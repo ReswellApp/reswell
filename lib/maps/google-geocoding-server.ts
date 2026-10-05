@@ -14,14 +14,17 @@ export function getGoogleGeocodingApiKey(): string | null {
   return k || null
 }
 
+type GeocodeResult = {
+  formatted_address: string
+  place_id?: string
+  geometry: { location: { lat: number; lng: number } }
+  address_components?: google.maps.GeocoderAddressComponent[]
+}
+
 type GeocodeJsonResponse = {
   status: string
   error_message?: string
-  results?: Array<{
-    formatted_address: string
-    geometry: { location: { lat: number; lng: number } }
-    address_components: google.maps.GeocoderAddressComponent[]
-  }>
+  results?: GeocodeResult[]
 }
 
 async function fetchGeocodeJson(params: URLSearchParams): Promise<GeocodeJsonResponse | null> {
@@ -125,5 +128,80 @@ export async function googleGeocodeUsZip(zip5: string): Promise<{
     city_locality: city,
     state_province: state,
     address_line1: "100 Main St",
+  }
+}
+
+export type GoogleResolvedStreet = {
+  formattedAddress: string
+  placeId: string
+  latitude: number
+  longitude: number
+  line1: string
+  line2: string
+  city: string
+  state: string
+  postalCode: string
+  country: string
+}
+
+/**
+ * Resolve a street with the existing Geocoding API. Place id wins when it resolves.
+ * Returns null when Google has no street-number result. Does not call another provider.
+ */
+export async function googleResolveStreetAddress(input: {
+  placeId?: string | null
+  query?: string | null
+}): Promise<GoogleResolvedStreet | null> {
+  const placeId = input.placeId?.trim() ?? ""
+  if (placeId) {
+    const params = new URLSearchParams()
+    params.set("place_id", placeId)
+    const byPlace = await firstStreetResult(params)
+    if (byPlace) return byPlace
+  }
+
+  const query = input.query?.trim() ?? ""
+  if (query.length < 5) return null
+  const params = new URLSearchParams()
+  params.set("address", query)
+  params.set("components", "country:US")
+  params.set("region", "us")
+  return firstStreetResult(params)
+}
+
+async function firstStreetResult(params: URLSearchParams): Promise<GoogleResolvedStreet | null> {
+  const data = await fetchGeocodeJson(params)
+  if (!data || data.status !== "OK" || !data.results?.length) return null
+  for (const result of data.results) {
+    const street = mapStreetResult(result)
+    if (street) return street
+  }
+  return null
+}
+
+function mapStreetResult(result: GeocodeResult): GoogleResolvedStreet | null {
+  const parsed = parseGoogleAddressComponents(result.address_components ?? [])
+  const line1 = parsed.line1.trim()
+  if (!/^\d/.test(line1)) return null
+  const city = parsed.city.trim()
+  const postalCode = parsed.postal_code.trim()
+  if (!city || !postalCode) return null
+  const loc = result.geometry?.location
+  if (!loc || typeof loc.lat !== "number" || typeof loc.lng !== "number") return null
+  const placeId = result.place_id?.trim() ?? ""
+  if (!placeId) return null
+  const country = (parsed.country || "US").slice(0, 2).toUpperCase()
+  const state = parsed.state ? normalizeUsStateProvinceForShipping(country, parsed.state) : ""
+  return {
+    formattedAddress: result.formatted_address?.trim() || line1,
+    placeId,
+    latitude: loc.lat,
+    longitude: loc.lng,
+    line1,
+    line2: parsed.line2.trim(),
+    city,
+    state,
+    postalCode,
+    country,
   }
 }

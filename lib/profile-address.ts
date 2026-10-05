@@ -22,6 +22,10 @@ export type ProfileAddressRow = {
   updated_at: string
   residential?: AddressResidentialIndicator | null
   address_validated_at?: string | null
+  google_place_id?: string | null
+  latitude?: number | null
+  longitude?: number | null
+  formatted_address?: string | null
 }
 
 function parseStoredResidential(value: unknown): AddressResidentialIndicator | null {
@@ -44,8 +48,53 @@ export function profileAddressToOrderShippingJson(addr: ProfileAddressRow, email
       postal_code: addr.postal_code,
       country: addr.country,
       residential: parseStoredResidential(addr.residential) ?? "yes",
+      ...googleAddressSnapshot(addr),
     },
   }
+}
+
+/** Place id and coordinates already stored on a saved address. Omitted when unset. */
+export function googleAddressSnapshot(addr: {
+  google_place_id?: string | null
+  latitude?: number | null
+  longitude?: number | null
+  formatted_address?: string | null
+}): {
+  google_place_id?: string
+  latitude?: number
+  longitude?: number
+  formatted_address?: string
+} {
+  const snapshot: {
+    google_place_id?: string
+    latitude?: number
+    longitude?: number
+    formatted_address?: string
+  } = {}
+  const placeId = addr.google_place_id?.trim()
+  const formatted = addr.formatted_address?.trim()
+  if (placeId) snapshot.google_place_id = placeId
+  if (typeof addr.latitude === "number" && Number.isFinite(addr.latitude)) snapshot.latitude = addr.latitude
+  if (typeof addr.longitude === "number" && Number.isFinite(addr.longitude)) snapshot.longitude = addr.longitude
+  if (formatted) snapshot.formatted_address = formatted
+  return snapshot
+}
+
+/** Street row without the Google columns, for a database that has not migrated yet. */
+export function withoutGoogleAddressColumns<T extends object>(row: T): T {
+  const street = { ...row } as Record<string, unknown>
+  delete street.google_place_id
+  delete street.latitude
+  delete street.longitude
+  delete street.formatted_address
+  return street as T
+}
+
+/** True when this database has not applied the Google address columns yet. */
+export function isMissingGoogleAddressColumn(message: string | null | undefined): boolean {
+  return /column "(google_place_id|formatted_address|latitude|longitude)" of relation "addresses" does not exist/i.test(
+    message ?? "",
+  )
 }
 
 /** Fields needed to insert / match a row in `public.addresses`. */
@@ -60,6 +109,10 @@ export type ProfileAddressFieldsFromOrder = {
   country: string
   residential?: AddressResidentialIndicator | null
   address_validated_at?: string | null
+  google_place_id?: string | null
+  latitude?: number | null
+  longitude?: number | null
+  formatted_address?: string | null
 }
 
 /**

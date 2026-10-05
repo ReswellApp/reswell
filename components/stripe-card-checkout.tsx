@@ -285,6 +285,7 @@ export function StripeCardCheckout({
   packagingMode = null,
   purchaseDetailsReady = true,
   needsShipping = false,
+  surfboardShipped = false,
   submitButtonLabel,
   submitButtonClassName,
   buyerEmail,
@@ -300,6 +301,7 @@ export function StripeCardCheckout({
   packagingMode?: "together" | "separate" | null
   purchaseDetailsReady?: boolean
   needsShipping?: boolean
+  surfboardShipped?: boolean
   /** When set, replaces the default “Pay — $x” label. */
   submitButtonLabel?: string
   submitButtonClassName?: string
@@ -364,6 +366,7 @@ export function StripeCardCheckout({
             ...(promoCode ? { promo_code: promoCode } : {}),
             ...(shippingQuoteToken ? { quote_token: shippingQuoteToken } : {}),
             ...(packagingMode ? { packaging_mode: packagingMode } : {}),
+            ...(surfboardShipped ? { surfboard_shipped: true } : {}),
           }),
         })
         const data = (await res.json()) as {
@@ -411,6 +414,7 @@ export function StripeCardCheckout({
     packagingMode,
     purchaseDetailsReady,
     needsShipping,
+    surfboardShipped,
     stripePromise,
   ])
 

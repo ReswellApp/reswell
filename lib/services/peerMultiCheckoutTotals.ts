@@ -66,6 +66,8 @@ export async function computePeerMultiCheckoutUsd(params: {
   }
   /** Units per listing id (shop inventory). Peer lines default to 1. */
   quantityByListingId?: Record<string, number>
+  /** Replaces carrier and flat shipping with one checkout line. Single listing only. */
+  fixedShippingUsd?: number
 }): Promise<
   | {
       ok: true
@@ -105,6 +107,10 @@ export async function computePeerMultiCheckoutUsd(params: {
   const surfboardCapError = peerCheckoutSurfboardCountError(countSurfboardListings(listingsOrdered))
   if (surfboardCapError) {
     return { ok: false, error: surfboardCapError }
+  }
+
+  if (params.fixedShippingUsd != null && listingsOrdered.length !== 1) {
+    return { ok: false, error: "Surfboard Shipped is one board per checkout." }
   }
 
   const sellerResolved = resolveMixedCheckoutSellerId(
@@ -204,6 +210,7 @@ export async function computePeerMultiCheckoutUsd(params: {
       sellerShipFromName,
       sellerShipFromAddress,
       shippingOverride: lineOverride,
+      fixedShippingUsd: params.fixedShippingUsd,
     })
     if (!totals.ok) {
       return { ok: false, error: totals.error }

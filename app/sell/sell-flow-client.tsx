@@ -152,9 +152,16 @@ import { clearSellServerDraftListingId, getSellServerDraftListingId, replaceSell
 import { AdminBulkListingBanner } from "@/components/features/sell/admin-bulk-listing-banner"
 import { ReswellPackageDimensionsCard } from "@/components/features/sell/reswell-package-dimensions-card"
 import { SellDropoffLocationCard } from "@/components/features/sell/sell-dropoff-location-card"
+import {
+  SurfboardShippedChoice,
+  type SurfboardShippedSellDraft,
+} from "@/components/features/sell/surfboard-shipped-choice"
 import { sellFormFieldsFromDropoffLocation } from "@/lib/dropoff-location-box-rules"
 import type { PublicDropoffLocation } from "@/lib/dropoff-location-types"
 import { normalizeSellShippingCostMode } from "@/lib/sell-shipping-cost-mode"
+import { saveListingSurfboardShippedAction } from "@/lib/actions/surfboardShippedActions"
+import { isCaliforniaAddressState } from "@/lib/services/surfboardShipped"
+import type { SurfboardShippedSellOffer } from "@/lib/services/surfboardShippedOffer"
 import { SellBoardModelField } from "@/components/sell-board-model-field"
 import { listingDetailPath } from "@/lib/listing-query"
 import {
@@ -701,6 +708,8 @@ type SellPageContentProps = {
   hasPublishedSurfboard?: boolean
   fromGiveaway?: boolean
   initialViewMode?: BoardSellViewMode
+  /** Null for non-admins and when no coastal shipper is live. */
+  surfboardShippedSell?: SurfboardShippedSellOffer | null
 }
 
 function SellPageContentInner({
@@ -711,6 +720,7 @@ function SellPageContentInner({
   hasPublishedSurfboard = false,
   fromGiveaway = false,
   initialViewMode = "guided",
+  surfboardShippedSell = null,
 }: SellPageContentProps) {
   const listingPhotosInputId = useId()
   const listingVideoInputId = useId()
@@ -936,6 +946,22 @@ function SellPageContentInner({
   const [listingCatalogRequestVariant, setListingCatalogRequestVariant] =
     useState<ListingCatalogRequestVariant | null>(null)
   const [formData, setFormData] = useState(createInitialSellFormData)
+  const [surfboardShippedDraft, setSurfboardShippedDraft] = useState<SurfboardShippedSellDraft>({
+    enabled: false,
+    ready: true,
+    addressId: null,
+    address: null,
+  })
+  const onSurfboardShippedDraft = useCallback((draft: SurfboardShippedSellDraft) => {
+    setSurfboardShippedDraft((current) =>
+      current.enabled === draft.enabled &&
+      current.ready === draft.ready &&
+      current.addressId === draft.addressId &&
+      JSON.stringify(current.address) === JSON.stringify(draft.address)
+        ? current
+        : draft,
+    )
+  }, [])
   const [dropoffLocations, setDropoffLocations] = useState<PublicDropoffLocation[]>([])
   const [dropoffLocationsStatus, setDropoffLocationsStatus] = useState<
     "loading" | "ready" | "error"
@@ -3402,6 +3428,33 @@ function SellPageContentInner({
         return
       }
 
+      if (surfboardShippedSell && isCaliforniaAddressState(fd.locationState)) {
+        if (!surfboardShippedDraft.ready) {
+          setLoading(false)
+          setPublishValidationBanner("Surfboard Shipped is still loading. Try again in a moment.")
+          return
+        }
+        if (surfboardShippedDraft.enabled) {
+          const pickup = surfboardShippedDraft.address
+          if (
+            !pickup ||
+            !pickup.full_name ||
+            !pickup.phone ||
+            !pickup.line1 ||
+            !pickup.city ||
+            !pickup.postal_code ||
+            !pickup.google_place_id ||
+            !isCaliforniaAddressState(pickup.state)
+          ) {
+            setLoading(false)
+            setPublishValidationBanner(
+              "Search a California street for Surfboard Shipped pickup. Google has to place the address.",
+            )
+            return
+          }
+        }
+      }
+
       if (
         fulfillmentFlags.shipping_available &&
         !listingImpersonation &&
@@ -3808,6 +3861,25 @@ function SellPageContentInner({
           : "/boards"
 
       if (listingId) {
+        if (
+          surfboardShippedSell &&
+          isCaliforniaAddressState(fd.locationState)
+        ) {
+          const pickup = surfboardShippedDraft.address
+          const savedChoice = await saveListingSurfboardShippedAction(
+            surfboardShippedDraft.enabled && pickup
+              ? {
+                  listingId,
+                  enabled: true,
+                  addressId: surfboardShippedDraft.addressId,
+                  address: pickup,
+                }
+              : { listingId, enabled: false },
+          )
+          if (savedChoice.error) {
+            throw new Error(savedChoice.error)
+          }
+        }
         if (!editId && !listingImpersonation) {
           if (publishedDraftNeedsSideEffects) {
             applyPublishedListingSideEffectsClient(listingId)
@@ -5226,6 +5298,12 @@ function SellPageContentInner({
                               </div>
                             </div>
                           </div>
+                          <SurfboardShippedChoice
+                            offer={surfboardShippedSell}
+                            locationState={formData.locationState}
+                            editListingId={editId}
+                            onChange={onSurfboardShippedDraft}
+                          />
                           <div
                             className={cn(
                               "flex items-start gap-2.5 rounded-lg border p-3 sm:gap-3 sm:rounded-xl sm:p-5",
@@ -5330,6 +5408,7 @@ export default function SellFlowShell(props: {
   hasPublishedSurfboard?: boolean
   fromGiveaway?: boolean
   initialViewMode?: BoardSellViewMode
+  surfboardShippedSell?: SurfboardShippedSellOffer | null
 }) {
   return <SellSearchParamsBridge {...props} />
 }
@@ -5345,6 +5424,7 @@ function SellSearchParamsBridge(props: {
   hasPublishedSurfboard?: boolean
   fromGiveaway?: boolean
   initialViewMode?: BoardSellViewMode
+  surfboardShippedSell?: SurfboardShippedSellOffer | null
 }) {
   const searchParams = useSearchParams()
   const qEditRaw = searchParams.get("edit")
@@ -5385,6 +5465,7 @@ function SellSearchParamsBridge(props: {
       hasPublishedSurfboard={props.hasPublishedSurfboard}
       fromGiveaway={props.fromGiveaway}
       initialViewMode={props.initialViewMode}
+      surfboardShippedSell={props.surfboardShippedSell}
     />
   )
 }

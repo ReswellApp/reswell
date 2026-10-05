@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
 import Stripe from "stripe"
+import { z } from "zod"
 import { getStripe, getStripeCheckoutKeyConfigError } from "@/lib/stripe-server"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import {
@@ -50,6 +51,10 @@ import {
   resolveShippingPackagingMode,
   type ShippingPackagingMode,
 } from "@/lib/shipping/packaging-mode"
+import {
+  prepareSurfboardShippedCharge,
+  type SurfboardShippedCharge,
+} from "@/lib/services/surfboardShippedOffer"
 
 const JSON_NO_STORE_HEADERS = {
   "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
@@ -102,6 +107,11 @@ export async function POST(request: NextRequest) {
       { status: 403 },
     )
   }
+
+  const surfboardFlag = z
+    .object({ surfboard_shipped: z.boolean().optional() })
+    .safeParse(rawBody)
+  const wantsSurfboardShipped = surfboardFlag.success && surfboardFlag.data.surfboard_shipped === true
 
   const body = rawBody as {
     listing_id?: string
@@ -347,6 +357,16 @@ export async function POST(request: NextRequest) {
       lp && sa ? (fulfillment === "shipping" ? "shipping" : "pickup") : !lp && sa ? "shipping" : "pickup"
   }
 
+  if (wantsSurfboardShipped) {
+    if (listingIdsOrdered.length !== 1) {
+      return NextResponse.json(
+        { error: "Surfboard Shipped is one board per checkout." },
+        { status: 422, headers: JSON_NO_STORE_HEADERS },
+      )
+    }
+    impliedFulfillment = "shipping"
+  }
+
   const addressId = body.address_id?.trim() || null
   let buyerAddress: ProfileAddressRow | null = null
   if (impliedFulfillment === "shipping") {
@@ -383,6 +403,24 @@ export async function POST(request: NextRequest) {
     buyerAddress = preparedAddress.address
   }
 
+  let surfboardCharge: SurfboardShippedCharge | null = null
+  if (wantsSurfboardShipped) {
+    if (!buyerAddress) {
+      return NextResponse.json({ error: "Shipping address is required" }, { status: 400 })
+    }
+    const prepared = await prepareSurfboardShippedCharge({
+      listingId: listingIdsOrdered[0]!,
+      buyer: buyerAddress,
+    })
+    if (!prepared.ok) {
+      return NextResponse.json(
+        { error: prepared.error },
+        { status: prepared.status, headers: JSON_NO_STORE_HEADERS },
+      )
+    }
+    surfboardCharge = prepared.charge
+  }
+
   let preverifiedShipping:
     | {
         shippingUsd: number
@@ -407,7 +445,7 @@ export async function POST(request: NextRequest) {
   }
 
   const quoteTokenRaw = body.quote_token?.trim()
-  if (impliedFulfillment === "shipping" && quoteTokenRaw && addressId) {
+  if (!surfboardCharge && impliedFulfillment === "shipping" && quoteTokenRaw && addressId) {
     const verified = verifyCheckoutShippingQuoteToken(quoteTokenRaw, {
       buyerId: user.id,
       listingIds: listingIdsOrdered,
@@ -447,6 +485,7 @@ export async function POST(request: NextRequest) {
     packagingMode,
     preverifiedShipping,
     quantityByListingId,
+    fixedShippingUsd: surfboardCharge?.feeUsd,
   })
 
   if (!bundle.ok) {
@@ -584,6 +623,16 @@ export async function POST(request: NextRequest) {
           : {}),
         ...(impliedFulfillment === "shipping" && listingIdsOrdered.length > 1
           ? { shipping_packaging_mode: packagingMode }
+          : {}),
+        ...(surfboardCharge
+          ? {
+              surfboard_shipped: "1",
+              surfboard_shipped_cents: String(surfboardCharge.feeCents),
+              surfboard_shipped_shipper_id: surfboardCharge.shipperId,
+              surfboard_shipped_run_id: surfboardCharge.runId,
+              surfboard_shipped_window_start: surfboardCharge.windowStart,
+              surfboard_shipped_window_end: surfboardCharge.windowEnd,
+            }
           : {}),
       },
       description: stripeDescription.slice(0, 1000),

@@ -239,6 +239,8 @@ export async function computePeerCheckoutTotalsUsd(input: {
   }
   selectedRateId?: string | null
   selectedServiceCode?: string | null
+  /** Flat checkout line that replaces the carrier or seller shipping price. */
+  fixedShippingUsd?: number
 }): Promise<
   | {
       ok: true
@@ -257,6 +259,20 @@ export async function computePeerCheckoutTotalsUsd(input: {
 
   if (input.fulfillment === "pickup") {
     return { ok: true, itemPrice, shippingUsd: 0, totalUsd: itemPrice, usedReswellQuote: false }
+  }
+
+  if (typeof input.fixedShippingUsd === "number") {
+    const ship = Math.round(input.fixedShippingUsd * 100) / 100
+    if (!Number.isFinite(ship) || ship < 0) {
+      return { ok: false, error: "Invalid shipping amount" }
+    }
+    return {
+      ok: true,
+      itemPrice,
+      shippingUsd: ship,
+      totalUsd: Math.round((itemPrice + ship) * 100) / 100,
+      usedReswellQuote: false,
+    }
   }
 
   const mode = effectiveBoardShippingMode(input.listing)

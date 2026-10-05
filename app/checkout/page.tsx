@@ -52,6 +52,18 @@ import {
   countSurfboardListings,
   peerCheckoutSurfboardCountError,
 } from "@/lib/surfboard-multi-board-parcel"
+import { getSurfboardShippedCheckoutSeed } from "@/lib/services/surfboardShippedOffer"
+import type { SurfboardShippedCheckoutSeed } from "@/lib/services/surfboardShippedOffer"
+
+async function surfboardShippedSeedForCheckout(
+  userId: string | null | undefined,
+  listings: { id: string; section?: string | null }[],
+): Promise<SurfboardShippedCheckoutSeed | null> {
+  if (!userId || listings.length !== 1) return null
+  const only = listings[0]
+  if (!only || only.section !== "surfboards") return null
+  return getSurfboardShippedCheckoutSeed(only.id)
+}
 
 export const dynamic = "force-dynamic"
 
@@ -185,6 +197,7 @@ export default async function CheckoutPage(props: {
             seller={seller}
             offerId={offer.id}
             suggestedFulfillment={loaded.fulfillment}
+            surfboardShippedSeed={await surfboardShippedSeedForCheckout(user.id, checkoutListings)}
           />
         </div>
       </main>
@@ -343,6 +356,7 @@ export default async function CheckoutPage(props: {
                   )
                 : null
             }
+            surfboardShippedSeed={await surfboardShippedSeedForCheckout(user.id, checkoutListings)}
           />
         </div>
       </main>
@@ -409,7 +423,13 @@ export default async function CheckoutPage(props: {
 
   const lp = listing.local_pickup !== false
   const sa = !!listing.shipping_available
-  if (!lp && !sa) {
+  const surfboardShippedSeed =
+    user && !isAnonymousSupabaseUser(user)
+      ? await surfboardShippedSeedForCheckout(user.id, [
+          { id: listing.id, section: listing.section },
+        ])
+      : null
+  if (!lp && !sa && !surfboardShippedSeed) {
     notFound()
   }
 
@@ -571,6 +591,7 @@ export default async function CheckoutPage(props: {
           seller={seller}
           offerId={matchedOfferId}
           suggestedFulfillment={matchedOfferFulfillment}
+          surfboardShippedSeed={surfboardShippedSeed}
         />
       </div>
     </main>

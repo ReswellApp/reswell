@@ -13,6 +13,7 @@ import {
   type PeerSurfboardCheckoutListingRow,
 } from "@/lib/services/peerListingShippingQuote"
 import { computePeerMultiCheckoutUsd } from "@/lib/services/peerMultiCheckoutTotals"
+import { readSurfboardShippedPaymentMetadata } from "@/lib/services/surfboardShipped"
 import type { CheckoutShippingPackageRate } from "@/lib/services/checkoutShippingQuoteToken"
 import {
   DEFAULT_SHIPPING_PACKAGING_MODE,
@@ -590,6 +591,11 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     }
   }
 
+  const surfboardShippedMeta = readSurfboardShippedPaymentMetadata(pi.metadata)
+  if (surfboardShippedMeta && !surfboardShippedMeta.ok) {
+    return { ok: false, error: surfboardShippedMeta.error, status: 400 }
+  }
+
   /** Must match `/api/stripe/create-payment-intent` (`Math.round(totalUsd * 100)`). */
   const metaAmountCentsRaw = pi.metadata.amount_cents?.trim()
   const hasMetaAmountCents =
@@ -644,26 +650,29 @@ export async function completeMarketplaceOrderFromPaymentIntent(
           pi.metadata.shipping_packaging_mode,
           DEFAULT_SHIPPING_PACKAGING_MODE,
         ),
-        ...(pi.metadata.reswell_shipping_cents?.trim() &&
-        /^\d+$/.test(pi.metadata.reswell_shipping_cents.trim())
-          ? {
-              preverifiedShipping: {
-                shippingUsd: parseInt(pi.metadata.reswell_shipping_cents.trim(), 10) / 100,
-                usedReswellQuote: true,
-                rateId: pi.metadata.shipengine_rate_id?.trim() || null,
-                serviceCode: pi.metadata.shipengine_service_code?.trim() || null,
-                packageRates: parseShipenginePackageRatesMeta(pi.metadata.shipengine_package_rates),
-              },
-            }
-          : {}),
+        ...(surfboardShippedMeta?.ok
+          ? { fixedShippingUsd: surfboardShippedMeta.feeUsd }
+          : pi.metadata.reswell_shipping_cents?.trim() &&
+              /^\d+$/.test(pi.metadata.reswell_shipping_cents.trim())
+            ? {
+                preverifiedShipping: {
+                  shippingUsd: parseInt(pi.metadata.reswell_shipping_cents.trim(), 10) / 100,
+                  usedReswellQuote: true,
+                  rateId: pi.metadata.shipengine_rate_id?.trim() || null,
+                  serviceCode: pi.metadata.shipengine_service_code?.trim() || null,
+                  packageRates: parseShipenginePackageRatesMeta(pi.metadata.shipengine_package_rates),
+                },
+              }
+            : {}),
       })
   if (!bundle.ok) {
     return { ok: false, error: bundle.error, status: 400 }
   }
 
   const chargedShippingCentsRaw = pi.metadata.reswell_shipping_cents?.trim()
-  const shippingUsd =
-    chargedShippingCentsRaw && /^\d+$/.test(chargedShippingCentsRaw)
+  const shippingUsd = surfboardShippedMeta?.ok
+    ? surfboardShippedMeta.feeUsd
+    : chargedShippingCentsRaw && /^\d+$/.test(chargedShippingCentsRaw)
       ? parseInt(chargedShippingCentsRaw, 10) / 100
       : bundle.totalShippingUsd
 
@@ -819,6 +828,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       sales_channel: isAdminTerminalSale ? "admin_terminal" : "online",
       ...(packagingModeForOrder ? { shipping_packaging_mode: packagingModeForOrder } : {}),
       ...(shippingAddressJson ? { shipping_address: shippingAddressJson } : {}),
+      ...(surfboardShippedMeta?.ok ? surfboardShippedMeta.write : {}),
     })
     .select()
     .single()
@@ -857,6 +867,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       msg.includes("pickup_code") ||
       msg.includes("shipping_amount") ||
       msg.includes("shipping_packaging_mode") ||
+      msg.includes("surfboard_shipped") ||
       msg.includes("order_items") ||
       msg.includes("sales_channel") ||
       msg.includes("buyer_required") ||
@@ -911,7 +922,12 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     return { ok: false, error: "Could not create order lines", status: 500 }
   }
 
-  if (fulfillmentMethod === "shipping" && insertedOrderItems && insertedOrderItems.length > 0) {
+  if (
+    fulfillmentMethod === "shipping" &&
+    !surfboardShippedMeta?.ok &&
+    insertedOrderItems &&
+    insertedOrderItems.length > 0
+  ) {
     const packageRates = parseShipenginePackageRatesMeta(pi.metadata.shipengine_package_rates)
     const rateByListing = new Map(
       (packageRates ?? []).map((r) => [r.listingId, r.rateId] as const),
@@ -1155,7 +1171,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
 
   if (isAdminTerminalSale) {
     void releaseOrderSellerEarningsAfterFulfillment(purchase.id)
-  } else if (!isPickup && fulfillmentMethod === "shipping") {
+  } else if (!isPickup && fulfillmentMethod === "shipping" && !surfboardShippedMeta?.ok) {
     await purchaseReswellShippingLabelAfterCheckout(serviceSupabase, purchase.id)
   }
 
