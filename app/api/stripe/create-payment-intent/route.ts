@@ -304,6 +304,12 @@ export async function POST(request: NextRequest) {
       Math.floor(Number((listing as { stock_quantity?: number }).stock_quantity) || 0),
     )
     const qty = quantityByListingId[listing.id] ?? 1
+    if (isShopifyManagedListing(listing) && qty !== 1) {
+      return NextResponse.json(
+        { error: "Shopify-synced listings are limited to one unit per checkout" },
+        { status: 400 },
+      )
+    }
     if (qty > stock) {
       return NextResponse.json({ error: "Not enough stock available" }, { status: 409 })
     }

@@ -23,7 +23,6 @@ import { trackKlaviyoBuyerOrderConfirmed } from "@/lib/klaviyo/track-buyer-order
 import type { KlaviyoBuyerOrderLineItem } from "@/lib/klaviyo/track-buyer-order-confirmed"
 import { notifySellerOrderCheckoutKlaviyo } from "@/lib/services/notifySellerOrderCheckoutKlaviyo"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
-import { dbRecordShopifyListingSale } from "@/lib/db/shopifyCatalog"
 import { isShopifyManagedListing } from "@/lib/shopify/listing"
 import { trackMetaPurchaseServerEvent } from "@/lib/meta/track-purchase-server-event"
 import { syncAdminTerminalGuestToCrm } from "@/lib/services/crmAdminTerminalGuest"
@@ -193,11 +192,11 @@ async function loadListingForAdminTerminal(
     return { ok: false, error: "Listing not found", status: 404 }
   }
 
-  const listing = data as AdminTerminalListingRow
+  const listing = data as unknown as AdminTerminalListingRow
   if (listing.archived_at) {
     return { ok: false, error: "Listing is archived", status: 400 }
   }
-  if (!["active", "pending_sale"].includes(listing.status)) {
+  if (!["active", "pending_sale"].includes(String(listing.status ?? ""))) {
     return {
       ok: false,
       error: `Listing status is "${listing.status}" — use an active or pending_sale listing`,
@@ -260,11 +259,11 @@ export async function previewAdminTerminalListingById(
     return { ok: false, error: "Listing not found", status: 404 }
   }
 
-  const listing = data as AdminTerminalListingRow
+  const listing = data as unknown as AdminTerminalListingRow
   if (listing.archived_at) {
     return { ok: false, error: "Listing is archived", status: 400 }
   }
-  if (!["active", "pending_sale"].includes(listing.status)) {
+  if (!["active", "pending_sale"].includes(String(listing.status ?? ""))) {
     return {
       ok: false,
       error: `Listing status is "${listing.status}" — use an active or pending_sale listing`,
@@ -309,7 +308,7 @@ async function buildListingPreview(
       title: listing.title?.trim() || "Untitled listing",
       slug: listing.slug,
       sellerId: listing.user_id,
-      status: listing.status,
+      status: String(listing.status ?? ""),
       itemPrice,
       shippingPrice,
       pickupAvailable,
@@ -448,11 +447,11 @@ async function loadListingForAdminTerminalSale(
     return { ok: false, error: "Listing not found", status: 404 }
   }
 
-  const listing = listingRaw as AdminTerminalListingRow
+  const listing = listingRaw as unknown as AdminTerminalListingRow
   if (listing.archived_at) {
     return { ok: false, error: "Listing is archived", status: 400 }
   }
-  if (!["active", "pending_sale"].includes(listing.status)) {
+  if (!["active", "pending_sale"].includes(String(listing.status ?? ""))) {
     return { ok: false, error: "Listing is not available for sale", status: 409 }
   }
   if (!isPeerListingSection(listing.section)) {
@@ -687,6 +686,14 @@ export async function completeAdminTerminalCashSale(
   if (!loaded.ok) return loaded
 
   const { listing, totalUsd } = loaded
+  if (isShopifyManagedListing(listing)) {
+    return {
+      ok: false,
+      error:
+        "Shopify-synced inventory requires card checkout at the register so the sale is idempotent.",
+      status: 400,
+    }
+  }
   const checkoutTotals = await computeAdminTerminalInPersonCheckoutUsd(service, listing)
   if (!checkoutTotals.ok) {
     return { ok: false, error: checkoutTotals.error, status: 422 }
@@ -777,22 +784,14 @@ export async function completeAdminTerminalCashSale(
 
   const listingTitle = String(listing.title ?? "")
 
-  if (isShopifyManagedListing(listing)) {
-    await dbRecordShopifyListingSale(service, {
-      orderId: purchase.id,
-      listingId: listing.id,
-      quantity: 1,
-    })
-  } else {
-    const { error: listingErr } = await service
-      .from("listings")
-      .update(listingSoldViaCheckoutUpdate())
-      .eq("id", listing.id)
+  const { error: listingErr } = await service
+    .from("listings")
+    .update(listingSoldViaCheckoutUpdate())
+    .eq("id", listing.id)
 
-    if (listingErr) {
-      console.error("[adminTerminalSale] cash listing update:", listingErr)
-      return { ok: false, error: "Could not mark listing sold", status: 500 }
-    }
+  if (listingErr) {
+    console.error("[adminTerminalSale] cash listing update:", listingErr)
+    return { ok: false, error: "Could not mark listing sold", status: 500 }
   }
 
   await safeRevalidateAfterMarketplaceOrderCommit(service, {

@@ -140,7 +140,11 @@ export function useShopifyIntegration(initialData: ShopifyDashboardData) {
       const response = await fetch("/api/integrations/shopify/disconnect", {
         method: "POST",
       })
-      if (!response.ok) throw new Error()
+      const body = (await response.json()) as { error?: string }
+      if (!response.ok) {
+        toast.error(body.error || "Could not disconnect Shopify")
+        return
+      }
       setConnection(null)
       setProducts([])
       toast.success("Shopify disconnected")

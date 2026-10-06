@@ -7,15 +7,6 @@ export async function setShopifyAccessForUser(
   grant: boolean,
 ): Promise<{ ok: true } | { ok: false; status: number; error: string }> {
   try {
-    const serviceSupabase = createServiceRoleClient()
-    const result = await dbSetShopifyAccessForUser(
-      serviceSupabase,
-      userId,
-      grant,
-    )
-    if (result === "not_found") {
-      return { ok: false, status: 404, error: "User not found" }
-    }
     if (!grant) {
       const disconnected = await disconnectMerchantShopify(userId)
       if (!disconnected.ok) {
@@ -25,6 +16,15 @@ export async function setShopifyAccessForUser(
           error: disconnected.error,
         }
       }
+    }
+    const serviceSupabase = createServiceRoleClient()
+    const result = await dbSetShopifyAccessForUser(
+      serviceSupabase,
+      userId,
+      grant,
+    )
+    if (result === "not_found") {
+      return { ok: false, status: 404, error: "User not found" }
     }
     return { ok: true }
   } catch (error) {

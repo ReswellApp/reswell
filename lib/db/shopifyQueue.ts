@@ -208,25 +208,129 @@ export async function dbCancelShopifyJobsForConnection(
     })
     .eq("connection_id", connectionId)
     .in("status", ["queued", "retry", "processing"])
+    .neq("job_type", "inventory_decrement")
   if (error) throw new Error(error.message)
 }
 
-export async function dbPendingShopifyInventoryDecrements(
+export async function dbCountUnresolvedShopifyInventoryJobs(
   supabase: SupabaseClient,
-  mappingId: string,
+  connectionId: string,
 ): Promise<number> {
+  const { count, error } = await supabase
+    .from("shopify_sync_jobs")
+    .select("id", { count: "exact", head: true })
+    .eq("connection_id", connectionId)
+    .eq("job_type", "inventory_decrement")
+    .in("status", ["queued", "retry", "processing", "dead"])
+  if (error) throw new Error(error.message)
+  return count ?? 0
+}
+
+export async function dbReviveDeadShopifyInventoryJobs(
+  supabase: SupabaseClient,
+  connectionId: string,
+): Promise<void> {
+  const { data, error: listError } = await supabase
+    .from("shopify_sync_jobs")
+    .select("id, payload")
+    .eq("connection_id", connectionId)
+    .eq("job_type", "inventory_decrement")
+    .eq("status", "dead")
+  if (listError) throw new Error(listError.message)
+
+  for (const row of data ?? []) {
+    const payload =
+      row.payload && typeof row.payload === "object" && !Array.isArray(row.payload)
+        ? { ...(row.payload as Record<string, unknown>) }
+        : {}
+    delete payload.locationId
+    delete payload.changeFromQuantity
+    delete payload.remoteTotalBefore
+    const { error } = await supabase
+      .from("shopify_sync_jobs")
+      .update({
+        payload,
+        status: "queued",
+        attempts: 0,
+        run_after: new Date().toISOString(),
+        locked_until: null,
+        worker_id: null,
+        last_error: "Retrying after Shopify reconnection",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", row.id)
+      .eq("status", "dead")
+    if (error) throw new Error(error.message)
+  }
+}
+
+export async function dbPersistShopifyInventoryAttempt(
+  supabase: SupabaseClient,
+  input: {
+    jobId: string
+    workerId: string | null
+    payload: Record<string, unknown>
+  },
+): Promise<void> {
+  const { data, error } = await supabase
+    .from("shopify_sync_jobs")
+    .update({
+      payload: input.payload,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", input.jobId)
+    .eq("status", "processing")
+    .eq("worker_id", input.workerId)
+    .select("id")
+    .maybeSingle()
+  if (error) throw new Error(error.message)
+  if (!data) throw new Error("Shopify inventory job lease was lost")
+}
+
+export async function dbListUnresolvedShopifyInventoryOrderIds(
+  supabase: SupabaseClient,
+  connectionId: string,
+): Promise<string[]> {
   const { data, error } = await supabase
     .from("shopify_sync_jobs")
     .select("payload")
+    .eq("connection_id", connectionId)
     .eq("job_type", "inventory_decrement")
-    .in("status", ["queued", "retry"])
-    .contains("payload", { mappingId })
+    .in("status", ["queued", "retry", "processing", "dead"])
   if (error) throw new Error(error.message)
-  return (data ?? []).reduce((sum, row) => {
-    const payload =
-      row.payload && typeof row.payload === "object" && !Array.isArray(row.payload)
-        ? (row.payload as Record<string, unknown>)
-        : {}
-    return sum + Math.max(1, Math.floor(Number(payload.quantity) || 1))
-  }, 0)
+  return [
+    ...new Set(
+      (data ?? [])
+        .map((row) => {
+          const payload =
+            row.payload &&
+            typeof row.payload === "object" &&
+            !Array.isArray(row.payload)
+              ? (row.payload as Record<string, unknown>)
+              : {}
+          return typeof payload.orderId === "string" ? payload.orderId : null
+        })
+        .filter((orderId): orderId is string => Boolean(orderId)),
+    ),
+  ]
+}
+
+export async function dbCancelShopifyInventoryJobsForConnection(
+  supabase: SupabaseClient,
+  connectionId: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from("shopify_sync_jobs")
+    .update({
+      status: "canceled",
+      locked_until: null,
+      worker_id: null,
+      completed_at: new Date().toISOString(),
+      last_error: "Reswell order compensated after Shopify disconnect",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("connection_id", connectionId)
+    .eq("job_type", "inventory_decrement")
+    .in("status", ["queued", "retry", "processing", "dead"])
+  if (error) throw new Error(error.message)
 }

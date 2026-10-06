@@ -58,6 +58,13 @@ CREATE INDEX IF NOT EXISTS listings_shopify_inventory_source_idx
 COMMENT ON COLUMN public.listings.inventory_source IS
   'reswell for normal listings; shopify when product fields and inventory are remotely managed.';
 
+ALTER TABLE public.orders
+  DROP CONSTRAINT IF EXISTS orders_status_check;
+
+ALTER TABLE public.orders
+  ADD CONSTRAINT orders_status_check
+  CHECK (status IN ('pending', 'confirmed', 'refunding', 'refunded'));
+
 CREATE TABLE IF NOT EXISTS public.shopify_connections (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -114,8 +121,13 @@ CREATE TABLE IF NOT EXISTS public.shopify_product_mappings (
   shopify_product_gid text NOT NULL,
   shopify_variant_gid text NOT NULL,
   shopify_inventory_item_gid text NOT NULL,
-  reswell_section text NOT NULL,
+  reswell_section text NOT NULL
+    CHECK (reswell_section IN (
+      'surfboards', 'fins', 'wetsuits', 'boardbags', 'surfpacks',
+      'leashes', 'apparel', 'accessories', 'magazines', 'traction'
+    )),
   selected boolean NOT NULL DEFAULT true,
+  inventory_generation bigint NOT NULL DEFAULT 0,
   sync_status text NOT NULL DEFAULT 'synced'
     CHECK (sync_status IN ('synced', 'out_of_stock', 'deleted', 'unselected', 'error')),
   remote_updated_at timestamptz,
@@ -196,23 +208,39 @@ CREATE UNIQUE INDEX IF NOT EXISTS shopify_sync_jobs_active_dedupe_idx
   WHERE dedupe_key IS NOT NULL
     AND status IN ('queued', 'retry');
 
+CREATE TABLE IF NOT EXISTS public.shopify_inventory_compensations (
+  order_id uuid PRIMARY KEY REFERENCES public.orders(id) ON DELETE CASCADE,
+  payment_intent_id text NOT NULL UNIQUE,
+  status text NOT NULL DEFAULT 'pending'
+    CHECK (status IN ('pending', 'refunding', 'refunded', 'failed')),
+  original_seller_earnings numeric(12, 2) NOT NULL DEFAULT 0,
+  original_platform_fee numeric(12, 2) NOT NULL DEFAULT 0,
+  stripe_refund_id text,
+  last_error text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
 ALTER TABLE public.shopify_connections ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.shopify_oauth_states ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.shopify_product_mappings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.shopify_webhook_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.shopify_sync_jobs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.shopify_inventory_compensations ENABLE ROW LEVEL SECURITY;
 
 REVOKE ALL ON public.shopify_connections FROM anon, authenticated;
 REVOKE ALL ON public.shopify_oauth_states FROM anon, authenticated;
 REVOKE ALL ON public.shopify_product_mappings FROM anon, authenticated;
 REVOKE ALL ON public.shopify_webhook_events FROM anon, authenticated;
 REVOKE ALL ON public.shopify_sync_jobs FROM anon, authenticated;
+REVOKE ALL ON public.shopify_inventory_compensations FROM anon, authenticated;
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.shopify_connections TO service_role;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.shopify_oauth_states TO service_role;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.shopify_product_mappings TO service_role;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.shopify_webhook_events TO service_role;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.shopify_sync_jobs TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.shopify_inventory_compensations TO service_role;
 
 CREATE OR REPLACE FUNCTION public.claim_shopify_webhook_events(
   p_limit integer DEFAULT 20,
@@ -272,17 +300,44 @@ BEGIN
   END IF;
 
   RETURN QUERY
-  WITH due AS (
-    SELECT id
-    FROM public.shopify_sync_jobs
+  WITH ranked AS (
+    SELECT
+      j.id,
+      row_number() OVER (
+        PARTITION BY CASE
+          WHEN j.job_type = 'inventory_decrement'
+            THEN 'inventory:' || coalesce(j.payload ->> 'mappingId', j.id::text)
+          ELSE j.id::text
+        END
+        ORDER BY j.run_after ASC, j.created_at ASC
+      ) AS queue_rank
+    FROM public.shopify_sync_jobs j
     WHERE (
-      status IN ('queued', 'retry')
-      AND run_after <= now()
+      j.status IN ('queued', 'retry')
+      AND j.run_after <= now()
+      AND (
+        j.job_type <> 'inventory_decrement'
+        OR NOT EXISTS (
+          SELECT 1
+          FROM public.shopify_sync_jobs active
+          WHERE active.id <> j.id
+            AND active.job_type = 'inventory_decrement'
+            AND active.status = 'processing'
+            AND active.locked_until >= now()
+            AND active.payload ->> 'mappingId' = j.payload ->> 'mappingId'
+        )
+      )
     ) OR (
-      status = 'processing'
-      AND locked_until < now()
+      j.status = 'processing'
+      AND j.locked_until < now()
     )
-    ORDER BY run_after ASC, created_at ASC
+  ),
+  due AS (
+    SELECT j.id
+    FROM public.shopify_sync_jobs j
+    JOIN ranked r ON r.id = j.id
+    WHERE r.queue_rank = 1
+    ORDER BY j.run_after ASC, j.created_at ASC
     LIMIT GREATEST(1, LEAST(p_limit, 100))
     FOR UPDATE SKIP LOCKED
   )
@@ -303,6 +358,83 @@ REVOKE ALL ON FUNCTION public.claim_shopify_sync_jobs(integer, text, integer) FR
 GRANT EXECUTE ON FUNCTION public.claim_shopify_webhook_events(integer, text, integer) TO service_role;
 GRANT EXECUTE ON FUNCTION public.claim_shopify_sync_jobs(integer, text, integer) TO service_role;
 
+CREATE OR REPLACE FUNCTION public.begin_shopify_inventory_compensation(
+  p_order_id uuid,
+  p_payment_intent_id text
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_order public.orders%ROWTYPE;
+  v_has_pending_earnings boolean;
+BEGIN
+  IF coalesce(auth.role(), '') <> 'service_role' THEN
+    RAISE EXCEPTION 'service role required';
+  END IF;
+
+  SELECT *
+  INTO v_order
+  FROM public.orders
+  WHERE id = p_order_id
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Order % not found', p_order_id;
+  END IF;
+
+  INSERT INTO public.shopify_inventory_compensations (
+    order_id,
+    payment_intent_id,
+    status,
+    original_seller_earnings,
+    original_platform_fee
+  )
+  VALUES (
+    p_order_id,
+    p_payment_intent_id,
+    'pending',
+    v_order.seller_earnings,
+    v_order.platform_fee
+  )
+  ON CONFLICT (order_id) DO NOTHING;
+
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.wallet_transactions wt
+    WHERE wt.reference_type = 'order_pending_earnings'
+      AND wt.reference_id::text = p_order_id::text
+  )
+  INTO v_has_pending_earnings;
+
+  UPDATE public.orders
+  SET status = 'refunding',
+      seller_earnings = CASE
+        WHEN v_has_pending_earnings THEN seller_earnings
+        ELSE 0
+      END,
+      platform_fee = CASE
+        WHEN v_has_pending_earnings THEN platform_fee
+        ELSE 0
+      END,
+      updated_at = now()
+  WHERE id = p_order_id
+    AND status IN ('confirmed', 'refunding');
+
+  UPDATE public.payouts
+  SET status = 'cancelled',
+      amount = 0,
+      updated_at = now()
+  WHERE order_id = p_order_id
+    AND status IN ('held', 'pending', 'processing');
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.begin_shopify_inventory_compensation(uuid, text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.begin_shopify_inventory_compensation(uuid, text) TO service_role;
+
 CREATE OR REPLACE FUNCTION public.record_shopify_listing_sale(
   p_order_id uuid,
   p_listing_id uuid,
@@ -317,7 +449,21 @@ DECLARE
   v_mapping public.shopify_product_mappings%ROWTYPE;
   v_job_id uuid;
   v_quantity integer := GREATEST(1, coalesce(p_quantity, 1));
+  v_inventory_source text;
 BEGIN
+  SELECT inventory_source
+  INTO v_inventory_source
+  FROM public.listings
+  WHERE id = p_listing_id;
+
+  IF v_inventory_source IS DISTINCT FROM 'shopify' THEN
+    RETURN false;
+  END IF;
+
+  IF coalesce(auth.role(), '') <> 'service_role' THEN
+    RAISE EXCEPTION 'service role required for Shopify inventory sales';
+  END IF;
+
   SELECT m.*
   INTO v_mapping
   FROM public.shopify_product_mappings m
@@ -331,7 +477,7 @@ BEGIN
   FOR UPDATE OF m;
 
   IF NOT FOUND THEN
-    RETURN false;
+    RAISE EXCEPTION 'Shopify-managed listing % has no active mapping', p_listing_id;
   END IF;
 
   INSERT INTO public.shopify_sync_jobs (
@@ -358,6 +504,11 @@ BEGIN
     RETURN false;
   END IF;
 
+  UPDATE public.shopify_product_mappings
+  SET inventory_generation = inventory_generation + 1,
+      updated_at = now()
+  WHERE id = v_mapping.id;
+
   UPDATE public.listings
   SET stock_quantity = GREATEST(0, stock_quantity - v_quantity),
       status = CASE
@@ -380,26 +531,79 @@ $$;
 REVOKE ALL ON FUNCTION public.record_shopify_listing_sale(uuid, uuid, integer) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.record_shopify_listing_sale(uuid, uuid, integer) TO service_role;
 
-CREATE OR REPLACE FUNCTION public.orders_record_shopify_listing_sale()
-RETURNS trigger
+CREATE OR REPLACE FUNCTION public.apply_shopify_inventory_projection(
+  p_mapping_ids uuid[],
+  p_remote_stock integer,
+  p_expected_generation bigint,
+  p_exclude_job_id uuid DEFAULT NULL
+)
+RETURNS TABLE (listing_id uuid, projected_stock integer)
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $$
+DECLARE
+  v_mapping public.shopify_product_mappings%ROWTYPE;
+  v_pending integer;
+  v_projected integer;
 BEGIN
-  IF NEW.status = 'confirmed' THEN
-    PERFORM public.record_shopify_listing_sale(NEW.id, NEW.listing_id, 1);
+  IF coalesce(auth.role(), '') <> 'service_role' THEN
+    RAISE EXCEPTION 'service role required';
   END IF;
-  RETURN NEW;
+
+  FOR v_mapping IN
+    SELECT *
+    FROM public.shopify_product_mappings
+    WHERE id = ANY(p_mapping_ids)
+    FOR UPDATE
+  LOOP
+    IF v_mapping.inventory_generation <> p_expected_generation THEN
+      listing_id := v_mapping.listing_id;
+      SELECT stock_quantity INTO projected_stock
+      FROM public.listings
+      WHERE id = v_mapping.listing_id;
+      RETURN NEXT;
+      CONTINUE;
+    END IF;
+
+    SELECT coalesce(sum(
+      GREATEST(1, coalesce((j.payload ->> 'quantity')::integer, 1))
+    ), 0)::integer
+    INTO v_pending
+    FROM public.shopify_sync_jobs j
+    WHERE j.job_type = 'inventory_decrement'
+      AND j.status IN ('queued', 'retry', 'processing', 'dead')
+      AND j.payload ->> 'mappingId' = v_mapping.id::text
+      AND (p_exclude_job_id IS NULL OR j.id <> p_exclude_job_id);
+
+    v_projected := GREATEST(0, coalesce(p_remote_stock, 0) - v_pending);
+
+    UPDATE public.listings
+    SET stock_quantity = v_projected,
+        status = CASE WHEN v_projected > 0 THEN 'active' ELSE 'removed' END,
+        updated_at = now()
+    WHERE id = v_mapping.listing_id
+      AND inventory_source = 'shopify';
+
+    UPDATE public.shopify_product_mappings
+    SET sync_status = CASE
+          WHEN v_projected > 0 THEN 'synced'
+          ELSE 'out_of_stock'
+        END,
+        last_synced_at = now(),
+        last_error = NULL,
+        updated_at = now()
+    WHERE id = v_mapping.id;
+
+    listing_id := v_mapping.listing_id;
+    projected_stock := v_projected;
+    RETURN NEXT;
+  END LOOP;
 END;
 $$;
 
-DROP TRIGGER IF EXISTS orders_record_shopify_listing_sale_trigger ON public.orders;
-CREATE TRIGGER orders_record_shopify_listing_sale_trigger
-  AFTER INSERT OR UPDATE OF status ON public.orders
-  FOR EACH ROW
-  WHEN (NEW.status = 'confirmed')
-  EXECUTE FUNCTION public.orders_record_shopify_listing_sale();
+REVOKE ALL ON FUNCTION public.apply_shopify_inventory_projection(uuid[], integer, bigint, uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.apply_shopify_inventory_projection(uuid[], integer, bigint, uuid) TO service_role;
 
 CREATE OR REPLACE FUNCTION public.order_items_record_shopify_listing_sale()
 RETURNS trigger

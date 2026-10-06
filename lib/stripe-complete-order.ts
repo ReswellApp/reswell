@@ -30,8 +30,21 @@ import { listingSoldViaCheckoutUpdate } from "@/lib/listing-sold-state"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { formatPeerItemCountPhrase } from "@/lib/peer-listing-item-nouns"
 import { isReswellShopListing } from "@/lib/reswell-shop"
-import { dbRecordShopifyListingSale } from "@/lib/db/shopifyCatalog"
+import {
+  dbListShopifyMappedListingIds,
+  dbOrderContainsListingItems,
+  dbOrderHasShopifySaleJobs,
+  dbRecordShopifyListingSale,
+} from "@/lib/db/shopifyCatalog"
+import {
+  dbGetShopifyInventoryCompensation,
+  dbMarkShopifyCompensatedOrderRefunded,
+} from "@/lib/db/shopifyCompensations"
 import { isShopifyManagedListing } from "@/lib/shopify/listing"
+import {
+  compensateShopifyInventoryConflict,
+  type ShopifyInventoryCompensationResult,
+} from "@/lib/services/shopifyInventoryCompensation"
 import {
   parseListingQuantitiesMeta,
   resolveMixedCheckoutSellerId,
@@ -85,6 +98,43 @@ import { isSellerSaleTipPaymentIntent } from "@/lib/stripe/seller-sale-tip-inten
 export type StripeCompleteOrderResult =
   | { ok: true; orderId: string; alreadyProcessed?: boolean }
   | { ok: false; error: string; status: number }
+
+async function ensureShopifySaleOutboxForOrder(
+  serviceSupabase: ReturnType<typeof createServiceRoleClient>,
+  orderId: string,
+  listingIds: string[],
+  quantityByListingId: Record<string, number>,
+): Promise<void> {
+  for (const listingId of listingIds) {
+    await dbRecordShopifyListingSale(serviceSupabase, {
+      orderId,
+      listingId,
+      quantity: quantityByListingId[listingId] ?? 1,
+    })
+  }
+}
+
+function isShopifyInventoryCommitError(error: {
+  message?: string | null
+}): boolean {
+  const message = error.message?.toLowerCase() ?? ""
+  return (
+    message.includes("shopify-managed listing") ||
+    message.includes("shopify inventory")
+  )
+}
+
+async function refundShopifyInventoryConflict(
+  serviceSupabase: ReturnType<typeof createServiceRoleClient>,
+  paymentIntentId: string,
+  orderId: string,
+): Promise<ShopifyInventoryCompensationResult> {
+  return compensateShopifyInventoryConflict({
+    serviceSupabase,
+    orderId,
+    paymentIntentId,
+  })
+}
 
 function isUniqueViolation(err: { code?: string; message?: string } | null): boolean {
   if (!err) return false
@@ -348,6 +398,11 @@ export async function completeMarketplaceOrderFromPaymentIntent(
 
   const piId = pi.id
   const isAdminTerminalSale = pi.metadata?.sales_channel === ADMIN_TERMINAL_SALES_CHANNEL
+  const recoveryListingIds = marketplaceListingIdsFromPaymentIntent(pi)
+  const recoveryQuantities = parseListingQuantitiesMeta(
+    pi.metadata.listing_qtys,
+    recoveryListingIds,
+  )
 
   let serviceSupabase
   try {
@@ -362,11 +417,106 @@ export async function completeMarketplaceOrderFromPaymentIntent(
 
   const { data: existing } = await serviceSupabase
     .from("orders")
-    .select("id, seller_earnings")
+    .select("id, seller_earnings, status, created_at")
     .eq("stripe_checkout_session_id", piId)
     .maybeSingle()
 
   if (existing?.id) {
+    const compensation = await dbGetShopifyInventoryCompensation(
+      serviceSupabase,
+      existing.id,
+    )
+    if (compensation?.status === "refunded") {
+      await dbMarkShopifyCompensatedOrderRefunded(
+        serviceSupabase,
+        existing.id,
+      )
+      return { ok: true, orderId: existing.id, alreadyProcessed: true }
+    }
+    if (compensation) {
+      const refundState = await refundShopifyInventoryConflict(
+        serviceSupabase,
+        piId,
+        existing.id,
+      )
+      return {
+        ok: false,
+        error:
+          refundState === "failed"
+            ? "This sold-out Shopify checkout needs a refund. Support has been notified."
+            : "This sold-out Shopify checkout is being refunded.",
+        status: refundState === "failed" ? 500 : 409,
+      }
+    }
+    if (existing.status === "refunded" || existing.status === "refunding") {
+      return { ok: true, orderId: existing.id, alreadyProcessed: true }
+    }
+
+    const mappedListingIds = await dbListShopifyMappedListingIds(
+      serviceSupabase,
+      recoveryListingIds,
+    )
+    if (mappedListingIds.length > 0) {
+      const [hasItems, hasSaleJobs] = await Promise.all([
+        dbOrderContainsListingItems(
+          serviceSupabase,
+          existing.id,
+          mappedListingIds,
+        ),
+        dbOrderHasShopifySaleJobs(
+          serviceSupabase,
+          existing.id,
+          mappedListingIds,
+        ),
+      ])
+      if (!hasItems) {
+        const orderAgeMs = Date.now() - Date.parse(existing.created_at)
+        if (Number.isFinite(orderAgeMs) && orderAgeMs < 5 * 60_000) {
+          return {
+            ok: false,
+            error: "Order completion is still in progress",
+            status: 503,
+          }
+        }
+        const refundState = await refundShopifyInventoryConflict(
+          serviceSupabase,
+          piId,
+          existing.id,
+        )
+        return {
+          ok: false,
+          error:
+            refundState === "failed"
+              ? "This incomplete Shopify checkout needs a refund. Support has been notified."
+              : "This incomplete Shopify checkout is being refunded.",
+          status: refundState === "failed" ? 500 : 409,
+        }
+      }
+      if (!hasSaleJobs) {
+        try {
+          await ensureShopifySaleOutboxForOrder(
+            serviceSupabase,
+            existing.id,
+            mappedListingIds,
+            recoveryQuantities,
+          )
+        } catch {
+          const refundState = await refundShopifyInventoryConflict(
+            serviceSupabase,
+            piId,
+            existing.id,
+          )
+          return {
+            ok: false,
+            error:
+              refundState === "failed"
+                ? "This Shopify checkout needs a refund. Support has been notified."
+                : "This Shopify checkout is being refunded.",
+            status: refundState === "failed" ? 500 : 409,
+          }
+        }
+      }
+    }
     const existingSellerEarnings = parseFloat(String(existing.seller_earnings ?? 0))
     const { data: pendingLedger } = await serviceSupabase
       .from("wallet_transactions")
@@ -882,8 +1032,11 @@ export async function completeMarketplaceOrderFromPaymentIntent(
         .eq("stripe_checkout_session_id", piId)
         .maybeSingle()
       if (raced?.id) {
-        void maybeSyncAdminTerminalGuestToCrm(serviceSupabase, pi, raced.id)
-        return { ok: true, orderId: raced.id, alreadyProcessed: true }
+        return {
+          ok: false,
+          error: "Order completion is already in progress",
+          status: 503,
+        }
       }
     }
     console.error(
@@ -949,6 +1102,23 @@ export async function completeMarketplaceOrderFromPaymentIntent(
 
   if (orderItemsErr) {
     console.error("[stripe-complete-order] order_items insert:", orderItemsErr)
+    if (isShopifyInventoryCommitError(orderItemsErr)) {
+      const refundState = await refundShopifyInventoryConflict(
+        serviceSupabase,
+        piId,
+        purchase.id,
+      )
+      return {
+        ok: false,
+        error:
+          refundState === "failed"
+            ? "This Shopify item sold out during checkout. Contact support for an immediate refund."
+            : refundState === "refunded"
+              ? "This Shopify item sold out during checkout. Your card payment was refunded automatically."
+              : "This Shopify item sold out during checkout. Your refund is processing.",
+        status: refundState === "failed" ? 500 : 409,
+      }
+    }
     const msg = orderItemsErr.message ?? ""
     const schemaStale =
       orderItemsErr.code === "PGRST204" || msg.includes("order_items") || msg.includes("schema cache")

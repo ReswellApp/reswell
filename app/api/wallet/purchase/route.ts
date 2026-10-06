@@ -27,7 +27,6 @@ import { isBlockedOwnListingPurchase } from "@/lib/cart-eligibility"
 import { readAdAttributionFromCookies } from "@/lib/ads/read-request-attribution"
 import { insertOrderAdAttribution } from "@/lib/db/orderAdAttribution"
 import { listingSoldViaCheckoutUpdate } from "@/lib/listing-sold-state"
-import { dbRecordShopifyListingSale } from "@/lib/db/shopifyCatalog"
 import { isShopifyManagedListing } from "@/lib/shopify/listing"
 
 export async function POST(request: NextRequest) {
@@ -82,6 +81,15 @@ export async function POST(request: NextRequest) {
     Math.max(0, Math.floor(Number(listing.stock_quantity) || 0)) < 1
   ) {
     return NextResponse.json({ error: "This Shopify item is out of stock" }, { status: 409 })
+  }
+  if (isShopifyManagedListing(listing)) {
+    return NextResponse.json(
+      {
+        error:
+          "Shopify-synced inventory currently requires card checkout so stock updates stay atomic.",
+      },
+      { status: 400 },
+    )
   }
 
   if (isBlockedOwnListingPurchase(listing, user.id)) {
@@ -272,31 +280,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Could not record purchase" }, { status: 500 })
   }
 
-  if (isShopifyManagedListing(listing)) {
-    try {
-      await dbRecordShopifyListingSale(serviceSupabase, {
-        orderId: purchase.id,
-        listingId: listing.id,
-        quantity: 1,
-      })
-    } catch (error) {
-      console.error("[wallet/purchase] Shopify sale outbox:", error)
-      return NextResponse.json(
-        { error: "Could not queue Shopify inventory update" },
-        { status: 500 },
-      )
-    }
-  } else {
-    // Mark sold only — never mutate listings.price (offer discounts stay private).
-    const { error: listingErr } = await serviceSupabase
-      .from("listings")
-      .update(listingSoldViaCheckoutUpdate())
-      .eq("id", listing.id)
+  // Mark sold only — never mutate listings.price (offer discounts stay private).
+  const { error: listingErr } = await serviceSupabase
+    .from("listings")
+    .update(listingSoldViaCheckoutUpdate())
+    .eq("id", listing.id)
 
-    if (listingErr) {
-      console.error("[wallet/purchase] listing update:", listingErr)
-      return NextResponse.json({ error: "Could not mark listing sold" }, { status: 500 })
-    }
+  if (listingErr) {
+    console.error("[wallet/purchase] listing update:", listingErr)
+    return NextResponse.json({ error: "Could not mark listing sold" }, { status: 500 })
   }
 
   revalidateBoardsBrowseCatalog()

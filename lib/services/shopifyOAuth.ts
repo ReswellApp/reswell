@@ -6,6 +6,7 @@ import {
   dbConsumeShopifyOAuthState,
   dbDeleteExpiredShopifyOAuthStates,
   dbGetShopifyConnectionById,
+  dbGetShopifyConnectionForUser,
   dbInsertShopifyOAuthState,
   dbMarkShopifyConnectionStatus,
   dbReleaseShopifyTokenRefresh,
@@ -13,6 +14,7 @@ import {
   dbUpsertShopifyConnection,
 } from "@/lib/db/shopifyConnections"
 import { dbUnpublishAllShopifyListingsForConnection } from "@/lib/db/shopifyCatalog"
+import { dbReviveDeadShopifyInventoryJobs } from "@/lib/db/shopifyQueue"
 import {
   shopifyGraphqlRequest,
   throwOnShopifyUserErrors,
@@ -263,6 +265,10 @@ export async function completeShopifyOAuth(input: {
       .map((scope) => scope.trim())
       .filter(Boolean),
   })
+  await dbReviveDeadShopifyInventoryJobs(
+    input.serviceSupabase,
+    connection.id,
+  )
   try {
     await registerShopifyWebhooks(input.shopDomain, token.access_token)
   } catch (error) {

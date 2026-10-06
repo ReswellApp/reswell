@@ -1,5 +1,9 @@
 import type { PeerListingSection } from "@/lib/peer-listing-sections"
 
+/** Retained for the legacy storefront sort constants still imported on main. */
+export type ProductSortKey = "RELEVANCE"
+export type ProductCollectionSortKey = "BEST_SELLING"
+
 export type ShopifyConnectionStatus =
   | "active"
   | "disconnected"
@@ -89,6 +93,7 @@ export interface ShopifyProductMappingRow {
   shopify_inventory_item_gid: string
   reswell_section: PeerListingSection
   selected: boolean
+  inventory_generation: number
   sync_status: "synced" | "out_of_stock" | "deleted" | "unselected" | "error"
   remote_updated_at: string | null
   last_synced_at: string | null

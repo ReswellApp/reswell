@@ -38,6 +38,12 @@ export const shopifyInventoryDecrementPayloadSchema = z.object({
   listingId: z.string().uuid(),
   orderId: z.string().uuid(),
   quantity: z.number().int().min(1).max(100),
+  locationId: z
+    .string()
+    .regex(/^gid:\/\/shopify\/Location\/\d+$/)
+    .optional(),
+  changeFromQuantity: z.number().int().min(0).optional(),
+  remoteTotalBefore: z.number().int().min(0).optional(),
 })
 
 export const shopifyProductJobPayloadSchema = z.object({

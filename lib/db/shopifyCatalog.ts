@@ -11,6 +11,7 @@ const MAPPING_SELECT = [
   "shopify_inventory_item_gid",
   "reswell_section",
   "selected",
+  "inventory_generation",
   "sync_status",
   "remote_updated_at",
   "last_synced_at",
@@ -26,7 +27,7 @@ export async function dbListShopifyMappingsForConnection(
     .select(MAPPING_SELECT)
     .eq("connection_id", connectionId)
   if (error) throw new Error(error.message)
-  return (data ?? []) as ShopifyProductMappingRow[]
+  return (data ?? []) as unknown as ShopifyProductMappingRow[]
 }
 
 export async function dbListSelectedShopifyProductSections(
@@ -77,7 +78,7 @@ export async function dbGetShopifyMappingByVariant(
     .eq("shopify_variant_gid", variantId)
     .maybeSingle()
   if (error) throw new Error(error.message)
-  return (data as ShopifyProductMappingRow | null) ?? null
+  return (data as unknown as ShopifyProductMappingRow | null) ?? null
 }
 
 export async function dbGetShopifyMappingById(
@@ -90,7 +91,7 @@ export async function dbGetShopifyMappingById(
     .eq("id", mappingId)
     .maybeSingle()
   if (error) throw new Error(error.message)
-  return (data as ShopifyProductMappingRow | null) ?? null
+  return (data as unknown as ShopifyProductMappingRow | null) ?? null
 }
 
 export async function dbListShopifyMappingsByProduct(
@@ -104,7 +105,7 @@ export async function dbListShopifyMappingsByProduct(
     .eq("connection_id", connectionId)
     .eq("shopify_product_gid", productId)
   if (error) throw new Error(error.message)
-  return (data ?? []) as ShopifyProductMappingRow[]
+  return (data ?? []) as unknown as ShopifyProductMappingRow[]
 }
 
 export async function dbListShopifyMappingsByInventoryItem(
@@ -119,7 +120,7 @@ export async function dbListShopifyMappingsByInventoryItem(
     .eq("shopify_inventory_item_gid", inventoryItemId)
     .eq("selected", true)
   if (error) throw new Error(error.message)
-  return (data ?? []) as ShopifyProductMappingRow[]
+  return (data ?? []) as unknown as ShopifyProductMappingRow[]
 }
 
 export async function dbLoadShopifyMerchantLocation(
@@ -303,36 +304,23 @@ export async function dbUpdateShopifyInventoryListings(
   supabase: SupabaseClient,
   mappings: ShopifyProductMappingRow[],
   stockQuantity: number,
+  excludeJobId?: string,
 ): Promise<string[]> {
   if (mappings.length === 0) return []
-  const listingIds = mappings.map((mapping) => mapping.listing_id)
   const stock = Math.max(0, Math.floor(stockQuantity))
-  const now = new Date().toISOString()
-  const { error: listingError } = await supabase
-    .from("listings")
-    .update({
-      stock_quantity: stock,
-      status: stock > 0 ? "active" : "removed",
-      updated_at: now,
-    })
-    .in("id", listingIds)
-    .eq("inventory_source", "shopify")
-  if (listingError) throw new Error(listingError.message)
-
-  const { error: mappingError } = await supabase
-    .from("shopify_product_mappings")
-    .update({
-      sync_status: stock > 0 ? "synced" : "out_of_stock",
-      last_synced_at: now,
-      last_error: null,
-      updated_at: now,
-    })
-    .in(
-      "id",
-      mappings.map((mapping) => mapping.id),
-    )
-  if (mappingError) throw new Error(mappingError.message)
-  return listingIds
+  const { data, error } = await supabase.rpc(
+    "apply_shopify_inventory_projection",
+    {
+      p_mapping_ids: mappings.map((mapping) => mapping.id),
+      p_remote_stock: stock,
+      p_expected_generation: mappings[0]!.inventory_generation,
+      p_exclude_job_id: excludeJobId ?? null,
+    },
+  )
+  if (error) throw new Error(error.message)
+  return (data ?? []).map((row: { listing_id: unknown }) =>
+    String(row.listing_id),
+  )
 }
 
 export async function dbRecordShopifyListingSale(
@@ -350,4 +338,53 @@ export async function dbRecordShopifyListingSale(
   })
   if (error) throw new Error(error.message)
   return data === true
+}
+
+export async function dbListShopifyMappedListingIds(
+  supabase: SupabaseClient,
+  listingIds: string[],
+): Promise<string[]> {
+  if (listingIds.length === 0) return []
+  const { data, error } = await supabase
+    .from("shopify_product_mappings")
+    .select("listing_id")
+    .in("listing_id", listingIds)
+  if (error) throw new Error(error.message)
+  return (data ?? []).map((row) => String(row.listing_id))
+}
+
+export async function dbOrderContainsListingItems(
+  supabase: SupabaseClient,
+  orderId: string,
+  listingIds: string[],
+): Promise<boolean> {
+  if (listingIds.length === 0) return true
+  const { data, error } = await supabase
+    .from("order_items")
+    .select("listing_id")
+    .eq("order_id", orderId)
+    .in("listing_id", listingIds)
+  if (error) throw new Error(error.message)
+  const found = new Set((data ?? []).map((row) => String(row.listing_id)))
+  return listingIds.every((listingId) => found.has(listingId))
+}
+
+export async function dbOrderHasShopifySaleJobs(
+  supabase: SupabaseClient,
+  orderId: string,
+  listingIds: string[],
+): Promise<boolean> {
+  if (listingIds.length === 0) return true
+  const expected = listingIds.map(
+    (listingId) => `sale:${orderId}:${listingId}`,
+  )
+  const { data, error } = await supabase
+    .from("shopify_sync_jobs")
+    .select("idempotency_key")
+    .in("idempotency_key", expected)
+  if (error) throw new Error(error.message)
+  const found = new Set(
+    (data ?? []).map((row) => String(row.idempotency_key)),
+  )
+  return expected.every((key) => found.has(key))
 }

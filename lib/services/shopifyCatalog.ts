@@ -12,10 +12,10 @@ import {
   dbLoadShopifyMerchantLocation,
   dbReplaceShopifyListingImage,
   dbUnpublishShopifyMappings,
+  dbUpdateShopifyInventoryListings,
   dbUpdateShopifyListing,
   dbSaveShopifyMapping,
 } from "@/lib/db/shopifyCatalog"
-import { dbPendingShopifyInventoryDecrements } from "@/lib/db/shopifyQueue"
 import { syncListingToIndex } from "@/lib/elasticsearch/listings-index"
 import { USED_FINS_CATEGORY_ID } from "@/lib/fin-listing-config"
 import { USED_LEASHES_CATEGORY_ID } from "@/lib/leash-listing-config"
@@ -26,6 +26,7 @@ import type {
   ShopifyCatalogProduct,
   ShopifyCatalogVariant,
   ShopifyConnectionRow,
+  ShopifyProductMappingRow,
 } from "@/lib/shopify/types"
 import { revalidateAfterListingSiteModeration } from "@/lib/services/listingSiteModerationRevalidation"
 import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
@@ -119,23 +120,19 @@ async function syncVariant(input: {
   section: PeerListingSection
   city: string
   state: string
+  expectedMapping?: ShopifyProductMappingRow
 }): Promise<string> {
-  const existing = await dbGetShopifyMappingByVariant(
-    input.serviceSupabase,
-    input.connection.id,
-    input.variant.id,
-  )
-  const pendingDecrements = existing
-    ? await dbPendingShopifyInventoryDecrements(
-        input.serviceSupabase,
-        existing.id,
-      )
-    : 0
+  const existing =
+    input.expectedMapping ??
+    (await dbGetShopifyMappingByVariant(
+      input.serviceSupabase,
+      input.connection.id,
+      input.variant.id,
+    ))
   const remoteStock =
     input.product.status === "ACTIVE"
       ? input.variant.available
       : 0
-  const stock = Math.max(0, remoteStock - pendingDecrements)
   const fields: Record<string, unknown> = {
     user_id: input.connection.user_id,
     title: listingTitle(input.product, input.variant),
@@ -154,8 +151,6 @@ async function syncVariant(input: {
     shipping_price: null,
     board_shipping_cost_mode: null,
     buyer_offers_enabled: false,
-    stock_quantity: stock,
-    status: stock > 0 ? "active" : "removed",
     hidden_from_site: false,
     site_visibility_reason: null,
     inventory_source: "shopify",
@@ -171,6 +166,8 @@ async function syncVariant(input: {
   } else {
     listingId = await dbInsertShopifyListing(input.serviceSupabase, {
       ...fields,
+      stock_quantity: 0,
+      status: "removed",
       slug: await generateUniqueListingSlug(
         input.serviceSupabase,
         String(fields.title),
@@ -191,9 +188,12 @@ async function syncVariant(input: {
     variantId: input.variant.id,
     inventoryItemId: input.variant.inventoryItemId,
     section: input.section,
-    status: stock > 0 ? "synced" : "out_of_stock",
+    status: remoteStock > 0 ? "synced" : "out_of_stock",
     remoteUpdatedAt: input.product.updatedAt,
   })
+  if (saved && createdListing) {
+    await dbUpdateShopifyListing(input.serviceSupabase, listingId, fields)
+  }
   if (!saved && createdListing) {
     await dbDeleteShopifyListing(input.serviceSupabase, listingId)
     const winner = await dbGetShopifyMappingByVariant(
@@ -217,10 +217,21 @@ async function syncVariant(input: {
       variantId: input.variant.id,
       inventoryItemId: input.variant.inventoryItemId,
       section: input.section,
-      status: stock > 0 ? "synced" : "out_of_stock",
+      status: remoteStock > 0 ? "synced" : "out_of_stock",
       remoteUpdatedAt: input.product.updatedAt,
     })
   }
+  const currentMapping = await dbGetShopifyMappingByVariant(
+    input.serviceSupabase,
+    input.connection.id,
+    input.variant.id,
+  )
+  if (!currentMapping) throw new Error("Shopify mapping was not persisted")
+  await dbUpdateShopifyInventoryListings(
+    input.serviceSupabase,
+    [input.expectedMapping ?? currentMapping],
+    remoteStock,
+  )
   return listingId
 }
 
@@ -268,6 +279,9 @@ export async function syncSelectedShopifyProduct(input: {
     input.connection.user_id,
   )
   const listingIds: string[] = []
+  const existingByVariant = new Map(
+    existing.map((mapping) => [mapping.shopify_variant_gid, mapping]),
+  )
   for (let index = 0; index < product.variants.length; index += 5) {
     const batch = product.variants.slice(index, index + 5)
     listingIds.push(
@@ -279,6 +293,7 @@ export async function syncSelectedShopifyProduct(input: {
             product,
             variant,
             section: selectedSection,
+            expectedMapping: existingByVariant.get(variant.id),
             ...location,
           }),
         ),

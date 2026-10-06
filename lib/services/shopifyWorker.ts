@@ -15,6 +15,7 @@ import {
 } from "@/lib/db/shopifyConnections"
 import {
   dbCancelShopifyJobsForConnection,
+  dbCancelShopifyInventoryJobsForConnection,
   dbClaimShopifyJobs,
   dbClaimShopifyWebhookEvents,
   dbCompleteShopifyJob,
@@ -23,6 +24,7 @@ import {
   dbEnqueueShopifyJob,
   dbFailShopifyJob,
   dbFailShopifyWebhookEvent,
+  dbListUnresolvedShopifyInventoryOrderIds,
 } from "@/lib/db/shopifyQueue"
 import type {
   ShopifyConnectionRow,
@@ -44,6 +46,7 @@ import {
   decrementShopifyInventoryForReswellSale,
   ShopifyInventoryWritesDisabledError,
 } from "@/lib/services/shopifyInventory"
+import { compensateShopifyInventoryConflict } from "@/lib/services/shopifyInventoryCompensation"
 
 function shopifyGid(
   kind: "Product" | "InventoryItem",
@@ -59,6 +62,31 @@ function shopifyGid(
     return `gid://shopify/${kind}/${String(value)}`
   }
   return null
+}
+
+async function compensateUnresolvedShopifySales(
+  serviceSupabase: SupabaseClient,
+  connectionId: string,
+): Promise<void> {
+  const orderIds = await dbListUnresolvedShopifyInventoryOrderIds(
+    serviceSupabase,
+    connectionId,
+  )
+  for (const orderId of orderIds) {
+    const result = await compensateShopifyInventoryConflict({
+      serviceSupabase,
+      orderId,
+    })
+    if (result === "failed") {
+      throw new Error(
+        `Could not compensate Reswell order ${orderId} before Shopify disconnect`,
+      )
+    }
+  }
+  await dbCancelShopifyInventoryJobsForConnection(
+    serviceSupabase,
+    connectionId,
+  )
 }
 
 async function handleWebhookEvent(
@@ -78,6 +106,7 @@ async function handleWebhookEvent(
 
   if (event.topic === "shop/redact") {
     if (!connection) return
+    await compensateUnresolvedShopifySales(serviceSupabase, connection.id)
     const listingIds = await dbRedactShopifyConnection(
       serviceSupabase,
       connection.id,
@@ -89,6 +118,7 @@ async function handleWebhookEvent(
 
   if (event.topic === "app/uninstalled") {
     if (!connection) return
+    await compensateUnresolvedShopifySales(serviceSupabase, connection.id)
     await dbMarkShopifyConnectionStatus(serviceSupabase, connection.id, {
       status: "disconnected",
       syncEnabled: false,
@@ -189,6 +219,9 @@ async function runSyncJob(
     job.connection_id,
   )
   if (!connection || connection.status !== "active" || !connection.sync_enabled) {
+    if (job.job_type === "inventory_decrement") {
+      throw new ShopifyInventoryWritesDisabledError()
+    }
     return
   }
 
@@ -229,8 +262,13 @@ async function runSyncJob(
       serviceSupabase,
       connection,
       jobId: job.id,
+      workerId: job.worker_id,
       mappingId: payload.mappingId,
+      orderId: payload.orderId,
       quantity: payload.quantity,
+      locationId: payload.locationId,
+      changeFromQuantity: payload.changeFromQuantity,
+      remoteTotalBefore: payload.remoteTotalBefore,
     })
   }
 }

@@ -9,7 +9,9 @@ import {
 } from "@/lib/db/shopifyCatalog"
 import {
   dbCancelShopifyJobsForConnection,
+  dbCountUnresolvedShopifyInventoryJobs,
   dbEnqueueShopifyJob,
+  dbReviveDeadShopifyInventoryJobs,
 } from "@/lib/db/shopifyQueue"
 import type {
   PublicShopifyConnection,
@@ -165,6 +167,10 @@ export async function requestShopifyReconciliation(
     if ("error" in loaded) {
       return { ok: false, status: loaded.status, error: loaded.error }
     }
+    await dbReviveDeadShopifyInventoryJobs(
+      loaded.service,
+      loaded.connection.id,
+    )
     const enqueued = await dbEnqueueShopifyJob(loaded.service, {
       connectionId: loaded.connection.id,
       jobType: "reconcile_connection",
@@ -188,6 +194,16 @@ export async function disconnectMerchantShopify(
   try {
     const connection = await dbGetShopifyConnectionForUser(service, userId)
     if (!connection) return { ok: true, data: { listingIds: [] } }
+    const unresolvedInventoryJobs =
+      await dbCountUnresolvedShopifyInventoryJobs(service, connection.id)
+    if (unresolvedInventoryJobs > 0) {
+      return {
+        ok: false,
+        status: 409,
+        error:
+          "Shopify still has inventory updates to send. Sync again before disconnecting.",
+      }
+    }
     await dbMarkShopifyConnectionStatus(service, connection.id, {
       status: "disconnected",
       syncEnabled: false,

@@ -8,7 +8,7 @@ import type {
   ShopifyInventoryLevel,
 } from "@/lib/shopify/types"
 
-type Money = string | number | null
+type Money = string | number | null | undefined
 
 type RawInventoryLevel = {
   location?: {
@@ -48,6 +48,18 @@ type RawProduct = {
     nodes?: RawVariant[] | null
     pageInfo?: { hasNextPage?: boolean | null } | null
   } | null
+}
+
+type InventoryLevelsConnection = {
+  nodes?: RawInventoryLevel[] | null
+  pageInfo?: {
+    hasNextPage?: boolean | null
+    endCursor?: string | null
+  } | null
+}
+
+type InventoryItemResponse = {
+  inventoryItem: { inventoryLevels?: InventoryLevelsConnection | null } | null
 }
 
 const PRODUCT_SUMMARY_FIELDS = `
@@ -271,17 +283,8 @@ export async function fetchShopifyInventoryLevels(input: {
   const levels: ShopifyInventoryLevel[] = []
   let after: string | null = null
   do {
-    const data = await shopifyGraphqlRequest<{
-      inventoryItem: {
-        inventoryLevels?: {
-          nodes?: RawInventoryLevel[] | null
-          pageInfo?: {
-            hasNextPage?: boolean | null
-            endCursor?: string | null
-          } | null
-        } | null
-      } | null
-    }>({
+    const data: InventoryItemResponse =
+      await shopifyGraphqlRequest<InventoryItemResponse>({
       shopDomain: input.shopDomain,
       accessToken: input.accessToken,
       query: `
@@ -298,8 +301,9 @@ export async function fetchShopifyInventoryLevels(input: {
         }
       `,
       variables: { id: input.inventoryItemId, after },
-    })
-    const connection = data.inventoryItem?.inventoryLevels
+      })
+    const connection: InventoryLevelsConnection | null | undefined =
+      data.inventoryItem?.inventoryLevels
     levels.push(...mapInventoryLevels(connection?.nodes))
     after =
       connection?.pageInfo?.hasNextPage === true

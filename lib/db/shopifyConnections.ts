@@ -105,7 +105,7 @@ export async function dbGetShopifyConnectionForUser(
     .eq("user_id", userId)
     .maybeSingle()
   if (error) throw new Error(error.message)
-  return (data as ShopifyConnectionRow | null) ?? null
+  return (data as unknown as ShopifyConnectionRow | null) ?? null
 }
 
 export async function dbGetShopifyConnectionById(
@@ -118,7 +118,7 @@ export async function dbGetShopifyConnectionById(
     .eq("id", connectionId)
     .maybeSingle()
   if (error) throw new Error(error.message)
-  return (data as ShopifyConnectionRow | null) ?? null
+  return (data as unknown as ShopifyConnectionRow | null) ?? null
 }
 
 export async function dbGetShopifyConnectionByDomain(
@@ -131,7 +131,7 @@ export async function dbGetShopifyConnectionByDomain(
     .eq("shop_domain", shopDomain)
     .maybeSingle()
   if (error) throw new Error(error.message)
-  return (data as ShopifyConnectionRow | null) ?? null
+  return (data as unknown as ShopifyConnectionRow | null) ?? null
 }
 
 export async function dbUpsertShopifyConnection(
@@ -186,7 +186,7 @@ export async function dbUpsertShopifyConnection(
   if (error || !data) {
     throw new Error(error?.message ?? "Could not save Shopify connection")
   }
-  return data as ShopifyConnectionRow
+  return data as unknown as ShopifyConnectionRow
 }
 
 export async function dbUpdateShopifyConnectionTokens(
@@ -340,7 +340,7 @@ export async function dbListShopifyConnectionsDueForReconcile(
     .or(`last_reconciled_at.is.null,last_reconciled_at.lt.${staleBefore}`)
     .limit(limit)
   if (error) throw new Error(error.message)
-  return (data ?? []) as ShopifyConnectionRow[]
+  return (data ?? []) as unknown as ShopifyConnectionRow[]
 }
 
 export function toPublicShopifyConnection(

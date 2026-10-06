@@ -4,6 +4,7 @@ import {
   dbListShopifyMappingsByInventoryItem,
   dbUpdateShopifyInventoryListings,
 } from "@/lib/db/shopifyCatalog"
+import { dbPersistShopifyInventoryAttempt } from "@/lib/db/shopifyQueue"
 import {
   decrementShopifyInventory,
   fetchShopifyInventoryLevels,
@@ -12,6 +13,7 @@ import {
 import { areShopifyInventoryWritesEnabled } from "@/lib/shopify/config"
 import type { ShopifyConnectionRow } from "@/lib/shopify/types"
 import { getShopifyAccessToken } from "@/lib/services/shopifyOAuth"
+import { compensateShopifyInventoryConflict } from "@/lib/services/shopifyInventoryCompensation"
 
 export class ShopifyInventoryWritesDisabledError extends Error {
   constructor() {
@@ -24,8 +26,13 @@ export async function decrementShopifyInventoryForReswellSale(input: {
   serviceSupabase: SupabaseClient
   connection: ShopifyConnectionRow
   jobId: string
+  workerId: string | null
   mappingId: string
+  orderId: string
   quantity: number
+  locationId?: string
+  changeFromQuantity?: number
+  remoteTotalBefore?: number
 }): Promise<void> {
   if (!areShopifyInventoryWritesEnabled()) {
     throw new ShopifyInventoryWritesDisabledError()
@@ -42,30 +49,72 @@ export async function decrementShopifyInventoryForReswellSale(input: {
     input.serviceSupabase,
     input.connection,
   )
-  const levels = await fetchShopifyInventoryLevels({
-    shopDomain: input.connection.shop_domain,
-    accessToken,
-    inventoryItemId: mapping.shopify_inventory_item_gid,
-  })
-  const source = [...levels]
-    .filter((level) => level.available > 0)
-    .sort((left, right) => right.available - left.available)[0]
-  const totalBefore = shopifyAvailableInventory(levels)
-
-  if (source) {
-    await decrementShopifyInventory({
+  let locationId = input.locationId
+  let changeFromQuantity = input.changeFromQuantity
+  let totalBefore = input.remoteTotalBefore
+  if (
+    locationId == null ||
+    changeFromQuantity == null ||
+    totalBefore == null
+  ) {
+    const levels = await fetchShopifyInventoryLevels({
       shopDomain: input.connection.shop_domain,
       accessToken,
       inventoryItemId: mapping.shopify_inventory_item_gid,
-      locationId: source.locationId,
-      currentAvailable: source.available,
-      quantity: Math.min(
-        source.available,
-        Math.max(1, Math.floor(input.quantity)),
-      ),
-      idempotencyKey: input.jobId,
+    })
+    const source = [...levels]
+      .filter((level) => level.available > 0)
+      .sort((left, right) => right.available - left.available)[0]
+    totalBefore = shopifyAvailableInventory(levels)
+    if (!source || totalBefore < input.quantity) {
+      const compensation = await compensateShopifyInventoryConflict({
+        serviceSupabase: input.serviceSupabase,
+        orderId: input.orderId,
+      })
+      if (compensation === "failed") {
+        throw new Error(
+          "Shopify inventory shortage compensation requires support",
+        )
+      }
+      const mappings = await dbListShopifyMappingsByInventoryItem(
+        input.serviceSupabase,
+        input.connection.id,
+        mapping.shopify_inventory_item_gid,
+      )
+      await dbUpdateShopifyInventoryListings(
+        input.serviceSupabase,
+        mappings,
+        0,
+        input.jobId,
+      )
+      return
+    }
+    locationId = source.locationId
+    changeFromQuantity = source.available
+    await dbPersistShopifyInventoryAttempt(input.serviceSupabase, {
+      jobId: input.jobId,
+      workerId: input.workerId,
+      payload: {
+        mappingId: input.mappingId,
+        listingId: mapping.listing_id,
+        orderId: input.orderId,
+        quantity: input.quantity,
+        locationId,
+        changeFromQuantity,
+        remoteTotalBefore: totalBefore,
+      },
     })
   }
+
+  await decrementShopifyInventory({
+    shopDomain: input.connection.shop_domain,
+    accessToken,
+    inventoryItemId: mapping.shopify_inventory_item_gid,
+    locationId,
+    currentAvailable: changeFromQuantity,
+    quantity: Math.max(1, Math.floor(input.quantity)),
+    idempotencyKey: input.jobId,
+  })
 
   const mappings = await dbListShopifyMappingsByInventoryItem(
     input.serviceSupabase,
@@ -76,5 +125,6 @@ export async function decrementShopifyInventoryForReswellSale(input: {
     input.serviceSupabase,
     mappings,
     Math.max(0, totalBefore - Math.max(1, Math.floor(input.quantity))),
+    input.jobId,
   )
 }
