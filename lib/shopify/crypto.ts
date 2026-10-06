@@ -18,21 +18,40 @@ export interface EncryptedShopifySecret {
   keyVersion: number
 }
 
-function encryptionKey(): Buffer {
-  const raw = process.env.SHOPIFY_TOKEN_ENCRYPTION_KEY?.trim()
-  if (!raw) throw new Error("SHOPIFY_TOKEN_ENCRYPTION_KEY is not configured")
-
+function decodeEncryptionKey(raw: string): Buffer {
   const hex = /^[a-f0-9]{64}$/i.test(raw) ? Buffer.from(raw, "hex") : null
   const key = hex ?? Buffer.from(raw, "base64")
   if (key.byteLength !== 32) {
-    throw new Error("SHOPIFY_TOKEN_ENCRYPTION_KEY must decode to 32 bytes")
+    throw new Error("Shopify token encryption keys must decode to 32 bytes")
   }
   return key
 }
 
+function encryptionKey(version: number): Buffer {
+  if (version === shopifyTokenEncryptionKeyVersion()) {
+    const current = process.env.SHOPIFY_TOKEN_ENCRYPTION_KEY?.trim()
+    if (!current) throw new Error("SHOPIFY_TOKEN_ENCRYPTION_KEY is not configured")
+    return decodeEncryptionKey(current)
+  }
+  const keyringRaw = process.env.SHOPIFY_TOKEN_ENCRYPTION_KEYRING?.trim()
+  if (keyringRaw) {
+    try {
+      const keyring = JSON.parse(keyringRaw) as Record<string, unknown>
+      const prior = keyring[String(version)]
+      if (typeof prior === "string" && prior.trim()) {
+        return decodeEncryptionKey(prior.trim())
+      }
+    } catch {
+      throw new Error("SHOPIFY_TOKEN_ENCRYPTION_KEYRING is invalid JSON")
+    }
+  }
+  throw new Error(`No Shopify credential key is configured for version ${version}`)
+}
+
 export function encryptShopifySecret(plaintext: string): EncryptedShopifySecret {
   const iv = randomBytes(12)
-  const cipher = createCipheriv("aes-256-gcm", encryptionKey(), iv)
+  const keyVersion = shopifyTokenEncryptionKeyVersion()
+  const cipher = createCipheriv("aes-256-gcm", encryptionKey(keyVersion), iv)
   const encrypted = Buffer.concat([
     cipher.update(plaintext, "utf8"),
     cipher.final(),
@@ -41,7 +60,7 @@ export function encryptShopifySecret(plaintext: string): EncryptedShopifySecret 
     ciphertext: encrypted.toString("base64"),
     iv: iv.toString("base64"),
     tag: cipher.getAuthTag().toString("base64"),
-    keyVersion: shopifyTokenEncryptionKeyVersion(),
+    keyVersion,
   }
 }
 
@@ -51,12 +70,9 @@ export function decryptShopifySecret(input: {
   tag: string
   keyVersion: number
 }): string {
-  if (input.keyVersion !== shopifyTokenEncryptionKeyVersion()) {
-    throw new Error("Shopify credential uses an unsupported encryption key version")
-  }
   const decipher = createDecipheriv(
     "aes-256-gcm",
-    encryptionKey(),
+    encryptionKey(input.keyVersion),
     Buffer.from(input.iv, "base64"),
   )
   decipher.setAuthTag(Buffer.from(input.tag, "base64"))

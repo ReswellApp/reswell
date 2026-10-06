@@ -503,6 +503,25 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     }
   }
 
+  const listingPriceSnapshot = pi.metadata.listing_price_cents
+    ?.split(",")
+    .map((value) => Number(value))
+  if (
+    listingPriceSnapshot?.length === listingsForTotals.length &&
+    listingPriceSnapshot.every(
+      (value) => Number.isInteger(value) && value >= 0,
+    )
+  ) {
+    listingsForTotals = listingsForTotals.map((listing, index) =>
+      isShopifyManagedListing(listing)
+        ? {
+            ...listing,
+            price: listingPriceSnapshot[index]! / 100,
+          }
+        : listing,
+    )
+  }
+
   const mixedSeller = resolveMixedCheckoutSellerId(
     listingsForTotals.map((l) => ({
       id: l.id,
@@ -1079,17 +1098,11 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     const listing = listingsOrdered.find((row) => row.id === line.listingId)
     if (!listing || !isShopifyManagedListing(listing)) continue
     try {
-      const recorded = await dbRecordShopifyListingSale(serviceSupabase, {
+      await dbRecordShopifyListingSale(serviceSupabase, {
         orderId: purchase.id,
         listingId: line.listingId,
         quantity: line.quantity,
       })
-      if (!recorded) {
-        console.error("[stripe-complete-order] missing Shopify sale mapping", {
-          orderId: purchase.id,
-          listingId: line.listingId,
-        })
-      }
     } catch (error) {
       console.error("[stripe-complete-order] Shopify sale outbox:", error)
       return {

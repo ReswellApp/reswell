@@ -94,16 +94,9 @@ const PRODUCT_DETAIL_FIELDS = `
       sku
       price
       compareAtPrice
+      inventoryQuantity
       image { url }
-      inventoryItem {
-        id
-        inventoryLevels(first: 50) {
-          nodes {
-            location { id name isActive }
-            quantities(names: ["available"]) { name quantity }
-          }
-        }
-      }
+      inventoryItem { id }
     }
     pageInfo { hasNextPage }
   }
@@ -275,28 +268,45 @@ export async function fetchShopifyInventoryLevels(input: {
   accessToken: string
   inventoryItemId: string
 }): Promise<ShopifyInventoryLevel[]> {
-  const data = await shopifyGraphqlRequest<{
-    inventoryItem: {
-      inventoryLevels?: { nodes?: RawInventoryLevel[] | null } | null
-    } | null
-  }>({
-    shopDomain: input.shopDomain,
-    accessToken: input.accessToken,
-    query: `
-      query ReswellInventory($id: ID!) {
-        inventoryItem(id: $id) {
-          inventoryLevels(first: 50) {
-            nodes {
-              location { id name isActive }
-              quantities(names: ["available"]) { name quantity }
+  const levels: ShopifyInventoryLevel[] = []
+  let after: string | null = null
+  do {
+    const data = await shopifyGraphqlRequest<{
+      inventoryItem: {
+        inventoryLevels?: {
+          nodes?: RawInventoryLevel[] | null
+          pageInfo?: {
+            hasNextPage?: boolean | null
+            endCursor?: string | null
+          } | null
+        } | null
+      } | null
+    }>({
+      shopDomain: input.shopDomain,
+      accessToken: input.accessToken,
+      query: `
+        query ReswellInventory($id: ID!, $after: String) {
+          inventoryItem(id: $id) {
+            inventoryLevels(first: 100, after: $after) {
+              nodes {
+                location { id name isActive }
+                quantities(names: ["available"]) { name quantity }
+              }
+              pageInfo { hasNextPage endCursor }
             }
           }
         }
-      }
-    `,
-    variables: { id: input.inventoryItemId },
-  })
-  return mapInventoryLevels(data.inventoryItem?.inventoryLevels?.nodes)
+      `,
+      variables: { id: input.inventoryItemId, after },
+    })
+    const connection = data.inventoryItem?.inventoryLevels
+    levels.push(...mapInventoryLevels(connection?.nodes))
+    after =
+      connection?.pageInfo?.hasNextPage === true
+        ? connection.pageInfo.endCursor?.trim() || null
+        : null
+  } while (after)
+  return levels
 }
 
 export async function decrementShopifyInventory(input: {
@@ -307,7 +317,6 @@ export async function decrementShopifyInventory(input: {
   currentAvailable: number
   quantity: number
   idempotencyKey: string
-  orderId: string
 }): Promise<void> {
   const result = await shopifyGraphqlRequest<{
     inventoryAdjustQuantities: {
@@ -332,7 +341,7 @@ export async function decrementShopifyInventory(input: {
       input: {
         reason: "correction",
         name: "available",
-        referenceDocumentUri: `gid://reswell/Order/${input.orderId}`,
+        referenceDocumentUri: `gid://reswell/InventoryAdjustment/${input.idempotencyKey}`,
         changes: [
           {
             inventoryItemId: input.inventoryItemId,

@@ -562,6 +562,11 @@ export async function POST(request: NextRequest) {
           listingsOrdered.map((l) => l.section),
         )} (${primaryTitle})`
       : `Reswell — ${primaryTitle}`
+  const listingPriceSnapshot = listingsForTotals
+    .map((listing) =>
+      String(Math.max(0, Math.round(Number(listing.price) * 100))),
+    )
+    .join(",")
 
   try {
     const stripe = getStripe()
@@ -593,6 +598,9 @@ export async function POST(request: NextRequest) {
         fulfillment: impliedFulfillment,
         amount_cents: String(amountCents),
         bundle_line_count: String(listingIdsOrdered.length),
+        ...(listingPriceSnapshot.length <= 450
+          ? { listing_price_cents: listingPriceSnapshot }
+          : {}),
         ...stripeAdAttributionMetadata(adAttribution),
         ...(validatedOfferId ? { offer_id: validatedOfferId } : {}),
         ...(addressId ? { address_id: addressId } : {}),

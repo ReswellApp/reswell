@@ -187,9 +187,10 @@ export async function dbReplaceShopifyListingImage(
   if (error) throw new Error(error.message)
 }
 
-export async function dbUpsertShopifyMapping(
+export async function dbSaveShopifyMapping(
   supabase: SupabaseClient,
   input: {
+    mappingId: string | null
     connectionId: string
     listingId: string
     productId: string
@@ -199,25 +200,47 @@ export async function dbUpsertShopifyMapping(
     status: ShopifyProductMappingRow["sync_status"]
     remoteUpdatedAt: string | null
   },
-): Promise<void> {
+): Promise<boolean> {
   const now = new Date().toISOString()
-  const { error } = await supabase.from("shopify_product_mappings").upsert(
-    {
-      connection_id: input.connectionId,
-      listing_id: input.listingId,
-      shopify_product_gid: input.productId,
-      shopify_variant_gid: input.variantId,
-      shopify_inventory_item_gid: input.inventoryItemId,
-      reswell_section: input.section,
-      selected: true,
-      sync_status: input.status,
-      remote_updated_at: input.remoteUpdatedAt,
-      last_synced_at: now,
-      last_error: null,
-      updated_at: now,
-    },
-    { onConflict: "connection_id,shopify_variant_gid" },
-  )
+  const fields = {
+    connection_id: input.connectionId,
+    listing_id: input.listingId,
+    shopify_product_gid: input.productId,
+    shopify_variant_gid: input.variantId,
+    shopify_inventory_item_gid: input.inventoryItemId,
+    reswell_section: input.section,
+    selected: true,
+    sync_status: input.status,
+    remote_updated_at: input.remoteUpdatedAt,
+    last_synced_at: now,
+    last_error: null,
+    updated_at: now,
+  }
+  if (input.mappingId) {
+    const { error } = await supabase
+      .from("shopify_product_mappings")
+      .update(fields)
+      .eq("id", input.mappingId)
+    if (error) throw new Error(error.message)
+    return true
+  }
+  const { error } = await supabase
+    .from("shopify_product_mappings")
+    .insert(fields)
+  if (!error) return true
+  if (error.code === "23505") return false
+  throw new Error(error.message)
+}
+
+export async function dbDeleteShopifyListing(
+  supabase: SupabaseClient,
+  listingId: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from("listings")
+    .delete()
+    .eq("id", listingId)
+    .eq("inventory_source", "shopify")
   if (error) throw new Error(error.message)
 }
 

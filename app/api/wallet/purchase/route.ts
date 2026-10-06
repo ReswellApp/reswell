@@ -274,17 +274,11 @@ export async function POST(request: NextRequest) {
 
   if (isShopifyManagedListing(listing)) {
     try {
-      const recorded = await dbRecordShopifyListingSale(serviceSupabase, {
+      await dbRecordShopifyListingSale(serviceSupabase, {
         orderId: purchase.id,
         listingId: listing.id,
         quantity: 1,
       })
-      if (!recorded) {
-        return NextResponse.json(
-          { error: "Could not queue Shopify inventory update" },
-          { status: 409 },
-        )
-      }
     } catch (error) {
       console.error("[wallet/purchase] Shopify sale outbox:", error)
       return NextResponse.json(

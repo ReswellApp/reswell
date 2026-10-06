@@ -21,6 +21,7 @@ const CONNECTION_SELECT = [
   "token_expires_at",
   "refresh_token_expires_at",
   "token_refresh_locked_until",
+  "token_refresh_lock_id",
   "scopes",
   "last_webhook_at",
   "last_reconciled_at",
@@ -171,6 +172,7 @@ export async function dbUpsertShopifyConnection(
         token_expires_at: input.tokenExpiresAt,
         refresh_token_expires_at: input.refreshTokenExpiresAt,
         token_refresh_locked_until: null,
+        token_refresh_lock_id: null,
         scopes: input.scopes,
         last_error: null,
         connected_at: now,
@@ -190,6 +192,7 @@ export async function dbUpsertShopifyConnection(
 export async function dbUpdateShopifyConnectionTokens(
   supabase: SupabaseClient,
   connectionId: string,
+  lockId: string,
   input: {
     accessTokenCiphertext: string
     accessTokenIv: string
@@ -202,7 +205,7 @@ export async function dbUpdateShopifyConnectionTokens(
     refreshTokenExpiresAt: string | null
   },
 ): Promise<void> {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("shopify_connections")
     .update({
       access_token_ciphertext: input.accessTokenCiphertext,
@@ -215,17 +218,23 @@ export async function dbUpdateShopifyConnectionTokens(
       token_expires_at: input.tokenExpiresAt,
       refresh_token_expires_at: input.refreshTokenExpiresAt,
       token_refresh_locked_until: null,
+      token_refresh_lock_id: null,
       status: "active",
       last_error: null,
       updated_at: new Date().toISOString(),
     })
     .eq("id", connectionId)
+    .eq("token_refresh_lock_id", lockId)
+    .select("id")
+    .maybeSingle()
   if (error) throw new Error(error.message)
+  if (!data) throw new Error("Shopify credential refresh lock was lost")
 }
 
 export async function dbClaimShopifyTokenRefresh(
   supabase: SupabaseClient,
   connectionId: string,
+  lockId: string,
 ): Promise<boolean> {
   const now = new Date()
   const expiredBefore = now.toISOString()
@@ -234,6 +243,7 @@ export async function dbClaimShopifyTokenRefresh(
     .from("shopify_connections")
     .update({
       token_refresh_locked_until: lockedUntil,
+      token_refresh_lock_id: lockId,
       updated_at: expiredBefore,
     })
     .eq("id", connectionId)
@@ -249,16 +259,19 @@ export async function dbClaimShopifyTokenRefresh(
 export async function dbReleaseShopifyTokenRefresh(
   supabase: SupabaseClient,
   connectionId: string,
+  lockId: string,
   errorMessage?: string,
 ): Promise<void> {
   await supabase
     .from("shopify_connections")
     .update({
       token_refresh_locked_until: null,
+      token_refresh_lock_id: null,
       ...(errorMessage ? { last_error: errorMessage.slice(0, 1000) } : {}),
       updated_at: new Date().toISOString(),
     })
     .eq("id", connectionId)
+    .eq("token_refresh_lock_id", lockId)
 }
 
 export async function dbMarkShopifyConnectionStatus(
@@ -345,4 +358,51 @@ export function toPublicShopifyConnection(
     last_error: connection.last_error,
     connected_at: connection.connected_at,
   }
+}
+
+export async function dbRedactShopifyConnection(
+  supabase: SupabaseClient,
+  connectionId: string,
+  shopDomain: string,
+): Promise<string[]> {
+  const { data: mappings, error: mappingsError } = await supabase
+    .from("shopify_product_mappings")
+    .select("listing_id")
+    .eq("connection_id", connectionId)
+  if (mappingsError) throw new Error(mappingsError.message)
+  const listingIds = (mappings ?? []).map((row) => row.listing_id)
+
+  if (listingIds.length > 0) {
+    const { error: imageError } = await supabase
+      .from("listing_images")
+      .delete()
+      .in("listing_id", listingIds)
+    if (imageError) throw new Error(imageError.message)
+    const { error: listingError } = await supabase
+      .from("listings")
+      .update({
+        title: "Removed Shopify product",
+        description: "This Shopify-sourced product is no longer available.",
+        brand: null,
+        model: null,
+        stock_quantity: 0,
+        status: "removed",
+        inventory_source: "reswell",
+        updated_at: new Date().toISOString(),
+      })
+      .in("id", listingIds)
+    if (listingError) throw new Error(listingError.message)
+  }
+
+  const { error: eventError } = await supabase
+    .from("shopify_webhook_events")
+    .delete()
+    .eq("shop_domain", shopDomain)
+  if (eventError) throw new Error(eventError.message)
+  const { error: connectionError } = await supabase
+    .from("shopify_connections")
+    .delete()
+    .eq("id", connectionId)
+  if (connectionError) throw new Error(connectionError.message)
+  return listingIds
 }

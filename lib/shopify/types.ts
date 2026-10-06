@@ -23,6 +23,7 @@ export interface ShopifyConnectionRow {
   token_expires_at: string | null
   refresh_token_expires_at: string | null
   token_refresh_locked_until: string | null
+  token_refresh_lock_id: string | null
   scopes: string[]
   last_webhook_at: string | null
   last_reconciled_at: string | null
@@ -104,6 +105,7 @@ export interface ShopifyWebhookEventRow {
   status: "queued" | "processing" | "retry" | "processed" | "dead"
   attempts: number
   max_attempts: number
+  worker_id: string | null
 }
 
 export type ShopifySyncJobType =
@@ -121,6 +123,7 @@ export interface ShopifySyncJobRow {
   status: "queued" | "processing" | "retry" | "succeeded" | "dead" | "canceled"
   attempts: number
   max_attempts: number
+  worker_id: string | null
 }
 
 export interface ShopifyDashboardData {

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { randomUUID } from "node:crypto"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import {
   dbClaimShopifyTokenRefresh,
@@ -11,6 +12,7 @@ import {
   dbUpdateShopifyConnectionTokens,
   dbUpsertShopifyConnection,
 } from "@/lib/db/shopifyConnections"
+import { dbUnpublishAllShopifyListingsForConnection } from "@/lib/db/shopifyCatalog"
 import {
   shopifyGraphqlRequest,
   throwOnShopifyUserErrors,
@@ -85,6 +87,7 @@ async function requestShopifyToken(
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: params,
       cache: "no-store",
+      signal: AbortSignal.timeout(15_000),
     },
   )
   if (!response.ok) {
@@ -115,7 +118,6 @@ export async function createShopifyInstallUrl(input: {
     scope: SHOPIFY_MVP_SCOPES.join(","),
     redirect_uri: shopifyOAuthRedirectUri(),
     state: state.state,
-    expiring: "1",
   })
   return `https://${input.shopDomain}/admin/oauth/authorize?${params.toString()}`
 }
@@ -125,6 +127,15 @@ export async function startShopifyOAuth(input: {
   shopDomain: string
 }): Promise<string> {
   const serviceSupabase = createServiceRoleClient()
+  const existing = await dbGetShopifyConnectionForUser(
+    serviceSupabase,
+    input.userId,
+  )
+  if (existing && existing.shop_domain !== input.shopDomain) {
+    throw new Error(
+      "This Reswell account is already linked to a different Shopify store",
+    )
+  }
   return createShopifyInstallUrl({ serviceSupabase, ...input })
 }
 
@@ -234,6 +245,7 @@ export async function completeShopifyOAuth(input: {
       client_id: shopifyApiKey(),
       client_secret: shopifyApiSecret(),
       code: input.code,
+      expiring: "1",
     }),
   )
   if (!token.access_token) {
@@ -330,12 +342,18 @@ export async function getShopifyAccessToken(
       syncEnabled: false,
       error: "Shopify authorization expired. Reconnect the store.",
     })
+    await dbUnpublishAllShopifyListingsForConnection(
+      serviceSupabase,
+      connection.id,
+    )
     throw new Error("Shopify store must be reconnected")
   }
 
+  const refreshLockId = randomUUID()
   const claimed = await dbClaimShopifyTokenRefresh(
     serviceSupabase,
     connection.id,
+    refreshLockId,
   )
   if (!claimed) {
     await new Promise((resolve) => setTimeout(resolve, 400))
@@ -362,6 +380,7 @@ export async function getShopifyAccessToken(
     await dbUpdateShopifyConnectionTokens(
       serviceSupabase,
       connection.id,
+      refreshLockId,
       encryptedTokenFields(token),
     )
     if (!token.access_token) throw new Error("Shopify refresh returned no token")
@@ -374,11 +393,16 @@ export async function getShopifyAccessToken(
         syncEnabled: false,
         error: "Shopify authorization expired. Reconnect the store.",
       })
+      await dbUnpublishAllShopifyListingsForConnection(
+        serviceSupabase,
+        connection.id,
+      )
       throw error
     }
     await dbReleaseShopifyTokenRefresh(
       serviceSupabase,
       connection.id,
+      refreshLockId,
       message,
     )
     throw error

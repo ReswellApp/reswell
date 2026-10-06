@@ -494,6 +494,7 @@ async function createAdminTerminalPaymentIntent(
         listing_id: listing.id,
         fulfillment: ADMIN_TERMINAL_FULFILLMENT,
         amount_cents: String(amountCents),
+        listing_price_cents: String(amountCents),
         bundle_line_count: "1",
         admin_profile_id: adminUserId,
         terminal_customer_name: parties.customerName,
@@ -777,18 +778,11 @@ export async function completeAdminTerminalCashSale(
   const listingTitle = String(listing.title ?? "")
 
   if (isShopifyManagedListing(listing)) {
-    const recorded = await dbRecordShopifyListingSale(service, {
+    await dbRecordShopifyListingSale(service, {
       orderId: purchase.id,
       listingId: listing.id,
       quantity: 1,
     })
-    if (!recorded) {
-      return {
-        ok: false,
-        error: "Could not queue Shopify inventory update",
-        status: 409,
-      }
-    }
   } else {
     const { error: listingErr } = await service
       .from("listings")

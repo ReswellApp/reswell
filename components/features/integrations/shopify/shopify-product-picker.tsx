@@ -40,7 +40,8 @@ export function ShopifyProductPicker({
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Each Shopify variant becomes a Reswell listing. Shopify continues to
-          control titles, prices, images, and inventory.
+          control titles, prices, images, and inventory. New imports start as
+          local pickup; add package details from My Listings before enabling shipping.
         </p>
       </div>
 

@@ -42,7 +42,7 @@ export async function dbClaimShopifyWebhookEvents(
 
 export async function dbCompleteShopifyWebhookEvent(
   supabase: SupabaseClient,
-  eventId: string,
+  event: Pick<ShopifyWebhookEventRow, "id" | "worker_id">,
 ): Promise<void> {
   const now = new Date().toISOString()
   const { error } = await supabase
@@ -55,13 +55,18 @@ export async function dbCompleteShopifyWebhookEvent(
       last_error: null,
       updated_at: now,
     })
-    .eq("id", eventId)
+    .eq("id", event.id)
+    .eq("status", "processing")
+    .eq("worker_id", event.worker_id)
   if (error) throw new Error(error.message)
 }
 
 export async function dbFailShopifyWebhookEvent(
   supabase: SupabaseClient,
-  event: Pick<ShopifyWebhookEventRow, "id" | "attempts" | "max_attempts">,
+  event: Pick<
+    ShopifyWebhookEventRow,
+    "id" | "attempts" | "max_attempts" | "worker_id"
+  >,
   errorMessage: string,
 ): Promise<void> {
   const dead = event.attempts >= event.max_attempts
@@ -77,6 +82,8 @@ export async function dbFailShopifyWebhookEvent(
       updated_at: new Date().toISOString(),
     })
     .eq("id", event.id)
+    .eq("status", "processing")
+    .eq("worker_id", event.worker_id)
   if (error) throw new Error(error.message)
 }
 
@@ -119,7 +126,7 @@ export async function dbClaimShopifyJobs(
 
 export async function dbCompleteShopifyJob(
   supabase: SupabaseClient,
-  jobId: string,
+  job: Pick<ShopifySyncJobRow, "id" | "worker_id">,
 ): Promise<void> {
   const now = new Date().toISOString()
   const { error } = await supabase
@@ -132,13 +139,18 @@ export async function dbCompleteShopifyJob(
       last_error: null,
       updated_at: now,
     })
-    .eq("id", jobId)
+    .eq("id", job.id)
+    .eq("status", "processing")
+    .eq("worker_id", job.worker_id)
   if (error) throw new Error(error.message)
 }
 
 export async function dbFailShopifyJob(
   supabase: SupabaseClient,
-  job: Pick<ShopifySyncJobRow, "id" | "attempts" | "max_attempts">,
+  job: Pick<
+    ShopifySyncJobRow,
+    "id" | "attempts" | "max_attempts" | "worker_id"
+  >,
   errorMessage: string,
 ): Promise<void> {
   const dead = job.attempts >= job.max_attempts
@@ -154,12 +166,14 @@ export async function dbFailShopifyJob(
       updated_at: new Date().toISOString(),
     })
     .eq("id", job.id)
+    .eq("status", "processing")
+    .eq("worker_id", job.worker_id)
   if (error) throw new Error(error.message)
 }
 
 export async function dbDeferShopifyJob(
   supabase: SupabaseClient,
-  job: Pick<ShopifySyncJobRow, "id" | "attempts">,
+  job: Pick<ShopifySyncJobRow, "id" | "attempts" | "worker_id">,
   reason: string,
 ): Promise<void> {
   const { error } = await supabase
@@ -174,6 +188,8 @@ export async function dbDeferShopifyJob(
       updated_at: new Date().toISOString(),
     })
     .eq("id", job.id)
+    .eq("status", "processing")
+    .eq("worker_id", job.worker_id)
   if (error) throw new Error(error.message)
 }
 
@@ -193,4 +209,24 @@ export async function dbCancelShopifyJobsForConnection(
     .eq("connection_id", connectionId)
     .in("status", ["queued", "retry", "processing"])
   if (error) throw new Error(error.message)
+}
+
+export async function dbPendingShopifyInventoryDecrements(
+  supabase: SupabaseClient,
+  mappingId: string,
+): Promise<number> {
+  const { data, error } = await supabase
+    .from("shopify_sync_jobs")
+    .select("payload")
+    .eq("job_type", "inventory_decrement")
+    .in("status", ["queued", "retry"])
+    .contains("payload", { mappingId })
+  if (error) throw new Error(error.message)
+  return (data ?? []).reduce((sum, row) => {
+    const payload =
+      row.payload && typeof row.payload === "object" && !Array.isArray(row.payload)
+        ? (row.payload as Record<string, unknown>)
+        : {}
+    return sum + Math.max(1, Math.floor(Number(payload.quantity) || 1))
+  }, 0)
 }

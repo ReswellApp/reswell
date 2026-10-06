@@ -8,7 +8,10 @@ import { Button } from "@/components/ui/button"
 import { DashboardSidebarNav } from "@/components/features/dashboard/dashboard-sidebar-nav"
 import { MessagesAccountShellClient } from "@/components/features/messages/messages-account-shell-client"
 import { coastalShipperMembership } from "@/lib/services/coastalShipperAccess"
-import { isShopifyIntegrationEnabled } from "@/lib/shopify/config"
+import {
+  isShopifyConfigured,
+  isShopifyIntegrationEnabled,
+} from "@/lib/shopify/config"
 
 export async function MessagesAccountShell({ children }: { children: React.ReactNode }) {
   const { supabase, user } = await getCachedDashboardSession()
@@ -31,7 +34,9 @@ export async function MessagesAccountShell({ children }: { children: React.React
     .maybeSingle()
   const isShipper = coastalShipperMembership({ rowId: shipperRow?.id, queryFailed: Boolean(shipperError) })
   const hasShopifyAccess =
-    isShopifyIntegrationEnabled() && profile?.shopify_connect_enabled === true
+    isShopifyIntegrationEnabled() &&
+    isShopifyConfigured() &&
+    profile?.shopify_connect_enabled === true
 
   return (
     <MessagesAccountShellClient

@@ -25,7 +25,7 @@ export async function GET(request: Request) {
     const serviceSupabase = createServiceRoleClient()
     const reconciliationsEnqueued =
       await enqueueScheduledShopifyReconciliations(serviceSupabase)
-    const workers = await runShopifyWorkers(serviceSupabase, 25)
+    const workers = await runShopifyWorkers(serviceSupabase, 10)
     return NextResponse.json({
       ok: true,
       reconciliationsEnqueued,

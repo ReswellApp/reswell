@@ -4,6 +4,7 @@ import { USED_APPAREL_CATEGORY_ID } from "@/lib/apparel-listing-config"
 import { USED_BOARDBAGS_CATEGORY_ID } from "@/lib/boardbag-listing-config"
 import {
   dbGetShopifyMappingByVariant,
+  dbDeleteShopifyListing,
   dbInsertShopifyListing,
   dbListSelectedShopifyProductSections,
   dbListShopifyMappingsByInventoryItem,
@@ -11,21 +12,16 @@ import {
   dbLoadShopifyMerchantLocation,
   dbReplaceShopifyListingImage,
   dbUnpublishShopifyMappings,
-  dbUpdateShopifyInventoryListings,
   dbUpdateShopifyListing,
-  dbUpsertShopifyMapping,
+  dbSaveShopifyMapping,
 } from "@/lib/db/shopifyCatalog"
+import { dbPendingShopifyInventoryDecrements } from "@/lib/db/shopifyQueue"
 import { syncListingToIndex } from "@/lib/elasticsearch/listings-index"
 import { USED_FINS_CATEGORY_ID } from "@/lib/fin-listing-config"
 import { USED_LEASHES_CATEGORY_ID } from "@/lib/leash-listing-config"
 import { USED_MAGAZINES_CATEGORY_ID } from "@/lib/magazine-listing-config"
 import type { PeerListingSection } from "@/lib/peer-listing-sections"
-import {
-  fetchShopifyInventoryLevels,
-  fetchShopifyProduct,
-  fetchShopifyProducts,
-  shopifyAvailableInventory,
-} from "@/lib/shopify/catalog"
+import { fetchShopifyProduct, fetchShopifyProducts } from "@/lib/shopify/catalog"
 import type {
   ShopifyCatalogProduct,
   ShopifyCatalogVariant,
@@ -68,13 +64,17 @@ export async function applyShopifyListingSideEffects(
   serviceSupabase: SupabaseClient,
   listingIds: string[],
 ): Promise<void> {
-  for (const listingId of listingIds) {
-    try {
-      await syncListingToIndex(serviceSupabase, listingId)
-    } catch {
-      // Elasticsearch is optional.
-    }
-    syncListingToGoogleMerchantBestEffort(serviceSupabase, listingId)
+  for (let index = 0; index < listingIds.length; index += 10) {
+    await Promise.all(
+      listingIds.slice(index, index + 10).map(async (listingId) => {
+        try {
+          await syncListingToIndex(serviceSupabase, listingId)
+        } catch {
+          // Elasticsearch is optional.
+        }
+        syncListingToGoogleMerchantBestEffort(serviceSupabase, listingId)
+      }),
+    )
   }
   await revalidateAfterListingSiteModeration(serviceSupabase, listingIds)
 }
@@ -125,10 +125,17 @@ async function syncVariant(input: {
     input.connection.id,
     input.variant.id,
   )
-  const stock =
+  const pendingDecrements = existing
+    ? await dbPendingShopifyInventoryDecrements(
+        input.serviceSupabase,
+        existing.id,
+      )
+    : 0
+  const remoteStock =
     input.product.status === "ACTIVE"
-      ? shopifyAvailableInventory(input.variant.inventoryLevels)
+      ? input.variant.available
       : 0
+  const stock = Math.max(0, remoteStock - pendingDecrements)
   const fields: Record<string, unknown> = {
     user_id: input.connection.user_id,
     title: listingTitle(input.product, input.variant),
@@ -142,10 +149,10 @@ async function syncVariant(input: {
     model: input.product.title,
     city: input.city,
     state: input.state,
-    shipping_available: true,
-    local_pickup: false,
-    shipping_price: 0,
-    board_shipping_cost_mode: "reswell",
+    shipping_available: false,
+    local_pickup: true,
+    shipping_price: null,
+    board_shipping_cost_mode: null,
     buyer_offers_enabled: false,
     stock_quantity: stock,
     status: stock > 0 ? "active" : "removed",
@@ -158,6 +165,7 @@ async function syncVariant(input: {
   }
 
   let listingId = existing?.listing_id ?? null
+  let createdListing = false
   if (listingId) {
     await dbUpdateShopifyListing(input.serviceSupabase, listingId, fields)
   } else {
@@ -168,13 +176,15 @@ async function syncVariant(input: {
         String(fields.title),
       ),
     })
+    createdListing = true
   }
   await dbReplaceShopifyListingImage(
     input.serviceSupabase,
     listingId,
     input.variant.imageUrl ?? input.product.imageUrl,
   )
-  await dbUpsertShopifyMapping(input.serviceSupabase, {
+  const saved = await dbSaveShopifyMapping(input.serviceSupabase, {
+    mappingId: existing?.id ?? null,
     connectionId: input.connection.id,
     listingId,
     productId: input.product.id,
@@ -184,6 +194,33 @@ async function syncVariant(input: {
     status: stock > 0 ? "synced" : "out_of_stock",
     remoteUpdatedAt: input.product.updatedAt,
   })
+  if (!saved && createdListing) {
+    await dbDeleteShopifyListing(input.serviceSupabase, listingId)
+    const winner = await dbGetShopifyMappingByVariant(
+      input.serviceSupabase,
+      input.connection.id,
+      input.variant.id,
+    )
+    if (!winner) throw new Error("Concurrent Shopify import did not create a mapping")
+    listingId = winner.listing_id
+    await dbUpdateShopifyListing(input.serviceSupabase, listingId, fields)
+    await dbReplaceShopifyListingImage(
+      input.serviceSupabase,
+      listingId,
+      input.variant.imageUrl ?? input.product.imageUrl,
+    )
+    await dbSaveShopifyMapping(input.serviceSupabase, {
+      mappingId: winner.id,
+      connectionId: input.connection.id,
+      listingId,
+      productId: input.product.id,
+      variantId: input.variant.id,
+      inventoryItemId: input.variant.inventoryItemId,
+      section: input.section,
+      status: stock > 0 ? "synced" : "out_of_stock",
+      remoteUpdatedAt: input.product.updatedAt,
+    })
+  }
   return listingId
 }
 
@@ -231,16 +268,21 @@ export async function syncSelectedShopifyProduct(input: {
     input.connection.user_id,
   )
   const listingIds: string[] = []
-  for (const variant of product.variants) {
+  for (let index = 0; index < product.variants.length; index += 5) {
+    const batch = product.variants.slice(index, index + 5)
     listingIds.push(
-      await syncVariant({
-        serviceSupabase: input.serviceSupabase,
-        connection: input.connection,
-        product,
-        variant,
-        section: selectedSection,
-        ...location,
-      }),
+      ...(await Promise.all(
+        batch.map((variant) =>
+          syncVariant({
+            serviceSupabase: input.serviceSupabase,
+            connection: input.connection,
+            product,
+            variant,
+            section: selectedSection,
+            ...location,
+          }),
+        ),
+      )),
     )
   }
 
@@ -293,22 +335,19 @@ export async function syncShopifyInventoryItem(input: {
     input.inventoryItemId,
   )
   if (mappings.length === 0) return []
-  const accessToken = await getShopifyAccessToken(
-    input.serviceSupabase,
-    input.connection,
-  )
-  const levels = await fetchShopifyInventoryLevels({
-    shopDomain: input.connection.shop_domain,
-    accessToken,
-    inventoryItemId: input.inventoryItemId,
-  })
-  const listingIds = await dbUpdateShopifyInventoryListings(
-    input.serviceSupabase,
-    mappings,
-    shopifyAvailableInventory(levels),
-  )
-  await applyShopifyListingSideEffects(input.serviceSupabase, listingIds)
-  return listingIds
+  const listingIds: string[] = []
+  const productIds = [
+    ...new Set(mappings.map((mapping) => mapping.shopify_product_gid)),
+  ]
+  for (const productId of productIds) {
+    const synced = await syncSelectedShopifyProduct({
+      serviceSupabase: input.serviceSupabase,
+      connection: input.connection,
+      productId,
+    })
+    listingIds.push(...synced.listingIds)
+  }
+  return [...new Set(listingIds)]
 }
 
 export async function unpublishDeletedShopifyProduct(input: {

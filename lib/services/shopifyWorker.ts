@@ -9,6 +9,7 @@ import {
   dbGetShopifyConnectionById,
   dbListShopifyConnectionsDueForReconcile,
   dbMarkShopifyConnectionStatus,
+  dbRedactShopifyConnection,
   dbTouchShopifyReconciled,
   dbTouchShopifyWebhook,
 } from "@/lib/db/shopifyConnections"
@@ -75,15 +76,23 @@ async function handleWebhookEvent(
           event.shop_domain,
         )
 
-  if (event.topic === "app/uninstalled" || event.topic === "shop/redact") {
+  if (event.topic === "shop/redact") {
+    if (!connection) return
+    const listingIds = await dbRedactShopifyConnection(
+      serviceSupabase,
+      connection.id,
+      event.shop_domain,
+    )
+    await applyShopifyListingSideEffects(serviceSupabase, listingIds)
+    return
+  }
+
+  if (event.topic === "app/uninstalled") {
     if (!connection) return
     await dbMarkShopifyConnectionStatus(serviceSupabase, connection.id, {
       status: "disconnected",
       syncEnabled: false,
-      error:
-        event.topic === "app/uninstalled"
-          ? "Shopify app was uninstalled"
-          : "Shopify requested shop data redaction",
+      error: "Shopify app was uninstalled",
     })
     const listingIds = await dbUnpublishAllShopifyListingsForConnection(
       serviceSupabase,
@@ -138,7 +147,7 @@ async function handleWebhookEvent(
   if (event.topic === "inventory_levels/update") {
     const inventoryItemId = shopifyGid(
       "InventoryItem",
-      event.payload.admin_graphql_api_id ?? event.payload.inventory_item_id,
+      event.payload.inventory_item_id,
     )
     if (!inventoryItemId) {
       throw new Error("Shopify inventory webhook has no inventory item id")
@@ -221,7 +230,6 @@ async function runSyncJob(
       connection,
       jobId: job.id,
       mappingId: payload.mappingId,
-      orderId: payload.orderId,
       quantity: payload.quantity,
     })
   }
@@ -273,7 +281,7 @@ export async function runShopifyWorkers(
   for (const event of events) {
     try {
       await handleWebhookEvent(serviceSupabase, event)
-      await dbCompleteShopifyWebhookEvent(serviceSupabase, event.id)
+      await dbCompleteShopifyWebhookEvent(serviceSupabase, event)
       result.eventsProcessed += 1
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
@@ -289,7 +297,7 @@ export async function runShopifyWorkers(
   for (const job of jobs) {
     try {
       await runSyncJob(serviceSupabase, job)
-      await dbCompleteShopifyJob(serviceSupabase, job.id)
+      await dbCompleteShopifyJob(serviceSupabase, job)
       result.jobsProcessed += 1
     } catch (error) {
       if (error instanceof ShopifyInventoryWritesDisabledError) {

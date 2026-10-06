@@ -25,7 +25,6 @@ export async function decrementShopifyInventoryForReswellSale(input: {
   connection: ShopifyConnectionRow
   jobId: string
   mappingId: string
-  orderId: string
   quantity: number
 }): Promise<void> {
   if (!areShopifyInventoryWritesEnabled()) {
@@ -65,7 +64,6 @@ export async function decrementShopifyInventoryForReswellSale(input: {
         Math.max(1, Math.floor(input.quantity)),
       ),
       idempotencyKey: input.jobId,
-      orderId: input.orderId,
     })
   }
 

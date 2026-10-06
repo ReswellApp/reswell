@@ -76,6 +76,7 @@ CREATE TABLE IF NOT EXISTS public.shopify_connections (
   token_expires_at timestamptz,
   refresh_token_expires_at timestamptz,
   token_refresh_locked_until timestamptz,
+  token_refresh_lock_id text,
   scopes text[] NOT NULL DEFAULT '{}',
   last_webhook_at timestamptz,
   last_reconciled_at timestamptz,
@@ -193,7 +194,7 @@ CREATE INDEX IF NOT EXISTS shopify_sync_jobs_claim_idx
 CREATE UNIQUE INDEX IF NOT EXISTS shopify_sync_jobs_active_dedupe_idx
   ON public.shopify_sync_jobs (dedupe_key)
   WHERE dedupe_key IS NOT NULL
-    AND status IN ('queued', 'processing', 'retry');
+    AND status IN ('queued', 'retry');
 
 ALTER TABLE public.shopify_connections ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.shopify_oauth_states ENABLE ROW LEVEL SECURITY;
@@ -317,10 +318,6 @@ DECLARE
   v_job_id uuid;
   v_quantity integer := GREATEST(1, coalesce(p_quantity, 1));
 BEGIN
-  IF coalesce(auth.role(), '') <> 'service_role' THEN
-    RAISE EXCEPTION 'service role required';
-  END IF;
-
   SELECT m.*
   INTO v_mapping
   FROM public.shopify_product_mappings m
@@ -369,7 +366,12 @@ BEGIN
       END,
       updated_at = now()
   WHERE id = p_listing_id
-    AND inventory_source = 'shopify';
+    AND inventory_source = 'shopify'
+    AND stock_quantity >= v_quantity;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Shopify-managed listing % has insufficient local stock', p_listing_id;
+  END IF;
 
   RETURN true;
 END;
@@ -378,6 +380,57 @@ $$;
 REVOKE ALL ON FUNCTION public.record_shopify_listing_sale(uuid, uuid, integer) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.record_shopify_listing_sale(uuid, uuid, integer) TO service_role;
 
+CREATE OR REPLACE FUNCTION public.orders_record_shopify_listing_sale()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF NEW.status = 'confirmed' THEN
+    PERFORM public.record_shopify_listing_sale(NEW.id, NEW.listing_id, 1);
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS orders_record_shopify_listing_sale_trigger ON public.orders;
+CREATE TRIGGER orders_record_shopify_listing_sale_trigger
+  AFTER INSERT OR UPDATE OF status ON public.orders
+  FOR EACH ROW
+  WHEN (NEW.status = 'confirmed')
+  EXECUTE FUNCTION public.orders_record_shopify_listing_sale();
+
+CREATE OR REPLACE FUNCTION public.order_items_record_shopify_listing_sale()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_status text;
+BEGIN
+  SELECT status INTO v_status
+  FROM public.orders
+  WHERE id = NEW.order_id;
+
+  IF v_status = 'confirmed' THEN
+    PERFORM public.record_shopify_listing_sale(
+      NEW.order_id,
+      NEW.listing_id,
+      GREATEST(1, coalesce(NEW.quantity, 1))
+    );
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS order_items_record_shopify_listing_sale_trigger ON public.order_items;
+CREATE TRIGGER order_items_record_shopify_listing_sale_trigger
+  AFTER INSERT ON public.order_items
+  FOR EACH ROW
+  EXECUTE FUNCTION public.order_items_record_shopify_listing_sale();
+
 CREATE OR REPLACE FUNCTION public.guard_shopify_managed_listing_truth()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -385,10 +438,14 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
+  IF coalesce(auth.role(), '') <> 'service_role' THEN
+    IF NEW.inventory_source IS DISTINCT FROM OLD.inventory_source THEN
+      NEW.inventory_source := OLD.inventory_source;
+    END IF;
+  END IF;
   IF OLD.inventory_source = 'shopify'
      AND coalesce(auth.role(), '') <> 'service_role'
   THEN
-    NEW.inventory_source := OLD.inventory_source;
     NEW.title := OLD.title;
     NEW.description := OLD.description;
     NEW.price := OLD.price;
@@ -410,6 +467,28 @@ CREATE TRIGGER guard_shopify_managed_listing_truth_trigger
   BEFORE UPDATE ON public.listings
   FOR EACH ROW
   EXECUTE FUNCTION public.guard_shopify_managed_listing_truth();
+
+CREATE OR REPLACE FUNCTION public.guard_shopify_managed_listing_insert()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF NEW.inventory_source = 'shopify'
+     AND coalesce(auth.role(), '') <> 'service_role'
+  THEN
+    NEW.inventory_source := 'reswell';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS guard_shopify_managed_listing_insert_trigger ON public.listings;
+CREATE TRIGGER guard_shopify_managed_listing_insert_trigger
+  BEFORE INSERT ON public.listings
+  FOR EACH ROW
+  EXECUTE FUNCTION public.guard_shopify_managed_listing_insert();
 
 CREATE OR REPLACE FUNCTION public.guard_shopify_managed_listing_delete()
 RETURNS trigger

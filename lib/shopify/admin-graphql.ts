@@ -19,13 +19,18 @@ type GraphqlResponse<T> = {
 }
 
 export class ShopifyGraphqlError extends Error {
+  readonly status: number
+  readonly retryable: boolean
+
   constructor(
     message: string,
-    readonly status: number,
-    readonly retryable: boolean,
+    status: number,
+    retryable: boolean,
   ) {
     super(message)
     this.name = "ShopifyGraphqlError"
+    this.status = status
+    this.retryable = retryable
   }
 }
 
