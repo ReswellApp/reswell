@@ -7,7 +7,7 @@ export interface BalanceSheetEntryOrder {
   nullsFirst?: boolean
 }
 
-/** Missing purchase prices first, then newest within each group. */
+/** Blank purchase prices first, then lowest paid price. Date is the tiebreaker. */
 export function balanceSheetEntryOrder(sort: BalanceSheetSort): BalanceSheetEntryOrder[] {
   if (sort === "missing-paid") {
     return [
