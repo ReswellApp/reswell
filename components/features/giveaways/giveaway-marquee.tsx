@@ -14,7 +14,7 @@ import {
 } from "@/lib/giveaways/marquee-storage"
 import { GIVEAWAYS_INDEX_HREF } from "@/lib/giveaways/paths"
 
-const PHRASE = "Win a custom surfboard by listing a surfboard"
+const PHRASE = "One day left to enter to win a custom surfboard"
 const LEARN_MORE = "learn more"
 const REPEAT = 6
 
