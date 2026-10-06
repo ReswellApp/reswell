@@ -34,7 +34,11 @@ export default async function CoastalDeliverySchedulePage() {
   return (
     <section className="space-y-4">
       <h2 className="text-lg font-medium">Weekly schedule</h2>
-      <CoastalScheduleEditor profile={loaded.data.profile} stops={loaded.data.stops} />
+      <CoastalScheduleEditor
+        profile={loaded.data.profile}
+        stops={loaded.data.stops}
+        shipperId={loaded.data.profile.id}
+      />
     </section>
   )
 }

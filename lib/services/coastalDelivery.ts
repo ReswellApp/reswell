@@ -5,6 +5,7 @@ import {
   getCoastalDeliveryRequest,
   getCoastalPreviewListing,
   getCoastalShipperByUserId,
+  getCoastalShipperSchedule,
   listCoastalShipperSchedules,
   listCoastalStops,
   searchCoastalPreviewListings,
@@ -61,11 +62,15 @@ export async function getCoastalOverview(): Promise<Ok<CoastalOverviewData> | Er
       listCoastalStops(db),
       listCoastalShipperSchedules(db),
     ])
+    const accounts = await loadShipperAccounts(
+      db,
+      schedules.map((schedule) => schedule.userId),
+    )
     return {
       ok: true,
       data: {
         stops,
-        shippers: schedules.map((schedule) => toSummary(schedule, gate.ctx.user.id)),
+        shippers: schedules.map((schedule) => toSummary(schedule, gate.ctx.user.id, accounts.get(schedule.userId))),
         joined: schedules.some((schedule) => schedule.userId === gate.ctx.user.id),
       },
     }
@@ -84,6 +89,43 @@ export async function getCoastalJoinState(): Promise<Ok<{ profile: CoastalShippe
     return { ok: true, data: { profile: schedule ? toProfile(schedule) : null } }
   } catch (error) {
     return loggedFailure(error, "Could not load the shipper profile.")
+  }
+}
+
+export async function enrollCoastalShipperAccount(input: {
+  email: string
+  displayName: string
+  phone?: string
+  notes?: string
+}): Promise<Ok<{ profile: CoastalShipperProfileView }> | Err> {
+  const gate = await requireAdmin()
+  if (!gate.ok) return { ok: false, error: "Admin only" }
+
+  try {
+    const db = createServiceRoleClient()
+    const email = input.email.trim()
+    const { data, error } = await db
+      .from("profiles")
+      .select("id")
+      .ilike("email", email)
+      .limit(2)
+    if (error) throw error
+    const rows = Array.isArray(data) ? data : []
+    const profile = rows[0] as { id?: string } | undefined
+    if (!profile?.id || rows.length !== 1) {
+      return { ok: false, error: rows.length > 1 ? "More than one account uses that email." : "No Reswell account uses that email." }
+    }
+    await upsertCoastalShipperProfile(db, {
+      userId: profile.id,
+      displayName: input.displayName,
+      phone: blankToNull(input.phone),
+      notes: blankToNull(input.notes),
+    })
+    const schedule = await getCoastalShipperByUserId(db, profile.id)
+    if (!schedule) return { ok: false, error: "Could not sign up that account." }
+    return { ok: true, data: { profile: toProfile(schedule) } }
+  } catch (error) {
+    return loggedFailure(error, "Could not sign up that account.")
   }
 }
 
@@ -125,16 +167,38 @@ export async function getCoastalSchedulePage(): Promise<
   }
 }
 
-export async function setCoastalScheduleEnabled(enabled: boolean): Promise<Ok<{ scheduleEnabled: boolean }> | Err> {
+export async function getCoastalShipperSchedulePage(
+  shipperId: string,
+): Promise<Ok<{ profile: CoastalShipperProfileView; stops: CoastalStopView[] }> | Err> {
   const gate = await requireAdmin()
   if (!gate.ok) return { ok: false, error: "Admin only" }
 
   try {
     const db = createServiceRoleClient()
-    const schedule = await getCoastalShipperByUserId(db, gate.ctx.user.id)
-    if (!schedule) return { ok: false, error: "Join as a shipper before editing a schedule." }
-    await setCoastalShipperScheduleEnabled(db, schedule.id, enabled)
-    return { ok: true, data: { scheduleEnabled: enabled } }
+    const [stops, schedule] = await Promise.all([
+      listCoastalStops(db),
+      getCoastalShipperSchedule(db, { shipperId }),
+    ])
+    if (!schedule) return { ok: false, error: "That account is not signed up as a shipper." }
+    return { ok: true, data: { stops, profile: toProfile(schedule) } }
+  } catch (error) {
+    return loggedFailure(error, "Could not load the weekly schedule.")
+  }
+}
+
+export async function setCoastalScheduleEnabled(input: {
+  shipperId: string
+  enabled: boolean
+}): Promise<Ok<{ scheduleEnabled: boolean }> | Err> {
+  const gate = await requireAdmin()
+  if (!gate.ok) return { ok: false, error: "Admin only" }
+
+  try {
+    const db = createServiceRoleClient()
+    const schedule = await getCoastalShipperSchedule(db, { shipperId: input.shipperId })
+    if (!schedule) return { ok: false, error: "That account is not signed up as a shipper." }
+    await setCoastalShipperScheduleEnabled(db, schedule.id, input.enabled)
+    return { ok: true, data: { scheduleEnabled: input.enabled } }
   } catch (error) {
     return loggedFailure(error, "Could not update the schedule.")
   }
@@ -151,9 +215,9 @@ export async function saveCoastalRun(input: CoastalRunInput): Promise<Ok<{ saved
     const db = createServiceRoleClient()
     const [stops, schedule] = await Promise.all([
       listCoastalStops(db),
-      getCoastalShipperByUserId(db, gate.ctx.user.id),
+      getCoastalShipperSchedule(db, { shipperId: input.shipperId }),
     ])
-    if (!schedule) return { ok: false, error: "Join as a shipper before adding a run." }
+    if (!schedule) return { ok: false, error: "That account is not signed up as a shipper." }
     const known = new Set(stops.map((stop) => stop.id))
     if (stopIds.some((id) => !known.has(id))) return { ok: false, error: "One of those stops is not on the corridor." }
 
@@ -171,15 +235,18 @@ export async function saveCoastalRun(input: CoastalRunInput): Promise<Ok<{ saved
   }
 }
 
-export async function removeCoastalRun(runId: string): Promise<Ok<{ deleted: true }> | Err> {
+export async function removeCoastalRun(input: {
+  shipperId: string
+  runId: string
+}): Promise<Ok<{ deleted: true }> | Err> {
   const gate = await requireAdmin()
   if (!gate.ok) return { ok: false, error: "Admin only" }
 
   try {
     const db = createServiceRoleClient()
-    const schedule = await getCoastalShipperByUserId(db, gate.ctx.user.id)
-    if (!schedule) return { ok: false, error: "Join as a shipper before editing a schedule." }
-    await deleteCoastalShipperRun(db, schedule.id, runId)
+    const schedule = await getCoastalShipperSchedule(db, { shipperId: input.shipperId })
+    if (!schedule) return { ok: false, error: "That account is not signed up as a shipper." }
+    await deleteCoastalShipperRun(db, schedule.id, input.runId)
     return { ok: true, data: { deleted: true } }
   } catch (error) {
     return loggedFailure(error, "Could not remove that run.")
@@ -349,15 +416,39 @@ function toProfile(schedule: CoastalShipperScheduleRecord): CoastalShipperProfil
   }
 }
 
-function toSummary(schedule: CoastalShipperScheduleRecord, userId: string): CoastalShipperSummary {
+function toSummary(
+  schedule: CoastalShipperScheduleRecord,
+  userId: string,
+  account: { email: string | null; isShop: boolean } | undefined,
+): CoastalShipperSummary {
   return {
     id: schedule.id,
     displayName: schedule.displayName,
+    email: account?.email ?? null,
+    isShop: account?.isShop === true,
     scheduleEnabled: schedule.scheduleEnabled,
     runCount: schedule.runs.length,
     enabledRunCount: schedule.runs.filter((run) => run.enabled).length,
     isYou: schedule.userId === userId,
   }
+}
+
+async function loadShipperAccounts(
+  db: ReturnType<typeof createServiceRoleClient>,
+  userIds: string[],
+): Promise<Map<string, { email: string | null; isShop: boolean }>> {
+  const accounts = new Map<string, { email: string | null; isShop: boolean }>()
+  if (userIds.length === 0) return accounts
+  const { data, error } = await db.from("profiles").select("id, email, is_shop").in("id", userIds)
+  if (error || !data) return accounts
+  for (const row of data as { id?: string; email?: string | null; is_shop?: boolean | null }[]) {
+    if (!row.id) continue
+    accounts.set(row.id, {
+      email: typeof row.email === "string" ? row.email : null,
+      isShop: row.is_shop === true,
+    })
+  }
+  return accounts
 }
 
 function blankToNull(value: string | null | undefined): string | null {

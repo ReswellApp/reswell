@@ -1,6 +1,7 @@
-import Link from "next/link"
 import { notFound } from "next/navigation"
 
+import { CoastalEnrollForm } from "@/components/features/admin/coastal-delivery/coastal-enroll-form"
+import { CoastalShipperRoster } from "@/components/features/admin/coastal-delivery/coastal-shipper-roster"
 import { getCoastalOverview } from "@/lib/services/coastalDelivery"
 import { privatePageMetadata } from "@/lib/site-metadata"
 
@@ -8,7 +9,7 @@ export const dynamic = "force-dynamic"
 
 export const metadata = privatePageMetadata({
   title: "Coastal delivery — Admin — Reswell",
-  description: "Admin draft of coastal surfboard hand delivery.",
+  description: "Signed-up coastal shippers and who is live this week.",
   path: "/admin/coastal-delivery",
 })
 
@@ -16,68 +17,52 @@ export default async function CoastalDeliveryOverviewPage() {
   const loaded = await getCoastalOverview()
   if (!loaded.ok) notFound()
 
-  const { stops, shippers, joined } = loaded.data
-  const schedulesOff = shippers.length > 0 && shippers.every((shipper) => !shipper.scheduleEnabled)
+  const { stops, shippers } = loaded.data
+  const liveCount = shippers.filter((shipper) => shipper.scheduleEnabled && shipper.enabledRunCount > 0).length
   const south = stops[0]?.name
   const north = stops[stops.length - 1]?.name
 
   return (
-    <div className="space-y-6">
-      <section className="space-y-2">
-        <h2 className="text-lg font-medium">Overview</h2>
-        {stops.length === 0 ? (
-          <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-            No coastal stops yet. Apply the coastal delivery migration, then reload.
-          </p>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            {stops.length} stops, south to north: {south} through {north}.
-          </p>
-        )}
-        {shippers.length === 0 ? (
-          <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-            No shippers yet. Join to preview the driver profile.
-          </p>
-        ) : null}
-        {schedulesOff ? (
-          <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-            Every weekly schedule is off. Matching will not offer these shippers until a schedule is turned on.
-          </p>
-        ) : null}
+    <div className="space-y-8">
+      <section className="grid gap-3 sm:grid-cols-3">
+        <Stat label="Signed up" value={String(shippers.length)} hint="One shipper row per account" />
+        <Stat label="Live" value={String(liveCount)} hint="Schedule on, with a run on" />
+        <Stat
+          label="Stops"
+          value={String(stops.length)}
+          hint={south && north ? `${south} through ${north}` : "Apply the coastal migration, then reload"}
+        />
       </section>
-      <section className="space-y-3">
-        <h2 className="text-lg font-medium">Shippers</h2>
-        {shippers.length === 0 ? (
-          <Link href="/admin/coastal-delivery/join" className="text-sm underline">
-            Join as a shipper
-          </Link>
-        ) : (
-          <ul className="divide-y rounded-lg border">
-            {shippers.map((shipper) => (
-              <li key={shipper.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
-                <span>
-                  {shipper.displayName}
-                  {shipper.isYou ? " (you)" : ""}
-                </span>
-                <span className="flex flex-wrap items-center gap-3">
-                  <span className="text-muted-foreground">
-                    {shipper.scheduleEnabled ? "Schedule on" : "Schedule off"} · {shipper.enabledRunCount}/
-                    {shipper.runCount} runs on
-                  </span>
-                  <Link href={`/coastal-delivery/${shipper.id}`} className="underline">
-                    Driver dashboard
-                  </Link>
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-        {joined ? (
-          <Link href="/admin/coastal-delivery/schedule" className="text-sm underline">
-            Edit your weekly schedule
-          </Link>
-        ) : null}
-      </section>
+
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
+        <section className="space-y-3">
+          <div>
+            <h2 className="text-lg font-medium">Accounts</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Only these accounts see Shipper on /dashboard. A shipper is live when the weekly schedule is on and at least one run is on.
+            </p>
+          </div>
+          <CoastalShipperRoster shippers={shippers} />
+        </section>
+
+        <section className="rounded-2xl border border-border/70 bg-card p-4 sm:p-5">
+          <h2 className="text-lg font-medium">Sign up an account</h2>
+          <p className="mt-1 mb-4 text-sm text-muted-foreground">
+            Shops and other drivers join as their existing Reswell account. This does not open public signup.
+          </p>
+          <CoastalEnrollForm />
+        </section>
+      </div>
+    </div>
+  )
+}
+
+function Stat({ label, value, hint }: { label: string; value: string; hint: string }) {
+  return (
+    <div className="rounded-2xl border border-border/70 bg-card px-4 py-3">
+      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="mt-1 text-2xl font-semibold tracking-tight text-foreground">{value}</p>
+      <p className="mt-1 text-sm text-muted-foreground">{hint}</p>
     </div>
   )
 }

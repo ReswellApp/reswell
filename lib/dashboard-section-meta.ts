@@ -25,6 +25,13 @@ const SECTION_META_BY_PREFIX: { prefix: string; meta: DashboardSectionMeta }[] =
     },
   },
   {
+    prefix: "/dashboard/shipper",
+    meta: {
+      sectionName: "Shipper",
+      description: "Your coastal runs, this week's jobs, and the schedule buyers can match.",
+    },
+  },
+  {
     prefix: "/dashboard/listings",
     meta: {
       sectionName: "My Listings",

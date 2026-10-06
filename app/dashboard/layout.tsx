@@ -22,9 +22,19 @@ export default async function DashboardLayout({
 
   const isShop = profile?.is_shop || false
   const shopHref = isShop ? sellerProfileHref(profile) : null
+  const { data: shipperRow, error: shipperError } = await supabase
+    .from("coastal_shippers")
+    .select("id")
+    .eq("user_id", user.id)
+    .maybeSingle()
+  const isShipper = !shipperError && typeof shipperRow?.id === "string"
 
   return (
-    <DashboardAppFrame sellerProfileHref={shopHref} isAdmin={profile?.is_admin === true}>
+    <DashboardAppFrame
+      sellerProfileHref={shopHref}
+      isAdmin={profile?.is_admin === true}
+      isShipper={isShipper}
+    >
       {children}
     </DashboardAppFrame>
   )

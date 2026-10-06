@@ -10,7 +10,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import {
-  DASHBOARD_NAV_LINKS,
+  dashboardNavLinks,
   type DashboardNavLink,
 } from "@/lib/dashboard-nav-links"
 import { SupportUnreadTicker } from "@/components/features/support/support-unread-ticker"
@@ -52,6 +52,7 @@ function resolveActiveLink(
 export interface DashboardMobileNavProps {
   sellerProfileHref: string | null
   isAdmin?: boolean
+  isShipper?: boolean
   /** Pango-style bordered bar for account pages (e.g. /messages). */
   variant?: "default" | "account"
 }
@@ -59,6 +60,7 @@ export interface DashboardMobileNavProps {
 export function DashboardMobileNav({
   sellerProfileHref,
   isAdmin = false,
+  isShipper = false,
   variant = "default",
 }: DashboardMobileNavProps) {
   const isAccountVariant = variant === "account"
@@ -76,13 +78,13 @@ export function DashboardMobileNav({
       : null
 
     return [
-      ...DASHBOARD_NAV_LINKS.filter((link) => !link.adminOnly || isAdmin).map((l) => ({
+      ...dashboardNavLinks({ isAdmin, isShipper }).map((l) => ({
         ...l,
         key: l.href,
       })),
       ...(sellerLink ? [sellerLink] : []),
     ]
-  }, [isAdmin, sellerProfileHref])
+  }, [isAdmin, isShipper, sellerProfileHref])
 
   const activeLink = useMemo(() => resolveActiveLink(pathname, links), [links, pathname])
 

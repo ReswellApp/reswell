@@ -12,9 +12,10 @@ import { Switch } from "@/components/ui/switch"
 interface CoastalRunRowProps {
   run: CoastalRunView
   stops: CoastalStopView[]
+  shipperId: string
 }
 
-export function CoastalRunRow({ run, stops }: CoastalRunRowProps) {
+export function CoastalRunRow({ run, stops, shipperId }: CoastalRunRowProps) {
   const router = useRouter()
   const [stopIds, setStopIds] = useState(run.stopIds)
   const [error, setError] = useState<string | null>(null)
@@ -24,6 +25,7 @@ export function CoastalRunRow({ run, stops }: CoastalRunRowProps) {
   function persist(next: { enabled: boolean; stopIds: string[] }) {
     startTransition(async () => {
       const result = await saveCoastalRunAction({
+        shipperId,
         runId: run.id,
         dayOfWeek: run.dayOfWeek,
         direction: run.direction,
@@ -41,7 +43,7 @@ export function CoastalRunRow({ run, stops }: CoastalRunRowProps) {
 
   function onDelete() {
     startTransition(async () => {
-      const result = await deleteCoastalRunAction({ runId: run.id })
+      const result = await deleteCoastalRunAction({ shipperId, runId: run.id })
       if ("error" in result && result.error) {
         setError(result.error)
         return

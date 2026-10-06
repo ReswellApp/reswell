@@ -22,6 +22,7 @@ function flattenZod(error: {
 }
 
 function revalidateShipper(shipperId: string) {
+  revalidatePath("/dashboard/shipper")
   revalidatePath("/coastal-delivery")
   revalidatePath(`/coastal-delivery/${shipperId}`)
   revalidatePath("/admin/coastal-delivery")

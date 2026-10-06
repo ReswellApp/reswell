@@ -12,6 +12,7 @@ import {
   MessageSquare,
   LifeBuoy,
   Scale,
+  Truck,
 } from "lucide-react"
 
 export interface DashboardNavChildLink {
@@ -31,6 +32,19 @@ export const DASHBOARD_MESSAGES_NAV: DashboardNavLink = {
   name: "Messages",
   href: "/messages",
   icon: MessageSquare,
+}
+
+export const DASHBOARD_SHIPPER_NAV: DashboardNavLink = {
+  name: "Shipper",
+  href: "/dashboard/shipper",
+  icon: Truck,
+}
+
+export function dashboardNavLinks(input: { isAdmin: boolean; isShipper: boolean }): DashboardNavLink[] {
+  const links = DASHBOARD_NAV_LINKS.filter((link) => !link.adminOnly || input.isAdmin)
+  if (!input.isShipper) return links
+  const [overview, ...rest] = links
+  return overview ? [overview, DASHBOARD_SHIPPER_NAV, ...rest] : [DASHBOARD_SHIPPER_NAV]
 }
 
 export const DASHBOARD_NAV_LINKS: DashboardNavLink[] = [

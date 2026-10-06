@@ -12,16 +12,17 @@ import { Switch } from "@/components/ui/switch"
 interface CoastalScheduleEditorProps {
   profile: CoastalShipperProfileView
   stops: CoastalStopView[]
+  shipperId: string
 }
 
-export function CoastalScheduleEditor({ profile, stops }: CoastalScheduleEditorProps) {
+export function CoastalScheduleEditor({ profile, stops, shipperId }: CoastalScheduleEditorProps) {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
   function onSchedule(enabled: boolean) {
     startTransition(async () => {
-      const result = await setCoastalScheduleEnabledAction({ enabled })
+      const result = await setCoastalScheduleEnabledAction({ shipperId, enabled })
       if ("error" in result && result.error) {
         setError(result.error)
         return
@@ -39,7 +40,7 @@ export function CoastalScheduleEditor({ profile, stops }: CoastalScheduleEditorP
           <p className="text-sm text-muted-foreground">
             {profile.scheduleEnabled
               ? "On. Enabled runs can match buyers."
-              : "Off. Buyers will not match you until this is on."}
+              : "Off. Buyers will not match this account until this is on."}
           </p>
         </div>
         <label className="flex items-center gap-2 text-sm">
@@ -54,7 +55,7 @@ export function CoastalScheduleEditor({ profile, stops }: CoastalScheduleEditorP
       </div>
       {!profile.scheduleEnabled ? (
         <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-          Schedule is off. Runs stay saved, and matching treats you as unavailable.
+          Schedule is off. Runs stay saved, and matching treats this account as unavailable.
         </p>
       ) : null}
       {profile.runs.length === 0 ? (
@@ -64,12 +65,12 @@ export function CoastalScheduleEditor({ profile, stops }: CoastalScheduleEditorP
       ) : (
         <div className="space-y-3">
           {profile.runs.map((run) => (
-            <CoastalRunRow key={run.id} run={run} stops={stops} />
+            <CoastalRunRow key={run.id} run={run} stops={stops} shipperId={shipperId} />
           ))}
         </div>
       )}
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
-      <CoastalRunForm key={profile.runs.length} stops={stops} />
+      <CoastalRunForm key={profile.runs.length} stops={stops} shipperId={shipperId} />
     </div>
   )
 }

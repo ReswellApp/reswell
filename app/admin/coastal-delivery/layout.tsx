@@ -24,8 +24,8 @@ export default async function CoastalDeliveryLayout({ children }: { children: Re
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">Coastal delivery</h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          Admin draft of white-glove surfboard hand delivery from Capitola through Bodega Bay. Buyers
-          cannot see this. There is no charge and checkout is unchanged.
+          Signed-up accounts get a shipper home at /dashboard/shipper. Everyone else does not see it.
+          Buyers still cannot choose this draft, and checkout is unchanged.
         </p>
       </div>
       <CoastalDeliverySubnav />

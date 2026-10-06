@@ -68,6 +68,8 @@ export type CoastalShipperProfileView = {
 export type CoastalShipperSummary = {
   id: string
   displayName: string
+  email: string | null
+  isShop: boolean
   scheduleEnabled: boolean
   runCount: number
   enabledRunCount: number
