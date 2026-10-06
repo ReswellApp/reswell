@@ -12,6 +12,8 @@ export type SimpleSellPhotoSlot = {
   errorMessage?: string
   /** True = apply 180° after automatic landscape→portrait (toggle). */
   userRotate180?: boolean
+  /** True once `previewUrl` is a small derivative safe to show during upload. */
+  localPreviewReady?: boolean
 }
 
 export function canRotateSimpleSellPhoto(slot: SimpleSellPhotoSlot): boolean {

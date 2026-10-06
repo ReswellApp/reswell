@@ -20,6 +20,10 @@ import {
 } from "@dnd-kit/core"
 import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable"
 import { prepareDecodableListingPhoto } from "@/lib/client-image-decode"
+import {
+  revealListingPhotoPreviewUrl,
+  swapListingPhotoPreviewToPreparedThumb,
+} from "@/lib/sell-flow/reveal-listing-photo-preview"
 import { resolveClientSessionForMutation } from "@/lib/auth/resolve-client-session-for-mutation"
 import { assertListingOriginalSize } from "@/lib/listing-image-pipeline"
 import { uploadListingImagePairToSupabase } from "@/lib/listing-image-storage"
@@ -140,21 +144,48 @@ export function useListingPhotoUpload({
         if (!prepared) {
           const src = slot.sourceFile
           if (!src) return
+          let paintedInstant = Boolean(slot.localPreviewReady)
+          if (!paintedInstant) {
+            const instantUrl = await revealListingPhotoPreviewUrl(src, {
+              rotate180: Boolean(slot.userRotate180),
+            })
+            if (!listingPhotoPrepareSeqInSync(clientId, prepareSeq)) {
+              if (instantUrl) URL.revokeObjectURL(instantUrl)
+              return
+            }
+            if (instantUrl) {
+              paintedInstant = true
+              const previous =
+                imagesRef.current.find((s) => s.clientId === clientId)?.previewUrl ?? previewUrl
+              if (previous.startsWith("blob:") && previous !== instantUrl) {
+                URL.revokeObjectURL(previous)
+              }
+              sellListingThumbLoadedSrcByClientId.delete(clientId)
+              setImages((prev) =>
+                prev.map((s) =>
+                  s.clientId === clientId
+                    ? { ...s, previewUrl: instantUrl, localPreviewReady: true }
+                    : s,
+                ),
+              )
+            }
+          }
+
           prepared = await prepareDecodableListingPhoto(src, {
             rotate180: Boolean(slot.userRotate180),
           })
           if (!listingPhotoPrepareSeqInSync(clientId, prepareSeq)) return
-          let nextPreviewUrl = previewUrl
-          if (previewUrl.startsWith("blob:")) {
-            URL.revokeObjectURL(previewUrl)
-          }
-          nextPreviewUrl = URL.createObjectURL(prepared.thumb)
+          const swapped = swapListingPhotoPreviewToPreparedThumb(
+            paintedInstant,
+            previewUrl,
+            prepared.thumb,
+          )
           setImages((prev) =>
             prev.map((s) =>
               s.clientId === clientId
                 ? {
                     ...s,
-                    previewUrl: nextPreviewUrl,
+                    ...(swapped ?? {}),
                     optimizePhase: "done",
                     uploadPhase: s.uploadPhase === "error" ? "idle" : s.uploadPhase,
                     prepared,
@@ -371,6 +402,7 @@ export function useListingPhotoUpload({
               progressFull: 0,
               progressThumb: 0,
               previewUrl: URL.createObjectURL(src),
+              localPreviewReady: false,
               errorMessage: undefined,
             }
             return nextSlot
@@ -426,6 +458,7 @@ export function useListingPhotoUpload({
                 progressFull: 0,
                 progressThumb: 0,
                 previewUrl: URL.createObjectURL(file),
+                localPreviewReady: false,
                 sourceFile: file,
                 dropSourceFileAfterUpload: true,
                 errorMessage: undefined,
