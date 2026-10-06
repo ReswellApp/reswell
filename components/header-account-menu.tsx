@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { DASHBOARD_NAV_LINKS } from "@/lib/dashboard-nav-links"
+import { dashboardNavLinks } from "@/lib/dashboard-nav-links"
 import { forceReleaseBodyScrollLock } from "@/hooks/use-body-scroll-lock"
 import { NavUnreadCountBadge } from "@/components/nav-unread-count-badge"
 
@@ -27,6 +27,7 @@ export type HeaderAccountMenuProps = {
   walletBalance: number | null
   unreadSupport: number
   isAdmin: boolean
+  isShipper: boolean
   onSignOut: () => void
 }
 
@@ -40,6 +41,7 @@ function HeaderAccountMenuInner({
   walletBalance,
   unreadSupport,
   isAdmin,
+  isShipper,
   onSignOut,
 }: HeaderAccountMenuProps) {
   const onOpenChange = useCallback((open: boolean) => {
@@ -84,7 +86,7 @@ function HeaderAccountMenuInner({
           </div>
         </div>
         <DropdownMenuSeparator />
-        {DASHBOARD_NAV_LINKS.filter((link) => !link.adminOnly || isAdmin).map((link) => {
+        {dashboardNavLinks({ isAdmin, isShipper }).map((link) => {
           const Icon = link.icon
           if (link.href === "/dashboard/earnings") {
             return (

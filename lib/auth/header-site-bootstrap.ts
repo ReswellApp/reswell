@@ -1,4 +1,5 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js"
+import { coastalShipperMembership } from "@/lib/services/coastalShipperAccess"
 import { reconcileWalletAggregates, walletAggregateStrings } from "@/lib/wallet-reconcile"
 import {
   persistWalletAggregatesIfNeeded,
@@ -20,6 +21,8 @@ export type HeaderSiteBootstrap = {
   unreadMessages: number
   unreadSupport: number
   walletBalance: number | null
+  /** True when this user has a coastal_shippers row. Schedule and runs do not count. */
+  isShipper: boolean
 }
 
 /**
@@ -30,7 +33,7 @@ export async function fetchHeaderSiteBootstrap(
   supabase: SupabaseClient,
   user: User,
 ): Promise<HeaderSiteBootstrap> {
-  const [profileRes, walletRes] = await Promise.all([
+  const [profileRes, walletRes, shipperRes] = await Promise.all([
     supabase
       .from("profiles")
       .select(
@@ -43,6 +46,7 @@ export async function fetchHeaderSiteBootstrap(
       .select("id, balance, pending_balance, lifetime_earned, lifetime_spent, lifetime_cashed_out")
       .eq("user_id", user.id)
       .single(),
+    supabase.from("coastal_shippers").select("id").eq("user_id", user.id).maybeSingle(),
   ])
 
   const profile = profileRes.data ?? null
@@ -65,5 +69,9 @@ export async function fetchHeaderSiteBootstrap(
     unreadMessages: Number(profile?.unread_message_count ?? 0),
     unreadSupport: Number(profile?.unread_support_count ?? 0),
     walletBalance: wallet ? reconcileWalletAggregates(wallet).totalBalance : 0,
+    isShipper: coastalShipperMembership({
+      rowId: shipperRes.data?.id,
+      queryFailed: Boolean(shipperRes.error),
+    }),
   }
 }

@@ -31,7 +31,7 @@ export default async function ShipperAdminPage() {
     <div className="space-y-6">
       <AdminPageHeader
         title="Shipper"
-        description="Grant Shipper to a Reswell account. They see it on their dashboard. Buyers still do not."
+        description="Accounts that can drive Shipper. Grant stays in the dialog. Buyers still do not see it."
         breadcrumbs={[{ label: "Admin", href: "/admin/home" }, { label: "Shipper" }]}
         actions={
           <>

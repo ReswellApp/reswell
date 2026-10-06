@@ -7,6 +7,7 @@ import { sellerProfileHref } from "@/lib/seller-slug"
 import { Button } from "@/components/ui/button"
 import { DashboardSidebarNav } from "@/components/features/dashboard/dashboard-sidebar-nav"
 import { MessagesAccountShellClient } from "@/components/features/messages/messages-account-shell-client"
+import { coastalShipperMembership } from "@/lib/services/coastalShipperAccess"
 
 export async function MessagesAccountShell({ children }: { children: React.ReactNode }) {
   const { supabase, user } = await getCachedDashboardSession()
@@ -27,7 +28,7 @@ export async function MessagesAccountShell({ children }: { children: React.React
     .select("id")
     .eq("user_id", user.id)
     .maybeSingle()
-  const isShipper = !shipperError && typeof shipperRow?.id === "string"
+  const isShipper = coastalShipperMembership({ rowId: shipperRow?.id, queryFailed: Boolean(shipperError) })
 
   return (
     <MessagesAccountShellClient

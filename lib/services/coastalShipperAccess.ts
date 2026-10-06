@@ -9,6 +9,25 @@ export function coastalJobVisibleToShipper(input: {
   return input.matchedRunId != null && input.runIds.includes(input.matchedRunId)
 }
 
+/** Profile email wins. Auth login email is the fallback so a grant still writes coastal_shippers.user_id. */
+export function resolveCoastalShipperGrantUserId(input: {
+  profileIds: string[]
+  authUserId: string | null
+}): { userId: string } | { error: string } {
+  if (input.profileIds.length > 1) return { error: "More than one account uses that email." }
+  const userId = input.profileIds[0] ?? input.authUserId
+  if (!userId) return { error: "No Reswell account uses that email." }
+  return { userId }
+}
+
+/**
+ * A granted shipper is a `coastal_shippers` row for this user.
+ * Schedule on, admin, and having a run do not grant the link.
+ */
+export function coastalShipperMembership(input: { rowId: unknown; queryFailed: boolean }): boolean {
+  return !input.queryFailed && typeof input.rowId === "string" && input.rowId.length > 0
+}
+
 /** Who may open a shipper run dashboard. Anonymous and everyone else get not found. */
 export function authorizeCoastalShipperView(input: {
   userId: string | null

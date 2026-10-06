@@ -10,7 +10,13 @@ import {
   snapshotFromOrderShipping,
   type CoastalSaleOrder,
 } from "./coastalAddressSnapshot"
-import { authorizeCoastalShipperView, coastalJobVisibleToShipper } from "./coastalShipperAccess"
+import {
+  authorizeCoastalShipperView,
+  coastalJobVisibleToShipper,
+  coastalShipperMembership,
+  resolveCoastalShipperGrantUserId,
+} from "./coastalShipperAccess"
+import { shipperAccountLine, shipperWeekStatusLine } from "./coastalShipperWeek"
 import { buildCoastalRunSheet, type CoastalJobDraft } from "./coastalShipperRunSheet"
 import type { CoastalAddressSnapshot, CoastalRunView, CoastalStopView } from "@/lib/types/coastal-delivery"
 
@@ -22,6 +28,45 @@ const stops: CoastalStopView[] = [
   { id: "san-francisco", slug: "san-francisco", name: "San Francisco", sortOrder: 50 },
   { id: "bodega-bay", slug: "bodega-bay", name: "Bodega Bay", sortOrder: 70 },
 ]
+
+describe("coastalShipperMembership", () => {
+  it("is a coastal_shippers row, not schedule, admin, or a run", () => {
+    assert.equal(coastalShipperMembership({ rowId: "shipper-1", queryFailed: false }), true)
+    assert.equal(coastalShipperMembership({ rowId: "", queryFailed: false }), false)
+    assert.equal(coastalShipperMembership({ rowId: null, queryFailed: false }), false)
+    assert.equal(coastalShipperMembership({ rowId: "shipper-1", queryFailed: true }), false)
+  })
+})
+
+describe("resolveCoastalShipperGrantUserId", () => {
+  it("uses the profile id, then the auth login id", () => {
+    assert.deepEqual(resolveCoastalShipperGrantUserId({ profileIds: ["profile-1"], authUserId: "auth-1" }), {
+      userId: "profile-1",
+    })
+    assert.deepEqual(resolveCoastalShipperGrantUserId({ profileIds: [], authUserId: "auth-1" }), {
+      userId: "auth-1",
+    })
+    assert.deepEqual(resolveCoastalShipperGrantUserId({ profileIds: [], authUserId: null }), {
+      error: "No Reswell account uses that email.",
+    })
+    assert.deepEqual(
+      resolveCoastalShipperGrantUserId({ profileIds: ["a", "b"], authUserId: "auth-1" }),
+      { error: "More than one account uses that email." },
+    )
+  })
+})
+
+describe("shipperWeekStatusLine", () => {
+  it("says the service state once", () => {
+    assert.equal(shipperWeekStatusLine({ scheduleEnabled: false, runs: [] }), "Shipper is off.")
+    assert.equal(shipperWeekStatusLine({ scheduleEnabled: true, runs: [] }), "Shipper is on.")
+    assert.equal(
+      shipperWeekStatusLine({ scheduleEnabled: true, runs: [{ enabled: true }] }),
+      "Shipper is on. One run can take boards.",
+    )
+    assert.equal(shipperAccountLine({ email: "haydensbsb@gmail.com", isShop: true }), "haydensbsb@gmail.com · Shop")
+  })
+})
 
 describe("authorizeCoastalShipperView", () => {
   it("lets the shipper and an admin through, and hides everyone else", () => {

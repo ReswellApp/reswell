@@ -3,6 +3,7 @@ import { describe, it } from "node:test"
 
 import type { CoastalStopView } from "@/lib/types/coastal-delivery.ts"
 import {
+  coastalContinuousStopIds,
   matchCoastalShippers,
   nextRunDateIso,
   pacificWeekDateIso,
@@ -77,6 +78,17 @@ describe("suggestPickupStopId", () => {
   it("returns null when the seller city is off the corridor", () => {
     assert.equal(suggestPickupStopId("Los Angeles", corridorStops), null)
     assert.equal(suggestPickupStopId(null, corridorStops), null)
+  })
+})
+
+describe("coastalContinuousStopIds", () => {
+  it("keeps every stop between the two ends, south to north", () => {
+    assert.deepEqual(coastalContinuousStopIds(corridorStops, "capitola", "san-francisco"), [
+      "capitola",
+      "santa-cruz",
+      "san-francisco",
+    ])
+    assert.equal(coastalContinuousStopIds(corridorStops, "capitola", "capitola"), null)
   })
 })
 
