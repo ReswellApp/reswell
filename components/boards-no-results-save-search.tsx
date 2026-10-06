@@ -76,13 +76,25 @@ export function BoardsNoResultsSaveSearch({
   const openSignIn = useSignInGate()
   const { toast } = useToast()
   const [pending, setPending] = useState(false)
-  const [savedSearchId, setSavedSearchId] = useState<string | null>(initialSavedSearchId)
+  const criteriaKey = JSON.stringify(criteria)
+  const [savedSearchState, setSavedSearchState] = useState<{
+    criteriaKey: string
+    id: string | null
+  }>({
+    criteriaKey,
+    id: initialSavedSearchId,
+  })
   const [hovering, setHovering] = useState(false)
+  const savedSearchId =
+    savedSearchState.criteriaKey === criteriaKey
+      ? savedSearchState.id
+      : initialSavedSearchId
   const saved = Boolean(savedSearchId)
 
   useEffect(() => {
-    setSavedSearchId(initialSavedSearchId)
-  }, [initialSavedSearchId])
+    setSavedSearchState({ criteriaKey, id: initialSavedSearchId })
+    setHovering(false)
+  }, [criteriaKey, initialSavedSearchId])
 
   useEffect(() => {
     if (!isLoggedIn || initialSavedSearchId) return
@@ -90,12 +102,12 @@ export function BoardsNoResultsSaveSearch({
     void listBoardSavedSearchesAction().then((res) => {
       if (cancelled || "error" in res) return
       const id = matchingSavedSearchId(res.data, criteria)
-      if (id) setSavedSearchId(id)
+      if (id) setSavedSearchState({ criteriaKey, id })
     })
     return () => {
       cancelled = true
     }
-  }, [criteria, initialSavedSearchId, isLoggedIn])
+  }, [criteria, criteriaKey, initialSavedSearchId, isLoggedIn])
   const canSave = boardSavedCriteriaCanSaveFromEmptyState(criteria)
   const section = criteria.anySection
     ? "any"
@@ -139,7 +151,7 @@ export function BoardsNoResultsSaveSearch({
       return
     }
 
-    setSavedSearchId(res.id)
+    setSavedSearchState({ criteriaKey, id: res.id })
     setHovering(false)
     toast({
       title: "Search saved",
@@ -171,7 +183,7 @@ export function BoardsNoResultsSaveSearch({
       return
     }
 
-    setSavedSearchId(null)
+    setSavedSearchState({ criteriaKey, id: null })
     toast({
       title: "Search unsaved",
       description: "We won't email you about new matches for this search.",
