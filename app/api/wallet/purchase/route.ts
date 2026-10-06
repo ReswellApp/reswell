@@ -27,6 +27,8 @@ import { isBlockedOwnListingPurchase } from "@/lib/cart-eligibility"
 import { readAdAttributionFromCookies } from "@/lib/ads/read-request-attribution"
 import { insertOrderAdAttribution } from "@/lib/db/orderAdAttribution"
 import { listingSoldViaCheckoutUpdate } from "@/lib/listing-sold-state"
+import { dbRecordShopifyListingSale } from "@/lib/db/shopifyCatalog"
+import { isShopifyManagedListing } from "@/lib/shopify/listing"
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -65,7 +67,7 @@ export async function POST(request: NextRequest) {
 
   const { data: listing, error: listingError } = await supabase
     .from("listings")
-    .select("id, user_id, title, price, section, slug, shipping_available, local_pickup, shipping_price, status")
+    .select("id, user_id, title, price, section, slug, shipping_available, local_pickup, shipping_price, status, stock_quantity, inventory_source")
     .eq("id", listing_id)
     .eq("status", "active")
     .eq("hidden_from_site", false)
@@ -74,6 +76,12 @@ export async function POST(request: NextRequest) {
 
   if (listingError || !listing) {
     return NextResponse.json({ error: "Listing not found or not available" }, { status: 404 })
+  }
+  if (
+    isShopifyManagedListing(listing) &&
+    Math.max(0, Math.floor(Number(listing.stock_quantity) || 0)) < 1
+  ) {
+    return NextResponse.json({ error: "This Shopify item is out of stock" }, { status: 409 })
   }
 
   if (isBlockedOwnListingPurchase(listing, user.id)) {
@@ -264,15 +272,37 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Could not record purchase" }, { status: 500 })
   }
 
-  // Mark sold only — never mutate listings.price (offer discounts stay private).
-  const { error: listingErr } = await serviceSupabase
-    .from("listings")
-    .update(listingSoldViaCheckoutUpdate())
-    .eq("id", listing.id)
+  if (isShopifyManagedListing(listing)) {
+    try {
+      const recorded = await dbRecordShopifyListingSale(serviceSupabase, {
+        orderId: purchase.id,
+        listingId: listing.id,
+        quantity: 1,
+      })
+      if (!recorded) {
+        return NextResponse.json(
+          { error: "Could not queue Shopify inventory update" },
+          { status: 409 },
+        )
+      }
+    } catch (error) {
+      console.error("[wallet/purchase] Shopify sale outbox:", error)
+      return NextResponse.json(
+        { error: "Could not queue Shopify inventory update" },
+        { status: 500 },
+      )
+    }
+  } else {
+    // Mark sold only — never mutate listings.price (offer discounts stay private).
+    const { error: listingErr } = await serviceSupabase
+      .from("listings")
+      .update(listingSoldViaCheckoutUpdate())
+      .eq("id", listing.id)
 
-  if (listingErr) {
-    console.error("[wallet/purchase] listing update:", listingErr)
-    return NextResponse.json({ error: "Could not mark listing sold" }, { status: 500 })
+    if (listingErr) {
+      console.error("[wallet/purchase] listing update:", listingErr)
+      return NextResponse.json({ error: "Could not mark listing sold" }, { status: 500 })
+    }
   }
 
   revalidateBoardsBrowseCatalog()

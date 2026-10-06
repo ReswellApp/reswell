@@ -7,6 +7,7 @@ interface AdminUserDetailAccessProps {
   profile: AdminUserDetailProfileRow
   onToggleVerified: () => void
   onToggleReswellSeller: () => void
+  onToggleShopifyAccess: () => void
   onToggleEmployee: () => void
   onToggleAdmin: () => void
 }
@@ -47,6 +48,7 @@ export function AdminUserDetailAccess({
   profile,
   onToggleVerified,
   onToggleReswellSeller,
+  onToggleShopifyAccess,
   onToggleEmployee,
   onToggleAdmin,
 }: AdminUserDetailAccessProps) {
@@ -79,6 +81,17 @@ export function AdminUserDetailAccess({
           actionLabel={profile.is_reswell_seller ? 'Remove' : 'Grant'}
           destructive={profile.is_reswell_seller}
           onClick={onToggleReswellSeller}
+        />
+        <AccessRow
+          title="Shopify integration"
+          description={
+            profile.shopify_connect_enabled
+              ? 'Approved to connect a Shopify store and publish selected inventory.'
+              : 'Allow this merchant to use the Shopify inventory integration.'
+          }
+          actionLabel={profile.shopify_connect_enabled ? 'Remove' : 'Approve'}
+          destructive={profile.shopify_connect_enabled}
+          onClick={onToggleShopifyAccess}
         />
         <AccessRow
           title="Employee"

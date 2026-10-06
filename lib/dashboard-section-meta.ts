@@ -11,6 +11,13 @@ const OVERVIEW_META: DashboardSectionMeta = {
 
 const SECTION_META_BY_PREFIX: { prefix: string; meta: DashboardSectionMeta }[] = [
   {
+    prefix: "/dashboard/integrations/shopify",
+    meta: {
+      sectionName: "Shopify",
+      description: "Connect your store and choose which products appear on Reswell.",
+    },
+  },
+  {
     prefix: "/dashboard/balance-sheet",
     meta: {
       sectionName: "Balance Sheet",

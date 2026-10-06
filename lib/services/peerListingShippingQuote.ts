@@ -24,6 +24,7 @@ export const PEER_SURFBOARD_CHECKOUT_LISTING_SELECT = `
   title,
   price,
   section,
+  inventory_source,
   shipping_available,
   local_pickup,
   shipping_price,
@@ -58,6 +59,7 @@ export const PEER_SURFBOARD_CHECKOUT_LISTING_SELECT = `
 export type PeerListingForShippingQuote = ListingPackedParcelSource &
   ReswellRateableListing & {
     section?: string | null
+    inventory_source?: string | null
     board_shipping_cost_mode?: string | null
     shipping_price?: string | number | null
   }
@@ -70,6 +72,7 @@ export type PeerSurfboardCheckoutListingRow = PeerListingForShippingQuote & {
   price: string | number
   title: string | null
   section: string | null
+  inventory_source: string | null
   status: string | null
   local_pickup: boolean | null
   shipping_available: boolean | null

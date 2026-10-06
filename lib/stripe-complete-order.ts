@@ -30,6 +30,8 @@ import { listingSoldViaCheckoutUpdate } from "@/lib/listing-sold-state"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { formatPeerItemCountPhrase } from "@/lib/peer-listing-item-nouns"
 import { isReswellShopListing } from "@/lib/reswell-shop"
+import { dbRecordShopifyListingSale } from "@/lib/db/shopifyCatalog"
+import { isShopifyManagedListing } from "@/lib/shopify/listing"
 import {
   parseListingQuantitiesMeta,
   resolveMixedCheckoutSellerId,
@@ -527,6 +529,26 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       status: 409,
     }
   }
+  if (
+    listingsOrdered.some(
+      (listing) =>
+        isShopifyManagedListing(listing) &&
+        Math.max(
+          0,
+          Math.floor(
+            Number(
+              (listing as { stock_quantity?: number | null }).stock_quantity,
+            ) || 0,
+          ),
+        ) < 1,
+    )
+  ) {
+    return {
+      ok: false,
+      error: "This Shopify item is out of stock. Contact support if you were charged.",
+      status: 409,
+    }
+  }
 
   const fulfillmentMeta = pi.metadata.fulfillment
   let impliedFulfillment: "pickup" | "shipping"
@@ -1018,7 +1040,11 @@ export async function completeMarketplaceOrderFromPaymentIntent(
 
   // Peer listings: mark sold. Shop inventory: atomically decrement stock (sold when 0).
   const peerListingIds = listingsOrdered
-    .filter((l) => isPeerListingSection(l.section))
+    .filter(
+      (listing) =>
+        isPeerListingSection(listing.section) &&
+        !isShopifyManagedListing(listing),
+    )
     .map((l) => l.id)
   if (peerListingIds.length > 0) {
     const { error: listingErr } = await serviceSupabase
@@ -1045,6 +1071,31 @@ export async function completeMarketplaceOrderFromPaymentIntent(
         ok: false,
         error: "Could not update shop inventory. Contact support if you were charged.",
         status: 409,
+      }
+    }
+  }
+
+  for (const line of bundle.lines) {
+    const listing = listingsOrdered.find((row) => row.id === line.listingId)
+    if (!listing || !isShopifyManagedListing(listing)) continue
+    try {
+      const recorded = await dbRecordShopifyListingSale(serviceSupabase, {
+        orderId: purchase.id,
+        listingId: line.listingId,
+        quantity: line.quantity,
+      })
+      if (!recorded) {
+        console.error("[stripe-complete-order] missing Shopify sale mapping", {
+          orderId: purchase.id,
+          listingId: line.listingId,
+        })
+      }
+    } catch (error) {
+      console.error("[stripe-complete-order] Shopify sale outbox:", error)
+      return {
+        ok: false,
+        error: "Could not queue Shopify inventory update. Contact support if you were charged.",
+        status: 500,
       }
     }
   }

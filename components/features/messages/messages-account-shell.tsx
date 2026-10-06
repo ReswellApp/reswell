@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { DashboardSidebarNav } from "@/components/features/dashboard/dashboard-sidebar-nav"
 import { MessagesAccountShellClient } from "@/components/features/messages/messages-account-shell-client"
 import { coastalShipperMembership } from "@/lib/services/coastalShipperAccess"
+import { isShopifyIntegrationEnabled } from "@/lib/shopify/config"
 
 export async function MessagesAccountShell({ children }: { children: React.ReactNode }) {
   const { supabase, user } = await getCachedDashboardSession()
@@ -18,7 +19,7 @@ export async function MessagesAccountShell({ children }: { children: React.React
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("is_shop, is_admin, seller_slug")
+    .select("is_shop, is_admin, seller_slug, shopify_connect_enabled")
     .eq("id", user.id)
     .single()
 
@@ -29,10 +30,13 @@ export async function MessagesAccountShell({ children }: { children: React.React
     .eq("user_id", user.id)
     .maybeSingle()
   const isShipper = coastalShipperMembership({ rowId: shipperRow?.id, queryFailed: Boolean(shipperError) })
+  const hasShopifyAccess =
+    isShopifyIntegrationEnabled() && profile?.shopify_connect_enabled === true
 
   return (
     <MessagesAccountShellClient
       sellerProfileHref={shopHref}
+      hasShopifyAccess={hasShopifyAccess}
       sidebar={
         <aside className="hidden shrink-0 lg:block lg:w-64 xl:w-72">
           <div className="sticky top-24 space-y-5">
@@ -48,6 +52,7 @@ export async function MessagesAccountShell({ children }: { children: React.React
                 sellerProfileHref={shopHref}
                 isAdmin={profile?.is_admin === true}
                 isShipper={isShipper}
+                hasShopifyAccess={hasShopifyAccess}
               />
             </Suspense>
           </div>

@@ -9,12 +9,14 @@ import { cn } from "@/lib/utils"
 
 interface MessagesAccountShellClientProps {
   sellerProfileHref: string | null
+  hasShopifyAccess: boolean
   sidebar: ReactNode
   children: ReactNode
 }
 
 export function MessagesAccountShellClient({
   sellerProfileHref,
+  hasShopifyAccess,
   sidebar,
   children,
 }: MessagesAccountShellClientProps) {
@@ -30,7 +32,10 @@ export function MessagesAccountShellClient({
         threadDetail && "max-lg:max-w-none max-lg:px-0 max-lg:py-0",
       )}
     >
-      <MessagesAccountMobileChrome sellerProfileHref={sellerProfileHref} />
+      <MessagesAccountMobileChrome
+        sellerProfileHref={sellerProfileHref}
+        hasShopifyAccess={hasShopifyAccess}
+      />
 
       <div
         className={cn(

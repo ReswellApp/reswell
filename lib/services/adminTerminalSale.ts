@@ -23,6 +23,8 @@ import { trackKlaviyoBuyerOrderConfirmed } from "@/lib/klaviyo/track-buyer-order
 import type { KlaviyoBuyerOrderLineItem } from "@/lib/klaviyo/track-buyer-order-confirmed"
 import { notifySellerOrderCheckoutKlaviyo } from "@/lib/services/notifySellerOrderCheckoutKlaviyo"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
+import { dbRecordShopifyListingSale } from "@/lib/db/shopifyCatalog"
+import { isShopifyManagedListing } from "@/lib/shopify/listing"
 import { trackMetaPurchaseServerEvent } from "@/lib/meta/track-purchase-server-event"
 import { syncAdminTerminalGuestToCrm } from "@/lib/services/crmAdminTerminalGuest"
 import {
@@ -774,14 +776,29 @@ export async function completeAdminTerminalCashSale(
 
   const listingTitle = String(listing.title ?? "")
 
-  const { error: listingErr } = await service
-    .from("listings")
-    .update(listingSoldViaCheckoutUpdate())
-    .eq("id", listing.id)
+  if (isShopifyManagedListing(listing)) {
+    const recorded = await dbRecordShopifyListingSale(service, {
+      orderId: purchase.id,
+      listingId: listing.id,
+      quantity: 1,
+    })
+    if (!recorded) {
+      return {
+        ok: false,
+        error: "Could not queue Shopify inventory update",
+        status: 409,
+      }
+    }
+  } else {
+    const { error: listingErr } = await service
+      .from("listings")
+      .update(listingSoldViaCheckoutUpdate())
+      .eq("id", listing.id)
 
-  if (listingErr) {
-    console.error("[adminTerminalSale] cash listing update:", listingErr)
-    return { ok: false, error: "Could not mark listing sold", status: 500 }
+    if (listingErr) {
+      console.error("[adminTerminalSale] cash listing update:", listingErr)
+      return { ok: false, error: "Could not mark listing sold", status: 500 }
+    }
   }
 
   await safeRevalidateAfterMarketplaceOrderCommit(service, {

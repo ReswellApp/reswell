@@ -24,6 +24,7 @@ import { isBlockedOwnListingPurchase } from "@/lib/cart-eligibility"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { formatPeerItemCountPhrase } from "@/lib/peer-listing-item-nouns"
 import { isReswellShopListing } from "@/lib/reswell-shop"
+import { isShopifyManagedListing } from "@/lib/shopify/listing"
 import {
   encodeListingQuantitiesMeta,
   resolveMixedCheckoutSellerId,
@@ -181,7 +182,10 @@ export async function POST(request: NextRequest) {
     if (!isPeerListingSection(listing.section) && !isReswellShopListing(listing.section)) {
       return NextResponse.json({ error: "This listing cannot be purchased here" }, { status: 400 })
     }
-    if (isReswellShopListing(listing.section)) {
+    if (
+      isReswellShopListing(listing.section) ||
+      isShopifyManagedListing(listing)
+    ) {
       const stock = Math.max(
         0,
         Math.floor(Number((listing as { stock_quantity?: number }).stock_quantity) || 0),
@@ -289,7 +293,12 @@ export async function POST(request: NextRequest) {
   }
 
   for (const listing of listingsOrdered) {
-    if (!isReswellShopListing(listing.section)) continue
+    if (
+      !isReswellShopListing(listing.section) &&
+      !isShopifyManagedListing(listing)
+    ) {
+      continue
+    }
     const stock = Math.max(
       0,
       Math.floor(Number((listing as { stock_quantity?: number }).stock_quantity) || 0),
