@@ -16,7 +16,12 @@ export function CoastalJobCard({ job, selected, pending, onSelect, onStatus }: C
   const next = nextStatus(job.status)
   const undo = undoStatus(job.status)
   return (
-    <article className={cn("space-y-3 rounded-lg border p-3", selected && "ring-2 ring-foreground")}>
+    <article
+      className={cn(
+        "space-y-3 rounded-2xl border border-border/70 bg-card p-4",
+        selected && "border-primary ring-2 ring-primary/30",
+      )}
+    >
       <button type="button" onClick={onSelect} className="min-h-12 w-full text-left">
         <p className="text-base font-medium text-foreground">{job.listingTitle}</p>
         <p className="text-sm text-muted-foreground">{job.saleLabel}</p>

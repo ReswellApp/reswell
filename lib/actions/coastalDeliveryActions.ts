@@ -37,13 +37,10 @@ function finish(result: { ok: true } | { ok: false; error: string }, paths: stri
 
 function schedulePaths(shipperId: string) {
   return [
-    "/admin/coastal-delivery",
-    "/admin/coastal-delivery/schedule",
-    `/admin/coastal-delivery/schedule/${shipperId}`,
-    "/admin/coastal-delivery/preview",
+    "/admin/shipper",
+    `/admin/shipper/${shipperId}`,
+    "/admin/shipper/preview",
     "/dashboard/shipper",
-    "/coastal-delivery",
-    `/coastal-delivery/${shipperId}`,
   ]
 }
 
@@ -52,7 +49,7 @@ export async function enrollCoastalShipperAccountAction(raw: unknown) {
   if (!parsed.success) return { error: flattenZod(parsed.error) }
   const result = await enrollCoastalShipperAccount(parsed.data)
   if (!result.ok) return { error: result.error }
-  revalidatePath("/admin/coastal-delivery")
+  revalidatePath("/admin/shipper")
   revalidatePath("/dashboard")
   revalidatePath("/dashboard/shipper")
   revalidatePath("/messages")
@@ -64,9 +61,7 @@ export async function joinCoastalShipperAction(raw: unknown) {
   if (!parsed.success) return { error: flattenZod(parsed.error) }
   const result = await joinCoastalShipper(parsed.data)
   if (!result.ok) return { error: result.error }
-  revalidatePath("/admin/coastal-delivery")
-  revalidatePath("/admin/coastal-delivery/join")
-  revalidatePath("/admin/coastal-delivery/schedule")
+  revalidatePath("/admin/shipper")
   revalidatePath("/dashboard")
   revalidatePath("/dashboard/shipper")
   revalidatePath("/messages")
@@ -104,6 +99,6 @@ export async function saveCoastalDeliveryChoiceAction(raw: unknown) {
   if (!parsed.success) return { error: flattenZod(parsed.error) }
   const result = await saveCoastalDeliveryChoice(parsed.data)
   if (!result.ok) return { error: result.error }
-  revalidatePath("/admin/coastal-delivery/preview")
+  revalidatePath("/admin/shipper/preview")
   return { success: true as const, saved: result.data.saved }
 }

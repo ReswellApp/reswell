@@ -32,8 +32,8 @@ export function AdminGuard({
         pathname === '/admin/search-curation' ||
         pathname === '/admin/shipping' ||
         pathname === '/admin/dropoff-locations' ||
-        pathname === '/admin/coastal-delivery' ||
-        pathname.startsWith('/admin/coastal-delivery/') ||
+        pathname === '/admin/shipper' ||
+        pathname.startsWith('/admin/shipper/') ||
         pathname === '/admin/tools' ||
         pathname === '/admin/site-assets' ||
         pathname === '/admin/llm-usage' ||
