@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react"
 import { LocationInputSuggest } from "@/components/location-input-suggest"
+import { normalizeCountryCodeForShipping } from "@/lib/shipping/normalize-country-code"
 import {
   GooglePlacesAddressInput,
   type GoogleFullPlaceResolved,
@@ -113,7 +114,7 @@ export function CheckoutAddressLine1Field({
               city: s.city_locality?.trim() ?? "",
               state: s.state_province?.trim() ?? "",
               postal_code: s.postal_code?.trim() ?? "",
-              country: (s.country_code?.trim() || "US").slice(0, 2).toUpperCase(),
+              country: normalizeCountryCodeForShipping(s.country_code?.trim() || "US"),
             })
           } catch {
             onAddressResolved({
