@@ -2,6 +2,7 @@ import { redirect } from "next/navigation"
 import { getCachedDashboardSession } from "@/lib/dashboard-session"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { DashboardAppFrame } from "@/components/features/dashboard/dashboard-app-frame"
+import { coastalShipperMembership } from "@/lib/services/coastalShipperAccess"
 
 export default async function DashboardLayout({
   children,
@@ -27,7 +28,7 @@ export default async function DashboardLayout({
     .select("id")
     .eq("user_id", user.id)
     .maybeSingle()
-  const isShipper = !shipperError && typeof shipperRow?.id === "string"
+  const isShipper = coastalShipperMembership({ rowId: shipperRow?.id, queryFailed: Boolean(shipperError) })
 
   return (
     <DashboardAppFrame

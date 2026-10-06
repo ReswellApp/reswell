@@ -1,16 +1,17 @@
-import Link from "next/link"
 import { notFound } from "next/navigation"
 
 import { AdminPageHeader } from "@/components/features/admin/admin-page-header"
-import { CoastalScheduleEditor } from "@/components/features/admin/coastal-delivery/coastal-schedule-editor"
+import { ShipperServiceSwitch } from "@/components/features/admin/shipper/shipper-service-switch"
+import { ShipperWeekBoard } from "@/components/features/admin/shipper/shipper-week-board"
 import { getCoastalShipperSchedulePage } from "@/lib/services/coastalDelivery"
+import { shipperAccountLine, shipperWeekStatusLine } from "@/lib/services/coastalShipperWeek"
 import { privatePageMetadata } from "@/lib/site-metadata"
 
 export const dynamic = "force-dynamic"
 
 export const metadata = privatePageMetadata({
   title: "Shipper runs — Admin — Reswell",
-  description: "Runs for a granted Shipper account.",
+  description: "Weekly runs for a granted Shipper account.",
   path: "/admin/shipper",
 })
 
@@ -27,27 +28,22 @@ export default async function ShipperRunsPage({
   const loaded = await getCoastalShipperSchedulePage(shipperId)
   if (!loaded.ok) notFound()
 
+  const { profile, stops } = loaded.data
+
   return (
     <div className="space-y-6">
       <AdminPageHeader
-        title={loaded.data.profile.displayName}
-        description="These runs belong to this account. They turn Shipper on from their dashboard."
+        title={profile.displayName}
+        description={shipperAccountLine(profile)}
         breadcrumbs={[
           { label: "Admin", href: "/admin/home" },
           { label: "Shipper", href: "/admin/shipper" },
-          { label: loaded.data.profile.displayName },
+          { label: profile.displayName },
         ]}
-        actions={
-          <Link href="/admin/shipper" className="text-sm underline">
-            All accounts
-          </Link>
-        }
+        actions={<ShipperServiceSwitch shipperId={profile.id} scheduleEnabled={profile.scheduleEnabled} />}
       />
-      <CoastalScheduleEditor
-        profile={loaded.data.profile}
-        stops={loaded.data.stops}
-        shipperId={loaded.data.profile.id}
-      />
+      <p className="text-sm text-muted-foreground">{shipperWeekStatusLine(profile)}</p>
+      <ShipperWeekBoard profile={profile} stops={stops} shipperId={profile.id} />
     </div>
   )
 }

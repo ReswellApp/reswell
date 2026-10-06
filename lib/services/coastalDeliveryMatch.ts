@@ -32,6 +32,22 @@ export function coastalDirectionLabel(direction: CoastalDirection): string {
   return direction === "northbound" ? "Northbound" : "Southbound"
 }
 
+/** Inclusive coast range. Fewer than two stops returns null. */
+export function coastalContinuousStopIds(
+  stops: readonly CoastalMatchStop[],
+  fromId: string,
+  toId: string,
+): string[] | null {
+  const ordered = [...stops].sort((a, b) => a.sortOrder - b.sortOrder)
+  const from = ordered.findIndex((stop) => stop.id === fromId)
+  const to = ordered.findIndex((stop) => stop.id === toId)
+  if (from < 0 || to < 0) return null
+  const start = Math.min(from, to)
+  const end = Math.max(from, to)
+  const range = ordered.slice(start, end + 1).map((stop) => stop.id)
+  return range.length >= 2 ? range : null
+}
+
 export function formatCoastalRunWhen(dayOfWeek: number, nextRunOn: string): string {
   const weekday = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][dayOfWeek] ?? "Run"
   const [yearRaw, monthRaw, dayRaw] = nextRunOn.split("-")

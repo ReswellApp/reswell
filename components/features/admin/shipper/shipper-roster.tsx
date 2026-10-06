@@ -1,7 +1,6 @@
 import Link from "next/link"
 
 import { AdminStatusPill } from "@/components/features/admin/admin-status-pill"
-import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import type { CoastalShipperSummary } from "@/lib/types/coastal-delivery"
 
@@ -24,22 +23,15 @@ export function ShipperRoster({ shippers }: ShipperRosterProps) {
       <ul className="space-y-3 md:hidden">
         {shippers.map((shipper) => (
           <li key={shipper.id} className="rounded-2xl border border-border/70 bg-card p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="truncate font-medium text-foreground">{shipper.displayName}</p>
-                <p className="truncate text-sm text-muted-foreground">{shipper.email ?? "No email"}</p>
-              </div>
-              <ShipperStatus shipper={shipper} />
-            </div>
-            <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-              {shipper.isShop ? <Badge variant="outline">Shop</Badge> : null}
-              {shipper.isYou ? <Badge variant="secondary">You</Badge> : null}
-              <span>
-                {shipper.enabledRunCount}/{shipper.runCount} runs on
-              </span>
+            <p className="truncate font-medium text-foreground">{shipper.displayName}</p>
+            <p className="truncate text-sm text-muted-foreground">{shipper.email ?? "No email"}</p>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <ShopMark isShop={shipper.isShop} />
+              <ServiceMark enabled={shipper.scheduleEnabled} />
+              <RunMark hasRun={shipper.runCount > 0} />
             </div>
             <Link href={`/admin/shipper/${shipper.id}`} className="mt-3 inline-flex text-sm font-medium underline">
-              Open runs
+              Open
             </Link>
           </li>
         ))}
@@ -49,32 +41,31 @@ export function ShipperRoster({ shippers }: ShipperRosterProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Account</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Runs</TableHead>
+              <TableHead>Name</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Shop</TableHead>
+              <TableHead>Service</TableHead>
+              <TableHead>Run</TableHead>
               <TableHead className="text-right"> </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {shippers.map((shipper) => (
               <TableRow key={shipper.id}>
+                <TableCell className="font-medium text-foreground">{shipper.displayName}</TableCell>
+                <TableCell className="text-muted-foreground">{shipper.email ?? "No email"}</TableCell>
                 <TableCell>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-medium text-foreground">{shipper.displayName}</span>
-                    {shipper.isShop ? <Badge variant="outline">Shop</Badge> : null}
-                    {shipper.isYou ? <Badge variant="secondary">You</Badge> : null}
-                  </div>
-                  <p className="text-sm text-muted-foreground">{shipper.email ?? "No email on this account"}</p>
+                  <ShopMark isShop={shipper.isShop} />
                 </TableCell>
                 <TableCell>
-                  <ShipperStatus shipper={shipper} />
+                  <ServiceMark enabled={shipper.scheduleEnabled} />
                 </TableCell>
-                <TableCell className="tabular-nums text-muted-foreground">
-                  {shipper.enabledRunCount}/{shipper.runCount} on
+                <TableCell>
+                  <RunMark hasRun={shipper.runCount > 0} />
                 </TableCell>
                 <TableCell className="text-right">
                   <Link href={`/admin/shipper/${shipper.id}`} className="text-sm font-medium underline">
-                    Open runs
+                    Open
                   </Link>
                 </TableCell>
               </TableRow>
@@ -86,12 +77,14 @@ export function ShipperRoster({ shippers }: ShipperRosterProps) {
   )
 }
 
-function ShipperStatus({ shipper }: { shipper: CoastalShipperSummary }) {
-  if (shipper.scheduleEnabled && shipper.enabledRunCount > 0) {
-    return <AdminStatusPill label="Service on" tone="green" />
-  }
-  if (shipper.scheduleEnabled) {
-    return <AdminStatusPill label="No runs on" tone="amber" />
-  }
-  return <AdminStatusPill label="Service off" tone="slate" />
+function ShopMark({ isShop }: { isShop: boolean }) {
+  return isShop ? <AdminStatusPill label="Shop" tone="blue" /> : <span className="text-sm text-muted-foreground">—</span>
+}
+
+function ServiceMark({ enabled }: { enabled: boolean }) {
+  return <AdminStatusPill label={enabled ? "On" : "Off"} tone={enabled ? "green" : "slate"} />
+}
+
+function RunMark({ hasRun }: { hasRun: boolean }) {
+  return <AdminStatusPill label={hasRun ? "Has a run" : "No run"} tone={hasRun ? "green" : "slate"} />
 }

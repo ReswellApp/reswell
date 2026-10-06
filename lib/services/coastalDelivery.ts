@@ -32,6 +32,8 @@ import type {
   CoastalShipperJoinInput,
 } from "@/lib/validations/coastal-delivery"
 import { matchCoastalShippers, suggestPickupStopId, type CoastalMatchShipper } from "@/lib/services/coastalDeliveryMatch"
+import { resolveCoastalShipperGrantUserId } from "@/lib/services/coastalShipperAccess"
+import { findUserIdByEmail } from "@/lib/services/resolveUserIdByEmail"
 
 export type CoastalOverviewData = {
   stops: CoastalStopView[]
@@ -110,18 +112,19 @@ export async function enrollCoastalShipperAccount(input: {
       .ilike("email", email)
       .limit(2)
     if (error) throw error
-    const rows = Array.isArray(data) ? data : []
-    const profile = rows[0] as { id?: string } | undefined
-    if (!profile?.id || rows.length !== 1) {
-      return { ok: false, error: rows.length > 1 ? "More than one account uses that email." : "No Reswell account uses that email." }
-    }
+    const profileIds = (Array.isArray(data) ? data : [])
+      .map((row) => (row as { id?: unknown }).id)
+      .filter((id): id is string => typeof id === "string" && id.length > 0)
+    const authUserId = profileIds.length === 0 ? await findUserIdByEmail(db, email) : null
+    const resolved = resolveCoastalShipperGrantUserId({ profileIds, authUserId })
+    if ("error" in resolved) return { ok: false, error: resolved.error }
     await upsertCoastalShipperProfile(db, {
-      userId: profile.id,
+      userId: resolved.userId,
       displayName: input.displayName,
       phone: blankToNull(input.phone),
       notes: blankToNull(input.notes),
     })
-    const schedule = await getCoastalShipperByUserId(db, profile.id)
+    const schedule = await getCoastalShipperByUserId(db, resolved.userId)
     if (!schedule) return { ok: false, error: "Could not sign up that account." }
     return { ok: true, data: { profile: toProfile(schedule) } }
   } catch (error) {
@@ -180,7 +183,8 @@ export async function getCoastalShipperSchedulePage(
       getCoastalShipperSchedule(db, { shipperId }),
     ])
     if (!schedule) return { ok: false, error: "That account is not signed up as a shipper." }
-    return { ok: true, data: { stops, profile: toProfile(schedule) } }
+    const account = (await loadShipperAccounts(db, [schedule.userId])).get(schedule.userId)
+    return { ok: true, data: { stops, profile: toProfile(schedule, account) } }
   } catch (error) {
     return loggedFailure(error, "Could not load the weekly schedule.")
   }
@@ -405,10 +409,15 @@ function toMatchShipper(schedule: CoastalShipperScheduleRecord): CoastalMatchShi
   }
 }
 
-function toProfile(schedule: CoastalShipperScheduleRecord): CoastalShipperProfileView {
+function toProfile(
+  schedule: CoastalShipperScheduleRecord,
+  account?: { email: string | null; isShop: boolean },
+): CoastalShipperProfileView {
   return {
     id: schedule.id,
     displayName: schedule.displayName,
+    email: account?.email ?? null,
+    isShop: account?.isShop === true,
     phone: schedule.phone,
     notes: schedule.notes,
     scheduleEnabled: schedule.scheduleEnabled,

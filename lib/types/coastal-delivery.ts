@@ -59,6 +59,8 @@ export type CoastalRunView = {
 export type CoastalShipperProfileView = {
   id: string
   displayName: string
+  email: string | null
+  isShop: boolean
   phone: string
   notes: string
   scheduleEnabled: boolean

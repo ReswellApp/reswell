@@ -78,6 +78,7 @@ import type { SiteChromeAuthPayload } from "@/lib/auth/get-site-chrome-auth"
 import { CartHeaderLink } from "@/components/cart-header-link"
 import { authLandingHref } from "@/lib/auth/auth-landing-href"
 import { HeaderAccountMenu } from "@/components/header-account-menu"
+import { coastalShipperMembership } from "@/lib/services/coastalShipperAccess"
 import { SiteWordmarkLink } from "@/components/site-wordmark-link"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
@@ -180,6 +181,7 @@ type HeaderDerivedNavState = {
   profileAvatarUrl: string | null
   profileDisplayName: string | null
   isAdmin: boolean
+  isShipper: boolean
   unreadMessages: number
   unreadSupport: number
   walletBalance: number | null
@@ -193,6 +195,7 @@ function deriveHeaderNavState(payload: SiteChromeAuthPayload): HeaderDerivedNavS
       profileAvatarUrl: null,
       profileDisplayName: null,
       isAdmin: false,
+      isShipper: false,
       unreadMessages: 0,
       unreadSupport: 0,
       walletBalance: null,
@@ -206,6 +209,7 @@ function deriveHeaderNavState(payload: SiteChromeAuthPayload): HeaderDerivedNavS
       profileAvatarUrl: resolveHeaderAvatarUrl(payload.user, null),
       profileDisplayName: null,
       isAdmin: false,
+      isShipper: b?.isShipper === true,
       unreadMessages: 0,
       unreadSupport: 0,
       walletBalance: null,
@@ -218,6 +222,7 @@ function deriveHeaderNavState(payload: SiteChromeAuthPayload): HeaderDerivedNavS
     profileAvatarUrl: resolveHeaderAvatarUrl(payload.user, prof),
     profileDisplayName: prof.display_name,
     isAdmin: prof.is_admin === true,
+    isShipper: b.isShipper === true,
     unreadMessages: b.unreadMessages,
     unreadSupport: Number(b.unreadSupport ?? 0) || 0,
     walletBalance: b.walletBalance,
@@ -483,6 +488,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
   const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(initNav.profileAvatarUrl)
   const [profileDisplayName, setProfileDisplayName] = useState<string | null>(initNav.profileDisplayName)
   const [isAdmin, setIsAdmin] = useState(initNav.isAdmin)
+  const [isShipper, setIsShipper] = useState(initNav.isShipper)
   const [unreadMessages, setUnreadMessages] = useState(initNav.unreadMessages)
   const [unreadSupport, setUnreadSupport] = useState(initNav.unreadSupport)
   const [walletBalance, setWalletBalance] = useState<number | null>(initNav.walletBalance)
@@ -571,6 +577,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       b?.profile?.avatar_url ?? "",
       b?.profile?.shop_logo_url ?? "",
       String(b?.profile?.is_admin ?? ""),
+      String(b?.isShipper ?? ""),
     ].join("|")
   }, [
     serverHeaderAuth.user?.id,
@@ -582,6 +589,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     serverHeaderAuth.bootstrap?.profile?.avatar_url,
     serverHeaderAuth.bootstrap?.profile?.shop_logo_url,
     serverHeaderAuth.bootstrap?.profile?.is_admin,
+    serverHeaderAuth.bootstrap?.isShipper,
   ])
 
   useLayoutEffect(() => {
@@ -619,6 +627,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       setProfileAvatarUrl((prev) => prev ?? d.profileAvatarUrl)
       setProfileDisplayName((prev) => prev ?? d.profileDisplayName)
       setIsAdmin((prev) => (d.isAdmin ? d.isAdmin : prev))
+      setIsShipper((prev) => (d.isShipper ? d.isShipper : prev))
       applyServerUnread(d.unreadMessages, "partial")
       applyServerUnreadSupport(d.unreadSupport, "partial")
       setWalletBalance((prev) => {
@@ -631,6 +640,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       setProfileAvatarUrl(d.profileAvatarUrl)
       setProfileDisplayName(d.profileDisplayName)
       setIsAdmin(d.isAdmin)
+      setIsShipper(d.isShipper)
       applyServerUnread(d.unreadMessages, "full")
       applyServerUnreadSupport(d.unreadSupport, "full")
       if (d.walletBalance !== null) {
@@ -685,6 +695,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         setProfileAvatarUrl(guest.profileAvatarUrl)
         setProfileDisplayName(guest.profileDisplayName)
         setIsAdmin(guest.isAdmin)
+        setIsShipper(guest.isShipper)
         setUnreadMessages(guest.unreadMessages)
         setUnreadSupport(guest.unreadSupport)
         clientWalletTotalRef.current = null
@@ -692,14 +703,23 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         return
       }
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select(
-          "is_admin, avatar_url, display_name, shop_logo_url, is_shop, unread_message_count, unread_support_count",
-        )
-        .eq("id", resolvedUser.id)
-        .single()
+      const [{ data: profile }, shipperRes] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select(
+            "is_admin, avatar_url, display_name, shop_logo_url, is_shop, unread_message_count, unread_support_count",
+          )
+          .eq("id", resolvedUser.id)
+          .single(),
+        supabase.from("coastal_shippers").select("id").eq("user_id", resolvedUser.id).maybeSingle(),
+      ])
       setIsAdmin(profile?.is_admin || false)
+      setIsShipper(
+        coastalShipperMembership({
+          rowId: shipperRes.data?.id,
+          queryFailed: Boolean(shipperRes.error),
+        }),
+      )
       setProfileAvatarUrl(resolveHeaderAvatarUrl(resolvedUser, profile))
       setProfileDisplayName(profile?.display_name || null)
       {
@@ -840,6 +860,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         setProfileAvatarUrl(guest.profileAvatarUrl)
         setProfileDisplayName(guest.profileDisplayName)
         setIsAdmin(guest.isAdmin)
+        setIsShipper(guest.isShipper)
         setUnreadMessages(guest.unreadMessages)
         setUnreadSupport(guest.unreadSupport)
         clientWalletTotalRef.current = null
@@ -1051,6 +1072,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         walletBalance={walletBalance}
         unreadSupport={unreadSupport}
         isAdmin={isAdmin}
+        isShipper={isShipper}
         onSignOut={handleSignOut}
       />
     ) : null
