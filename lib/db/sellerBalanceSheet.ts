@@ -6,8 +6,12 @@ import type {
   SellerBalanceSheetSummary,
 } from "@/lib/types/sellerBalanceSheet"
 import type { PeerListingSection } from "@/lib/peer-listing-sections"
+import { balanceSheetEntryOrder } from "@/lib/utils/balance-sheet-query"
 import type { UpdateListingAcquisitionInput } from "@/lib/validations/listing-acquisition"
-import type { RemoveBalanceSheetItemInput } from "@/lib/validations/seller-balance-sheet"
+import type {
+  BalanceSheetSort,
+  RemoveBalanceSheetItemInput,
+} from "@/lib/validations/seller-balance-sheet"
 
 interface BalanceSheetViewRow {
   entry_key: string
@@ -97,6 +101,7 @@ export async function getSellerBalanceSheetPage(
   page: number,
   pageSize: number,
   listingSection: PeerListingSection | null,
+  sort: BalanceSheetSort,
 ): Promise<SellerBalanceSheetPage> {
   const from = (page - 1) * pageSize
   const to = from + pageSize - 1
@@ -110,11 +115,17 @@ export async function getSellerBalanceSheetPage(
     entriesQuery = entriesQuery.eq("listing_section", listingSection)
   }
 
+  const orderedEntries = balanceSheetEntryOrder(sort).reduce(
+    (query, step) =>
+      query.order(step.column, {
+        ascending: step.ascending,
+        nullsFirst: step.nullsFirst,
+      }),
+    entriesQuery,
+  )
+
   const [entriesResult, summaryResult] = await Promise.all([
-    entriesQuery
-      .order("sold_at", { ascending: false })
-      .order("entry_key", { ascending: false })
-      .range(from, to),
+    orderedEntries.range(from, to),
     supabase.rpc("get_my_balance_sheet_summary_by_section", {
       p_listing_section: listingSection,
     }),
