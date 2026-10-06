@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { upsertUserListingBoardModelDataFromSellForm } from "@/lib/db/user-listing-board-model-data"
 import { omitClientAutoPriceDropSchedule } from "@/lib/listing-auto-price-drop"
+import { listingFieldsWithCoercedPrice } from "@/lib/listing-compare-at-price"
 import {
   isListingDimensionDisplaySchemaCacheError,
   withoutListingDimensionDisplayDbFields,
@@ -83,17 +84,19 @@ export async function persistPeerListingUpdate(input: {
     return { ok: false, status: 400, error: "Sold listings cannot be edited" }
   }
 
-  const listingFields = await overlayListingRowWithDropoffParcel(
-    input.db,
-    {
-      dropoffLocationId:
-        typeof input.listingData.dropoff_location_id === "string"
-          ? input.listingData.dropoff_location_id
-          : null,
-      boardLength: input.catalogSnapshot?.boardLength,
-      boardWidthInches: input.catalogSnapshot?.boardWidthInches,
-    },
-    omitClientAutoPriceDropSchedule(listingFieldsForPeerUpdate(input.listingData)),
+  const listingFields = listingFieldsWithCoercedPrice(
+    await overlayListingRowWithDropoffParcel(
+      input.db,
+      {
+        dropoffLocationId:
+          typeof input.listingData.dropoff_location_id === "string"
+            ? input.listingData.dropoff_location_id
+            : null,
+        boardLength: input.catalogSnapshot?.boardLength,
+        boardWidthInches: input.catalogSnapshot?.boardWidthInches,
+      },
+      omitClientAutoPriceDropSchedule(listingFieldsForPeerUpdate(input.listingData)),
+    ),
   )
   const publishingFromDraft =
     input.existingListing.status === "draft" && input.publishFromDraft
