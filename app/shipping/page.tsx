@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
 import { listSellerLabelPurchasableOrders } from "@/lib/services/sellerShippingLabelCheckout"
 import { capitalizeWords } from "@/lib/listing-labels"
+import { SURFBOARD_BOXES_HREF } from "@/lib/seller-resources"
 import { Truck } from "lucide-react"
 
 export async function generateMetadata() {
@@ -61,7 +62,11 @@ function ShippingGuideCards() {
           >
             A New Earth Project
           </a>
-          .
+          .{" "}
+          <Link href={SURFBOARD_BOXES_HREF} className="font-medium text-primary underline">
+            Surfboard boxes
+          </Link>{" "}
+          covers how to get a carton and which companies are worth ordering from.
         </p>
       </section>
 
