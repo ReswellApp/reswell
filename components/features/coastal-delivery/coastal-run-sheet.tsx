@@ -21,6 +21,8 @@ interface CoastalRunSheetProps {
   hasRuns: boolean
   jobCount: number
   onSelectJob: (jobId: string) => void
+  /** The shipper home draws its own service switch above the map. */
+  hideServiceToggle?: boolean
 }
 
 export function CoastalRunSheet({
@@ -32,6 +34,7 @@ export function CoastalRunSheet({
   hasRuns,
   jobCount,
   onSelectJob,
+  hideServiceToggle = false,
 }: CoastalRunSheetProps) {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
@@ -50,38 +53,42 @@ export function CoastalRunSheet({
   }
 
   return (
-    <div className="space-y-4 p-4">
-      <div className="flex items-center justify-between gap-3 rounded-lg border p-3">
-        <div>
-          <p className="text-sm font-medium text-foreground">Whole schedule</p>
-          <p className="text-sm text-muted-foreground">{scheduleEnabled ? "On for matching" : "Off. Buyers will not match you."}</p>
+    <div className="space-y-4">
+      {hideServiceToggle ? null : (
+        <div className="flex items-center justify-between gap-3 rounded-2xl border border-border/70 bg-card p-4">
+          <div>
+            <p className="text-sm font-medium text-foreground">Shipper</p>
+            <p className="text-sm text-muted-foreground">
+              {scheduleEnabled ? "On. You can be matched." : "Off. Turn Shipper on when you are driving."}
+            </p>
+          </div>
+          <div className="flex min-h-12 items-center">
+            <Switch
+              checked={scheduleEnabled}
+              disabled={pending}
+              onCheckedChange={(enabled) => run(() => setCoastalShipperScheduleAction({ shipperId, enabled }))}
+              aria-label="Turn Shipper on or off"
+            />
+          </div>
         </div>
-        <div className="flex min-h-12 items-center">
-          <Switch
-            checked={scheduleEnabled}
-            disabled={pending}
-            onCheckedChange={(enabled) => run(() => setCoastalShipperScheduleAction({ shipperId, enabled }))}
-            aria-label="Turn the whole weekly schedule on or off"
-          />
-        </div>
-      </div>
+      )}
       {!scheduleEnabled ? (
-        <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-          Schedule is off. Runs stay saved, and new boards will not match you until this is on.
+        <p className="rounded-2xl border border-dashed border-border/80 p-4 text-sm text-muted-foreground">
+          Shipper is off. Your runs stay saved. Turn it on when you are driving.
         </p>
       ) : null}
       {!hasRuns ? (
-        <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-          No weekly runs yet. Stops you cover will show on the map once a run is saved.
+        <p className="rounded-2xl border border-dashed border-border/80 p-4 text-sm text-muted-foreground">
+          No runs yet. They show on the map once an admin saves them.
         </p>
       ) : null}
       {hasRuns && jobCount === 0 ? (
-        <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-          No boards on your runs this week. {weekLabel}.
+        <p className="rounded-2xl border border-dashed border-border/80 p-4 text-sm text-muted-foreground">
+          No boards this week. {weekLabel}.
         </p>
       ) : null}
       {sections.map((section) => (
-        <section key={section.key} className="space-y-3">
+        <section key={section.key} className="space-y-3 rounded-2xl border border-border/70 bg-card p-4">
           <div className="flex items-start justify-between gap-3">
             <div>
               <h2 className="text-base font-medium text-foreground">{section.title}</h2>
@@ -103,7 +110,9 @@ export function CoastalRunSheet({
             ) : null}
           </div>
           {section.jobs.length === 0 ? (
-            <p className="rounded-lg border border-dashed px-3 py-3 text-sm text-muted-foreground">No boards on this run.</p>
+            <p className="rounded-2xl border border-dashed border-border/80 px-3 py-3 text-sm text-muted-foreground">
+              No boards on this run.
+            </p>
           ) : (
             section.jobs.map((job) => (
               <CoastalJobCard

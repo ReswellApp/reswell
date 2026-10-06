@@ -14,11 +14,17 @@ export const coastalShipperJoinSchema = z.object({
   notes: optionalText(500),
 })
 
+export const coastalShipperEnrollSchema = coastalShipperJoinSchema.extend({
+  email: z.string().trim().email("Enter the account email.").max(200),
+})
+
 export const coastalScheduleEnabledSchema = z.object({
+  shipperId: z.string().uuid(),
   enabled: z.boolean(),
 })
 
 export const coastalRunSchema = z.object({
+  shipperId: z.string().uuid(),
   runId: z.string().uuid().optional(),
   dayOfWeek: z.number().int().min(0).max(6),
   direction: z.enum(["northbound", "southbound"]),
@@ -27,6 +33,7 @@ export const coastalRunSchema = z.object({
 })
 
 export const coastalDeleteRunSchema = z.object({
+  shipperId: z.string().uuid(),
   runId: z.string().uuid(),
 })
 

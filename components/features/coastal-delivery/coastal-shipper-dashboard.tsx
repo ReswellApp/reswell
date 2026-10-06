@@ -47,8 +47,8 @@ export function CoastalShipperDashboard({ data }: CoastalShipperDashboardProps) 
           {data.previewing ? (
             <p className="text-sm text-muted-foreground">
               Admin preview.{" "}
-              <Link href="/admin/coastal-delivery" className="underline">
-                Back to coastal delivery
+              <Link href="/admin/shipper" className="underline">
+                Back to Shipper
               </Link>
             </p>
           ) : null}

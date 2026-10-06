@@ -17,11 +17,17 @@ export async function MessagesAccountShell({ children }: { children: React.React
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("is_shop, seller_slug")
+    .select("is_shop, is_admin, seller_slug")
     .eq("id", user.id)
     .single()
 
   const shopHref = profile?.is_shop ? sellerProfileHref(profile) : null
+  const { data: shipperRow, error: shipperError } = await supabase
+    .from("coastal_shippers")
+    .select("id")
+    .eq("user_id", user.id)
+    .maybeSingle()
+  const isShipper = !shipperError && typeof shipperRow?.id === "string"
 
   return (
     <MessagesAccountShellClient
@@ -37,7 +43,11 @@ export async function MessagesAccountShell({ children }: { children: React.React
             </Button>
 
             <Suspense fallback={null}>
-              <DashboardSidebarNav sellerProfileHref={shopHref} />
+              <DashboardSidebarNav
+                sellerProfileHref={shopHref}
+                isAdmin={profile?.is_admin === true}
+                isShipper={isShipper}
+              />
             </Suspense>
           </div>
         </aside>

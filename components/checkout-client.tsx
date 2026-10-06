@@ -773,7 +773,7 @@ export function CheckoutClient({
                             ? ` (${surfboardPreview.matchedWeekday} runs)`
                             : ""
                         }.`
-                      : " A live coastal shipper picks the board up and drives it to you."}
+                      : " A shipper picks the board up and drives it to you."}
                   </p>
                   <ul className="mt-2 space-y-1 text-xs text-foreground">
                     {(surfboardPreview?.available

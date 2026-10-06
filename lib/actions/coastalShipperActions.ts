@@ -22,11 +22,10 @@ function flattenZod(error: {
 }
 
 function revalidateShipper(shipperId: string) {
-  revalidatePath("/coastal-delivery")
-  revalidatePath(`/coastal-delivery/${shipperId}`)
-  revalidatePath("/admin/coastal-delivery")
-  revalidatePath("/admin/coastal-delivery/schedule")
-  revalidatePath("/admin/coastal-delivery/preview")
+  revalidatePath("/dashboard/shipper")
+  revalidatePath("/admin/shipper")
+  revalidatePath(`/admin/shipper/${shipperId}`)
+  revalidatePath("/admin/shipper/preview")
 }
 
 export async function setCoastalShipperScheduleAction(raw: unknown) {

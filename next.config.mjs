@@ -250,6 +250,19 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      { source: "/admin/coastal-delivery", destination: "/admin/shipper", permanent: false },
+      { source: "/admin/coastal-delivery/join", destination: "/admin/shipper", permanent: false },
+      { source: "/admin/coastal-delivery/schedule", destination: "/admin/shipper", permanent: false },
+      {
+        source: "/admin/coastal-delivery/schedule/:shipperId",
+        destination: "/admin/shipper/:shipperId",
+        permanent: false,
+      },
+      { source: "/admin/coastal-delivery/stops", destination: "/admin/shipper/stops", permanent: false },
+      { source: "/admin/coastal-delivery/preview", destination: "/admin/shipper/preview", permanent: false },
+      { source: "/admin/coastal-delivery/:path*", destination: "/admin/shipper", permanent: false },
+      { source: "/coastal-delivery", destination: "/dashboard/shipper", permanent: false },
+      { source: "/coastal-delivery/:shipperId", destination: "/admin/shipper/:shipperId", permanent: false },
       { source: "/dashboard/orders", destination: "/dashboard/purchases", permanent: true },
       { source: "/dashboard/orders/:id", destination: "/dashboard/purchases/:id", permanent: true },
       { source: "/dashboard/claims", destination: "/dashboard", permanent: true },

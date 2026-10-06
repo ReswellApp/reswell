@@ -13,9 +13,10 @@ const fieldClass =
 
 interface CoastalRunFormProps {
   stops: CoastalStopView[]
+  shipperId: string
 }
 
-export function CoastalRunForm({ stops }: CoastalRunFormProps) {
+export function CoastalRunForm({ stops, shipperId }: CoastalRunFormProps) {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
@@ -24,6 +25,7 @@ export function CoastalRunForm({ stops }: CoastalRunFormProps) {
     const stopIds = formData.getAll("stopIds").map(String)
     startTransition(async () => {
       const result = await saveCoastalRunAction({
+        shipperId,
         dayOfWeek: Number(formData.get("dayOfWeek")),
         direction: String(formData.get("direction")),
         enabled: true,

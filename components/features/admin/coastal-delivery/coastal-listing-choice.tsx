@@ -67,11 +67,11 @@ export function CoastalListingChoice({ listing, stops, choice, initialMatch }: C
         shipperId: shipperId || null,
       })
       if (!("saved" in result)) {
-        setError("error" in result && result.error ? result.error : "Could not save coastal delivery.")
+        setError("error" in result && result.error ? result.error : "Could not save Shipper.")
         return
       }
       setError(null)
-      setNotice(result.saved ? "Saved. Waiting for a run." : "White-glove delivery removed from this listing.")
+      setNotice(result.saved ? "Saved. Waiting for a run." : "Shipper removed from this listing.")
       if (!result.saved) setWhiteGlove(false)
       router.refresh()
     })
@@ -81,17 +81,17 @@ export function CoastalListingChoice({ listing, stops, choice, initialMatch }: C
     <div className="space-y-4 rounded-lg border p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-sm font-medium">White-glove coastal delivery</h2>
+          <h2 className="text-sm font-medium">Shipper</h2>
           <p className="text-sm text-muted-foreground">Hand delivery along the corridor. No charge in this draft.</p>
         </div>
         <label className="flex items-center gap-2 text-sm">
-          <Switch checked={whiteGlove} onCheckedChange={setWhiteGlove} aria-label="Choose white-glove coastal delivery" />
+          <Switch checked={whiteGlove} onCheckedChange={setWhiteGlove} aria-label="Turn Shipper on for this listing" />
           {whiteGlove ? "On" : "Off"}
         </label>
       </div>
       {!whiteGlove ? (
         <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-          White-glove delivery is off for this listing.
+          Shipper is off for this listing.
         </p>
       ) : (
         <div className="space-y-4">

@@ -17,12 +17,14 @@ import { cn } from "@/lib/utils"
 interface DashboardAppFrameProps {
   sellerProfileHref: string | null
   isAdmin?: boolean
+  isShipper?: boolean
   children: ReactNode
 }
 
 export function DashboardAppFrame({
   sellerProfileHref,
   isAdmin = false,
+  isShipper = false,
   children,
 }: DashboardAppFrameProps) {
   const pathname = usePathname() ?? ""
@@ -39,7 +41,11 @@ export function DashboardAppFrame({
 
   return (
     <div className="container mx-auto flex-1 pb-3 pt-5 sm:pb-6 sm:pt-6 lg:py-8">
-      <DashboardMobilePageChrome sellerProfileHref={sellerProfileHref} isAdmin={isAdmin} />
+      <DashboardMobilePageChrome
+        sellerProfileHref={sellerProfileHref}
+        isAdmin={isAdmin}
+        isShipper={isShipper}
+      />
 
       <div className="mt-5 flex flex-col gap-6 lg:mt-0 lg:flex-row lg:gap-12 xl:gap-14">
         <aside className={cn("hidden shrink-0 lg:block", dashboardSidebarWidthClass)}>
@@ -55,6 +61,7 @@ export function DashboardAppFrame({
               <DashboardSidebarNav
                 sellerProfileHref={sellerProfileHref}
                 isAdmin={isAdmin}
+                isShipper={isShipper}
                 size="large"
               />
             </Suspense>

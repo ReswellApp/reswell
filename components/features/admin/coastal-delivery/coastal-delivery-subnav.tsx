@@ -19,7 +19,10 @@ export function CoastalDeliverySubnav() {
   return (
     <nav className="flex flex-wrap gap-2" aria-label="Coastal delivery">
       {LINKS.map((link) => {
-        const active = pathname === link.href
+        const active =
+          link.href === "/admin/coastal-delivery"
+            ? pathname === link.href
+            : pathname === link.href || pathname.startsWith(`${link.href}/`)
         return (
           <Link
             key={link.href}

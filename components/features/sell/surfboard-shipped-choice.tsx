@@ -176,7 +176,7 @@ export function SurfboardShippedChoice({
             {SURFBOARD_SHIPPED_NAME}
           </Label>
           <p className="text-xs leading-snug text-muted-foreground sm:text-sm">
-            A live coastal shipper picks the board up at a California street and drives it to the
+            A shipper picks the board up at a California street and drives it to the
             buyer. Any California city qualifies. Buyers pay ${SURFBOARD_SHIPPED_FEE_USD} at checkout.
             Drop-off is {SURFBOARD_SHIPPED_WINDOW_LABEL}.
           </p>
