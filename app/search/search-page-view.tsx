@@ -42,6 +42,7 @@ import {
 import { fetchCuratedRecentListings } from "@/lib/db/curatedRecentListings"
 import { boardLengthLabelFromDimensionsColumn } from "@/lib/listing-dimensions-storage"
 import {
+  listingCardImageSrc,
   listingCoverImageForCard,
   listingImagesFromPrimaryFields,
 } from "@/lib/listing-image-display"
@@ -164,6 +165,80 @@ function sortMarketplaceBrowseCategories<T extends { name: string; board?: boole
     if (sa !== sb) return sa - sb
     return a.name.localeCompare(b.name)
   })
+}
+
+export async function getSearchShareListing({
+  rawQuery,
+  brandSlugFromUrl,
+  categorySlugFromUrl,
+}: {
+  rawQuery: string
+  brandSlugFromUrl: string
+  categorySlugFromUrl: string
+}): Promise<RecentListing | null> {
+  const supabase = await createClient()
+  const brandSlugRequested = brandSlugFromUrl.trim()
+
+  let brandFromUrl: { id: string; name: string; slug: string } | null = null
+  if (brandSlugRequested) {
+    const { data: brand } = await supabase
+      .from("brands")
+      .select("id, name, slug")
+      .eq("slug", brandSlugRequested)
+      .maybeSingle()
+    if (brand) {
+      brandFromUrl = { id: brand.id, name: brand.name, slug: brand.slug }
+    }
+  }
+
+  const parsedQuery =
+    rawQuery.trim().length >= 2
+      ? await parseMarketplaceQuery(supabase, rawQuery, {
+          brandHint: brandFromUrl ? { ...brandFromUrl, logo_url: null } : null,
+        })
+      : null
+
+  let brandRow: { id: string; name: string; slug: string } | null =
+    brandFromUrl ??
+    (parsedQuery?.brand
+      ? {
+          id: parsedQuery.brand.id,
+          name: parsedQuery.brand.name,
+          slug: parsedQuery.brand.slug,
+        }
+      : null)
+
+  if (
+    !brandRow &&
+    rawQuery.trim() &&
+    !parsedQuery?.model &&
+    !isMarketplaceSectionOnlyQuery(rawQuery) &&
+    !isMarketplaceBoardStyleOnlyQuery(rawQuery) &&
+    !isMarketplaceGenericSurfSearchOnly(rawQuery)
+  ) {
+    brandRow = await resolveDirectoryBrandRowFromLabel(supabase, rawQuery)
+  }
+
+  const sortedCategories = sortMarketplaceBrowseCategories(await getCachedBrowseCategories())
+  const matchedCategory = categorySlugFromUrl.trim()
+    ? sortedCategories.find((category) => category.slug === categorySlugFromUrl.trim())
+    : undefined
+  const categoryFilter = rawQuery.trim()
+    ? null
+    : matchedCategory
+      ? { id: matchedCategory.id, name: matchedCategory.name }
+      : null
+  const brandUnknown = Boolean(brandSlugRequested && !brandFromUrl)
+  const { listings } = await resolveSearchListings(
+    supabase,
+    rawQuery,
+    categoryFilter,
+    brandUnknown ? null : brandRow,
+    parsedQuery,
+    Boolean(brandFromUrl),
+  )
+
+  return listings.find((listing) => Boolean(listingCardImageSrc(listing.listing_images))) ?? null
 }
 
 export async function SearchPageView({

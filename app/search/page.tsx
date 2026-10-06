@@ -1,14 +1,16 @@
 import { Suspense } from "react"
+import type { Metadata } from "next"
 import { permanentRedirect, redirect } from "next/navigation"
 import { NavSearchQueryParamCleanup } from "@/components/features/search/nav-search-query-param-cleanup"
-import { pageSeoMetadata } from "@/lib/site-metadata"
+import { listingCardImageSrc } from "@/lib/listing-image-display"
+import { absolutePublicMediaUrl, absoluteUrl, pageSeoMetadata } from "@/lib/site-metadata"
 import {
   extractMarketplaceSectionIntent,
   isMarketplaceSectionOnlyQuery,
   marketplaceSectionBrowseHref,
 } from "@/lib/utils/marketplace-brand-query"
 import { marketplaceBoardStyleBrowseHref } from "@/lib/utils/marketplace-style-query"
-import { SearchPageView } from "./search-page-view"
+import { getSearchShareListing, SearchPageView } from "./search-page-view"
 
 interface SearchParams {
   q?: string
@@ -23,11 +25,46 @@ interface SearchParams {
 /** Search uses query params + auth; must not be statically prerendered. */
 export const dynamic = "force-dynamic"
 
-export const metadata = pageSeoMetadata({
-  title: "Search — Reswell",
-  description: "Search surfboards and gear — empty searches redirect to recent marketplace results.",
-  path: "/search",
-})
+const SEARCH_TITLE = "Search — Reswell"
+const SEARCH_DESCRIPTION =
+  "Search surfboards and gear — empty searches redirect to recent marketplace results."
+
+export async function generateMetadata(props: {
+  searchParams: Promise<SearchParams>
+}): Promise<Metadata> {
+  const searchParams = await props.searchParams
+  const baseMetadata = pageSeoMetadata({
+    title: SEARCH_TITLE,
+    description: SEARCH_DESCRIPTION,
+    path: "/search",
+  })
+  const fallbackImageUrl = absoluteUrl("/images/og-image.jpg")
+
+  let shareImageUrl = fallbackImageUrl
+  try {
+    const listing = await getSearchShareListing({
+      rawQuery: (searchParams.q ?? "").trim(),
+      brandSlugFromUrl: (searchParams.brandSlug ?? "").trim(),
+      categorySlugFromUrl: (searchParams.category ?? "").trim(),
+    })
+    const listingImageUrl = listingCardImageSrc(listing?.listing_images)
+    shareImageUrl = absolutePublicMediaUrl(listingImageUrl) ?? fallbackImageUrl
+  } catch (error) {
+    console.error("[search] Failed to resolve share image:", error)
+  }
+
+  return {
+    ...baseMetadata,
+    openGraph: {
+      ...baseMetadata.openGraph,
+      images: [{ url: shareImageUrl }],
+    },
+    twitter: {
+      ...baseMetadata.twitter,
+      images: [shareImageUrl],
+    },
+  }
+}
 
 export default async function SearchPage(props: {
   searchParams: Promise<SearchParams>
