@@ -166,7 +166,6 @@ export async function createBoardSavedSearchAction(raw: unknown) {
   revalidatePath("/leashes")
   revalidatePath("/apparel")
   revalidatePath("/accessories")
-  revalidatePath("/search")
 
   return {
     success: true as const,
@@ -205,7 +204,6 @@ export async function deleteBoardSavedSearchAction(raw: unknown) {
   revalidatePath("/leashes")
   revalidatePath("/apparel")
   revalidatePath("/accessories")
-  revalidatePath("/search")
 
   return { success: true as const }
 }
