@@ -22,6 +22,7 @@ import {
   type PlacePredictionHandle,
 } from "@/lib/maps/places-autocomplete-new"
 import { parseGoogleAddressComponents } from "@/lib/maps/parse-google-address-components"
+import { computeBelowFieldDropdownLayout } from "@/lib/utils/below-field-dropdown-layout"
 
 /** If Maps JS never settles, fall back (checkout OSM) instead of spinning forever. */
 const GOOGLE_MAPS_BOOT_HANG_MS = 12_000
@@ -131,7 +132,12 @@ export function GooglePlacesAddressInput({
   const [rows, setRows] = useState<PredictionRow[]>([])
   const [fetchEmpty, setFetchEmpty] = useState(false)
   const [activeIndex, setActiveIndex] = useState(-1)
-  const [dropdownRect, setDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null)
+  const [dropdownRect, setDropdownRect] = useState<{
+    top: number
+    left: number
+    width: number
+    maxHeight: number
+  } | null>(null)
   const [placesBackend, setPlacesBackend] = useState<PlacesAutocompleteBackend | null>(null)
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -144,6 +150,8 @@ export function GooglePlacesAddressInput({
   const autocompleteServiceRef = useRef<google.maps.places.AutocompleteService | null>(null)
   const predictHangTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const detailsHangTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const blurCloseTimerRef = useRef<number | null>(null)
+  const pickLockRef = useRef(false)
   const onProviderErrorRef = useRef(onProviderError)
   onProviderErrorRef.current = onProviderError
 
@@ -206,6 +214,7 @@ export function GooglePlacesAddressInput({
       if (debounceRef.current) clearTimeout(debounceRef.current)
       if (predictHangTimerRef.current) clearTimeout(predictHangTimerRef.current)
       if (detailsHangTimerRef.current) clearTimeout(detailsHangTimerRef.current)
+      if (blurCloseTimerRef.current) window.clearTimeout(blurCloseTimerRef.current)
     }
   }, [])
 
@@ -407,21 +416,38 @@ export function GooglePlacesAddressInput({
   }, [value, minLength, debounceMs, disabled, invalidatePending, placesBackend])
 
   useEffect(() => {
-    if (!panelOpen || !containerRef.current) {
+    if (!panelOpen) {
       setDropdownRect(null)
       return
     }
-    const el = containerRef.current
     const update = () => {
-      const rect = el.getBoundingClientRect()
-      setDropdownRect({ top: rect.bottom + 4, left: rect.left, width: rect.width })
+      const anchor = inputRef.current ?? containerRef.current
+      if (!anchor) return
+      setDropdownRect(
+        computeBelowFieldDropdownLayout(anchor, {
+          gap: 4,
+          minListWidth: 280,
+          maxListWidth: 520,
+          maxHeightCap: 340,
+          allowFlip: true,
+        }),
+      )
     }
     update()
     window.addEventListener("scroll", update, true)
     window.addEventListener("resize", update)
+    const vv = window.visualViewport
+    if (vv) {
+      vv.addEventListener("scroll", update)
+      vv.addEventListener("resize", update)
+    }
     return () => {
       window.removeEventListener("scroll", update, true)
       window.removeEventListener("resize", update)
+      if (vv) {
+        vv.removeEventListener("scroll", update)
+        vv.removeEventListener("resize", update)
+      }
     }
   }, [panelOpen])
 
@@ -432,7 +458,7 @@ export function GooglePlacesAddressInput({
   }, [activeIndex, panelOpen, listboxId])
 
   useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
+    function handlePointerOutside(e: PointerEvent) {
       const target = e.target as Node
       if (containerRef.current?.contains(target)) return
       if (dropdownRef.current?.contains(target)) return
@@ -440,8 +466,9 @@ export function GooglePlacesAddressInput({
       setOpen(false)
       setActiveIndex(-1)
     }
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => document.removeEventListener("mousedown", handleClickOutside)
+    // pointerdown covers touch + mouse; mousedown-only misses iOS taps that blur the field first
+    document.addEventListener("pointerdown", handlePointerOutside)
+    return () => document.removeEventListener("pointerdown", handlePointerOutside)
   }, [invalidatePending])
 
   const resolvePlace = useCallback(
@@ -554,6 +581,8 @@ export function GooglePlacesAddressInput({
 
   const pick = useCallback(
     (row: PredictionRow) => {
+      if (pickLockRef.current) return
+      pickLockRef.current = true
       invalidatePending()
       suppressOpenUntilTypingRef.current = true
       setFetchEmpty(false)
@@ -562,6 +591,7 @@ export function GooglePlacesAddressInput({
       setOpen(false)
       setRows([])
       setActiveIndex(-1)
+      pickLockRef.current = false
     },
     [invalidatePending, onChange, resolvePlace],
   )
@@ -600,10 +630,6 @@ export function GooglePlacesAddressInput({
   }
 
   const portalReady = panelOpen && dropdownRect && typeof document !== "undefined"
-  const panelWidth = dropdownRect ? Math.max(dropdownRect.width, 280) : 280
-  const panelLeft = dropdownRect
-    ? Math.min(dropdownRect.left, typeof window !== "undefined" ? window.innerWidth - panelWidth - 12 : dropdownRect.left)
-    : 0
 
   const showListbox = panelOpen && rows.length > 0 && !loadingPredictions
 
@@ -616,16 +642,19 @@ export function GooglePlacesAddressInput({
         id={listboxId}
         role={showListbox ? "listbox" : fetchEmpty ? "status" : undefined}
         aria-label={showListbox ? "Address suggestions" : fetchEmpty ? "No matching addresses" : undefined}
-        onMouseDown={(e) => e.preventDefault()}
+        onPointerDown={(e) => {
+          if (e.target instanceof Element && e.target.closest("a")) return
+          if (e.pointerType === "mouse") e.preventDefault()
+        }}
         className={cn(
-          "fixed z-[100] overflow-hidden rounded-[6px] border border-neutral-200 bg-white text-neutral-900",
+          "pointer-events-auto fixed z-[160] touch-pan-y overflow-hidden rounded-[6px] border border-neutral-200 bg-white text-neutral-900",
           "shadow-[0_10px_40px_-4px_rgba(0,0,0,0.12)]",
         )}
         style={{
           top: dropdownRect.top,
-          left: panelLeft,
-          width: panelWidth,
-          maxHeight: "min(60vh, 340px)",
+          left: dropdownRect.left,
+          width: dropdownRect.width,
+          maxHeight: dropdownRect.maxHeight,
         }}
       >
         {fetchEmpty ? (
@@ -638,8 +667,11 @@ export function GooglePlacesAddressInput({
             </div>
           </div>
         ) : (
-          <div className="flex max-h-[min(60vh,340px)] flex-col">
-            <div className="max-h-[min(52vh,300px)] overflow-y-auto overscroll-contain py-1">
+          <div className="flex min-h-0 flex-col overflow-hidden" style={{ maxHeight: dropdownRect.maxHeight }}>
+            <div
+              className="min-h-0 overflow-y-auto overscroll-contain py-1 [-webkit-overflow-scrolling:touch]"
+              style={{ maxHeight: Math.max(96, dropdownRect.maxHeight - 40) }}
+            >
               {rows.map((row, idx) => (
                 <button
                   key={row.placeId}
@@ -652,10 +684,10 @@ export function GooglePlacesAddressInput({
                     "hover:bg-neutral-100/90 active:bg-neutral-100",
                     idx === activeIndex ? "border-l-[#5574AD] bg-[#5574AD]/[0.06]" : "border-l-transparent",
                   )}
-                  onMouseDown={(ev) => {
-                    ev.preventDefault()
-                    pick(row)
+                  onPointerDown={(ev) => {
+                    if (ev.pointerType === "mouse") ev.preventDefault()
                   }}
+                  onClick={() => pick(row)}
                   onMouseEnter={() => setActiveIndex(idx)}
                 >
                   <span className="min-w-0 flex-1 leading-snug">
@@ -713,12 +745,24 @@ export function GooglePlacesAddressInput({
           setOpen(true)
         }}
         onFocus={() => {
+          if (blurCloseTimerRef.current) {
+            window.clearTimeout(blurCloseTimerRef.current)
+            blurCloseTimerRef.current = null
+          }
           setInputFocused(true)
         }}
         onBlur={(e) => {
           const next = e.relatedTarget as Node | null
           if (next && dropdownRef.current?.contains(next)) return
-          setInputFocused(false)
+          // Touch: blur often fires before the suggestion click. Delay closing so the pick can run.
+          if (blurCloseTimerRef.current) window.clearTimeout(blurCloseTimerRef.current)
+          blurCloseTimerRef.current = window.setTimeout(() => {
+            blurCloseTimerRef.current = null
+            if (inputRef.current && document.activeElement === inputRef.current) return
+            if (dropdownRef.current?.contains(document.activeElement)) return
+            if (pickLockRef.current) return
+            setInputFocused(false)
+          }, 180)
         }}
         onKeyDown={onKeyDown}
         className={cn(

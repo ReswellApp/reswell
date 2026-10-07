@@ -153,17 +153,7 @@ export function suggestionToRowTexts(s: AutocompleteSuggestionItem): {
   }
 }
 
-/** New `Place.addressComponents` entries use longText/shortText; legacy parser expects Geocoder-shaped components. */
-export function newPlaceAddressComponentsToGeocoder(
-  components: google.maps.places.AddressComponent[] | null | undefined,
-): google.maps.GeocoderAddressComponent[] {
-  if (!components?.length) return []
-  return components.map((c) => ({
-    long_name: c.longText ?? "",
-    short_name: c.shortText ?? "",
-    types: c.types ?? [],
-  }))
-}
+export { newPlaceAddressComponentsToGeocoder } from "@/lib/maps/parse-google-address-components"
 
 /** Reads location from Places (new) `Place.location` whether LatLng or literal. */
 export function readPlaceLocationLatLng(place: {

@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select"
 import type { ShippingAddressFormInput } from "@/lib/address-input"
 import type { ProfileAddressRow } from "@/lib/profile-address"
+import { normalizeCountryCodeForShipping } from "@/lib/shipping/normalize-country-code"
 import { toE164UsPhone } from "@/lib/utils/phone-e164-us"
 
 function formatAddressLine(a: ProfileAddressRow) {
@@ -89,7 +90,7 @@ export function CheckoutPurchaseDetails({
       city: addr.city.trim() || d.city,
       state: addr.state.trim() || d.state,
       postal_code: addr.postal_code.trim() || d.postal_code,
-      country: (addr.country.trim() || d.country).slice(0, 2).toUpperCase() || d.country,
+      country: normalizeCountryCodeForShipping(addr.country.trim() || d.country),
     }))
   }, [])
 
