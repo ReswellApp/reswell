@@ -43,7 +43,7 @@ export const DASHBOARD_SHIPPER_NAV: DashboardNavLink = {
 
 export const DASHBOARD_SHOPIFY_NAV: DashboardNavLink = {
   name: "Shopify",
-  href: "/dashboard/integrations/shopify",
+  href: "/dashboard/shopify",
   icon: Store,
 }
 

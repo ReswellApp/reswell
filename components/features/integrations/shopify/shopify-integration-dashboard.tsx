@@ -24,7 +24,9 @@ export function ShopifyIntegrationDashboard({
   callbackError,
 }: ShopifyIntegrationDashboardProps) {
   const integration = useShopifyIntegration(initialData)
+  const runtimeReady = initialData.enabled && initialData.configured
   const connectedAndActive =
+    runtimeReady &&
     integration.connection?.status === "active" &&
     integration.connection.sync_enabled
 
@@ -47,7 +49,18 @@ export function ShopifyIntegrationDashboard({
           </AlertDescription>
         </Alert>
       ) : null}
-      {callbackError || initialData.loadError ? (
+      {!runtimeReady ? (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Shopify access approved</AlertTitle>
+          <AlertDescription>
+            {initialData.configured
+              ? "The integration is temporarily paused. Your Shopify access is still approved."
+              : "Reswell is finishing the Shopify app setup. This page will become active when configuration is complete."}
+          </AlertDescription>
+        </Alert>
+      ) : null}
+      {runtimeReady && (callbackError || initialData.loadError) ? (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Shopify needs attention</AlertTitle>
@@ -58,12 +71,14 @@ export function ShopifyIntegrationDashboard({
         </Alert>
       ) : null}
 
-      <ShopifyConnectionCard
-        connection={integration.connection}
-        busy={integration.connectionBusy}
-        onSync={() => void integration.requestSync()}
-        onDisconnect={() => void integration.disconnect()}
-      />
+      {runtimeReady ? (
+        <ShopifyConnectionCard
+          connection={integration.connection}
+          busy={integration.connectionBusy}
+          onSync={() => void integration.requestSync()}
+          onDisconnect={() => void integration.disconnect()}
+        />
+      ) : null}
 
       {connectedAndActive ? (
         <ShopifyProductPicker

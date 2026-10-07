@@ -3,10 +3,6 @@ import { getCachedDashboardSession } from "@/lib/dashboard-session"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { DashboardAppFrame } from "@/components/features/dashboard/dashboard-app-frame"
 import { coastalShipperMembership } from "@/lib/services/coastalShipperAccess"
-import {
-  isShopifyConfigured,
-  isShopifyIntegrationEnabled,
-} from "@/lib/shopify/config"
 
 export default async function DashboardLayout({
   children,
@@ -27,10 +23,7 @@ export default async function DashboardLayout({
 
   const isShop = profile?.is_shop || false
   const shopHref = isShop ? sellerProfileHref(profile) : null
-  const hasShopifyAccess =
-    isShopifyIntegrationEnabled() &&
-    isShopifyConfigured() &&
-    profile?.shopify_connect_enabled === true
+  const hasShopifyAccess = profile?.shopify_connect_enabled === true
   const { data: shipperRow, error: shipperError } = await supabase
     .from("coastal_shippers")
     .select("id")

@@ -17,6 +17,14 @@ export async function checkShopifyMerchantAccess(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<ShopifyMerchantAccess> {
+  const eligible = await dbShopifyUserIsEligible(supabase, userId)
+  if (!eligible) {
+    return {
+      allowed: false,
+      reason: "not_approved",
+      message: "Your account is not approved for Shopify yet.",
+    }
+  }
   if (!isShopifyIntegrationEnabled()) {
     return {
       allowed: false,
@@ -29,14 +37,6 @@ export async function checkShopifyMerchantAccess(
       allowed: false,
       reason: "not_configured",
       message: "Shopify integration is not configured.",
-    }
-  }
-  const eligible = await dbShopifyUserIsEligible(supabase, userId)
-  if (!eligible) {
-    return {
-      allowed: false,
-      reason: "not_approved",
-      message: "Your account is not approved for Shopify yet.",
     }
   }
   return { allowed: true }
