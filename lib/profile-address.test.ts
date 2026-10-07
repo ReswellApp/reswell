@@ -1,6 +1,7 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 import {
+  isMissingGoogleAddressColumn,
   parseOrderShippingAddressForProfile,
   profileAddressesMatch,
   profileAddressToOrderShippingJson,
@@ -52,6 +53,26 @@ describe("profileAddressesMatch", () => {
         city: "Santa Barbara",
         postal_code: "93101-4321",
       }),
+      true,
+    )
+  })
+})
+
+describe("isMissingGoogleAddressColumn", () => {
+  it("recognizes PostgREST schema-cache errors", () => {
+    assert.equal(
+      isMissingGoogleAddressColumn(
+        "Could not find the 'formatted_address' column of 'addresses' in the schema cache",
+      ),
+      true,
+    )
+  })
+
+  it("recognizes direct PostgreSQL missing-column errors", () => {
+    assert.equal(
+      isMissingGoogleAddressColumn(
+        'column "google_geocoded_at" of relation "addresses" does not exist',
+      ),
       true,
     )
   })
