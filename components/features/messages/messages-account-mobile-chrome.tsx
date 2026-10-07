@@ -6,8 +6,10 @@ import { isMessageThreadDetailRoute } from "@/lib/utils/message-thread-routes"
 
 export function MessagesAccountMobileChrome({
   sellerProfileHref,
+  hasShopifyAccess,
 }: {
   sellerProfileHref: string | null
+  hasShopifyAccess: boolean
 }) {
   const pathname = usePathname() ?? ""
 
@@ -15,5 +17,10 @@ export function MessagesAccountMobileChrome({
     return null
   }
 
-  return <DashboardMobilePageChrome sellerProfileHref={sellerProfileHref} />
+  return (
+    <DashboardMobilePageChrome
+      sellerProfileHref={sellerProfileHref}
+      hasShopifyAccess={hasShopifyAccess}
+    />
+  )
 }

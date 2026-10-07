@@ -58,6 +58,7 @@ import {
   type ListingPhotoSlot,
 } from "@/lib/sell-flow/listing-photo-slot"
 import { listingPhotoPreviewFromPrepared } from "@/lib/sell-flow/simple-listing-photo-rotate"
+import { stageListingPhotoInstantPreview } from "@/lib/sell-flow/reveal-listing-photo-preview"
 import {
   APPAREL_LISTING_MAX_PHOTOS,
   APPAREL_LISTING_TITLE_MAX_LENGTH,
@@ -125,6 +126,7 @@ type PhotoSlot = {
   progress: number
   errorMessage?: string
   userRotate180?: boolean
+  localPreviewReady?: boolean
 }
 
 function shippingPriceToFormValue(v: unknown): string {
@@ -481,11 +483,24 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
       if (!slot.file) return
       let failureContext: "add" | "upload" = "add"
       try {
+        const showedInstant = await stageListingPhotoInstantPreview(
+          slot.file,
+          slot.previewUrl,
+          { rotate180: Boolean(slot.userRotate180) },
+          (previewUrl) => updateSlot(slot.clientId, { previewUrl, localPreviewReady: true }),
+        )
         const prepared = await prepareDecodableListingPhoto(slot.file, {
           rotate180: Boolean(slot.userRotate180),
         })
-        const nextPreviewUrl = listingPhotoPreviewFromPrepared(slot.previewUrl, prepared.thumb)
-        updateSlot(slot.clientId, { phase: "uploading", progress: 5, previewUrl: nextPreviewUrl })
+        const nextPreviewUrl = showedInstant
+          ? null
+          : listingPhotoPreviewFromPrepared(slot.previewUrl, prepared.thumb)
+        updateSlot(slot.clientId, {
+          phase: "uploading",
+          progress: 5,
+          localPreviewReady: true,
+          ...(nextPreviewUrl ? { previewUrl: nextPreviewUrl } : {}),
+        })
 
         const supabase = supabaseRef.current
         const session = await resolveClientSessionForMutation(supabase)

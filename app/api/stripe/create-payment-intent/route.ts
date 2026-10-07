@@ -24,6 +24,7 @@ import { isBlockedOwnListingPurchase } from "@/lib/cart-eligibility"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { formatPeerItemCountPhrase } from "@/lib/peer-listing-item-nouns"
 import { isReswellShopListing } from "@/lib/reswell-shop"
+import { isShopifyManagedListing } from "@/lib/shopify/listing"
 import {
   encodeListingQuantitiesMeta,
   resolveMixedCheckoutSellerId,
@@ -181,7 +182,10 @@ export async function POST(request: NextRequest) {
     if (!isPeerListingSection(listing.section) && !isReswellShopListing(listing.section)) {
       return NextResponse.json({ error: "This listing cannot be purchased here" }, { status: 400 })
     }
-    if (isReswellShopListing(listing.section)) {
+    if (
+      isReswellShopListing(listing.section) ||
+      isShopifyManagedListing(listing)
+    ) {
       const stock = Math.max(
         0,
         Math.floor(Number((listing as { stock_quantity?: number }).stock_quantity) || 0),
@@ -289,12 +293,23 @@ export async function POST(request: NextRequest) {
   }
 
   for (const listing of listingsOrdered) {
-    if (!isReswellShopListing(listing.section)) continue
+    if (
+      !isReswellShopListing(listing.section) &&
+      !isShopifyManagedListing(listing)
+    ) {
+      continue
+    }
     const stock = Math.max(
       0,
       Math.floor(Number((listing as { stock_quantity?: number }).stock_quantity) || 0),
     )
     const qty = quantityByListingId[listing.id] ?? 1
+    if (isShopifyManagedListing(listing) && qty !== 1) {
+      return NextResponse.json(
+        { error: "Shopify-synced listings are limited to one unit per checkout" },
+        { status: 400 },
+      )
+    }
     if (qty > stock) {
       return NextResponse.json({ error: "Not enough stock available" }, { status: 409 })
     }
@@ -553,6 +568,11 @@ export async function POST(request: NextRequest) {
           listingsOrdered.map((l) => l.section),
         )} (${primaryTitle})`
       : `Reswell — ${primaryTitle}`
+  const listingPriceSnapshot = listingsForTotals
+    .map((listing) =>
+      String(Math.max(0, Math.round(Number(listing.price) * 100))),
+    )
+    .join(",")
 
   try {
     const stripe = getStripe()
@@ -584,6 +604,9 @@ export async function POST(request: NextRequest) {
         fulfillment: impliedFulfillment,
         amount_cents: String(amountCents),
         bundle_line_count: String(listingIdsOrdered.length),
+        ...(listingPriceSnapshot.length <= 450
+          ? { listing_price_cents: listingPriceSnapshot }
+          : {}),
         ...stripeAdAttributionMetadata(adAttribution),
         ...(validatedOfferId ? { offer_id: validatedOfferId } : {}),
         ...(addressId ? { address_id: addressId } : {}),

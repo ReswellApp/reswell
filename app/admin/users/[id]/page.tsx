@@ -491,6 +491,31 @@ export default function AdminUserDetailPage() {
     }
   }
 
+  async function toggleShopifyAccess() {
+    if (!profile) return
+    const next = !profile.shopify_connect_enabled
+    try {
+      const res = await fetch('/api/admin/users/shopify-access', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: id, grant: next }),
+      })
+      const body = (await res.json().catch(() => null)) as { error?: string } | null
+      if (!res.ok) {
+        toast.error(body?.error ?? 'Failed to update Shopify access')
+        return
+      }
+      setProfile({ ...profile, shopify_connect_enabled: next })
+      toast.success(
+        next
+          ? 'Shopify integration access approved'
+          : 'Shopify access removed and synced listings unpublished',
+      )
+    } catch {
+      toast.error('Failed to update Shopify access')
+    }
+  }
+
   async function toggleEmployee() {
     if (!profile) return
     const next = !profile.is_employee
@@ -742,6 +767,7 @@ export default function AdminUserDetailPage() {
           profile={profile}
           onToggleVerified={() => void toggleVerified()}
           onToggleReswellSeller={() => void toggleReswellSeller()}
+          onToggleShopifyAccess={() => void toggleShopifyAccess()}
           onToggleEmployee={() => void toggleEmployee()}
           onToggleAdmin={() => void toggleAdmin()}
         />

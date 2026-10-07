@@ -8,6 +8,12 @@ export type ListingPhotoSlot = {
   clientId: string
   /** Local preview (blob URL) until we can show uploaded thumb */
   previewUrl: string
+  /**
+   * True once `previewUrl` is a small derivative (or prepared thumb), safe to paint
+   * immediately. The original camera file is not — decoding it in the tile is what
+   * kept iPhone photos on the skeleton.
+   */
+  localPreviewReady?: boolean
   id?: string
   url?: string
   thumbnailUrl?: string
@@ -127,4 +133,33 @@ export function listingPhotoSlotsForDraftPersist(
       return s.optimizePhase !== "running" && s.uploadPhase !== "uploading"
     })
     .map((s) => ({ file: s.sourceFile }))
+}
+
+export function isLocalListingPhotoPreviewUrl(url: string | null | undefined): boolean {
+  if (!url) return false
+  return url.startsWith("blob:") || url.startsWith("data:")
+}
+
+/**
+ * Src the sell tile should paint. A ready local derivative stays on screen through
+ * optimize and upload — swapping to the remote thumb is what put the tile back on
+ * a skeleton after a slow upload.
+ */
+export function listingPhotoTilePreviewSrc(image: ListingPhotoSlot): string {
+  if (image.localPreviewReady && isLocalListingPhotoPreviewUrl(image.previewUrl)) {
+    return image.previewUrl
+  }
+  if (image.uploadPhase !== "done") return ""
+  return (image.thumbnailUrl?.trim() || image.url?.trim() || "").trim()
+}
+
+/** Skeleton only until there is a paintable src that has decoded. Upload does not hide the photo. */
+export function listingPhotoTileSkeletonVisible(
+  image: ListingPhotoSlot,
+  thumbLoaded: boolean,
+): boolean {
+  if (image.optimizePhase === "error" || image.uploadPhase === "error") return false
+  const src = listingPhotoTilePreviewSrc(image)
+  if (!src) return true
+  return !thumbLoaded
 }

@@ -1,5 +1,5 @@
 import { requireAdmin } from "@/lib/brands/admin-server"
-import { listCoastalShipperSchedules } from "@/lib/db/coastal-delivery"
+import { listCoastalCoverageIndex, listCoastalShipperSchedules, listCoastalStops } from "@/lib/db/coastal-delivery"
 import type { CoastalShipperScheduleRecord } from "@/lib/db/coastal-delivery"
 import {
   fetchListingSurfboardShipped,
@@ -17,7 +17,6 @@ import {
   verifyGoogleStreetAddress,
 } from "@/lib/services/addressGeocoding"
 import {
-  SURFBOARD_SHIPPED_FEE_CENTS,
   SURFBOARD_SHIPPED_FEE_USD,
   attachSurfboardShippedShipper,
   isCaliforniaAddressState,
@@ -27,6 +26,7 @@ import {
   type LiveSurfboardShipper,
   type SurfboardShippedWindow,
 } from "@/lib/services/surfboardShipped"
+import { shipperServesPoint } from "@/lib/services/coastalShipperWeek"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { toE164UsPhone } from "@/lib/utils/phone-e164-us"
 import type { SaveListingSurfboardShippedInput } from "@/lib/validations/surfboard-shipped"
@@ -182,7 +182,7 @@ export async function getSurfboardShippedCheckoutSeed(
     const shippers = liveSurfboardShippers(await loadMatchShippers())
     if (shippers.length === 0) return null
     return {
-      feeUsd: SURFBOARD_SHIPPED_FEE_USD,
+      feeUsd: Math.min(...shippers.map((shipper) => shipper.priceUsd)),
       liveShippers: shippers,
       pickupCity: loaded.pickup.city,
       pickupState: loaded.pickup.state ?? "CA",
@@ -253,7 +253,7 @@ export async function prepareSurfboardShippedCharge(input: {
       ok: true,
       charge: {
         feeUsd: charge.feeUsd,
-        feeCents: SURFBOARD_SHIPPED_FEE_CENTS,
+        feeCents: Math.round(charge.feeUsd * 100),
         shipperId: charge.shipperId,
         runId: charge.runId,
         windowStart: charge.window.startDate,
@@ -323,9 +323,11 @@ async function buildCharge(
 } | null> {
   if (!isCaliforniaAddressState(buyer.state)) return null
   const db = createServiceRoleClient()
-  const [shippers, pickup] = await Promise.all([
+  const [shippers, pickup, stops, coverage] = await Promise.all([
     loadMatchShippers(),
     loadOptedInPickup(db, listingId),
+    listCoastalStops(db),
+    listCoastalCoverageIndex(db),
   ])
   if (!pickup) return null
   if (liveSurfboardShippers(shippers).length === 0) return null
@@ -334,18 +336,51 @@ async function buildCharge(
     resolveStreetForCharge(pickup.pickup),
     resolveStreetForCharge(buyer),
   ])
-  if (!isGoogleCaliforniaStreet(pickupResolved) || !isGoogleCaliforniaStreet(buyerResolved)) {
+  if (!isGoogleCaliforniaStreet(pickupResolved) || !isGoogleCaliforniaStreet(buyerResolved) || !pickupResolved || !buyerResolved) {
     return null
   }
 
+  const latByStop = new Map(
+    stops.flatMap((stop) => (typeof stop.latitude === "number" ? [[stop.id, stop.latitude] as const] : [])),
+  )
+  const eligible = shippers.filter((shipper) => {
+    const explicit = coverage.ready ? coverage.regions.get(shipper.shipperId) : undefined
+    const stopIds =
+      explicit && explicit.length > 0
+        ? explicit
+        : shipper.runs.filter((run) => run.enabled).flatMap((run) => run.stopIds)
+    const regionLatitudes = coverage.ready
+      ? stopIds.flatMap((id) => {
+          const latitude = latByStop.get(id)
+          return typeof latitude === "number" ? [latitude] : []
+        })
+      : undefined
+    const exclusions = coverage.ready ? coverage.exclusions.get(shipper.shipperId) ?? [] : []
+    const pickupOk = shipperServesPoint({
+      latitude: pickupResolved.latitude,
+      city: pickupResolved.city,
+      line1: pickupResolved.line1,
+      regionLatitudes,
+      exclusions,
+    })
+    const dropoffOk = shipperServesPoint({
+      latitude: buyerResolved.latitude,
+      city: buyerResolved.city,
+      line1: buyerResolved.line1,
+      regionLatitudes,
+      exclusions,
+    })
+    return pickupOk && dropoffOk
+  })
+
   const attached = attachSurfboardShippedShipper({
-    shippers,
+    shippers: eligible,
     now: new Date(),
   })
   if (!attached) return null
 
   return {
-    feeUsd: SURFBOARD_SHIPPED_FEE_USD,
+    feeUsd: attached.feeUsd,
     shipperId: attached.shipperId,
     runId: attached.runId,
     window: surfboardShippedWindow(new Date()),
@@ -376,12 +411,14 @@ function scheduleToMatchShipper(schedule: CoastalShipperScheduleRecord): Coastal
     shipperId: schedule.id,
     displayName: schedule.displayName,
     scheduleEnabled: schedule.scheduleEnabled,
+    priceCents: schedule.priceCents,
     runs: schedule.runs.map((run) => ({
       id: run.id,
       dayOfWeek: run.dayOfWeek,
       direction: run.direction,
       enabled: run.enabled,
       stopIds: run.stopIds,
+      serviceDate: run.serviceDate ?? null,
     })),
   }
 }

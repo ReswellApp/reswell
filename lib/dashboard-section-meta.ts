@@ -6,10 +6,17 @@ export interface DashboardSectionMeta {
 
 const OVERVIEW_META: DashboardSectionMeta = {
   sectionName: "Overview",
-  description: "Here is what is happening with your account — updates in real time.",
+  description: "Your balance, listings, and every part of your account.",
 }
 
 const SECTION_META_BY_PREFIX: { prefix: string; meta: DashboardSectionMeta }[] = [
+  {
+    prefix: "/dashboard/shopify",
+    meta: {
+      sectionName: "Shopify",
+      description: "Connect your store and choose which products appear on Reswell.",
+    },
+  },
   {
     prefix: "/dashboard/balance-sheet",
     meta: {

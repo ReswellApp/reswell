@@ -405,6 +405,7 @@ function toMatchShipper(schedule: CoastalShipperScheduleRecord): CoastalMatchShi
     shipperId: schedule.id,
     displayName: schedule.displayName,
     scheduleEnabled: schedule.scheduleEnabled,
+    priceCents: schedule.priceCents,
     runs: schedule.runs,
   }
 }
@@ -421,6 +422,7 @@ function toProfile(
     phone: schedule.phone,
     notes: schedule.notes,
     scheduleEnabled: schedule.scheduleEnabled,
+    priceCents: schedule.priceCents,
     runs: schedule.runs,
   }
 }
@@ -436,6 +438,7 @@ function toSummary(
     email: account?.email ?? null,
     isShop: account?.isShop === true,
     scheduleEnabled: schedule.scheduleEnabled,
+    priceCents: schedule.priceCents,
     runCount: schedule.runs.length,
     enabledRunCount: schedule.runs.filter((run) => run.enabled).length,
     isYou: schedule.userId === userId,

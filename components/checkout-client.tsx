@@ -347,8 +347,8 @@ export function CheckoutClient({
         return
       }
       setShipQuote({
-        shippingUsd: SURFBOARD_SHIPPED_FEE_USD,
-        totalUsd: Math.round((resolved.itemPrice + SURFBOARD_SHIPPED_FEE_USD) * 100) / 100,
+        shippingUsd: surfboardPreview.feeUsd,
+        totalUsd: Math.round((resolved.itemPrice + surfboardPreview.feeUsd) * 100) / 100,
         usedReswellQuote: false,
       })
       setShipQuoteToken(null)
@@ -763,7 +763,8 @@ export function CheckoutClient({
                 >
                   <span className="flex items-center gap-2 text-sm font-medium text-foreground">
                     <Truck className="h-4 w-4 shrink-0 text-neutral-600" />
-                    {SURFBOARD_SHIPPED_NAME} · ${SURFBOARD_SHIPPED_FEE_USD}
+                    {SURFBOARD_SHIPPED_NAME}
+                    {surfboardPreview?.available ? ` · $${surfboardPreview.feeUsd}` : ""}
                   </span>
                   <p className="mt-1 text-xs leading-relaxed text-neutral-500">
                     Drop-off in {surfboardPreview?.window?.label ?? SURFBOARD_SHIPPED_WINDOW_LABEL}.
@@ -781,7 +782,7 @@ export function CheckoutClient({
                       : surfboardShippedSeed.liveShippers
                     ).map((shipper) => (
                       <li key={shipper.id}>
-                        {shipper.displayName} · Live
+                        {shipper.displayName} · ${shipper.priceUsd} · Live
                       </li>
                     ))}
                   </ul>
@@ -938,7 +939,7 @@ export function CheckoutClient({
                           : `Reswell recommended shipping (carrier rate) is about $${displayTotals.shipping.toFixed(2)} — included in your total.`
                         : "Free shipping from this seller — included in your total."
                       : surfboardShippedSelected
-                        ? `${SURFBOARD_SHIPPED_NAME} is $${SURFBOARD_SHIPPED_FEE_USD.toFixed(2)} — included in your total. Drop-off in ${SURFBOARD_SHIPPED_WINDOW_LABEL}.`
+                        ? `${SURFBOARD_SHIPPED_NAME} is $${(surfboardPreview?.available ? surfboardPreview.feeUsd : displayTotals.shipping).toFixed(2)} — included in your total. Drop-off in ${surfboardPreview?.window?.label ?? SURFBOARD_SHIPPED_WINDOW_LABEL}.`
                       : displayTotals.shipping > 0
                         ? `Flat $${displayTotals.shipping.toFixed(2)} shipping from the seller — included in your total.`
                         : "Free shipping from this seller — included in your total."}

@@ -79,7 +79,7 @@ export function CoastalRunSheet({
       ) : null}
       {!hasRuns ? (
         <p className="rounded-2xl border border-dashed border-border/80 p-4 text-sm text-muted-foreground">
-          No runs yet. They show on the map once an admin saves them.
+          No trips yet. Add one on this page. Weekly trips repeat. This week can be different.
         </p>
       ) : null}
       {hasRuns && jobCount === 0 ? (

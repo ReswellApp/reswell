@@ -1,6 +1,13 @@
 import assert from "node:assert/strict"
 import test from "node:test"
-import { removeBalanceSheetItemSchema } from "./seller-balance-sheet.ts"
+import { balanceSheetSortSchema, removeBalanceSheetItemSchema } from "./seller-balance-sheet.ts"
+
+test("balanceSheetSortSchema accepts missing paid price and defaults anything else to recent", () => {
+  assert.equal(balanceSheetSortSchema.parse("missing-paid"), "missing-paid")
+  assert.equal(balanceSheetSortSchema.parse("recent"), "recent")
+  assert.equal(balanceSheetSortSchema.parse(undefined), "recent")
+  assert.equal(balanceSheetSortSchema.parse("price"), "recent")
+})
 
 test("removeBalanceSheetItemSchema accepts a listing UUID", () => {
   const result = removeBalanceSheetItemSchema.safeParse({

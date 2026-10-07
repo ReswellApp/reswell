@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 
+import { normalizeShipperPriceCents } from "@/lib/utils/shipperPrice"
+
 import type {
   CoastalAddressSnapshot,
   CoastalAddressSource,
@@ -9,6 +11,7 @@ import type {
   CoastalListingHit,
   CoastalListingPreview,
   CoastalRunView,
+  CoastalShipperExclusion,
   CoastalStopView,
 } from "@/lib/types/coastal-delivery"
 
@@ -19,12 +22,15 @@ export type CoastalShipperScheduleRecord = {
   phone: string
   notes: string
   scheduleEnabled: boolean
+  priceCents: number
   runs: CoastalRunView[]
 }
 
 const STOP_SELECT = "id, slug, name, sort_order, latitude, longitude, active"
-const SHIPPER_SELECT = "id, user_id, display_name, phone, notes, schedule_enabled"
-const RUN_SELECT = "id, shipper_id, day_of_week, direction, enabled"
+const SHIPPER_SELECT = "id, user_id, display_name, phone, notes, schedule_enabled, price_cents"
+const SHIPPER_SELECT_BASE = "id, user_id, display_name, phone, notes, schedule_enabled"
+const RUN_SELECT = "id, shipper_id, day_of_week, direction, enabled, service_date"
+const RUN_SELECT_WEEKLY = "id, shipper_id, day_of_week, direction, enabled"
 const LISTING_SELECT = "id, title, city, state, status, section"
 
 export async function listCoastalStops(supabase: SupabaseClient): Promise<CoastalStopView[]> {
@@ -42,8 +48,8 @@ export async function listCoastalShipperSchedules(
   supabase: SupabaseClient,
 ): Promise<CoastalShipperScheduleRecord[]> {
   const [shippers, runs, runStops] = await Promise.all([
-    supabase.from("coastal_shippers").select(SHIPPER_SELECT).order("display_name", { ascending: true }),
-    supabase.from("coastal_shipper_runs").select(RUN_SELECT),
+    selectShipperRows(supabase),
+    selectShipperRuns(supabase),
     supabase.from("coastal_shipper_run_stops").select("run_id, stop_id"),
   ])
 
@@ -78,6 +84,18 @@ export async function upsertCoastalShipperProfile(
   if (error) throw error
 }
 
+export async function setCoastalShipperPrice(
+  supabase: SupabaseClient,
+  shipperId: string,
+  priceCents: number,
+): Promise<void> {
+  const { error } = await supabase.from("coastal_shippers").update({ price_cents: priceCents }).eq("id", shipperId)
+  if (error && isMissingPriceColumn(error.message)) {
+    throw new Error("Run the latest Shipper SQL, then try again.")
+  }
+  if (error) throw error
+}
+
 export async function setCoastalShipperScheduleEnabled(
   supabase: SupabaseClient,
   shipperId: string,
@@ -99,6 +117,7 @@ export async function upsertCoastalShipperRun(
     direction: CoastalDirection
     enabled: boolean
     stopIds: string[]
+    serviceDate?: string | null
   },
 ): Promise<void> {
   const runId = await resolveRunId(supabase, input)
@@ -126,6 +145,115 @@ export async function deleteCoastalShipperRun(
 
   if (error) throw error
   if (!data) throw new Error("Run not found.")
+}
+
+export async function listCoastalCoverageIndex(supabase: SupabaseClient): Promise<{
+  ready: boolean
+  regions: Map<string, string[]>
+  exclusions: Map<string, string[]>
+}> {
+  const [regions, exclusions] = await Promise.all([
+    supabase.from("coastal_shipper_regions").select("shipper_id, stop_id"),
+    supabase.from("coastal_shipper_exclusions").select("shipper_id, label"),
+  ])
+  const missing =
+    Boolean(regions.error && isMissingShipperScheduleTable(regions.error.message)) ||
+    Boolean(exclusions.error && isMissingShipperScheduleTable(exclusions.error.message))
+  if (missing) return { ready: false, regions: new Map(), exclusions: new Map() }
+  if (regions.error) throw regions.error
+  if (exclusions.error) throw exclusions.error
+  const regionMap = new Map<string, string[]>()
+  for (const row of asRecords(regions.data)) {
+    const shipperId = stringField(row, "shipper_id")
+    const stopId = stringField(row, "stop_id")
+    if (!shipperId || !stopId) continue
+    const current = regionMap.get(shipperId) ?? []
+    current.push(stopId)
+    regionMap.set(shipperId, current)
+  }
+  const exclusionMap = new Map<string, string[]>()
+  for (const row of asRecords(exclusions.data)) {
+    const shipperId = stringField(row, "shipper_id")
+    const label = stringField(row, "label")
+    if (!shipperId || !label) continue
+    const current = exclusionMap.get(shipperId) ?? []
+    current.push(label)
+    exclusionMap.set(shipperId, current)
+  }
+  return { ready: true, regions: regionMap, exclusions: exclusionMap }
+}
+
+export async function listCoastalShipperCoverage(
+  supabase: SupabaseClient,
+  shipperId: string,
+): Promise<{ regionStopIds: string[]; regionsExplicit: boolean; exclusions: CoastalShipperExclusion[] }> {
+  const [regions, exclusions] = await Promise.all([
+    supabase.from("coastal_shipper_regions").select("stop_id").eq("shipper_id", shipperId),
+    supabase.from("coastal_shipper_exclusions").select("id, kind, label").eq("shipper_id", shipperId),
+  ])
+  const regionsMissing = Boolean(regions.error && isMissingShipperScheduleTable(regions.error.message))
+  const exclusionsMissing = Boolean(exclusions.error && isMissingShipperScheduleTable(exclusions.error.message))
+  if (regions.error && !regionsMissing) throw regions.error
+  if (exclusions.error && !exclusionsMissing) throw exclusions.error
+  const regionStopIds = regionsMissing
+    ? []
+    : asRecords(regions.data).map((row) => stringField(row, "stop_id")).filter((id): id is string => Boolean(id))
+  const exclusionRows: CoastalShipperExclusion[] = exclusionsMissing
+    ? []
+    : asRecords(exclusions.data).flatMap((row): CoastalShipperExclusion[] => {
+        const id = stringField(row, "id")
+        const label = stringField(row, "label")?.trim() ?? ""
+        const kind = row.kind === "address" ? "address" : row.kind === "area" ? "area" : null
+        if (!id || !kind || label.length < 2) return []
+        return [{ id, kind, label }]
+      })
+  return { regionStopIds, regionsExplicit: !regionsMissing && regionStopIds.length > 0, exclusions: exclusionRows }
+}
+
+export async function replaceCoastalShipperRegions(
+  supabase: SupabaseClient,
+  shipperId: string,
+  stopIds: string[],
+): Promise<void> {
+  const removed = await supabase.from("coastal_shipper_regions").delete().eq("shipper_id", shipperId)
+  if (removed.error) throw scheduleTableError(removed.error)
+  if (stopIds.length === 0) return
+  const inserted = await supabase
+    .from("coastal_shipper_regions")
+    .insert(stopIds.map((stopId) => ({ shipper_id: shipperId, stop_id: stopId })))
+  if (inserted.error) throw scheduleTableError(inserted.error)
+}
+
+export async function insertCoastalShipperExclusion(
+  supabase: SupabaseClient,
+  input: { shipperId: string; kind: "area" | "address"; label: string },
+): Promise<void> {
+  const { error } = await supabase.from("coastal_shipper_exclusions").insert({
+    shipper_id: input.shipperId,
+    kind: input.kind,
+    label: input.label.trim(),
+  })
+  if (error) throw scheduleTableError(error)
+}
+
+export async function deleteCoastalShipperExclusion(
+  supabase: SupabaseClient,
+  shipperId: string,
+  exclusionId: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from("coastal_shipper_exclusions")
+    .delete()
+    .eq("id", exclusionId)
+    .eq("shipper_id", shipperId)
+  if (error) throw scheduleTableError(error)
+}
+
+function scheduleTableError(error: { message?: string }): Error {
+  if (isMissingShipperScheduleTable(error.message)) {
+    return new Error("Run the latest Shipper SQL, then try again.")
+  }
+  return new Error(error.message || "Could not save that.")
 }
 
 export async function searchCoastalPreviewListings(
@@ -498,42 +626,51 @@ async function resolveRunId(
     dayOfWeek: number
     direction: CoastalDirection
     enabled: boolean
+    serviceDate?: string | null
   },
 ): Promise<string> {
+  const serviceDate = input.serviceDate ?? null
   const patch = {
     day_of_week: input.dayOfWeek,
     direction: input.direction,
     enabled: input.enabled,
+    service_date: serviceDate,
   }
 
   if (input.runId) {
-    const { data, error } = await supabase
-      .from("coastal_shipper_runs")
-      .update(patch)
-      .eq("id", input.runId)
-      .eq("shipper_id", input.shipperId)
-      .select("id")
-      .maybeSingle()
-    if (error) throw friendlyRunError(error)
-    const id = asRecord(data).id
-    if (typeof id !== "string") throw new Error("Run not found.")
+    const id = await writeRunPatch(supabase, input.runId, input.shipperId, patch, serviceDate)
+    if (!id) throw new Error("Run not found.")
     return id
   }
 
-  const { data: existing, error: existingError } = await supabase
+  let existingQuery = supabase
     .from("coastal_shipper_runs")
     .select("id")
     .eq("shipper_id", input.shipperId)
-    .eq("day_of_week", input.dayOfWeek)
     .eq("direction", input.direction)
-    .maybeSingle()
+  existingQuery = serviceDate
+    ? existingQuery.eq("service_date", serviceDate)
+    : existingQuery.is("service_date", null).eq("day_of_week", input.dayOfWeek)
+  let { data: existing, error: existingError } = await existingQuery.maybeSingle()
+  if (existingError && isMissingServiceDateColumn(existingError.message)) {
+    if (serviceDate) throw new Error("Run the latest Shipper SQL before saving a one-week trip.")
+    const weeklyLookup = await supabase
+      .from("coastal_shipper_runs")
+      .select("id")
+      .eq("shipper_id", input.shipperId)
+      .eq("direction", input.direction)
+      .eq("day_of_week", input.dayOfWeek)
+      .maybeSingle()
+    existing = weeklyLookup.data
+    existingError = weeklyLookup.error
+  }
   if (existingError) throw existingError
 
   const existingId = asRecord(existing).id
   if (typeof existingId === "string") {
-    const { error } = await supabase.from("coastal_shipper_runs").update(patch).eq("id", existingId)
-    if (error) throw friendlyRunError(error)
-    return existingId
+    const id = await writeRunPatch(supabase, existingId, input.shipperId, patch, serviceDate)
+    if (!id) throw new Error("Run not found.")
+    return id
   }
 
   const { data, error } = await supabase
@@ -541,6 +678,23 @@ async function resolveRunId(
     .insert({ shipper_id: input.shipperId, ...patch })
     .select("id")
     .single()
+  if (error && isMissingServiceDateColumn(error.message)) {
+    if (serviceDate) throw new Error("Run the latest Shipper SQL before saving a one-week trip.")
+    const weekly = await supabase
+      .from("coastal_shipper_runs")
+      .insert({
+        shipper_id: input.shipperId,
+        day_of_week: input.dayOfWeek,
+        direction: input.direction,
+        enabled: input.enabled,
+      })
+      .select("id")
+      .single()
+    if (weekly.error) throw friendlyRunError(weekly.error)
+    const weeklyId = asRecord(weekly.data).id
+    if (typeof weeklyId !== "string") throw new Error("Could not save that run.")
+    return weeklyId
+  }
   if (error) throw friendlyRunError(error)
   const id = asRecord(data).id
   if (typeof id !== "string") throw new Error("Could not save that run.")
@@ -586,6 +740,7 @@ function assembleSchedules(
         phone: stringField(row, "phone") ?? "",
         notes: stringField(row, "notes") ?? "",
         scheduleEnabled: row.schedule_enabled === true,
+        priceCents: normalizeShipperPriceCents(row.price_cents),
         runs,
       },
     ]
@@ -608,7 +763,68 @@ function mapRun(row: Record<string, unknown>, stopIds: string[]): CoastalRunView
   const direction = row.direction === "northbound" || row.direction === "southbound" ? row.direction : null
   const dayOfWeek = typeof row.day_of_week === "number" ? row.day_of_week : Number(row.day_of_week)
   if (!id || !direction || !Number.isInteger(dayOfWeek)) return null
-  return { id, dayOfWeek, direction, enabled: row.enabled === true, stopIds }
+  const rawDate = stringField(row, "service_date")
+  const serviceDate = rawDate && /^\d{4}-\d{2}-\d{2}/.test(rawDate) ? rawDate.slice(0, 10) : null
+  return { id, dayOfWeek, direction, enabled: row.enabled === true, stopIds, serviceDate }
+}
+
+async function selectShipperRows(supabase: SupabaseClient) {
+  const withPrice = await supabase
+    .from("coastal_shippers")
+    .select(SHIPPER_SELECT)
+    .order("display_name", { ascending: true })
+  if (!withPrice.error || !isMissingPriceColumn(withPrice.error.message)) return withPrice
+  return supabase.from("coastal_shippers").select(SHIPPER_SELECT_BASE).order("display_name", { ascending: true })
+}
+
+function isMissingPriceColumn(message: string | undefined): boolean {
+  return /price_cents/i.test(message ?? "") && /does not exist|schema cache/i.test(message ?? "")
+}
+
+async function selectShipperRuns(supabase: SupabaseClient) {
+  const withDate = await supabase.from("coastal_shipper_runs").select(RUN_SELECT)
+  if (!withDate.error || !isMissingServiceDateColumn(withDate.error.message)) return withDate
+  return supabase.from("coastal_shipper_runs").select(RUN_SELECT_WEEKLY)
+}
+
+async function writeRunPatch(
+  supabase: SupabaseClient,
+  runId: string,
+  shipperId: string,
+  patch: { day_of_week: number; direction: CoastalDirection; enabled: boolean; service_date: string | null },
+  serviceDate: string | null,
+): Promise<string | null> {
+  const updated = await supabase
+    .from("coastal_shipper_runs")
+    .update(patch)
+    .eq("id", runId)
+    .eq("shipper_id", shipperId)
+    .select("id")
+    .maybeSingle()
+  if (updated.error && isMissingServiceDateColumn(updated.error.message)) {
+    if (serviceDate) throw new Error("Run the latest Shipper SQL before saving a one-week trip.")
+    const weekly = await supabase
+      .from("coastal_shipper_runs")
+      .update({ day_of_week: patch.day_of_week, direction: patch.direction, enabled: patch.enabled })
+      .eq("id", runId)
+      .eq("shipper_id", shipperId)
+      .select("id")
+      .maybeSingle()
+    if (weekly.error) throw friendlyRunError(weekly.error)
+    const id = asRecord(weekly.data).id
+    return typeof id === "string" ? id : null
+  }
+  if (updated.error) throw friendlyRunError(updated.error)
+  const id = asRecord(updated.data).id
+  return typeof id === "string" ? id : null
+}
+
+function isMissingServiceDateColumn(message: string | undefined): boolean {
+  return /column "service_date"|service_date/i.test(message ?? "") && /does not exist|schema cache/i.test(message ?? "")
+}
+
+export function isMissingShipperScheduleTable(message: string | undefined): boolean {
+  return /coastal_shipper_(regions|exclusions)|service_date/i.test(message ?? "") && /does not exist|schema cache/i.test(message ?? "")
 }
 
 function mapListingHit(row: Record<string, unknown>): CoastalListingHit {
@@ -665,7 +881,9 @@ function mapShipperJob(row: Record<string, unknown>): CoastalShipperJobRecord | 
 }
 
 function parseDeliveryStatus(value: unknown): CoastalDeliveryStatus {
-  if (value === "picked_up" || value === "dropped_off" || value === "waiting_for_run") return value
+  if (value === "picked_up" || value === "dropped_off" || value === "waiting_for_run" || value === "cancelled") {
+    return value
+  }
   return "waiting_for_run"
 }
 

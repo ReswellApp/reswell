@@ -12,6 +12,7 @@ import {
   MessageSquare,
   LifeBuoy,
   Scale,
+  Store,
   Truck,
 } from "lucide-react"
 
@@ -40,10 +41,27 @@ export const DASHBOARD_SHIPPER_NAV: DashboardNavLink = {
   icon: Truck,
 }
 
-export function dashboardNavLinks(input: { isAdmin: boolean; isShipper: boolean }): DashboardNavLink[] {
+export const DASHBOARD_SHOPIFY_NAV: DashboardNavLink = {
+  name: "Shopify",
+  href: "/dashboard/shopify",
+  icon: Store,
+}
+
+export function dashboardNavLinks(input: {
+  isAdmin: boolean
+  isShipper: boolean
+  hasShopifyAccess?: boolean
+}): DashboardNavLink[] {
   const links = DASHBOARD_NAV_LINKS.filter((link) => !link.adminOnly || input.isAdmin)
-  if (!input.isShipper) return links
-  const [overview, ...rest] = links
+  const expanded = input.hasShopifyAccess
+    ? links.flatMap((link) =>
+        link.href === "/dashboard/listings"
+          ? [link, DASHBOARD_SHOPIFY_NAV]
+          : [link],
+      )
+    : links
+  if (!input.isShipper) return expanded
+  const [overview, ...rest] = expanded
   return overview ? [overview, DASHBOARD_SHIPPER_NAV, ...rest] : [DASHBOARD_SHIPPER_NAV]
 }
 

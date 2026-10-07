@@ -3,6 +3,7 @@ import Link from "next/link"
 import { AdminStatusPill } from "@/components/features/admin/admin-status-pill"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import type { CoastalShipperSummary } from "@/lib/types/coastal-delivery"
+import { shipperPriceUsd } from "@/lib/utils/shipperPrice"
 
 interface ShipperRosterProps {
   shippers: CoastalShipperSummary[]
@@ -28,6 +29,7 @@ export function ShipperRoster({ shippers }: ShipperRosterProps) {
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <ShopMark isShop={shipper.isShop} />
               <ServiceMark enabled={shipper.scheduleEnabled} />
+              <span className="text-sm text-foreground">${shipperPriceUsd(shipper.priceCents)}</span>
               <RunMark hasRun={shipper.runCount > 0} />
             </div>
             <Link href={`/admin/shipper/${shipper.id}`} className="mt-3 inline-flex text-sm font-medium underline">
@@ -45,6 +47,7 @@ export function ShipperRoster({ shippers }: ShipperRosterProps) {
               <TableHead>Email</TableHead>
               <TableHead>Shop</TableHead>
               <TableHead>Service</TableHead>
+              <TableHead>Price</TableHead>
               <TableHead>Run</TableHead>
               <TableHead className="text-right"> </TableHead>
             </TableRow>
@@ -60,6 +63,7 @@ export function ShipperRoster({ shippers }: ShipperRosterProps) {
                 <TableCell>
                   <ServiceMark enabled={shipper.scheduleEnabled} />
                 </TableCell>
+                <TableCell className="tabular-nums">${shipperPriceUsd(shipper.priceCents)}</TableCell>
                 <TableCell>
                   <RunMark hasRun={shipper.runCount > 0} />
                 </TableCell>

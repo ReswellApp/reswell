@@ -16,7 +16,7 @@ import {
   coastalShipperMembership,
   resolveCoastalShipperGrantUserId,
 } from "./coastalShipperAccess"
-import { shipperAccountLine, shipperWeekStatusLine } from "./coastalShipperWeek"
+import { shipperAccountLine, shipperServesPoint, shipperWeekStatusLine, soonestEnabledTrip, tripsForWeek } from "./coastalShipperWeek"
 import { buildCoastalRunSheet, type CoastalJobDraft } from "./coastalShipperRunSheet"
 import type { CoastalAddressSnapshot, CoastalRunView, CoastalStopView } from "@/lib/types/coastal-delivery"
 
@@ -65,6 +65,61 @@ describe("shipperWeekStatusLine", () => {
       "Shipper is on. One run can take boards.",
     )
     assert.equal(shipperAccountLine({ email: "haydensbsb@gmail.com", isShop: true }), "haydensbsb@gmail.com · Shop")
+  })
+})
+
+describe("tripsForWeek", () => {
+  it("lets a dated trip replace the weekly one for that day", () => {
+    const weekly = {
+      id: "weekly",
+      dayOfWeek: 2,
+      direction: "northbound" as const,
+      enabled: true,
+      stopIds: ["a", "b"],
+      serviceDate: null,
+    }
+    const dated = { ...weekly, id: "dated", serviceDate: "2026-10-06" }
+    const shown = tripsForWeek([weekly, dated], "2026-10-04")
+    assert.deepEqual(shown.map((trip) => trip.id), ["dated"])
+    assert.equal(shipperServesPoint({
+      latitude: 36.97,
+      city: "Santa Cruz",
+      line1: "1 Pacific Ave",
+      regionLatitudes: [36.97, 37.76],
+      exclusions: ["Oakland"],
+    }), true)
+    assert.equal(shipperServesPoint({
+      latitude: 34.42,
+      city: "Santa Barbara",
+      line1: "1 State St",
+      regionLatitudes: [36.97, 37.76],
+      exclusions: [],
+    }), false)
+  })
+})
+
+describe("soonestEnabledTrip", () => {
+  const monday = new Date("2026-06-15T18:00:00.000Z")
+  const weekly = {
+    id: "weekly",
+    dayOfWeek: 2,
+    direction: "northbound" as const,
+    enabled: true,
+    serviceDate: null,
+  }
+
+  it("uses a one-week trip on its date and skips a week that trip is off", () => {
+    const dated = { ...weekly, id: "dated", serviceDate: "2026-06-16" }
+    assert.equal(soonestEnabledTrip(monday, [weekly, dated])?.run.id, "dated")
+    assert.equal(soonestEnabledTrip(monday, [weekly, dated])?.date, "2026-06-16")
+
+    const cancelled = { ...dated, enabled: false }
+    const skipped = soonestEnabledTrip(monday, [weekly, cancelled])
+    assert.equal(skipped?.run.id, "weekly")
+    assert.equal(skipped?.date, "2026-06-23")
+
+    const past = { ...dated, serviceDate: "2026-06-09" }
+    assert.equal(soonestEnabledTrip(monday, [past]), null)
   })
 })
 
@@ -158,6 +213,9 @@ describe("canSetCoastalStatus", () => {
     assert.equal(canSetCoastalStatus("picked_up", "waiting_for_run"), true)
     assert.equal(canSetCoastalStatus("dropped_off", "picked_up"), true)
     assert.equal(canSetCoastalStatus("waiting_for_run", "dropped_off"), false)
+    assert.equal(canSetCoastalStatus("waiting_for_run", "cancelled"), true)
+    assert.equal(canSetCoastalStatus("cancelled", "waiting_for_run"), true)
+    assert.equal(canSetCoastalStatus("picked_up", "cancelled"), false)
     assert.equal(canSetCoastalStatus("dropped_off", "waiting_for_run"), false)
   })
 })

@@ -4,6 +4,7 @@ import type {
   GiveawayPrizeBrandId,
   GiveawayStatus,
 } from "@/lib/types/giveaways"
+import { BUSINESS_TIMEZONE } from "@/lib/utils/business-timezone"
 
 export const GIVEAWAY_PRIZE_BRANDS: readonly GiveawayPrizeBrand[] = [
   {
@@ -49,6 +50,9 @@ export const GIVEAWAY_PRIZE_BRAND_LIST_COPY =
 
 export const WIN_A_SURFBOARD_GIVEAWAY_SLUG = "win-a-custom-surfboard"
 
+/** Final entry moment for the custom-surfboard raffle, in Pacific Time. */
+export const WIN_A_SURFBOARD_ENTRY_DEADLINE_COPY = "tonight at 11:59pm PT"
+
 const WIN_A_SURFBOARD_GIVEAWAY: Giveaway = {
   slug: WIN_A_SURFBOARD_GIVEAWAY_SLUG,
   title: "List a surfboard to win a surfboard",
@@ -60,10 +64,12 @@ const WIN_A_SURFBOARD_GIVEAWAY: Giveaway = {
     "We’re giving away a custom surfboard to one seller who lists a board on Reswell. Sign up, publish a surfboard listing, then choose the brand you want to ride — you’re in the raffle. One entry per person.",
   prizeLabel: `One custom surfboard from ${GIVEAWAY_PRIZE_BRAND_LIST_COPY}`,
   startsAt: "2026-08-18T00:00:00.000Z",
-  endsAt: "2026-10-07T23:59:59.000Z",
+  // 11:59:59pm Pacific on October 7, 2026 (PDT, UTC−7).
+  endsAt: "2026-10-08T06:59:59.000Z",
   winnerDrawnAt: "2026-10-10T00:00:00.000Z",
+  deadlineLabel: WIN_A_SURFBOARD_ENTRY_DEADLINE_COPY,
   scheduleLabel:
-    "Ends October 7th · Raffle winner is chosen on October 10th",
+    `Deadline to enter is ${WIN_A_SURFBOARD_ENTRY_DEADLINE_COPY} · Raffle winner is chosen on October 10th`,
   status: "active",
   requiresSurfboardListing: true,
   prizeBrands: [
@@ -81,7 +87,7 @@ const WIN_A_SURFBOARD_GIVEAWAY: Giveaway = {
     },
     {
       title: "List a surfboard",
-      body: "Publish a board by October 7th. That’s your raffle ticket.",
+      body: `Publish a board by ${WIN_A_SURFBOARD_ENTRY_DEADLINE_COPY}. That’s your raffle ticket.`,
     },
     {
       title: "Pick your custom",
@@ -94,7 +100,7 @@ const WIN_A_SURFBOARD_GIVEAWAY: Giveaway = {
     "After you list, choose one prize brand. You can change it any time before the giveaway ends, and again if you win and want a different maker.",
     "Listings must be real surfboards offered for sale on Reswell. Drafts do not count.",
     "No purchase necessary beyond creating a free listing. Shipping or selling the board is not required to stay entered.",
-    "Entries close October 7th. The winner is selected at random from qualified entries on October 10th and notified by email.",
+    `Entries close ${WIN_A_SURFBOARD_ENTRY_DEADLINE_COPY}. The winner is selected at random from qualified entries on October 10th and notified by email.`,
     "Prize is one custom surfboard from any of the prize brands, coordinated by Reswell. The winner may switch makers if they change their mind. Exact model, dimensions, and build details are confirmed with the winner.",
     "Reswell may disqualify entries that are fake, duplicate, or violate the Terms of Service.",
     `This giveaway is run by Reswell and is not sponsored, endorsed, or administered by ${GIVEAWAY_PRIZE_BRAND_LIST_COPY}.`,
@@ -153,5 +159,6 @@ export function formatGiveawayEndDate(iso: string): string {
     month: "long",
     day: "numeric",
     year: "numeric",
+    timeZone: BUSINESS_TIMEZONE,
   }).format(date)
 }

@@ -27,6 +27,7 @@ import { isBlockedOwnListingPurchase } from "@/lib/cart-eligibility"
 import { readAdAttributionFromCookies } from "@/lib/ads/read-request-attribution"
 import { insertOrderAdAttribution } from "@/lib/db/orderAdAttribution"
 import { listingSoldViaCheckoutUpdate } from "@/lib/listing-sold-state"
+import { isShopifyManagedListing } from "@/lib/shopify/listing"
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -65,7 +66,7 @@ export async function POST(request: NextRequest) {
 
   const { data: listing, error: listingError } = await supabase
     .from("listings")
-    .select("id, user_id, title, price, section, slug, shipping_available, local_pickup, shipping_price, status")
+    .select("id, user_id, title, price, section, slug, shipping_available, local_pickup, shipping_price, status, stock_quantity, inventory_source")
     .eq("id", listing_id)
     .eq("status", "active")
     .eq("hidden_from_site", false)
@@ -74,6 +75,21 @@ export async function POST(request: NextRequest) {
 
   if (listingError || !listing) {
     return NextResponse.json({ error: "Listing not found or not available" }, { status: 404 })
+  }
+  if (
+    isShopifyManagedListing(listing) &&
+    Math.max(0, Math.floor(Number(listing.stock_quantity) || 0)) < 1
+  ) {
+    return NextResponse.json({ error: "This Shopify item is out of stock" }, { status: 409 })
+  }
+  if (isShopifyManagedListing(listing)) {
+    return NextResponse.json(
+      {
+        error:
+          "Shopify-synced inventory currently requires card checkout so stock updates stay atomic.",
+      },
+      { status: 400 },
+    )
   }
 
   if (isBlockedOwnListingPurchase(listing, user.id)) {
