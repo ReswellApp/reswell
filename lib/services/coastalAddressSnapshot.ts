@@ -33,9 +33,11 @@ export function chooseCoastalSale(orders: CoastalSaleOrder[]): CoastalSaleChoice
 
 export function canSetCoastalStatus(from: CoastalDeliveryStatus, to: CoastalDeliveryStatus): boolean {
   if (from === to) return false
-  if (from === "waiting_for_run") return to === "picked_up"
+  if (from === "waiting_for_run") return to === "picked_up" || to === "cancelled"
+  if (from === "cancelled") return to === "waiting_for_run"
   if (from === "picked_up") return to === "dropped_off" || to === "waiting_for_run"
-  return to === "picked_up"
+  if (from === "dropped_off") return to === "picked_up"
+  return false
 }
 
 export function snapshotFromListingPin(input: {

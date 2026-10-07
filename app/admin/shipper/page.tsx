@@ -31,7 +31,7 @@ export default async function ShipperAdminPage() {
     <div className="space-y-6">
       <AdminPageHeader
         title="Shipper"
-        description="Accounts that can drive Shipper. Grant stays in the dialog. Buyers still do not see it."
+        description="Grant Shipper and see who is signed up. They build their own trips on the Shipper dashboard."
         breadcrumbs={[{ label: "Admin", href: "/admin/home" }, { label: "Shipper" }]}
         actions={
           <>

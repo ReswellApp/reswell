@@ -1,6 +1,5 @@
 import type { ReactNode } from "react"
 import Image from "next/image"
-import { formatGiveawayEndDate } from "@/lib/giveaways/catalog"
 import { wideShimmer } from "@/lib/image-shimmer"
 import type { Giveaway } from "@/lib/types/giveaways"
 import heroBackdrop from "@/public/images/home/hero-backdrop-tahiti.jpg"
@@ -11,8 +10,6 @@ type GiveawayHeroProps = {
 }
 
 export function GiveawayHero({ giveaway, children }: GiveawayHeroProps) {
-  const ends = formatGiveawayEndDate(giveaway.endsAt)
-
   return (
     <section className="relative overflow-hidden">
       <div className="relative isolate min-h-[22rem] sm:min-h-[26rem]">
@@ -34,12 +31,8 @@ export function GiveawayHero({ giveaway, children }: GiveawayHeroProps) {
         <div className="relative z-10 mx-auto flex min-h-[22rem] max-w-2xl flex-col justify-end px-4 pb-12 pt-8 sm:min-h-[26rem] sm:px-6 sm:pb-14">
           <p className="text-xs font-semibold uppercase tracking-widest text-white/80">
             {giveaway.eyebrow}
-            {ends ? (
-              <>
-                <span aria-hidden> · </span>
-                Ends {ends}
-              </>
-            ) : null}
+            <span aria-hidden> · </span>
+            Deadline {giveaway.deadlineLabel}
           </p>
           <h1 className="mt-3 font-headline text-4xl font-bold leading-[1.05] tracking-[-0.03em] text-balance text-white sm:text-5xl">
             {giveaway.headline}

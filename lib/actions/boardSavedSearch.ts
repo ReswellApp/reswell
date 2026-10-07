@@ -31,6 +31,23 @@ export type BoardSavedSearchListItem = {
   updatedAt: string
 }
 
+function revalidateSavedSearchPaths() {
+  try {
+    revalidatePath("/board-finder")
+    revalidatePath("/boards")
+    revalidatePath("/fins")
+    revalidatePath("/wetsuits")
+    revalidatePath("/magazines")
+    revalidatePath("/boardbags")
+    revalidatePath("/surfpacks")
+    revalidatePath("/leashes")
+    revalidatePath("/apparel")
+    revalidatePath("/accessories")
+  } catch (err) {
+    console.error("[saved_search] revalidate failed:", err)
+  }
+}
+
 function toListItem(row: BoardSavedSearchRow): BoardSavedSearchListItem {
   return {
     id: row.id,
@@ -127,6 +144,11 @@ export async function createBoardSavedSearchAction(raw: unknown) {
   })
 
   if (error || !data) {
+    if (error && "code" in error && error.code === "23505") {
+      return {
+        error: "Could not save another search. Remove one and try again." as const,
+      }
+    }
     return { error: "Could not save search. Try again." as const }
   }
 
@@ -156,17 +178,7 @@ export async function createBoardSavedSearchAction(raw: unknown) {
     })
   })
 
-  revalidatePath("/board-finder")
-  revalidatePath("/boards")
-  revalidatePath("/fins")
-  revalidatePath("/wetsuits")
-  revalidatePath("/magazines")
-  revalidatePath("/boardbags")
-  revalidatePath("/surfpacks")
-  revalidatePath("/leashes")
-  revalidatePath("/apparel")
-  revalidatePath("/accessories")
-  revalidatePath("/search")
+  revalidateSavedSearchPaths()
 
   return {
     success: true as const,
@@ -195,17 +207,7 @@ export async function deleteBoardSavedSearchAction(raw: unknown) {
     return { error: "Could not remove saved search." as const }
   }
 
-  revalidatePath("/board-finder")
-  revalidatePath("/boards")
-  revalidatePath("/fins")
-  revalidatePath("/wetsuits")
-  revalidatePath("/magazines")
-  revalidatePath("/boardbags")
-  revalidatePath("/surfpacks")
-  revalidatePath("/leashes")
-  revalidatePath("/apparel")
-  revalidatePath("/accessories")
-  revalidatePath("/search")
+  revalidateSavedSearchPaths()
 
   return { success: true as const }
 }

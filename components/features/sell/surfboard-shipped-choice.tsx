@@ -14,12 +14,12 @@ import {
 } from "@/lib/actions/surfboardShippedActions"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import {
-  SURFBOARD_SHIPPED_FEE_USD,
   SURFBOARD_SHIPPED_NAME,
   SURFBOARD_SHIPPED_WINDOW_LABEL,
   isCaliforniaAddressState,
   type LiveSurfboardShipper,
 } from "@/lib/services/surfboardShipped"
+import { surfboardShippedBuyerPriceCopy } from "@/lib/utils/shipperPrice"
 import { cn } from "@/lib/utils"
 
 export type SurfboardShippedSellDraft = {
@@ -177,13 +177,13 @@ export function SurfboardShippedChoice({
           </Label>
           <p className="text-xs leading-snug text-muted-foreground sm:text-sm">
             A shipper picks the board up at a California street and drives it to the
-            buyer. Any California city qualifies. Buyers pay ${SURFBOARD_SHIPPED_FEE_USD} at checkout.
+            buyer. Any California city qualifies. {surfboardShippedBuyerPriceCopy(offer.liveShippers.map((shipper) => shipper.priceUsd))}{" "}
             Drop-off is {SURFBOARD_SHIPPED_WINDOW_LABEL}.
           </p>
           <ul className="space-y-1 text-xs text-foreground sm:text-sm">
             {offer.liveShippers.map((shipper) => (
               <li key={shipper.id}>
-                {shipper.displayName} · Live
+                {shipper.displayName} · ${shipper.priceUsd} · Live
               </li>
             ))}
           </ul>

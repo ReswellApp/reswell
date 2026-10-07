@@ -27,7 +27,12 @@ import { Label } from "@/components/ui/label"
 import { LISTING_VIDEO_ACCEPT } from "@/lib/listing-video-pipeline"
 import { LISTING_PHOTO_ACCEPT } from "@/lib/sell-flow/listing-photo-file"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
-import type { ListingPhotoSlot } from "@/lib/sell-flow/listing-photo-slot"
+import {
+  isLocalListingPhotoPreviewUrl,
+  listingPhotoTilePreviewSrc,
+  listingPhotoTileSkeletonVisible,
+  type ListingPhotoSlot,
+} from "@/lib/sell-flow/listing-photo-slot"
 import {
   isListingVideoImagePreviewUrl,
   listingVideoUploadStatusLabel,
@@ -151,16 +156,12 @@ function SellListingPhotoTile({
   const isFailure = image.optimizePhase === "error" || image.uploadPhase === "error"
   const isPendingAuth = image.uploadPhase === "pending_auth"
 
-  const remote =
-    image.uploadPhase === "done"
-      ? (image.thumbnailUrl?.trim() || image.url?.trim() || "").trim()
+  const rawPreview = listingPhotoTilePreviewSrc(image)
+  const thumbSrc = isLocalListingPhotoPreviewUrl(rawPreview)
+    ? rawPreview
+    : rawPreview
+      ? (proxiedListingImageSrc(rawPreview) ?? rawPreview)
       : ""
-  const localPreview =
-    (image.optimizePhase === "done" || isPendingAuth) &&
-    image.previewUrl.startsWith("blob:")
-      ? image.previewUrl
-      : ""
-  const thumbSrc = remote ? (proxiedListingImageSrc(remote) ?? remote) : localPreview
   const photoReady = Boolean(thumbSrc)
 
   const persistedThumbMatches =
@@ -176,11 +177,7 @@ function SellListingPhotoTile({
     setThumbLoaded(matched)
   }, [image.clientId, thumbSrc])
 
-  const skeletonVisible =
-    !isFailure &&
-    (image.optimizePhase === "running" ||
-      image.uploadPhase === "uploading" ||
-      (Boolean(thumbSrc) && !thumbLoaded))
+  const skeletonVisible = listingPhotoTileSkeletonVisible(image, thumbLoaded)
 
   const canRotate180 =
     !isFailure &&
@@ -213,10 +210,16 @@ function SellListingPhotoTile({
             fill
             draggable={false}
             className={cn(
-              "pointer-events-none object-cover object-center transition-opacity duration-500 ease-out motion-reduce:duration-150 [-webkit-touch-callout:none]",
+              "pointer-events-none object-cover object-center transition-opacity ease-out motion-reduce:duration-150 [-webkit-touch-callout:none]",
+              isLocalListingPhotoPreviewUrl(rawPreview) ? "duration-150" : "duration-500",
               thumbLoaded ? "opacity-100" : "opacity-0",
             )}
             unoptimized
+            loading={isLocalListingPhotoPreviewUrl(rawPreview) ? "eager" : undefined}
+            onLoad={() => {
+              sellListingThumbLoadedSrcByClientId.set(image.clientId, thumbSrc)
+              setThumbLoaded(true)
+            }}
             onLoadingComplete={() => {
               sellListingThumbLoadedSrcByClientId.set(image.clientId, thumbSrc)
               setThumbLoaded(true)
@@ -229,7 +232,10 @@ function SellListingPhotoTile({
               "skeleton pointer-events-none absolute inset-0 z-[1] rounded-lg motion-reduce:[animation-duration:1ms]",
               skeletonVisible
                 ? "opacity-100"
-                : "opacity-0 transition-opacity duration-500 ease-out motion-reduce:duration-150 motion-reduce:transition-none",
+                : cn(
+                    "opacity-0 transition-opacity ease-out motion-reduce:duration-150 motion-reduce:transition-none",
+                    isLocalListingPhotoPreviewUrl(rawPreview) ? "duration-150" : "duration-500",
+                  ),
             )}
             aria-hidden
           />

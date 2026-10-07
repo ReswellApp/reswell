@@ -24,29 +24,36 @@ export const SellSimplePhotoTile = memo(function SellSimplePhotoTile({
   onRemove,
 }: SellSimplePhotoTileProps) {
   const showRotate = canRotateSimpleSellPhoto(photo)
+  // Don't point <img> at the original camera file — iOS will decode the full HEIC
+  // under the spinner and fight the small preview decode.
+  const showImage =
+    photo.localPreviewReady ||
+    photo.phase === "done" ||
+    !photo.previewUrl.startsWith("blob:")
 
   return (
     <div className="relative aspect-square overflow-hidden rounded-lg border border-transparent bg-muted">
-      <Image
-        src={photo.previewUrl}
-        alt={`Photo ${index + 1}`}
-        fill
-        sizes="120px"
-        className="object-cover object-center"
-        unoptimized
-      />
-      {photo.phase !== "done" ? (
+      {showImage ? (
+        <Image
+          src={photo.previewUrl}
+          alt={`Photo ${index + 1}`}
+          fill
+          sizes="120px"
+          className="object-cover object-center"
+          unoptimized
+          loading={photo.localPreviewReady ? "eager" : undefined}
+        />
+      ) : null}
+      {photo.phase === "error" ? (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-background/70 text-xs text-muted-foreground">
-          {photo.phase === "error" ? (
-            <span className="px-2 text-center text-[11px] leading-snug text-destructive">
-              {photo.errorMessage || "Couldn't add this photo. Try again."}
-            </span>
-          ) : (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              {photo.progress > 0 ? `${photo.progress}%` : null}
-            </>
-          )}
+          <span className="px-2 text-center text-[11px] leading-snug text-destructive">
+            {photo.errorMessage || "Couldn't add this photo. Try again."}
+          </span>
+        </div>
+      ) : photo.phase !== "done" && !photo.localPreviewReady ? (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-background/70 text-xs text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          {photo.progress > 0 ? `${photo.progress}%` : null}
         </div>
       ) : null}
       {index === 0 ? (

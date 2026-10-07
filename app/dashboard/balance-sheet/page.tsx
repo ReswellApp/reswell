@@ -1,7 +1,9 @@
+import Link from "next/link"
 import { redirect } from "next/navigation"
 import { z } from "zod"
 import { AlertTriangle, ReceiptText } from "lucide-react"
 import { BalanceSheetCategoryFilter } from "@/components/features/dashboard/balance-sheet-category-filter"
+import { BalanceSheetSortSelect } from "@/components/features/dashboard/balance-sheet-sort-select"
 import { BalanceSheetSummary } from "@/components/features/dashboard/balance-sheet-summary"
 import { BalanceSheetTable } from "@/components/features/dashboard/balance-sheet-table"
 import { DashboardPageHeader } from "@/components/features/dashboard/dashboard-page-header"
@@ -12,6 +14,8 @@ import {
   SellerBalanceSheetAccessError,
 } from "@/lib/services/sellerBalanceSheet"
 import { privatePageMetadata } from "@/lib/site-metadata"
+import { balanceSheetHref } from "@/lib/utils/balance-sheet-query"
+import { balanceSheetSortSchema } from "@/lib/validations/seller-balance-sheet"
 
 export const metadata = privatePageMetadata({
   title: "Balance Sheet — Reswell",
@@ -25,15 +29,16 @@ const PAGE_SIZE = 50
 export default async function BalanceSheetPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; category?: string }>
+  searchParams: Promise<{ page?: string; category?: string; sort?: string }>
 }) {
   const params = await searchParams
   const requestedPage = pageSchema.parse(params.page)
   const category = isPeerListingSection(params.category) ? params.category : null
+  const sort = balanceSheetSortSchema.parse(params.sort)
 
   let sheet
   try {
-    sheet = await getAdminSellerBalanceSheet(requestedPage, PAGE_SIZE, category)
+    sheet = await getAdminSellerBalanceSheet(requestedPage, PAGE_SIZE, category, sort)
   } catch (error) {
     if (error instanceof SellerBalanceSheetAccessError) {
       redirect("/dashboard")
@@ -42,9 +47,7 @@ export default async function BalanceSheetPage({
   }
 
   if (requestedPage > sheet.totalPages) {
-    const redirectParams = new URLSearchParams({ page: String(sheet.totalPages) })
-    if (category) redirectParams.set("category", category)
-    redirect(`/dashboard/balance-sheet?${redirectParams.toString()}`)
+    redirect(balanceSheetHref({ page: sheet.totalPages, category, sort }))
   }
 
   return (
@@ -54,7 +57,8 @@ export default async function BalanceSheetPage({
         description="Inventory, realized sales, and profit update automatically from listings, orders, refunds, and tipped off-platform sales."
       />
 
-      <div className="flex justify-end">
+      <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+        <BalanceSheetSortSelect sort={sort} />
         <BalanceSheetCategoryFilter category={category} />
       </div>
 
@@ -67,13 +71,23 @@ export default async function BalanceSheetPage({
             {sheet.summary.missingCostBasis}{" "}
             {sheet.summary.missingCostBasis === 1 ? "listing is" : "listings are"} missing a
             purchase price. Add it by editing the listing to complete its cost basis and calculate
-            profit after a sale.
+            profit after a sale.{" "}
+            {sort === "missing-paid" ? (
+              "Missing paid prices are listed first."
+            ) : (
+              <Link
+                href={balanceSheetHref({ category, sort: "missing-paid" })}
+                className="font-medium text-foreground underline underline-offset-2"
+              >
+                Sort by missing paid price.
+              </Link>
+            )}
           </p>
         </div>
       ) : null}
 
       {sheet.entries.length > 0 ? (
-        <BalanceSheetTable sheet={sheet} category={category} />
+        <BalanceSheetTable sheet={sheet} category={category} sort={sort} />
       ) : (
         <Card>
           <CardContent className="flex flex-col items-center py-14 text-center">

@@ -146,10 +146,11 @@ function decodeViaImageElement(file: File): Promise<DecodedImageSource> {
 export async function createImageBitmapMaxLongEdge(
   blob: Blob,
   maxLongEdge: number = LISTING_FULL_MAX_LONG_EDGE,
+  resizeQuality: "low" | "medium" | "high" = "high",
 ): Promise<ImageBitmap> {
   const opts = {
     imageOrientation: "from-image" as const,
-    resizeQuality: "high" as const,
+    resizeQuality,
   }
 
   // Portrait-primary (most sell photos after EXIF): constrain height first.
@@ -375,6 +376,53 @@ async function prepareListingImagePairOnMainThread(
     }
   } finally {
     decoded.release()
+  }
+}
+
+/**
+ * Fast on-screen JPEG for a sell tile. Downscales during decode to the listing thumb
+ * size with a cheaper filter so a 48MP iPhone photo can paint before the full
+ * WebP pair is encoded and uploaded. Not persisted.
+ */
+export async function createInstantListingPhotoPreview(
+  file: Blob,
+  options?: PrepareListingImagePairOptions,
+): Promise<Blob> {
+  let bitmap: ImageBitmap | null = await createImageBitmapMaxLongEdge(
+    file,
+    LISTING_THUMB_MAX_LONG_EDGE,
+    "medium",
+  )
+  try {
+    let drawable: Drawable = {
+      source: bitmap,
+      width: bitmap.width,
+      height: bitmap.height,
+    }
+    if (!options?.skipLandscapeToPortrait) {
+      drawable = rotateLandscapeToPortraitIfNeeded(drawable)
+    }
+    if (options?.rotate180) {
+      drawable = rotate180(drawable)
+    }
+    const turns = normalizeQuarterTurns(options?.rotateClockwiseQuarterTurns)
+    for (let i = 0; i < turns; i += 1) {
+      drawable = rotateClockwise90(drawable)
+    }
+    const { width, height } = longEdgeDimensions(
+      drawable.width,
+      drawable.height,
+      LISTING_THUMB_MAX_LONG_EDGE,
+    )
+    const canvas = drawToCanvas(drawable, width, height, (ctx) => {
+      ctx.drawImage(drawable.source, 0, 0, width, height)
+    })
+    bitmap.close()
+    bitmap = null
+    const encoded = await canvasToImageBlob(canvas, false, 0.72)
+    return encoded.blob
+  } finally {
+    bitmap?.close()
   }
 }
 

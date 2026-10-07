@@ -31,7 +31,7 @@ export async function insertBoardSavedSearch(
     email_notifications_enabled: boolean
     label?: string | null
   },
-): Promise<{ data: SavedSearchRow | null; error: Error | null }> {
+): Promise<{ data: SavedSearchRow | null; error: (Error & { code?: string }) | null }> {
   const section = savedSearchSectionColumn(input.criteria)
   const categoryId = savedSearchCategoryIdColumn(input.criteria)
 
@@ -50,7 +50,10 @@ export async function insertBoardSavedSearch(
     .maybeSingle()
 
   if (error) {
-    return { data: null, error: new Error(error.message) }
+    const wrapped = new Error(error.message) as Error & { code?: string }
+    wrapped.code = error.code
+    console.error("[saved_search] insert failed:", error.code, error.message)
+    return { data: null, error: wrapped }
   }
 
   return { data: data as SavedSearchRow | null, error: null }

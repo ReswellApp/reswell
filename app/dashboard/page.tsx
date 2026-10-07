@@ -1,41 +1,14 @@
-import Link from "next/link"
-import Image from "next/image"
 import { after } from "next/server"
 import { privatePageMetadata } from "@/lib/site-metadata"
 import { getCachedDashboardSession } from "@/lib/dashboard-session"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import {
-  Package,
-  Heart,
-  MessageSquare,
-  ArrowRight,
-  Wallet,
-  Users,
-  Lightbulb,
-  Handshake,
-  ShoppingBag,
-  PackageCheck,
-  UserCircle,
-  List,
-  Plus,
-  TrendingUp,
-  LifeBuoy,
-} from "lucide-react"
-import { capitalizeWords } from "@/lib/listing-labels"
+import { DashboardOverview } from "@/components/features/dashboard/dashboard-overview"
+import type { DashboardOverviewListingPreview } from "@/components/features/dashboard/dashboard-overview-model"
 import { reconcileWalletAggregates } from "@/lib/wallet-reconcile"
 import { persistWalletAggregatesIfNeeded } from "@/lib/services/walletReconcile"
-import {
-  listingImageShouldBypassOptimization,
-  proxiedListingImageSrc,
-} from "@/lib/listing-media-proxy-url"
+import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
 import { ORDER_STATUS_LIST } from "@/lib/order-status"
 import { sellerProfileHref } from "@/lib/seller-slug"
-import { DashboardOverviewRealtimeRefresh } from "@/components/features/dashboard/dashboard-overview-realtime-refresh"
-import { LiveSupportUnreadValue } from "@/components/features/dashboard/live-support-unread-value"
-import { dashboardPageSubtitleClass, dashboardPageTitleClass } from "@/lib/utils/dashboard-display-styles"
 import { getMySellerEarningsTotals } from "@/lib/db/sellerEarningsTotals"
 import { REAL_MARKETPLACE_SALES_FILTER } from "@/lib/order-admin-test"
 import { peerListingEditHref } from "@/lib/peer-listing-sections"
@@ -109,7 +82,7 @@ export default async function DashboardPage() {
     supabase
       .from("profiles")
       .select(
-        "is_shop, shop_name, display_name, city, location, seller_slug, avatar_url, shop_logo_url, follower_count, unread_message_count, unread_support_count",
+        "is_shop, is_admin, shop_name, display_name, city, location, seller_slug, avatar_url, shop_logo_url, follower_count, unread_message_count, unread_support_count",
       )
       .eq("id", user.id)
       .single(),
@@ -138,11 +111,9 @@ export default async function DashboardPage() {
 
   const listings = listingsAgg.data
   const listingCount = listingsAgg.count
-  const activeListings = listings?.filter((l) => l.status === "active").length || 0
+  const activeListings = listings?.filter((listing) => listing.status === "active").length || 0
   const favoriteCount = favoritesAgg.count
   const unreadNotifCount = unreadNotifAgg.count
-  const publishedListings = publishedListingsRes.data
-  const draftListings = draftListingsRes.data
   const pendingOffersReceived = pendingOffersReceivedRes.count ?? 0
   const walletRow = walletRes.data
   const profile = profileRes.data
@@ -156,26 +127,26 @@ export default async function DashboardPage() {
   const followingCount = followingRes.count ?? 0
   const sellerEarningsTotals = sellerEarningsTotalsRes
 
-  const welcomeName =
-    (profile?.is_shop && profile?.shop_name?.trim()) ||
-    profile?.display_name?.trim() ||
-    (user.user_metadata?.full_name as string | undefined)?.trim() ||
+  const metadataName = textOrNull(user.user_metadata?.full_name)
+  const name =
+    (profile?.is_shop ? textOrNull(profile?.shop_name) : null) ??
+    textOrNull(profile?.display_name) ??
+    metadataName ??
     "User"
 
-  const profileTitle =
-    (profile?.is_shop && profile?.shop_name?.trim()) || profile?.display_name?.trim() || welcomeName
-  const profileImageRaw = profile?.is_shop
-    ? profile?.shop_logo_url || profile?.avatar_url
-    : profile?.avatar_url
-  const profileImageUrl = profileImageRaw
-    ? profileMediaDisplaySrc(profileImageRaw)
-    : null
+  const location = uniqueJoined([textOrNull(profile?.city), textOrNull(profile?.location)])
+  const shopSlug = textOrNull(profile?.seller_slug)
+  const shopHref = profile?.is_shop && shopSlug ? sellerProfileHref(profile) : null
+  const rawImage = profile?.is_shop
+    ? textOrNull(profile?.shop_logo_url) ?? textOrNull(profile?.avatar_url)
+    : textOrNull(profile?.avatar_url)
+  const profileImageUrl = rawImage ? profileMediaDisplaySrc(rawImage) || null : null
 
   let walletBalance = 0
-  let allTimeEarned = 0
+  let lifetimeEarned = 0
   if (walletRow) {
-    const r = reconcileWalletAggregates(walletRow)
-    walletBalance = r.totalBalance
+    const reconciled = reconcileWalletAggregates(walletRow)
+    walletBalance = reconciled.totalBalance
     const earnedRaw = walletRow.lifetime_earned
     const earnedParsed =
       earnedRaw === null || earnedRaw === undefined
@@ -183,476 +154,101 @@ export default async function DashboardPage() {
         : typeof earnedRaw === "number"
           ? earnedRaw
           : parseFloat(String(earnedRaw))
-    allTimeEarned = Number.isFinite(earnedParsed) ? earnedParsed : 0
-    if (r.needsPersist) {
+    lifetimeEarned = Number.isFinite(earnedParsed) ? earnedParsed : 0
+    if (reconciled.needsPersist) {
       after(async () => {
         try {
           await persistWalletAggregatesIfNeeded(supabase, walletRow)
-        } catch (e) {
-          console.error("[DashboardPage] wallet reconcile persist failed:", e)
+        } catch (error) {
+          console.error("[DashboardPage] wallet reconcile persist failed:", error)
         }
       })
     }
   }
 
   if (sellerEarningsTotals !== null) {
-    allTimeEarned = sellerEarningsTotals.lifetimeSoldUsd
+    lifetimeEarned = sellerEarningsTotals.lifetimeSoldUsd
   }
 
-  const coreStats: Array<{
-    name: string
-    value: string | number
-    total?: number
-    icon: typeof Wallet
-    href: string
-    highlight?: boolean
-  }> = [
-    {
-      name: "Earnings",
-      value: `$${walletBalance.toFixed(2)}`,
-      icon: Wallet,
-      href: "/dashboard/earnings",
-      highlight: true,
-    },
-    {
-      name: "Sales",
-      value: sellerOrderCount,
-      icon: PackageCheck,
-      href: "/dashboard/sales",
-    },
-    {
-      name: "Purchases",
-      value: buyerOrderCount,
-      icon: ShoppingBag,
-      href: "/dashboard/purchases",
-    },
-    {
-      name: "My listings",
-      value: activeListings,
-      total: listingCount || 0,
-      icon: Package,
-      href: "/dashboard/listings",
-    },
-  ]
-
-  const activityStats: Array<{
-    name: string
-    value: number
-    icon: typeof Heart
-    href: string
-  }> = [
-    {
-      name: "Pending offers",
-      value: pendingOffersReceived,
-      icon: Handshake,
-      href: "/dashboard/offers?tab=received",
-    },
-    {
-      name: "Favorites",
-      value: favoriteCount || 0,
-      icon: Heart,
-              href: "/dashboard/favorites",
-    },
-    {
-      name: "Unread",
-      value: unreadCount || 0,
-      icon: MessageSquare,
-      href: "/messages",
-    },
-    {
-      name: "Support",
-      value: unreadSupportCount || 0,
-      icon: LifeBuoy,
-      href: "/dashboard/support",
-    },
-  ]
-
   return (
-    <div className="space-y-6 md:space-y-8">
-      <DashboardOverviewRealtimeRefresh />
-
-      {/* Welcome */}
-      <div className="hidden max-w-3xl lg:block">
-        <h1 className={dashboardPageTitleClass}>Welcome back, {welcomeName}</h1>
-        <p className={dashboardPageSubtitleClass}>
-          Here is what is happening with your account — updates in real time.
-        </p>
-      </div>
-
-      {/* Profile */}
-      <Card className="overflow-hidden">
-        <CardContent className="p-5 sm:p-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex min-w-0 items-center gap-4">
-              <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full bg-muted">
-                {profileImageUrl ? (
-                  <Image
-                    src={profileImageUrl}
-                    alt=""
-                    width={64}
-                    height={64}
-                    className="h-full w-full object-cover"
-                    unoptimized={listingImageShouldBypassOptimization(profileImageUrl)}
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center text-muted-foreground" aria-hidden>
-                    <UserCircle className="h-9 w-9" />
-                  </div>
-                )}
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-muted-foreground">Profile</p>
-                <h2 className="truncate text-lg font-semibold tracking-tight sm:text-xl">{profileTitle}</h2>
-                {(profile?.city || profile?.location) && (
-                  <p className="text-sm text-muted-foreground">
-                    {[profile?.city, profile?.location].filter(Boolean).join(" · ")}
-                  </p>
-                )}
-                {profile?.is_shop && profile?.seller_slug && (
-                  <p className="mt-1">
-                    <Link
-                      href={sellerProfileHref(profile)}
-                      className="text-sm font-medium text-primary hover:underline"
-                    >
-                      View public shop
-                    </Link>
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className="flex shrink-0 flex-wrap gap-2">
-              <Button asChild>
-                <Link href="/dashboard/profile">Manage profile</Link>
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Core metrics — earnings, sales, purchases, listings */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 xl:grid-cols-4 xl:gap-4">
-        {coreStats.map((stat) => (
-          <Link key={stat.name} href={stat.href} className="min-w-0">
-            <Card
-              className={`h-full overflow-hidden hover:shadow-md transition-shadow ${
-                stat.highlight ? "border-primary/20 bg-primary/5" : ""
-              }`}
-            >
-              <CardContent className="p-5 sm:p-6">
-                <div className="flex items-start justify-between gap-3">
-                  <p className="min-w-0 flex-1 text-sm leading-snug text-muted-foreground">{stat.name}</p>
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary sm:h-10 sm:w-10">
-                    <stat.icon className="h-[1.125rem] w-[1.125rem] sm:h-5 sm:w-5" aria-hidden />
-                  </div>
-                </div>
-                <p
-                  className={`mt-3 min-w-0 break-words text-2xl font-bold tabular-nums tracking-tight sm:text-3xl ${
-                    stat.highlight ? "text-primary" : ""
-                  }`}
-                >
-                  {typeof stat.value === "number" ? stat.value.toLocaleString() : stat.value}
-                  {stat.total !== undefined && stat.total > 0 && (
-                    <span className="text-base font-normal text-muted-foreground sm:text-lg">
-                      /{stat.total.toLocaleString()}
-                    </span>
-                  )}
-                </p>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
-      </div>
-
-      <div>
-        <h2 className="mb-3 text-sm font-medium text-foreground">All-time earnings</h2>
-        <Link href="/dashboard/earnings" className="min-w-0 block">
-          <Card className="h-full overflow-hidden hover:shadow-md transition-shadow border-primary/15 bg-primary/[0.03]">
-            <CardContent className="p-5 sm:p-6">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="min-w-0 space-y-1">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <TrendingUp className="h-4 w-4 shrink-0" aria-hidden />
-                    <span>Lifetime earned on Reswell</span>
-                  </div>
-                  <p className="text-3xl font-bold tabular-nums tracking-tight text-primary sm:text-4xl">
-                    ${allTimeEarned.toFixed(2)}
-                  </p>
-                </div>
-                <div className="flex shrink-0 items-center gap-1 text-sm font-medium text-primary">
-                  View earnings
-                  <ArrowRight className="h-4 w-4" aria-hidden />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-      </div>
-
-      <div>
-        <h2 className="mb-3 text-sm font-medium text-foreground">Activity</h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 xl:grid-cols-4">
-          {activityStats.map((stat) => (
-            <Link key={stat.name} href={stat.href} className="min-w-0">
-              <Card
-                className={`h-full overflow-hidden hover:shadow-md transition-shadow${
-                  stat.name === "Support" && unreadSupportCount > 0
-                    ? " border-listingHeart/35"
-                    : ""
-                }`}
-              >
-                <CardContent className="p-5 sm:p-6">
-                  <div className="flex items-start justify-between gap-3">
-                    <p className="min-w-0 flex-1 text-sm leading-snug text-muted-foreground">{stat.name}</p>
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-foreground sm:h-10 sm:w-10">
-                      <stat.icon className="h-[1.125rem] w-[1.125rem] sm:h-5 sm:w-5" aria-hidden />
-                    </div>
-                  </div>
-                  <p className="mt-3 text-2xl font-bold tabular-nums tracking-tight sm:text-3xl">
-                    {stat.name === "Support" ? (
-                      <LiveSupportUnreadValue initialCount={Number(stat.value)} />
-                    ) : (
-                      stat.value.toLocaleString()
-                    )}
-                  </p>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
-      </div>
-
-      {/* Followers & following */}
-      <Card className="border-border">
-        <CardHeader className="flex flex-row items-center justify-between pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Followers &amp; following
-          </CardTitle>
-          <Link
-            href="/dashboard/following"
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
-          >
-            View all
-            <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap items-end gap-8 sm:gap-10">
-            <div>
-              <p className="text-3xl font-bold text-foreground tabular-nums">
-                {followerCount.toLocaleString()}
-              </p>
-              <p className="text-sm text-muted-foreground mt-0.5">Followers</p>
-            </div>
-            <div>
-              <p className="text-3xl font-bold text-foreground tabular-nums">
-                {followingCount.toLocaleString()}
-              </p>
-              <p className="text-sm text-muted-foreground mt-0.5">Following</p>
-            </div>
-            {newFollowersThisMonth > 0 && (
-              <div>
-                <p className="text-xl font-semibold text-green-600 tabular-nums">
-                  +{newFollowersThisMonth.toLocaleString()}
-                </p>
-                <p className="text-sm text-muted-foreground mt-0.5">new followers this month</p>
-              </div>
-            )}
-          </div>
-          <div className="mt-4 flex items-start gap-2 rounded-lg bg-muted/50 px-3 py-2.5">
-            <Lightbulb className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-            <p className="text-xs text-muted-foreground">
-              Post new listings regularly to keep your followers engaged and coming back.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Active listings only — sold/archived appear elsewhere */}
-      <Card>
-        <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-0">
-          <CardTitle className="text-lg">Your listings</CardTitle>
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/dashboard/listings">
-              View All
-              <ArrowRight className="ml-1 h-4 w-4" />
-            </Link>
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {publishedListings && publishedListings.length > 0 ? (
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 lg:gap-6 xl:grid-cols-3 2xl:grid-cols-4 2xl:gap-5">
-              {publishedListings.map((listing) => {
-                const primaryImage =
-                  listing.listing_images?.find((img: { is_primary: boolean }) => img.is_primary) ||
-                  listing.listing_images?.[0]
-                const listingImageSrc =
-                  proxiedListingImageSrc(primaryImage?.url) || "/placeholder.svg"
-                return (
-                  <Link
-                    key={listing.id}
-                    href={peerListingEditHref(listing.section, listing.id)}
-                    className="group min-w-0"
-                  >
-                    <div className="relative mb-2 aspect-[3/4] overflow-hidden rounded-xl bg-muted">
-                      {primaryImage?.url ? (
-                        <Image
-                          src={listingImageSrc}
-                          alt={capitalizeWords(listing.title)}
-                          fill
-                          className="object-cover object-center group-hover:scale-105 transition-transform"
-                          unoptimized={listingImageShouldBypassOptimization(listingImageSrc)}
-                        />
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                          No Image
-                        </div>
-                      )}
-                      <Badge className="absolute top-2 left-2 bg-black/70 text-white border-0">
-                        {listing.status}
-                      </Badge>
-                    </div>
-                    <h3 className="line-clamp-2 min-h-[2.5rem] text-[15px] font-semibold leading-snug group-hover:text-primary transition-colors">
-                      {capitalizeWords(listing.title)}
-                    </h3>
-                    <p className="text-base font-bold tabular-nums text-black dark:text-white">
-                      ${listing.price.toFixed(2)}
-                    </p>
-                  </Link>
-                )
-              })}
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground mb-4">
-                No active listings yet{draftListings && draftListings.length > 0 ? " — finish a draft below" : ""}
-              </p>
-              <Button asChild>
-                <Link href="/sell?new=1">Create a listing</Link>
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Drafts — only when there is at least one */}
-      {draftListings && draftListings.length > 0 && (
-        <Card>
-          <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-0">
-            <CardTitle className="text-lg">Drafts</CardTitle>
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/dashboard/listings?status=draft">
-                View All
-                <ArrowRight className="ml-1 h-4 w-4" />
-              </Link>
-            </Button>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 lg:gap-6 xl:grid-cols-3 2xl:grid-cols-4 2xl:gap-5">
-              {draftListings.map((listing) => {
-                const primaryImage =
-                  listing.listing_images?.find((img: { is_primary: boolean }) => img.is_primary) ||
-                  listing.listing_images?.[0]
-                const listingImageSrc =
-                  proxiedListingImageSrc(primaryImage?.url) || "/placeholder.svg"
-                return (
-                  <Link
-                    key={listing.id}
-                    href={peerListingEditHref(listing.section, listing.id)}
-                    className="group min-w-0"
-                  >
-                    <div className="relative mb-2 aspect-[3/4] overflow-hidden rounded-xl bg-muted">
-                      {primaryImage?.url ? (
-                        <Image
-                          src={listingImageSrc}
-                          alt={capitalizeWords(listing.title)}
-                          fill
-                          className="object-cover object-center group-hover:scale-105 transition-transform"
-                          unoptimized={listingImageShouldBypassOptimization(listingImageSrc)}
-                        />
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                          No Image
-                        </div>
-                      )}
-                      <Badge className="absolute top-2 left-2 bg-black/70 text-white border-0">
-                        draft
-                      </Badge>
-                    </div>
-                    <h3 className="line-clamp-2 min-h-[2.5rem] text-[15px] font-semibold leading-snug group-hover:text-primary transition-colors">
-                      {capitalizeWords(listing.title)}
-                    </h3>
-                    <p className="text-base font-bold tabular-nums text-black dark:text-white">
-                      ${listing.price.toFixed(2)}
-                    </p>
-                  </Link>
-                )
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Quick actions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
-            <Button variant="outline" className="h-auto py-4 flex-col bg-transparent" asChild>
-              <Link href="/sell?new=1">
-                <Plus className="h-6 w-6 mb-2" />
-                Create listing
-              </Link>
-            </Button>
-            <Button variant="outline" className="h-auto py-4 flex-col bg-transparent" asChild>
-              <Link href="/dashboard/profile">
-                <UserCircle className="h-6 w-6 mb-2" />
-                Profile
-              </Link>
-            </Button>
-            <Button variant="outline" className="h-auto py-4 flex-col bg-transparent" asChild>
-              <Link href="/dashboard/listings">
-                <List className="h-6 w-6 mb-2" />
-                My listings
-              </Link>
-            </Button>
-            <Button variant="outline" className="h-auto py-4 flex-col bg-transparent" asChild>
-              <Link href="/dashboard/purchases">
-                <ShoppingBag className="h-6 w-6 mb-2" />
-                Purchases
-              </Link>
-            </Button>
-            <Button variant="outline" className="h-auto py-4 flex-col bg-transparent" asChild>
-              <Link href="/dashboard/sales">
-                <PackageCheck className="h-6 w-6 mb-2" />
-                Sales
-              </Link>
-            </Button>
-            <Button variant="outline" className="h-auto py-4 flex-col bg-transparent" asChild>
-              <Link href="/messages">
-                <MessageSquare className="h-6 w-6 mb-2" />
-                Messages
-              </Link>
-            </Button>
-            <Button variant="outline" className="h-auto py-4 flex-col bg-transparent" asChild>
-              <Link href="/dashboard/favorites">
-                <Heart className="mb-2 h-6 w-6" />
-                Favorites
-              </Link>
-            </Button>
-            <Button variant="outline" className="h-auto py-4 flex-col bg-transparent" asChild>
-              <Link href="/dashboard/earnings">
-                <Wallet className="h-6 w-6 mb-2" />
-                Earnings
-              </Link>
-            </Button>
-
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+    <DashboardOverview
+      model={{
+        name,
+        location,
+        profileImageUrl,
+        shopHref,
+        walletBalance,
+        lifetimeEarned,
+        activeListings,
+        listingCount: listingCount || 0,
+        sellerOrderCount,
+        buyerOrderCount,
+        pendingOffers: pendingOffersReceived,
+        unreadCount,
+        unreadSupportCount,
+        favoriteCount: favoriteCount || 0,
+        followerCount,
+        followingCount,
+        newFollowersThisMonth,
+        isAdmin: profile?.is_admin === true,
+        activeListingPreviews: toPreviews(publishedListingsRes.data),
+        draftListingPreviews: toPreviews(draftListingsRes.data),
+      }}
+    />
   )
+}
+
+function textOrNull(value: unknown): string | null {
+  if (typeof value !== "string") return null
+  const trimmed = value.trim()
+  return trimmed.length > 0 ? trimmed : null
+}
+
+function uniqueJoined(parts: Array<string | null>): string | null {
+  const unique = [...new Set(parts.filter((part): part is string => part !== null))]
+  return unique.length > 0 ? unique.join(" · ") : null
+}
+
+function toPreviews(rows: unknown): DashboardOverviewListingPreview[] {
+  if (!Array.isArray(rows)) return []
+  const previews: DashboardOverviewListingPreview[] = []
+  for (const row of rows) {
+    const preview = toPreview(row)
+    if (preview) previews.push(preview)
+  }
+  return previews
+}
+
+function toPreview(row: unknown): DashboardOverviewListingPreview | null {
+  if (!row || typeof row !== "object") return null
+  const listing = row as Record<string, unknown>
+  if (typeof listing.id !== "string" || typeof listing.title !== "string") return null
+
+  const price = typeof listing.price === "number" ? listing.price : Number(listing.price)
+  const section = typeof listing.section === "string" ? listing.section : null
+  const proxied = primaryImageUrl(listing.listing_images)
+
+  return {
+    id: listing.id,
+    title: listing.title,
+    price: Number.isFinite(price) ? price : 0,
+    section,
+    imageSrc: proxied,
+    href: peerListingEditHref(section, listing.id),
+  }
+}
+
+function primaryImageUrl(images: unknown): string | null {
+  if (!Array.isArray(images)) return null
+  let fallback: string | null = null
+  for (const image of images) {
+    if (!image || typeof image !== "object") continue
+    const candidate = image as { url?: unknown; is_primary?: unknown }
+    if (typeof candidate.url !== "string" || candidate.url.length === 0) continue
+    if (candidate.is_primary === true) {
+      return proxiedListingImageSrc(candidate.url) || null
+    }
+    if (!fallback) fallback = candidate.url
+  }
+  return fallback ? proxiedListingImageSrc(fallback) || null : null
 }
