@@ -6,8 +6,10 @@ import type { ProfileAddressFieldsFromOrder, ProfileAddressRow } from "@/lib/pro
 
 export type GeocodableAddress = Pick<
   ProfileAddressFieldsFromOrder,
-  "line1" | "line2" | "city" | "state" | "postal_code" | "country"
+  "line1" | "city" | "postal_code" | "country"
 > & {
+  line2?: string | null
+  state?: string | null
   google_place_id?: string | null
 }
 
