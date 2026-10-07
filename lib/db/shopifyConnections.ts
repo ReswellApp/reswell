@@ -8,9 +8,15 @@ const CONNECTION_SELECT = [
   "id",
   "user_id",
   "shop_domain",
+  "shop_gid",
   "shop_name",
   "status",
   "sync_enabled",
+  "credential_provider",
+  "active_credential_id",
+  "catalog_read_enabled",
+  "sales_enabled",
+  "inventory_write_enabled",
   "access_token_ciphertext",
   "access_token_iv",
   "access_token_tag",
@@ -45,13 +51,54 @@ export async function dbShopifyUserIsEligible(
   return data?.shopify_connect_enabled === true
 }
 
+export async function dbShopifyUserManualCanaryEnabled(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("shopify_manual_canary_enabled")
+    .eq("id", userId)
+    .maybeSingle()
+  if (error) throw new Error(error.message)
+  return data?.shopify_manual_canary_enabled === true
+}
+
+export async function dbPeekShopifyOAuthState(
+  supabase: SupabaseClient,
+  stateHash: string,
+): Promise<{
+  flowType: "account_oauth" | "public_install"
+  userId: string | null
+  shopDomain: string
+} | null> {
+  const now = new Date().toISOString()
+  const { data, error } = await supabase
+    .from("shopify_oauth_states")
+    .select("flow_type, user_id, shop_domain")
+    .eq("state_hash", stateHash)
+    .is("consumed_at", null)
+    .gt("expires_at", now)
+    .maybeSingle()
+  if (error) throw new Error(error.message)
+  if (!data) return null
+  const flowType = data.flow_type as "account_oauth" | "public_install"
+  return {
+    flowType,
+    userId: (data.user_id as string | null) ?? null,
+    shopDomain: data.shop_domain as string,
+  }
+}
+
 export async function dbInsertShopifyOAuthState(
   supabase: SupabaseClient,
   input: {
     stateHash: string
-    userId: string
+    userId: string | null
     shopDomain: string
     expiresAt: string
+    flowType?: "account_oauth" | "public_install"
+    connectionId?: string | null
   },
 ): Promise<void> {
   const { error } = await supabase.from("shopify_oauth_states").insert({
@@ -59,6 +106,8 @@ export async function dbInsertShopifyOAuthState(
     user_id: input.userId,
     shop_domain: input.shopDomain,
     expires_at: input.expiresAt,
+    flow_type: input.flowType ?? "account_oauth",
+    connection_id: input.connectionId ?? null,
   })
   if (error) throw new Error(error.message)
 }
@@ -78,6 +127,26 @@ export async function dbConsumeShopifyOAuthState(
     .eq("state_hash", input.stateHash)
     .eq("user_id", input.userId)
     .eq("shop_domain", input.shopDomain)
+    .is("consumed_at", null)
+    .gt("expires_at", now)
+    .select("state_hash")
+    .maybeSingle()
+  if (error) throw new Error(error.message)
+  return Boolean(data)
+}
+
+export async function dbConsumePublicShopifyOAuthState(
+  supabase: SupabaseClient,
+  input: { stateHash: string; shopDomain: string },
+): Promise<boolean> {
+  const now = new Date().toISOString()
+  const { data, error } = await supabase
+    .from("shopify_oauth_states")
+    .update({ consumed_at: now })
+    .eq("state_hash", input.stateHash)
+    .eq("shop_domain", input.shopDomain)
+    .eq("flow_type", "public_install")
+    .is("user_id", null)
     .is("consumed_at", null)
     .gt("expires_at", now)
     .select("state_hash")
@@ -140,6 +209,7 @@ export async function dbUpsertShopifyConnection(
     userId: string
     shopDomain: string
     shopName: string | null
+    shopGid?: string | null
     accessTokenCiphertext: string
     accessTokenIv: string
     accessTokenTag: string
@@ -150,6 +220,10 @@ export async function dbUpsertShopifyConnection(
     tokenExpiresAt: string | null
     refreshTokenExpiresAt: string | null
     scopes: string[]
+    credentialProvider?: "public_oauth" | "merchant_custom"
+    catalogReadEnabled?: boolean
+    salesEnabled?: boolean
+    inventoryWriteEnabled?: boolean
   },
 ): Promise<ShopifyConnectionRow> {
   const now = new Date().toISOString()
@@ -159,6 +233,7 @@ export async function dbUpsertShopifyConnection(
       {
         user_id: input.userId,
         shop_domain: input.shopDomain,
+        shop_gid: input.shopGid ?? null,
         shop_name: input.shopName,
         status: "active",
         sync_enabled: true,
@@ -174,6 +249,10 @@ export async function dbUpsertShopifyConnection(
         token_refresh_locked_until: null,
         token_refresh_lock_id: null,
         scopes: input.scopes,
+        credential_provider: input.credentialProvider ?? "public_oauth",
+        catalog_read_enabled: input.catalogReadEnabled ?? true,
+        sales_enabled: input.salesEnabled ?? true,
+        inventory_write_enabled: input.inventoryWriteEnabled ?? true,
         last_error: null,
         connected_at: now,
         disconnected_at: null,
@@ -187,6 +266,41 @@ export async function dbUpsertShopifyConnection(
     throw new Error(error?.message ?? "Could not save Shopify connection")
   }
   return data as unknown as ShopifyConnectionRow
+}
+
+export async function dbMirrorShopifyConnectionTokens(
+  supabase: SupabaseClient,
+  connectionId: string,
+  input: {
+    accessTokenCiphertext: string
+    accessTokenIv: string
+    accessTokenTag: string
+    refreshTokenCiphertext: string | null
+    refreshTokenIv: string | null
+    refreshTokenTag: string | null
+    encryptionKeyVersion: number
+    tokenExpiresAt: string | null
+    refreshTokenExpiresAt: string | null
+  },
+): Promise<void> {
+  const { error } = await supabase
+    .from("shopify_connections")
+    .update({
+      access_token_ciphertext: input.accessTokenCiphertext,
+      access_token_iv: input.accessTokenIv,
+      access_token_tag: input.accessTokenTag,
+      refresh_token_ciphertext: input.refreshTokenCiphertext,
+      refresh_token_iv: input.refreshTokenIv,
+      refresh_token_tag: input.refreshTokenTag,
+      encryption_key_version: input.encryptionKeyVersion,
+      token_expires_at: input.tokenExpiresAt,
+      refresh_token_expires_at: input.refreshTokenExpiresAt,
+      status: "active",
+      last_error: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", connectionId)
+  if (error) throw new Error(error.message)
 }
 
 export async function dbUpdateShopifyConnectionTokens(
@@ -349,9 +463,14 @@ export function toPublicShopifyConnection(
   return {
     id: connection.id,
     shop_domain: connection.shop_domain,
+    shop_gid: connection.shop_gid,
     shop_name: connection.shop_name,
     status: connection.status,
     sync_enabled: connection.sync_enabled,
+    credential_provider: connection.credential_provider,
+    catalog_read_enabled: connection.catalog_read_enabled,
+    sales_enabled: connection.sales_enabled,
+    inventory_write_enabled: connection.inventory_write_enabled,
     scopes: connection.scopes,
     last_webhook_at: connection.last_webhook_at,
     last_reconciled_at: connection.last_reconciled_at,

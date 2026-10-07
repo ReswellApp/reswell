@@ -4,6 +4,7 @@ import test from "node:test"
 import {
   decryptShopifySecret,
   encryptShopifySecret,
+  hashShopifyClaimSecret,
   hashShopifyOAuthState,
   verifyShopifyOAuthHmac,
   verifyShopifyWebhookHmac,
@@ -69,4 +70,5 @@ test("verifies webhook HMAC and hashes OAuth state without storing it", () => {
   assert.equal(verifyShopifyWebhookHmac(`${body} `, hmac), false)
   assert.equal(hashShopifyOAuthState("state").length, 64)
   assert.notEqual(hashShopifyOAuthState("state"), "state")
+  assert.equal(hashShopifyClaimSecret("claim").length, 64)
 })

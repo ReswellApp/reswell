@@ -5,7 +5,12 @@ import { privatePageMetadata } from "@/lib/site-metadata"
 import {
   isShopifyConfigured,
   isShopifyIntegrationEnabled,
+  isShopifyManualCanaryEnabled,
+  isShopifyPublicOAuthConfigured,
+  isShopifyPublicOAuthEnabled,
+  shopifyAppInstallUrl,
 } from "@/lib/shopify/config"
+import { dbShopifyUserManualCanaryEnabled } from "@/lib/db/shopifyConnections"
 import type { ShopifyDashboardData } from "@/lib/shopify/types"
 import { checkShopifyMerchantAccess } from "@/lib/services/shopifyAccess"
 import {
@@ -61,12 +66,24 @@ export default async function ShopifyIntegrationPage({
     }
   }
 
+  const manualCanaryEnabled =
+    access.allowed &&
+    isShopifyManualCanaryEnabled() &&
+    (await dbShopifyUserManualCanaryEnabled(supabase, user.id))
+
   const params = await searchParams
   return (
     <ShopifyIntegrationDashboard
       initialData={{
         enabled: isShopifyIntegrationEnabled(),
         configured: isShopifyConfigured(),
+        publicOAuthEnabled:
+          isShopifyPublicOAuthEnabled() && isShopifyPublicOAuthConfigured(),
+        manualCanaryEnabled,
+        appInstallUrl:
+          isShopifyPublicOAuthEnabled() && isShopifyPublicOAuthConfigured()
+            ? shopifyAppInstallUrl()
+            : null,
         connection,
         products,
         productPageInfo,

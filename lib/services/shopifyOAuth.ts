@@ -2,13 +2,19 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { randomUUID } from "node:crypto"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import {
+  dbInsertActiveShopifyCredential,
+  dbUpdateShopifyCredentialTokens,
+} from "@/lib/db/shopifyCredentials"
+import {
   dbClaimShopifyTokenRefresh,
   dbConsumeShopifyOAuthState,
   dbDeleteExpiredShopifyOAuthStates,
   dbGetShopifyConnectionById,
   dbGetShopifyConnectionForUser,
+  dbGetActiveShopifyCredential,
   dbInsertShopifyOAuthState,
   dbMarkShopifyConnectionStatus,
+  dbMirrorShopifyConnectionTokens,
   dbReleaseShopifyTokenRefresh,
   dbUpdateShopifyConnectionTokens,
   dbUpsertShopifyConnection,
@@ -103,9 +109,11 @@ async function requestShopifyToken(
 
 export async function createShopifyInstallUrl(input: {
   serviceSupabase: SupabaseClient
-  userId: string
+  userId: string | null
   shopDomain: string
+  flowType?: "account_oauth" | "public_install"
 }): Promise<string> {
+  const flowType = input.flowType ?? "account_oauth"
   const state = createShopifyOAuthState()
   await dbDeleteExpiredShopifyOAuthStates(input.serviceSupabase)
   await dbInsertShopifyOAuthState(input.serviceSupabase, {
@@ -113,6 +121,7 @@ export async function createShopifyInstallUrl(input: {
     userId: input.userId,
     shopDomain: input.shopDomain,
     expiresAt: new Date(Date.now() + 10 * 60_000).toISOString(),
+    flowType,
   })
 
   const params = new URLSearchParams({
@@ -154,16 +163,23 @@ export async function consumeShopifyOAuthState(input: {
   })
 }
 
-async function fetchShopName(
+export async function fetchShopIdentity(
   shopDomain: string,
   accessToken: string,
-): Promise<string | null> {
-  const data = await shopifyGraphqlRequest<{ shop: { name?: string | null } }>({
+): Promise<{ shopGid: string; shopName: string | null }> {
+  const data = await shopifyGraphqlRequest<{
+    shop: { id?: string | null; name?: string | null }
+  }>({
     shopDomain,
     accessToken,
-    query: `query ReswellShopIdentity { shop { name } }`,
+    query: `query ReswellShopIdentity { shop { id name } }`,
   })
-  return data.shop.name?.trim() || null
+  const shopGid = data.shop.id?.trim()
+  if (!shopGid) throw new Error("Shopify did not return a shop id")
+  return {
+    shopGid,
+    shopName: data.shop.name?.trim() || null,
+  }
 }
 
 const REQUIRED_WEBHOOKS = [
@@ -173,9 +189,10 @@ const REQUIRED_WEBHOOKS = [
   "APP_UNINSTALLED",
 ] as const
 
-async function registerShopifyWebhooks(
+export async function registerShopifyWebhooks(
   shopDomain: string,
   accessToken: string,
+  callbackUrl = shopifyWebhookUri(),
 ): Promise<void> {
   const existing = await shopifyGraphqlRequest<{
     webhookSubscriptions: {
@@ -197,7 +214,6 @@ async function registerShopifyWebhooks(
       }
     `,
   })
-  const callbackUrl = shopifyWebhookUri()
   const installed = new Set(
     existing.webhookSubscriptions.nodes
       .filter((node) => node.endpoint?.callbackUrl === callbackUrl)
@@ -254,16 +270,32 @@ export async function completeShopifyOAuth(input: {
     throw new Error("Shopify did not return an access token")
   }
 
-  const shopName = await fetchShopName(input.shopDomain, token.access_token)
+  const identity = await fetchShopIdentity(
+    input.shopDomain,
+    token.access_token,
+  )
+  const scopes = (token.scope ?? SHOPIFY_MVP_SCOPES.join(","))
+    .split(",")
+    .map((scope) => scope.trim())
+    .filter(Boolean)
+  const tokenFields = encryptedTokenFields(token)
   const connection = await dbUpsertShopifyConnection(input.serviceSupabase, {
     userId: input.userId,
     shopDomain: input.shopDomain,
-    shopName,
-    ...encryptedTokenFields(token),
-    scopes: (token.scope ?? SHOPIFY_MVP_SCOPES.join(","))
-      .split(",")
-      .map((scope) => scope.trim())
-      .filter(Boolean),
+    shopGid: identity.shopGid,
+    shopName: identity.shopName,
+    ...tokenFields,
+    scopes,
+    credentialProvider: "public_oauth",
+  })
+  await dbInsertActiveShopifyCredential(input.serviceSupabase, {
+    connectionId: connection.id,
+    provider: "public_oauth",
+    authMode: "expiring_oauth",
+    ...tokenFields,
+    tokenExpiresAt: tokenFields.tokenExpiresAt,
+    refreshTokenExpiresAt: tokenFields.refreshTokenExpiresAt,
+    scopes,
   })
   await dbReviveDeadShopifyInventoryJobs(
     input.serviceSupabase,
@@ -335,10 +367,90 @@ function tokenNeedsRefresh(connection: ShopifyConnectionRow): boolean {
   return Date.parse(connection.token_expires_at) <= Date.now() + 10 * 60_000
 }
 
+async function mintMerchantCustomAccessToken(input: {
+  shopDomain: string
+  clientId: string
+  clientSecret: string
+}): Promise<ShopifyTokenResponse> {
+  return requestShopifyToken(
+    input.shopDomain,
+    new URLSearchParams({
+      grant_type: "client_credentials",
+      client_id: input.clientId,
+      client_secret: input.clientSecret,
+    }),
+  )
+}
+
 export async function getShopifyAccessToken(
   serviceSupabase: SupabaseClient,
   connection: ShopifyConnectionRow,
 ): Promise<string> {
+  if (connection.credential_provider === "merchant_custom") {
+    const credential = await dbGetActiveShopifyCredential(
+      serviceSupabase,
+      connection.id,
+    )
+    if (!credential) {
+      throw new Error("Shopify merchant credential is missing")
+    }
+    if (
+      credential.token_expires_at &&
+      Date.parse(credential.token_expires_at) > Date.now() + 10 * 60_000
+    ) {
+      return decryptShopifySecret({
+        ciphertext: credential.access_token_ciphertext,
+        iv: credential.access_token_iv,
+        tag: credential.access_token_tag,
+        keyVersion: credential.encryption_key_version,
+      })
+    }
+    if (
+      !credential.client_id_ciphertext ||
+      !credential.client_id_iv ||
+      !credential.client_id_tag ||
+      !credential.client_secret_ciphertext ||
+      !credential.client_secret_iv ||
+      !credential.client_secret_tag
+    ) {
+      throw new Error("Shopify merchant credential is incomplete")
+    }
+    const clientId = decryptShopifySecret({
+      ciphertext: credential.client_id_ciphertext,
+      iv: credential.client_id_iv,
+      tag: credential.client_id_tag,
+      keyVersion: credential.encryption_key_version,
+    })
+    const clientSecret = decryptShopifySecret({
+      ciphertext: credential.client_secret_ciphertext,
+      iv: credential.client_secret_iv,
+      tag: credential.client_secret_tag,
+      keyVersion: credential.encryption_key_version,
+    })
+    const token = await mintMerchantCustomAccessToken({
+      shopDomain: connection.shop_domain,
+      clientId,
+      clientSecret,
+    })
+    const tokenFields = encryptedTokenFields(token)
+    await dbUpdateShopifyCredentialTokens(serviceSupabase, credential.id, {
+      accessTokenCiphertext: tokenFields.accessTokenCiphertext,
+      accessTokenIv: tokenFields.accessTokenIv,
+      accessTokenTag: tokenFields.accessTokenTag,
+      encryptionKeyVersion: tokenFields.encryptionKeyVersion,
+      tokenExpiresAt: tokenFields.tokenExpiresAt,
+    })
+    await dbMirrorShopifyConnectionTokens(serviceSupabase, connection.id, {
+      ...tokenFields,
+      refreshTokenCiphertext: null,
+      refreshTokenIv: null,
+      refreshTokenTag: null,
+      refreshTokenExpiresAt: null,
+    })
+    if (!token.access_token) throw new Error("Shopify token mint returned no token")
+    return token.access_token
+  }
+
   if (!tokenNeedsRefresh(connection)) return decryptAccessToken(connection)
 
   const refreshToken = decryptRefreshToken(connection)
