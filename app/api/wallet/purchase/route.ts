@@ -27,8 +27,7 @@ import { isBlockedOwnListingPurchase } from "@/lib/cart-eligibility"
 import { readAdAttributionFromCookies } from "@/lib/ads/read-request-attribution"
 import { insertOrderAdAttribution } from "@/lib/db/orderAdAttribution"
 import { listingSoldViaCheckoutUpdate } from "@/lib/listing-sold-state"
-import { isShopifyManagedListing } from "@/lib/shopify/listing"
-import { withShopifyInventorySourcesForPurchase } from "@/lib/shopify/listing-inventory-source"
+import { resolveWalletListingInventorySource } from "@/lib/shopify/listing-inventory-source"
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -77,15 +76,25 @@ export async function POST(request: NextRequest) {
   if (listingError || !listing) {
     return NextResponse.json({ error: "Listing not found or not available" }, { status: 404 })
   }
-  const [sourcedListing] = await withShopifyInventorySourcesForPurchase(supabase, [listing])
-  const shopifyListing = sourcedListing ?? listing
-  if (
-    isShopifyManagedListing(shopifyListing) &&
-    Math.max(0, Math.floor(Number(listing.stock_quantity) || 0)) < 1
-  ) {
-    return NextResponse.json({ error: "This Shopify item is out of stock" }, { status: 409 })
+
+  let serviceSupabase
+  try {
+    serviceSupabase = createServiceRoleClient()
+  } catch {
+    return NextResponse.json(
+      { error: "Purchase could not be completed (server configuration)." },
+      { status: 503 },
+    )
   }
-  if (isShopifyManagedListing(shopifyListing)) {
+
+  const inventorySource = await resolveWalletListingInventorySource(serviceSupabase, listing.id)
+  if (!inventorySource.ok) {
+    return NextResponse.json({ error: inventorySource.error }, { status: 503 })
+  }
+  if (inventorySource.kind === "shopify") {
+    if (Math.max(0, Math.floor(Number(listing.stock_quantity) || 0)) < 1) {
+      return NextResponse.json({ error: "This Shopify item is out of stock" }, { status: 409 })
+    }
     return NextResponse.json(
       {
         error:
@@ -147,16 +156,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { error: "Insufficient wallet balance", balance: buyerWallet?.balance || 0 },
       { status: 400 }
-    )
-  }
-
-  let serviceSupabase
-  try {
-    serviceSupabase = createServiceRoleClient()
-  } catch {
-    return NextResponse.json(
-      { error: "Purchase could not be completed (server configuration)." },
-      { status: 503 },
     )
   }
 

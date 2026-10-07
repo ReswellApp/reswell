@@ -107,11 +107,56 @@ export async function withShopifyInventorySources<T extends ListingInventoryRef>
   }))
 }
 
+export const WALLET_INVENTORY_SOURCE_UNVERIFIED =
+  "Could not verify this listing for wallet checkout. Try again."
+
+export type WalletListingInventorySource =
+  | { ok: true; kind: "native" }
+  | { ok: true; kind: "shopify" }
+  | { ok: false; error: string }
+
 /**
- * Purchase routes use the buyer session, which cannot read `shopify_connections`.
+ * Wallet checkout must not infer a native listing from Shopify connection state.
+ * Native only when the column is confirmed missing, or the stored value was read and is not `shopify`.
+ * Any other read failure rejects the purchase. This never writes listing rows.
+ */
+export async function resolveWalletListingInventorySource(
+  supabase: SupabaseClient,
+  listingId: string,
+): Promise<WalletListingInventorySource> {
+  const { data, error } = await supabase
+    .from("listings")
+    .select("id, inventory_source")
+    .eq("id", listingId)
+    .maybeSingle()
+
+  if (error) {
+    if (isMissingInventorySourceColumn(error)) {
+      return { ok: true, kind: "native" }
+    }
+    console.error("[wallet] inventory source read failed", {
+      code: error.code,
+      message: error.message,
+    })
+    return { ok: false, error: WALLET_INVENTORY_SOURCE_UNVERIFIED }
+  }
+
+  const row = data as { id?: string; inventory_source?: string | null } | null
+  if (!row || !("inventory_source" in row) || String(row.id ?? "") !== listingId) {
+    return { ok: false, error: WALLET_INVENTORY_SOURCE_UNVERIFIED }
+  }
+
+  if (row.inventory_source === "shopify") {
+    return { ok: true, kind: "shopify" }
+  }
+  return { ok: true, kind: "native" }
+}
+
+/**
+ * Cart and card checkout use the buyer session, which cannot read `shopify_connections`.
  * Prefer the service role for this read so a connected shop is recognized once the
  * column exists. If that client is unavailable, the buyer client is used and a
- * failed lookup stays a native listing.
+ * failed lookup stays a native listing. Wallet checkout does not use this helper.
  */
 export async function withShopifyInventorySourcesForPurchase<T extends ListingInventoryRef>(
   fallback: SupabaseClient,
