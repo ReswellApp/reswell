@@ -111,6 +111,7 @@ export function BoardFinderForm({
             catalogBrandId={catalogBrandId}
             modelText={model}
             showLabels
+            brandSuggest="sell"
             onBrandTextChange={onBrandTextChange}
             onCatalogBrandPicked={onCatalogBrandPicked}
             onModelTextChange={onModelTextChange}
