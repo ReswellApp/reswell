@@ -10,6 +10,7 @@ import {
 import {
   createShopifyInstallUrl,
   fetchShopIdentity,
+  registerShopifyWebhooks,
 } from "@/lib/services/shopifyOAuth"
 
 type ShopifyTokenResponse = {
@@ -96,7 +97,10 @@ export async function finishPublicShopifyInstall(input: {
   }
 
   const token = await requestShopifyToken(input.shopDomain, input.code)
-  const identity = await fetchShopIdentity(input.shopDomain, token.access_token!)
+  if (!token.access_token?.trim()) {
+    throw new Error("Shopify did not return an access token")
+  }
+  const identity = await fetchShopIdentity(input.shopDomain, token.access_token)
   const scopes = (token.scope ?? SHOPIFY_MVP_SCOPES.join(","))
     .split(",")
     .map((scope) => scope.trim())
@@ -113,6 +117,12 @@ export async function finishPublicShopifyInstall(input: {
     ...tokenFields,
     scopes,
   })
+
+  try {
+    await registerShopifyWebhooks(input.shopDomain, token.access_token)
+  } catch (error) {
+    console.error("[shopify] pending-install webhook setup", error)
+  }
 
   return {
     claimSecret: claim.claimSecret,

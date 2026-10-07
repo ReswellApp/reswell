@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
 import { isShopifyConfigured } from "@/lib/shopify/config"
-import { verifyShopifyWebhookHmacWithSecrets } from "@/lib/shopify/crypto"
 import { ingestShopifyManualWebhook } from "@/lib/services/shopifyWebhook"
 import { shopifyWebhookHeadersSchema } from "@/lib/validations/shopify"
 

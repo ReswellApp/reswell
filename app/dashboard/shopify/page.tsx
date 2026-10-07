@@ -5,14 +5,12 @@ import { privatePageMetadata } from "@/lib/site-metadata"
 import {
   isShopifyConfigured,
   isShopifyIntegrationEnabled,
-  isShopifyManualCanaryEnabled,
-  isShopifyPublicOAuthConfigured,
-  isShopifyPublicOAuthEnabled,
-  shopifyAppInstallUrl,
 } from "@/lib/shopify/config"
-import { dbShopifyUserManualCanaryEnabled } from "@/lib/db/shopifyConnections"
 import type { ShopifyDashboardData } from "@/lib/shopify/types"
-import { checkShopifyMerchantAccess } from "@/lib/services/shopifyAccess"
+import {
+  checkShopifyMerchantAccess,
+  getShopifyDashboardConnectOptions,
+} from "@/lib/services/shopifyAccess"
 import {
   getShopifyConnectionStatus,
   listMerchantShopifyProducts,
@@ -66,10 +64,13 @@ export default async function ShopifyIntegrationPage({
     }
   }
 
-  const manualCanaryEnabled =
-    access.allowed &&
-    isShopifyManualCanaryEnabled() &&
-    (await dbShopifyUserManualCanaryEnabled(supabase, user.id))
+  const connectOptions = access.allowed
+    ? await getShopifyDashboardConnectOptions(supabase, user.id)
+    : {
+        publicOAuthEnabled: false,
+        manualCanaryEnabled: false,
+        appInstallUrl: null,
+      }
 
   const params = await searchParams
   return (
@@ -77,13 +78,9 @@ export default async function ShopifyIntegrationPage({
       initialData={{
         enabled: isShopifyIntegrationEnabled(),
         configured: isShopifyConfigured(),
-        publicOAuthEnabled:
-          isShopifyPublicOAuthEnabled() && isShopifyPublicOAuthConfigured(),
-        manualCanaryEnabled,
-        appInstallUrl:
-          isShopifyPublicOAuthEnabled() && isShopifyPublicOAuthConfigured()
-            ? shopifyAppInstallUrl()
-            : null,
+        publicOAuthEnabled: connectOptions.publicOAuthEnabled,
+        manualCanaryEnabled: connectOptions.manualCanaryEnabled,
+        appInstallUrl: connectOptions.appInstallUrl,
         connection,
         products,
         productPageInfo,

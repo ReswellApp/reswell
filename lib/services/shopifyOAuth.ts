@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { randomUUID } from "node:crypto"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import {
+  dbGetActiveShopifyCredential,
   dbInsertActiveShopifyCredential,
   dbUpdateShopifyCredentialTokens,
 } from "@/lib/db/shopifyCredentials"
@@ -11,7 +12,6 @@ import {
   dbDeleteExpiredShopifyOAuthStates,
   dbGetShopifyConnectionById,
   dbGetShopifyConnectionForUser,
-  dbGetActiveShopifyCredential,
   dbInsertShopifyOAuthState,
   dbMarkShopifyConnectionStatus,
   dbMirrorShopifyConnectionTokens,

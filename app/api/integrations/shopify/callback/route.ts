@@ -75,8 +75,11 @@ export async function GET(request: NextRequest) {
 
   const auth = await requireShopifyMerchant()
   if (!auth.ok) {
-    const signInUrl = new URL("/login", publicSiteOrigin())
-    signInUrl.searchParams.set("next", request.nextUrl.pathname + request.nextUrl.search)
+    const signInUrl = new URL("/auth/login", publicSiteOrigin())
+    signInUrl.searchParams.set(
+      "redirect",
+      request.nextUrl.pathname + request.nextUrl.search,
+    )
     return NextResponse.redirect(signInUrl)
   }
 

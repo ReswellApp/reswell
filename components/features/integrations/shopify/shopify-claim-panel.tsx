@@ -75,7 +75,9 @@ export function ShopifyClaimPanel({
 
         {!signedIn ? (
           <Button asChild className="w-full">
-            <Link href="/login?next=%2Fshopify%2Fclaim">Sign in to continue</Link>
+            <Link href="/auth/login?redirect=%2Fshopify%2Fclaim">
+              Sign in to continue
+            </Link>
           </Button>
         ) : (
           <>
