@@ -1,5 +1,6 @@
 import type { HelpArticle } from "@/lib/help-center/types"
 import { SHIPPING_DEADLINE_DAYS } from "@/lib/shipping-deadline"
+import { BOARD_SAVED_SEARCHES_MAX } from "@/lib/saved-search-limits"
 import {
   BulletList,
   HelpNote,
@@ -1171,7 +1172,8 @@ export const buyingHelpArticles: HelpArticle[] = [
       <>
         Go to {helpLink("/board-finder", "Board Finder")}, set brand, model, size, condition, or
         price filters, and save the search. You can also save a model or brand from its page. We
-        email you when a new listing matches. You can keep up to 5 saved searches per account.
+        email you when a new listing matches. You can keep up to {BOARD_SAVED_SEARCHES_MAX} saved
+        searches per account.
       </>
     ),
     sections: [
@@ -1189,9 +1191,9 @@ export const buyingHelpArticles: HelpArticle[] = [
         heading: "Limits and managing alerts",
         body: (
           <p>
-            Each account can save up to 5 searches across marketplace categories. Manage or delete
-            them on the Board Finder page. A match email links you to the listing so you can favorite
-            it, message the seller, or buy.
+            Each account can save up to {BOARD_SAVED_SEARCHES_MAX} searches across marketplace
+            categories. Manage or delete them on the Board Finder page. A match email links you to
+            the listing so you can favorite it, message the seller, or buy.
           </p>
         ),
       },
