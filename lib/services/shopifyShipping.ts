@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { fetchProfileAddresses } from "@/lib/db/profile-addresses"
+import { dbLoadShopifyImportShippingProfile } from "@/lib/db/shopifyCatalog"
 import { fetchListingsDeskProfile } from "@/lib/db/shopCategoryPackageSizes"
 import {
   PEER_LISTING_SECTION_LABELS,
@@ -40,6 +41,22 @@ export function shopifyImportFulfillmentDefaults(input: {
     board_shipping_cost_mode: shippingAvailable ? "reswell" : null,
     ...(packageColumns ?? {}),
   }
+}
+
+export async function getShopifyImportFulfillmentDefaults(
+  supabase: SupabaseClient,
+  userId: string,
+  section: PeerListingSection,
+): Promise<ShopifyImportFulfillmentDefaults> {
+  const profile = await dbLoadShopifyImportShippingProfile(
+    supabase,
+    userId,
+  )
+  return shopifyImportFulfillmentDefaults({
+    section,
+    hasShipFromAddress: profile.hasShipFromAddress,
+    packageSizes: profile.packageSizes,
+  })
 }
 
 export async function getShopifyShippingReadiness(

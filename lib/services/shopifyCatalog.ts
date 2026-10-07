@@ -33,8 +33,7 @@ import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { getShopifyAccessToken } from "@/lib/services/shopifyOAuth"
 import {
-  getShopifyShippingReadiness,
-  shopifyImportFulfillmentDefaults,
+  getShopifyImportFulfillmentDefaults,
   type ShopifyImportFulfillmentDefaults,
 } from "@/lib/services/shopifyShipping"
 import { USED_SURFPACKS_CATEGORY_ID } from "@/lib/surfpack-listing-config"
@@ -292,21 +291,17 @@ export async function syncSelectedShopifyProduct(input: {
     throw new Error("This Shopify product has no sellable variants")
   }
 
-  const [location, shippingReadiness] = await Promise.all([
+  const [location, fulfillmentDefaults] = await Promise.all([
     dbLoadShopifyMerchantLocation(
       input.serviceSupabase,
       input.connection.user_id,
     ),
-    getShopifyShippingReadiness(
+    getShopifyImportFulfillmentDefaults(
       input.serviceSupabase,
       input.connection.user_id,
+      selectedSection,
     ),
   ])
-  const fulfillmentDefaults = shopifyImportFulfillmentDefaults({
-    section: selectedSection,
-    hasShipFromAddress: shippingReadiness.hasShipFromAddress,
-    packageSizes: shippingReadiness.packageSizes,
-  })
   const listingIds: string[] = []
   const existingByVariant = new Map(
     existing.map((mapping) => [mapping.shopify_variant_gid, mapping]),

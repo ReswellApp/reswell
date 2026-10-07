@@ -18,6 +18,7 @@ type DeskListing = ListingsDeskAnalyticsInput & {
   condition: string | null
   description: string | null
   archived_at: string | null
+  inventory_source: string
   site_visibility_reason: string | null
   listing_images: { url: string; thumbnail_url?: string | null; is_primary: boolean | null }[] | null
   shipping_package_tier: string | null
@@ -121,9 +122,17 @@ export function ListingsAdvancedView({
                   expanded={openEditorId === listing.id}
                   onExpandedChange={(open) => setOpenEditorId(open ? listing.id : null)}
                   appliedPackageSizeId={
-                    packageSync?.section === listing.section ? packageSync.packageSizeId : null
+                    packageSync?.section === listing.section &&
+                    listing.inventory_source !== "shopify"
+                      ? packageSync.packageSizeId
+                      : null
                   }
-                  packageSyncNonce={packageSync?.section === listing.section ? packageSync.nonce : 0}
+                  packageSyncNonce={
+                    packageSync?.section === listing.section &&
+                    listing.inventory_source !== "shopify"
+                      ? packageSync.nonce
+                      : 0
+                  }
                   onSaved={onListingSaved}
                 />
               ))}
