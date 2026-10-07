@@ -1,4 +1,5 @@
-import { nextRunDateIso, type CoastalMatchShipper } from "@/lib/services/coastalDeliveryMatch"
+import { type CoastalMatchShipper } from "@/lib/services/coastalDeliveryMatch"
+import { soonestEnabledTrip } from "@/lib/services/coastalShipperWeek"
 import { COASTAL_WEEKDAY_LABELS } from "@/lib/types/coastal-delivery"
 import { normalizeUsStateProvinceForShipping } from "@/lib/us-state-name-to-code"
 
@@ -126,19 +127,12 @@ export function attachSurfboardShippedShipper(input: {
   const ranked = input.shippers
     .filter(coastalShipperIsLive)
     .map((shipper) => {
-      const enabled = shipper.runs.filter((run) => run.enabled)
-      const soonest = [...enabled].sort((a, b) => {
-        const byDate = nextRunDateIso(input.now, a.dayOfWeek).localeCompare(
-          nextRunDateIso(input.now, b.dayOfWeek),
-        )
-        if (byDate !== 0) return byDate
-        return a.id.localeCompare(b.id)
-      })[0]
+      const soonest = soonestEnabledTrip(input.now, shipper.runs)
       if (!soonest) return null
       return {
         shipper,
-        run: soonest,
-        nextRunOn: nextRunDateIso(input.now, soonest.dayOfWeek),
+        run: soonest.run,
+        nextRunOn: soonest.date,
       }
     })
     .filter((row): row is NonNullable<typeof row> => row != null)

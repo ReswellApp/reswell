@@ -19,6 +19,8 @@ export type CoastalMatchRun = {
   direction: CoastalDirection
   enabled: boolean
   stopIds: string[]
+  /** Null repeats every week. A date is that calendar day only. */
+  serviceDate?: string | null
 }
 
 export type CoastalMatchShipper = {
@@ -74,6 +76,11 @@ export function nextRunDateIso(now: Date, dayOfWeek: number): string {
   const civil = pacificCivilDate(now)
   const delta = (dayOfWeek - civil.weekday + 7) % 7
   return formatIsoDate(civil.year, civil.month, civil.day + delta)
+}
+
+export function pacificTodayIso(now: Date): string {
+  const civil = pacificCivilDate(now)
+  return formatIsoDate(civil.year, civil.month, civil.day)
 }
 
 /** This weekday inside the America/Los_Angeles week that contains `now` (Sunday through Saturday). */

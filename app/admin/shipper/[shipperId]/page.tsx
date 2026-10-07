@@ -2,7 +2,6 @@ import { notFound } from "next/navigation"
 
 import { AdminPageHeader } from "@/components/features/admin/admin-page-header"
 import { ShipperServiceSwitch } from "@/components/features/admin/shipper/shipper-service-switch"
-import { ShipperWeekBoard } from "@/components/features/admin/shipper/shipper-week-board"
 import { getCoastalShipperSchedulePage } from "@/lib/services/coastalDelivery"
 import { shipperAccountLine, shipperWeekStatusLine } from "@/lib/services/coastalShipperWeek"
 import { privatePageMetadata } from "@/lib/site-metadata"
@@ -10,14 +9,14 @@ import { privatePageMetadata } from "@/lib/site-metadata"
 export const dynamic = "force-dynamic"
 
 export const metadata = privatePageMetadata({
-  title: "Shipper runs — Admin — Reswell",
-  description: "Weekly runs for a granted Shipper account.",
+  title: "Shipper — Admin — Reswell",
+  description: "A granted Shipper account.",
   path: "/admin/shipper",
 })
 
 const SHIPPER_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
-export default async function ShipperRunsPage({
+export default async function ShipperAccountPage({
   params,
 }: {
   params: Promise<{ shipperId: string }>
@@ -28,7 +27,9 @@ export default async function ShipperRunsPage({
   const loaded = await getCoastalShipperSchedulePage(shipperId)
   if (!loaded.ok) notFound()
 
-  const { profile, stops } = loaded.data
+  const { profile } = loaded.data
+  const weekly = profile.runs.filter((run) => !run.serviceDate).length
+  const dated = profile.runs.length - weekly
 
   return (
     <div className="space-y-6">
@@ -43,7 +44,15 @@ export default async function ShipperRunsPage({
         actions={<ShipperServiceSwitch shipperId={profile.id} scheduleEnabled={profile.scheduleEnabled} />}
       />
       <p className="text-sm text-muted-foreground">{shipperWeekStatusLine(profile)}</p>
-      <ShipperWeekBoard profile={profile} stops={stops} shipperId={profile.id} />
+      <div className="admin-surface space-y-2 p-5">
+        <p className="text-sm text-foreground">
+          {weekly} weekly {weekly === 1 ? "trip" : "trips"}
+          {dated > 0 ? ` · ${dated} one-week ${dated === 1 ? "trip" : "trips"}` : ""}
+        </p>
+        <p className="text-sm text-muted-foreground">
+          They set trips, regions, and cancellations on their Shipper dashboard. Admin grants accounts and can turn Shipper off.
+        </p>
+      </div>
     </div>
   )
 }

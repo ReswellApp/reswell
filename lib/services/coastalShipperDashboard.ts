@@ -5,9 +5,15 @@ import {
   listCoastalProfileNames,
   listCoastalSaleOrdersForListings,
   listCoastalShipperJobs,
+  deleteCoastalShipperExclusion,
+  deleteCoastalShipperRun,
+  insertCoastalShipperExclusion,
+  listCoastalShipperCoverage,
   listCoastalStops,
+  replaceCoastalShipperRegions,
   setCoastalShipperRunEnabled,
   setCoastalShipperScheduleEnabled,
+  upsertCoastalShipperRun,
   updateCoastalDeliverySnapshots,
   updateCoastalDeliveryStatus,
   type CoastalJobListingRecord,
@@ -28,11 +34,14 @@ import {
   type CoastalSaleOrder,
 } from "@/lib/services/coastalAddressSnapshot"
 import { authorizeCoastalShipperView, coastalJobVisibleToShipper } from "@/lib/services/coastalShipperAccess"
+import { coastalContinuousStopIds, pacificWeekDateIso } from "@/lib/services/coastalDeliveryMatch"
+import { isoWeekday, tripsForWeek } from "@/lib/services/coastalShipperWeek"
 import { buildCoastalRunSheet, type CoastalJobDraft } from "@/lib/services/coastalShipperRunSheet"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import type {
   CoastalAddressSnapshot,
   CoastalDeliveryStatus,
+  CoastalDirection,
   CoastalShipperDashboardData,
 } from "@/lib/types/coastal-delivery"
 import type { SupabaseClient } from "@supabase/supabase-js"
@@ -127,6 +136,119 @@ export async function setCoastalShipperDashboardJobStatus(input: {
   }
 }
 
+export async function saveCoastalShipperTrip(input: {
+  shipperId: string
+  runId?: string
+  dayOfWeek: number
+  direction: CoastalDirection
+  enabled: boolean
+  stopIds: string[]
+  serviceDate: string | null
+}): Promise<Mutation> {
+  try {
+    const gate = await ownShipper(input.shipperId)
+    if (!gate.ok) return gate
+    if (input.serviceDate && isoWeekday(input.serviceDate) !== input.dayOfWeek) {
+      return { ok: false, error: "That date does not fall on that day." }
+    }
+    const stops = await listCoastalStops(gate.db)
+    const ordered = [...stops].sort((a, b) => a.sortOrder - b.sortOrder)
+    const chosen = new Set(input.stopIds)
+    const chosenStops = ordered.filter((stop) => chosen.has(stop.id))
+    const south = chosenStops[0]
+    const north = chosenStops[chosenStops.length - 1]
+    const range = south && north ? coastalContinuousStopIds(ordered, south.id, north.id) : null
+    if (!range || range.length !== chosenStops.length) {
+      return { ok: false, error: "Pick a continuous set of towns, south to north." }
+    }
+    await upsertCoastalShipperRun(gate.db, {
+      shipperId: gate.schedule.id,
+      runId: input.runId,
+      dayOfWeek: input.dayOfWeek,
+      direction: input.direction,
+      enabled: input.enabled,
+      stopIds: range,
+      serviceDate: input.serviceDate,
+    })
+    return { ok: true }
+  } catch (error) {
+    const failed = loggedFailure(error, "Could not save that trip.")
+    return { ok: false, error: failed.error }
+  }
+}
+
+export async function removeCoastalShipperTrip(input: { shipperId: string; runId: string }): Promise<Mutation> {
+  try {
+    const gate = await ownShipper(input.shipperId)
+    if (!gate.ok) return gate
+    await deleteCoastalShipperRun(gate.db, gate.schedule.id, input.runId)
+    return { ok: true }
+  } catch (error) {
+    const failed = loggedFailure(error, "Could not remove that trip.")
+    return { ok: false, error: failed.error }
+  }
+}
+
+export async function saveCoastalShipperRegions(input: { shipperId: string; stopIds: string[] }): Promise<Mutation> {
+  try {
+    const gate = await ownShipper(input.shipperId)
+    if (!gate.ok) return gate
+    const stops = await listCoastalStops(gate.db)
+    const known = new Set(stops.map((stop) => stop.id))
+    if (input.stopIds.some((id) => !known.has(id))) return { ok: false, error: "One of those towns is not on the coast." }
+    await replaceCoastalShipperRegions(gate.db, gate.schedule.id, input.stopIds)
+    return { ok: true }
+  } catch (error) {
+    const failed = loggedFailure(error, "Could not save your regions.")
+    return { ok: false, error: failed.error }
+  }
+}
+
+export async function addCoastalShipperExclusion(input: {
+  shipperId: string
+  kind: "area" | "address"
+  label: string
+}): Promise<Mutation> {
+  try {
+    const gate = await ownShipper(input.shipperId)
+    if (!gate.ok) return gate
+    await insertCoastalShipperExclusion(gate.db, {
+      shipperId: gate.schedule.id,
+      kind: input.kind,
+      label: input.label,
+    })
+    return { ok: true }
+  } catch (error) {
+    const failed = loggedFailure(error, "Could not save that exclusion.")
+    return { ok: false, error: failed.error }
+  }
+}
+
+export async function removeCoastalShipperExclusion(input: {
+  shipperId: string
+  exclusionId: string
+}): Promise<Mutation> {
+  try {
+    const gate = await ownShipper(input.shipperId)
+    if (!gate.ok) return gate
+    await deleteCoastalShipperExclusion(gate.db, gate.schedule.id, input.exclusionId)
+    return { ok: true }
+  } catch (error) {
+    const failed = loggedFailure(error, "Could not remove that exclusion.")
+    return { ok: false, error: failed.error }
+  }
+}
+
+async function ownShipper(shipperId: string): Promise<
+  | { ok: true; db: SupabaseClient; schedule: CoastalShipperScheduleRecord }
+  | { ok: false; error: string }
+> {
+  const gate = await openShipperGate(shipperId)
+  if (!gate.ok) return { ok: false, error: UNAVAILABLE }
+  if (gate.previewing) return { ok: false, error: "Open your own Shipper dashboard to change trips." }
+  return { ok: true, db: gate.db, schedule: gate.schedule }
+}
+
 async function openShipperGate(shipperId: string | null): Promise<
   | { ok: true; db: SupabaseClient; schedule: CoastalShipperScheduleRecord; previewing: boolean }
   | NotFound
@@ -161,9 +283,10 @@ async function loadDashboard(
   previewing: boolean,
 ): Promise<CoastalShipperDashboardData> {
   const runIds = schedule.runs.map((run) => run.id)
-  const [stops, jobs] = await Promise.all([
+  const [stops, jobs, coverage] = await Promise.all([
     listCoastalStops(db),
     listCoastalShipperJobs(db, schedule.id, runIds),
+    listCoastalShipperCoverage(db, schedule.id),
   ])
   const visible = jobs.filter((job) =>
     coastalJobVisibleToShipper({
@@ -183,17 +306,25 @@ async function loadDashboard(
   const drafts = visible.map((job) => toDraft(job, listingsById.get(job.listingId), saleRows, names))
   await placeDropoffs(drafts)
   await persistSnapshots(db, visible, drafts)
-  const sheet = buildCoastalRunSheet({ now: new Date(), runs: schedule.runs, stops, jobs: drafts })
+  const now = new Date()
+  const weekStart = pacificWeekDateIso(now, 0)
+  const sheet = buildCoastalRunSheet({ now, runs: tripsForWeek(schedule.runs, weekStart), stops, jobs: drafts })
   return {
     shipperId: schedule.id,
     displayName: schedule.displayName,
     scheduleEnabled: schedule.scheduleEnabled,
     previewing,
     weekLabel: sheet.weekLabel,
+    weekStart,
     coverage: sheet.coverage,
     sections: sheet.sections,
     jobCount: sheet.jobs.length,
     hasRuns: schedule.runs.length > 0,
+    stops,
+    trips: schedule.runs,
+    regionStopIds: coverage.regionStopIds,
+    regionsExplicit: coverage.regionsExplicit,
+    exclusions: coverage.exclusions,
   }
 }
 
@@ -330,5 +461,16 @@ function profileIds(listings: CoastalJobListingRecord[], orders: CoastalSaleOrde
 function loggedFailure(error: unknown, fallback: string): Failed {
   const message = error instanceof Error ? error.message : fallback
   console.error("[coastal-delivery]", { message, at: new Date().toISOString() })
+  if (
+    message.startsWith("Run the latest") ||
+    message === "Run not found." ||
+    message.startsWith("You already have a run") ||
+    /coastal_delivery_requests_status/i.test(message)
+  ) {
+    if (/coastal_delivery_requests_status/i.test(message)) {
+      return { ok: false, code: "error", error: "Run the latest Shipper SQL, then try again." }
+    }
+    return { ok: false, code: "error", error: message }
+  }
   return { ok: false, code: "error", error: fallback }
 }

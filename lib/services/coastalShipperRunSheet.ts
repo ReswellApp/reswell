@@ -55,6 +55,7 @@ export function stopCoordinates(stop: CoastalStopView | undefined): { latitude: 
 export function nextHandoffCopy(status: CoastalDeliveryStatus, pickupLabel: string, dropoffLabel: string): string {
   if (status === "waiting_for_run") return `Pick up at ${pickupLabel}`
   if (status === "picked_up") return `Drop off at ${dropoffLabel}`
+  if (status === "cancelled") return "Pickup cancelled"
   return "Dropped off"
 }
 
