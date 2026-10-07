@@ -1,4 +1,5 @@
 import { SHIPPING_DEADLINE_DAYS } from "../../shipping-deadline.ts"
+import { BOARD_SAVED_SEARCHES_MAX } from "../../saved-search-limits.ts"
 import { retrievalDoc } from "./build.ts"
 
 export const buyingRetrievalDocs = [
@@ -117,7 +118,7 @@ export const buyingRetrievalDocs = [
     keywords: ["board finder", "alert", "saved search", "wishlist", "notify"],
     relatedIds: ["buying/how-to-search", "buying/how-do-favorites-work", "buying/how-do-i-buy-a-board"],
     quickAnswer:
-      "Go to Board Finder, set brand, model, size, condition, or price filters, and save the search. You can also save a model or brand from its page. We email you when a new listing matches. You can keep up to 5 saved searches per account.",
+      `Go to Board Finder, set brand, model, size, condition, or price filters, and save the search. You can also save a model or brand from its page. We email you when a new listing matches. You can keep up to ${BOARD_SAVED_SEARCHES_MAX} saved searches per account.`,
     sections: [
       {
         heading: "Create an alert",
@@ -125,7 +126,7 @@ export const buyingRetrievalDocs = [
       },
       {
         heading: "Limits and managing alerts",
-        text: "Each account can save up to 5 searches across marketplace categories. Manage or delete them on the Board Finder page. A match email links you to the listing so you can favorite it, message the seller, or buy.",
+        text: `Each account can save up to ${BOARD_SAVED_SEARCHES_MAX} searches across marketplace categories. Manage or delete them on the Board Finder page. A match email links you to the listing so you can favorite it, message the seller, or buy.`,
       },
       {
         heading: "Favorites vs Board Finder",
