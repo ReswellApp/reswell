@@ -16,6 +16,17 @@ ALTER TABLE public.coastal_shippers
 COMMENT ON COLUMN public.coastal_shippers.price_cents IS
   'Whole-dollar price the buyer pays when this shipper is matched. 2000–50000 cents. Default 10000.';
 
+-- The flat-$100 order columns may not be on this database yet.
+ALTER TABLE public.orders
+  ADD COLUMN IF NOT EXISTS surfboard_shipped boolean NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS surfboard_shipped_shipper_id uuid
+    REFERENCES public.coastal_shippers (id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS surfboard_shipped_run_id uuid
+    REFERENCES public.coastal_shipper_runs (id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS surfboard_shipped_owed_cents integer,
+  ADD COLUMN IF NOT EXISTS surfboard_shipped_window_start date,
+  ADD COLUMN IF NOT EXISTS surfboard_shipped_window_end date;
+
 ALTER TABLE public.orders
   DROP CONSTRAINT IF EXISTS orders_surfboard_shipped_owed_cents_check;
 
