@@ -32,6 +32,11 @@ import { revalidateAfterListingSiteModeration } from "@/lib/services/listingSite
 import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { getShopifyAccessToken } from "@/lib/services/shopifyOAuth"
+import {
+  getShopifyShippingReadiness,
+  shopifyImportFulfillmentDefaults,
+  type ShopifyImportFulfillmentDefaults,
+} from "@/lib/services/shopifyShipping"
 import { USED_SURFPACKS_CATEGORY_ID } from "@/lib/surfpack-listing-config"
 import { USED_TRACTION_CATEGORY_ID } from "@/lib/traction-listing-config"
 import { boardCategoryMap } from "@/lib/utils/board-type-from-category-id"
@@ -120,6 +125,7 @@ async function syncVariant(input: {
   section: PeerListingSection
   city: string
   state: string
+  fulfillmentDefaults: ShopifyImportFulfillmentDefaults
   expectedMapping?: ShopifyProductMappingRow
 }): Promise<string> {
   const existing =
@@ -133,8 +139,7 @@ async function syncVariant(input: {
     input.product.status === "ACTIVE"
       ? input.variant.available
       : 0
-  const fields: Record<string, unknown> = {
-    user_id: input.connection.user_id,
+  const syncedFields: Record<string, unknown> = {
     title: listingTitle(input.product, input.variant),
     description: input.product.description,
     price: input.variant.price,
@@ -144,16 +149,16 @@ async function syncVariant(input: {
     category_id: SECTION_CATEGORY[input.section],
     brand: input.product.vendor,
     model: input.product.title,
+    inventory_source: "shopify",
+  }
+  const initialReswellFields: Record<string, unknown> = {
+    user_id: input.connection.user_id,
     city: input.city,
     state: input.state,
-    shipping_available: false,
-    local_pickup: true,
-    shipping_price: null,
-    board_shipping_cost_mode: null,
     buyer_offers_enabled: false,
     hidden_from_site: false,
     site_visibility_reason: null,
-    inventory_source: "shopify",
+    ...input.fulfillmentDefaults,
     ...(input.section === "surfboards" ? { board_type: "other" } : {}),
     ...(input.section === "apparel" ? { apparel_kind: "other" } : {}),
     ...(input.section === "traction" ? { traction_size: "other" } : {}),
@@ -162,15 +167,20 @@ async function syncVariant(input: {
   let listingId = existing?.listing_id ?? null
   let createdListing = false
   if (listingId) {
-    await dbUpdateShopifyListing(input.serviceSupabase, listingId, fields)
+    await dbUpdateShopifyListing(
+      input.serviceSupabase,
+      listingId,
+      syncedFields,
+    )
   } else {
     listingId = await dbInsertShopifyListing(input.serviceSupabase, {
-      ...fields,
+      ...syncedFields,
+      ...initialReswellFields,
       stock_quantity: 0,
       status: "removed",
       slug: await generateUniqueListingSlug(
         input.serviceSupabase,
-        String(fields.title),
+        String(syncedFields.title),
       ),
     })
     createdListing = true
@@ -192,7 +202,11 @@ async function syncVariant(input: {
     remoteUpdatedAt: input.product.updatedAt,
   })
   if (saved && createdListing) {
-    await dbUpdateShopifyListing(input.serviceSupabase, listingId, fields)
+    await dbUpdateShopifyListing(
+      input.serviceSupabase,
+      listingId,
+      syncedFields,
+    )
   }
   if (!saved && createdListing) {
     await dbDeleteShopifyListing(input.serviceSupabase, listingId)
@@ -203,7 +217,11 @@ async function syncVariant(input: {
     )
     if (!winner) throw new Error("Concurrent Shopify import did not create a mapping")
     listingId = winner.listing_id
-    await dbUpdateShopifyListing(input.serviceSupabase, listingId, fields)
+    await dbUpdateShopifyListing(
+      input.serviceSupabase,
+      listingId,
+      syncedFields,
+    )
     await dbReplaceShopifyListingImage(
       input.serviceSupabase,
       listingId,
@@ -274,10 +292,21 @@ export async function syncSelectedShopifyProduct(input: {
     throw new Error("This Shopify product has no sellable variants")
   }
 
-  const location = await dbLoadShopifyMerchantLocation(
-    input.serviceSupabase,
-    input.connection.user_id,
-  )
+  const [location, shippingReadiness] = await Promise.all([
+    dbLoadShopifyMerchantLocation(
+      input.serviceSupabase,
+      input.connection.user_id,
+    ),
+    getShopifyShippingReadiness(
+      input.serviceSupabase,
+      input.connection.user_id,
+    ),
+  ])
+  const fulfillmentDefaults = shopifyImportFulfillmentDefaults({
+    section: selectedSection,
+    hasShipFromAddress: shippingReadiness.hasShipFromAddress,
+    packageSizes: shippingReadiness.packageSizes,
+  })
   const listingIds: string[] = []
   const existingByVariant = new Map(
     existing.map((mapping) => [mapping.shopify_variant_gid, mapping]),
@@ -294,6 +323,7 @@ export async function syncSelectedShopifyProduct(input: {
             variant,
             section: selectedSection,
             expectedMapping: existingByVariant.get(variant.id),
+            fulfillmentDefaults,
             ...location,
           }),
         ),

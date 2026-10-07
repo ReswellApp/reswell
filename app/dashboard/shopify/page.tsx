@@ -12,6 +12,7 @@ import {
   getShopifyConnectionStatus,
   listMerchantShopifyProducts,
 } from "@/lib/services/shopifyConnection"
+import { getShopifyShippingReadiness } from "@/lib/services/shopifyShipping"
 
 export const dynamic = "force-dynamic"
 
@@ -34,6 +35,10 @@ export default async function ShopifyIntegrationPage({
   const status = access.allowed
     ? await getShopifyConnectionStatus(user.id)
     : null
+  const shippingReadiness = await getShopifyShippingReadiness(
+    supabase,
+    user.id,
+  )
   const connection = status?.ok ? status.data : null
   let products: ShopifyDashboardData["products"] = []
   let productPageInfo: ShopifyDashboardData["productPageInfo"] = {
@@ -65,6 +70,7 @@ export default async function ShopifyIntegrationPage({
         connection,
         products,
         productPageInfo,
+        shippingReadiness,
         loadError,
       }}
       connected={params.connected === "1"}

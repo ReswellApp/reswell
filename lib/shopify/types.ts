@@ -131,6 +131,17 @@ export interface ShopifySyncJobRow {
   worker_id: string | null
 }
 
+export interface ShopifyShippingReadiness {
+  hasShipFromAddress: boolean
+  packageDefaults: Array<{
+    section: PeerListingSection
+    sectionLabel: string
+    packageSizeId: string
+    packageLabel: string
+    packageSummary: string
+  }>
+}
+
 export interface ShopifyDashboardData {
   enabled: boolean
   configured: boolean
@@ -140,5 +151,6 @@ export interface ShopifyDashboardData {
     hasNextPage: boolean
     endCursor: string | null
   }
+  shippingReadiness: ShopifyShippingReadiness
   loadError: string | null
 }

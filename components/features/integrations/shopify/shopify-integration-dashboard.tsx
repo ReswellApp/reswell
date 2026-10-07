@@ -5,6 +5,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Card, CardContent } from "@/components/ui/card"
 import { ShopifyConnectionCard } from "@/components/features/integrations/shopify/shopify-connection-card"
 import { ShopifyProductPicker } from "@/components/features/integrations/shopify/shopify-product-picker"
+import { ShopifyShippingReadinessCard } from "@/components/features/integrations/shopify/shopify-shipping-readiness-card"
 import { useShopifyIntegration } from "@/components/features/integrations/shopify/hooks/use-shopify-integration"
 import type { ShopifyDashboardData } from "@/lib/shopify/types"
 import {
@@ -79,6 +80,10 @@ export function ShopifyIntegrationDashboard({
           onDisconnect={() => void integration.disconnect()}
         />
       ) : null}
+
+      <ShopifyShippingReadinessCard
+        readiness={initialData.shippingReadiness}
+      />
 
       {connectedAndActive ? (
         <ShopifyProductPicker
