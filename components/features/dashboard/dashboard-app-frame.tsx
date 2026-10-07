@@ -18,6 +18,7 @@ interface DashboardAppFrameProps {
   sellerProfileHref: string | null
   isAdmin?: boolean
   isShipper?: boolean
+  hasShopifyAccess?: boolean
   children: ReactNode
 }
 
@@ -25,6 +26,7 @@ export function DashboardAppFrame({
   sellerProfileHref,
   isAdmin = false,
   isShipper = false,
+  hasShopifyAccess = false,
   children,
 }: DashboardAppFrameProps) {
   const pathname = usePathname() ?? ""
@@ -45,6 +47,7 @@ export function DashboardAppFrame({
         sellerProfileHref={sellerProfileHref}
         isAdmin={isAdmin}
         isShipper={isShipper}
+        hasShopifyAccess={hasShopifyAccess}
       />
 
       <div className="mt-5 flex flex-col gap-6 lg:mt-0 lg:flex-row lg:gap-12 xl:gap-14">
@@ -62,6 +65,7 @@ export function DashboardAppFrame({
                 sellerProfileHref={sellerProfileHref}
                 isAdmin={isAdmin}
                 isShipper={isShipper}
+                hasShopifyAccess={hasShopifyAccess}
                 size="large"
               />
             </Suspense>

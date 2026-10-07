@@ -13,6 +13,7 @@ import type { PeerListingCartFields } from "@/lib/peer-listing-cart"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { captureServerEvent } from "@/lib/posthog-server"
 import { isReswellShopListing } from "@/lib/reswell-shop"
+import { isShopifyManagedListing } from "@/lib/shopify/listing"
 import { acceptedUnitPriceForSingleItemOffer } from "@/lib/services/acceptedOfferCheckout"
 import { assertBuyerMayPurchaseListingExclusiveWindow } from "@/lib/services/listingBuyerExclusiveWindow"
 import {
@@ -44,6 +45,7 @@ export type CartListingRow = {
   board_type?: string | null
   dimensions?: string | null
   stock_quantity?: number | null
+  inventory_source?: string | null
   listing_images: { url: string; thumbnail_url?: string | null; is_primary?: boolean | null }[] | null
   profiles: {
     display_name: string | null
@@ -67,6 +69,7 @@ type CartEligibleListing = PeerListingCartFields & {
   hidden_from_site?: boolean | null
   archived_at?: string | null
   stock_quantity?: number | null
+  inventory_source?: string | null
 }
 
 async function assertListingEligibleForCart(
@@ -77,7 +80,7 @@ async function assertListingEligibleForCart(
   const { data: row, error } = await supabase
     .from("listings")
     .select(
-      "id, user_id, section, status, local_pickup, shipping_available, hidden_from_site, archived_at, stock_quantity",
+      "id, user_id, section, status, local_pickup, shipping_available, hidden_from_site, archived_at, stock_quantity, inventory_source",
     )
     .eq("id", listingId)
     .maybeSingle()
@@ -101,7 +104,10 @@ async function assertListingEligibleForCart(
   if (isBlockedOwnListingPurchase(listing, buyerId)) {
     return { ok: false, message: "You cannot add your own listing" }
   }
-  if (isReswellShopListing(listing.section)) {
+  if (
+    isReswellShopListing(listing.section) ||
+    isShopifyManagedListing(listing)
+  ) {
     const stock = Math.max(0, Math.floor(Number(listing.stock_quantity) || 0))
     if (stock < 1) {
       return { ok: false, message: "This item is out of stock" }
@@ -553,6 +559,7 @@ export async function getCartPageItems(): Promise<{
         board_type,
         dimensions,
         stock_quantity,
+        inventory_source,
         hidden_from_site,
         archived_at,
         listing_images ( url, thumbnail_url, is_primary ),
