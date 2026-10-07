@@ -6,6 +6,7 @@ import { X } from "lucide-react"
 import {
   getGiveawayBySlug,
   isGiveawayOpen,
+  WIN_A_SURFBOARD_ENTRY_DEADLINE_COPY,
   WIN_A_SURFBOARD_GIVEAWAY_SLUG,
 } from "@/lib/giveaways/catalog"
 import {
@@ -14,7 +15,7 @@ import {
 } from "@/lib/giveaways/marquee-storage"
 import { GIVEAWAYS_INDEX_HREF } from "@/lib/giveaways/paths"
 
-const PHRASE = "One day left to enter to win a custom surfboard"
+const PHRASE = `The deadline to enter to win a custom surfboard is ${WIN_A_SURFBOARD_ENTRY_DEADLINE_COPY}`
 const LEARN_MORE = "learn more"
 const REPEAT = 6
 
