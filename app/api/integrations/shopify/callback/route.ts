@@ -9,7 +9,7 @@ function dashboardRedirect(
   result: "connected" | "error",
   detail?: string,
 ) {
-  const url = new URL("/dashboard/integrations/shopify", publicSiteOrigin())
+  const url = new URL("/dashboard/shopify", publicSiteOrigin())
   url.searchParams.set(result, "1")
   if (detail) url.searchParams.set("detail", detail)
   return NextResponse.redirect(url)
