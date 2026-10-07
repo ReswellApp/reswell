@@ -26,7 +26,7 @@ export type CoastalStopView = {
   longitude?: number | null
 }
 
-export const COASTAL_DELIVERY_STATUSES = ["waiting_for_run", "picked_up", "dropped_off"] as const
+export const COASTAL_DELIVERY_STATUSES = ["waiting_for_run", "picked_up", "dropped_off", "cancelled"] as const
 
 export type CoastalDeliveryStatus = (typeof COASTAL_DELIVERY_STATUSES)[number]
 
@@ -54,6 +54,14 @@ export type CoastalRunView = {
   direction: CoastalDirection
   enabled: boolean
   stopIds: string[]
+  /** Null is the repeating weekly trip. A date is that week only. */
+  serviceDate?: string | null
+}
+
+export type CoastalShipperExclusion = {
+  id: string
+  kind: "area" | "address"
+  label: string
 }
 
 export type CoastalShipperProfileView = {
@@ -64,6 +72,7 @@ export type CoastalShipperProfileView = {
   phone: string
   notes: string
   scheduleEnabled: boolean
+  priceCents: number
   runs: CoastalRunView[]
 }
 
@@ -73,6 +82,7 @@ export type CoastalShipperSummary = {
   email: string | null
   isShop: boolean
   scheduleEnabled: boolean
+  priceCents: number
   runCount: number
   enabledRunCount: number
   isYou: boolean
@@ -166,10 +176,17 @@ export type CoastalShipperDashboardData = {
   shipperId: string
   displayName: string
   scheduleEnabled: boolean
+  priceCents: number
   previewing: boolean
   weekLabel: string
+  weekStart: string
   coverage: CoastalCoverageStop[]
   sections: CoastalRunSheetSection[]
   jobCount: number
   hasRuns: boolean
+  stops: CoastalStopView[]
+  trips: CoastalRunView[]
+  regionStopIds: string[]
+  regionsExplicit: boolean
+  exclusions: CoastalShipperExclusion[]
 }

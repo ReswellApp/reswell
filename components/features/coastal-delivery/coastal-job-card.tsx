@@ -32,11 +32,24 @@ export function CoastalJobCard({ job, selected, pending, onSelect, onStatus }: C
         {job.sellerOriginLabel ? <p className="text-sm text-muted-foreground">Note · {job.sellerOriginLabel}</p> : null}
         <p className="mt-2 text-sm font-medium text-foreground">{job.nextHandoff}</p>
       </button>
-      {job.statusActionsEnabled && next ? (
+      {job.statusActionsEnabled && (next || job.status === "waiting_for_run" || undo) ? (
         <div className="flex flex-col gap-2 sm:flex-row">
-          <Button type="button" className="h-12 flex-1 text-base" disabled={pending} onClick={() => onStatus(next.status)}>
-            {next.label}
-          </Button>
+          {next ? (
+            <Button type="button" className="h-12 flex-1 text-base" disabled={pending} onClick={() => onStatus(next.status)}>
+              {next.label}
+            </Button>
+          ) : null}
+          {job.status === "waiting_for_run" ? (
+            <Button
+              type="button"
+              variant="outline"
+              className="h-12 flex-1 text-base"
+              disabled={pending}
+              onClick={() => onStatus("cancelled")}
+            >
+              Cancel pickup
+            </Button>
+          ) : null}
           {undo ? (
             <Button
               type="button"
@@ -83,5 +96,6 @@ function nextStatus(status: CoastalDeliveryStatus): { status: CoastalDeliverySta
 function undoStatus(status: CoastalDeliveryStatus): { status: CoastalDeliveryStatus; label: string } | null {
   if (status === "picked_up") return { status: "waiting_for_run", label: "Not picked up yet" }
   if (status === "dropped_off") return { status: "picked_up", label: "Still in the car" }
+  if (status === "cancelled") return { status: "waiting_for_run", label: "Restore pickup" }
   return null
 }

@@ -82,7 +82,47 @@ export const coastalShipperRunToggleSchema = z.object({
 export const coastalShipperJobStatusSchema = z.object({
   shipperId: z.string().uuid(),
   requestId: z.string().uuid(),
-  status: z.enum(["waiting_for_run", "picked_up", "dropped_off"]),
+  status: z.enum(["waiting_for_run", "picked_up", "dropped_off", "cancelled"]),
+})
+
+export const coastalShipperPriceSchema = z.object({
+  shipperId: z.string().uuid(),
+  priceUsd: z
+    .number()
+    .int()
+    .min(20, "Enter a whole-dollar price from $20 to $500.")
+    .max(500, "Enter a whole-dollar price from $20 to $500."),
+})
+
+export const coastalShipperTripSchema = z.object({
+  shipperId: z.string().uuid(),
+  runId: z.string().uuid().optional(),
+  dayOfWeek: z.number().int().min(0).max(6),
+  direction: z.enum(["northbound", "southbound"]),
+  enabled: z.boolean(),
+  stopIds: z.array(z.string().uuid()).min(2).max(20),
+  serviceDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(),
+})
+
+export const coastalShipperDeleteTripSchema = z.object({
+  shipperId: z.string().uuid(),
+  runId: z.string().uuid(),
+})
+
+export const coastalShipperRegionsSchema = z.object({
+  shipperId: z.string().uuid(),
+  stopIds: z.array(z.string().uuid()).max(20),
+})
+
+export const coastalShipperExclusionSchema = z.object({
+  shipperId: z.string().uuid(),
+  kind: z.enum(["area", "address"]),
+  label: z.string().trim().min(2).max(160),
+})
+
+export const coastalShipperDeleteExclusionSchema = z.object({
+  shipperId: z.string().uuid(),
+  exclusionId: z.string().uuid(),
 })
 
 export type CoastalShipperJoinInput = z.infer<typeof coastalShipperJoinSchema>

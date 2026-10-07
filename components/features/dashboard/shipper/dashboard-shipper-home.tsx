@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation"
 
 import { CoastalRunSheet } from "@/components/features/coastal-delivery/coastal-run-sheet"
 import { CoastalShipperMap } from "@/components/features/coastal-delivery/coastal-shipper-map"
+import { ShipperPricePanel } from "@/components/features/dashboard/shipper/shipper-price-panel"
+import { ShipperRegionPanel } from "@/components/features/dashboard/shipper/shipper-region-panel"
+import { ShipperTripPlanner } from "@/components/features/dashboard/shipper/shipper-trip-planner"
 import { setCoastalShipperScheduleAction } from "@/lib/actions/coastalShipperActions"
 import type { CoastalShipperDashboardData } from "@/lib/types/coastal-delivery"
 import { Switch } from "@/components/ui/switch"
@@ -56,6 +59,24 @@ export function DashboardShipperHome({ data }: DashboardShipperHomeProps) {
       </section>
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
+      <ShipperPricePanel shipperId={data.shipperId} priceCents={data.priceCents} previewing={data.previewing} />
+      <ShipperTripPlanner
+        shipperId={data.shipperId}
+        weekStart={data.weekStart}
+        stops={data.stops}
+        trips={data.trips}
+        previewing={data.previewing}
+      />
+      <ShipperRegionPanel
+        shipperId={data.shipperId}
+        stops={data.stops}
+        regionStopIds={data.regionStopIds}
+        regionsExplicit={data.regionsExplicit}
+        tripsStopIds={[...new Set(data.trips.filter((trip) => trip.enabled).flatMap((trip) => trip.stopIds))]}
+        exclusions={data.exclusions}
+        previewing={data.previewing}
+      />
+
       <section className="grid grid-cols-3 gap-2 sm:gap-3">
         <Stat label="Boards" value={String(data.jobCount)} />
         <Stat label="Runs on" value={data.hasRuns ? String(enabledRuns) : "0"} />
@@ -73,7 +94,7 @@ export function DashboardShipperHome({ data }: DashboardShipperHomeProps) {
               data.coverage.length === 0 && jobs.length === 0
                 ? data.hasRuns
                   ? "Turn a run on to see the stops you cover."
-                  : "No pickups or drop-offs yet. Your runs show up here once they are saved."
+                  : "No pickups yet. Add a trip and your coast shows up here."
                 : null
             }
           />

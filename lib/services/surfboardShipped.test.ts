@@ -1,6 +1,7 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 
+import { surfboardShippedBuyerPriceCopy } from "@/lib/utils/shipperPrice"
 import type { CoastalMatchShipper } from "./coastalDeliveryMatch.ts"
 import {
   SURFBOARD_SHIPPED_FEE_CENTS,
@@ -132,8 +133,19 @@ describe("surfboard shipped match and window", () => {
     assert.ok(attached)
     assert.equal(attached?.shipperId, "sooner")
     assert.equal(attached?.displayName, "Avery")
+    assert.equal(attached?.feeUsd, 100)
     assert.equal(attached?.availableShippers.length, 2)
     assert.equal(attached?.availableShippers.every((row) => row.live), true)
+  })
+
+  it("charges the matched shipper's price", () => {
+    const priced = shipper("priced", "Blair", 1)
+    priced.priceCents = 15_000
+    const attached = attachSurfboardShippedShipper({ shippers: [priced], now })
+    assert.equal(attached?.feeUsd, 150)
+    assert.equal(attached?.availableShippers[0]?.priceUsd, 150)
+    assert.equal(surfboardShippedBuyerPriceCopy([80, 150, 80]), "Buyers pay the matched shipper's price, $80–$150, at checkout.")
+    assert.equal(surfboardShippedBuyerPriceCopy([100]), "Buyers pay $100 at checkout.")
   })
 
   it("records $100 owed from payment metadata and rejects a partial snapshot", () => {
@@ -155,6 +167,31 @@ describe("surfboard shipped match and window", () => {
     }
     assert.equal(readSurfboardShippedPaymentMetadata({ surfboard_shipped: "1" })?.ok, false)
     assert.equal(readSurfboardShippedPaymentMetadata(null), null)
+
+    const custom = readSurfboardShippedPaymentMetadata({
+      surfboard_shipped: "1",
+      surfboard_shipped_cents: "15000",
+      surfboard_shipped_shipper_id: shipperId,
+      surfboard_shipped_run_id: runId,
+      surfboard_shipped_window_start: "2026-06-22",
+      surfboard_shipped_window_end: "2026-06-29",
+    })
+    assert.equal(custom?.ok, true)
+    if (custom?.ok) {
+      assert.equal(custom.feeUsd, 150)
+      assert.equal(custom.write.surfboard_shipped_owed_cents, 15000)
+    }
+    assert.equal(
+      readSurfboardShippedPaymentMetadata({
+        surfboard_shipped: "1",
+        surfboard_shipped_cents: "15050",
+        surfboard_shipped_shipper_id: shipperId,
+        surfboard_shipped_run_id: runId,
+        surfboard_shipped_window_start: "2026-06-22",
+        surfboard_shipped_window_end: "2026-06-29",
+      })?.ok,
+      false,
+    )
   })
 
   it("does not attach when no run is live", () => {
