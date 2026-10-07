@@ -7,6 +7,7 @@
  */
 
 import { totalBoardLengthInchesFromCombinedInput } from "@/lib/board-measurements"
+import { isListingPurchasable } from "@/lib/listing-public-visibility"
 import { parseListingDimensionsColumn } from "@/lib/listing-dimensions-storage"
 import {
   SURFBOARD_LABEL_MAX_UPS_DIMENSION_TOTAL_IN,
@@ -40,6 +41,52 @@ export function countSurfboardListings(
 export function peerCheckoutSurfboardCountError(count: number): string | null {
   if (count <= MAX_SURFBOARDS_PER_SELLER_CHECKOUT) return null
   return `You can buy up to ${MAX_SURFBOARDS_PER_SELLER_CHECKOUT} surfboards from the same seller in one checkout.`
+}
+
+/** Cart row used to decide whether another surfboard from the same seller still fits. */
+export type CartSurfboardCapRow = {
+  listingId: string
+  userId?: string | null
+  section?: string | null
+  status?: string | null
+  title?: string | null
+  hiddenFromSite?: boolean | null
+  archivedAt?: string | null
+}
+
+/**
+ * Cap for adding one surfboard. Counts only purchasable boards from that seller.
+ * Sold, hidden, and archived cart rows are not in checkout, so they do not count.
+ * Re-adding a listing already in the cart is not another board.
+ */
+export function surfboardCapErrorForAddedListing(
+  cartRows: CartSurfboardCapRow[],
+  adding: { listingId: string; userId: string; section?: string | null },
+): string | null {
+  if (!isSurfboardListingSection(adding.section)) return null
+
+  const seen = new Set<string>()
+  const sellerBoards: Array<{ section?: string | null }> = []
+  for (const row of cartRows) {
+    const listingId = row.listingId.trim()
+    if (!listingId || seen.has(listingId)) continue
+    seen.add(listingId)
+    if (row.userId !== adding.userId) continue
+    if (
+      !isListingPurchasable({
+        status: row.status ?? "",
+        title: row.title,
+        hidden_from_site: row.hiddenFromSite,
+        archived_at: row.archivedAt,
+      })
+    ) {
+      continue
+    }
+    sellerBoards.push({ section: row.section })
+  }
+
+  if (seen.has(adding.listingId.trim())) return null
+  return peerCheckoutSurfboardCountError(countSurfboardListings(sellerBoards) + 1)
 }
 
 export function boardLengthInchesFromListing(row: { dimensions?: string | null }): number | null {

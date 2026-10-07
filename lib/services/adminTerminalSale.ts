@@ -24,6 +24,7 @@ import type { KlaviyoBuyerOrderLineItem } from "@/lib/klaviyo/track-buyer-order-
 import { notifySellerOrderCheckoutKlaviyo } from "@/lib/services/notifySellerOrderCheckoutKlaviyo"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { isShopifyManagedListing } from "@/lib/shopify/listing"
+import { withShopifyInventorySources } from "@/lib/shopify/listing-inventory-source"
 import { trackMetaPurchaseServerEvent } from "@/lib/meta/track-purchase-server-event"
 import { syncAdminTerminalGuestToCrm } from "@/lib/services/crmAdminTerminalGuest"
 import {
@@ -192,7 +193,13 @@ async function loadListingForAdminTerminal(
     return { ok: false, error: "Listing not found", status: 404 }
   }
 
-  const listing = data as unknown as AdminTerminalListingRow
+  const [sourcedListing] = await withShopifyInventorySources(serviceSupabase, [
+    data as unknown as AdminTerminalListingRow,
+  ])
+  const listing = sourcedListing
+  if (!listing) {
+    return { ok: false, error: "Listing not found", status: 404 }
+  }
   if (listing.archived_at) {
     return { ok: false, error: "Listing is archived", status: 400 }
   }
@@ -259,7 +266,13 @@ export async function previewAdminTerminalListingById(
     return { ok: false, error: "Listing not found", status: 404 }
   }
 
-  const listing = data as unknown as AdminTerminalListingRow
+  const [sourcedListing] = await withShopifyInventorySources(serviceSupabase, [
+    data as unknown as AdminTerminalListingRow,
+  ])
+  const listing = sourcedListing
+  if (!listing) {
+    return { ok: false, error: "Listing not found", status: 404 }
+  }
   if (listing.archived_at) {
     return { ok: false, error: "Listing is archived", status: 400 }
   }
@@ -447,7 +460,13 @@ async function loadListingForAdminTerminalSale(
     return { ok: false, error: "Listing not found", status: 404 }
   }
 
-  const listing = listingRaw as unknown as AdminTerminalListingRow
+  const [sourcedListing] = await withShopifyInventorySources(service, [
+    listingRaw as unknown as AdminTerminalListingRow,
+  ])
+  const listing = sourcedListing
+  if (!listing) {
+    return { ok: false, error: "Listing not found", status: 404 }
+  }
   if (listing.archived_at) {
     return { ok: false, error: "Listing is archived", status: 400 }
   }

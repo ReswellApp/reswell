@@ -41,6 +41,7 @@ import {
   dbMarkShopifyCompensatedOrderRefunded,
 } from "@/lib/db/shopifyCompensations"
 import { isShopifyManagedListing } from "@/lib/shopify/listing"
+import { withShopifyInventorySources } from "@/lib/shopify/listing-inventory-source"
 import {
   compensateShopifyInventoryConflict,
   type ShopifyInventoryCompensationResult,
@@ -614,13 +615,15 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     }),
   )
 
-  const listingsOrdered = listingIdsOrdered
+  const listingsLoaded = listingIdsOrdered
     .map((id) => listingMap.get(id))
     .filter((row): row is PeerSurfboardCheckoutListingRow => row != null)
 
-  if (listingsOrdered.length !== listingIdsOrdered.length) {
+  if (listingsLoaded.length !== listingIdsOrdered.length) {
     return { ok: false, error: "Listing not found", status: 404 }
   }
+
+  const listingsOrdered = await withShopifyInventorySources(serviceSupabase, listingsLoaded)
 
   if (buyerId && listingsOrdered.some((l) => l.user_id === buyerId)) {
     return { ok: false, error: "Invalid purchase", status: 400 }

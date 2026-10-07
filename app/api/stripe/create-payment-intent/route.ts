@@ -25,6 +25,7 @@ import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { formatPeerItemCountPhrase } from "@/lib/peer-listing-item-nouns"
 import { isReswellShopListing } from "@/lib/reswell-shop"
 import { isShopifyManagedListing } from "@/lib/shopify/listing"
+import { withShopifyInventorySourcesForPurchase } from "@/lib/shopify/listing-inventory-source"
 import {
   encodeListingQuantitiesMeta,
   resolveMixedCheckoutSellerId,
@@ -161,13 +162,15 @@ export async function POST(request: NextRequest) {
     }),
   )
 
-  const listingsOrdered = listingIdsOrdered
+  const listingsLoaded = listingIdsOrdered
     .map((id) => listingMap.get(id))
     .filter((row): row is PeerSurfboardCheckoutListingRow => row != null)
 
-  if (listingsOrdered.length !== listingIdsOrdered.length) {
+  if (listingsLoaded.length !== listingIdsOrdered.length) {
     return NextResponse.json({ error: "Listing not found or not available" }, { status: 404 })
   }
+
+  const listingsOrdered = await withShopifyInventorySourcesForPurchase(supabase, listingsLoaded)
 
   if (listingsOrdered.some((l) => isBlockedOwnListingPurchase(l, user.id))) {
     return NextResponse.json({ error: "Cannot purchase your own listing" }, { status: 400 })
