@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Heart, Loader2, Check } from "lucide-react"
+import { Heart, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import {
@@ -255,13 +255,13 @@ export function BoardsNoResultsSaveSearch({
           ) : saved ? (
             hovering ? (
               <>
-                <Heart className={cn(compact ? "mr-1.5 h-3.5 w-3.5" : "mr-2 h-4 w-4")} aria-hidden />
+                <Heart className={cn("fill-current", compact ? "mr-1.5 h-3.5 w-3.5" : "mr-2 h-4 w-4")} aria-hidden />
                 Unsave
               </>
             ) : (
               <>
-                <Check className={cn(compact ? "mr-1.5 h-3.5 w-3.5" : "mr-2 h-4 w-4")} aria-hidden />
-                Search Saved
+                <Heart className={cn("fill-current", compact ? "mr-1.5 h-3.5 w-3.5" : "mr-2 h-4 w-4")} aria-hidden />
+                Saved
               </>
             )
           ) : (
