@@ -10,8 +10,12 @@ import {
 import { fetchProfileIsAdmin } from "@/lib/db/profileAdmin"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import type { CoastalMatchShipper } from "@/lib/services/coastalDeliveryMatch"
-import { googleResolveStreetAddress } from "@/lib/maps/google-geocoding-server"
 import type { GoogleResolvedStreet } from "@/lib/maps/google-geocoding-server"
+import {
+  addressFieldsFromVerifiedGoogleStreet,
+  verifiedGoogleStreetFromStoredAddress,
+  verifyGoogleStreetAddress,
+} from "@/lib/services/addressGeocoding"
 import {
   SURFBOARD_SHIPPED_FEE_USD,
   attachSurfboardShippedShipper,
@@ -106,10 +110,7 @@ export async function saveListingSurfboardShipped(
     const phone = toE164UsPhone(addressInput.phone)
     if (!phone) return { error: "Enter a US phone number." }
 
-    const resolved = await googleResolveStreetAddress({
-      placeId: addressInput.google_place_id,
-      query: streetQuery(addressInput),
-    })
+    const resolved = await verifyGoogleStreetAddress(addressInput)
     if (!isGoogleCaliforniaStreet(resolved) || !resolved) {
       return { error: "Pickup must be a California street address." }
     }
@@ -302,7 +303,10 @@ type StreetAddress = Pick<
   "line1" | "line2" | "city" | "state" | "postal_code" | "country"
 > & {
   google_place_id?: string | null
+  latitude?: number | null
+  longitude?: number | null
   formatted_address?: string | null
+  google_geocoded_at?: string | null
 }
 
 async function buildCharge(
@@ -329,14 +333,8 @@ async function buildCharge(
   if (liveSurfboardShippers(shippers).length === 0) return null
 
   const [pickupResolved, buyerResolved] = await Promise.all([
-    googleResolveStreetAddress({
-      placeId: pickup.pickup.google_place_id,
-      query: streetQuery(pickup.pickup),
-    }),
-    googleResolveStreetAddress({
-      placeId: buyer.google_place_id,
-      query: streetQuery(buyer),
-    }),
+    resolveStreetForCharge(pickup.pickup),
+    resolveStreetForCharge(buyer),
   ])
   if (!isGoogleCaliforniaStreet(pickupResolved) || !isGoogleCaliforniaStreet(buyerResolved) || !pickupResolved || !buyerResolved) {
     return null
@@ -392,13 +390,8 @@ async function buildCharge(
   }
 }
 
-function streetQuery(address: StreetAddress): string {
-  const formatted = address.formatted_address?.trim()
-  if (formatted) return formatted
-  return [address.line1, address.line2, address.city, address.state, address.postal_code, address.country || "US"]
-    .map((part) => (part ?? "").trim())
-    .filter(Boolean)
-    .join(", ")
+async function resolveStreetForCharge(address: StreetAddress): Promise<GoogleResolvedStreet | null> {
+  return verifiedGoogleStreetFromStoredAddress(address) ?? verifyGoogleStreetAddress(address)
 }
 
 function addressFieldsFromGoogle(
@@ -409,16 +402,7 @@ function addressFieldsFromGoogle(
   return {
     full_name: fullName,
     phone,
-    line1: resolved.line1,
-    line2: resolved.line2 || null,
-    city: resolved.city,
-    state: resolved.state,
-    postal_code: resolved.postalCode,
-    country: "US",
-    google_place_id: resolved.placeId,
-    latitude: resolved.latitude,
-    longitude: resolved.longitude,
-    formatted_address: resolved.formattedAddress,
+    ...addressFieldsFromVerifiedGoogleStreet(resolved),
   }
 }
 

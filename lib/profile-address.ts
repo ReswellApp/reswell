@@ -26,6 +26,7 @@ export type ProfileAddressRow = {
   latitude?: number | null
   longitude?: number | null
   formatted_address?: string | null
+  google_geocoded_at?: string | null
 }
 
 function parseStoredResidential(value: unknown): AddressResidentialIndicator | null {
@@ -59,24 +60,29 @@ export function googleAddressSnapshot(addr: {
   latitude?: number | null
   longitude?: number | null
   formatted_address?: string | null
+  google_geocoded_at?: string | null
 }): {
   google_place_id?: string
   latitude?: number
   longitude?: number
   formatted_address?: string
+  google_geocoded_at?: string
 } {
   const snapshot: {
     google_place_id?: string
     latitude?: number
     longitude?: number
     formatted_address?: string
+    google_geocoded_at?: string
   } = {}
   const placeId = addr.google_place_id?.trim()
   const formatted = addr.formatted_address?.trim()
+  const geocodedAt = addr.google_geocoded_at?.trim()
   if (placeId) snapshot.google_place_id = placeId
   if (typeof addr.latitude === "number" && Number.isFinite(addr.latitude)) snapshot.latitude = addr.latitude
   if (typeof addr.longitude === "number" && Number.isFinite(addr.longitude)) snapshot.longitude = addr.longitude
   if (formatted) snapshot.formatted_address = formatted
+  if (geocodedAt) snapshot.google_geocoded_at = geocodedAt
   return snapshot
 }
 
@@ -87,13 +93,20 @@ export function withoutGoogleAddressColumns<T extends object>(row: T): T {
   delete street.latitude
   delete street.longitude
   delete street.formatted_address
+  delete street.google_geocoded_at
   return street as T
 }
 
 /** True when this database has not applied the Google address columns yet. */
 export function isMissingGoogleAddressColumn(message: string | null | undefined): boolean {
-  return /column "(google_place_id|formatted_address|latitude|longitude)" of relation "addresses" does not exist/i.test(
-    message ?? "",
+  const value = message ?? ""
+  return (
+    /column "(google_place_id|formatted_address|latitude|longitude|google_geocoded_at)" of relation "addresses" does not exist/i.test(
+      value,
+    ) ||
+    /could not find the ['"]?(google_place_id|formatted_address|latitude|longitude|google_geocoded_at)['"]? column of ['"]?addresses['"]? in the schema cache/i.test(
+      value,
+    )
   )
 }
 
@@ -113,6 +126,7 @@ export type ProfileAddressFieldsFromOrder = {
   latitude?: number | null
   longitude?: number | null
   formatted_address?: string | null
+  google_geocoded_at?: string | null
 }
 
 /**

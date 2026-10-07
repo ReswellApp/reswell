@@ -188,5 +188,6 @@ export function buyerAddressInsertFromCarrierFields(
     latitude: original.latitude ?? null,
     longitude: original.longitude ?? null,
     formatted_address: original.formatted_address ?? null,
+    google_geocoded_at: original.google_geocoded_at ?? null,
   }
 }

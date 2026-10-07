@@ -10,6 +10,10 @@ import {
   buyerAddressInsertFromCarrierFields,
   normalizeBuyerAddressForCarriers,
 } from "@/lib/services/checkoutBuyerAddress"
+import {
+  addressFieldsFromVerifiedGoogleStreet,
+  verifyGoogleStreetAddress,
+} from "@/lib/services/addressGeocoding"
 
 export async function getProfileAddresses(): Promise<{
   addresses: ProfileAddressRow[]
@@ -75,32 +79,29 @@ export async function createProfileAddress(
     }
   }
 
-  const normalized = await normalizeBuyerAddressForCarriers({
+  const verifiedGoogle = await verifyGoogleStreetAddress(input)
+  const verifiedFields = verifiedGoogle
+    ? addressFieldsFromVerifiedGoogleStreet(verifiedGoogle)
+    : null
+  const addressForCarrier = {
     full_name: identity.full_name,
     phone: identity.phone,
-    line1: input.line1,
-    line2: input.line2 ?? null,
-    city: input.city,
-    state: input.state ?? null,
-    postal_code: input.postal_code,
-    country: input.country,
-  })
+    line1: verifiedFields?.line1 ?? input.line1,
+    line2: verifiedFields?.line2 ?? input.line2 ?? null,
+    city: verifiedFields?.city ?? input.city,
+    state: verifiedFields?.state ?? input.state ?? null,
+    postal_code: verifiedFields?.postal_code ?? input.postal_code,
+    country: verifiedFields?.country ?? input.country,
+    ...(verifiedFields ?? {}),
+  }
+  const normalized = await normalizeBuyerAddressForCarriers(addressForCarrier)
   if (!normalized.ok && normalized.fatal) {
     return { address: null, error: normalized.error }
   }
 
   const carrierFields = buyerAddressInsertFromCarrierFields(
     identity,
-    {
-      full_name: identity.full_name,
-      phone: identity.phone,
-      line1: input.line1,
-      line2: input.line2 ?? null,
-      city: input.city,
-      state: input.state ?? null,
-      postal_code: input.postal_code,
-      country: input.country,
-    },
+    addressForCarrier,
     normalized.ok ? normalized.fields : null,
   )
 
@@ -108,7 +109,7 @@ export async function createProfileAddress(
     await supabase.from("addresses").update({ is_default: false }).eq("profile_id", user.id)
   }
 
-  const pin = googleAddressSnapshot(input)
+  const pin = googleAddressSnapshot(carrierFields)
   const row = {
     profile_id: user.id,
     full_name: carrierFields.full_name,
@@ -186,6 +187,12 @@ export async function updateProfileAddress(
     input.state !== undefined ||
     input.postal_code !== undefined ||
     input.country !== undefined
+  const locationChanged =
+    streetChanged ||
+    input.google_place_id !== undefined ||
+    input.latitude !== undefined ||
+    input.longitude !== undefined ||
+    input.formatted_address !== undefined
 
   const update: Record<string, unknown> = {}
   if (input.line1 !== undefined) update.line1 = input.line1
@@ -226,7 +233,7 @@ export async function updateProfileAddress(
     update.phone = identity.phone
   }
 
-  if (streetChanged) {
+  if (locationChanged) {
     const existingRow = existing as ProfileAddressRow
     const merged = {
       full_name: String(update.full_name ?? existingRow.full_name),
@@ -242,8 +249,30 @@ export async function updateProfileAddress(
         null,
       postal_code: String(update.postal_code ?? existingRow.postal_code),
       country: String(update.country ?? existingRow.country),
+      google_place_id:
+        input.google_place_id === undefined
+          ? existingRow.google_place_id
+          : input.google_place_id,
     }
-    const normalized = await normalizeBuyerAddressForCarriers(merged)
+    const verifiedGoogle = await verifyGoogleStreetAddress(merged)
+    const verifiedFields = verifiedGoogle
+      ? addressFieldsFromVerifiedGoogleStreet(verifiedGoogle)
+      : null
+    const addressForCarrier = verifiedFields
+      ? { ...merged, ...verifiedFields }
+      : merged
+
+    if (verifiedFields) {
+      Object.assign(update, verifiedFields)
+    } else {
+      update.google_place_id = null
+      update.latitude = null
+      update.longitude = null
+      update.formatted_address = null
+      update.google_geocoded_at = null
+    }
+
+    const normalized = await normalizeBuyerAddressForCarriers(addressForCarrier)
     if (!normalized.ok && normalized.fatal) {
       return { address: null, error: normalized.error }
     }
@@ -262,13 +291,25 @@ export async function updateProfileAddress(
     }
   }
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from("addresses")
     .update(update)
     .eq("id", id)
     .eq("profile_id", user.id)
     .select()
     .single()
+
+  if (error && locationChanged && isMissingGoogleAddressColumn(error.message)) {
+    const retry = await supabase
+      .from("addresses")
+      .update(withoutGoogleAddressColumns(update))
+      .eq("id", id)
+      .eq("profile_id", user.id)
+      .select()
+      .single()
+    data = retry.data
+    error = retry.error
+  }
 
   if (error) {
     return { address: null, error: error.message }
