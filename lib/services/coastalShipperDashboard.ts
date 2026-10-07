@@ -11,6 +11,7 @@ import {
   listCoastalShipperCoverage,
   listCoastalStops,
   replaceCoastalShipperRegions,
+  setCoastalShipperPrice,
   setCoastalShipperRunEnabled,
   setCoastalShipperScheduleEnabled,
   upsertCoastalShipperRun,
@@ -38,6 +39,7 @@ import { coastalContinuousStopIds, pacificWeekDateIso } from "@/lib/services/coa
 import { isoWeekday, tripsForWeek } from "@/lib/services/coastalShipperWeek"
 import { buildCoastalRunSheet, type CoastalJobDraft } from "@/lib/services/coastalShipperRunSheet"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
+import { isShipperPriceCents } from "@/lib/utils/shipperPrice"
 import type {
   CoastalAddressSnapshot,
   CoastalDeliveryStatus,
@@ -132,6 +134,24 @@ export async function setCoastalShipperDashboardJobStatus(input: {
     return { ok: true }
   } catch (error) {
     const failed = loggedFailure(error, "Could not update that handoff.")
+    return { ok: false, error: failed.error }
+  }
+}
+
+export async function setCoastalShipperDashboardPrice(input: {
+  shipperId: string
+  priceCents: number
+}): Promise<Mutation> {
+  try {
+    const gate = await ownShipper(input.shipperId)
+    if (!gate.ok) return gate
+    if (!isShipperPriceCents(input.priceCents)) {
+      return { ok: false, error: "Enter a whole-dollar price from $20 to $500." }
+    }
+    await setCoastalShipperPrice(gate.db, gate.schedule.id, input.priceCents)
+    return { ok: true }
+  } catch (error) {
+    const failed = loggedFailure(error, "Could not save that price.")
     return { ok: false, error: failed.error }
   }
 }
@@ -313,6 +333,7 @@ async function loadDashboard(
     shipperId: schedule.id,
     displayName: schedule.displayName,
     scheduleEnabled: schedule.scheduleEnabled,
+    priceCents: schedule.priceCents,
     previewing,
     weekLabel: sheet.weekLabel,
     weekStart,

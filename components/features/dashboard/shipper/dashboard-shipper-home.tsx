@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 
 import { CoastalRunSheet } from "@/components/features/coastal-delivery/coastal-run-sheet"
 import { CoastalShipperMap } from "@/components/features/coastal-delivery/coastal-shipper-map"
+import { ShipperPricePanel } from "@/components/features/dashboard/shipper/shipper-price-panel"
 import { ShipperRegionPanel } from "@/components/features/dashboard/shipper/shipper-region-panel"
 import { ShipperTripPlanner } from "@/components/features/dashboard/shipper/shipper-trip-planner"
 import { setCoastalShipperScheduleAction } from "@/lib/actions/coastalShipperActions"
@@ -58,6 +59,7 @@ export function DashboardShipperHome({ data }: DashboardShipperHomeProps) {
       </section>
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
+      <ShipperPricePanel shipperId={data.shipperId} priceCents={data.priceCents} previewing={data.previewing} />
       <ShipperTripPlanner
         shipperId={data.shipperId}
         weekStart={data.weekStart}

@@ -4,6 +4,7 @@ import { AdminPageHeader } from "@/components/features/admin/admin-page-header"
 import { ShipperServiceSwitch } from "@/components/features/admin/shipper/shipper-service-switch"
 import { getCoastalShipperSchedulePage } from "@/lib/services/coastalDelivery"
 import { shipperAccountLine, shipperWeekStatusLine } from "@/lib/services/coastalShipperWeek"
+import { shipperPriceUsd } from "@/lib/utils/shipperPrice"
 import { privatePageMetadata } from "@/lib/site-metadata"
 
 export const dynamic = "force-dynamic"
@@ -46,11 +47,13 @@ export default async function ShipperAccountPage({
       <p className="text-sm text-muted-foreground">{shipperWeekStatusLine(profile)}</p>
       <div className="admin-surface space-y-2 p-5">
         <p className="text-sm text-foreground">
+          ${shipperPriceUsd(profile.priceCents)} per board
+          {" · "}
           {weekly} weekly {weekly === 1 ? "trip" : "trips"}
           {dated > 0 ? ` · ${dated} one-week ${dated === 1 ? "trip" : "trips"}` : ""}
         </p>
         <p className="text-sm text-muted-foreground">
-          They set trips, regions, and cancellations on their Shipper dashboard. Admin grants accounts and can turn Shipper off.
+          They set the price, trips, regions, and cancellations on their Shipper dashboard. Admin grants accounts and can turn Shipper off.
         </p>
       </div>
     </div>

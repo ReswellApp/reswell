@@ -85,6 +85,15 @@ export const coastalShipperJobStatusSchema = z.object({
   status: z.enum(["waiting_for_run", "picked_up", "dropped_off", "cancelled"]),
 })
 
+export const coastalShipperPriceSchema = z.object({
+  shipperId: z.string().uuid(),
+  priceUsd: z
+    .number()
+    .int()
+    .min(20, "Enter a whole-dollar price from $20 to $500.")
+    .max(500, "Enter a whole-dollar price from $20 to $500."),
+})
+
 export const coastalShipperTripSchema = z.object({
   shipperId: z.string().uuid(),
   runId: z.string().uuid().optional(),

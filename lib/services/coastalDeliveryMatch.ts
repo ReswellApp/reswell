@@ -27,6 +27,8 @@ export type CoastalMatchShipper = {
   shipperId: string
   displayName: string
   scheduleEnabled: boolean
+  /** Whole-dollar cents. Missing means the $100 default. */
+  priceCents?: number
   runs: CoastalMatchRun[]
 }
 

@@ -72,6 +72,7 @@ export type CoastalShipperProfileView = {
   phone: string
   notes: string
   scheduleEnabled: boolean
+  priceCents: number
   runs: CoastalRunView[]
 }
 
@@ -81,6 +82,7 @@ export type CoastalShipperSummary = {
   email: string | null
   isShop: boolean
   scheduleEnabled: boolean
+  priceCents: number
   runCount: number
   enabledRunCount: number
   isYou: boolean
@@ -174,6 +176,7 @@ export type CoastalShipperDashboardData = {
   shipperId: string
   displayName: string
   scheduleEnabled: boolean
+  priceCents: number
   previewing: boolean
   weekLabel: string
   weekStart: string

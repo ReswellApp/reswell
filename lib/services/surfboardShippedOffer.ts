@@ -13,7 +13,6 @@ import type { CoastalMatchShipper } from "@/lib/services/coastalDeliveryMatch"
 import { googleResolveStreetAddress } from "@/lib/maps/google-geocoding-server"
 import type { GoogleResolvedStreet } from "@/lib/maps/google-geocoding-server"
 import {
-  SURFBOARD_SHIPPED_FEE_CENTS,
   SURFBOARD_SHIPPED_FEE_USD,
   attachSurfboardShippedShipper,
   isCaliforniaAddressState,
@@ -182,7 +181,7 @@ export async function getSurfboardShippedCheckoutSeed(
     const shippers = liveSurfboardShippers(await loadMatchShippers())
     if (shippers.length === 0) return null
     return {
-      feeUsd: SURFBOARD_SHIPPED_FEE_USD,
+      feeUsd: Math.min(...shippers.map((shipper) => shipper.priceUsd)),
       liveShippers: shippers,
       pickupCity: loaded.pickup.city,
       pickupState: loaded.pickup.state ?? "CA",
@@ -253,7 +252,7 @@ export async function prepareSurfboardShippedCharge(input: {
       ok: true,
       charge: {
         feeUsd: charge.feeUsd,
-        feeCents: SURFBOARD_SHIPPED_FEE_CENTS,
+        feeCents: Math.round(charge.feeUsd * 100),
         shipperId: charge.shipperId,
         runId: charge.runId,
         windowStart: charge.window.startDate,
@@ -383,7 +382,7 @@ async function buildCharge(
   if (!attached) return null
 
   return {
-    feeUsd: SURFBOARD_SHIPPED_FEE_USD,
+    feeUsd: attached.feeUsd,
     shipperId: attached.shipperId,
     runId: attached.runId,
     window: surfboardShippedWindow(new Date()),
@@ -428,6 +427,7 @@ function scheduleToMatchShipper(schedule: CoastalShipperScheduleRecord): Coastal
     shipperId: schedule.id,
     displayName: schedule.displayName,
     scheduleEnabled: schedule.scheduleEnabled,
+    priceCents: schedule.priceCents,
     runs: schedule.runs.map((run) => ({
       id: run.id,
       dayOfWeek: run.dayOfWeek,

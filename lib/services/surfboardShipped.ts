@@ -2,6 +2,7 @@ import { type CoastalMatchShipper } from "@/lib/services/coastalDeliveryMatch"
 import { soonestEnabledTrip } from "@/lib/services/coastalShipperWeek"
 import { COASTAL_WEEKDAY_LABELS } from "@/lib/types/coastal-delivery"
 import { normalizeUsStateProvinceForShipping } from "@/lib/us-state-name-to-code"
+import { isShipperPriceCents, shipperPriceUsd } from "@/lib/utils/shipperPrice"
 
 export const SURFBOARD_SHIPPED_NAME = "Surfboard Shipped"
 export const SURFBOARD_SHIPPED_FEE_USD = 100
@@ -15,6 +16,7 @@ const PACIFIC_TIME_ZONE = "America/Los_Angeles"
 export type LiveSurfboardShipper = {
   id: string
   displayName: string
+  priceUsd: number
   live: true
 }
 
@@ -31,6 +33,7 @@ export type SurfboardShippedAttachment = {
   dayOfWeek: number
   weekdayLabel: string
   nextRunOn: string
+  feeUsd: number
   /** Live shippers whose enabled runs cover this corridor, soonest first. */
   availableShippers: LiveSurfboardShipper[]
 }
@@ -53,6 +56,7 @@ export function liveSurfboardShippers(shippers: CoastalMatchShipper[]): LiveSurf
     .map((shipper) => ({
       id: shipper.shipperId,
       displayName: shipper.displayName,
+      priceUsd: shipperPriceUsd(shipper.priceCents),
       live: true as const,
     }))
     .sort((a, b) => a.displayName.localeCompare(b.displayName))
@@ -152,9 +156,11 @@ export function attachSurfboardShippedShipper(input: {
     dayOfWeek: soonest.run.dayOfWeek,
     weekdayLabel: COASTAL_WEEKDAY_LABELS[soonest.run.dayOfWeek] ?? "Run",
     nextRunOn: soonest.nextRunOn,
+    feeUsd: shipperPriceUsd(soonest.shipper.priceCents),
     availableShippers: ranked.map((row) => ({
       id: row.shipper.shipperId,
       displayName: row.shipper.displayName,
+      priceUsd: shipperPriceUsd(row.shipper.priceCents),
       live: true as const,
     })),
   }
@@ -181,24 +187,25 @@ export function readSurfboardShippedPaymentMetadata(
   const windowEnd = metadata.surfboard_shipped_window_end?.trim() ?? ""
   const cents = metadata.surfboard_shipped_cents?.trim() ?? ""
 
+  const owedCents = Number(cents)
   if (
     !isUuid(shipperId) ||
     !isUuid(runId) ||
     !isIsoDate(windowStart) ||
     !isIsoDate(windowEnd) ||
-    cents !== String(SURFBOARD_SHIPPED_FEE_CENTS)
+    !isShipperPriceCents(owedCents)
   ) {
     return { ok: false, error: "Surfboard Shipped payment is missing shipper details." }
   }
 
   return {
     ok: true,
-    feeUsd: SURFBOARD_SHIPPED_FEE_USD,
+    feeUsd: owedCents / 100,
     write: {
       surfboard_shipped: true,
       surfboard_shipped_shipper_id: shipperId,
       surfboard_shipped_run_id: runId,
-      surfboard_shipped_owed_cents: SURFBOARD_SHIPPED_FEE_CENTS,
+      surfboard_shipped_owed_cents: owedCents,
       surfboard_shipped_window_start: windowStart,
       surfboard_shipped_window_end: windowEnd,
     },

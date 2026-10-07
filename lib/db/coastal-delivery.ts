@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 
+import { normalizeShipperPriceCents } from "@/lib/utils/shipperPrice"
+
 import type {
   CoastalAddressSnapshot,
   CoastalAddressSource,
@@ -20,11 +22,13 @@ export type CoastalShipperScheduleRecord = {
   phone: string
   notes: string
   scheduleEnabled: boolean
+  priceCents: number
   runs: CoastalRunView[]
 }
 
 const STOP_SELECT = "id, slug, name, sort_order, latitude, longitude, active"
-const SHIPPER_SELECT = "id, user_id, display_name, phone, notes, schedule_enabled"
+const SHIPPER_SELECT = "id, user_id, display_name, phone, notes, schedule_enabled, price_cents"
+const SHIPPER_SELECT_BASE = "id, user_id, display_name, phone, notes, schedule_enabled"
 const RUN_SELECT = "id, shipper_id, day_of_week, direction, enabled, service_date"
 const RUN_SELECT_WEEKLY = "id, shipper_id, day_of_week, direction, enabled"
 const LISTING_SELECT = "id, title, city, state, status, section"
@@ -44,7 +48,7 @@ export async function listCoastalShipperSchedules(
   supabase: SupabaseClient,
 ): Promise<CoastalShipperScheduleRecord[]> {
   const [shippers, runs, runStops] = await Promise.all([
-    supabase.from("coastal_shippers").select(SHIPPER_SELECT).order("display_name", { ascending: true }),
+    selectShipperRows(supabase),
     selectShipperRuns(supabase),
     supabase.from("coastal_shipper_run_stops").select("run_id, stop_id"),
   ])
@@ -77,6 +81,18 @@ export async function upsertCoastalShipperProfile(
     },
     { onConflict: "user_id" },
   )
+  if (error) throw error
+}
+
+export async function setCoastalShipperPrice(
+  supabase: SupabaseClient,
+  shipperId: string,
+  priceCents: number,
+): Promise<void> {
+  const { error } = await supabase.from("coastal_shippers").update({ price_cents: priceCents }).eq("id", shipperId)
+  if (error && isMissingPriceColumn(error.message)) {
+    throw new Error("Run the latest Shipper SQL, then try again.")
+  }
   if (error) throw error
 }
 
@@ -724,6 +740,7 @@ function assembleSchedules(
         phone: stringField(row, "phone") ?? "",
         notes: stringField(row, "notes") ?? "",
         scheduleEnabled: row.schedule_enabled === true,
+        priceCents: normalizeShipperPriceCents(row.price_cents),
         runs,
       },
     ]
@@ -749,6 +766,19 @@ function mapRun(row: Record<string, unknown>, stopIds: string[]): CoastalRunView
   const rawDate = stringField(row, "service_date")
   const serviceDate = rawDate && /^\d{4}-\d{2}-\d{2}/.test(rawDate) ? rawDate.slice(0, 10) : null
   return { id, dayOfWeek, direction, enabled: row.enabled === true, stopIds, serviceDate }
+}
+
+async function selectShipperRows(supabase: SupabaseClient) {
+  const withPrice = await supabase
+    .from("coastal_shippers")
+    .select(SHIPPER_SELECT)
+    .order("display_name", { ascending: true })
+  if (!withPrice.error || !isMissingPriceColumn(withPrice.error.message)) return withPrice
+  return supabase.from("coastal_shippers").select(SHIPPER_SELECT_BASE).order("display_name", { ascending: true })
+}
+
+function isMissingPriceColumn(message: string | undefined): boolean {
+  return /price_cents/i.test(message ?? "") && /does not exist|schema cache/i.test(message ?? "")
 }
 
 async function selectShipperRuns(supabase: SupabaseClient) {

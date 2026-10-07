@@ -8,6 +8,7 @@ import {
   removeCoastalShipperTrip,
   saveCoastalShipperRegions,
   saveCoastalShipperTrip,
+  setCoastalShipperDashboardPrice,
   setCoastalShipperDashboardJobStatus,
   setCoastalShipperDashboardRun,
   setCoastalShipperDashboardSchedule,
@@ -17,6 +18,7 @@ import {
   coastalShipperDeleteTripSchema,
   coastalShipperExclusionSchema,
   coastalShipperJobStatusSchema,
+  coastalShipperPriceSchema,
   coastalShipperRegionsSchema,
   coastalShipperRunToggleSchema,
   coastalShipperScheduleToggleSchema,
@@ -36,6 +38,19 @@ function revalidateShipper(shipperId: string) {
   revalidatePath("/admin/shipper")
   revalidatePath(`/admin/shipper/${shipperId}`)
   revalidatePath("/admin/shipper/preview")
+}
+
+export async function setCoastalShipperPriceAction(raw: unknown) {
+  const parsed = coastalShipperPriceSchema.safeParse(raw)
+  if (!parsed.success) return { error: flattenZod(parsed.error) }
+  const result = await setCoastalShipperDashboardPrice({
+    shipperId: parsed.data.shipperId,
+    priceCents: parsed.data.priceUsd * 100,
+  })
+  if (!result.ok) return { error: result.error }
+  revalidateShipper(parsed.data.shipperId)
+  revalidatePath("/sell/boards")
+  return { success: true as const }
 }
 
 export async function setCoastalShipperScheduleAction(raw: unknown) {
