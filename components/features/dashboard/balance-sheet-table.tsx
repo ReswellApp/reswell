@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ArrowLeft, ArrowRight } from "lucide-react"
+import { ArrowLeft, ArrowRight, ArrowUp, ArrowUpDown } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -8,10 +8,13 @@ import { RemoveBalanceSheetItemButton } from "@/components/features/dashboard/re
 import { listingDetailHref } from "@/lib/listing-href"
 import type { PeerListingSection } from "@/lib/peer-listing-sections"
 import type { SellerBalanceSheetPage } from "@/lib/types/sellerBalanceSheet"
+import { balanceSheetHref } from "@/lib/utils/balance-sheet-query"
+import type { BalanceSheetSort } from "@/lib/validations/seller-balance-sheet"
 
 interface BalanceSheetTableProps {
   sheet: SellerBalanceSheetPage
   category: PeerListingSection | null
+  sort: BalanceSheetSort
 }
 
 function usd(value: number | null): string {
@@ -41,13 +44,16 @@ function sourceLabel(source: SellerBalanceSheetPage["entries"][number]["saleSour
   return source === "reswell" ? "Reswell sale" : "Off-platform sale"
 }
 
-function pageHref(page: number, category: PeerListingSection | null): string {
-  const params = new URLSearchParams({ page: String(page) })
-  if (category) params.set("category", category)
-  return `/dashboard/balance-sheet?${params.toString()}`
+function pageHref(
+  page: number,
+  category: PeerListingSection | null,
+  sort: BalanceSheetSort,
+): string {
+  return balanceSheetHref({ page, category, sort })
 }
 
-export function BalanceSheetTable({ sheet, category }: BalanceSheetTableProps) {
+export function BalanceSheetTable({ sheet, category, sort }: BalanceSheetTableProps) {
+  const missingPaidFirst = sort === "missing-paid"
   return (
     <div className="space-y-4">
       <div className="hidden overflow-hidden rounded-xl border md:block">
@@ -56,7 +62,30 @@ export function BalanceSheetTable({ sheet, category }: BalanceSheetTableProps) {
             <tr>
               <th className="px-4 py-3 font-medium">Listing</th>
               <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 text-right font-medium">Paid</th>
+              <th
+                className="px-4 py-3 text-right font-medium"
+                aria-sort={missingPaidFirst ? "other" : "none"}
+              >
+                <Link
+                  href={balanceSheetHref({
+                    category,
+                    sort: missingPaidFirst ? "recent" : "missing-paid",
+                  })}
+                  className="inline-flex items-center justify-end gap-1 hover:text-foreground"
+                  aria-label={
+                    missingPaidFirst
+                      ? "Missing paid prices are first. Show newest first."
+                      : "Sort by missing paid price"
+                  }
+                >
+                  Paid
+                  {missingPaidFirst ? (
+                    <ArrowUp className="h-3.5 w-3.5" aria-hidden />
+                  ) : (
+                    <ArrowUpDown className="h-3.5 w-3.5 opacity-50" aria-hidden />
+                  )}
+                </Link>
+              </th>
               <th className="px-4 py-3 text-right font-medium">Asking / sold</th>
               <th className="px-4 py-3 text-right font-medium">Fee</th>
               <th className="px-4 py-3 text-right font-medium">Profit</th>
@@ -176,7 +205,7 @@ export function BalanceSheetTable({ sheet, category }: BalanceSheetTableProps) {
           <div className="flex gap-2">
             {sheet.page > 1 ? (
               <Button asChild variant="outline" size="sm">
-                <Link href={pageHref(sheet.page - 1, category)}>
+                <Link href={pageHref(sheet.page - 1, category, sort)}>
                   <ArrowLeft className="mr-1 h-4 w-4" /> Previous
                 </Link>
               </Button>
@@ -187,7 +216,7 @@ export function BalanceSheetTable({ sheet, category }: BalanceSheetTableProps) {
             )}
             {sheet.page < sheet.totalPages ? (
               <Button asChild variant="outline" size="sm">
-                <Link href={pageHref(sheet.page + 1, category)}>
+                <Link href={pageHref(sheet.page + 1, category, sort)}>
                   Next <ArrowRight className="ml-1 h-4 w-4" />
                 </Link>
               </Button>
