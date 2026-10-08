@@ -6,6 +6,7 @@ import { getStripe, getStripeCheckoutKeyConfigError } from "@/lib/stripe-server"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
 import { deleteBuyerCartRowsForListings } from "@/lib/db/cart-items-server"
+import { attachListingInventorySources } from "@/lib/db/listingInventorySource"
 import {
   PEER_SURFBOARD_CHECKOUT_LISTING_SELECT,
   type PeerSurfboardCheckoutListingRow,
@@ -469,7 +470,16 @@ async function loadListingForAdminTerminalSale(
     return { ok: false, error: "Amount is below the minimum charge", status: 400 }
   }
 
-  return { ok: true, listing, totalUsd, amountCents }
+  const sourcedListing = await attachListingInventorySources(service, [listing])
+  if (!sourcedListing.ok) {
+    return { ok: false, error: sourcedListing.error, status: 500 }
+  }
+  const ready = sourcedListing.listings[0]
+  if (!ready) {
+    return { ok: false, error: "Listing not found", status: 404 }
+  }
+
+  return { ok: true, listing: ready, totalUsd, amountCents }
 }
 
 async function createAdminTerminalPaymentIntent(

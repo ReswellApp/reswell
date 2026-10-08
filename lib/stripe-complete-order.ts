@@ -8,6 +8,7 @@ import {
 } from "@/lib/listing-offer-authorization"
 import type Stripe from "stripe"
 import { deleteBuyerCartRowsForListings } from "@/lib/db/cart-items-server"
+import { attachListingInventorySources } from "@/lib/db/listingInventorySource"
 import {
   PEER_SURFBOARD_CHECKOUT_LISTING_SELECT,
   type PeerSurfboardCheckoutListingRow,
@@ -620,6 +621,15 @@ export async function completeMarketplaceOrderFromPaymentIntent(
 
   if (listingsOrdered.length !== listingIdsOrdered.length) {
     return { ok: false, error: "Listing not found", status: 404 }
+  }
+
+  const sourcedListings = await attachListingInventorySources(serviceSupabase, listingsOrdered)
+  if (!sourcedListings.ok) {
+    return { ok: false, error: sourcedListings.error, status: 500 }
+  }
+  for (let index = 0; index < listingsOrdered.length; index += 1) {
+    const sourced = sourcedListings.listings[index]
+    if (sourced) listingsOrdered[index] = sourced
   }
 
   if (buyerId && listingsOrdered.some((l) => l.user_id === buyerId)) {

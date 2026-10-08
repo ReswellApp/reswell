@@ -24,6 +24,7 @@ import { isBlockedOwnListingPurchase } from "@/lib/cart-eligibility"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { formatPeerItemCountPhrase } from "@/lib/peer-listing-item-nouns"
 import { isReswellShopListing } from "@/lib/reswell-shop"
+import { attachListingInventorySources } from "@/lib/db/listingInventorySource"
 import { isShopifyManagedListing } from "@/lib/shopify/listing"
 import {
   encodeListingQuantitiesMeta,
@@ -167,6 +168,15 @@ export async function POST(request: NextRequest) {
 
   if (listingsOrdered.length !== listingIdsOrdered.length) {
     return NextResponse.json({ error: "Listing not found or not available" }, { status: 404 })
+  }
+
+  const sourcedListings = await attachListingInventorySources(supabase, listingsOrdered)
+  if (!sourcedListings.ok) {
+    return NextResponse.json({ error: sourcedListings.error }, { status: 500 })
+  }
+  for (let index = 0; index < listingsOrdered.length; index += 1) {
+    const sourced = sourcedListings.listings[index]
+    if (sourced) listingsOrdered[index] = sourced
   }
 
   if (listingsOrdered.some((l) => isBlockedOwnListingPurchase(l, user.id))) {
