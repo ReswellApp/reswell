@@ -44,6 +44,20 @@ export async function downloadAndStoreLabelPdf(params: {
   }
 
   const buf = Buffer.from(await pdfRes.arrayBuffer())
+  return storeLabelPdfBytes({
+    supabase: params.supabase,
+    orderId: params.orderId,
+    bytes: buf,
+  })
+}
+
+/** Saves PDF bytes already downloaded from the carrier into the private label bucket. */
+export async function storeLabelPdfBytes(params: {
+  supabase: SupabaseClient
+  orderId: string
+  bytes: Uint8Array
+}): Promise<{ ok: true; storagePath: string } | { ok: false; error: string }> {
+  const buf = Buffer.from(params.bytes)
   if (buf.length > MAX_ASSET_BYTES) {
     return { ok: false, error: "Label PDF too large (max 15 MB)." }
   }

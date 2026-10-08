@@ -22,6 +22,7 @@ import {
   pickupCodeBannerLabelClassName,
   pickupCodeBannerSurfaceClassName,
 } from "@/components/order-actions"
+import { adminOrderShowsShippingLabel } from "@/lib/admin/admin-order-label-visibility"
 import { orderStatusBadgeVariant, orderStatusLabel, deliveryStatusLabel, payoutStatusLabel } from "@/lib/order-status"
 import { carrierDeliveryPayoutEligibleAt } from "@/lib/shipping/carrier-delivery-payout-hold"
 import { createClient } from "@/lib/supabase/client"
@@ -220,8 +221,11 @@ export default function AdminOrderDetailPage() {
   const hasPaperlessQr = payload.capabilities.hasPaperlessQr
   const canFulfillReswellShop = payload.capabilities.canFulfillReswellShop
   const canReplaceShippingLabel = payload.capabilities.canReplaceShippingLabel
-  const showShippingLabel =
-    o.fulfillment_method === "shipping" && hasShippingLabel
+  const showShippingLabel = adminOrderShowsShippingLabel({
+    fulfillmentMethod: o.fulfillment_method,
+    hasPdf: hasShippingLabel,
+    hasPaperlessQr,
+  })
   const showCarrierTracking =
     o.fulfillment_method === "shipping" && Boolean(o.tracking_number?.trim())
   const showLegacyManualPayoutRelease =
@@ -644,9 +648,12 @@ export default function AdminOrderDetailPage() {
         <SellerPreparedShippingLabelCard
           orderId={o.id}
           downloadApiPrefix="/api/admin/orders"
+          hasPdf={hasShippingLabel}
           hasPaperlessQr={hasPaperlessQr}
           paperlessInstructions={payload.capabilities.paperlessInstructions}
           paperlessHandoffCode={payload.capabilities.paperlessHandoffCode}
+          title="Shipping label"
+          description="Carrier label purchased for this order. View or download it here to pack and ship."
         />
       ) : null}
 
