@@ -27,7 +27,7 @@ import { isBlockedOwnListingPurchase } from "@/lib/cart-eligibility"
 import { readAdAttributionFromCookies } from "@/lib/ads/read-request-attribution"
 import { insertOrderAdAttribution } from "@/lib/db/orderAdAttribution"
 import { listingSoldViaCheckoutUpdate } from "@/lib/listing-sold-state"
-import { isShopifyManagedListing } from "@/lib/shopify/listing"
+import { resolveWalletListingInventorySource } from "@/lib/shopify/listing-inventory-source"
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
 
   const { data: listing, error: listingError } = await supabase
     .from("listings")
-    .select("id, user_id, title, price, section, slug, shipping_available, local_pickup, shipping_price, status, stock_quantity, inventory_source")
+    .select("id, user_id, title, price, section, slug, shipping_available, local_pickup, shipping_price, status, stock_quantity")
     .eq("id", listing_id)
     .eq("status", "active")
     .eq("hidden_from_site", false)
@@ -76,13 +76,25 @@ export async function POST(request: NextRequest) {
   if (listingError || !listing) {
     return NextResponse.json({ error: "Listing not found or not available" }, { status: 404 })
   }
-  if (
-    isShopifyManagedListing(listing) &&
-    Math.max(0, Math.floor(Number(listing.stock_quantity) || 0)) < 1
-  ) {
-    return NextResponse.json({ error: "This Shopify item is out of stock" }, { status: 409 })
+
+  let serviceSupabase
+  try {
+    serviceSupabase = createServiceRoleClient()
+  } catch {
+    return NextResponse.json(
+      { error: "Purchase could not be completed (server configuration)." },
+      { status: 503 },
+    )
   }
-  if (isShopifyManagedListing(listing)) {
+
+  const inventorySource = await resolveWalletListingInventorySource(serviceSupabase, listing.id)
+  if (!inventorySource.ok) {
+    return NextResponse.json({ error: inventorySource.error }, { status: 503 })
+  }
+  if (inventorySource.kind === "shopify") {
+    if (Math.max(0, Math.floor(Number(listing.stock_quantity) || 0)) < 1) {
+      return NextResponse.json({ error: "This Shopify item is out of stock" }, { status: 409 })
+    }
     return NextResponse.json(
       {
         error:
@@ -144,16 +156,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { error: "Insufficient wallet balance", balance: buyerWallet?.balance || 0 },
       { status: 400 }
-    )
-  }
-
-  let serviceSupabase
-  try {
-    serviceSupabase = createServiceRoleClient()
-  } catch {
-    return NextResponse.json(
-      { error: "Purchase could not be completed (server configuration)." },
-      { status: 503 },
     )
   }
 

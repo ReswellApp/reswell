@@ -14,12 +14,16 @@ import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { captureServerEvent } from "@/lib/posthog-server"
 import { isReswellShopListing } from "@/lib/reswell-shop"
 import { isShopifyManagedListing } from "@/lib/shopify/listing"
+import {
+  LISTING_CART_ELIGIBILITY_SELECT,
+  withShopifyInventorySourcesForPurchase,
+} from "@/lib/shopify/listing-inventory-source"
 import { acceptedUnitPriceForSingleItemOffer } from "@/lib/services/acceptedOfferCheckout"
 import { assertBuyerMayPurchaseListingExclusiveWindow } from "@/lib/services/listingBuyerExclusiveWindow"
 import {
-  countSurfboardListings,
   isSurfboardListingSection,
-  peerCheckoutSurfboardCountError,
+  surfboardCapErrorForAddedListing,
+  type CartSurfboardCapRow,
 } from "@/lib/surfboard-multi-board-parcel"
 import {
   cartFromCartCheckoutHref,
@@ -79,9 +83,7 @@ async function assertListingEligibleForCart(
 ): Promise<{ ok: true; listing: CartEligibleListing } | { ok: false; message: string }> {
   const { data: row, error } = await supabase
     .from("listings")
-    .select(
-      "id, user_id, section, status, local_pickup, shipping_available, hidden_from_site, archived_at, stock_quantity, inventory_source",
-    )
+    .select(LISTING_CART_ELIGIBILITY_SELECT)
     .eq("id", listingId)
     .maybeSingle()
 
@@ -89,7 +91,10 @@ async function assertListingEligibleForCart(
     return { ok: false, message: "Listing not found" }
   }
 
-  const listing = row as CartEligibleListing
+  const [withSource] = await withShopifyInventorySourcesForPurchase(supabase, [
+    row as CartEligibleListing,
+  ])
+  const listing = withSource ?? (row as CartEligibleListing)
   if (!isListingPurchasable(listing)) {
     return { ok: false, message: "This listing is not available" }
   }
@@ -126,6 +131,45 @@ async function assertListingEligibleForCart(
   }
 
   return { ok: true, listing }
+}
+
+function cartSurfboardCapRows(rows: unknown[]): CartSurfboardCapRow[] {
+  const parsed: CartSurfboardCapRow[] = []
+  for (const row of rows) {
+    if (!row || typeof row !== "object") continue
+    const raw = row as {
+      listing_id?: unknown
+      listings?:
+        | {
+            user_id?: string | null
+            section?: string | null
+            status?: string | null
+            title?: string | null
+            hidden_from_site?: boolean | null
+            archived_at?: string | null
+          }
+        | Array<{
+            user_id?: string | null
+            section?: string | null
+            status?: string | null
+            title?: string | null
+            hidden_from_site?: boolean | null
+            archived_at?: string | null
+          }>
+        | null
+    }
+    const listing = Array.isArray(raw.listings) ? raw.listings[0] : raw.listings
+    parsed.push({
+      listingId: typeof raw.listing_id === "string" ? raw.listing_id : "",
+      userId: listing?.user_id ?? null,
+      section: listing?.section ?? null,
+      status: listing?.status ?? null,
+      title: listing?.title ?? null,
+      hiddenFromSite: listing?.hidden_from_site ?? null,
+      archivedAt: listing?.archived_at ?? null,
+    })
+  }
+  return parsed
 }
 
 export type AddCartItemResult = {
@@ -251,30 +295,29 @@ export async function addCartItem(
   }
 
   if (isSurfboardListingSection(check.listing.section)) {
-    const { data: cartPeerRows } = await supabase
+    const { data: cartPeerRows, error: cartPeerErr } = await supabase
       .from("cart_items")
-      .select("listing_id, listings!inner ( user_id, section )")
+      .select(
+        "listing_id, listings!inner ( user_id, section, status, title, hidden_from_site, archived_at )",
+      )
       .eq("profile_id", user.id)
-    const alreadyIds = new Set<string>()
-    const sellerBoards: Array<{ section?: string | null }> = []
-    for (const row of cartPeerRows ?? []) {
-      const raw = row as {
-        listing_id?: string
-        listings?: { user_id?: string; section?: string | null } | { user_id?: string; section?: string | null }[] | null
-      }
-      const listing = Array.isArray(raw.listings) ? raw.listings[0] : raw.listings
-      const listingId = String(raw.listing_id ?? "").trim()
-      if (listingId) alreadyIds.add(listingId)
-      if (listing?.user_id === check.listing.user_id) {
-        sellerBoards.push({ section: listing.section })
-      }
+    if (cartPeerErr) {
+      console.error("[cart] surfboard cap lookup failed", {
+        listingId,
+        message: cartPeerErr.message,
+      })
+      return { ok: false, error: "Could not check your cart" }
     }
-    if (!alreadyIds.has(listingId)) {
-      const nextCount = countSurfboardListings(sellerBoards) + 1
-      const capError = peerCheckoutSurfboardCountError(nextCount)
-      if (capError) {
-        return { ok: false, error: capError }
-      }
+    const capError = surfboardCapErrorForAddedListing(
+      cartSurfboardCapRows(cartPeerRows ?? []),
+      {
+        listingId,
+        userId: check.listing.user_id,
+        section: check.listing.section,
+      },
+    )
+    if (capError) {
+      return { ok: false, error: capError }
     }
   }
 
@@ -559,7 +602,6 @@ export async function getCartPageItems(): Promise<{
         board_type,
         dimensions,
         stock_quantity,
-        inventory_source,
         hidden_from_site,
         archived_at,
         listing_images ( url, thumbnail_url, is_primary ),

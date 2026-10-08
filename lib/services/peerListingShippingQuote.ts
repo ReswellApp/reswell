@@ -16,6 +16,10 @@ import {
 /**
  * Supabase `listings` select fragment for peer surfboard checkout + ShipEngine.
  * Used by shipping quotes, payment intent creation, and order finalization so inputs never drift.
+ *
+ * Do not add `inventory_source` here. That column is not on every database yet, and naming it
+ * makes checkout, shipping quotes, and payment intents fail for every listing. Shopify-managed
+ * rows are attached separately, and only for sellers with an active Shopify connection.
  */
 export const PEER_SURFBOARD_CHECKOUT_LISTING_SELECT = `
   id,
@@ -24,7 +28,6 @@ export const PEER_SURFBOARD_CHECKOUT_LISTING_SELECT = `
   title,
   price,
   section,
-  inventory_source,
   shipping_available,
   local_pickup,
   shipping_price,
@@ -72,7 +75,8 @@ export type PeerSurfboardCheckoutListingRow = PeerListingForShippingQuote & {
   price: string | number
   title: string | null
   section: string | null
-  inventory_source: string | null
+  /** Present only after a Shopify-connected seller's inventory source is attached. Null means native Reswell. */
+  inventory_source?: string | null
   status: string | null
   local_pickup: boolean | null
   shipping_available: boolean | null
