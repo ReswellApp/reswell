@@ -69,7 +69,7 @@ export default function CartScreen() {
 }
 
 const styles = StyleSheet.create({
-  list: { paddingTop: 12, paddingBottom: 28 },
+  list: { paddingTop: 12, paddingBottom: 120 },
   row: { gap: 12, paddingHorizontal: 12 },
   cell: { flex: 1 },
   spacer: { flex: 1 },

@@ -54,6 +54,68 @@ export const mobileListingsPageSchema = z.object({
   has_more: z.boolean(),
 })
 
+/**
+ * Homepage sections, in the same order the website renders them.
+ * The site decides membership and sort. The app only lays these out.
+ */
+export const mobileHomeBrandSchema = z.object({
+  id: z.string().uuid(),
+  slug: z.string(),
+  name: z.string(),
+  logo_url: z.string().nullable(),
+})
+
+export const mobileHomeShopSchema = z.object({
+  id: z.string().uuid(),
+  seller_slug: z.string().nullable(),
+  name: z.string(),
+  avatar_url: z.string().nullable(),
+  location_label: z.string().nullable(),
+  verified: z.boolean(),
+})
+
+export const mobileHomeListingsSectionSchema = z.object({
+  kind: z.literal("listings"),
+  id: z.enum([
+    "recently_listed",
+    "recently_added_fins",
+    "recently_added_surfboards",
+    "recently_sold",
+    "reswell_shop",
+  ]),
+  title: z.string(),
+  listings: z.array(mobileListingCardSchema).min(1),
+})
+
+export const mobileHomeBrandsSectionSchema = z.object({
+  kind: z.literal("brands"),
+  id: z.literal("trending_brands"),
+  title: z.string(),
+  brands: z.array(mobileHomeBrandSchema).min(1),
+})
+
+export const mobileHomeShopsSectionSchema = z.object({
+  kind: z.literal("shops"),
+  id: z.literal("featured_shops"),
+  title: z.string(),
+  shops: z.array(mobileHomeShopSchema).min(1),
+})
+
+export const mobileHomeSectionSchema = z.discriminatedUnion("kind", [
+  mobileHomeListingsSectionSchema,
+  mobileHomeBrandsSectionSchema,
+  mobileHomeShopsSectionSchema,
+])
+
+export const mobileHomeSchema = z.object({
+  sections: z.array(mobileHomeSectionSchema),
+})
+
+/** Signed-in history from `user_recently_viewed_listings`, newest view first. */
+export const mobileRecentlyViewedSchema = z.object({
+  listings: z.array(mobileListingCardSchema),
+})
+
 /** Peer catalog sections. Same slugs as the website category routes. */
 export const MOBILE_LISTING_CATEGORIES = [
   "surfboards",
@@ -191,6 +253,11 @@ export type MobileMe = z.infer<typeof mobileMeSchema>
 export type MobileListingCard = z.infer<typeof mobileListingCardSchema>
 export type MobileListingDetail = z.infer<typeof mobileListingDetailSchema>
 export type MobileListingsPage = z.infer<typeof mobileListingsPageSchema>
+export type MobileHome = z.infer<typeof mobileHomeSchema>
+export type MobileRecentlyViewed = z.infer<typeof mobileRecentlyViewedSchema>
+export type MobileHomeSection = z.infer<typeof mobileHomeSectionSchema>
+export type MobileHomeBrand = z.infer<typeof mobileHomeBrandSchema>
+export type MobileHomeShop = z.infer<typeof mobileHomeShopSchema>
 export type MobileListingsQuery = z.infer<typeof mobileListingsQuerySchema>
 export type MobileProfile = z.infer<typeof mobileProfileSchema>
 

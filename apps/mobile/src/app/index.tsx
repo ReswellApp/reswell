@@ -1,10 +1,11 @@
 import { Stack, useFocusEffect, useRouter } from "expo-router"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native"
-import type { MobileBrowseChip, MobileListingsPage } from "@reswell/api-contract"
+import type { MobileBrowseChip, MobileHome, MobileListingCard, MobileListingsPage } from "@reswell/api-contract"
+import { HomeFeed } from "@/components/home-feed"
 import { HomeHeader } from "@/components/home-header"
 import { ListingCard } from "@/components/listing-card"
-import { fetchListings } from "@/lib/api"
+import { fetchHome, fetchListings, fetchRecentlyViewed } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
 import { fontFamily, useReswellColors } from "@/theme"
 
@@ -12,7 +13,10 @@ export default function ListingsScreen() {
   const colors = useReswellColors()
   const router = useRouter()
   const { session } = useAuth()
+  const accessToken = session?.access_token ?? null
   const [page, setPage] = useState<MobileListingsPage | null>(null)
+  const [home, setHome] = useState<MobileHome | null>(null)
+  const [continueListings, setContinueListings] = useState<MobileListingCard[]>([])
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -33,11 +37,39 @@ export default function ListingsScreen() {
     setPage(null)
   }, [search, browse])
 
+  const browsing = Boolean(search || browse)
+
   const load = useCallback(() => {
     let cancelled = false
     const q = search
     const chip = browse
     setLoading(true)
+    if (!q && !chip) {
+      const recent = accessToken
+        ? fetchRecentlyViewed(accessToken).catch(() => ({ listings: [] }))
+        : Promise.resolve({ listings: [] })
+      Promise.all([fetchHome(), recent])
+        .then(([next, viewed]) => {
+          if (!cancelled) {
+            setHome(next)
+            setContinueListings(viewed.listings)
+            setError(null)
+          }
+        })
+        .catch((cause: unknown) => {
+          if (!cancelled) {
+            setHome(null)
+            setContinueListings([])
+            setError(cause instanceof Error ? cause.message : "Unable to load the homepage")
+          }
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false)
+        })
+      return () => {
+        cancelled = true
+      }
+    }
     fetchListings(0, listingsQuery(q, chip))
       .then((next) => {
         if (!cancelled) {
@@ -57,7 +89,7 @@ export default function ListingsScreen() {
     return () => {
       cancelled = true
     }
-  }, [search, browse])
+  }, [search, browse, accessToken])
 
   useFocusEffect(load)
 
@@ -77,6 +109,10 @@ export default function ListingsScreen() {
       })
       .catch(() => undefined)
       .finally(() => setLoadingMore(false))
+  }
+
+  function openListing(id: string) {
+    router.push({ pathname: "/listing/[id]", params: { id } })
   }
 
   const listings = page?.listings ?? []
@@ -105,9 +141,9 @@ export default function ListingsScreen() {
           { color: colors.foreground, backgroundColor: colors.image, fontFamily: fontFamily.text },
         ]}
       />
-      {loading && !page ? (
+      {loading && (browsing ? !page : !home) ? (
         <ActivityIndicator style={styles.centered} color={colors.foreground} />
-      ) : error && !page ? (
+      ) : error && (browsing ? !page : !home) ? (
         <View style={styles.centered}>
           <Text style={{ color: colors.foreground, fontFamily: fontFamily.text }}>{error}</Text>
           <Pressable onPress={load}>
@@ -116,7 +152,7 @@ export default function ListingsScreen() {
             </Text>
           </Pressable>
         </View>
-      ) : (
+      ) : browsing ? (
         <FlatList
           data={grid}
           keyExtractor={(item) => item?.id ?? "spacer"}
@@ -143,17 +179,21 @@ export default function ListingsScreen() {
             item ? (
               <ListingCard
                 item={item}
-                onPress={() =>
-                  router.push({
-                    pathname: "/listing/[id]",
-                    params: { id: item.slug || item.id },
-                  })
-                }
+                onPress={() => openListing(item.slug || item.id)}
               />
             ) : (
               <View style={styles.spacer} />
             )
           }
+        />
+      ) : (
+        <HomeFeed
+          sections={home?.sections ?? []}
+          continueListings={continueListings}
+          refreshing={loading}
+          onRefresh={load}
+          onOpenListing={(listing) => openListing(listing.slug || listing.id)}
+          onOpenShop={(slug) => router.push({ pathname: "/profile/[slug]", params: { slug } })}
         />
       )}
     </View>
@@ -181,7 +221,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 16,
   },
-  list: { paddingTop: 8, paddingBottom: 28 },
+  list: { paddingTop: 8, paddingBottom: 120 },
   row: { gap: 12, paddingHorizontal: 12 },
   empty: { textAlign: "center", marginTop: 48, fontSize: 16 },
   footer: { marginVertical: 16 },

@@ -86,7 +86,7 @@ export default function AccountScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   signedOut: { flex: 1, justifyContent: "center", padding: 24, gap: 16 },
-  list: { paddingBottom: 32 },
+  list: { paddingBottom: 120 },
   name: { fontSize: 28, fontWeight: "700", letterSpacing: -0.6, paddingHorizontal: 16, paddingTop: 8 },
   email: { fontSize: 15, paddingHorizontal: 16, paddingTop: 4, paddingBottom: 12 },
   button: { borderRadius: 8, minHeight: 48, alignItems: "center", justifyContent: "center" },

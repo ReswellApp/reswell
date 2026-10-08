@@ -9,6 +9,7 @@ import {
   mobileFavoritesSchema,
   mobileFollowResultSchema,
   mobileFollowingSchema,
+  mobileHomeSchema,
   mobileListingDetailSchema,
   mobileListingsPageSchema,
   mobileMeSchema,
@@ -17,6 +18,7 @@ import {
   mobileOffersSchema,
   mobileOrdersSchema,
   mobileProfileSchema,
+  mobileRecentlyViewedSchema,
   mobileReviewsPageSchema,
   mobileSalesSchema,
   type MobileCart,
@@ -27,6 +29,7 @@ import {
   type MobileFavoriteResult,
   type MobileFollowResult,
   type MobileFollowing,
+  type MobileHome,
   type MobileListingDetail,
   type MobileListingsPage,
   type MobileMe,
@@ -36,6 +39,7 @@ import {
   type MobileOfferActionResult,
   type MobileOrder,
   type MobileProfile,
+  type MobileRecentlyViewed,
   type MobileReviewsPage,
   type MobileSale,
 } from "@reswell/api-contract"
@@ -90,6 +94,18 @@ async function getJson(path: string, accessToken?: string | null, payload?: unkn
 
 function read<T>(path: string, parse: (data: unknown) => T, accessToken?: string | null, body?: unknown): Promise<T> {
   return getJson(path, accessToken, body).then(parse)
+}
+
+export function fetchHome(): Promise<MobileHome> {
+  return read("/api/mobile/v1/home", (data) => mobileHomeSchema.parse(data))
+}
+
+export function fetchRecentlyViewed(accessToken: string): Promise<MobileRecentlyViewed> {
+  return read(
+    "/api/mobile/v1/me/recently-viewed",
+    (data) => mobileRecentlyViewedSchema.parse(data),
+    accessToken,
+  )
 }
 
 export function fetchListings(

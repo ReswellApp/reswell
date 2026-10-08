@@ -125,7 +125,29 @@ export async function listMobileListingRows(
     return { ok: false, message: error.message }
   }
 
-  const rows = (data ?? []) as MobileListingRow[]
+  const rows = (data ?? []) as unknown as MobileListingRow[]
   const hasMore = rows.length > query.limit
   return { ok: true, rows: hasMore ? rows.slice(0, query.limit) : rows, hasMore }
+}
+
+/** Public listing cards in the caller's order. Missing ids are dropped. */
+export async function listMobileListingRowsByIds(
+  ids: readonly string[],
+): Promise<{ ok: true; rows: MobileListingRow[] } | { ok: false; message: string }> {
+  const ordered = [...new Set(ids.map((id) => id.trim()).filter(Boolean))]
+  if (ordered.length === 0) return { ok: true, rows: [] }
+
+  const supabase = getDb({ consistency: "eventual", purpose: "catalog" })
+  const { data, error } = await supabase.from("listings").select(MOBILE_LISTING_SELECT).in("id", ordered)
+  if (error) return { ok: false, message: error.message }
+
+  const byId = new Map<string, MobileListingRow>()
+  for (const row of (data ?? []) as unknown as MobileListingRow[]) {
+    byId.set(row.id, row)
+  }
+  const rows = ordered.flatMap((id) => {
+    const row = byId.get(id)
+    return row ? [row] : []
+  })
+  return { ok: true, rows }
 }

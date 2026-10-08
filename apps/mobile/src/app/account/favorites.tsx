@@ -46,7 +46,7 @@ export default function FavoritesScreen() {
 }
 
 const styles = StyleSheet.create({
-  list: { paddingTop: 12, paddingBottom: 28 },
+  list: { paddingTop: 12, paddingBottom: 120 },
   row: { gap: 12, paddingHorizontal: 12 },
   spacer: { flex: 1 },
 })

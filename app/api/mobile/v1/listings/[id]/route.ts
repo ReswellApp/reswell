@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { mobileListingParamSchema } from "@reswell/api-contract"
 import { readOptionalMobileSession } from "@/lib/auth/mobile-session"
 import { getMobileListingService } from "@/lib/services/mobileApi"
+import { recordPublicListingView } from "@/lib/services/listingViews"
 import { mobileDataResponse } from "@/lib/utils/mobile-api-response"
 
 export const dynamic = "force-dynamic"
@@ -23,6 +24,18 @@ export async function GET(request: NextRequest, context: RouteContext) {
       parsed.data.id,
       session?.ok ? { supabase: session.supabase, userId: session.user.id } : undefined,
     )
+    if (session?.ok && result.ok) {
+      const recorded = await recordPublicListingView(session.supabase, {
+        listingId: result.data.id,
+        viewerUserId: session.user.id,
+      })
+      if (!recorded.ok) {
+        console.error("[mobile-api] listing view was not recorded", {
+          timestamp: new Date().toISOString(),
+          message: recorded.message,
+        })
+      }
+    }
     return mobileDataResponse(
       result,
       session?.ok ? "private, no-store" : "public, s-maxage=30, stale-while-revalidate=120",
