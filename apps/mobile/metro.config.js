@@ -1,3 +1,7 @@
+const { loadRepoEnv } = require("./load-root-env")
+
+loadRepoEnv()
+
 const path = require("path")
 const { getDefaultConfig } = require("expo/metro-config")
 
@@ -5,6 +9,12 @@ const projectRoot = __dirname
 const contractEntry = path.resolve(projectRoot, "../../packages/api-contract/src/index.ts")
 
 const config = getDefaultConfig(projectRoot)
+
+config.cacheVersion = [
+  process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
+  process.env.NEXT_PUBLIC_URL ?? "",
+].join("\0")
 
 config.resolver.assetExts = [...config.resolver.assetExts, "woff", "woff2"]
 config.watchFolders = [path.resolve(projectRoot, "../../packages/api-contract")]

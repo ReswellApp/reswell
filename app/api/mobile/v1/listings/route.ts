@@ -11,6 +11,8 @@ export async function GET(request: NextRequest) {
       offset: request.nextUrl.searchParams.get("offset") ?? undefined,
       q: request.nextUrl.searchParams.get("q") ?? undefined,
       section: request.nextUrl.searchParams.get("section") ?? undefined,
+      category: request.nextUrl.searchParams.get("category") ?? undefined,
+      board_type: request.nextUrl.searchParams.get("board_type") ?? undefined,
     })
     if (!parsed.success) {
       return NextResponse.json({ error: "Invalid listings query" }, { status: 400 })

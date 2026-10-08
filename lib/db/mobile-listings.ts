@@ -1,5 +1,7 @@
 import { LISTING_SELLER_PROFILES_EMBED } from "@/lib/db/listing-seller-profile-embed"
+import { listingBoardTypeDbValuesForFilter } from "@/lib/board-type-canonical"
 import { getDb } from "@/lib/supabase/db"
+import { categoryIdForBrowseBoardType } from "@/lib/utils/board-type-from-category-id"
 import type { ListingImageForCard } from "@/lib/listing-image-display"
 
 export type MobileListingSellerRow = {
@@ -62,6 +64,8 @@ export type MobileListingListQuery = {
   offset: number
   q?: string
   section?: string
+  /** Canonical surfboard shape. Matches `board_type` aliases and `category_id`. */
+  boardType?: string
   sellerId?: string
   /** Browse is active-only. A profile shows current inventory, including pending sales, or sold history. */
   availability?: "active" | "current" | "sold"
@@ -91,6 +95,19 @@ export async function listMobileListingRows(
 
   if (query.sellerId) request = request.eq("user_id", query.sellerId)
   if (query.section) request = request.eq("section", query.section)
+  if (query.boardType) {
+    const dbTypes = listingBoardTypeDbValuesForFilter(query.boardType)
+    const categoryId = categoryIdForBrowseBoardType(query.boardType)
+    const parts: string[] = []
+    if (dbTypes.length === 1) parts.push(`board_type.eq.${dbTypes[0]}`)
+    else if (dbTypes.length > 1) parts.push(`board_type.in.(${dbTypes.join(",")})`)
+    if (categoryId) parts.push(`category_id.eq.${categoryId}`)
+    if (parts.length === 1 && dbTypes.length === 1) {
+      request = request.eq("board_type", dbTypes[0]!)
+    } else if (parts.length > 0) {
+      request = request.or(parts.join(",")) as typeof request
+    }
+  }
 
   const q = query.q?.trim()
   if (q) {

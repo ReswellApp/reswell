@@ -54,11 +54,92 @@ export const mobileListingsPageSchema = z.object({
   has_more: z.boolean(),
 })
 
-export const mobileListingsQuerySchema = z.object({
+/** Peer catalog sections. Same slugs as the website category routes. */
+export const MOBILE_LISTING_CATEGORIES = [
+  "surfboards",
+  "fins",
+  "traction",
+  "wetsuits",
+  "apparel",
+  "magazines",
+  "boardbags",
+  "surfpacks",
+  "leashes",
+  "accessories",
+] as const
+
+/** Surfboard shapes. Same slugs as `/boards?type=`. */
+export const MOBILE_BOARD_TYPES = [
+  "shortboard",
+  "groveler",
+  "fish",
+  "asym",
+  "hybrid",
+  "longboard",
+  "step-up-gun",
+  "other",
+] as const
+
+export type MobileListingCategory = (typeof MOBILE_LISTING_CATEGORIES)[number]
+export type MobileBoardType = (typeof MOBILE_BOARD_TYPES)[number]
+
+export type MobileBrowseChip = {
+  label: string
+  category: MobileListingCategory
+  board_type?: MobileBoardType
+}
+
+/**
+ * Website browse order: surfboards, then shapes, then the rest of the category rail.
+ * A shape chip also sets `category` to surfboards.
+ */
+export const MOBILE_BROWSE_CHIPS: readonly MobileBrowseChip[] = [
+  { label: "Surfboards", category: "surfboards" },
+  { label: "Shortboard", category: "surfboards", board_type: "shortboard" },
+  { label: "Groveler", category: "surfboards", board_type: "groveler" },
+  { label: "Fish", category: "surfboards", board_type: "fish" },
+  { label: "Asym", category: "surfboards", board_type: "asym" },
+  { label: "Hybrid", category: "surfboards", board_type: "hybrid" },
+  { label: "Longboard", category: "surfboards", board_type: "longboard" },
+  { label: "Step-Up / Gun", category: "surfboards", board_type: "step-up-gun" },
+  { label: "Other", category: "surfboards", board_type: "other" },
+  { label: "Fins", category: "fins" },
+  { label: "Traction", category: "traction" },
+  { label: "Wetsuits", category: "wetsuits" },
+  { label: "Apparel", category: "apparel" },
+  { label: "Magazines", category: "magazines" },
+  { label: "Boardbags", category: "boardbags" },
+  { label: "Surfpacks", category: "surfpacks" },
+  { label: "Leashes", category: "leashes" },
+  { label: "Accessories", category: "accessories" },
+]
+
+const mobileListingsQueryObject = z.object({
   limit: z.coerce.number().int().min(1).max(40).default(20),
   offset: z.coerce.number().int().min(0).max(5000).default(0),
   q: z.string().trim().max(80).optional(),
+  /** Kept for existing clients. `category` is the same filter. */
   section: z.string().trim().max(40).optional(),
+  category: z.enum(MOBILE_LISTING_CATEGORIES).optional(),
+  board_type: z.enum(MOBILE_BOARD_TYPES).optional(),
+})
+
+export const mobileListingsQuerySchema = mobileListingsQueryObject.superRefine((data, ctx) => {
+  if (data.section && data.category && data.section !== data.category) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "category and section must match",
+      path: ["category"],
+    })
+  }
+  const category = data.category ?? data.section
+  if (data.board_type && category && category !== "surfboards") {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "board_type only applies to surfboards",
+      path: ["board_type"],
+    })
+  }
 })
 
 export const mobileListingParamSchema = z.object({
@@ -119,7 +200,7 @@ const mobilePageFields = {
   has_more: z.boolean(),
 }
 
-export const mobileProfileListingsQuerySchema = mobileListingsQuerySchema.extend({
+export const mobileProfileListingsQuerySchema = mobileListingsQueryObject.extend({
   status: z.enum(["current", "sold"]).default("current"),
 })
 

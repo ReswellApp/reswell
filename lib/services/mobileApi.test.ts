@@ -56,6 +56,23 @@ describe("mobile listings contract", () => {
     assert.equal(parsed.limit, 20)
   })
 
+  it("accepts a category and surfboard shape", () => {
+    const parsed = mobileListingsQuerySchema.parse({ category: "fins", board_type: undefined })
+    assert.equal(parsed.category, "fins")
+    const shaped = mobileListingsQuerySchema.parse({ category: "surfboards", board_type: "fish" })
+    assert.equal(shaped.board_type, "fish")
+  })
+
+  it("rejects a shape outside surfboards", () => {
+    const parsed = mobileListingsQuerySchema.safeParse({ category: "wetsuits", board_type: "longboard" })
+    assert.equal(parsed.success, false)
+  })
+
+  it("rejects an unknown shape", () => {
+    const parsed = mobileListingsQuerySchema.safeParse({ board_type: "gun" })
+    assert.equal(parsed.success, false)
+  })
+
   it("maps a listing row into the card the app renders", () => {
     const card = toMobileListingCard(ROW)
     if (!card) throw new Error("expected a listing card")

@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js"
 import * as SecureStore from "expo-secure-store"
 import { Platform } from "react-native"
+import { publicSupabaseAnonKey, publicSupabaseUrl } from "@/lib/public-env"
 
 const CHUNK = 1800
 
@@ -76,8 +77,8 @@ let client: SupabaseClient | null | undefined
 
 export function getSupabase(): SupabaseClient | null {
   if (client !== undefined) return client
-  const url = process.env.EXPO_PUBLIC_SUPABASE_URL
-  const key = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
+  const url = publicSupabaseUrl()
+  const key = publicSupabaseAnonKey()
   if (!url || !key) {
     client = null
     return client

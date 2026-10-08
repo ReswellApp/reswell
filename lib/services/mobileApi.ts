@@ -6,6 +6,7 @@ import {
   type MobileListingCard,
   type MobileListingDetail,
   type MobileListingsPage,
+  type MobileListingsQuery,
   type MobileMe,
   type MobileProfile,
 } from "@reswell/api-contract"
@@ -183,10 +184,13 @@ export async function getMobileMeService(
 }
 
 export async function listMobileListingsService(
-  query: { limit: number; offset: number; q?: string; section?: string },
+  query: MobileListingsQuery,
 ): Promise<MobileApiResult<MobileListingsPage>> {
-  const section = query.section?.trim()
-  if (section && !isPeerListingSection(section)) {
+  const requestedSection = (query.category ?? query.section)?.trim()
+  if (requestedSection && !isPeerListingSection(requestedSection)) {
+    return { ok: false, status: 400, error: "Invalid listings query" }
+  }
+  if (query.board_type && requestedSection && requestedSection !== "surfboards") {
     return { ok: false, status: 400, error: "Invalid listings query" }
   }
 
@@ -194,7 +198,8 @@ export async function listMobileListingsService(
     limit: query.limit,
     offset: query.offset,
     q: query.q?.trim() || undefined,
-    section: section || undefined,
+    section: query.board_type ? "surfboards" : requestedSection || undefined,
+    boardType: query.board_type,
   })
   if (!listed.ok) {
     console.error("[mobile-api] listings failed", {

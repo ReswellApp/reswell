@@ -1,4 +1,5 @@
 import Constants from "expo-constants"
+import { publicApiUrl } from "@/lib/public-env"
 import {
   mobileCartResultSchema,
   mobileCartSchema,
@@ -49,7 +50,7 @@ function packagerHostname(): string | null {
 }
 
 function apiOrigin(): string {
-  const configured = process.env.EXPO_PUBLIC_API_URL?.trim() || "http://localhost:3000"
+  const configured = publicApiUrl()
   const withProtocol = /^https?:\/\//i.test(configured) ? configured : `http://${configured}`
   let url: URL
   try {
@@ -91,10 +92,15 @@ function read<T>(path: string, parse: (data: unknown) => T, accessToken?: string
   return getJson(path, accessToken, body).then(parse)
 }
 
-export function fetchListings(offset = 0, query?: { q?: string; section?: string }): Promise<MobileListingsPage> {
+export function fetchListings(
+  offset = 0,
+  query?: { q?: string; section?: string; category?: string; board_type?: string },
+): Promise<MobileListingsPage> {
   const params = new URLSearchParams({ limit: "20", offset: String(offset) })
   if (query?.q) params.set("q", query.q)
   if (query?.section) params.set("section", query.section)
+  if (query?.category) params.set("category", query.category)
+  if (query?.board_type) params.set("board_type", query.board_type)
   return read(`/api/mobile/v1/listings?${params.toString()}`, (data) => mobileListingsPageSchema.parse(data))
 }
 

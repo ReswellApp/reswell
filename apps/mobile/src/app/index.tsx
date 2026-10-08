@@ -1,9 +1,9 @@
 import { Stack, useFocusEffect, useRouter } from "expo-router"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native"
-import type { MobileListingsPage } from "@reswell/api-contract"
+import type { MobileBrowseChip, MobileListingsPage } from "@reswell/api-contract"
+import { HomeHeader } from "@/components/home-header"
 import { ListingCard } from "@/components/listing-card"
-import { Wordmark } from "@/components/wordmark"
 import { fetchListings } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
 import { fontFamily, useReswellColors } from "@/theme"
@@ -18,8 +18,11 @@ export default function ListingsScreen() {
   const [loadingMore, setLoadingMore] = useState(false)
   const [query, setQuery] = useState("")
   const [search, setSearch] = useState("")
+  const [browse, setBrowse] = useState<MobileBrowseChip | null>(null)
   const searchRef = useRef(search)
+  const browseRef = useRef(browse)
   searchRef.current = search
+  browseRef.current = browse
 
   useEffect(() => {
     const timer = setTimeout(() => setSearch(query.trim()), 300)
@@ -28,13 +31,14 @@ export default function ListingsScreen() {
 
   useEffect(() => {
     setPage(null)
-  }, [search])
+  }, [search, browse])
 
   const load = useCallback(() => {
     let cancelled = false
     const q = search
+    const chip = browse
     setLoading(true)
-    fetchListings(0, q ? { q } : undefined)
+    fetchListings(0, listingsQuery(q, chip))
       .then((next) => {
         if (!cancelled) {
           setPage(next)
@@ -53,17 +57,18 @@ export default function ListingsScreen() {
     return () => {
       cancelled = true
     }
-  }, [search])
+  }, [search, browse])
 
   useFocusEffect(load)
 
   function loadMore() {
     if (!page?.has_more || loadingMore || loading) return
     const q = search
+    const chip = browse
     setLoadingMore(true)
-    fetchListings(page.offset + page.limit, q ? { q } : undefined)
+    fetchListings(page.offset + page.limit, listingsQuery(q, chip))
       .then((next) => {
-        if (searchRef.current !== q) return
+        if (searchRef.current !== q || browseRef.current !== chip) return
         setPage((current) =>
           current
             ? { ...next, listings: [...current.listings, ...next.listings] }
@@ -79,18 +84,12 @@ export default function ListingsScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
-      <Stack.Screen
-        options={{
-          headerTitle: "",
-          headerLeft: () => <Wordmark />,
-          headerRight: () => (
-            <Pressable onPress={() => router.push(session ? "/account" : "/sign-in")} hitSlop={8}>
-              <Text style={[styles.headerAction, { color: colors.foreground, fontFamily: fontFamily.text }]}>
-                {session ? "Account" : "Sign in"}
-              </Text>
-            </Pressable>
-          ),
-        }}
+      <Stack.Screen options={{ headerShown: false }} />
+      <HomeHeader
+        signedIn={Boolean(session)}
+        onAccount={() => router.push(session ? "/account" : "/sign-in")}
+        selected={browse}
+        onSelect={setBrowse}
       />
       <TextInput
         value={query}
@@ -130,7 +129,11 @@ export default function ListingsScreen() {
           onEndReachedThreshold={0.4}
           ListEmptyComponent={
             <Text style={[styles.empty, { color: colors.muted, fontFamily: fontFamily.text }]}>
-              {search ? "No listings match that search." : "No listings yet."}
+              {search
+                ? "No listings match that search."
+                : browse
+                  ? `No ${browse.label.toLowerCase()} listings yet.`
+                  : "No listings yet."}
             </Text>
           }
           ListFooterComponent={
@@ -155,6 +158,14 @@ export default function ListingsScreen() {
       )}
     </View>
   )
+}
+
+function listingsQuery(q: string, chip: MobileBrowseChip | null): { q?: string; category?: string; board_type?: string } {
+  return {
+    q: q || undefined,
+    category: chip?.category,
+    board_type: chip?.board_type,
+  }
 }
 
 const styles = StyleSheet.create({

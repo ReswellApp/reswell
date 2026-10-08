@@ -60,7 +60,7 @@ export default function SignInScreen() {
       <Wordmark />
       {!configured ? (
         <Text style={{ color: colors.foreground, fontFamily: fontFamily.text }}>
-          Add the Supabase URL and anon key to apps/mobile/.env before signing in.
+          Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to the repo .env.local.
         </Text>
       ) : session ? (
         <View style={styles.stack}>
