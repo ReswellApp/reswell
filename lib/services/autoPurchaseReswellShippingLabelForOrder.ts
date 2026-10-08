@@ -43,7 +43,7 @@ import {
   DEFAULT_SHIPPING_PACKAGING_MODE,
   resolveShippingPackagingMode,
 } from "@/lib/shipping/packaging-mode"
-import { listingsUseSantaBarbaraDropoff } from "@/lib/dropoff-santa-barbara"
+import { prepareSantaBarbaraDropoffListingsForLabel } from "@/lib/services/santaBarbaraDropoffLabelParcel"
 
 async function orderAlreadyHasPreparedLabel(
   supabase: SupabaseClient,
@@ -267,7 +267,9 @@ async function ensureShipmentsExist(
 
 /**
  * After a peer order with Reswell-calculated shipping, purchase ShipEngine label(s)
- * per shipment, store PDFs, and expose them on the seller sale page.
+ * per shipment and store PDFs. Santa Barbara drop-off orders buy from that
+ * location's box rules and street address. The seller sale page does not show
+ * that file; admin reads it from the order.
  *
  * Safe to call multiple times — skips shipments that already have labels.
  */
@@ -362,9 +364,23 @@ export async function autoPurchaseReswellShippingLabelForOrder(
     }
 
     const allListings = [...listingById.values()]
-    if (listingsUseSantaBarbaraDropoff(allListings)) {
-      console.info(`${tag} skipped: seller selected Santa Barbara drop-off.`)
+    const dropoffPlan = await prepareSantaBarbaraDropoffListingsForLabel({
+      supabase,
+      sellerId: o.seller_id,
+      listings: allListings,
+    })
+    if (dropoffPlan.applies && !dropoffPlan.ok) {
+      await fail("rate_quote", dropoffPlan.error)
       return
+    }
+    if (dropoffPlan.applies && dropoffPlan.ok) {
+      for (const row of dropoffPlan.listings) {
+        const id = typeof row.id === "string" ? row.id.trim() : ""
+        if (id) listingById.set(id, row)
+      }
+      console.info(
+        `${tag} Santa Barbara drop-off label uses ${dropoffPlan.parcel.ruleLabel} (${dropoffPlan.parcel.lengthIn}×${dropoffPlan.parcel.widthIn}×${dropoffPlan.parcel.heightIn} in, ${dropoffPlan.parcel.weightLb} lb).`,
+      )
     }
 
     const shipments = await ensureShipmentsExist(supabase, o.id, o.shipping_packaging_mode)
@@ -402,9 +418,14 @@ export async function autoPurchaseReswellShippingLabelForOrder(
     const shipTo = rateQuoteFieldsToShippingInput(shipToFields)
     const sellerShipFromName = await fetchSellerShipFromLabelName(supabase, o.seller_id)
     const sellerShipFromResolved = await resolveSellerShipFromAddress(supabase, o.seller_id)
-    const sellerShipFromAddress: ProfileAddressRow | null = sellerShipFromResolved.ok
-      ? sellerShipFromResolved.address
-      : null
+    // Drop-off labels are quoted from the location street and box rules.
+    // A checkout rate_id is from the seller's home or a city pin, so it is not purchased.
+    const sellerShipFromAddress: ProfileAddressRow | null =
+      dropoffPlan.applies && dropoffPlan.ok
+        ? dropoffPlan.shipFrom
+        : sellerShipFromResolved.ok
+          ? sellerShipFromResolved.address
+          : null
 
     let togetherRateFromPi: string | null = null
     let togetherServiceFromPi: string | null = null
@@ -438,7 +459,10 @@ export async function autoPurchaseReswellShippingLabelForOrder(
       const listingsForQuote =
         shipmentListings.length > 0
           ? shipmentListings
-          : [listing as unknown as PeerListingForShippingQuote]
+          : [
+              listingById.get(o.listing_id) ??
+                (listing as unknown as PeerListingForShippingQuote),
+            ]
 
       if (!listingsForQuote.some((l) => effectiveBoardShippingMode(l) === "reswell")) {
         continue
