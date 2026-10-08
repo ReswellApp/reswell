@@ -9,6 +9,13 @@ export type MobileSession =
  * App sessions are Supabase access tokens, not the website's cookies.
  * The Expo app signs in with Supabase directly and sends `Authorization: Bearer`.
  */
+/** No `Authorization` header means a public request. A present token is still checked. */
+export async function readOptionalMobileSession(request: Request): Promise<MobileSession | null> {
+  const header = request.headers.get("authorization")
+  if (!header?.trim()) return null
+  return readMobileSession(request)
+}
+
 export async function readMobileSession(request: Request): Promise<MobileSession> {
   const header = request.headers.get("authorization")
   if (!header?.toLowerCase().startsWith("bearer ")) {

@@ -9,12 +9,14 @@ export async function GET(request: NextRequest) {
     const parsed = mobileListingsQuerySchema.safeParse({
       limit: request.nextUrl.searchParams.get("limit") ?? undefined,
       offset: request.nextUrl.searchParams.get("offset") ?? undefined,
+      q: request.nextUrl.searchParams.get("q") ?? undefined,
+      section: request.nextUrl.searchParams.get("section") ?? undefined,
     })
     if (!parsed.success) {
       return NextResponse.json({ error: "Invalid listings query" }, { status: 400 })
     }
 
-    const result = await listMobileListingsService(parsed.data.limit, parsed.data.offset)
+    const result = await listMobileListingsService(parsed.data)
     if (!result.ok) {
       return NextResponse.json({ error: result.error }, { status: result.status })
     }

@@ -3,24 +3,18 @@
 import { randomUUID } from "node:crypto"
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
-import { isBlockedOwnListingPurchase, isCartEligibleSection } from "@/lib/cart-eligibility"
+import { isCartEligibleSection } from "@/lib/cart-eligibility"
 import { fetchAcceptedOffersForBuyerListings } from "@/lib/db/offers"
 import { trackKlaviyoAddedToCart } from "@/lib/klaviyo/track-added-to-cart"
 import { listingTileImageSrcFromRow } from "@/lib/listing-image-display"
 import { isListingPurchasable } from "@/lib/listing-public-visibility"
 import { trackMetaAddToCartServerEvent } from "@/lib/meta/track-add-to-cart-server-event"
-import type { PeerListingCartFields } from "@/lib/peer-listing-cart"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { captureServerEvent } from "@/lib/posthog-server"
 import { isReswellShopListing } from "@/lib/reswell-shop"
-import { isShopifyManagedListing } from "@/lib/shopify/listing"
 import { acceptedUnitPriceForSingleItemOffer } from "@/lib/services/acceptedOfferCheckout"
-import { assertBuyerMayPurchaseListingExclusiveWindow } from "@/lib/services/listingBuyerExclusiveWindow"
-import {
-  countSurfboardListings,
-  isSurfboardListingSection,
-  peerCheckoutSurfboardCountError,
-} from "@/lib/surfboard-multi-board-parcel"
+import { assertListingEligibleForCart, peerSurfboardAddCapError } from "@/lib/services/cartEligibility"
+import { isSurfboardListingSection } from "@/lib/surfboard-multi-board-parcel"
 import {
   cartFromCartCheckoutHref,
   cartItemCountFromQuantities,
@@ -63,69 +57,6 @@ export type CartPageItem = {
   listing: CartListingRow
   /** Accepted single-item offer unit price. Cart/checkout charge this instead of list price. */
   agreedPriceUsd: number | null
-}
-
-type CartEligibleListing = PeerListingCartFields & {
-  hidden_from_site?: boolean | null
-  archived_at?: string | null
-  stock_quantity?: number | null
-  inventory_source?: string | null
-}
-
-async function assertListingEligibleForCart(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  listingId: string,
-  buyerId: string,
-): Promise<{ ok: true; listing: CartEligibleListing } | { ok: false; message: string }> {
-  const { data: row, error } = await supabase
-    .from("listings")
-    .select(
-      "id, user_id, section, status, local_pickup, shipping_available, hidden_from_site, archived_at, stock_quantity, inventory_source",
-    )
-    .eq("id", listingId)
-    .maybeSingle()
-
-  if (error || !row) {
-    return { ok: false, message: "Listing not found" }
-  }
-
-  const listing = row as CartEligibleListing
-  if (!isListingPurchasable(listing)) {
-    return { ok: false, message: "This listing is not available" }
-  }
-  if (!isCartEligibleSection(listing.section)) {
-    return { ok: false, message: "This listing cannot be added to cart" }
-  }
-  const lp = listing.local_pickup !== false
-  const sa = !!listing.shipping_available
-  if (!lp && !sa) {
-    return { ok: false, message: "This listing has no checkout option" }
-  }
-  if (isBlockedOwnListingPurchase(listing, buyerId)) {
-    return { ok: false, message: "You cannot add your own listing" }
-  }
-  if (
-    isReswellShopListing(listing.section) ||
-    isShopifyManagedListing(listing)
-  ) {
-    const stock = Math.max(0, Math.floor(Number(listing.stock_quantity) || 0))
-    if (stock < 1) {
-      return { ok: false, message: "This item is out of stock" }
-    }
-  }
-
-  if (isPeerListingSection(listing.section)) {
-    const exclusiveCheck = await assertBuyerMayPurchaseListingExclusiveWindow(
-      supabase,
-      listingId,
-      buyerId,
-    )
-    if (!exclusiveCheck.ok) {
-      return { ok: false, message: exclusiveCheck.message }
-    }
-  }
-
-  return { ok: true, listing }
 }
 
 export type AddCartItemResult = {
@@ -251,30 +182,9 @@ export async function addCartItem(
   }
 
   if (isSurfboardListingSection(check.listing.section)) {
-    const { data: cartPeerRows } = await supabase
-      .from("cart_items")
-      .select("listing_id, listings!inner ( user_id, section )")
-      .eq("profile_id", user.id)
-    const alreadyIds = new Set<string>()
-    const sellerBoards: Array<{ section?: string | null }> = []
-    for (const row of cartPeerRows ?? []) {
-      const raw = row as {
-        listing_id?: string
-        listings?: { user_id?: string; section?: string | null } | { user_id?: string; section?: string | null }[] | null
-      }
-      const listing = Array.isArray(raw.listings) ? raw.listings[0] : raw.listings
-      const listingId = String(raw.listing_id ?? "").trim()
-      if (listingId) alreadyIds.add(listingId)
-      if (listing?.user_id === check.listing.user_id) {
-        sellerBoards.push({ section: listing.section })
-      }
-    }
-    if (!alreadyIds.has(listingId)) {
-      const nextCount = countSurfboardListings(sellerBoards) + 1
-      const capError = peerCheckoutSurfboardCountError(nextCount)
-      if (capError) {
-        return { ok: false, error: capError }
-      }
+    const capError = await peerSurfboardAddCapError(supabase, check.listing, user.id)
+    if (capError) {
+      return { ok: false, error: capError }
     }
   }
 

@@ -57,27 +57,58 @@ export const MOBILE_LISTING_SELECT = `
   ${LISTING_SELLER_PROFILES_EMBED} (seller_slug, display_name)
 `
 
+export type MobileListingListQuery = {
+  limit: number
+  offset: number
+  q?: string
+  section?: string
+  sellerId?: string
+  /** Browse is active-only. A profile shows current inventory, including pending sales, or sold history. */
+  availability?: "active" | "current" | "sold"
+}
+
+function escapeIlikeToken(value: string): string {
+  return value.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_").replace(/"/g, "")
+}
+
 export async function listMobileListingRows(
-  limit: number,
-  offset: number,
+  query: MobileListingListQuery,
 ): Promise<{ ok: true; rows: MobileListingRow[]; hasMore: boolean } | { ok: false; message: string }> {
   const supabase = getDb({ consistency: "eventual", purpose: "catalog" })
-  const { data, error } = await supabase
-    .from("listings")
-    .select(MOBILE_LISTING_SELECT)
-    .eq("status", "active")
-    .eq("hidden_from_site", false)
-    .is("archived_at", null)
+  const availability = query.availability ?? "active"
+  let request = supabase.from("listings").select(MOBILE_LISTING_SELECT)
+
+  if (availability === "sold") {
+    request = request.eq("status", "sold")
+  } else if (availability === "current") {
+    request = request
+      .in("status", ["active", "pending_sale"])
+      .eq("hidden_from_site", false)
+      .is("archived_at", null)
+  } else {
+    request = request.eq("status", "active").eq("hidden_from_site", false).is("archived_at", null)
+  }
+
+  if (query.sellerId) request = request.eq("user_id", query.sellerId)
+  if (query.section) request = request.eq("section", query.section)
+
+  const q = query.q?.trim()
+  if (q) {
+    const pattern = `"%${escapeIlikeToken(q)}%"`
+    request = request.or(`title.ilike.${pattern},brand.ilike.${pattern},model.ilike.${pattern}`)
+  }
+
+  const { data, error } = await request
     .not("title", "ilike", "admin seed%")
     .order("created_at", { ascending: false })
     .order("id", { ascending: false })
-    .range(offset, offset + limit)
+    .range(query.offset, query.offset + query.limit)
 
   if (error) {
     return { ok: false, message: error.message }
   }
 
   const rows = (data ?? []) as MobileListingRow[]
-  const hasMore = rows.length > limit
-  return { ok: true, rows: hasMore ? rows.slice(0, limit) : rows, hasMore }
+  const hasMore = rows.length > query.limit
+  return { ok: true, rows: hasMore ? rows.slice(0, query.limit) : rows, hasMore }
 }

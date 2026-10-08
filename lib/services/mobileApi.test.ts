@@ -1,7 +1,14 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
-import { mobileListingsQuerySchema } from "@reswell/api-contract"
-import { toMobileListingCard, toMobileListingDetail } from "./mobileApi.ts"
+import {
+  mobileCartBodySchema,
+  mobileListingsQuerySchema,
+  mobileMessageBodySchema,
+  mobileOfferActionBodySchema,
+  mobileProfileParamSchema,
+} from "@reswell/api-contract"
+import { toMobileListingCard, toMobileListingDetail, toMobileProfile } from "./mobileApi.ts"
+import type { MobileProfileRow } from "@/lib/db/mobile-profiles"
 import type { MobileListingRow } from "@/lib/db/mobile-listings"
 
 const ROW: MobileListingRow = {
@@ -42,6 +49,13 @@ describe("mobile listings contract", () => {
     assert.equal(parsed.success, false)
   })
 
+  it("keeps a search query on the listings page", () => {
+    const parsed = mobileListingsQuerySchema.parse({ q: " album ", section: "surfboards" })
+    assert.equal(parsed.q, "album")
+    assert.equal(parsed.section, "surfboards")
+    assert.equal(parsed.limit, 20)
+  })
+
   it("maps a listing row into the card the app renders", () => {
     const card = toMobileListingCard(ROW)
     if (!card) throw new Error("expected a listing card")
@@ -63,5 +77,85 @@ describe("mobile listings contract", () => {
     assert.equal(detail.seller.seller_slug, "north-shop")
     assert.deepEqual(detail.image_urls, ["https://cdn.example.com/full.jpg"])
     assert.equal(detail.description, "Light use.")
+  })
+})
+
+const PROFILE: MobileProfileRow = {
+  id: "6d8b6c3e-1f4a-4c2d-9a7b-0e5f1a2b3c4d",
+  seller_slug: "north-shop",
+  display_name: "North",
+  avatar_url: "https://cdn.example.com/face.jpg",
+  city: "Santa Cruz",
+  location: "California",
+  bio: "Personal bio",
+  created_at: "2024-03-15T18:00:00.000Z",
+  is_shop: true,
+  shop_name: "North Shop",
+  shop_description: " Boards and fins. ",
+  shop_banner_url: "https://cdn.example.com/banner.jpg",
+  shop_logo_url: "https://cdn.example.com/logo.jpg",
+  shop_verified: true,
+  shop_website: "https://north.example/shop",
+  shop_phone: "831-555-0100",
+  shop_address: "123 Pacific Ave",
+  sales_count: 12,
+  follower_count: 40,
+  seller_banned_at: null,
+}
+
+describe("mobile write contract", () => {
+  it("rejects an empty message and a counter without an amount", () => {
+    assert.equal(mobileMessageBodySchema.safeParse({ body: "   " }).success, false)
+    assert.equal(mobileOfferActionBodySchema.safeParse({ action: "counter" }).success, false)
+    assert.equal(mobileOfferActionBodySchema.safeParse({ action: "withdraw" }).success, true)
+    assert.equal(mobileCartBodySchema.parse({ listing_id: "11111111-1111-4111-8111-111111111111" }).quantity, 1)
+  })
+})
+
+describe("mobile profile contract", () => {
+  it("accepts a seller slug and rejects a path", () => {
+    assert.equal(mobileProfileParamSchema.safeParse({ slug: "north-shop" }).success, true)
+    assert.equal(mobileProfileParamSchema.safeParse({ slug: "../me" }).success, false)
+  })
+
+  it("maps a shop into the public profile the app renders", () => {
+    const profile = toMobileProfile(PROFILE, {
+      listingCount: 3,
+      ratingAverage: 4.8,
+      reviewCount: 9,
+    })
+    if (!profile) throw new Error("expected a profile")
+    assert.equal(profile.name, "North Shop")
+    assert.equal(profile.about, "Boards and fins.")
+    assert.equal(profile.location_label, "123 Pacific Ave")
+    assert.equal(profile.avatar_url, "https://cdn.example.com/logo.jpg")
+    assert.equal(profile.banner_url, "https://cdn.example.com/banner.jpg")
+    assert.equal(profile.verified, true)
+    assert.equal(profile.website_url, "https://north.example/shop")
+    assert.equal(profile.phone, "831-555-0100")
+    assert.equal(profile.listing_count, 3)
+    assert.equal(profile.rating_average, 4.8)
+    assert.equal(profile.review_count, 9)
+    assert.equal(profile.member_since_label, "March 2024")
+  })
+
+  it("uses the person name and drops a non-http website", () => {
+    const profile = toMobileProfile(
+      {
+        ...PROFILE,
+        is_shop: false,
+        shop_description: null,
+        shop_verified: true,
+        shop_website: "javascript:alert(1)",
+      },
+      { listingCount: 0, ratingAverage: 0, reviewCount: 0 },
+    )
+    if (!profile) throw new Error("expected a profile")
+    assert.equal(profile.name, "North")
+    assert.equal(profile.is_shop, false)
+    assert.equal(profile.verified, false)
+    assert.equal(profile.avatar_url, "https://cdn.example.com/face.jpg")
+    assert.equal(profile.about, "Personal bio")
+    assert.equal(profile.website_url, null)
   })
 })

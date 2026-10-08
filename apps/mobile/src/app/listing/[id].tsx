@@ -1,17 +1,20 @@
 import { Image } from "expo-image"
-import { Stack, useLocalSearchParams } from "expo-router"
+import { Link, Stack, useLocalSearchParams } from "expo-router"
 import { SymbolView } from "expo-symbols"
 import { useEffect, useState } from "react"
 import {
   ActivityIndicator,
   Dimensions,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native"
 import type { MobileListingDetail } from "@reswell/api-contract"
+import { ListingActions } from "@/components/listing-actions"
 import { fetchListing } from "@/lib/api"
+import { useAuth } from "@/lib/auth-context"
 import { fontFamily, useReswellColors } from "@/theme"
 
 const width = Dimensions.get("window").width
@@ -19,13 +22,15 @@ const width = Dimensions.get("window").width
 export default function ListingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const colors = useReswellColors()
+  const { session } = useAuth()
+  const token = session?.access_token
   const [listing, setListing] = useState<MobileListingDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!id) return
     let cancelled = false
-    fetchListing(id)
+    fetchListing(id, token)
       .then((next) => {
         if (!cancelled) setListing(next)
       })
@@ -35,7 +40,7 @@ export default function ListingScreen() {
     return () => {
       cancelled = true
     }
-  }, [id])
+  }, [id, token])
 
   const identity = listing ? [listing.brand, listing.model].filter(Boolean).join(" · ") : ""
 
@@ -99,9 +104,18 @@ export default function ListingScreen() {
                 {listing.condition_line}
               </Text>
             ) : null}
-            <Text style={[styles.seller, { color: colors.muted, fontFamily: fontFamily.text }]}>
-              {listing.seller.name}
-            </Text>
+            {listing.seller.seller_slug ? (
+              <Link href={{ pathname: "/profile/[slug]", params: { slug: listing.seller.seller_slug } }} asChild>
+                <Pressable hitSlop={8}>
+                  <Text style={[styles.seller, { color: colors.foreground, fontFamily: fontFamily.text }]}>
+                    {listing.seller.name}
+                  </Text>
+                </Pressable>
+              </Link>
+            ) : (
+              <Text style={[styles.seller, { color: colors.muted, fontFamily: fontFamily.text }]}>{listing.seller.name}</Text>
+            )}
+            <ListingActions listing={listing} onChange={setListing} />
             {listing.description ? (
               <Text style={[styles.description, { color: colors.foreground, fontFamily: fontFamily.text }]}>
                 {listing.description}

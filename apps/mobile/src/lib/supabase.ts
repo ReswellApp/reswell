@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js"
 import * as SecureStore from "expo-secure-store"
+import { Platform } from "react-native"
 
 const CHUNK = 1800
 
@@ -45,6 +46,32 @@ const secureStore = {
   },
 }
 
+const serverMemory = new Map<string, string>()
+
+/** Web has no Keychain. During static render, `window` is also missing. */
+const webStore = {
+  async getItem(key: string): Promise<string | null> {
+    if (typeof window === "undefined") return serverMemory.get(key) ?? null
+    return window.localStorage.getItem(key)
+  },
+  async setItem(key: string, value: string): Promise<void> {
+    if (typeof window === "undefined") {
+      serverMemory.set(key, value)
+      return
+    }
+    window.localStorage.setItem(key, value)
+  },
+  async removeItem(key: string): Promise<void> {
+    if (typeof window === "undefined") {
+      serverMemory.delete(key)
+      return
+    }
+    window.localStorage.removeItem(key)
+  },
+}
+
+const authStorage = Platform.OS === "web" ? webStore : secureStore
+
 let client: SupabaseClient | null | undefined
 
 export function getSupabase(): SupabaseClient | null {
@@ -57,7 +84,7 @@ export function getSupabase(): SupabaseClient | null {
   }
   client = createClient(url, key, {
     auth: {
-      storage: secureStore,
+      storage: authStorage,
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: false,
