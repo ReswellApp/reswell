@@ -1827,8 +1827,7 @@ function SellPageContentInner({
 
   const boardShippingSelected =
     flagsFromBoardFulfillment(formData.boardFulfillment).shipping_available &&
-    viewMode !== "quick" &&
-    !formData.dropoffLocationId
+    viewMode !== "quick"
 
   const shipFrom = useSellShipFromAddress({
     shippingSelected: boardShippingSelected,
@@ -3491,8 +3490,7 @@ function SellPageContentInner({
       if (
         fulfillmentFlags.shipping_available &&
         !listingImpersonation &&
-        !adminImpersonationEditListing &&
-        !(fd.dropoffLocationId ?? "").trim()
+        !adminImpersonationEditListing
       ) {
         const shipFromReady = await shipFrom.ensureShipFrom()
         if (!shipFromReady) {

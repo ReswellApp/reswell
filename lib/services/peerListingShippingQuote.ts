@@ -51,7 +51,8 @@ export const PEER_SURFBOARD_CHECKOUT_LISTING_SELECT = `
     state,
     postal_code,
     latitude,
-    longitude
+    longitude,
+    box_rules
   ),
   dimensions
 `.trim()

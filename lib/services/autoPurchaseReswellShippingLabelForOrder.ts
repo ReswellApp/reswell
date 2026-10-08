@@ -43,7 +43,7 @@ import {
   DEFAULT_SHIPPING_PACKAGING_MODE,
   resolveShippingPackagingMode,
 } from "@/lib/shipping/packaging-mode"
-import { listingsUseSantaBarbaraDropoff } from "@/lib/dropoff-santa-barbara"
+import { overlayDropoffBoxesForQuote } from "@/lib/dropoff-quote-parcel"
 
 async function orderAlreadyHasPreparedLabel(
   supabase: SupabaseClient,
@@ -267,7 +267,10 @@ async function ensureShipmentsExist(
 
 /**
  * After a peer order with Reswell-calculated shipping, purchase ShipEngine label(s)
- * per shipment, store PDFs, and expose them on the seller sale page.
+ * per shipment and store the PDFs.
+ *
+ * Drop-off orders use that location's box size and the seller's saved ship-from
+ * name and street. Santa Barbara labels stay off the seller sale page.
  *
  * Safe to call multiple times — skips shipments that already have labels.
  */
@@ -362,9 +365,17 @@ export async function autoPurchaseReswellShippingLabelForOrder(
     }
 
     const allListings = [...listingById.values()]
-    if (listingsUseSantaBarbaraDropoff(allListings)) {
-      console.info(`${tag} skipped: seller selected Santa Barbara drop-off.`)
+    const dropoffOrder = allListings.some((listing) =>
+      Boolean(listing.dropoff_location_id?.trim()),
+    )
+    const overlaid = overlayDropoffBoxesForQuote(allListings)
+    if (!overlaid.ok) {
+      await fail("rate_quote", overlaid.error)
       return
+    }
+    for (const row of overlaid.listings) {
+      const id = (row as { id?: string }).id?.trim()
+      if (id) listingById.set(id, row)
     }
 
     const shipments = await ensureShipmentsExist(supabase, o.id, o.shipping_packaging_mode)
@@ -405,6 +416,13 @@ export async function autoPurchaseReswellShippingLabelForOrder(
     const sellerShipFromAddress: ProfileAddressRow | null = sellerShipFromResolved.ok
       ? sellerShipFromResolved.address
       : null
+    if (dropoffOrder && !sellerShipFromAddress) {
+      await fail(
+        "incomplete_address",
+        "This seller has no ship-from address. Add it on /sell, then buy the label. Drop-off labels use the seller's name and street, and the location's box size.",
+      )
+      return
+    }
 
     let togetherRateFromPi: string | null = null
     let togetherServiceFromPi: string | null = null
@@ -449,12 +467,12 @@ export async function autoPurchaseReswellShippingLabelForOrder(
           ? togetherServiceFromPi
           : serviceByListing.get(shipment.listing_ids[0] ?? "") ?? togetherServiceFromPi
 
-      // Checkout rate_ids are quoted from listing/dropoff locality (placeholder street).
-      // Buying that rate prints the generic location on the label. When the seller
-      // has a saved ship-from, always re-quote from that street and keep the service.
-      let rateId = sellerShipFromAddress
-        ? null
-        : shipment.shipengine_rate_id?.trim() ||
+      // Checkout rate_ids are quoted from listing locality or a placeholder street.
+      // Drop-off labels are re-quoted from the seller's ship-from street, in the location's box.
+      let rateId =
+        sellerShipFromAddress || dropoffOrder
+          ? null
+          : shipment.shipengine_rate_id?.trim() ||
           (shipment.packaging_kind === "together"
             ? togetherRateFromPi
             : rateByListing.get(shipment.listing_ids[0] ?? "") ?? null)
