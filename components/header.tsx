@@ -79,6 +79,7 @@ import { CartHeaderLink } from "@/components/cart-header-link"
 import { authLandingHref } from "@/lib/auth/auth-landing-href"
 import { HeaderAccountMenu } from "@/components/header-account-menu"
 import { coastalShipperMembership } from "@/lib/services/coastalShipperAccess"
+import { dropoffLocationMembership } from "@/lib/services/dropoffLocationAccess"
 import { SiteWordmarkLink } from "@/components/site-wordmark-link"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
@@ -182,6 +183,7 @@ type HeaderDerivedNavState = {
   profileDisplayName: string | null
   isAdmin: boolean
   isShipper: boolean
+  isDropoffLocation: boolean
   unreadMessages: number
   unreadSupport: number
   walletBalance: number | null
@@ -196,6 +198,7 @@ function deriveHeaderNavState(payload: SiteChromeAuthPayload): HeaderDerivedNavS
       profileDisplayName: null,
       isAdmin: false,
       isShipper: false,
+      isDropoffLocation: false,
       unreadMessages: 0,
       unreadSupport: 0,
       walletBalance: null,
@@ -210,6 +213,7 @@ function deriveHeaderNavState(payload: SiteChromeAuthPayload): HeaderDerivedNavS
       profileDisplayName: null,
       isAdmin: false,
       isShipper: b?.isShipper === true,
+      isDropoffLocation: b?.isDropoffLocation === true,
       unreadMessages: 0,
       unreadSupport: 0,
       walletBalance: null,
@@ -223,6 +227,7 @@ function deriveHeaderNavState(payload: SiteChromeAuthPayload): HeaderDerivedNavS
     profileDisplayName: prof.display_name,
     isAdmin: prof.is_admin === true,
     isShipper: b.isShipper === true,
+    isDropoffLocation: b.isDropoffLocation === true,
     unreadMessages: b.unreadMessages,
     unreadSupport: Number(b.unreadSupport ?? 0) || 0,
     walletBalance: b.walletBalance,
@@ -489,6 +494,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
   const [profileDisplayName, setProfileDisplayName] = useState<string | null>(initNav.profileDisplayName)
   const [isAdmin, setIsAdmin] = useState(initNav.isAdmin)
   const [isShipper, setIsShipper] = useState(initNav.isShipper)
+  const [isDropoffLocation, setIsDropoffLocation] = useState(initNav.isDropoffLocation)
   const [unreadMessages, setUnreadMessages] = useState(initNav.unreadMessages)
   const [unreadSupport, setUnreadSupport] = useState(initNav.unreadSupport)
   const [walletBalance, setWalletBalance] = useState<number | null>(initNav.walletBalance)
@@ -578,6 +584,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       b?.profile?.shop_logo_url ?? "",
       String(b?.profile?.is_admin ?? ""),
       String(b?.isShipper ?? ""),
+      String(b?.isDropoffLocation ?? ""),
     ].join("|")
   }, [
     serverHeaderAuth.user?.id,
@@ -590,6 +597,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     serverHeaderAuth.bootstrap?.profile?.shop_logo_url,
     serverHeaderAuth.bootstrap?.profile?.is_admin,
     serverHeaderAuth.bootstrap?.isShipper,
+    serverHeaderAuth.bootstrap?.isDropoffLocation,
   ])
 
   useLayoutEffect(() => {
@@ -628,6 +636,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       setProfileDisplayName((prev) => prev ?? d.profileDisplayName)
       setIsAdmin((prev) => (d.isAdmin ? d.isAdmin : prev))
       setIsShipper((prev) => (d.isShipper ? d.isShipper : prev))
+      setIsDropoffLocation((prev) => (d.isDropoffLocation ? d.isDropoffLocation : prev))
       applyServerUnread(d.unreadMessages, "partial")
       applyServerUnreadSupport(d.unreadSupport, "partial")
       setWalletBalance((prev) => {
@@ -641,6 +650,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       setProfileDisplayName(d.profileDisplayName)
       setIsAdmin(d.isAdmin)
       setIsShipper(d.isShipper)
+      setIsDropoffLocation(d.isDropoffLocation)
       applyServerUnread(d.unreadMessages, "full")
       applyServerUnreadSupport(d.unreadSupport, "full")
       if (d.walletBalance !== null) {
@@ -696,6 +706,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         setProfileDisplayName(guest.profileDisplayName)
         setIsAdmin(guest.isAdmin)
         setIsShipper(guest.isShipper)
+        setIsDropoffLocation(guest.isDropoffLocation)
         setUnreadMessages(guest.unreadMessages)
         setUnreadSupport(guest.unreadSupport)
         clientWalletTotalRef.current = null
@@ -703,7 +714,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         return
       }
 
-      const [{ data: profile }, shipperRes] = await Promise.all([
+      const [{ data: profile }, shipperRes, dropoffRes] = await Promise.all([
         supabase
           .from("profiles")
           .select(
@@ -712,12 +723,19 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
           .eq("id", resolvedUser.id)
           .single(),
         supabase.from("coastal_shippers").select("id").eq("user_id", resolvedUser.id).maybeSingle(),
+        supabase.from("dropoff_location_grants").select("id").eq("user_id", resolvedUser.id).maybeSingle(),
       ])
       setIsAdmin(profile?.is_admin || false)
       setIsShipper(
         coastalShipperMembership({
           rowId: shipperRes.data?.id,
           queryFailed: Boolean(shipperRes.error),
+        }),
+      )
+      setIsDropoffLocation(
+        dropoffLocationMembership({
+          rowId: dropoffRes.data?.id,
+          queryFailed: Boolean(dropoffRes.error),
         }),
       )
       setProfileAvatarUrl(resolveHeaderAvatarUrl(resolvedUser, profile))
@@ -861,6 +879,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         setProfileDisplayName(guest.profileDisplayName)
         setIsAdmin(guest.isAdmin)
         setIsShipper(guest.isShipper)
+        setIsDropoffLocation(guest.isDropoffLocation)
         setUnreadMessages(guest.unreadMessages)
         setUnreadSupport(guest.unreadSupport)
         clientWalletTotalRef.current = null
@@ -1073,6 +1092,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         unreadSupport={unreadSupport}
         isAdmin={isAdmin}
         isShipper={isShipper}
+        isDropoffLocation={isDropoffLocation}
         onSignOut={handleSignOut}
       />
     ) : null

@@ -28,6 +28,7 @@ export type HeaderAccountMenuProps = {
   unreadSupport: number
   isAdmin: boolean
   isShipper: boolean
+  isDropoffLocation: boolean
   onSignOut: () => void
 }
 
@@ -42,6 +43,7 @@ function HeaderAccountMenuInner({
   unreadSupport,
   isAdmin,
   isShipper,
+  isDropoffLocation,
   onSignOut,
 }: HeaderAccountMenuProps) {
   const onOpenChange = useCallback((open: boolean) => {
@@ -86,7 +88,7 @@ function HeaderAccountMenuInner({
           </div>
         </div>
         <DropdownMenuSeparator />
-        {dashboardNavLinks({ isAdmin, isShipper }).map((link) => {
+        {dashboardNavLinks({ isAdmin, isShipper, isDropoffLocation }).map((link) => {
           const Icon = link.icon
           if (link.href === "/dashboard/earnings") {
             return (

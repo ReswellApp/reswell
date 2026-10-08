@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { DashboardSidebarNav } from "@/components/features/dashboard/dashboard-sidebar-nav"
 import { MessagesAccountShellClient } from "@/components/features/messages/messages-account-shell-client"
 import { coastalShipperMembership } from "@/lib/services/coastalShipperAccess"
+import { dropoffLocationMembership } from "@/lib/services/dropoffLocationAccess"
 
 export async function MessagesAccountShell({ children }: { children: React.ReactNode }) {
   const { supabase, user } = await getCachedDashboardSession()
@@ -23,17 +24,24 @@ export async function MessagesAccountShell({ children }: { children: React.React
     .single()
 
   const shopHref = profile?.is_shop ? sellerProfileHref(profile) : null
-  const { data: shipperRow, error: shipperError } = await supabase
-    .from("coastal_shippers")
-    .select("id")
-    .eq("user_id", user.id)
-    .maybeSingle()
+  const [{ data: shipperRow, error: shipperError }, { data: dropoffRow, error: dropoffError }] =
+    await Promise.all([
+      supabase.from("coastal_shippers").select("id").eq("user_id", user.id).maybeSingle(),
+      supabase.from("dropoff_location_grants").select("id").eq("user_id", user.id).maybeSingle(),
+    ])
   const isShipper = coastalShipperMembership({ rowId: shipperRow?.id, queryFailed: Boolean(shipperError) })
+  const isDropoffLocation = dropoffLocationMembership({
+    rowId: dropoffRow?.id,
+    queryFailed: Boolean(dropoffError),
+  })
   const hasShopifyAccess = profile?.shopify_connect_enabled === true
 
   return (
     <MessagesAccountShellClient
       sellerProfileHref={shopHref}
+      isAdmin={profile?.is_admin === true}
+      isShipper={isShipper}
+      isDropoffLocation={isDropoffLocation}
       hasShopifyAccess={hasShopifyAccess}
       sidebar={
         <aside className="hidden shrink-0 lg:block lg:w-64 xl:w-72">
@@ -50,6 +58,7 @@ export async function MessagesAccountShell({ children }: { children: React.React
                 sellerProfileHref={shopHref}
                 isAdmin={profile?.is_admin === true}
                 isShipper={isShipper}
+                isDropoffLocation={isDropoffLocation}
                 hasShopifyAccess={hasShopifyAccess}
               />
             </Suspense>

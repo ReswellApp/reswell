@@ -18,6 +18,7 @@ interface DashboardAppFrameProps {
   sellerProfileHref: string | null
   isAdmin?: boolean
   isShipper?: boolean
+  isDropoffLocation?: boolean
   hasShopifyAccess?: boolean
   children: ReactNode
 }
@@ -26,6 +27,7 @@ export function DashboardAppFrame({
   sellerProfileHref,
   isAdmin = false,
   isShipper = false,
+  isDropoffLocation = false,
   hasShopifyAccess = false,
   children,
 }: DashboardAppFrameProps) {
@@ -47,6 +49,7 @@ export function DashboardAppFrame({
         sellerProfileHref={sellerProfileHref}
         isAdmin={isAdmin}
         isShipper={isShipper}
+        isDropoffLocation={isDropoffLocation}
         hasShopifyAccess={hasShopifyAccess}
       />
 
@@ -65,6 +68,7 @@ export function DashboardAppFrame({
                 sellerProfileHref={sellerProfileHref}
                 isAdmin={isAdmin}
                 isShipper={isShipper}
+                isDropoffLocation={isDropoffLocation}
                 hasShopifyAccess={hasShopifyAccess}
                 size="large"
               />

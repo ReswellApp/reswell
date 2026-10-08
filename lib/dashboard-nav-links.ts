@@ -4,6 +4,7 @@ import {
   Banknote,
   Handshake,
   Heart,
+  MapPin,
   Package,
   ShoppingBag,
   PackageCheck,
@@ -15,6 +16,7 @@ import {
   Store,
   Truck,
 } from "lucide-react"
+import { insertNavLinkAfter } from "@/lib/dashboard-nav-order"
 
 export interface DashboardNavChildLink {
   name: string
@@ -41,6 +43,12 @@ export const DASHBOARD_SHIPPER_NAV: DashboardNavLink = {
   icon: Truck,
 }
 
+export const DASHBOARD_DROPOFF_LOCATION_NAV: DashboardNavLink = {
+  name: "Drop-off",
+  href: "/dashboard/dropoff-location",
+  icon: MapPin,
+}
+
 export const DASHBOARD_SHOPIFY_NAV: DashboardNavLink = {
   name: "Shopify",
   href: "/dashboard/shopify",
@@ -50,19 +58,28 @@ export const DASHBOARD_SHOPIFY_NAV: DashboardNavLink = {
 export function dashboardNavLinks(input: {
   isAdmin: boolean
   isShipper: boolean
+  isDropoffLocation?: boolean
   hasShopifyAccess?: boolean
 }): DashboardNavLink[] {
   const links = DASHBOARD_NAV_LINKS.filter((link) => !link.adminOnly || input.isAdmin)
-  const expanded = input.hasShopifyAccess
+  let expanded = input.hasShopifyAccess
     ? links.flatMap((link) =>
         link.href === "/dashboard/listings"
           ? [link, DASHBOARD_SHOPIFY_NAV]
           : [link],
       )
     : links
-  if (!input.isShipper) return expanded
-  const [overview, ...rest] = expanded
-  return overview ? [overview, DASHBOARD_SHIPPER_NAV, ...rest] : [DASHBOARD_SHIPPER_NAV]
+  if (input.isShipper) {
+    expanded = insertNavLinkAfter(expanded, DASHBOARD_SHIPPER_NAV, "/dashboard")
+  }
+  if (input.isDropoffLocation) {
+    expanded = insertNavLinkAfter(
+      expanded,
+      DASHBOARD_DROPOFF_LOCATION_NAV,
+      input.isShipper ? "/dashboard/shipper" : "/dashboard",
+    )
+  }
+  return expanded
 }
 
 export const DASHBOARD_NAV_LINKS: DashboardNavLink[] = [

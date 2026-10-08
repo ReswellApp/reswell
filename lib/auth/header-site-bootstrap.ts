@@ -1,5 +1,6 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js"
 import { coastalShipperMembership } from "@/lib/services/coastalShipperAccess"
+import { dropoffLocationMembership } from "@/lib/services/dropoffLocationAccess"
 import { reconcileWalletAggregates, walletAggregateStrings } from "@/lib/wallet-reconcile"
 import {
   persistWalletAggregatesIfNeeded,
@@ -23,6 +24,8 @@ export type HeaderSiteBootstrap = {
   walletBalance: number | null
   /** True when this user has a coastal_shippers row. Schedule and runs do not count. */
   isShipper: boolean
+  /** True when this user has a dropoff_location_grants row. Admin does not count. */
+  isDropoffLocation: boolean
 }
 
 /**
@@ -33,7 +36,7 @@ export async function fetchHeaderSiteBootstrap(
   supabase: SupabaseClient,
   user: User,
 ): Promise<HeaderSiteBootstrap> {
-  const [profileRes, walletRes, shipperRes] = await Promise.all([
+  const [profileRes, walletRes, shipperRes, dropoffRes] = await Promise.all([
     supabase
       .from("profiles")
       .select(
@@ -47,6 +50,7 @@ export async function fetchHeaderSiteBootstrap(
       .eq("user_id", user.id)
       .single(),
     supabase.from("coastal_shippers").select("id").eq("user_id", user.id).maybeSingle(),
+    supabase.from("dropoff_location_grants").select("id").eq("user_id", user.id).maybeSingle(),
   ])
 
   const profile = profileRes.data ?? null
@@ -72,6 +76,10 @@ export async function fetchHeaderSiteBootstrap(
     isShipper: coastalShipperMembership({
       rowId: shipperRes.data?.id,
       queryFailed: Boolean(shipperRes.error),
+    }),
+    isDropoffLocation: dropoffLocationMembership({
+      rowId: dropoffRes.data?.id,
+      queryFailed: Boolean(dropoffRes.error),
     }),
   }
 }

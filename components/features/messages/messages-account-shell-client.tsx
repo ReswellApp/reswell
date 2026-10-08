@@ -9,6 +9,9 @@ import { cn } from "@/lib/utils"
 
 interface MessagesAccountShellClientProps {
   sellerProfileHref: string | null
+  isAdmin?: boolean
+  isShipper?: boolean
+  isDropoffLocation?: boolean
   hasShopifyAccess: boolean
   sidebar: ReactNode
   children: ReactNode
@@ -16,6 +19,9 @@ interface MessagesAccountShellClientProps {
 
 export function MessagesAccountShellClient({
   sellerProfileHref,
+  isAdmin = false,
+  isShipper = false,
+  isDropoffLocation = false,
   hasShopifyAccess,
   sidebar,
   children,
@@ -34,6 +40,9 @@ export function MessagesAccountShellClient({
     >
       <MessagesAccountMobileChrome
         sellerProfileHref={sellerProfileHref}
+        isAdmin={isAdmin}
+        isShipper={isShipper}
+        isDropoffLocation={isDropoffLocation}
         hasShopifyAccess={hasShopifyAccess}
       />
 

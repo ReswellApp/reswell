@@ -133,6 +133,7 @@ export interface DashboardSidebarNavProps {
   sellerProfileHref: string | null
   isAdmin?: boolean
   isShipper?: boolean
+  isDropoffLocation?: boolean
   hasShopifyAccess?: boolean
   /** Larger nav for `/dashboard` shell; messages keeps the default compact size. */
   size?: "default" | "large"
@@ -142,6 +143,7 @@ export function DashboardSidebarNav({
   sellerProfileHref,
   isAdmin = false,
   isShipper = false,
+  isDropoffLocation = false,
   hasShopifyAccess = false,
   size = "default",
 }: DashboardSidebarNavProps) {
@@ -159,7 +161,7 @@ export function DashboardSidebarNav({
       className={cn("hidden lg:block", isLarge ? "space-y-2" : "space-y-1.5")}
       aria-label="Dashboard"
     >
-      {dashboardNavLinks({ isAdmin, isShipper, hasShopifyAccess }).map((link) => (
+      {dashboardNavLinks({ isAdmin, isShipper, isDropoffLocation, hasShopifyAccess }).map((link) => (
         <DashboardNavItem key={link.href} link={link} size={size} />
       ))}
       {sellerProfileHref ? (

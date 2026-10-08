@@ -14,6 +14,7 @@ export interface DashboardMobilePageChromeProps {
   sellerProfileHref: string | null
   isAdmin?: boolean
   isShipper?: boolean
+  isDropoffLocation?: boolean
   hasShopifyAccess?: boolean
 }
 
@@ -21,6 +22,7 @@ export function DashboardMobilePageChrome({
   sellerProfileHref,
   isAdmin = false,
   isShipper = false,
+  isDropoffLocation = false,
   hasShopifyAccess = false,
 }: DashboardMobilePageChromeProps) {
   const pathname = usePathname() ?? ""
@@ -34,6 +36,7 @@ export function DashboardMobilePageChrome({
         sellerProfileHref={sellerProfileHref}
         isAdmin={isAdmin}
         isShipper={isShipper}
+        isDropoffLocation={isDropoffLocation}
         hasShopifyAccess={hasShopifyAccess}
         variant="account"
       />
