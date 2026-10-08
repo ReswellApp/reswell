@@ -2,12 +2,8 @@ import type { Metadata } from "next"
 import { Suspense } from "react"
 import { redirect } from "next/navigation"
 import { pageSeoMetadata } from "@/lib/site-metadata"
-import { findListingByParam } from "@/lib/listing-query"
-import {
-  getCachedPublicListingForMetadata,
-  getCachedPublicListingForRoute,
-  SURFBOARD_LISTING_SELECT,
-} from "@/lib/listing-detail-cache"
+import { getCachedPublicListingDetail } from "@/lib/listing-detail-cache"
+import { getCachedLiveListingByParam } from "@/lib/listing-detail-request"
 import { resolveListingDetailMetadata } from "@/lib/seo/resolve-listing-metadata"
 import { canViewHiddenListing } from "@/lib/listing-site-access"
 import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
@@ -32,14 +28,9 @@ export async function generateMetadata(props: {
   params: Promise<{ listing: string }>
 }): Promise<Metadata> {
   const { listing: listingParam } = await props.params
-  let { listing } = await getCachedPublicListingForMetadata(listingParam)
+  let { listing } = await getCachedPublicListingDetail(listingParam)
   if (!listing) {
-    const { supabase } = await getCachedRequestSession()
-    const live = await findListingByParam(supabase, listingParam, {
-      select: SURFBOARD_LISTING_SELECT,
-      section: undefined,
-      includeHiddenListings: true,
-    })
+    const live = await getCachedLiveListingByParam(listingParam)
     listing = live.listing
   }
   if (!listing) {
@@ -63,7 +54,7 @@ export default async function ListingDetailPage(props: {
   params: Promise<{ listing: string }>
 }) {
   const { listing: listingParam } = await props.params
-  const { listing, redirectSlug } = await getCachedPublicListingForRoute(listingParam)
+  const { listing, redirectSlug } = await getCachedPublicListingDetail(listingParam)
 
   if (listing && !listing.hidden_from_site) {
     if (redirectSlug) {

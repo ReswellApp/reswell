@@ -103,6 +103,12 @@ export interface ListingMobileBuySummaryProps {
   /** Board spec table (or similar) after the purchase actions. */
   afterPrice?: ReactNode
   children?: ReactNode
+  /** Replaces the views/watchers row so counts can stream in after the price. */
+  engagement?: ReactNode
+  /** Replaces the cart-holder phrase on the scarcity line. */
+  scarcityNote?: ReactNode
+  /** Sold listings: shipped note streamed after the price. */
+  soldStatusNote?: ReactNode
 }
 
 export function ListingMobileBuySummary({
@@ -128,6 +134,9 @@ export function ListingMobileBuySummary({
   compareAtPriceUsd = null,
   afterPrice = null,
   children,
+  engagement,
+  scarcityNote,
+  soldStatusNote,
 }: ListingMobileBuySummaryProps) {
   const shippingNote = isSold ? null : priceShippingNote(shippingPriceCaption)
   const shippingRow = shippingStatusRow({
@@ -149,21 +158,23 @@ export function ListingMobileBuySummary({
 
   return (
     <div className="min-w-0">
-      <ListingDetailEngagementMetrics
-        views={views}
-        watchers={watchers}
-        cartHolderCount={cartHolderCount}
-        isSold={isSold}
-        offerToCart={
-          offerToCart
-            ? {
-                ...offerToCart,
-                listPrice: offerToCart.listPrice ?? priceUsd,
-              }
-            : null
-        }
-        className="text-[13px]"
-      />
+      {engagement ?? (
+        <ListingDetailEngagementMetrics
+          views={views}
+          watchers={watchers}
+          cartHolderCount={cartHolderCount}
+          isSold={isSold}
+          offerToCart={
+            offerToCart
+              ? {
+                  ...offerToCart,
+                  listPrice: offerToCart.listPrice ?? priceUsd,
+                }
+              : null
+          }
+          className="text-[13px]"
+        />
+      )}
 
       {isSold ? (
         <p className="mt-2 font-headline text-3xl font-semibold leading-none tracking-tight text-[#163060] tabular-nums">
@@ -202,8 +213,9 @@ export function ListingMobileBuySummary({
       {children ? <div className="mt-5">{children}</div> : null}
       {afterPrice ? <div className="mt-5">{afterPrice}</div> : null}
 
-      {shippingRow || showScarcity || recentlyListed || showPurchaseProtection ? (
+      {soldStatusNote || shippingRow || showScarcity || recentlyListed || showPurchaseProtection ? (
         <ul className="mt-5 space-y-2.5">
+          {soldStatusNote}
           {shippingRow ? (
             <li className="flex gap-2.5 text-[14px] leading-snug">
               <Truck className={iconClassName} aria-hidden />
@@ -220,7 +232,7 @@ export function ListingMobileBuySummary({
               <Hourglass className={iconClassName} aria-hidden />
               <p>
                 <span className="font-semibold text-foreground">Only one available</span>
-                {cartDetail ? <span className="text-muted-foreground"> {cartDetail}</span> : null}
+                {scarcityNote ?? (cartDetail ? <span className="text-muted-foreground"> {cartDetail}</span> : null)}
               </p>
             </li>
           ) : null}
