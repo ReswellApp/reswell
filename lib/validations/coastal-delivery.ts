@@ -94,13 +94,28 @@ export const coastalShipperPriceSchema = z.object({
     .max(500, "Enter a whole-dollar price from $20 to $500."),
 })
 
+const coastalTripCitySchema = z.object({
+  city: z.string().trim().min(1, "Choose a city.").max(80),
+  state: z
+    .string()
+    .trim()
+    .max(40)
+    .nullable()
+    .transform((value) => (value && value.length > 0 ? value : null)),
+  latitude: z.number().finite().min(-90).max(90),
+  longitude: z.number().finite().min(-180).max(180),
+})
+
 export const coastalShipperTripSchema = z.object({
   shipperId: z.string().uuid(),
   runId: z.string().uuid().optional(),
   dayOfWeek: z.number().int().min(0).max(6),
   direction: z.enum(["northbound", "southbound"]),
   enabled: z.boolean(),
-  stopIds: z.array(z.string().uuid()).min(2).max(20),
+  stops: z
+    .array(coastalTripCitySchema)
+    .min(2, "Pick a From city and a To city.")
+    .max(20, "A trip can have at most 20 cities."),
   serviceDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(),
 })
 

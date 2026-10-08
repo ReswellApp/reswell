@@ -3,14 +3,15 @@
 import { useMemo, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 
-import { ModeButton, ShipperTripForm, TripChip, formatWeek } from "@/components/features/dashboard/shipper/shipper-trip-form"
+import { ShipperTripForm, type ShipperTripCityPayload } from "@/components/features/dashboard/shipper/shipper-trip-form"
+import { ModeButton, TripChip, formatWeek } from "@/components/features/dashboard/shipper/shipper-trip-chip"
 import {
   removeCoastalShipperTripAction,
   saveCoastalShipperTripAction,
   setCoastalShipperRunAction,
 } from "@/lib/actions/coastalShipperActions"
-import { coastalContinuousStopIds } from "@/lib/services/coastalDeliveryMatch"
 import { addIsoDays, tripDateForWeek, tripsForWeek } from "@/lib/services/coastalShipperWeek"
+import { tripStopNames } from "@/lib/utils/shipperTripStops"
 import {
   COASTAL_WEEKDAY_LABELS,
   type CoastalDirection,
@@ -34,14 +35,10 @@ export function ShipperTripPlanner({ shipperId, weekStart, stops, trips, preview
   const [weekOffset, setWeekOffset] = useState(0)
   const [dayOfWeek, setDayOfWeek] = useState(2)
   const [direction, setDirection] = useState<CoastalDirection>("northbound")
-  const [fromId, setFromId] = useState(ordered[0]?.id ?? "")
-  const [toId, setToId] = useState(ordered[ordered.length - 1]?.id ?? "")
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
   const activeStart = addIsoDays(weekStart, weekOffset * 7)
   const visible = repeating ? trips.filter((trip) => !trip.serviceDate) : tripsForWeek(trips, activeStart)
-  const range = coastalContinuousStopIds(ordered, fromId, toId)
-  const rangeNames = ordered.filter((stop) => range?.includes(stop.id)).map((stop) => stop.name)
 
   function run(task: () => Promise<{ error?: string; success?: true }>) {
     startTransition(async () => {
@@ -55,8 +52,8 @@ export function ShipperTripPlanner({ shipperId, weekStart, stops, trips, preview
     })
   }
 
-  function onAdd() {
-    if (!range || previewing) return
+  function onSave(cities: ShipperTripCityPayload[]) {
+    if (previewing) return
     const dated = tripDateForWeek(activeStart, dayOfWeek, repeating)
     if (!dated) return
     run(() =>
@@ -65,7 +62,7 @@ export function ShipperTripPlanner({ shipperId, weekStart, stops, trips, preview
         dayOfWeek: dated.dayOfWeek,
         direction,
         enabled: true,
-        stopIds: range,
+        stops: cities,
         serviceDate: dated.serviceDate,
       }),
     )
@@ -117,7 +114,7 @@ export function ShipperTripPlanner({ shipperId, weekStart, stops, trips, preview
                   <TripChip
                     key={trip.id}
                     trip={trip}
-                    names={ordered.filter((stop) => trip.stopIds.includes(stop.id)).map((stop) => stop.name)}
+                    names={tripStopNames(trip.stopIds, ordered, trip.stopsInDriveOrder)}
                     pending={pending || previewing}
                     onToggle={(enabled) => run(() => setCoastalShipperRunAction({ shipperId, runId: trip.id, enabled }))}
                     onRemove={() => run(() => removeCoastalShipperTripAction({ shipperId, runId: trip.id }))}
@@ -134,13 +131,8 @@ export function ShipperTripPlanner({ shipperId, weekStart, stops, trips, preview
       ) : null}
 
       <ShipperTripForm
-        ordered={ordered}
         dayOfWeek={dayOfWeek}
         direction={direction}
-        fromId={fromId}
-        toId={toId}
-        rangeNames={rangeNames}
-        canSave={Boolean(range)}
         pending={pending}
         previewing={previewing}
         repeating={repeating}
@@ -148,9 +140,7 @@ export function ShipperTripPlanner({ shipperId, weekStart, stops, trips, preview
         error={error}
         onDay={setDayOfWeek}
         onDirection={setDirection}
-        onFrom={setFromId}
-        onTo={setToId}
-        onAdd={onAdd}
+        onSave={onSave}
       />
     </section>
   )

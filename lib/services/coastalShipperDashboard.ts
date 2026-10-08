@@ -14,6 +14,7 @@ import {
   setCoastalShipperPrice,
   setCoastalShipperRunEnabled,
   setCoastalShipperScheduleEnabled,
+  ensureOrderedCoastalStops,
   upsertCoastalShipperRun,
   updateCoastalDeliverySnapshots,
   updateCoastalDeliveryStatus,
@@ -35,7 +36,7 @@ import {
   type CoastalSaleOrder,
 } from "@/lib/services/coastalAddressSnapshot"
 import { authorizeCoastalShipperView, coastalJobVisibleToShipper } from "@/lib/services/coastalShipperAccess"
-import { coastalContinuousStopIds, pacificWeekDateIso } from "@/lib/services/coastalDeliveryMatch"
+import { pacificWeekDateIso } from "@/lib/services/coastalDeliveryMatch"
 import { isoWeekday, tripsForWeek } from "@/lib/services/coastalShipperWeek"
 import { buildCoastalRunSheet, type CoastalJobDraft } from "@/lib/services/coastalShipperRunSheet"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
@@ -162,7 +163,7 @@ export async function saveCoastalShipperTrip(input: {
   dayOfWeek: number
   direction: CoastalDirection
   enabled: boolean
-  stopIds: string[]
+  stops: { city: string; state: string | null; latitude: number; longitude: number }[]
   serviceDate: string | null
 }): Promise<Mutation> {
   try {
@@ -171,15 +172,10 @@ export async function saveCoastalShipperTrip(input: {
     if (input.serviceDate && isoWeekday(input.serviceDate) !== input.dayOfWeek) {
       return { ok: false, error: "That date does not fall on that day." }
     }
-    const stops = await listCoastalStops(gate.db)
-    const ordered = [...stops].sort((a, b) => a.sortOrder - b.sortOrder)
-    const chosen = new Set(input.stopIds)
-    const chosenStops = ordered.filter((stop) => chosen.has(stop.id))
-    const south = chosenStops[0]
-    const north = chosenStops[chosenStops.length - 1]
-    const range = south && north ? coastalContinuousStopIds(ordered, south.id, north.id) : null
-    if (!range || range.length !== chosenStops.length) {
-      return { ok: false, error: "Pick a continuous set of towns, south to north." }
+    if (input.stops.length < 2) return { ok: false, error: "Pick a From city and a To city." }
+    const stopIds = await ensureOrderedCoastalStops(gate.db, input.stops)
+    if (new Set(stopIds).size !== stopIds.length) {
+      return { ok: false, error: "Each city on a trip has to be different." }
     }
     await upsertCoastalShipperRun(gate.db, {
       shipperId: gate.schedule.id,
@@ -187,7 +183,7 @@ export async function saveCoastalShipperTrip(input: {
       dayOfWeek: input.dayOfWeek,
       direction: input.direction,
       enabled: input.enabled,
-      stopIds: range,
+      stopIds,
       serviceDate: input.serviceDate,
     })
     return { ok: true }
