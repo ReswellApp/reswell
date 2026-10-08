@@ -26,6 +26,7 @@ import { assertBuyerMayPurchaseListingExclusiveWindow } from "@/lib/services/lis
 import { isBlockedOwnListingPurchase } from "@/lib/cart-eligibility"
 import { readAdAttributionFromCookies } from "@/lib/ads/read-request-attribution"
 import { insertOrderAdAttribution } from "@/lib/db/orderAdAttribution"
+import { attachListingInventorySources } from "@/lib/db/listingInventorySource"
 import { listingSoldViaCheckoutUpdate } from "@/lib/listing-sold-state"
 import { isShopifyManagedListing } from "@/lib/shopify/listing"
 
@@ -66,7 +67,7 @@ export async function POST(request: NextRequest) {
 
   const { data: listing, error: listingError } = await supabase
     .from("listings")
-    .select("id, user_id, title, price, section, slug, shipping_available, local_pickup, shipping_price, status, stock_quantity, inventory_source")
+    .select("id, user_id, title, price, section, slug, shipping_available, local_pickup, shipping_price, status, stock_quantity")
     .eq("id", listing_id)
     .eq("status", "active")
     .eq("hidden_from_site", false)
@@ -76,13 +77,21 @@ export async function POST(request: NextRequest) {
   if (listingError || !listing) {
     return NextResponse.json({ error: "Listing not found or not available" }, { status: 404 })
   }
+  const sourcedListing = await attachListingInventorySources(supabase, [listing])
+  if (!sourcedListing.ok) {
+    return NextResponse.json({ error: sourcedListing.error }, { status: 500 })
+  }
+  const purchasable = sourcedListing.listings[0]
+  if (!purchasable) {
+    return NextResponse.json({ error: "Listing not found or not available" }, { status: 404 })
+  }
   if (
-    isShopifyManagedListing(listing) &&
-    Math.max(0, Math.floor(Number(listing.stock_quantity) || 0)) < 1
+    isShopifyManagedListing(purchasable) &&
+    Math.max(0, Math.floor(Number(purchasable.stock_quantity) || 0)) < 1
   ) {
     return NextResponse.json({ error: "This Shopify item is out of stock" }, { status: 409 })
   }
-  if (isShopifyManagedListing(listing)) {
+  if (isShopifyManagedListing(purchasable)) {
     return NextResponse.json(
       {
         error:

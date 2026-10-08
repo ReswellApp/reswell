@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto"
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
 import { isBlockedOwnListingPurchase, isCartEligibleSection } from "@/lib/cart-eligibility"
+import { attachListingInventorySources } from "@/lib/db/listingInventorySource"
 import { fetchAcceptedOffersForBuyerListings } from "@/lib/db/offers"
 import { trackKlaviyoAddedToCart } from "@/lib/klaviyo/track-added-to-cart"
 import { listingTileImageSrcFromRow } from "@/lib/listing-image-display"
@@ -80,7 +81,7 @@ async function assertListingEligibleForCart(
   const { data: row, error } = await supabase
     .from("listings")
     .select(
-      "id, user_id, section, status, local_pickup, shipping_available, hidden_from_site, archived_at, stock_quantity, inventory_source",
+      "id, user_id, section, status, local_pickup, shipping_available, hidden_from_site, archived_at, stock_quantity",
     )
     .eq("id", listingId)
     .maybeSingle()
@@ -90,31 +91,39 @@ async function assertListingEligibleForCart(
   }
 
   const listing = row as CartEligibleListing
-  if (!isListingPurchasable(listing)) {
+  const sourced = await attachListingInventorySources(supabase, [listing])
+  if (!sourced.ok) {
+    return { ok: false, message: sourced.error }
+  }
+  const ready = sourced.listings[0]
+  if (!ready) {
+    return { ok: false, message: "Listing not found" }
+  }
+  if (!isListingPurchasable(ready)) {
     return { ok: false, message: "This listing is not available" }
   }
-  if (!isCartEligibleSection(listing.section)) {
+  if (!isCartEligibleSection(ready.section)) {
     return { ok: false, message: "This listing cannot be added to cart" }
   }
-  const lp = listing.local_pickup !== false
-  const sa = !!listing.shipping_available
+  const lp = ready.local_pickup !== false
+  const sa = !!ready.shipping_available
   if (!lp && !sa) {
     return { ok: false, message: "This listing has no checkout option" }
   }
-  if (isBlockedOwnListingPurchase(listing, buyerId)) {
+  if (isBlockedOwnListingPurchase(ready, buyerId)) {
     return { ok: false, message: "You cannot add your own listing" }
   }
   if (
-    isReswellShopListing(listing.section) ||
-    isShopifyManagedListing(listing)
+    isReswellShopListing(ready.section) ||
+    isShopifyManagedListing(ready)
   ) {
-    const stock = Math.max(0, Math.floor(Number(listing.stock_quantity) || 0))
+    const stock = Math.max(0, Math.floor(Number(ready.stock_quantity) || 0))
     if (stock < 1) {
       return { ok: false, message: "This item is out of stock" }
     }
   }
 
-  if (isPeerListingSection(listing.section)) {
+  if (isPeerListingSection(ready.section)) {
     const exclusiveCheck = await assertBuyerMayPurchaseListingExclusiveWindow(
       supabase,
       listingId,
@@ -125,7 +134,7 @@ async function assertListingEligibleForCart(
     }
   }
 
-  return { ok: true, listing }
+  return { ok: true, listing: ready }
 }
 
 export type AddCartItemResult = {
@@ -559,7 +568,6 @@ export async function getCartPageItems(): Promise<{
         board_type,
         dimensions,
         stock_quantity,
-        inventory_source,
         hidden_from_site,
         archived_at,
         listing_images ( url, thumbnail_url, is_primary ),
@@ -571,7 +579,8 @@ export async function getCartPageItems(): Promise<{
     .order("created_at", { ascending: false })
 
   if (error) {
-    return { items: [], error: error.message }
+    console.error("[cart] getCartPageItems:", error.message)
+    return { items: [], error: "We couldn't load your cart. Refresh and try again." }
   }
 
   const items: CartPageItem[] = []

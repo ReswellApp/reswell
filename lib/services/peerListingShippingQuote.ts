@@ -16,6 +16,10 @@ import {
 /**
  * Supabase `listings` select fragment for peer surfboard checkout + ShipEngine.
  * Used by shipping quotes, payment intent creation, and order finalization so inputs never drift.
+ *
+ * `inventory_source` stays off this fragment. Purchase paths load it through
+ * `attachListingInventorySources` so cart and checkout still run before
+ * migration `20271015120000_shopify_inventory_mvp.sql` is applied.
  */
 export const PEER_SURFBOARD_CHECKOUT_LISTING_SELECT = `
   id,
@@ -24,7 +28,6 @@ export const PEER_SURFBOARD_CHECKOUT_LISTING_SELECT = `
   title,
   price,
   section,
-  inventory_source,
   shipping_available,
   local_pickup,
   shipping_price,
@@ -72,7 +75,8 @@ export type PeerSurfboardCheckoutListingRow = PeerListingForShippingQuote & {
   price: string | number
   title: string | null
   section: string | null
-  inventory_source: string | null
+  /** Set by `attachListingInventorySources` on Shopify-aware purchase paths. */
+  inventory_source?: string | null
   status: string | null
   local_pickup: boolean | null
   shipping_available: boolean | null
