@@ -1,0 +1,37 @@
+import { NextRequest, NextResponse } from "next/server"
+import { mobileListingsQuerySchema } from "@reswell/api-contract"
+import { listMobileListingsService } from "@/lib/services/mobileApi"
+
+export const dynamic = "force-dynamic"
+
+export async function GET(request: NextRequest) {
+  try {
+    const parsed = mobileListingsQuerySchema.safeParse({
+      limit: request.nextUrl.searchParams.get("limit") ?? undefined,
+      offset: request.nextUrl.searchParams.get("offset") ?? undefined,
+    })
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid listings query" }, { status: 400 })
+    }
+
+    const result = await listMobileListingsService(parsed.data.limit, parsed.data.offset)
+    if (!result.ok) {
+      return NextResponse.json({ error: result.error }, { status: result.status })
+    }
+
+    return NextResponse.json(
+      { data: result.data },
+      {
+        status: 200,
+        headers: { "Cache-Control": "public, s-maxage=30, stale-while-revalidate=120" },
+      },
+    )
+  } catch (error) {
+    console.error("[mobile-api] listings failed", {
+      route: "/api/mobile/v1/listings",
+      timestamp: new Date().toISOString(),
+      message: error instanceof Error ? error.message : String(error),
+    })
+    return NextResponse.json({ error: "Unable to load listings right now" }, { status: 500 })
+  }
+}

@@ -25,6 +25,9 @@
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "@reswell/api-contract": [
+        "./packages/api-contract/src/index.ts"
       ]
     }
   },
@@ -36,6 +39,7 @@
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "apps/mobile"
   ]
 }
