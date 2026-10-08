@@ -1,0 +1,199 @@
+{
+  "generated_for": "Vernor Surfboards official named standup catalog",
+  "source": "https://vernorsurfboards.com/boards (official Next.js model pages — excludes fins, apparel, and custom-order deposits)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "vernor-surfboards",
+      "name": "Vernor Surfboards",
+      "website_url": "https://vernorsurfboards.com/",
+      "location_label": "Watsonville, California",
+      "founder_name": "David Vernor",
+      "lead_shaper_name": "David Vernor",
+      "short_description": "Hand-shaped high-performance surfboards by David Vernor in Watsonville, California — shortboards, twins, midlengths, logs, and step-ups built for Santa Cruz waves.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/vernor-surfboards.png",
+      "models": [
+        {
+          "name": "Techno Twin",
+          "image_url": "https://vernorsurfboards.com/img/boards/TT2.png",
+          "description": "Introducing the Techno Twin ! This performance based twin is made for speed & agility. With its parallel outline, bullet nose, flat rocker, pulled in tidy wing-swallow tail, and unique dual exhaust channel out the tail, it will have you going Mach 3 right at takeoff! We pulled elements from many different models in David's lineup to make this board the perfect daily driver twin in your quiver! From knee high to a few feet overhead, you'll be impressed with its control and playfulness. Designed as a twin plus trailer, using Vernor's Naked Viking Twin Trailer fin set. When using this fin set, expect exceptional drive and control and the ability to go vertical in the lip. As an alternative for when the waves are sub-par, use Vernor's Naked Viking Magic Twins as a true twin for speed generation and that addictive free flowing twin fin feel. Meant to be ridden short, advanced to intermediate surfers should order it at your height or a few inches shorter. For the intermediate to novice surfer, order it a couple inches or more over your height and add 1/2 in. of width. Foam is your friend! The Techno Twin represents a successful 11 year shaper & surfer relationship & I'm sure you're going to love it! -Eric",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Drifter",
+          "image_url": "https://vernorsurfboards.com/img/boards/Drifter.jpg",
+          "description": "The Drifter was designed to pack a high volume of foam into a compact shape. It features a broad outline coupled with a fish-like nose for easy entry into waves. Rather than a swallow tail, it sports a diamond tail, enabling you to position your foot further back for enhanced drive along the shorter rail line. The board has a flat deck and low apex rails, contributing to its excellent paddling capabilities and effortless rail-to-rail transitions. Minimal effort is needed to get the Drifter up to speed; its deep double-barrel concave not only generates rapid acceleration but also offers lift off the back foot and exceptional grip during turns.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Chef",
+          "image_url": "https://vernorsurfboards.com/img/boards/carbonchef-web.png",
+          "description": "The chef is a tweaked version of the rubble that David and I worked on together. We wanted to create a board that would enhance my aerial surfing yet have a curvy outline to surf in the pocket. By adding more width in the nose and tail, the board feels like a skateboard, single concave, ultra-fast and loose! If you want to push your surfing to the next level, this is the board for you! - Noah Threlked",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Da Bear",
+          "image_url": "https://vernorsurfboards.com/img/boards/DaBear.png",
+          "description": "\"Da Bear\" longboard surfboard, designed for surfers who seek to elevate their performance. This model stands out with its refined, slightly narrower outline, tailored to enhance maneuverability and speed. Crafted for versatility, \"Da Bear\" accommodates any fin setup, which allows it to work in all conditions. From carving on small waves to charging overhead+, this board provides the precision and responsiveness needed for leveling up your surfing. With its balanced design, \"Da Bear\" is a solid choice for surfers looking to push their limits while maintaining the longboard feel.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Shapers Choice",
+          "image_url": "https://vernorsurfboards.com/img/boards/ShapersChoiceAll.jpg",
+          "description": "This is my year round personal model. I feel this is the most versatile shortboard in the water. Combined maneuverability and surface area create easier entry in the wave, tighter turning radius, and down the line speed. By widening the mid template area in-between your feet allows you to generate more down the line speed. The wings bring the template in for a tighter turning radius and overall performance. This board is the most important part of my personal quiver -Vernor",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Triplane",
+          "image_url": "https://vernorsurfboards.com/img/boards/trip_all_white_copy.png",
+          "description": "The Triplane started as a design for a longboard for a person who wanted more paddling speed, and a more lively performer vs. a plank. Since its inception, it has also turned a shorter eggy-type shortboard into a mor eversatile all around knee to head-high performer. If you are looking for a board that paddles way better than its volume, but you don't have to pump it to get it going like a fish, you'll have a blast! And, if you do pump it, it flies! Dave makes this board from 6'4\" to 9'6\". EPS or POLY. The 6'4\" stringerless EPS is awesome!",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Roadster",
+          "image_url": "https://vernorsurfboards.com/img/boards/All3.jpg",
+          "description": "Dave shaped me this board about 6 years ago. I wanted a board with the wide point forward and a slight concave under the chest. He naied it! From waist-high to way overhead! Great paddler and you can ride it from the tail, or more up and it speeds through sections or flat spots. Mine is poly, but also comes in EPS. --- Blair Rhodes - Owner, Chauncey's Surf-O-Rama",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Da Bomb",
+          "image_url": "https://vernorsurfboards.com/img/boards/DaBombAll.jpg",
+          "description": "I have been surfing DA BOMB now for the past month. I have been riding it in waist to 1ft overhead conditions. LOVE IT!!! This board is a rocket ship right from takeoff, tons of speed and drive. I have really enjoyed the boards response when its chest to shoulder high. I feel like it really excels in fast down the line surfing (barrels) and then releases well off the lip on finishing maneuvers. This board is the goto for small-medium size surf(2-6ft). I ride it as a quad with AM Blackstix and quad rear QDR-2.0 trailer Future fins. David knocked one out of the ballpark with a grand-slam. This board rips!!! --- Jeff Carver, REAL Watersports",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Tree Hugger",
+          "image_url": "https://vernorsurfboards.com/img/boards/main-treehugger.jpg",
+          "description": "The Tree Hugger starts with a \"Simmons Like\" entry that provides extremely fast paddling into the wave. The shape of the board lends itself to high performance surfing, with a nod to the retro inspired hipsters. We suggest riding the board between 6’6 and 8’0 and in a variety of conditions (between 2’ and 8’).",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Mini Simmons",
+          "image_url": "https://vernorsurfboards.com/img/boards/main-mini-simmons.jpg",
+          "description": "Old and new ideas come together, this displacement hull and almost no rocker has been improved by ending the tail with a double con cave and a 4-fin setup. the fastest board I've ever ridden. - David Vernor",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Wild Thing",
+          "image_url": "https://vernorsurfboards.com/img/boards/main-wild-thing.jpg",
+          "description": "This is the Wild Thing! A hybrid Simmons that turns like a performance shortboard. It can be configured as a 4-fin or 3-fin, has bottom contours and concaves of the Mini Simmons, has a flatter deck and a more aggressive tail rocker. It is a little narrower and about 1 1/2 liters (4 beers) less volume than the Mini Simmons. The Wild Thing is a great summer board to get WILD on!",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Barracuda",
+          "image_url": "https://vernorsurfboards.com/img/boards/main-barracuda.jpg",
+          "description": "The Barracuda is our version of a high-performance four fin fish, with more short board feeling rails and a thinned out tail! This board glides like a fish and explodes and reacts like your normal short board. The quad-fin set up holds a higher line in the more critical part of the wave. The Barracuda gives you the best of both worlds. - David Vernor",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Hunter",
+          "image_url": "https://vernorsurfboards.com/img/boards/main-hunter.jpg",
+          "description": "The Hunter is our newest, larger-volume, foam-forward, single concave step up model. The nose template allows you to ride it 4-6 inches shorter than the Scorpion in the same conditions. You have the shortest board built for performance and control on the biggest waves.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Hellbilly",
+          "image_url": "https://vernorsurfboards.com/img/boards/main-hellbilly.jpg",
+          "description": "The story: I reached out to David telling him I needed a board that was specifically for low tide shorebreak. Something that paddled fast and was responsive enough for under the lip take offs, loose and manueverable to pump through barrels. My 5'10 is 3 inches thick. I asked for extra float to paddle fast and float me in a 5mm suit. I also asked for this board to have David's special epoxy application with a round pin and 5 fin set up. The name the Hellbilly came from my love for the outdoors and outlaw country music. - Colin",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Donkey Jumper II",
+          "image_url": "https://vernorsurfboards.com/img/boards/main-donkey-ii.jpg",
+          "description": "Short, wide and ugly, but fun and fast. We designed this board for small to med surf with an emphasis on the launch!!!!!!",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "The Rubble",
+          "image_url": "https://vernorsurfboards.com/img/boards/main-rubble.jpg",
+          "description": "This is my personal Rubble! And here’s the Tech story for you. This is an I-foam blank from Marko foam with a bamboo stringer, its laminated with1 layer of s-glass on both sides, suspension on the inside and vector-net with carbon pro-toes on the deck. This is my favorite go-to board that snaps off the bottom and top better than anything I have ever ridden. The recoil and spring are unbelievable with these materials you won’t be disappointed!",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Thumbtack",
+          "image_url": "https://vernorsurfboards.com/img/boards/main-thumbtack.jpg",
+          "description": "The guys at Aqua Surf Shop in San Francisco said it best, “The Thumbtack is all of Vernor’s boards rolled into one!” It’s easy to use, stable, fast and turns on a dime! This is a very user-friendly board that has a place in anybody’s quiver, from just learning to the full on ripper.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "The Egg",
+          "image_url": "https://vernorsurfboards.com/img/boards/main-egg.jpg",
+          "description": "The Egg is the perfect board for any surfer from beginner to advanced. This board glides in easy and turns on a dime. The whole family can benefit from having an egg in there household. It will be a go to for the kids or when Dad just wants to catch all the waves.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Scorpion",
+          "image_url": "https://vernorsurfboards.com/img/boards/main-scorpion.jpg",
+          "description": "The Scorpion is a great good-wave board for shoulder to double over head and can be used as a step-up board for most intermediate and higher level surfers. This board has low entry rocker with a single to double concave that ends with a 3/8” vee at the tail. The round pin provides easy rail to rail transitions in and out of the pocket with plenty of outline curve for vertical transitions. The 3 or 4 fin options make this boards into one of the best travel boards in our lineup",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Silver Bullet II",
+          "image_url": "https://vernorsurfboards.com/img/boards/main-silver-ii.jpg",
+          "description": "This is one of my favorite boards to ride. This board has a displacement hull in the front in to a Vee’d out double concave that ends in a round fang in the tail. This board has Mini-Simmons speed and the ability to go vertical at any moment. I have 5 fins boxes in this board so that I can ride it as a 3-fin for going hyper on the lip. I throw the quad fins in for tube riding and easy gliding transitions through flat sections.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Dump Truck",
+          "image_url": "https://vernorsurfboards.com/img/boards/main-dump-truck.jpg",
+          "description": "David has incorporated all of his years of shaping mastery into the ultimate summertime board. Short and wide with low entry rocker and single to double concave with vee out the tail. This performance short board is incredibly fast and loose. David rides this model with the Future T1 fins. Perfect travel board, this shape is best suited for waves one foot to head high. Get one now!",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "The Driver",
+          "image_url": "https://vernorsurfboards.com/img/boards/main-driver.jpg",
+          "description": "The Driver is my favorite rounded pin, performance shortboard. With a full outline and 16 inch tail, it picks up and moves at hyper-speed! The single concave holds that speed through the turns to the point that I almost buckled my knee on one of the fastest round-house cutbacks of my life last January. People came up to me and were super excited about how fast I was turning the board!",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Pitbull",
+          "image_url": "https://vernorsurfboards.com/img/boards/main-pitbull.jpg",
+          "description": "The Pitbull is as comfortable going vertical as it driving through sections. The displacement hull belly transitions to a double concave and a V panel behind the rear fin. The narrower tail and outline is the next step in my refinement of high performance Simmons inspired hulls.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Assassin",
+          "image_url": "https://vernorsurfboards.com/img/boards/main-assassin.jpg",
+          "description": "The assassin is the big brother to the rocco, it is the best all around short board and should be ridden 1 inch shorter than your standard shorty, if you want to win heats or upgrade your stoke this is your go to board in 2 to 6 foot surf! The first documented kickflip as performed by Zoltan Torkos using the Assassin model with I-Beam suspension.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Hybrid",
+          "image_url": "https://vernorsurfboards.com/img/boards/main-hybrid.jpg",
+          "description": "This is the most user friendly surfboard on the market. The thickness from your crotch to your chest area resembles a 9' longboard and the width in the nose gives you a paddling advantage. From the middle of the board to the tail you have characteristics of a contemporary shortboard. Having one of these boards in your quiver will definitely improve your wave count and stoke.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Longboard",
+          "image_url": "https://vernorsurfboards.com/img/boards/perf_long.001.png",
+          "description": "The 9'0\" performance longboard can be used at 2' Waikiki beach to 6' Steamer Lane. This longboard incorporates stylish nose riding and can do floaters and off the lip depending on where you stand on the board. This board is designed to be ridden from nose to tail and everywhere in-between.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Rocco",
+          "image_url": "https://vernorsurfboards.com/img/boards/main-rocco.jpg",
+          "description": "Very low entry rocker and extended tail kick for tight rail turns. The ROCCO has the deepest single concave we have ever put in a board, creating rocker on the rails and flatness through the center.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Baker",
+          "image_url": "https://vernorsurfboards.com/img/boards/main-baker.jpg",
+          "description": "The Baker is our newest idea in high-performance twin-fins that can also be ridden as a thruster. The Baker is super-fast and loose with a single or double-concave, accelerated-V out the tail, and a big nose so we can push more volume forward. This allows for super-easy wave catching. I recommend getting this board 2 inches smaller than your Chef.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Double Barrel Shotgun",
+          "image_url": "https://vernorsurfboards.com/img/boards/main-db-shotgun.jpg",
+          "description": "The Double Barrel Shotgun (DBS) is my newest creation for the Spring/Summer of 2014. Just like the Mini Simmons and the Silver Bullet II, the DBS has a displacement hull in the front with a double concave toward the tail. This allows the board to glide across flat sections while still being able to go vertical. Adaptable in conditions from one foot up to a few feet overhead. This particular board is my favorite for traveling because it’s so versatile. The 5 fin boxes setup allows the rider to play with different fin setups. I prefer to use the Future Fins T1 setup. This board is a must for any quiver.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Log",
+          "image_url": "https://vernorsurfboards.com/img/boards/main-log.jpg",
+          "description": "A contemporary version of the old classic noserider, the log combines classic rocker and rail shape with a more modern volume distribution that allows for a much more user friendly experience for riders of all levels. 50/50 rails and increased tail rocker allow for maximum hold and control while riding the nose. Within the glass job comes a standard knee paddle patch that adds extra strength to the deck of the board and an increased amount of weight to create a smooth glide through the water. Wether it is technical noserides, or simply just cruzing that you are after, the log is right for you!",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
