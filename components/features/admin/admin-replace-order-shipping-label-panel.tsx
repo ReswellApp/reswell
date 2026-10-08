@@ -58,7 +58,15 @@ type Overview = {
   buyerAddressSummary: string | null
   shipTo: AddressFields | null
   warnings: string[]
-  shipFromSource: "seller" | "admin"
+  suggestedParcel: {
+    lengthIn: string
+    widthIn: string
+    heightIn: string
+    weightLb: string
+    weightOz: string
+    ruleLabel: string
+  } | null
+  shipFromSource: "seller" | "admin" | "dropoff"
   shipFromAddresses: Array<{
     id: string
     label: string
@@ -205,6 +213,14 @@ export function AdminReplaceOrderShippingLabelPanel({
         body.data.shipFromAddresses.find((a) => a.id === preferred)?.fields ?? EMPTY_ADDRESS,
       )
       setShipTo(body.data.shipTo ?? EMPTY_ADDRESS)
+      const parcel = body.data.suggestedParcel
+      if (parcel) {
+        setLengthIn(parcel.lengthIn)
+        setWidthIn(parcel.widthIn)
+        setHeightIn(parcel.heightIn)
+        setWeightLb(parcel.weightLb)
+        setWeightOz(parcel.weightOz)
+      }
       setRates(null)
       setSelectedRateId("")
       setQuoteMeta(null)
@@ -272,7 +288,7 @@ export function AdminReplaceOrderShippingLabelPanel({
           rates: RateOption[]
           shipFromSummary: string
           shipToSummary: string
-          shipFromSource: "seller" | "admin"
+          shipFromSource: "seller" | "admin" | "dropoff"
         }
         error?: string
       }
@@ -411,12 +427,16 @@ export function AdminReplaceOrderShippingLabelPanel({
         </div>
         <div className="min-w-0 space-y-1">
           <p className="text-sm font-semibold tracking-tight text-foreground">
-            Exact box — replace UPS label
+            {overview.shipFromSource === "dropoff"
+              ? "Santa Barbara drop-off label"
+              : "Exact box — replace UPS label"}
           </p>
           <p className="text-xs text-muted-foreground leading-relaxed">
-            Edit the ship-from or ship-to address, or the measured box size. Get live UPS rates,
-            void the old label, and buy a new one. The order&apos;s shipping address updates to the
-            ship-to you enter. Reswell pays for the replacement.
+            {overview.shipFromSource === "dropoff"
+              ? overview.suggestedParcel
+                ? `Box from the Santa Barbara drop-off rules (${overview.suggestedParcel.ruleLabel}). Buy the label from that location. It is saved on this order for admin. The seller does not get the file.`
+                : "This order uses the Santa Barbara drop-off. Buy the label from that location with the location box size. The seller does not get the file."
+              : "Edit the ship-from or ship-to address, or the measured box size. Get live UPS rates, void the old label, and buy a new one. The order's shipping address updates to the ship-to you enter. Reswell pays for the replacement."}
           </p>
         </div>
       </div>
@@ -461,6 +481,18 @@ export function AdminReplaceOrderShippingLabelPanel({
         </Alert>
       ) : null}
 
+      {overview.shipFromSource === "dropoff" ? (
+        <Alert>
+          <AlertTitle>Ships from Santa Barbara</AlertTitle>
+          <AlertDescription>
+            Origin is the drop-off, not the seller&apos;s home address.
+            {overview.suggestedParcel
+              ? ` Carton ${overview.suggestedParcel.lengthIn} × ${overview.suggestedParcel.widthIn} × ${overview.suggestedParcel.heightIn} in, ${overview.suggestedParcel.weightLb} lb.`
+              : ""}
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
       {overview.shipFromSource === "admin" && overview.shipFromAddresses.length > 0 ? (
         <Alert>
           <AlertTitle>Using admin ship-from</AlertTitle>
@@ -474,7 +506,11 @@ export function AdminReplaceOrderShippingLabelPanel({
       {overview.shipFromAddresses.length > 1 ? (
         <div className="space-y-2">
           <Label htmlFor="replace-label-ship-from-saved" className="text-sm font-medium">
-            {overview.shipFromSource === "admin" ? "Saved admin ship from" : "Saved seller ship from"}
+            {overview.shipFromSource === "dropoff"
+              ? "Ship from"
+              : overview.shipFromSource === "admin"
+                ? "Saved admin ship from"
+                : "Saved seller ship from"}
           </Label>
           <Select
             value={shipFromAddressId}

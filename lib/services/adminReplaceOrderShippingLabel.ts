@@ -12,7 +12,10 @@ import { attachAdminShippingLabelToOrder } from "@/lib/services/adminOrderShippi
 import { fetchRatesForSurfboardOrder } from "@/lib/services/orderShippingLabel"
 import { purchaseShipEngineLabelForOrderOnce } from "@/lib/services/purchaseShipEngineLabelForOrderOnce"
 import { voidShipEngineLabelForOrder } from "@/lib/services/voidShipEngineLabelForOrder"
-import { PEER_SURFBOARD_CHECKOUT_LISTING_SELECT } from "@/lib/services/peerListingShippingQuote"
+import {
+  PEER_SURFBOARD_CHECKOUT_LISTING_SELECT,
+  type PeerListingForShippingQuote,
+} from "@/lib/services/peerListingShippingQuote"
 import { applyRateQuoteAddressToOrderShippingJson } from "@/lib/shipping/order-shipping-json"
 import {
   orderShippingJsonToRateQuoteAddress,
@@ -21,6 +24,8 @@ import {
 } from "@/lib/shipping/rate-address"
 import { validateLabelParcelEntry } from "@/lib/shipping/surfboard-label-limits"
 import { resolveSellerShipFromAddress } from "@/lib/services/sellerShipFromAddress"
+import { prepareSantaBarbaraDropoffListingsForLabel } from "@/lib/services/santaBarbaraDropoffLabelParcel"
+import type { SantaBarbaraExactParcelFields } from "@/lib/services/santaBarbaraDropoffLabelParcel"
 
 export type AdminExactParcel = {
   lengthIn: number
@@ -38,6 +43,23 @@ function filterUpsRates(rates: ShipEngineRateOption[]): ShipEngineRateOption[] {
   return rates.filter(isUpsRate)
 }
 
+const LISTING_REPLACE_FALLBACK_SELECT = `
+  id,
+  title,
+  section,
+  user_id,
+  dimensions,
+  city,
+  state,
+  dropoff_location_id,
+  shipping_packed_length_in,
+  shipping_packed_width_in,
+  shipping_packed_height_in,
+  shipping_packed_weight_oz,
+  shipping_package_tier,
+  shipping_package_band
+`.trim()
+
 type OrderRowForReplace = {
   id: string
   order_num: string | null
@@ -51,6 +73,50 @@ type OrderRowForReplace = {
   tracking_number: string | null
   tracking_carrier: string | null
   listings: Record<string, unknown> | Record<string, unknown>[] | null
+}
+
+async function loadListingForReplace(
+  supabase: SupabaseClient,
+  listingId: string,
+): Promise<
+  | { ok: true; listing: Record<string, unknown> }
+  | { ok: false; error: string; status: number }
+> {
+  const full = await supabase
+    .from("listings")
+    .select(PEER_SURFBOARD_CHECKOUT_LISTING_SELECT)
+    .eq("id", listingId)
+    .maybeSingle()
+
+  if (full.error) {
+    console.error(
+      "[adminReplaceOrderShippingLabel] listing select:",
+      full.error.code,
+      full.error.message,
+    )
+  } else if (full.data && typeof full.data === "object") {
+    return { ok: true, listing: full.data as Record<string, unknown> }
+  } else {
+    return { ok: false, error: "Listing not found for this order.", status: 400 }
+  }
+
+  const fallback = await supabase
+    .from("listings")
+    .select(LISTING_REPLACE_FALLBACK_SELECT)
+    .eq("id", listingId)
+    .maybeSingle()
+  if (fallback.error) {
+    console.error(
+      "[adminReplaceOrderShippingLabel] listing fallback:",
+      fallback.error.code,
+      fallback.error.message,
+    )
+    return { ok: false, error: "Could not load the listing for this order.", status: 500 }
+  }
+  if (!fallback.data || typeof fallback.data !== "object") {
+    return { ok: false, error: "Listing not found for this order.", status: 400 }
+  }
+  return { ok: true, listing: fallback.data as Record<string, unknown> }
 }
 
 async function loadOrderForReplace(
@@ -74,24 +140,28 @@ async function loadOrderForReplace(
       delivery_status,
       shipping_address,
       tracking_number,
-      tracking_carrier,
-      listings (
-        ${PEER_SURFBOARD_CHECKOUT_LISTING_SELECT}
-      )
+      tracking_carrier
     `,
     )
     .eq("id", orderId)
     .maybeSingle()
 
-  if (error || !order) {
+  if (error) {
+    console.error("[adminReplaceOrderShippingLabel] order load:", error.code, error.message)
+    return { ok: false, error: "Could not load this order.", status: 500 }
+  }
+  if (!order) {
     return { ok: false, error: "Order not found", status: 404 }
   }
 
   const o = order as unknown as OrderRowForReplace
-  const listing = Array.isArray(o.listings) ? o.listings[0] : o.listings
-  if (!listing || typeof listing !== "object") {
+  const listingId = typeof o.listing_id === "string" ? o.listing_id.trim() : ""
+  if (!listingId) {
     return { ok: false, error: "Listing not found for this order.", status: 400 }
   }
+  const loadedListing = await loadListingForReplace(supabase, listingId)
+  if (!loadedListing.ok) return loadedListing
+  const listing = loadedListing.listing
   if (!isPeerListingSection((listing as { section?: string }).section)) {
     return {
       ok: false,
@@ -116,7 +186,7 @@ async function loadOrderForReplace(
   return { ok: true, order: o, listing: listing as Record<string, unknown> }
 }
 
-export type AdminReplaceShipFromSource = "seller" | "admin"
+export type AdminReplaceShipFromSource = "seller" | "admin" | "dropoff"
 
 function addressOneLine(ar: ProfileAddressRow): string {
   return [ar.line1, [ar.city, ar.state, ar.postal_code].filter(Boolean).join(", ")]
@@ -222,7 +292,9 @@ export async function getAdminReplaceOrderShippingLabelOverview(params: {
         shipTo: AdminReplaceLabelAddress | null
         /** Notes that do not block quoting — the admin can type a corrected address. */
         warnings: string[]
-        /** Active ship-from list: seller addresses, or admin when seller has none. */
+        /** Santa Barbara drop-off carton for this board, when a location box rule matches. */
+        suggestedParcel: SantaBarbaraExactParcelFields | null
+        /** Active ship-from list: drop-off, seller, or admin. */
         shipFromSource: AdminReplaceShipFromSource
         shipFromAddresses: Array<{
           id: string
@@ -254,11 +326,32 @@ export async function getAdminReplaceOrderShippingLabelOverview(params: {
     }
   }
   const adminRows = await loadProfileAddresses(params.supabase, params.adminUserId)
-  const shipFromSource: AdminReplaceShipFromSource =
+  const dropoffPlan = await prepareSantaBarbaraDropoffListingsForLabel({
+    supabase: params.supabase,
+    sellerId: order.seller_id,
+    listings: [listing as PeerListingForShippingQuote],
+  })
+  let shipFromSource: AdminReplaceShipFromSource =
     effectiveSellerRows.length > 0 ? "seller" : "admin"
-  const shipFromAddresses = (shipFromSource === "seller" ? effectiveSellerRows : adminRows).map(
+  let shipFromAddresses = (shipFromSource === "seller" ? effectiveSellerRows : adminRows).map(
     toShipFromOption,
   )
+  let suggestedParcel: SantaBarbaraExactParcelFields | null = null
+  if (dropoffPlan.applies && dropoffPlan.ok) {
+    suggestedParcel = dropoffPlan.parcel
+    const dropoffOption = {
+      ...toShipFromOption(dropoffPlan.shipFrom),
+      label: "Santa Barbara drop-off",
+      isDefault: true,
+    }
+    shipFromSource = "dropoff"
+    shipFromAddresses = [
+      dropoffOption,
+      ...shipFromAddresses.map((address) => ({ ...address, isDefault: false })),
+    ]
+  } else if (dropoffPlan.applies) {
+    warnings.push(dropoffPlan.error)
+  }
 
   if (shipFromAddresses.length === 0) {
     warnings.push("No saved ship-from address. Enter the origin below before getting rates.")
@@ -297,6 +390,7 @@ export async function getAdminReplaceOrderShippingLabelOverview(params: {
       buyerAddressSummary,
       shipTo,
       warnings,
+      suggestedParcel,
       shipFromSource,
       shipFromAddresses,
     },
@@ -310,6 +404,8 @@ async function resolveAdminReplaceLane(params: {
   shipFromAddressId?: string | null
   shipFrom?: AdminReplaceLabelAddress | null
   shipTo?: AdminReplaceLabelAddress | null
+  /** Used when the typed origin is the drop-off, not a saved profile address. */
+  unmatchedExplicitSource?: AdminReplaceShipFromSource
 }): Promise<
   | {
       ok: true
@@ -332,6 +428,9 @@ async function resolveAdminReplaceLane(params: {
         shipFromAddressId: params.shipFromAddressId,
       })
       if (labeled.ok) shipFromSource = labeled.source
+      else if (params.unmatchedExplicitSource) shipFromSource = params.unmatchedExplicitSource
+    } else if (params.unmatchedExplicitSource) {
+      shipFromSource = params.unmatchedExplicitSource
     }
   } else {
     const shipFromRes = await resolveShipFromAddressForAdminReplace({
@@ -391,6 +490,20 @@ async function saveOrderShipToAddress(
   return { ok: true }
 }
 
+async function santaBarbaraReplaceLaneHint(params: {
+  supabase: SupabaseClient
+  sellerId: string
+  listing: Record<string, unknown>
+}): Promise<{ source?: "dropoff"; shipFrom: RateQuoteAddressFields | null }> {
+  const plan = await prepareSantaBarbaraDropoffListingsForLabel({
+    supabase: params.supabase,
+    sellerId: params.sellerId,
+    listings: [params.listing as PeerListingForShippingQuote],
+  })
+  if (!plan.applies || !plan.ok) return { shipFrom: null }
+  return { source: "dropoff", shipFrom: profileRowToRateQuoteAddress(plan.shipFrom) }
+}
+
 export async function quoteAdminExactParcelUpsRatesForOrder(params: {
   supabase: SupabaseClient
   orderId: string
@@ -418,13 +531,19 @@ export async function quoteAdminExactParcelUpsRatesForOrder(params: {
     return { ok: false, error: "ShipEngine is not configured.", status: 503 }
   }
 
+  const dropoffLane = await santaBarbaraReplaceLaneHint({
+    supabase: params.supabase,
+    sellerId: loaded.order.seller_id,
+    listing: loaded.listing,
+  })
   const resolved = await resolveAdminReplaceLane({
     supabase: params.supabase,
     order: loaded.order,
     adminUserId: params.adminUserId,
     shipFromAddressId: params.shipFromAddressId,
-    shipFrom: params.shipFrom,
+    shipFrom: params.shipFrom ?? dropoffLane.shipFrom,
     shipTo: params.shipTo,
+    unmatchedExplicitSource: dropoffLane.source,
   })
   if (!resolved.ok) return resolved
 
@@ -547,13 +666,19 @@ export async function purchaseAdminExactParcelReplacementLabelForOrder(params: {
   }
 
   // Confirm the lane still resolves. Parcel and addresses are baked into rate_id.
+  const dropoffLane = await santaBarbaraReplaceLaneHint({
+    supabase: params.supabase,
+    sellerId: loaded.order.seller_id,
+    listing: loaded.listing,
+  })
   const resolved = await resolveAdminReplaceLane({
     supabase: params.supabase,
     order: loaded.order,
     adminUserId: params.adminUserId,
     shipFromAddressId: params.shipFromAddressId,
-    shipFrom: params.shipFrom,
+    shipFrom: params.shipFrom ?? dropoffLane.shipFrom,
     shipTo: params.shipTo,
+    unmatchedExplicitSource: dropoffLane.source,
   })
   if (!resolved.ok) return resolved
 
