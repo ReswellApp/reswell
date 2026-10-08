@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation"
 
+import { DropoffLocationGrantPanel } from "@/components/features/admin/dropoff-location-grant-panel"
 import { DropoffLocationsAdminClient } from "@/components/features/admin/dropoff-locations-admin-client"
+import { listDropoffLocationGrantViews } from "@/lib/services/dropoffLocationGrants"
 import { getDropoffLocationsAdminDashboard } from "@/lib/services/dropoffLocations"
 import { privatePageMetadata } from "@/lib/site-metadata"
 import { createClient } from "@/lib/supabase/server"
@@ -32,7 +34,10 @@ export default async function AdminDropoffLocationsPage() {
     redirect("/")
   }
 
-  const loaded = await getDropoffLocationsAdminDashboard()
+  const [loaded, grants] = await Promise.all([
+    getDropoffLocationsAdminDashboard(),
+    listDropoffLocationGrantViews(),
+  ])
   if (!loaded.ok) {
     redirect("/")
   }
@@ -46,6 +51,14 @@ export default async function AdminDropoffLocationsPage() {
           size is assigned from these rules — review listings and override a carton when needed.
         </p>
       </div>
+      {grants.ok ? (
+        <DropoffLocationGrantPanel
+          locations={loaded.data.locations.map((location) => ({ id: location.id, name: location.name }))}
+          grants={grants.grants}
+        />
+      ) : (
+        <p className="text-sm text-destructive">{grants.error}</p>
+      )}
       <DropoffLocationsAdminClient initialData={loaded.data} />
     </div>
   )

@@ -53,6 +53,7 @@ export interface DashboardMobileNavProps {
   sellerProfileHref: string | null
   isAdmin?: boolean
   isShipper?: boolean
+  isDropoffLocation?: boolean
   hasShopifyAccess?: boolean
   /** Pango-style bordered bar for account pages (e.g. /messages). */
   variant?: "default" | "account"
@@ -62,6 +63,7 @@ export function DashboardMobileNav({
   sellerProfileHref,
   isAdmin = false,
   isShipper = false,
+  isDropoffLocation = false,
   hasShopifyAccess = false,
   variant = "default",
 }: DashboardMobileNavProps) {
@@ -80,13 +82,13 @@ export function DashboardMobileNav({
       : null
 
     return [
-      ...dashboardNavLinks({ isAdmin, isShipper, hasShopifyAccess }).map((l) => ({
+      ...dashboardNavLinks({ isAdmin, isShipper, isDropoffLocation, hasShopifyAccess }).map((l) => ({
         ...l,
         key: l.href,
       })),
       ...(sellerLink ? [sellerLink] : []),
     ]
-  }, [hasShopifyAccess, isAdmin, isShipper, sellerProfileHref])
+  }, [hasShopifyAccess, isAdmin, isDropoffLocation, isShipper, sellerProfileHref])
 
   const activeLink = useMemo(() => resolveActiveLink(pathname, links), [links, pathname])
 

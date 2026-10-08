@@ -39,6 +39,13 @@ const SECTION_META_BY_PREFIX: { prefix: string; meta: DashboardSectionMeta }[] =
     },
   },
   {
+    prefix: "/dashboard/dropoff-location",
+    meta: {
+      sectionName: "Drop-off",
+      description: "Boards dropped at your location, and the shipping labels for those orders.",
+    },
+  },
+  {
     prefix: "/dashboard/listings",
     meta: {
       sectionName: "My Listings",
