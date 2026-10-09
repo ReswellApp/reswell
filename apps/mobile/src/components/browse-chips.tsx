@@ -2,18 +2,7 @@ import { ScrollView, Pressable, StyleSheet, Text } from "react-native"
 import { MOBILE_BROWSE_CHIPS, type MobileBrowseChip } from "@reswell/api-contract"
 import { fontFamily, useReswellColors } from "@/theme"
 
-function sameChip(left: MobileBrowseChip | null, right: MobileBrowseChip): boolean {
-  if (!left) return false
-  return left.category === right.category && left.board_type === right.board_type
-}
-
-export function BrowseChips({
-  selected,
-  onSelect,
-}: {
-  selected: MobileBrowseChip | null
-  onSelect: (next: MobileBrowseChip | null) => void
-}) {
+export function BrowseChips({ onOpenCategory }: { onOpenCategory: (chip: MobileBrowseChip) => void }) {
   const colors = useReswellColors()
 
   return (
@@ -24,18 +13,16 @@ export function BrowseChips({
       contentContainerStyle={styles.row}
     >
       {MOBILE_BROWSE_CHIPS.map((chip) => {
-        const active = sameChip(selected, chip)
         return (
           <Pressable
             key={`${chip.category}:${chip.board_type ?? "all"}`}
             accessibilityRole="button"
-            accessibilityState={{ selected: active }}
-            onPress={() => onSelect(active ? null : chip)}
+            onPress={() => onOpenCategory(chip)}
             style={[
               styles.chip,
               {
-                backgroundColor: active ? colors.image : colors.background,
-                borderColor: active ? colors.foreground : colors.border,
+                backgroundColor: colors.background,
+                borderColor: colors.border,
               },
             ]}
           >

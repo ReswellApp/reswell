@@ -9,6 +9,7 @@ import {
   mobileFavoritesSchema,
   mobileFollowResultSchema,
   mobileFollowingSchema,
+  mobileCategorySchema,
   mobileHomeSchema,
   mobileListingDetailSchema,
   mobileListingsPageSchema,
@@ -21,6 +22,8 @@ import {
   mobileRecentlyViewedSchema,
   mobileReviewsPageSchema,
   mobileSalesSchema,
+  type MobileCategory,
+  type MobileCategoryListingsQuery,
   type MobileCart,
   type MobileCartResult,
   type MobileConversationDetail,
@@ -105,6 +108,30 @@ export function fetchRecentlyViewed(accessToken: string): Promise<MobileRecently
     "/api/mobile/v1/me/recently-viewed",
     (data) => mobileRecentlyViewedSchema.parse(data),
     accessToken,
+  )
+}
+
+export function fetchCategory(slug: string): Promise<MobileCategory> {
+  return read(`/api/mobile/v1/categories/${encodeURIComponent(slug)}`, (data) => mobileCategorySchema.parse(data))
+}
+
+export function fetchCategoryListings(
+  slug: string,
+  query: Partial<MobileCategoryListingsQuery> & { offset?: number },
+): Promise<MobileListingsPage> {
+  const params = new URLSearchParams()
+  if (query.offset) params.set("offset", String(query.offset))
+  if (query.sort) params.set("sort", query.sort)
+  if (query.shipping) params.set("shipping", query.shipping)
+  if (query.type) params.set("type", query.type)
+  for (const key of ["style", "condition", "fin", "finSystem", "construction", "length", "volume", "size", "kind"] as const) {
+    const value = query[key]
+    if (value) params.set(key, value)
+  }
+  const search = params.toString()
+  return read(
+    `/api/mobile/v1/categories/${encodeURIComponent(slug)}/listings${search ? `?${search}` : ""}`,
+    (data) => mobileListingsPageSchema.parse(data),
   )
 }
 

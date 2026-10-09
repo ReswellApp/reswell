@@ -145,6 +145,51 @@ export const MOBILE_BOARD_TYPES = [
 export type MobileListingCategory = (typeof MOBILE_LISTING_CATEGORIES)[number]
 export type MobileBoardType = (typeof MOBILE_BOARD_TYPES)[number]
 
+export const MOBILE_CATEGORY_SORTS = ["relevant", "newest", "price-low", "price-high"] as const
+
+export const mobileCategorySortSchema = z.object({
+  id: z.enum(MOBILE_CATEGORY_SORTS),
+  label: z.string(),
+})
+
+export const mobileCategoryFacetOptionSchema = z.object({
+  value: z.string(),
+  label: z.string(),
+})
+
+export const mobileCategoryFacetSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  options: z.array(mobileCategoryFacetOptionSchema).min(1),
+})
+
+/** Website category page: atmosphere photo plus the facet groups that page already uses. */
+export const mobileCategorySchema = z.object({
+  slug: z.enum(MOBILE_LISTING_CATEGORIES),
+  title: z.string(),
+  image_url: z.string().nullable(),
+  image_position: z.string().nullable(),
+  ship: z.boolean(),
+  sorts: z.array(mobileCategorySortSchema).min(1),
+  facets: z.array(mobileCategoryFacetSchema),
+})
+
+export const mobileCategoryListingsQuerySchema = z.object({
+  offset: z.coerce.number().int().min(0).max(5000).default(0),
+  sort: z.enum(MOBILE_CATEGORY_SORTS).default("relevant"),
+  shipping: z.literal("1").optional(),
+  type: z.enum(MOBILE_BOARD_TYPES).optional(),
+  style: z.string().trim().max(200).optional(),
+  condition: z.string().trim().max(200).optional(),
+  fin: z.string().trim().max(200).optional(),
+  finSystem: z.string().trim().max(200).optional(),
+  construction: z.string().trim().max(200).optional(),
+  length: z.string().trim().max(200).optional(),
+  volume: z.string().trim().max(200).optional(),
+  size: z.string().trim().max(200).optional(),
+  kind: z.string().trim().max(200).optional(),
+})
+
 export type MobileBrowseChip = {
   label: string
   category: MobileListingCategory
@@ -255,6 +300,9 @@ export type MobileListingDetail = z.infer<typeof mobileListingDetailSchema>
 export type MobileListingsPage = z.infer<typeof mobileListingsPageSchema>
 export type MobileHome = z.infer<typeof mobileHomeSchema>
 export type MobileRecentlyViewed = z.infer<typeof mobileRecentlyViewedSchema>
+export type MobileCategory = z.infer<typeof mobileCategorySchema>
+export type MobileCategorySortId = (typeof MOBILE_CATEGORY_SORTS)[number]
+export type MobileCategoryListingsQuery = z.infer<typeof mobileCategoryListingsQuerySchema>
 export type MobileHomeSection = z.infer<typeof mobileHomeSectionSchema>
 export type MobileHomeBrand = z.infer<typeof mobileHomeBrandSchema>
 export type MobileHomeShop = z.infer<typeof mobileHomeShopSchema>

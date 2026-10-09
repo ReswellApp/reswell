@@ -22,11 +22,8 @@ export default function ListingsScreen() {
   const [loadingMore, setLoadingMore] = useState(false)
   const [query, setQuery] = useState("")
   const [search, setSearch] = useState("")
-  const [browse, setBrowse] = useState<MobileBrowseChip | null>(null)
   const searchRef = useRef(search)
-  const browseRef = useRef(browse)
   searchRef.current = search
-  browseRef.current = browse
 
   useEffect(() => {
     const timer = setTimeout(() => setSearch(query.trim()), 300)
@@ -35,16 +32,15 @@ export default function ListingsScreen() {
 
   useEffect(() => {
     setPage(null)
-  }, [search, browse])
+  }, [search])
 
-  const browsing = Boolean(search || browse)
+  const browsing = Boolean(search)
 
   const load = useCallback(() => {
     let cancelled = false
     const q = search
-    const chip = browse
     setLoading(true)
-    if (!q && !chip) {
+    if (!q) {
       const recent = accessToken
         ? fetchRecentlyViewed(accessToken).catch(() => ({ listings: [] }))
         : Promise.resolve({ listings: [] })
@@ -70,7 +66,7 @@ export default function ListingsScreen() {
         cancelled = true
       }
     }
-    fetchListings(0, listingsQuery(q, chip))
+    fetchListings(0, { q: q || undefined })
       .then((next) => {
         if (!cancelled) {
           setPage(next)
@@ -89,18 +85,17 @@ export default function ListingsScreen() {
     return () => {
       cancelled = true
     }
-  }, [search, browse, accessToken])
+  }, [search, accessToken])
 
   useFocusEffect(load)
 
   function loadMore() {
     if (!page?.has_more || loadingMore || loading) return
     const q = search
-    const chip = browse
     setLoadingMore(true)
-    fetchListings(page.offset + page.limit, listingsQuery(q, chip))
+    fetchListings(page.offset + page.limit, { q: q || undefined })
       .then((next) => {
-        if (searchRef.current !== q || browseRef.current !== chip) return
+        if (searchRef.current !== q) return
         setPage((current) =>
           current
             ? { ...next, listings: [...current.listings, ...next.listings] }
@@ -124,8 +119,12 @@ export default function ListingsScreen() {
       <HomeHeader
         signedIn={Boolean(session)}
         onAccount={() => router.push(session ? "/account" : "/sign-in")}
-        selected={browse}
-        onSelect={setBrowse}
+        onOpenCategory={(chip: MobileBrowseChip) =>
+          router.push({
+            pathname: "/category/[slug]",
+            params: chip.board_type ? { slug: chip.category, type: chip.board_type } : { slug: chip.category },
+          })
+        }
       />
       <TextInput
         value={query}
@@ -165,11 +164,7 @@ export default function ListingsScreen() {
           onEndReachedThreshold={0.4}
           ListEmptyComponent={
             <Text style={[styles.empty, { color: colors.muted, fontFamily: fontFamily.text }]}>
-              {search
-                ? "No listings match that search."
-                : browse
-                  ? `No ${browse.label.toLowerCase()} listings yet.`
-                  : "No listings yet."}
+              {search ? "No listings match that search." : "No listings yet."}
             </Text>
           }
           ListFooterComponent={
@@ -198,14 +193,6 @@ export default function ListingsScreen() {
       )}
     </View>
   )
-}
-
-function listingsQuery(q: string, chip: MobileBrowseChip | null): { q?: string; category?: string; board_type?: string } {
-  return {
-    q: q || undefined,
-    category: chip?.category,
-    board_type: chip?.board_type,
-  }
 }
 
 const styles = StyleSheet.create({

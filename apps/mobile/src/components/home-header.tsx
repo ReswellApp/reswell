@@ -8,13 +8,11 @@ import { fontFamily, useReswellColors } from "@/theme"
 export function HomeHeader({
   signedIn,
   onAccount,
-  selected,
-  onSelect,
+  onOpenCategory,
 }: {
   signedIn: boolean
   onAccount: () => void
-  selected: MobileBrowseChip | null
-  onSelect: (next: MobileBrowseChip | null) => void
+  onOpenCategory: (chip: MobileBrowseChip) => void
 }) {
   const colors = useReswellColors()
   const insets = useSafeAreaInsets()
@@ -29,7 +27,7 @@ export function HomeHeader({
           </Text>
         </Pressable>
       </View>
-      <BrowseChips selected={selected} onSelect={onSelect} />
+      <BrowseChips onOpenCategory={onOpenCategory} />
     </View>
   )
 }

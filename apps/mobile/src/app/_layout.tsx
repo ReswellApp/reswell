@@ -31,6 +31,7 @@ export default function RootLayout() {
         >
           <Stack.Screen name="index" options={{ headerLargeTitle: false }} />
           <Stack.Screen name="listing/[id]" options={{ title: "" }} />
+          <Stack.Screen name="category/[slug]" options={{ title: "" }} />
           <Stack.Screen name="profile/[slug]" options={{ title: "" }} />
           <Stack.Screen name="sign-in" options={{ title: "Sign in", presentation: "modal" }} />
         </Stack>
