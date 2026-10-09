@@ -55,8 +55,23 @@ export const createReswellTicketFileSchema = z.object({
   label: z.string().trim().max(200).optional(),
 })
 
+export const reswellTicketCursorActionSchema = z.discriminatedUnion('action', [
+  z.object({
+    action: z.literal('dispatch'),
+    force: z.boolean().optional(),
+  }),
+  z.object({
+    action: z.literal('sync'),
+  }),
+  z.object({
+    action: z.literal('follow_up'),
+    text: z.string().trim().min(1, 'Follow-up cannot be empty').max(4000),
+  }),
+])
+
 export type UpdateReswellTicketInput = z.infer<typeof updateReswellTicketSchema>
 export type CreateReswellTicketCommentInput = z.infer<typeof createReswellTicketCommentSchema>
 export type CreateReswellTicketSubtaskInput = z.infer<typeof createReswellTicketSubtaskSchema>
 export type UpdateReswellTicketSubtaskInput = z.infer<typeof updateReswellTicketSubtaskSchema>
 export type CreateReswellTicketFileInput = z.infer<typeof createReswellTicketFileSchema>
+export type ReswellTicketCursorActionInput = z.infer<typeof reswellTicketCursorActionSchema>
