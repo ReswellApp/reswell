@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server"
 import { checkShopifyMerchantAccess } from "@/lib/services/shopifyAccess"
 import { claimShopifyPendingInstallation } from "@/lib/services/shopifyClaim"
 import { SHOPIFY_CLAIM_COOKIE } from "@/lib/shopify/claim-cookie"
+import { SHOPIFY_CLAIM_PATH, SHOPIFY_CONNECT_PATH } from "@/lib/shopify/claim-path"
 
 function publicShopifyClaimError(error: unknown): string {
   const message = error instanceof Error ? error.message : ""
@@ -57,7 +58,8 @@ export async function claimShopifyInstallAction(): Promise<
       sameSite: "lax",
     })
     revalidatePath("/dashboard/shopify")
-    revalidatePath("/shopify/claim")
+    revalidatePath(SHOPIFY_CONNECT_PATH)
+    revalidatePath(SHOPIFY_CLAIM_PATH)
     return { success: true }
   } catch (error) {
     const message =

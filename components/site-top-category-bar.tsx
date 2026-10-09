@@ -14,7 +14,7 @@ import {
   siteHeaderSecondaryNavItemIsActive,
 } from "@/lib/site-category-directory"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
-import { isShopifyClaimPath } from "@/lib/shopify/claim-path"
+import { isShopifyConnectPath } from "@/lib/shopify/claim-path"
 
 const chipBase =
   "inline-flex min-h-9 items-center justify-center whitespace-nowrap rounded-full border px-3.5 py-1.5 text-center text-[13px] font-semibold leading-tight text-foreground shadow-sm transition-colors focus-visible:outline-none focus-visible:border-cerulean/40 focus-visible:ring-2 focus-visible:ring-cerulean/15 focus-visible:ring-offset-0"
@@ -101,7 +101,7 @@ export function shouldShowSiteTopCategoryBar(pathname: string | null): boolean {
   if (pathname.startsWith("/auth") || pathname === "/help" || pathname.startsWith("/help/")) {
     return false
   }
-  if (isShopifyClaimPath(pathname)) {
+  if (isShopifyConnectPath(pathname)) {
     return false
   }
   if (pathname === "/sell" || pathname.startsWith("/sell/")) return false

@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
 import { requestShopifyPluginAccess } from "@/lib/services/shopifyAccessRequest"
 import { SHOPIFY_CLAIM_COOKIE } from "@/lib/shopify/claim-cookie"
+import { SHOPIFY_CLAIM_PATH, SHOPIFY_CONNECT_PATH } from "@/lib/shopify/claim-path"
 
 export async function requestShopifyPluginAccessAction(): Promise<
   { success: true; alreadyRequested: boolean } | { error: string }
@@ -23,7 +24,8 @@ export async function requestShopifyPluginAccessAction(): Promise<
       userId: user.id,
       claimSecret,
     })
-    revalidatePath("/shopify/claim")
+    revalidatePath(SHOPIFY_CONNECT_PATH)
+    revalidatePath(SHOPIFY_CLAIM_PATH)
     return result
   } catch (error) {
     console.error("[shopify] access request", error)

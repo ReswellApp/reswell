@@ -4,6 +4,7 @@ import { requireShopifyMerchant } from "@/lib/shopify/authorize"
 import { normalizeShopifyDomain } from "@/lib/shopify/config"
 import { verifyShopifyOAuthHmac, hashShopifyOAuthState } from "@/lib/shopify/crypto"
 import { shopifyClaimCookieOptions } from "@/lib/shopify/claim-cookie"
+import { SHOPIFY_CONNECT_PATH } from "@/lib/shopify/claim-path"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { dbPeekShopifyOAuthState } from "@/lib/db/shopifyConnections"
 import { finishShopifyOAuth } from "@/lib/services/shopifyOAuth"
@@ -54,7 +55,7 @@ export async function GET(request: NextRequest) {
         code,
         state,
       })
-      const url = new URL("/shopify/claim", publicSiteOrigin())
+      const url = new URL(SHOPIFY_CONNECT_PATH, publicSiteOrigin())
       const response = NextResponse.redirect(url)
       const cookie = shopifyClaimCookieOptions(pending.claimSecret)
       response.cookies.set(cookie.name, cookie.value, {
@@ -67,7 +68,7 @@ export async function GET(request: NextRequest) {
       return response
     } catch (error) {
       console.error("[shopify] public callback", error)
-      const url = new URL("/shopify/claim", publicSiteOrigin())
+      const url = new URL(SHOPIFY_CONNECT_PATH, publicSiteOrigin())
       url.searchParams.set("error", "connection_failed")
       return NextResponse.redirect(url)
     }

@@ -35,14 +35,14 @@ import { useFlatMobileMessagesInbox } from "@/hooks/use-flat-mobile-messages-inb
 import { useMobileLg } from "@/hooks/use-mobile-lg"
 import { cn } from "@/lib/utils"
 import { isThreadsRoute } from "@/lib/utils/threads-routes"
-import { isShopifyClaimPath } from "@/lib/shopify/claim-path"
+import { isShopifyConnectPath } from "@/lib/shopify/claim-path"
 
 function hideSiteChrome(pathname: string | null): boolean {
   if (!pathname) return false
   if (pathname.startsWith("/auth") || pathname === "/help" || pathname.startsWith("/help/")) {
     return true
   }
-  if (isShopifyClaimPath(pathname)) {
+  if (isShopifyConnectPath(pathname)) {
     return true
   }
   if (pathname.startsWith("/embed")) {
@@ -74,7 +74,7 @@ function hideFooter(pathname: string | null): boolean {
     pathname.startsWith("/admin/") ||
     pathname === "/coastal-delivery" ||
     pathname.startsWith("/coastal-delivery/") ||
-    isShopifyClaimPath(pathname) ||
+    isShopifyConnectPath(pathname) ||
     isSupportCaseThreadRoute(pathname)
   )
 }

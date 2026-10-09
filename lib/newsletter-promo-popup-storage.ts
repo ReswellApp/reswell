@@ -2,7 +2,7 @@ import {
   NEWSLETTER_POPUP_STORAGE_KEY,
   type NewsletterPopupStorageState,
 } from "@/lib/constants/newsletter-promo"
-import { isShopifyClaimPath } from "@/lib/shopify/claim-path"
+import { isShopifyConnectPath } from "@/lib/shopify/claim-path"
 
 export function getNewsletterPopupStorageState(): NewsletterPopupStorageState | null {
   if (typeof window === "undefined") return null
@@ -27,7 +27,7 @@ export function setNewsletterPopupStorageState(state: NewsletterPopupStorageStat
 export function shouldShowNewsletterPopup(pathname: string | null): boolean {
   if (!pathname) return false
   if (pathname.startsWith("/auth")) return false
-  if (isShopifyClaimPath(pathname)) return false
+  if (isShopifyConnectPath(pathname)) return false
   if (pathname.startsWith("/admin")) return false
   if (pathname.startsWith("/checkout")) return false
   if (pathname.startsWith("/sell")) return false
