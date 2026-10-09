@@ -54,6 +54,8 @@ export type CoastalRunView = {
   direction: CoastalDirection
   enabled: boolean
   stopIds: string[]
+  /** True when stopIds are the drive order. Otherwise they are still sorted south to north for display. */
+  stopsInDriveOrder?: boolean
   /** Null is the repeating weekly trip. A date is that week only. */
   serviceDate?: string | null
 }
