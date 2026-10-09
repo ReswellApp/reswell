@@ -1,35 +1,29 @@
-import { Image } from "expo-image"
-import { Link, Stack, useLocalSearchParams } from "expo-router"
+import { Stack, useLocalSearchParams, useRouter } from "expo-router"
 import { SymbolView } from "expo-symbols"
 import { useEffect, useState } from "react"
-import {
-  ActivityIndicator,
-  Dimensions,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native"
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import type { MobileListingDetail } from "@reswell/api-contract"
 import { ListingActions } from "@/components/listing-actions"
+import { ListingDetail } from "@/components/listing-detail"
+import { ListingGallery } from "@/components/listing-gallery"
 import { fetchListing } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
 import { fontFamily, useReswellColors } from "@/theme"
 
-const width = Dimensions.get("window").width
-
 export default function ListingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const colors = useReswellColors()
+  const router = useRouter()
   const { session } = useAuth()
   const token = session?.access_token
   const [listing, setListing] = useState<MobileListingDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
     if (!id) return
     let cancelled = false
+    setError(null)
     fetchListing(id, token)
       .then((next) => {
         if (!cancelled) setListing(next)
@@ -40,89 +34,51 @@ export default function ListingScreen() {
     return () => {
       cancelled = true
     }
-  }, [id, token])
-
-  const identity = listing ? [listing.brand, listing.model].filter(Boolean).join(" · ") : ""
+  }, [id, token, attempt])
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
-      <Stack.Screen options={{ title: listing?.title ?? "Listing" }} />
+      <Stack.Screen
+        options={{
+          title: "",
+          headerTransparent: true,
+          headerShadowVisible: false,
+          headerStyle: { backgroundColor: "transparent" },
+          headerLeft: () => (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Back"
+              onPress={() => router.back()}
+              style={[styles.back, { backgroundColor: colors.background }]}
+            >
+              <SymbolView
+                name={{ ios: "chevron.left", android: "arrow_back", web: "arrow_back" }}
+                size={18}
+                tintColor={colors.foreground}
+              />
+            </Pressable>
+          ),
+        }}
+      />
       {!listing && !error ? (
         <ActivityIndicator style={styles.centered} color={colors.foreground} />
       ) : error || !listing ? (
-        <Text style={[styles.error, { color: colors.foreground, fontFamily: fontFamily.text }]}>
-          {error ?? "Unable to load listing"}
-        </Text>
+        <View style={styles.centered}>
+          <Text style={[styles.error, { color: colors.foreground, fontFamily: fontFamily.text }]}>
+            {error ?? "Unable to load listing"}
+          </Text>
+          <Pressable onPress={() => setAttempt((current) => current + 1)}>
+            <Text style={[styles.retry, { color: colors.foreground, fontFamily: fontFamily.text }]}>Try again</Text>
+          </Pressable>
+        </View>
       ) : (
-        <ScrollView contentInsetAdjustmentBehavior="automatic">
-          <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
-            {(listing.image_urls.length > 0 ? listing.image_urls : [null]).map((uri, index) =>
-              uri ? (
-                <Image
-                  key={uri}
-                  source={{ uri }}
-                  style={[styles.hero, { backgroundColor: colors.image }]}
-                  contentFit="cover"
-                />
-              ) : (
-                <View key={index} style={[styles.hero, { backgroundColor: colors.image }]} />
-              ),
-            )}
+        <>
+          <ScrollView contentInsetAdjustmentBehavior="never">
+            <ListingGallery urls={listing.image_urls} />
+            <ListingDetail listing={listing} />
           </ScrollView>
-          <View style={styles.body}>
-            <Text style={[styles.title, { color: colors.foreground, fontFamily: fontFamily.headline }]}>
-              {listing.title}
-            </Text>
-            {identity ? (
-              <Text style={[styles.identity, { color: colors.foreground, fontFamily: fontFamily.text }]}>
-                {identity}
-              </Text>
-            ) : null}
-            <Text style={[styles.price, { color: colors.foreground, fontFamily: fontFamily.text }]}>
-              {listing.price_label}
-            </Text>
-            {listing.shipping_label ? (
-              <Text style={[styles.shipping, { color: colors.shipping, fontFamily: fontFamily.text }]}>
-                {listing.shipping_label}
-              </Text>
-            ) : null}
-            {listing.pickup_label ? (
-              <View style={styles.placeRow}>
-                <SymbolView name="mappin" size={14} tintColor={colors.muted} />
-                <Text style={[styles.meta, { color: colors.muted, fontFamily: fontFamily.text }]}>
-                  {listing.pickup_label}
-                </Text>
-              </View>
-            ) : null}
-            {listing.dimensions ? (
-              <Text style={[styles.meta, { color: colors.muted, fontFamily: fontFamily.text }]}>
-                {listing.dimensions}
-              </Text>
-            ) : null}
-            {listing.condition_line ? (
-              <Text style={[styles.meta, { color: colors.muted, fontFamily: fontFamily.text }]}>
-                {listing.condition_line}
-              </Text>
-            ) : null}
-            {listing.seller.seller_slug ? (
-              <Link href={{ pathname: "/profile/[slug]", params: { slug: listing.seller.seller_slug } }} asChild>
-                <Pressable hitSlop={8}>
-                  <Text style={[styles.seller, { color: colors.foreground, fontFamily: fontFamily.text }]}>
-                    {listing.seller.name}
-                  </Text>
-                </Pressable>
-              </Link>
-            ) : (
-              <Text style={[styles.seller, { color: colors.muted, fontFamily: fontFamily.text }]}>{listing.seller.name}</Text>
-            )}
-            <ListingActions listing={listing} onChange={setListing} />
-            {listing.description ? (
-              <Text style={[styles.description, { color: colors.foreground, fontFamily: fontFamily.text }]}>
-                {listing.description}
-              </Text>
-            ) : null}
-          </View>
-        </ScrollView>
+          <ListingActions listing={listing} onChange={setListing} />
+        </>
       )}
     </View>
   )
@@ -130,16 +86,15 @@ export default function ListingScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  centered: { marginTop: 48 },
-  error: { textAlign: "center", marginTop: 48, paddingHorizontal: 24 },
-  hero: { width, aspectRatio: 3 / 4 },
-  body: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 40, gap: 6 },
-  title: { fontSize: 28, fontWeight: "700", letterSpacing: -0.6, lineHeight: 32 },
-  identity: { fontSize: 15, fontWeight: "600" },
-  price: { marginTop: 8, fontSize: 32, fontWeight: "700", letterSpacing: -0.5 },
-  shipping: { fontSize: 15, fontWeight: "500" },
-  placeRow: { flexDirection: "row", alignItems: "center", gap: 4 },
-  meta: { fontSize: 15 },
-  seller: { marginTop: 8, fontSize: 15 },
-  description: { marginTop: 12, fontSize: 16, lineHeight: 24 },
+  back: {
+    width: 36,
+    height: 36,
+    marginLeft: 8,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  centered: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, padding: 24 },
+  error: { textAlign: "center", fontSize: 16 },
+  retry: { fontSize: 16, fontWeight: "600" },
 })

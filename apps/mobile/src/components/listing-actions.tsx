@@ -1,6 +1,8 @@
 import { useRouter } from "expo-router"
+import { SymbolView } from "expo-symbols"
 import { useState } from "react"
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 import type { MobileListingDetail } from "@reswell/api-contract"
 import { sendListingMessage, setCartItem, setFavorite } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
@@ -14,10 +16,12 @@ export function ListingActions({
   onChange: (next: MobileListingDetail) => void
 }) {
   const colors = useReswellColors()
+  const insets = useSafeAreaInsets()
   const router = useRouter()
   const { session } = useAuth()
   const [busy, setBusy] = useState<"save" | "cart" | "message" | null>(null)
   const [draft, setDraft] = useState("")
+  const [composing, setComposing] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
   const token = session?.access_token
 
@@ -41,9 +45,21 @@ export function ListingActions({
   }
 
   return (
-    <View style={styles.wrap}>
+    <View style={[styles.bar, { backgroundColor: colors.background, borderTopColor: colors.border, paddingBottom: Math.max(insets.bottom, 12) }]}>
+      {composing ? (
+        <TextInput
+          value={draft}
+          onChangeText={setDraft}
+          placeholder="Message the seller"
+          placeholderTextColor={colors.muted}
+          style={[styles.input, { color: colors.foreground, backgroundColor: colors.image, fontFamily: fontFamily.text }]}
+        />
+      ) : null}
+      {notice ? <Text style={[styles.notice, { color: colors.destructive, fontFamily: fontFamily.text }]}>{notice}</Text> : null}
       <View style={styles.row}>
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={listing.favorited ? "Saved" : "Save"}
           onPress={() =>
             void run("save", async (accessToken) => {
               const next = !listing.favorited
@@ -51,14 +67,20 @@ export function ListingActions({
               onChange({ ...listing, favorited: result.favorited })
             })
           }
-          style={[styles.button, { borderColor: colors.border }]}
+          style={[styles.save, { borderColor: colors.border, backgroundColor: colors.background }]}
         >
           {busy === "save" ? (
             <ActivityIndicator color={colors.foreground} />
           ) : (
-            <Text style={[styles.label, { color: colors.foreground, fontFamily: fontFamily.text }]}>
-              {listing.favorited ? "Saved" : "Save"}
-            </Text>
+            <SymbolView
+              name={{
+                ios: listing.favorited ? "heart.fill" : "heart",
+                android: listing.favorited ? "favorite" : "favorite_border",
+                web: listing.favorited ? "favorite" : "favorite_border",
+              }}
+              size={22}
+              tintColor={colors.foreground}
+            />
           )}
         </Pressable>
         <Pressable
@@ -69,60 +91,51 @@ export function ListingActions({
               onChange({ ...listing, in_cart: result.in_cart })
             })
           }
-          style={[styles.button, { backgroundColor: colors.primary }]}
+          style={[styles.cart, { backgroundColor: colors.primary }]}
         >
           {busy === "cart" ? (
             <ActivityIndicator color={colors.primaryForeground} />
           ) : (
-            <Text style={[styles.label, { color: colors.primaryForeground, fontFamily: fontFamily.text }]}>
+            <Text style={[styles.cartLabel, { color: colors.primaryForeground, fontFamily: fontFamily.text }]}>
               {listing.in_cart ? "Remove" : "Add to cart"}
             </Text>
           )}
         </Pressable>
+        <Pressable
+          onPress={() => {
+            if (!composing) {
+              setComposing(true)
+              return
+            }
+            const body = draft.trim()
+            if (!body) return
+            void run("message", async (accessToken) => {
+              const result = await sendListingMessage(accessToken, listing.id, body)
+              setDraft("")
+              setComposing(false)
+              router.push({ pathname: "/account/messages/[id]", params: { id: result.conversation_id } })
+            })
+          }}
+          style={[styles.message, { borderColor: colors.border }]}
+        >
+          {busy === "message" ? (
+            <ActivityIndicator color={colors.foreground} />
+          ) : (
+            <SymbolView name={{ ios: "bubble.left", android: "chat_bubble", web: "chat_bubble" }} size={20} tintColor={colors.foreground} />
+          )}
+        </Pressable>
       </View>
-      <TextInput
-        value={draft}
-        onChangeText={setDraft}
-        placeholder="Message the seller"
-        placeholderTextColor={colors.muted}
-        style={[styles.input, { color: colors.foreground, borderColor: colors.border, fontFamily: fontFamily.text }]}
-      />
-      <Pressable
-        onPress={() => {
-          const body = draft.trim()
-          if (!body) return
-          void run("message", async (accessToken) => {
-            const result = await sendListingMessage(accessToken, listing.id, body)
-            setDraft("")
-            router.push({ pathname: "/account/messages/[id]", params: { id: result.conversation_id } })
-          })
-        }}
-        style={[styles.button, { borderColor: colors.border }]}
-      >
-        {busy === "message" ? (
-          <ActivityIndicator color={colors.foreground} />
-        ) : (
-          <Text style={[styles.label, { color: colors.foreground, fontFamily: fontFamily.text }]}>Send message</Text>
-        )}
-      </Pressable>
-      {notice ? <Text style={[styles.notice, { color: colors.destructive, fontFamily: fontFamily.text }]}>{notice}</Text> : null}
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  wrap: { marginTop: 16, gap: 10 },
-  row: { flexDirection: "row", gap: 10 },
-  button: {
-    flex: 1,
-    minHeight: 44,
-    borderRadius: 8,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 12,
-  },
-  label: { fontSize: 16, fontWeight: "600" },
-  input: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16 },
-  notice: { fontSize: 15 },
+  bar: { borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 16, paddingTop: 12, gap: 10 },
+  row: { flexDirection: "row", alignItems: "center", gap: 10 },
+  save: { width: 52, height: 52, borderRadius: 26, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  cart: { flex: 1, height: 52, borderRadius: 26, alignItems: "center", justifyContent: "center" },
+  cartLabel: { fontSize: 16, fontWeight: "700" },
+  message: { width: 52, height: 52, borderRadius: 26, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  input: { borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16 },
+  notice: { fontSize: 14 },
 })
