@@ -10,13 +10,23 @@ export type ShopifyConnectionStatus =
   | "reauthorization_required"
   | "error"
 
+export type ShopifyCredentialProvider =
+  | "public_oauth"
+  | "merchant_custom"
+
 export interface ShopifyConnectionRow {
   id: string
   user_id: string
   shop_domain: string
+  shop_gid: string | null
   shop_name: string | null
   status: ShopifyConnectionStatus
   sync_enabled: boolean
+  credential_provider: ShopifyCredentialProvider
+  active_credential_id: string | null
+  catalog_read_enabled: boolean
+  sales_enabled: boolean
+  inventory_write_enabled: boolean
   access_token_ciphertext: string
   access_token_iv: string
   access_token_tag: string
@@ -42,15 +52,55 @@ export type PublicShopifyConnection = Pick<
   ShopifyConnectionRow,
   | "id"
   | "shop_domain"
+  | "shop_gid"
   | "shop_name"
   | "status"
   | "sync_enabled"
+  | "credential_provider"
+  | "catalog_read_enabled"
+  | "sales_enabled"
+  | "inventory_write_enabled"
   | "scopes"
   | "last_webhook_at"
   | "last_reconciled_at"
   | "last_error"
   | "connected_at"
 >
+
+export interface ShopifyCredentialRow {
+  id: string
+  connection_id: string
+  provider: ShopifyCredentialProvider
+  auth_mode: "expiring_oauth" | "client_credentials"
+  status: "staged" | "active" | "grace" | "retired" | "revoked"
+  client_id_ciphertext: string | null
+  client_id_iv: string | null
+  client_id_tag: string | null
+  client_secret_ciphertext: string | null
+  client_secret_iv: string | null
+  client_secret_tag: string | null
+  access_token_ciphertext: string
+  access_token_iv: string
+  access_token_tag: string
+  refresh_token_ciphertext: string | null
+  refresh_token_iv: string | null
+  refresh_token_tag: string | null
+  encryption_key_version: number
+  token_expires_at: string | null
+  refresh_token_expires_at: string | null
+  scopes: string[]
+  app_gid: string | null
+  app_installation_gid: string | null
+  webhook_route_key: string
+  last_verified_at: string | null
+}
+
+export interface ShopifyPendingInstallationPreview {
+  shopDomain: string
+  shopName: string | null
+  expiresAt: string
+  ready: boolean
+}
 
 export interface ShopifyInventoryLevel {
   locationId: string
@@ -131,14 +181,29 @@ export interface ShopifySyncJobRow {
   worker_id: string | null
 }
 
+export interface ShopifyShippingReadiness {
+  hasShipFromAddress: boolean
+  packageDefaults: Array<{
+    section: PeerListingSection
+    sectionLabel: string
+    packageSizeId: string
+    packageLabel: string
+    packageSummary: string
+  }>
+}
+
 export interface ShopifyDashboardData {
   enabled: boolean
   configured: boolean
+  publicOAuthEnabled: boolean
+  manualCanaryEnabled: boolean
+  appInstallUrl: string | null
   connection: PublicShopifyConnection | null
   products: ShopifyCatalogProduct[]
   productPageInfo: {
     hasNextPage: boolean
     endCursor: string | null
   }
+  shippingReadiness: ShopifyShippingReadiness
   loadError: string | null
 }

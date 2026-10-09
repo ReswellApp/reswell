@@ -1,8 +1,15 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { dbShopifyUserIsEligible } from "@/lib/db/shopifyConnections"
+import {
+  dbShopifyUserIsEligible,
+  dbShopifyUserManualCanaryEnabled,
+} from "@/lib/db/shopifyConnections"
 import {
   isShopifyConfigured,
   isShopifyIntegrationEnabled,
+  isShopifyManualCanaryEnabled,
+  isShopifyPublicOAuthConfigured,
+  isShopifyPublicOAuthEnabled,
+  shopifyAppInstallUrl,
 } from "@/lib/shopify/config"
 
 export type ShopifyMerchantAccess =
@@ -40,4 +47,24 @@ export async function checkShopifyMerchantAccess(
     }
   }
   return { allowed: true }
+}
+
+export async function getShopifyDashboardConnectOptions(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<{
+  publicOAuthEnabled: boolean
+  manualCanaryEnabled: boolean
+  appInstallUrl: string | null
+}> {
+  const publicOAuthEnabled =
+    isShopifyPublicOAuthEnabled() && isShopifyPublicOAuthConfigured()
+  const manualCanaryEnabled =
+    isShopifyManualCanaryEnabled() &&
+    (await dbShopifyUserManualCanaryEnabled(supabase, userId))
+  return {
+    publicOAuthEnabled,
+    manualCanaryEnabled,
+    appInstallUrl: publicOAuthEnabled ? shopifyAppInstallUrl() : null,
+  }
 }

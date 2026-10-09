@@ -94,6 +94,21 @@ export function hashShopifyOAuthState(state: string): string {
   return createHash("sha256").update(state, "utf8").digest("hex")
 }
 
+export function hashShopifyClaimSecret(secret: string): string {
+  return createHash("sha256").update(secret, "utf8").digest("hex")
+}
+
+export function createShopifyClaimSecret(): {
+  claimSecret: string
+  claimSecretHash: string
+} {
+  const claimSecret = randomBytes(32).toString("base64url")
+  return {
+    claimSecret,
+    claimSecretHash: hashShopifyClaimSecret(claimSecret),
+  }
+}
+
 function secureEqual(left: string, right: string): boolean {
   const a = Buffer.from(left)
   const b = Buffer.from(right)
@@ -119,9 +134,23 @@ export function verifyShopifyWebhookHmac(
   rawBody: string,
   suppliedHmac: string | null,
 ): boolean {
+  return verifyShopifyWebhookHmacWithSecrets(
+    rawBody,
+    suppliedHmac,
+    [shopifyApiSecret()],
+  )
+}
+
+export function verifyShopifyWebhookHmacWithSecrets(
+  rawBody: string,
+  suppliedHmac: string | null,
+  secrets: readonly string[],
+): boolean {
   if (!suppliedHmac?.trim()) return false
-  const expected = createHmac("sha256", shopifyApiSecret())
-    .update(rawBody, "utf8")
-    .digest("base64")
-  return secureEqual(expected, suppliedHmac.trim())
+  return secrets.some((secret) => {
+    const expected = createHmac("sha256", secret)
+      .update(rawBody, "utf8")
+      .digest("base64")
+    return secureEqual(expected, suppliedHmac.trim())
+  })
 }

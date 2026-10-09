@@ -1,5 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { PeerListingSection } from "@/lib/peer-listing-sections"
+import {
+  parseShopCategoryPackageSizeMap,
+  type ShopCategoryPackageSizeMap,
+} from "@/lib/shop-category-package-sizes"
 import type { ShopifyProductMappingRow } from "@/lib/shopify/types"
 
 const MAPPING_SELECT = [
@@ -136,6 +140,36 @@ export async function dbLoadShopifyMerchantLocation(
   return {
     city: data?.city?.trim() || data?.location?.trim() || "United States",
     state: data?.state?.trim() || "US",
+  }
+}
+
+export async function dbLoadShopifyImportShippingProfile(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<{
+  hasShipFromAddress: boolean
+  packageSizes: ShopCategoryPackageSizeMap
+}> {
+  const [profileResult, addressResult] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("shop_category_package_sizes")
+      .eq("id", userId)
+      .maybeSingle(),
+    supabase
+      .from("addresses")
+      .select("id")
+      .eq("profile_id", userId)
+      .limit(1),
+  ])
+  if (profileResult.error) throw new Error(profileResult.error.message)
+  if (!profileResult.data) throw new Error("Shopify merchant profile not found")
+  if (addressResult.error) throw new Error(addressResult.error.message)
+  return {
+    hasShipFromAddress: (addressResult.data ?? []).length > 0,
+    packageSizes: parseShopCategoryPackageSizeMap(
+      profileResult.data.shop_category_package_sizes,
+    ),
   }
 }
 

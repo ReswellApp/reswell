@@ -21,6 +21,7 @@ export type MyListingRow = {
   compare_at_price: number | null
   status: string
   section: string
+  inventory_source: string
   condition: string | null
   brand: string | null
   model: string | null
@@ -79,7 +80,7 @@ export type FetchMyListingsResult = {
 }
 
 const MY_LISTINGS_SELECT =
-  "id, slug, title, description, price, compare_at_price, status, section, condition, brand, model, city, state, latitude, longitude, local_pickup, shipping_available, board_shipping_cost_mode, shipping_price, dropoff_location_id, dimensions, length_total_inches, volume_liters, fins_setup, fin_system, construction, fins_included, tail_shape, fin_size, wetsuit_size, apparel_kind, traction_size, views, created_at, archived_at, hidden_from_site, site_visibility_reason, sold_off_platform, shipping_package_tier, shipping_package_band, shipping_packed_length_in, shipping_packed_width_in, shipping_packed_height_in, shipping_packed_weight_oz, listing_images(url, thumbnail_url, is_primary)"
+  "id, slug, title, description, price, compare_at_price, status, section, inventory_source, condition, brand, model, city, state, latitude, longitude, local_pickup, shipping_available, board_shipping_cost_mode, shipping_price, dropoff_location_id, dimensions, length_total_inches, volume_liters, fins_setup, fin_system, construction, fins_included, tail_shape, fin_size, wetsuit_size, apparel_kind, traction_size, views, created_at, archived_at, hidden_from_site, site_visibility_reason, sold_off_platform, shipping_package_tier, shipping_package_band, shipping_packed_length_in, shipping_packed_width_in, shipping_packed_height_in, shipping_packed_weight_oz, listing_images(url, thumbnail_url, is_primary)"
 
 const EMPTY_STATS: MyListingsDashboardStats = {
   totalListings: 0,

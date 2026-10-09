@@ -9,6 +9,16 @@ export const shopifyConnectQuerySchema = z.object({
   shop: z.string().trim().min(3).max(255),
 })
 
+export const shopifyInstallQuerySchema = z.object({
+  shop: z.string().trim().min(3).max(255),
+})
+
+export const shopifyManualConnectBodySchema = z.object({
+  shop: z.string().trim().min(3).max(255),
+  clientId: z.string().trim().min(8).max(200),
+  clientSecret: z.string().trim().min(8).max(500),
+})
+
 export const shopifyProductsQuerySchema = z.object({
   query: z.string().trim().max(200).optional().default(""),
   after: z.string().trim().max(500).optional(),

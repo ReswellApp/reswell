@@ -7,11 +7,15 @@ import {
   isShopifyIntegrationEnabled,
 } from "@/lib/shopify/config"
 import type { ShopifyDashboardData } from "@/lib/shopify/types"
-import { checkShopifyMerchantAccess } from "@/lib/services/shopifyAccess"
+import {
+  checkShopifyMerchantAccess,
+  getShopifyDashboardConnectOptions,
+} from "@/lib/services/shopifyAccess"
 import {
   getShopifyConnectionStatus,
   listMerchantShopifyProducts,
 } from "@/lib/services/shopifyConnection"
+import { getShopifyShippingReadiness } from "@/lib/services/shopifyShipping"
 
 export const dynamic = "force-dynamic"
 
@@ -34,6 +38,10 @@ export default async function ShopifyIntegrationPage({
   const status = access.allowed
     ? await getShopifyConnectionStatus(user.id)
     : null
+  const shippingReadiness = await getShopifyShippingReadiness(
+    supabase,
+    user.id,
+  )
   const connection = status?.ok ? status.data : null
   let products: ShopifyDashboardData["products"] = []
   let productPageInfo: ShopifyDashboardData["productPageInfo"] = {
@@ -56,15 +64,27 @@ export default async function ShopifyIntegrationPage({
     }
   }
 
+  const connectOptions = access.allowed
+    ? await getShopifyDashboardConnectOptions(supabase, user.id)
+    : {
+        publicOAuthEnabled: false,
+        manualCanaryEnabled: false,
+        appInstallUrl: null,
+      }
+
   const params = await searchParams
   return (
     <ShopifyIntegrationDashboard
       initialData={{
         enabled: isShopifyIntegrationEnabled(),
         configured: isShopifyConfigured(),
+        publicOAuthEnabled: connectOptions.publicOAuthEnabled,
+        manualCanaryEnabled: connectOptions.manualCanaryEnabled,
+        appInstallUrl: connectOptions.appInstallUrl,
         connection,
         products,
         productPageInfo,
+        shippingReadiness,
         loadError,
       }}
       connected={params.connected === "1"}

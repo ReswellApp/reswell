@@ -466,7 +466,13 @@ export function MyListingsClient({
     setListingPatches((current) => {
       const next = { ...current }
       for (const listing of listings) {
-        if (listing.section !== section || !canQuickEditListing(listing.status)) continue
+        if (
+          listing.section !== section ||
+          listing.inventory_source === "shopify" ||
+          !canQuickEditListing(listing.status)
+        ) {
+          continue
+        }
         next[listing.id] = { ...next[listing.id], ...columns }
       }
       return next
