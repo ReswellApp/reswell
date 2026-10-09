@@ -29,12 +29,12 @@ import {
 import { evaluateUserPurchase } from "@/lib/services/accountRestrictions"
 import { assertBuyerMayPurchaseListingExclusiveWindow } from "@/lib/services/listingBuyerExclusiveWindow"
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
-import { computeCheckoutTotalWithNewsletterPromo } from "@/lib/services/newsletterPromo"
 import {
   releaseAndReserveCheckoutPromoForPaymentIntent,
   validateCheckoutPromoForCheckout,
   type CheckoutPromoRef,
 } from "@/lib/services/checkoutPromo"
+import { promoCheckoutLinesFromPricedListings } from "@/lib/utils/promo-product-type"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { normalizeNewsletterPromoCodeInput } from "@/lib/utils/newsletter-promo-code"
 import { verifyCheckoutShippingQuoteToken } from "@/lib/services/checkoutShippingQuoteToken"
@@ -508,6 +508,7 @@ export async function POST(request: NextRequest) {
   let promoKind: CheckoutPromoRef["kind"] | null = null
   let promoDiscountPercent = 0
   let promoRef: CheckoutPromoRef | null = null
+  let promoCheckTotalUsd = bundle.totalUsd
 
   if (promoCodeNormalized) {
     const buyerEmail = (await getAuthEmailForUserId(user.id)) ?? user.email?.trim() ?? ""
@@ -523,6 +524,10 @@ export async function POST(request: NextRequest) {
       buyerEmail,
       itemSubtotalUsd: bundle.totalItemPriceUsd,
       shippingUsd: bundle.totalShippingUsd,
+      lines: promoCheckoutLinesFromPricedListings({
+        listings: listingsForTotals,
+        pricedLines: bundle.lines,
+      }),
     })
 
     if (!promoCheck.ok) {
@@ -530,6 +535,7 @@ export async function POST(request: NextRequest) {
     }
 
     promoDiscountUsd = promoCheck.discountUsd
+    promoCheckTotalUsd = promoCheck.totalUsd
     promoCodeId = promoCheck.promo.id
     promoKind = promoCheck.kind
     promoDiscountPercent = promoCheck.discountPercent
@@ -539,14 +545,7 @@ export async function POST(request: NextRequest) {
         : { kind: "admin_issued", promo: promoCheck.promo }
   }
 
-  const chargedTotalUsd =
-    promoDiscountUsd > 0
-      ? computeCheckoutTotalWithNewsletterPromo({
-          itemSubtotalUsd: bundle.totalItemPriceUsd,
-          shippingUsd: bundle.totalShippingUsd,
-          discountPercent: promoDiscountPercent,
-        }).totalUsd
-      : bundle.totalUsd
+  const chargedTotalUsd = promoRef ? promoCheckTotalUsd : bundle.totalUsd
 
   const amountCents = Math.round(chargedTotalUsd * 100)
   if (amountCents < 50) {

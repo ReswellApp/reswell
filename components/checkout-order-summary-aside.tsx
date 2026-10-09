@@ -19,6 +19,8 @@ export type AppliedNewsletterPromo = {
   code: string
   discountUsd: number
   discountPercent: number
+  /** "fins" when the code is limited to a product type. Null discounts every item. */
+  appliesToLabel?: string | null
 }
 
 function sellerDisplayName(s: CheckoutSeller) {
@@ -195,7 +197,8 @@ export function CheckoutOrderSummaryAside({
             </p>
           ) : appliedPromo ? (
             <p className="mt-2 text-[12px] font-medium text-[#5574AD]">
-              {appliedPromo.code} applied — {appliedPromo.discountPercent}% off items
+              {appliedPromo.code} applied — {appliedPromo.discountPercent}% off{" "}
+              {appliedPromo.appliesToLabel ?? "items"}
             </p>
           ) : promoError ? (
             <p className="mt-2 text-[12px] text-destructive" role="alert">

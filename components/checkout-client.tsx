@@ -533,6 +533,11 @@ export function CheckoutClient({
             code,
             item_subtotal_usd: itemSubtotal,
             shipping_usd: shippingUsd,
+            listing_lines: listings.map((listing) => ({
+              id: listing.id,
+              quantity: Math.max(1, Math.floor(listing.quantity ?? 1)),
+            })),
+            ...(offerId ? { offer_id: offerId } : {}),
           }),
         })
         const data = (await res.json()) as {
@@ -541,6 +546,7 @@ export function CheckoutClient({
             code: string
             discountUsd: number
             discountPercent: number
+            appliesToLabel?: string | null
           }
         }
         if (!res.ok || !data.data) {
@@ -553,6 +559,7 @@ export function CheckoutClient({
           code: data.data.code,
           discountUsd: data.data.discountUsd,
           discountPercent: data.data.discountPercent,
+          appliesToLabel: data.data.appliesToLabel ?? null,
         })
         setPromoCodeInput(data.data.code)
         clearPendingPromoCode()
@@ -564,7 +571,7 @@ export function CheckoutClient({
         setPromoApplying(false)
       }
     },
-    [resolved, needsShipping, activeShipQuote],
+    [resolved, needsShipping, activeShipQuote, listings, offerId],
   )
 
   const handleApplyPromo = useCallback(() => {
