@@ -87,7 +87,9 @@ export function AdminUserDetailAccess({
           description={
             profile.shopify_connect_enabled
               ? 'Approved to connect a Shopify store and publish selected inventory.'
-              : 'Allow this merchant to use the Shopify inventory integration.'
+              : profile.shopify_connect_requested_at
+                ? `Requested Shopify plugin access ${formatBusinessDate(profile.shopify_connect_requested_at)}. Approval is still required.`
+                : 'Allow this merchant to use the Shopify inventory integration.'
           }
           actionLabel={profile.shopify_connect_enabled ? 'Remove' : 'Approve'}
           destructive={profile.shopify_connect_enabled}
