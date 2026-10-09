@@ -8,11 +8,10 @@ import { evaluateMessagePolicyForSend } from "@/lib/messages/message-policy-enfo
 import { evaluateUserMessageSend } from "@/lib/services/accountRestrictions"
 import { trackKlaviyoSupportTicketResponse } from "@/lib/klaviyo/track-support-ticket-response"
 import { trackKlaviyoMessageSent } from "@/lib/klaviyo/track-message-sent"
-import { MESSAGE_BLOCKED_POLICY_ERROR } from "@/lib/messages/policy-errors"
-import {
-  messagePolicyBlocksDelivery,
-  type MessagePolicyReasonCode,
-} from "@/lib/messages/fraud-reason-codes"
+import { sendResultAfterBlockedFraudCapture } from "@/lib/messages/message-ban-protocol"
+import { isMessagePolicyBlockedResult } from "@/lib/messages/policy-errors"
+import { isMessageSendRestrictionResult } from "@/lib/messages/send-restriction-errors"
+import type { MessagePolicyReasonCode } from "@/lib/messages/fraud-reason-codes"
 import {
   MARKETPLACE_MESSAGE_ATTACHMENTS_BUCKET,
   composeMediaAttachmentMessageBody,
@@ -33,7 +32,14 @@ export type SendMarketplaceMediaMessageResult =
         metadata: { attachment: MarketplaceMessageAttachment }
       }
     }
-  | { ok: false; error: string; policyReason?: MessagePolicyReasonCode; status?: number }
+  | {
+      ok: false
+      error: string
+      policyReason?: MessagePolicyReasonCode
+      restrictionCode?: string
+      restrictedUntil?: string
+      status?: number
+    }
 
 function attachmentPathBelongsToConversation(path: string, conversationId: string): boolean {
   const prefix = `${conversationId}/`
@@ -118,8 +124,9 @@ export async function sendMarketplaceMediaMessage(input: {
       trimmedCaption,
     )
     if (policyDecision) {
+      let banned = false
       try {
-        await captureBlockedFraudMessage(service, {
+        const captured = await captureBlockedFraudMessage(service, {
           conversationId,
           senderId,
           recipientId: receiverId,
@@ -131,16 +138,32 @@ export async function sendMarketplaceMediaMessage(input: {
           llmReviewRationale: policyDecision.llmReviewRationale,
           llmReviewSource: "send",
         })
+        banned = captured.banned
       } catch (e) {
         console.error("[sendMarketplaceMediaMessage] fraud_messages insert:", e)
       }
-      if (messagePolicyBlocksDelivery(policyDecision.reasonCode)) {
+      const blocked = sendResultAfterBlockedFraudCapture({
+        reasonCode: policyDecision.reasonCode,
+        banned,
+      })
+      if (blocked) {
         await removeOrphanAttachment(service, attachment.path)
-        return {
-          ok: false,
-          error: MESSAGE_BLOCKED_POLICY_ERROR,
-          policyReason: policyDecision.reasonCode,
-          status: 400,
+        if (isMessageSendRestrictionResult(blocked)) {
+          return {
+            ok: false,
+            error: blocked.error,
+            restrictionCode: blocked.restrictionCode,
+            restrictedUntil: blocked.restrictedUntil,
+            status: 403,
+          }
+        }
+        if (isMessagePolicyBlockedResult(blocked)) {
+          return {
+            ok: false,
+            error: blocked.error,
+            policyReason: blocked.policyReason,
+            status: 400,
+          }
         }
       }
     }
