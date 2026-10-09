@@ -14,6 +14,7 @@ import { resolveMixedCheckoutSellerId } from "@/lib/mixed-checkout"
 import { listingDetailHref } from "@/lib/listing-href"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { resolvePayableAmount } from "@/lib/purchase-amount"
+import { resolveCheckoutShippingPriceDisplay } from "@/lib/checkout-shipping-price"
 import {
   fetchCheckoutBuyerContext,
   fetchCheckoutSellerAndBuyerContext,
@@ -42,6 +43,7 @@ import {
 } from "@/lib/services/acceptedOfferCheckout"
 import { applyAcceptedOfferToPeerCheckoutListings } from "@/lib/services/applyAcceptedOfferToPeerCheckoutListings"
 import {
+  effectiveBoardShippingMode,
   PEER_SURFBOARD_CHECKOUT_LISTING_SELECT,
   type PeerSurfboardCheckoutListingRow,
 } from "@/lib/services/peerListingShippingQuote"
@@ -467,28 +469,40 @@ export default async function CheckoutPage(props: {
   const previewImpliedFulfillment: "pickup" | "shipping" = lp && sa ? "pickup" : !lp && sa ? "shipping" : "pickup"
   const previewNeedsShipping = previewImpliedFulfillment === "shipping"
   const previewResolved = resolvePayableAmount(checkoutListing, previewImpliedFulfillment)
+  const previewPriceDependsOnAddress =
+    previewNeedsShipping && effectiveBoardShippingMode(checkoutListing) === "reswell"
+  const previewShippingPrice = resolveCheckoutShippingPriceDisplay({
+    needsShipping: previewNeedsShipping,
+    priceDependsOnAddress: previewPriceDependsOnAddress,
+    hasShippingAddress: false,
+    quoteLoading: false,
+    quoteError: null,
+    shippingUsd: previewPriceDependsOnAddress || !previewResolved.ok ? null : previewResolved.shipping,
+  })
 
-  const previewTotals =
-    previewResolved.ok
-      ? {
-          itemPrice: previewResolved.itemPrice,
-          shipping: previewResolved.shipping,
-          total: previewResolved.total,
-        }
-      : { itemPrice: 0, shipping: 0, total: 0 }
+  const previewTotals = previewResolved.ok
+    ? {
+        itemPrice: previewResolved.itemPrice,
+        shipping: previewShippingPrice.amountUsd ?? 0,
+        total: Math.round((previewResolved.itemPrice + (previewShippingPrice.amountUsd ?? 0)) * 100) / 100,
+      }
+    : { itemPrice: 0, shipping: 0, total: 0 }
 
-  const previewShippingSummaryRight = (() => {
-    if (!previewNeedsShipping) {
-      return <span className="text-neutral-500">Local pickup</span>
-    }
-    if (previewResolved.ok && previewResolved.shipping === 0) {
-      return <span className="text-neutral-700">Free</span>
-    }
-    if (previewResolved.ok) {
-      return <span className="tabular-nums text-neutral-900">${previewResolved.shipping.toFixed(2)}</span>
-    }
-    return <span className="text-neutral-400">—</span>
-  })()
+  const previewShippingSummaryRight = (
+    <span
+      className={
+        previewShippingPrice.status === "priced"
+          ? "tabular-nums text-neutral-900"
+          : previewShippingPrice.status === "free"
+            ? "text-neutral-700"
+            : previewShippingPrice.status === "pending"
+              ? "text-neutral-400"
+              : "text-neutral-500"
+      }
+    >
+      {previewShippingPrice.label}
+    </span>
+  )
 
   const accountGate = !user || (user && isAnonymousSupabaseUser(user))
 

@@ -28,6 +28,7 @@ import {
   listingHasShippingModeFields,
   peerCheckoutNeedsLiveShippingQuote,
 } from "@/lib/checkout-peer-shipping-client"
+import { resolveCheckoutShippingPriceDisplay } from "@/lib/checkout-shipping-price"
 import { effectiveBoardShippingMode } from "@/lib/services/peerListingShippingQuote"
 import {
   peerCheckoutOffersShippingRateChoice,
@@ -203,6 +204,7 @@ export function CheckoutClient({
     shippingAddressId: null,
     shippingState: null,
     shippingCity: null,
+    shippingAddressVersion: 0,
   })
   const [surfboardPreview, setSurfboardPreview] = useState<SurfboardShippedCheckoutPreview | null>(
     null,
@@ -262,6 +264,16 @@ export function CheckoutClient({
     () => needsShipping && peerCheckoutNeedsLiveShippingQuote(listings.map(listingHasShippingModeFields)),
     [needsShipping, listings],
   )
+
+  const priceDependsOnAddress = needsLiveShippingQuote || surfboardShippedSelected
+
+  const staticShipQuote = useMemo(() => {
+    if (!needsShipping || priceDependsOnAddress || !resolved.ok) return null
+    return computeStaticPeerShippingQuoteUsd(
+      listings.map(listingHasShippingModeFields),
+      resolved.itemPrice,
+    )
+  }, [listings, needsShipping, priceDependsOnAddress, resolved])
 
   const [promoCodeInput, setPromoCodeInput] = useState("")
   const [appliedPromo, setAppliedPromo] = useState<AppliedNewsletterPromo | null>(null)
@@ -365,15 +377,6 @@ export function CheckoutClient({
       return
     }
 
-    if (!purchaseDetails.shippingAddressId) {
-      setShipQuote(null)
-      setShipQuoteToken(null)
-      setQuoteError(null)
-      setQuoteLoading(false)
-      setSelectedShippingServiceCode(null)
-      return
-    }
-
     if (!needsLiveShippingQuote) {
       if (!resolved.ok) {
         setShipQuote(null)
@@ -382,10 +385,21 @@ export function CheckoutClient({
         setQuoteLoading(false)
         return
       }
-      setShipQuote(computeStaticPeerShippingQuoteUsd(listings.map(listingHasShippingModeFields), resolved.itemPrice))
+      setShipQuote(
+        computeStaticPeerShippingQuoteUsd(listings.map(listingHasShippingModeFields), resolved.itemPrice),
+      )
       setShipQuoteToken(null)
       setQuoteError(null)
       setQuoteLoading(false)
+      return
+    }
+
+    if (!purchaseDetails.shippingAddressId) {
+      setShipQuote(null)
+      setShipQuoteToken(null)
+      setQuoteError(null)
+      setQuoteLoading(false)
+      setSelectedShippingServiceCode(null)
       return
     }
 
@@ -469,6 +483,8 @@ export function CheckoutClient({
     listings,
     offerId,
     purchaseDetails.shippingAddressId,
+    // Same address id is updated in place when the buyer edits it.
+    purchaseDetails.shippingAddressVersion,
     resolved,
     selectedShippingServiceCode,
     effectivePackagingMode,
@@ -480,6 +496,8 @@ export function CheckoutClient({
     setPurchaseDetails(state)
   }, [])
 
+  const activeShipQuote = staticShipQuote ?? shipQuote
+
   const applyPromoCode = useCallback(
     async (rawCode: string) => {
       const code = normalizeNewsletterPromoCodeInput(rawCode)
@@ -490,12 +508,7 @@ export function CheckoutClient({
       setPromoError(null)
 
       const itemSubtotal = resolved.ok ? resolved.itemPrice : 0
-      const shippingUsd =
-        needsShipping && shipQuote
-          ? shipQuote.shippingUsd
-          : resolved.ok
-            ? resolved.shipping
-            : 0
+      const shippingUsd = needsShipping && activeShipQuote ? activeShipQuote.shippingUsd : 0
 
       try {
         const res = await fetch("/api/promo/validate", {
@@ -538,7 +551,7 @@ export function CheckoutClient({
         setPromoApplying(false)
       }
     },
-    [resolved, needsShipping, shipQuote],
+    [resolved, needsShipping, activeShipQuote],
   )
 
   const handleApplyPromo = useCallback(() => {
@@ -599,17 +612,17 @@ export function CheckoutClient({
   }
 
   const displayTotals =
-    needsShipping && shipQuote
+    needsShipping && activeShipQuote
       ? {
           itemPrice: resolved.itemPrice,
-          shipping: shipQuote.shippingUsd,
-          total: shipQuote.totalUsd,
+          shipping: activeShipQuote.shippingUsd,
+          total: activeShipQuote.totalUsd,
           discount: appliedPromo?.discountUsd,
         }
       : {
           itemPrice: resolved.itemPrice,
-          shipping: resolved.shipping,
-          total: resolved.total,
+          shipping: 0,
+          total: resolved.itemPrice,
           discount: appliedPromo?.discountUsd,
         }
 
@@ -619,28 +632,34 @@ export function CheckoutClient({
     return Math.max(0, Math.round((baseTotal - discount) * 100) / 100)
   }, [displayTotals.total, appliedPromo?.discountUsd])
 
-  const shippingQuoteReady = !needsShipping || (!!shipQuote && !quoteLoading && !quoteError)
+  const shippingQuoteReady =
+    !needsShipping || (!!activeShipQuote && !quoteLoading && !quoteError)
   const paymentBlocked = !purchaseDetails.readyToPay || !shippingQuoteReady
 
-  const shippingSummaryRight = (() => {
-    if (!needsShipping) {
-      return <span className="text-neutral-500">Local pickup</span>
-    }
-    // Short text keeps the aside shipping row stable (no line-wrap on mobile = no height shift).
-    if (!purchaseDetails.readyToPay) {
-      return <span className="text-neutral-400">—</span>
-    }
-    if (quoteLoading) {
-      return <span className="text-neutral-500">Calculating…</span>
-    }
-    if (quoteError) {
-      return <span className="text-destructive">Unavailable</span>
-    }
-    if (displayTotals.shipping === 0) {
-      return <span className="text-neutral-700">Free</span>
-    }
-    return <span className="tabular-nums text-neutral-900">${displayTotals.shipping.toFixed(2)}</span>
-  })()
+  const shippingPriceDisplay = resolveCheckoutShippingPriceDisplay({
+    needsShipping,
+    priceDependsOnAddress,
+    hasShippingAddress: Boolean(purchaseDetails.shippingAddressId),
+    quoteLoading: priceDependsOnAddress && quoteLoading,
+    quoteError: priceDependsOnAddress ? quoteError : null,
+    shippingUsd: activeShipQuote ? activeShipQuote.shippingUsd : null,
+  })
+
+  const shippingSummaryRight = (
+    <span
+      className={cn(
+        "tabular-nums",
+        shippingPriceDisplay.status === "priced" && "text-neutral-900",
+        shippingPriceDisplay.status === "free" && "text-neutral-700",
+        shippingPriceDisplay.status === "unavailable" && "text-destructive",
+        shippingPriceDisplay.status === "pending" && "text-neutral-400",
+        (shippingPriceDisplay.status === "calculating" || shippingPriceDisplay.status === "pickup") &&
+          "text-neutral-500",
+      )}
+    >
+      {shippingPriceDisplay.label}
+    </span>
+  )
 
   const payButtonClassName = cn(
     "h-[52px] w-full rounded-[6px] text-[16px] font-semibold shadow-none",
@@ -879,12 +898,12 @@ export function CheckoutClient({
             {needsShipping && (
               <div className="mt-10 space-y-3">
                 <h2 className="text-[15px] font-semibold tracking-tight text-foreground">Shipping</h2>
-                {quoteError && purchaseDetails.readyToPay ? (
+                {quoteError && purchaseDetails.shippingAddressId ? (
                   <p className="rounded-[8px] border border-destructive/30 bg-destructive/5 px-4 py-3.5 text-[13px] leading-relaxed text-destructive">
                     {quoteError}
                   </p>
                 ) : null}
-                {!purchaseDetails.readyToPay ? (
+                {priceDependsOnAddress && !purchaseDetails.shippingAddressId ? (
                   <div className="min-h-[3.5rem] rounded-[8px] border border-neutral-200 bg-neutral-100/80 px-4 py-3.5 text-[13px] leading-relaxed text-neutral-600">
                     Enter your shipping address above to confirm delivery.
                   </div>
