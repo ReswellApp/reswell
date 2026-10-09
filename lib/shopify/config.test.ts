@@ -6,6 +6,7 @@ import {
   isShopifyPublicOAuthConfigured,
   isShopifyPublicOAuthEnabled,
   normalizeShopifyDomain,
+  parseShopifyAppInstallUrl,
   shopifyAppInstallUrl,
 } from "@/lib/shopify/config"
 import { shopifyManualConnectBodySchema } from "@/lib/validations/shopify"
@@ -43,14 +44,45 @@ test("normalizes myshopify domains and rejects custom hosts", () => {
   assert.equal(normalizeShopifyDomain("https://store.example.com"), null)
 })
 
-test("requires Shopify-owned HTTPS install URLs", () => {
-  process.env.SHOPIFY_APP_INSTALL_URL = "https://apps.shopify.com/reswell"
+test("parses Shopify-owned HTTPS install URLs without crashing on invalid hosts", () => {
+  delete process.env.SHOPIFY_APP_INSTALL_URL
+  assert.equal(parseShopifyAppInstallUrl(), null)
+  assert.throws(
+    () => shopifyAppInstallUrl(),
+    /SHOPIFY_APP_INSTALL_URL is not configured/,
+  )
+
+  process.env.SHOPIFY_APP_INSTALL_URL = "  https://apps.shopify.com/reswell  "
   assert.equal(
-    shopifyAppInstallUrl(),
+    parseShopifyAppInstallUrl(),
     "https://apps.shopify.com/reswell",
   )
+  assert.equal(shopifyAppInstallUrl(), "https://apps.shopify.com/reswell")
+
+  process.env.SHOPIFY_APP_INSTALL_URL = "https://admin.shopify.com/store/apps"
+  assert.equal(
+    parseShopifyAppInstallUrl(),
+    "https://admin.shopify.com/store/apps",
+  )
+  process.env.SHOPIFY_APP_INSTALL_URL = "https://shopify.com/admin"
+  assert.equal(parseShopifyAppInstallUrl(), "https://shopify.com/admin")
+  process.env.SHOPIFY_APP_INSTALL_URL = "https://www.shopify.com/apps"
+  assert.equal(parseShopifyAppInstallUrl(), "https://www.shopify.com/apps")
+
   process.env.SHOPIFY_APP_INSTALL_URL = "https://evil.example/install"
-  assert.throws(() => shopifyAppInstallUrl())
+  assert.equal(parseShopifyAppInstallUrl(), null)
+  assert.throws(
+    () => shopifyAppInstallUrl(),
+    /SHOPIFY_APP_INSTALL_URL must be a Shopify-owned HTTPS URL/,
+  )
+
+  process.env.SHOPIFY_APP_INSTALL_URL = "not a url"
+  assert.equal(parseShopifyAppInstallUrl(), null)
+
+  process.env.SHOPIFY_API_KEY = "key"
+  process.env.SHOPIFY_API_SECRET = "secret"
+  process.env.SHOPIFY_APP_INSTALL_URL = "https://partner.example/install"
+  assert.equal(isShopifyPublicOAuthConfigured(), false)
 })
 
 test("public OAuth and manual canary flags stay independent", () => {
