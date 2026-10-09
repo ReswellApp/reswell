@@ -145,6 +145,7 @@ export const MOBILE_BOARD_TYPES = [
 export type MobileListingCategory = (typeof MOBILE_LISTING_CATEGORIES)[number]
 export type MobileBoardType = (typeof MOBILE_BOARD_TYPES)[number]
 
+<<<<<<< Updated upstream
 export const MOBILE_CATEGORY_SORTS = ["relevant", "newest", "price-low", "price-high"] as const
 
 export const mobileCategorySortSchema = z.object({
@@ -191,34 +192,45 @@ export const mobileCategoryListingsQuerySchema = z.object({
 })
 
 export type MobileBrowseChip = {
+=======
+export type MobileCategoryChip = {
+>>>>>>> Stashed changes
   label: string
   category: MobileListingCategory
-  board_type?: MobileBoardType
+}
+
+export type MobileBoardStyleFilter = {
+  label: string
+  board_type: MobileBoardType
 }
 
 /**
- * Website browse order: surfboards, then shapes, then the rest of the category rail.
- * A shape chip also sets `category` to surfboards.
+ * Main category rail. Same order as the website header:
+ * Surfboards, Fins, Traction, Wetsuits, Apparel, Magazines.
+ * Board shapes stay off this row.
  */
-export const MOBILE_BROWSE_CHIPS: readonly MobileBrowseChip[] = [
+export const MOBILE_CATEGORY_CHIPS: readonly MobileCategoryChip[] = [
   { label: "Surfboards", category: "surfboards" },
-  { label: "Shortboard", category: "surfboards", board_type: "shortboard" },
-  { label: "Groveler", category: "surfboards", board_type: "groveler" },
-  { label: "Fish", category: "surfboards", board_type: "fish" },
-  { label: "Asym", category: "surfboards", board_type: "asym" },
-  { label: "Hybrid", category: "surfboards", board_type: "hybrid" },
-  { label: "Longboard", category: "surfboards", board_type: "longboard" },
-  { label: "Step-Up / Gun", category: "surfboards", board_type: "step-up-gun" },
-  { label: "Other", category: "surfboards", board_type: "other" },
   { label: "Fins", category: "fins" },
   { label: "Traction", category: "traction" },
   { label: "Wetsuits", category: "wetsuits" },
   { label: "Apparel", category: "apparel" },
   { label: "Magazines", category: "magazines" },
-  { label: "Boardbags", category: "boardbags" },
-  { label: "Surfpacks", category: "surfpacks" },
-  { label: "Leashes", category: "leashes" },
-  { label: "Accessories", category: "accessories" },
+]
+
+/**
+ * Surfboard shape filters. Same slugs and labels as the website board-style facet
+ * (`BOARD_STYLE_OPTIONS` / `/boards?type=`).
+ */
+export const MOBILE_BOARD_STYLE_FILTERS: readonly MobileBoardStyleFilter[] = [
+  { label: "Shortboard", board_type: "shortboard" },
+  { label: "Groveler", board_type: "groveler" },
+  { label: "Fish", board_type: "fish" },
+  { label: "Asym", board_type: "asym" },
+  { label: "Hybrid / Mid-Length", board_type: "hybrid" },
+  { label: "Longboard", board_type: "longboard" },
+  { label: "Step-Up / Gun", board_type: "step-up-gun" },
+  { label: "Other", board_type: "other" },
 ]
 
 const mobileListingsQueryObject = z.object({
