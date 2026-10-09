@@ -50,10 +50,6 @@ import {
 import { KlaviyoCheckoutStartedTracker } from "@/components/features/checkout/klaviyo-checkout-started-tracker"
 import { assertBuyerMayPurchaseListingsExclusiveWindow } from "@/lib/services/listingBuyerExclusiveWindow"
 import { peerCheckoutCopyFromSections } from "@/lib/peer-listing-item-nouns"
-import {
-  countSurfboardListings,
-  peerCheckoutSurfboardCountError,
-} from "@/lib/surfboard-multi-board-parcel"
 import { getSurfboardShippedCheckoutSeed } from "@/lib/services/surfboardShippedOffer"
 import type { SurfboardShippedCheckoutSeed } from "@/lib/services/surfboardShippedOffer"
 
@@ -130,10 +126,6 @@ export default async function CheckoutPage(props: {
     }
 
     const checkoutListings = loaded.listings.map(rowToCheckoutListing)
-
-    if (peerCheckoutSurfboardCountError(countSurfboardListings(checkoutListings))) {
-      redirect("/messages/offers")
-    }
 
     if (checkoutListings.some((l) => l.user_id === user.id)) {
       redirect("/messages/offers")
@@ -238,10 +230,6 @@ export default async function CheckoutPage(props: {
       bundle.lines.map((l) => [l.listing.id, Number(l.listing.price)] as const),
     )
     let checkoutListings = bundle.lines.map((l) => rowToCheckoutListing(l.listing, l.quantity))
-
-    if (peerCheckoutSurfboardCountError(countSurfboardListings(checkoutListings))) {
-      redirect("/cart")
-    }
 
     const pricedRows = await applyAcceptedOfferToPeerCheckoutListings(
       supabase,

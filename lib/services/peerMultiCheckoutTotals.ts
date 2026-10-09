@@ -16,6 +16,7 @@ import { getReswellShopLineEarnings, isReswellShopListing } from "@/lib/reswell-
 import {
   countSurfboardListings,
   peerCheckoutSurfboardCountError,
+  surfboardsRequireSeparatePackages,
 } from "@/lib/surfboard-multi-board-parcel"
 import {
   DEFAULT_SHIPPING_PACKAGING_MODE,
@@ -104,9 +105,16 @@ export async function computePeerMultiCheckoutUsd(params: {
       ? resolveShippingPackagingMode(params.packagingMode, DEFAULT_SHIPPING_PACKAGING_MODE)
       : DEFAULT_SHIPPING_PACKAGING_MODE
 
-  const surfboardCapError = peerCheckoutSurfboardCountError(countSurfboardListings(listingsOrdered))
-  if (surfboardCapError) {
-    return { ok: false, error: surfboardCapError }
+  const surfboardCount = countSurfboardListings(listingsOrdered)
+  if (
+    fulfillment === "shipping" &&
+    packagingMode !== "separate" &&
+    surfboardsRequireSeparatePackages(surfboardCount)
+  ) {
+    const surfboardCapError = peerCheckoutSurfboardCountError(surfboardCount)
+    if (surfboardCapError) {
+      return { ok: false, error: surfboardCapError }
+    }
   }
 
   if (params.fixedShippingUsd != null && listingsOrdered.length !== 1) {

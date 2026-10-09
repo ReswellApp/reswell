@@ -18,17 +18,13 @@ import {
   type CheckoutShippingPackageRate,
 } from "@/lib/services/checkoutShippingQuoteToken"
 import {
-  countSurfboardListings,
-  peerCheckoutSurfboardCountError,
-} from "@/lib/surfboard-multi-board-parcel"
-import {
   findPeerCheckoutRateOption,
   findPeerCheckoutRateOptionByServiceCode,
   peerCheckoutSharedSection,
 } from "@/lib/shipping/peer-checkout-usps-services"
 import {
-  checkoutOffersShippingPackagingChoice,
   DEFAULT_SHIPPING_PACKAGING_MODE,
+  resolveMultiItemPackagingMode,
   resolveShippingPackagingMode,
   type ShippingPackagingMode,
 } from "@/lib/shipping/packaging-mode"
@@ -197,14 +193,6 @@ export async function POST(request: Request) {
   }
   const sellerId = mixedSeller.sellerId
 
-  const surfboardCapError = peerCheckoutSurfboardCountError(countSurfboardListings(listingRows))
-  if (surfboardCapError) {
-    return NextResponse.json(
-      { error: surfboardCapError },
-      { status: 422, headers: JSON_NO_STORE_HEADERS },
-    )
-  }
-
   if (!listingRows.every((l) => !!l.shipping_available)) {
     return NextResponse.json(
       { error: "Every item in this order must offer shipping." },
@@ -311,10 +299,11 @@ export async function POST(request: Request) {
     )
   }
 
-  const packagingMode: ShippingPackagingMode =
-    checkoutOffersShippingPackagingChoice(listingRows) && packagingModeRequested === "separate"
-      ? "separate"
-      : "together"
+  const packagingMode = resolveMultiItemPackagingMode({
+    listings: listingRows,
+    requested: packagingModeRequested,
+    fulfillment: "shipping",
+  })
 
   if (packagingMode === "separate") {
     const quantityByListingId = Object.fromEntries(qtyById.entries())
