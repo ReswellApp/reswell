@@ -1,0 +1,255 @@
+<!--
+  Reswell · Klaviyo flow — Welcome gift / first-order discount
+  Paste into Flows → Email → Code / HTML (or a Custom HTML block).
+
+  Suggested trigger: List / Added to list (newsletter or account created),
+  or Metric → Signed Up. Trigger filter: `reswell_metric_seed` is not true.
+
+  Subject: A little welcome gift, just for you
+  Preview: Your discount code is inside.
+
+  Before the flow goes live, replace:
+  - COUPON_NAME with the Klaviyo coupon name
+  - [XX%] and [OFFER TERMS / EXPIRY]
+  - [COMPANY LEGAL NAME] and the address line (Klaviyo can also inject
+    organization fields from the account footer)
+
+  Tags used (Klaviyo): first_name, coupon_code, web_view_link,
+  manage_preferences_link, unsubscribe_link, current_year.
+
+  Do not use {% if %} / {% for %} in this workspace — they often print as raw text.
+  Colors are brand tokens: #163060 deep blue, #355185 dark blue, #04070E, #64748B, #E2E8F0.
+-->
+<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">
+  A little welcome gift, just for you. Your discount code is inside.
+</div>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;background:#FFFFFF;">
+  <tr>
+    <td align="center" style="padding:0 0 40px 0;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;max-width:600px;">
+
+        <!-- Gift line -->
+        <tr>
+          <td align="center" style="padding:28px 32px 8px 32px;font-family:Arial, Helvetica, sans-serif;font-size:13px;line-height:1.4;color:#64748B;">
+            A little welcome gift, just for you. &#10024;
+          </td>
+        </tr>
+
+        <!-- Logo + view in browser -->
+        <tr>
+          <td style="padding:8px 32px 20px 32px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">
+              <tr>
+                <td align="left" valign="middle">
+                  <a href="https://www.reswell.app/boards?utm_source=klaviyo&utm_medium=email&utm_campaign=welcome_discount&utm_content=logo" style="text-decoration:none;">
+                    <img src="https://www.reswell.app/images/reswell-logo.png" alt="Reswell" width="132" height="18" style="display:block;width:132px;max-width:100%;height:auto;border:0;" />
+                  </a>
+                </td>
+                <td align="right" valign="middle" style="font-family:Arial, Helvetica, sans-serif;font-size:13px;line-height:1.4;">
+                  <a href="{% web_view_link %}" style="color:#64748B;text-decoration:underline;">View in browser</a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Hero -->
+        <tr>
+          <td style="padding:0;">
+            <a href="https://www.reswell.app/boards?utm_source=klaviyo&utm_medium=email&utm_campaign=welcome_discount&utm_content=hero" style="text-decoration:none;">
+              <img src="https://www.reswell.app/images/email/welcome-hero-beach.jpg" alt="Surfers on the beach at sunset" width="600" height="292" style="display:block;width:100%;max-width:600px;height:auto;border:0;" />
+            </a>
+          </td>
+        </tr>
+
+        <!-- Welcome -->
+        <tr>
+          <td align="center" style="padding:36px 32px 0 32px;">
+            <p style="margin:0;font-family:Arial, Helvetica, sans-serif;font-size:12px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#355185;">
+              Welcome to something better
+            </p>
+            <h1 style="margin:14px 0 0 0;font-family:Arial, Helvetica, sans-serif;font-size:36px;font-weight:700;line-height:1.15;letter-spacing:-0.03em;color:#04070E;">
+              Hello, {{ first_name|default:'there' }}.
+            </h1>
+            <p style="margin:16px 0 0 0;font-family:Arial, Helvetica, sans-serif;font-size:16px;line-height:1.55;color:#64748B;">
+              We are the surfer to surfer marketplace connecting surfers nationwide to buy and sell surfboards.
+            </p>
+            <p style="margin:28px 0 0 0;font-family:Arial, Helvetica, sans-serif;font-size:15px;line-height:1.4;color:#04070E;">
+              Your discount code is:
+            </p>
+          </td>
+        </tr>
+
+        <!-- Coupon -->
+        <tr>
+          <td align="center" style="padding:12px 32px 0 32px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+              <tr>
+                <td align="center" style="padding:14px 28px;border:1px solid #E2E8F0;border-radius:8px;font-family:Arial, Helvetica, sans-serif;font-size:16px;font-weight:700;letter-spacing:0.04em;color:#04070E;">
+                  {% coupon_code 'COUPON_NAME' %}
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Primary CTA -->
+        <tr>
+          <td align="center" style="padding:22px 32px 8px 32px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+              <tr>
+                <td align="center" bgcolor="#163060" style="border-radius:50px;">
+                  <a href="https://www.reswell.app/boards?utm_source=klaviyo&utm_medium=email&utm_campaign=welcome_discount&utm_content=discover" style="display:inline-block;padding:16px 36px;font-family:Arial, Helvetica, sans-serif;font-size:14px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#FFFFFF;text-decoration:none;">
+                    Discover the collection
+                  </a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Why you'll love us -->
+        <tr>
+          <td align="center" style="padding:48px 32px 0 32px;">
+            <p style="margin:0;font-family:Arial, Helvetica, sans-serif;font-size:12px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#355185;">
+              Why you&rsquo;ll love us
+            </p>
+            <h2 style="margin:10px 0 0 0;font-family:Arial, Helvetica, sans-serif;font-size:28px;font-weight:700;line-height:1.2;letter-spacing:-0.03em;color:#04070E;">
+              Made with intention
+            </h2>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:28px 16px 8px 16px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">
+              <tr>
+                <td class="stack" width="33%" valign="top" style="padding:0 12px 16px 12px;font-family:Arial, Helvetica, sans-serif;">
+                  <p style="margin:0;font-size:28px;font-weight:700;letter-spacing:-0.03em;color:#163060;">01</p>
+                  <p style="margin:10px 0 0 0;font-size:16px;font-weight:700;line-height:1.3;color:#04070E;">Made for surfers by surfers.</p>
+                  <p style="margin:8px 0 0 0;font-size:14px;line-height:1.5;color:#64748B;">Dedicated to making the most enjoyable place for surfers to buy and sell boards, fins and more.</p>
+                </td>
+                <td class="stack" width="33%" valign="top" style="padding:0 12px 16px 12px;font-family:Arial, Helvetica, sans-serif;">
+                  <p style="margin:0;font-size:28px;font-weight:700;letter-spacing:-0.03em;color:#163060;">02</p>
+                  <p style="margin:10px 0 0 0;font-size:16px;font-weight:700;line-height:1.3;color:#04070E;">More trust.</p>
+                  <p style="margin:8px 0 0 0;font-size:14px;line-height:1.5;color:#64748B;">Reswell works hard to maintain trust between buying and selling.</p>
+                </td>
+                <td class="stack" width="34%" valign="top" style="padding:0 12px 16px 12px;font-family:Arial, Helvetica, sans-serif;">
+                  <p style="margin:0;font-size:28px;font-weight:700;letter-spacing:-0.03em;color:#163060;">03</p>
+                  <p style="margin:10px 0 0 0;font-size:16px;font-weight:700;line-height:1.3;color:#04070E;">Here for you.</p>
+                  <p style="margin:8px 0 0 0;font-size:14px;line-height:1.5;color:#64748B;">Real surfers here when you need us.</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Wave -->
+        <tr>
+          <td style="padding:20px 0 0 0;">
+            <a href="https://www.reswell.app/boards?utm_source=klaviyo&utm_medium=email&utm_campaign=welcome_discount&utm_content=wave" style="text-decoration:none;">
+              <img src="https://www.reswell.app/images/email/welcome-wave.jpg" alt="A breaking wave with flags along the beach" width="600" height="134" style="display:block;width:100%;max-width:600px;height:auto;border:0;" />
+            </a>
+          </td>
+        </tr>
+
+        <!-- Reviews -->
+        <tr>
+          <td align="center" style="padding:40px 32px 0 32px;">
+            <h2 style="margin:0;font-family:Arial, Helvetica, sans-serif;font-size:12px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#355185;">
+              Reviews from surfers
+            </h2>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:24px 12px 8px 12px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">
+              <tr>
+                <td class="stack" width="33%" valign="top" style="padding:0 12px 20px 12px;font-family:Arial, Helvetica, sans-serif;">
+                  <p style="margin:0;font-size:14px;letter-spacing:0.08em;color:#163060;">&#9733;&#9733;&#9733;&#9733;&#9733;</p>
+                  <p style="margin:10px 0 0 0;font-size:14px;line-height:1.5;color:#04070E;">&ldquo;Fantastic seller, fast shipping, beyond high quality packaging, and great communication. Could not recommend more!&rdquo;</p>
+                  <p style="margin:12px 0 0 0;font-size:12px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:#355185;">&mdash; Outsurfing &middot; Sep 22, 2026</p>
+                </td>
+                <td class="stack" width="33%" valign="top" style="padding:0 12px 20px 12px;font-family:Arial, Helvetica, sans-serif;">
+                  <p style="margin:0;font-size:14px;letter-spacing:0.08em;color:#163060;">&#9733;&#9733;&#9733;&#9733;&#9733;</p>
+                  <p style="margin:10px 0 0 0;font-size:14px;line-height:1.5;color:#04070E;">&ldquo;GREAT BUYER. RESWELL IS A GREAT PLATFORM. I SENT IT OUT FROM NJ TO CALI. WAS VERY SMOOTH AND EASY TRANSACTION. BETTER THEN DEALING WITH FACEBOOK MARKETPLACE FLAKY PEOPLE.&rdquo;</p>
+                  <p style="margin:12px 0 0 0;font-size:12px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:#355185;">&mdash; Todd Barry &middot; Sep 12, 2026</p>
+                </td>
+                <td class="stack" width="34%" valign="top" style="padding:0 12px 20px 12px;font-family:Arial, Helvetica, sans-serif;">
+                  <p style="margin:0;font-size:14px;letter-spacing:0.08em;color:#163060;">&#9733;&#9733;&#9733;&#9733;&#9733;</p>
+                  <p style="margin:10px 0 0 0;font-size:14px;line-height:1.5;color:#04070E;">&ldquo;Excellent dudes! Fins were in perfect condition, shipping was quick and superb communication. I would definitely recommend Reswell! &#129305;&rdquo;</p>
+                  <p style="margin:12px 0 0 0;font-size:12px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:#355185;">&mdash; Todd.M.Heinle &middot; Sep 22, 2026</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Promo -->
+        <tr>
+          <td style="padding:16px 24px 0 24px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;background:#355185;">
+              <tr>
+                <td align="center" style="padding:40px 28px 36px 28px;">
+                  <p style="margin:0;font-family:Arial, Helvetica, sans-serif;font-size:12px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#FFFFFF;">
+                    A welcome from us
+                  </p>
+                  <h2 style="margin:12px 0 0 0;font-family:Arial, Helvetica, sans-serif;font-size:32px;font-weight:700;line-height:1.15;letter-spacing:-0.03em;color:#FFFFFF;">
+                    Enjoy [XX%] off your first order
+                  </h2>
+                  <p style="margin:14px 0 0 0;font-family:Arial, Helvetica, sans-serif;font-size:15px;line-height:1.5;color:#FFFFFF;">
+                    Use your editable code at checkout. Valid for [OFFER TERMS / EXPIRY].
+                  </p>
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin:22px auto 0 auto;">
+                    <tr>
+                      <td align="center" bgcolor="#FFFFFF" style="border-radius:8px;border:1px dashed #163060;padding:12px 22px;font-family:Arial, Helvetica, sans-serif;font-size:15px;font-weight:700;letter-spacing:0.04em;color:#163060;">
+                        {% coupon_code 'COUPON_NAME' %}
+                      </td>
+                    </tr>
+                  </table>
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin:22px auto 0 auto;">
+                    <tr>
+                      <td align="center" bgcolor="#163060" style="border-radius:50px;">
+                        <a href="https://www.reswell.app/boards?utm_source=klaviyo&utm_medium=email&utm_campaign=welcome_discount&utm_content=shop" style="display:inline-block;padding:16px 36px;font-family:Arial, Helvetica, sans-serif;font-size:14px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#FFFFFF;text-decoration:none;">
+                          Shop surfboards
+                        </a>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td align="center" style="padding:36px 32px 0 32px;">
+            <a href="https://www.reswell.app/?utm_source=klaviyo&utm_medium=email&utm_campaign=welcome_discount&utm_content=footer_logo" style="text-decoration:none;">
+              <img src="https://www.reswell.app/images/reswell-logo.png" alt="Reswell" width="132" height="18" style="display:block;margin:0 auto;width:132px;max-width:100%;height:auto;border:0;" />
+            </a>
+            <p style="margin:14px 0 0 0;font-family:Arial, Helvetica, sans-serif;font-size:14px;">
+              <a href="https://www.instagram.com/reswellll/" style="color:#04070E;text-decoration:underline;">Instagram</a>
+            </p>
+            <p style="margin:22px 0 0 0;font-family:Arial, Helvetica, sans-serif;font-size:12px;line-height:1.55;color:#64748B;">
+              You&rsquo;re receiving this email because you signed up for news and offers from Reswell.
+            </p>
+            <p style="margin:8px 0 0 0;font-family:Arial, Helvetica, sans-serif;font-size:12px;line-height:1.55;color:#64748B;">
+              [COMPANY LEGAL NAME] &middot; [STREET ADDRESS] &middot; [CITY, STATE ZIP] &middot; [COUNTRY]
+            </p>
+            <p style="margin:14px 0 0 0;font-family:Arial, Helvetica, sans-serif;font-size:12px;line-height:1.55;">
+              <a href="{% manage_preferences_link %}" style="color:#355185;text-decoration:underline;">Manage preferences</a>
+              &nbsp;&middot;&nbsp;
+              <a href="{% unsubscribe_link %}" style="color:#355185;text-decoration:underline;">Unsubscribe</a>
+            </p>
+            <p style="margin:14px 0 0 0;font-family:Arial, Helvetica, sans-serif;font-size:12px;line-height:1.55;color:#64748B;">
+              &copy; {% current_year %} Reswell. All rights reserved.
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
