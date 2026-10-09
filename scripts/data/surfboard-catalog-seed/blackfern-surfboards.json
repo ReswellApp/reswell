@@ -1,0 +1,85 @@
+{
+  "generated_for": "Blackfern official named standup catalog",
+  "source": "https://www.blackfernsurf.com/ official Squarespace model pages (SHORT / ALT / FUN / LONG) — excludes CRISPR and Proper gallery tiles with no live model pages, tees, and custom-only placeholders",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "blackfern-surfboards",
+      "name": "Blackfern Surfboards",
+      "website_url": "https://www.blackfernsurf.com/",
+      "location_label": "Portland, Oregon",
+      "founder_name": "Mike Hall",
+      "lead_shaper_name": "Mike Hall",
+      "short_description": "Hand-made custom surfboards from Mike Hall's backyard shaping bay in Portland — shortboards, fishes, funboards, and longboards built one at a time for Pacific Northwest waves.",
+      "logo_url": "https://images.squarespace-cdn.com/content/530b8d9ae4b01764e002f660/1393290688603-PCU544KCC6V74TRSOQQY/blkfrn_2.png",
+      "models": [
+        {
+          "name": "Plankton",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/530b8d9ae4b01764e002f660/1585070132902-BAITU0F4V47FW0FBV2HK/plankton_.png?format=jpg",
+          "description": "The Plankton is a meaty all around shortboard. It is designed in response to the frame-shift in modern surfing towards shorter, wider boards. The Plankton can float through miserable sections and be poised to hit the lip when a wave shapes up. Aggressive single concavity, coupling with a ton of tail rocker, give this board a crisp, snappy feel. With a bit of extra volume, the Plankton is the definition of a Northwest daily driver. If you have to choose a single shortboard for any type of conditions, this is it.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Modern",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/530b8d9ae4b01764e002f660/1585149487677-Q6JIXX0TAR8WW3LWUANB/modern.png?format=jpg",
+          "description": "The Modern fish is essentially a clone of Rob Machado's Seaside model. I cloned this board for a customer and was quite intrigued by its approach to fishing. Essentially, it's got a wider and more curvy outline, which makes it more skatey feeling. That, combined with the super deep nested double concave (a double concave within a single concave), make the board way more responsive and snappy than you might have thought possible. It can glide along more effortlessly than a shortboard but is fully capable of doing tight radius, in-the-lip turns.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Simms",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/530b8d9ae4b01764e002f660/1585149488225-1A5V6JBMNCOTWQK0XKNW/simms.png?format=jpg",
+          "description": "The Mini Simmons implements planing hull theory on a very small sized board. Mini Simms can be ridden up to a foot shorter than your shortboard and still allow you to easily catch and stay with waves. The wide tail and waist, and minimal tail rocker help maximize the planing ability of the board. For maneuverability, it has two fin boxes positioned very near to the tail. This provides the board with ample drive while diminishing overall fin area, making it easy to overpower the fins on turns, making tail throws/slides easier than you might think. Your first ride on a Simms is a true revelation and adds an amazing new dimension to your surf experience.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Retro",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/530b8d9ae4b01764e002f660/1585149538797-34HEVYBS6DNVKA6ZVLOA/retro.png?format=jpg",
+          "description": "One of the most versatile surfboard models ever built. A classic retro fish designed to make the most of your Northwest summer session. You might not be able to hack the lip quite as hard as a high-performance shortboard but you'll catch plenty of waves. The retro fish has a rocker that matches the slopey shape of Pacific Northwest summer swell and has enough thickness to maintain float in gutless waves. The McKee quad setup adds to the board's speed but does not have any of the tracking issues of a standard quad setup. Single-double concavity and a thinned out tail make for a responsive and loose feel. This board is also a great option for those wishing to make the transition between longboard and shortboard.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Twinny",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/530b8d9ae4b01764e002f660/1585149488569-1CE0RO9BR8JA8Q961GUD/twinny.png?format=jpg",
+          "description": "The Twinny is inspired by Morning of the Earth surfboard's Fiji and Massive models. The problem with riding twin fins on larger waves is that they can slide out due to the absence of the center fin. That's where the channels come in — they help to lock in the tail without creating extra drag. This feature, combined with the relaxed rocker profile overall, make this board lightning fast. I personally love riding it on head to double overhead waves. Mine is 8 inches longer than my go-to shortboard, which makes it a breeze to navigate in larger conditions.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Hank",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/530b8d9ae4b01764e002f660/1585149487649-YZID4UHUGK0TO52WMB1P/hank.png?format=jpg",
+          "description": "Hank provides a unique platform for wave sliding creativity. The intent here is to use your body position to work the board, similar to how a longboard is ridden. The spooned nose enables toe dancing nose ride potential while the veed tail and tight pin tail yield a tight pivot point. Hank keeps its width into the tail area more so than nearly any other model we offer. The parallel water line gives her plenty of speed. Overall, this is a wide and stable board that's ultra efficient at paddling and catching waves. Check out a Hank if you like the thought of drawing creative lines and value style over maneuvers.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Vesper",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/530b8d9ae4b01764e002f660/1585168247855-0M193OE7UY755ZR7E3AA/vesper.png?format=jpg",
+          "description": "Vesper is a modified funboard designed to draw smoother, more fluid turns while not sacrificing wave count. Great for surfers intending to conquer the shortboard world down the road, Vesper has a balanced outline that yields a more lively feel than a traditional funboard. The front two thirds of the board feature 60-40 rails, making for easy and forgiving turns. In the back third, the thinned out rails on the hemmed tail help stabilize the board while promoting deep, gouging turns. These features, combined with aggressive double concavity, perfectly blend stability and maneuverability.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Magnolia",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/530b8d9ae4b01764e002f660/1585168253980-GGHTS2ZQJ95UAPQAAS0P/magnolia.png?format=jpg",
+          "description": "Meet Blackfern's more versatile funboard. Magnolia is designed for beginner-intermediate riders. All the familiar attributes of a funboard — easy paddling, stable take offs, and ample volume — are present but Magnolia throws some new features into the mix. It has a squared tail with deep bottom contours, which gives the board a lot of bite when the rider's weight is shifted over it. Due to its parallel rail lines and low rocker, Magnolia is fast down the line as well as paddling into waves. Customize your rocker if you want to tackle larger waves of the fall and winter.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Smooth",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/530b8d9ae4b01764e002f660/1585168247745-FRRMCCKS7P5QPHRL970C/smooth.png?format=jpg",
+          "description": "Smooth is an easy riding funboard reminiscent of a scaled down longboard. Its ultra-wide and stable nose provides stability and ease to wave riding. Smooth has a mellow tail and nose rocker with a slight kick over the front 6 inches to keep the nose from pearling. Safe, full rails keep the board stable while double concavity in the tail keep the board lively. The board has ample volume, helping you catch and surf waves easily. Intended for beginners, Smooth is the easiest surfing of Blackfern's funboard collection.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Oso Doso",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/530b8d9ae4b01764e002f660/1585237438010-NUEBX2QFEW7406ZNCYD7/oso.png?format=jpg",
+          "description": "Oso Doso is a clone of our favorite Randy Rarrick Bear longboard. It is a performance longboard that is much more responsive and nimble than the standard log. Oso's generous tail rocker and convex aka belly bottom contours create smooth, pivoting turns. The moderate nose rocker gives rise to cheeky nose rides — less so than what's possible on the noserider but the potential is still there. Oso is an amazingly well rounded board that will turn a day of waist high crumblers into a joyous experience.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Noseride",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/530b8d9ae4b01764e002f660/1585237437970-BA4I2Z9H8RNX6H2YQ6W0/noserider.png?format=jpg",
+          "description": "The Noseride is a longboard specifically designed for riding the nose. The outline tells the story — pivot off the hips at the rear of the board, establish trim, and dance to the nose. To help you in your journey forward, the noseride features a spooned nose and belly concavity throughout the back two thirds of the board. The rocker profile is more generous in the tail than in the nose, lending to smooth turns and smooth toe-curling nasal rides. Recommended addition: glassed on pivot fin.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
