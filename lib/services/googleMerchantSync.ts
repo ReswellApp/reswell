@@ -3,13 +3,27 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { z } from "zod"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import {
+  clearGoogleMerchantPublication,
+  listDueGoogleMerchantListingIds,
+  recordGoogleMerchantPublicationFailure,
+  recordGoogleMerchantPublicationSuccess,
+} from "@/lib/db/google-merchant-publications"
+import {
   getGoogleMerchantListingById,
   listGoogleMerchantListingBatch,
 } from "@/lib/db/google-merchant-listings"
 import {
   GOOGLE_MERCHANT_OUTSURFING_SHOP_SELLER_EMAIL,
+  GOOGLE_MERCHANT_PEER_SECTIONS,
   isGoogleMerchantConfigured,
+  isGoogleMerchantPeerSection,
 } from "@/lib/google-merchant/config"
+import { isListingDiscoveryEligible } from "@/lib/listing-public-visibility"
+import {
+  GOOGLE_MERCHANT_REVALIDATE_BATCH_LIMIT,
+  googleMerchantRevalidateCutoff,
+  googleMerchantRevalidateRetryCutoff,
+} from "@/lib/google-merchant/publication"
 import {
   isGoogleMerchantEligibleListing,
   mapListingToProductInput,
@@ -56,6 +70,74 @@ async function googleMerchantProductInputContext(
 export type GoogleMerchantSyncListingResult =
   | { action: "inserted" | "deleted" | "skipped"; offerId: string }
   | { action: "error"; offerId: string; error: string }
+
+const listingIdSchema = z.string().uuid()
+
+function publicationWriter(): SupabaseClient | null {
+  try {
+    return createServiceRoleClient()
+  } catch (error) {
+    console.error("[google-merchant] publication log unavailable", {
+      error: error instanceof Error ? error.message : String(error),
+    })
+    return null
+  }
+}
+
+async function rememberGoogleMerchantPublicationSuccess(
+  listingId: string,
+  publishedAt: Date,
+): Promise<void> {
+  const parsed = listingIdSchema.safeParse(listingId)
+  const supabase = publicationWriter()
+  if (!parsed.success || !supabase) return
+
+  const result = await recordGoogleMerchantPublicationSuccess(supabase, parsed.data, publishedAt)
+  if (result.error) {
+    console.error("[google-merchant] publication record failed", {
+      listingId,
+      error: result.error,
+    })
+  }
+}
+
+async function rememberGoogleMerchantPublicationFailure(
+  listingId: string,
+  errorMessage: string,
+  options?: { clearPublishedAt?: boolean },
+): Promise<void> {
+  const parsed = listingIdSchema.safeParse(listingId)
+  const supabase = publicationWriter()
+  if (!parsed.success || !supabase) return
+
+  const result = await recordGoogleMerchantPublicationFailure(
+    supabase,
+    parsed.data,
+    new Date(),
+    errorMessage,
+    options,
+  )
+  if (result.error) {
+    console.error("[google-merchant] publication failure record failed", {
+      listingId,
+      error: result.error,
+    })
+  }
+}
+
+async function forgetGoogleMerchantPublication(listingId: string): Promise<void> {
+  const parsed = listingIdSchema.safeParse(listingId)
+  const supabase = publicationWriter()
+  if (!parsed.success || !supabase) return
+
+  const result = await clearGoogleMerchantPublication(supabase, parsed.data)
+  if (result.error) {
+    console.error("[google-merchant] publication clear failed", {
+      listingId,
+      error: result.error,
+    })
+  }
+}
 
 /**
  * Fire-and-forget helper for listing mutations. Logs failures; never throws.
@@ -136,8 +218,10 @@ export async function syncListingToGoogleMerchant(
   if (!listing) {
     const deleted = await deleteGoogleMerchantProductInput(listingId)
     if (!deleted.ok && deleted.status !== 404) {
+      await rememberGoogleMerchantPublicationFailure(listingId, deleted.error)
       return { action: "error", offerId: listingId, error: deleted.error }
     }
+    await forgetGoogleMerchantPublication(listingId)
     return { action: "deleted", offerId: listingId }
   }
 
@@ -146,16 +230,36 @@ export async function syncListingToGoogleMerchant(
   if (!productInput) {
     const deleted = await deleteGoogleMerchantProductInput(listing.id)
     if (!deleted.ok && deleted.status !== 404) {
+      await rememberGoogleMerchantPublicationFailure(listing.id, deleted.error)
       return { action: "error", offerId: listing.id, error: deleted.error }
+    }
+    const stillActive =
+      isGoogleMerchantPeerSection(listing.section) &&
+      isListingDiscoveryEligible({
+        status: listing.status,
+        title: listing.title,
+        hidden_from_site: listing.hidden_from_site,
+        archived_at: listing.archived_at,
+      })
+    if (stillActive) {
+      await rememberGoogleMerchantPublicationFailure(
+        listing.id,
+        "listing is not eligible for Google Merchant",
+        { clearPublishedAt: true },
+      )
+    } else {
+      await forgetGoogleMerchantPublication(listing.id)
     }
     return { action: "deleted", offerId: listing.id }
   }
 
   const inserted = await insertGoogleMerchantProductInput(productInput)
   if (!inserted.ok) {
+    await rememberGoogleMerchantPublicationFailure(listing.id, inserted.error)
     return { action: "error", offerId: listing.id, error: inserted.error }
   }
 
+  await rememberGoogleMerchantPublicationSuccess(listing.id, new Date())
   return { action: "inserted", offerId: listing.id }
 }
 
@@ -165,6 +269,13 @@ export type GoogleMerchantBulkSyncSummary = {
   deleted: number
   skipped: number
   errors: number
+  reconciled_checked: number
+  reconciled_deleted: number
+  reconciled_errors: number
+  error_samples: Array<{ offerId: string; error: string }>
+}
+
+type GoogleMerchantReconcileCounters = {
   reconciled_checked: number
   reconciled_deleted: number
   reconciled_errors: number
@@ -195,7 +306,7 @@ async function collectEligibleOfferIds(supabase: SupabaseClient): Promise<Set<st
 
 async function reconcileGoogleMerchantOrphans(
   eligibleOfferIds: Set<string>,
-  summary: GoogleMerchantBulkSyncSummary,
+  summary: GoogleMerchantReconcileCounters,
 ): Promise<void> {
   const listed = await listAllGoogleMerchantProducts()
   if (!listed.ok) {
@@ -214,10 +325,12 @@ async function reconcileGoogleMerchantOrphans(
     const deleted = await deleteGoogleMerchantProductInput(product.offerId)
     if (deleted.ok || deleted.status === 404) {
       summary.reconciled_deleted += 1
+      await forgetGoogleMerchantPublication(product.offerId)
       continue
     }
 
     summary.reconciled_errors += 1
+    await rememberGoogleMerchantPublicationFailure(product.offerId, deleted.error)
     if (summary.error_samples.length < 10) {
       summary.error_samples.push({ offerId: product.offerId, error: deleted.error })
     }
@@ -268,8 +381,10 @@ export async function syncAllActiveListingsToGoogleMerchant(
       const result = await insertGoogleMerchantProductInput(productInput)
       if (result.ok) {
         summary.inserted += 1
+        await rememberGoogleMerchantPublicationSuccess(listing.id, new Date())
       } else {
         summary.errors += 1
+        await rememberGoogleMerchantPublicationFailure(listing.id, result.error)
         if (summary.error_samples.length < 10) {
           summary.error_samples.push({ offerId: listing.id, error: result.error })
         }
@@ -280,6 +395,76 @@ export async function syncAllActiveListingsToGoogleMerchant(
     from += pageSize
   }
 
+  await reconcileGoogleMerchantOrphans(eligibleOfferIds, summary)
+
+  return summary
+}
+
+export type GoogleMerchantRevalidationSummary = {
+  cutoff: string
+  retry_cutoff: string
+  due: number
+  inserted: number
+  deleted: number
+  skipped: number
+  errors: number
+  reconciled_checked: number
+  reconciled_deleted: number
+  reconciled_errors: number
+  error_samples: Array<{ offerId: string; error: string }>
+}
+
+/**
+ * Resubmit active listings whose last Google Merchant publish is at least 29 days old,
+ * plus listings that have never been published. Removes products Google still has for
+ * listings that are no longer eligible.
+ */
+export async function refreshExpiringGoogleMerchantListings(
+  supabase: SupabaseClient,
+  referenceTime: Date = new Date(),
+): Promise<GoogleMerchantRevalidationSummary> {
+  const cutoff = googleMerchantRevalidateCutoff(referenceTime)
+  const retryCutoff = googleMerchantRevalidateRetryCutoff(referenceTime)
+  const summary: GoogleMerchantRevalidationSummary = {
+    cutoff: cutoff.toISOString(),
+    retry_cutoff: retryCutoff.toISOString(),
+    due: 0,
+    inserted: 0,
+    deleted: 0,
+    skipped: 0,
+    errors: 0,
+    reconciled_checked: 0,
+    reconciled_deleted: 0,
+    reconciled_errors: 0,
+    error_samples: [],
+  }
+
+  if (!isGoogleMerchantConfigured()) {
+    return summary
+  }
+
+  const dueIds = await listDueGoogleMerchantListingIds(supabase, {
+    publishedBefore: cutoff,
+    attemptBefore: retryCutoff,
+    sections: GOOGLE_MERCHANT_PEER_SECTIONS,
+    limit: GOOGLE_MERCHANT_REVALIDATE_BATCH_LIMIT,
+  })
+  summary.due = dueIds.length
+
+  for (const listingId of dueIds) {
+    const result = await syncListingToGoogleMerchant(supabase, listingId)
+    if (result.action === "inserted") summary.inserted += 1
+    else if (result.action === "deleted") summary.deleted += 1
+    else if (result.action === "skipped") summary.skipped += 1
+    else {
+      summary.errors += 1
+      if (summary.error_samples.length < 10) {
+        summary.error_samples.push({ offerId: result.offerId, error: result.error })
+      }
+    }
+  }
+
+  const eligibleOfferIds = await collectEligibleOfferIds(supabase)
   await reconcileGoogleMerchantOrphans(eligibleOfferIds, summary)
 
   return summary
