@@ -1,4 +1,7 @@
-import { shouldNotifyKlaviyoOnLiveChatReply } from "./klaviyo-policy.ts"
+import {
+  liveChatEmailSafeReplyContent,
+  shouldNotifyKlaviyoOnLiveChatReply,
+} from "./klaviyo-policy.ts"
 import {
   liveChatVisitorResumeAbsoluteUrl,
   parseLiveChatResumePublicId,
@@ -26,7 +29,7 @@ export function buildLiveChatKlaviyoReplyPayload(input: {
   origin: string
 }): LiveChatKlaviyoReplyPayload | null {
   const email = input.visitorEmail?.trim() ?? ""
-  const content = input.content.trim()
+  const content = liveChatEmailSafeReplyContent(input.content)
   const supportCaseId = input.supportCaseId?.trim() ?? ""
   const messageId = input.messageId.trim()
   const publicId = parseLiveChatResumePublicId(input.publicId)
