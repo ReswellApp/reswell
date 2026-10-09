@@ -33,6 +33,7 @@ import { CartOrderSummary } from "@/components/features/cart/cart-order-summary"
 import type { CartSellerAddonCarouselItem } from "@/lib/services/cartSellerAddons"
 import { cn } from "@/lib/utils"
 import { FavoriteButton } from "@/components/favorite-button"
+import { MAX_SURFBOARDS_PER_SELLER_CHECKOUT } from "@/lib/surfboard-multi-board-parcel"
 
 function listingAvailable(listing: CartPageItem["listing"]) {
   return listing.status === "active" || listing.status === "pending_sale"
@@ -179,13 +180,15 @@ export function CartPageView({
     const note =
       sellerGroupCount > 1
         ? "Multiple sellers — checkout each group separately. Reswell shop items are included with whichever seller group you check out first."
-        : maxSurfboardsInSellerGroup >= 2
-          ? "These surfboards can ship together in one box or separately — choose at checkout. Live shipping is quoted from your address."
-          : shopRows.length > 0 && peerRows.length > 0
-            ? "Peer listings and Reswell shop items check out together in one payment."
-            : availRows.length > 0 && availRows.some(({ listing }) => listing.shipping_available)
-              ? "Shipping cost and delivery timing are finalized at checkout."
-              : "Pickup or shipping details are confirmed when you check out."
+        : maxSurfboardsInSellerGroup > MAX_SURFBOARDS_PER_SELLER_CHECKOUT
+          ? `More than ${MAX_SURFBOARDS_PER_SELLER_CHECKOUT} surfboards from one seller ship in separate boxes, or you can choose local pickup. Live shipping is quoted from your address.`
+          : maxSurfboardsInSellerGroup >= 2
+            ? "These surfboards can ship together in one box or separately — choose at checkout. Live shipping is quoted from your address."
+            : shopRows.length > 0 && peerRows.length > 0
+              ? "Peer listings and Reswell shop items check out together in one payment."
+              : availRows.length > 0 && availRows.some(({ listing }) => listing.shipping_available)
+                ? "Shipping cost and delivery timing are finalized at checkout."
+                : "Pickup or shipping details are confirmed when you check out."
 
     return {
       availableTotal: total,

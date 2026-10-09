@@ -10,10 +10,6 @@ import {
 } from "@/lib/services/peerListingShippingQuote"
 import { computePeerMultiCheckoutUsd } from "@/lib/services/peerMultiCheckoutTotals"
 import {
-  countSurfboardListings,
-  peerCheckoutSurfboardCountError,
-} from "@/lib/surfboard-multi-board-parcel"
-import {
   applyAcceptedOfferToPeerCheckoutListings,
   priceListingsFromAcceptedOffer,
 } from "@/lib/services/applyAcceptedOfferToPeerCheckoutListings"
@@ -48,8 +44,8 @@ import { ensureCheckoutBuyerPhone } from "@/lib/services/checkoutBuyerPhone"
 import { readAdAttributionFromCookies } from "@/lib/ads/read-request-attribution"
 import { stripeAdAttributionMetadata } from "@/lib/ads/attribution"
 import {
-  checkoutOffersShippingPackagingChoice,
   DEFAULT_SHIPPING_PACKAGING_MODE,
+  resolveMultiItemPackagingMode,
   resolveShippingPackagingMode,
   type ShippingPackagingMode,
 } from "@/lib/shipping/packaging-mode"
@@ -181,11 +177,6 @@ export async function POST(request: NextRequest) {
 
   if (listingsOrdered.some((l) => isBlockedOwnListingPurchase(l, user.id))) {
     return NextResponse.json({ error: "Cannot purchase your own listing" }, { status: 400 })
-  }
-
-  const surfboardCapError = peerCheckoutSurfboardCountError(countSurfboardListings(listingsOrdered))
-  if (surfboardCapError) {
-    return NextResponse.json({ error: surfboardCapError }, { status: 422 })
   }
 
   for (const listing of listingsOrdered) {
@@ -455,19 +446,11 @@ export async function POST(request: NextRequest) {
         packageRates?: CheckoutShippingPackageRate[] | null
       }
     | undefined
-  let packagingMode: ShippingPackagingMode = DEFAULT_SHIPPING_PACKAGING_MODE
-  const packagingFromBody = resolveShippingPackagingMode(
-    body.packaging_mode,
-    DEFAULT_SHIPPING_PACKAGING_MODE,
-  )
-  if (
-    impliedFulfillment === "shipping" &&
-    listingIdsOrdered.length > 1 &&
-    checkoutOffersShippingPackagingChoice(listingsOrdered) &&
-    packagingFromBody === "separate"
-  ) {
-    packagingMode = "separate"
-  }
+  const packagingMode: ShippingPackagingMode = resolveMultiItemPackagingMode({
+    listings: listingsOrdered,
+    requested: body.packaging_mode,
+    fulfillment: impliedFulfillment,
+  })
 
   const quoteTokenRaw = body.quote_token?.trim()
   if (!surfboardCharge && impliedFulfillment === "shipping" && quoteTokenRaw && addressId) {

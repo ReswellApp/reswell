@@ -47,8 +47,14 @@ import {
 import {
   checkoutOffersShippingPackagingChoice,
   DEFAULT_SHIPPING_PACKAGING_MODE,
+  resolveMultiItemPackagingMode,
   type ShippingPackagingMode,
 } from "@/lib/shipping/packaging-mode"
+import {
+  countSurfboardListings,
+  MAX_SURFBOARDS_PER_SELLER_CHECKOUT,
+  surfboardsRequireSeparatePackages,
+} from "@/lib/surfboard-multi-board-parcel"
 import { previewSurfboardShippedCheckoutAction } from "@/lib/actions/surfboardShippedActions"
 import {
   SURFBOARD_SHIPPED_FEE_USD,
@@ -169,14 +175,21 @@ export function CheckoutClient({
 
   const needsShipping = impliedFulfillment === "shipping"
 
-  const offersPackagingChoice =
-    needsShipping && !surfboardShippedSelected && checkoutOffersShippingPackagingChoice(listings)
+  const multiPackagingFulfillment: "pickup" | "shipping" =
+    needsShipping && !surfboardShippedSelected ? "shipping" : "pickup"
+  const mustShipSurfboardsSeparately =
+    multiPackagingFulfillment === "shipping" &&
+    surfboardsRequireSeparatePackages(countSurfboardListings(listings))
   const [packagingMode, setPackagingMode] = useState<ShippingPackagingMode>(
     DEFAULT_SHIPPING_PACKAGING_MODE,
   )
-  const effectivePackagingMode: ShippingPackagingMode = offersPackagingChoice
-    ? packagingMode
-    : DEFAULT_SHIPPING_PACKAGING_MODE
+  const effectivePackagingMode = resolveMultiItemPackagingMode({
+    listings,
+    requested: packagingMode,
+    fulfillment: multiPackagingFulfillment,
+  })
+  const offersPackagingChoice =
+    multiPackagingFulfillment === "shipping" && checkoutOffersShippingPackagingChoice(listings)
 
   const resolved = useMemo(() => {
     if (isBundle) {
@@ -678,7 +691,12 @@ export function CheckoutClient({
                 <span className="font-semibold text-foreground">{itemCountPhrase}</span> from one seller in a
                 single payment.{" "}
                 {needsShipping ? (
-                  offersPackagingChoice ? (
+                  mustShipSurfboardsSeparately ? (
+                    <>
+                      Each item ships in its own box. One box holds up to{" "}
+                      {MAX_SURFBOARDS_PER_SELLER_CHECKOUT} surfboards, so every item gets its own shipping label.
+                    </>
+                  ) : offersPackagingChoice ? (
                     <>
                       Choose whether boards ship in one box or each get their own shipping label below.
                     </>
@@ -748,9 +766,11 @@ export function CheckoutClient({
                       </span>
                       <p className="mt-1 text-xs leading-relaxed text-neutral-500">
                         {isBundle && !shipQuote
-                          ? offersPackagingChoice
-                            ? `Choose packaging below — rate is calculated for your address.`
-                            : `All ${itemNoun.plural} ship together in one box — rate is calculated for your address.`
+                          ? mustShipSurfboardsSeparately
+                            ? `Each item ships in its own box — rate is calculated for your address.`
+                            : offersPackagingChoice
+                              ? `Choose packaging below — rate is calculated for your address.`
+                              : `All ${itemNoun.plural} ship together in one box — rate is calculated for your address.`
                           : shipQuote?.usedReswellQuote
                             ? displayTotals.shipping > 0
                               ? `Includes about $${displayTotals.shipping.toFixed(2)} carrier shipping (Reswell rate).`
