@@ -1,5 +1,6 @@
 import { isPostHogBenignClientFetchError } from "@/lib/utils/is-abort-error"
 import { isPostHogAndroidWebViewBridgeNoise } from "@/lib/utils/is-android-webview-bridge-noise"
+import { isPostHogFirefoxIosReaderNoise } from "@/lib/utils/is-firefox-ios-reader-noise"
 import { isPostHogStaleFileNotFoundError } from "@/lib/utils/is-stale-file-not-found-error"
 
 type PostHogClient = (typeof import("posthog-js"))["default"]
@@ -36,6 +37,7 @@ export function ensurePostHogClient(): Promise<PostHogClient | null> {
         debug: process.env.NODE_ENV === "development",
         before_send: (event) => {
           if (isPostHogAndroidWebViewBridgeNoise(event)) return null
+          if (isPostHogFirefoxIosReaderNoise(event)) return null
           if (isPostHogBenignClientFetchError(event)) return null
           if (isPostHogStaleFileNotFoundError(event)) return null
           return event
