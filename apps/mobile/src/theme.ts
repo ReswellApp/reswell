@@ -11,6 +11,7 @@ export const lightColors = {
   primary: "#04070E",
   primaryForeground: "#FFFFFF",
   shipping: "#4263EB",
+  sold: "#163060",
   destructive: "#DC2626",
 }
 
@@ -24,6 +25,7 @@ export const darkColors = {
   primary: "#FAFAFA",
   primaryForeground: "#04070E",
   shipping: "#4263EB",
+  sold: "#9BB6F0",
   destructive: "#D4D4D4",
 }
 

@@ -7,9 +7,6 @@ import {
 } from "@reswell/api-contract"
 import { fontFamily, useReswellColors } from "@/theme"
 
-<<<<<<< Updated upstream
-export function BrowseChips({ onOpenCategory }: { onOpenCategory: (chip: MobileBrowseChip) => void }) {
-=======
 function ChipRow({
   chips,
   selectedKey,
@@ -21,7 +18,6 @@ function ChipRow({
   onPress: (key: string) => void
   placement: "category" | "category-above-filter" | "filter"
 }) {
->>>>>>> Stashed changes
   const colors = useReswellColors()
   const rowStyle =
     placement === "filter"
@@ -37,27 +33,19 @@ function ChipRow({
       style={styles.scroller}
       contentContainerStyle={rowStyle}
     >
-<<<<<<< Updated upstream
-      {MOBILE_BROWSE_CHIPS.map((chip) => {
-=======
       {chips.map((chip) => {
         const active = selectedKey === chip.key
->>>>>>> Stashed changes
         return (
           <Pressable
             key={chip.key}
             accessibilityRole="button"
-<<<<<<< Updated upstream
-            onPress={() => onOpenCategory(chip)}
-=======
             accessibilityState={{ selected: active }}
             onPress={() => onPress(chip.key)}
->>>>>>> Stashed changes
             style={[
               styles.chip,
               {
-                backgroundColor: colors.background,
-                borderColor: colors.border,
+                backgroundColor: active ? colors.image : colors.background,
+                borderColor: active ? colors.foreground : colors.border,
               },
             ]}
           >
@@ -71,28 +59,23 @@ function ChipRow({
   )
 }
 
-/** Website header rail: Surfboards, Fins, Traction, Wetsuits, Apparel, Magazines. */
+/** Website header rail. Opens a category page. */
 export function CategorySlider({
-  selected,
-  onSelect,
-  trailing,
+  onOpenCategory,
 }: {
-  selected: MobileListingCategory | null
-  onSelect: (next: MobileListingCategory | null) => void
-  /** Shape filters sit under this row, so the gap below the categories tightens. */
-  trailing?: boolean
+  onOpenCategory: (category: MobileListingCategory) => void
 }) {
   return (
     <ChipRow
-      placement={trailing ? "category-above-filter" : "category"}
-      selectedKey={selected}
+      placement="category"
+      selectedKey={null}
       chips={MOBILE_CATEGORY_CHIPS.map((chip) => ({ key: chip.category, label: chip.label }))}
-      onPress={(key) => onSelect(selected === key ? null : (key as MobileListingCategory))}
+      onPress={(key) => onOpenCategory(key as MobileListingCategory)}
     />
   )
 }
 
-/** Website board-style facet. Only shown while Surfboards is the active category. */
+/** Website board-style facet. Shown on the Surfboards category. */
 export function BoardStyleFilter({
   selected,
   onSelect,
@@ -130,7 +113,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
     paddingHorizontal: 16,
-    paddingTop: 0,
+    paddingTop: 4,
     paddingBottom: 12,
   },
   chip: {

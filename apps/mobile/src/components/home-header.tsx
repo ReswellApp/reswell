@@ -1,32 +1,18 @@
 import { Pressable, StyleSheet, Text, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
-import type { MobileBoardType, MobileListingCategory } from "@reswell/api-contract"
-import { BoardStyleFilter, CategorySlider } from "@/components/browse-chips"
+import type { MobileListingCategory } from "@reswell/api-contract"
+import { CategorySlider } from "@/components/browse-chips"
 import { Wordmark } from "@/components/wordmark"
 import { fontFamily, useReswellColors } from "@/theme"
 
 export function HomeHeader({
   signedIn,
   onAccount,
-<<<<<<< Updated upstream
   onOpenCategory,
 }: {
   signedIn: boolean
   onAccount: () => void
-  onOpenCategory: (chip: MobileBrowseChip) => void
-=======
-  category,
-  boardType,
-  onSelectCategory,
-  onSelectBoardType,
-}: {
-  signedIn: boolean
-  onAccount: () => void
-  category: MobileListingCategory | null
-  boardType: MobileBoardType | null
-  onSelectCategory: (next: MobileListingCategory | null) => void
-  onSelectBoardType: (next: MobileBoardType | null) => void
->>>>>>> Stashed changes
+  onOpenCategory: (category: MobileListingCategory) => void
 }) {
   const colors = useReswellColors()
   const insets = useSafeAreaInsets()
@@ -41,18 +27,7 @@ export function HomeHeader({
           </Text>
         </Pressable>
       </View>
-<<<<<<< Updated upstream
-      <BrowseChips onOpenCategory={onOpenCategory} />
-=======
-      <CategorySlider
-        selected={category}
-        onSelect={onSelectCategory}
-        trailing={category === "surfboards"}
-      />
-      {category === "surfboards" ? (
-        <BoardStyleFilter selected={boardType} onSelect={onSelectBoardType} />
-      ) : null}
->>>>>>> Stashed changes
+      <CategorySlider onOpenCategory={onOpenCategory} />
     </View>
   )
 }

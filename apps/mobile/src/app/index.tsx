@@ -1,18 +1,8 @@
 import { Stack, useFocusEffect, useRouter } from "expo-router"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native"
-<<<<<<< Updated upstream
-import type { MobileBrowseChip, MobileHome, MobileListingCard, MobileListingsPage } from "@reswell/api-contract"
+import type { MobileHome, MobileListingCard, MobileListingCategory, MobileListingsPage } from "@reswell/api-contract"
 import { HomeFeed } from "@/components/home-feed"
-=======
-import {
-  MOBILE_BOARD_STYLE_FILTERS,
-  MOBILE_CATEGORY_CHIPS,
-  type MobileBoardType,
-  type MobileListingCategory,
-  type MobileListingsPage,
-} from "@reswell/api-contract"
->>>>>>> Stashed changes
 import { HomeHeader } from "@/components/home-header"
 import { ListingCard } from "@/components/listing-card"
 import { fetchHome, fetchListings, fetchRecentlyViewed } from "@/lib/api"
@@ -32,18 +22,8 @@ export default function ListingsScreen() {
   const [loadingMore, setLoadingMore] = useState(false)
   const [query, setQuery] = useState("")
   const [search, setSearch] = useState("")
-<<<<<<< Updated upstream
   const searchRef = useRef(search)
   searchRef.current = search
-=======
-  const [category, setCategory] = useState<MobileListingCategory | null>(null)
-  const [boardType, setBoardType] = useState<MobileBoardType | null>(null)
-  const browseKey = `${category ?? ""}:${boardType ?? ""}`
-  const searchRef = useRef(search)
-  const browseRef = useRef(browseKey)
-  searchRef.current = search
-  browseRef.current = browseKey
->>>>>>> Stashed changes
 
   useEffect(() => {
     const timer = setTimeout(() => setSearch(query.trim()), 300)
@@ -52,18 +32,13 @@ export default function ListingsScreen() {
 
   useEffect(() => {
     setPage(null)
-<<<<<<< Updated upstream
   }, [search])
 
   const browsing = Boolean(search)
-=======
-  }, [search, category, boardType])
->>>>>>> Stashed changes
 
   const load = useCallback(() => {
     let cancelled = false
     const q = search
-<<<<<<< Updated upstream
     setLoading(true)
     if (!q) {
       const recent = accessToken
@@ -91,13 +66,7 @@ export default function ListingsScreen() {
         cancelled = true
       }
     }
-    fetchListings(0, { q: q || undefined })
-=======
-    const nextCategory = category
-    const nextBoardType = boardType
-    setLoading(true)
-    fetchListings(0, listingsQuery(q, nextCategory, nextBoardType))
->>>>>>> Stashed changes
+    fetchListings(0, { q })
       .then((next) => {
         if (!cancelled) {
           setPage(next)
@@ -116,29 +85,17 @@ export default function ListingsScreen() {
     return () => {
       cancelled = true
     }
-<<<<<<< Updated upstream
   }, [search, accessToken])
-=======
-  }, [search, category, boardType])
->>>>>>> Stashed changes
 
   useFocusEffect(load)
 
   function loadMore() {
-    if (!page?.has_more || loadingMore || loading) return
+    if (!page?.has_more || loadingMore || loading || !search) return
     const q = search
-<<<<<<< Updated upstream
     setLoadingMore(true)
-    fetchListings(page.offset + page.limit, { q: q || undefined })
+    fetchListings(page.offset + page.limit, { q })
       .then((next) => {
         if (searchRef.current !== q) return
-=======
-    const key = browseKey
-    setLoadingMore(true)
-    fetchListings(page.offset + page.limit, listingsQuery(q, category, boardType))
-      .then((next) => {
-        if (searchRef.current !== q || browseRef.current !== key) return
->>>>>>> Stashed changes
         setPage((current) =>
           current
             ? { ...next, listings: [...current.listings, ...next.listings] }
@@ -153,6 +110,10 @@ export default function ListingsScreen() {
     router.push({ pathname: "/listing/[id]", params: { id } })
   }
 
+  function openCategory(category: MobileListingCategory) {
+    router.push({ pathname: "/category/[slug]", params: { slug: category } })
+  }
+
   const listings = page?.listings ?? []
   const grid = listings.length % 2 === 1 ? [...listings, null] : listings
 
@@ -162,22 +123,7 @@ export default function ListingsScreen() {
       <HomeHeader
         signedIn={Boolean(session)}
         onAccount={() => router.push(session ? "/account" : "/sign-in")}
-<<<<<<< Updated upstream
-        onOpenCategory={(chip: MobileBrowseChip) =>
-          router.push({
-            pathname: "/category/[slug]",
-            params: chip.board_type ? { slug: chip.category, type: chip.board_type } : { slug: chip.category },
-          })
-        }
-=======
-        category={category}
-        boardType={boardType}
-        onSelectCategory={(next) => {
-          setCategory(next)
-          setBoardType(null)
-        }}
-        onSelectBoardType={setBoardType}
->>>>>>> Stashed changes
+        onOpenCategory={openCategory}
       />
       <TextInput
         value={query}
@@ -217,15 +163,7 @@ export default function ListingsScreen() {
           onEndReachedThreshold={0.4}
           ListEmptyComponent={
             <Text style={[styles.empty, { color: colors.muted, fontFamily: fontFamily.text }]}>
-<<<<<<< Updated upstream
               {search ? "No listings match that search." : "No listings yet."}
-=======
-              {search
-                ? "No listings match that search."
-                : browseLabel(category, boardType)
-                  ? `No ${browseLabel(category, boardType)} listings yet.`
-                  : "No listings yet."}
->>>>>>> Stashed changes
             </Text>
           }
           ListFooterComponent={
@@ -256,31 +194,6 @@ export default function ListingsScreen() {
   )
 }
 
-<<<<<<< Updated upstream
-=======
-function listingsQuery(
-  q: string,
-  category: MobileListingCategory | null,
-  boardType: MobileBoardType | null,
-): { q?: string; category?: string; board_type?: string } {
-  return {
-    q: q || undefined,
-    category: category ?? undefined,
-    board_type: category === "surfboards" ? boardType ?? undefined : undefined,
-  }
-}
-
-function browseLabel(category: MobileListingCategory | null, boardType: MobileBoardType | null): string | null {
-  if (boardType) {
-    return MOBILE_BOARD_STYLE_FILTERS.find((filter) => filter.board_type === boardType)?.label.toLowerCase() ?? null
-  }
-  if (category) {
-    return MOBILE_CATEGORY_CHIPS.find((chip) => chip.category === category)?.label.toLowerCase() ?? null
-  }
-  return null
-}
-
->>>>>>> Stashed changes
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   centered: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, padding: 24 },

@@ -145,7 +145,6 @@ export const MOBILE_BOARD_TYPES = [
 export type MobileListingCategory = (typeof MOBILE_LISTING_CATEGORIES)[number]
 export type MobileBoardType = (typeof MOBILE_BOARD_TYPES)[number]
 
-<<<<<<< Updated upstream
 export const MOBILE_CATEGORY_SORTS = ["relevant", "newest", "price-low", "price-high"] as const
 
 export const mobileCategorySortSchema = z.object({
@@ -191,13 +190,13 @@ export const mobileCategoryListingsQuerySchema = z.object({
   kind: z.string().trim().max(200).optional(),
 })
 
-export type MobileBrowseChip = {
-=======
 export type MobileCategoryChip = {
->>>>>>> Stashed changes
   label: string
   category: MobileListingCategory
 }
+
+/** Category rail chip. Shapes are not on this row. */
+export type MobileBrowseChip = MobileCategoryChip
 
 export type MobileBoardStyleFilter = {
   label: string

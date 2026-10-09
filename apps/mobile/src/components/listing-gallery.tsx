@@ -3,6 +3,9 @@ import { useState } from "react"
 import { ScrollView, StyleSheet, View, useWindowDimensions } from "react-native"
 import { useReswellColors } from "@/theme"
 
+/** Same default frame as the website listing hero: 3:4, whole photo visible. */
+const HERO_ASPECT = 3 / 4
+
 export function ListingGallery({ urls }: { urls: string[] }) {
   const colors = useReswellColors()
   const { width } = useWindowDimensions()
@@ -25,8 +28,8 @@ export function ListingGallery({ urls }: { urls: string[] }) {
             <Image
               key={uri}
               source={{ uri }}
-              style={[styles.frame, { width, backgroundColor: colors.image }]}
-              contentFit="cover"
+              style={[styles.frame, { width, backgroundColor: colors.background }]}
+              contentFit="contain"
             />
           ) : (
             <View key={frame} style={[styles.frame, { width, backgroundColor: colors.image }]} />
@@ -50,7 +53,7 @@ export function ListingGallery({ urls }: { urls: string[] }) {
 }
 
 const styles = StyleSheet.create({
-  frame: { aspectRatio: 4 / 5 },
+  frame: { aspectRatio: HERO_ASPECT },
   dots: {
     position: "absolute",
     left: 0,

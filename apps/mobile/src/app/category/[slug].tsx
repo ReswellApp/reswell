@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native"
 import type { MobileBoardType, MobileCategory, MobileCategoryListingsQuery, MobileCategorySortId, MobileListingCard, MobileListingsPage } from "@reswell/api-contract"
+import { BoardStyleFilter } from "@/components/browse-chips"
 import { CategoryHero } from "@/components/category-hero"
 import { CategoryToolbar } from "@/components/category-toolbar"
 import { ListingCard } from "@/components/listing-card"
@@ -116,6 +117,12 @@ export default function CategoryScreen() {
           ListHeaderComponent={
             <View>
               <CategoryHero title={category.title} imageUrl={category.image_url} imagePosition={category.image_position} />
+              {slug === "surfboards" ? (
+                <BoardStyleFilter
+                  selected={isBoardType(boardType) ? boardType : null}
+                  onSelect={(next) => router.setParams({ type: next ?? "" })}
+                />
+              ) : null}
               <CategoryToolbar
                 sortLabel={sortLabel}
                 filterCount={filterCount}

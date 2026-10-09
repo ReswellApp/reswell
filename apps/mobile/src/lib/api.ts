@@ -1,4 +1,6 @@
 import Constants from "expo-constants"
+import { isDevice } from "expo-device"
+import { Platform } from "react-native"
 import { publicApiUrl } from "@/lib/public-env"
 import {
   mobileCartResultSchema,
@@ -47,13 +49,24 @@ import {
   type MobileSale,
 } from "@reswell/api-contract"
 
-/** Metro's host, so a phone can reach the Next server on this Mac instead of its own localhost. */
+/** Metro's host, so a physical phone can reach the Next server on this Mac. */
 function packagerHostname(): string | null {
   const hostUri = Constants.expoConfig?.hostUri
   if (!hostUri) return null
   const host = hostUri.split(":")[0]?.trim()
   if (!host || host === "localhost" || host === "127.0.0.1") return null
   return host
+}
+
+/**
+ * The iOS simulator shares this Mac's localhost. A physical phone does not, so it
+ * uses the Metro host. The Android emulator reaches the host at 10.0.2.2.
+ */
+function devApiHostname(): string | null {
+  if (Platform.OS === "web") return null
+  if (!isDevice && Platform.OS === "ios") return null
+  if (!isDevice && Platform.OS === "android") return "10.0.2.2"
+  return packagerHostname()
 }
 
 function apiOrigin(): string {
@@ -66,7 +79,7 @@ function apiOrigin(): string {
     return "http://localhost:3000"
   }
   if (__DEV__ && (url.hostname === "localhost" || url.hostname === "127.0.0.1")) {
-    const host = packagerHostname()
+    const host = devApiHostname()
     if (host) url.hostname = host
   }
   return url.origin
