@@ -84,7 +84,8 @@ import {
   parseCheckoutPromoKind,
   redeemCheckoutPromoForOrder,
 } from "@/lib/services/checkoutPromo"
-import { computeCheckoutTotalWithNewsletterPromo } from "@/lib/services/newsletterPromo"
+import { eligibleItemSubtotalForAdminPromo } from "@/lib/services/promoProductType"
+import { computeRestrictedPromoCheckoutAmounts, promoCheckoutLinesFromPricedListings } from "@/lib/utils/promo-product-type"
 import { sendPostPurchaseReviewInvite } from "@/lib/services/orderReviewInvite"
 import { notifySellerOrderCheckoutKlaviyo } from "@/lib/services/notifySellerOrderCheckoutKlaviyo"
 import { releaseOrderSellerEarningsAfterFulfillment } from "@/lib/services/releaseOrderSellerEarnings"
@@ -886,6 +887,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     (promoCodeId ? await inferCheckoutPromoKind(promoCodeId) : null)
   let promoDiscountUsd = 0
   let promoDiscountPercent = 0
+  let expectedPromoTotal = 0
 
   if (promoCodeId) {
     if (!promoDiscountCentsRaw || !/^\d+$/.test(promoDiscountCentsRaw)) {
@@ -908,12 +910,31 @@ export async function completeMarketplaceOrderFromPaymentIntent(
         : // Legacy PIs without promo_discount_percent metadata.
           Math.round((promoDiscountUsd / bundle.totalItemPriceUsd) * 100)
 
-    const { discountUsd: expectedDiscountUsd, totalUsd: expectedPromoTotal } =
-      computeCheckoutTotalWithNewsletterPromo({
+    let eligibleItemSubtotalUsd = bundle.totalItemPriceUsd
+    if (promoKind === "admin_issued") {
+      const eligible = await eligibleItemSubtotalForAdminPromo({
+        supabase: serviceSupabase,
+        promoId: promoCodeId,
+        lines: promoCheckoutLinesFromPricedListings({
+          listings: listingsForTotals,
+          pricedLines: bundle.lines,
+        }),
         itemSubtotalUsd: bundle.totalItemPriceUsd,
+      })
+      if (!eligible.ok) {
+        return { ok: false, error: eligible.error, status: 400 }
+      }
+      eligibleItemSubtotalUsd = eligible.eligibleItemSubtotalUsd
+    }
+
+    const amounts = computeRestrictedPromoCheckoutAmounts({
+        itemSubtotalUsd: bundle.totalItemPriceUsd,
+        eligibleItemSubtotalUsd,
         shippingUsd,
         discountPercent: promoDiscountPercent,
       })
+    const expectedDiscountUsd = amounts.discountUsd
+    expectedPromoTotal = amounts.totalUsd
 
     const expectedPromoCents = Math.round(expectedPromoTotal * 100)
     const metaCents = hasMetaAmountCents ? parseInt(metaAmountCentsRaw!, 10) : expectedPromoCents
@@ -928,13 +949,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
   const expectedCents = hasMetaAmountCents
     ? parseInt(metaAmountCentsRaw!, 10)
     : promoCodeId
-      ? Math.round(
-          computeCheckoutTotalWithNewsletterPromo({
-            itemSubtotalUsd: bundle.totalItemPriceUsd,
-            shippingUsd,
-            discountPercent: promoDiscountPercent,
-          }).totalUsd * 100,
-        )
+      ? Math.round(expectedPromoTotal * 100)
       : Math.round((bundle.totalItemPriceUsd + shippingUsd) * 100)
 
   if (pi.amount !== expectedCents) {

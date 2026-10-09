@@ -19,6 +19,16 @@ export const newsletterPromoValidateBodySchema = z.object({
     .trim()
     .min(1, "Enter your promo code")
     .transform(normalizeNewsletterPromoCodeInput),
+  listing_lines: z
+    .array(
+      z.object({
+        id: z.string().uuid(),
+        quantity: z.coerce.number().int().min(1).max(99).optional(),
+      }),
+    )
+    .max(40)
+    .optional(),
+  offer_id: z.string().uuid().nullable().optional(),
 })
 
 export type NewsletterSignupBody = z.infer<typeof newsletterSignupBodySchema>
