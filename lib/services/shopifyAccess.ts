@@ -9,7 +9,7 @@ import {
   isShopifyManualCanaryEnabled,
   isShopifyPublicOAuthConfigured,
   isShopifyPublicOAuthEnabled,
-  shopifyAppInstallUrl,
+  parseShopifyAppInstallUrl,
 } from "@/lib/shopify/config"
 
 export type ShopifyMerchantAccess =
@@ -65,6 +65,6 @@ export async function getShopifyDashboardConnectOptions(
   return {
     publicOAuthEnabled,
     manualCanaryEnabled,
-    appInstallUrl: publicOAuthEnabled ? shopifyAppInstallUrl() : null,
+    appInstallUrl: publicOAuthEnabled ? parseShopifyAppInstallUrl() : null,
   }
 }

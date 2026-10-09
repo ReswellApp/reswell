@@ -52,7 +52,7 @@ export function isShopifyPublicOAuthConfigured(): boolean {
   return Boolean(
     process.env.SHOPIFY_API_KEY?.trim() &&
       process.env.SHOPIFY_API_SECRET?.trim() &&
-      process.env.SHOPIFY_APP_INSTALL_URL?.trim(),
+      parseShopifyAppInstallUrl(),
   )
 }
 
@@ -87,20 +87,37 @@ export function shopifyManualWebhookUri(routeKey: string): string {
   )}`
 }
 
-export function shopifyAppInstallUrl(): string {
+const SHOPIFY_APP_INSTALL_HOSTS = new Set([
+  "admin.shopify.com",
+  "apps.shopify.com",
+  "shopify.com",
+  "www.shopify.com",
+])
+
+export function parseShopifyAppInstallUrl(): string | null {
   const value = process.env.SHOPIFY_APP_INSTALL_URL?.trim()
-  if (!value) throw new Error("SHOPIFY_APP_INSTALL_URL is not configured")
-  const url = new URL(value)
-  const allowedHosts = new Set([
-    "apps.shopify.com",
-    "admin.shopify.com",
-    "shopify.com",
-    "www.shopify.com",
-  ])
-  if (url.protocol !== "https:" || !allowedHosts.has(url.hostname)) {
-    throw new Error("SHOPIFY_APP_INSTALL_URL must be a Shopify-owned HTTPS URL")
+  if (!value) return null
+  try {
+    const url = new URL(value)
+    if (
+      url.protocol !== "https:" ||
+      !SHOPIFY_APP_INSTALL_HOSTS.has(url.hostname)
+    ) {
+      return null
+    }
+    return url.toString()
+  } catch {
+    return null
   }
-  return url.toString()
+}
+
+export function shopifyAppInstallUrl(): string {
+  const parsed = parseShopifyAppInstallUrl()
+  if (parsed) return parsed
+  if (!process.env.SHOPIFY_APP_INSTALL_URL?.trim()) {
+    throw new Error("SHOPIFY_APP_INSTALL_URL is not configured")
+  }
+  throw new Error("SHOPIFY_APP_INSTALL_URL must be a Shopify-owned HTTPS URL")
 }
 
 export function shopifyGraphqlEndpoint(shopDomain: string): string {
