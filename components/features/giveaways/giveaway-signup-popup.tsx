@@ -51,6 +51,7 @@ function listingParamFromPathname(pathname: string | null): string | null {
 function shouldSkipPath(pathname: string | null): boolean {
   if (!pathname) return true
   if (pathname.startsWith("/auth")) return true
+  if (pathname === "/shopify/claim" || pathname.startsWith("/shopify/claim/")) return true
   if (pathname === "/sell" || pathname.startsWith("/sell/")) return true
   const listingParam = listingParamFromPathname(pathname)
   if (listingParam && shouldSkipGiveawaySignupPopupAfterPublish()) return true
