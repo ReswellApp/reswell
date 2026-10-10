@@ -28,6 +28,7 @@ import { setSellEntryPoint } from "@/lib/sell-flow/sell-entry-point"
 import { hasSupabaseAuthCookiesClient } from "@/lib/auth/has-supabase-auth-cookies"
 import { createClient } from "@/lib/supabase/client"
 import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock"
+import { isShopifyClaimPath } from "@/lib/shopify/claim-path"
 
 const RECENT_SIGNUP_MS = 24 * 60 * 60 * 1000
 
@@ -51,7 +52,7 @@ function listingParamFromPathname(pathname: string | null): string | null {
 function shouldSkipPath(pathname: string | null): boolean {
   if (!pathname) return true
   if (pathname.startsWith("/auth")) return true
-  if (pathname === "/shopify/claim" || pathname.startsWith("/shopify/claim/")) return true
+  if (isShopifyClaimPath(pathname)) return true
   if (pathname === "/sell" || pathname.startsWith("/sell/")) return true
   const listingParam = listingParamFromPathname(pathname)
   if (listingParam && shouldSkipGiveawaySignupPopupAfterPublish()) return true

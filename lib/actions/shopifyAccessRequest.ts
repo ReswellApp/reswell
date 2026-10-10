@@ -24,6 +24,7 @@ export async function requestShopifyPluginAccessAction(): Promise<
       claimSecret,
     })
     revalidatePath("/shopify/claim")
+    revalidatePath("/shopify/connect")
     return result
   } catch (error) {
     console.error("[shopify] access request", error)
