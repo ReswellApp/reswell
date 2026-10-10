@@ -124,11 +124,11 @@ export async function createShopifyInstallUrl(input: {
     flowType,
   })
 
-  // Released Dev Dashboard apps already declare access scopes on the app
-  // version. Shopify rejects the authorization-code grant when this URL
-  // also sends a scope parameter (failed_grant_with_invalid_scopes).
+  // The app uses the legacy install flow, so Shopify grants only the scopes
+  // sent here. Keep this list identical to the released app version.
   const params = new URLSearchParams({
     client_id: shopifyApiKey(),
+    scope: SHOPIFY_MVP_SCOPES.join(","),
     redirect_uri: shopifyOAuthRedirectUri(),
     state: state.state,
   })
