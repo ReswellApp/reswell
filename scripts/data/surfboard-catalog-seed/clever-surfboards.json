@@ -1,0 +1,109 @@
+{
+  "generated_for": "Clever Surfboards official named standup catalog",
+  "source": "https://cleversurfboards.com/ (official Jay Smith model lineup — standup surfboards only; SUP All-Arounder omitted)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "clever-surfboards",
+      "name": "Clever Surfboards",
+      "website_url": "https://cleversurfboards.com",
+      "location_label": "Edgewater / New Smyrna Beach, Florida",
+      "founder_name": "Jay Smith",
+      "lead_shaper_name": "Jay Smith",
+      "short_description": "Handcrafted EPS/epoxy surfboards shaped by former pro Jay Smith in Edgewater, Florida, and glassed at Halifax Glassing for East Coast beach-break conditions.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/clever-surfboards.png",
+      "models": [
+        {
+          "name": "Grominator",
+          "image_url": "https://cleversurfboards.com/images/clever_grominator_board1.jpg",
+          "description": "Designed for the grom with advanced skills. They are pushing surfings limits and need boards that can keep up. We have been refining this shape for 18 years now. Tail designs include squash, round, swallow, moon and diamond.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Grominator Jet",
+          "image_url": "https://cleversurfboards.com/images/clever_grominator_jet_board1.jpg",
+          "description": "Designed for the everyday grom surfer. It's a performance shape but user-friendly. Our thinking is to get the groms into waves easily, while still allowing performance surfing. Catching waves = having fun! Tail designs include squash, round, swallow, moon and diamond.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Jet",
+          "image_url": "https://cleversurfboards.com/images/clever_jet_board1.jpg",
+          "description": "The most versatile board in the Clever quiver. This board is designed for intermediate to advance skill level. Performs in knee to overhead waves and has flowing rocker and rail to rail quickness. Tail designs include squash, swallow, moon, round, diamond, bat and sprocket.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Trooper",
+          "image_url": "https://cleversurfboards.com/images/clever_trooper_board1.jpg",
+          "description": "New shape available! Evolved from the Jet model. For average to highly skilled surfers. This design is a little narrower and more rocker. Good short board for ok waves to overheard surf. Tail designs include squash, swallow, moon, round, diamond and bat.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "J Bird",
+          "image_url": "https://cleversurfboards.com/images/clever_jbird_board1.jpg",
+          "description": "Another new shape avilable! The J-Bird was in conjunction with personal knowledge on how a good board rides in our day to day conditions. This shape is narrower, more rocker and a double wing in tail. Tail designs include double wing round tail that encourages flowing turns and tight in the pocket.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Fish Jet",
+          "image_url": "https://cleversurfboards.com/images/clever_fish_jet_board1.jpg",
+          "description": "This model has a full pointed nose for radical surfing and has been used to win several ESA contests. Performs very well in knee to overhead conditions and paddles easy. Tail design comes with a single wing, round, swallow, moon and diamond.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Ambush",
+          "image_url": "https://cleversurfboards.com/images/clever_ambush_board1.jpg",
+          "description": "Designed for maximum performance for the expert surfer in good waves or next surf trip. This shape has added rocker, deep concave bottom, which increases lift and speed. Best for the young or fit surfer who can put it on rail and throw tail! Tail designs include squash, round pin and swallow.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Speedster",
+          "image_url": "https://cleversurfboards.com/images/clever_speedster_board1.jpg",
+          "description": "This model is designed with a slightly wider outline and less rocker than Ambush model. This board holds well in quality surf and is shaped with a smooth concave bottom that provides speed and forgiveness. For the average to highly skilled surfer. Tail designs include squash, swallow, moon, round and single or double wing.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Fat Nose Fish",
+          "image_url": "https://cleversurfboards.com/images/clever_fat_nose_fish_board1.jpg",
+          "description": "This model has a low entry rocker and wide outline. It's fun, fast and does airs in small junky waves. the Grom Fish is a shrunk down version for the little groms who are starting out.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Retro Fish",
+          "image_url": "https://cleversurfboards.com/images/clever_retro_fish_board1.jpg",
+          "description": "This models overall dimensions are wider than the Fast Nose Fish model. Designed with very low rocker entry.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Whale Booger",
+          "image_url": "https://cleversurfboards.com/images/clever_whale_booger_board1.jpg",
+          "description": "A short and wide hybrid from the mini simmons concept. The Whale Booger catches small scale waves with ease and turns on a dime. A super fun board when you want to change things up. Ride 6-10 inches shorter than your regular short board. Diamond quad setup works best for the tail design.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Dolphin",
+          "image_url": "https://cleversurfboards.com/images/clever_dolphin_board1.jpg",
+          "description": "The nose outline resembles the Fat Fish Fish model. Which helps you get into the wave faster. The pulled in roundpin tail holds in overhead surf. Speedy down the line & draws tight hooks in the pocket. Ride 2 to 5 inches shorter than standard shortboard depending on surfing ability. Offered in 5/4/3 fins options.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Fun Shape",
+          "image_url": "https://cleversurfboards.com/images/clever_fun_shape_board1.jpg",
+          "description": "These models catch waves with ease and keeps the fun in small wave conditions. Shaped with two kinds of nose styles, full or more pointed. Tail design includes squash, round, diamond, fun fish swallow and moon, single or double wing. Offered in 5/4/3 fin options.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Log",
+          "image_url": "https://cleversurfboards.com/images/clever_log_board1.jpg",
+          "description": "The Log has full nose outline with nose concave. EPS/Epoxy, Poly/Epoxy or Poly/Polyester construction.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Fisher Grant Model",
+          "image_url": "https://cleversurfboards.com/images/clever_fisher_grant_board1.jpg",
+          "description": "High peformance all around longboard built in collaboration with one of the East Coast shredders, Fisher Grant. With modern rocker profile and subtle nose scoop, this board does it all. Tail design comes in roundtail. EPS/Epoxy or Poly/Polyester. Fisher rides the EPS/Epoxy construction.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
