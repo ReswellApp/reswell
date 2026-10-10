@@ -3,16 +3,19 @@ export type SellerResourceLink = { label: string; href: string }
 export const SELLER_RESOURCES_HUB_HREF = "/seller-resources"
 export const HOW_TO_SELL_HREF = "/seller-resources/how-to-sell"
 export const HOW_TO_SHIP_HREF = "/seller-resources/how-to-ship"
+export const SURFBOARD_BOXES_HREF = "/seller-resources/surfboard-boxes"
 export const SALES_MAP_HREF = "/map"
 
 /**
- * Seller Resources dropdown — For surf shops, How to Sell, How to Ship, Sales Map, More Sell Resources.
+ * Seller Resources dropdown — For surf shops, How to Sell, How to Ship,
+ * Surfboard Boxes, Sales Map, More Sell Resources.
  * Pricing Hub and Sell-Out List stay out of the nav until those pages have data.
  */
 export const sellerResourcesNavLinks: SellerResourceLink[] = [
   { label: "For surf shops", href: "/for-surf-shops" },
   { label: "How to Sell", href: HOW_TO_SELL_HREF },
   { label: "How to Ship", href: HOW_TO_SHIP_HREF },
+  { label: "Surfboard Boxes", href: SURFBOARD_BOXES_HREF },
   { label: "Sales Map", href: SALES_MAP_HREF },
   { label: "More Sell Resources", href: SELLER_RESOURCES_HUB_HREF },
 ]

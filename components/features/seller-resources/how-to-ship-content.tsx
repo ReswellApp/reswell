@@ -5,7 +5,7 @@ import { SellerResourcesCta } from "@/components/features/seller-resources/selle
 import { SellerResourcesHero } from "@/components/features/seller-resources/seller-resources-hero"
 import { SellerResourcesHowCard } from "@/components/features/seller-resources/seller-resources-how-card"
 import { SellerResourcesValueStrip } from "@/components/features/seller-resources/seller-resources-value-strip"
-import { HOW_TO_SELL_HREF } from "@/lib/seller-resources"
+import { HOW_TO_SELL_HREF, SURFBOARD_BOXES_HREF } from "@/lib/seller-resources"
 import { SANTA_BARBARA_DROPOFF_HREF } from "@/lib/dropoff-santa-barbara"
 import {
   HOW_TO_SELL_BEST_RATE_BOX,
@@ -89,18 +89,17 @@ export function HowToShipContent() {
         title="How to pack a surfboard"
         lead={
           <>
-            Need a box? Order a recyclable carton from{" "}
-            <a
-              href="https://anewearthproject.com"
-              target="_blank"
-              rel="noopener noreferrer"
+            Need a box?{" "}
+            <Link
+              href={SURFBOARD_BOXES_HREF}
               className="font-medium text-[#001A4A] underline underline-offset-2"
             >
-              A New Earth Project
-            </a>
-            . For the best rates, pack into {HOW_TO_SELL_BEST_RATE_BOX.lengthIn}×
-            {HOW_TO_SELL_BEST_RATE_BOX.widthIn}×{HOW_TO_SELL_BEST_RATE_BOX.heightIn} or stay under{" "}
-            {HOW_TO_SELL_BEST_RATE_MAX_LENGTH_IN}″ length — see the{" "}
+              Surfboard boxes
+            </Link>{" "}
+            covers where to buy one, including our partner A New Earth Project. For the best rates,
+            pack into {HOW_TO_SELL_BEST_RATE_BOX.lengthIn}×{HOW_TO_SELL_BEST_RATE_BOX.widthIn}×
+            {HOW_TO_SELL_BEST_RATE_BOX.heightIn} or stay under {HOW_TO_SELL_BEST_RATE_MAX_LENGTH_IN}″
+            length — see the{" "}
             <Link href={`${HOW_TO_SELL_HREF}#boxes`} className="font-medium text-[#001A4A] underline underline-offset-2">
               box size guide
             </Link>
