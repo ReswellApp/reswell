@@ -64,6 +64,7 @@ export const MODEL_PAGE_RESERVED_BRAND_SEGMENTS = new Set([
   "sellers",
   "shipping",
   "shipping-estimator",
+  "shopify",
   "site-assets",
   "sold",
   "successpage",

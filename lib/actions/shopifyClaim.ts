@@ -58,6 +58,7 @@ export async function claimShopifyInstallAction(): Promise<
     })
     revalidatePath("/dashboard/shopify")
     revalidatePath("/shopify/claim")
+    revalidatePath("/shopify/connect")
     return { success: true }
   } catch (error) {
     const message =

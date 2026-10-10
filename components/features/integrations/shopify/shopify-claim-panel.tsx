@@ -21,6 +21,8 @@ interface ShopifyClaimPanelProps {
   shopifyConnectEnabled: boolean
   accessRequested: boolean
   callbackError: boolean
+  /** Verified install-launch shop. Shown while access is still required. */
+  installLaunchShop?: string | null
 }
 
 export function ShopifyClaimPanel({
@@ -29,6 +31,7 @@ export function ShopifyClaimPanel({
   shopifyConnectEnabled,
   accessRequested,
   callbackError,
+  installLaunchShop = null,
 }: ShopifyClaimPanelProps) {
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
@@ -36,7 +39,8 @@ export function ShopifyClaimPanel({
 
   const expired =
     preview && Date.parse(preview.expiresAt) <= Date.now()
-  const shopLabel = preview?.shopName || preview?.shopDomain || null
+  const launchShop = installLaunchShop?.trim() || null
+  const shopLabel = preview?.shopName || preview?.shopDomain || launchShop
 
   return (
     <>
@@ -62,13 +66,23 @@ export function ShopifyClaimPanel({
           ) : null}
 
           {!preview || !preview.ready || expired ? (
-            <Alert>
-              <AlertTitle>Install session expired</AlertTitle>
-              <AlertDescription>
-                Install the Reswell app from Shopify again to continue. Pending
-                installs expire after 30 minutes.
-              </AlertDescription>
-            </Alert>
+            launchShop ? (
+              <div className="rounded-lg border bg-muted/30 p-4 text-sm">
+                <p className="font-medium text-foreground">{launchShop}</p>
+                <p className="text-muted-foreground">
+                  This Shopify store is waiting on plugin access for your Reswell
+                  account.
+                </p>
+              </div>
+            ) : (
+              <Alert>
+                <AlertTitle>Install session expired</AlertTitle>
+                <AlertDescription>
+                  Install the Reswell app from Shopify again to continue. Pending
+                  installs expire after 30 minutes.
+                </AlertDescription>
+              </Alert>
+            )
           ) : (
             <div className="rounded-lg border bg-muted/30 p-4 text-sm">
               <p className="font-medium text-foreground">
