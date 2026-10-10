@@ -13,7 +13,6 @@ export type TractionSellSectionCompletionInput = {
   locationCity: string
   locationState: string
   shippingAvailable: boolean
-  localPickup: boolean
   shippingMode: "reswell" | "free" | "flat"
   shippingPrice: string
   reswellPackageLengthIn: string
@@ -41,15 +40,12 @@ export function computeTractionSellSectionCompletion(
 
   const details = Boolean(form.condition.trim()) && Boolean(form.description.trim())
 
-  const hasDelivery = form.shippingAvailable || form.localPickup
   const shippingRateOk =
-    !form.shippingAvailable ||
     form.shippingMode === "free" ||
     (form.shippingMode === "flat" && Number(form.shippingPrice) >= 0 && form.shippingPrice !== "") ||
     (form.shippingMode === "reswell" && reswellPackageComplete(form))
   const delivery =
     Boolean(form.locationCity.trim() && form.locationState.trim()) &&
-    hasDelivery &&
     shippingRateOk
 
   const priceNum = Number.parseFloat(form.price)
