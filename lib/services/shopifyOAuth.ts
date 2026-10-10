@@ -49,12 +49,12 @@ type ShopifyTokenResponse = {
 }
 
 class ShopifyOAuthRequestError extends Error {
-  constructor(
-    message: string,
-    readonly status: number,
-  ) {
+  readonly status: number
+
+  constructor(message: string, status: number) {
     super(message)
     this.name = "ShopifyOAuthRequestError"
+    this.status = status
   }
 }
 
@@ -124,9 +124,11 @@ export async function createShopifyInstallUrl(input: {
     flowType,
   })
 
+  // Released Dev Dashboard apps already declare access scopes on the app
+  // version. Shopify rejects the authorization-code grant when this URL
+  // also sends a scope parameter (failed_grant_with_invalid_scopes).
   const params = new URLSearchParams({
     client_id: shopifyApiKey(),
-    scope: SHOPIFY_MVP_SCOPES.join(","),
     redirect_uri: shopifyOAuthRedirectUri(),
     state: state.state,
   })
