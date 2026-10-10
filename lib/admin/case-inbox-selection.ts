@@ -58,6 +58,8 @@ export function nextInboxSelectedKey(args: {
   filtered: InboxSelectableItem[]
   selectedKey: string | null
   loading: boolean
+  /** Desktop keeps the first row open. Phones stay on the list when this is false. */
+  autoSelectFirst?: boolean
 }): string | undefined {
   if (args.loading) return undefined
   const matched = findInboxItemBySelection(args.items, args.selectedKey)
@@ -69,8 +71,23 @@ export function nextInboxSelectedKey(args: {
     // re-run this helper, and then pick filtered[0] — rewriting the URL.
     return undefined
   }
+  if (args.autoSelectFirst === false) return undefined
   if (args.filtered.length > 0) return args.filtered[0]!.key
   return undefined
+}
+
+/**
+ * Phones hide the ticket list while a conversation is open. An unmatched
+ * `?case=` must not keep the empty pane up after load — that is the only
+ * way back to the list.
+ */
+export function inboxMobileShowsConversation(args: {
+  hasSelectedItem: boolean
+  selectedKey: string | null
+  loading: boolean
+}): boolean {
+  if (args.hasSelectedItem) return true
+  return Boolean(args.selectedKey) && args.loading
 }
 
 export type InboxLoadMode = "initial" | "refresh" | "page"
