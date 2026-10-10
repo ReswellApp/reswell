@@ -6,6 +6,7 @@ import {
 } from "@/lib/klaviyo/seller-sale-event-helpers"
 import { trackKlaviyoSellerNewSaleReceived } from "@/lib/klaviyo/track-seller-new-sale-received"
 import type { KlaviyoSellerNewSaleReceivedPayload } from "@/lib/klaviyo/track-seller-new-sale-received"
+import { resolveSellerOrderDisplayAmounts } from "@/lib/seller-order-display-amounts"
 import {
   PEER_SURFBOARD_CHECKOUT_LISTING_SELECT,
   type PeerListingForShippingQuote,
@@ -18,8 +19,10 @@ type OrderRowForSellerKlaviyo = {
   seller_id: string
   listing_id: string
   amount: string | number
+  shipping_amount: string | number | null
   platform_fee: string | number
   seller_earnings: string | number
+  promo_discount_usd: string | number | null
   fulfillment_method: string | null
   payment_method: string | null
   shipping_address: unknown
@@ -57,8 +60,10 @@ export async function notifySellerOrderCheckoutKlaviyo(
       seller_id,
       listing_id,
       amount,
+      shipping_amount,
       platform_fee,
       seller_earnings,
+      promo_discount_usd,
       fulfillment_method,
       payment_method,
       shipping_address,
@@ -145,7 +150,7 @@ export async function notifySellerOrderCheckoutKlaviyo(
     ),
     listingSection: listing.section ?? "surfboards",
     listingSlug: listing.slug ?? null,
-    orderAmount: Number(row.amount),
+    orderAmount: resolveSellerOrderDisplayAmounts(row).sellerSaleTotal,
     sellerEarnings: Number(row.seller_earnings),
     platformFee: Number(row.platform_fee),
     fulfillmentMethod,

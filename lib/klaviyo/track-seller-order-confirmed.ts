@@ -32,7 +32,10 @@ export type KlaviyoSellerOrderConfirmedPayload = {
   listingSlug?: string | null
   /** Absolute listing photo URL for the email hero. Empty when the listing has no photo. */
   listingImageUrl?: string | null
-  /** Total order amount (buyer paid). */
+  /**
+   * Seller-facing sale total (listing item price + shipping).
+   * Never the discounted amount the buyer paid.
+   */
   orderAmount: number
   sellerEarnings: number
   platformFee: number

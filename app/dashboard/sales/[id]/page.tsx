@@ -534,12 +534,17 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
 
       {/* ── Refund banners (full width, before columns) ── */}
       {isRefunding && (
-        <SellerRefundInProgressBanner amount={buyerPaidTotal} paidWithCard={paidWithCard} />
+        <SellerRefundInProgressBanner
+          amount={hadReswellPromo ? 0 : buyerPaidTotal}
+          paidWithCard={paidWithCard}
+          disclosePaidAmount={!hadReswellPromo}
+        />
       )}
       {isRefunded && (
         <SellerRefundedBanner
-          amount={buyerPaidTotal}
+          amount={hadReswellPromo ? 0 : buyerPaidTotal}
           refundedAt={sale.refunded_at}
+          disclosePaidAmount={!hadReswellPromo}
         />
       )}
 
@@ -644,7 +649,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
                     reversed once the sale is fully refunded.
                   </p>
                 )}
-                {isRefunded && (
+                {isRefunded && !hadReswellPromo && (
                   <>
                     <Separator />
                     <div className="flex justify-between items-baseline gap-3 rounded-lg border border-destructive/15 bg-destructive/[0.04] px-3 py-2.5">
@@ -677,8 +682,9 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
                 )}
                 {isRefunded && (
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    The buyer is refunded the full sale total. The earnings line is your net share
-                    that was reversed (after the platform fee).
+                    {hadReswellPromo
+                      ? "The buyer was refunded. The earnings line is your net share that was reversed (after the platform fee)."
+                      : "The buyer is refunded the full sale total. The earnings line is your net share that was reversed (after the platform fee)."}
                   </p>
                 )}
               </div>

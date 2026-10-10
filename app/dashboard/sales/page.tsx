@@ -563,7 +563,9 @@ export default async function SalesPage({
                     <div className="rounded-lg bg-amber-500/[0.08] border border-amber-500/25 p-2.5 flex items-center gap-2 text-sm">
                       <RotateCcw className="h-3.5 w-3.5 text-amber-800 dark:text-amber-200 shrink-0" />
                       <span className="text-amber-950 dark:text-amber-100 font-medium">
-                        Refund in progress — ${amounts.buyerPaidTotal.toFixed(2)} returning to buyer via Stripe
+                        {amounts.hadReswellPromo
+                          ? "Refund in progress — returning to the buyer via Stripe"
+                          : `Refund in progress — $${amounts.buyerPaidTotal.toFixed(2)} returning to buyer via Stripe`}
                       </span>
                     </div>
                   )}
@@ -572,7 +574,9 @@ export default async function SalesPage({
                     <div className="rounded-lg bg-destructive/5 border border-destructive/15 p-2.5 flex items-center gap-2 text-sm">
                       <RotateCcw className="h-3.5 w-3.5 text-destructive shrink-0" />
                       <span className="text-destructive font-medium">
-                        Refund complete — ${amounts.buyerPaidTotal.toFixed(2)} returned to buyer
+                        {amounts.hadReswellPromo
+                          ? "Refund complete — returned to the buyer"
+                          : `Refund complete — $${amounts.buyerPaidTotal.toFixed(2)} returned to buyer`}
                       </span>
                     </div>
                   )}

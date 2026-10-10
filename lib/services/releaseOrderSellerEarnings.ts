@@ -2,6 +2,7 @@ import { createServiceRoleClient } from "@/lib/supabase/server"
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
 import { fetchPrimaryListingImageUrlsForKlaviyo } from "@/lib/klaviyo/fetch-primary-listing-image-urls"
 import { trackKlaviyoSellerOrderConfirmed } from "@/lib/klaviyo/track-seller-order-confirmed"
+import { resolveSellerOrderDisplayAmounts } from "@/lib/seller-order-display-amounts"
 
 /**
  * After buyer confirms delivery or seller verifies pickup: credit seller wallet balance
@@ -35,7 +36,7 @@ export async function releaseOrderSellerEarningsAfterFulfillment(
     const { data: order } = await supabase
       .from("orders")
       .select(
-        "id, order_num, buyer_id, seller_id, listing_id, amount, platform_fee, seller_earnings, fulfillment_method, payment_method",
+        "id, order_num, buyer_id, seller_id, listing_id, amount, shipping_amount, platform_fee, seller_earnings, promo_discount_usd, fulfillment_method, payment_method",
       )
       .eq("id", orderId)
       .maybeSingle()
@@ -54,9 +55,9 @@ export async function releaseOrderSellerEarningsAfterFulfillment(
 
     if (order?.seller_id && listing && order.buyer_id !== order.seller_id) {
       const sellerEmail = await getAuthEmailForUserId(order.seller_id)
-      const amount = Number(order.amount)
-      const platformFee = Number(order.platform_fee)
-      const sellerEarnings = Number(order.seller_earnings)
+      const display = resolveSellerOrderDisplayAmounts(order)
+      const platformFee = display.platformFee
+      const sellerEarnings = display.sellerEarningsAmount
       await trackKlaviyoSellerOrderConfirmed({
         sellerUserId: order.seller_id,
         sellerEmail,
@@ -67,7 +68,7 @@ export async function releaseOrderSellerEarningsAfterFulfillment(
         listingSection: listing.section ?? "",
         listingSlug: listing.slug ?? null,
         listingImageUrl: imageUrls.get(listing.id) ?? null,
-        orderAmount: Number.isFinite(amount) ? amount : 0,
+        orderAmount: display.sellerSaleTotal,
         sellerEarnings: Number.isFinite(sellerEarnings) ? sellerEarnings : 0,
         platformFee: Number.isFinite(platformFee) ? platformFee : 0,
         fulfillmentMethod: order.fulfillment_method === "pickup" ? "pickup" : "shipping",
