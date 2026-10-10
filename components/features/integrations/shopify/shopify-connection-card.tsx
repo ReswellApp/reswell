@@ -26,7 +26,6 @@ interface ShopifyConnectionCardProps {
   busy: boolean
   publicOAuthEnabled: boolean
   manualCanaryEnabled: boolean
-  appInstallUrl: string | null
   onSync: () => void
   onDisconnect: () => void
 }
@@ -36,7 +35,6 @@ export function ShopifyConnectionCard({
   busy,
   publicOAuthEnabled,
   manualCanaryEnabled,
-  appInstallUrl,
   onSync,
   onDisconnect,
 }: ShopifyConnectionCardProps) {
@@ -82,41 +80,33 @@ export function ShopifyConnectionCard({
           </CardTitle>
           <CardDescription>
             {publicOAuthEnabled
-              ? "Install the Reswell app from Shopify, then sign in here to link your seller account."
+              ? "Enter your store's your-store.myshopify.com domain. Shopify asks you to approve the Reswell app, then links the store to this account."
               : "Use the permanent your-store.myshopify.com domain for migration testing only."}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {publicOAuthEnabled && appInstallUrl ? (
-            <Button asChild className="w-full sm:w-auto">
-              <a href={appInstallUrl} rel="noopener noreferrer">
-                Install from Shopify
-              </a>
+          <form
+            className="flex flex-col gap-3 sm:flex-row"
+            onSubmit={(event) => {
+              event.preventDefault()
+              const value = shop.trim()
+              if (!value) return
+              window.location.assign(
+                `/api/integrations/shopify/connect?shop=${encodeURIComponent(value)}`,
+              )
+            }}
+          >
+            <Input
+              value={shop}
+              onChange={(event) => setShop(event.target.value)}
+              placeholder="your-store.myshopify.com"
+              aria-label="Shopify store domain"
+              required
+            />
+            <Button type="submit" className="shrink-0">
+              Connect Shopify
             </Button>
-          ) : (
-            <form
-              className="flex flex-col gap-3 sm:flex-row"
-              onSubmit={(event) => {
-                event.preventDefault()
-                const value = shop.trim()
-                if (!value) return
-                window.location.assign(
-                  `/api/integrations/shopify/connect?shop=${encodeURIComponent(value)}`,
-                )
-              }}
-            >
-              <Input
-                value={shop}
-                onChange={(event) => setShop(event.target.value)}
-                placeholder="your-store.myshopify.com"
-                aria-label="Shopify store domain"
-                required
-              />
-              <Button type="submit" className="shrink-0">
-                Connect Shopify
-              </Button>
-            </form>
-          )}
+          </form>
 
           {manualCanaryEnabled ? (
             <Accordion type="single" collapsible className="rounded-lg border px-4">
@@ -185,10 +175,7 @@ export function ShopifyConnectionCard({
     connection.status === "reauthorization_required" ||
     connection.status === "error"
 
-  const reconnectHref =
-    publicOAuthEnabled && appInstallUrl
-      ? appInstallUrl
-      : `/api/integrations/shopify/connect?shop=${encodeURIComponent(connection.shop_domain)}`
+  const reconnectHref = `/api/integrations/shopify/connect?shop=${encodeURIComponent(connection.shop_domain)}`
 
   return (
     <Card>

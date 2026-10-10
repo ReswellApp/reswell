@@ -78,7 +78,6 @@ export function ShopifyIntegrationDashboard({
           busy={integration.connectionBusy}
           publicOAuthEnabled={initialData.publicOAuthEnabled}
           manualCanaryEnabled={initialData.manualCanaryEnabled}
-          appInstallUrl={initialData.appInstallUrl}
           onSync={() => void integration.requestSync()}
           onDisconnect={() => void integration.disconnect()}
         />

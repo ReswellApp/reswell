@@ -1,20 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireShopifyMerchant } from "@/lib/shopify/authorize"
-import {
-  isShopifyPublicOAuthEnabled,
-  normalizeShopifyDomain,
-  shopifyAppInstallUrl,
-} from "@/lib/shopify/config"
+import { normalizeShopifyDomain } from "@/lib/shopify/config"
 import { startShopifyOAuth } from "@/lib/services/shopifyOAuth"
 import { shopifyConnectQuerySchema } from "@/lib/validations/shopify"
 
 export async function GET(request: NextRequest) {
   const auth = await requireShopifyMerchant()
   if (!auth.ok) return auth.response
-
-  if (isShopifyPublicOAuthEnabled()) {
-    return NextResponse.redirect(shopifyAppInstallUrl())
-  }
 
   const parsed = shopifyConnectQuerySchema.safeParse({
     shop: request.nextUrl.searchParams.get("shop") ?? "",
