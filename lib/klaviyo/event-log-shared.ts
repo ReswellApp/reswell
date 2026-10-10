@@ -13,6 +13,7 @@ const METRIC_CATEGORY: Record<string, KlaviyoMetricCategory> = {
   "Purchase Successful": "transactional",
   "Local Pickup Order Placed": "transactional",
   "Sale Successful": "transactional",
+  "Earnings Available": "transactional",
   "New Sale Received": "transactional",
   "Shipping Sale Received": "transactional",
   "Local Pickup Sale Received": "transactional",

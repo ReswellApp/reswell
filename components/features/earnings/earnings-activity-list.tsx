@@ -16,10 +16,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import type { EarningsActivityStatusFilter, EarningsTransaction } from "./earnings-types"
+import { EarningsListingThumb } from "./earnings-listing-thumb"
 import {
   activityEmptyFilterCopy,
   buildSalePendingReleasePairs,
@@ -27,6 +29,7 @@ import {
   extractSoldItemName,
   formatActivityDayLabel,
   omitReversedSaleCreditRow,
+  orderDetailPathFromTx,
   orderIdFromSellerSaleLedgerTx,
   parseDescription,
   singleRowVisualKind,
@@ -210,16 +213,27 @@ export function EarningsActivityList({
                   const { pending, release } = row
                   const amt = parseFloat(pending.amount)
                   const parsedPending = parseDescription(pending.description, pending.type)
+                  const listing = pending.listing ?? release.listing
                   const item =
+                    listing?.title ??
                     extractSoldItemName(pending.description) ??
                     parsedPending.title.replace(/^Pending — /, "").replace(/^Available — /, "")
+                  const extra =
+                    listing && listing.extraListingCount > 0
+                      ? ` + ${listing.extraListingCount} more`
+                      : ""
                   const balAfter = Number.isFinite(parseFloat(release.balance_after))
                     ? parseFloat(release.balance_after)
                     : 0
                   const time = formatTimeOnly(release.created_at)
-                  return (
-                    <li key={row.key}>
-                      <div className="group flex items-center gap-4 px-4 py-3.5 hover:bg-muted/30 transition-colors">
+                  const saleHref = release.saleHref ?? pending.saleHref ?? orderDetailPathFromTx(release)
+                  const rowClass =
+                    "group flex items-center gap-4 px-4 py-3.5 hover:bg-muted/30 transition-colors"
+                  const body = (
+                    <>
+                      {listing ? (
+                        <EarningsListingThumb src={listing.imageUrl} alt="" />
+                      ) : (
                         <div
                           aria-hidden
                           className={cn(
@@ -229,38 +243,51 @@ export function EarningsActivityList({
                         >
                           <CheckCircle2 className="h-4 w-4" />
                         </div>
-                        <div className="flex-1 min-w-0 py-0.5">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <p className="text-sm font-semibold text-foreground truncate">{item}</p>
-                            <span className={statusPillClass}>Ready</span>
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-1 tabular-nums">
-                            <span>Sale cleared</span>
-                            <span className="mx-1.5 text-border" aria-hidden>·</span>
-                            <span>{time}</span>
+                      )}
+                      <div className="flex-1 min-w-0 py-0.5">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <p className="text-sm font-semibold text-foreground truncate">
+                            {item}
+                            {extra}
                           </p>
+                          <span className={statusPillClass}>Ready</span>
                         </div>
-                        <div className="text-right shrink-0 min-w-[6rem] pl-2">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button
-                                type="button"
-                                className={cn(
-                                  "block w-full text-sm font-semibold tabular-nums text-foreground rounded-md px-1 -mx-1 py-0.5 hover:bg-background cursor-help text-right focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                                )}
-                              >
-                                +{formatMoney(amt)}
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent side="left" className="text-xs max-w-[17rem] leading-snug">
-                              Your ready balance after this sale unlocked was {formatMoney(balAfter)}.
-                            </TooltipContent>
-                          </Tooltip>
-                          <p className="text-[10.5px] text-muted-foreground tabular-nums mt-0.5">
-                            Bal {formatMoney(balAfter)}
-                          </p>
-                        </div>
+                        <p className="text-xs text-muted-foreground mt-1 tabular-nums">
+                          <span>Sale cleared</span>
+                          <span className="mx-1.5 text-border" aria-hidden>·</span>
+                          <span>{time}</span>
+                        </p>
                       </div>
+                      <div className="text-right shrink-0 min-w-[6rem] pl-2">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span
+                              className={cn(
+                                "block w-full text-sm font-semibold tabular-nums text-foreground rounded-md px-1 -mx-1 py-0.5 text-right",
+                              )}
+                            >
+                              +{formatMoney(amt)}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="left" className="text-xs max-w-[17rem] leading-snug">
+                            Your ready balance after this sale unlocked was {formatMoney(balAfter)}.
+                          </TooltipContent>
+                        </Tooltip>
+                        <p className="text-[10.5px] text-muted-foreground tabular-nums mt-0.5">
+                          Bal {formatMoney(balAfter)}
+                        </p>
+                      </div>
+                    </>
+                  )
+                  return (
+                    <li key={row.key}>
+                      {saleHref ? (
+                        <Link href={saleHref} className={rowClass}>
+                          {body}
+                        </Link>
+                      ) : (
+                        <div className={rowClass}>{body}</div>
+                      )}
                     </li>
                   )
                 }
@@ -281,7 +308,12 @@ export function EarningsActivityList({
                       ? "Returned"
                       : kindLabel(visualKind, t.type)
                 const parsedDescription = parseDescription(t.description, t.type)
-                const title = titleForSingleRow(t)
+                const listing = t.listing
+                const title = listing?.title || titleForSingleRow(t)
+                const extra =
+                  listing && listing.extraListingCount > 0
+                    ? ` + ${listing.extraListingCount} more`
+                    : ""
                 const adjustmentExplanation =
                   t.reference_type === "shipengine_label_adjustment" ||
                   t.reference_type === "shipengine_label_adjustment_reversal"
@@ -301,9 +333,14 @@ export function EarningsActivityList({
                           : incoming
                             ? ArrowDownLeft
                             : ArrowUpRight
-                return (
-                  <li key={row.key}>
-                    <div className="group flex items-center gap-4 px-4 py-3.5 hover:bg-muted/30 transition-colors">
+                const saleHref = t.saleHref ?? orderDetailPathFromTx(t)
+                const rowClass =
+                  "group flex items-center gap-4 px-4 py-3.5 hover:bg-muted/30 transition-colors"
+                const body = (
+                  <>
+                    {listing && (visualKind === "available" || visualKind === "pending") ? (
+                      <EarningsListingThumb src={listing.imageUrl} alt="" />
+                    ) : (
                       <div
                         aria-hidden
                         className={cn(
@@ -313,57 +350,70 @@ export function EarningsActivityList({
                       >
                         <Icon className="h-4 w-4" />
                       </div>
-                      <div className="flex-1 min-w-0 py-0.5">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <p className="text-sm font-semibold text-foreground truncate">{title}</p>
-                          <span className={statusPillClass}>{label}</span>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-1 tabular-nums">
-                          <span>{time}</span>
-                          {statusNote ? (
-                            <>
-                              <span className="mx-1.5 text-border" aria-hidden>·</span>
-                              <span className="capitalize">{statusNote}</span>
-                            </>
-                          ) : null}
+                    )}
+                    <div className="flex-1 min-w-0 py-0.5">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <p className="text-sm font-semibold text-foreground truncate">
+                          {title}
+                          {extra}
                         </p>
-                        {adjustmentExplanation ? (
-                          <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground">
-                            {adjustmentExplanation}
-                          </p>
+                        <span className={statusPillClass}>{label}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1 tabular-nums">
+                        <span>{time}</span>
+                        {statusNote ? (
+                          <>
+                            <span className="mx-1.5 text-border" aria-hidden>·</span>
+                            <span className="capitalize">{statusNote}</span>
+                          </>
                         ) : null}
-                      </div>
-                      <div className="text-right shrink-0 min-w-[6rem] pl-2">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button
-                              type="button"
-                              className={cn(
-                                "block w-full text-sm font-semibold tabular-nums rounded-md px-1 -mx-1 py-0.5 hover:bg-background cursor-help text-right focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                                isRelease ? "text-muted-foreground" : "text-foreground",
-                              )}
-                            >
-                              {isRelease ? (
-                                <span className="font-medium">Unlocked</span>
-                              ) : (
-                                <>
-                                  {incoming ? "+" : "−"}
-                                  {formatMoney(amt)}
-                                </>
-                              )}
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent side="left" className="text-xs max-w-[17rem] leading-snug">
-                            {isRelease
-                              ? "Pending earnings moved into your ready balance (no extra dollar amount on this line)."
-                              : `Your ready balance after this line posted was ${formatMoney(balAfter)}.`}
-                          </TooltipContent>
-                        </Tooltip>
-                        <p className="text-[10.5px] text-muted-foreground tabular-nums mt-0.5">
-                          Bal {formatMoney(balAfter)}
+                      </p>
+                      {adjustmentExplanation ? (
+                        <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground">
+                          {adjustmentExplanation}
                         </p>
-                      </div>
+                      ) : null}
                     </div>
+                    <div className="text-right shrink-0 min-w-[6rem] pl-2">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span
+                            className={cn(
+                              "block w-full text-sm font-semibold tabular-nums rounded-md px-1 -mx-1 py-0.5 text-right",
+                              isRelease ? "text-muted-foreground" : "text-foreground",
+                            )}
+                          >
+                            {isRelease ? (
+                              <span className="font-medium">Unlocked</span>
+                            ) : (
+                              <>
+                                {incoming ? "+" : "−"}
+                                {formatMoney(amt)}
+                              </>
+                            )}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="left" className="text-xs max-w-[17rem] leading-snug">
+                          {isRelease
+                            ? "Pending earnings moved into your ready balance (no extra dollar amount on this line)."
+                            : `Your ready balance after this line posted was ${formatMoney(balAfter)}.`}
+                        </TooltipContent>
+                      </Tooltip>
+                      <p className="text-[10.5px] text-muted-foreground tabular-nums mt-0.5">
+                        Bal {formatMoney(balAfter)}
+                      </p>
+                    </div>
+                  </>
+                )
+                return (
+                  <li key={row.key}>
+                    {saleHref ? (
+                      <Link href={saleHref} className={rowClass}>
+                        {body}
+                      </Link>
+                    ) : (
+                      <div className={rowClass}>{body}</div>
+                    )}
                   </li>
                 )
               })}

@@ -1,7 +1,11 @@
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
 import { fetchPrimaryListingImageUrlsForKlaviyo } from "@/lib/klaviyo/fetch-primary-listing-image-urls"
-import { trackKlaviyoSellerOrderConfirmed } from "@/lib/klaviyo/track-seller-order-confirmed"
+import { trackKlaviyoEarningsAvailable } from "@/lib/klaviyo/track-earnings-available"
+import {
+  trackKlaviyoSellerOrderConfirmed,
+  type KlaviyoSellerOrderConfirmedPayload,
+} from "@/lib/klaviyo/track-seller-order-confirmed"
 
 /**
  * After buyer confirms delivery or seller verifies pickup: credit seller wallet balance
@@ -57,16 +61,16 @@ export async function releaseOrderSellerEarningsAfterFulfillment(
       const amount = Number(order.amount)
       const platformFee = Number(order.platform_fee)
       const sellerEarnings = Number(order.seller_earnings)
-      await trackKlaviyoSellerOrderConfirmed({
-        sellerUserId: order.seller_id,
+      const klaviyoPayload: KlaviyoSellerOrderConfirmedPayload = {
+        sellerUserId: String(order.seller_id),
         sellerEmail,
-        orderId: order.id,
+        orderId: String(order.id),
         orderNum: (order as { order_num?: string | null }).order_num ?? null,
-        listingId: listing.id,
-        listingTitle: listing.title ?? "",
-        listingSection: listing.section ?? "",
-        listingSlug: listing.slug ?? null,
-        listingImageUrl: imageUrls.get(listing.id) ?? null,
+        listingId: String(listing.id),
+        listingTitle: typeof listing.title === "string" ? listing.title : "",
+        listingSection: typeof listing.section === "string" ? listing.section : "",
+        listingSlug: typeof listing.slug === "string" ? listing.slug : null,
+        listingImageUrl: imageUrls.get(String(listing.id)) ?? null,
         orderAmount: Number.isFinite(amount) ? amount : 0,
         sellerEarnings: Number.isFinite(sellerEarnings) ? sellerEarnings : 0,
         platformFee: Number.isFinite(platformFee) ? platformFee : 0,
@@ -77,7 +81,11 @@ export async function releaseOrderSellerEarningsAfterFulfillment(
             : order.payment_method === "cash"
               ? "cash"
               : "stripe",
-      })
+      }
+      await Promise.all([
+        trackKlaviyoSellerOrderConfirmed(klaviyoPayload),
+        trackKlaviyoEarningsAvailable(klaviyoPayload),
+      ])
     }
   }
 
