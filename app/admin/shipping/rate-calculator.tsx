@@ -54,11 +54,7 @@ import {
   TIER_CEILING_PRESETS,
   type RatePackagePreset,
 } from './rate-package-presets'
-import {
-  isReswellUpsCarrier,
-  isReswellUpsCarrierId,
-  RESWELL_UPS_CARRIER_ID,
-} from '@/lib/shipengine/reswell-carriers'
+import { isShipEngineWalletCarrierId } from '@/lib/shipengine/reswell-carriers'
 
 const inputClass = 'h-11 rounded-xl'
 const selectTriggerClass = 'h-11 rounded-xl'
@@ -584,12 +580,19 @@ export function ShippingRateCalculator({
 }: {
   carriers: Record<string, unknown>[]
 }) {
+  const walletCarriers = useMemo(
+    () =>
+      carriers.filter((c) =>
+        isShipEngineWalletCarrierId(typeof c.carrier_id === 'string' ? c.carrier_id : null),
+      ),
+    [carriers],
+  )
   const carrierIds = useMemo(
     () =>
-      carriers
+      walletCarriers
         .map((c) => (typeof c.carrier_id === 'string' ? c.carrier_id : null))
-        .filter(Boolean) as string[],
-    [carriers],
+        .filter((id): id is string => Boolean(id)),
+    [walletCarriers],
   )
 
   const [selectedIds, setSelectedIds] = useState<string[]>([])
@@ -598,11 +601,7 @@ export function ShippingRateCalculator({
     if (carrierIds.length === 0) return
     if (!carriersSeenRef.current) {
       carriersSeenRef.current = true
-      setSelectedIds(
-        carrierIds.includes(RESWELL_UPS_CARRIER_ID)
-          ? [RESWELL_UPS_CARRIER_ID]
-          : [...carrierIds],
-      )
+      setSelectedIds([...carrierIds])
     }
   }, [carrierIds])
 
@@ -701,14 +700,6 @@ export function ShippingRateCalculator({
   }, [carrierIds])
 
   const clearCarriers = useCallback(() => setSelectedIds([]), [])
-
-  const selectReswellUpsOnly = useCallback(() => {
-    if (!carrierIds.includes(RESWELL_UPS_CARRIER_ID)) {
-      toast.error(`Reswell UPS carrier ${RESWELL_UPS_CARRIER_ID} is not connected`)
-      return
-    }
-    setSelectedIds([RESWELL_UPS_CARRIER_ID])
-  }, [carrierIds])
 
   const runRates = useCallback(
     async (payload: object) => {
@@ -905,7 +896,7 @@ export function ShippingRateCalculator({
           </span>
           <CardTitle className="text-lg font-semibold tracking-tight">Rate calculator</CardTitle>
           <CardDescription className="text-sm">
-            No carrier accounts found. Connect carriers in the ShipEngine dashboard, then refresh.
+            ShipEngine One Balance carriers are not connected. Refresh after USPS, UPS, FedEx, and GlobalPost appear on the account.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -951,16 +942,6 @@ export function ShippingRateCalculator({
               <div className="flex flex-wrap gap-2">
                 <Button
                   type="button"
-                  variant="secondary"
-                  size="sm"
-                  className="h-9 rounded-xl px-4 text-[13px] font-medium"
-                  onClick={selectReswellUpsOnly}
-                  disabled={!carrierIds.includes(RESWELL_UPS_CARRIER_ID)}
-                >
-                  Reswell UPS only
-                </Button>
-                <Button
-                  type="button"
                   variant="outline"
                   size="sm"
                   className="h-9 rounded-xl px-4 text-[13px] font-medium"
@@ -980,20 +961,14 @@ export function ShippingRateCalculator({
               </div>
             </div>
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {carriers.map((c) => {
+              {walletCarriers.map((c) => {
                 const id = typeof c.carrier_id === 'string' ? c.carrier_id : ''
                 if (!id) return null
                 const label = String(c.friendly_name ?? c.nickname ?? c.carrier_code ?? id)
-                const isReswellUps = isReswellUpsCarrier(c)
                 return (
                   <label
                     key={id}
-                    className={cn(
-                      'flex cursor-pointer items-start gap-3 rounded-2xl border px-3.5 py-2.5 text-[13px] transition-colors hover:bg-muted/40',
-                      isReswellUps
-                        ? 'border-emerald-500/30 bg-emerald-500/5'
-                        : 'border-border/50 bg-background/40',
-                    )}
+                    className="flex cursor-pointer items-start gap-3 rounded-2xl border border-border/50 bg-background/40 px-3.5 py-2.5 text-[13px] transition-colors hover:bg-muted/40"
                   >
                     <Checkbox
                       className="mt-0.5"
@@ -1007,11 +982,6 @@ export function ShippingRateCalculator({
                         <span className="truncate font-medium" title={label}>
                           {label}
                         </span>
-                        {isReswellUps ? (
-                          <Badge variant="secondary" className="rounded-full px-2 py-0 text-[10px]">
-                            Reswell UPS
-                          </Badge>
-                        ) : null}
                       </span>
                       <span className="mt-0.5 block truncate font-mono text-[11px] text-muted-foreground" title={id}>
                         {id}
@@ -1400,16 +1370,7 @@ export function ShippingRateCalculator({
                             {currency.toUpperCase()} {total.toFixed(2)}
                           </TableCell>
                           <TableCell className="text-sm">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span>{String(r.carrier_friendly_name ?? r.carrier_code ?? '—')}</span>
-                              {isReswellUpsCarrierId(
-                                typeof r.carrier_id === 'string' ? r.carrier_id : null,
-                              ) ? (
-                                <Badge variant="secondary" className="rounded-full px-2 py-0 text-[10px]">
-                                  Reswell UPS
-                                </Badge>
-                              ) : null}
-                            </div>
+                            <span>{String(r.carrier_friendly_name ?? r.carrier_code ?? '—')}</span>
                           </TableCell>
                           <TableCell
                             className="font-mono text-[10px] max-w-[120px] truncate"

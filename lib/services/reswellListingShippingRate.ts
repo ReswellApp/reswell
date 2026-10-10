@@ -39,6 +39,7 @@ import { resolveSurfboardShippingPackBandId } from "@/lib/surfboard-shipping-pac
 import { shipEngineRequest } from "@/lib/shipengine/client"
 import { isShipEngineConfigured } from "@/lib/shipengine/config"
 import { formatShipEngineApiError } from "@/lib/shipengine/errors"
+import { filterToShipEngineWalletCarrierIds } from "@/lib/shipengine/reswell-carriers"
 import {
   buildShipmentBody,
   extractCarrierIdsFromCarriersResponse,
@@ -148,7 +149,7 @@ async function fetchAllConnectedCarrierIds(): Promise<{ ok: true; ids: string[] 
     return { ok: false, error: hint || "Could not load carrier accounts." }
   }
   const data = await parseJsonSafe(res)
-  const ids = extractCarrierIdsFromCarriersResponse(data)
+  const ids = filterToShipEngineWalletCarrierIds(extractCarrierIdsFromCarriersResponse(data))
   writeCachedCarrierIds(ids)
   return { ok: true, ids }
 }
@@ -512,8 +513,11 @@ export async function getCheapestReswellRateForListings(input: {
     return { ok: false, error: shipFrom.error }
   }
 
-  let carrierIds = input.carrierIds?.filter(Boolean) ?? []
-  if (carrierIds.length === 0) {
+  const requestedCarrierIds = input.carrierIds?.filter(Boolean) ?? []
+  let carrierIds: string[]
+  if (requestedCarrierIds.length > 0) {
+    carrierIds = filterToShipEngineWalletCarrierIds(requestedCarrierIds)
+  } else {
     const carriersResult = await fetchAllConnectedCarrierIds()
     if (!carriersResult.ok) {
       return { ok: false, error: carriersResult.error }
@@ -521,7 +525,10 @@ export async function getCheapestReswellRateForListings(input: {
     carrierIds = carriersResult.ids
   }
   if (carrierIds.length === 0) {
-    return { ok: false, error: "No shipping carriers are configured yet." }
+    return {
+      ok: false,
+      error: "ShipEngine One Balance carriers are not connected.",
+    }
   }
 
   const payload: ReswellListingRateRequestPayload = {
