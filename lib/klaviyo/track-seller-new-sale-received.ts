@@ -28,6 +28,10 @@ export type KlaviyoSellerNewSaleReceivedPayload = {
   listingTitle: string
   listingSection: string
   listingSlug?: string | null
+  /**
+   * Seller-facing sale total (listing item price + shipping).
+   * Never the discounted amount the buyer paid.
+   */
   orderAmount: number
   sellerEarnings: number
   platformFee: number

@@ -11,7 +11,7 @@
  *
  * **Event variables** (from `track-seller-local-pickup-sale-received.ts`):
  * - `order_num`, `Title`, `buyer_display_name`, `sale_url`, `listing_url`
- * - `seller_earnings`, `order_amount` (numbers, prefixed with `$` in the template)
+ * - `seller_earnings`, `order_amount` (seller-facing sale total: item + shipping, never the discounted buyer charge; prefixed with `$`)
  * - `pickup_instructions` (plain-text next-step paragraph)
  *
  * **Klaviyo notes**
@@ -127,7 +127,7 @@ export const KLAVIYO_SELLER_LOCAL_PICKUP_SALE_RECEIVED_EMAIL_HTML = `<table role
       <td style="padding:0 20px;">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">
           <tr>
-            <td style="${summaryRowStyle}">Order total</td>
+            <td style="${summaryRowStyle}">Sale total</td>
             <td align="right" style="${summaryRowStyle}white-space:nowrap;font-weight:600;">\${{ event|lookup:'order_amount' }}</td>
           </tr>
         </table>

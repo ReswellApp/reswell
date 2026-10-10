@@ -11,6 +11,7 @@ import {
   type KlaviyoOrderRefundedLineItem,
   type KlaviyoOrderRefundedPayload,
 } from "@/lib/klaviyo/track-order-refunded"
+import { resolveSellerOrderDisplayAmounts } from "@/lib/seller-order-display-amounts"
 
 type ListingRow = {
   id: string
@@ -108,7 +109,7 @@ export async function emitKlaviyoOrderRefundedForOrder(
     const { data: order, error: orderErr } = await supabase
       .from("orders")
       .select(
-        "id, order_num, buyer_id, seller_id, listing_id, amount, seller_earnings, payment_method, fulfillment_method, refunded_at, shipping_address",
+        "id, order_num, buyer_id, seller_id, listing_id, amount, shipping_amount, platform_fee, seller_earnings, promo_discount_usd, payment_method, fulfillment_method, refunded_at, shipping_address",
       )
       .eq("id", trimmedId)
       .maybeSingle()
@@ -215,7 +216,15 @@ export async function emitKlaviyoOrderRefundedForOrder(
     }
     const sellerEmail = await getAuthEmailForUserId(order.seller_id)
 
-    const shared: Omit<KlaviyoOrderRefundedPayload, "recipientRole"> = {
+    const display = resolveSellerOrderDisplayAmounts({
+      amount: order.amount,
+      shipping_amount: order.shipping_amount,
+      platform_fee: order.platform_fee,
+      seller_earnings: order.seller_earnings,
+      promo_discount_usd: order.promo_discount_usd,
+    })
+
+    const shared: Omit<KlaviyoOrderRefundedPayload, "recipientRole" | "amount"> = {
       buyerUserId: order.buyer_id,
       buyerEmail,
       buyerDisplayName: displayNameFromProfile(profileById.get(order.buyer_id) ?? null, "Buyer"),
@@ -241,7 +250,6 @@ export async function emitKlaviyoOrderRefundedForOrder(
       listingCity: typeof primary?.city === "string" ? primary.city : null,
       listingState: typeof primary?.state === "string" ? primary.state : null,
       listingDimensions: typeof primary?.dimensions === "string" ? primary.dimensions : null,
-      amount: Number(order.amount ?? 0),
       sellerEarnings:
         order.seller_earnings != null ? Number(order.seller_earnings) : null,
       paymentMethod: typeof order.payment_method === "string" ? order.payment_method : null,
@@ -255,8 +263,16 @@ export async function emitKlaviyoOrderRefundedForOrder(
     }
 
     const [buyerResult, sellerResult] = await Promise.all([
-      trackKlaviyoOrderRefunded({ ...shared, recipientRole: "buyer" }),
-      trackKlaviyoOrderRefunded({ ...shared, recipientRole: "seller" }),
+      trackKlaviyoOrderRefunded({
+        ...shared,
+        recipientRole: "buyer",
+        amount: display.buyerPaidTotal,
+      }),
+      trackKlaviyoOrderRefunded({
+        ...shared,
+        recipientRole: "seller",
+        amount: display.sellerSaleTotal,
+      }),
     ])
 
     if (!buyerResult.ok && !sellerResult.ok) {
