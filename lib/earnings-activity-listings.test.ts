@@ -1,6 +1,7 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 
+import { availableEarningsListingRows } from "../components/features/earnings/earnings-activity-helpers"
 import type { EarningsTransaction } from "../components/features/earnings/earnings-types"
 import { applyEarningsListingMap, type EarningsListingMapRow } from "./earnings-listing-map"
 import {
@@ -114,5 +115,70 @@ describe("applyEarningsListingMap", () => {
     )
     assert.equal(enriched?.saleHref, saleHrefForOrderId(ORDER_B))
     assert.equal(enriched?.listing, undefined)
+  })
+})
+
+describe("availableEarningsListingRows", () => {
+  it("pairs pending + available rows and prefers the listing title", () => {
+    const pending = tx({
+      id: "p1",
+      amount: "88.00",
+      created_at: "2026-10-01T10:00:00.000Z",
+      reference_type: "order_pending_earnings",
+      reference_id: ORDER_A,
+      description: 'Pending — Sold "Old title from ledger"',
+      listing: {
+        id: "list-1",
+        title: "Channel Islands Twin",
+        href: "/l/ci-twin",
+        imageUrl: "/media/listings/ci.jpg",
+        extraListingCount: 1,
+      },
+      saleHref: `/dashboard/sales/${ORDER_A}`,
+      sellerEarningsUsd: 88,
+    })
+    const release = tx({
+      id: "r1",
+      amount: "0.00",
+      created_at: "2026-10-10T10:00:00.000Z",
+      reference_type: "order_seller_earnings",
+      reference_id: ORDER_A,
+      description: 'Available — Sold "Old title from ledger"',
+      listing: pending.listing,
+      saleHref: pending.saleHref,
+      sellerEarningsUsd: 88,
+    })
+
+    const rows = availableEarningsListingRows([release, pending], new Set())
+    assert.equal(rows.length, 1)
+    assert.equal(rows[0]?.title, "Channel Islands Twin")
+    assert.equal(rows[0]?.amountUsd, 88)
+    assert.equal(rows[0]?.listingHref, "/l/ci-twin")
+    assert.equal(rows[0]?.saleHref, `/dashboard/sales/${ORDER_A}`)
+    assert.equal(rows[0]?.extraListingCount, 1)
+    assert.equal(rows[0]?.imageUrl, "/media/listings/ci.jpg")
+  })
+
+  it("skips reversed sales", () => {
+    const rows = availableEarningsListingRows(
+      [
+        tx({
+          id: "r1",
+          amount: "0.00",
+          reference_type: "order_seller_earnings",
+          reference_id: ORDER_A,
+          description: 'Available — Sold "Board"',
+          listing: {
+            id: "list-1",
+            title: "Board",
+            href: "/l/board",
+            imageUrl: null,
+            extraListingCount: 0,
+          },
+        }),
+      ],
+      new Set([ORDER_A]),
+    )
+    assert.equal(rows.length, 0)
   })
 })
