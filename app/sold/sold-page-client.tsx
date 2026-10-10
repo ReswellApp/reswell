@@ -269,7 +269,7 @@ export function SoldFeedPanel({
       })
       if (brandSlug) query.set("brandSlug", brandSlug)
 
-      const response = await fetch(`/api/feed/sold?${query.toString()}`)
+      const response = await fetch(`/api/feed/sold?${query.toString()}`, { cache: "no-store" })
       const payload = (await response.json()) as SoldFeedPageResponse
       if (!response.ok || !payload.data) {
         throw new Error(payload.error || "Unable to load more sold items")

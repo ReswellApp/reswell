@@ -52,5 +52,8 @@ export function publicMarketplaceCdnCacheControl(
   pathname: string,
   hasSetCookie: boolean,
 ): string | null {
+  // Cookie-free document. Next.js revalidatePath("/sold") owns freshness
+  // after a sale, purchase, or return.
+  if (pathname === "/sold") return null
   return cdnCacheControlForPublicHtml(isPublicMarketplaceHtmlPath(pathname), hasSetCookie)
 }

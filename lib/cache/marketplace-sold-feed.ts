@@ -13,11 +13,19 @@ import {
 } from "@/lib/services/marketplaceSoldFeed"
 import { getDb } from "@/lib/supabase/db"
 
-/** Hourly cache for anonymous `/sold` sold + shipped feeds. */
+/**
+ * `/sold` sold, shipped, and new-listings feeds.
+ * Held until the next sale, purchase, or return, with an hourly backstop.
+ */
 export const MARKETPLACE_SOLD_FEED_CACHE_TAG = "marketplace-sold-feed"
 export const MARKETPLACE_SOLD_FEED_REVALIDATE_SECONDS = 60 * 60
 
 const BRAND_NONE = "__none__"
+
+/** Primary read so a refill after invalidation cannot cache a lagging replica. */
+function soldFeedReadClient() {
+  return getDb({ consistency: "strong" })
+}
 
 /** Stats can load while the listing grid fetch fails; never serve or retain that split state. */
 function isPoisonedSoldFeedPayload(
@@ -30,7 +38,7 @@ function isPoisonedSoldFeedPayload(
 
 const getCachedSoldFeedPayload = unstable_cache(
   async (brandKey: string, shippedOnly: boolean): Promise<MarketplaceSoldFeedPayload> => {
-    const supabase = getDb({ consistency: "eventual" })
+    const supabase = soldFeedReadClient()
     const brandSlug = brandKey === BRAND_NONE ? null : brandKey
     const payload = await loadMarketplaceSoldFeed(supabase, brandSlug, { shippedOnly })
 
@@ -43,7 +51,7 @@ const getCachedSoldFeedPayload = unstable_cache(
 
     return payload
   },
-  ["marketplace-sold-feed-v12"],
+  ["marketplace-sold-feed-v13"],
   {
     revalidate: MARKETPLACE_SOLD_FEED_REVALIDATE_SECONDS,
     tags: [MARKETPLACE_SOLD_FEED_CACHE_TAG],
@@ -71,7 +79,7 @@ export async function getCachedMarketplaceSoldFeed(
   // Dev: skip `unstable_cache` so RPC/migration fixes show up without waiting out the 1h TTL
   // or restarting after an earlier failed fetch cached an empty listing grid.
   if (process.env.NODE_ENV === "development") {
-    const supabase = getDb({ consistency: "eventual" })
+    const supabase = soldFeedReadClient()
     return loadMarketplaceSoldFeed(supabase, normalizedBrandSlug, { shippedOnly: false })
   }
 
@@ -80,7 +88,7 @@ export async function getCachedMarketplaceSoldFeed(
     console.warn(
       "[marketplace-sold-feed] cached sold feed is inconsistent — refetching without cache",
     )
-    const supabase = getDb({ consistency: "eventual" })
+    const supabase = soldFeedReadClient()
     return loadMarketplaceSoldFeed(supabase, normalizedBrandSlug, { shippedOnly: false })
   }
 
@@ -89,11 +97,11 @@ export async function getCachedMarketplaceSoldFeed(
 
 const getCachedShippedFeedPagePayload = unstable_cache(
   async (brandKey: string, page: number): Promise<MarketplaceShippedFeedPayload> => {
-    const supabase = getDb({ consistency: "eventual" })
+    const supabase = soldFeedReadClient()
     const brandSlug = brandKey === BRAND_NONE ? null : brandKey
     return loadMarketplaceShippedFeedPage(supabase, brandSlug, page)
   },
-  ["marketplace-shipped-feed-v2"],
+  ["marketplace-shipped-feed-v3"],
   {
     revalidate: MARKETPLACE_SOLD_FEED_REVALIDATE_SECONDS,
     tags: [MARKETPLACE_SOLD_FEED_CACHE_TAG],
@@ -108,7 +116,7 @@ export async function getCachedMarketplaceShippedFeedPage(
   const safePage = Math.max(1, Math.floor(page) || 1)
 
   if (process.env.NODE_ENV === "development") {
-    const supabase = getDb({ consistency: "eventual" })
+    const supabase = soldFeedReadClient()
     return loadMarketplaceShippedFeedPage(supabase, normalizedBrandSlug, safePage)
   }
 
@@ -117,7 +125,7 @@ export async function getCachedMarketplaceShippedFeedPage(
 
 const getCachedNewListingsFeedPagePayload = unstable_cache(
   async (page: number) => {
-    const supabase = getDb({ consistency: "eventual" })
+    const supabase = soldFeedReadClient()
     const { listings, totalCount } = await fetchNewestActiveListingsPage(supabase, {
       categoryId: null,
       page,
@@ -125,7 +133,7 @@ const getCachedNewListingsFeedPagePayload = unstable_cache(
     const totalPages = Math.max(1, Math.ceil(totalCount / NEW_LISTINGS_FEED_PAGE_SIZE))
     return { listings, totalCount, totalPages }
   },
-  ["marketplace-new-listings-feed-v2"],
+  ["marketplace-new-listings-feed-v3"],
   {
     revalidate: MARKETPLACE_SOLD_FEED_REVALIDATE_SECONDS,
     tags: [MARKETPLACE_SOLD_FEED_CACHE_TAG],
