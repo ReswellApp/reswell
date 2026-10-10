@@ -59,7 +59,7 @@ function oauthStateSupabase(): SupabaseClient {
 
 test.after(restoreEnv)
 
-test("authorize URL omits scope when the app version already declares scopes", async () => {
+test("authorize URL requests the legacy install flow scopes", async () => {
   process.env.SHOPIFY_API_KEY = "shopify-client-id"
   process.env.NEXT_PUBLIC_SITE_URL = "https://www.reswell.app"
   delete process.env.NEXT_PUBLIC_APP_URL
@@ -76,7 +76,10 @@ test("authorize URL omits scope when the app version already declares scopes", a
     url.origin + url.pathname,
     "https://reswell-pilot.myshopify.com/admin/oauth/authorize",
   )
-  assert.equal(url.searchParams.has("scope"), false)
+  assert.equal(
+    url.searchParams.get("scope"),
+    "read_products,read_inventory,write_inventory,read_locations",
+  )
   assert.equal(url.searchParams.get("client_id"), "shopify-client-id")
   assert.equal(
     url.searchParams.get("redirect_uri"),
@@ -86,6 +89,6 @@ test("authorize URL omits scope when the app version already declares scopes", a
   assert.ok((url.searchParams.get("state") ?? "").length > 0)
   assert.deepEqual(
     [...url.searchParams.keys()].sort(),
-    ["client_id", "redirect_uri", "state"],
+    ["client_id", "redirect_uri", "scope", "state"],
   )
 })
