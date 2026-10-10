@@ -1,11 +1,12 @@
 import { Stack, useFocusEffect, useRouter } from "expo-router"
 import { useCallback, useEffect, useRef, useState } from "react"
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native"
-import type { MobileHome, MobileListingCard, MobileListingCategory, MobileListingsPage } from "@reswell/api-contract"
+import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
+import type { MobileBrowseRail, MobileHome, MobileListingCard, MobileListingCategory, MobileListingsPage } from "@reswell/api-contract"
+import { CategorySlider } from "@/components/browse-chips"
 import { HomeFeed } from "@/components/home-feed"
 import { HomeHeader } from "@/components/home-header"
 import { ListingCard } from "@/components/listing-card"
-import { fetchHome, fetchListings, fetchRecentlyViewed } from "@/lib/api"
+import { fetchBrowseRail, fetchHome, fetchListings, fetchRecentlyViewed } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
 import { fontFamily, useReswellColors } from "@/theme"
 
@@ -17,6 +18,7 @@ export default function ListingsScreen() {
   const [page, setPage] = useState<MobileListingsPage | null>(null)
   const [home, setHome] = useState<MobileHome | null>(null)
   const [continueListings, setContinueListings] = useState<MobileListingCard[]>([])
+  const [rail, setRail] = useState<MobileBrowseRail | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -40,6 +42,11 @@ export default function ListingsScreen() {
     let cancelled = false
     const q = search
     setLoading(true)
+    fetchBrowseRail()
+      .then((next) => {
+        if (!cancelled) setRail(next)
+      })
+      .catch(() => undefined)
     if (!q) {
       const recent = accessToken
         ? fetchRecentlyViewed(accessToken).catch(() => ({ listings: [] }))
@@ -114,6 +121,10 @@ export default function ListingsScreen() {
     router.push({ pathname: "/category/[slug]", params: { slug: category } })
   }
 
+  function openResource(screen: string) {
+    router.push({ pathname: "/seller-resources/[slug]", params: { slug: screen } })
+  }
+
   const listings = page?.listings ?? []
   const grid = listings.length % 2 === 1 ? [...listings, null] : listings
 
@@ -121,38 +132,32 @@ export default function ListingsScreen() {
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <Stack.Screen options={{ headerShown: false }} />
       <HomeHeader
-        signedIn={Boolean(session)}
-        onAccount={() => router.push(session ? "/account" : "/sign-in")}
-        onOpenCategory={openCategory}
-      />
-      <TextInput
-        value={query}
-        onChangeText={setQuery}
-        placeholder="Search boards, brands, models"
-        placeholderTextColor={colors.muted}
-        autoCapitalize="none"
-        autoCorrect={false}
-        clearButtonMode="while-editing"
-        returnKeyType="search"
-        style={[
-          styles.search,
-          { color: colors.foreground, backgroundColor: colors.image, fontFamily: fontFamily.text },
-        ]}
+        query={query}
+        onQueryChange={setQuery}
+        onNotifications={() => router.push(session ? "/account/messages" : "/sign-in")}
+        onCart={() => router.push(session ? "/account/cart" : "/sign-in")}
       />
       {loading && (browsing ? !page : !home) ? (
-        <ActivityIndicator style={styles.centered} color={colors.foreground} />
+        <ScrollView>
+          <CategorySlider items={rail?.items ?? null} onOpenCategory={openCategory} onOpenResource={openResource} />
+          <ActivityIndicator style={styles.centered} color={colors.foreground} />
+        </ScrollView>
       ) : error && (browsing ? !page : !home) ? (
-        <View style={styles.centered}>
-          <Text style={{ color: colors.foreground, fontFamily: fontFamily.text }}>{error}</Text>
-          <Pressable onPress={load}>
-            <Text style={[styles.headerAction, { color: colors.foreground, fontFamily: fontFamily.text }]}>
-              Try again
-            </Text>
-          </Pressable>
-        </View>
+        <ScrollView>
+          <CategorySlider items={rail?.items ?? null} onOpenCategory={openCategory} onOpenResource={openResource} />
+          <View style={styles.centered}>
+            <Text style={{ color: colors.foreground, fontFamily: fontFamily.text }}>{error}</Text>
+            <Pressable onPress={load}>
+              <Text style={[styles.headerAction, { color: colors.foreground, fontFamily: fontFamily.text }]}>
+                Try again
+              </Text>
+            </Pressable>
+          </View>
+        </ScrollView>
       ) : browsing ? (
         <FlatList
           data={grid}
+          ListHeaderComponent={<CategorySlider items={rail?.items ?? null} onOpenCategory={openCategory} onOpenResource={openResource} />}
           keyExtractor={(item) => item?.id ?? "spacer"}
           numColumns={2}
           columnWrapperStyle={styles.row}
@@ -188,6 +193,9 @@ export default function ListingsScreen() {
           onRefresh={load}
           onOpenListing={(listing) => openListing(listing.slug || listing.id)}
           onOpenShop={(slug) => router.push({ pathname: "/profile/[slug]", params: { slug } })}
+          onOpenCategory={openCategory}
+          onOpenResource={openResource}
+          rail={rail?.items ?? null}
         />
       )}
     </View>
@@ -198,15 +206,6 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   centered: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, padding: 24 },
   headerAction: { fontSize: 16, fontWeight: "600" },
-  search: {
-    marginHorizontal: 16,
-    marginTop: 8,
-    marginBottom: 4,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    fontSize: 16,
-  },
   list: { paddingTop: 8, paddingBottom: 120 },
   row: { gap: 12, paddingHorizontal: 12 },
   empty: { textAlign: "center", marginTop: 48, fontSize: 16 },

@@ -28,6 +28,10 @@ export async function GET(request: NextRequest, context: RouteContext) {
       volume: params.get("volume") ?? undefined,
       size: params.get("size") ?? undefined,
       kind: params.get("kind") ?? undefined,
+      location: params.get("location") ?? undefined,
+      lat: params.get("lat") ?? undefined,
+      lng: params.get("lng") ?? undefined,
+      radius: params.get("radius") ?? undefined,
     })
     if (!parsed.success) {
       return NextResponse.json({ error: "Invalid listings query" }, { status: 400 })

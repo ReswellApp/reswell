@@ -1,95 +1,129 @@
-import { ScrollView, Pressable, StyleSheet, Text } from "react-native"
+import { SymbolView } from "expo-symbols"
+import { useRef, useState } from "react"
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import {
-  MOBILE_BOARD_STYLE_FILTERS,
   MOBILE_CATEGORY_CHIPS,
-  type MobileBoardType,
+  type MobileBrowseRailItem,
   type MobileListingCategory,
 } from "@reswell/api-contract"
 import { fontFamily, useReswellColors } from "@/theme"
 
-function ChipRow({
-  chips,
-  selectedKey,
-  onPress,
-  placement,
+const FALLBACK_ITEMS: MobileBrowseRailItem[] = MOBILE_CATEGORY_CHIPS.map((chip) => ({
+  kind: "category",
+  label: chip.label,
+  href: "",
+  category: chip.category,
+}))
+
+/** Homepage slider. Categories and Seller Resources both open native screens. */
+export function CategorySlider({
+  items,
+  onOpenCategory,
+  onOpenResource,
 }: {
-  chips: readonly { key: string; label: string }[]
-  selectedKey: string | null
-  onPress: (key: string) => void
-  placement: "category" | "category-above-filter" | "filter"
+  items: MobileBrowseRailItem[] | null
+  onOpenCategory: (category: MobileListingCategory) => void
+  onOpenResource: (screen: string) => void
 }) {
   const colors = useReswellColors()
-  const rowStyle =
-    placement === "filter"
-      ? styles.filterRow
-      : placement === "category-above-filter"
-        ? styles.categoryAboveFilter
-        : styles.categoryRow
+  const rail = items && items.length > 0 ? items : FALLBACK_ITEMS
 
   return (
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
       style={styles.scroller}
-      contentContainerStyle={rowStyle}
+      contentContainerStyle={styles.categoryRow}
     >
-      {chips.map((chip) => {
-        const active = selectedKey === chip.key
-        return (
+      {rail.map((item) =>
+        item.kind === "menu" ? (
+          <ResourceMenu key={item.id} label={item.label} items={item.items} onOpenResource={onOpenResource} />
+        ) : (
           <Pressable
-            key={chip.key}
+            key={item.href || item.category || item.label}
             accessibilityRole="button"
-            accessibilityState={{ selected: active }}
-            onPress={() => onPress(chip.key)}
-            style={[
-              styles.chip,
-              {
-                backgroundColor: active ? colors.image : colors.background,
-                borderColor: active ? colors.foreground : colors.border,
-              },
-            ]}
+            onPress={() => {
+              if (item.category) onOpenCategory(item.category)
+            }}
+            style={[styles.chip, { backgroundColor: colors.background, borderColor: colors.border }]}
           >
-            <Text style={[styles.label, { color: colors.foreground, fontFamily: fontFamily.text }]}>
-              {chip.label}
-            </Text>
+            <Text style={[styles.label, { color: colors.foreground, fontFamily: fontFamily.text }]}>{item.label}</Text>
           </Pressable>
-        )
-      })}
+        ),
+      )}
     </ScrollView>
   )
 }
 
-/** Website header rail. Opens a category page. */
-export function CategorySlider({
-  onOpenCategory,
+function ResourceMenu({
+  label,
+  items,
+  onOpenResource,
 }: {
-  onOpenCategory: (category: MobileListingCategory) => void
+  label: string
+  items: { label: string; href: string; screen: string | null }[]
+  onOpenResource: (screen: string) => void
 }) {
-  return (
-    <ChipRow
-      placement="category"
-      selectedKey={null}
-      chips={MOBILE_CATEGORY_CHIPS.map((chip) => ({ key: chip.category, label: chip.label }))}
-      onPress={(key) => onOpenCategory(key as MobileListingCategory)}
-    />
-  )
-}
+  const colors = useReswellColors()
+  const chipRef = useRef<View>(null)
+  const [anchor, setAnchor] = useState<{ x: number; y: number; height: number } | null>(null)
 
-/** Website board-style facet. Shown on the Surfboards category. */
-export function BoardStyleFilter({
-  selected,
-  onSelect,
-}: {
-  selected: MobileBoardType | null
-  onSelect: (next: MobileBoardType | null) => void
-}) {
+  function open() {
+    chipRef.current?.measureInWindow((x, y, _width, height) => {
+      setAnchor({ x, y, height })
+    })
+  }
+
   return (
-    <ChipRow
-      placement="filter"
-      selectedKey={selected}
-      chips={MOBILE_BOARD_STYLE_FILTERS.map((chip) => ({ key: chip.board_type, label: chip.label }))}
-      onPress={(key) => onSelect(selected === key ? null : (key as MobileBoardType))}
-    />
+    <>
+      <View ref={chipRef} collapsable={false}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={label}
+          onPress={open}
+          style={[styles.chip, styles.menuChip, { backgroundColor: colors.background, borderColor: colors.border }]}
+        >
+          <Text style={[styles.label, { color: colors.foreground, fontFamily: fontFamily.text }]}>{label}</Text>
+          <SymbolView
+            name={{ ios: "chevron.down", android: "expand_more", web: "expand_more" }}
+            size={14}
+            tintColor={colors.foreground}
+          />
+        </Pressable>
+      </View>
+      <Modal visible={anchor !== null} transparent animationType="fade" onRequestClose={() => setAnchor(null)}>
+        <View style={styles.scrim}>
+          <Pressable style={styles.scrim} onPress={() => setAnchor(null)} />
+          <View
+            style={[
+              styles.menu,
+              {
+                backgroundColor: colors.background,
+                borderColor: colors.border,
+                top: (anchor?.y ?? 0) + (anchor?.height ?? 0) + 6,
+                left: Math.max(16, anchor?.x ?? 16),
+              },
+            ]}
+          >
+            {items.map((item) => (
+              <Pressable
+                key={item.href}
+                accessibilityRole="button"
+                onPress={() => {
+                  setAnchor(null)
+                  if (item.screen) onOpenResource(item.screen)
+                }}
+                style={styles.menuItem}
+              >
+                <Text style={[styles.menuLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}>
+                  {item.label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      </Modal>
+    </>
   )
 }
 
@@ -102,20 +136,6 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 12,
   },
-  categoryAboveFilter: {
-    alignItems: "center",
-    gap: 10,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 8,
-  },
-  filterRow: {
-    alignItems: "center",
-    gap: 10,
-    paddingHorizontal: 16,
-    paddingTop: 4,
-    paddingBottom: 12,
-  },
   chip: {
     minHeight: 36,
     justifyContent: "center",
@@ -124,5 +144,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 6,
   },
+  menuChip: { flexDirection: "row", alignItems: "center", gap: 4 },
   label: { fontSize: 13, fontWeight: "600", lineHeight: 16 },
+  scrim: { flex: 1 },
+  menu: {
+    position: "absolute",
+    minWidth: 220,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 12,
+    paddingVertical: 6,
+    shadowColor: "#000000",
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 8,
+  },
+  menuItem: { paddingHorizontal: 14, paddingVertical: 12 },
+  menuLabel: { fontSize: 16, fontWeight: "500" },
 })

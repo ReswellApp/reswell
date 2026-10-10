@@ -29,10 +29,19 @@ import {
   listingCardImageSrc,
   orderedListingGalleryImages,
 } from "@/lib/listing-image-display"
+import {
+  formatListingGeometryLine,
+  formatListingVolumePart,
+  formatStoredListingDimensions,
+} from "@/lib/listing-dimensions-display"
 import { formatCondition, formatHomePeerListingConditionLine, capitalizeWords, getPublicSellerDisplayName } from "@/lib/listing-labels"
 import { peerListingShippingSubline } from "@/lib/listing-pdp-price-line"
 import { findListingByParam } from "@/lib/listing-query"
-import { isListingPubliclyVisible } from "@/lib/listing-public-visibility"
+import {
+  isListingPubliclyVisible,
+  isListingVisibleInPublicSoldFeed,
+  type ListingPublicVisibilityFields,
+} from "@/lib/listing-public-visibility"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { absoluteProxiedProfileMediaUrl } from "@/lib/public-media-display-src"
 import { configuredReswellShopOwnerUserId } from "@/lib/services/resolveReswellShopOwnerUser"
@@ -73,6 +82,21 @@ function listingPriceLabel(priceUsd: number): string {
   return `$${priceUsd.toFixed(2)}`
 }
 
+/** Same Dimensions and Volume lines the public listing page shows. Never the stored JSON. */
+function buyerFacingDimensions(raw: string | null | undefined): {
+  dimensions: string | null
+  volume_label: string | null
+} {
+  const text = nullableText(raw)
+  if (!text) return { dimensions: null, volume_label: null }
+  const geometry = formatListingGeometryLine({ dimensions: text })
+  const volume = formatListingVolumePart({ dimensions: text })
+  return {
+    dimensions: geometry ?? (volume ? null : formatStoredListingDimensions(text)),
+    volume_label: volume,
+  }
+}
+
 function shippingCostMode(
   value: string | null | undefined,
 ): "reswell" | "flat" | "free" | null {
@@ -96,7 +120,7 @@ export function toMobileListingCard(row: MobileListingRow): MobileListingCard | 
     condition_line: formatHomePeerListingConditionLine(row.condition),
     section: nullableText(row.section) ?? "other",
     board_type: nullableText(row.board_type),
-    dimensions: nullableText(row.dimensions),
+    ...buyerFacingDimensions(row.dimensions),
     price_usd: priceUsd,
     price_cents: Math.round(priceUsd * 100),
     price_label: listingPriceLabel(priceUsd),
@@ -365,6 +389,11 @@ export async function getMobileProfileService(
   return { ok: true, data: profile }
 }
 
+/** Browse listings stay purchasable-only. A sold listing stays open when it belongs on the public sold feed. */
+export function isMobileListingDetailVisible(listing: ListingPublicVisibilityFields): boolean {
+  return isListingPubliclyVisible(listing) || isListingVisibleInPublicSoldFeed(listing)
+}
+
 export async function getMobileListingService(
   listingParam: string,
   viewer?: { supabase: SupabaseClient; userId: string },
@@ -378,7 +407,7 @@ export async function getMobileListingService(
   }
 
   const row = found.listing as MobileListingRow | null
-  if (!row || !isListingPubliclyVisible(row)) {
+  if (!row || !isMobileListingDetailVisible(row)) {
     return { ok: false, status: 404, error: "Listing not found" }
   }
 

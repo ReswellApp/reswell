@@ -1,12 +1,12 @@
 import { Image } from "expo-image"
 import { useState } from "react"
-import { ScrollView, StyleSheet, View, useWindowDimensions } from "react-native"
-import { useReswellColors } from "@/theme"
+import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native"
+import { fontFamily, useReswellColors } from "@/theme"
 
 /** Same default frame as the website listing hero: 3:4, whole photo visible. */
 const HERO_ASPECT = 3 / 4
 
-export function ListingGallery({ urls }: { urls: string[] }) {
+export function ListingGallery({ urls, sold = false }: { urls: string[]; sold?: boolean }) {
   const colors = useReswellColors()
   const { width } = useWindowDimensions()
   const [index, setIndex] = useState(0)
@@ -36,6 +36,11 @@ export function ListingGallery({ urls }: { urls: string[] }) {
           ),
         )}
       </ScrollView>
+      {sold ? (
+        <View style={[styles.sold, { backgroundColor: colors.foreground }]} pointerEvents="none">
+          <Text style={[styles.soldLabel, { color: colors.primaryForeground, fontFamily: fontFamily.text }]}>Sold</Text>
+        </View>
+      ) : null}
       {frames.length > 1 ? (
         <View style={styles.dots} pointerEvents="none">
           <View style={styles.dotsPill}>
@@ -54,6 +59,15 @@ export function ListingGallery({ urls }: { urls: string[] }) {
 
 const styles = StyleSheet.create({
   frame: { aspectRatio: HERO_ASPECT },
+  sold: {
+    position: "absolute",
+    top: 16,
+    left: 16,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+  },
+  soldLabel: { fontSize: 11, fontWeight: "600", letterSpacing: 0.6, textTransform: "uppercase" },
   dots: {
     position: "absolute",
     left: 0,

@@ -7,7 +7,12 @@ import {
   mobileOfferActionBodySchema,
   mobileProfileParamSchema,
 } from "@reswell/api-contract"
-import { toMobileListingCard, toMobileListingDetail, toMobileProfile } from "./mobileApi.ts"
+import {
+  isMobileListingDetailVisible,
+  toMobileListingCard,
+  toMobileListingDetail,
+  toMobileProfile,
+} from "./mobileApi.ts"
 import type { MobileProfileRow } from "@/lib/db/mobile-profiles"
 import type { MobileListingRow } from "@/lib/db/mobile-listings"
 
@@ -23,7 +28,7 @@ const ROW: MobileListingRow = {
   brand: "Album",
   model: "Twin",
   board_type: "shortboard",
-  dimensions: "5'10\"",
+  dimensions: `{"v":2,"L":"6'6\\"","W":"21\\"","T":"2 5/8"}`,
   city: "Santa Cruz",
   state: "CA",
   shipping_available: true,
@@ -85,6 +90,17 @@ describe("mobile listings contract", () => {
     assert.equal(card.pickup_label, null)
     assert.equal(card.image_url, "https://cdn.example.com/full.jpg")
     assert.equal(card.condition_label, "Good")
+    assert.equal(card.dimensions, `6'6″ × 21" × 2 5/8″`)
+    assert.equal(card.volume_label, null)
+  })
+
+  it("opens a public sold listing and keeps a hidden sold listing closed", () => {
+    assert.equal(isMobileListingDetailVisible({ ...ROW, status: "sold" }), true)
+    assert.equal(
+      isMobileListingDetailVisible({ ...ROW, status: "sold", hidden_from_site: true }),
+      false,
+    )
+    assert.equal(isMobileListingDetailVisible({ ...ROW, status: "removed" }), false)
   })
 
   it("maps seller and gallery onto the detail", () => {

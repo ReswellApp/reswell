@@ -23,7 +23,9 @@ import { fetchWetsuitsBrowsePage } from "@/lib/db/wetsuit-listings"
 import { finFacetSelectionsFromParams } from "@/lib/fins-browse-facets"
 import { leashFacetSelectionsFromParams } from "@/lib/leashes-browse-facets"
 import { magazineFacetSelectionsFromParams } from "@/lib/magazines-browse-facets"
+import { getCachedForwardGeocodePlace } from "@/lib/cache/forward-geocode-place"
 import { BOARDS_BROWSE_DEFAULT_SORT, BOARDS_BROWSE_NEWEST_SORT } from "@/lib/marketplace-slug-metadata"
+import { surfboardLocationFilter, surfboardLocationNeedsGeocode } from "@/lib/services/mobileCategoryLocation"
 import { isListingPubliclyVisible } from "@/lib/listing-public-visibility"
 import { surfpackFacetSelectionsFromParams } from "@/lib/surfpacks-browse-facets"
 import { tractionFacetSelectionsFromParams } from "@/lib/traction-browse-facets"
@@ -75,6 +77,10 @@ async function listSurfboards(
     length: query.length,
     volume: query.volume,
     shipping: shipping ? "1" : undefined,
+    location: query.location,
+    lat: query.lat != null ? String(query.lat) : undefined,
+    lng: query.lng != null ? String(query.lng) : undefined,
+    radius: query.radius,
     sort: query.sort === "relevant" ? BOARDS_BROWSE_DEFAULT_SORT : query.sort,
   }
   const hasSidebarFilters = boardsBrowseHasSidebarFilters(params)
@@ -101,12 +107,18 @@ async function listSurfboards(
   const limit = CATEGORY_PAGE_SIZE
   const offset = (pageFor(query.offset, limit) - 1) * limit
   const facets = facetSelectionsFromBrowseParams(params)
+  const geocoded = surfboardLocationNeedsGeocode(query)
+    ? await getCachedForwardGeocodePlace(query.location ?? "")
+    : null
+  const location = surfboardLocationFilter(query, geocoded)
   const chain = await buildSurfboardBrowseBaseQuery(supabase, {
     boardType: "all",
     condition: "all",
     query: "",
     facets,
     shippingAvailable: shipping || undefined,
+    geoBbox: location.geoBbox,
+    locationTextFilter: location.locationTextFilter,
     pagedSort: sort === BOARDS_BROWSE_DEFAULT_SORT ? BOARDS_BROWSE_NEWEST_SORT : sort,
     pagedRange: { from: offset, to: offset + limit - 1 },
     useSuppressionSort: false,

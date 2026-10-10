@@ -1,45 +1,135 @@
-import { Pressable, StyleSheet, Text, View } from "react-native"
+import { SymbolView, type AndroidSymbol } from "expo-symbols"
+import { useRef } from "react"
+import { Pressable, StyleSheet, TextInput, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
-import type { MobileListingCategory } from "@reswell/api-contract"
-import { CategorySlider } from "@/components/browse-chips"
+import type { SFSymbol } from "sf-symbols-typescript"
 import { Wordmark } from "@/components/wordmark"
 import { fontFamily, useReswellColors } from "@/theme"
 
+type HeaderIcon = { ios: SFSymbol; android: AndroidSymbol }
+
 export function HomeHeader({
-  signedIn,
-  onAccount,
-  onOpenCategory,
+  query,
+  onQueryChange,
+  onNotifications,
+  onCart,
 }: {
-  signedIn: boolean
-  onAccount: () => void
-  onOpenCategory: (category: MobileListingCategory) => void
+  query: string
+  onQueryChange: (value: string) => void
+  onNotifications: () => void
+  onCart: () => void
 }) {
   const colors = useReswellColors()
   const insets = useSafeAreaInsets()
+  const searchRef = useRef<TextInput>(null)
 
   return (
     <View style={[styles.bar, { paddingTop: insets.top, backgroundColor: colors.background, borderBottomColor: colors.border }]}>
-      <View style={styles.titleRow}>
+      <View style={styles.logoRow}>
+        <View style={styles.logoSide} />
         <Wordmark />
-        <Pressable onPress={onAccount} hitSlop={8}>
-          <Text style={[styles.account, { color: colors.foreground, fontFamily: fontFamily.text }]}>
-            {signedIn ? "Account" : "Sign in"}
-          </Text>
-        </Pressable>
+        <HeaderIconButton icon={{ ios: "cart", android: "shopping_cart" }} label="Cart" onPress={onCart} />
       </View>
-      <CategorySlider onOpenCategory={onOpenCategory} />
+      <View style={styles.searchRow}>
+        <View style={[styles.pill, { borderColor: colors.border, backgroundColor: colors.background }]}>
+          <TextInput
+            ref={searchRef}
+            value={query}
+            onChangeText={onQueryChange}
+            placeholder="Search surfboards, fins, wetsuits or apparel…"
+            placeholderTextColor={colors.muted}
+            autoCapitalize="none"
+            autoCorrect={false}
+            clearButtonMode="while-editing"
+            returnKeyType="search"
+            style={[styles.input, { color: colors.foreground, fontFamily: fontFamily.text }]}
+          />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Search"
+            onPress={() => searchRef.current?.focus()}
+            style={[styles.searchButton, { backgroundColor: colors.primary }]}
+          >
+            <SymbolView
+              name={{ ios: "magnifyingglass", android: "search", web: "search" }}
+              size={16}
+              tintColor={colors.primaryForeground}
+              weight="semibold"
+            />
+          </Pressable>
+        </View>
+        <HeaderIconButton icon={{ ios: "bell", android: "notifications" }} label="Notifications" onPress={onNotifications} />
+      </View>
     </View>
+  )
+}
+
+function HeaderIconButton({
+  icon,
+  label,
+  onPress,
+}: {
+  icon: HeaderIcon
+  label: string
+  onPress: () => void
+}) {
+  const colors = useReswellColors()
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel={label} hitSlop={6} onPress={onPress} style={styles.iconButton}>
+      <SymbolView
+        name={{ ios: icon.ios, android: icon.android, web: icon.android }}
+        size={22}
+        tintColor={colors.foreground}
+        weight="regular"
+      />
+    </Pressable>
   )
 }
 
 const styles = StyleSheet.create({
   bar: { borderBottomWidth: StyleSheet.hairlineWidth },
-  titleRow: {
+  logoRow: {
     minHeight: 44,
     paddingHorizontal: 16,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
-  account: { fontSize: 16, fontWeight: "600" },
+  logoSide: { width: 32 },
+  searchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingBottom: 4,
+  },
+  pill: {
+    flex: 1,
+    minHeight: 44,
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingLeft: 14,
+    paddingRight: 4,
+  },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    paddingVertical: 8,
+    paddingRight: 8,
+  },
+  searchButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  iconButton: {
+    width: 32,
+    height: 32,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 })

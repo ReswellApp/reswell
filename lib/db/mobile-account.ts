@@ -78,7 +78,7 @@ export async function listMobileFavoriteRows(
     .select(`id, created_at, listing:listings (${MOBILE_LISTING_SELECT})`)
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
-    .limit(100)
+    .limit(1000)
 
   if (error) return { ok: false, message: error.message }
 

@@ -11,8 +11,11 @@ import {
   mobileFavoritesSchema,
   mobileFollowResultSchema,
   mobileFollowingSchema,
+  mobileBrowseRailSchema,
+  mobileSellerResourceSchema,
   mobileCategorySchema,
   mobileHomeSchema,
+  mobileMarketplaceFeedSchema,
   mobileListingDetailSchema,
   mobileListingsPageSchema,
   mobileMeSchema,
@@ -24,6 +27,8 @@ import {
   mobileRecentlyViewedSchema,
   mobileReviewsPageSchema,
   mobileSalesSchema,
+  type MobileBrowseRail,
+  type MobileSellerResource,
   type MobileCategory,
   type MobileCategoryListingsQuery,
   type MobileCart,
@@ -36,6 +41,8 @@ import {
   type MobileFollowing,
   type MobileHome,
   type MobileListingDetail,
+  type MobileMarketplaceFeed,
+  type MobileMarketplaceFeedTab,
   type MobileListingsPage,
   type MobileMe,
   type MobileMessageResult,
@@ -116,6 +123,37 @@ export function fetchHome(): Promise<MobileHome> {
   return read("/api/mobile/v1/home", (data) => mobileHomeSchema.parse(data))
 }
 
+/** Website category rail and Seller Resources dropdown. Refetched on each home visit. */
+export function fetchBrowseRail(): Promise<MobileBrowseRail> {
+  return read("/api/mobile/v1/browse-rail", (data) => mobileBrowseRailSchema.parse(data))
+}
+
+/** Seller resource page. Copy comes from the same source as the website. */
+export function fetchSellerResource(slug: string): Promise<MobileSellerResource> {
+  return read(`/api/mobile/v1/seller-resources/${encodeURIComponent(slug)}`, (data) =>
+    mobileSellerResourceSchema.parse(data),
+  )
+}
+
+export function fetchMarketplaceFeed(query?: {
+  tab?: MobileMarketplaceFeedTab
+  page?: number
+  sold_at?: string
+  listing_id?: string
+}): Promise<MobileMarketplaceFeed> {
+  const params = new URLSearchParams()
+  if (query?.tab) params.set("tab", query.tab)
+  if (query?.page && query.page > 1) params.set("page", String(query.page))
+  if (query?.sold_at && query.listing_id) {
+    params.set("sold_at", query.sold_at)
+    params.set("listing_id", query.listing_id)
+  }
+  const search = params.toString()
+  return read(`/api/mobile/v1/feed${search ? `?${search}` : ""}`, (data) =>
+    mobileMarketplaceFeedSchema.parse(data),
+  )
+}
+
 export function fetchRecentlyViewed(accessToken: string): Promise<MobileRecentlyViewed> {
   return read(
     "/api/mobile/v1/me/recently-viewed",
@@ -137,15 +175,57 @@ export function fetchCategoryListings(
   if (query.sort) params.set("sort", query.sort)
   if (query.shipping) params.set("shipping", query.shipping)
   if (query.type) params.set("type", query.type)
-  for (const key of ["style", "condition", "fin", "finSystem", "construction", "length", "volume", "size", "kind"] as const) {
+  for (const key of ["style", "condition", "fin", "finSystem", "construction", "length", "volume", "size", "kind", "location", "radius"] as const) {
     const value = query[key]
     if (value) params.set(key, value)
+  }
+  if (query.lat != null && query.lng != null) {
+    params.set("lat", String(query.lat))
+    params.set("lng", String(query.lng))
   }
   const search = params.toString()
   return read(
     `/api/mobile/v1/categories/${encodeURIComponent(slug)}/listings${search ? `?${search}` : ""}`,
     (data) => mobileListingsPageSchema.parse(data),
   )
+}
+
+export type PlaceSuggestion = {
+  label: string
+  lat: number
+  lng: number
+}
+
+/** Website city/ZIP suggestions (`/api/geocode/suggest`). */
+export async function fetchPlaceSuggestions(query: string): Promise<PlaceSuggestion[]> {
+  const q = query.trim()
+  if (q.length < 2) return []
+  const response = await fetch(`${apiOrigin()}/api/geocode/suggest?q=${encodeURIComponent(q)}`, {
+    headers: { Accept: "application/json" },
+  })
+  if (!response.ok) return []
+  const body: unknown = await response.json()
+  if (!body || typeof body !== "object" || !("suggestions" in body) || !Array.isArray(body.suggestions)) return []
+  return body.suggestions.flatMap((row) => {
+    if (!row || typeof row !== "object") return []
+    const suggestion = row as Record<string, unknown>
+    if (typeof suggestion.label !== "string" || typeof suggestion.lat !== "number" || typeof suggestion.lng !== "number") {
+      return []
+    }
+    return [{ label: suggestion.label, lat: suggestion.lat, lng: suggestion.lng }]
+  })
+}
+
+/** Website reverse geocode (`/api/geocode?lat=&lng=`). */
+export async function reverseGeocodeLabel(lat: number, lng: number): Promise<string | null> {
+  const response = await fetch(`${apiOrigin()}/api/geocode?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`, {
+    headers: { Accept: "application/json" },
+  })
+  if (!response.ok) return null
+  const body: unknown = await response.json()
+  if (!body || typeof body !== "object" || !("displayName" in body) || typeof body.displayName !== "string") return null
+  const label = body.displayName.trim()
+  return label || null
 }
 
 export function fetchListings(

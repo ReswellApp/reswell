@@ -15,6 +15,7 @@ function specRows(listing: MobileListingDetail): { label: string; value: string 
   const shape = shapeLabel(listing.board_type)
   if (shape) rows.push({ label: "Shape", value: shape })
   if (listing.dimensions) rows.push({ label: "Dimensions", value: listing.dimensions })
+  if (listing.volume_label) rows.push({ label: "Volume", value: listing.volume_label })
   return rows
 }
 

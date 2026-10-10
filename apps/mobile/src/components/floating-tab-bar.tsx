@@ -15,7 +15,7 @@ type TabItem = {
   label: string
   icon: TabIcon
   activeIcon?: TabIcon
-  href?: "/" | "/account"
+  href?: "/" | "/feed" | "/sell" | "/favorites" | "/account"
 }
 
 const TABS: TabItem[] = [
@@ -28,14 +28,20 @@ const TABS: TabItem[] = [
   {
     label: "Feed",
     icon: { ios: "list.bullet.rectangle", android: "list_alt" },
+    activeIcon: { ios: "list.bullet.rectangle.fill", android: "list_alt" },
+    href: "/feed",
   },
   {
     label: "Sell",
     icon: { ios: "camera", android: "photo_camera" },
+    activeIcon: { ios: "camera.fill", android: "photo_camera" },
+    href: "/sell",
   },
   {
-    label: "Shops",
-    icon: { ios: "storefront", android: "storefront" },
+    label: "Favorites",
+    icon: { ios: "heart", android: "favorite_border" },
+    activeIcon: { ios: "heart.fill", android: "favorite" },
+    href: "/favorites",
   },
   {
     label: "Me",
@@ -47,6 +53,9 @@ const TABS: TabItem[] = [
 
 function tabIsActive(pathname: string, href: TabItem["href"]): boolean {
   if (href === "/") return pathname === "/" || pathname === ""
+  if (href === "/feed") return pathname === "/feed"
+  if (href === "/sell") return pathname === "/sell" || pathname.startsWith("/sell/")
+  if (href === "/favorites") return pathname === "/favorites"
   if (href === "/account") return pathname === "/account" || pathname.startsWith("/account/")
   return false
 }
@@ -55,6 +64,8 @@ function tabBarHidden(pathname: string): boolean {
   return (
     pathname.startsWith("/listing") ||
     pathname.startsWith("/profile") ||
+    pathname.startsWith("/seller-resources") ||
+    pathname.startsWith("/sell/") ||
     pathname === "/sign-in"
   )
 }
@@ -81,7 +92,7 @@ export function FloatingTabBar() {
                 tintColor={color}
                 weight={active ? "semibold" : "regular"}
               />
-              <Text style={[styles.label, { color, fontFamily: fontFamily.text }]}>{tab.label}</Text>
+              <Text numberOfLines={1} style={[styles.label, { color, fontFamily: fontFamily.text }]}>{tab.label}</Text>
             </View>
           )
           const href = tab.href
@@ -99,6 +110,9 @@ export function FloatingTabBar() {
               accessibilityState={{ selected: active }}
               onPress={() => {
                 if (href === "/" && (pathname === "/" || pathname === "")) return
+                if (href === "/feed" && pathname === "/feed") return
+                if (href === "/sell" && pathname === "/sell") return
+                if (href === "/favorites" && pathname === "/favorites") return
                 if (href === "/account" && pathname === "/account") return
                 router.navigate(href)
               }}

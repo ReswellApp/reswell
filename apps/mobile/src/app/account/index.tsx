@@ -8,7 +8,7 @@ import { useAuth } from "@/lib/auth-context"
 import { fontFamily, useReswellColors } from "@/theme"
 
 const LINKS = [
-  { path: "/account/favorites", label: "Favorites" },
+  { path: "/favorites", label: "Favorites" },
   { path: "/account/following", label: "Following" },
   { path: "/account/cart", label: "Cart" },
   { path: "/account/offers", label: "Offers" },

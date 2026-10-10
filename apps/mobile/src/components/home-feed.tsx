@@ -1,6 +1,7 @@
 import { Image } from "expo-image"
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native"
-import type { MobileHomeSection, MobileListingCard } from "@reswell/api-contract"
+import type { MobileBrowseRailItem, MobileHomeSection, MobileListingCard, MobileListingCategory } from "@reswell/api-contract"
+import { CategorySlider } from "@/components/browse-chips"
 import { ListingCard } from "@/components/listing-card"
 import { fontFamily, useReswellColors } from "@/theme"
 
@@ -11,6 +12,9 @@ export function HomeFeed({
   onRefresh,
   onOpenListing,
   onOpenShop,
+  onOpenCategory,
+  onOpenResource,
+  rail,
 }: {
   sections: MobileHomeSection[]
   continueListings: MobileListingCard[]
@@ -18,6 +22,9 @@ export function HomeFeed({
   onRefresh: () => void
   onOpenListing: (listing: MobileListingCard) => void
   onOpenShop: (slug: string) => void
+  onOpenCategory: (category: MobileListingCategory) => void
+  onOpenResource: (screen: string) => void
+  rail: MobileBrowseRailItem[] | null
 }) {
   const colors = useReswellColors()
   return (
@@ -26,6 +33,7 @@ export function HomeFeed({
       contentContainerStyle={styles.page}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.foreground} />}
     >
+      <CategorySlider items={rail} onOpenCategory={onOpenCategory} onOpenResource={onOpenResource} />
       {continueListings.length > 0 ? (
         <ListingSection
           title="Pick up where you left off"
@@ -39,6 +47,7 @@ export function HomeFeed({
             key={section.id}
             title={section.title}
             listings={section.listings}
+            badge={section.id === "recently_sold" ? "Sold" : undefined}
             onOpenListing={onOpenListing}
           />
         ) : section.kind === "brands" ? (
@@ -77,10 +86,12 @@ export function HomeFeed({
 function ListingSection({
   title,
   listings,
+  badge,
   onOpenListing,
 }: {
   title: string
   listings: MobileListingCard[]
+  badge?: string
   onOpenListing: (listing: MobileListingCard) => void
 }) {
   return (
@@ -89,7 +100,7 @@ function ListingSection({
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.rail}>
         {listings.map((listing) => (
           <View key={listing.id} style={styles.railCard}>
-            <ListingCard item={listing} onPress={() => onOpenListing(listing)} />
+            <ListingCard item={listing} badge={badge} onPress={() => onOpenListing(listing)} />
           </View>
         ))}
       </ScrollView>

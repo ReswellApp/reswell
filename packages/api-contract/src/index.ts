@@ -20,7 +20,10 @@ export const mobileListingCardSchema = z.object({
   condition_label: z.string().nullable(),
   section: z.string(),
   board_type: z.string().nullable(),
+  /** Buyer-facing length × width × thickness. Same line as the website Dimensions row. */
   dimensions: z.string().nullable(),
+  /** Buyer-facing liters. Same line as the website Volume row. */
+  volume_label: z.string().nullable(),
   price_usd: z.number(),
   price_cents: z.number().int(),
   city: z.string().nullable(),
@@ -52,6 +55,69 @@ export const mobileListingsPageSchema = z.object({
   limit: z.number().int(),
   offset: z.number().int(),
   has_more: z.boolean(),
+})
+
+/**
+ * Marketplace feed. Same three lists as the website `/sold` page:
+ * newest active surfboards, sold, and shipped boards.
+ */
+export const MOBILE_MARKETPLACE_FEED_TABS = ["new", "sold", "shipped"] as const
+
+export const mobileMarketplaceFeedTabSchema = z.enum(MOBILE_MARKETPLACE_FEED_TABS)
+
+export const mobileMarketplaceFeedCursorSchema = z.object({
+  sold_at: z.string(),
+  listing_id: z.string().uuid(),
+})
+
+export const mobileMarketplaceFeedQuerySchema = z
+  .object({
+    tab: mobileMarketplaceFeedTabSchema.default("new"),
+    page: z.coerce.number().int().min(1).max(500).default(1),
+    sold_at: z.string().trim().min(1).max(64).optional(),
+    listing_id: z.string().uuid().optional(),
+  })
+  .superRefine((data, ctx) => {
+    const hasCursor = Boolean(data.sold_at) || Boolean(data.listing_id)
+    if (Boolean(data.sold_at) !== Boolean(data.listing_id)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "A complete sold cursor is required",
+        path: ["sold_at"],
+      })
+    }
+    if (hasCursor && data.tab !== "sold") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "A sold cursor only applies to the sold feed",
+        path: ["tab"],
+      })
+    }
+    if (data.tab === "sold" && data.page > 1 && !hasCursor) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Further sold pages use the cursor from the previous page",
+        path: ["page"],
+      })
+    }
+  })
+
+export const mobileMarketplaceFeedStatsSchema = z.object({
+  count: z.number().int().nonnegative(),
+  gmv_label: z.string().nullable(),
+  caption: z.string(),
+})
+
+export const mobileMarketplaceFeedSchema = z.object({
+  tab: mobileMarketplaceFeedTabSchema,
+  title: z.string(),
+  subtitle: z.string(),
+  listings: z.array(mobileListingCardSchema),
+  page: z.number().int(),
+  page_size: z.number().int(),
+  has_more: z.boolean(),
+  next_cursor: mobileMarketplaceFeedCursorSchema.nullable(),
+  stats: mobileMarketplaceFeedStatsSchema.nullable(),
 })
 
 /**
@@ -174,21 +240,51 @@ export const mobileCategorySchema = z.object({
   facets: z.array(mobileCategoryFacetSchema),
 })
 
-export const mobileCategoryListingsQuerySchema = z.object({
-  offset: z.coerce.number().int().min(0).max(5000).default(0),
-  sort: z.enum(MOBILE_CATEGORY_SORTS).default("relevant"),
-  shipping: z.literal("1").optional(),
-  type: z.enum(MOBILE_BOARD_TYPES).optional(),
-  style: z.string().trim().max(200).optional(),
-  condition: z.string().trim().max(200).optional(),
-  fin: z.string().trim().max(200).optional(),
-  finSystem: z.string().trim().max(200).optional(),
-  construction: z.string().trim().max(200).optional(),
-  length: z.string().trim().max(200).optional(),
-  volume: z.string().trim().max(200).optional(),
-  size: z.string().trim().max(200).optional(),
-  kind: z.string().trim().max(200).optional(),
-})
+/** Same mile choices as the website boards location filter. "Any distance" is omitted. */
+export const MOBILE_BOARD_RADIUS = ["25", "50", "100", "200"] as const
+
+function blankToUndefined(value: unknown): unknown {
+  if (value == null) return undefined
+  if (typeof value === "string" && value.trim() === "") return undefined
+  return value
+}
+
+export const mobileCategoryListingsQuerySchema = z
+  .object({
+    offset: z.coerce.number().int().min(0).max(5000).default(0),
+    sort: z.enum(MOBILE_CATEGORY_SORTS).default("relevant"),
+    shipping: z.literal("1").optional(),
+    type: z.enum(MOBILE_BOARD_TYPES).optional(),
+    style: z.string().trim().max(200).optional(),
+    condition: z.string().trim().max(200).optional(),
+    fin: z.string().trim().max(200).optional(),
+    finSystem: z.string().trim().max(200).optional(),
+    construction: z.string().trim().max(200).optional(),
+    length: z.string().trim().max(200).optional(),
+    volume: z.string().trim().max(200).optional(),
+    size: z.string().trim().max(200).optional(),
+    kind: z.string().trim().max(200).optional(),
+    location: z.preprocess(blankToUndefined, z.string().trim().max(120).optional()),
+    lat: z.preprocess(blankToUndefined, z.coerce.number().min(-90).max(90).optional()),
+    lng: z.preprocess(blankToUndefined, z.coerce.number().min(-180).max(180).optional()),
+    radius: z.preprocess(blankToUndefined, z.enum(MOBILE_BOARD_RADIUS).optional()),
+  })
+  .superRefine((value, ctx) => {
+    if ((value.lat == null) !== (value.lng == null)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Latitude and longitude are set together",
+        path: ["lat"],
+      })
+    }
+    if (value.radius && value.lat == null && !value.location) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "A radius needs a place",
+        path: ["radius"],
+      })
+    }
+  })
 
 export type MobileCategoryChip = {
   label: string
@@ -216,6 +312,92 @@ export const MOBILE_CATEGORY_CHIPS: readonly MobileCategoryChip[] = [
   { label: "Apparel", category: "apparel" },
   { label: "Magazines", category: "magazines" },
 ]
+
+/** Seller resource screens. Same pages as the website dropdown. */
+export const MOBILE_SELLER_RESOURCE_SLUGS = [
+  "for-surf-shops",
+  "how-to-sell",
+  "how-to-ship",
+  "sales-map",
+  "seller-resources",
+] as const
+
+export type MobileSellerResourceSlug = (typeof MOBILE_SELLER_RESOURCE_SLUGS)[number]
+
+/** A page on the live site. `screen` opens the native seller resource. `category` opens a catalog. */
+export const mobileBrowseLinkSchema = z.object({
+  label: z.string(),
+  href: z.string(),
+  category: z.enum(MOBILE_LISTING_CATEGORIES).nullable(),
+  screen: z.enum(MOBILE_SELLER_RESOURCE_SLUGS).nullable(),
+})
+
+const mobileSellerResourceCardSchema = z.object({
+  title: z.string(),
+  body: z.string(),
+  screen: z.enum(MOBILE_SELLER_RESOURCE_SLUGS).nullable(),
+  listing_id: z.string().nullable(),
+  image_url: z.string().nullable(),
+})
+
+export const mobileSellerResourceSectionSchema = z.discriminatedUnion("kind", [
+  z.object({
+    kind: z.literal("paragraphs"),
+    title: z.string().nullable(),
+    paragraphs: z.array(z.string()).min(1),
+  }),
+  z.object({
+    kind: z.literal("steps"),
+    title: z.string().nullable(),
+    steps: z.array(z.object({ title: z.string(), body: z.string() })).min(1),
+  }),
+  z.object({
+    kind: z.literal("cards"),
+    title: z.string().nullable(),
+    cards: z.array(mobileSellerResourceCardSchema).min(1),
+  }),
+  z.object({
+    kind: z.literal("faqs"),
+    title: z.string().nullable(),
+    items: z.array(z.object({ question: z.string(), answer: z.string() })).min(1),
+  }),
+])
+
+/** Body of a seller resource page. The website and the app both read this. */
+export const mobileSellerResourceSchema = z.object({
+  slug: z.enum(MOBILE_SELLER_RESOURCE_SLUGS),
+  title: z.string(),
+  description: z.string(),
+  sections: z.array(mobileSellerResourceSectionSchema),
+})
+
+export type MobileSellerResource = z.infer<typeof mobileSellerResourceSchema>
+
+/**
+ * Homepage slider. Categories match the website rail. Menus match a website dropdown,
+ * including Seller Resources. The app fetches this on each visit.
+ */
+export const mobileBrowseRailItemSchema = z.discriminatedUnion("kind", [
+  z.object({
+    kind: z.literal("category"),
+    label: z.string(),
+    href: z.string(),
+    category: z.enum(MOBILE_LISTING_CATEGORIES).nullable(),
+  }),
+  z.object({
+    kind: z.literal("menu"),
+    id: z.string(),
+    label: z.string(),
+    items: z.array(mobileBrowseLinkSchema).min(1),
+  }),
+])
+
+export const mobileBrowseRailSchema = z.object({
+  items: z.array(mobileBrowseRailItemSchema).min(1),
+})
+
+export type MobileBrowseRail = z.infer<typeof mobileBrowseRailSchema>
+export type MobileBrowseRailItem = z.infer<typeof mobileBrowseRailItemSchema>
 
 /**
  * Surfboard shape filters. Same slugs and labels as the website board-style facet
@@ -309,6 +491,10 @@ export type MobileMe = z.infer<typeof mobileMeSchema>
 export type MobileListingCard = z.infer<typeof mobileListingCardSchema>
 export type MobileListingDetail = z.infer<typeof mobileListingDetailSchema>
 export type MobileListingsPage = z.infer<typeof mobileListingsPageSchema>
+export type MobileMarketplaceFeedTab = z.infer<typeof mobileMarketplaceFeedTabSchema>
+export type MobileMarketplaceFeedQuery = z.infer<typeof mobileMarketplaceFeedQuerySchema>
+export type MobileMarketplaceFeed = z.infer<typeof mobileMarketplaceFeedSchema>
+export type MobileMarketplaceFeedStats = z.infer<typeof mobileMarketplaceFeedStatsSchema>
 export type MobileHome = z.infer<typeof mobileHomeSchema>
 export type MobileRecentlyViewed = z.infer<typeof mobileRecentlyViewedSchema>
 export type MobileCategory = z.infer<typeof mobileCategorySchema>

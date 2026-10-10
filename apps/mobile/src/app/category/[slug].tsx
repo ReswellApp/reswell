@@ -1,21 +1,23 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router"
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import {
   ActivityIndicator,
   FlatList,
   Modal,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native"
 import type { MobileBoardType, MobileCategory, MobileCategoryListingsQuery, MobileCategorySortId, MobileListingCard, MobileListingsPage } from "@reswell/api-contract"
-import { BoardStyleFilter } from "@/components/browse-chips"
+import { CategoryFilters } from "@/components/category-filters"
 import { CategoryHero } from "@/components/category-hero"
+import { type CategoryPlace, type CategoryRadius } from "@/components/category-location-filter"
 import { CategoryToolbar } from "@/components/category-toolbar"
+import { HomeHeader } from "@/components/home-header"
 import { ListingCard } from "@/components/listing-card"
-import { fetchCategory, fetchCategoryListings } from "@/lib/api"
+import { fetchCategory, fetchCategoryListings, fetchListings } from "@/lib/api"
+import { useAuth } from "@/lib/auth-context"
 import { fontFamily, useReswellColors } from "@/theme"
 
 type SelectedFacets = Record<string, string[]>
@@ -23,6 +25,7 @@ type SelectedFacets = Record<string, string[]>
 export default function CategoryScreen() {
   const colors = useReswellColors()
   const router = useRouter()
+  const { session } = useAuth()
   const params = useLocalSearchParams<{ slug: string; type?: string }>()
   const slug = params.slug
   const boardType = params.type
@@ -34,9 +37,19 @@ export default function CategoryScreen() {
   const [sort, setSort] = useState<MobileCategorySortId>("relevant")
   const [shipping, setShipping] = useState(false)
   const [selected, setSelected] = useState<SelectedFacets>({})
+  const [place, setPlace] = useState<CategoryPlace | null>(null)
+  const [radius, setRadius] = useState<CategoryRadius>("any")
   const [layout, setLayout] = useState<"grid" | "list">("grid")
   const [sortOpen, setSortOpen] = useState(false)
   const [filtersOpen, setFiltersOpen] = useState(false)
+  const [query, setQuery] = useState("")
+  const [search, setSearch] = useState("")
+  const [searchPage, setSearchPage] = useState<MobileListingsPage | null>(null)
+  const [searchError, setSearchError] = useState<string | null>(null)
+  const [searchLoading, setSearchLoading] = useState(false)
+  const [searchLoadingMore, setSearchLoadingMore] = useState(false)
+  const searchRef = useRef(search)
+  searchRef.current = search
 
   const load = useCallback(() => {
     if (!slug) return
@@ -44,7 +57,7 @@ export default function CategoryScreen() {
     setLoading(true)
     Promise.all([
       fetchCategory(slug),
-      fetchCategoryListings(slug, listingQuery(0, sort, shipping, selected, boardType)),
+      fetchCategoryListings(slug, listingQuery(0, sort, shipping, selected, boardType, place, radius)),
     ])
       .then(([nextCategory, nextPage]) => {
         if (!cancelled) {
@@ -62,16 +75,52 @@ export default function CategoryScreen() {
     return () => {
       cancelled = true
     }
-  }, [slug, sort, shipping, selected, boardType])
+  }, [slug, sort, shipping, selected, boardType, place, radius])
 
   useEffect(() => {
     return load()
   }, [load])
 
+  useEffect(() => {
+    const timer = setTimeout(() => setSearch(query.trim()), 300)
+    return () => clearTimeout(timer)
+  }, [query])
+
+  useEffect(() => {
+    if (!search) {
+      setSearchPage(null)
+      setSearchError(null)
+      setSearchLoading(false)
+      return
+    }
+    let cancelled = false
+    const q = search
+    setSearchLoading(true)
+    fetchListings(0, { q })
+      .then((next) => {
+        if (!cancelled) {
+          setSearchPage(next)
+          setSearchError(null)
+        }
+      })
+      .catch((cause: unknown) => {
+        if (!cancelled) {
+          setSearchPage(null)
+          setSearchError(cause instanceof Error ? cause.message : "Unable to load listings")
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setSearchLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [search])
+
   function loadMore() {
     if (!page?.has_more || loadingMore || loading || !slug) return
     setLoadingMore(true)
-    fetchCategoryListings(slug, listingQuery(page.offset + page.limit, sort, shipping, selected, boardType))
+    fetchCategoryListings(slug, listingQuery(page.offset + page.limit, sort, shipping, selected, boardType, place, radius))
       .then((next) => {
         setPage((current) =>
           current ? { ...next, listings: [...current.listings, ...next.listings] } : next,
@@ -85,15 +134,74 @@ export default function CategoryScreen() {
     router.push({ pathname: "/listing/[id]", params: { id: listing.slug || listing.id } })
   }
 
+  function loadMoreSearch() {
+    if (!searchPage?.has_more || searchLoadingMore || searchLoading || !search) return
+    const q = search
+    setSearchLoadingMore(true)
+    fetchListings(searchPage.offset + searchPage.limit, { q })
+      .then((next) => {
+        if (searchRef.current !== q) return
+        setSearchPage((current) =>
+          current ? { ...next, listings: [...current.listings, ...next.listings] } : next,
+        )
+      })
+      .catch(() => undefined)
+      .finally(() => setSearchLoadingMore(false))
+  }
+
   const listings = page?.listings ?? []
   const grid = layout === "grid" && listings.length % 2 === 1 ? [...listings, null] : listings
   const sortLabel = category?.sorts.find((item) => item.id === sort)?.label ?? "Most Relevant"
-  const filterCount = Object.values(selected).reduce((sum, values) => sum + values.length, 0) + (shipping ? 1 : 0)
+  const filterCount =
+    Object.values(selected).reduce((sum, values) => sum + values.length, 0) + (shipping ? 1 : 0) + (place ? 1 : 0)
+
+  const searching = Boolean(search)
+  const searchListings = searchPage?.listings ?? []
+  const searchGrid = searchListings.length % 2 === 1 ? [...searchListings, null] : searchListings
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
-      <Stack.Screen options={{ title: "" }} />
-      {loading && !category ? (
+      <Stack.Screen options={{ headerShown: false }} />
+      <HomeHeader
+        query={query}
+        onQueryChange={setQuery}
+        onNotifications={() => router.push(session ? "/account/messages" : "/sign-in")}
+        onCart={() => router.push(session ? "/account/cart" : "/sign-in")}
+      />
+      {searching ? (
+        searchLoading && !searchPage ? (
+          <ActivityIndicator style={styles.centered} color={colors.foreground} />
+        ) : searchError && !searchPage ? (
+          <View style={styles.centered}>
+            <Text style={{ color: colors.foreground, fontFamily: fontFamily.text }}>{searchError}</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={searchGrid}
+            keyExtractor={(item) => item?.id ?? "spacer"}
+            numColumns={2}
+            columnWrapperStyle={styles.columns}
+            contentContainerStyle={styles.list}
+            onEndReached={loadMoreSearch}
+            onEndReachedThreshold={0.4}
+            ListEmptyComponent={
+              <Text style={[styles.empty, { color: colors.muted, fontFamily: fontFamily.text }]}>
+                No listings match that search.
+              </Text>
+            }
+            ListFooterComponent={
+              searchLoadingMore ? <ActivityIndicator color={colors.foreground} style={styles.footer} /> : null
+            }
+            renderItem={({ item }) =>
+              item ? (
+                <ListingCard item={item} onPress={() => openListing(item)} />
+              ) : (
+                <View style={styles.spacer} />
+              )
+            }
+          />
+        )
+      ) : loading && !category ? (
         <ActivityIndicator style={styles.centered} color={colors.foreground} />
       ) : error && !category ? (
         <View style={styles.centered}>
@@ -117,12 +225,6 @@ export default function CategoryScreen() {
           ListHeaderComponent={
             <View>
               <CategoryHero title={category.title} imageUrl={category.image_url} imagePosition={category.image_position} />
-              {slug === "surfboards" ? (
-                <BoardStyleFilter
-                  selected={isBoardType(boardType) ? boardType : null}
-                  onSelect={(next) => router.setParams({ type: next ?? "" })}
-                />
-              ) : null}
               <CategoryToolbar
                 sortLabel={sortLabel}
                 filterCount={filterCount}
@@ -179,71 +281,27 @@ export default function CategoryScreen() {
           </View>
         </Pressable>
       </Modal>
-      <Modal visible={filtersOpen} animationType="slide" onRequestClose={() => setFiltersOpen(false)}>
-        <View style={[styles.filterScreen, { backgroundColor: colors.background }]}>
-          <View style={styles.filterHeader}>
-            <Text style={[styles.filterTitle, { color: colors.foreground, fontFamily: fontFamily.headline }]}>Filters</Text>
-            <Pressable onPress={() => setFiltersOpen(false)}>
-              <Text style={{ color: colors.foreground, fontFamily: fontFamily.text, fontWeight: "700" }}>Done</Text>
-            </Pressable>
-          </View>
-          <ScrollView contentContainerStyle={styles.filterBody}>
-            {category?.ship ? (
-              <Pressable
-                onPress={() => setShipping((current) => !current)}
-                style={[styles.ship, { backgroundColor: shipping ? colors.foreground : colors.image }]}
-              >
-                <Text style={{ color: shipping ? colors.primaryForeground : colors.foreground, fontFamily: fontFamily.text, fontWeight: "700" }}>
-                  Ship to me
-                </Text>
-              </Pressable>
-            ) : null}
-            {category?.facets.map((group) => (
-              <View key={group.id} style={styles.group}>
-                <Text style={[styles.groupTitle, { color: colors.foreground, fontFamily: fontFamily.text }]}>{group.label}</Text>
-                <View style={styles.options}>
-                  {group.options.map((option) => {
-                    const active = selected[group.id]?.includes(option.value) ?? false
-                    return (
-                      <Pressable
-                        key={option.value}
-                        onPress={() =>
-                          setSelected((current) => {
-                            const values = current[group.id] ?? []
-                            const next = values.includes(option.value)
-                              ? values.filter((value) => value !== option.value)
-                              : [...values, option.value]
-                            return { ...current, [group.id]: next }
-                          })
-                        }
-                        style={[
-                          styles.option,
-                          {
-                            backgroundColor: active ? colors.foreground : colors.background,
-                            borderColor: active ? colors.foreground : colors.border,
-                          },
-                        ]}
-                      >
-                        <Text style={{ color: active ? colors.primaryForeground : colors.foreground, fontFamily: fontFamily.text, fontSize: 14 }}>
-                          {option.label}
-                        </Text>
-                      </Pressable>
-                    )
-                  })}
-                </View>
-              </View>
-            ))}
-            <Pressable
-              onPress={() => {
-                setSelected({})
-                setShipping(false)
-              }}
-            >
-              <Text style={{ color: colors.muted, fontFamily: fontFamily.text, fontWeight: "600" }}>Clear filters</Text>
-            </Pressable>
-          </ScrollView>
-        </View>
-      </Modal>
+      <CategoryFilters
+        visible={filtersOpen}
+        facets={category?.facets ?? []}
+        ship={category?.ship ?? false}
+        showLocation={slug === "surfboards"}
+        shipping={shipping}
+        selected={selected}
+        place={place}
+        radius={radius}
+        onShippingChange={setShipping}
+        onSelectedChange={setSelected}
+        onPlaceChange={setPlace}
+        onRadiusChange={setRadius}
+        onClear={() => {
+          setSelected({})
+          setShipping(false)
+          setPlace(null)
+          setRadius("any")
+        }}
+        onClose={() => setFiltersOpen(false)}
+      />
     </View>
   )
 }
@@ -254,10 +312,20 @@ function listingQuery(
   shipping: boolean,
   selected: SelectedFacets,
   boardType: string | undefined,
+  place: CategoryPlace | null,
+  radius: CategoryRadius,
 ): Partial<MobileCategoryListingsQuery> & { offset: number } {
   const query: Partial<MobileCategoryListingsQuery> & { offset: number } = { offset, sort }
   if (shipping) query.shipping = "1"
   if (isBoardType(boardType)) query.type = boardType
+  if (place?.label) {
+    query.location = place.label
+    if (place.lat != null && place.lng != null) {
+      query.lat = place.lat
+      query.lng = place.lng
+    }
+    if (radius !== "any") query.radius = radius
+  }
   for (const [key, values] of Object.entries(selected)) {
     if (values.length === 0) continue
     const joined = values.join(",")
@@ -299,13 +367,4 @@ const styles = StyleSheet.create({
   scrim: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.28)" },
   sheet: { borderTopLeftRadius: 18, borderTopRightRadius: 18, paddingVertical: 8 },
   sheetRow: { paddingHorizontal: 20, paddingVertical: 16 },
-  filterScreen: { flex: 1, paddingTop: 56 },
-  filterHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16 },
-  filterTitle: { fontSize: 28, fontWeight: "700" },
-  filterBody: { padding: 16, gap: 18, paddingBottom: 40 },
-  ship: { alignSelf: "flex-start", borderRadius: 999, paddingHorizontal: 16, paddingVertical: 10 },
-  group: { gap: 8 },
-  groupTitle: { fontSize: 16, fontWeight: "700" },
-  options: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  option: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8 },
 })

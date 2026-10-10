@@ -3,6 +3,7 @@ import * as AppleAuthentication from "expo-apple-authentication"
 import * as Linking from "expo-linking"
 import * as WebBrowser from "expo-web-browser"
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react"
+import { publicApiUrl } from "@/lib/public-env"
 import { getSupabase } from "@/lib/supabase"
 
 WebBrowser.maybeCompleteAuthSession()
@@ -67,7 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         })
         if (error) return error.message
         if (!data.url) return "Could not start Google sign-in."
-        const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo)
+        const result = await WebBrowser.openAuthSessionAsync(googleSignInStartUrl(data.url), redirectTo)
         if (result.type === "cancel" || result.type === "dismiss") return null
         if (result.type !== "success") return "Google sign-in did not finish."
         return finishSupabaseOAuth(supabase, result.url)
@@ -110,6 +111,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+}
+
+/**
+ * iOS prints the host of this URL on the sign-in sheet. Start on Reswell so
+ * the sheet does not name the Supabase project.
+ *
+ * Expo Go on this Mac uses the local Reswell server, so the sheet says
+ * localhost. A build that talks to the live site says reswell.app.
+ */
+function googleSignInStartUrl(authorizeUrl: string): string {
+  const configured = publicApiUrl().replace(/\/$/, "")
+  const origin = __DEV__ && configured ? configured : "https://reswell.app"
+  const start = new URL("/api/mobile/v1/auth/google", origin)
+  start.searchParams.set("url", authorizeUrl)
+  return start.toString()
 }
 
 function oauthParam(url: string, name: string): string | null {

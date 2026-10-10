@@ -148,6 +148,7 @@ export default function ProfileScreen() {
             item ? (
               <ListingCard
                 item={item}
+                badge={tab === "sold" ? "Sold" : undefined}
                 onPress={() => router.push({ pathname: "/listing/[id]", params: { id: item.slug || item.id } })}
               />
             ) : (

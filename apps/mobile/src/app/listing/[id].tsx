@@ -74,10 +74,10 @@ export default function ListingScreen() {
       ) : (
         <>
           <ScrollView contentInsetAdjustmentBehavior="never">
-            <ListingGallery urls={listing.image_urls} />
+            <ListingGallery urls={listing.image_urls} sold={listing.status === "sold"} />
             <ListingDetail listing={listing} />
           </ScrollView>
-          <ListingActions listing={listing} onChange={setListing} />
+          {listing.status === "sold" ? null : <ListingActions listing={listing} onChange={setListing} />}
         </>
       )}
     </View>
