@@ -20,7 +20,10 @@ import { ListingTileGridSkeleton } from "@/components/listing-tile-skeleton"
 import { Skeleton } from "@/components/ui/skeleton"
 import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
 
-/** ISR for `/sold` feeds — public listing data is also wrapped in `unstable_cache`. */
+/**
+ * Backstop if a sale, purchase, or return misses on-demand revalidation.
+ * Those events expire this page immediately via `revalidateMarketplaceSoldFeedCatalog`.
+ */
 export const revalidate = 3600
 
 export async function generateMetadata(): Promise<Metadata> {
