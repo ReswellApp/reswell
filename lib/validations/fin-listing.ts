@@ -1,3 +1,4 @@
+import { coerceListingPriceUsd } from "@/lib/listing-compare-at-price"
 import { addReswellPackedWeightZodIssues } from "@/lib/validations/reswell-packed-weight"
 import {
   listingRemovedVideoIdsSchema,
@@ -53,7 +54,10 @@ const finListingImageSchema = z.object({
 const finListingBaseObject = z.object({
   title: z.string().trim().min(3, "Add a title").max(FIN_LISTING_TITLE_MAX_LENGTH),
   description: z.string().trim().min(1, "Add a description"),
-  price: z.coerce.number().positive("Enter a price greater than $0"),
+  price: z.preprocess(
+    (value) => coerceListingPriceUsd(value) ?? value,
+    z.coerce.number().positive("Enter a price greater than $0").max(999_999.99),
+  ),
   condition: z.enum(sellableConditions),
 
   size: optionalSlug(finSizeValues),

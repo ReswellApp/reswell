@@ -9,6 +9,7 @@ import {
   parseReswellParcelWidthHeightRawToCarrierInches,
   validateReswellPackedWeightRequired,
 } from "@/lib/reswell-parcel-fields"
+import { coerceListingPriceUsd } from "@/lib/listing-compare-at-price"
 import {
   FIN_LISTING_MAX_PHOTOS,
   FIN_LISTING_MIN_PHOTOS,
@@ -74,11 +75,10 @@ export function validateFinListingForm(
     return "Add a description."
   }
 
-  if (!form.price.trim()) {
-    return "Enter a listing price."
-  }
-  const price = Number.parseFloat(form.price.trim())
-  if (!Number.isFinite(price) || price < PRICE_MIN || price > PRICE_MAX) {
+  const price = coerceListingPriceUsd(form.price)
+  const priceText = typeof form.price === "string" ? form.price.trim() : ""
+  if (price == null || price < PRICE_MIN || price > PRICE_MAX) {
+    if (!priceText) return "Enter a listing price."
     return `Enter a valid price between $${PRICE_MIN} and $${PRICE_MAX.toLocaleString()}.`
   }
 
