@@ -16,8 +16,10 @@ interface ShopifyProductPickerProps {
   onQueryChange: (query: string) => void
   onSearch: () => void
   onLoadMore: () => void
+  linkedCount: number
   onPublish: (productId: string, section: PeerListingSection) => void
   onUnpublish: (productId: string) => void
+  onViewLinked?: () => void
 }
 
 export function ShopifyProductPicker({
@@ -26,17 +28,20 @@ export function ShopifyProductPicker({
   busyProductId,
   loading,
   hasNextPage,
+  linkedCount,
   onQueryChange,
   onSearch,
   onLoadMore,
   onPublish,
   onUnpublish,
+  onViewLinked,
 }: ShopifyProductPickerProps) {
+  const searched = query.trim() !== ""
   return (
     <section className="space-y-4">
       <div>
         <h2 className="font-headline text-xl font-semibold text-foreground">
-          Choose products
+          Add products from Shopify
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Each Shopify variant becomes a Reswell listing. Shopify continues to
@@ -77,8 +82,29 @@ export function ShopifyProductPicker({
           ))}
         </div>
       ) : (
-        <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
-          {loading ? "Loading products…" : "No Shopify products found."}
+        <div className="space-y-2 rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
+          {loading ? (
+            <p>Loading products…</p>
+          ) : searched ? (
+            <p>No Shopify products match “{query.trim()}”.</p>
+          ) : (
+            <>
+              <p className="font-medium text-foreground">
+                Shopify returned no products for this store.
+              </p>
+              <p>
+                Products deleted in Shopify no longer appear here.
+                {linkedCount > 0
+                  ? " Their Reswell listings are still tracked under Listings."
+                  : " Add a product in Shopify, then search again."}
+              </p>
+              {linkedCount > 0 && onViewLinked ? (
+                <Button type="button" variant="outline" size="sm" onClick={onViewLinked}>
+                  View {linkedCount} linked listing{linkedCount === 1 ? "" : "s"}
+                </Button>
+              ) : null}
+            </>
+          )}
         </div>
       )}
 

@@ -80,7 +80,6 @@ function toLinkedListing(
     syncStatus: row.sync_status,
     selected: row.selected,
     lastSyncedAt: row.last_synced_at,
-    lastError: row.last_error,
     shopifyProductStatus: presence?.productStatus ?? null,
     state: deriveShopifyLinkedListingState({
       syncStatus: row.sync_status,

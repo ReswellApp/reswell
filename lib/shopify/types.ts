@@ -251,7 +251,6 @@ export interface ShopifyLinkedListing {
   syncStatus: ShopifyProductMappingRow["sync_status"]
   selected: boolean
   lastSyncedAt: string | null
-  lastError: string | null
   shopifyProductStatus: string | null
   state: ShopifyLinkedListingState
   adminUrl: string
