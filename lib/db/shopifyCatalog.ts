@@ -4,6 +4,10 @@ import {
   parseShopCategoryPackageSizeMap,
   type ShopCategoryPackageSizeMap,
 } from "@/lib/shop-category-package-sizes"
+import {
+  resolveShopifyListingLocality,
+  type ShopifyMerchantProfileLocality,
+} from "@/lib/shopify/listing-locality"
 import type { ShopifyProductMappingRow } from "@/lib/shopify/types"
 
 const MAPPING_SELECT = [
@@ -133,14 +137,13 @@ export async function dbLoadShopifyMerchantLocation(
 ): Promise<{ city: string; state: string }> {
   const { data, error } = await supabase
     .from("profiles")
-    .select("city, state, location")
+    .select("default_listing_city, default_listing_state, city, location")
     .eq("id", userId)
     .maybeSingle()
   if (error) throw new Error(error.message)
-  return {
-    city: data?.city?.trim() || data?.location?.trim() || "United States",
-    state: data?.state?.trim() || "US",
-  }
+  return resolveShopifyListingLocality(
+    data as ShopifyMerchantProfileLocality | null,
+  )
 }
 
 export async function dbLoadShopifyImportShippingProfile(
