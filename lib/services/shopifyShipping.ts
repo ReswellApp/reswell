@@ -13,6 +13,14 @@ import {
   type ListingPackageColumns,
   type ShopCategoryPackageSizeMap,
 } from "@/lib/shop-category-package-sizes"
+import {
+  SHOP_STORE_DEFAULT_ID,
+  formatShopPackedSizeSummary,
+  packageFitsSurfboardListing,
+  shopShippingColumnsForRef,
+  shopShippingColumnsForSoftSection,
+  type ShopShippingDefaults,
+} from "@/lib/shop-shipping-defaults"
 import type { ShopifyShippingReadiness } from "@/lib/shopify/types"
 
 export type ShopifyImportFulfillmentDefaults = {
@@ -22,15 +30,31 @@ export type ShopifyImportFulfillmentDefaults = {
   board_shipping_cost_mode: "reswell" | null
 } & Partial<ListingPackageColumns>
 
+function shopDefaultColumnsForImport(
+  section: PeerListingSection,
+  packageSizes: ShopCategoryPackageSizeMap,
+  shippingDefaults: ShopShippingDefaults | undefined,
+): ListingPackageColumns | null {
+  if (!shippingDefaults?.physicalProduct) return null
+  if (section === "surfboards") {
+    const ref = shippingDefaults.boardSizes.shortboard_medium ?? SHOP_STORE_DEFAULT_ID
+    const columns = shopShippingColumnsForRef(shippingDefaults, ref, "shortboard_medium")
+    return columns && packageFitsSurfboardListing(columns) ? columns : null
+  }
+  if (packageSizes[section]) return null
+  return shopShippingColumnsForSoftSection(shippingDefaults, section)
+}
+
 export function shopifyImportFulfillmentDefaults(input: {
   section: PeerListingSection
   hasShipFromAddress: boolean
   packageSizes: ShopCategoryPackageSizeMap
+  shippingDefaults?: ShopShippingDefaults
 }): ShopifyImportFulfillmentDefaults {
   const packageSizeId = input.packageSizes[input.section]
-  const packageColumns = packageSizeId
-    ? listingPackageColumnsForShopSize(input.section, packageSizeId)
-    : null
+  const packageColumns =
+    shopDefaultColumnsForImport(input.section, input.packageSizes, input.shippingDefaults) ??
+    (packageSizeId ? listingPackageColumnsForShopSize(input.section, packageSizeId) : null)
   const shippingAvailable =
     input.hasShipFromAddress && packageColumns !== null
 
@@ -56,6 +80,7 @@ export async function getShopifyImportFulfillmentDefaults(
     section,
     hasShipFromAddress: profile.hasShipFromAddress,
     packageSizes: profile.packageSizes,
+    shippingDefaults: profile.shippingDefaults,
   })
 }
 
@@ -70,6 +95,16 @@ export async function getShopifyShippingReadiness(
     fetchProfileAddresses(supabase, userId),
   ])
   const packageDefaults: ShopifyShippingReadiness["packageDefaults"] = []
+  const storeDefault = profile.shopShippingDefaults.storeDefault
+  if (profile.shopShippingDefaults.physicalProduct && storeDefault) {
+    packageDefaults.push({
+      section: "surfboards",
+      sectionLabel: "Shop default",
+      packageSizeId: SHOP_STORE_DEFAULT_ID,
+      packageLabel: storeDefault.name,
+      packageSummary: formatShopPackedSizeSummary(storeDefault),
+    })
+  }
   for (const [section, packageSizeId] of Object.entries(
     profile.shopCategoryPackageSizes,
   )) {

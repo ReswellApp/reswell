@@ -12,6 +12,7 @@ import {
   type ShopCategoryPackageSizeMap,
   type ShopPackageSizeId,
 } from "@/lib/shop-category-package-sizes"
+import type { ShopShippingDefaults } from "@/lib/shop-shipping-defaults"
 
 type DeskListing = ListingsDeskAnalyticsInput & {
   slug: string | null
@@ -58,8 +59,10 @@ interface ListingsAdvancedViewProps {
   sellerStoreHref: string | null
   sellerBanned: boolean
   shopCategoryPackageSizes: ShopCategoryPackageSizeMap
+  shopShippingDefaults: ShopShippingDefaults
   onListingSaved: (listingId: string, saved: ListingQuickEditSaved) => void
   onPackageApplied: (section: string, columns: ListingPackageColumns) => void
+  onShippingApplied: (groups: { ids: string[]; columns: ListingPackageColumns }[]) => void
 }
 
 export function ListingsAdvancedView({
@@ -68,8 +71,10 @@ export function ListingsAdvancedView({
   sellerStoreHref,
   sellerBanned,
   shopCategoryPackageSizes,
+  shopShippingDefaults,
   onListingSaved,
   onPackageApplied,
+  onShippingApplied,
 }: ListingsAdvancedViewProps) {
   const [packageSync, setPackageSync] = useState<{
     nonce: number
@@ -89,7 +94,9 @@ export function ListingsAdvancedView({
       <ListingsAdvancedTools sellerStoreHref={sellerStoreHref} sellerBanned={sellerBanned} />
       <ShopCategoryPackagePanel
         sizes={shopCategoryPackageSizes}
+        shippingDefaults={shopShippingDefaults}
         listings={allListings}
+        onShippingApplied={onShippingApplied}
         onApplied={(result) => {
           setPackageSync((current) => ({
             nonce: (current?.nonce ?? 0) + 1,
