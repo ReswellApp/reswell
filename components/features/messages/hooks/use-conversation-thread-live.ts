@@ -25,21 +25,19 @@ export interface RealtimeThreadMessage {
 
 interface UseConversationThreadLiveOptions {
   conversationId: string
-  currentUserId: string | null
   onMessageInsert: (message: RealtimeThreadMessage) => void
-  /** Conversation, unread badge, focus, or a missed insert — reload the thread. */
+  /** An existing bubble was rewritten, such as an offer. A new chat message does not use this. */
   onThreadChanged: () => void
 }
 
 /**
- * The saved message is broadcast by the server onto this conversation's private
- * channel, and the open thread appends that one bubble. A full reload runs when
- * the thread opens, when the tab regains focus, and while the broadcast channel
- * is down (then the profile counter and conversation row are the backup).
+ * Both people in this thread receive the saved message on a private channel and
+ * append that one bubble. A normal send or receive never refetches the thread.
+ * A refetch runs once when the thread opens (the router can serve a stale page)
+ * and when an existing bubble is rewritten, such as an offer update.
  */
 export function useConversationThreadLive({
   conversationId,
-  currentUserId,
   onMessageInsert,
   onThreadChanged,
 }: UseConversationThreadLiveOptions): void {
@@ -63,10 +61,8 @@ export function useConversationThreadLive({
       }, RELOAD_DEBOUNCE_MS)
     }
 
-    let broadcastReady = false
-    const reloadIfBroadcastDown = () => {
-      if (broadcastReady) return
-      scheduleReload()
+    const appendMessage = (message: RealtimeThreadMessage) => {
+      onMessageInsertRef.current(message)
     }
 
     const channel = supabase.channel(marketplaceThreadChannel(conversationId), {
@@ -75,12 +71,8 @@ export function useConversationThreadLive({
 
     channel.on("broadcast", { event: MARKETPLACE_THREAD_MESSAGE_EVENT }, ({ payload }) => {
       const parsed = marketplaceThreadBroadcastMessageSchema.safeParse(payload)
-      if (!parsed.success || parsed.data.conversation_id !== conversationId) {
-        // A private payload we cannot append is still a signal that the thread moved.
-        scheduleReload()
-        return
-      }
-      onMessageInsertRef.current({
+      if (!parsed.success || parsed.data.conversation_id !== conversationId) return
+      appendMessage({
         id: parsed.data.id,
         content: parsed.data.content,
         sender_id: parsed.data.sender_id,
@@ -97,8 +89,8 @@ export function useConversationThreadLive({
       scheduleReload()
     })
 
-    // Separate from the private broadcast so a failed authorization does not
-    // also drop the profile/conversation backup.
+    // Database insert, same append. Used when the private channel is still
+    // connecting. A duplicate of the broadcast is ignored by message id.
     const fallback = supabase.channel(`thread-live:${conversationId}`)
     fallback.on(
       "postgres_changes",
@@ -109,70 +101,21 @@ export function useConversationThreadLive({
         filter: `conversation_id=eq.${conversationId}`,
       },
       (payload) => {
-        // The private broadcast is the steady path. The WAL event is only used
-        // while that channel is down, so one message cannot move the badge twice.
-        if (broadcastReady) return
         const message = realtimeThreadMessage(payload.new)
-        if (!message) {
-          scheduleReload()
-          return
-        }
-        onMessageInsertRef.current(message)
+        if (!message) return
+        appendMessage(message)
       },
     )
-    fallback.on(
-      "postgres_changes",
-      {
-        event: "UPDATE",
-        schema: "public",
-        table: "conversations",
-        filter: `id=eq.${conversationId}`,
-      },
-      reloadIfBroadcastDown,
-    )
-    if (currentUserId) {
-      fallback.on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "profiles",
-          filter: `id=eq.${currentUserId}`,
-        },
-        (payload) => {
-          if (!unreadCountChanged(payload.old, payload.new)) return
-          reloadIfBroadcastDown()
-        },
-      )
-    }
     fallback.subscribe()
 
     void attachRealtimeAuth(supabase).finally(() => {
       if (!active) return
-      channel.subscribe((status) => {
-        if (!active) return
-        if (status === "SUBSCRIBED") {
-          broadcastReady = true
-          // Catch messages published while auth and subscribe were still in flight.
-          scheduleReload()
-          return
-        }
-        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-          broadcastReady = false
-          scheduleReload()
-        }
-      })
+      channel.subscribe()
     })
 
-    // The client router keeps this page for several minutes. Pull a fresh
-    // thread on open so a cached snapshot cannot sit behind the live ticker.
+    // The client router keeps this page for several minutes. Pull history once
+    // on open. Later messages append; they do not run this again.
     scheduleReload()
-
-    const onVisible = () => {
-      if (document.visibilityState === "visible") scheduleReload()
-    }
-    document.addEventListener("visibilitychange", onVisible)
-    window.addEventListener("focus", onVisible)
 
     const {
       data: { subscription },
@@ -185,13 +128,11 @@ export function useConversationThreadLive({
     return () => {
       active = false
       if (reloadTimer) clearTimeout(reloadTimer)
-      document.removeEventListener("visibilitychange", onVisible)
-      window.removeEventListener("focus", onVisible)
       subscription.unsubscribe()
       void supabase.removeChannel(channel)
       void supabase.removeChannel(fallback)
     }
-  }, [conversationId, currentUserId, supabase])
+  }, [conversationId, supabase])
 }
 
 async function attachRealtimeAuth(supabase: SupabaseClient): Promise<void> {
@@ -201,19 +142,8 @@ async function attachRealtimeAuth(supabase: SupabaseClient): Promise<void> {
     if (!token) return
     await supabase.realtime.setAuth(token)
   } catch {
-    // Public profile updates still arrive. The thread reloads from those.
+    // The database insert listener can still append a bubble.
   }
-}
-
-function unreadCountChanged(previous: unknown, next: unknown): boolean {
-  if (!next || typeof next !== "object") return false
-  const nextCount = (next as { unread_message_count?: unknown }).unread_message_count
-  if (typeof nextCount !== "number") return false
-  const previousCount =
-    previous && typeof previous === "object"
-      ? (previous as { unread_message_count?: unknown }).unread_message_count
-      : undefined
-  return previousCount !== nextCount
 }
 
 export function realtimeThreadMessage(value: unknown): RealtimeThreadMessage | null {

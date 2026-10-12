@@ -642,7 +642,6 @@ export function ConversationThreadClient({
 
   useConversationThreadLive({
     conversationId: id,
-    currentUserId,
     onMessageInsert: applyInsertedMessage,
     onThreadChanged: syncOpenThread,
   })
