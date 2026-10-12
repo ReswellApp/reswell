@@ -2,10 +2,12 @@ import {
   shopifyGraphqlRequest,
   throwOnShopifyUserErrors,
 } from "@/lib/shopify/admin-graphql"
+import { mapShopifyVariantPresence } from "@/lib/shopify/linked-listings"
 import type {
   ShopifyCatalogProduct,
   ShopifyCatalogVariant,
   ShopifyInventoryLevel,
+  ShopifyVariantPresence,
 } from "@/lib/shopify/types"
 
 type Money = string | number | null | undefined
@@ -273,6 +275,42 @@ export async function fetchShopifyProduct(input: {
     variables: { id: input.productId },
   })
   return data.product ? mapProduct(data.product) : null
+}
+
+export async function fetchShopifyVariantPresence(input: {
+  shopDomain: string
+  accessToken: string
+  variantIds: string[]
+}): Promise<Map<string, ShopifyVariantPresence | null>> {
+  const presence = new Map<string, ShopifyVariantPresence | null>()
+  const ids = [...new Set(input.variantIds)]
+  for (let index = 0; index < ids.length; index += 100) {
+    const batch = ids.slice(index, index + 100)
+    const data = await shopifyGraphqlRequest<{ nodes?: unknown[] | null }>({
+      shopDomain: input.shopDomain,
+      accessToken: input.accessToken,
+      query: `
+        query ReswellVariantPresence($ids: [ID!]!) {
+          nodes(ids: $ids) {
+            ... on ProductVariant {
+              id
+              title
+              inventoryQuantity
+              product { id title status }
+            }
+          }
+        }
+      `,
+      variables: { ids: batch },
+    })
+    for (const [id, value] of mapShopifyVariantPresence(
+      batch,
+      data.nodes ?? [],
+    )) {
+      presence.set(id, value)
+    }
+  }
+  return presence
 }
 
 export async function fetchShopifyInventoryLevels(input: {

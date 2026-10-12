@@ -17,13 +17,14 @@ import {
   getShopifyConnectionStatus,
   listMerchantShopifyProducts,
 } from "@/lib/services/shopifyConnection"
+import { getMerchantShopifyCatalog } from "@/lib/services/shopifyCatalogManager"
 import { getShopifyShippingReadiness } from "@/lib/services/shopifyShipping"
 
 export const dynamic = "force-dynamic"
 
 export const metadata = privatePageMetadata({
   title: "Shopify — Reswell",
-  description: "Connect Shopify and choose the products you sell on Reswell.",
+  description: "Manage the Shopify products you sell on Reswell.",
   path: "/dashboard/shopify",
 })
 
@@ -56,14 +57,28 @@ export default async function ShopifyIntegrationPage({
       : status?.error ?? "Could not load Shopify status"
     : access.message
 
-  if (connection?.status === "active" && connection.sync_enabled) {
-    const listed = await listMerchantShopifyProducts({ userId: user.id })
-    if (listed.ok) {
+  let catalog: ShopifyDashboardData["catalog"] = null
+  if (connection) {
+    const [listed, managed] = await Promise.all([
+      connection.status === "active" && connection.sync_enabled
+        ? listMerchantShopifyProducts({ userId: user.id })
+        : null,
+      getMerchantShopifyCatalog({
+        userId: user.id,
+        filter: "all",
+        section: null,
+        query: "",
+        page: 1,
+      }),
+    ])
+    if (listed?.ok) {
       products = listed.data.products
       productPageInfo = listed.data.pageInfo
-    } else {
+    } else if (listed) {
       loadError = listed.error
     }
+    if (managed.ok) catalog = managed.data
+    else loadError ??= managed.error
   }
 
   const connectOptions = access.allowed
@@ -80,6 +95,7 @@ export default async function ShopifyIntegrationPage({
         connection,
         products,
         productPageInfo,
+        catalog,
         shippingReadiness,
         loadError,
       }}

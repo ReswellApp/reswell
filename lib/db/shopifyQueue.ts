@@ -226,6 +226,25 @@ export async function dbCountUnresolvedShopifyInventoryJobs(
   return count ?? 0
 }
 
+export async function dbCountShopifySyncJobsByStatus(
+  supabase: SupabaseClient,
+  connectionId: string,
+): Promise<{ queued: number; retry: number; dead: number }> {
+  const statuses = ["queued", "retry", "dead"] as const
+  const counts = await Promise.all(
+    statuses.map(async (status) => {
+      const { count, error } = await supabase
+        .from("shopify_sync_jobs")
+        .select("id", { count: "exact", head: true })
+        .eq("connection_id", connectionId)
+        .eq("status", status)
+      if (error) throw new Error(error.message)
+      return count ?? 0
+    }),
+  )
+  return { queued: counts[0] ?? 0, retry: counts[1] ?? 0, dead: counts[2] ?? 0 }
+}
+
 export async function dbReviveDeadShopifyInventoryJobs(
   supabase: SupabaseClient,
   connectionId: string,
