@@ -1,10 +1,12 @@
 "use server"
 
 import { unstable_noStore as noStore } from "next/cache"
+import type { EarningsTransaction } from "@/components/features/earnings/earnings-types"
 import { createClient } from "@/lib/supabase/server"
 import { reconcileWalletAggregates, walletAggregateStrings } from "@/lib/wallet-reconcile"
 import { EARNINGS_ACTIVITY_PAGE_SIZE } from "@/lib/earnings-activity-page-size"
 import { resolveReversedSellerOrderIds } from "@/lib/services/earningsReversedOrders"
+import { attachListingsToEarningsTransactions } from "@/lib/services/earningsActivityListings"
 import { getMySellerEarningsTotals } from "@/lib/db/sellerEarningsTotals"
 
 const EARNINGS_ACTIVITY_MAX_PAGE = 50
@@ -25,6 +27,7 @@ export async function getEarningsWalletData(opts?: { activityLimit?: number }) {
       error: "Unauthorized" as const,
       wallet: null,
       transactions: [] as unknown[],
+      recentAvailableTransactions: [] as unknown[],
       reversedOrderIds: [] as string[],
       activityHasMore: false,
       sellerEarningsTotals: null,
@@ -44,6 +47,7 @@ export async function getEarningsWalletData(opts?: { activityLimit?: number }) {
         error: "Failed to create wallet" as const,
         wallet: null,
         transactions: [],
+        recentAvailableTransactions: [],
         reversedOrderIds: [],
         activityHasMore: false,
         sellerEarningsTotals: null,
@@ -72,7 +76,7 @@ export async function getEarningsWalletData(opts?: { activityLimit?: number }) {
     }
   }
 
-  const [sellerEarningsTotals, pageFetch] = await Promise.all([
+  const [sellerEarningsTotals, pageFetch, recentAvailableTransactions] = await Promise.all([
     getMySellerEarningsTotals(supabase),
     (async () => {
       const pageSize = clampActivityLimit(opts?.activityLimit ?? EARNINGS_ACTIVITY_PAGE_SIZE)
@@ -84,18 +88,39 @@ export async function getEarningsWalletData(opts?: { activityLimit?: number }) {
         .order("created_at", { ascending: false })
         .range(0, fetchThrough)
 
-      const batch = rawTx ?? []
+      const batch = (rawTx ?? []) as EarningsTransaction[]
       const activityHasMore = batch.length > pageSize
       const rows = activityHasMore ? batch.slice(0, pageSize) : batch
-      const reversedOrderIds = await resolveReversedSellerOrderIds(supabase, user.id, rows)
-      return { rows, activityHasMore, reversedOrderIds }
+      const [reversedOrderIds, withListings] = await Promise.all([
+        resolveReversedSellerOrderIds(supabase, user.id, rows),
+        attachListingsToEarningsTransactions(supabase, rows),
+      ])
+      return { rows: withListings, activityHasMore, reversedOrderIds }
+    })(),
+    (async () => {
+      const { data: rawAvailable } = await supabase
+        .from("wallet_transactions")
+        .select("*")
+        .eq("wallet_id", wallet.id)
+        .eq("reference_type", "order_seller_earnings")
+        .order("created_at", { ascending: false })
+        .limit(8)
+      const rows = (rawAvailable ?? []) as EarningsTransaction[]
+      const [withListings, reversedOrderIds] = await Promise.all([
+        attachListingsToEarningsTransactions(supabase, rows),
+        resolveReversedSellerOrderIds(supabase, user.id, rows),
+      ])
+      return { rows: withListings, reversedOrderIds }
     })(),
   ])
 
   return {
     wallet,
     transactions: pageFetch.rows,
-    reversedOrderIds: pageFetch.reversedOrderIds,
+    recentAvailableTransactions: recentAvailableTransactions.rows,
+    reversedOrderIds: [
+      ...new Set([...pageFetch.reversedOrderIds, ...recentAvailableTransactions.reversedOrderIds]),
+    ],
     activityHasMore: pageFetch.activityHasMore,
     sellerEarningsTotals,
     paymentMethods: [] as unknown[],
@@ -136,14 +161,17 @@ export async function loadMoreEarningsActivity(params: { offset: number; limit?:
     .order("created_at", { ascending: false })
     .range(offset, end)
 
-  const batch = rawTx ?? []
+  const batch = (rawTx ?? []) as EarningsTransaction[]
   const hasMore = batch.length > pageSize
   const rows = hasMore ? batch.slice(0, pageSize) : batch
-  const reversedOrderIds = await resolveReversedSellerOrderIds(supabase, user.id, rows)
+  const [reversedOrderIds, withListings] = await Promise.all([
+    resolveReversedSellerOrderIds(supabase, user.id, rows),
+    attachListingsToEarningsTransactions(supabase, rows),
+  ])
 
   return {
     error: null,
-    transactions: rows,
+    transactions: withListings,
     reversedOrderIds,
     hasMore,
   }
