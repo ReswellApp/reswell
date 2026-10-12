@@ -7,6 +7,8 @@ import { reconcileWalletAggregates, walletAggregateStrings } from "@/lib/wallet-
 import { EARNINGS_ACTIVITY_PAGE_SIZE } from "@/lib/earnings-activity-page-size"
 import { resolveReversedSellerOrderIds } from "@/lib/services/earningsReversedOrders"
 import { attachListingsToEarningsTransactions } from "@/lib/services/earningsActivityListings"
+import { getEarningsBalanceListings } from "@/lib/services/earningsBalanceListings"
+import type { EarningsBalanceListingRow } from "@/lib/earnings-balance-listings"
 import { getMySellerEarningsTotals } from "@/lib/db/sellerEarningsTotals"
 
 const EARNINGS_ACTIVITY_MAX_PAGE = 50
@@ -27,7 +29,8 @@ export async function getEarningsWalletData(opts?: { activityLimit?: number }) {
       error: "Unauthorized" as const,
       wallet: null,
       transactions: [] as unknown[],
-      recentAvailableTransactions: [] as unknown[],
+      pendingBalanceListings: [] as EarningsBalanceListingRow[],
+      readyBalanceListings: [] as EarningsBalanceListingRow[],
       reversedOrderIds: [] as string[],
       activityHasMore: false,
       sellerEarningsTotals: null,
@@ -47,7 +50,8 @@ export async function getEarningsWalletData(opts?: { activityLimit?: number }) {
         error: "Failed to create wallet" as const,
         wallet: null,
         transactions: [],
-        recentAvailableTransactions: [],
+        pendingBalanceListings: [],
+        readyBalanceListings: [],
         reversedOrderIds: [],
         activityHasMore: false,
         sellerEarningsTotals: null,
@@ -76,7 +80,9 @@ export async function getEarningsWalletData(opts?: { activityLimit?: number }) {
     }
   }
 
-  const [sellerEarningsTotals, pageFetch, recentAvailableTransactions] = await Promise.all([
+  const readyBalanceUsd = parseFloat(String(wallet.balance ?? 0))
+
+  const [sellerEarningsTotals, pageFetch, balanceListings] = await Promise.all([
     getMySellerEarningsTotals(supabase),
     (async () => {
       const pageSize = clampActivityLimit(opts?.activityLimit ?? EARNINGS_ACTIVITY_PAGE_SIZE)
@@ -97,29 +103,20 @@ export async function getEarningsWalletData(opts?: { activityLimit?: number }) {
       ])
       return { rows: withListings, activityHasMore, reversedOrderIds }
     })(),
-    (async () => {
-      const { data: rawAvailable } = await supabase
-        .from("wallet_transactions")
-        .select("*")
-        .eq("wallet_id", wallet.id)
-        .eq("reference_type", "order_seller_earnings")
-        .order("created_at", { ascending: false })
-        .limit(8)
-      const rows = (rawAvailable ?? []) as EarningsTransaction[]
-      const [withListings, reversedOrderIds] = await Promise.all([
-        attachListingsToEarningsTransactions(supabase, rows),
-        resolveReversedSellerOrderIds(supabase, user.id, rows),
-      ])
-      return { rows: withListings, reversedOrderIds }
-    })(),
+    getEarningsBalanceListings(supabase, {
+      walletId: wallet.id,
+      sellerId: user.id,
+      readyBalanceUsd: Number.isFinite(readyBalanceUsd) ? readyBalanceUsd : 0,
+    }),
   ])
 
   return {
     wallet,
     transactions: pageFetch.rows,
-    recentAvailableTransactions: recentAvailableTransactions.rows,
+    pendingBalanceListings: balanceListings.pending,
+    readyBalanceListings: balanceListings.ready,
     reversedOrderIds: [
-      ...new Set([...pageFetch.reversedOrderIds, ...recentAvailableTransactions.reversedOrderIds]),
+      ...new Set([...pageFetch.reversedOrderIds, ...balanceListings.reversedOrderIds]),
     ],
     activityHasMore: pageFetch.activityHasMore,
     sellerEarningsTotals,
