@@ -19,6 +19,7 @@ import { AdClickAttributionBootstrap } from '@/components/ads/ad-click-attributi
 import { DeviceCookieBootstrap } from '@/components/device-cookie-bootstrap'
 import { JsonLd } from '@/components/seo/json-ld'
 import { organizationSchema, webSiteSchema } from '@/lib/seo/structured-data'
+import { HEADER_CHROME_BOOT_SCRIPT } from '@/lib/auth/header-chrome-snapshot'
 
 import './globals.css'
 
@@ -82,6 +83,7 @@ export default function RootLayout({
         className={`${stackSansText.variable} ${stackSansHeadline.variable} font-sans antialiased bg-background text-muted-foreground min-h-dvh overflow-x-clip selection:bg-slate-900/10 selection:text-foreground`}
         suppressHydrationWarning
       >
+        <script dangerouslySetInnerHTML={{ __html: HEADER_CHROME_BOOT_SCRIPT }} />
         <noscript>
           <style>{`.fade-in-section,.fade-in-section.fade-in-pending{opacity:1!important;transform:none!important}`}</style>
         </noscript>
