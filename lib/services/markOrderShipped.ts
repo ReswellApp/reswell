@@ -3,6 +3,7 @@ import { getConversationForBuyerSellerListing, ensureConversationForBuyerSellerL
 import { notifyOrderShippedKlaviyoIfMissing } from "@/lib/services/notifyOrderShippedKlaviyo"
 import { normalizeTrackingNumberForCarrier } from "@/lib/shipping/normalize-tracking-number"
 import { buildOrderShippedPlainText } from "@/lib/messages/order-shipped-thread"
+import { broadcastInsertedMarketplaceMessage } from "@/lib/services/broadcastMarketplaceThreadMessage"
 import { parseOrderShippedMessageMetadata } from "@/lib/validations/order-shipped-message-metadata"
 import type { OrderShippedMessagePayload } from "@/lib/validations/order-shipped-message-metadata"
 
@@ -97,12 +98,24 @@ async function postOrderShippedNotification(
     trackingCarrier: carrier,
   }
 
-  await supabase.from("messages").insert({
-    conversation_id: conv.id,
-    sender_id: sellerUserId,
-    content: msgContent,
-    metadata,
-  })
+  const { data: inserted, error: msgErr } = await supabase
+    .from("messages")
+    .insert({
+      conversation_id: conv.id,
+      sender_id: sellerUserId,
+      content: msgContent,
+      metadata,
+    })
+    .select("id, created_at")
+    .single()
+  if (msgErr || !inserted) {
+    console.error("[markOrderShipped] message insert:", msgErr)
+  } else {
+    await broadcastInsertedMarketplaceMessage(
+      { ...inserted, sender_id: sellerUserId, content: msgContent, metadata },
+      conv.id,
+    )
+  }
   await supabase
     .from("conversations")
     .update({ last_message_at: new Date().toISOString() })

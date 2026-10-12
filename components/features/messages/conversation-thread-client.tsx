@@ -224,6 +224,7 @@ export function ConversationThreadClient({
     () => initialData.currentUserId ?? null,
   )
   const unreadAdjustRef = useRef(0)
+  const knownMessageIdsRef = useRef(new Set<string>())
   const [listingBannerImageReady, setListingBannerImageReady] = useState(false)
   const messagesScrollRef = useRef<HTMLDivElement>(null)
   const stickToBottomRef = useRef(true)
@@ -577,8 +578,14 @@ export function ConversationThreadClient({
     })
   }, [currentUserId, id, loadThread])
 
+  for (const message of messages) {
+    knownMessageIdsRef.current.add(message.id)
+  }
+
   const applyInsertedMessage = useCallback(
     (incoming: RealtimeThreadMessage) => {
+      if (knownMessageIdsRef.current.has(incoming.id)) return
+      knownMessageIdsRef.current.add(incoming.id)
       const msg: Message = {
         id: incoming.id,
         content: incoming.content,
@@ -635,7 +642,6 @@ export function ConversationThreadClient({
 
   useConversationThreadLive({
     conversationId: id,
-    currentUserId,
     onMessageInsert: applyInsertedMessage,
     onThreadChanged: syncOpenThread,
   })

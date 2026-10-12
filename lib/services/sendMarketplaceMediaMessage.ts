@@ -8,6 +8,7 @@ import { evaluateMessagePolicyForSend } from "@/lib/messages/message-policy-enfo
 import { evaluateUserMessageSend } from "@/lib/services/accountRestrictions"
 import { trackKlaviyoSupportTicketResponse } from "@/lib/klaviyo/track-support-ticket-response"
 import { trackKlaviyoMessageSent } from "@/lib/klaviyo/track-message-sent"
+import { broadcastInsertedMarketplaceMessage } from "@/lib/services/broadcastMarketplaceThreadMessage"
 import { MESSAGE_BLOCKED_POLICY_ERROR } from "@/lib/messages/policy-errors"
 import {
   messagePolicyBlocksDelivery,
@@ -169,6 +170,8 @@ export async function sendMarketplaceMediaMessage(input: {
     await removeOrphanAttachment(service, attachment.path)
     return { ok: false, error: "Could not send message", status: 500 }
   }
+
+  await broadcastInsertedMarketplaceMessage(inserted, conversationId)
 
   await service
     .from("conversations")

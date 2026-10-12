@@ -3,6 +3,7 @@ import { getConversationForBuyerSellerListing, ensureConversationForBuyerSellerL
 import { getSellerEmailForKlaviyo } from "@/lib/klaviyo/seller-sale-event-helpers"
 import { trackKlaviyoSellerShippingLabelReady } from "@/lib/klaviyo/track-seller-shipping-label-ready"
 import { buildShippingLabelThreadPlainText } from "@/lib/messages/shipping-label-thread"
+import { broadcastInsertedMarketplaceMessage } from "@/lib/services/broadcastMarketplaceThreadMessage"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { fetchSantaBarbaraDropoffOrderIds } from "@/lib/services/santaBarbaraDropoffOrderAccess"
 import type { ShippingLabelReadyMessagePayload } from "@/lib/validations/shipping-label-message-metadata"
@@ -103,18 +104,27 @@ export async function postReswellShippingLabelReadyThreadNotification(
     trackingCarrier: params.trackingCarrier?.trim() || null,
   }
 
-  const { error: msgErr } = await supabase.from("messages").insert({
-    conversation_id: conv.id,
-    sender_id: params.sellerId,
-    content,
-    metadata,
-  })
+  const { data: inserted, error: msgErr } = await supabase
+    .from("messages")
+    .insert({
+      conversation_id: conv.id,
+      sender_id: params.sellerId,
+      content,
+      metadata,
+    })
+    .select("id, created_at")
+    .single()
 
-  if (msgErr) {
+  if (msgErr || !inserted) {
     if (isUniqueViolation(msgErr)) return
-    console.error("[postReswellShippingLabelReady] message insert:", msgErr.message)
+    console.error("[postReswellShippingLabelReady] message insert:", msgErr?.message)
     return
   }
+
+  await broadcastInsertedMarketplaceMessage(
+    { ...inserted, sender_id: params.sellerId, content, metadata },
+    conv.id,
+  )
 
   await supabase
     .from("conversations")
