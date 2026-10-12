@@ -19,7 +19,9 @@ import {
  * Marketplace `/messages` never shows Reswell Support threads.
  * Hide member↔support DMs (listing_id null, support user as seller) and any
  * conversation linked as a support_conversation_id — including order claims.
- * Staff-outbound marketplace DMs (staff as buyer) stay here.
+ * profiles.unread_message_count uses the same exclusion
+ * (conversation_excluded_from_marketplace_messages) so the header badge
+ * matches this inbox. Staff-outbound marketplace DMs (staff as buyer) stay here.
  */
 export async function retainMarketplaceInboxConversations(
   conversations: InboxConversationRow[],
