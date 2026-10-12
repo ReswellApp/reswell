@@ -36,6 +36,10 @@ import {
   formatHomePeerListingConditionLine,
 } from "@/lib/listing-labels"
 import { EndListingDialog } from "@/components/end-listing-dialog"
+import {
+  isShopifyManagedListing,
+  SHOPIFY_LISTING_DELETE_BLOCKED_MESSAGE,
+} from "@/lib/shopify/listing"
 import { ListingVacationModeButton } from "@/components/features/sell/listing-vacation-mode-button"
 import {
   canUseListingVacationMode,
@@ -521,6 +525,7 @@ export function MyListingsClient({
     endListing != null
       ? (vacationById[endListing.id] ?? endListing.hidden_from_site === true)
       : false
+  const endListingShopify = endListing != null && isShopifyManagedListing(endListing)
 
   function setListingVacation(listingId: string, enabled: boolean) {
     setVacationById((current) => ({ ...current, [listingId]: enabled }))
@@ -763,7 +768,12 @@ export function MyListingsClient({
         listingPriceUsd={endListing?.price}
         listingStatus={endListing?.status}
         vacationMode={endListingVacation}
-        canDelete={endListing?.canDelete === true}
+        canDelete={endListing?.canDelete === true && !endListingShopify}
+        deleteBlockedReason={
+          endListing?.canDelete === true && endListingShopify
+            ? SHOPIFY_LISTING_DELETE_BLOCKED_MESSAGE
+            : undefined
+        }
         open={!!endListingId}
         onOpenChange={(open) => {
           if (!open) setEndListingId(null)

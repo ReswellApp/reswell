@@ -34,6 +34,8 @@ interface EndListingDialogProps {
   listingStatus?: string | null
   vacationMode?: boolean
   canDelete?: boolean
+  /** Why permanent delete is unavailable. Falls back to the order-history explanation. */
+  deleteBlockedReason?: string
   open: boolean
   onOpenChange: (open: boolean) => void
   onComplete?: (result: EndListingDialogResult) => void
@@ -45,6 +47,7 @@ export function EndListingDialog({
   listingStatus,
   vacationMode = false,
   canDelete = false,
+  deleteBlockedReason,
   open,
   onOpenChange,
   onComplete,
@@ -166,6 +169,9 @@ export function EndListingDialog({
     (typeof listingPriceUsd === "number" && listingPriceUsd > 0 ? listingPriceUsd : null)
   const followUpOpen = step === "sold_survey" || step === "delete_survey"
   const followUpIntent = step === "delete_survey" ? "delete" : "mark_sold"
+  const deleteBlockedCopy =
+    deleteBlockedReason ??
+    "This listing is tied to an order or payment, so it cannot be permanently deleted."
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -251,9 +257,7 @@ export function EndListingDialog({
                 {canUseListingVacationMode(listingStatus)
                   ? "Vacation mode temporarily hides a live listing until you go live again. "
                   : null}
-                {canDelete
-                  ? "Delete removes the listing immediately."
-                  : "This listing is tied to an order or payment, so it cannot be permanently deleted."}{" "}
+                {canDelete ? "Delete removes the listing immediately." : deleteBlockedCopy}{" "}
                 Mark as sold keeps it on file when you closed the sale elsewhere.
               </DialogDescription>
             </DialogHeader>

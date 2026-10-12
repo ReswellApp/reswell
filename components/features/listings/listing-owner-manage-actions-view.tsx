@@ -24,6 +24,7 @@ export interface ListingOwnerManageActionsViewProps {
   enrichmentGaps?: ListingEnrichmentGap[]
   userId: string
   canDelete: boolean
+  deleteBlockedReason?: string
   cartHolderCount: number
 }
 
@@ -39,6 +40,7 @@ export function ListingOwnerManageActionsView({
   enrichmentGaps = [],
   userId,
   canDelete,
+  deleteBlockedReason,
   cartHolderCount,
 }: ListingOwnerManageActionsViewProps) {
   const isDraft = listingStatus === "draft"
@@ -124,6 +126,7 @@ export function ListingOwnerManageActionsView({
               listingStatus={listingStatus}
               vacationMode={hiddenFromSite}
               canDelete={canDelete}
+              deleteBlockedReason={deleteBlockedReason}
               triggerClassName="rounded-full border-border/60 shadow-none"
             />
           ) : null}

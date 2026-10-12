@@ -9,12 +9,24 @@ import {
   removeListingImageFilesFromStorage,
 } from "@/lib/services/listingStorageCleanup"
 import { listingCanBePermanentlyDeleted } from "@/lib/db/listingDeleteEligibility"
+import {
+  isShopifyManagedListing,
+  SHOPIFY_LISTING_DELETE_BLOCKED_MESSAGE,
+} from "@/lib/shopify/listing"
 
 type ListingEndRow = {
   id: string
   user_id: string
   status: string
   slug: string | null
+  inventory_source: string | null
+}
+
+type ListingDeleteError = {
+  code?: string
+  message: string
+  details?: string
+  hint?: string
 }
 
 export type EndSellerListingResult =
@@ -28,13 +40,37 @@ export type DeleteSellerDraftListingResult =
 const ORDER_HISTORY_DELETE_BLOCKED_MESSAGE =
   "This listing is tied to an order or payment, so it cannot be permanently deleted."
 
+function logListingDeleteFailure(listingId: string, error: ListingDeleteError): void {
+  console.error("[listing-delete] failed", {
+    listingId,
+    code: error.code,
+    message: error.message,
+    details: error.details,
+    hint: error.hint,
+  })
+}
+
+function permanentDeleteError(
+  listingId: string,
+  error: ListingDeleteError,
+): { ok: false; status: number; error: string } {
+  logListingDeleteFailure(listingId, error)
+  if (error.code === "23503") {
+    return { ok: false, status: 409, error: ORDER_HISTORY_DELETE_BLOCKED_MESSAGE }
+  }
+  if (error.message.includes("Shopify-managed")) {
+    return { ok: false, status: 409, error: SHOPIFY_LISTING_DELETE_BLOCKED_MESSAGE }
+  }
+  return { ok: false, status: 500, error: "Failed to delete listing" }
+}
+
 async function loadListingForEnd(
   supabase: SupabaseClient,
   listingId: string,
 ): Promise<ListingEndRow | null> {
   const { data, error } = await supabase
     .from("listings")
-    .select("id, user_id, status, slug")
+    .select("id, user_id, status, slug, inventory_source")
     .eq("id", listingId)
     .maybeSingle()
 
@@ -72,6 +108,7 @@ export async function deleteSellerDraftListing(
     .eq("user_id", sellerUserId)
 
   if (error) {
+    logListingDeleteFailure(listingId, error)
     return { ok: false, status: 500, error: "Failed to delete draft" }
   }
 
@@ -112,6 +149,9 @@ export async function endSellerListing(
   if (row.user_id !== sellerUserId) {
     return { ok: false, status: 403, error: "Forbidden" }
   }
+  if (isShopifyManagedListing(row)) {
+    return { ok: false, status: 409, error: SHOPIFY_LISTING_DELETE_BLOCKED_MESSAGE }
+  }
 
   const canDelete = await listingCanBePermanentlyDeleted(supabase, listingId)
   if (!canDelete) {
@@ -127,10 +167,7 @@ export async function endSellerListing(
     .eq("user_id", sellerUserId)
 
   if (error) {
-    if (error.code === "23503") {
-      return { ok: false, status: 409, error: ORDER_HISTORY_DELETE_BLOCKED_MESSAGE }
-    }
-    return { ok: false, status: 500, error: "Failed to delete listing" }
+    return permanentDeleteError(listingId, error)
   }
 
   try {
