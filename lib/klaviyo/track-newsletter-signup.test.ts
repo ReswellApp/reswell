@@ -8,15 +8,15 @@ describe("newsletterPromoEventProperties", () => {
     const properties = newsletterPromoEventProperties({
       email: "surfer@example.com",
       promoCode: "WELCOME-K7M3NP",
-      discountPercent: 15,
+      discountPercent: 10,
       expiresAt: "2026-10-24T00:00:00.000Z",
       isNewCode: true,
       shopOrigin: "https://www.reswell.app",
     })
 
     assert.equal(properties.promo_code, "WELCOME-K7M3NP")
-    assert.equal(properties.discount_percent, 15)
-    assert.equal(properties.discount_label, "15% off")
+    assert.equal(properties.discount_percent, 10)
+    assert.equal(properties.discount_label, "10% off")
     assert.equal(properties.expires_at_formatted, "October 24, 2026")
     assert.equal(properties.is_new_code, true)
     assert.match(String(properties.shop_url), /\/boards$/)

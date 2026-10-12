@@ -6,7 +6,7 @@ const JSON_HEADERS = {
 
 /**
  * Anonymous email capture no longer mints a promo.
- * The 15% code is issued when a Reswell account is created, then sent on the
+ * The 10% code is issued when a Reswell account is created, then sent on the
  * Klaviyo **New Account Created** welcome flow (and the Newsletter metric for new codes).
  */
 export async function POST() {
