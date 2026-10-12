@@ -1,12 +1,11 @@
--- Deleting a listing cascades to listing_images. sync_listing_primary_image()
--- then UPDATEs that same listings row to refresh primary_* and
--- tile_gallery_images. Postgres rejects the second write with SQLSTATE 27000
--- ("tuple to be updated was already modified by an operation triggered by
--- the current command") and the seller delete rolls back. The app shows
--- "Failed to delete listing".
+-- Cover columns exist so browse does not join listing_images. The image trigger
+-- keeps them in sync. Deleting a listing cascades to listing_images, and that
+-- trigger then UPDATEs the listing row the DELETE is already removing. Postgres
+-- aborts with SQLSTATE 27000 and the seller sees "Failed to delete listing".
 --
--- A direct photo delete still refreshes the cover. Only the cascaded delete
--- of a listing that is already going away is ignored.
+-- Skip that write only when the image delete is nested under another trigger
+-- (the listing cascade). A direct photo add, edit, or remove is depth 1 and
+-- still refreshes the cover. No subtransaction on the photo write path.
 
 CREATE OR REPLACE FUNCTION public.sync_listing_primary_image()
 RETURNS trigger
@@ -23,6 +22,10 @@ BEGIN
   v_listing_id := COALESCE(NEW.listing_id, OLD.listing_id);
   IF v_listing_id IS NULL THEN
     RETURN COALESCE(NEW, OLD);
+  END IF;
+
+  IF TG_OP = 'DELETE' AND pg_trigger_depth() > 1 THEN
+    RETURN OLD;
   END IF;
 
   SELECT
@@ -70,27 +73,17 @@ BEGIN
   ) ranked
   WHERE ranked.ord <= 12;
 
-  BEGIN
-    UPDATE public.listings
-    SET
-      primary_image_url = v_url,
-      primary_thumbnail_url = v_thumb,
-      tile_gallery_images = COALESCE(v_gallery, '[]'::jsonb)
-    WHERE id = v_listing_id
-      AND (
-        primary_image_url IS DISTINCT FROM v_url
-        OR primary_thumbnail_url IS DISTINCT FROM v_thumb
-        OR tile_gallery_images IS DISTINCT FROM COALESCE(v_gallery, '[]'::jsonb)
-      );
-  EXCEPTION
-    WHEN SQLSTATE '27000' THEN
-      -- Cascaded image deletes run while the listing row is already being
-      -- removed. Cover columns disappear with that row, so ignore the conflict.
-      -- Any other statement that hits this still fails.
-      IF TG_OP IS DISTINCT FROM 'DELETE' THEN
-        RAISE;
-      END IF;
-  END;
+  UPDATE public.listings
+  SET
+    primary_image_url = v_url,
+    primary_thumbnail_url = v_thumb,
+    tile_gallery_images = COALESCE(v_gallery, '[]'::jsonb)
+  WHERE id = v_listing_id
+    AND (
+      primary_image_url IS DISTINCT FROM v_url
+      OR primary_thumbnail_url IS DISTINCT FROM v_thumb
+      OR tile_gallery_images IS DISTINCT FROM COALESCE(v_gallery, '[]'::jsonb)
+    );
 
   RETURN COALESCE(NEW, OLD);
 END;
