@@ -801,3 +801,40 @@ html[data-reswell-scroll-lock] body {
   object-fit: var(--listing-pdp-object-fit, cover) !important;
   object-position: var(--listing-pdp-object-position, center);
 }
+
+/*
+ * Returning account chrome. Cached HTML is anonymous. A blocking boot script
+ * adds `rw-known-auth` before first paint when this browser already has a
+ * confirmed account snapshot (or a visible auth cookie), and React adds
+ * `rw-auth-hydrated` once the real header state is committed.
+ */
+[data-rw-auth-preview] {
+  display: none;
+}
+
+html.rw-known-auth:not(.rw-auth-hydrated) [data-rw-guest-auth] {
+  display: none !important;
+}
+
+html.rw-known-auth:not(.rw-auth-hydrated) [data-rw-auth-preview] {
+  display: flex !important;
+}
+
+.rw-header-preview-avatar {
+  background-color: hsl(var(--muted));
+}
+
+html.rw-known-auth.rw-header-has-avatar .rw-header-preview-avatar {
+  background-image: var(--rw-header-avatar);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+html.rw-known-auth.rw-header-has-initial:not(.rw-header-has-avatar) .rw-header-preview-avatar::before {
+  content: var(--rw-header-initial);
+  color: hsl(var(--foreground));
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1;
+}
