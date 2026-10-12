@@ -10,6 +10,7 @@ import { dbReviveDeadShopifyInventoryJobs } from "@/lib/db/shopifyQueue"
 import {
   SHOPIFY_MVP_SCOPES,
   isShopifyManualCanaryEnabled,
+  missingShopifyReadScopes,
   normalizeShopifyDomain,
   shopifyManualWebhookUri,
 } from "@/lib/shopify/config"
@@ -23,6 +24,27 @@ type ShopifyTokenResponse = {
   access_token?: string
   expires_in?: number
   scope?: string
+}
+
+/** `message` is safe to show the merchant. */
+export class ShopifyManualConnectError extends Error {
+  readonly status: number
+
+  constructor(message: string, status: number) {
+    super(message)
+    this.name = "ShopifyManualConnectError"
+    this.status = status
+  }
+}
+
+function clientCredentialsFailureMessage(status: number): string {
+  if (status === 404) {
+    return "Shopify could not find that store. Check the your-store.myshopify.com domain."
+  }
+  if (status === 400 || status === 401 || status === 403) {
+    return "Shopify rejected the client ID or secret. Copy both from your Dev Dashboard app's Settings, and make sure the app is installed on this store."
+  }
+  return "Shopify did not respond. Try again in a minute."
 }
 
 function expiresAt(seconds: number | undefined): string | null {
@@ -50,8 +72,9 @@ async function requestClientCredentialsToken(input: {
     },
   )
   if (!response.ok) {
-    throw new Error(
-      `Shopify client-credentials exchange failed (${response.status})`,
+    throw new ShopifyManualConnectError(
+      clientCredentialsFailureMessage(response.status),
+      response.status >= 500 ? 502 : 400,
     )
   }
   return (await response.json()) as ShopifyTokenResponse
@@ -64,12 +87,18 @@ export async function connectMerchantCustomShopifyApp(input: {
   clientSecret: string
 }): Promise<ShopifyConnectionRow> {
   if (!isShopifyManualCanaryEnabled()) {
-    throw new Error("Merchant custom Shopify connect is disabled")
+    throw new ShopifyManualConnectError(
+      "Manual setup is turned off on Reswell right now.",
+      403,
+    )
   }
 
   const shopDomain = normalizeShopifyDomain(input.shop)
   if (!shopDomain) {
-    throw new Error("Enter a valid myshopify.com domain")
+    throw new ShopifyManualConnectError(
+      "Enter your store's permanent your-store.myshopify.com domain.",
+      400,
+    )
   }
 
   const serviceSupabase = createServiceRoleClient()
@@ -78,7 +107,10 @@ export async function connectMerchantCustomShopifyApp(input: {
     input.userId,
   )
   if (!allowlisted) {
-    throw new Error("Your account is not approved for the Shopify dev pilot")
+    throw new ShopifyManualConnectError(
+      "Your account needs Reswell approval for manual setup.",
+      403,
+    )
   }
 
   const existing = await dbGetShopifyConnectionForUser(
@@ -86,8 +118,9 @@ export async function connectMerchantCustomShopifyApp(input: {
     input.userId,
   )
   if (existing && existing.shop_domain !== shopDomain) {
-    throw new Error(
-      "This Reswell account is already linked to a different Shopify store",
+    throw new ShopifyManualConnectError(
+      "This Reswell account is already linked to a different Shopify store. Disconnect it first.",
+      409,
     )
   }
 
@@ -97,17 +130,28 @@ export async function connectMerchantCustomShopifyApp(input: {
     clientSecret: input.clientSecret,
   })
   if (!token.access_token?.trim()) {
-    throw new Error("Shopify did not return an access token")
+    throw new ShopifyManualConnectError(
+      "Shopify did not return an access token. Check that the app is installed on this store.",
+      400,
+    )
+  }
+
+  const scopes = (token.scope ?? SHOPIFY_MVP_SCOPES.join(","))
+    .split(",")
+    .map((scope) => scope.trim())
+    .filter(Boolean)
+  const missingScopes = missingShopifyReadScopes(scopes)
+  if (missingScopes.length > 0) {
+    throw new ShopifyManualConnectError(
+      `Your Dev Dashboard app is missing ${missingScopes.join(", ")}. Add the scopes, release a new version, reinstall it on the store, then try again.`,
+      400,
+    )
   }
 
   const identity = await fetchShopIdentity(shopDomain, token.access_token)
   const access = encryptShopifySecret(token.access_token)
   const clientIdSecret = encryptShopifySecret(input.clientId)
   const clientSecretSecret = encryptShopifySecret(input.clientSecret)
-  const scopes = (token.scope ?? SHOPIFY_MVP_SCOPES.join(","))
-    .split(",")
-    .map((scope) => scope.trim())
-    .filter(Boolean)
 
   const connection = await dbUpsertShopifyConnection(serviceSupabase, {
     userId: input.userId,
@@ -161,7 +205,15 @@ export async function connectMerchantCustomShopifyApp(input: {
       syncEnabled: false,
       error: `Webhook setup failed: ${message}`,
     })
-    throw error
+    console.error("[shopify] manual webhook setup", {
+      userId: input.userId,
+      shopDomain,
+      error,
+    })
+    throw new ShopifyManualConnectError(
+      "Shopify accepted the credentials, but webhook setup failed. Try again.",
+      502,
+    )
   }
 
   return connection
