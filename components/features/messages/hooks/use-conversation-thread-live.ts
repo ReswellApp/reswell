@@ -3,6 +3,13 @@
 import { useEffect, useRef } from "react"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
+import {
+  MARKETPLACE_THREAD_MESSAGE_EVENT,
+  MARKETPLACE_THREAD_REFRESH_EVENT,
+  marketplaceThreadBroadcastMessageSchema,
+  marketplaceThreadChannel,
+  marketplaceThreadRefreshSchema,
+} from "@/lib/messages/thread-broadcast"
 
 const RELOAD_DEBOUNCE_MS = 200
 
@@ -25,12 +32,10 @@ interface UseConversationThreadLiveOptions {
 }
 
 /**
- * The nav ticker follows `profiles.unread_message_count`, which is publicly
- * readable, so that badge moves as soon as a message is stored. `messages`
- * inserts are authorized with a join through `conversations`, and Realtime
- * often drops those events. Reload from the signals that already arrive
- * (profile unread count and the conversation row) so the open thread updates
- * with the ticker.
+ * The saved message is broadcast by the server onto this conversation's private
+ * channel, and the open thread appends that one bubble. A full reload runs when
+ * the thread opens, when the tab regains focus, and while the broadcast channel
+ * is down (then the profile counter and conversation row are the backup).
  */
 export function useConversationThreadLive({
   conversationId,
@@ -58,11 +63,44 @@ export function useConversationThreadLive({
       }, RELOAD_DEBOUNCE_MS)
     }
 
-    void attachRealtimeAuth(supabase)
+    let broadcastReady = false
+    const reloadIfBroadcastDown = () => {
+      if (broadcastReady) return
+      scheduleReload()
+    }
 
-    const channel = supabase.channel(`thread-live:${conversationId}`)
+    const channel = supabase.channel(marketplaceThreadChannel(conversationId), {
+      config: { private: true },
+    })
 
-    channel.on(
+    channel.on("broadcast", { event: MARKETPLACE_THREAD_MESSAGE_EVENT }, ({ payload }) => {
+      const parsed = marketplaceThreadBroadcastMessageSchema.safeParse(payload)
+      if (!parsed.success || parsed.data.conversation_id !== conversationId) {
+        // A private payload we cannot append is still a signal that the thread moved.
+        scheduleReload()
+        return
+      }
+      onMessageInsertRef.current({
+        id: parsed.data.id,
+        content: parsed.data.content,
+        sender_id: parsed.data.sender_id,
+        created_at: parsed.data.created_at,
+        is_read: parsed.data.is_read ?? false,
+        offer_id: parsed.data.offer_id ?? null,
+        metadata: parsed.data.metadata,
+      })
+    })
+
+    channel.on("broadcast", { event: MARKETPLACE_THREAD_REFRESH_EVENT }, ({ payload }) => {
+      const parsed = marketplaceThreadRefreshSchema.safeParse(payload)
+      if (!parsed.success || parsed.data.conversation_id !== conversationId) return
+      scheduleReload()
+    })
+
+    // Separate from the private broadcast so a failed authorization does not
+    // also drop the profile/conversation backup.
+    const fallback = supabase.channel(`thread-live:${conversationId}`)
+    fallback.on(
       "postgres_changes",
       {
         event: "INSERT",
@@ -71,6 +109,9 @@ export function useConversationThreadLive({
         filter: `conversation_id=eq.${conversationId}`,
       },
       (payload) => {
+        // The private broadcast is the steady path. The WAL event is only used
+        // while that channel is down, so one message cannot move the badge twice.
+        if (broadcastReady) return
         const message = realtimeThreadMessage(payload.new)
         if (!message) {
           scheduleReload()
@@ -79,8 +120,7 @@ export function useConversationThreadLive({
         onMessageInsertRef.current(message)
       },
     )
-
-    channel.on(
+    fallback.on(
       "postgres_changes",
       {
         event: "UPDATE",
@@ -88,13 +128,10 @@ export function useConversationThreadLive({
         table: "conversations",
         filter: `id=eq.${conversationId}`,
       },
-      () => {
-        scheduleReload()
-      },
+      reloadIfBroadcastDown,
     )
-
     if (currentUserId) {
-      channel.on(
+      fallback.on(
         "postgres_changes",
         {
           event: "UPDATE",
@@ -104,14 +141,27 @@ export function useConversationThreadLive({
         },
         (payload) => {
           if (!unreadCountChanged(payload.old, payload.new)) return
-          scheduleReload()
+          reloadIfBroadcastDown()
         },
       )
     }
+    fallback.subscribe()
 
-    channel.subscribe((status) => {
+    void attachRealtimeAuth(supabase).finally(() => {
       if (!active) return
-      if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") scheduleReload()
+      channel.subscribe((status) => {
+        if (!active) return
+        if (status === "SUBSCRIBED") {
+          broadcastReady = true
+          // Catch messages published while auth and subscribe were still in flight.
+          scheduleReload()
+          return
+        }
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          broadcastReady = false
+          scheduleReload()
+        }
+      })
     })
 
     // The client router keeps this page for several minutes. Pull a fresh
@@ -139,6 +189,7 @@ export function useConversationThreadLive({
       window.removeEventListener("focus", onVisible)
       subscription.unsubscribe()
       void supabase.removeChannel(channel)
+      void supabase.removeChannel(fallback)
     }
   }, [conversationId, currentUserId, supabase])
 }

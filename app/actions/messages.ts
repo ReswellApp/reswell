@@ -28,6 +28,7 @@ import { composerUnlockTokenSchema } from "@/lib/validations/composer-unlock"
 import { verifyMarketplaceComposerUnlock } from "@/lib/services/composerUnlock"
 import { marketplaceComposerUnlockDenied } from "@/lib/messages/composer-unlock-errors"
 import { sendMarketplaceMediaMessage } from "@/lib/services/sendMarketplaceMediaMessage"
+import { broadcastInsertedMarketplaceMessage } from "@/lib/services/broadcastMarketplaceThreadMessage"
 import { discardUnsentMessageAttachment } from "@/lib/services/discardUnsentMessageAttachment"
 import { captureServerEvent } from "@/lib/posthog-server"
 import {
@@ -434,6 +435,11 @@ export async function sendMarketplaceListingMessage(input: unknown) {
     return { error: "Failed to send message" as const }
   }
 
+  await broadcastInsertedMarketplaceMessage(
+    { ...inserted, content: body, sender_id: user.id },
+    conversation.id,
+  )
+
   await supabase
     .from("conversations")
     .update({ last_message_at: new Date().toISOString() })
@@ -565,6 +571,11 @@ export async function sendListingMessage(input: {
     return { error: "Failed to send message" as const }
   }
 
+  await broadcastInsertedMarketplaceMessage(
+    { ...inserted, content: body, sender_id: user.id },
+    conversation.id,
+  )
+
   await supabase
     .from("conversations")
     .update({ last_message_at: new Date().toISOString() })
@@ -676,6 +687,8 @@ export async function sendConversationReply(input: {
     console.error("[sendConversationReply] message insert:", msgError)
     return { error: "Failed to send message" as const }
   }
+
+  await broadcastInsertedMarketplaceMessage(inserted, conv.id)
 
   await supabase
     .from("conversations")
@@ -889,6 +902,8 @@ export async function sendConversationLocationReply(input: unknown) {
     console.error("[sendConversationLocationReply] message insert:", msgError)
     return { error: "Failed to send message" as const }
   }
+
+  await broadcastInsertedMarketplaceMessage(inserted, conv.id)
 
   await supabase
     .from("conversations")
