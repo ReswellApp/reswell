@@ -25,8 +25,9 @@ import {
   syncSelectedShopifyProduct,
   unpublishSelectedShopifyProduct,
 } from "@/lib/services/shopifyCatalog"
+import { sweepDeletedShopifyListings } from "@/lib/services/shopifyDeletionSweep"
 
-type ServiceResult<T> =
+export type ServiceResult<T> =
   | { ok: true; data: T }
   | { ok: false; status: number; error: string }
 
@@ -164,13 +165,67 @@ export async function unpublishMerchantShopifyProduct(input: {
   }
 }
 
+export async function resyncMerchantShopifyProduct(input: {
+  userId: string
+  productId: string
+}): Promise<ServiceResult<{ listingIds: string[]; productMissing: boolean }>> {
+  try {
+    const loaded = await activeConnection(input.userId)
+    if ("error" in loaded) {
+      return { ok: false, status: loaded.status, error: loaded.error }
+    }
+    const synced = await syncSelectedShopifyProduct({
+      serviceSupabase: loaded.service,
+      connection: loaded.connection,
+      productId: input.productId,
+    })
+    if (!synced.productMissing && synced.listingIds.length === 0) {
+      return {
+        ok: false,
+        status: 409,
+        error: "Publish this product on Reswell before syncing it",
+      }
+    }
+    return { ok: true, data: synced }
+  } catch (error) {
+    console.error("[shopify] resync product", {
+      userId: input.userId,
+      productId: input.productId,
+      error,
+    })
+    return { ok: false, status: 502, error: "Could not sync this product" }
+  }
+}
+
 export async function requestShopifyReconciliation(
   userId: string,
-): Promise<ServiceResult<{ enqueued: boolean }>> {
+): Promise<
+  ServiceResult<{
+    enqueued: boolean
+    removedListingIds: string[]
+    sweepFailed: boolean
+  }>
+> {
   try {
     const loaded = await activeConnection(userId)
     if ("error" in loaded) {
       return { ok: false, status: loaded.status, error: loaded.error }
+    }
+    let removedListingIds: string[] = []
+    let sweepFailed = false
+    try {
+      const swept = await sweepDeletedShopifyListings({
+        serviceSupabase: loaded.service,
+        connection: loaded.connection,
+      })
+      removedListingIds = swept.removedListingIds
+    } catch (error) {
+      sweepFailed = true
+      console.error("[shopify] deletion sweep", {
+        userId,
+        connectionId: loaded.connection.id,
+        error,
+      })
     }
     await dbReviveDeadShopifyInventoryJobs(
       loaded.service,
@@ -182,7 +237,7 @@ export async function requestShopifyReconciliation(
       payload: { connectionId: loaded.connection.id },
       dedupeKey: `reconcile:${loaded.connection.id}`,
     })
-    return { ok: true, data: { enqueued } }
+    return { ok: true, data: { enqueued, removedListingIds, sweepFailed } }
   } catch (error) {
     console.error("[shopify] reconcile", error)
     return { ok: false, status: 500, error: "Could not queue Shopify sync" }

@@ -1,5 +1,6 @@
 import { z } from "zod"
 import { PEER_LISTING_SECTIONS } from "@/lib/peer-listing-sections"
+import { SHOPIFY_LINKED_LISTING_FILTERS } from "@/lib/shopify/types"
 
 const shopifyProductGid = z
   .string()
@@ -31,6 +32,17 @@ export const shopifyProductSelectionSchema = z.object({
 
 export const shopifyProductUnpublishSchema = z.object({
   productId: shopifyProductGid,
+})
+
+export const shopifyProductResyncSchema = z.object({
+  productId: shopifyProductGid,
+})
+
+export const shopifyLinkedListingsQuerySchema = z.object({
+  filter: z.enum(SHOPIFY_LINKED_LISTING_FILTERS).optional().default("all"),
+  section: z.enum(PEER_LISTING_SECTIONS).nullable().optional().default(null),
+  query: z.string().trim().max(200).optional().default(""),
+  page: z.coerce.number().int().min(1).max(1000).optional().default(1),
 })
 
 export const shopifyWebhookHeadersSchema = z.object({
