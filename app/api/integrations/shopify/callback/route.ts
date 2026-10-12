@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
 import { requireShopifyMerchant } from "@/lib/shopify/authorize"
 import { normalizeShopifyDomain } from "@/lib/shopify/config"
+import type { ShopifyConnectErrorDetail } from "@/lib/shopify/connect-errors"
 import { verifyShopifyOAuthHmac, hashShopifyOAuthState } from "@/lib/shopify/crypto"
 import { shopifyClaimCookieOptions } from "@/lib/shopify/claim-cookie"
 import { createServiceRoleClient } from "@/lib/supabase/server"
@@ -11,7 +12,7 @@ import { finishPublicShopifyInstall } from "@/lib/services/shopifyPublicInstall"
 
 function dashboardRedirect(
   result: "connected" | "error",
-  detail?: string,
+  detail?: ShopifyConnectErrorDetail,
 ) {
   const url = new URL("/dashboard/shopify", publicSiteOrigin())
   url.searchParams.set(result, "1")

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireShopifyMerchant } from "@/lib/shopify/authorize"
-import { connectMerchantCustomShopifyApp } from "@/lib/services/shopifyManualConnect"
+import {
+  ShopifyManualConnectError,
+  connectMerchantCustomShopifyApp,
+} from "@/lib/services/shopifyManualConnect"
 import { shopifyManualConnectBodySchema } from "@/lib/validations/shopify"
 
 export async function POST(request: NextRequest) {
@@ -37,10 +40,13 @@ export async function POST(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error("[shopify] manual-connect", error)
-    const message =
-      error instanceof Error ? error.message : "Could not connect Shopify app"
-    const status = message.includes("not approved") ? 403 : 500
-    return NextResponse.json({ error: message }, { status })
+    if (error instanceof ShopifyManualConnectError) {
+      return NextResponse.json({ error: error.message }, { status: error.status })
+    }
+    console.error("[shopify] manual-connect", { userId: auth.user.id, error })
+    return NextResponse.json(
+      { error: "Could not connect your Shopify store. Try again." },
+      { status: 500 },
+    )
   }
 }

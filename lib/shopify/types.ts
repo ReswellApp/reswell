@@ -192,12 +192,21 @@ export interface ShopifyShippingReadiness {
   }>
 }
 
+/**
+ * `disabled`: SHOPIFY_MANUAL_CANARY_ENABLED is off.
+ * `needs_approval`: the profile lacks shopify_manual_canary_enabled.
+ */
+export type ShopifyManualSetupState = "available" | "disabled" | "needs_approval"
+
+export interface ShopifyConnectOptions {
+  pluginAvailable: boolean
+  manualSetup: ShopifyManualSetupState
+}
+
 export interface ShopifyDashboardData {
   enabled: boolean
   configured: boolean
-  publicOAuthEnabled: boolean
-  manualCanaryEnabled: boolean
-  appInstallUrl: string | null
+  connectOptions: ShopifyConnectOptions
   connection: PublicShopifyConnection | null
   products: ShopifyCatalogProduct[]
   productPageInfo: {

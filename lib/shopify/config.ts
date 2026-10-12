@@ -16,6 +16,11 @@ export const SHOPIFY_READ_SCOPES = [
   "read_locations",
 ] as const
 
+export function missingShopifyReadScopes(granted: string[]): string[] {
+  const grantedSet = new Set(granted)
+  return SHOPIFY_READ_SCOPES.filter((scope) => !grantedSet.has(scope))
+}
+
 export function isShopifyIntegrationEnabled(): boolean {
   return process.env.SHOPIFY_INTEGRATION_ENABLED?.trim().toLowerCase() === "true"
 }
@@ -44,16 +49,20 @@ export function areShopifyInventoryWritesEnabled(): boolean {
 export function isShopifyConfigured(): boolean {
   return (
     Boolean(process.env.SHOPIFY_TOKEN_ENCRYPTION_KEY?.trim()) &&
-    (isShopifyPublicOAuthConfigured() || isShopifyManualCanaryEnabled())
+    (isShopifyAccountOAuthConfigured() || isShopifyManualCanaryEnabled())
+  )
+}
+
+/** Reswell-started OAuth only needs the app credentials, not an install URL. */
+export function isShopifyAccountOAuthConfigured(): boolean {
+  return Boolean(
+    process.env.SHOPIFY_API_KEY?.trim() &&
+      process.env.SHOPIFY_API_SECRET?.trim(),
   )
 }
 
 export function isShopifyPublicOAuthConfigured(): boolean {
-  return Boolean(
-    process.env.SHOPIFY_API_KEY?.trim() &&
-      process.env.SHOPIFY_API_SECRET?.trim() &&
-      parseShopifyAppInstallUrl(),
-  )
+  return isShopifyAccountOAuthConfigured() && Boolean(parseShopifyAppInstallUrl())
 }
 
 export function shopifyApiKey(): string {
