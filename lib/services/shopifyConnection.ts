@@ -126,7 +126,12 @@ export async function selectMerchantShopifyProduct(input: {
     }
     return { ok: true, data: { listingIds: synced.listingIds } }
   } catch (error) {
-    console.error("[shopify] select product", error)
+    console.error("[shopify] select product", {
+      userId: input.userId,
+      productId: input.productId,
+      section: input.section,
+      error,
+    })
     return {
       ok: false,
       status: 502,
