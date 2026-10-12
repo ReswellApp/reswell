@@ -16,7 +16,7 @@ import {
 interface ShopifyIntegrationDashboardProps {
   initialData: ShopifyDashboardData
   connected: boolean
-  callbackError: boolean
+  callbackError: string | null
 }
 
 export function ShopifyIntegrationDashboard({
@@ -66,8 +66,7 @@ export function ShopifyIntegrationDashboard({
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Shopify needs attention</AlertTitle>
           <AlertDescription>
-            {initialData.loadError ||
-              "The Shopify connection could not be completed. Try connecting again."}
+            {callbackError ?? initialData.loadError}
           </AlertDescription>
         </Alert>
       ) : null}
@@ -76,8 +75,7 @@ export function ShopifyIntegrationDashboard({
         <ShopifyConnectionCard
           connection={integration.connection}
           busy={integration.connectionBusy}
-          publicOAuthEnabled={initialData.publicOAuthEnabled}
-          manualCanaryEnabled={initialData.manualCanaryEnabled}
+          connectOptions={initialData.connectOptions}
           onSync={() => void integration.requestSync()}
           onDisconnect={() => void integration.disconnect()}
         />

@@ -6,8 +6,10 @@ import {
   isShopifyConfigured,
   isShopifyIntegrationEnabled,
 } from "@/lib/shopify/config"
+import { shopifyConnectErrorMessage } from "@/lib/shopify/connect-errors"
 import type { ShopifyDashboardData } from "@/lib/shopify/types"
 import {
+  SHOPIFY_CONNECT_OPTIONS_UNAVAILABLE,
   checkShopifyMerchantAccess,
   getShopifyDashboardConnectOptions,
 } from "@/lib/services/shopifyAccess"
@@ -28,7 +30,7 @@ export const metadata = privatePageMetadata({
 export default async function ShopifyIntegrationPage({
   searchParams,
 }: {
-  searchParams: Promise<{ connected?: string; error?: string }>
+  searchParams: Promise<{ connected?: string; error?: string; detail?: string }>
 }) {
   const { supabase, user } = await getCachedDashboardSession()
   if (!user) return null
@@ -66,11 +68,7 @@ export default async function ShopifyIntegrationPage({
 
   const connectOptions = access.allowed
     ? await getShopifyDashboardConnectOptions(supabase, user.id)
-    : {
-        publicOAuthEnabled: false,
-        manualCanaryEnabled: false,
-        appInstallUrl: null,
-      }
+    : SHOPIFY_CONNECT_OPTIONS_UNAVAILABLE
 
   const params = await searchParams
   return (
@@ -78,9 +76,7 @@ export default async function ShopifyIntegrationPage({
       initialData={{
         enabled: isShopifyIntegrationEnabled(),
         configured: isShopifyConfigured(),
-        publicOAuthEnabled: connectOptions.publicOAuthEnabled,
-        manualCanaryEnabled: connectOptions.manualCanaryEnabled,
-        appInstallUrl: connectOptions.appInstallUrl,
+        connectOptions,
         connection,
         products,
         productPageInfo,
@@ -88,7 +84,9 @@ export default async function ShopifyIntegrationPage({
         loadError,
       }}
       connected={params.connected === "1"}
-      callbackError={params.error === "1"}
+      callbackError={
+        params.error === "1" ? shopifyConnectErrorMessage(params.detail) : null
+      }
     />
   )
 }

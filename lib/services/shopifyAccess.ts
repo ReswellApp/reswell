@@ -4,13 +4,15 @@ import {
   dbShopifyUserManualCanaryEnabled,
 } from "@/lib/db/shopifyConnections"
 import {
+  isShopifyAccountOAuthConfigured,
   isShopifyConfigured,
   isShopifyIntegrationEnabled,
   isShopifyManualCanaryEnabled,
-  isShopifyPublicOAuthConfigured,
-  isShopifyPublicOAuthEnabled,
-  parseShopifyAppInstallUrl,
 } from "@/lib/shopify/config"
+import type {
+  ShopifyConnectOptions,
+  ShopifyManualSetupState,
+} from "@/lib/shopify/types"
 
 export type ShopifyMerchantAccess =
   | { allowed: true }
@@ -49,22 +51,33 @@ export async function checkShopifyMerchantAccess(
   return { allowed: true }
 }
 
+export const SHOPIFY_CONNECT_OPTIONS_UNAVAILABLE: ShopifyConnectOptions = {
+  pluginAvailable: false,
+  manualSetup: "disabled",
+}
+
+export function resolveShopifyManualSetupState(input: {
+  envEnabled: boolean
+  profileAllowlisted: boolean
+}): ShopifyManualSetupState {
+  if (!input.envEnabled) return "disabled"
+  if (!input.profileAllowlisted) return "needs_approval"
+  return "available"
+}
+
 export async function getShopifyDashboardConnectOptions(
   supabase: SupabaseClient,
   userId: string,
-): Promise<{
-  publicOAuthEnabled: boolean
-  manualCanaryEnabled: boolean
-  appInstallUrl: string | null
-}> {
-  const publicOAuthEnabled =
-    isShopifyPublicOAuthEnabled() && isShopifyPublicOAuthConfigured()
-  const manualCanaryEnabled =
-    isShopifyManualCanaryEnabled() &&
-    (await dbShopifyUserManualCanaryEnabled(supabase, userId))
+): Promise<ShopifyConnectOptions> {
+  const envEnabled = isShopifyManualCanaryEnabled()
+  const profileAllowlisted = envEnabled
+    ? await dbShopifyUserManualCanaryEnabled(supabase, userId)
+    : false
   return {
-    publicOAuthEnabled,
-    manualCanaryEnabled,
-    appInstallUrl: publicOAuthEnabled ? parseShopifyAppInstallUrl() : null,
+    pluginAvailable: isShopifyAccountOAuthConfigured(),
+    manualSetup: resolveShopifyManualSetupState({
+      envEnabled,
+      profileAllowlisted,
+    }),
   }
 }
