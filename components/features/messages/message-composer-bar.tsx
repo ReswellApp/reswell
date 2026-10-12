@@ -41,6 +41,7 @@ export interface MessageComposerBarProps {
     disabled?: boolean
     onSent: (message: SentMediaMessage) => void
     onBlockedPolicy?: (originalContent: string, reasonCode: MessagePolicyReasonCode) => void
+    onRestricted?: (message: string) => void
     ensureConversationId?: () => Promise<string | null>
   }
 }
@@ -89,6 +90,7 @@ export function MessageComposerBar({
             composerUnlockToken={composerUnlockToken}
             onSent={media.onSent}
             onBlockedPolicy={media.onBlockedPolicy}
+            onRestricted={media.onRestricted}
             ensureConversationId={media.ensureConversationId}
             onDraftUiChange={handleDraftUiChange}
           />

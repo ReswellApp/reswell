@@ -18,6 +18,10 @@ import {
   sendConversationMediaReply,
 } from "@/app/actions/messages"
 import { getPolicyBlockFromSendResult } from "@/lib/messages/policy-block-client"
+import {
+  isAccountRestrictedSendResult,
+  sendRestrictionMessageFromResult,
+} from "@/lib/messages/send-restriction-client"
 import type { MessagePolicyReasonCode } from "@/lib/messages/fraud-reason-codes"
 import { PromiseDeadlineError, raceWithDeadline } from "@/lib/utils/race-with-deadline"
 import { friendlyMessageMediaErrorMessage } from "@/lib/utils/friendly-message-media-error"
@@ -61,6 +65,7 @@ export function MessageMediaSendButton({
   caption,
   onSent,
   onBlockedPolicy,
+  onRestricted,
   className,
   ensureConversationId,
   onDraftUiChange,
@@ -72,6 +77,7 @@ export function MessageMediaSendButton({
   composerUnlockToken?: string | null
   onSent: (message: SentMediaMessage) => void
   onBlockedPolicy?: (originalContent: string, reasonCode: MessagePolicyReasonCode) => void
+  onRestricted?: (message: string) => void
   className?: string
   /** Creates the conversation on demand when media is the first message. */
   ensureConversationId?: () => Promise<string | null>
@@ -198,6 +204,17 @@ export function MessageMediaSendButton({
         }
 
         if ("error" in result) {
+          if (isAccountRestrictedSendResult(result)) {
+            job.uploadedPath = null
+            jobRef.current = null
+            setDraft((prev) => {
+              clearDraftPreviewUrl(prev?.previewUrl)
+              return null
+            })
+            const locked = sendRestrictionMessageFromResult(result) ?? result.error
+            onRestricted?.(locked)
+            return
+          }
           const policyReason = getPolicyBlockFromSendResult(result)
           if (policyReason) {
             // Server already deleted the orphan on policy block.

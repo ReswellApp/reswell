@@ -27,6 +27,10 @@ import {
 import { offerMessageAnchorId } from '@/lib/utils/offer-messages-href'
 import { isUuidString } from '@/lib/utils/isUuid'
 import { getPolicyBlockFromSendResult } from '@/lib/messages/policy-block-client'
+import {
+  isAccountRestrictedSendResult,
+  sendRestrictionMessageFromResult,
+} from '@/lib/messages/send-restriction-client'
 import type { MessagePolicyReasonCode } from '@/lib/messages/fraud-reason-codes'
 import { LocalPhonePolicyBlockBubble } from '@/components/features/messages/local-phone-policy-block-bubble'
 import { cn } from '@/lib/utils'
@@ -68,6 +72,7 @@ function NewMessageComposeContent() {
   const [newMessage, setNewMessage] = useState('')
   const [sending, setSending] = useState(false)
   const composerUnlock = useComposerUnlock({ scope: 'marketplace' })
+  const [sendLockedMessage, setSendLockedMessage] = useState<string | null>(null)
   const [blockedPolicyNotice, setBlockedPolicyNotice] = useState<{
     content: string
     reasonCode: MessagePolicyReasonCode
@@ -202,6 +207,12 @@ function NewMessageComposeContent() {
       })
 
       if ('error' in result) {
+        if (isAccountRestrictedSendResult(result)) {
+          const locked = sendRestrictionMessageFromResult(result) ?? result.error
+          setSendLockedMessage(locked)
+          toast.error(locked)
+          return
+        }
         const policyReason = getPolicyBlockFromSendResult(result)
         if (policyReason) {
           setBlockedPolicyNotice({ content: trimmed, reasonCode: policyReason })
@@ -333,6 +344,11 @@ function NewMessageComposeContent() {
           </div>
         </div>
 
+        {sendLockedMessage ? (
+          <div className="border-t border-border/60 px-4 py-3">
+            <p className="text-sm leading-relaxed text-muted-foreground">{sendLockedMessage}</p>
+          </div>
+        ) : (
         <MessageThreadMobileComposerDock>
           <MessageComposerBar
             value={newMessage}
@@ -377,9 +393,14 @@ function NewMessageComposeContent() {
                 setBlockedPolicyNotice({ content: originalContent, reasonCode })
                 setNewMessage('')
               },
+              onRestricted: (message) => {
+                setSendLockedMessage(message)
+                toast.error(message)
+              },
             }}
           />
         </MessageThreadMobileComposerDock>
+        )}
       </div>
     </main>
   )
