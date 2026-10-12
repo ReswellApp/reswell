@@ -326,6 +326,30 @@ export async function dbUnpublishShopifyMappings(
   return listingIds
 }
 
+/** Removes Shopify listings that are still active although their mapping is no longer selected. */
+export async function dbRemoveStaleShopifyListings(
+  supabase: SupabaseClient,
+  listingIds: string[],
+): Promise<string[]> {
+  const removed: string[] = []
+  for (let index = 0; index < listingIds.length; index += 200) {
+    const { data, error } = await supabase
+      .from("listings")
+      .update({
+        status: "removed",
+        stock_quantity: 0,
+        updated_at: new Date().toISOString(),
+      })
+      .in("id", listingIds.slice(index, index + 200))
+      .eq("inventory_source", "shopify")
+      .eq("status", "active")
+      .select("id")
+    if (error) throw new Error(error.message)
+    removed.push(...(data ?? []).map((row) => String(row.id)))
+  }
+  return removed
+}
+
 export async function dbUnpublishAllShopifyListingsForConnection(
   supabase: SupabaseClient,
   connectionId: string,

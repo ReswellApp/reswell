@@ -1,9 +1,6 @@
 import { randomUUID } from "node:crypto"
 import type { SupabaseClient } from "@supabase/supabase-js"
-import {
-  dbListSelectedShopifyProductIds,
-  dbUnpublishAllShopifyListingsForConnection,
-} from "@/lib/db/shopifyCatalog"
+import { dbUnpublishAllShopifyListingsForConnection } from "@/lib/db/shopifyCatalog"
 import {
   dbGetShopifyConnectionByDomain,
   dbGetShopifyConnectionById,
@@ -46,6 +43,7 @@ import {
   decrementShopifyInventoryForReswellSale,
   ShopifyInventoryWritesDisabledError,
 } from "@/lib/services/shopifyInventory"
+import { sweepDeletedShopifyListings } from "@/lib/services/shopifyDeletionSweep"
 import { compensateShopifyInventoryConflict } from "@/lib/services/shopifyInventoryCompensation"
 
 function shopifyGid(
@@ -139,6 +137,27 @@ async function handleWebhookEvent(
   ) {
     return
   }
+
+  // Deletion only writes Reswell rows, so it runs even while sync is paused or
+  // the store needs reauthorization: a deleted product must never stay live.
+  if (event.topic === "products/delete") {
+    if (!connection) return
+    const productId = shopifyGid(
+      "Product",
+      event.payload.admin_graphql_api_id ?? event.payload.id,
+    )
+    if (!productId) throw new Error("Shopify delete webhook has no product id")
+    if (connection.status === "active" && connection.sync_enabled) {
+      await dbTouchShopifyWebhook(serviceSupabase, connection.id)
+    }
+    await unpublishDeletedShopifyProduct({
+      serviceSupabase,
+      connectionId: connection.id,
+      productId,
+    })
+    return
+  }
+
   if (!connection || connection.status !== "active" || !connection.sync_enabled) {
     return
   }
@@ -155,21 +174,6 @@ async function handleWebhookEvent(
       jobType: "product_sync",
       payload: { productId },
       dedupeKey: `product:${connection.id}:${productId}`,
-    })
-    return
-  }
-
-  if (event.topic === "products/delete") {
-    const productId = shopifyGid(
-      "Product",
-      event.payload.admin_graphql_api_id ?? event.payload.id,
-    )
-    if (!productId) throw new Error("Shopify delete webhook has no product id")
-    await dbEnqueueShopifyJob(serviceSupabase, {
-      connectionId: connection.id,
-      jobType: "product_delete",
-      payload: { productId },
-      dedupeKey: `product-delete:${connection.id}:${productId}`,
     })
     return
   }
@@ -195,11 +199,11 @@ async function enqueueConnectionProducts(
   serviceSupabase: SupabaseClient,
   connection: ShopifyConnectionRow,
 ): Promise<void> {
-  const productIds = await dbListSelectedShopifyProductIds(
+  const { liveProductIds } = await sweepDeletedShopifyListings({
     serviceSupabase,
-    connection.id,
-  )
-  for (const productId of productIds) {
+    connection,
+  })
+  for (const productId of liveProductIds) {
     await dbEnqueueShopifyJob(serviceSupabase, {
       connectionId: connection.id,
       jobType: "product_sync",
@@ -218,6 +222,15 @@ async function runSyncJob(
     serviceSupabase,
     job.connection_id,
   )
+  if (connection && job.job_type === "product_delete") {
+    const payload = shopifyProductJobPayloadSchema.parse(job.payload)
+    await unpublishDeletedShopifyProduct({
+      serviceSupabase,
+      connectionId: connection.id,
+      productId: payload.productId,
+    })
+    return
+  }
   if (!connection || connection.status !== "active" || !connection.sync_enabled) {
     if (job.job_type === "inventory_decrement") {
       throw new ShopifyInventoryWritesDisabledError()
@@ -234,15 +247,6 @@ async function runSyncJob(
     await syncSelectedShopifyProduct({
       serviceSupabase,
       connection,
-      productId: payload.productId,
-    })
-    return
-  }
-  if (job.job_type === "product_delete") {
-    const payload = shopifyProductJobPayloadSchema.parse(job.payload)
-    await unpublishDeletedShopifyProduct({
-      serviceSupabase,
-      connectionId: connection.id,
       productId: payload.productId,
     })
     return
