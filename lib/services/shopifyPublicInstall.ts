@@ -1,5 +1,9 @@
 import { createServiceRoleClient } from "@/lib/supabase/server"
-import { dbConsumePublicShopifyOAuthState } from "@/lib/db/shopifyConnections"
+import {
+  dbConsumePublicShopifyOAuthState,
+  dbGetShopifyConnectionByDomain,
+} from "@/lib/db/shopifyConnections"
+import { shopifyLinkSkipsReinstall } from "@/lib/shopify/install-launch"
 import { dbUpsertShopifyPendingInstallation } from "@/lib/db/shopifyPendingInstallations"
 import { SHOPIFY_MVP_SCOPES, shopifyApiKey, shopifyApiSecret } from "@/lib/shopify/config"
 import {
@@ -10,6 +14,7 @@ import {
 import {
   createShopifyInstallUrl,
   fetchShopIdentity,
+  getShopifyAccessToken,
   registerShopifyWebhooks,
 } from "@/lib/services/shopifyOAuth"
 
@@ -70,6 +75,28 @@ async function requestShopifyToken(
     throw new Error(`Shopify OAuth token exchange failed (${response.status})`)
   }
   return (await response.json()) as ShopifyTokenResponse
+}
+
+export async function isShopifyStoreLinkedForLaunch(
+  shopDomain: string,
+  userId: string | null,
+): Promise<boolean> {
+  try {
+    const serviceSupabase = createServiceRoleClient()
+    const connection = await dbGetShopifyConnectionByDomain(
+      serviceSupabase,
+      shopDomain,
+    )
+    if (!connection || !shopifyLinkSkipsReinstall(connection, userId)) {
+      return false
+    }
+    const accessToken = await getShopifyAccessToken(serviceSupabase, connection)
+    const identity = await fetchShopIdentity(connection.shop_domain, accessToken)
+    return !connection.shop_gid || identity.shopGid === connection.shop_gid
+  } catch (error) {
+    console.error("[shopify] launch link check", { shopDomain, error })
+    return false
+  }
 }
 
 export async function startPublicShopifyInstall(shopDomain: string): Promise<string> {

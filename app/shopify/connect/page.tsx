@@ -16,7 +16,10 @@ import {
 } from "@/lib/shopify/install-launch"
 import { getShopifyAccessRequestState } from "@/lib/services/shopifyAccessRequest"
 import { previewShopifyPendingClaim } from "@/lib/services/shopifyClaim"
-import { startPublicShopifyInstall } from "@/lib/services/shopifyPublicInstall"
+import {
+  isShopifyStoreLinkedForLaunch,
+  startPublicShopifyInstall,
+} from "@/lib/services/shopifyPublicInstall"
 import { privatePageMetadata } from "@/lib/site-metadata"
 
 export const dynamic = "force-dynamic"
@@ -84,6 +87,14 @@ export default async function ShopifyConnectPage({
       publicInstallAvailable:
         isShopifyPublicOAuthEnabled() && isShopifyPublicOAuthConfigured(),
     })
+
+    if (
+      decision.action === "start_public_install" &&
+      user &&
+      (await isShopifyStoreLinkedForLaunch(decision.shopDomain, user.id))
+    ) {
+      redirect("/dashboard/shopify")
+    }
 
     if (decision.action === "start_public_install") {
       let installUrl: string

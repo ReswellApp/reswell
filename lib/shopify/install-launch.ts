@@ -1,6 +1,10 @@
 import { shopifyConnectHref, SHOPIFY_CONNECT_PATH } from "@/lib/shopify/claim-path"
-import { normalizeShopifyDomain } from "@/lib/shopify/config"
+import {
+  missingShopifyReadScopes,
+  normalizeShopifyDomain,
+} from "@/lib/shopify/config"
 import { verifyShopifyOAuthHmac } from "@/lib/shopify/crypto"
+import type { ShopifyConnectionRow } from "@/lib/shopify/types"
 
 export type ShopifyInstallLaunch =
   | { kind: "absent" }
@@ -66,6 +70,23 @@ export function assessShopifyInstallLaunch(
     shopDomain,
     returnPath: shopifyConnectHref(params) || SHOPIFY_CONNECT_PATH,
   }
+}
+
+/**
+ * A store opened from Shopify can skip OAuth only when its existing link is
+ * healthy. Anything else re-runs OAuth so a reinstall always refreshes the token.
+ */
+export function shopifyLinkSkipsReinstall(
+  connection: Pick<
+    ShopifyConnectionRow,
+    "user_id" | "status" | "sync_enabled" | "scopes"
+  > | null,
+  userId: string | null,
+): boolean {
+  if (!connection) return false
+  if (connection.status !== "active" || !connection.sync_enabled) return false
+  if (userId && connection.user_id !== userId) return false
+  return missingShopifyReadScopes(connection.scopes).length === 0
 }
 
 export function decideShopifyConnectInstall(input: {

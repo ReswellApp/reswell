@@ -7,6 +7,7 @@ import { verifyShopifyOAuthHmac } from "@/lib/shopify/crypto"
 import {
   assessShopifyInstallLaunch,
   decideShopifyConnectInstall,
+  shopifyLinkSkipsReinstall,
 } from "@/lib/shopify/install-launch"
 
 const SECRET = "test-shopify-secret"
@@ -126,4 +127,29 @@ test("unconfigured Shopify secret rejects the launch instead of trusting shop", 
   } finally {
     process.env.SHOPIFY_API_SECRET = SECRET
   }
+})
+
+test("only a healthy link owned by the same account skips reinstall", () => {
+  const healthy = {
+    user_id: "user-1",
+    status: "active" as const,
+    sync_enabled: true,
+    scopes: ["read_products", "read_inventory", "read_locations"],
+  }
+  assert.equal(shopifyLinkSkipsReinstall(healthy, null), true)
+  assert.equal(shopifyLinkSkipsReinstall(healthy, "user-1"), true)
+  assert.equal(shopifyLinkSkipsReinstall(healthy, "user-2"), false)
+  assert.equal(shopifyLinkSkipsReinstall(null, null), false)
+  assert.equal(
+    shopifyLinkSkipsReinstall({ ...healthy, status: "disconnected" }, null),
+    false,
+  )
+  assert.equal(
+    shopifyLinkSkipsReinstall({ ...healthy, sync_enabled: false }, null),
+    false,
+  )
+  assert.equal(
+    shopifyLinkSkipsReinstall({ ...healthy, scopes: ["read_products"] }, null),
+    false,
+  )
 })
