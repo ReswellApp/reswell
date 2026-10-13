@@ -93,3 +93,14 @@ export async function dbClaimShopifyPendingInstallation(
         : String(record.shop_name),
   }
 }
+
+export async function dbDeleteShopifyPendingInstallationsForShop(
+  supabase: SupabaseClient,
+  shopDomain: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from("shopify_pending_installations")
+    .delete()
+    .eq("shop_domain", shopDomain.toLowerCase())
+  if (error) throw new Error(error.message)
+}

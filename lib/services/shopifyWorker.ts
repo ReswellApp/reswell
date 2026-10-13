@@ -10,6 +10,7 @@ import {
   dbTouchShopifyReconciled,
   dbTouchShopifyWebhook,
 } from "@/lib/db/shopifyConnections"
+import { dbDeleteShopifyPendingInstallationsForShop } from "@/lib/db/shopifyPendingInstallations"
 import {
   dbCancelShopifyJobsForConnection,
   dbCancelShopifyInventoryJobsForConnection,
@@ -103,6 +104,10 @@ async function handleWebhookEvent(
         )
 
   if (event.topic === "shop/redact") {
+    await dbDeleteShopifyPendingInstallationsForShop(
+      serviceSupabase,
+      event.shop_domain,
+    )
     if (!connection) return
     await compensateUnresolvedShopifySales(serviceSupabase, connection.id)
     const listingIds = await dbRedactShopifyConnection(
