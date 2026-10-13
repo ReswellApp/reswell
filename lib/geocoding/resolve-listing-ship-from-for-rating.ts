@@ -1,12 +1,21 @@
 import type { ShipFromParts } from "@/lib/geocoding/nominatim-reverse-us-ship-from"
 import { reverseGeocodeShipFromParts } from "@/lib/geocoding/nominatim-reverse-us-ship-from"
-import { normalizeUsStateProvinceForShipping } from "@/lib/us-state-name-to-code"
+import {
+  normalizeUsStateProvinceForShipping,
+  usStateTitleCaseName,
+} from "@/lib/us-state-name-to-code"
 
 /** Match `nominatim-reverse-us-ship-from` — required by Nominatim usage policy. */
 const NOMINATIM_HEADERS = {
   Accept: "application/json",
   "User-Agent": "ReswellSurfMarketplace/1",
 } as const
+
+type NominatimSearchHit = {
+  lat?: string
+  lon?: string
+  address?: Record<string, string>
+}
 
 function postcodeToFive(zip: string | undefined): string {
   const t = zip?.trim() ?? ""
@@ -15,12 +24,53 @@ function postcodeToFive(zip: string | undefined): string {
   return five ?? ""
 }
 
+function localityName(address: Record<string, string> | undefined): string {
+  if (!address) return ""
+  return (
+    address.city ||
+    address.town ||
+    address.village ||
+    address.hamlet ||
+    address.municipality ||
+    ""
+  ).trim()
+}
+
 /**
- * USPS-style ship-from locality for SurfEngine /rates parity with `/admin/shipping`:
- * derives origin from the listing city + state shoppers see instead of noisy map-pin
- * reverse lookups (pins can land in suburbs or mismatched Postal towns).
- *
- * Fallback: reverse-geocode `{ latitude, longitude }` when locality search fails or has no ZIP.
+ * Free-text "Ventura, CA" returns Ventura County first. That hit has no ZIP and
+ * its centroid sits on a trail outside the city, so checkout cannot rate it.
+ * Prefer the hit whose city/town actually matches the listing locality.
+ */
+export function pickNominatimCityHit(
+  hits: NominatimSearchHit[],
+  city: string,
+): NominatimSearchHit | null {
+  const wanted = city.trim().toLowerCase()
+  if (!wanted) return null
+  for (const hit of hits) {
+    if (localityName(hit.address).toLowerCase() === wanted) return hit
+  }
+  return null
+}
+
+function finalizeShipFrom(parts: ShipFromParts | null): ShipFromParts | null {
+  if (!parts) return null
+  const postal = postcodeToFive(parts.postal_code)
+  const state = normalizeUsStateProvinceForShipping("US", parts.state_province)
+  const city = parts.city_locality.trim()
+  if (postal.length < 5 || state.length !== 2 || !city) return null
+  return {
+    address_line1: parts.address_line1.trim() || "100 Main St",
+    city_locality: city,
+    state_province: state,
+    postal_code: postal,
+  }
+}
+
+/**
+ * USPS-style ship-from locality for carrier rates.
+ * Derives origin from the listing city + state shoppers see. Map pins are only
+ * a fallback — a county centroid is not a ship-from.
  */
 export async function resolveListingShipFromForRating(params: {
   city?: string | null
@@ -31,11 +81,10 @@ export async function resolveListingShipFromForRating(params: {
   const cityTrim = params.city?.trim() ?? ""
   const stateTrim = params.state?.trim() ?? ""
 
-  // Listings often store city/state from the seller ship-from without a map pin.
-  // Forward-geocode that locality first so missing lat/lng does not block checkout.
   if (cityTrim && stateTrim) {
     const fromLocality = await forwardGeocodeUsCityStateShipFromParts(cityTrim, stateTrim)
-    if (fromLocality?.postal_code?.length >= 5) return fromLocality
+    const finalized = finalizeShipFrom(fromLocality)
+    if (finalized) return finalized
   }
 
   const latRaw = params.latitude
@@ -44,50 +93,75 @@ export async function resolveListingShipFromForRating(params: {
   const lng = lngRaw != null && lngRaw !== "" ? Number(lngRaw) : NaN
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null
 
-  return reverseGeocodeShipFromParts(lat, lng)
+  return finalizeShipFrom(
+    await reverseGeocodeShipFromParts(lat, lng, { fallbackCity: cityTrim || null }),
+  )
 }
 
-/** Nominatim search `{city}, ST, USA` → ship-from ZIP + centroid street line. */
-async function forwardGeocodeUsCityStateShipFromParts(city: string, stateRaw: string): Promise<ShipFromParts | null> {
-  const st = normalizeUsStateProvinceForShipping("US", stateRaw)
-  if (!st || st.length < 2) return null
-
-  const url = new URL("https://nominatim.openstreetmap.org/search")
-  url.searchParams.set("format", "json")
-  url.searchParams.set("limit", "1")
-  url.searchParams.set("addressdetails", "1")
-  url.searchParams.set("countrycodes", "us")
-  url.searchParams.set("q", `${city}, ${st}, USA`)
-
-  let hits: unknown
+async function fetchNominatimJson(url: URL): Promise<unknown | null> {
   try {
     const res = await fetch(url.toString(), { headers: NOMINATIM_HEADERS })
     if (!res.ok) return null
-    hits = await res.json()
+    return await res.json()
   } catch {
     return null
   }
+}
 
-  if (!Array.isArray(hits) || hits.length === 0) return null
+async function searchCityHits(city: string, stateCode: string): Promise<NominatimSearchHit[]> {
+  const stateName = usStateTitleCaseName(stateCode) ?? stateCode
+  const structured = new URL("https://nominatim.openstreetmap.org/search")
+  structured.searchParams.set("format", "json")
+  structured.searchParams.set("limit", "5")
+  structured.searchParams.set("addressdetails", "1")
+  structured.searchParams.set("countrycodes", "us")
+  structured.searchParams.set("city", city)
+  structured.searchParams.set("state", stateName)
+  structured.searchParams.set("country", "United States")
 
-  const row = hits[0] as { address?: Record<string, string> }
-  const a = row.address
-  if (!a) return null
+  const structuredHits = await fetchNominatimJson(structured)
+  const parsedStructured = Array.isArray(structuredHits)
+    ? (structuredHits as NominatimSearchHit[])
+    : []
+  if (pickNominatimCityHit(parsedStructured, city)) return parsedStructured
 
-  const postal = postcodeToFive(a.postcode)
-  if (!postal) return null
+  const freeText = new URL("https://nominatim.openstreetmap.org/search")
+  freeText.searchParams.set("format", "json")
+  freeText.searchParams.set("limit", "5")
+  freeText.searchParams.set("addressdetails", "1")
+  freeText.searchParams.set("countrycodes", "us")
+  freeText.searchParams.set("q", `${city}, ${stateCode}, USA`)
+  const freeHits = await fetchNominatimJson(freeText)
+  return Array.isArray(freeHits) ? (freeHits as NominatimSearchHit[]) : parsedStructured
+}
 
-  const road = [a.house_number, a.road].filter(Boolean).join(" ").trim()
-  const address_line1 = road || "100 Main St"
-  const cityOut =
-    a.city || a.town || a.village || a.hamlet || a.municipality || a.suburb || city
-  const stateOutRaw = a.state ?? st
-  if (!cityOut || !stateOutRaw) return null
+/** Nominatim city/state search → ship-from ZIP + a street line inside that city. */
+async function forwardGeocodeUsCityStateShipFromParts(
+  city: string,
+  stateRaw: string,
+): Promise<ShipFromParts | null> {
+  const st = normalizeUsStateProvinceForShipping("US", stateRaw)
+  if (!st || st.length < 2) return null
 
-  return {
-    address_line1,
-    city_locality: cityOut,
-    state_province: normalizeUsStateProvinceForShipping("US", stateOutRaw),
-    postal_code: postal.length >= 5 ? postal.slice(0, 5) : postal,
+  const hit = pickNominatimCityHit(await searchCityHits(city, st), city)
+  if (!hit?.address) return null
+
+  const postal = postcodeToFive(hit.address.postcode)
+  if (postal) {
+    const road = [hit.address.house_number, hit.address.road].filter(Boolean).join(" ").trim()
+    return {
+      address_line1: road || "100 Main St",
+      city_locality: localityName(hit.address) || city,
+      state_province: normalizeUsStateProvinceForShipping("US", hit.address.state ?? st),
+      postal_code: postal,
+    }
   }
+
+  const lat = Number(hit.lat)
+  const lng = Number(hit.lon)
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null
+
+  // City boundaries often have no postcode. Reverse the city point for a ZIP
+  // inside that city instead of the county centroid the free-text search returns.
+  return reverseGeocodeShipFromParts(lat, lng, { fallbackCity: city })
 }

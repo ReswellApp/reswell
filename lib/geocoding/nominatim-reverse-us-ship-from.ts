@@ -17,6 +17,7 @@ export type ShipFromParts = {
 export async function reverseGeocodeShipFromParts(
   lat: number,
   lng: number,
+  opts?: { fallbackCity?: string | null },
 ): Promise<ShipFromParts | null> {
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null
 
@@ -44,7 +45,14 @@ export async function reverseGeocodeShipFromParts(
   const address_line1 = road || "100 Main St"
 
   const city =
-    a.city || a.town || a.village || a.hamlet || a.municipality || a.suburb || ""
+    a.city ||
+    a.town ||
+    a.village ||
+    a.hamlet ||
+    a.municipality ||
+    a.suburb ||
+    opts?.fallbackCity?.trim() ||
+    ""
   const state = a.state || ""
   const rawZip = (a.postcode || "").trim()
   const postal_code = rawZip.length >= 5 ? rawZip.slice(0, 5) : rawZip
