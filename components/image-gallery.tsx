@@ -62,11 +62,6 @@ interface ImageGalleryProps {
     pdp_crop_zoom?: number | null
     pdp_crop_x?: number | null
     pdp_crop_y?: number | null
-    tone_source_url?: string | null
-    tone_brightness?: number | null
-    tone_highlights?: number | null
-    tone_shadows?: number | null
-    tone_contrast?: number | null
   }>
   title: string
   /** Optional listing video — rendered as the last carousel slide, not above the photos. */
@@ -121,7 +116,7 @@ export function ImageGallery({
   const [imageAspectRatios, setImageAspectRatios] = useState<Record<number, number>>({})
   const [cropOverrides, setCropOverrides] = useState<Record<string, ListingPdpCrop | null>>({})
   const [photoOverrides, setPhotoOverrides] = useState<
-    Record<string, Partial<ImageGalleryProps["images"][number]>>
+    Record<string, { url: string; thumbnail_url: string | null }>
   >({})
   const images = useMemo(
     () =>
@@ -442,11 +437,6 @@ export function ImageGallery({
                 next[image.id] = {
                   url: image.url,
                   thumbnail_url: image.thumbnailUrl,
-                  tone_source_url: image.sourceUrl,
-                  tone_brightness: image.brightness === 0 ? null : image.brightness,
-                  tone_highlights: image.highlights === 0 ? null : image.highlights,
-                  tone_shadows: image.shadows === 0 ? null : image.shadows,
-                  tone_contrast: image.contrast === 0 ? null : image.contrast,
                 }
               }
               return next

@@ -6,32 +6,97 @@ import {
   applyListingPhotoToneToPixels,
   clampListingPhotoTone,
   isListingPhotoToneIdentity,
-  listingPhotoToneColumnValues,
-  listingPhotoToneFromImageRow,
+  listingPhotoToneFromStops,
   listingPhotoToneObjectsToRemove,
+  listingPhotoToneRecipeFromRow,
   listingPhotoToneRgb,
-  listingPhotoToneSourceUrl,
   listingPhotoToneStoragePaths,
   listingPhotoTonesEqual,
+  parseListingPhotoToneActiveRecipes,
+  planListingPhotoToneSave,
+  resolveListingPhotoToneEdit,
+  type ListingPhotoToneRecipe,
 } from "./listing-photo-tone.ts"
 
-describe("listingPhotoToneFromImageRow", () => {
-  it("treats missing columns as no adjustment", () => {
-    assert.deepEqual(listingPhotoToneFromImageRow(null), LISTING_PHOTO_TONE_IDENTITY)
-    assert.deepEqual(listingPhotoToneFromImageRow({}), LISTING_PHOTO_TONE_IDENTITY)
+const ORIGINAL = "https://app.reswell.app/storage/v1/object/public/listings/user/1-full.webp"
+const ORIGINAL_THUMB = ORIGINAL.replace("-full.", "-thumb.")
+const BAKED = "https://app.reswell.app/storage/v1/object/public/listings/user/2-full.webp"
+const BAKED_THUMB = BAKED.replace("-full.", "-thumb.")
+const REPLACED = "https://app.reswell.app/storage/v1/object/public/listings/user/3-full.webp"
+const REPLACED_THUMB = REPLACED.replace("-full.", "-thumb.")
+
+function recipe(overrides: Partial<ListingPhotoToneRecipe> = {}): ListingPhotoToneRecipe {
+  return {
+    sourceUrl: ORIGINAL,
+    sourceThumbnailUrl: ORIGINAL_THUMB,
+    renditionUrl: BAKED,
+    renditionThumbnailUrl: BAKED_THUMB,
+    tone: { brightness: 20, highlights: 0, shadows: 10, contrast: 0 },
+    ...overrides,
+  }
+}
+
+describe("listingPhotoToneFromStops", () => {
+  it("treats a missing recipe as no adjustment", () => {
+    assert.deepEqual(listingPhotoToneFromStops(null), LISTING_PHOTO_TONE_IDENTITY)
+    assert.deepEqual(listingPhotoToneFromStops({}), LISTING_PHOTO_TONE_IDENTITY)
     assert.equal(isListingPhotoToneIdentity(null), true)
   })
 
   it("reads PostgREST numeric strings and clamps", () => {
     assert.deepEqual(
-      listingPhotoToneFromImageRow({
-        tone_brightness: "12",
-        tone_highlights: "-40",
-        tone_shadows: 200,
-        tone_contrast: "-3.2",
+      listingPhotoToneFromStops({
+        brightness: "12",
+        highlights: "-40",
+        shadows: 200,
+        contrast: "-3.2",
       }),
       { brightness: 12, highlights: -40, shadows: 100, contrast: -3 },
     )
+  })
+})
+
+describe("resolveListingPhotoToneEdit", () => {
+  it("bakes from the public photo when there is no recipe", () => {
+    assert.deepEqual(
+      resolveListingPhotoToneEdit({
+        publicUrl: ORIGINAL,
+        publicThumbnailUrl: ORIGINAL_THUMB,
+        recipe: null,
+      }),
+      {
+        sourceUrl: ORIGINAL,
+        sourceThumbnailUrl: ORIGINAL_THUMB,
+        tone: LISTING_PHOTO_TONE_IDENTITY,
+        renditionIsCurrent: false,
+        staleRenditionUrl: null,
+        staleRenditionThumbnailUrl: null,
+      },
+    )
+  })
+
+  it("keeps the original when the listing still points at the rendition", () => {
+    const edit = resolveListingPhotoToneEdit({
+      publicUrl: ` ${BAKED} `,
+      publicThumbnailUrl: BAKED_THUMB,
+      recipe: recipe({ sourceUrl: ` ${ORIGINAL} ` }),
+    })
+    assert.equal(edit.renditionIsCurrent, true)
+    assert.equal(edit.sourceUrl, ORIGINAL)
+    assert.equal(edit.tone.brightness, 20)
+    assert.equal(edit.staleRenditionUrl, null)
+  })
+
+  it("treats a replaced upload as a new original", () => {
+    const edit = resolveListingPhotoToneEdit({
+      publicUrl: REPLACED,
+      publicThumbnailUrl: REPLACED_THUMB,
+      recipe: recipe(),
+    })
+    assert.equal(edit.renditionIsCurrent, false)
+    assert.equal(edit.sourceUrl, REPLACED)
+    assert.deepEqual(edit.tone, LISTING_PHOTO_TONE_IDENTITY)
+    assert.equal(edit.staleRenditionUrl, BAKED)
   })
 })
 
@@ -114,15 +179,12 @@ describe("applyListingPhotoToneToPixels", () => {
 })
 
 describe("listingPhotoToneObjectsToRemove", () => {
-  const source = "https://app.reswell.app/storage/v1/object/public/listings/user/1-full.webp"
-  const baked = "https://app.reswell.app/storage/v1/object/public/listings/user/2-full.webp"
-
   it("keeps the original on the first bake", () => {
     assert.deepEqual(
       listingPhotoToneObjectsToRemove({
-        previousFullUrl: source,
-        previousThumbUrl: source.replace("-full.", "-thumb."),
-        sourceFullUrl: source,
+        previousFullUrl: ORIGINAL,
+        previousThumbUrl: ORIGINAL_THUMB,
+        sourceFullUrl: ORIGINAL,
       }),
       [],
     )
@@ -131,22 +193,120 @@ describe("listingPhotoToneObjectsToRemove", () => {
   it("removes the previous baked full, thumb, card, and film", () => {
     assert.deepEqual(
       listingPhotoToneObjectsToRemove({
-        previousFullUrl: baked,
-        previousThumbUrl: baked.replace("-full.", "-thumb."),
-        sourceFullUrl: source,
+        previousFullUrl: BAKED,
+        previousThumbUrl: BAKED_THUMB,
+        sourceFullUrl: ORIGINAL,
       }),
       [
-        baked,
-        baked.replace("-full.", "-thumb."),
-        baked.replace("-full.", "-card2."),
-        baked.replace("-full.", "-film2."),
+        BAKED,
+        BAKED.replace("-full.", "-thumb."),
+        BAKED.replace("-full.", "-card2."),
+        BAKED.replace("-full.", "-film2."),
       ],
     )
+  })
+
+  it("keeps a seller replacement that shares no path with the old rendition", () => {
+    const removed = listingPhotoToneObjectsToRemove({
+      previousFullUrl: BAKED,
+      previousThumbUrl: BAKED_THUMB,
+      sourceFullUrl: ORIGINAL,
+      keepUrls: [REPLACED, REPLACED_THUMB, ORIGINAL, ORIGINAL_THUMB],
+    })
+    assert.equal(removed.includes(REPLACED), false)
+    assert.equal(removed.includes(ORIGINAL), false)
+    assert.equal(removed.includes(BAKED), true)
+  })
+})
+
+describe("planListingPhotoToneSave", () => {
+  it("bakes the first copy from the upload and deletes nothing", () => {
+    const plan = planListingPhotoToneSave({
+      publicUrl: ORIGINAL,
+      publicThumbnailUrl: ORIGINAL_THUMB,
+      requested: { brightness: 15, highlights: 0, shadows: 0, contrast: 0 },
+      recipe: null,
+    })
+    assert.equal(plan.action, "bake")
+    if (plan.action !== "bake") return
+    assert.equal(plan.sourceUrl, ORIGINAL)
+    assert.deepEqual(plan.removeUrls, [])
+  })
+
+  it("rebakes from the original and drops the previous rendition", () => {
+    const plan = planListingPhotoToneSave({
+      publicUrl: BAKED,
+      publicThumbnailUrl: BAKED_THUMB,
+      requested: { brightness: 30, highlights: 0, shadows: 0, contrast: 0 },
+      recipe: recipe(),
+    })
+    assert.equal(plan.action, "bake")
+    if (plan.action !== "bake") return
+    assert.equal(plan.sourceUrl, ORIGINAL)
+    assert.equal(plan.removeUrls.includes(BAKED), true)
+    assert.equal(plan.removeUrls.includes(ORIGINAL), false)
+    assert.equal(plan.removeUrls.includes(ORIGINAL_THUMB), false)
+  })
+
+  it("skips a save that matches the current recipe", () => {
+    const plan = planListingPhotoToneSave({
+      publicUrl: BAKED,
+      publicThumbnailUrl: BAKED_THUMB,
+      requested: recipe().tone,
+      recipe: recipe(),
+    })
+    assert.deepEqual(plan, {
+      action: "skip",
+      url: BAKED,
+      thumbnailUrl: BAKED_THUMB,
+      sourceUrl: ORIGINAL,
+      tone: recipe().tone,
+    })
+  })
+
+  it("restores the original and drops the rendition when the sliders return to zero", () => {
+    const plan = planListingPhotoToneSave({
+      publicUrl: BAKED,
+      publicThumbnailUrl: BAKED_THUMB,
+      requested: LISTING_PHOTO_TONE_IDENTITY,
+      recipe: recipe(),
+    })
+    assert.equal(plan.action, "restore")
+    if (plan.action !== "restore") return
+    assert.equal(plan.sourceUrl, ORIGINAL)
+    assert.equal(plan.removeUrls.includes(BAKED), true)
+    assert.equal(plan.removeUrls.includes(ORIGINAL), false)
+  })
+
+  it("bakes a replaced photo from the new upload and drops the old rendition", () => {
+    const plan = planListingPhotoToneSave({
+      publicUrl: REPLACED,
+      publicThumbnailUrl: REPLACED_THUMB,
+      requested: { brightness: 8, highlights: 0, shadows: 0, contrast: 0 },
+      recipe: recipe(),
+    })
+    assert.equal(plan.action, "bake")
+    if (plan.action !== "bake") return
+    assert.equal(plan.sourceUrl, REPLACED)
+    assert.equal(plan.removeUrls.includes(BAKED), true)
+    assert.equal(plan.removeUrls.includes(REPLACED), false)
+    assert.equal(plan.removeUrls.includes(ORIGINAL), false)
+    assert.equal(plan.removeUrls.includes(ORIGINAL_THUMB), false)
+  })
+
+  it("does not point a replaced photo back at the older upload", () => {
+    const plan = planListingPhotoToneSave({
+      publicUrl: REPLACED,
+      publicThumbnailUrl: REPLACED_THUMB,
+      requested: LISTING_PHOTO_TONE_IDENTITY,
+      recipe: recipe(),
+    })
+    assert.equal(plan.action, "skip")
   })
 })
 
 describe("listingPhotoTone helpers", () => {
-  it("compares clamped stops and clears identity columns", () => {
+  it("compares clamped stops", () => {
     assert.equal(
       listingPhotoTonesEqual({ brightness: 1.2, highlights: 0, shadows: 0, contrast: 0 }, {
         brightness: 1,
@@ -156,13 +316,43 @@ describe("listingPhotoTone helpers", () => {
       }),
       true,
     )
-    assert.deepEqual(listingPhotoToneColumnValues(LISTING_PHOTO_TONE_IDENTITY), {
-      tone_brightness: null,
-      tone_highlights: null,
-      tone_shadows: null,
-      tone_contrast: null,
-    })
     assert.equal(clampListingPhotoTone({ brightness: 4 }).brightness, 4)
+  })
+
+  it("reads a recipe row and ignores an incomplete one", () => {
+    const parsed = listingPhotoToneRecipeFromRow({
+      source_url: ORIGINAL,
+      source_thumbnail_url: ORIGINAL_THUMB,
+      rendition_url: BAKED,
+      rendition_thumbnail_url: BAKED_THUMB,
+      brightness: "20",
+      highlights: 0,
+      shadows: "10",
+      contrast: 0,
+    })
+    assert.equal(parsed?.sourceUrl, ORIGINAL)
+    assert.equal(parsed?.tone.brightness, 20)
+    assert.equal(listingPhotoToneRecipeFromRow({ source_url: ORIGINAL }), null)
+  })
+
+  it("parses active recipes from the editor payload", () => {
+    const parsed = parseListingPhotoToneActiveRecipes({
+      data: {
+        images: [
+          { id: "img-1", sourceUrl: ` ${ORIGINAL} `, brightness: 12, highlights: 0, shadows: 0, contrast: 0 },
+          { id: "img-2", sourceUrl: ORIGINAL, brightness: 0, highlights: 0, shadows: 0, contrast: 0 },
+          { id: "", sourceUrl: ORIGINAL, brightness: 4, highlights: 0, shadows: 0, contrast: 0 },
+        ],
+      },
+    })
+    assert.deepEqual(parsed, [
+      {
+        id: "img-1",
+        sourceUrl: ORIGINAL,
+        tone: { brightness: 12, highlights: 0, shadows: 0, contrast: 0 },
+      },
+    ])
+    assert.deepEqual(parseListingPhotoToneActiveRecipes(null), [])
   })
 
   it("builds proxy-safe derivative paths", () => {
@@ -177,11 +367,4 @@ describe("listingPhotoTone helpers", () => {
     }
   })
 
-  it("prefers the stored source url", () => {
-    assert.equal(
-      listingPhotoToneSourceUrl({ url: "baked", tone_source_url: " original " }),
-      "original",
-    )
-    assert.equal(listingPhotoToneSourceUrl({ url: "current" }), "current")
-  })
 })

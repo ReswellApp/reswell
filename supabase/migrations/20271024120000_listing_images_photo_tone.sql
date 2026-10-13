@@ -1,48 +1,54 @@
--- Admin listing photo tone. tone_source_url keeps the unedited full object so
--- later saves rebase instead of stacking. Baked files replace url / thumbnail_url.
--- The listing_images trigger refreshes primary_* and tile_gallery_images.
+-- Non-destructive listing photo tone, in the Photos / Lightroom shape.
+-- The uploaded file stays the original. This table is the recipe. On save the
+-- server bakes a new full/thumb/card/film set and points listing_images at it.
+-- Revert deletes the recipe and the rendition, and points the listing back.
 
 ALTER TABLE public.listing_images
-  ADD COLUMN IF NOT EXISTS tone_source_url text,
-  ADD COLUMN IF NOT EXISTS tone_source_thumbnail_url text,
-  ADD COLUMN IF NOT EXISTS tone_brightness smallint,
-  ADD COLUMN IF NOT EXISTS tone_highlights smallint,
-  ADD COLUMN IF NOT EXISTS tone_shadows smallint,
-  ADD COLUMN IF NOT EXISTS tone_contrast smallint;
-
-COMMENT ON COLUMN public.listing_images.tone_source_url IS
-  'Unedited full listing photo. Tone saves rebase from this object.';
-COMMENT ON COLUMN public.listing_images.tone_source_thumbnail_url IS
-  'Thumbnail that belonged to tone_source_url. Restored when tone is cleared.';
-COMMENT ON COLUMN public.listing_images.tone_brightness IS
-  'Admin brightness stop, -100 to 100. NULL = unchanged.';
-COMMENT ON COLUMN public.listing_images.tone_highlights IS
-  'Admin highlights stop, -100 to 100. NULL = unchanged.';
-COMMENT ON COLUMN public.listing_images.tone_shadows IS
-  'Admin shadows stop, -100 to 100. NULL = unchanged.';
-COMMENT ON COLUMN public.listing_images.tone_contrast IS
-  'Admin contrast stop, -100 to 100. NULL = unchanged.';
-
-ALTER TABLE public.listing_images
-  DROP CONSTRAINT IF EXISTS listing_images_tone_brightness_range;
-ALTER TABLE public.listing_images
-  ADD CONSTRAINT listing_images_tone_brightness_range
-  CHECK (tone_brightness IS NULL OR tone_brightness BETWEEN -100 AND 100);
-
-ALTER TABLE public.listing_images
-  DROP CONSTRAINT IF EXISTS listing_images_tone_highlights_range;
-ALTER TABLE public.listing_images
-  ADD CONSTRAINT listing_images_tone_highlights_range
-  CHECK (tone_highlights IS NULL OR tone_highlights BETWEEN -100 AND 100);
-
-ALTER TABLE public.listing_images
-  DROP CONSTRAINT IF EXISTS listing_images_tone_shadows_range;
-ALTER TABLE public.listing_images
-  ADD CONSTRAINT listing_images_tone_shadows_range
-  CHECK (tone_shadows IS NULL OR tone_shadows BETWEEN -100 AND 100);
-
-ALTER TABLE public.listing_images
+  DROP CONSTRAINT IF EXISTS listing_images_tone_brightness_range,
+  DROP CONSTRAINT IF EXISTS listing_images_tone_highlights_range,
+  DROP CONSTRAINT IF EXISTS listing_images_tone_shadows_range,
   DROP CONSTRAINT IF EXISTS listing_images_tone_contrast_range;
+
 ALTER TABLE public.listing_images
-  ADD CONSTRAINT listing_images_tone_contrast_range
-  CHECK (tone_contrast IS NULL OR tone_contrast BETWEEN -100 AND 100);
+  DROP COLUMN IF EXISTS tone_source_url,
+  DROP COLUMN IF EXISTS tone_source_thumbnail_url,
+  DROP COLUMN IF EXISTS tone_brightness,
+  DROP COLUMN IF EXISTS tone_highlights,
+  DROP COLUMN IF EXISTS tone_shadows,
+  DROP COLUMN IF EXISTS tone_contrast;
+
+CREATE TABLE IF NOT EXISTS public.listing_image_adjustments (
+  image_id uuid PRIMARY KEY REFERENCES public.listing_images (id) ON DELETE CASCADE,
+  listing_id uuid NOT NULL REFERENCES public.listings (id) ON DELETE CASCADE,
+  source_url text NOT NULL,
+  source_thumbnail_url text,
+  rendition_url text NOT NULL,
+  rendition_thumbnail_url text,
+  brightness smallint NOT NULL DEFAULT 0,
+  highlights smallint NOT NULL DEFAULT 0,
+  shadows smallint NOT NULL DEFAULT 0,
+  contrast smallint NOT NULL DEFAULT 0,
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT listing_image_adjustments_brightness_range
+    CHECK (brightness BETWEEN -100 AND 100),
+  CONSTRAINT listing_image_adjustments_highlights_range
+    CHECK (highlights BETWEEN -100 AND 100),
+  CONSTRAINT listing_image_adjustments_shadows_range
+    CHECK (shadows BETWEEN -100 AND 100),
+  CONSTRAINT listing_image_adjustments_contrast_range
+    CHECK (contrast BETWEEN -100 AND 100),
+  CONSTRAINT listing_image_adjustments_has_change
+    CHECK (brightness <> 0 OR highlights <> 0 OR shadows <> 0 OR contrast <> 0)
+);
+
+CREATE INDEX IF NOT EXISTS listing_image_adjustments_listing_id_idx
+  ON public.listing_image_adjustments (listing_id);
+
+COMMENT ON TABLE public.listing_image_adjustments IS
+  'Tone recipe for one listing photo. source_url is the untouched upload. rendition_url is the baked copy listing_images.url points at while the recipe is current.';
+COMMENT ON COLUMN public.listing_image_adjustments.source_url IS
+  'Original full listing photo. Never overwritten.';
+COMMENT ON COLUMN public.listing_image_adjustments.rendition_url IS
+  'Baked full photo buyers are served. A new URL on every save.';
+
+ALTER TABLE public.listing_image_adjustments ENABLE ROW LEVEL SECURITY;

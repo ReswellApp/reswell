@@ -2,9 +2,13 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { expirePublicListingSurfacesAfterEdit } from "@/lib/cache/revalidate-listing-after-edit"
 import { fetchProfileIsAdmin } from "@/lib/db/profileAdmin"
 import {
+  deleteListingPhotoToneAdjustment,
+  fetchListingPhotoToneAdjustments,
   fetchListingPhotoToneImages,
   fetchListingPhotoToneListing,
-  updateListingPhotoToneImage,
+  updateListingPhotoToneImageUrls,
+  upsertListingPhotoToneAdjustment,
+  type ListingPhotoToneAdjustmentRow,
   type ListingPhotoToneImageRow,
   type ListingPhotoToneListingRow,
 } from "@/lib/db/listing-photo-tone"
@@ -15,13 +19,11 @@ import { removeListingImageFilesFromStorage } from "@/lib/services/listingStorag
 import { createServiceRoleClient } from "@/lib/supabase/service-role"
 import { listingObjectPublicUrl } from "@/lib/supabase/storage-upload-xhr"
 import {
-  isListingPhotoToneIdentity,
-  listingPhotoToneObjectsToRemove,
-  listingPhotoToneSourceUrl,
-  listingPhotoTonesEqual,
-  listingPhotoToneFromImageRow,
+  listingPhotoToneRecipeFromRow,
   listingPhotoToneStoragePaths,
+  planListingPhotoToneSave,
   type ListingPhotoTone,
+  type ListingPhotoToneRecipe,
   type ListingPhotoToneSavedImage,
 } from "@/lib/utils/listing-photo-tone"
 
@@ -38,8 +40,21 @@ class ListingPhotoToneError extends Error {
 
 export type { ListingPhotoToneSavedImage }
 
+export type ListingPhotoToneActiveRecipe = {
+  id: string
+  sourceUrl: string
+  brightness: number
+  highlights: number
+  shadows: number
+  contrast: number
+}
+
 export type SaveListingPhotoTonesResult =
   | { ok: true; images: ListingPhotoToneSavedImage[] }
+  | { ok: false; status: number; error: string }
+
+export type ListListingPhotoToneRecipesResult =
+  | { ok: true; images: ListingPhotoToneActiveRecipe[] }
   | { ok: false; status: number; error: string }
 
 type ToneWrite = ListingPhotoTone & { id: string }
@@ -63,9 +78,8 @@ function savedFromRow(
   }
 }
 
-function sourceThumbnailUrl(row: ListingPhotoToneImageRow): string | null {
-  if (row.tone_source_url?.trim()) return row.tone_source_thumbnail_url?.trim() || null
-  return row.thumbnail_url?.trim() || null
+function recipeFromRow(row: ListingPhotoToneAdjustmentRow): ListingPhotoToneRecipe | null {
+  return listingPhotoToneRecipeFromRow(row)
 }
 
 async function downloadListingPhoto(
@@ -102,16 +116,70 @@ async function uploadWebp(
   if (error) throw new Error(error.message || "Upload failed")
 }
 
+async function removeUploaded(
+  supabase: SupabaseClient,
+  supabaseUrl: string,
+  paths: string[],
+): Promise<void> {
+  if (paths.length === 0) return
+  await removeListingImageFilesFromStorage(
+    supabase,
+    paths.map((path) => listingObjectPublicUrl(supabaseUrl, path)),
+  )
+}
+
+/**
+ * If the listing row never moved, put the recipe back so the next edit still
+ * bakes from the original instead of the previous rendition.
+ */
+async function rollbackRecipe(
+  supabase: SupabaseClient,
+  listingId: string,
+  imageId: string,
+  previous: ListingPhotoToneRecipe | null,
+): Promise<void> {
+  if (!previous) {
+    const deleted = await deleteListingPhotoToneAdjustment(supabase, listingId, imageId)
+    if (!deleted.ok) {
+      console.error("[listingPhotoTone] recipe rollback failed", {
+        listingId,
+        imageId,
+        message: deleted.message,
+      })
+    }
+    return
+  }
+
+  const restored = await upsertListingPhotoToneAdjustment(supabase, {
+    imageId,
+    listingId,
+    sourceUrl: previous.sourceUrl,
+    sourceThumbnailUrl: previous.sourceThumbnailUrl,
+    renditionUrl: previous.renditionUrl,
+    renditionThumbnailUrl: previous.renditionThumbnailUrl,
+    tone: previous.tone,
+  })
+  if (!restored.ok) {
+    console.error("[listingPhotoTone] recipe rollback failed", {
+      listingId,
+      imageId,
+      message: restored.message,
+    })
+  }
+}
+
 async function bakeListingPhotoTone(input: {
   supabase: SupabaseClient
   listing: ListingPhotoToneListingRow
   row: ListingPhotoToneImageRow
+  previous: ListingPhotoToneRecipe | null
+  sourceUrl: string
+  sourceThumbnailUrl: string | null
   tone: ListingPhotoTone
+  removeUrls: string[]
   stamp: string
 }): Promise<ListingPhotoToneSavedImage> {
-  const sourceUrl = listingPhotoToneSourceUrl(input.row)
-  const sourceThumb = sourceThumbnailUrl(input.row)
-  const downloaded = await downloadListingPhoto(input.supabase, sourceUrl)
+  const downloaded = await downloadListingPhoto(input.supabase, input.sourceUrl)
   if (!downloaded.ok) throw new ListingPhotoToneError(400, downloaded.error)
 
   const derivatives = await renderListingPhotoToneDerivatives(downloaded.bytes, input.tone)
@@ -133,76 +201,152 @@ async function bakeListingPhotoTone(input: {
       uploaded.push(file.path)
     }
   } catch (error) {
-    await removeListingImageFilesFromStorage(
-      input.supabase,
-      uploaded.map((path) => listingObjectPublicUrl(supabaseUrl, path)),
-    )
+    await removeUploaded(input.supabase, supabaseUrl, uploaded)
     throw error
   }
 
   const fullUrl = listingObjectPublicUrl(supabaseUrl, paths.full)
   const thumbUrl = listingObjectPublicUrl(supabaseUrl, paths.thumb)
-  const written = await updateListingPhotoToneImage(input.supabase, input.listing.id, {
+  const writtenRecipe = await upsertListingPhotoToneAdjustment(input.supabase, {
+    imageId: input.row.id,
+    listingId: input.listing.id,
+    sourceUrl: input.sourceUrl,
+    sourceThumbnailUrl: input.sourceThumbnailUrl,
+    renditionUrl: fullUrl,
+    renditionThumbnailUrl: thumbUrl,
+    tone: input.tone,
+  })
+  if (!writtenRecipe.ok) {
+    await removeUploaded(input.supabase, supabaseUrl, uploaded)
+    throw new Error(writtenRecipe.message)
+  }
+
+  const written = await updateListingPhotoToneImageUrls(input.supabase, input.listing.id, {
     id: input.row.id,
     url: fullUrl,
     thumbnailUrl: thumbUrl,
-    sourceUrl,
-    sourceThumbnailUrl: sourceThumb,
-    tone: input.tone,
   })
   if (!written.ok) {
-    await removeListingImageFilesFromStorage(
-      input.supabase,
-      uploaded.map((path) => listingObjectPublicUrl(supabaseUrl, path)),
-    )
+    await rollbackRecipe(input.supabase, input.listing.id, input.row.id, input.previous)
+    await removeUploaded(input.supabase, supabaseUrl, uploaded)
     throw new Error(written.message)
   }
 
-  await removeListingImageFilesFromStorage(
-    input.supabase,
-    listingPhotoToneObjectsToRemove({
-      previousFullUrl: input.row.url,
-      previousThumbUrl: input.row.thumbnail_url,
-      sourceFullUrl: sourceUrl,
-    }),
-  )
-
-  return savedFromRow(input.row, input.tone, fullUrl, thumbUrl, sourceUrl)
+  await removeListingImageFilesFromStorage(input.supabase, input.removeUrls)
+  return savedFromRow(input.row, input.tone, fullUrl, thumbUrl, input.sourceUrl)
 }
 
 async function restoreListingPhotoTone(input: {
   supabase: SupabaseClient
   listing: ListingPhotoToneListingRow
   row: ListingPhotoToneImageRow
-  tone: ListingPhotoTone
+  sourceUrl: string
+  sourceThumbnailUrl: string | null
+  removeUrls: string[]
 }): Promise<ListingPhotoToneSavedImage> {
-  const sourceUrl = input.row.tone_source_url?.trim() || input.row.url
-  const sourceThumb = sourceThumbnailUrl(input.row)
-  const written = await updateListingPhotoToneImage(input.supabase, input.listing.id, {
+  const written = await updateListingPhotoToneImageUrls(input.supabase, input.listing.id, {
     id: input.row.id,
-    url: sourceUrl,
-    thumbnailUrl: sourceThumb,
-    sourceUrl: input.row.tone_source_url?.trim() || null,
-    sourceThumbnailUrl: input.row.tone_source_url?.trim() ? sourceThumb : null,
-    tone: input.tone,
+    url: input.sourceUrl,
+    thumbnailUrl: input.sourceThumbnailUrl,
   })
   if (!written.ok) throw new Error(written.message)
 
-  await removeListingImageFilesFromStorage(
+  await removeListingImageFilesFromStorage(input.supabase, input.removeUrls)
+  const deleted = await deleteListingPhotoToneAdjustment(
     input.supabase,
-    listingPhotoToneObjectsToRemove({
-      previousFullUrl: input.row.url,
-      previousThumbUrl: input.row.thumbnail_url,
-      sourceFullUrl: sourceUrl,
-    }),
+    input.listing.id,
+    input.row.id,
   )
+  if (!deleted.ok) throw new Error(deleted.message)
 
-  return savedFromRow(input.row, input.tone, sourceUrl, sourceThumb, input.row.tone_source_url?.trim() || null)
+  return savedFromRow(
+    input.row,
+    { brightness: 0, highlights: 0, shadows: 0, contrast: 0 },
+    input.sourceUrl,
+    input.sourceThumbnailUrl,
+    input.sourceUrl,
+  )
+}
+
+async function requireAdminListing(
+  userSupabase: SupabaseClient,
+  listingId: string,
+  actorUserId: string,
+): Promise<
+  | { ok: true; service: SupabaseClient; listing: ListingPhotoToneListingRow }
+  | { ok: false; status: number; error: string }
+> {
+  const isAdmin = await fetchProfileIsAdmin(userSupabase, actorUserId)
+  if (!isAdmin) return { ok: false, status: 403, error: "Admins only" }
+
+  const service = createServiceRoleClient()
+  const listing = await fetchListingPhotoToneListing(service, listingId)
+  if (!listing) return { ok: false, status: 404, error: "Listing not found" }
+  return { ok: true, service, listing }
 }
 
 /**
- * Bake admin tone into the listing's stored photos and the card, film, and
- * thumb derivatives `/l` serves. Rebases from the unedited source. Admins only.
+ * Recipes whose baked copy is still the photo the listing serves.
+ * A replaced upload is omitted so the editor starts from that new original.
+ */
+export async function listListingPhotoToneRecipes(
+  userSupabase: SupabaseClient,
+  params: { listingId: string; actorUserId: string },
+): Promise<ListListingPhotoToneRecipesResult> {
+  const listingId = params.listingId.trim()
+  if (!listingId) return { ok: false, status: 400, error: "Missing listing id" }
+
+  const access = await requireAdminListing(userSupabase, listingId, params.actorUserId)
+  if (!access.ok) return access
+
+  const loaded = await fetchListingPhotoToneAdjustments(access.service, listingId)
+  if (loaded.error) {
+    console.error("[listingPhotoTone] load recipes failed", { listingId, message: loaded.error })
+    return { ok: false, status: 500, error: "Could not load photo adjustments" }
+  }
+  if (loaded.data.length === 0) return { ok: true, images: [] }
+
+  const images = await fetchListingPhotoToneImages(
+    access.service,
+    listingId,
+    loaded.data.map((row) => row.image_id),
+  )
+  if (images.error) {
+    console.error("[listingPhotoTone] load photos failed", { listingId, message: images.error })
+    return { ok: false, status: 500, error: "Could not load photo adjustments" }
+  }
+
+  const byId = new Map(images.data.map((row) => [row.id, row]))
+  const active: ListingPhotoToneActiveRecipe[] = []
+  for (const row of loaded.data) {
+    const image = byId.get(row.image_id)
+    const recipe = recipeFromRow(row)
+    if (!image || !recipe) continue
+    const plan = planListingPhotoToneSave({
+      publicUrl: image.url,
+      publicThumbnailUrl: image.thumbnail_url,
+      requested: recipe.tone,
+      recipe,
+    })
+    if (plan.action !== "skip" || !plan.sourceUrl) continue
+    active.push({
+      id: row.image_id,
+      sourceUrl: plan.sourceUrl,
+      brightness: recipe.tone.brightness,
+      highlights: recipe.tone.highlights,
+      shadows: recipe.tone.shadows,
+      contrast: recipe.tone.contrast,
+    })
+  }
+
+  return { ok: true, images: active }
+}
+
+/**
+ * Store the sliders as a recipe and bake a new full, thumb, card, and film
+ * copy. The upload stays put. Buyers, email, and catalog feeds follow
+ * `listing_images`, which points at the new URLs. Revert drops the recipe
+ * and the copy. Admins only.
  */
 export async function saveListingPhotoTones(
   userSupabase: SupabaseClient,
@@ -215,26 +359,31 @@ export async function saveListingPhotoTones(
   const listingId = params.listingId.trim()
   if (!listingId) return { ok: false, status: 400, error: "Missing listing id" }
 
-  const isAdmin = await fetchProfileIsAdmin(userSupabase, params.actorUserId)
-  if (!isAdmin) return { ok: false, status: 403, error: "Admins only" }
+  const access = await requireAdminListing(userSupabase, listingId, params.actorUserId)
+  if (!access.ok) return access
 
-  const service = createServiceRoleClient()
-  const listing = await fetchListingPhotoToneListing(service, listingId)
-  if (!listing) return { ok: false, status: 404, error: "Listing not found" }
-
-  const loaded = await fetchListingPhotoToneImages(
-    service,
-    listingId,
-    params.images.map((image) => image.id),
-  )
-  if (loaded.error) {
-    console.error("[listingPhotoTone] load failed", { listingId, message: loaded.error })
+  const imageIds = params.images.map((image) => image.id)
+  const [loaded, adjustments] = await Promise.all([
+    fetchListingPhotoToneImages(access.service, listingId, imageIds),
+    fetchListingPhotoToneAdjustments(access.service, listingId, imageIds),
+  ])
+  if (loaded.error || adjustments.error) {
+    console.error("[listingPhotoTone] load failed", {
+      listingId,
+      message: loaded.error ?? adjustments.error,
+    })
     return { ok: false, status: 500, error: "Could not save photo adjustments" }
   }
 
   const byId = new Map(loaded.data.map((row) => [row.id, row]))
   if (params.images.some((image) => !byId.has(image.id))) {
     return { ok: false, status: 400, error: "Photo is not on this listing" }
+  }
+
+  const recipes = new Map<string, ListingPhotoToneRecipe>()
+  for (const row of adjustments.data) {
+    const recipe = recipeFromRow(row)
+    if (recipe) recipes.set(row.image_id, recipe)
   }
 
   const saved: ListingPhotoToneSavedImage[] = []
@@ -246,35 +395,46 @@ export async function saveListingPhotoTones(
       if (!requested) continue
       const row = byId.get(requested.id)
       if (!row) continue
-      const tone = {
-        brightness: requested.brightness,
-        highlights: requested.highlights,
-        shadows: requested.shadows,
-        contrast: requested.contrast,
+      const previous = recipes.get(row.id) ?? null
+      const plan = planListingPhotoToneSave({
+        publicUrl: row.url,
+        publicThumbnailUrl: row.thumbnail_url,
+        requested,
+        recipe: previous,
+      })
+
+      if (plan.action === "skip") {
+        saved.push(savedFromRow(row, plan.tone, plan.url, plan.thumbnailUrl, plan.sourceUrl))
+        continue
       }
-      if (listingPhotoTonesEqual(tone, listingPhotoToneFromImageRow(row))) {
+
+      if (plan.action === "restore") {
         saved.push(
-          savedFromRow(
+          await restoreListingPhotoTone({
+            supabase: access.service,
+            listing: access.listing,
             row,
-            listingPhotoToneFromImageRow(row),
-            row.url,
-            row.thumbnail_url,
-            row.tone_source_url,
-          ),
+            sourceUrl: plan.sourceUrl,
+            sourceThumbnailUrl: plan.sourceThumbnailUrl,
+            removeUrls: plan.removeUrls,
+          }),
         )
         continue
       }
 
-      const next = isListingPhotoToneIdentity(tone)
-        ? await restoreListingPhotoTone({ supabase: service, listing, row, tone })
-        : await bakeListingPhotoTone({
-            supabase: service,
-            listing,
-            row,
-            tone,
-            stamp: `${stamp}${index}`,
-          })
-      saved.push(next)
+      saved.push(
+        await bakeListingPhotoTone({
+          supabase: access.service,
+          listing: access.listing,
+          row,
+          previous,
+          sourceUrl: plan.sourceUrl,
+          sourceThumbnailUrl: plan.sourceThumbnailUrl,
+          tone: plan.tone,
+          removeUrls: plan.removeUrls,
+          stamp: `${stamp}${index}`,
+        }),
+      )
     }
   } catch (error) {
     if (error instanceof ListingPhotoToneError) {
@@ -288,6 +448,6 @@ export async function saveListingPhotoTones(
     return { ok: false, status: 500, error: "Could not save photo adjustments" }
   }
 
-  expirePublicListingSurfacesAfterEdit(listingId, listing.slug)
+  expirePublicListingSurfacesAfterEdit(listingId, access.listing.slug)
   return { ok: true, images: saved }
 }

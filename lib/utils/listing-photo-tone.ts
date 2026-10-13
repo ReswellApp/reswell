@@ -25,6 +25,7 @@ export type ListingPhotoToneSavedImage = {
   id: string
   url: string
   thumbnailUrl: string | null
+  /** Untouched upload. Null when this photo has no current recipe. */
   sourceUrl: string | null
   brightness: number
   highlights: number
@@ -32,13 +33,49 @@ export type ListingPhotoToneSavedImage = {
   contrast: number
 }
 
-export type ListingPhotoToneImageRow = {
-  tone_brightness?: unknown
-  tone_highlights?: unknown
-  tone_shadows?: unknown
-  tone_contrast?: unknown
-  tone_source_url?: unknown
+/** Sliders stored beside a listing photo. The upload itself is never rewritten. */
+export type ListingPhotoToneRecipe = {
+  sourceUrl: string
+  sourceThumbnailUrl: string | null
+  renditionUrl: string
+  renditionThumbnailUrl: string | null
+  tone: ListingPhotoTone
 }
+
+/**
+ * What an edit should bake from. A recipe counts only while `listing_images.url`
+ * is still the rendition it produced. A replaced photo is a new original.
+ */
+export type ListingPhotoToneEdit = {
+  sourceUrl: string
+  sourceThumbnailUrl: string | null
+  tone: ListingPhotoTone
+  renditionIsCurrent: boolean
+  staleRenditionUrl: string | null
+  staleRenditionThumbnailUrl: string | null
+}
+
+export type ListingPhotoToneSavePlan =
+  | {
+      action: "skip"
+      url: string
+      thumbnailUrl: string | null
+      sourceUrl: string | null
+      tone: ListingPhotoTone
+    }
+  | {
+      action: "restore"
+      sourceUrl: string
+      sourceThumbnailUrl: string | null
+      removeUrls: string[]
+    }
+  | {
+      action: "bake"
+      sourceUrl: string
+      sourceThumbnailUrl: string | null
+      tone: ListingPhotoTone
+      removeUrls: string[]
+    }
 
 const BRIGHTNESS_GAIN = 0.55
 const CONTRAST_GAIN = 0.65
@@ -112,25 +149,217 @@ export function listingPhotoTonesEqual(
   )
 }
 
-export function listingPhotoToneFromImageRow(
-  row: ListingPhotoToneImageRow | null | undefined,
+export function listingPhotoToneFromStops(
+  row:
+    | {
+        brightness?: unknown
+        highlights?: unknown
+        shadows?: unknown
+        contrast?: unknown
+      }
+    | null
+    | undefined,
 ): ListingPhotoTone {
   if (!row) return { ...LISTING_PHOTO_TONE_IDENTITY }
   return clampListingPhotoTone({
-    brightness: readStop(row.tone_brightness),
-    highlights: readStop(row.tone_highlights),
-    shadows: readStop(row.tone_shadows),
-    contrast: readStop(row.tone_contrast),
+    brightness: readStop(row.brightness),
+    highlights: readStop(row.highlights),
+    shadows: readStop(row.shadows),
+    contrast: readStop(row.contrast),
   })
 }
 
-/** Unedited full object. Falls back to the current listing photo URL. */
-export function listingPhotoToneSourceUrl(
-  row: { url?: string | null; tone_source_url?: unknown } | null | undefined,
-): string {
-  const source = typeof row?.tone_source_url === "string" ? row.tone_source_url.trim() : ""
-  if (source) return source
-  return row?.url?.trim() ?? ""
+function trimmedUrl(value: string | null | undefined): string {
+  return value?.trim() ?? ""
+}
+
+function trimmedUrlOrNull(value: string | null | undefined): string | null {
+  const next = trimmedUrl(value)
+  return next || null
+}
+
+/** A recipe row with a real source and rendition. Incomplete rows are ignored. */
+export function listingPhotoToneRecipeFromRow(row: {
+  source_url?: unknown
+  source_thumbnail_url?: unknown
+  rendition_url?: unknown
+  rendition_thumbnail_url?: unknown
+  brightness?: unknown
+  highlights?: unknown
+  shadows?: unknown
+  contrast?: unknown
+} | null | undefined): ListingPhotoToneRecipe | null {
+  const sourceUrl = typeof row?.source_url === "string" ? row.source_url.trim() : ""
+  const renditionUrl = typeof row?.rendition_url === "string" ? row.rendition_url.trim() : ""
+  if (!sourceUrl || !renditionUrl) return null
+  const sourceThumbnailUrl =
+    typeof row?.source_thumbnail_url === "string" ? trimmedUrlOrNull(row.source_thumbnail_url) : null
+  const renditionThumbnailUrl =
+    typeof row?.rendition_thumbnail_url === "string"
+      ? trimmedUrlOrNull(row.rendition_thumbnail_url)
+      : null
+  return {
+    sourceUrl,
+    sourceThumbnailUrl,
+    renditionUrl,
+    renditionThumbnailUrl,
+    tone: listingPhotoToneFromStops(row),
+  }
+}
+
+export function resolveListingPhotoToneEdit(input: {
+  publicUrl: string | null | undefined
+  publicThumbnailUrl: string | null | undefined
+  recipe: ListingPhotoToneRecipe | null | undefined
+}): ListingPhotoToneEdit {
+  const publicUrl = trimmedUrl(input.publicUrl)
+  const publicThumbnailUrl = trimmedUrlOrNull(input.publicThumbnailUrl)
+  const recipe = input.recipe ?? null
+  const renditionUrl = trimmedUrl(recipe?.renditionUrl)
+  const sourceUrl = trimmedUrl(recipe?.sourceUrl)
+  const renditionIsCurrent = Boolean(recipe && renditionUrl && sourceUrl && renditionUrl === publicUrl)
+
+  if (renditionIsCurrent && recipe) {
+    return {
+      sourceUrl,
+      sourceThumbnailUrl: trimmedUrlOrNull(recipe.sourceThumbnailUrl),
+      tone: clampListingPhotoTone(recipe.tone),
+      renditionIsCurrent: true,
+      staleRenditionUrl: null,
+      staleRenditionThumbnailUrl: null,
+    }
+  }
+
+  const stale = Boolean(recipe && renditionUrl && renditionUrl !== publicUrl)
+  return {
+    sourceUrl: publicUrl,
+    sourceThumbnailUrl: publicThumbnailUrl,
+    tone: { ...LISTING_PHOTO_TONE_IDENTITY },
+    renditionIsCurrent: false,
+    staleRenditionUrl: stale ? renditionUrl : null,
+    staleRenditionThumbnailUrl: stale ? trimmedUrlOrNull(recipe?.renditionThumbnailUrl) : null,
+  }
+}
+
+function renditionCopiesToRemove(input: {
+  publicUrl: string
+  publicThumbnailUrl: string | null
+  edit: ListingPhotoToneEdit
+  recipe: ListingPhotoToneRecipe | null
+}): string[] {
+  if (input.edit.renditionIsCurrent) {
+    return listingPhotoToneObjectsToRemove({
+      previousFullUrl: input.publicUrl,
+      previousThumbUrl: input.publicThumbnailUrl,
+      sourceFullUrl: input.edit.sourceUrl,
+      keepUrls: [input.edit.sourceUrl, input.edit.sourceThumbnailUrl],
+    })
+  }
+  if (!input.edit.staleRenditionUrl || !input.recipe) return []
+  return listingPhotoToneObjectsToRemove({
+    previousFullUrl: input.edit.staleRenditionUrl,
+    previousThumbUrl: input.edit.staleRenditionThumbnailUrl,
+    sourceFullUrl: input.recipe.sourceUrl,
+    keepUrls: [
+      input.publicUrl,
+      input.publicThumbnailUrl,
+      input.recipe.sourceUrl,
+      input.recipe.sourceThumbnailUrl,
+    ],
+  })
+}
+
+/**
+ * Skip when the stored recipe already matches. Restore when the sliders return
+ * to zero on the current rendition. Bake from the untouched source otherwise.
+ * A photo the seller replaced is a new original: identity does not point the
+ * listing back at the older upload.
+ */
+export function planListingPhotoToneSave(input: {
+  publicUrl: string | null | undefined
+  publicThumbnailUrl: string | null | undefined
+  requested: Partial<ListingPhotoTone> | null | undefined
+  recipe: ListingPhotoToneRecipe | null | undefined
+}): ListingPhotoToneSavePlan {
+  const publicUrl = trimmedUrl(input.publicUrl)
+  const publicThumbnailUrl = trimmedUrlOrNull(input.publicThumbnailUrl)
+  const requested = clampListingPhotoTone(input.requested)
+  const recipe = input.recipe ?? null
+  const edit = resolveListingPhotoToneEdit({
+    publicUrl,
+    publicThumbnailUrl,
+    recipe,
+  })
+
+  if (listingPhotoTonesEqual(requested, edit.tone)) {
+    return {
+      action: "skip",
+      url: publicUrl,
+      thumbnailUrl: publicThumbnailUrl,
+      sourceUrl: edit.renditionIsCurrent ? edit.sourceUrl : null,
+      tone: edit.tone,
+    }
+  }
+
+  if (isListingPhotoToneIdentity(requested)) {
+    return {
+      action: "restore",
+      sourceUrl: edit.sourceUrl,
+      sourceThumbnailUrl: edit.sourceThumbnailUrl,
+      removeUrls: listingPhotoToneObjectsToRemove({
+        previousFullUrl: publicUrl,
+        previousThumbUrl: publicThumbnailUrl,
+        sourceFullUrl: edit.sourceUrl,
+        keepUrls: [edit.sourceUrl, edit.sourceThumbnailUrl],
+      }),
+    }
+  }
+
+  return {
+    action: "bake",
+    sourceUrl: edit.sourceUrl,
+    sourceThumbnailUrl: edit.sourceThumbnailUrl,
+    tone: requested,
+    removeUrls: renditionCopiesToRemove({
+      publicUrl,
+      publicThumbnailUrl,
+      edit,
+      recipe,
+    }),
+  }
+}
+
+/** Active recipes from `GET /api/listings/:id/photo-tone`. Drops incomplete rows. */
+export function parseListingPhotoToneActiveRecipes(body: unknown): Array<{
+  id: string
+  sourceUrl: string
+  tone: ListingPhotoTone
+}> {
+  if (!body || typeof body !== "object") return []
+  const data = (body as { data?: unknown }).data
+  if (!data || typeof data !== "object") return []
+  const images = (data as { images?: unknown }).images
+  if (!Array.isArray(images)) return []
+
+  const recipes: Array<{ id: string; sourceUrl: string; tone: ListingPhotoTone }> = []
+  for (const row of images) {
+    if (!row || typeof row !== "object") continue
+    const record = row as {
+      id?: unknown
+      sourceUrl?: unknown
+      brightness?: unknown
+      highlights?: unknown
+      shadows?: unknown
+      contrast?: unknown
+    }
+    const id = typeof record.id === "string" ? record.id.trim() : ""
+    const sourceUrl = typeof record.sourceUrl === "string" ? record.sourceUrl.trim() : ""
+    if (!id || !sourceUrl) continue
+    const tone = listingPhotoToneFromStops(record)
+    if (isListingPhotoToneIdentity(tone)) continue
+    recipes.push({ id, sourceUrl, tone })
+  }
+  return recipes
 }
 
 function channelByte(value: number): number {
@@ -212,6 +441,8 @@ export function listingPhotoToneObjectsToRemove(input: {
   previousFullUrl: string | null | undefined
   previousThumbUrl: string | null | undefined
   sourceFullUrl: string | null | undefined
+  /** Public files that must survive, including a seller's replacement photo. */
+  keepUrls?: ReadonlyArray<string | null | undefined>
 }): string[] {
   const previous = input.previousFullUrl?.trim() ?? ""
   const source = input.sourceFullUrl?.trim() ?? ""
@@ -228,7 +459,13 @@ export function listingPhotoToneObjectsToRemove(input: {
   const thumb = input.previousThumbUrl?.trim() ?? ""
   if (thumb && thumb !== source) urls.push(thumb)
 
-  return [...new Set(urls)]
+  const keep = new Set<string>()
+  if (source) keep.add(source)
+  for (const url of input.keepUrls ?? []) {
+    const next = url?.trim() ?? ""
+    if (next) keep.add(next)
+  }
+  return [...new Set(urls)].filter((url) => !keep.has(url))
 }
 
 /** Storage keys for a baked listing photo. Names match the `/media/listings` proxy. */
@@ -246,18 +483,3 @@ export function listingPhotoToneStoragePaths(
   }
 }
 
-/** Columns written for a tone. Identity clears the stops. */
-export function listingPhotoToneColumnValues(tone: ListingPhotoTone): {
-  tone_brightness: number | null
-  tone_highlights: number | null
-  tone_shadows: number | null
-  tone_contrast: number | null
-} {
-  const next = clampListingPhotoTone(tone)
-  return {
-    tone_brightness: next.brightness === 0 ? null : next.brightness,
-    tone_highlights: next.highlights === 0 ? null : next.highlights,
-    tone_shadows: next.shadows === 0 ? null : next.shadows,
-    tone_contrast: next.contrast === 0 ? null : next.contrast,
-  }
-}

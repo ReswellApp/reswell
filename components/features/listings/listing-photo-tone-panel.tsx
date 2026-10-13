@@ -26,7 +26,7 @@ export function ListingPhotoTonePanel({ tone, disabled, onChange }: ListingPhoto
   return (
     <div className="space-y-3">
       <p className="text-center text-[12px] font-medium uppercase tracking-[0.14em] text-white/45">
-        Admin · updates the listing photos
+        Admin · saved as a copy. The original stays.
       </p>
       {STOPS.map((stop) => {
         const value = tone[stop.key]
