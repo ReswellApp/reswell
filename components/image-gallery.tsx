@@ -36,6 +36,7 @@ import {
   listingPdpCropObjectPosition,
   type ListingPdpCrop,
 } from "@/lib/utils/listing-pdp-crop"
+import type { ListingPhotoToneSavedImage } from "@/lib/utils/listing-photo-tone"
 import { useListingGallerySwipe } from "@/components/features/listings/hooks/use-passive-gallery-swipe"
 import { ListingImageCarouselNavButton } from "@/components/features/listings/listing-image-carousel-nav-button"
 import { ListingPdpVideo } from "@/components/features/listings/listing-pdp-video"
@@ -61,6 +62,11 @@ interface ImageGalleryProps {
     pdp_crop_zoom?: number | null
     pdp_crop_x?: number | null
     pdp_crop_y?: number | null
+    tone_source_url?: string | null
+    tone_brightness?: number | null
+    tone_highlights?: number | null
+    tone_shadows?: number | null
+    tone_contrast?: number | null
   }>
   title: string
   /** Optional listing video — rendered as the last carousel slide, not above the photos. */
@@ -98,7 +104,7 @@ function warmHeroSlideNeighbors(urls: string[], activeIndex: number): void {
 }
 
 export function ImageGallery({
-  images,
+  images: imageRows,
   title,
   video,
   sold,
@@ -114,6 +120,17 @@ export function ImageGallery({
   /** Natural width/height per slide — mobile hero uses this instead of a fixed crop frame. */
   const [imageAspectRatios, setImageAspectRatios] = useState<Record<number, number>>({})
   const [cropOverrides, setCropOverrides] = useState<Record<string, ListingPdpCrop | null>>({})
+  const [photoOverrides, setPhotoOverrides] = useState<
+    Record<string, Partial<ImageGalleryProps["images"][number]>>
+  >({})
+  const images = useMemo(
+    () =>
+      imageRows.map((image) => {
+        const override = photoOverrides[image.id]
+        return override ? { ...image, ...override } : image
+      }),
+    [imageRows, photoOverrides],
+  )
   /** Aspect frame follows the settled slide so the hero height does not jump mid-swipe. */
   const [frameIndex, setFrameIndex] = useState(0)
   const pointerStartRef = useRef<{ x: number; y: number } | null>(null)
@@ -417,6 +434,23 @@ export function ImageGallery({
           hidden={isVideoSelected}
           onCropsSaved={(saved) => {
             setCropOverrides((prev) => ({ ...prev, ...saved }))
+          }}
+          onToneSaved={(saved: ListingPhotoToneSavedImage[]) => {
+            setPhotoOverrides((prev) => {
+              const next = { ...prev }
+              for (const image of saved) {
+                next[image.id] = {
+                  url: image.url,
+                  thumbnail_url: image.thumbnailUrl,
+                  tone_source_url: image.sourceUrl,
+                  tone_brightness: image.brightness === 0 ? null : image.brightness,
+                  tone_highlights: image.highlights === 0 ? null : image.highlights,
+                  tone_shadows: image.shadows === 0 ? null : image.shadows,
+                  tone_contrast: image.contrast === 0 ? null : image.contrast,
+                }
+              }
+              return next
+            })
           }}
         />
 

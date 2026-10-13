@@ -2,9 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { createPortal } from "react-dom"
+import { useRouter } from "next/navigation"
 import { Crop } from "lucide-react"
 import { ListingPdpCropEditor } from "@/components/features/listings/listing-pdp-crop-editor"
 import { useListingViewer } from "@/components/features/listings/listing-viewer-provider"
+import { browserProfileIsAdmin } from "@/lib/auth/browser-profile-is-admin"
+import { createClient } from "@/lib/supabase/client"
 import {
   listingFilmImageSrcFromRow,
   listingTileImageSrcFromRow,
@@ -20,6 +23,11 @@ import {
   listingPdpCropFromImageRow,
   type ListingPdpCrop,
 } from "@/lib/utils/listing-pdp-crop"
+import {
+  listingPhotoToneFromImageRow,
+  listingPhotoToneSourceUrl,
+  type ListingPhotoToneSavedImage,
+} from "@/lib/utils/listing-photo-tone"
 
 export type ListingPdpCropIslandImage = {
   id: string
@@ -29,6 +37,11 @@ export type ListingPdpCropIslandImage = {
   pdp_crop_zoom?: number | null
   pdp_crop_x?: number | null
   pdp_crop_y?: number | null
+  tone_source_url?: string | null
+  tone_brightness?: number | null
+  tone_highlights?: number | null
+  tone_shadows?: number | null
+  tone_contrast?: number | null
 }
 
 type ListingPdpCropIslandProps = {
@@ -36,6 +49,7 @@ type ListingPdpCropIslandProps = {
   initialIndex?: number
   hidden?: boolean
   onCropsSaved?: (crops: Record<string, ListingPdpCrop | null>) => void
+  onToneSaved?: (images: ListingPhotoToneSavedImage[]) => void
 }
 
 export function ListingPdpCropIsland({
@@ -43,19 +57,36 @@ export function ListingPdpCropIsland({
   initialIndex = 0,
   hidden = false,
   onCropsSaved,
+  onToneSaved,
 }: ListingPdpCropIslandProps) {
+  const router = useRouter()
   const viewer = useListingViewer()
   const listingId = viewer?.listingId?.trim() ?? ""
   const isOwner = listingPdpCropActorIsOwner(viewer?.userId, viewer?.sellerUserId)
   const [open, setOpen] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
   const [savedCrops, setSavedCrops] = useState<Record<string, ListingPdpCrop | null>>({})
 
   useEffect(() => {
-    if (!isOwner) return
+    if (!viewer?.userId) {
+      setIsAdmin(false)
+      return
+    }
+    let cancelled = false
+    void browserProfileIsAdmin(createClient()).then((value) => {
+      if (!cancelled) setIsAdmin(value === true)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [viewer?.userId])
+
+  useEffect(() => {
+    if (!isOwner && !isAdmin) return
     const onOpen = () => setOpen(true)
     window.addEventListener(LISTING_PDP_CROP_OPEN_EVENT, onOpen)
     return () => window.removeEventListener(LISTING_PDP_CROP_OPEN_EVENT, onOpen)
-  }, [isOwner])
+  }, [isAdmin, isOwner])
 
   const editorImages = useMemo(
     () =>
@@ -64,9 +95,14 @@ export function ListingPdpCropIsland({
         .map((image) => {
           const proxied = proxiedListingImageSrc(image.url) || image.url
           const hero = proxied === "/placeholder.svg" ? proxied : withListingMediaPdpVariant(proxied)
+          const sourceUrl = listingPhotoToneSourceUrl(image)
+          const proxiedSource = proxiedListingImageSrc(sourceUrl) || sourceUrl
+          const sourceHero =
+            proxiedSource === "/placeholder.svg" ? proxiedSource : withListingMediaPdpVariant(proxiedSource)
           return {
             id: image.id,
             src: hero,
+            sourceSrc: sourceHero || hero,
             previewSrc:
               listingTileImageSrcFromRow(image) ||
               listingFilmImageSrcFromRow(image) ||
@@ -74,12 +110,13 @@ export function ListingPdpCropIsland({
             crop: Object.prototype.hasOwnProperty.call(savedCrops, image.id)
               ? savedCrops[image.id]
               : listingPdpCropFromImageRow(image),
+            tone: listingPhotoToneFromImageRow(image),
           }
         }),
     [images, savedCrops],
   )
 
-  const canEdit = Boolean(listingId && viewer?.ready && isOwner)
+  const canEdit = Boolean(listingId && viewer?.ready && (isOwner || isAdmin))
   if (!canEdit || editorImages.length === 0) return null
 
   return (
@@ -109,9 +146,15 @@ export function ListingPdpCropIsland({
               listingId={listingId}
               images={editorImages}
               initialIndex={initialIndex}
+              canCrop={isOwner}
+              canTone={isAdmin}
               onSaved={(saved) => {
                 setSavedCrops((prev) => ({ ...prev, ...saved }))
                 onCropsSaved?.(saved)
+              }}
+              onToneSaved={(saved) => {
+                onToneSaved?.(saved)
+                router.refresh()
               }}
             />,
             document.body,
