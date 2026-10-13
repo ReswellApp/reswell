@@ -7,17 +7,25 @@ import { resolveAddressShippingIdentity } from "@/lib/db/addressShippingIdentity
 import { fetchProfileAddresses, preferredProfileAddress } from "@/lib/db/profile-addresses"
 import { updateProfileDefaultListingLocality } from "@/lib/db/profileDefaultListingLocality"
 import { getProfilePersonalInfo, updateProfilePersonalInfo } from "@/lib/db/profilePersonalInfo"
+import { sellerHasSoldSurfboardsOrFins } from "@/lib/db/sellerSoldListings"
+import { fetchSellerShippingLocality } from "@/lib/db/sellerShippingLocality"
 import { googleForwardGeocode } from "@/lib/maps/google-geocoding-server"
 import {
   listingLocalityFromAddress,
   type ListingLocalityFromAddress,
 } from "@/lib/sell-flow/listing-locality-from-address"
+import {
+  decideSignInShipFromPrompt,
+  type SignInShipFromPromptResult,
+} from "@/lib/services/signInShipFromPrompt"
 import { createClient } from "@/lib/supabase/server"
 import { toE164UsPhone } from "@/lib/utils/phone-e164-us"
 
 const saveSellerShipFromSchema = shippingAddressFormSchema.extend({
   full_name: z.string().trim().min(1).max(200).optional(),
   phone: z.string().trim().max(40).optional(),
+  /** Update this saved row instead of inserting another address. */
+  address_id: z.string().uuid().optional(),
 })
 
 export type SellerShipFromSetup = {
@@ -103,6 +111,33 @@ export async function getSellerShipFromSetup(): Promise<SellerShipFromSetup> {
   }
 }
 
+/** Signed-in seller prompt. Buyers and sellers with a complete ship-from get nothing to show. */
+export async function getSignInShipFromPrompt(): Promise<SignInShipFromPromptResult> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) return { shouldPrompt: false }
+
+  const [addressesResult, personal, locality, hasSold] = await Promise.all([
+    fetchProfileAddresses(supabase, user.id),
+    getProfilePersonalInfo(supabase, user.id),
+    fetchSellerShippingLocality(supabase, user.id),
+    sellerHasSoldSurfboardsOrFins(supabase, user.id),
+  ])
+
+  if (addressesResult.error) return { shouldPrompt: false }
+
+  return decideSignInShipFromPrompt({
+    offersShipping: locality.offersShipping || hasSold,
+    addresses: addressesResult.addresses,
+    personal,
+    listingCity: locality.city,
+    listingState: locality.state,
+  })
+}
+
 export async function saveSellerShipFromAddress(
   raw: unknown,
 ): Promise<{
@@ -170,10 +205,7 @@ export async function saveSellerShipFromAddress(
     return { locality: null, error: "Enter a phone number for the carrier." }
   }
 
-  await supabase.from("addresses").update({ is_default: false }).eq("profile_id", user.id)
-
-  const { error } = await supabase.from("addresses").insert({
-    profile_id: user.id,
+  const row = {
     full_name: identity.full_name,
     phone: identity.phone,
     line1: input.line1,
@@ -184,7 +216,25 @@ export async function saveSellerShipFromAddress(
     country: input.country || "US",
     label: input.label?.trim() || "Ship from",
     is_default: true,
-  })
+  }
+
+  if (input.address_id) {
+    const { data: existing, error: existingError } = await supabase
+      .from("addresses")
+      .select("id")
+      .eq("id", input.address_id)
+      .eq("profile_id", user.id)
+      .maybeSingle()
+    if (existingError || !existing) {
+      return { locality: null, error: "Address not found." }
+    }
+  }
+
+  await supabase.from("addresses").update({ is_default: false }).eq("profile_id", user.id)
+
+  const { error } = input.address_id
+    ? await supabase.from("addresses").update(row).eq("id", input.address_id).eq("profile_id", user.id)
+    : await supabase.from("addresses").insert({ profile_id: user.id, ...row })
 
   if (error) {
     return { locality: null, error: error.message }
