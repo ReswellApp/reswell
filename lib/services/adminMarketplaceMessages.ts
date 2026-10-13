@@ -5,6 +5,7 @@ import {
   type ListAdminMarketplaceConversationsArgs,
   type ListAdminMarketplaceMessagesArgs,
 } from "@/lib/db/adminMarketplaceMessages"
+import { broadcastMarketplaceThreadRefresh } from "@/lib/services/broadcastMarketplaceThreadMessage"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 
 export async function getAdminMarketplaceMessages(args: ListAdminMarketplaceMessagesArgs) {
@@ -19,5 +20,9 @@ export async function getAdminMarketplaceConversations(args: ListAdminMarketplac
 
 export async function removeAdminMarketplaceMessage(messageId: string) {
   const supabase = createServiceRoleClient()
-  return deleteMarketplaceMessageAsAdmin(supabase, messageId)
+  const result = await deleteMarketplaceMessageAsAdmin(supabase, messageId)
+  if (result.ok) {
+    await broadcastMarketplaceThreadRefresh(result.conversationId)
+  }
+  return result
 }

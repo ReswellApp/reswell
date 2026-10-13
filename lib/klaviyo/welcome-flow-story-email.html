@@ -142,7 +142,7 @@
                 Your code
               </p>
               <p style="margin:10px 0 0;font-family:Georgia, 'Times New Roman', Times, serif;font-size:26px;line-height:32px;color:#05080D;">
-                {{ person|lookup:'welcome_discount_percent'|default:event.discount_percent|default:'15' }}% off is still yours.
+                {{ person|lookup:'welcome_discount_percent'|default:event.discount_percent|default:'10' }}% off is still yours.
               </p>
               <p style="margin:8px 0 0;font-family:Arial, Helvetica, sans-serif;font-size:15px;line-height:22px;color:#5C6168;">
                 Use it at checkout. Valid through {{ person|lookup:'welcome_promo_expires'|default:event.expires_at_formatted|default:'30 days' }}.

@@ -4,6 +4,10 @@ import {
   parseShopCategoryPackageSizeMap,
   type ShopCategoryPackageSizeMap,
 } from "@/lib/shop-category-package-sizes"
+import {
+  resolveShopifyListingLocality,
+  type ShopifyMerchantProfileLocality,
+} from "@/lib/shopify/listing-locality"
 import type { ShopifyProductMappingRow } from "@/lib/shopify/types"
 
 const MAPPING_SELECT = [
@@ -133,14 +137,13 @@ export async function dbLoadShopifyMerchantLocation(
 ): Promise<{ city: string; state: string }> {
   const { data, error } = await supabase
     .from("profiles")
-    .select("city, state, location")
+    .select("default_listing_city, default_listing_state, city, location")
     .eq("id", userId)
     .maybeSingle()
   if (error) throw new Error(error.message)
-  return {
-    city: data?.city?.trim() || data?.location?.trim() || "United States",
-    state: data?.state?.trim() || "US",
-  }
+  return resolveShopifyListingLocality(
+    data as ShopifyMerchantProfileLocality | null,
+  )
 }
 
 export async function dbLoadShopifyImportShippingProfile(
@@ -321,6 +324,30 @@ export async function dbUnpublishShopifyMappings(
     .eq("inventory_source", "shopify")
   if (listingError) throw new Error(listingError.message)
   return listingIds
+}
+
+/** Removes Shopify listings that are still active although their mapping is no longer selected. */
+export async function dbRemoveStaleShopifyListings(
+  supabase: SupabaseClient,
+  listingIds: string[],
+): Promise<string[]> {
+  const removed: string[] = []
+  for (let index = 0; index < listingIds.length; index += 200) {
+    const { data, error } = await supabase
+      .from("listings")
+      .update({
+        status: "removed",
+        stock_quantity: 0,
+        updated_at: new Date().toISOString(),
+      })
+      .in("id", listingIds.slice(index, index + 200))
+      .eq("inventory_source", "shopify")
+      .eq("status", "active")
+      .select("id")
+    if (error) throw new Error(error.message)
+    removed.push(...(data ?? []).map((row) => String(row.id)))
+  }
+  return removed
 }
 
 export async function dbUnpublishAllShopifyListingsForConnection(

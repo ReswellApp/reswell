@@ -1,6 +1,7 @@
 "use client"
 
 import posthog from "posthog-js"
+import { clearHeaderChromeSnapshot } from "@/lib/auth/header-chrome-snapshot"
 import { clearImpersonation } from "@/lib/impersonation"
 import { clearLiveChatBrowserState } from "@/lib/live-chat/visitor-storage"
 
@@ -14,6 +15,7 @@ export function signOutAndRedirect(next = "/"): void {
     posthog.reset()
   }
   clearImpersonation()
+  clearHeaderChromeSnapshot()
   // Live chat resume keys live in localStorage and are not auth cookies.
   clearLiveChatBrowserState()
   window.location.assign(`/auth/sign-out?next=${encodeURIComponent(next)}`)

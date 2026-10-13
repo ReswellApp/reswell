@@ -192,18 +192,115 @@ export interface ShopifyShippingReadiness {
   }>
 }
 
+/**
+ * `disabled`: SHOPIFY_MANUAL_CANARY_ENABLED is off.
+ * `needs_approval`: the profile lacks shopify_manual_canary_enabled.
+ */
+export type ShopifyManualSetupState = "available" | "disabled" | "needs_approval"
+
+export interface ShopifyConnectOptions {
+  pluginAvailable: boolean
+  manualSetup: ShopifyManualSetupState
+}
+
+/** A live Shopify variant, or `null` when Shopify confirms it no longer exists. */
+export interface ShopifyVariantPresence {
+  variantId: string
+  variantTitle: string
+  inventoryQuantity: number
+  productId: string
+  productTitle: string
+  productStatus: string
+}
+
+export type ShopifyLinkedListingState =
+  | "live"
+  | "out_of_stock"
+  | "not_active_in_shopify"
+  | "deleted_in_shopify"
+  | "needs_removal"
+  | "unpublished"
+  | "error"
+
+export const SHOPIFY_LINKED_LISTING_FILTERS = [
+  "all",
+  "live",
+  "out_of_stock",
+  "deleted",
+  "unpublished",
+  "error",
+] as const
+
+export type ShopifyLinkedListingFilter =
+  (typeof SHOPIFY_LINKED_LISTING_FILTERS)[number]
+
+export interface ShopifyLinkedListing {
+  mappingId: string
+  listingId: string
+  productId: string
+  variantId: string
+  title: string
+  variantTitle: string | null
+  imageUrl: string | null
+  price: number | null
+  shopifyQuantity: number | null
+  reswellStock: number
+  reswellStatus: string
+  section: PeerListingSection
+  slug: string | null
+  syncStatus: ShopifyProductMappingRow["sync_status"]
+  selected: boolean
+  lastSyncedAt: string | null
+  shopifyProductStatus: string | null
+  state: ShopifyLinkedListingState
+  adminUrl: string
+}
+
+export interface ShopifyCatalogSummary {
+  total: number
+  live: number
+  outOfStock: number
+  deleted: number
+  unpublished: number
+  errors: number
+  needsRemoval: number
+}
+
+export interface ShopifySyncHealth {
+  queuedJobs: number
+  retryJobs: number
+  deadJobs: number
+  pendingInventoryWrites: number
+  inventoryWritesEnabled: boolean
+}
+
+export interface ShopifyLinkedListingsPage {
+  listings: ShopifyLinkedListing[]
+  total: number
+  page: number
+  pageSize: number
+  /** `unavailable` when Shopify could not be reached to confirm variants. */
+  shopifyCheck: "ok" | "unavailable" | "skipped"
+  missingInShopify: number
+}
+
+export interface ShopifyCatalogManagerData {
+  summary: ShopifyCatalogSummary
+  health: ShopifySyncHealth
+  listings: ShopifyLinkedListingsPage
+}
+
 export interface ShopifyDashboardData {
   enabled: boolean
   configured: boolean
-  publicOAuthEnabled: boolean
-  manualCanaryEnabled: boolean
-  appInstallUrl: string | null
+  connectOptions: ShopifyConnectOptions
   connection: PublicShopifyConnection | null
   products: ShopifyCatalogProduct[]
   productPageInfo: {
     hasNextPage: boolean
     endCursor: string | null
   }
+  catalog: ShopifyCatalogManagerData | null
   shippingReadiness: ShopifyShippingReadiness
   loadError: string | null
 }

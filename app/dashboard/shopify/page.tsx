@@ -6,8 +6,10 @@ import {
   isShopifyConfigured,
   isShopifyIntegrationEnabled,
 } from "@/lib/shopify/config"
+import { shopifyConnectErrorMessage } from "@/lib/shopify/connect-errors"
 import type { ShopifyDashboardData } from "@/lib/shopify/types"
 import {
+  SHOPIFY_CONNECT_OPTIONS_UNAVAILABLE,
   checkShopifyMerchantAccess,
   getShopifyDashboardConnectOptions,
 } from "@/lib/services/shopifyAccess"
@@ -15,20 +17,21 @@ import {
   getShopifyConnectionStatus,
   listMerchantShopifyProducts,
 } from "@/lib/services/shopifyConnection"
+import { getMerchantShopifyCatalog } from "@/lib/services/shopifyCatalogManager"
 import { getShopifyShippingReadiness } from "@/lib/services/shopifyShipping"
 
 export const dynamic = "force-dynamic"
 
 export const metadata = privatePageMetadata({
   title: "Shopify — Reswell",
-  description: "Connect Shopify and choose the products you sell on Reswell.",
+  description: "Manage the Shopify products you sell on Reswell.",
   path: "/dashboard/shopify",
 })
 
 export default async function ShopifyIntegrationPage({
   searchParams,
 }: {
-  searchParams: Promise<{ connected?: string; error?: string }>
+  searchParams: Promise<{ connected?: string; error?: string; detail?: string }>
 }) {
   const { supabase, user } = await getCachedDashboardSession()
   if (!user) return null
@@ -54,23 +57,33 @@ export default async function ShopifyIntegrationPage({
       : status?.error ?? "Could not load Shopify status"
     : access.message
 
-  if (connection?.status === "active" && connection.sync_enabled) {
-    const listed = await listMerchantShopifyProducts({ userId: user.id })
-    if (listed.ok) {
+  let catalog: ShopifyDashboardData["catalog"] = null
+  if (connection) {
+    const [listed, managed] = await Promise.all([
+      connection.status === "active" && connection.sync_enabled
+        ? listMerchantShopifyProducts({ userId: user.id })
+        : null,
+      getMerchantShopifyCatalog({
+        userId: user.id,
+        filter: "all",
+        section: null,
+        query: "",
+        page: 1,
+      }),
+    ])
+    if (listed?.ok) {
       products = listed.data.products
       productPageInfo = listed.data.pageInfo
-    } else {
+    } else if (listed) {
       loadError = listed.error
     }
+    if (managed.ok) catalog = managed.data
+    else loadError ??= managed.error
   }
 
   const connectOptions = access.allowed
     ? await getShopifyDashboardConnectOptions(supabase, user.id)
-    : {
-        publicOAuthEnabled: false,
-        manualCanaryEnabled: false,
-        appInstallUrl: null,
-      }
+    : SHOPIFY_CONNECT_OPTIONS_UNAVAILABLE
 
   const params = await searchParams
   return (
@@ -78,17 +91,18 @@ export default async function ShopifyIntegrationPage({
       initialData={{
         enabled: isShopifyIntegrationEnabled(),
         configured: isShopifyConfigured(),
-        publicOAuthEnabled: connectOptions.publicOAuthEnabled,
-        manualCanaryEnabled: connectOptions.manualCanaryEnabled,
-        appInstallUrl: connectOptions.appInstallUrl,
+        connectOptions,
         connection,
         products,
         productPageInfo,
+        catalog,
         shippingReadiness,
         loadError,
       }}
       connected={params.connected === "1"}
-      callbackError={params.error === "1"}
+      callbackError={
+        params.error === "1" ? shopifyConnectErrorMessage(params.detail) : null
+      }
     />
   )
 }

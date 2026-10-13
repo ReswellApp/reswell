@@ -74,6 +74,15 @@ import { getAuthUserWithRetry } from "@/lib/auth/get-user-with-retry"
 import { isAbortError } from "@/lib/utils/is-abort-error"
 import { signOutAndRedirect } from "@/lib/auth/sign-out-and-redirect"
 import { waitForClientSession } from "@/lib/auth/wait-for-client-session"
+import {
+  clearHeaderChromeSnapshot,
+  headerChromeAvatarCssValue,
+  headerChromeSnapshotUser,
+  markHeaderChromeHydrated,
+  readHeaderChromeSnapshot,
+  writeHeaderChromeSnapshot,
+} from "@/lib/auth/header-chrome-snapshot"
+import { HeaderKnownAuthPreview } from "@/components/header-known-auth-preview"
 import type { SiteChromeAuthPayload } from "@/lib/auth/get-site-chrome-auth"
 import { CartHeaderLink } from "@/components/cart-header-link"
 import { authLandingHref } from "@/lib/auth/auth-landing-href"
@@ -513,6 +522,12 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
   // correct amount of space for auth-dependent action buttons before they
   // appear, preventing the search bar from shifting horizontally.
   const [authLoaded, setAuthLoaded] = useState(initNav.authLoaded)
+  /**
+   * Snapshot paint is display-only. Realtime and wallet reads wait until GoTrue
+   * has actually resolved a session, so a remembered account does not subscribe
+   * as the anon key.
+   */
+  const [authSessionReady, setAuthSessionReady] = useState(Boolean(serverHeaderAuth.user))
   /** When the image URL is set but fails to load (403, blocked, bad URL), hide img so fallback letter shows. */
   const [avatarImageFailed, setAvatarImageFailed] = useState(false)
   const headerMainRowRef = useRef<HTMLDivElement>(null)
@@ -606,6 +621,29 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     // visible to RSC — do not paint logged-out over a verified client session.
     if (!d.user && user) return
 
+    // Cached HTML is anonymous. Paint the last confirmed account before GoTrue
+    // responds so a returning visitor does not sit on Log in for a few seconds.
+    if (!d.user) {
+      const remembered = readHeaderChromeSnapshot()
+      if (remembered) {
+        setUser(headerChromeSnapshotUser(remembered))
+        setProfileAvatarUrl(remembered.avatarUrl)
+        setProfileDisplayName(remembered.displayName)
+        setIsAdmin(remembered.isAdmin)
+        setIsShipper(remembered.isShipper)
+        setIsDropoffLocation(remembered.isDropoffLocation)
+        setUnreadMessages(remembered.unreadMessages)
+        setUnreadSupport(remembered.unreadSupport)
+        setWalletBalance(remembered.walletBalance)
+        setAuthLoaded(true)
+        return
+      }
+      if (hasSupabaseAuthCookiesClient()) {
+        setAuthLoaded(false)
+        return
+      }
+    }
+
     const isPartialBootstrap = Boolean(d.user && !d.authLoaded)
 
     setUser(d.user)
@@ -685,6 +723,12 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [headerAuthDigest])
 
+  useLayoutEffect(() => {
+    // Hold the pre-paint avatar until the remembered account is in React state.
+    if (readHeaderChromeSnapshot() && !user) return
+    markHeaderChromeHydrated()
+  }, [user, authLoaded])
+
   const refetchFromClient = useCallback(async () => {
     if (user) setAuthLoaded(true)
     try {
@@ -701,6 +745,9 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       const resolvedUser = userResult.user
       setUser(resolvedUser)
       if (!resolvedUser) {
+        clearHeaderChromeSnapshot()
+        markHeaderChromeHydrated()
+        setAuthSessionReady(false)
         const guest = deriveHeaderNavState({ user: null, bootstrap: null })
         setProfileAvatarUrl(guest.profileAvatarUrl)
         setProfileDisplayName(guest.profileDisplayName)
@@ -713,6 +760,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         setWalletBalance(guest.walletBalance)
         return
       }
+      setAuthSessionReady(true)
 
       const [{ data: profile }, shipperRes, dropoffRes] = await Promise.all([
         supabase
@@ -725,21 +773,22 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         supabase.from("coastal_shippers").select("id").eq("user_id", resolvedUser.id).maybeSingle(),
         supabase.from("dropoff_location_grants").select("id").eq("user_id", resolvedUser.id).maybeSingle(),
       ])
+      const isShipperMember = coastalShipperMembership({
+        rowId: shipperRes.data?.id,
+        queryFailed: Boolean(shipperRes.error),
+      })
+      const isDropoffMember = dropoffLocationMembership({
+        rowId: dropoffRes.data?.id,
+        queryFailed: Boolean(dropoffRes.error),
+      })
+      const nextAvatarUrl = resolveHeaderAvatarUrl(resolvedUser, profile)
+      const nextDisplayName =
+        typeof profile?.display_name === "string" ? profile.display_name : null
       setIsAdmin(profile?.is_admin || false)
-      setIsShipper(
-        coastalShipperMembership({
-          rowId: shipperRes.data?.id,
-          queryFailed: Boolean(shipperRes.error),
-        }),
-      )
-      setIsDropoffLocation(
-        dropoffLocationMembership({
-          rowId: dropoffRes.data?.id,
-          queryFailed: Boolean(dropoffRes.error),
-        }),
-      )
-      setProfileAvatarUrl(resolveHeaderAvatarUrl(resolvedUser, profile))
-      setProfileDisplayName(profile?.display_name || null)
+      setIsShipper(isShipperMember)
+      setIsDropoffLocation(isDropoffMember)
+      setProfileAvatarUrl(nextAvatarUrl)
+      setProfileDisplayName(nextDisplayName)
       {
         const nextUnread = Number(profile?.unread_message_count ?? 0)
         setUnreadMessages((prev) => {
@@ -764,6 +813,23 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       ) {
         clientWalletTotalRef.current = null
       }
+      if (profile) {
+        const persistedAvatar = headerChromeAvatarCssValue(nextAvatarUrl) ? nextAvatarUrl : null
+        const persistedName = nextDisplayName?.trim().slice(0, 80) || null
+        writeHeaderChromeSnapshot({
+          v: 1,
+          userId: resolvedUser.id,
+          email: resolvedUser.email ?? null,
+          displayName: persistedName,
+          avatarUrl: persistedAvatar,
+          isAdmin: profile.is_admin === true,
+          isShipper: isShipperMember,
+          isDropoffLocation: isDropoffMember,
+          unreadMessages: Math.max(0, Number(profile.unread_message_count ?? 0) || 0),
+          unreadSupport: Math.max(0, Number(profile.unread_support_count ?? 0) || 0),
+          walletBalance: total,
+        })
+      }
     } finally {
       setAuthLoaded(true)
     }
@@ -775,10 +841,10 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     void refetchFromClient()
   }, [authLoaded, user, refetchFromClient])
 
-  /** Cached HTML is anonymous. Fill the account menu when the browser has a session. */
+  /** Cached HTML is anonymous. Confirm the session when this browser already knows the account. */
   useEffect(() => {
     if (serverHeaderAuth.user) return
-    if (!hasSupabaseAuthCookiesClient()) return
+    if (!hasSupabaseAuthCookiesClient() && !readHeaderChromeSnapshot()) return
     void refetchFromClient()
   }, [serverHeaderAuth.user, refetchFromClient])
 
@@ -866,6 +932,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "INITIAL_SESSION") {
         if (session?.user) {
+          setAuthSessionReady(true)
           setUser(session.user)
           void refetchFromClient()
         }
@@ -873,6 +940,9 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       }
 
       if (event === "SIGNED_OUT") {
+        clearHeaderChromeSnapshot()
+        markHeaderChromeHydrated()
+        setAuthSessionReady(false)
         const guest = deriveHeaderNavState({ user: null, bootstrap: null })
         setUser(guest.user)
         setProfileAvatarUrl(guest.profileAvatarUrl)
@@ -893,6 +963,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         (event === "SIGNED_IN" || event === "USER_UPDATED") &&
         session?.user
       ) {
+        setAuthSessionReady(true)
         setUser(session.user)
         setAuthLoaded(true)
         void refetchFromClient()
@@ -911,7 +982,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
 
   /** Messaging profile and conversations — one Realtime channel per signed-in tab. */
   useEffect(() => {
-    if (!user?.id) return
+    if (!user?.id || !authSessionReady) return
     const applyUnreadFromProfileRow = (row: unknown) => {
       if (!row || typeof row !== "object") return false
       const raw = (row as { unread_message_count?: unknown }).unread_message_count
@@ -985,11 +1056,11 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       if (unreadRefreshTimer) clearTimeout(unreadRefreshTimer)
       void supabase.removeChannel(channel)
     }
-  }, [supabase, user?.id])
+  }, [supabase, user?.id, authSessionReady])
 
   /** Lightweight wallet + unread resync on route changes — catches Realtime misses. */
   useEffect(() => {
-    if (!user?.id) return
+    if (!user?.id || !authSessionReady) return
     let cancelled = false
     supabase
       .from("wallets")
@@ -1027,7 +1098,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         if (Number.isFinite(nextSupport)) setUnreadSupport(Math.max(0, nextSupport))
       })
     return () => { cancelled = true }
-  }, [supabase, user?.id, pathname])
+  }, [supabase, user?.id, pathname, authSessionReady])
 
   useBodyScrollLock(mobileMenuOpen)
 
@@ -1117,21 +1188,24 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         <div className="container mx-auto flex min-h-[56px] min-w-0 items-center justify-between gap-4 px-4 py-2 sm:min-h-[64px] md:min-h-[80px] sm:px-6">
           <SiteWordmarkLink href="/admin/home" />
           <div className="flex shrink-0 items-center justify-end">
-            {!authLoaded ? (
-              <Skeleton className="h-9 w-9 shrink-0 rounded-full" aria-hidden />
-            ) : user && accountMenu ? (
-              accountMenu
-            ) : authLoaded ? (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-10 w-10 shrink-0 text-foreground"
-                onClick={() => openLogin()}
-                aria-label="Log in or sign up"
-              >
-                <User className="h-6 w-6" />
-              </Button>
-            ) : null}
+            <div data-rw-guest-auth className="flex shrink-0 items-center justify-end">
+              {!authLoaded ? (
+                <Skeleton className="h-9 w-9 shrink-0 rounded-full" aria-hidden />
+              ) : user && accountMenu ? (
+                accountMenu
+              ) : authLoaded ? (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 shrink-0 text-foreground"
+                  onClick={() => openLogin()}
+                  aria-label="Log in or sign up"
+                >
+                  <User className="h-6 w-6" />
+                </Button>
+              ) : null}
+            </div>
+            <HeaderKnownAuthPreview />
           </div>
         </div>
       </header>
@@ -1148,6 +1222,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         <div className="container mx-auto flex min-h-[56px] min-w-0 items-center justify-between gap-4 px-4 py-2 sm:min-h-[64px] md:min-h-[80px] sm:px-6">
           <SiteWordmarkLink />
           <div className="flex shrink-0 items-center justify-end gap-0.5 sm:gap-1">
+            <div data-rw-guest-auth className="flex shrink-0 items-center justify-end gap-0.5 sm:gap-1">
             {!authLoaded ? (
               <Skeleton className="h-9 w-9 shrink-0 rounded-full" aria-hidden />
             ) : user && accountMenu ? (
@@ -1187,6 +1262,8 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                 </Button>
               )
             ) : null}
+            </div>
+            <HeaderKnownAuthPreview />
           </div>
         </div>
       </header>
@@ -1220,6 +1297,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                   <SiteWordmarkLink compact className="px-1 py-1 sm:px-2 sm:py-1.5" />
                 </div>
                 <div
+                  data-rw-guest-auth
                   className={mobileActionRowClassName}
                   aria-busy={!authLoaded}
                   aria-label={!authLoaded ? "Loading navigation" : undefined}
@@ -1262,6 +1340,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                     </>
                   )}
                 </div>
+                <HeaderKnownAuthPreview />
               </div>
               {hideMobileBrowseChrome ? null : (
               <div className="flex min-w-0 items-center gap-2">
@@ -1339,6 +1418,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
               </PopoverContent>
             </Popover>
 
+            <div data-rw-guest-auth className="flex min-w-0 items-center gap-1 sm:gap-1.5 md:gap-0.5">
             {!authLoaded ? (
               <HeaderDesktopNavActionsSkeleton />
             ) : (
@@ -1450,6 +1530,8 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
             )}
               </>
             )}
+            </div>
+            <HeaderKnownAuthPreview />
 
             {/* Menu toggle: phone & tablet only (below lg). Desktop/Mac use category bar + primary nav. */}
             {hideMobileBrowseChrome ? null : (

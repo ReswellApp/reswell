@@ -372,7 +372,8 @@ async function recoverMissingOrderPendingLedger(
 
 /**
  * Re-send Purchase Successful for an order already stored (idempotent finalize / webhook).
- * Seller Sale Successful Klaviyo fires when earnings are released after fulfillment.
+ * Seller Sale Successful and Earnings Available Klaviyo events fire when earnings
+ * are released after fulfillment.
  */
 async function emitPurchaseSuccessfulKlaviyoForOrderId(
   serviceSupabase: ReturnType<typeof createServiceRoleClient>,

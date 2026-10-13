@@ -14,6 +14,7 @@ import {
 } from "@/lib/auth/password-reset-landing-flag"
 import { hasSupabaseAuthCookies } from '@/lib/auth/has-supabase-auth-cookies'
 import { pathnameRequiresAuthSession } from '@/lib/auth/pathname-requires-auth-session'
+import { supabaseAuthForwardPathname } from '@/lib/auth/supabase-auth-forward-path'
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
@@ -31,37 +32,15 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Supabase sometimes falls back to Site URL with auth params on the homepage. Forward to
-  // the correct handler so server-side exchange / verifyOtp runs before any session probe.
-  const tokenHash = request.nextUrl.searchParams.get("token_hash")
-  const tokenType = request.nextUrl.searchParams.get("type")
-  if (
-    tokenHash &&
-    tokenType &&
-    pathname !== "/auth/callback" &&
-    pathname !== "/auth/confirm" &&
-    pathname !== "/auth/recovery"
-  ) {
+  // Forward stray Supabase auth params so server-side exchange / verifyOtp runs before any
+  // session probe.
+  const authForwardPathname = supabaseAuthForwardPathname(
+    pathname,
+    request.nextUrl.searchParams,
+  )
+  if (authForwardPathname) {
     const url = request.nextUrl.clone()
-    url.pathname =
-      tokenType === "recovery"
-        ? "/auth/recovery"
-        : tokenType === "email" ||
-            tokenType === "signup" ||
-            tokenType === "invite"
-          ? "/auth/confirm"
-          : "/auth/callback"
-    return NextResponse.redirect(url)
-  }
-
-  if (
-    pathname !== "/auth/callback" &&
-    pathname !== "/auth/recovery" &&
-    request.nextUrl.searchParams.has("code")
-  ) {
-    const url = request.nextUrl.clone()
-    url.pathname =
-      tokenType === "recovery" ? "/auth/recovery" : "/auth/callback"
+    url.pathname = authForwardPathname
     return NextResponse.redirect(url)
   }
 

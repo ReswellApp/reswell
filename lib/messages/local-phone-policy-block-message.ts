@@ -6,6 +6,9 @@ import {
 
 export const LOCAL_POLICY_BLOCK_ID_PREFIX = "local-policy-block-" as const
 
+/** Optimistic composer rows, replaced when the inserted row comes back. */
+export const PENDING_THREAD_MESSAGE_ID_PREFIX = "pending-" as const
+
 /** @deprecated Use {@link LOCAL_POLICY_BLOCK_ID_PREFIX} */
 export const LOCAL_PHONE_POLICY_BLOCK_ID_PREFIX = LOCAL_POLICY_BLOCK_ID_PREFIX
 
@@ -44,22 +47,48 @@ export function parseLocalPhonePolicyBlockMetadata(metadata: unknown): LocalPoli
   return parseLocalPolicyBlockMetadata(metadata)
 }
 
+function messageTimestamp(createdAt: string): number {
+  const parsed = Date.parse(createdAt)
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
 /**
- * Keeps client-only policy reminders when the thread is re-fetched from Supabase.
+ * Keeps client-only rows when a thread refetch is stale.
+ * Policy reminders never exist on the server. Pending sends stay until a row
+ * with the same sender and body arrives. Any local row newer than the snapshot
+ * stays too, so a live bubble is not wiped by a cached reload.
  */
 export function mergeServerMessagesPreservingLocalPolicyBlocks<
-  T extends { id: string; created_at: string; metadata?: unknown | null },
+  T extends {
+    id: string
+    created_at: string
+    metadata?: unknown | null
+    content?: string
+    sender_id?: string
+  },
 >(previous: T[], serverRows: T[]): T[] {
-  const localOnly = previous.filter((m) => parseLocalPolicyBlockMetadata(m.metadata) != null)
   const seen = new Set(serverRows.map((m) => m.id))
-  const merged = [...serverRows] as T[]
-  for (const m of localOnly) {
-    if (!seen.has(m.id)) {
-      seen.add(m.id)
-      merged.push(m)
-    }
+  let newestServer = 0
+  for (const row of serverRows) {
+    newestServer = Math.max(newestServer, messageTimestamp(row.created_at))
   }
-  merged.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+  const merged = [...serverRows] as T[]
+  for (const message of previous) {
+    if (seen.has(message.id)) continue
+    const pending = message.id.startsWith(PENDING_THREAD_MESSAGE_ID_PREFIX)
+    const policyBlock = parseLocalPolicyBlockMetadata(message.metadata) != null
+    if (pending) {
+      const confirmed = serverRows.some(
+        (row) => row.content === message.content && row.sender_id === message.sender_id,
+      )
+      if (confirmed) continue
+    } else if (!policyBlock && messageTimestamp(message.created_at) <= newestServer) {
+      continue
+    }
+    seen.add(message.id)
+    merged.push(message)
+  }
+  merged.sort((a, b) => messageTimestamp(a.created_at) - messageTimestamp(b.created_at))
   return merged
 }
 

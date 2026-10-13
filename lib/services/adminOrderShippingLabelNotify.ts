@@ -6,6 +6,7 @@ import {
 } from "@/lib/db/adminOrderShippingLabels"
 import { resolveOpenOrderShippingLabelFailures } from "@/lib/db/orderShippingLabelFailures"
 import { buildShippingLabelThreadPlainText } from "@/lib/messages/shipping-label-thread"
+import { broadcastInsertedMarketplaceMessage } from "@/lib/services/broadcastMarketplaceThreadMessage"
 import { fetchSantaBarbaraDropoffOrderIds } from "@/lib/services/santaBarbaraDropoffOrderAccess"
 import { downloadAndStoreLabelPdf } from "@/lib/services/storeOrderShippingLabelAssets"
 import type { AdminShippingLabelMessagePayload } from "@/lib/validations/shipping-label-message-metadata"
@@ -143,14 +144,23 @@ export async function attachAdminShippingLabelToOrder(params: {
   }
 
   if (conv) {
-    const { error: msgErr } = await params.supabase.from("messages").insert({
-      conversation_id: conv.id,
-      sender_id: params.adminUserId,
-      content,
-      metadata,
-    })
-    if (msgErr) {
+    const { data: inserted, error: msgErr } = await params.supabase
+      .from("messages")
+      .insert({
+        conversation_id: conv.id,
+        sender_id: params.adminUserId,
+        content,
+        metadata,
+      })
+      .select("id, created_at")
+      .single()
+    if (msgErr || !inserted) {
       console.error("[attachAdminShippingLabelToOrder] message insert:", msgErr)
+    } else {
+      await broadcastInsertedMarketplaceMessage(
+        { ...inserted, sender_id: params.adminUserId, content, metadata },
+        conv.id,
+      )
     }
     await params.supabase
       .from("conversations")

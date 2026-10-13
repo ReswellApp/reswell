@@ -191,14 +191,17 @@ function FeaturedShops({ shops }: { shops: HomeFeaturedShop[] }) {
   )
 }
 
+/** Homepage retail rail. Set to true to show "Shop From Reswell" again. */
+const SHOW_HOME_RESWELL_SHOP = false
+
 async function HomeStableTail() {
   const { featuredShops, featuredNew, featuredListingIds } = await getCachedHomeStableCatalog()
 
   return (
     <>
-      <HomeViewerListingScope ids={featuredListingIds} />
+      <HomeViewerListingScope ids={SHOW_HOME_RESWELL_SHOP ? featuredListingIds : []} />
       <FeaturedShops shops={featuredShops ?? []} />
-      {featuredNew.length > 0 ? (
+      {SHOW_HOME_RESWELL_SHOP && featuredNew.length > 0 ? (
         <FadeInSection>
           <section className="bg-offwhite py-16">
             <div className="container mx-auto">

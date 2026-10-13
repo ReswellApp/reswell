@@ -1,7 +1,15 @@
-import { revalidateTag } from "next/cache"
+import { revalidatePath, revalidateTag } from "next/cache"
 import { MARKETPLACE_SOLD_FEED_CACHE_TAG } from "@/lib/cache/marketplace-sold-feed"
 
-/** Bust hourly `/sold` sold, shipped, and new-listings feed caches. */
+const EXPIRE_NOW = { expire: 0 } as const
+
+/**
+ * Drop `/sold` feed caches immediately after a sale, purchase, or return.
+ * A stale-while-revalidate bust leaves the previous grid in place, so the next
+ * render can store that grid for another hour.
+ */
 export function revalidateMarketplaceSoldFeedCatalog(): void {
-  revalidateTag(MARKETPLACE_SOLD_FEED_CACHE_TAG, 'max')
+  revalidateTag(MARKETPLACE_SOLD_FEED_CACHE_TAG, EXPIRE_NOW)
+  revalidatePath("/sold", "page")
+  revalidatePath("/sold", "layout")
 }

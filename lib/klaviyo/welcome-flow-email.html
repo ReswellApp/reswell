@@ -234,7 +234,7 @@
                       A welcome from us
                     </p>
                     <h2 class="banner-title" style="margin:14px 0 0;font-family:Georgia, 'Times New Roman', Times, serif;font-size:34px;font-weight:500;line-height:40px;letter-spacing:-0.02em;color:#FFFFFF;">
-                      Enjoy {{ person|lookup:'welcome_discount_percent'|default:event.discount_percent|default:'15' }}% off your first order
+                      Enjoy {{ person|lookup:'welcome_discount_percent'|default:event.discount_percent|default:'10' }}% off your first order
                     </h2>
                     <p style="margin:14px 0 0;font-family:Arial, Helvetica, sans-serif;font-size:14px;line-height:21px;color:#D5DCEC;">
                       Use your code at checkout. Valid through {{ person|lookup:'welcome_promo_expires'|default:event.expires_at_formatted|default:'30 days' }}.

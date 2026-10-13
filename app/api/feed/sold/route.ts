@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const supabase = getDb({ consistency: "eventual" })
+    const supabase = getDb({ consistency: "strong" })
     const data = await loadMarketplaceSoldFeedPage(
       supabase,
       parsed.data.brandSlug ?? null,
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
       { data },
       {
         headers: {
-          "Cache-Control": "public, s-maxage=300, stale-while-revalidate=3600",
+          "Cache-Control": "private, no-store",
         },
       },
     )

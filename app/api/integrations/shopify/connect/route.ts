@@ -1,37 +1,41 @@
 import { NextRequest, NextResponse } from "next/server"
+import { publicSiteOrigin } from "@/lib/public-site-origin"
 import { requireShopifyMerchant } from "@/lib/shopify/authorize"
-import {
-  isShopifyPublicOAuthEnabled,
-  normalizeShopifyDomain,
-  shopifyAppInstallUrl,
-} from "@/lib/shopify/config"
+import { normalizeShopifyDomain } from "@/lib/shopify/config"
+import type { ShopifyConnectErrorDetail } from "@/lib/shopify/connect-errors"
 import { startShopifyOAuth } from "@/lib/services/shopifyOAuth"
 import { shopifyConnectQuerySchema } from "@/lib/validations/shopify"
 
+function dashboardError(detail: ShopifyConnectErrorDetail) {
+  const url = new URL("/dashboard/shopify", publicSiteOrigin())
+  url.searchParams.set("error", "1")
+  url.searchParams.set("detail", detail)
+  return NextResponse.redirect(url)
+}
+
 export async function GET(request: NextRequest) {
   const auth = await requireShopifyMerchant()
-  if (!auth.ok) return auth.response
-
-  if (isShopifyPublicOAuthEnabled()) {
-    return NextResponse.redirect(shopifyAppInstallUrl())
+  if (!auth.ok) {
+    if (auth.response.status === 401) {
+      const signInUrl = new URL("/auth/login", publicSiteOrigin())
+      signInUrl.searchParams.set(
+        "redirect",
+        request.nextUrl.pathname + request.nextUrl.search,
+      )
+      return NextResponse.redirect(signInUrl)
+    }
+    return dashboardError(
+      auth.response.status === 403 ? "not_approved" : "unavailable",
+    )
   }
 
   const parsed = shopifyConnectQuerySchema.safeParse({
     shop: request.nextUrl.searchParams.get("shop") ?? "",
   })
-  if (!parsed.success) {
-    return NextResponse.json(
-      { error: "Enter a valid Shopify store domain" },
-      { status: 400 },
-    )
-  }
-  const shopDomain = normalizeShopifyDomain(parsed.data.shop)
-  if (!shopDomain) {
-    return NextResponse.json(
-      { error: "Enter a valid myshopify.com domain" },
-      { status: 400 },
-    )
-  }
+  const shopDomain = parsed.success
+    ? normalizeShopifyDomain(parsed.data.shop)
+    : null
+  if (!shopDomain) return dashboardError("invalid_shop")
 
   try {
     const url = await startShopifyOAuth({
@@ -40,10 +44,14 @@ export async function GET(request: NextRequest) {
     })
     return NextResponse.redirect(url)
   } catch (error) {
-    console.error("[shopify] connect", error)
-    return NextResponse.json(
-      { error: "Could not start Shopify connection" },
-      { status: 500 },
+    console.error("[shopify] connect", {
+      userId: auth.user.id,
+      shopDomain,
+      error,
+    })
+    const message = error instanceof Error ? error.message : ""
+    return dashboardError(
+      message.includes("different Shopify store") ? "already_linked" : "start_failed",
     )
   }
 }

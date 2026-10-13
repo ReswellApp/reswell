@@ -1,10 +1,12 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 import {
+  isShopifyAccountOAuthConfigured,
   isShopifyConfigured,
   isShopifyManualCanaryEnabled,
   isShopifyPublicOAuthConfigured,
   isShopifyPublicOAuthEnabled,
+  missingShopifyReadScopes,
   normalizeShopifyDomain,
   parseShopifyAppInstallUrl,
   shopifyAppInstallUrl,
@@ -104,6 +106,34 @@ test("public OAuth and manual canary flags stay independent", () => {
   assert.equal(isShopifyPublicOAuthConfigured(), false)
   assert.equal(isShopifyManualCanaryEnabled(), true)
   assert.equal(isShopifyConfigured(), true)
+})
+
+test("Reswell-started OAuth does not need SHOPIFY_APP_INSTALL_URL", () => {
+  process.env.SHOPIFY_INTEGRATION_ENABLED = "true"
+  process.env.SHOPIFY_MANUAL_CANARY_ENABLED = "false"
+  process.env.SHOPIFY_TOKEN_ENCRYPTION_KEY = Buffer.alloc(32, 3).toString("base64")
+  process.env.SHOPIFY_API_KEY = "key"
+  process.env.SHOPIFY_API_SECRET = "secret"
+  delete process.env.SHOPIFY_APP_INSTALL_URL
+
+  assert.equal(isShopifyAccountOAuthConfigured(), true)
+  assert.equal(isShopifyPublicOAuthConfigured(), false)
+  assert.equal(isShopifyConfigured(), true)
+
+  delete process.env.SHOPIFY_API_SECRET
+  assert.equal(isShopifyAccountOAuthConfigured(), false)
+  assert.equal(isShopifyConfigured(), false)
+})
+
+test("manual setup reports the read scopes a Dev Dashboard app is missing", () => {
+  assert.deepEqual(
+    missingShopifyReadScopes(["read_products", "read_inventory", "read_locations"]),
+    [],
+  )
+  assert.deepEqual(missingShopifyReadScopes(["read_products", "write_inventory"]), [
+    "read_inventory",
+    "read_locations",
+  ])
 })
 
 test("merchant custom connect requires client credentials, not a static token", () => {

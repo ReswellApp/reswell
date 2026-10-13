@@ -12,7 +12,7 @@ export type DbPurpose = "catalog" | "analytics"
  * Query-class router.
  *
  * - `strong` + `catalog` — primary anon (listing-row cache fills after publish)
- * - `eventual` + `catalog` — replica anon (home, boards, sold, nav, similar)
+ * - `eventual` + `catalog` — replica anon (home, boards, nav, similar)
  * - `strong` + `analytics` — primary service role (writes, read-your-writes)
  * - `eventual` + `analytics` — replica service role (pulse, badges, BI, heavy scans)
  *

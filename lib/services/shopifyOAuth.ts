@@ -49,12 +49,12 @@ type ShopifyTokenResponse = {
 }
 
 class ShopifyOAuthRequestError extends Error {
-  constructor(
-    message: string,
-    readonly status: number,
-  ) {
+  readonly status: number
+
+  constructor(message: string, status: number) {
     super(message)
     this.name = "ShopifyOAuthRequestError"
+    this.status = status
   }
 }
 
@@ -124,6 +124,8 @@ export async function createShopifyInstallUrl(input: {
     flowType,
   })
 
+  // The app uses the legacy install flow, so Shopify grants only the scopes
+  // sent here. Keep this list identical to the released app version.
   const params = new URLSearchParams({
     client_id: shopifyApiKey(),
     scope: SHOPIFY_MVP_SCOPES.join(","),

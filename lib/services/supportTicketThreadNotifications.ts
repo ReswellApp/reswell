@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { revalidateMessagesInboxForConversationId } from "@/lib/cache/revalidate-messages-inbox"
 import { createServiceRoleClient } from "@/lib/supabase/server"
+import { broadcastInsertedMarketplaceMessage } from "@/lib/services/broadcastMarketplaceThreadMessage"
 import type { ContactMessageSupportStatus } from "@/lib/db/contactMessages"
 
 /** Customer-visible line when workflow status changes in admin. */
@@ -50,15 +51,23 @@ export async function insertMemberMessageInConversation(
   supabase: SupabaseClient,
   args: { conversationId: string; senderId: string; content: string },
 ): Promise<boolean> {
-  const { error } = await supabase.from("messages").insert({
-    conversation_id: args.conversationId,
-    sender_id: args.senderId,
-    content: args.content,
-  })
-  if (error) {
+  const { data: inserted, error } = await supabase
+    .from("messages")
+    .insert({
+      conversation_id: args.conversationId,
+      sender_id: args.senderId,
+      content: args.content,
+    })
+    .select("id, created_at")
+    .maybeSingle()
+  if (error || !inserted) {
     console.error("insertMemberMessageInConversation", error)
     return false
   }
+  await broadcastInsertedMarketplaceMessage(
+    { ...inserted, sender_id: args.senderId, content: args.content },
+    args.conversationId,
+  )
 
   void revalidateMessagesInboxForConversationId(args.conversationId)
 
@@ -87,7 +96,7 @@ export async function insertSupportStatusMessageAsSupportUser(args: {
       sender_id: args.supportUserId,
       content,
     })
-    .select("id")
+    .select("id, created_at")
     .maybeSingle()
 
   if (error) {
@@ -98,6 +107,10 @@ export async function insertSupportStatusMessageAsSupportUser(args: {
   if (!id) {
     return { ok: false }
   }
+  await broadcastInsertedMarketplaceMessage(
+    { ...data, sender_id: args.supportUserId, content },
+    args.conversationId,
+  )
   return {
     ok: true,
     messageId: id,
@@ -124,7 +137,7 @@ export async function insertSupportStaffThreadMessage(args: {
       sender_id: args.supportUserId,
       content: body,
     })
-    .select("id")
+    .select("id, created_at")
     .maybeSingle()
 
   if (error) {
@@ -135,6 +148,10 @@ export async function insertSupportStaffThreadMessage(args: {
   if (!id) {
     return { ok: false }
   }
+  await broadcastInsertedMarketplaceMessage(
+    { ...data, sender_id: args.supportUserId, content: body },
+    args.conversationId,
+  )
 
   const { error: convErr } = await svc
     .from("conversations")
