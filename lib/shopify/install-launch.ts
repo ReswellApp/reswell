@@ -84,10 +84,11 @@ export function decideShopifyConnectInstall(input: {
       shopDomain: input.launch.shopDomain,
     }
   }
-  if (!input.shopifyConnectEnabled) {
-    return { action: "request_access", shopDomain: input.launch.shopDomain }
+  if (!input.publicInstallAvailable) {
+    return input.shopifyConnectEnabled
+      ? { action: "install_unavailable" }
+      : { action: "request_access", shopDomain: input.launch.shopDomain }
   }
-  if (!input.publicInstallAvailable) return { action: "install_unavailable" }
   return {
     action: "start_public_install",
     shopDomain: input.launch.shopDomain,

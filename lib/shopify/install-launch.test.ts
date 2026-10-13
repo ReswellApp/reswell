@@ -62,12 +62,22 @@ test("verified install launch keeps the exact connect URL for sign-in", () => {
   }
 })
 
-test("signed-in merchant without access does not start OAuth", () => {
+test("signed-in merchant without access still starts OAuth from a signed launch", () => {
   const decision = decideShopifyConnectInstall({
     launch: assessShopifyInstallLaunch(signedInstallQuery()),
     signedIn: true,
     shopifyConnectEnabled: false,
     publicInstallAvailable: true,
+  })
+  assert.equal(decision.action, "start_public_install")
+})
+
+test("without public install, unapproved merchants can still request access", () => {
+  const decision = decideShopifyConnectInstall({
+    launch: assessShopifyInstallLaunch(signedInstallQuery()),
+    signedIn: true,
+    shopifyConnectEnabled: false,
+    publicInstallAvailable: false,
   })
   assert.equal(decision.action, "request_access")
 })
