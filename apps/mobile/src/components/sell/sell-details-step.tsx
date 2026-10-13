@@ -16,13 +16,6 @@ export function SellDetailsStep({
   return (
     <View style={styles.stack}>
       <SellField
-        label="Title"
-        value={draft.title}
-        onChangeText={(title) => onChange({ title })}
-        placeholder="What are you selling?"
-        autoCapitalize="words"
-      />
-      <SellField
         label="Description"
         value={draft.description}
         onChangeText={(description) => onChange({ description })}

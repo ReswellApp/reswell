@@ -400,6 +400,57 @@ export type MobileBrowseRail = z.infer<typeof mobileBrowseRailSchema>
 export type MobileBrowseRailItem = z.infer<typeof mobileBrowseRailItemSchema>
 
 /**
+ * Sell-flow categories. Same slugs as marketplace browse.
+ * Subcategories are the identity filters for that category — board style for surfboards.
+ */
+export const mobileSellSubcategorySchema = z.object({
+  slug: z.string().min(1),
+  label: z.string().min(1),
+})
+
+export const mobileSellCategorySchema = z.object({
+  slug: z.enum(MOBILE_LISTING_CATEGORIES),
+  label: z.string().min(1),
+  /** Null when this category has no subcategory. "Board style" for surfboards. */
+  subcategory_label: z.string().min(1).nullable(),
+  subcategories: z.array(mobileSellSubcategorySchema),
+})
+
+export const mobileSellTaxonomySchema = z.object({
+  categories: z.array(mobileSellCategorySchema).min(1),
+})
+
+export type MobileSellTaxonomy = z.infer<typeof mobileSellTaxonomySchema>
+export type MobileSellCategory = z.infer<typeof mobileSellCategorySchema>
+
+/** Categories the sell catalog search can return. Same set as the website `/sell` search. */
+export const MOBILE_SELL_CATALOG_CATEGORIES = ["surfboards", "fins", "wetsuits", "apparel"] as const
+
+export const mobileSellCatalogQuerySchema = z.object({
+  q: z.string().trim().min(1).max(200),
+})
+
+export const mobileSellCatalogRowSchema = z.object({
+  kind: z.enum(["brand", "model", "variant"]),
+  id: z.string().min(1),
+  brand_id: z.string().min(1),
+  brand_name: z.string().min(1),
+  model_name: z.string().nullable(),
+  category: z.enum(MOBILE_SELL_CATALOG_CATEGORIES),
+  category_label: z.string().min(1),
+  board_type: z.enum(MOBILE_BOARD_TYPES).nullable(),
+  image_url: z.string().nullable(),
+  title: z.string().min(1),
+})
+
+export const mobileSellCatalogSearchSchema = z.object({
+  results: z.array(mobileSellCatalogRowSchema),
+})
+
+export type MobileSellCatalogRow = z.infer<typeof mobileSellCatalogRowSchema>
+export type MobileSellCatalogSearch = z.infer<typeof mobileSellCatalogSearchSchema>
+
+/**
  * Surfboard shape filters. Same slugs and labels as the website board-style facet
  * (`BOARD_STYLE_OPTIONS` / `/boards?type=`).
  */

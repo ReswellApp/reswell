@@ -27,6 +27,8 @@ import {
   mobileRecentlyViewedSchema,
   mobileReviewsPageSchema,
   mobileSalesSchema,
+  mobileSellCatalogSearchSchema,
+  mobileSellTaxonomySchema,
   type MobileBrowseRail,
   type MobileSellerResource,
   type MobileCategory,
@@ -54,6 +56,8 @@ import {
   type MobileRecentlyViewed,
   type MobileReviewsPage,
   type MobileSale,
+  type MobileSellCatalogSearch,
+  type MobileSellTaxonomy,
 } from "@reswell/api-contract"
 
 /** Metro's host, so a physical phone can reach the Next server on this Mac. */
@@ -367,6 +371,19 @@ export function fetchSales(accessToken: string): Promise<{ sales: MobileSale[] }
 
 export function fetchConversations(accessToken: string): Promise<{ conversations: MobileConversationPreview[] }> {
   return read("/api/mobile/v1/me/conversations", (data) => mobileConversationsSchema.parse(data), accessToken)
+}
+
+/** Sell categories and surfboard board-style subcategories. */
+export function fetchSellTaxonomy(): Promise<MobileSellTaxonomy> {
+  return read("/api/mobile/v1/sell/taxonomy", (data) => mobileSellTaxonomySchema.parse(data))
+}
+
+/** Brand and model catalog search. Same index as the website sell flow. */
+export function fetchSellCatalog(query: string): Promise<MobileSellCatalogSearch> {
+  const params = new URLSearchParams({ q: query.trim() })
+  return read(`/api/mobile/v1/sell/catalog-search?${params.toString()}`, (data) =>
+    mobileSellCatalogSearchSchema.parse(data),
+  )
 }
 
 export function fetchConversation(id: string, accessToken: string): Promise<MobileConversationDetail> {

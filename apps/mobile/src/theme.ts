@@ -10,6 +10,8 @@ export const lightColors = {
   image: "#F3F4F6",
   primary: "#04070E",
   primaryForeground: "#FFFFFF",
+  /** Sell Continue / progress. Same as website `listingHeart`. */
+  listingHeart: "#355185",
   shipping: "#4263EB",
   sold: "#163060",
   destructive: "#DC2626",
@@ -24,6 +26,8 @@ export const darkColors = {
   image: "#2A2A2A",
   primary: "#FAFAFA",
   primaryForeground: "#04070E",
+  /** Sell Continue / progress. Same as website `listingHeart`. */
+  listingHeart: "#355185",
   shipping: "#4263EB",
   sold: "#9BB6F0",
   destructive: "#D4D4D4",

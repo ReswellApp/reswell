@@ -1,25 +1,3 @@
-/** Public sell product types. Same sections as the website sell flows. */
-export const SELL_SECTIONS = [
-  { slug: "surfboards", title: "Surfboard" },
-  { slug: "fins", title: "Fins" },
-  { slug: "traction", title: "Traction" },
-  { slug: "wetsuits", title: "Wetsuits" },
-  { slug: "magazines", title: "Magazines" },
-  { slug: "apparel", title: "Apparel" },
-  { slug: "boardbags", title: "Boardbag" },
-  { slug: "surfpacks", title: "Surfpack" },
-  { slug: "leashes", title: "Leash" },
-  { slug: "accessories", title: "Accessories" },
-] as const
-
-export type SellSectionSlug = (typeof SELL_SECTIONS)[number]["slug"]
-
-export type SellSection = (typeof SELL_SECTIONS)[number]
-
-export function sellSectionBySlug(slug: string | undefined): SellSection | null {
-  return SELL_SECTIONS.find((section) => section.slug === slug) ?? null
-}
-
 export const SELL_CONDITIONS = [
   { value: "brand_new", label: "Brand New" },
   { value: "excellent", label: "Excellent" },
@@ -29,13 +7,14 @@ export const SELL_CONDITIONS = [
   { value: "poor", label: "Poor" },
 ] as const
 
-export const SELL_STEPS = ["photos", "details", "price", "place", "review"] as const
+export const SELL_STEPS = ["product", "photos", "details", "price", "place", "review"] as const
 
 export type SellStep = (typeof SELL_STEPS)[number]
 
 export const SELL_STEP_TITLES: Record<SellStep, string> = {
+  product: "Product info",
   photos: "Photos",
-  details: "Details",
+  details: "Condition",
   price: "Price",
   place: "Pickup & shipping",
   review: "Review",
@@ -54,6 +33,12 @@ export type SellPhoto = {
 export type SellDraft = {
   photos: SellPhoto[]
   title: string
+  brand: string
+  model: string
+  /** Category slug from `GET /api/mobile/v1/sell/taxonomy`. */
+  category: string
+  /** Subcategory slug. Board style when the category is surfboards. */
+  subcategory: string
   condition: string
   description: string
   price: string
@@ -67,6 +52,10 @@ export function emptySellDraft(): SellDraft {
   return {
     photos: [],
     title: "",
+    brand: "",
+    model: "",
+    category: "",
+    subcategory: "",
     condition: "",
     description: "",
     price: "",
@@ -75,6 +64,20 @@ export function emptySellDraft(): SellDraft {
     localPickup: true,
     shipping: false,
   }
+}
+
+type SellCategoryChoice = {
+  slug: string
+  subcategories: readonly { slug: string }[]
+}
+
+/** Product info is ready when title, brand, model, and category are set, plus a subcategory when the API requires one. */
+export function productStepIsReady(draft: SellDraft, categories: readonly SellCategoryChoice[]): boolean {
+  if (!draft.title.trim() || !draft.brand.trim() || !draft.model.trim() || !draft.category) return false
+  const category = categories.find((item) => item.slug === draft.category)
+  if (!category) return false
+  if (category.subcategories.length === 0) return true
+  return category.subcategories.some((item) => item.slug === draft.subcategory)
 }
 
 export function sellConditionLabel(value: string): string {
@@ -97,9 +100,14 @@ export function formatSellPrice(raw: string): string {
   return priceUsd(raw).toLocaleString("en-US", { style: "currency", currency: "USD" })
 }
 
-export function stepIsReady(step: SellStep, draft: SellDraft): boolean {
+export function stepIsReady(
+  step: SellStep,
+  draft: SellDraft,
+  categories: readonly SellCategoryChoice[] = [],
+): boolean {
+  if (step === "product") return productStepIsReady(draft, categories)
   if (step === "photos") return draft.photos.length >= 1
-  if (step === "details") return draft.title.trim().length > 0 && draft.condition.length > 0 && draft.description.trim().length > 0
+  if (step === "details") return draft.condition.length > 0 && draft.description.trim().length > 0
   if (step === "price") {
     const price = priceUsd(draft.price)
     return price >= PRICE_MIN && price <= PRICE_MAX

@@ -1,18 +1,21 @@
 import { Image } from "expo-image"
 import { StyleSheet, Text, View } from "react-native"
-import { formatSellPrice, sellConditionLabel, type SellDraft, type SellSection } from "@/lib/sell-flow"
+import { formatSellPrice, sellConditionLabel, type SellDraft } from "@/lib/sell-flow"
+import type { MobileSellTaxonomy } from "@reswell/api-contract"
 import { fontFamily, useReswellColors } from "@/theme"
 
 export function SellReviewStep({
-  section,
   draft,
+  taxonomy,
   signedIn,
 }: {
-  section: SellSection
   draft: SellDraft
+  taxonomy: MobileSellTaxonomy | null
   signedIn: boolean
 }) {
   const colors = useReswellColors()
+  const category = taxonomy?.categories.find((item) => item.slug === draft.category) ?? null
+  const subcategory = category?.subcategories.find((item) => item.slug === draft.subcategory) ?? null
   const fulfillment = [draft.localPickup ? "Local pickup" : null, draft.shipping ? "Shipping" : null]
     .filter((item): item is string => item != null)
     .join(" · ")
@@ -24,8 +27,13 @@ export function SellReviewStep({
           <Image key={photo.id} source={{ uri: photo.uri }} style={[styles.photo, { backgroundColor: colors.image }]} contentFit="cover" />
         ))}
       </View>
-      <ReviewLine label="Type" value={section.title} />
       <ReviewLine label="Title" value={draft.title.trim()} />
+      <ReviewLine label="Brand" value={draft.brand.trim()} />
+      <ReviewLine label="Model" value={draft.model.trim()} />
+      <ReviewLine label="Category" value={category?.label ?? draft.category} />
+      {subcategory && category?.subcategory_label ? (
+        <ReviewLine label={category.subcategory_label} value={subcategory.label} />
+      ) : null}
       <ReviewLine label="Condition" value={sellConditionLabel(draft.condition)} />
       <ReviewLine label="Description" value={draft.description.trim()} />
       <ReviewLine label="Price" value={formatSellPrice(draft.price)} />
