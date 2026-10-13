@@ -75,7 +75,7 @@ export default async function HomePage() {
                   </Link>
                 </Button>
                 <Button size="lg" variant="outline" className="w-full lg:w-full" asChild>
-                  <Link href="/cities">
+                  <Link href="/cities/top">
                     Browse by city
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
