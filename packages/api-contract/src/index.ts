@@ -408,12 +408,53 @@ export const mobileSellSubcategorySchema = z.object({
   label: z.string().min(1),
 })
 
+/** Same cost choices as the website sell radios. */
+export const MOBILE_SELL_SHIPPING_MODES = ["reswell", "free", "flat"] as const
+
+export const mobileSellShippingOptionSchema = z.object({
+  id: z.enum(MOBILE_SELL_SHIPPING_MODES),
+  label: z.string().min(1),
+  detail: z.string().min(1),
+  badge: z.string().min(1).nullable(),
+})
+
+/**
+ * Shipping section for one sell category. Mirrors that category's website `/sell` flow.
+ * Shipping starts on. Local pickup starts off, and is omitted when the category ships only.
+ */
+export const mobileSellFulfillmentSchema = z.object({
+  title: z.string().min(1),
+  description: z.string().min(1),
+  hint: z.string().min(1).nullable(),
+  shipping_default: z.literal(true),
+  /** Seller can turn shipping off. Ship-only categories keep it on. */
+  shipping_toggle: z.boolean(),
+  shipping_label: z.string().min(1),
+  shipping_badge: z.string().min(1).nullable(),
+  /** Shown when shipping is on and there is no cost-mode choice (apparel, magazines). */
+  shipping_detail: z.string().min(1).nullable(),
+  /** Heading for the compact Shipping / Local pickup choices. Null when the category ships only. */
+  delivery_title: z.string().min(1).nullable(),
+  /** Heading above the Reswell / free / flat choices. */
+  cost_title: z.string().min(1).nullable(),
+  local_pickup: z.boolean(),
+  local_pickup_default: z.literal(false),
+  /** Empty when the category always uses Reswell calculated shipping. */
+  shipping_options: z.array(mobileSellShippingOptionSchema),
+  package_dimensions: z.boolean(),
+  /** Surfboards can be dropped at a city Reswell packs and ships from. */
+  dropoff: z.boolean(),
+})
+
 export const mobileSellCategorySchema = z.object({
   slug: z.enum(MOBILE_LISTING_CATEGORIES),
   label: z.string().min(1),
   /** Null when this category has no subcategory. "Board style" for surfboards. */
   subcategory_label: z.string().min(1).nullable(),
   subcategories: z.array(mobileSellSubcategorySchema),
+  fulfillment: mobileSellFulfillmentSchema,
+  /** True when this category uses the surfboard dimensions and fins section on the photos step. */
+  board_specs: z.boolean(),
 })
 
 export const mobileSellTaxonomySchema = z.object({
@@ -422,6 +463,89 @@ export const mobileSellTaxonomySchema = z.object({
 
 export type MobileSellTaxonomy = z.infer<typeof mobileSellTaxonomySchema>
 export type MobileSellCategory = z.infer<typeof mobileSellCategorySchema>
+export type MobileSellFulfillment = z.infer<typeof mobileSellFulfillmentSchema>
+export type MobileSellShippingMode = (typeof MOBILE_SELL_SHIPPING_MODES)[number]
+
+export const mobileSellSpecOptionSchema = z.object({
+  value: z.string(),
+  label: z.string().min(1),
+  /** Alternate label when the seller switches width and thickness to decimals. */
+  decimal_label: z.string().min(1).nullable(),
+})
+
+export const mobileSellSpecFieldSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+  hint: z.string().min(1).nullable(),
+  required: z.boolean(),
+  kind: z.enum(["select", "text"]),
+  placeholder: z.string().nullable(),
+  suffix: z.string().min(1).nullable(),
+  options: z.array(mobileSellSpecOptionSchema),
+})
+
+export const mobileSellSpecSectionSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(1).nullable(),
+  hint: z.string().min(1).nullable(),
+  fields: z.array(mobileSellSpecFieldSchema).min(1),
+})
+
+/** Surfboard dimensions, fins, and construction. Same options as the website photos step. */
+export const mobileSellBoardSpecsSchema = z.object({
+  sections: z.array(mobileSellSpecSectionSchema).min(1),
+})
+
+export type MobileSellBoardSpecs = z.infer<typeof mobileSellBoardSpecsSchema>
+export type MobileSellSpecField = z.infer<typeof mobileSellSpecFieldSchema>
+
+export const mobileSellDropoffLocationSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  city: z.string().min(1),
+  state: z.string().min(1),
+})
+
+export const mobileSellDropoffLocationsSchema = z.object({
+  locations: z.array(mobileSellDropoffLocationSchema),
+})
+
+export type MobileSellDropoffLocations = z.infer<typeof mobileSellDropoffLocationsSchema>
+
+/** Google place dropdown for the sell location field. `place_id` is set when Google returned the row. */
+export const mobilePlaceSuggestionSchema = z.object({
+  label: z.string().min(1),
+  place_id: z.string().min(1).nullable(),
+  lat: z.number().nullable(),
+  lng: z.number().nullable(),
+  city: z.string(),
+  state: z.string(),
+})
+
+export const mobilePlaceSuggestionsSchema = z.object({
+  suggestions: z.array(mobilePlaceSuggestionSchema),
+})
+
+export const mobilePlaceSuggestQuerySchema = z.object({
+  q: z.string().trim().min(2).max(200),
+})
+
+export const mobilePlaceDetailsQuerySchema = z.object({
+  place_id: z.string().trim().min(1).max(300),
+})
+
+export const mobilePlaceDetailsSchema = z.object({
+  label: z.string().min(1),
+  place_id: z.string().min(1),
+  lat: z.number(),
+  lng: z.number(),
+  city: z.string().min(1),
+  state: z.string().min(1),
+})
+
+export type MobilePlaceSuggestion = z.infer<typeof mobilePlaceSuggestionSchema>
+export type MobilePlaceSuggestions = z.infer<typeof mobilePlaceSuggestionsSchema>
+export type MobilePlaceDetails = z.infer<typeof mobilePlaceDetailsSchema>
 
 /** Categories the sell catalog search can return. Same set as the website `/sell` search. */
 export const MOBILE_SELL_CATALOG_CATEGORIES = ["surfboards", "fins", "wetsuits", "apparel"] as const

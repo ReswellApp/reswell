@@ -1,3 +1,5 @@
+import type { MobileSellBoardSpecs, MobileSellFulfillment } from "@reswell/api-contract"
+
 export const SELL_CONDITIONS = [
   { value: "brand_new", label: "Brand New" },
   { value: "excellent", label: "Excellent" },
@@ -16,7 +18,7 @@ export const SELL_STEP_TITLES: Record<SellStep, string> = {
   photos: "Photos",
   details: "Condition",
   price: "Price",
-  place: "Pickup & shipping",
+  place: "Shipping",
   review: "Review",
 }
 
@@ -24,6 +26,9 @@ export const MAX_SELL_PHOTOS = 8
 
 const PRICE_MIN = 0.01
 const PRICE_MAX = 999_999.99
+
+export const SELL_SHIPPING_MODES = ["reswell", "free", "flat"] as const
+export type SellShippingMode = (typeof SELL_SHIPPING_MODES)[number]
 
 export type SellPhoto = {
   id: string
@@ -42,10 +47,25 @@ export type SellDraft = {
   condition: string
   description: string
   price: string
+  /** Display label from the place dropdown. */
+  locationLabel: string
   city: string
   state: string
+  locationLat: number | null
+  locationLng: number | null
+  /** Shipping starts on. Local pickup starts off until the seller turns it on. */
   localPickup: boolean
   shipping: boolean
+  shippingMode: SellShippingMode
+  shippingPrice: string
+  packageLength: string
+  packageWidth: string
+  packageHeight: string
+  packageWeightLb: string
+  packageWeightOz: string
+  dropoffLocationId: string
+  /** Values for API-defined board spec fields. Keys are field ids from board specs. */
+  specs: Record<string, string>
 }
 
 export function emptySellDraft(): SellDraft {
@@ -59,16 +79,30 @@ export function emptySellDraft(): SellDraft {
     condition: "",
     description: "",
     price: "",
+    locationLabel: "",
     city: "",
     state: "",
-    localPickup: true,
-    shipping: false,
+    locationLat: null,
+    locationLng: null,
+    localPickup: false,
+    shipping: true,
+    shippingMode: "reswell",
+    shippingPrice: "",
+    packageLength: "",
+    packageWidth: "",
+    packageHeight: "",
+    packageWeightLb: "",
+    packageWeightOz: "",
+    dropoffLocationId: "",
+    specs: {},
   }
 }
 
 type SellCategoryChoice = {
   slug: string
   subcategories: readonly { slug: string }[]
+  fulfillment?: MobileSellFulfillment
+  board_specs?: boolean
 }
 
 /** Product info is ready when title, brand, model, and category are set, plus a subcategory when the API requires one. */
@@ -104,16 +138,116 @@ export function stepIsReady(
   step: SellStep,
   draft: SellDraft,
   categories: readonly SellCategoryChoice[] = [],
+  boardSpecs: MobileSellBoardSpecs | null = null,
 ): boolean {
   if (step === "product") return productStepIsReady(draft, categories)
-  if (step === "photos") return draft.photos.length >= 1
+  if (step === "photos") {
+    const category = categories.find((item) => item.slug === draft.category)
+    return photosStepIsReady(draft, category?.board_specs === true, boardSpecs)
+  }
   if (step === "details") return draft.condition.length > 0 && draft.description.trim().length > 0
   if (step === "price") {
     const price = priceUsd(draft.price)
     return price >= PRICE_MIN && price <= PRICE_MAX
   }
   if (step === "place") {
-    return draft.city.trim().length > 0 && draft.state.trim().length > 0 && (draft.localPickup || draft.shipping)
+    const category = categories.find((item) => item.slug === draft.category)
+    return placeStepIsReady(draft, category?.fulfillment)
   }
   return true
+}
+
+/** Photos are required. Required board-spec fields come from the board specs API. */
+export function photosStepIsReady(
+  draft: SellDraft,
+  needsBoardSpecs: boolean,
+  boardSpecs: MobileSellBoardSpecs | null,
+): boolean {
+  if (draft.photos.length < 1) return false
+  if (!needsBoardSpecs) return true
+  if (!boardSpecs) return false
+  return boardSpecs.sections.every((section) =>
+    section.fields.every((field) => !field.required || boardSpecValue(draft, field.id).trim().length > 0),
+  )
+}
+
+export function boardSpecValue(draft: SellDraft, fieldId: string): string {
+  return draft.specs[fieldId] ?? ""
+}
+
+/** Filled board-spec rows for review. Labels and option text come from the board specs API. */
+export function boardSpecReviewLines(
+  draft: SellDraft,
+  specs: MobileSellBoardSpecs | null,
+): { label: string; value: string }[] {
+  if (!specs) return []
+  const lines: { label: string; value: string }[] = []
+  for (const section of specs.sections) {
+    for (const field of section.fields) {
+      const raw = boardSpecValue(draft, field.id).trim()
+      if (!raw) continue
+      const option = field.options.find((item) => item.value === raw)
+      const value = option?.label ?? raw
+      lines.push({ label: field.label, value: field.suffix ? `${value} ${field.suffix}` : value })
+    }
+  }
+  return lines
+}
+
+function positiveInches(raw: string): boolean {
+  const value = Number(raw.trim())
+  return Number.isFinite(value) && value > 0
+}
+
+function packageIsReady(draft: SellDraft): boolean {
+  if (!positiveInches(draft.packageLength) || !positiveInches(draft.packageWidth) || !positiveInches(draft.packageHeight)) {
+    return false
+  }
+  const pounds = draft.packageWeightLb.trim() === "" ? 0 : Number(draft.packageWeightLb)
+  const ounces = draft.packageWeightOz.trim() === "" ? 0 : Number(draft.packageWeightOz)
+  if (!Number.isFinite(pounds) || pounds < 0 || !Number.isFinite(ounces) || ounces < 0 || ounces >= 16) return false
+  if (draft.packageWeightLb.trim() === "" && draft.packageWeightOz.trim() === "") return false
+  return pounds * 16 + ounces > 0
+}
+
+/** Place step matches the category's website shipping section. */
+export function placeStepIsReady(draft: SellDraft, fulfillment: MobileSellFulfillment | undefined): boolean {
+  if (!fulfillment) return false
+  if (!draft.city.trim() || !draft.state.trim() || draft.locationLat == null || draft.locationLng == null) return false
+
+  const shippingOn = fulfillment.shipping_toggle ? draft.shipping : true
+  const pickupOn = fulfillment.local_pickup ? draft.localPickup : false
+  if (!shippingOn && !pickupOn) return false
+  if (!shippingOn) return true
+
+  const selected =
+    fulfillment.shipping_options.find((option) => option.id === draft.shippingMode)?.id ??
+    fulfillment.shipping_options[0]?.id ??
+    "reswell"
+  if (selected === "flat") {
+    const price = Number(draft.shippingPrice)
+    if (draft.shippingPrice.trim() === "" || !Number.isFinite(price) || price < 0) return false
+  }
+  if (selected === "reswell" && fulfillment.package_dimensions && !packageIsReady(draft)) return false
+  return true
+}
+
+const SHIPPING_SUMMARY: Record<SellShippingMode, string> = {
+  reswell: "Reswell shipping",
+  free: "Free shipping",
+  flat: "Flat-rate shipping",
+}
+
+export function sellFulfillmentSummary(draft: SellDraft, fulfillment: MobileSellFulfillment | undefined): string {
+  const shippingOn = fulfillment ? (fulfillment.shipping_toggle ? draft.shipping : true) : draft.shipping
+  const pickupOn = fulfillment?.local_pickup ? draft.localPickup : false
+  const mode = fulfillment?.shipping_options.find((option) => option.id === draft.shippingMode)?.id
+  const shippingLabel = !shippingOn
+    ? null
+    : mode
+      ? SHIPPING_SUMMARY[mode]
+      : fulfillment && fulfillment.shipping_options.length === 0
+        ? "Reswell shipping"
+        : "Shipping"
+  return [shippingLabel, pickupOn ? "Local pickup" : null].filter((item): item is string => item != null).join(" · ")
 }

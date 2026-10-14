@@ -8,7 +8,7 @@ import { SellPlaceStep } from "@/components/sell/sell-place-step"
 import { SellPriceStep } from "@/components/sell/sell-price-step"
 import { SellProductStep } from "@/components/sell/sell-product-step"
 import { SellReviewStep } from "@/components/sell/sell-review-step"
-import { fetchSellTaxonomy } from "@/lib/api"
+import { fetchSellBoardSpecs, fetchSellTaxonomy } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
 import {
   emptySellDraft,
@@ -17,7 +17,7 @@ import {
   stepIsReady,
   type SellDraft,
 } from "@/lib/sell-flow"
-import type { MobileSellTaxonomy } from "@reswell/api-contract"
+import type { MobileSellBoardSpecs, MobileSellTaxonomy } from "@reswell/api-contract"
 import { fontFamily, useReswellColors } from "@/theme"
 
 export function SellListingFlow({ initial }: { initial?: Partial<SellDraft> }) {
@@ -29,8 +29,15 @@ export function SellListingFlow({ initial }: { initial?: Partial<SellDraft> }) {
   const [draft, setDraft] = useState<SellDraft>(() => ({ ...emptySellDraft(), ...initial }))
   const [taxonomy, setTaxonomy] = useState<MobileSellTaxonomy | null>(null)
   const [taxonomyError, setTaxonomyError] = useState<string | null>(null)
+  const [boardSpecs, setBoardSpecs] = useState<MobileSellBoardSpecs | null>(null)
+  const [boardSpecsError, setBoardSpecsError] = useState<string | null>(null)
+  const [boardSpecsAttempt, setBoardSpecsAttempt] = useState(0)
   const step = SELL_STEPS[stepIndex] ?? "product"
-  const ready = stepIsReady(step, draft, taxonomy?.categories ?? [])
+  const category = taxonomy?.categories.find((item) => item.slug === draft.category) ?? null
+  const fulfillment = category?.fulfillment ?? null
+  const needsBoardSpecs = category?.board_specs === true
+  const ready = stepIsReady(step, draft, taxonomy?.categories ?? [], needsBoardSpecs ? boardSpecs : null)
+  const stepTitle = step === "place" && fulfillment ? fulfillment.title : SELL_STEP_TITLES[step]
   const signedIn = Boolean(session?.access_token)
 
   const loadTaxonomy = useCallback(() => {
@@ -46,8 +53,35 @@ export function SellListingFlow({ initial }: { initial?: Partial<SellDraft> }) {
     loadTaxonomy()
   }, [loadTaxonomy])
 
+  useEffect(() => {
+    if (!needsBoardSpecs) return
+    let cancelled = false
+    setBoardSpecsError(null)
+    fetchSellBoardSpecs()
+      .then((result) => {
+        if (!cancelled) setBoardSpecs(result)
+      })
+      .catch(() => {
+        if (!cancelled) setBoardSpecsError("Couldn't load board details.")
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [needsBoardSpecs, boardSpecsAttempt])
+
   function patch(next: Partial<SellDraft>) {
-    setDraft((current) => ({ ...current, ...next }))
+    setDraft((current) => {
+      const merged = { ...current, ...next }
+      if (next.category && next.category !== current.category) {
+        merged.shipping = true
+        merged.localPickup = false
+        merged.shippingMode = "reswell"
+        merged.shippingPrice = ""
+        merged.dropoffLocationId = ""
+        merged.specs = {}
+      }
+      return merged
+    })
   }
 
   return (
@@ -61,8 +95,13 @@ export function SellListingFlow({ initial }: { initial?: Partial<SellDraft> }) {
           Step {stepIndex + 1} of {SELL_STEPS.length}
         </Text>
         <Text style={[styles.stepTitle, { color: colors.foreground, fontFamily: fontFamily.headline }]}>
-          {SELL_STEP_TITLES[step]}
+          {stepTitle}
         </Text>
+        {step === "place" && fulfillment ? (
+          <Text style={[styles.stepDescription, { color: colors.muted, fontFamily: fontFamily.text }]}>
+            {fulfillment.description}
+          </Text>
+        ) : null}
         {step === "product" ? (
           <SellProductStep
             draft={draft}
@@ -72,11 +111,23 @@ export function SellListingFlow({ initial }: { initial?: Partial<SellDraft> }) {
             onChange={patch}
           />
         ) : null}
-        {step === "photos" ? <SellPhotosStep photos={draft.photos} onChange={(photos) => patch({ photos })} /> : null}
+        {step === "photos" ? (
+          <SellPhotosStep
+            photos={draft.photos}
+            boardSpecs={needsBoardSpecs ? boardSpecs : undefined}
+            specValues={draft.specs}
+            specsError={boardSpecsError}
+            onRetrySpecs={() => setBoardSpecsAttempt((attempt) => attempt + 1)}
+            onChange={(photos) => patch({ photos })}
+            onSpecsChange={(specs) => patch({ specs })}
+          />
+        ) : null}
         {step === "details" ? <SellDetailsStep draft={draft} onChange={patch} /> : null}
         {step === "price" ? <SellPriceStep draft={draft} onChange={patch} /> : null}
-        {step === "place" ? <SellPlaceStep draft={draft} onChange={patch} /> : null}
-        {step === "review" ? <SellReviewStep draft={draft} taxonomy={taxonomy} signedIn={signedIn} /> : null}
+        {step === "place" ? <SellPlaceStep draft={draft} fulfillment={fulfillment} onChange={patch} /> : null}
+        {step === "review" ? (
+          <SellReviewStep draft={draft} taxonomy={taxonomy} boardSpecs={needsBoardSpecs ? boardSpecs : null} signedIn={signedIn} />
+        ) : null}
       </ScrollView>
       <View style={[styles.footer, { borderTopColor: colors.border, paddingBottom: Math.max(insets.bottom, 12) }]}>
         {stepIndex > 0 ? (
@@ -110,6 +161,7 @@ const styles = StyleSheet.create({
   content: { padding: 16, paddingBottom: 24, gap: 16 },
   progress: { fontSize: 13, fontWeight: "600" },
   stepTitle: { fontSize: 28, fontWeight: "600", marginTop: -8 },
+  stepDescription: { fontSize: 15, lineHeight: 21, marginTop: -8 },
   footer: {
     borderTopWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 16,

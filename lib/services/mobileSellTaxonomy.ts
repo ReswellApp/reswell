@@ -4,6 +4,7 @@ import {
   type MobileListingCategory,
   type MobileSellTaxonomy,
 } from "@reswell/api-contract"
+import { getMobileSellFulfillment } from "@/lib/services/mobileSellFulfillment"
 import { BOARD_STYLE_OPTIONS } from "@/lib/boards-browse-facets"
 import {
   siteHeaderMainPeerProductNavLinks,
@@ -50,6 +51,8 @@ export function getMobileSellTaxonomy(): MobileSellTaxonomy {
       label: labelFor(slug),
       subcategory_label: slug === "surfboards" ? "Board style" : null,
       subcategories: slug === "surfboards" ? boardStyles : [],
+      fulfillment: getMobileSellFulfillment(slug),
+      board_specs: slug === "surfboards",
     })),
   })
 }

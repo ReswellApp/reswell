@@ -27,8 +27,12 @@ import {
   mobileRecentlyViewedSchema,
   mobileReviewsPageSchema,
   mobileSalesSchema,
+  mobileSellBoardSpecsSchema,
   mobileSellCatalogSearchSchema,
+  mobileSellDropoffLocationsSchema,
   mobileSellTaxonomySchema,
+  mobilePlaceDetailsSchema,
+  mobilePlaceSuggestionsSchema,
   type MobileBrowseRail,
   type MobileSellerResource,
   type MobileCategory,
@@ -56,8 +60,12 @@ import {
   type MobileRecentlyViewed,
   type MobileReviewsPage,
   type MobileSale,
+  type MobileSellBoardSpecs,
   type MobileSellCatalogSearch,
+  type MobileSellDropoffLocations,
   type MobileSellTaxonomy,
+  type MobilePlaceDetails,
+  type MobilePlaceSuggestions,
 } from "@reswell/api-contract"
 
 /** Metro's host, so a physical phone can reach the Next server on this Mac. */
@@ -376,6 +384,54 @@ export function fetchConversations(accessToken: string): Promise<{ conversations
 /** Sell categories and surfboard board-style subcategories. */
 export function fetchSellTaxonomy(): Promise<MobileSellTaxonomy> {
   return read("/api/mobile/v1/sell/taxonomy", (data) => mobileSellTaxonomySchema.parse(data))
+}
+
+/** Google place dropdown for the sell location field. Falls back to city/ZIP search on the server. */
+export function fetchSellPlaceSuggestions(query: string): Promise<MobilePlaceSuggestions> {
+  const q = query.trim()
+  if (q.length < 2) return Promise.resolve({ suggestions: [] })
+  return read(`/api/mobile/v1/places/suggest?q=${encodeURIComponent(q)}`, (data) =>
+    mobilePlaceSuggestionsSchema.parse(data),
+  )
+}
+
+/** City, state, and coordinates for a Google suggestion. */
+export function fetchSellPlaceDetails(placeId: string): Promise<MobilePlaceDetails> {
+  return read(`/api/mobile/v1/places/details?place_id=${encodeURIComponent(placeId)}`, (data) =>
+    mobilePlaceDetailsSchema.parse(data),
+  )
+}
+
+/** Surfboard length, width, thickness, volume, fins, and construction. Same lists as `/sell`. */
+export function fetchSellBoardSpecs(): Promise<MobileSellBoardSpecs> {
+  return read("/api/mobile/v1/sell/board-specs", (data) => mobileSellBoardSpecsSchema.parse(data))
+}
+
+/** Surfboard drop-off cities. Same list as the website sell flow. */
+export function fetchSellDropoffLocations(): Promise<MobileSellDropoffLocations> {
+  return read("/api/mobile/v1/sell/dropoff-locations", (data) => mobileSellDropoffLocationsSchema.parse(data))
+}
+
+export type StructuredPlace = {
+  label: string
+  city: string
+  state: string
+}
+
+/** Website reverse geocode (`/api/geocode/structured`). Google first. */
+export async function fetchStructuredPlace(lat: number, lng: number): Promise<StructuredPlace | null> {
+  const response = await fetch(
+    `${apiOrigin()}/api/geocode/structured?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`,
+    { headers: { Accept: "application/json" } },
+  )
+  if (!response.ok) return null
+  const body: unknown = await response.json()
+  if (!body || typeof body !== "object") return null
+  const row = body as { city_locality?: unknown; state_province?: unknown }
+  const city = typeof row.city_locality === "string" ? row.city_locality.trim() : ""
+  const state = typeof row.state_province === "string" ? row.state_province.trim() : ""
+  if (!city || !state) return null
+  return { label: `${city}, ${state}`, city, state }
 }
 
 /** Brand and model catalog search. Same index as the website sell flow. */

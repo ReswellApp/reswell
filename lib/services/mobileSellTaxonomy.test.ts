@@ -36,4 +36,60 @@ describe("mobile sell taxonomy", () => {
       assert.deepEqual(category.subcategories, [])
     }
   })
+
+  it("ships the website shipping section for each category", () => {
+    const taxonomy = getMobileSellTaxonomy()
+    const bySlug = new Map(taxonomy.categories.map((category) => [category.slug, category.fulfillment]))
+
+    for (const fulfillment of bySlug.values()) {
+      assert.equal(fulfillment.shipping_default, true)
+      assert.equal(fulfillment.local_pickup_default, false)
+    }
+
+    const surfboards = bySlug.get("surfboards")
+    assert.equal(surfboards?.title, "Shipping")
+    assert.equal(surfboards?.dropoff, true)
+    assert.equal(surfboards?.local_pickup, true)
+    assert.equal(surfboards?.shipping_toggle, true)
+    assert.equal(surfboards?.delivery_title, "Delivery options")
+    assert.equal(surfboards?.shipping_badge, "Items sell faster")
+    assert.equal(surfboards?.cost_title, "Shipping cost in the Continental U.S.")
+    assert.deepEqual(
+      surfboards?.shipping_options.map((option) => option.id),
+      ["reswell", "free", "flat"],
+    )
+    assert.equal(surfboards?.shipping_options[0]?.badge, "Recommended")
+
+    const fins = bySlug.get("fins")
+    assert.equal(fins?.title, "Shipping")
+    assert.equal(fins?.local_pickup, false)
+    assert.equal(fins?.shipping_options.length, 3)
+
+    const wetsuits = bySlug.get("wetsuits")
+    assert.equal(wetsuits?.local_pickup, false)
+
+    const apparel = bySlug.get("apparel")
+    assert.equal(apparel?.title, "Pickup & shipping")
+    assert.equal(apparel?.shipping_toggle, true)
+    assert.equal(apparel?.local_pickup, true)
+    assert.deepEqual(apparel?.shipping_options, [])
+    assert.match(apparel?.shipping_detail ?? "", /USPS/)
+    assert.equal(apparel?.shipping_badge, "Items sell faster")
+
+    const leash = bySlug.get("leashes")
+    assert.equal(leash?.shipping_toggle, true)
+    assert.equal(leash?.shipping_options[0]?.id, "reswell")
+
+    const magazines = bySlug.get("magazines")
+    assert.equal(magazines?.title, "Shipping")
+    assert.equal(magazines?.local_pickup, false)
+    assert.deepEqual(magazines?.shipping_options, [])
+    assert.equal(magazines?.package_dimensions, true)
+
+    assert.equal(taxonomy.categories.find((category) => category.slug === "surfboards")?.board_specs, true)
+    for (const category of taxonomy.categories) {
+      if (category.slug === "surfboards") continue
+      assert.equal(category.board_specs, false)
+    }
+  })
 })

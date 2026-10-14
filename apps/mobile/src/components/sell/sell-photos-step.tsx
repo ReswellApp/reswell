@@ -3,18 +3,30 @@ import { Image } from "expo-image"
 import { useState } from "react"
 import { Pressable, StyleSheet, Text, View } from "react-native"
 import { SymbolView } from "expo-symbols"
+import { SellBoardSpecs } from "@/components/sell/sell-board-specs"
 import { SellPhotoExamples } from "@/components/sell/sell-photo-examples"
 import { SellPhotoTips } from "@/components/sell/sell-photo-tips"
 import { SellUploadMenu } from "@/components/sell/sell-upload-menu"
 import { MAX_SELL_PHOTOS, type SellPhoto } from "@/lib/sell-flow"
+import type { MobileSellBoardSpecs } from "@reswell/api-contract"
 import { fontFamily, useReswellColors } from "@/theme"
 
 export function SellPhotosStep({
   photos,
+  boardSpecs,
+  specValues,
+  specsError,
+  onRetrySpecs,
   onChange,
+  onSpecsChange,
 }: {
   photos: SellPhoto[]
+  boardSpecs?: MobileSellBoardSpecs | null
+  specValues?: Record<string, string>
+  specsError?: string | null
+  onRetrySpecs?: () => void
   onChange: (photos: SellPhoto[]) => void
+  onSpecsChange?: (specs: Record<string, string>) => void
 }) {
   const colors = useReswellColors()
   const [error, setError] = useState<string | null>(null)
@@ -104,6 +116,15 @@ export function SellPhotosStep({
       ) : null}
       {error ? <Text style={[styles.error, { color: colors.destructive, fontFamily: fontFamily.text }]}>{error}</Text> : null}
       <SellPhotoExamples open={examplesOpen} onToggle={() => setExamplesOpen((open) => !open)} />
+      {boardSpecs !== undefined ? (
+        <SellBoardSpecs
+          specs={boardSpecs}
+          values={specValues ?? {}}
+          error={specsError ?? null}
+          onRetry={onRetrySpecs ?? (() => undefined)}
+          onChange={onSpecsChange ?? (() => undefined)}
+        />
+      ) : null}
       {tipsOpen ? <SellPhotoTips onClose={() => setTipsOpen(false)} /> : null}
       {menuOpen ? (
         <SellUploadMenu onLibrary={() => void addFromLibrary()} onCamera={() => void takePhoto()} onClose={() => setMenuOpen(false)} />

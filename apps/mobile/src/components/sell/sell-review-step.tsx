@@ -1,24 +1,25 @@
 import { Image } from "expo-image"
 import { StyleSheet, Text, View } from "react-native"
-import { formatSellPrice, sellConditionLabel, type SellDraft } from "@/lib/sell-flow"
-import type { MobileSellTaxonomy } from "@reswell/api-contract"
+import { boardSpecReviewLines, formatSellPrice, sellConditionLabel, sellFulfillmentSummary, type SellDraft } from "@/lib/sell-flow"
+import type { MobileSellBoardSpecs, MobileSellTaxonomy } from "@reswell/api-contract"
 import { fontFamily, useReswellColors } from "@/theme"
 
 export function SellReviewStep({
   draft,
   taxonomy,
+  boardSpecs,
   signedIn,
 }: {
   draft: SellDraft
   taxonomy: MobileSellTaxonomy | null
+  boardSpecs: MobileSellBoardSpecs | null
   signedIn: boolean
 }) {
   const colors = useReswellColors()
   const category = taxonomy?.categories.find((item) => item.slug === draft.category) ?? null
   const subcategory = category?.subcategories.find((item) => item.slug === draft.subcategory) ?? null
-  const fulfillment = [draft.localPickup ? "Local pickup" : null, draft.shipping ? "Shipping" : null]
-    .filter((item): item is string => item != null)
-    .join(" · ")
+  const fulfillment = sellFulfillmentSummary(draft, category?.fulfillment)
+  const specLines = boardSpecReviewLines(draft, boardSpecs)
 
   return (
     <View style={styles.stack}>
@@ -34,10 +35,13 @@ export function SellReviewStep({
       {subcategory && category?.subcategory_label ? (
         <ReviewLine label={category.subcategory_label} value={subcategory.label} />
       ) : null}
+      {specLines.map((line) => (
+        <ReviewLine key={line.label} label={line.label} value={line.value} />
+      ))}
       <ReviewLine label="Condition" value={sellConditionLabel(draft.condition)} />
       <ReviewLine label="Description" value={draft.description.trim()} />
       <ReviewLine label="Price" value={formatSellPrice(draft.price)} />
-      <ReviewLine label="Location" value={`${draft.city.trim()}, ${draft.state.trim()}`} />
+      <ReviewLine label="Location" value={draft.locationLabel.trim() || `${draft.city.trim()}, ${draft.state.trim()}`} />
       <ReviewLine label="Fulfillment" value={fulfillment} />
       <Text style={[styles.note, { color: colors.muted, fontFamily: fontFamily.text }]}>
         {signedIn
