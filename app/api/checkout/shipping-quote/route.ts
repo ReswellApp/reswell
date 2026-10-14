@@ -253,6 +253,10 @@ export async function POST(request: Request) {
     })
 
     if (!totals.ok) {
+      console.error("[checkout/shipping-quote] quote failed", {
+        listingIds,
+        error: totals.error,
+      })
       return NextResponse.json({ error: totals.error }, { status: 422, headers: JSON_NO_STORE_HEADERS })
     }
 
@@ -317,6 +321,10 @@ export async function POST(request: Request) {
       quantityByListingId,
     })
     if (!multi.ok) {
+      console.error("[checkout/shipping-quote] quote failed", {
+        listingIds,
+        error: multi.error,
+      })
       return NextResponse.json({ error: multi.error }, { status: 422, headers: JSON_NO_STORE_HEADERS })
     }
 
@@ -358,6 +366,10 @@ export async function POST(request: Request) {
   })
 
   if (!bundleShipping.ok) {
+    console.error("[checkout/shipping-quote] quote failed", {
+      listingIds,
+      error: bundleShipping.error,
+    })
     return NextResponse.json({ error: bundleShipping.error }, { status: 422, headers: JSON_NO_STORE_HEADERS })
   }
 

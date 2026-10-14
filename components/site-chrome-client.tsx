@@ -16,6 +16,7 @@ import { AuthModalProvider } from "@/components/auth/auth-modal-context"
 import { AddedToCartProvider } from "@/components/features/cart/added-to-cart-context"
 import { ImpersonationBanner } from "@/components/impersonation-banner"
 import { NewsletterPromoPopup } from "@/components/features/marketing/newsletter-promo-popup"
+import { SignInShipFromPrompt } from "@/components/features/sell/sign-in-ship-from-prompt"
 import { GiveawayEntryBootstrap } from "@/components/features/giveaways/giveaway-entry-bootstrap"
 import {
   GiveawayMarquee,
@@ -153,6 +154,7 @@ export function SiteChromeClient({
             <GiveawayEntryBootstrap isLoggedIn={hasUser} />
             <GiveawaySignupPopup serverUser={headerAuth.user} />
             <NewsletterPromoPopup serverUser={headerAuth.user} />
+            <SignInShipFromPrompt />
             <RouteProgressBar />
             <NavigationPageGate>{children}</NavigationPageGate>
           </div>
@@ -166,6 +168,7 @@ export function SiteChromeClient({
         <GiveawayEntryBootstrap isLoggedIn={hasUser} />
         <GiveawaySignupPopup serverUser={headerAuth.user} />
         <NewsletterPromoPopup serverUser={headerAuth.user} />
+        <SignInShipFromPrompt />
         <div
           className={cn(
             "flex flex-col",
