@@ -305,6 +305,10 @@ const nextConfig = {
       { source: "/used/:path*", destination: "/boards", permanent: true },
       { source: "/gear", destination: "/boards", permanent: true },
       { source: "/gear/:path*", destination: "/boards", permanent: true },
+      // Routing redirect, not a page-level redirect(). Client navigations to a
+      // page that calls redirect() crash the app router (React #310) before
+      // /cities/top can render.
+      { source: "/cities", destination: "/cities/top", permanent: true },
       { source: "/categories", destination: "/boards", permanent: true },
       { source: "/categories/:path*", destination: "/boards", permanent: true },
       { source: "/board-bags", destination: "/boardbags", permanent: true },
