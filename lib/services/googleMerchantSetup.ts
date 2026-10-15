@@ -1,9 +1,12 @@
 import { googleMerchantRequest } from "@/lib/google-merchant/client"
 import {
+  getGoogleMerchantAccountId,
+  getGoogleMerchantAuthMode,
+  getGoogleMerchantContentLanguage,
   getGoogleMerchantDataSourceName,
   getGoogleMerchantDeveloperEmail,
   getGoogleMerchantParentAccount,
-  isGoogleMerchantConfigured,
+  getGoogleMerchantShippableSurfboardsFeedLabel,
   matchesGoogleMerchantFeedProduct,
 } from "@/lib/google-merchant/config"
 import type { GoogleMerchantProductInputPayload } from "@/lib/google-merchant/map-listing-to-product-input"
@@ -91,18 +94,57 @@ export async function createGoogleMerchantPrimaryDataSource(
   return { ok: true, data: res.data }
 }
 
+/**
+ * One-time: create the primary API data source for shippable surfboards only.
+ * Save the returned `name` as GOOGLE_MERCHANT_SHIPPABLE_SURFBOARDS_DATA_SOURCE_NAME.
+ * Feed label defaults to SHIP so it does not collide with the primary US feed.
+ */
+export async function createGoogleMerchantShippableSurfboardsDataSource(
+  displayName = "Reswell Shippable Surfboards",
+): Promise<GoogleMerchantSetupResult> {
+  const parent = getGoogleMerchantParentAccount()
+  const res = await googleMerchantRequest(`/datasources/v1/${parent}/dataSources`, {
+    method: "POST",
+    body: JSON.stringify({
+      displayName,
+      primaryProductDataSource: {
+        countries: ["US"],
+        contentLanguage: getGoogleMerchantContentLanguage(),
+        feedLabel: getGoogleMerchantShippableSurfboardsFeedLabel(),
+      },
+    }),
+  })
+
+  if (!res.ok) {
+    return {
+      ok: false,
+      status: res.status,
+      error: errorMessage(res.data, "dataSources.create failed"),
+      data: res.data,
+    }
+  }
+
+  return { ok: true, data: res.data }
+}
+
+function resolveMerchantDataSource(explicit?: string): string | null {
+  const dataSource = explicit?.trim() || getGoogleMerchantDataSourceName()
+  if (!getGoogleMerchantAccountId() || getGoogleMerchantAuthMode() === "none" || !dataSource) {
+    return null
+  }
+  return dataSource
+}
+
 export async function insertGoogleMerchantProductInput(
   productInput: GoogleMerchantProductInputPayload,
+  options?: { dataSource?: string },
 ): Promise<GoogleMerchantSetupResult> {
-  if (!isGoogleMerchantConfigured()) {
+  const dataSource = resolveMerchantDataSource(options?.dataSource)
+  if (!dataSource) {
     return { ok: false, status: 503, error: "Google Merchant API is not configured" }
   }
 
   const parent = getGoogleMerchantParentAccount()
-  const dataSource = getGoogleMerchantDataSourceName()
-  if (!dataSource) {
-    return { ok: false, status: 503, error: "GOOGLE_MERCHANT_DATA_SOURCE_NAME is not set" }
-  }
 
   const query = new URLSearchParams({ dataSource })
   const res = await googleMerchantRequest(
@@ -127,17 +169,14 @@ export async function insertGoogleMerchantProductInput(
 
 export async function deleteGoogleMerchantProductInput(
   offerId: string,
+  options?: { dataSource?: string; feedLabel?: string },
 ): Promise<GoogleMerchantSetupResult> {
-  if (!isGoogleMerchantConfigured()) {
+  const dataSource = resolveMerchantDataSource(options?.dataSource)
+  if (!dataSource) {
     return { ok: false, status: 503, error: "Google Merchant API is not configured" }
   }
 
-  const dataSource = getGoogleMerchantDataSourceName()
-  if (!dataSource) {
-    return { ok: false, status: 503, error: "GOOGLE_MERCHANT_DATA_SOURCE_NAME is not set" }
-  }
-
-  const name = buildProductInputResourceName(offerId)
+  const name = buildProductInputResourceName(offerId, options?.feedLabel)
   const query = new URLSearchParams({ dataSource })
   const res = await googleMerchantRequest(`/products/v1/${name}?${query.toString()}`, {
     method: "DELETE",
@@ -159,6 +198,7 @@ export type GoogleMerchantListedProduct = {
   offerId: string
   contentLanguage: string
   feedLabel: string
+  dataSource: string
 }
 
 type GoogleMerchantProductsListResponse = {
@@ -177,11 +217,12 @@ type GoogleMerchantProductsListResponse = {
 export async function listGoogleMerchantProductsPage(options?: {
   pageToken?: string
   pageSize?: number
+  match?: (product: GoogleMerchantListedProduct) => boolean
 }): Promise<
   | { ok: true; products: GoogleMerchantListedProduct[]; nextPageToken?: string }
   | { ok: false; status: number; error: string }
 > {
-  if (!isGoogleMerchantConfigured()) {
+  if (!getGoogleMerchantAccountId() || getGoogleMerchantAuthMode() === "none") {
     return { ok: false, status: 503, error: "Google Merchant API is not configured" }
   }
 
@@ -212,7 +253,7 @@ export async function listGoogleMerchantProductsPage(options?: {
       feedLabel: product.feedLabel?.trim() ?? "",
       dataSource: product.dataSource?.trim() ?? "",
     }))
-    .filter((product) => matchesGoogleMerchantFeedProduct(product))
+    .filter((product) => (options?.match ?? matchesGoogleMerchantFeedProduct)(product))
 
   return {
     ok: true,
@@ -221,7 +262,9 @@ export async function listGoogleMerchantProductsPage(options?: {
   }
 }
 
-export async function listAllGoogleMerchantProducts(): Promise<
+export async function listAllGoogleMerchantProducts(options?: {
+  match?: (product: GoogleMerchantListedProduct) => boolean
+}): Promise<
   | { ok: true; products: GoogleMerchantListedProduct[] }
   | { ok: false; status: number; error: string }
 > {
@@ -229,7 +272,7 @@ export async function listAllGoogleMerchantProducts(): Promise<
   let pageToken: string | undefined
 
   for (;;) {
-    const page = await listGoogleMerchantProductsPage({ pageToken })
+    const page = await listGoogleMerchantProductsPage({ pageToken, match: options?.match })
     if (!page.ok) return page
 
     products.push(...page.products)

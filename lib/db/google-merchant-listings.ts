@@ -66,3 +66,26 @@ export async function listGoogleMerchantListingBatch(
   if (error || !data) return []
   return data as unknown as GoogleMerchantListingRow[]
 }
+
+/**
+ * Active surfboards with shipping on, for the shippable-surfboard Merchant feed.
+ * Image and price eligibility is applied by the mapper after this query.
+ */
+export async function listShippableSurfboardMerchantListingBatch(
+  supabase: SupabaseClient,
+  options: { from: number; limit: number },
+): Promise<GoogleMerchantListingRow[]> {
+  const { data, error } = await supabase
+    .from("listings")
+    .select(GOOGLE_MERCHANT_LISTING_SELECT)
+    .eq("section", "surfboards")
+    .eq("shipping_available", true)
+    .eq("status", "active")
+    .eq("hidden_from_site", false)
+    .is("archived_at", null)
+    .order("created_at", { ascending: false })
+    .range(options.from, options.from + options.limit - 1)
+
+  if (error || !data) return []
+  return data as unknown as GoogleMerchantListingRow[]
+}

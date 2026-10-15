@@ -660,6 +660,9 @@ export function GoogleMerchantDashboardClient({
                 feed <span className="font-medium text-foreground">{insights.account.feedLabel}</span> ·{" "}
                 {insights.account.contentLanguage}
               </span>
+              <span className="font-mono" title="Scheduled fetch: surfboards with shipping only">
+                shippable boards /api/integrations/google-merchant/catalog-feed/shippable-surfboards
+              </span>
               {insights.account.dataSourceName ? (
                 <span className="font-mono" title={insights.account.dataSourceName}>
                   API data source
