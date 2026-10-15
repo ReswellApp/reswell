@@ -1,5 +1,5 @@
 import { Stack, useRouter } from "expo-router"
-import { useCallback } from "react"
+import { useCallback, useState } from "react"
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { ListingCard } from "@/components/listing-card"
@@ -48,7 +48,9 @@ function FavoritesList() {
   const load = useCallback((accessToken: string) => fetchFavorites(accessToken), [])
   const { data, error, loading, reload } = useAccountResource(load)
   const favorites = data?.favorites ?? []
-  const grid = favorites.length % 2 === 1 ? [...favorites, null] : favorites
+  const [removed, setRemoved] = useState<ReadonlySet<string>>(new Set())
+  const visible = favorites.filter((favorite) => !removed.has(favorite.listing.id))
+  const grid = visible.length % 2 === 1 ? [...visible, null] : visible
 
   if (loading && favorites.length === 0) {
     return <ActivityIndicator style={styles.centered} color={colors.foreground} />
@@ -73,7 +75,10 @@ function FavoritesList() {
       columnWrapperStyle={styles.row}
       contentContainerStyle={styles.list}
       refreshing={loading}
-      onRefresh={reload}
+      onRefresh={() => {
+        setRemoved(new Set())
+        reload()
+      }}
       ListEmptyComponent={
         <Text style={[styles.message, styles.empty, { color: colors.muted, fontFamily: fontFamily.text }]}>
           No saved listings yet.
@@ -83,6 +88,11 @@ function FavoritesList() {
         item ? (
           <ListingCard
             item={item.listing}
+            initialFavorited
+            onFavoritedChange={(favorited) => {
+              if (favorited) return
+              setRemoved((current) => new Set(current).add(item.listing.id))
+            }}
             onPress={() =>
               router.push({ pathname: "/listing/[id]", params: { id: item.listing.slug || item.listing.id } })
             }

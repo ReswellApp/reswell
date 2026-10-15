@@ -3,6 +3,7 @@ import { Stack } from "expo-router"
 import { View } from "react-native"
 import { FloatingTabBar } from "@/components/floating-tab-bar"
 import { AuthProvider } from "@/lib/auth-context"
+import { ListingMarksProvider } from "@/lib/listing-marks"
 import { useReswellColors, fontFamily } from "@/theme"
 
 export default function RootLayout() {
@@ -18,25 +19,27 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <View style={{ flex: 1, backgroundColor: colors.background }}>
-        <Stack
-          screenOptions={{
-            headerShadowVisible: false,
-            headerBackButtonDisplayMode: "minimal",
-            headerTintColor: colors.foreground,
-            headerStyle: { backgroundColor: colors.background },
-            headerTitleStyle: { fontFamily: type, fontWeight: "600", color: colors.foreground },
-            contentStyle: { backgroundColor: colors.background },
-          }}
-        >
-          <Stack.Screen name="index" options={{ headerLargeTitle: false }} />
-          <Stack.Screen name="listing/[id]" options={{ title: "" }} />
-          <Stack.Screen name="category/[slug]" options={{ title: "" }} />
-          <Stack.Screen name="profile/[slug]" options={{ title: "" }} />
-          <Stack.Screen name="sign-in" options={{ title: "Sign in", presentation: "modal" }} />
-        </Stack>
-        <FloatingTabBar />
-      </View>
+      <ListingMarksProvider>
+        <View style={{ flex: 1, backgroundColor: colors.background }}>
+          <Stack
+            screenOptions={{
+              headerShadowVisible: false,
+              headerBackButtonDisplayMode: "minimal",
+              headerTintColor: colors.foreground,
+              headerStyle: { backgroundColor: colors.background },
+              headerTitleStyle: { fontFamily: type, fontWeight: "600", color: colors.foreground },
+              contentStyle: { backgroundColor: colors.background },
+            }}
+          >
+            <Stack.Screen name="index" options={{ headerLargeTitle: false }} />
+            <Stack.Screen name="listing/[id]" options={{ title: "" }} />
+            <Stack.Screen name="category/[slug]" options={{ title: "" }} />
+            <Stack.Screen name="profile/[slug]" options={{ title: "" }} />
+            <Stack.Screen name="sign-in" options={{ title: "Sign in", presentation: "modal" }} />
+          </Stack>
+          <FloatingTabBar />
+        </View>
+      </ListingMarksProvider>
     </AuthProvider>
   )
 }
