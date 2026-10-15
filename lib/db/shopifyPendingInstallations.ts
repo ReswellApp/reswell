@@ -70,6 +70,18 @@ export async function dbGetShopifyPendingInstallationPreview(
   }
 }
 
+export async function dbApproveShopifyInstallClaimant(
+  supabase: SupabaseClient,
+  input: { claimSecretHash: string; userId: string },
+): Promise<boolean> {
+  const { data, error } = await supabase.rpc("approve_shopify_install_claimant", {
+    p_claim_secret_hash: input.claimSecretHash,
+    p_user_id: input.userId,
+  })
+  if (error) throw new Error(error.message)
+  return data === true
+}
+
 export async function dbClaimShopifyPendingInstallation(
   supabase: SupabaseClient,
   input: { claimSecretHash: string; userId: string },

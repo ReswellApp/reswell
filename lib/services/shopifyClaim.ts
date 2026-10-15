@@ -1,5 +1,6 @@
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import {
+  dbApproveShopifyInstallClaimant,
   dbClaimShopifyPendingInstallation,
   dbGetShopifyPendingInstallationPreview,
 } from "@/lib/db/shopifyPendingInstallations"
@@ -29,8 +30,13 @@ export async function claimShopifyPendingInstallation(input: {
   claimSecret: string
 }): Promise<{ connectionId: string; shopDomain: string }> {
   const serviceSupabase = createServiceRoleClient()
+  const claimSecretHash = hashShopifyClaimSecret(input.claimSecret.trim())
+  await dbApproveShopifyInstallClaimant(serviceSupabase, {
+    claimSecretHash,
+    userId: input.userId,
+  })
   const claimed = await dbClaimShopifyPendingInstallation(serviceSupabase, {
-    claimSecretHash: hashShopifyClaimSecret(input.claimSecret.trim()),
+    claimSecretHash,
     userId: input.userId,
   })
 
