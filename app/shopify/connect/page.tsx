@@ -2,6 +2,7 @@ import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { ShopifyClaimPanel } from "@/components/features/integrations/shopify/shopify-claim-panel"
 import { ShopifyClaimSignIn } from "@/components/features/integrations/shopify/shopify-claim-sign-in"
+import { ShopifyConsentShell } from "@/components/features/integrations/shopify/shopify-consent-shell"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { getCachedDashboardSession } from "@/lib/dashboard-session"
 import { SHOPIFY_CLAIM_COOKIE } from "@/lib/shopify/claim-cookie"
@@ -51,12 +52,12 @@ function InstallProblem({
   description: string
 }) {
   return (
-    <main className="mx-auto flex min-h-[60vh] max-w-3xl flex-col justify-center px-4 py-12">
-      <Alert variant="destructive" className="mx-auto max-w-lg">
+    <ShopifyConsentShell>
+      <Alert variant="destructive" className="rounded-2xl bg-background p-6 shadow-sm">
         <AlertTitle>{title}</AlertTitle>
         <AlertDescription>{description}</AlertDescription>
       </Alert>
-    </main>
+    </ShopifyConsentShell>
   )
 }
 
@@ -124,7 +125,7 @@ export default async function ShopifyConnectPage({
 
     if (decision.action === "request_access" && user) {
       return (
-        <main className="mx-auto flex min-h-[60vh] max-w-3xl flex-col justify-center px-4 py-12">
+        <ShopifyConsentShell>
           <ShopifyClaimPanel
             preview={null}
             userEmail={user.email ?? null}
@@ -133,7 +134,7 @@ export default async function ShopifyConnectPage({
             callbackError={false}
             installLaunchShop={decision.shopDomain}
           />
-        </main>
+        </ShopifyConsentShell>
       )
     }
 
@@ -166,7 +167,7 @@ export default async function ShopifyConnectPage({
   const access = await getShopifyAccessRequestState(user.id)
 
   return (
-    <main className="mx-auto flex min-h-[60vh] max-w-3xl flex-col justify-center px-4 py-12">
+    <ShopifyConsentShell>
       <ShopifyClaimPanel
         preview={preview}
         userEmail={user.email ?? null}
@@ -176,6 +177,6 @@ export default async function ShopifyConnectPage({
         accessRequested={Boolean(access.requestedAt)}
         callbackError={params.get("error") === "connection_failed"}
       />
-    </main>
+    </ShopifyConsentShell>
   )
 }
