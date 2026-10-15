@@ -1,7 +1,9 @@
 "use client"
 
 import type { ReactNode } from "react"
+import Link from "next/link"
 import { Camera, Ruler, Scale, ShieldCheck, TriangleAlert } from "lucide-react"
+import { SHIPPING_ADJUSTMENT_LEARN_MORE_HREF } from "@/lib/shipping/adjustment-strike"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
@@ -56,7 +58,8 @@ function AdjustmentDetailsDialog({ children }: { children: ReactNode }) {
             <p className="text-sm font-semibold text-foreground">The label measurements are a limit.</p>
             <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
               If the packed box is larger or heavier than the label allows, the carrier may bill an
-              adjustment. Any carrier-adjusted amount is deducted from your earnings for that sale.
+              adjustment. Reswell covers the first one. The next adjustment on a shipped item is
+              deducted from your earnings on that sale.
             </p>
           </div>
           <div className="space-y-3">
@@ -103,9 +106,16 @@ export function CarrierAdjustmentNotice({
               Measure the packed box before drop-off
             </p>
             <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-              Keep every side at or below the dimensions on the label. If the carrier measures a
-              larger box, its adjustment fee will be deducted from your earnings on this sale.
+              Keep every side at or below the dimensions on the label. Reswell covers the first
+              carrier adjustment. The next one on a shipped item is deducted from your earnings on
+              that sale.
             </p>
+            <Link
+              href={SHIPPING_ADJUSTMENT_LEARN_MORE_HREF}
+              className="mt-2 inline-flex text-sm font-semibold text-foreground underline underline-offset-2"
+            >
+              Shipping best practices
+            </Link>
             <AdjustmentDetailsDialog>
               <Button
                 type="button"

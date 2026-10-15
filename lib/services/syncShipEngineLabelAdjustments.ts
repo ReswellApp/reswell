@@ -15,6 +15,7 @@ import {
   dbUpsertAdjustmentReport,
   dbUpsertLabelAdjustments,
 } from "@/lib/db/shipengineLabelAdjustments"
+import { notifySellerShippingAdjustments } from "@/lib/services/notifySellerShippingAdjustments"
 
 export type SyncShipEngineAdjustmentsSummary = {
   reportsSeen: number
@@ -24,6 +25,8 @@ export type SyncShipEngineAdjustmentsSummary = {
   walletTransactionsSeen: number
   walletAdjustmentsUpserted: number
   walletDebits: number
+  coveredStrikes: number
+  sellerNotified: number
   skipped: number
 }
 
@@ -181,6 +184,8 @@ export async function syncShipEngineLabelAdjustments(opts?: {
     walletTransactionsSeen: 0,
     walletAdjustmentsUpserted: 0,
     walletDebits: 0,
+    coveredStrikes: 0,
+    sellerNotified: 0,
     skipped: 0,
   }
 
@@ -220,7 +225,16 @@ export async function syncShipEngineLabelAdjustments(opts?: {
       return { ok: false, error: message }
     }
     summary.walletDebits += debits.data.charged
+    summary.coveredStrikes += debits.data.covered
     if (debits.data.processed < debitBatchSize) break
+  }
+
+  try {
+    const notified = await notifySellerShippingAdjustments(supabase)
+    summary.sellerNotified = notified.notified
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e)
+    console.error("[syncShipEngineLabelAdjustments] seller notify", message)
   }
 
   return { ok: true, summary }

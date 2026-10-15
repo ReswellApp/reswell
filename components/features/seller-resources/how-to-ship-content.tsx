@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { MapPin, Package, Printer } from "lucide-react"
 import { HowToSellSection } from "@/components/features/seller-resources/how-to-sell-section"
+import { HowToShipPackingGuide } from "@/components/features/seller-resources/how-to-ship-packing-guide"
 import { SellerResourcesCta } from "@/components/features/seller-resources/seller-resources-cta"
 import { SellerResourcesHero } from "@/components/features/seller-resources/seller-resources-hero"
 import { SellerResourcesHowCard } from "@/components/features/seller-resources/seller-resources-how-card"
@@ -81,6 +82,8 @@ export function HowToShipContent() {
           ))}
         </ol>
       </HowToSellSection>
+
+      <HowToShipPackingGuide />
 
       <HowToSellSection
         id="pack"

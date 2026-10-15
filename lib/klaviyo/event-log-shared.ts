@@ -18,6 +18,7 @@ const METRIC_CATEGORY: Record<string, KlaviyoMetricCategory> = {
   "Shipping Sale Received": "transactional",
   "Local Pickup Sale Received": "transactional",
   "Shipping Label Ready": "transactional",
+  "Shipping Adjustment": "transactional",
   "Order Shipped": "transactional",
   "Seller Order Shipped": "transactional",
   "Order Shipping Update": "transactional",

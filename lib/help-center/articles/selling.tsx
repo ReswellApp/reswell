@@ -1120,8 +1120,9 @@ export const sellingHelpArticles: HelpArticle[] = [
             <p>
               Carrier labels are priced from the packed dimensions and weight entered when the label
               is purchased. Carriers measure packages again after drop-off. If your sealed box is
-              larger or heavier than the label allows, the carrier may charge an adjustment and that
-              amount is deducted from your earnings for the sale.
+              larger or heavier than the label allows, the carrier may charge an adjustment. Reswell
+              covers the first one. The next adjustment on a shipped item is deducted from your
+              earnings on that sale.
             </p>
             <BulletList
               items={[

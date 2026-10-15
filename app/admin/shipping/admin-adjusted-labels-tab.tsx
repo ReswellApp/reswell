@@ -35,6 +35,7 @@ type AdjustedLabelRow = {
   order_id: string | null
   wallet_debited_at: string | null
   charge_seller_wallet?: boolean
+  coverage?: "covered_strike" | "charged_to_earnings" | "legacy_absorbed" | null
   created_at: string
   orderDisplayNum: string | null
 }
@@ -110,6 +111,8 @@ export function AdminAdjustedLabelsTab() {
           walletTransactionsSeen: number
           walletAdjustmentsUpserted: number
           walletDebits: number
+          coveredStrikes?: number
+          sellerNotified?: number
           skipped: number
         }
         error?: string
@@ -122,10 +125,11 @@ export function AdminAdjustedLabelsTab() {
       const increased = body.data?.increasedRows ?? 0
       const walletAdjustments = body.data?.walletAdjustmentsUpserted ?? 0
       const debited = body.data?.walletDebits ?? 0
+      const covered = body.data?.coveredStrikes ?? 0
       const skipped = body.data?.skipped ?? 0
       toast.success(
-        ingested > 0 || walletAdjustments > 0 || debited > 0
-          ? `Ingested ${ingested} report${ingested === 1 ? "" : "s"} · ${walletAdjustments} balance adjustment${walletAdjustments === 1 ? "" : "s"} · ${increased} price increase${increased === 1 ? "" : "s"} · ${debited} wallet debit${debited === 1 ? "" : "s"}`
+        ingested > 0 || walletAdjustments > 0 || debited > 0 || covered > 0
+          ? `Ingested ${ingested} report${ingested === 1 ? "" : "s"} · ${walletAdjustments} balance adjustment${walletAdjustments === 1 ? "" : "s"} · ${increased} price increase${increased === 1 ? "" : "s"} · ${covered} covered · ${debited} deducted from earnings`
           : skipped > 0
             ? "Already up to date"
             : "No new adjustment reports",
@@ -248,11 +252,17 @@ export function AdminAdjustedLabelsTab() {
                     )}
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
-                    {row.wallet_debited_at
-                      ? "Debited"
-                      : row.charge_seller_wallet
-                        ? "Pending deduction"
-                        : "Not charged"}
+                    {row.coverage === "covered_strike"
+                      ? "Covered"
+                      : row.coverage === "charged_to_earnings"
+                        ? "Deducted from earnings"
+                        : row.coverage === "legacy_absorbed"
+                          ? "Not charged"
+                          : row.wallet_debited_at
+                            ? "Debited"
+                            : row.charge_seller_wallet
+                              ? "Pending deduction"
+                              : "Not charged"}
                   </TableCell>
                   <TableCell className="max-w-[180px] truncate text-xs text-muted-foreground">
                     {[row.adjustment_type, row.reason_code].filter(Boolean).join(" · ") || "—"}
