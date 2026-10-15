@@ -1,18 +1,14 @@
 "use client"
 
 import { useState, useTransition } from "react"
-import { Loader2, Store } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import { claimShopifyInstallAction } from "@/lib/actions/shopifyClaim"
 import { ShopifyAccessRequestDialog } from "@/components/features/integrations/shopify/shopify-access-request-dialog"
+import { ShopifyConsentHeader } from "@/components/features/integrations/shopify/shopify-consent-header"
+import { ShopifyConsentIdentity } from "@/components/features/integrations/shopify/shopify-consent-identity"
+import { ShopifyConsentPermissions } from "@/components/features/integrations/shopify/shopify-consent-permissions"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import type { ShopifyPendingInstallationPreview } from "@/lib/shopify/types"
 
 interface ShopifyClaimPanelProps {
@@ -37,115 +33,109 @@ export function ShopifyClaimPanel({
   const [pending, startTransition] = useTransition()
   const [requestOpen, setRequestOpen] = useState(!shopifyConnectEnabled)
 
-  const expired =
-    preview && Date.parse(preview.expiresAt) <= Date.now()
+  const expired = preview && Date.parse(preview.expiresAt) <= Date.now()
+  const ready = Boolean(preview?.ready) && !expired
   const launchShop = installLaunchShop?.trim() || null
-  const shopLabel = preview?.shopName || preview?.shopDomain || launchShop
+  const shopDomain = ready ? (preview?.shopDomain ?? null) : launchShop
+  const shopName = ready ? (preview?.shopName ?? null) : null
+  const shopLabel = shopName || shopDomain
+  const cancelHref = shopDomain ? `https://${shopDomain}/admin` : "/"
+
+  const connect = () => {
+    setError(null)
+    startTransition(async () => {
+      const result = await claimShopifyInstallAction()
+      if ("error" in result) {
+        setError(result.error)
+        return
+      }
+      window.location.assign("/dashboard/shopify?connected=1")
+    })
+  }
 
   return (
     <>
-      <Card className="mx-auto max-w-lg">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-xl">
-            <Store className="h-5 w-5" aria-hidden />
-            Link Shopify to Reswell
-          </CardTitle>
-          <CardDescription>
-            Confirm which Reswell account should manage this Shopify store.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {callbackError ? (
-            <Alert variant="destructive">
-              <AlertTitle>Install could not be completed</AlertTitle>
-              <AlertDescription>
-                Return to Shopify and install the Reswell app again, then sign in
-                here to finish linking.
-              </AlertDescription>
-            </Alert>
-          ) : null}
+      <div className="space-y-6 rounded-2xl border bg-background p-6 shadow-sm sm:p-8">
+        <ShopifyConsentHeader
+          title="Connect Shopify to Reswell"
+          description={
+            shopLabel
+              ? `Reswell will list the products you choose from ${shopLabel} and keep them in sync. Shopify stays in charge of prices and stock.`
+              : "Reswell lists the products you choose and keeps them in sync. Shopify stays in charge of prices and stock."
+          }
+        />
 
-          {!preview || !preview.ready || expired ? (
-            launchShop ? (
-              <div className="rounded-lg border bg-muted/30 p-4 text-sm">
-                <p className="font-medium text-foreground">{launchShop}</p>
-                <p className="text-muted-foreground">
-                  This Shopify store is waiting on plugin access for your Reswell
-                  account.
-                </p>
-              </div>
-            ) : (
-              <Alert>
-                <AlertTitle>Install session expired</AlertTitle>
-                <AlertDescription>
-                  Install the Reswell app from Shopify again to continue. Pending
-                  installs expire after 30 minutes.
-                </AlertDescription>
-              </Alert>
-            )
-          ) : (
-            <div className="rounded-lg border bg-muted/30 p-4 text-sm">
-              <p className="font-medium text-foreground">
-                {preview.shopName || preview.shopDomain}
-              </p>
-              <p className="text-muted-foreground">{preview.shopDomain}</p>
-            </div>
-          )}
+        {callbackError ? (
+          <Alert variant="destructive">
+            <AlertTitle>Install could not be completed</AlertTitle>
+            <AlertDescription>
+              Return to Shopify and install the Reswell app again, then sign in here to finish.
+            </AlertDescription>
+          </Alert>
+        ) : null}
 
-          <p className="text-sm text-muted-foreground">
-            Signed in as <span className="font-medium">{userEmail}</span>
-          </p>
+        {!ready && !launchShop ? (
+          <Alert>
+            <AlertTitle>Install session expired</AlertTitle>
+            <AlertDescription>
+              Open the Reswell app from Shopify again to continue. Install sessions expire after
+              30 minutes.
+            </AlertDescription>
+          </Alert>
+        ) : null}
 
+        <ShopifyConsentIdentity shopName={shopName} shopDomain={shopDomain} userEmail={userEmail} />
+
+        <ShopifyConsentPermissions />
+
+        {!shopifyConnectEnabled ? (
+          <Alert>
+            <AlertTitle>Shopify access required</AlertTitle>
+            <AlertDescription>
+              {accessRequested
+                ? "Your request is with the Reswell team. You can connect this store once it’s approved."
+                : "This account isn’t approved for Shopify yet. Request access to continue."}
+            </AlertDescription>
+          </Alert>
+        ) : null}
+
+        {error ? (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        ) : null}
+
+        <div className="space-y-3">
           {shopifyConnectEnabled ? (
             <Button
               type="button"
-              className="w-full"
-              disabled={!preview?.ready || expired || pending}
-              onClick={() => {
-                setError(null)
-                startTransition(async () => {
-                  const result = await claimShopifyInstallAction()
-                  if ("error" in result) {
-                    setError(result.error)
-                    return
-                  }
-                  window.location.assign("/dashboard/shopify?connected=1")
-                })
-              }}
+              size="lg"
+              className="h-11 w-full rounded-lg text-sm"
+              disabled={!ready || pending}
+              onClick={connect}
             >
-              {pending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
-              ) : null}
-              Link this store to my Reswell account
+              {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden /> : null}
+              {pending ? "Connecting…" : "Connect store"}
             </Button>
           ) : (
-            <>
-              <Alert>
-                <AlertTitle>Shopify plugin access required</AlertTitle>
-                <AlertDescription>
-                  {accessRequested
-                    ? "Your access request is waiting on Reswell. You’ll be able to link this store after an admin approves it."
-                    : "This account is not approved for the Shopify plugin. Request access to continue."}
-                </AlertDescription>
-              </Alert>
-              <Button
-                type="button"
-                className="w-full"
-                variant={accessRequested ? "outline" : "default"}
-                onClick={() => setRequestOpen(true)}
-              >
-                {accessRequested ? "View access request" : "Request Shopify plugin access"}
-              </Button>
-            </>
+            <Button
+              type="button"
+              size="lg"
+              className="h-11 w-full rounded-lg text-sm"
+              variant={accessRequested ? "outline" : "default"}
+              onClick={() => setRequestOpen(true)}
+            >
+              {accessRequested ? "View access request" : "Request Shopify access"}
+            </Button>
           )}
-
-          {error ? (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          ) : null}
-        </CardContent>
-      </Card>
+          <a
+            href={cancelHref}
+            className="block text-center text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+          >
+            Not now
+          </a>
+        </div>
+      </div>
 
       {!shopifyConnectEnabled ? (
         <ShopifyAccessRequestDialog
