@@ -6,7 +6,11 @@ import {
 } from "@/lib/shopify/config"
 import { verifyShopifyOAuthHmac } from "@/lib/shopify/crypto"
 import { shopifyInstallQuerySchema } from "@/lib/validations/shopify"
-import { startPublicShopifyInstall } from "@/lib/services/shopifyPublicInstall"
+import { publicSiteOrigin } from "@/lib/public-site-origin"
+import {
+  isShopifyStoreLinkedForLaunch,
+  startPublicShopifyInstall,
+} from "@/lib/services/shopifyPublicInstall"
 
 export async function GET(request: NextRequest) {
   if (!isShopifyPublicOAuthEnabled() || !isShopifyPublicOAuthConfigured()) {
@@ -29,6 +33,10 @@ export async function GET(request: NextRequest) {
   const shopDomain = normalizeShopifyDomain(parsed.data.shop)
   if (!shopDomain) {
     return NextResponse.json({ error: "Invalid shop domain" }, { status: 400 })
+  }
+
+  if (await isShopifyStoreLinkedForLaunch(shopDomain, null)) {
+    return NextResponse.redirect(new URL("/dashboard/shopify", publicSiteOrigin()))
   }
 
   try {
