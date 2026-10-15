@@ -679,6 +679,66 @@ export type MobileHomeSection = z.infer<typeof mobileHomeSectionSchema>
 export type MobileHomeBrand = z.infer<typeof mobileHomeBrandSchema>
 export type MobileHomeShop = z.infer<typeof mobileHomeShopSchema>
 export type MobileListingsQuery = z.infer<typeof mobileListingsQuerySchema>
+
+export const mobileSearchQuerySchema = z.object({
+  q: z.string().trim().min(2).max(80),
+})
+
+export const mobileSearchSchema = z.object({
+  listings: z.array(mobileListingCardSchema),
+})
+
+export const mobileSearchResultsSchema = z.object({
+  query: z.string(),
+  listings: z.array(mobileListingCardSchema),
+  browse: z
+    .object({
+      category: z.enum(MOBILE_LISTING_CATEGORIES),
+      board_type: z.enum(MOBILE_BOARD_TYPES).nullable(),
+    })
+    .nullable(),
+  /** Model, brand, and length the website prints under the results heading. */
+  summary: z
+    .object({
+      model: z.string().nullable(),
+      brand: z.string().nullable(),
+      length: z.string().nullable(),
+    })
+    .nullable(),
+})
+
+export const mobileSavedSearchQuerySchema = mobileSearchQuerySchema
+
+export const mobileSavedSearchBodySchema = z.object({
+  q: z.string().trim().min(2).max(80),
+  saved: z.boolean(),
+})
+
+export const mobileSavedSearchSchema = z.object({
+  saved_search_id: z.string().uuid().nullable(),
+})
+
+export type MobileSearchQuery = z.infer<typeof mobileSearchQuerySchema>
+export type MobileSearch = z.infer<typeof mobileSearchSchema>
+export type MobileSearchResults = z.infer<typeof mobileSearchResultsSchema>
+export type MobileSavedSearch = z.infer<typeof mobileSavedSearchSchema>
+export type MobileSavedSearchBody = z.infer<typeof mobileSavedSearchBodySchema>
+
+/** Copy from the website save-search card. `compact` is the phone size. */
+export function savedSearchCardCopy(input: { saved: boolean; compact: boolean; noun: string }): {
+  title: string
+  body: string
+  button: string
+} {
+  const matching = input.compact ? `a new matching ${input.noun}` : `a matching ${input.noun}`
+  return {
+    title: "Let the Gear Come to You",
+    body: input.saved
+      ? `This search is saved. We'll email you when ${matching} is listed on Reswell.`
+      : `Save this search and we'll email you when ${matching} is listed on Reswell.`,
+    button: input.saved ? "Saved" : "Save Search",
+  }
+}
 export type MobileProfile = z.infer<typeof mobileProfileSchema>
 
 const mobilePageFields = {

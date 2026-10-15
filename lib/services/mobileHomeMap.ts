@@ -6,6 +6,7 @@ import {
   type MobileHomeShop,
   type MobileListingCard,
 } from "@reswell/api-contract"
+import type { HomeFeedSection } from "@/lib/services/homeFeedPlan"
 import { brandLogoDisplaySrc } from "@/lib/brand-media-proxy-url"
 import type { MobileListingRow } from "@/lib/db/mobile-listings"
 import { toMobileListingCard } from "@/lib/services/mobileApi"
@@ -137,4 +138,36 @@ export function homeShopToMobile(shop: HomeShopSource): MobileHomeShop | null {
     verified: Boolean(shop.is_shop && shop.shop_verified),
   })
   return parsed.success ? parsed.data : null
+}
+
+/** App rails from the shared homepage feed. Empty rails are omitted. */
+export function mobileSectionsFromHomeFeed(sections: HomeFeedSection[]): MobileHomeSection[] {
+  return sections.flatMap((section) => {
+    if (section.kind === "listings") {
+      const mapped = homeListingsSection(section.id, section.title, section.listings)
+      return mapped ? [mapped] : []
+    }
+    if (section.kind === "reswell_shop") {
+      const listings = section.products.flatMap((item) => {
+        const card = homeShopProductToMobileCard(item.listing)
+        return card ? [card] : []
+      })
+      if (listings.length === 0) return []
+      return [{ kind: "listings" as const, id: "reswell_shop" as const, title: section.title, listings }]
+    }
+    if (section.kind === "brands") {
+      const brands = section.brands.flatMap((row) => {
+        const mapped = homeBrandToMobile(row.brand)
+        return mapped ? [mapped] : []
+      })
+      if (brands.length === 0) return []
+      return [{ kind: "brands" as const, id: "trending_brands" as const, title: section.title, brands }]
+    }
+    const shops = section.shops.flatMap((shop) => {
+      const mapped = homeShopToMobile(shop)
+      return mapped ? [mapped] : []
+    })
+    if (shops.length === 0) return []
+    return [{ kind: "shops" as const, id: "featured_shops" as const, title: section.title, shops }]
+  })
 }

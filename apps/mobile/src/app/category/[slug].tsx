@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router"
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import {
   ActivityIndicator,
   FlatList,
@@ -16,7 +16,7 @@ import { type CategoryPlace, type CategoryRadius } from "@/components/category-l
 import { CategoryToolbar } from "@/components/category-toolbar"
 import { HomeHeader } from "@/components/home-header"
 import { ListingCard } from "@/components/listing-card"
-import { fetchCategory, fetchCategoryListings, fetchListings } from "@/lib/api"
+import { fetchCategory, fetchCategoryListings } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
 import { fontFamily, useReswellColors } from "@/theme"
 
@@ -42,15 +42,6 @@ export default function CategoryScreen() {
   const [layout, setLayout] = useState<"grid" | "list">("grid")
   const [sortOpen, setSortOpen] = useState(false)
   const [filtersOpen, setFiltersOpen] = useState(false)
-  const [query, setQuery] = useState("")
-  const [search, setSearch] = useState("")
-  const [searchPage, setSearchPage] = useState<MobileListingsPage | null>(null)
-  const [searchError, setSearchError] = useState<string | null>(null)
-  const [searchLoading, setSearchLoading] = useState(false)
-  const [searchLoadingMore, setSearchLoadingMore] = useState(false)
-  const searchRef = useRef(search)
-  searchRef.current = search
-
   const load = useCallback(() => {
     if (!slug) return
     let cancelled = false
@@ -81,42 +72,6 @@ export default function CategoryScreen() {
     return load()
   }, [load])
 
-  useEffect(() => {
-    const timer = setTimeout(() => setSearch(query.trim()), 300)
-    return () => clearTimeout(timer)
-  }, [query])
-
-  useEffect(() => {
-    if (!search) {
-      setSearchPage(null)
-      setSearchError(null)
-      setSearchLoading(false)
-      return
-    }
-    let cancelled = false
-    const q = search
-    setSearchLoading(true)
-    fetchListings(0, { q })
-      .then((next) => {
-        if (!cancelled) {
-          setSearchPage(next)
-          setSearchError(null)
-        }
-      })
-      .catch((cause: unknown) => {
-        if (!cancelled) {
-          setSearchPage(null)
-          setSearchError(cause instanceof Error ? cause.message : "Unable to load listings")
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setSearchLoading(false)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [search])
-
   function loadMore() {
     if (!page?.has_more || loadingMore || loading || !slug) return
     setLoadingMore(true)
@@ -134,74 +89,20 @@ export default function CategoryScreen() {
     router.push({ pathname: "/listing/[id]", params: { id: listing.slug || listing.id } })
   }
 
-  function loadMoreSearch() {
-    if (!searchPage?.has_more || searchLoadingMore || searchLoading || !search) return
-    const q = search
-    setSearchLoadingMore(true)
-    fetchListings(searchPage.offset + searchPage.limit, { q })
-      .then((next) => {
-        if (searchRef.current !== q) return
-        setSearchPage((current) =>
-          current ? { ...next, listings: [...current.listings, ...next.listings] } : next,
-        )
-      })
-      .catch(() => undefined)
-      .finally(() => setSearchLoadingMore(false))
-  }
-
   const listings = page?.listings ?? []
   const grid = layout === "grid" && listings.length % 2 === 1 ? [...listings, null] : listings
   const sortLabel = category?.sorts.find((item) => item.id === sort)?.label ?? "Most Relevant"
   const filterCount =
     Object.values(selected).reduce((sum, values) => sum + values.length, 0) + (shipping ? 1 : 0) + (place ? 1 : 0)
 
-  const searching = Boolean(search)
-  const searchListings = searchPage?.listings ?? []
-  const searchGrid = searchListings.length % 2 === 1 ? [...searchListings, null] : searchListings
-
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <Stack.Screen options={{ headerShown: false }} />
       <HomeHeader
-        query={query}
-        onQueryChange={setQuery}
         onNotifications={() => router.push(session ? "/account/messages" : "/sign-in")}
         onCart={() => router.push(session ? "/account/cart" : "/sign-in")}
       />
-      {searching ? (
-        searchLoading && !searchPage ? (
-          <ActivityIndicator style={styles.centered} color={colors.foreground} />
-        ) : searchError && !searchPage ? (
-          <View style={styles.centered}>
-            <Text style={{ color: colors.foreground, fontFamily: fontFamily.text }}>{searchError}</Text>
-          </View>
-        ) : (
-          <FlatList
-            data={searchGrid}
-            keyExtractor={(item) => item?.id ?? "spacer"}
-            numColumns={2}
-            columnWrapperStyle={styles.columns}
-            contentContainerStyle={styles.list}
-            onEndReached={loadMoreSearch}
-            onEndReachedThreshold={0.4}
-            ListEmptyComponent={
-              <Text style={[styles.empty, { color: colors.muted, fontFamily: fontFamily.text }]}>
-                No listings match that search.
-              </Text>
-            }
-            ListFooterComponent={
-              searchLoadingMore ? <ActivityIndicator color={colors.foreground} style={styles.footer} /> : null
-            }
-            renderItem={({ item }) =>
-              item ? (
-                <ListingCard item={item} onPress={() => openListing(item)} />
-              ) : (
-                <View style={styles.spacer} />
-              )
-            }
-          />
-        )
-      ) : loading && !category ? (
+      {loading && !category ? (
         <ActivityIndicator style={styles.centered} color={colors.foreground} />
       ) : error && !category ? (
         <View style={styles.centered}>

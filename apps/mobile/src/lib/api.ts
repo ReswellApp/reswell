@@ -26,6 +26,9 @@ import {
   mobileProfileSchema,
   mobileRecentlyViewedSchema,
   mobileReviewsPageSchema,
+  mobileSavedSearchSchema,
+  mobileSearchResultsSchema,
+  mobileSearchSchema,
   mobileSalesSchema,
   mobileSellBoardSpecsSchema,
   mobileSellCatalogSearchSchema,
@@ -59,6 +62,9 @@ import {
   type MobileProfile,
   type MobileRecentlyViewed,
   type MobileReviewsPage,
+  type MobileSavedSearch,
+  type MobileSearch,
+  type MobileSearchResults,
   type MobileSale,
   type MobileSellBoardSpecs,
   type MobileSellCatalogSearch,
@@ -238,6 +244,35 @@ export async function reverseGeocodeLabel(lat: number, lng: number): Promise<str
   if (!body || typeof body !== "object" || !("displayName" in body) || typeof body.displayName !== "string") return null
   const label = body.displayName.trim()
   return label || null
+}
+
+/** Same ranking as the website header. Cards use absolute image URLs. */
+export function fetchSearchSuggest(query: string): Promise<MobileSearch["listings"]> {
+  const q = query.trim()
+  if (q.length < 2) return Promise.resolve([])
+  return read(`/api/mobile/v1/search?q=${encodeURIComponent(q)}`, (data) => mobileSearchSchema.parse(data).listings)
+}
+
+/** Same result set as the website `/search` page. */
+export function fetchSearchResults(query: string): Promise<MobileSearchResults> {
+  return read(`/api/mobile/v1/search/results?q=${encodeURIComponent(query.trim())}`, (data) =>
+    mobileSearchResultsSchema.parse(data),
+  )
+}
+
+export function fetchSavedSearch(accessToken: string, query: string): Promise<MobileSavedSearch> {
+  return read(
+    `/api/mobile/v1/me/saved-searches?q=${encodeURIComponent(query.trim())}`,
+    (data) => mobileSavedSearchSchema.parse(data),
+    accessToken,
+  )
+}
+
+export function setSavedSearch(accessToken: string, query: string, saved: boolean): Promise<MobileSavedSearch> {
+  return read("/api/mobile/v1/me/saved-searches", (data) => mobileSavedSearchSchema.parse(data), accessToken, {
+    q: query.trim(),
+    saved,
+  })
 }
 
 export function fetchListings(

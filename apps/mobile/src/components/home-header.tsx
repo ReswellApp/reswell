@@ -1,27 +1,44 @@
 import { SymbolView, type AndroidSymbol } from "expo-symbols"
-import { useRef } from "react"
-import { Pressable, StyleSheet, TextInput, View } from "react-native"
+import { useEffect, useRef, useState } from "react"
+import { Animated, Modal, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import type { SFSymbol } from "sf-symbols-typescript"
+import { SearchScreen } from "@/components/search-screen"
 import { Wordmark } from "@/components/wordmark"
 import { fontFamily, useReswellColors } from "@/theme"
 
 type HeaderIcon = { ios: SFSymbol; android: AndroidSymbol }
 
 export function HomeHeader({
-  query,
-  onQueryChange,
   onNotifications,
   onCart,
 }: {
-  query: string
-  onQueryChange: (value: string) => void
   onNotifications: () => void
   onCart: () => void
 }) {
   const colors = useReswellColors()
   const insets = useSafeAreaInsets()
-  const searchRef = useRef<TextInput>(null)
+  const { height } = useWindowDimensions()
+  const [open, setOpen] = useState(false)
+  const [openId, setOpenId] = useState(0)
+  const closing = useRef(false)
+  const translateY = useRef(new Animated.Value(-height)).current
+
+  useEffect(() => {
+    if (!open) return
+    translateY.setValue(-height)
+    Animated.timing(translateY, { toValue: 0, duration: 280, useNativeDriver: true }).start()
+  }, [height, open, translateY])
+
+  function close(after?: () => void) {
+    if (!open || closing.current) return
+    closing.current = true
+    Animated.timing(translateY, { toValue: -height, duration: 220, useNativeDriver: true }).start(() => {
+      closing.current = false
+      setOpen(false)
+      after?.()
+    })
+  }
 
   return (
     <View style={[styles.bar, { paddingTop: insets.top, backgroundColor: colors.background, borderBottomColor: colors.border }]}>
@@ -31,35 +48,34 @@ export function HomeHeader({
         <HeaderIconButton icon={{ ios: "cart", android: "shopping_cart" }} label="Cart" onPress={onCart} />
       </View>
       <View style={styles.searchRow}>
-        <View style={[styles.pill, { borderColor: colors.border, backgroundColor: colors.background }]}>
-          <TextInput
-            ref={searchRef}
-            value={query}
-            onChangeText={onQueryChange}
-            placeholder="Search surfboards, fins, wetsuits or apparel…"
-            placeholderTextColor={colors.muted}
-            autoCapitalize="none"
-            autoCorrect={false}
-            clearButtonMode="while-editing"
-            returnKeyType="search"
-            style={[styles.input, { color: colors.foreground, fontFamily: fontFamily.text }]}
-          />
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Search"
-            onPress={() => searchRef.current?.focus()}
-            style={[styles.searchButton, { backgroundColor: colors.primary }]}
-          >
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Search"
+          onPress={() => {
+            setOpenId((id) => id + 1)
+            setOpen(true)
+          }}
+          style={[styles.pill, { borderColor: colors.border, backgroundColor: colors.background }]}
+        >
+          <Text numberOfLines={1} style={[styles.placeholder, { color: colors.muted, fontFamily: fontFamily.text }]}>
+            Search surfboards, fins, wetsuits or apparel…
+          </Text>
+          <View style={[styles.searchButton, { backgroundColor: colors.primary }]}>
             <SymbolView
               name={{ ios: "magnifyingglass", android: "search", web: "search" }}
               size={16}
               tintColor={colors.primaryForeground}
               weight="semibold"
             />
-          </Pressable>
-        </View>
+          </View>
+        </Pressable>
         <HeaderIconButton icon={{ ios: "bell", android: "notifications" }} label="Notifications" onPress={onNotifications} />
       </View>
+      <Modal visible={open} transparent animationType="none" statusBarTranslucent onRequestClose={() => close()}>
+        <Animated.View style={[styles.cover, { backgroundColor: colors.background, transform: [{ translateY }] }]}>
+          <SearchScreen key={openId} onClose={close} />
+        </Animated.View>
+      </Modal>
     </View>
   )
 }
@@ -88,6 +104,7 @@ function HeaderIconButton({
 
 const styles = StyleSheet.create({
   bar: { borderBottomWidth: StyleSheet.hairlineWidth },
+  cover: { flex: 1 },
   logoRow: {
     minHeight: 44,
     paddingHorizontal: 16,
@@ -113,7 +130,7 @@ const styles = StyleSheet.create({
     paddingLeft: 14,
     paddingRight: 4,
   },
-  input: {
+  placeholder: {
     flex: 1,
     fontSize: 16,
     paddingVertical: 8,

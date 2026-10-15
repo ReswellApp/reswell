@@ -1,6 +1,7 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
-import { homeListingsSection, homePeerToMobileCard, homeShopToMobile } from "./mobileHomeMap.ts"
+import { homeListingsSection, homePeerToMobileCard, homeShopToMobile, mobileSectionsFromHomeFeed } from "./mobileHomeMap.ts"
+import type { HomeFeedSection } from "./homeFeedPlan.ts"
 
 const LISTING_ID = "6d8b6c3e-1f4a-4c2d-9a7b-0e5f1a2b3c4d"
 
@@ -45,5 +46,49 @@ describe("mobile homepage map", () => {
     assert.equal(shop.name, "North Shop")
     assert.equal(shop.location_label, "123 Pacific Ave")
     assert.equal(shop.verified, true)
+  })
+
+  it("maps the shared feed in order and drops an empty shop rail", () => {
+    const sections: HomeFeedSection[] = [
+      {
+        kind: "listings",
+        id: "recently_listed",
+        title: "Recently listed",
+        listings: [
+          {
+            id: LISTING_ID,
+            slug: "album-twin",
+            user_id: LISTING_ID,
+            title: "album twin",
+            price: "725.5",
+            status: "active",
+            section: "surfboards",
+            condition: "good",
+            board_type: "shortboard",
+            shipping_available: true,
+            local_pickup: false,
+            listing_images: [{ url: "https://cdn.example.com/board.jpg", is_primary: true }],
+          },
+        ],
+        listingIds: [LISTING_ID],
+        moreHref: null,
+        moreLabel: null,
+      },
+      {
+        kind: "shops",
+        id: "featured_shops",
+        title: "Featured Sellers",
+        subtitle: null,
+        shops: [],
+        moreHref: "/sellers",
+        moreLabel: "All Sellers",
+      },
+    ]
+    const mobile = mobileSectionsFromHomeFeed(sections)
+    assert.equal(mobile.length, 1)
+    assert.equal(mobile[0]?.kind, "listings")
+    if (mobile[0]?.kind !== "listings") return
+    assert.equal(mobile[0].title, "Recently listed")
+    assert.equal(mobile[0].listings[0]?.title, "Album Twin")
   })
 })
