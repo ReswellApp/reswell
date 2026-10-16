@@ -13,6 +13,7 @@ export const siteFooterNavLinks: {
   marketplace: [
     { name: "Shop from Reswell", href: "/reswell/shop" },
     { name: "Board Finder", href: "/board-finder" },
+    { name: "On sale", href: "/sale" },
     { name: "Recently sold", href: "/sold" },
     { name: "Sell your gear", href: "/sell" },
     { name: "Seller Resources", href: "/seller-resources" },

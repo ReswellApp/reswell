@@ -3,6 +3,7 @@ import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-bro
 import { revalidateListingDetailPage } from "@/lib/cache/revalidate-listing-public-detail"
 import { revalidateMarketplaceSalesMapCatalog } from "@/lib/cache/revalidate-marketplace-sales-map"
 import { revalidateMarketplaceSoldFeedCatalog } from "@/lib/cache/revalidate-marketplace-sold-feed"
+import { revalidateSaleFeedCatalog } from "@/lib/cache/revalidate-sale-feed"
 import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
 
 function isNextCacheContextMissing(error: unknown): boolean {
@@ -26,6 +27,7 @@ export async function safeRevalidateAfterMarketplaceOrderCommit(
     revalidateBoardsBrowseCatalog()
     await revalidateSellersAfterListingChange(supabase, params.sellerUserId)
     revalidateMarketplaceSoldFeedCatalog()
+    revalidateSaleFeedCatalog()
     revalidateMarketplaceSalesMapCatalog()
     for (let i = 0; i < params.listingIds.length; i++) {
       revalidateListingDetailPage(params.listingIds[i]!, params.listingSlugs[i] ?? null)

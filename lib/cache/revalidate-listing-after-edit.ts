@@ -7,6 +7,7 @@ import {
 } from "@/lib/cache/home-public-catalog"
 import { NAV_SUGGESTED_SURFBOARDS_CACHE_TAG } from "@/lib/cache/nav-suggested-surfboards"
 import { revalidateListingDetailPage } from "@/lib/cache/revalidate-listing-public-detail"
+import { revalidateSaleFeedCatalog } from "@/lib/cache/revalidate-sale-feed"
 
 const EXPIRE_NOW = { expire: 0 } as const
 
@@ -27,4 +28,5 @@ export function expirePublicListingSurfacesAfterEdit(
   revalidateTag(NAV_SUGGESTED_SURFBOARDS_CACHE_TAG, EXPIRE_NOW)
   revalidatePath("/boards", "page")
   revalidatePath("/", "page")
+  revalidateSaleFeedCatalog()
 }

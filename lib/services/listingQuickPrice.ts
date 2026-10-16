@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { syncListingToIndex } from "@/lib/elasticsearch/listings-index"
 import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
+import { revalidateSaleFeedCatalog } from "@/lib/cache/revalidate-sale-feed"
 import { revalidateListingDetailPage } from "@/lib/cache/revalidate-listing-public-detail"
 import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
@@ -140,6 +141,7 @@ export async function updateSellerListingQuickPrice(
   await revalidateSellersAfterListingChange(supabase, sellerUserId)
 
   revalidateListingDetailPage(listingId, row.slug)
+  revalidateSaleFeedCatalog()
   if (row.section === "surfboards") {
     revalidateBoardsBrowseCatalog()
   }

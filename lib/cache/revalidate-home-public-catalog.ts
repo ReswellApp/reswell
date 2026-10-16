@@ -9,6 +9,7 @@ import {
   HOME_TRENDING_BRANDS_CACHE_TAG,
 } from "@/lib/cache/home-public-catalog"
 import { revalidateMarketplaceSoldFeedCatalog } from "@/lib/cache/revalidate-marketplace-sold-feed"
+import { revalidateSaleFeedCatalog } from "@/lib/cache/revalidate-sale-feed"
 import { revalidateListYourSurfboardShowcase } from "@/lib/cache/revalidate-list-your-surfboard-showcase"
 
 /** Bust admin-curated homepage sections after CMS or homepage-visibility changes. */
@@ -60,6 +61,7 @@ export function revalidateHomeRecentlyListedGridCatalog(): void {
 export function revalidateRecentlySoldSurfaces(): void {
   revalidateHomeRecentlySoldCatalog()
   revalidateMarketplaceSoldFeedCatalog()
+  revalidateSaleFeedCatalog()
   revalidatePath("/sold", "page")
   revalidatePath("/sold", "layout")
   revalidateListYourSurfboardShowcase()

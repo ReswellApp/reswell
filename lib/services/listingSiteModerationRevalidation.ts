@@ -17,6 +17,7 @@ import {
 } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { revalidateListingDetailPage } from "@/lib/cache/revalidate-listing-public-detail"
 import { revalidateMarketplaceSoldFeedCatalog } from "@/lib/cache/revalidate-marketplace-sold-feed"
+import { revalidateSaleFeedCatalog } from "@/lib/cache/revalidate-sale-feed"
 import { revalidateTopCitiesDirectory } from "@/lib/cache/revalidate-top-cities-directory"
 
 const EXPIRE_NOW = { expire: 0 } as const
@@ -51,6 +52,7 @@ function expireListingDiscoveryCatalogs(): void {
   revalidatePath("/", "page")
   revalidatePath("/search")
   revalidatePath("/sold")
+  revalidateSaleFeedCatalog()
   revalidateTopCitiesDirectory()
 }
 

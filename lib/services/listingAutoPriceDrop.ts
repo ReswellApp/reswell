@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
+import { revalidateSaleFeedCatalog } from "@/lib/cache/revalidate-sale-feed"
 import { revalidateListingDetailPage } from "@/lib/cache/revalidate-listing-public-detail"
 import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import {
@@ -59,6 +60,10 @@ export async function applyDueListingAutoPriceDrops(
         summary.errors.push({ listingId: row.id, error: message })
       }
     }
+  }
+
+  if (summary.dropped > 0) {
+    revalidateSaleFeedCatalog()
   }
 
   return summary

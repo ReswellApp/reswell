@@ -284,6 +284,12 @@ export const MANAGED_PAGES: ManagedPage[] = [
       "See surfboards that recently sold on Reswell — live marketplace activity and completed sales.",
     path: "/sold",
   }),
+  page("sale", "marketplace", "On sale", {
+    title: "On sale | Reswell",
+    description:
+      "Shop marked-down surfboards, fins, wetsuits, and gear on Reswell. Every active listing with a public price drop.",
+    path: "/sale",
+  }),
   page("map", "marketplace", "Sales map", {
     title: "Where Reswell orders flow | Sales map",
     description:
