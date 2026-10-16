@@ -488,7 +488,7 @@ export const MANAGED_PAGES: ManagedPage[] = [
   page("seller-resources", "marketing", "Seller Resources", {
     title: "Seller Resources — Reswell",
     description:
-      "Guides for selling on Reswell: how to list, how to ship, the sales map, and more seller tools.",
+      "Guides for selling on Reswell: how to list, how to ship, where to get a surfboard box, the sales map, and more seller tools.",
     path: "/seller-resources",
     keywords: ["sell surfboard", "seller resources", "how to sell on Reswell"],
   }),
@@ -510,6 +510,19 @@ export const MANAGED_PAGES: ManagedPage[] = [
       "Offer shipping on a listing, pack a surfboard, print a label after the sale, or meet for local pickup.",
     path: "/seller-resources/how-to-ship",
     keywords: ["ship a surfboard", "surfboard shipping", "Reswell shipping label"],
+  }),
+  page("seller-resources-surfboard-boxes", "marketing", "Surfboard Boxes", {
+    title: "Surfboard Boxes — Where to Buy a Board Carton",
+    description:
+      "How to get a surfboard shipping box: reuse the carton it came in, ask a local shop, or order from A New Earth Project or Uline. Stay at or under 76×22×5 for the best rates.",
+    path: "/seller-resources/surfboard-boxes",
+    keywords: [
+      "surfboard box",
+      "surfboard shipping box",
+      "buy surfboard box",
+      "A New Earth Project",
+      "Uline surfboard box",
+    ],
   }),
   page("dropoff-santa-barbara", "marketing", "Santa Barbara drop-off", {
     title: "Santa Barbara Drop-Off | We Pack and Ship Your Surfboard",

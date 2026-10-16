@@ -200,6 +200,12 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
       priority: 0.5,
     },
     {
+      url: `${BASE}/seller-resources/surfboard-boxes`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.5,
+    },
+    {
       url: `${BASE}/dropoff/santa-barbara`,
       lastModified: now,
       changeFrequency: "monthly",

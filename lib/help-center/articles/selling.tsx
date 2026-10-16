@@ -1105,8 +1105,9 @@ export const sellingHelpArticles: HelpArticle[] = [
         body: (
           <>
             <p>
-              Use a proper board box for surfboards. Our {helpLink("/shipping", "Shipping guide")}{" "}
-              covers packing and box partners. Compare quotes with{" "}
+              Use a proper board box for surfboards.{" "}
+              {helpLink("/seller-resources/surfboard-boxes", "Surfboard boxes")} covers where to buy
+              one. Our {helpLink("/shipping", "Shipping guide")} covers packing. Compare quotes with{" "}
               {helpLink("/shipping-estimator", "the shipping estimator")} before you list. Ship within{" "}
               {SHIPPING_DEADLINE_DAYS} days. Message the buyer if you are running behind.
             </p>

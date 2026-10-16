@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { BookOpen, Map, Package, Store } from "lucide-react"
+import { BookOpen, Box, Map, Package, Store } from "lucide-react"
 import { helpArticlePath, helpTopicPath } from "@/lib/help-center/paths"
 import { HowToSellSection } from "@/components/features/seller-resources/how-to-sell-section"
 import { SellerResourcesCta } from "@/components/features/seller-resources/seller-resources-cta"
@@ -8,6 +8,7 @@ import {
   HOW_TO_SELL_HREF,
   HOW_TO_SHIP_HREF,
   SALES_MAP_HREF,
+  SURFBOARD_BOXES_HREF,
   sellerResourcesComingSoon,
 } from "@/lib/seller-resources"
 import { SANTA_BARBARA_DROPOFF_HREF } from "@/lib/dropoff-santa-barbara"
@@ -32,6 +33,12 @@ const PRIMARY = [
     href: HOW_TO_SHIP_HREF,
     body: "Offer shipping, pack a board, print a label, or meet for pickup.",
     icon: Package,
+  },
+  {
+    title: "Surfboard Boxes",
+    href: SURFBOARD_BOXES_HREF,
+    body: "Where to buy a board carton, and which companies are worth ordering from.",
+    icon: Box,
   },
   {
     title: "Sales Map",
