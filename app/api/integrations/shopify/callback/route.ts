@@ -94,6 +94,14 @@ export async function GET(request: NextRequest) {
     return dashboardRedirect("connected")
   } catch (error) {
     console.error("[shopify] callback", error)
-    return dashboardRedirect("error", "connection_failed")
+    const message = error instanceof Error ? error.message : ""
+    return dashboardRedirect(
+      "error",
+      message.includes("different Reswell account")
+        ? "store_taken"
+        : message.includes("different Shopify store")
+          ? "already_linked"
+          : "connection_failed",
+    )
   }
 }

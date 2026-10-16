@@ -1,6 +1,6 @@
 import Image from "next/image"
 import { ArrowLeftRight, ShoppingBag } from "lucide-react"
-import reswellMark from "@/public/images/reswell-mark.png"
+import reswellWaveAvatar from "@/public/images/reswell-wave-avatar.jpg"
 
 interface ShopifyConsentHeaderProps {
   title: string
@@ -20,7 +20,7 @@ export function ShopifyConsentHeader({ title, description }: ShopifyConsentHeade
           <span className="h-px w-4 border-t border-dashed border-current" />
         </div>
         <div className="relative h-14 w-14 overflow-hidden rounded-2xl bg-background shadow-sm ring-1 ring-black/5">
-          <Image src={reswellMark} alt="" fill sizes="56px" className="object-cover" />
+          <Image src={reswellWaveAvatar} alt="" fill sizes="56px" className="object-cover" />
         </div>
       </div>
       <h1 className="mt-6 text-2xl font-semibold tracking-tight text-foreground sm:text-[1.75rem]">

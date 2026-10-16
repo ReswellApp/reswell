@@ -65,6 +65,9 @@ export function listStaticSiteAssets(): SiteAssetEntry[] {
       status: "orphan",
       notes: "Present in /public but not referenced in application code.",
     }),
+    publicImage("reswell-wave-avatar.jpg", "Reswell wave mark", "brand", ["/shopify/connect"], {
+      notes: "Shopify connect consent avatar.",
+    }),
     publicImage("og-image.jpg", "Listing / brand OG fallback", "brand", [], {
       notes: "Used in listing share cards and brand metadata — not visible in page body.",
     }),

@@ -1,6 +1,7 @@
 export type ShopifyConnectErrorDetail =
   | "invalid_shop"
   | "already_linked"
+  | "store_taken"
   | "not_approved"
   | "unavailable"
   | "start_failed"
@@ -15,6 +16,8 @@ const MESSAGES: Record<ShopifyConnectErrorDetail, string> = {
     "Enter your store's permanent your-store.myshopify.com domain, not a custom domain.",
   already_linked:
     "This Reswell account is already linked to a different Shopify store. Disconnect it first.",
+  store_taken:
+    "This Shopify store is already linked to a different Reswell account.",
   not_approved: "Your account is not approved for Shopify yet.",
   unavailable: "Shopify connections are temporarily unavailable. Try again shortly.",
   start_failed: "Reswell could not start the Shopify approval. Try again.",
