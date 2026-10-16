@@ -43,9 +43,7 @@ import {
   CRM_PRIORITY_LABEL,
   CRM_SOURCE_LABEL,
   CRM_STATUS_LABEL,
-  contactNeedsFollowUp,
   crmInterestStatusBadgeClass,
-  crmPriorityBadgeClass,
   crmStatusBadgeClass,
   crmTagDotClass,
   formatCurrency,
@@ -75,7 +73,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import {
   Dialog,
   DialogContent,
@@ -147,6 +145,7 @@ import {
   Phone,
   Plus,
   Search,
+  SlidersHorizontal,
   Trash2,
   UserPlus,
   Users,
@@ -432,7 +431,12 @@ export function CrmAdminClient() {
     if (filters.facebookOnly) {
       rows = rows.filter((contact) => contact.facebook_profile_url || contact.facebook_thread_id)
     }
-    if (filters.followUpOnly) rows = rows.filter((c) => contactNeedsFollowUp(c))
+    if (filters.followUpOnly) {
+      rows = rows.filter((contact) => {
+        const activity = activityFor(contact)
+        return activity != null && contactCircleBackDue(contact, activity)
+      })
+    }
     if (filters.createdWithinDays != null) {
       const cutoff = Date.now() - filters.createdWithinDays * 86_400_000
       rows = rows.filter((c) => timeValue(c.created_at) >= cutoff)
@@ -441,7 +445,7 @@ export function CrmAdminClient() {
       rows = rows.filter((c) => c.tags.some((t) => t.id === filters.tagId))
     }
     return sortContacts(rows, sort)
-  }, [contacts, filters.facebookOnly, filters.followUpOnly, filters.createdWithinDays, filters.tagId, sort])
+  }, [contacts, filters.facebookOnly, filters.followUpOnly, filters.createdWithinDays, filters.tagId, sort, activityFor])
 
   const visibleIds = useMemo(() => filteredContacts.map((c) => c.id), [filteredContacts])
   const selectedVisibleCount = useMemo(
@@ -562,18 +566,10 @@ export function CrmAdminClient() {
   const hasContacts = contacts.length > 0
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight">CRM</h1>
-          <p className="max-w-2xl text-sm text-muted-foreground">
-            Save Facebook Marketplace leads, reopen the chat, and circle back when they have not listed or bought.
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {followUpQueue.length} due · {marketplaceCount} marketplace · {stats?.totalContacts ?? contacts.length} contacts
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-xl font-semibold tracking-tight">CRM</h1>
+        <div className="flex items-center gap-2">
           <ToggleGroup
             type="single"
             value={view}
@@ -592,16 +588,17 @@ export function CrmAdminClient() {
             </ToggleGroupItem>
           </ToggleGroup>
           <Button
-            variant="outline"
-            className="min-w-0 flex-1 sm:flex-none"
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9"
+            aria-label="Export"
             onClick={() => downloadContactsCsv(filteredContacts)}
             disabled={filteredContacts.length === 0}
           >
-            <Download className="mr-2 h-4 w-4" />
-            Export
+            <Download className="h-4 w-4" />
           </Button>
-          <Button variant="outline" className="min-w-0 flex-1 sm:flex-none" onClick={() => setAddContactOpen(true)}>
-            <UserPlus className="mr-2 h-4 w-4" />
+          <Button variant="outline" size="sm" onClick={() => setAddContactOpen(true)}>
+            <UserPlus className="h-4 w-4" />
             Add contact
           </Button>
         </div>
@@ -611,154 +608,179 @@ export function CrmAdminClient() {
 
       <CrmFollowUpQueue contacts={followUpQueue} onOpen={setSelectedContactId} onMutated={refreshAfterMutation} />
 
-      {stats ? (
-        <details className="rounded-xl border bg-card shadow-sm">
-          <summary className="cursor-pointer px-4 py-3 text-sm font-medium">Pipeline insights</summary>
-          <div className="px-4 pb-4">
-            <CrmAnalytics stats={stats} />
-          </div>
-        </details>
-      ) : null}
-
-      <div className="flex flex-wrap items-center gap-2">
-        {CRM_SEGMENTS.map((segment) => {
-          const Icon = segment.icon
-          const active = currentSegment === segment.id
-          return (
-            <button
-              key={segment.id}
-              type="button"
-              onClick={() => {
-                setFilters(segment.filters)
-                clearSelection()
-              }}
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
-                active
-                  ? "border-teal-500 bg-teal-500 text-white shadow-sm"
-                  : "border-border bg-background text-muted-foreground hover:bg-muted",
-              )}
-            >
-              <Icon className="h-3.5 w-3.5" />
-              {segment.label}
-            </button>
-          )
-        })}
-      </div>
-
       <Card className="border shadow-sm">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-lg">Leads</CardTitle>
-          <CardDescription>Open the Facebook profile or the Marketplace chat without leaving the list.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-            <div className="relative flex-1">
+        <CardContent className="space-y-3 p-3 sm:p-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="relative min-w-0 flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search name, Facebook, or thread…"
+                placeholder="Search name, Facebook, or thread"
                 className="pl-9"
               />
             </div>
-            <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">
-              <Select
-                value={filters.status}
-                onValueChange={(v) => updateFilter({ status: v as CrmContactStatus | "all" })}
-              >
-                <SelectTrigger className="w-full min-w-0 sm:w-[140px]">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All statuses</SelectItem>
-                  {(Object.keys(CRM_STATUS_LABEL) as CrmContactStatus[]).map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {CRM_STATUS_LABEL[s]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select
-                value={filters.priority}
-                onValueChange={(v) => updateFilter({ priority: v as CrmContactPriority | "all" })}
-              >
-                <SelectTrigger className="w-full min-w-0 sm:w-[140px]">
-                  <SelectValue placeholder="Priority" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All priorities</SelectItem>
-                  {(Object.keys(CRM_PRIORITY_LABEL) as CrmContactPriority[]).map((p) => (
-                    <SelectItem key={p} value={p}>
-                      {CRM_PRIORITY_LABEL[p]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select
-                value={filters.source}
-                onValueChange={(v) => updateFilter({ source: v as CrmContactSource | "all" })}
-              >
-                <SelectTrigger className="w-full min-w-0 sm:w-[150px]">
-                  <SelectValue placeholder="Source" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All sources</SelectItem>
-                  {(Object.keys(CRM_SOURCE_LABEL) as CrmContactSource[]).map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {CRM_SOURCE_LABEL[s]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select
-                value={filters.assignedTo}
-                onValueChange={(v) => updateFilter({ assignedTo: v as CrmFilterState["assignedTo"] })}
-              >
-                <SelectTrigger className="w-full min-w-0 sm:w-[150px]">
-                  <SelectValue placeholder="Owner" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All owners</SelectItem>
-                  <SelectItem value="unassigned">Unassigned</SelectItem>
-                  {staff.map((member) => (
-                    <SelectItem key={member.id} value={member.id}>
-                      {member.display_name ?? "Staff"}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {tags.length > 0 ? (
-                <Select
-                  value={filters.tagId ?? "all"}
-                  onValueChange={(v) => updateFilter({ tagId: v === "all" ? null : v })}
-                >
-                  <SelectTrigger className="w-full min-w-0 sm:w-[150px]">
-                    <SelectValue placeholder="Tag" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All tags</SelectItem>
-                    {tags.map((tag) => (
-                      <SelectItem key={tag.id} value={tag.id}>
-                        <span className="inline-flex items-center gap-2">
-                          <span className={cn("h-2 w-2 rounded-full", crmTagDotClass(tag.color))} />
-                          {tag.name}
-                        </span>
-                      </SelectItem>
+            <div className="flex items-center gap-1 overflow-x-auto">
+              {CRM_SEGMENTS.filter((segment) =>
+                ["all", "overdue", "marketplace", "customers"].includes(segment.id),
+              ).map((segment) => {
+                const active = currentSegment === segment.id
+                const count =
+                  segment.id === "marketplace"
+                    ? marketplaceCount
+                    : segment.id === "overdue"
+                      ? followUpQueue.length
+                      : null
+                return (
+                  <button
+                    key={segment.id}
+                    type="button"
+                    onClick={() => {
+                      setFilters(segment.filters)
+                      clearSelection()
+                    }}
+                    className={cn(
+                      "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3 text-sm transition-colors",
+                      active
+                        ? "bg-foreground text-background"
+                        : "text-muted-foreground hover:bg-muted",
+                    )}
+                  >
+                    {segment.id === "all" ? "All" : segment.id === "overdue" ? "Due" : segment.id === "marketplace" ? "Facebook" : "Customers"}
+                    {count != null ? <span className={cn("text-xs", active ? "text-background/70" : "text-muted-foreground")}>{count}</span> : null}
+                  </button>
+                )
+              })}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="relative h-9 w-9 shrink-0"
+                    aria-label="More filters"
+                  >
+                    <SlidersHorizontal className="h-4 w-4" />
+                    {currentSegment == null ? (
+                      <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-teal-500" />
+                    ) : null}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-72 space-y-3">
+                  <div className="flex flex-wrap gap-1.5">
+                    {CRM_SEGMENTS.filter((segment) => segment.id === "hot" || segment.id === "new").map((segment) => (
+                      <Button
+                        key={segment.id}
+                        type="button"
+                        size="sm"
+                        variant={currentSegment === segment.id ? "default" : "outline"}
+                        onClick={() => {
+                          setFilters(segment.filters)
+                          clearSelection()
+                        }}
+                      >
+                        {segment.label}
+                      </Button>
                     ))}
-                  </SelectContent>
-                </Select>
-              ) : null}
-              <div className="flex items-center gap-2 rounded-md border px-3 py-2">
-                <Switch
-                  id="follow-up-only"
-                  checked={filters.followUpOnly}
-                  onCheckedChange={(checked) => updateFilter({ followUpOnly: checked })}
-                />
-                <Label htmlFor="follow-up-only" className="text-sm font-normal whitespace-nowrap cursor-pointer">
-                  Follow-up due
-                </Label>
-              </div>
+                  </div>
+                  <Select
+                    value={filters.status}
+                    onValueChange={(v) => updateFilter({ status: v as CrmContactStatus | "all" })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All statuses</SelectItem>
+                      {(Object.keys(CRM_STATUS_LABEL) as CrmContactStatus[]).map((s) => (
+                        <SelectItem key={s} value={s}>
+                          {CRM_STATUS_LABEL[s]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select
+                    value={filters.priority}
+                    onValueChange={(v) => updateFilter({ priority: v as CrmContactPriority | "all" })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All priorities</SelectItem>
+                      {(Object.keys(CRM_PRIORITY_LABEL) as CrmContactPriority[]).map((p) => (
+                        <SelectItem key={p} value={p}>
+                          {CRM_PRIORITY_LABEL[p]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select
+                    value={filters.source}
+                    onValueChange={(v) => updateFilter({ source: v as CrmContactSource | "all" })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Source" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All sources</SelectItem>
+                      {(Object.keys(CRM_SOURCE_LABEL) as CrmContactSource[]).map((s) => (
+                        <SelectItem key={s} value={s}>
+                          {CRM_SOURCE_LABEL[s]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select
+                    value={filters.assignedTo}
+                    onValueChange={(v) => updateFilter({ assignedTo: v as CrmFilterState["assignedTo"] })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Owner" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All owners</SelectItem>
+                      <SelectItem value="unassigned">Unassigned</SelectItem>
+                      {staff.map((member) => (
+                        <SelectItem key={member.id} value={member.id}>
+                          {member.display_name ?? "Staff"}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {tags.length > 0 ? (
+                    <Select
+                      value={filters.tagId ?? "all"}
+                      onValueChange={(v) => updateFilter({ tagId: v === "all" ? null : v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Tag" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All tags</SelectItem>
+                        {tags.map((tag) => (
+                          <SelectItem key={tag.id} value={tag.id}>
+                            <span className="inline-flex items-center gap-2">
+                              <span className={cn("h-2 w-2 rounded-full", crmTagDotClass(tag.color))} />
+                              {tag.name}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : null}
+                  <div className="flex items-center justify-between gap-3">
+                    <Label htmlFor="follow-up-only" className="text-sm font-normal">
+                      Follow-up due
+                    </Label>
+                    <Switch
+                      id="follow-up-only"
+                      checked={filters.followUpOnly}
+                      onCheckedChange={(checked) => updateFilter({ followUpOnly: checked })}
+                    />
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
 
@@ -813,6 +835,10 @@ export function CrmAdminClient() {
               onOpen={setSelectedContactId}
               onToggleSelect={toggleSelectOne}
               reswellLabel={(contact) => reswellStatusLabel(activityFor(contact))}
+              isDue={(contact) => {
+                const activity = activityFor(contact)
+                return activity != null && contactCircleBackDue(contact, activity)
+              }}
             />
             <div className="hidden overflow-hidden rounded-md border md:block">
               <Table>
@@ -826,31 +852,35 @@ export function CrmAdminClient() {
                       />
                     </TableHead>
                     <SortHeader label="Contact" columnKey="name" sort={sort} onSort={handleSort} />
-                    <TableHead>Facebook</TableHead>
-                    <TableHead>Source</TableHead>
-                    <SortHeader label="Status" columnKey="status" sort={sort} onSort={handleSort} />
-                    <SortHeader label="Priority" columnKey="priority" sort={sort} onSort={handleSort} />
-                    <TableHead>Owner</TableHead>
                     <SortHeader
-                      label="Last contacted"
+                      label="Last contact"
                       columnKey="last_contacted"
                       sort={sort}
                       onSort={handleSort}
+                      className="w-36"
                     />
                     <SortHeader
-                      label="Next follow-up"
+                      label="Follow up"
                       columnKey="next_follow_up"
                       sort={sort}
                       onSort={handleSort}
+                      className="w-36"
                     />
+                    <TableHead className="w-24" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredContacts.map((contact) => {
                     const name = crmContactDisplayName(contact)
                     const avatarUrl = contact.profile?.avatar_url
-                    const needsFollowUp = contactNeedsFollowUp(contact)
+                    const activity = activityFor(contact)
+                    const due = activity != null && contactCircleBackDue(contact, activity)
                     const isSelected = selectedIds.has(contact.id)
+                    const subtitle =
+                      contact.email ??
+                      contact.profile?.email ??
+                      contact.facebook_username ??
+                      (contact.facebook_profile_url ? "Facebook" : null)
                     return (
                       <TableRow
                         key={contact.id}
@@ -872,74 +902,30 @@ export function CrmAdminClient() {
                               <AvatarFallback className="text-xs">{initials(name)}</AvatarFallback>
                             </Avatar>
                             <div className="min-w-0">
-                              <p className="font-medium truncate">{name}</p>
-                              <p className="text-xs text-muted-foreground truncate">
-                                {contact.email ?? contact.profile?.email ?? "No email"}
-                              </p>
-                              {contact.tags.length > 0 ? (
-                                <CrmTagChips tags={contact.tags} max={3} className="mt-1" />
+                              <div className="flex items-center gap-2">
+                                <p className="truncate font-medium">{name}</p>
+                                <span
+                                  className={cn(
+                                    "inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[11px] font-medium",
+                                    crmStatusBadgeClass(contact.status),
+                                  )}
+                                >
+                                  {CRM_STATUS_LABEL[contact.status]}
+                                </span>
+                                {due ? (
+                                  <span className="text-[11px] font-medium text-amber-700">Due</span>
+                                ) : null}
+                              </div>
+                              {subtitle || reswellStatusLabel(activity) ? (
+                                <p className="truncate text-xs text-muted-foreground">
+                                  {[subtitle, reswellStatusLabel(activity)].filter(Boolean).join(" · ")}
+                                </p>
                               ) : null}
-                              {reswellStatusLabel(activityFor(contact)) ? (
-                                <p className="text-xs text-teal-700">{reswellStatusLabel(activityFor(contact))}</p>
+                              {contact.tags.length > 0 ? (
+                                <CrmTagChips tags={contact.tags} max={2} className="mt-1" />
                               ) : null}
                             </div>
-                            {needsFollowUp ? (
-                              <Badge variant="outline" className="ml-auto shrink-0 border-amber-300 text-amber-700">
-                                Due
-                              </Badge>
-                            ) : null}
                           </div>
-                        </TableCell>
-                        <TableCell>
-                          <CrmFacebookLinks
-                            profileUrl={contact.facebook_profile_url}
-                            threadUrl={contact.facebook_thread_url}
-                          />
-                          {!contact.facebook_profile_url && !contact.facebook_thread_url ? (
-                            <span className="text-xs text-muted-foreground">—</span>
-                          ) : null}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">{CRM_SOURCE_LABEL[contact.source]}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <span
-                            className={cn(
-                              "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium",
-                              crmStatusBadgeClass(contact.status),
-                            )}
-                          >
-                            {CRM_STATUS_LABEL[contact.status]}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <span
-                            className={cn(
-                              "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium",
-                              crmPriorityBadgeClass(contact.priority),
-                            )}
-                          >
-                            {CRM_PRIORITY_LABEL[contact.priority]}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          {contact.assignee ? (
-                            <span className="flex items-center gap-2">
-                              <Avatar className="h-6 w-6">
-                                {contact.assignee.avatar_url ? (
-                                  <AvatarImage src={contact.assignee.avatar_url} alt="" />
-                                ) : null}
-                                <AvatarFallback className="text-[9px]">
-                                  {initials(contact.assignee.display_name ?? "?")}
-                                </AvatarFallback>
-                              </Avatar>
-                              <span className="text-xs text-muted-foreground truncate max-w-[100px]">
-                                {contact.assignee.display_name ?? "Staff"}
-                              </span>
-                            </span>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">—</span>
-                          )}
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {contact.last_contacted_at
@@ -948,8 +934,15 @@ export function CrmAdminClient() {
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {contact.next_follow_up_at
-                            ? format(new Date(contact.next_follow_up_at), "MMM d, yyyy")
+                            ? format(new Date(contact.next_follow_up_at), "MMM d")
                             : "—"}
+                        </TableCell>
+                        <TableCell>
+                          <CrmFacebookLinks
+                            profileUrl={contact.facebook_profile_url}
+                            threadUrl={contact.facebook_thread_url}
+                            compact
+                          />
                         </TableCell>
                       </TableRow>
                     )
@@ -961,6 +954,15 @@ export function CrmAdminClient() {
           )}
         </CardContent>
       </Card>
+
+      {stats ? (
+        <details className="text-sm">
+          <summary className="cursor-pointer text-muted-foreground">Pipeline insights</summary>
+          <div className="pt-3">
+            <CrmAnalytics stats={stats} />
+          </div>
+        </details>
+      ) : null}
 
       <AddContactDialog
         open={addContactOpen}

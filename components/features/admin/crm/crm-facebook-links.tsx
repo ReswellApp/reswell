@@ -9,6 +9,7 @@ interface CrmFacebookLinksProps {
   threadUrl: string | null
   className?: string
   size?: "sm" | "default"
+  compact?: boolean
 }
 
 function safeFacebookHref(url: string | null): string | null {
@@ -30,7 +31,13 @@ function safeFacebookHref(url: string | null): string | null {
   }
 }
 
-export function CrmFacebookLinks({ profileUrl, threadUrl, className, size = "sm" }: CrmFacebookLinksProps) {
+export function CrmFacebookLinks({
+  profileUrl,
+  threadUrl,
+  className,
+  size = "sm",
+  compact = false,
+}: CrmFacebookLinksProps) {
   const profile = safeFacebookHref(profileUrl)
   const thread = safeFacebookHref(threadUrl)
   if (!profile && !thread) return null
@@ -38,18 +45,18 @@ export function CrmFacebookLinks({ profileUrl, threadUrl, className, size = "sm"
   return (
     <div className={cn("flex flex-wrap items-center gap-1.5", className)} onClick={(event) => event.stopPropagation()}>
       {thread ? (
-        <Button asChild size={size} variant="default">
-          <a href={thread} target="_blank" rel="noopener noreferrer">
-            <MessageCircle className="mr-1.5 h-3.5 w-3.5" />
-            Open chat
+        <Button asChild size={compact ? "icon" : size} variant={compact ? "outline" : "default"} className={compact ? "h-8 w-8" : undefined}>
+          <a href={thread} target="_blank" rel="noopener noreferrer" aria-label="Open chat" title="Open chat">
+            <MessageCircle className={compact ? "h-4 w-4" : "mr-1.5 h-3.5 w-3.5"} />
+            {compact ? null : "Open chat"}
           </a>
         </Button>
       ) : null}
       {profile ? (
-        <Button asChild size={size} variant="outline">
-          <a href={profile} target="_blank" rel="noopener noreferrer">
-            <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
-            Profile
+        <Button asChild size={compact ? "icon" : size} variant="outline" className={compact ? "h-8 w-8" : undefined}>
+          <a href={profile} target="_blank" rel="noopener noreferrer" aria-label="Open profile" title="Open profile">
+            <ExternalLink className={compact ? "h-4 w-4" : "mr-1.5 h-3.5 w-3.5"} />
+            {compact ? null : "Profile"}
           </a>
         </Button>
       ) : null}

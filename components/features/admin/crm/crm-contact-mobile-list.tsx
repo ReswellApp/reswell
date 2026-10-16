@@ -5,14 +5,7 @@ import {
   crmContactDisplayName,
   type CrmContactWithProfile,
 } from "@/lib/db/crm"
-import {
-  CRM_PRIORITY_LABEL,
-  CRM_SOURCE_LABEL,
-  CRM_STATUS_LABEL,
-  contactNeedsFollowUp,
-  crmPriorityBadgeClass,
-  crmStatusBadgeClass,
-} from "@/components/features/admin/crm/crm-labels"
+import { CRM_STATUS_LABEL, crmStatusBadgeClass } from "@/components/features/admin/crm/crm-labels"
 import { CrmFacebookLinks } from "@/components/features/admin/crm/crm-facebook-links"
 import { CrmTagChips } from "@/components/features/admin/crm/crm-tag-editor"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -33,6 +26,7 @@ interface CrmContactMobileListProps {
   onOpen: (id: string) => void
   onToggleSelect: (id: string) => void
   reswellLabel?: (contact: CrmContactWithProfile) => string | null
+  isDue?: (contact: CrmContactWithProfile) => boolean
 }
 
 export function CrmContactMobileList({
@@ -41,13 +35,14 @@ export function CrmContactMobileList({
   onOpen,
   onToggleSelect,
   reswellLabel,
+  isDue,
 }: CrmContactMobileListProps) {
   return (
     <ul className="space-y-2 md:hidden" role="list">
       {contacts.map((contact) => {
         const name = crmContactDisplayName(contact)
         const avatarUrl = contact.profile?.avatar_url
-        const needsFollowUp = contactNeedsFollowUp(contact)
+        const needsFollowUp = isDue?.(contact) ?? false
         const isSelected = selectedIds.has(contact.id)
 
         return (
@@ -97,8 +92,7 @@ export function CrmContactMobileList({
                     {reswellLabel?.(contact) ? (
                       <p className="text-xs text-teal-700">{reswellLabel(contact)}</p>
                     ) : null}
-                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                      <Badge variant="secondary">{CRM_SOURCE_LABEL[contact.source]}</Badge>
+                    <div className="mt-2">
                       <span
                         className={cn(
                           "inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium",
@@ -106,14 +100,6 @@ export function CrmContactMobileList({
                         )}
                       >
                         {CRM_STATUS_LABEL[contact.status]}
-                      </span>
-                      <span
-                        className={cn(
-                          "inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium",
-                          crmPriorityBadgeClass(contact.priority),
-                        )}
-                      >
-                        {CRM_PRIORITY_LABEL[contact.priority]}
                       </span>
                     </div>
                     {contact.tags.length > 0 ? (
@@ -134,6 +120,7 @@ export function CrmContactMobileList({
               <CrmFacebookLinks
                 profileUrl={contact.facebook_profile_url}
                 threadUrl={contact.facebook_thread_url}
+                compact
               />
             </div>
           </li>
