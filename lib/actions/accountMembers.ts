@@ -16,7 +16,7 @@ import {
 
 function revalidateAccountSurfaces() {
   revalidatePath("/dashboard")
-  revalidatePath("/dashboard/team")
+  revalidatePath("/dashboard/profile/team")
   revalidatePath("/dashboard/listings")
   revalidatePath("/dashboard/sales")
   revalidatePath("/dashboard/offers")

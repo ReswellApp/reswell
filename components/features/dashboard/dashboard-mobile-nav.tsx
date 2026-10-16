@@ -13,19 +13,9 @@ import {
   dashboardNavLinks,
   type DashboardNavLink,
 } from "@/lib/dashboard-nav-links"
+import { isMostSpecificDashboardNavMatch } from "@/lib/dashboard-nav-match"
 import { SupportUnreadTicker } from "@/components/features/support/support-unread-ticker"
 import { cn } from "@/lib/utils"
-
-function isLinkActive(pathname: string, href: string): boolean {
-  const normalized = pathname.replace(/\/$/, "") || "/"
-  if (href === "/dashboard") {
-    return normalized === "/dashboard"
-  }
-  if (href === "/messages" || href.startsWith("/messages")) {
-    return normalized === "/messages" || normalized.startsWith("/messages/")
-  }
-  return normalized === href || normalized.startsWith(`${href}/`)
-}
 
 function isMessageThreadRoute(pathname: string): boolean {
   return /^\/messages\/[^/]+$/.test(pathname) && pathname !== "/messages/offers"
@@ -42,9 +32,12 @@ function resolveActiveLink(
   )
   if (exactSeller) return exactSeller
 
+  const hrefs = links.map((link) => link.href)
   const active =
-    links.find((link) => link.key !== "seller-profile" && isLinkActive(pathname, link.href)) ??
-    links[0]
+    links.find(
+      (link) =>
+        link.key !== "seller-profile" && isMostSpecificDashboardNavMatch(pathname, link.href, hrefs),
+    ) ?? links[0]
 
   return active
 }
@@ -92,6 +85,7 @@ export function DashboardMobileNav({
     ]
   }, [hasShopifyAccess, isAdmin, isDropoffLocation, isShipper, sellerProfileHref, showEarnings])
 
+  const navHrefs = useMemo(() => links.map((link) => link.href), [links])
   const activeLink = useMemo(() => resolveActiveLink(pathname, links), [links, pathname])
 
   useEffect(() => {
@@ -146,7 +140,7 @@ export function DashboardMobileNav({
           <CollapsibleContent className="overflow-hidden">
             <ul>
               {links.map((link) => {
-                const active = isLinkActive(pathname, link.href)
+                const active = isMostSpecificDashboardNavMatch(pathname, link.href, navHrefs)
 
                 return (
                   <li key={link.key}>

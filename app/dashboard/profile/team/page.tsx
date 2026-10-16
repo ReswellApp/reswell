@@ -7,10 +7,10 @@ import { privatePageMetadata } from "@/lib/site-metadata"
 export const metadata = privatePageMetadata({
   title: "Team — Reswell",
   description: "Add emails that can sign in and help run your shop.",
-  path: "/dashboard/team",
+  path: "/dashboard/profile/team",
 })
 
-export default async function DashboardTeamPage() {
+export default async function DashboardProfileTeamPage() {
   const shop = await getShopAccountContext()
   if (!shop) return null
 

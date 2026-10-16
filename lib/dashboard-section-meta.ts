@@ -53,7 +53,7 @@ const SECTION_META_BY_PREFIX: { prefix: string; meta: DashboardSectionMeta }[] =
     },
   },
   {
-    prefix: "/dashboard/team",
+    prefix: "/dashboard/profile/team",
     meta: {
       sectionName: "Team",
       description: "Emails that can sign in and help run this account.",
