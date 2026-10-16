@@ -17,6 +17,7 @@ import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerc
 import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
 import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { revalidateMarketplaceSoldFeedCatalog } from "@/lib/cache/revalidate-marketplace-sold-feed"
+import { revalidateSaleFeedCatalog } from "@/lib/cache/revalidate-sale-feed"
 import { completeAcceptedOfferOnPurchase } from "@/lib/services/completeOfferOnPurchase"
 import { purchaseReswellShippingLabelAfterCheckout } from "@/lib/services/autoPurchaseReswellShippingLabelForOrder"
 import { sendPostPurchaseReviewInvite } from "@/lib/services/orderReviewInvite"
@@ -303,6 +304,7 @@ export async function POST(request: NextRequest) {
   revalidateBoardsBrowseCatalog()
   await revalidateSellersAfterListingChange(serviceSupabase, listing.user_id)
   revalidateMarketplaceSoldFeedCatalog()
+  revalidateSaleFeedCatalog()
 
   void completeAcceptedOfferOnPurchase(serviceSupabase, user.id, [listing.id], listing.user_id)
 

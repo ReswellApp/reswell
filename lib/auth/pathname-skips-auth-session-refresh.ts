@@ -8,7 +8,7 @@ export function pathnameSkipsAuthSessionRefresh(pathname: string): boolean {
   if (pathname === "/contact") return true
   if (pathname === "/boards") return true
   if (pathname.startsWith("/search")) return true
-  if (pathname === "/sold") return true
+  if (pathname === "/sold" || pathname === "/sale") return true
   if (
     pathname === "/fins" ||
     pathname === "/wetsuits" ||

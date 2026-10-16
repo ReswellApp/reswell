@@ -7,6 +7,7 @@ import { trackKlaviyoMarkedAsSold } from "@/lib/klaviyo/track-marked-as-sold"
 import { deleteAllCartRowsForListing } from "@/lib/db/cart-items-server"
 import { removeListingFromGoogleMerchantFeed } from "@/lib/services/googleMerchantSync"
 import { revalidateMarketplaceSoldFeedCatalog } from "@/lib/cache/revalidate-marketplace-sold-feed"
+import { revalidateSaleFeedCatalog } from "@/lib/cache/revalidate-sale-feed"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import type { SoldOffPlatformChannel } from "@/lib/validations/mark-listing-sold"
 
@@ -143,6 +144,7 @@ export async function markSellerListingSoldOffPlatform(
   revalidateListingDetailPage(listingId, row.slug)
   revalidateBoardsBrowseCatalog()
   revalidateMarketplaceSoldFeedCatalog()
+  revalidateSaleFeedCatalog()
   await revalidateSellersAfterListingChange(supabase, sellerUserId)
 
   void trackKlaviyoMarkedAsSold({

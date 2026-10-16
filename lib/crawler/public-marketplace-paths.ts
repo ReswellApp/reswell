@@ -17,7 +17,9 @@ export {
  * copy for every visitor.
  */
 export function isPublicMarketplaceHtmlPath(pathname: string): boolean {
-  if (pathname === "/" || pathname === "/boards" || pathname === "/sold") return true
+  if (pathname === "/" || pathname === "/boards" || pathname === "/sold" || pathname === "/sale") {
+    return true
+  }
   if (pathname.startsWith("/l/")) return true
   if (
     pathname === "/fins" ||
@@ -52,8 +54,8 @@ export function publicMarketplaceCdnCacheControl(
   pathname: string,
   hasSetCookie: boolean,
 ): string | null {
-  // Cookie-free document. Next.js revalidatePath("/sold") owns freshness
-  // after a sale, purchase, or return.
-  if (pathname === "/sold") return null
+  // Cookie-free documents. Next.js revalidatePath owns freshness after a
+  // sale, purchase, return, or public markdown.
+  if (pathname === "/sold" || pathname === "/sale") return null
   return cdnCacheControlForPublicHtml(isPublicMarketplaceHtmlPath(pathname), hasSetCookie)
 }

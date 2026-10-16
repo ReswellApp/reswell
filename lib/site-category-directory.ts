@@ -183,15 +183,17 @@ export function boardBrowseNavItemIsActive(
   return pathname === path
 }
 
-/** Desktop header right rail — Sellers, Sold. `/brands` stays live; hidden from nav for now. */
+/** Desktop header right rail — Sellers, Sale, Sold. `/brands` stays live; hidden from nav for now. */
 export const siteHeaderDesktopSecondaryNavLinks: CategoryLink[] = [
   { label: "Sellers", href: "/sellers" },
+  { label: "Sale", href: "/sale" },
   { label: "Sold", href: "/sold" },
 ]
 
-/** Mobile pill strip + hamburger — Sellers, Sold. `/brands` stays live; hidden from nav for now. */
+/** Mobile pill strip + hamburger — Sellers, Sale, Sold. `/brands` stays live; hidden from nav for now. */
 export const siteHeaderMobileSecondaryNavLinks: CategoryLink[] = [
   { label: "Sellers", href: "/sellers" },
+  { label: "Sale", href: "/sale" },
   { label: "Sold", href: "/sold" },
 ]
 

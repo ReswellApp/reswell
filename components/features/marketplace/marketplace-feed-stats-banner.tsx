@@ -53,3 +53,14 @@ export function MarketplaceFeedNewListingsStatsBanner({ totalCount }: { totalCou
     </MarketplaceFeedStatsBanner>
   )
 }
+
+export function MarketplaceFeedSaleStatsBanner({ totalCount }: { totalCount: number }) {
+  return (
+    <MarketplaceFeedStatsBanner>
+      <span className="inline-flex flex-wrap items-center justify-center gap-x-1 gap-y-1 text-muted-foreground">
+        <span className="font-medium tabular-nums text-foreground">{totalCount}</span>
+        <span>{totalCount === 1 ? "listing" : "listings"} on sale</span>
+      </span>
+    </MarketplaceFeedStatsBanner>
+  )
+}
