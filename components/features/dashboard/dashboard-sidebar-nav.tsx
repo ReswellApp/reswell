@@ -13,6 +13,7 @@ import {
   dashboardNavLinks,
   type DashboardNavLink,
 } from "@/lib/dashboard-nav-links"
+import { isMostSpecificDashboardNavMatch } from "@/lib/dashboard-nav-match"
 import {
   dashboardSidebarNavIconClass,
   dashboardSidebarNavItemClass,
@@ -20,29 +21,17 @@ import {
 import { SupportUnreadTicker } from "@/components/features/support/support-unread-ticker"
 import { cn } from "@/lib/utils"
 
-function isLinkActive(pathname: string, href: string): boolean {
-  const normalized = pathname.replace(/\/$/, "") || "/"
-  const target = href.replace(/\/$/, "") || "/"
-
-  if (target === "/dashboard") {
-    return normalized === "/dashboard"
-  }
-
-  if (target === "/messages") {
-    return normalized === "/messages" || normalized.startsWith("/messages/")
-  }
-
-  return normalized === target || normalized.startsWith(`${target}/`)
-}
-
 function DashboardNavItem({
   link,
   size,
+  navHrefs,
 }: {
   link: DashboardNavLink
   size: "default" | "large"
+  navHrefs: readonly string[]
 }) {
   const pathname = usePathname() ?? ""
+  const isActive = (href: string) => isMostSpecificDashboardNavMatch(pathname, href, navHrefs)
   const Icon = link.icon
   const isLarge = size === "large"
   const itemClass = isLarge
@@ -53,7 +42,7 @@ function DashboardNavItem({
     : "h-4 w-4 lg:h-[18px] lg:w-[18px]"
 
   if (!link.children?.length) {
-    const active = isLinkActive(pathname, link.href)
+    const active = isActive(link.href)
     return (
       <Link
         href={link.href}
@@ -73,7 +62,7 @@ function DashboardNavItem({
     )
   }
 
-  const sectionActive = link.children.some((child) => isLinkActive(pathname, child.href))
+  const sectionActive = link.children.some((child) => isActive(child.href))
 
   return (
     <Collapsible defaultOpen={sectionActive}>
@@ -106,7 +95,7 @@ function DashboardNavItem({
         )}
       >
         {link.children.map((child) => {
-          const childActive = isLinkActive(pathname, child.href)
+          const childActive = isActive(child.href)
           return (
             <Link
               key={child.href}
@@ -157,14 +146,25 @@ export function DashboardSidebarNav({
   const iconClass = isLarge
     ? dashboardSidebarNavIconClass
     : "h-4 w-4 lg:h-[18px] lg:w-[18px]"
+  const links = dashboardNavLinks({
+    isAdmin,
+    isShipper,
+    isDropoffLocation,
+    hasShopifyAccess,
+    showEarnings,
+  })
+  const navHrefs = links.flatMap((item) => [
+    item.href,
+    ...(item.children?.map((child) => child.href) ?? []),
+  ])
 
   return (
     <nav
       className={cn("hidden lg:block", isLarge ? "space-y-2" : "space-y-1.5")}
       aria-label="Dashboard"
     >
-      {dashboardNavLinks({ isAdmin, isShipper, isDropoffLocation, hasShopifyAccess, showEarnings }).map((link) => (
-        <DashboardNavItem key={link.href} link={link} size={size} />
+      {links.map((link) => (
+        <DashboardNavItem key={link.href} link={link} size={size} navHrefs={navHrefs} />
       ))}
       {sellerProfileHref ? (
         <Link

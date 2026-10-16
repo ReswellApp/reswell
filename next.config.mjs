@@ -263,6 +263,8 @@ const nextConfig = {
       { source: "/admin/coastal-delivery/:path*", destination: "/admin/shipper", permanent: false },
       { source: "/coastal-delivery", destination: "/dashboard/shipper", permanent: false },
       { source: "/coastal-delivery/:shipperId", destination: "/admin/shipper/:shipperId", permanent: false },
+      { source: "/dashboard/team", destination: "/dashboard/profile/team", permanent: true },
+      { source: "/dashboard/team/:path*", destination: "/dashboard/profile/team", permanent: true },
       { source: "/dashboard/orders", destination: "/dashboard/purchases", permanent: true },
       { source: "/dashboard/orders/:id", destination: "/dashboard/purchases/:id", permanent: true },
       { source: "/dashboard/claims", destination: "/dashboard", permanent: true },

@@ -91,7 +91,7 @@ export function dashboardNavLinks(input: {
 export const DASHBOARD_NAV_LINKS: DashboardNavLink[] = [
   { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { name: "Profile", href: "/dashboard/profile", icon: UserCircle },
-  { name: "Team", href: "/dashboard/team", icon: UserPlus },
+  { name: "Team", href: "/dashboard/profile/team", icon: UserPlus },
   { name: "Earnings", href: "/dashboard/earnings", icon: Banknote },
   {
     name: "Balance Sheet",
