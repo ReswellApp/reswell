@@ -1,4 +1,14 @@
 import { createClient } from "@/lib/supabase/server"
+import { createServiceRoleClient } from "@/lib/supabase/service-role"
+import { lookupFacebookPublicName } from "@/lib/services/facebookLeadLookup"
+import {
+  addDaysIso,
+  CRM_FACEBOOK_FOLLOW_UP_DAYS,
+  facebookNameIsAutomatic,
+  leadNameFromFacebook,
+  parseFacebookProfileInput,
+  parseFacebookThreadInput,
+} from "@/lib/utils/facebookLead"
 import {
   addCrmContactTagRow,
   bulkDeleteCrmContactRows,
@@ -8,9 +18,11 @@ import {
   deleteCrmTagRow,
   getCrmContactByProfileId,
   insertCrmBoardInterest,
+  findCrmContactsByFacebook,
   insertCrmContact,
   insertCrmInteraction,
   insertCrmTag,
+  listCrmReswellActivity,
   removeCrmContactTagRow,
   updateCrmBoardInterestRow,
   updateCrmContactRow,
@@ -23,6 +35,8 @@ import {
   createCrmBoardInterestSchema,
   createCrmContactFromProfileSchema,
   createCrmExternalContactSchema,
+  createCrmFacebookLeadSchema,
+  crmReswellActivitySchema,
   createCrmTagSchema,
   deleteCrmBoardInterestSchema,
   deleteCrmContactSchema,
@@ -134,6 +148,129 @@ export async function createCrmExternalContactService(
 
   if (result.error) return { error: result.error }
   return { success: true }
+}
+
+export async function createCrmFacebookLeadService(
+  raw: unknown,
+): Promise<
+  | (ServiceSuccess & { contactId: string; displayName: string; created: boolean; enriched: boolean })
+  | ServiceError
+> {
+  const auth = await requireStaffUserId()
+  if ("error" in auth) return auth
+
+  const parsed = createCrmFacebookLeadSchema.safeParse(raw)
+  if (!parsed.success) {
+    const fields = parsed.error.flatten().fieldErrors
+    return { error: fields.profileLink?.[0] ?? fields.threadId?.[0] ?? "Paste a profile link and a thread" }
+  }
+
+  const profile = parseFacebookProfileInput(parsed.data.profileLink)
+  if (!profile) return { error: "That doesn't look like a Facebook profile link" }
+  const thread = parseFacebookThreadInput(parsed.data.threadId)
+  if (!thread) return { error: "Paste the Marketplace thread link or its id" }
+
+  const publicName = await lookupFacebookPublicName(profile)
+  const name = leadNameFromFacebook({ parsed: profile, publicName })
+
+  const supabase = await createClient()
+  const existing = await findCrmContactsByFacebook(supabase, {
+    profileId: profile.profileId,
+    username: profile.username,
+    threadId: thread.threadId,
+  })
+  if (existing.error) return { error: "Could not check for an existing lead" }
+
+  if (
+    existing.byProfile &&
+    existing.byThread &&
+    existing.byProfile.id !== existing.byThread.id
+  ) {
+    return { error: "That Marketplace thread is already saved on another lead" }
+  }
+
+  const match = existing.byProfile ?? existing.byThread
+  if (match) {
+    const patch: Parameters<typeof updateCrmContactRow>[2] = {
+      facebook_profile_url: profile.profileUrl,
+      facebook_profile_id: profile.profileId,
+      facebook_username: profile.username,
+      facebook_thread_id: thread.threadId,
+      facebook_thread_url: thread.threadUrl,
+      facebook_display_name: name.displayName,
+    }
+    if (facebookNameIsAutomatic(match, match.facebook_display_name)) {
+      patch.first_name = name.firstName
+      patch.last_name = name.lastName
+    }
+    const updated = await updateCrmContactRow(supabase, match.id, patch)
+    if (updated.error) return { error: "Could not update that lead" }
+    return {
+      success: true,
+      contactId: match.id,
+      displayName: name.displayName,
+      created: false,
+      enriched: publicName != null,
+    }
+  }
+
+  const now = Date.now()
+  const inserted = await insertCrmContact(supabase, {
+    profile_id: null,
+    first_name: name.firstName,
+    last_name: name.lastName,
+    email: null,
+    phone: null,
+    source: "external",
+    status: "lead",
+    priority: "medium",
+    notes: null,
+    next_follow_up_at: addDaysIso(CRM_FACEBOOK_FOLLOW_UP_DAYS, now),
+    assigned_to: null,
+    created_by: auth.userId,
+    last_contacted_at: new Date(now).toISOString(),
+    facebook_profile_url: profile.profileUrl,
+    facebook_profile_id: profile.profileId,
+    facebook_username: profile.username,
+    facebook_thread_id: thread.threadId,
+    facebook_thread_url: thread.threadUrl,
+    facebook_display_name: name.displayName,
+  })
+  if (inserted.error || !inserted.data) {
+    const duplicate = inserted.error?.toLowerCase().includes("duplicate")
+    return { error: duplicate ? "This Facebook profile is already in the CRM" : "Could not save that lead" }
+  }
+
+  const logged = await insertCrmInteraction(supabase, {
+    contact_id: inserted.data.id,
+    interaction_type: "other",
+    subject: "Facebook Marketplace",
+    notes: `Saved from Marketplace. Profile ${profile.profileUrl}. Thread ${thread.threadId}.`,
+    created_by: auth.userId,
+  })
+  if (logged.error) console.error("createCrmFacebookLeadService interaction:", logged.error)
+
+  return {
+    success: true,
+    contactId: inserted.data.id,
+    displayName: name.displayName,
+    created: true,
+    enriched: publicName != null,
+  }
+}
+
+export async function getCrmReswellActivityService(
+  raw: unknown,
+): Promise<{ success: true; activity: { profileId: string; listedSurfboard: boolean; bought: boolean }[] } | ServiceError> {
+  const auth = await requireStaffUserId()
+  if ("error" in auth) return auth
+
+  const parsed = crmReswellActivitySchema.safeParse(raw)
+  if (!parsed.success) return { error: "Invalid profiles" }
+
+  const result = await listCrmReswellActivity(createServiceRoleClient(), parsed.data.profileIds)
+  if (result.error) return { error: "Could not check listings and purchases" }
+  return { success: true, activity: result.data }
 }
 
 export async function updateCrmContactService(raw: unknown): Promise<ServiceSuccess | ServiceError> {

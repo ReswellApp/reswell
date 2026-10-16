@@ -50,6 +50,12 @@ export type CrmContactRow = {
   created_by: string
   created_at: string
   updated_at: string
+  facebook_profile_url: string | null
+  facebook_profile_id: string | null
+  facebook_username: string | null
+  facebook_thread_id: string | null
+  facebook_thread_url: string | null
+  facebook_display_name: string | null
 }
 
 export type CrmContactProfileEmbed = {
@@ -135,7 +141,7 @@ export type CrmInteractionWithAuthor = CrmInteractionRow & {
 }
 
 export const CRM_CONTACT_SELECT =
-  "id, profile_id, first_name, last_name, email, phone, source, status, priority, notes, last_contacted_at, next_follow_up_at, assigned_to, created_by, created_at, updated_at"
+  "id, profile_id, first_name, last_name, email, phone, source, status, priority, notes, last_contacted_at, next_follow_up_at, assigned_to, created_by, created_at, updated_at, facebook_profile_url, facebook_profile_id, facebook_username, facebook_thread_id, facebook_thread_url, facebook_display_name"
 
 export const CRM_CONTACT_WITH_PROFILE_SELECT = `${CRM_CONTACT_SELECT}, profile:profiles!crm_contacts_profile_id_fkey (display_name, avatar_url, seller_slug, email), assignee:profiles!crm_contacts_assigned_to_fkey (id, display_name, avatar_url), tags:crm_contact_tags (tag:crm_tags (id, name, color, created_by, created_at, updated_at))`
 
@@ -175,7 +181,18 @@ export function normalizeCrmContactRow(raw: Record<string, unknown>): CrmContact
     created_by: String(raw.created_by ?? ""),
     created_at: String(raw.created_at ?? ""),
     updated_at: String(raw.updated_at ?? raw.created_at ?? ""),
+    facebook_profile_url: textOrNull(raw.facebook_profile_url),
+    facebook_profile_id: textOrNull(raw.facebook_profile_id),
+    facebook_username: textOrNull(raw.facebook_username),
+    facebook_thread_id: textOrNull(raw.facebook_thread_id),
+    facebook_thread_url: textOrNull(raw.facebook_thread_url),
+    facebook_display_name: textOrNull(raw.facebook_display_name),
   }
+}
+
+function textOrNull(value: unknown): string | null {
+  if (value == null || value === "") return null
+  return String(value)
 }
 
 export function normalizeCrmTagRow(raw: Record<string, unknown>): CrmTagRow {
@@ -323,8 +340,17 @@ export function normalizeCrmInteractionWithAuthor(raw: Record<string, unknown>):
   return { ...base, author }
 }
 
-export function crmContactDisplayName(contact: Pick<CrmContactRow, "first_name" | "last_name">): string {
-  return [contact.first_name, contact.last_name].filter(Boolean).join(" ").trim() || "Unnamed contact"
+export function crmContactDisplayName(
+  contact: Pick<CrmContactRow, "first_name" | "last_name"> &
+    Partial<Pick<CrmContactRow, "facebook_display_name" | "facebook_username" | "facebook_profile_id">>,
+): string {
+  const stored = [contact.first_name, contact.last_name].filter(Boolean).join(" ").trim()
+  const auto = contact.facebook_display_name?.trim()
+  if (auto && (contact.first_name === "Facebook" || !stored || stored === auto)) return auto
+  if (stored && contact.first_name !== "Facebook") return stored
+  if (contact.facebook_username) return contact.facebook_username
+  if (contact.facebook_profile_id) return `Facebook ${contact.facebook_profile_id.slice(-6)}`
+  return stored || "Unnamed contact"
 }
 
 export function crmBoardInterestLabel(interest: CrmBoardInterestWithEmbeds): string {
@@ -376,7 +402,7 @@ export async function listCrmContacts(
   if (args?.search?.trim()) {
     const q = args.search.trim().replace(/[%_]/g, "")
     query = query.or(
-      `first_name.ilike.%${q}%,last_name.ilike.%${q}%,email.ilike.%${q}%,phone.ilike.%${q}%`,
+      `first_name.ilike.%${q}%,last_name.ilike.%${q}%,email.ilike.%${q}%,phone.ilike.%${q}%,facebook_username.ilike.%${q}%,facebook_profile_id.ilike.%${q}%,facebook_thread_id.ilike.%${q}%,facebook_display_name.ilike.%${q}%`,
     )
   }
 
@@ -436,15 +462,31 @@ export async function listCrmInteractionsForContact(
   return (data ?? []).map((row) => normalizeCrmInteractionWithAuthor(row as Record<string, unknown>))
 }
 
+type CrmFacebookColumn =
+  | "facebook_profile_url"
+  | "facebook_profile_id"
+  | "facebook_username"
+  | "facebook_thread_id"
+  | "facebook_thread_url"
+  | "facebook_display_name"
+
 export async function insertCrmContact(
   supabase: SupabaseClient,
-  row: Omit<CrmContactRow, "id" | "created_at" | "updated_at" | "last_contacted_at"> & {
+  row: Omit<CrmContactRow, "id" | "created_at" | "updated_at" | "last_contacted_at" | CrmFacebookColumn> & {
     last_contacted_at?: string | null
-  },
+  } & Partial<Pick<CrmContactRow, CrmFacebookColumn>>,
 ): Promise<{ data: CrmContactRow | null; error: string | null }> {
   const { data, error } = await supabase
     .from("crm_contacts")
-    .insert(row)
+    .insert({
+      facebook_profile_url: null,
+      facebook_profile_id: null,
+      facebook_username: null,
+      facebook_thread_id: null,
+      facebook_thread_url: null,
+      facebook_display_name: null,
+      ...row,
+    })
     .select(CRM_CONTACT_SELECT)
     .single()
 
@@ -468,6 +510,12 @@ export async function updateCrmContactRow(
       | "next_follow_up_at"
       | "assigned_to"
       | "last_contacted_at"
+      | "facebook_profile_url"
+      | "facebook_profile_id"
+      | "facebook_username"
+      | "facebook_thread_id"
+      | "facebook_thread_url"
+      | "facebook_display_name"
     >
   >,
 ): Promise<{ error: string | null }> {
@@ -638,6 +686,92 @@ export async function getCrmContactByEmail(
 
   if (error || !data) return null
   return normalizeCrmContactRow(data as Record<string, unknown>)
+}
+
+export async function findCrmContactsByFacebook(
+  supabase: SupabaseClient,
+  identity: { profileId: string | null; username: string | null; threadId: string | null },
+): Promise<{ byProfile: CrmContactRow | null; byThread: CrmContactRow | null; error: string | null }> {
+  const profileQuery = identity.profileId
+    ? supabase
+        .from("crm_contacts")
+        .select(CRM_CONTACT_SELECT)
+        .eq("facebook_profile_id", identity.profileId)
+        .maybeSingle()
+    : identity.username
+      ? supabase
+          .from("crm_contacts")
+          .select(CRM_CONTACT_SELECT)
+          .ilike("facebook_username", identity.username)
+          .maybeSingle()
+      : Promise.resolve({ data: null, error: null })
+
+  const threadQuery = identity.threadId
+    ? supabase
+        .from("crm_contacts")
+        .select(CRM_CONTACT_SELECT)
+        .eq("facebook_thread_id", identity.threadId)
+        .maybeSingle()
+    : Promise.resolve({ data: null, error: null })
+
+  const [profileRes, threadRes] = await Promise.all([profileQuery, threadQuery])
+  const error = profileRes.error?.message ?? threadRes.error?.message ?? null
+  return {
+    byProfile: profileRes.data ? normalizeCrmContactRow(profileRes.data as Record<string, unknown>) : null,
+    byThread: threadRes.data ? normalizeCrmContactRow(threadRes.data as Record<string, unknown>) : null,
+    error,
+  }
+}
+
+export type CrmProfileReswellActivity = {
+  profileId: string
+  listedSurfboard: boolean
+  bought: boolean
+}
+
+export async function listCrmReswellActivity(
+  supabase: SupabaseClient,
+  profileIds: string[],
+): Promise<{ data: CrmProfileReswellActivity[]; error: string | null }> {
+  const ids = [...new Set(profileIds.filter(Boolean))]
+  if (ids.length === 0) return { data: [], error: null }
+
+  const [listingsRes, ordersRes] = await Promise.all([
+    supabase
+      .from("listings")
+      .select("user_id")
+      .in("user_id", ids)
+      .eq("section", "surfboards")
+      .neq("status", "draft")
+      .limit(10000),
+    supabase
+      .from("orders")
+      .select("buyer_id")
+      .in("buyer_id", ids)
+      .eq("status", "confirmed")
+      .eq("is_admin_test", false)
+      .limit(10000),
+  ])
+
+  if (listingsRes.error || ordersRes.error) {
+    return { data: [], error: listingsRes.error?.message ?? ordersRes.error?.message ?? "Could not load activity" }
+  }
+
+  const listed = new Set((listingsRes.data ?? []).map((row) => String((row as { user_id: string }).user_id)))
+  const bought = new Set(
+    (ordersRes.data ?? [])
+      .map((row) => (row as { buyer_id: string | null }).buyer_id)
+      .filter((id): id is string => Boolean(id)),
+  )
+
+  return {
+    data: ids.map((profileId) => ({
+      profileId,
+      listedSurfboard: listed.has(profileId),
+      bought: bought.has(profileId),
+    })),
+    error: null,
+  }
 }
 
 export async function getCrmContactByProfileId(
