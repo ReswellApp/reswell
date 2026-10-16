@@ -28,6 +28,7 @@ import {
   boardDimensionBrowseIlikeTokens,
 } from "@/lib/utils/board-dimension-browse-filter"
 import { resolveSavedSearchSection } from "@/lib/utils/peer-saved-search-criteria"
+import { savedSearchBrandAndModelMatch } from "@/lib/services/savedSearchBrandModelMatch"
 
 export type ListingRowForBoardAlert = {
   id: string
@@ -280,17 +281,15 @@ export function listingMatchesBoardSavedCriteria(
 
   if (!keywordMatchesListing(listing, c.q)) return false
 
-  if (c.brandModelId?.trim()) {
-    if ((listing.brand_model_id ?? "").trim() !== c.brandModelId.trim()) return false
-  } else if (c.brandId?.trim()) {
-    if ((listing.brand_id ?? "").trim() !== c.brandId.trim()) return false
-  } else {
-    if (!includesInsensitive(listing.brand, c.brand)) return false
-    const modelOk =
-      !c.model?.trim() ||
-      includesInsensitive(listing.model, c.model) ||
-      includesInsensitive(listing.title, c.model)
-    if (!modelOk) return false
+  if (
+    !savedSearchBrandAndModelMatch(listing, {
+      brand: c.brand,
+      brandId: c.brandId,
+      model: c.model,
+      brandModelId: c.brandModelId,
+    })
+  ) {
+    return false
   }
 
   if (!conditionMatches(c.condition, c.conditions, listing.condition)) return false

@@ -223,6 +223,17 @@ function priceClauses(ctx: BoardsBrowseEsContext): object[] {
   return out
 }
 
+function freeformModelClause(model: string | undefined): object | null {
+  const text = model?.trim()
+  if (!text) return null
+  return {
+    bool: {
+      should: [{ match: { model: text } }, { match: { title: text } }],
+      minimum_should_match: 1,
+    },
+  }
+}
+
 function brandModelClauses(ctx: BoardsBrowseEsContext): object[] {
   const brandModelIds = (ctx.brandModelIds ?? [])
     .map((id) => id.trim())
@@ -235,21 +246,18 @@ function brandModelClauses(ctx: BoardsBrowseEsContext): object[] {
   if (brandModelId && isUuidString(brandModelId)) {
     return [{ term: { brand_model_id: brandModelId } }]
   }
-  if (brandId && isUuidString(brandId)) {
-    return [listingBrandIdFilterClause(brandId, ctx.expansions)]
-  }
+
   const out: object[] = []
-  const brand = ctx.brand?.trim()
-  if (brand) out.push({ match: { brand } })
-  const model = ctx.model?.trim()
-  if (model) {
-    out.push({
-      bool: {
-        should: [{ match: { model } }, { match: { title: model } }],
-        minimum_should_match: 1,
-      },
-    })
+  if (brandId && isUuidString(brandId)) {
+    out.push(listingBrandIdFilterClause(brandId, ctx.expansions))
+  } else if (ctx.brand?.trim()) {
+    out.push({ match: { brand: ctx.brand.trim() } })
   }
+
+  // A typed model still applies when the brand was picked from the directory
+  // but the model is not a catalog row.
+  const modelClause = freeformModelClause(ctx.model)
+  if (modelClause) out.push(modelClause)
   return out
 }
 
