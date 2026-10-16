@@ -16,16 +16,15 @@ import { SellRequiredMark } from "@/components/features/sell/sell-required-mark"
 import { ListingPriceMarkdownToggle } from "@/components/features/listings/listing-price-markdown-toggle"
 import { cn } from "@/lib/utils"
 import {
+  coerceListingPriceUsd,
   parseOptionalUsdAmount,
   resolveCompareAtPriceOnUpdate,
 } from "@/lib/listing-compare-at-price"
 
-/** Mirrors the listing-price rule in `pricePublishFieldsComplete` (sell-section-completion). */
+/** Mirrors the listing-price rule used when a fin listing is published. */
 function listingPriceComplete(raw: string): boolean {
-  const t = raw.trim().replace(/,/g, "")
-  if (!t) return false
-  const n = Number.parseFloat(t)
-  return Number.isFinite(n) && n >= 0.01 && n <= 999_999.99
+  const n = coerceListingPriceUsd(raw)
+  return n != null && n <= 999_999.99
 }
 
 export interface SellPriceFieldsProps {

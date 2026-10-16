@@ -61,6 +61,7 @@ import {
   updateOwnedListingViaApi,
 } from "@/lib/sell-flow/update-owned-listing-client"
 import { buildFinListingPersistFields } from "@/lib/fin-listing-persist-fields"
+import { coerceListingPriceUsd } from "@/lib/listing-compare-at-price"
 import { computeFinSellSectionCompletion } from "@/lib/fin-sell-section-completion"
 import { sellFormConditionValue } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
@@ -869,18 +870,21 @@ export default function SellFinsFlow({
     const submitActorIsAdmin = actorProfile?.is_admin === true
     setActorIsAdmin(submitActorIsAdmin)
 
-    const validationMessage = validateFinListingForm(form, {
-      imageCount: images.length,
-      imagesUploadReady,
-      videoUploadReady,
-    })
-    if (validationMessage) {
+    const listingPriceUsd = coerceListingPriceUsd(form.price)
+    const validationMessage =
+      validateFinListingForm(form, {
+        imageCount: images.length,
+        imagesUploadReady,
+        videoUploadReady,
+      }) ?? (listingPriceUsd == null ? "Enter a listing price." : null)
+    if (validationMessage || listingPriceUsd == null) {
+      const message = validationMessage ?? "Enter a listing price."
       logSellFunnelEvent({
         listingType: "fins",
         event: "validation_failed",
-        message: validationMessage,
+        message,
       })
-      setPublishValidationBanner(validationMessage)
+      setPublishValidationBanner(message)
       scrollPublishValidationBannerIntoView()
       return
     }
@@ -899,7 +903,7 @@ export default function SellFinsFlow({
     const payload = {
       title: form.title,
       description: form.description,
-      price: form.price,
+      price: listingPriceUsd,
       condition: form.condition,
       size: form.size || null,
       finSetup: form.finSetup || null,

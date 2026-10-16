@@ -25,6 +25,7 @@ import { trackKlaviyoListingCreated } from "@/lib/klaviyo/track-listing-created"
 import { trackFirstTimeSellerForListingIfNeeded } from "@/lib/services/klaviyoFirstTimeSeller"
 import { recordListingVisibilityEvent } from "@/lib/services/listingVisibilityAudit"
 import { omitClientAutoPriceDropSchedule } from "@/lib/listing-auto-price-drop"
+import { listingFieldsWithCoercedPrice } from "@/lib/listing-compare-at-price"
 import { overlayListingRowWithDropoffParcel } from "@/lib/services/listingDropoffParcel"
 
 /** Admin impersonation saves include photos + shipping columns; give the write time to finish. */
@@ -156,17 +157,19 @@ async function putImpersonatedListing(request: NextRequest) {
   > & {
     slug?: unknown
   }
-  const listingFields = await overlayListingRowWithDropoffParcel(
-    service,
-    {
-      dropoffLocationId:
-        typeof listingFieldsRaw.dropoff_location_id === "string"
-          ? listingFieldsRaw.dropoff_location_id
-          : null,
-      boardLength: catalog_snapshot?.boardLength,
-      boardWidthInches: catalog_snapshot?.boardWidthInches,
-    },
-    omitClientAutoPriceDropSchedule(listingFieldsRaw),
+  const listingFields = listingFieldsWithCoercedPrice(
+    await overlayListingRowWithDropoffParcel(
+      service,
+      {
+        dropoffLocationId:
+          typeof listingFieldsRaw.dropoff_location_id === "string"
+            ? listingFieldsRaw.dropoff_location_id
+            : null,
+        boardLength: catalog_snapshot?.boardLength,
+        boardWidthInches: catalog_snapshot?.boardWidthInches,
+      },
+      omitClientAutoPriceDropSchedule(listingFieldsRaw),
+    ),
   )
 
   const publishingFromDraft =
