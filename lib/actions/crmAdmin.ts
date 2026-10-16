@@ -9,6 +9,8 @@ import {
   createCrmBoardInterestService,
   createCrmContactFromProfileService,
   createCrmExternalContactService,
+  createCrmFacebookLeadService,
+  getCrmReswellActivityService,
   createCrmTagService,
   deleteCrmBoardInterestService,
   deleteCrmContactService,
@@ -31,6 +33,25 @@ export async function createCrmContactFromProfileAction(raw: unknown) {
   if ("error" in result) return { error: result.error }
   revalidateCrm()
   return { success: true as const }
+}
+
+export async function createCrmFacebookLeadAction(raw: unknown) {
+  const result = await createCrmFacebookLeadService(raw)
+  if ("error" in result) return { error: result.error }
+  revalidateCrm()
+  return {
+    success: true as const,
+    contactId: result.contactId,
+    displayName: result.displayName,
+    created: result.created,
+    enriched: result.enriched,
+  }
+}
+
+export async function getCrmReswellActivityAction(raw: unknown) {
+  const result = await getCrmReswellActivityService(raw)
+  if ("error" in result) return { error: result.error }
+  return { success: true as const, activity: result.activity }
 }
 
 export async function createCrmExternalContactAction(raw: unknown) {

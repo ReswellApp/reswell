@@ -29,6 +29,7 @@ import {
   createCrmBoardInterestAction,
   createCrmContactFromProfileAction,
   createCrmExternalContactAction,
+  getCrmReswellActivityAction,
   deleteCrmBoardInterestAction,
   deleteCrmContactAction,
   logCrmInteractionAction,
@@ -51,6 +52,9 @@ import {
 } from "@/components/features/admin/crm/crm-labels"
 import { CrmAnalytics } from "@/components/features/admin/crm/crm-analytics"
 import { CrmBoardView } from "@/components/features/admin/crm/crm-board-view"
+import { CrmFacebookLinks } from "@/components/features/admin/crm/crm-facebook-links"
+import { CrmFollowUpQueue } from "@/components/features/admin/crm/crm-follow-up-queue"
+import { CrmQuickCapture } from "@/components/features/admin/crm/crm-quick-capture"
 import { CrmBulkBar } from "@/components/features/admin/crm/crm-bulk-bar"
 import { CrmContactMobileList } from "@/components/features/admin/crm/crm-contact-mobile-list"
 import {
@@ -60,6 +64,11 @@ import {
   type CrmFilterState,
 } from "@/components/features/admin/crm/crm-segments"
 import { downloadContactsCsv } from "@/components/features/admin/crm/crm-export"
+import {
+  contactCircleBackDue,
+  CRM_NO_RESWELL_ACTIVITY,
+  type CrmReswellActivity,
+} from "@/lib/utils/crmFollowUp"
 import { CrmTagChips, CrmTagEditor } from "@/components/features/admin/crm/crm-tag-editor"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -126,13 +135,11 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
-  CalendarClock,
   Check,
   ChevronsUpDown,
   Columns3,
   Download,
   ExternalLink,
-  Flame,
   LayoutGrid,
   Loader2,
   Mail,
@@ -180,6 +187,14 @@ type BrandSearchHit = {
   logo_url: string | null
 }
 
+function reswellStatusLabel(activity: CrmReswellActivity | null): string | null {
+  if (!activity) return null
+  if (activity.bought && activity.listedSurfboard) return "Listed and bought"
+  if (activity.bought) return "Bought on Reswell"
+  if (activity.listedSurfboard) return "Listed a board"
+  return null
+}
+
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean)
   if (parts.length === 0) return "?"
@@ -191,38 +206,6 @@ function isAbortError(err: unknown): boolean {
   if (!(err instanceof Error)) return false
   if (err.name === "AbortError") return true
   return typeof err.message === "string" && err.message.toLowerCase().includes("aborted")
-}
-
-function StatCard({
-  title,
-  value,
-  description,
-  icon: Icon,
-  accent,
-}: {
-  title: string
-  value: number
-  description: string
-  icon: typeof Users
-  accent: string
-}) {
-  return (
-    <Card className="overflow-hidden border-0 shadow-sm">
-      <CardContent className="relative p-5">
-        <div className={cn("absolute inset-0 opacity-[0.07]", accent)} />
-        <div className="relative flex items-start justify-between gap-3">
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-muted-foreground">{title}</p>
-            <p className="text-3xl font-bold tracking-tight">{value}</p>
-            <p className="text-xs text-muted-foreground">{description}</p>
-          </div>
-          <div className={cn("rounded-xl p-2.5", accent.replace("bg-", "bg-opacity-15 bg-"))}>
-            <Icon className={cn("h-5 w-5", accent.replace("bg-", "text-").replace("-500", "-600"))} />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  )
 }
 
 type CrmSortKey = "updated" | "name" | "status" | "priority" | "last_contacted" | "next_follow_up"
@@ -322,6 +305,8 @@ export function CrmAdminClient() {
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null)
   const [addContactOpen, setAddContactOpen] = useState(false)
+  const [activityByProfile, setActivityByProfile] = useState<Map<string, CrmReswellActivity>>(new Map())
+  const [activityReady, setActivityReady] = useState(false)
   const [isPending, startTransition] = useTransition()
 
   const selectedContact = useMemo(
@@ -388,8 +373,65 @@ export function CrmAdminClient() {
     void loadMeta()
   }, [loadMeta])
 
+  useEffect(() => {
+    const ids = [...new Set(contacts.map((contact) => contact.profile_id).filter((id): id is string => Boolean(id)))]
+    if (ids.length === 0) {
+      setActivityByProfile(new Map())
+      setActivityReady(true)
+      return
+    }
+    let cancelled = false
+    setActivityReady(false)
+    void getCrmReswellActivityAction({ profileIds: ids })
+      .then((result) => {
+        if (cancelled) return
+        if ("error" in result) {
+          console.error("CrmAdminClient.activity:", result.error)
+          setActivityReady(false)
+          return
+        }
+        setActivityByProfile(
+          new Map(result.activity.map((row) => [row.profileId, { listedSurfboard: row.listedSurfboard, bought: row.bought }])),
+        )
+        setActivityReady(true)
+      })
+      .catch((err) => {
+        if (cancelled || isAbortError(err)) return
+        console.error("CrmAdminClient.activity:", err)
+        setActivityReady(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [contacts])
+
+  const activityFor = useCallback(
+    (contact: CrmContactWithProfile): CrmReswellActivity | null => {
+      if (!contact.profile_id) return CRM_NO_RESWELL_ACTIVITY
+      return activityByProfile.get(contact.profile_id) ?? (activityReady ? CRM_NO_RESWELL_ACTIVITY : null)
+    },
+    [activityByProfile, activityReady],
+  )
+
+  const followUpQueue = useMemo(() => {
+    return contacts
+      .filter((contact) => {
+        const activity = activityFor(contact)
+        return activity != null && contactCircleBackDue(contact, activity)
+      })
+      .sort((a, b) => timeValue(a.next_follow_up_at || a.last_contacted_at) - timeValue(b.next_follow_up_at || b.last_contacted_at))
+  }, [contacts, activityFor])
+
+  const marketplaceCount = useMemo(
+    () => contacts.filter((contact) => contact.facebook_profile_url || contact.facebook_thread_id).length,
+    [contacts],
+  )
+
   const filteredContacts = useMemo(() => {
     let rows = contacts
+    if (filters.facebookOnly) {
+      rows = rows.filter((contact) => contact.facebook_profile_url || contact.facebook_thread_id)
+    }
     if (filters.followUpOnly) rows = rows.filter((c) => contactNeedsFollowUp(c))
     if (filters.createdWithinDays != null) {
       const cutoff = Date.now() - filters.createdWithinDays * 86_400_000
@@ -399,7 +441,7 @@ export function CrmAdminClient() {
       rows = rows.filter((c) => c.tags.some((t) => t.id === filters.tagId))
     }
     return sortContacts(rows, sort)
-  }, [contacts, filters.followUpOnly, filters.createdWithinDays, filters.tagId, sort])
+  }, [contacts, filters.facebookOnly, filters.followUpOnly, filters.createdWithinDays, filters.tagId, sort])
 
   const visibleIds = useMemo(() => filteredContacts.map((c) => c.id), [filteredContacts])
   const selectedVisibleCount = useMemo(
@@ -523,10 +565,12 @@ export function CrmAdminClient() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight">CRM</h1>
-          <p className="text-muted-foreground max-w-2xl">
-            Track surfboard shoppers, log touchpoints, and manage board interests — from Reswell profiles or
-            external leads.
+          <h1 className="text-2xl font-semibold tracking-tight">CRM</h1>
+          <p className="max-w-2xl text-sm text-muted-foreground">
+            Save Facebook Marketplace leads, reopen the chat, and circle back when they have not listed or bought.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {followUpQueue.length} due · {marketplaceCount} marketplace · {stats?.totalContacts ?? contacts.length} contacts
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -556,47 +600,25 @@ export function CrmAdminClient() {
             <Download className="mr-2 h-4 w-4" />
             Export
           </Button>
-          <Button className="min-w-0 flex-1 sm:flex-none" onClick={() => setAddContactOpen(true)}>
+          <Button variant="outline" className="min-w-0 flex-1 sm:flex-none" onClick={() => setAddContactOpen(true)}>
             <UserPlus className="mr-2 h-4 w-4" />
             Add contact
           </Button>
         </div>
       </div>
 
-      {stats ? (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <StatCard
-            title="Total contacts"
-            value={stats.totalContacts}
-            description="Profiles and external leads"
-            icon={Users}
-            accent="bg-sky-500"
-          />
-          <StatCard
-            title="Needs follow-up"
-            value={stats.needsFollowUp}
-            description="Overdue or never contacted"
-            icon={CalendarClock}
-            accent="bg-amber-500"
-          />
-          <StatCard
-            title="High priority"
-            value={stats.highPriority}
-            description="Hot leads in pipeline"
-            icon={Flame}
-            accent="bg-rose-500"
-          />
-          <StatCard
-            title="Active board interests"
-            value={stats.activeInterests}
-            description="Interested, contacted, or matched"
-            icon={Waves}
-            accent="bg-teal-500"
-          />
-        </div>
-      ) : null}
+      <CrmQuickCapture onSaved={refreshAfterMutation} />
 
-      {stats ? <CrmAnalytics stats={stats} /> : null}
+      <CrmFollowUpQueue contacts={followUpQueue} onOpen={setSelectedContactId} onMutated={refreshAfterMutation} />
+
+      {stats ? (
+        <details className="rounded-xl border bg-card shadow-sm">
+          <summary className="cursor-pointer px-4 py-3 text-sm font-medium">Pipeline insights</summary>
+          <div className="px-4 pb-4">
+            <CrmAnalytics stats={stats} />
+          </div>
+        </details>
+      ) : null}
 
       <div className="flex flex-wrap items-center gap-2">
         {CRM_SEGMENTS.map((segment) => {
@@ -626,8 +648,8 @@ export function CrmAdminClient() {
 
       <Card className="border shadow-sm">
         <CardHeader className="pb-4">
-          <CardTitle className="text-lg">Pipeline</CardTitle>
-          <CardDescription>Search and filter your contact list</CardDescription>
+          <CardTitle className="text-lg">Leads</CardTitle>
+          <CardDescription>Open the Facebook profile or the Marketplace chat without leaving the list.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
@@ -636,7 +658,7 @@ export function CrmAdminClient() {
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search name, email, or phone…"
+                placeholder="Search name, Facebook, or thread…"
                 className="pl-9"
               />
             </div>
@@ -761,9 +783,9 @@ export function CrmAdminClient() {
             <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed py-16 text-center">
               <Users className="h-10 w-10 text-muted-foreground/60" />
               <div>
-                <p className="font-medium">No contacts yet</p>
+                <p className="font-medium">No leads yet</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Add a Reswell profile or external lead to start tracking board interests.
+                  Paste a Facebook profile and Marketplace thread above. Names, notes, and board interests can come after.
                 </p>
               </div>
               <Button variant="outline" onClick={() => setAddContactOpen(true)}>
@@ -790,6 +812,7 @@ export function CrmAdminClient() {
               selectedIds={selectedIds}
               onOpen={setSelectedContactId}
               onToggleSelect={toggleSelectOne}
+              reswellLabel={(contact) => reswellStatusLabel(activityFor(contact))}
             />
             <div className="hidden overflow-hidden rounded-md border md:block">
               <Table>
@@ -803,6 +826,7 @@ export function CrmAdminClient() {
                       />
                     </TableHead>
                     <SortHeader label="Contact" columnKey="name" sort={sort} onSort={handleSort} />
+                    <TableHead>Facebook</TableHead>
                     <TableHead>Source</TableHead>
                     <SortHeader label="Status" columnKey="status" sort={sort} onSort={handleSort} />
                     <SortHeader label="Priority" columnKey="priority" sort={sort} onSort={handleSort} />
@@ -855,6 +879,9 @@ export function CrmAdminClient() {
                               {contact.tags.length > 0 ? (
                                 <CrmTagChips tags={contact.tags} max={3} className="mt-1" />
                               ) : null}
+                              {reswellStatusLabel(activityFor(contact)) ? (
+                                <p className="text-xs text-teal-700">{reswellStatusLabel(activityFor(contact))}</p>
+                              ) : null}
                             </div>
                             {needsFollowUp ? (
                               <Badge variant="outline" className="ml-auto shrink-0 border-amber-300 text-amber-700">
@@ -862,6 +889,15 @@ export function CrmAdminClient() {
                               </Badge>
                             ) : null}
                           </div>
+                        </TableCell>
+                        <TableCell>
+                          <CrmFacebookLinks
+                            profileUrl={contact.facebook_profile_url}
+                            threadUrl={contact.facebook_thread_url}
+                          />
+                          {!contact.facebook_profile_url && !contact.facebook_thread_url ? (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          ) : null}
                         </TableCell>
                         <TableCell>
                           <Badge variant="secondary">{CRM_SOURCE_LABEL[contact.source]}</Badge>
@@ -1226,6 +1262,8 @@ function ContactDetailSheet({
   const [saving, setSaving] = useState(false)
   const [assigning, setAssigning] = useState(false)
 
+  const [editFirstName, setEditFirstName] = useState("")
+  const [editLastName, setEditLastName] = useState("")
   const [editStatus, setEditStatus] = useState<CrmContactStatus>("lead")
   const [editPriority, setEditPriority] = useState<CrmContactPriority>("medium")
   const [editNotes, setEditNotes] = useState("")
@@ -1251,6 +1289,8 @@ function ContactDetailSheet({
 
   useEffect(() => {
     if (contact && open) {
+      setEditFirstName(contact.first_name)
+      setEditLastName(contact.last_name ?? "")
       setEditStatus(contact.status)
       setEditPriority(contact.priority)
       setEditNotes(contact.notes ?? "")
@@ -1267,8 +1307,15 @@ function ContactDetailSheet({
   async function saveContactFields() {
     setSaving(true)
     try {
+      const firstName = editFirstName.trim()
+      if (!firstName) {
+        toast.error("Add a first name before saving")
+        return
+      }
       const result = await updateCrmContactAction({
         contactId: contact!.id,
+        firstName,
+        lastName: editLastName.trim() || null,
         status: editStatus,
         priority: editPriority,
         notes: editNotes || null,
@@ -1382,6 +1429,14 @@ function ContactDetailSheet({
                     </Link>
                   ) : null}
                 </SheetDescription>
+                <CrmFacebookLinks
+                  profileUrl={contact.facebook_profile_url}
+                  threadUrl={contact.facebook_thread_url}
+                  className="pt-2"
+                />
+                {contact.facebook_thread_id ? (
+                  <p className="text-xs text-muted-foreground">Thread {contact.facebook_thread_id}</p>
+                ) : null}
                 <div className="flex flex-wrap gap-3 text-sm text-muted-foreground pt-1">
                   {contact.email ? (
                     <span className="inline-flex items-center gap-1">
@@ -1426,6 +1481,24 @@ function ContactDetailSheet({
             </TabsList>
 
             <TabsContent value="overview" className="space-y-4 pt-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="contact-first-name">First name</Label>
+                  <Input
+                    id="contact-first-name"
+                    value={editFirstName}
+                    onChange={(event) => setEditFirstName(event.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="contact-last-name">Last name</Label>
+                  <Input
+                    id="contact-last-name"
+                    value={editLastName}
+                    onChange={(event) => setEditLastName(event.target.value)}
+                  />
+                </div>
+              </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Status</Label>

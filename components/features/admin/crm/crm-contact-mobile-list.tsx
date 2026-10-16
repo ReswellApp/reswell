@@ -13,6 +13,7 @@ import {
   crmPriorityBadgeClass,
   crmStatusBadgeClass,
 } from "@/components/features/admin/crm/crm-labels"
+import { CrmFacebookLinks } from "@/components/features/admin/crm/crm-facebook-links"
 import { CrmTagChips } from "@/components/features/admin/crm/crm-tag-editor"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -31,6 +32,7 @@ interface CrmContactMobileListProps {
   selectedIds: Set<string>
   onOpen: (id: string) => void
   onToggleSelect: (id: string) => void
+  reswellLabel?: (contact: CrmContactWithProfile) => string | null
 }
 
 export function CrmContactMobileList({
@@ -38,6 +40,7 @@ export function CrmContactMobileList({
   selectedIds,
   onOpen,
   onToggleSelect,
+  reswellLabel,
 }: CrmContactMobileListProps) {
   return (
     <ul className="space-y-2 md:hidden" role="list">
@@ -51,10 +54,11 @@ export function CrmContactMobileList({
           <li key={contact.id}>
             <div
               className={cn(
-                "flex gap-3 rounded-lg border bg-card p-3",
+                "space-y-3 rounded-lg border bg-card p-3",
                 isSelected && "border-teal-300 bg-teal-50/50 dark:border-teal-900 dark:bg-teal-950/20",
               )}
             >
+              <div className="flex gap-3">
               <div className="pt-1" onClick={(event) => event.stopPropagation()}>
                 <Checkbox
                   checked={isSelected}
@@ -85,8 +89,14 @@ export function CrmContactMobileList({
                       ) : null}
                     </div>
                     <p className="truncate text-xs text-muted-foreground">
-                      {contact.email ?? contact.profile?.email ?? "No email"}
+                      {contact.email ??
+                        contact.profile?.email ??
+                        contact.facebook_username ??
+                        (contact.facebook_profile_url ? "Facebook profile saved" : "No email")}
                     </p>
+                    {reswellLabel?.(contact) ? (
+                      <p className="text-xs text-teal-700">{reswellLabel(contact)}</p>
+                    ) : null}
                     <div className="mt-2 flex flex-wrap items-center gap-1.5">
                       <Badge variant="secondary">{CRM_SOURCE_LABEL[contact.source]}</Badge>
                       <span
@@ -120,6 +130,11 @@ export function CrmContactMobileList({
                   </div>
                 </div>
               </button>
+              </div>
+              <CrmFacebookLinks
+                profileUrl={contact.facebook_profile_url}
+                threadUrl={contact.facebook_thread_url}
+              />
             </div>
           </li>
         )
