@@ -337,6 +337,7 @@ export async function dbListUnresolvedShopifyInventoryOrderIds(
 export async function dbCancelShopifyInventoryJobsForConnection(
   supabase: SupabaseClient,
   connectionId: string,
+  reason = "Reswell order compensated after Shopify disconnect",
 ): Promise<void> {
   const { error } = await supabase
     .from("shopify_sync_jobs")
@@ -345,7 +346,7 @@ export async function dbCancelShopifyInventoryJobsForConnection(
       locked_until: null,
       worker_id: null,
       completed_at: new Date().toISOString(),
-      last_error: "Reswell order compensated after Shopify disconnect",
+      last_error: reason,
       updated_at: new Date().toISOString(),
     })
     .eq("connection_id", connectionId)

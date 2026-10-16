@@ -1,6 +1,7 @@
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { dbInsertActiveShopifyCredential } from "@/lib/db/shopifyCredentials"
 import {
+  dbGetShopifyConnectionByDomain,
   dbGetShopifyConnectionForUser,
   dbMarkShopifyConnectionStatus,
   dbShopifyUserManualCanaryEnabled,
@@ -19,6 +20,10 @@ import type { ShopifyConnectionRow } from "@/lib/shopify/types"
 import {
   fetchShopIdentity,
   registerShopifyWebhooks,
+  retireShopifyListingsForShopMove,
+  shopifyConnectionBlocksDifferentShop,
+  shopifyReconnectMovesToNewShop,
+  shopifyShopActivelyLinkedToOtherAccount,
 } from "@/lib/services/shopifyOAuth"
 type ShopifyTokenResponse = {
   access_token?: string
@@ -117,12 +122,23 @@ export async function connectMerchantCustomShopifyApp(input: {
     serviceSupabase,
     input.userId,
   )
-  if (existing && existing.shop_domain !== shopDomain) {
+  if (shopifyConnectionBlocksDifferentShop(existing, shopDomain)) {
     throw new ShopifyManualConnectError(
       "This Reswell account is already linked to a different Shopify store. Disconnect it first.",
       409,
     )
   }
+  const domainOwner = await dbGetShopifyConnectionByDomain(
+    serviceSupabase,
+    shopDomain,
+  )
+  if (shopifyShopActivelyLinkedToOtherAccount(domainOwner, input.userId)) {
+    throw new ShopifyManualConnectError(
+      "This Shopify store is already linked to a different Reswell account.",
+      409,
+    )
+  }
+  const movingToNewShop = shopifyReconnectMovesToNewShop(existing, shopDomain)
 
   const token = await requestClientCredentialsToken({
     shopDomain,
@@ -152,6 +168,9 @@ export async function connectMerchantCustomShopifyApp(input: {
   const access = encryptShopifySecret(token.access_token)
   const clientIdSecret = encryptShopifySecret(input.clientId)
   const clientSecretSecret = encryptShopifySecret(input.clientSecret)
+  if (movingToNewShop && existing) {
+    await retireShopifyListingsForShopMove(serviceSupabase, existing.id)
+  }
 
   const connection = await dbUpsertShopifyConnection(serviceSupabase, {
     userId: input.userId,
@@ -193,7 +212,9 @@ export async function connectMerchantCustomShopifyApp(input: {
     scopes,
   })
 
-  await dbReviveDeadShopifyInventoryJobs(serviceSupabase, connection.id)
+  if (!movingToNewShop) {
+    await dbReviveDeadShopifyInventoryJobs(serviceSupabase, connection.id)
+  }
 
   const webhookUrl = shopifyManualWebhookUri(credential.webhook_route_key)
   try {

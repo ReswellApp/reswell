@@ -10,6 +10,7 @@ import {
   dbClaimShopifyTokenRefresh,
   dbConsumeShopifyOAuthState,
   dbDeleteExpiredShopifyOAuthStates,
+  dbGetShopifyConnectionByDomain,
   dbGetShopifyConnectionById,
   dbGetShopifyConnectionForUser,
   dbInsertShopifyOAuthState,
@@ -20,7 +21,10 @@ import {
   dbUpsertShopifyConnection,
 } from "@/lib/db/shopifyConnections"
 import { dbUnpublishAllShopifyListingsForConnection } from "@/lib/db/shopifyCatalog"
-import { dbReviveDeadShopifyInventoryJobs } from "@/lib/db/shopifyQueue"
+import {
+  dbCancelShopifyInventoryJobsForConnection,
+  dbReviveDeadShopifyInventoryJobs,
+} from "@/lib/db/shopifyQueue"
 import {
   shopifyGraphqlRequest,
   throwOnShopifyUserErrors,
@@ -56,6 +60,83 @@ class ShopifyOAuthRequestError extends Error {
     this.name = "ShopifyOAuthRequestError"
     this.status = status
   }
+}
+
+const DIFFERENT_SHOPIFY_STORE_ERROR =
+  "This Reswell account is already linked to a different Shopify store"
+
+const SHOPIFY_STORE_TAKEN_ERROR =
+  "This Shopify store is already linked to a different Reswell account"
+
+const SHOP_MOVE_INVENTORY_CANCEL_REASON =
+  "Canceled because this Reswell account connected a different Shopify store"
+
+/** A disconnected row still stores the old shop domain, but it is not a live link. */
+export function shopifyConnectionBlocksDifferentShop(
+  existing: Pick<ShopifyConnectionRow, "shop_domain" | "status"> | null,
+  shopDomain: string,
+): boolean {
+  return Boolean(
+    existing &&
+      existing.shop_domain !== shopDomain &&
+      existing.status !== "disconnected",
+  )
+}
+
+export function shopifyShopActivelyLinkedToOtherAccount(
+  existing: Pick<ShopifyConnectionRow, "user_id" | "status"> | null,
+  userId: string,
+): boolean {
+  return Boolean(
+    existing &&
+      existing.user_id !== userId &&
+      existing.status !== "disconnected",
+  )
+}
+
+export function shopifyReconnectMovesToNewShop(
+  existing: Pick<ShopifyConnectionRow, "shop_domain"> | null,
+  shopDomain: string,
+): boolean {
+  return Boolean(existing && existing.shop_domain !== shopDomain)
+}
+
+async function loadShopifyReconnectContext(
+  serviceSupabase: SupabaseClient,
+  userId: string,
+  shopDomain: string,
+): Promise<ShopifyConnectionRow | null> {
+  const existing = await dbGetShopifyConnectionForUser(serviceSupabase, userId)
+  if (shopifyConnectionBlocksDifferentShop(existing, shopDomain)) {
+    throw new Error(DIFFERENT_SHOPIFY_STORE_ERROR)
+  }
+  const domainOwner = await dbGetShopifyConnectionByDomain(
+    serviceSupabase,
+    shopDomain,
+  )
+  if (shopifyShopActivelyLinkedToOtherAccount(domainOwner, userId)) {
+    throw new Error(SHOPIFY_STORE_TAKEN_ERROR)
+  }
+  return existing
+}
+
+/**
+ * The connection row is reused for the new shop, so old mappings and inventory
+ * jobs would otherwise republish the previous store's listings.
+ */
+export async function retireShopifyListingsForShopMove(
+  serviceSupabase: SupabaseClient,
+  connectionId: string,
+): Promise<void> {
+  await dbUnpublishAllShopifyListingsForConnection(
+    serviceSupabase,
+    connectionId,
+  )
+  await dbCancelShopifyInventoryJobsForConnection(
+    serviceSupabase,
+    connectionId,
+    SHOP_MOVE_INVENTORY_CANCEL_REASON,
+  )
 }
 
 function expiresAt(seconds: number | undefined): string | null {
@@ -138,18 +219,19 @@ export async function createShopifyInstallUrl(input: {
 export async function startShopifyOAuth(input: {
   userId: string
   shopDomain: string
+  serviceSupabase?: SupabaseClient
 }): Promise<string> {
-  const serviceSupabase = createServiceRoleClient()
-  const existing = await dbGetShopifyConnectionForUser(
+  const serviceSupabase = input.serviceSupabase ?? createServiceRoleClient()
+  await loadShopifyReconnectContext(
     serviceSupabase,
     input.userId,
+    input.shopDomain,
   )
-  if (existing && existing.shop_domain !== input.shopDomain) {
-    throw new Error(
-      "This Reswell account is already linked to a different Shopify store",
-    )
-  }
-  return createShopifyInstallUrl({ serviceSupabase, ...input })
+  return createShopifyInstallUrl({
+    serviceSupabase,
+    userId: input.userId,
+    shopDomain: input.shopDomain,
+  })
 }
 
 export async function consumeShopifyOAuthState(input: {
@@ -259,6 +341,16 @@ export async function completeShopifyOAuth(input: {
   shopDomain: string
   code: string
 }): Promise<ShopifyConnectionRow> {
+  const previous = await loadShopifyReconnectContext(
+    input.serviceSupabase,
+    input.userId,
+    input.shopDomain,
+  )
+  const movingToNewShop = shopifyReconnectMovesToNewShop(
+    previous,
+    input.shopDomain,
+  )
+
   const token = await requestShopifyToken(
     input.shopDomain,
     new URLSearchParams({
@@ -281,6 +373,9 @@ export async function completeShopifyOAuth(input: {
     .map((scope) => scope.trim())
     .filter(Boolean)
   const tokenFields = encryptedTokenFields(token)
+  if (movingToNewShop && previous) {
+    await retireShopifyListingsForShopMove(input.serviceSupabase, previous.id)
+  }
   const connection = await dbUpsertShopifyConnection(input.serviceSupabase, {
     userId: input.userId,
     shopDomain: input.shopDomain,
@@ -299,10 +394,12 @@ export async function completeShopifyOAuth(input: {
     refreshTokenExpiresAt: tokenFields.refreshTokenExpiresAt,
     scopes,
   })
-  await dbReviveDeadShopifyInventoryJobs(
-    input.serviceSupabase,
-    connection.id,
-  )
+  if (!movingToNewShop) {
+    await dbReviveDeadShopifyInventoryJobs(
+      input.serviceSupabase,
+      connection.id,
+    )
+  }
   try {
     await registerShopifyWebhooks(input.shopDomain, token.access_token)
   } catch (error) {
