@@ -5,8 +5,13 @@ import { listingListedAfterSavedSearch } from "@/lib/services/boardSavedSearchAl
 import {
   ensureListingIndexedForSavedSearchAlerts,
   listingMatchesSavedSearch,
+  surfboardAlertIndexState,
   type ListingRowForBoardAlert,
 } from "@/lib/services/boardSavedSearchMatch"
+import {
+  clearSurfboardAlertRetry,
+  scheduleSurfboardAlertRetry,
+} from "@/lib/services/savedSearchAlertRetry"
 import { sendBoardSavedSearchAlert } from "@/lib/services/sendBoardSavedSearchAlert"
 
 export type { ListingRowForBoardAlert }
@@ -15,6 +20,7 @@ export { listingMatchesBoardSavedCriteria } from "@/lib/services/boardSavedSearc
 /**
  * When a peer listing goes live, notify users whose saved searches would return that listing.
  * Surfboard alerts only go out when the board was first published after the search was saved.
+ * If the surfboard is not in the search index yet, field-match now and retry for about an hour.
  */
 export async function notifyBoardSavedSearchMatchesForListing(
   listingId: string,
@@ -45,6 +51,7 @@ export async function notifyBoardSavedSearchMatchesForListing(
   }
 
   let listedAt: string | null = null
+  let indexReady = false
   if (row.section === "surfboards") {
     await ensureListingIndexedForSavedSearchAlerts(listingId)
     const { data: createdEvent, error: createdErr } = await service
@@ -59,6 +66,24 @@ export async function notifyBoardSavedSearchMatchesForListing(
     listedAt = createdEvent?.listed_at ? String(createdEvent.listed_at) : null
     if (!listedAt) {
       return { attempted: 0, sent: 0, skippedReason: "listing_not_newly_listed" }
+    }
+    const indexState = await surfboardAlertIndexState(listingId)
+    if (indexState === "ready") {
+      indexReady = true
+      try {
+        await clearSurfboardAlertRetry(service, listingId)
+      } catch (err) {
+        console.error("[saved_search] clear index retry:", err)
+      }
+    } else if (indexState === "pending") {
+      try {
+        const plan = await scheduleSurfboardAlertRetry(service, listingId, listedAt, new Date())
+        if (!plan.matchNow) {
+          return { attempted: 0, sent: 0, skippedReason: "index_retry_exhausted" }
+        }
+      } catch (err) {
+        console.error("[saved_search] schedule index retry:", err)
+      }
     }
   }
 
@@ -80,7 +105,9 @@ export async function notifyBoardSavedSearchMatchesForListing(
   })
   const eligible: typeof candidates = []
   for (const s of candidates) {
-    const matches = await listingMatchesSavedSearch(listingId, row, s.criteria)
+    const matches = await listingMatchesSavedSearch(listingId, row, s.criteria, {
+      indexReady: row.section === "surfboards" ? indexReady : undefined,
+    })
     if (matches) eligible.push(s)
   }
 

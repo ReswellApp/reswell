@@ -2,6 +2,11 @@ import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 import { listingListedAfterSavedSearch } from "./boardSavedSearchAlertWindow.ts"
 import { savedSearchBrandAndModelMatch } from "./savedSearchBrandModelMatch.ts"
+import {
+  nextSavedSearchAlertRetry,
+  SAVED_SEARCH_ALERT_LOOKBACK_MS,
+  savedSearchAlertLookbackStart,
+} from "./savedSearchAlertRetryWindow.ts"
 
 const BRAND_ID = "11111111-1111-4111-8111-111111111111"
 const MODEL_ID = "22222222-2222-4222-8222-222222222222"
@@ -80,5 +85,119 @@ describe("savedSearchBrandAndModelMatch", () => {
       ),
       true,
     )
+  })
+
+  it("matches punctuation, spacing, and a known short alias", () => {
+    assert.equal(
+      savedSearchBrandAndModelMatch(channelIslands, { brand: "channelislands", model: "neckbeard" }),
+      true,
+    )
+    assert.equal(
+      savedSearchBrandAndModelMatch(
+        { brand: "Channel Islands Surfboards", model: "Neck Beard", title: "Neck Beard" },
+        { brand: "CI", model: "Neck Beard" },
+      ),
+      true,
+    )
+  })
+
+  it("matches Lost and Mayhem as the same shaper", () => {
+    assert.equal(
+      savedSearchBrandAndModelMatch(
+        { brand: "Lost Surfboards", model: "Puddle Jumper", title: "Puddle Jumper" },
+        { brand: "Mayhem", model: "Puddle Jumper" },
+      ),
+      true,
+    )
+    assert.equal(
+      savedSearchBrandAndModelMatch(
+        { brand: "Lost by Mayhem", model: "Driver", title: "Driver" },
+        { brand: "Lost", model: "Driver" },
+      ),
+      true,
+    )
+  })
+
+  it("does not treat a different shaper that contains an alias word as that alias", () => {
+    assert.equal(
+      savedSearchBrandAndModelMatch(
+        { brand: "Lost Coast", model: "Daily", title: "Daily" },
+        { brand: "Mayhem", model: "Daily" },
+      ),
+      false,
+    )
+  })
+
+  it("does not treat a short fragment as a brand", () => {
+    assert.equal(
+      savedSearchBrandAndModelMatch(
+        { brand: "Album Surf", model: "Round", title: "Album Round" },
+        { brand: "al", model: "Round" },
+      ),
+      false,
+    )
+  })
+
+  it("matches an unlinked listing when the directory brand text is the same shaper", () => {
+    assert.equal(
+      savedSearchBrandAndModelMatch(
+        { ...channelIslands, brand_id: null },
+        { brandId: BRAND_ID, brand: "Channel Islands", model: "Neck Beard" },
+      ),
+      true,
+    )
+  })
+
+  it("rejects a different catalog brand even when the typed name matches", () => {
+    assert.equal(
+      savedSearchBrandAndModelMatch(channelIslands, {
+        brandId: "33333333-3333-4333-8333-333333333333",
+        brand: "Channel Islands",
+        model: "Neck Beard",
+      }),
+      false,
+    )
+  })
+})
+
+describe("saved search alert retry window", () => {
+  const listedAt = "2026-10-16T18:00:00.000Z"
+
+  it("schedules the next pass 15 minutes out, inside the hour", () => {
+    const next = nextSavedSearchAlertRetry({
+      listedAt,
+      now: new Date("2026-10-16T18:00:00.000Z"),
+      attempts: 0,
+    })
+    assert.equal(next?.attempts, 1)
+    assert.equal(next?.nextAttemptAt, "2026-10-16T18:15:00.000Z")
+    assert.equal(next?.giveUpAt, "2026-10-16T19:00:00.000Z")
+  })
+
+  it("stops after four attempts or an hour", () => {
+    assert.equal(
+      nextSavedSearchAlertRetry({
+        listedAt,
+        now: new Date("2026-10-16T18:40:00.000Z"),
+        attempts: 4,
+      }),
+      null,
+    )
+    assert.equal(
+      nextSavedSearchAlertRetry({
+        listedAt,
+        now: new Date("2026-10-16T19:00:00.000Z"),
+        attempts: 1,
+      }),
+      null,
+    )
+  })
+
+  it("caps a stuck watermark to the lookback", () => {
+    const now = new Date("2026-10-16T18:00:00.000Z")
+    const recent = savedSearchAlertLookbackStart("2026-10-16T17:00:00.000Z", now)
+    assert.equal(recent, "2026-10-16T17:00:00.000Z")
+    const stuck = savedSearchAlertLookbackStart("2026-09-01T00:00:00.000Z", now)
+    assert.equal(stuck, new Date(now.getTime() - SAVED_SEARCH_ALERT_LOOKBACK_MS).toISOString())
   })
 })

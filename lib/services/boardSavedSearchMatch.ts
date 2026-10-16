@@ -131,6 +131,7 @@ export function boardSavedCriteriaToBrowseEsParams(c: BoardSavedSearchCriteria) 
     brandId: c.brandId?.trim() || undefined,
     model: c.model?.trim() || undefined,
     brandModelId: c.brandModelId?.trim() || undefined,
+    brandTextRecall: true,
     minPrice: c.minPrice,
     maxPrice: c.maxPrice,
     boardType: hasFacetStyles ? undefined : c.type,
@@ -354,14 +355,57 @@ export function listingMatchesBoardSavedCriteria(
   return true
 }
 
+export type SurfboardAlertIndexSnapshot =
+  | { mode: "disabled" }
+  | { mode: "unchecked" }
+  | { mode: "split"; readyIds: Set<string> }
+
+/**
+ * Which of these surfboards are visible in the boards index right now.
+ * `unchecked` means Elasticsearch is on but the visibility query failed,
+ * so callers should field-match and retry rather than treat the miss as final.
+ */
+export async function surfboardAlertIndexSnapshot(
+  listingIds: string[],
+): Promise<SurfboardAlertIndexSnapshot> {
+  if (!isBoardsBrowseEsEnabled()) return { mode: "disabled" }
+  if (listingIds.length === 0) return { mode: "split", readyIds: new Set() }
+  try {
+    const res = await searchBoardsBrowse({
+      restrictToIds: listingIds,
+      from: 0,
+      size: listingIds.length,
+      sort: "newest",
+    })
+    if (res === null) return { mode: "unchecked" }
+    return { mode: "split", readyIds: new Set(res.ids) }
+  } catch (err) {
+    console.error("[board_saved_search] index visibility failed:", err)
+    return { mode: "unchecked" }
+  }
+}
+
+/** `ready` once this surfboard is in the index. `pending` when the index is late or down. */
+export async function surfboardAlertIndexState(
+  listingId: string,
+): Promise<"disabled" | "pending" | "ready"> {
+  const snapshot = await surfboardAlertIndexSnapshot([listingId])
+  if (snapshot.mode === "disabled") return "disabled"
+  if (snapshot.mode === "unchecked") return "pending"
+  return snapshot.readyIds.has(listingId) ? "ready" : "pending"
+}
+
 /**
  * True when the listing would appear in the saved search.
  * Surfboards prefer Elasticsearch browse replay; other sections use field matching.
+ * `indexReady: false` skips the index (it does not contain the listing yet).
+ * `indexReady: true` trusts an empty index hit — that listing is indexed and does not match.
  */
 export async function listingMatchesSavedSearch(
   listingId: string,
   listing: ListingRowForBoardAlert,
   rawCriteria: unknown,
+  options?: { indexReady?: boolean },
 ): Promise<boolean> {
   const parsed = boardSavedSearchCriteriaSchema.safeParse(rawCriteria)
   if (!parsed.success) return false
@@ -370,6 +414,7 @@ export async function listingMatchesSavedSearch(
 
   const target = resolveSavedSearchSection(parsed.data)
   const useBoardsEs =
+    options?.indexReady !== false &&
     (target === "surfboards" || (target === "any" && listing.section === "surfboards")) &&
     isBoardsBrowseEsEnabled()
 

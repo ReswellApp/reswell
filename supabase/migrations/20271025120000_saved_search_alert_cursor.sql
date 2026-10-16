@@ -1,6 +1,6 @@
--- Watermark for the daily surfboard saved-search alert cron.
--- The first row is written at "now" so the job never emails about boards
--- that were already listed when the cron starts.
+-- Watermark for the surfboard saved-search alert catch-up.
+-- Runs about every 15 minutes. The first row is written at "now" so the job
+-- never emails about boards that were already listed when the cron starts.
 
 CREATE TABLE IF NOT EXISTS public.saved_search_alert_cursors (
   job text PRIMARY KEY,

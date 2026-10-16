@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 
-/** Daily Board Finder cron watermark (`listing_creation_events.listed_at`). */
+/** Board Finder catch-up watermark (`listing_creation_events.listed_at`). */
 export const SURFBOARD_NEW_LISTING_ALERT_JOB = "surfboard_new_listings"
 
 export async function getSavedSearchAlertCursor(

@@ -47,6 +47,7 @@ import {
 } from "@/lib/listing-tail-shape-tags"
 import { parseBrowseLocationLabel } from "@/lib/listing-location-or-filter"
 import { usStateTitleCaseName } from "@/lib/us-state-name-to-code"
+import { savedSearchBrandAliasLabels } from "@/lib/utils/saved-search-brand-text"
 
 /** Attach `must_not` to a listings bool query body (keyword builders already set filter/must/should). */
 function withMustNot(queryBody: object, mustNot: object[]): object {
@@ -199,6 +200,11 @@ export type BoardsBrowseEsContext = {
   shippingAvailable?: boolean
   /** Admin synonym expansions for keyword recall (e.g. "ci" → "channel islands"). */
   expansions?: string[]
+  /**
+   * Saved-search replay. A directory brand id also matches a listing that has
+   * no brand id yet when the brand text (or a known alias) is the same shaper.
+   */
+  brandTextRecall?: boolean
   /** Exact board length from query parse (`5'10` → 70); applied as a tight inches range. */
   lengthInches?: number
   /** Inclusive min board length in inches (`over 7 feet`). */
@@ -234,6 +240,45 @@ function freeformModelClause(model: string | undefined): object | null {
   }
 }
 
+function freeformBrandClause(brand: string): object {
+  const text = brand.trim()
+  const labels: string[] = []
+  const seen = new Set<string>()
+  for (const label of [text, ...savedSearchBrandAliasLabels(text)]) {
+    const trimmed = label.trim()
+    const key = trimmed.toLowerCase()
+    if (!trimmed || seen.has(key)) continue
+    seen.add(key)
+    labels.push(trimmed)
+  }
+  const clauses = labels.map((label) => ({
+    match: { brand: { query: label, operator: "and" as const } },
+  }))
+  const only = clauses[0]
+  if (clauses.length === 1 && only) return only
+  return { bool: { should: clauses, minimum_should_match: 1 } }
+}
+
+function directoryBrandClause(ctx: BoardsBrowseEsContext, brandId: string): object {
+  const idClause = listingBrandIdFilterClause(brandId, ctx.expansions)
+  const brand = ctx.brand?.trim()
+  if (!ctx.brandTextRecall || !brand) return idClause
+  return {
+    bool: {
+      should: [
+        idClause,
+        {
+          bool: {
+            must: [freeformBrandClause(brand)],
+            must_not: [{ exists: { field: "brand_id" } }],
+          },
+        },
+      ],
+      minimum_should_match: 1,
+    },
+  }
+}
+
 function brandModelClauses(ctx: BoardsBrowseEsContext): object[] {
   const brandModelIds = (ctx.brandModelIds ?? [])
     .map((id) => id.trim())
@@ -249,9 +294,9 @@ function brandModelClauses(ctx: BoardsBrowseEsContext): object[] {
 
   const out: object[] = []
   if (brandId && isUuidString(brandId)) {
-    out.push(listingBrandIdFilterClause(brandId, ctx.expansions))
+    out.push(directoryBrandClause(ctx, brandId))
   } else if (ctx.brand?.trim()) {
-    out.push({ match: { brand: ctx.brand.trim() } })
+    out.push(freeformBrandClause(ctx.brand))
   }
 
   // A typed model still applies when the brand was picked from the directory

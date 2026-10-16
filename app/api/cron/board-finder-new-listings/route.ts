@@ -4,10 +4,12 @@ import { runBoardFinderNewListingAlerts } from "@/lib/services/boardFinderNewLis
 export const maxDuration = 300
 
 /**
- * Daily Board Finder catch-up. Replays saved surfboard searches against the
- * listing index for boards first published since the last run, and only when
- * that publish is newer than the search. The first run records the watermark
- * and does not email about boards already listed.
+ * Board Finder catch-up, about every 15 minutes. Replays saved surfboard
+ * searches against boards first published since the last run (capped so a
+ * stuck watermark cannot email old inventory), and retries listings the
+ * search index was not ready for. Alerts only when that publish is newer
+ * than the search. The first run records the watermark and does not email
+ * about boards already listed.
  * Protected with CRON_SECRET.
  */
 export async function GET(request: Request) {

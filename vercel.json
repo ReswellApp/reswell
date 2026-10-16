@@ -108,7 +108,7 @@
     },
     {
       "path": "/api/cron/board-finder-new-listings",
-      "schedule": "15 16 * * *"
+      "schedule": "7,22,37,52 * * * *"
     },
     {
       "path": "/api/cron/search-period-report",

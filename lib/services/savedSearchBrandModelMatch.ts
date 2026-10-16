@@ -1,15 +1,4 @@
-function norm(value: string | null | undefined): string {
-  return (value ?? "").trim().toLowerCase()
-}
-
-function includesInsensitive(
-  haystack: string | null | undefined,
-  needle: string | undefined,
-): boolean {
-  const text = (needle ?? "").trim()
-  if (!text) return true
-  return norm(haystack).includes(text.toLowerCase())
-}
+import { savedSearchBrandTextsMatch, savedSearchTextMatches } from "@/lib/utils/saved-search-brand-text"
 
 export type SavedSearchBrandModelListing = {
   brand?: string | null
@@ -27,9 +16,9 @@ export type SavedSearchBrandModelCriteria = {
 }
 
 /**
- * Catalog ids win for the field they identify.
- * A typed brand or model still has to match when that side has no catalog id,
- * including a directory brand plus a freeform model.
+ * Catalog ids win when the listing actually has that id.
+ * A directory brand still matches an unlinked listing by normalized brand text.
+ * A typed model still has to match when the search has no catalog model id.
  */
 export function savedSearchBrandAndModelMatch(
   listing: SavedSearchBrandModelListing,
@@ -42,12 +31,17 @@ export function savedSearchBrandAndModelMatch(
 
   const brandId = criteria.brandId?.trim() ?? ""
   if (brandId) {
-    if ((listing.brand_id ?? "").trim() !== brandId) return false
-  } else if (!includesInsensitive(listing.brand, criteria.brand)) {
+    const listingBrandId = (listing.brand_id ?? "").trim()
+    if (listingBrandId) {
+      if (listingBrandId !== brandId) return false
+    } else if (!criteria.brand?.trim() || !savedSearchBrandTextsMatch(listing.brand, criteria.brand)) {
+      return false
+    }
+  } else if (!savedSearchBrandTextsMatch(listing.brand, criteria.brand)) {
     return false
   }
 
   const model = criteria.model?.trim() ?? ""
   if (!model) return true
-  return includesInsensitive(listing.model, model) || includesInsensitive(listing.title, model)
+  return savedSearchTextMatches(listing.model, model) || savedSearchTextMatches(listing.title, model)
 }
