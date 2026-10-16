@@ -9,6 +9,8 @@ import {
   removeListingImageFilesFromStorage,
 } from "@/lib/services/listingStorageCleanup"
 import { listingCanBePermanentlyDeleted } from "@/lib/db/listingDeleteEligibility"
+import { isListingForeignKeyDeleteError } from "@/lib/listing-archive"
+import { archiveListingPreservingHistory } from "@/lib/services/listingArchive"
 
 type ListingEndRow = {
   id: string
@@ -18,15 +20,12 @@ type ListingEndRow = {
 }
 
 export type EndSellerListingResult =
-  | { ok: true; mode: "delete" }
+  | { ok: true; mode: "delete" | "archive" }
   | { ok: false; status: number; error: string }
 
 export type DeleteSellerDraftListingResult =
   | { ok: true }
   | { ok: false; status: number; error: string }
-
-const ORDER_HISTORY_DELETE_BLOCKED_MESSAGE =
-  "This listing is tied to an order or payment, so it cannot be permanently deleted."
 
 async function loadListingForEnd(
   supabase: SupabaseClient,
@@ -96,8 +95,24 @@ export async function deleteSellerDraftListing(
   return { ok: true }
 }
 
+async function archiveSellerListing(
+  supabase: SupabaseClient,
+  params: { listingId: string; sellerUserId: string },
+): Promise<EndSellerListingResult> {
+  const archived = await archiveListingPreservingHistory(supabase, {
+    listingId: params.listingId,
+    actorUserId: params.sellerUserId,
+    source: "seller_archive",
+  })
+  if (!archived.ok) {
+    return { ok: false, status: 500, error: archived.error }
+  }
+  return { ok: true, mode: "archive" }
+}
+
 /**
- * Seller permanently deletes a listing. Listings tied to an order or payment cannot be deleted.
+ * Seller removes a listing. Rows still referenced by an order are archived
+ * instead of erased, so the order stays intact and the listing leaves the site.
  */
 export async function endSellerListing(
   supabase: SupabaseClient,
@@ -115,7 +130,7 @@ export async function endSellerListing(
 
   const canDelete = await listingCanBePermanentlyDeleted(supabase, listingId)
   if (!canDelete) {
-    return { ok: false, status: 409, error: ORDER_HISTORY_DELETE_BLOCKED_MESSAGE }
+    return archiveSellerListing(supabase, { listingId, sellerUserId })
   }
 
   const imageUrls = await fetchListingImageUrlsForListingIds(supabase, [listingId])
@@ -127,8 +142,8 @@ export async function endSellerListing(
     .eq("user_id", sellerUserId)
 
   if (error) {
-    if (error.code === "23503") {
-      return { ok: false, status: 409, error: ORDER_HISTORY_DELETE_BLOCKED_MESSAGE }
+    if (isListingForeignKeyDeleteError(error)) {
+      return archiveSellerListing(supabase, { listingId, sellerUserId })
     }
     return { ok: false, status: 500, error: "Failed to delete listing" }
   }

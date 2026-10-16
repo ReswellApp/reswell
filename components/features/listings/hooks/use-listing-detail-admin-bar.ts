@@ -81,7 +81,13 @@ export function useListingDetailAdminBar(listing: ListingAdminBarSnapshot) {
   )
 
   const deleteListing = React.useCallback(() => {
-    if (!confirm("Permanently delete this listing? This cannot be undone.")) return
+    if (
+      !confirm(
+        "Delete this listing? If an order is attached, it is archived and kept for that order.",
+      )
+    ) {
+      return
+    }
     void run("delete", async () => {
       const res = await fetch(`/api/admin/listings?id=${encodeURIComponent(listing.id)}`, {
         method: "DELETE",
@@ -91,7 +97,12 @@ export function useListingDetailAdminBar(listing: ListingAdminBarSnapshot) {
         toast.error(await readApiError(res, "Could not delete listing"))
         return
       }
-      toast.success("Listing deleted")
+      const json = (await res.json().catch(() => ({}))) as { archived?: unknown }
+      toast.success(
+        json.archived === true
+          ? "Listing archived. Order history stays on file."
+          : "Listing deleted",
+      )
       router.push("/admin/listings")
     })
   }, [listing.id, router, run])

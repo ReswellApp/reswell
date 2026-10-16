@@ -1,8 +1,8 @@
-export type EndListingMode = "delete"
+export type EndListingMode = "delete" | "archive"
 
 export async function postEndListing(
   listingId: string,
-  mode: EndListingMode = "delete",
+  mode: "delete" = "delete",
 ): Promise<{ ok: true; mode: EndListingMode } | { ok: false; error: string; status: number }> {
   const res = await fetch(`/api/listings/${listingId}/end`, {
     method: "POST",
@@ -12,7 +12,24 @@ export async function postEndListing(
   })
 
   if (res.ok) {
-    return { ok: true, mode: "delete" }
+    let resolved: EndListingMode = "delete"
+    try {
+      const json: unknown = await res.json()
+      if (
+        json &&
+        typeof json === "object" &&
+        "data" in json &&
+        json.data &&
+        typeof json.data === "object" &&
+        "mode" in json.data &&
+        (json.data as { mode?: unknown }).mode === "archive"
+      ) {
+        resolved = "archive"
+      }
+    } catch {
+      // success without a body still means the listing is gone
+    }
+    return { ok: true, mode: resolved }
   }
 
   let error = "Request failed"

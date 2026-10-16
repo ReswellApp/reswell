@@ -7,6 +7,7 @@ import {
 } from "@/lib/services/listingStorageCleanup"
 import { NextResponse } from "next/server"
 import { revalidateSellersForUserIds } from "@/lib/cache/revalidate-sellers-directory-catalog"
+import { listingIdsBlockedFromPermanentDelete } from "@/lib/db/listingDeleteEligibility"
 
 const ARCHIVE_DAYS = 30
 
@@ -47,18 +48,29 @@ export async function GET(request: Request) {
   }
 
   const ids = toDelete.map((r) => r.id)
-  const imageUrls = await fetchListingImageUrlsForListingIds(supabase, ids)
+  const blocked = await listingIdsBlockedFromPermanentDelete(supabase, ids)
+  const deletable = toDelete.filter((row) => !blocked.has(row.id))
+  if (deletable.length === 0) {
+    return NextResponse.json({
+      deleted: 0,
+      skipped: ids.length,
+      message: "Archived listings still have order history",
+    })
+  }
+
+  const deletableIds = deletable.map((row) => row.id)
+  const imageUrls = await fetchListingImageUrlsForListingIds(supabase, deletableIds)
 
   const { error: deleteError } = await supabase
     .from("listings")
     .delete()
-    .in("id", ids)
+    .in("id", deletableIds)
 
   if (deleteError) {
     return NextResponse.json({ error: deleteError.message }, { status: 500 })
   }
 
-  for (const id of ids) {
+  for (const id of deletableIds) {
     try {
       await deleteListingDocument(id)
     } catch {
@@ -73,10 +85,14 @@ export async function GET(request: Request) {
     /* best-effort storage cleanup */
   }
 
-  const sellerUserIds = (toDelete ?? [])
+  const sellerUserIds = deletable
     .map((row) => (row as { user_id?: string | null }).user_id)
     .filter((id): id is string => typeof id === "string" && id.length > 0)
   await revalidateSellersForUserIds(supabase, sellerUserIds)
 
-  return NextResponse.json({ deleted: ids.length, ids })
+  return NextResponse.json({
+    deleted: deletableIds.length,
+    skipped: ids.length - deletableIds.length,
+    ids: deletableIds,
+  })
 }

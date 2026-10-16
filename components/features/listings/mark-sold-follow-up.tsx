@@ -61,7 +61,7 @@ export function MarkSoldFollowUp({
   onFinished?: () => void
   onCheckoutActiveChange?: (active: boolean) => void
   onMarkedSold?: () => void
-  onDeleted?: () => void
+  onDeleted?: (mode: "delete" | "archive") => void
 }) {
   const [step, setStep] = useState<FollowUpStep>("form")
   const [soldChannel, setSoldChannel] = useState<SoldOffPlatformChannel | null>(null)
@@ -111,7 +111,7 @@ export function MarkSoldFollowUp({
       toast.error(result.error)
       return false
     }
-    onDeleted?.()
+    onDeleted?.(result.mode)
     return true
   }
 

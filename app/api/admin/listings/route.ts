@@ -17,6 +17,9 @@ import {
   removeListingImageFilesFromStorage,
 } from '@/lib/services/listingStorageCleanup'
 import { revalidateAfterListingDeletion } from '@/lib/services/listingSiteModerationRevalidation'
+import { listingCanBePermanentlyDeleted } from '@/lib/db/listingDeleteEligibility'
+import { isListingForeignKeyDeleteError } from '@/lib/listing-archive'
+import { archiveListingPreservingHistory } from '@/lib/services/listingArchive'
 import {
   composeListingDimensionsFromSplitListingFields,
   listingDimensionsColumnTrim,
@@ -330,15 +333,33 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
   }
 
+  const canErase = await listingCanBePermanentlyDeleted(service, listingId)
+  if (!canErase) {
+    const archived = await archiveListingPreservingHistory(service, {
+      listingId,
+      actorUserId: user.id,
+      source: 'admin_status',
+    })
+    if (!archived.ok) {
+      return NextResponse.json({ error: archived.error }, { status: 500 })
+    }
+    return NextResponse.json({ success: true, archived: true })
+  }
+
   const imageUrls = await fetchListingImageUrlsForListingIds(service, [listingId])
 
   const { error } = await service.from('listings').delete().eq('id', listingId)
   if (error) {
-    if (error.code === '23503') {
-      return NextResponse.json(
-        { error: 'Listing has related order history and cannot be permanently deleted.' },
-        { status: 409 },
-      )
+    if (isListingForeignKeyDeleteError(error)) {
+      const archived = await archiveListingPreservingHistory(service, {
+        listingId,
+        actorUserId: user.id,
+        source: 'admin_status',
+      })
+      if (!archived.ok) {
+        return NextResponse.json({ error: archived.error }, { status: 500 })
+      }
+      return NextResponse.json({ success: true, archived: true })
     }
     console.error('[admin listings] delete failed:', error)
     return NextResponse.json({ error: 'Failed to delete listing' }, { status: 500 })

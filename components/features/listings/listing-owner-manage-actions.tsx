@@ -2,7 +2,6 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { EndListingButton } from "@/components/end-listing-button"
 import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
-import { listingCanBePermanentlyDeleted } from "@/lib/db/listingDeleteEligibility"
 import { getListingCartHolderCount } from "@/lib/db/listing-cart-holders"
 import { isPeerListingSection, peerListingEditHref } from "@/lib/peer-listing-sections"
 import type { ListingEnrichmentGap } from "@/lib/sell-flow/listing-enrichment"
@@ -82,10 +81,9 @@ async function renderListingOwnerManageActions({
     !isSold &&
     !hiddenFromSite
 
-  const [canDelete, cartHolderCount] = await Promise.all([
-    isDraft ? Promise.resolve(false) : listingCanBePermanentlyDeleted(supabase, listingId),
-    canOfferToCart ? getListingCartHolderCount(supabase, listingId) : Promise.resolve(0),
-  ])
+  const cartHolderCount = canOfferToCart
+    ? await getListingCartHolderCount(supabase, listingId)
+    : 0
 
   if (!user) return null
 
@@ -100,7 +98,7 @@ async function renderListingOwnerManageActions({
       showQuickPriceEdit={showQuickPriceEdit}
       enrichmentGaps={enrichmentGaps}
       userId={user.id}
-      canDelete={canDelete}
+      canDelete={!isDraft}
       cartHolderCount={cartHolderCount}
     />
   )

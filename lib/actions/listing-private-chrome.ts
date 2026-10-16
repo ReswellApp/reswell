@@ -1,6 +1,5 @@
 "use server"
 
-import { listingCanBePermanentlyDeleted } from "@/lib/db/listingDeleteEligibility"
 import { getListingCartHolderCount } from "@/lib/db/listing-cart-holders"
 import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
 import {
@@ -47,11 +46,8 @@ export async function loadListingPrivateChrome(
     status !== "sold" &&
     !hidden
 
-  const [adminHolders, canDelete, cartHolderCount, canRelist] = await Promise.all([
+  const [adminHolders, cartHolderCount, canRelist] = await Promise.all([
     isAdmin ? listListingCartHoldersForAdmin(id) : Promise.resolve([]),
-    isOwner && status !== "draft"
-      ? listingCanBePermanentlyDeleted(supabase, id)
-      : Promise.resolve(false),
     canOfferToCart ? getListingCartHolderCount(supabase, id) : Promise.resolve(0),
     isOwner && listing?.user_id
       ? sellerCanRelistListing(supabase, user.id, {
@@ -68,7 +64,7 @@ export async function loadListingPrivateChrome(
     isAdmin,
     adminHolders,
     owner: isOwner
-      ? { userId: user.id, canDelete, cartHolderCount, canRelist }
+      ? { userId: user.id, canDelete: status !== "draft", cartHolderCount, canRelist }
       : null,
   }
 }
