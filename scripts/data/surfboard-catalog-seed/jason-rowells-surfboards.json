@@ -1,0 +1,175 @@
+{
+  "generated_for": "Jason Rowells Surfboards official named standup catalog",
+  "source": "https://jasonrowellssurfboards.com/ (official homepage lineup + dedicated model pages; first-party copy from each model page; unique product-front photos from those pages)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "jason-rowells-surfboards",
+      "name": "Jason Rowells Surfboards",
+      "website_url": "https://jasonrowellssurfboards.com/",
+      "location_label": "Oceanside, California",
+      "founder_name": "Jason Rowells",
+      "lead_shaper_name": "Jason Rowells",
+      "short_description": "Jason Rowells shapes mostly EPS surfboards in Oceanside, California, with North Carolina roots and a named production lineup of shortboards, grovelers, and longboards.",
+      "logo_url": "https://jasonrowellssurfboards.com/wp-content/uploads/homelogo.png",
+      "models": [
+        {
+          "name": "Mutt",
+          "image_url": "https://jasonrowellssurfboards.com/wp-content/uploads/MUTT6.jpg",
+          "description": "The Mutt is the number one selling standard short board model. It’s single to double to vee bottom contours give it combined speed with control. This model has gone through extensive modifications and makes it a favorite to many riders. Works best in 2 to 8 ft surf. Best ordered in rounded or squash tail. Available as thruster, quad or five fin setup. Typical sizes range from 5’4 to ‘6’4. Works best when ordered as EPS.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Mutt 2.0",
+          "image_url": "https://jasonrowellssurfboards.com/wp-content/uploads/MUTT4.jpg",
+          "description": "The Mutt 2.0 is the same as the Mutt model except the tail rocker has been increased slightly. This increased rocker flows better in bigger, more hollow conditions. It’s single to double to vee bottom contours give it combined speed with control. This model has gone through extensive modifications and makes it a favorite to many riders. Works best in 2 to 8 ft surf. Best ordered in rounded or squash tail. Available as thruster, quad or five fin setup. Typical sizes range from 5’4 to ‘6’4. Works best when ordered as EPS.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Shocker",
+          "image_url": "https://jasonrowellssurfboards.com/wp-content/uploads/shocker.jpg",
+          "description": "The Shocker is a high performance, modern shortboard model. It works best in good conditions between 3 to 7 feet. Works best as a thruster, recommended to be ridden with typical shortboard dimensions. It’s bottom contours are deep single concave throughout which release out to vee in the tail. That along with its pulled in tail and pulled back center point allows for quick release in turns and its flattened rocker through the center of the board keeps speed through the flats. The nose and tail rocker remains relatively high allowing for shocking turns in critical places. Available sizes 5’4″ to 6’4″.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Hall Pass",
+          "image_url": "https://jasonrowellssurfboards.com/wp-content/uploads/hallpass11.jpg",
+          "description": "The HallPass model incorporates a blend of deep single to double with vee out the back. Moderate foam under the hood on this one but its epoxy and feather light. Grab a HallPass and ditch everything else!",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Jacked Up",
+          "image_url": "https://jasonrowellssurfboards.com/wp-content/uploads/jackedup11.jpg",
+          "description": "Throwing it back with this one! The Jacked Up model might resemble a 80’s style outline but its modern rail and deep single bottom contours give it a whole new feel. It also has increased nose and tail rocker. Relatively easy to surf with good volume, magical moments are bound to happen! The wing, pulled in tail, vee and swallow tail allow for easy turns. Avilable in thruster or five fin setup. Order 2 to 3 inches shorter than standard shortboard. Works best in 2 to 8 feet.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Push",
+          "image_url": "https://jasonrowellssurfboards.com/wp-content/uploads/push11.jpg",
+          "description": "The Push was designed as an all around step up/travel board for bigger and more powerful waves. Perfect for over head to double over head plus conditions. It’s moderate rocker and deep single keep things in control on the bombs. Standard sizes range from 6’4 t0 6’11 but as always, any board size and dimension can built to specific needs.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "GI Joe",
+          "image_url": "https://jasonrowellssurfboards.com/wp-content/uploads/gijoe3.jpg",
+          "description": "The G.I Joe model was developed with Team rider Joe Fusco. I had an amazing session on it at Lowers this past week when I was able to really open up and put it on rail. It excels in waves with more of slope and a moderate pace down the line. One advantage in the beachbreaks however is the drive down the line and its hold of speed, which plows through flat sections and cuts through chop. All-in-all, it is a much easier ride than the shocker: forgiving and easy to fly when the waves have less give. It would be great for your average to slightly better surfer in grovel-y conditions. Available as thruster, quad or five fin setup. Typical sizes range from 5’4 to ‘6’4. Works best when ordered as EPS.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Butterface",
+          "image_url": "https://jasonrowellssurfboards.com/wp-content/uploads/butterface.jpg",
+          "description": "Butterface = SPEED! Fastest board in the lineup. Its decreased rocker, (almost flat in the tail) works in smaller steeper waves and goes through sections like no other. One pump and your blazing past closeout sections. The control can be tricky at times and this board isn’t the easiest to handle in big waves but the speed is incredible! I moved the fins forward and combined that with a pulled in tail. Did i mention speed? I’ve only tried this board with Rasta fins in a quad setup. Its a super fun board!",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Okerchomp",
+          "image_url": "https://jasonrowellssurfboards.com/wp-content/uploads/OKERCHOMP2.jpg",
+          "description": "The Okerchomp model is made for bigger guys like my friend Dave Oelkers who helped design this. Works in all conditions, big, small, powerful, mushy, you name it. Its full rails, increased nose rocker and fuller tail outline work best for laying into power turns and keeping speed through roundhouses. Bottom contours are single to double to vee. The Okerchomp is a hungry beast!",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Grom-A-Zoid",
+          "image_url": "https://jasonrowellssurfboards.com/wp-content/uploads/grompic3a.jpg",
+          "description": "Grom-A-Zoid is a groms dream come true. Light and lively and perfect for almost all conditions. Single to double concave with vee off the tail. Available in thruster, quad or 5 fin setups. You tell me the board size, details and paint scheme and I’ll make it!",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Buggupa",
+          "image_url": "https://jasonrowellssurfboards.com/wp-content/uploads/bugtop3.jpg",
+          "description": "The Buggupa has standard short board outlines and features with unique bottom contours. It starts with a moderate single and blends to Vee much earlier (about 1/3 from tail) allowing easier pivoting. Best for bigger/speedy conditions and geared for the slightly better than average surfer. The center point is one inch forward and paddles like a champ. Available as thruster, quad or five fin setup. Typical sizes range from 5’4 to 6’8 with a few examples below. Any sizing can be customized.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Johnboat",
+          "image_url": "https://jasonrowellssurfboards.com/wp-content/uploads/jbpic6a.jpg",
+          "description": "The Johnboat was made with the help of my friend John Lighhart, this board was mostly built to grovel in small waves. Don’t let it’s shortness fool you, you can ride this board a full 8 to 12 inches shorter than your standard short board. The volume is blended in its full nose, thickness and width. Its stubby outline and wider diamond tail pivots with ease. It actually rides good in bigger waves too especially with the right fin setup. I’ve been riding mine all summer from knee to double over head and loving every minute of it!",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Grits N Gravy",
+          "image_url": "https://jasonrowellssurfboards.com/wp-content/uploads/gritspic1b.jpg",
+          "description": "This board absolutely flies on everything. One foot mush… no problem, double over head… yup. This board is on track to become my number one selling shape and for good reason. The full outline combined with super light EPS gives this board tons of flotation resulting in more waves and more fun. The rounded pin and single to double concave allow you to be where you want to be! This model works great as a quad using Clay Marzo Future Fins. Order 4 to 6 inches shorter than your short board. Grits and Gravy ya’ll!",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Mikita",
+          "image_url": "https://jasonrowellssurfboards.com/wp-content/uploads/MIKITA2.png",
+          "description": "The Mikita model works well in most conditions but it really excels in the mush. It flies through the flat sections yet pivots easily. This board is a great everyday go to board and compliments any quiver. My buddy, Mr. Mikita helped design so stayed tuned to see him attacking it on this one. Order 3 to 5 inches shorter then your standard board. Works best with EPS and 5 fin Future boxes.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "High Five",
+          "image_url": "https://jasonrowellssurfboards.com/wp-content/uploads/highfive11.jpg",
+          "description": "The HighFive model incorporates a blend of single to double to vee with a double bump tail outline. The bump is pushed back in the board and allows the board to pivot off the back foot while maintaining a wide point for groveling in the mush. This board works great in anything under head high. EPS and 5 (High Five) Future fin boxes recommended for this model. Order 2 to 4 inches smaller than your standard shortboard.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Paddilac",
+          "image_url": "https://jasonrowellssurfboards.com/wp-content/uploads/padillac2.jpg",
+          "description": "The Padillac model is the perfect board for someone who wants or needs extra paddle power. Great beginner board with plenty of thickness, full rails and foam. Perfectly suited with everyday summer time surf.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Skillet",
+          "image_url": "https://jasonrowellssurfboards.com/wp-content/uploads/skillet13.jpg",
+          "description": "The Skillet model is the perfect board for someone who has graduated from a longer board and ready to shake things up. Like the Grits n Gravy model, the Skillet model works great in small to medium surf. Its thickness, reduced rocker and full rails are perfectly suited with everyday summer time surf. Come annnnnnd getttttt it!",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Johnboat 2.0",
+          "image_url": "https://jasonrowellssurfboards.com/wp-content/uploads/jb2pic1a.jpg",
+          "description": "The Johnboat 2.0 is the exact same as the original Johnboat except it has a pulled in rounded tail with a slight bump in the outline. This board was mostly built to grovel in small waves. Don’t let it’s shortness fool you, you can ride this board a full 8 to 12 inches shorter than your standard short board. The volume is blended in its full nose, thickness and width. Its stubby outline and wider diamond tail pivots with ease. It actually rides good in bigger waves too especially with the right fin setup.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Me Gusta Gordo",
+          "image_url": "https://jasonrowellssurfboards.com/wp-content/uploads/gordopic1a.jpg",
+          "description": "The Me Gusta Gordo aka “I like fat” model is a fast cruiser that loves drawing a good line but also turns well. Super fun playing around in soft/gutless waves. Works best in 1 to 4 ft surf. Available as thruster, 2+1, 4+1, quad or five fin setup. Typical sizes range from 6’0 to 7’4 but any size can be made.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Crispy Mist",
+          "image_url": "https://jasonrowellssurfboards.com/wp-content/uploads/crispypic2a.jpg",
+          "description": "The Crispy Mist model has a fuller outline, forward wide point and pulled in tail. The bottom contours have early vee to single to double to vee bottom to give it plenty of speed and control. Available as thruster, quad or five fin setup. Typical sizes range from 5’4 to 6’4 but can accommodate any custom sizes. Great in small to medium to surf and its user friendly for all skill levels. Works best when ordered as EPS.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Brinson",
+          "image_url": "https://jasonrowellssurfboards.com/wp-content/uploads/brinsonpic1a.jpg",
+          "description": "The Brinson full description coming soon. Works best in 2 to 4 ft surf. Available as 2+1, 4+1, or quad fin setup. Typical sizes range from 5’4 to ‘6’4.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Moist Nougat",
+          "image_url": "https://jasonrowellssurfboards.com/wp-content/uploads/mntop1.jpg",
+          "description": "The Moist Nougat model full description coming soon. Works best in 2 to 6 ft surf. Available as thruster, quad or five fin setup. Typical sizes range from 5’4 to ‘6’4. Works best when ordered as EPS.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Squigeon",
+          "image_url": "https://jasonrowellssurfboards.com/wp-content/uploads/squitop1.jpg",
+          "description": "The Squigeon model full description is coming soon. Works best in 2 to 6 ft surf. Available as thruster, quad or five fin setup. Typical sizes range from 5’4 to ‘6’4. Works best when ordered as EPS.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Bubble Butt",
+          "image_url": "https://jasonrowellssurfboards.com/wp-content/uploads/bubble01.jpg",
+          "description": "Bubble butt, bubble bubble butt…. this funboard is all about… having fun. Duh! Great for beginners that aren’t sure if they want to explore the path of short vs. long boarding. The bubble butt allows for stability without having too much board length. Standard sizes range from 7’0″ to 8’2″ and can be ordered as a thruster, quad, single or 2+1 fin setup. The bottom features single concave to vee. While you’re on this one make sure you turn around, stick it out and show em what you got!",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Banana Peel",
+          "image_url": "https://jasonrowellssurfboards.com/wp-content/uploads/banana4.jpg",
+          "description": "A high performance 2+1 design that turns well off the tail. It offers more drive and speed out of turns and works in a wide range of size and conditions. Typical size ranges from 8-6 to 10-6 but can be custom built outside that range.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Kinfolk",
+          "image_url": "https://jasonrowellssurfboards.com/wp-content/uploads/kinfolk31.png",
+          "description": "The Kinfolk model is the traditional all purpose nose rider longboard. Its classic design with tucked rails and lots of vee allows for hot dogging and style points while speeding down the line. Even in tiny surf it flies! Available between 8’10” and 10’0″.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
