@@ -10,6 +10,7 @@ import {
   PackageCheck,
   UserCircle,
   Users,
+  UserPlus,
   MessageSquare,
   LifeBuoy,
   Scale,
@@ -60,8 +61,13 @@ export function dashboardNavLinks(input: {
   isShipper: boolean
   isDropoffLocation?: boolean
   hasShopifyAccess?: boolean
+  showEarnings?: boolean
 }): DashboardNavLink[] {
-  const links = DASHBOARD_NAV_LINKS.filter((link) => !link.adminOnly || input.isAdmin)
+  const links = DASHBOARD_NAV_LINKS.filter((link) => {
+    if (link.adminOnly && !input.isAdmin) return false
+    if (input.showEarnings === false && link.href === "/dashboard/earnings") return false
+    return true
+  })
   let expanded = input.hasShopifyAccess
     ? links.flatMap((link) =>
         link.href === "/dashboard/listings"
@@ -85,6 +91,7 @@ export function dashboardNavLinks(input: {
 export const DASHBOARD_NAV_LINKS: DashboardNavLink[] = [
   { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { name: "Profile", href: "/dashboard/profile", icon: UserCircle },
+  { name: "Team", href: "/dashboard/team", icon: UserPlus },
   { name: "Earnings", href: "/dashboard/earnings", icon: Banknote },
   {
     name: "Balance Sheet",

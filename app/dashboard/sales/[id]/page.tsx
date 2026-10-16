@@ -4,6 +4,7 @@ import { notFound } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { createClient } from "@/lib/supabase/server"
+import { getShopAccountContext } from "@/lib/services/accountAccess"
 import { getConversationForBuyerSellerListing } from "@/lib/db/conversations"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -211,6 +212,9 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
   } = await supabase.auth.getUser()
 
   if (!user) return null
+  const shop = await getShopAccountContext()
+  const sellerId = shop?.accountId ?? user.id
+  const showPayouts = shop?.permissions.has("payouts.read") ?? true
 
   const { data: row, error } = await supabase
     .from("orders")
@@ -266,7 +270,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
     `,
     )
     .eq("id", id)
-    .eq("seller_id", user.id)
+    .eq("seller_id", sellerId)
     .match(REAL_MARKETPLACE_SALES_FILTER)
     .in("status", [...ORDER_STATUS_LIST])
     .maybeSingle()
@@ -279,7 +283,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
   const trackingDetailRaw = await fetchOptionalOrderTrackingDetailJson(supabase, {
     orderId: id,
     role: "seller",
-    sellerId: user.id,
+    sellerId,
   })
 
   const { data: payoutFromDb } = await supabase
@@ -349,7 +353,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
   const serviceSupabase = createServiceRoleClient()
   const chargedAdjustmentFees = await listSellerChargedAdjustmentFees({
     orderId: id,
-    sellerId: user.id,
+    sellerId,
     trackingCarrier: sale.tracking_carrier,
   })
   const preparedShippingLabel = await getLatestPreparedShippingLabelForOrder(serviceSupabase, id)
@@ -406,7 +410,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
   const { data: buyerReviewForOrder } = sale.buyer_id
     ? await getMarketplaceReviewByOrderAndReviewer(supabase, id, sale.buyer_id)
     : { data: null }
-  const { data: sellerReviewOfBuyer } = await getMarketplaceReviewByOrderAndReviewer(supabase, id, user.id)
+  const { data: sellerReviewOfBuyer } = await getMarketplaceReviewByOrderAndReviewer(supabase, id, sellerId)
   const buyerReviewGate = validateSellerReviewForOrder(
     {
       status: sale.status,
@@ -429,7 +433,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
       ? await sellerReviewRequestAlreadySentForOrder(
           supabase,
           sale.buyer_id,
-          user.id,
+          sellerId,
           id,
           sale.listing_id,
         )
@@ -446,7 +450,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
     ? await getConversationForBuyerSellerListing(
         supabase,
         sale.buyer_id,
-        user.id,
+        sellerId,
         sale.listing_id,
       )
     : null
@@ -467,7 +471,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
       .from("messages")
       .update({ is_read: true })
       .eq("conversation_id", conversationId)
-      .neq("sender_id", user.id)
+      .neq("sender_id", sellerId)
   }
 
   return (
@@ -622,7 +626,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
                     </span>
                   </div>
                 )}
-                {platformFee > 0 && (
+                {showPayouts && platformFee > 0 && (
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Platform fee (7% of item)</span>
                     <span
@@ -632,7 +636,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
                     </span>
                   </div>
                 )}
-                {hadReswellPromo && !isRefunded && !isRefunding ? (
+                {showPayouts && hadReswellPromo && !isRefunded && !isRefunding ? (
                   <p className="text-xs text-muted-foreground leading-relaxed rounded-md border border-border/80 bg-muted/30 px-2.5 py-2">
                     The buyer used a Reswell promo code. Your earnings are based on the full listing
                     price — the discount is covered by Reswell, not deducted from you.
@@ -657,6 +661,8 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
                     </div>
                   </>
                 )}
+                {showPayouts ? (
+                  <>
                 <Separator />
                 <div className="flex justify-between items-baseline">
                   <span className="font-semibold">
@@ -681,6 +687,8 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
                     that was reversed (after the platform fee).
                   </p>
                 )}
+                  </>
+                ) : null}
               </div>
             </CardContent>
           </Card>
@@ -1009,7 +1017,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
             conversationId={conversationId}
             initialMessages={initialMessages}
             counterpartyName={buyerName}
-            currentUserId={user.id}
+            currentUserId={sellerId}
             variant="seller"
           />
         </div>

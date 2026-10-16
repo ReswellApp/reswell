@@ -13,6 +13,7 @@ import {
   UPDATE_PASSWORD_PATH,
 } from "@/lib/auth/password-reset-landing-flag"
 import { hasSupabaseAuthCookies } from '@/lib/auth/has-supabase-auth-cookies'
+import { platformAccessForSignedInUser } from '@/lib/account-access/platform-access'
 import { pathnameRequiresAuthSession } from '@/lib/auth/pathname-requires-auth-session'
 import { supabaseAuthForwardPathname } from '@/lib/auth/supabase-auth-forward-path'
 import { createServerClient } from '@supabase/ssr'
@@ -258,8 +259,8 @@ async function refreshSupabaseSession(
         .eq('id', user.id)
         .single()
 
-      const isStaff =
-        profile?.is_admin === true || profile?.is_employee === true
+      const platformAccess = platformAccessForSignedInUser({ profile })
+      const isStaff = platformAccess.isAdmin || platformAccess.isEmployee
 
       if (!isStaff) {
         const url = request.nextUrl.clone()

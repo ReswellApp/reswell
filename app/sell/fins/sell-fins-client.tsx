@@ -48,6 +48,8 @@ import {
   useSellServerDraft,
 } from "@/components/features/sell/hooks/use-sell-server-draft"
 import { usePendingPublishResume } from "@/components/features/sell/hooks/use-pending-publish-resume"
+import { fetchActingShopAccountId } from "@/lib/account-access/fetch-acting-shop-account"
+import { listingOwnerIsOperableAccount } from "@/lib/account-access/operates-listing"
 import { createClient } from "@/lib/supabase/client"
 import type { OwnedListingForEditRow } from "@/lib/db/listingEdit"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
@@ -948,10 +950,11 @@ export default function SellFinsFlow({
         storedImpersonation = null
       }
 
+      const actingShopAccountId = await fetchActingShopAccountId()
       const editingOwnListing =
         Boolean(editId) &&
         Boolean(editListingOwnerId) &&
-        user.id === editListingOwnerId
+        listingOwnerIsOperableAccount(user.id, editListingOwnerId, actingShopAccountId)
       if (editingOwnListing && storedImpersonation) {
         clearImpersonation()
         storedImpersonation = null
@@ -978,7 +981,8 @@ export default function SellFinsFlow({
         }
 
         const ownerEditsOwnListing =
-          isLocalOnlyServerDraftSubmit || user.id === editListingOwnerId
+          isLocalOnlyServerDraftSubmit ||
+          listingOwnerIsOperableAccount(user.id, editListingOwnerId, actingShopAccountId)
 
         if (adminImpersonatesListingOwner) {
           if (!editId) {

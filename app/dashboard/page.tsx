@@ -1,6 +1,7 @@
 import { after } from "next/server"
 import { privatePageMetadata } from "@/lib/site-metadata"
 import { getCachedDashboardSession } from "@/lib/dashboard-session"
+import { getShopAccountContext } from "@/lib/services/accountAccess"
 import { DashboardOverview } from "@/components/features/dashboard/dashboard-overview"
 import type { DashboardOverviewListingPreview } from "@/components/features/dashboard/dashboard-overview-model"
 import { reconcileWalletAggregates } from "@/lib/wallet-reconcile"
@@ -25,6 +26,9 @@ export default async function DashboardPage() {
 
   if (!user) return null
 
+  const shop = await getShopAccountContext()
+  const sellerId = shop?.accountId ?? user.id
+  const canReadPayouts = shop?.permissions.has("payouts.read") ?? true
   const orderStatuses = [...ORDER_STATUS_LIST]
   const [
     listingsAgg,
@@ -44,7 +48,7 @@ export default async function DashboardPage() {
     supabase
       .from("listings")
       .select("id, status", { count: "exact" })
-      .eq("user_id", user.id),
+      .eq("user_id", sellerId),
     supabase
       .from("favorites")
       .select("id", { count: "exact", head: true })
@@ -57,7 +61,7 @@ export default async function DashboardPage() {
     supabase
       .from("listings")
       .select("id, title, price, status, section, listing_images (url, is_primary)")
-      .eq("user_id", user.id)
+      .eq("user_id", sellerId)
       .eq("status", "active")
       .is("archived_at", null)
       .order("updated_at", { ascending: false })
@@ -65,31 +69,33 @@ export default async function DashboardPage() {
     supabase
       .from("listings")
       .select("id, title, price, status, section, listing_images (url, is_primary)")
-      .eq("user_id", user.id)
+      .eq("user_id", sellerId)
       .eq("status", "draft")
       .order("updated_at", { ascending: false })
       .limit(4),
     supabase
       .from("offers")
       .select("id", { count: "exact", head: true })
-      .eq("seller_id", user.id)
+      .eq("seller_id", sellerId)
       .eq("status", "PENDING"),
-    supabase
-      .from("wallets")
-      .select("id, balance, pending_balance, lifetime_earned, lifetime_spent, lifetime_cashed_out")
-      .eq("user_id", user.id)
-      .single(),
+    canReadPayouts
+      ? supabase
+          .from("wallets")
+          .select("id, balance, pending_balance, lifetime_earned, lifetime_spent, lifetime_cashed_out")
+          .eq("user_id", sellerId)
+          .single()
+      : Promise.resolve({ data: null }),
     supabase
       .from("profiles")
       .select(
         "is_shop, is_admin, shop_name, display_name, city, location, seller_slug, avatar_url, shop_logo_url, follower_count, unread_message_count, unread_support_count",
       )
-      .eq("id", user.id)
+      .eq("id", sellerId)
       .single(),
     supabase
       .from("seller_follows")
       .select("id", { count: "exact", head: true })
-      .eq("seller_id", user.id)
+      .eq("seller_id", sellerId)
       .gte("created_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
     supabase
       .from("orders")
@@ -99,14 +105,14 @@ export default async function DashboardPage() {
     supabase
       .from("orders")
       .select("id", { count: "exact", head: true })
-      .eq("seller_id", user.id)
+      .eq("seller_id", sellerId)
       .match(REAL_MARKETPLACE_SALES_FILTER)
       .in("status", orderStatuses),
     supabase
       .from("seller_follows")
       .select("id", { count: "exact", head: true })
       .eq("follower_id", user.id),
-    getMySellerEarningsTotals(supabase),
+    canReadPayouts ? getMySellerEarningsTotals(supabase) : Promise.resolve(null),
   ])
 
   const listings = listingsAgg.data
@@ -179,6 +185,7 @@ export default async function DashboardPage() {
         shopHref,
         walletBalance,
         lifetimeEarned,
+        showPayouts: canReadPayouts,
         activeListings,
         listingCount: listingCount || 0,
         sellerOrderCount,
@@ -190,7 +197,7 @@ export default async function DashboardPage() {
         followerCount,
         followingCount,
         newFollowersThisMonth,
-        isAdmin: profile?.is_admin === true,
+        isAdmin: shop?.platformAdmin === true,
         activeListingPreviews: toPreviews(publishedListingsRes.data),
         draftListingPreviews: toPreviews(draftListingsRes.data),
       }}

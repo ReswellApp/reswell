@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 import { privatePageMetadata } from "@/lib/site-metadata"
 import { getCachedDashboardSession } from "@/lib/dashboard-session"
+import { getShopAccountContext } from "@/lib/services/accountAccess"
 import { fetchOwnedPeerListingEditPath } from "@/lib/db/peerListingEditPath"
 
 export async function generateMetadata(props: {
@@ -25,7 +26,9 @@ export default async function DashboardListingEditPage({
   if (!user) {
     redirect(`/auth/login?redirect=${encodeURIComponent(`/dashboard/listings/${id}/edit`)}`)
   }
+  const shop = await getShopAccountContext()
+  const sellerId = shop?.accountId ?? user.id
 
-  const editPath = await fetchOwnedPeerListingEditPath(id, user.id)
+  const editPath = await fetchOwnedPeerListingEditPath(id, sellerId)
   redirect(editPath ?? "/dashboard/listings")
 }

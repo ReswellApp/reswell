@@ -2,6 +2,7 @@
 
 import { z } from "zod"
 import { revalidateMessagesInboxForParticipants } from "@/lib/cache/revalidate-messages-inbox"
+import { getShopAccountContext, viewerForConversation } from "@/lib/services/accountAccess"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { findMessagesSupportTicketMetaByConversationId } from "@/lib/db/contactMessages"
 import { getSupportCaseByContactMessageId } from "@/lib/db/supportCases"
@@ -631,21 +632,37 @@ export async function sendConversationReply(input: {
     return { error: "Empty message" as const }
   }
 
-  const { data: conv, error: convErr } = await supabase
+  let { data: conv, error: convErr } = await supabase
     .from("conversations")
     .select("id, buyer_id, seller_id, listing_id")
     .eq("id", input.conversation_id)
-    .single()
+    .maybeSingle()
+
+  if (!conv) {
+    try {
+      const service = createServiceRoleClient()
+      const retry = await service
+        .from("conversations")
+        .select("id, buyer_id, seller_id, listing_id")
+        .eq("id", input.conversation_id)
+        .maybeSingle()
+      conv = retry.data
+      convErr = retry.error
+    } catch {
+      conv = null
+    }
+  }
 
   if (convErr || !conv) {
     return { error: "Conversation not found" as const }
   }
 
-  if (user.id !== conv.buyer_id && user.id !== conv.seller_id) {
+  const viewer = await viewerForConversation(user.id, conv.buyer_id, conv.seller_id)
+  if (!viewer.allowed) {
     return { error: "Forbidden" as const }
   }
 
-  const receiverId = user.id === conv.buyer_id ? conv.seller_id : conv.buyer_id
+  const receiverId = viewer.viewerId === conv.buyer_id ? conv.seller_id : conv.buyer_id
 
   const sendGuard = await evaluateUserMessageSend(supabase, user.id, receiverId)
   if (!sendGuard.ok) {
@@ -673,11 +690,12 @@ export async function sendConversationReply(input: {
     if (blocked) return blocked
   }
 
-  const { data: inserted, error: msgError } = await supabase
+  const writeDb = viewer.useServiceRole ? createServiceRoleClient() : supabase
+  const { data: inserted, error: msgError } = await writeDb
     .from("messages")
     .insert({
       conversation_id: conv.id,
-      sender_id: user.id,
+      sender_id: viewer.senderId,
       content: body,
     })
     .select("id, content, sender_id, created_at, is_read")
@@ -690,7 +708,7 @@ export async function sendConversationReply(input: {
 
   await broadcastInsertedMarketplaceMessage(inserted, conv.id)
 
-  await supabase
+  await writeDb
     .from("conversations")
     .update({ last_message_at: new Date().toISOString() })
     .eq("id", conv.id)
@@ -999,7 +1017,10 @@ export async function refreshMessagesInbox(): Promise<
     return { error: "Unauthorized" }
   }
 
-  return getMessagesInboxForUser(user.id)
+  const shop = await getShopAccountContext()
+  const inboxUserId =
+    shop?.actingAsShop && shop.permissions.has("messages.read") ? shop.accountId : user.id
+  return getMessagesInboxForUser(inboxUserId)
 }
 
 export type CounterpartyThreadProfile = {
@@ -1250,11 +1271,12 @@ export async function loadConversationThread(
   const buyerId = conv.buyer_id as string
   const sellerId = conv.seller_id as string
 
-  if (user.id !== buyerId && user.id !== sellerId) {
+  const viewer = await viewerForConversation(user.id, buyerId, sellerId)
+  if (!viewer.allowed) {
     return { error: "Conversation not found" }
   }
 
-  const otherUserId = user.id === buyerId ? sellerId : buyerId
+  const otherUserId = viewer.viewerId === buyerId ? sellerId : buyerId
 
   const [{ data: siblingRows }, { data: msgData }, { count: unreadInboundCount }, otherPartyProfile] =
     await Promise.all([
@@ -1276,7 +1298,7 @@ export async function loadConversationThread(
         .from("messages")
         .select("id", { count: "exact", head: true })
         .eq("conversation_id", conversationId)
-        .neq("sender_id", user.id)
+        .neq("sender_id", viewer.viewerId)
         .eq("is_read", false),
       loadOtherPartyProfile(service, otherUserId).catch(() => null),
     ])
@@ -1302,7 +1324,7 @@ export async function loadConversationThread(
   // renders oldest-first, so restore ascending order here.
   let messages = ((msgData ?? []) as Record<string, unknown>[]).slice().reverse()
   let hiddenShippingLabelOrderIds: string[] = []
-  if (user.id === sellerId) {
+  if (viewer.viewerId === sellerId) {
     const redacted = await redactSantaBarbaraDropoffShippingLabels(service, messages)
     messages = redacted.messages
     hiddenShippingLabelOrderIds = redacted.hiddenOrderIds
@@ -1344,7 +1366,7 @@ export async function loadConversationThread(
   }
 
   return {
-    currentUserId: user.id,
+    currentUserId: viewer.viewerId,
     conversation: conv,
     listingThreads,
     messages,
@@ -1393,7 +1415,8 @@ export async function markConversationThreadRead(
   const buyerId = convData.buyer_id as string
   const sellerId = convData.seller_id as string
 
-  if (user.id !== buyerId && user.id !== sellerId) {
+  const viewer = await viewerForConversation(user.id, buyerId, sellerId)
+  if (!viewer.allowed) {
     return { error: "Conversation not found" }
   }
 
@@ -1402,7 +1425,7 @@ export async function markConversationThreadRead(
       .from("messages")
       .update({ is_read: true })
       .eq("conversation_id", conversationId)
-      .neq("sender_id", user.id)
+      .neq("sender_id", viewer.viewerId)
       .eq("is_read", false),
     service
       .from("notifications")

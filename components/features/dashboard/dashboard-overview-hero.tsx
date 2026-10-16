@@ -4,6 +4,7 @@ import { ArrowUpRight, ChevronRight, Plus, UserCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { OverviewAttention } from "@/components/features/dashboard/dashboard-overview-live"
 import { formatUsd } from "@/lib/utils/format-usd"
+import { cn } from "@/lib/utils"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import type { DashboardOverviewModel } from "@/components/features/dashboard/dashboard-overview-model"
 
@@ -111,7 +112,11 @@ export function DashboardOverviewHero({ model }: DashboardOverviewHeroProps) {
         newFollowersThisMonth={model.newFollowersThisMonth}
       />
 
-      <section aria-label="Account snapshot" className="grid items-stretch gap-3 lg:grid-cols-5 lg:gap-4">
+      <section
+        aria-label="Account snapshot"
+        className={cn("grid items-stretch gap-3 lg:gap-4", model.showPayouts && "lg:grid-cols-5")}
+      >
+        {model.showPayouts ? (
         <Link
           href="/dashboard/earnings"
           className="group block h-full rounded-2xl bg-foreground text-white shadow-soft outline-none transition-colors hover:bg-[#12151c] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 dark:bg-white dark:text-[#04070E] dark:hover:bg-neutral-100 lg:col-span-3"
@@ -135,8 +140,14 @@ export function DashboardOverviewHero({ model }: DashboardOverviewHeroProps) {
             </div>
           </div>
         </Link>
+        ) : null}
 
-        <div className="grid grid-cols-1 divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card lg:col-span-2">
+        <div
+          className={cn(
+            "grid grid-cols-1 divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card",
+            model.showPayouts && "lg:col-span-2",
+          )}
+        >
           {stats.map((stat) => (
             <Link
               key={stat.label}

@@ -3,6 +3,7 @@ import { privatePageMetadata } from "@/lib/site-metadata"
 import { DashboardOffersView } from "@/components/features/offers/dashboard-offers-view"
 import { parseOffersTab } from "@/lib/utils/offers-dashboard-display"
 import { getCachedDashboardSession } from "@/lib/dashboard-session"
+import { getShopAccountContext } from "@/lib/services/accountAccess"
 import { fetchDashboardOffersPartitioned } from "@/lib/db/offers-dashboard"
 import { fetchMyListingCartOfferProspects } from "@/lib/db/my-listings"
 import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
@@ -36,13 +37,15 @@ export default async function DashboardOffersPage({
   if (!user) {
     redirect("/auth/login?redirect=/dashboard/offers")
   }
+  const shop = await getShopAccountContext()
+  const sellerId = shop?.accountId ?? user.id
 
   const [
     { sent, received, sellersById, buyersById, conversationIdByOfferKey, fetchError },
     cartOfferProspects,
   ] = await Promise.all([
-    fetchDashboardOffersPartitioned(supabase, user.id),
-    fetchMyListingCartOfferProspects(supabase, user.id),
+    fetchDashboardOffersPartitioned(supabase, sellerId),
+    fetchMyListingCartOfferProspects(supabase, sellerId),
   ])
 
   const offers = mergeOffers(sent, received)
@@ -85,7 +88,7 @@ export default async function DashboardOffersPage({
         </div>
       )}
       <DashboardOffersView
-        userId={user.id}
+        userId={sellerId}
         defaultTab={defaultTab}
         offers={offers}
         sellersById={sellersById}

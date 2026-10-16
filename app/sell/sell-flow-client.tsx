@@ -13,6 +13,8 @@ import React, {
 import { createPortal } from "react-dom"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
+import { fetchActingShopAccountId } from "@/lib/account-access/fetch-acting-shop-account"
+import { listingOwnerIsOperableAccount } from "@/lib/account-access/operates-listing"
 import { createClient } from "@/lib/supabase/client"
 import { saveDefaultListingLocationClient } from "@/lib/sell-flow/save-default-listing-location-client"
 import {
@@ -3295,10 +3297,11 @@ function SellPageContentInner({
        * Editing your own listing never uses impersonation — drop a stale cookie so Save
        * stays on the normal owner update path (admin flat/free included).
        */
+      const actingShopAccountId = await fetchActingShopAccountId()
       const editingOwnListing =
         Boolean(editId) &&
         Boolean(editListingOwnerId) &&
-        user.id === editListingOwnerId
+        listingOwnerIsOperableAccount(user.id, editListingOwnerId, actingShopAccountId)
       if (editingOwnListing && storedImpersonation) {
         clearImpersonation()
         setImpersonation(null)
@@ -3594,7 +3597,8 @@ function SellPageContentInner({
           return
         }
         const ownerEditsOwnListing =
-          isLocalOnlyServerDraftSubmit || user.id === editListingOwnerId
+          isLocalOnlyServerDraftSubmit ||
+          listingOwnerIsOperableAccount(user.id, editListingOwnerId, actingShopAccountId)
         const adminEditsOtherListing = adminIsEditingAnotherUsersListing({
           actorIsAdmin: submitActorIsAdmin,
           actorUserId: user.id,
@@ -3850,7 +3854,7 @@ function SellPageContentInner({
               .from("listings")
               .delete()
               .eq("id", listing.id)
-              .eq("user_id", user.id)
+              .eq("user_id", listing.user_id)
             listingId = null
             throw new Error(sellSubmitErrorMessage(imagesInsertError, "Failed to save listing photos"))
           }
@@ -3869,7 +3873,7 @@ function SellPageContentInner({
                 .from("listings")
                 .delete()
                 .eq("id", listing.id)
-                .eq("user_id", user.id)
+                .eq("user_id", listing.user_id)
               listingId = null
               throw new Error(
                 sellSubmitErrorMessage(videoInsertError, "Failed to save listing video"),
