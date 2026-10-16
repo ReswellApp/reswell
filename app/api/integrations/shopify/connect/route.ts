@@ -51,7 +51,11 @@ export async function GET(request: NextRequest) {
     })
     const message = error instanceof Error ? error.message : ""
     return dashboardError(
-      message.includes("different Shopify store") ? "already_linked" : "start_failed",
+      message.includes("different Shopify store")
+        ? "already_linked"
+        : message.includes("different Reswell account")
+          ? "store_taken"
+          : "start_failed",
     )
   }
 }

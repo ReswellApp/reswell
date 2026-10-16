@@ -7,6 +7,7 @@ test("maps connect failure details to merchant-facing messages", () => {
   assert.match(shopifyConnectErrorMessage("invalid_shop"), /myshopify\.com/)
   assert.match(shopifyConnectErrorMessage("invalid_state"), /expired/)
   assert.match(shopifyConnectErrorMessage("already_linked"), /different Shopify store/)
+  assert.match(shopifyConnectErrorMessage("store_taken"), /different Reswell account/)
 })
 
 test("falls back to a generic message for unknown details", () => {
