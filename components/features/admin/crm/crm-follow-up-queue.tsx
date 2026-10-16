@@ -19,7 +19,7 @@ interface CrmFollowUpQueueProps {
 export function CrmFollowUpQueue({ contacts, onOpen, onMutated }: CrmFollowUpQueueProps) {
   const [expanded, setExpanded] = useState(false)
   const [busyId, setBusyId] = useState<string | null>(null)
-  const visible = expanded ? contacts : contacts.slice(0, 6)
+  const visible = expanded ? contacts : contacts.slice(0, 4)
 
   async function markFollowedUp(contactId: string) {
     setBusyId(contactId)
@@ -32,7 +32,7 @@ export function CrmFollowUpQueue({ contacts, onOpen, onMutated }: CrmFollowUpQue
         toast.error(result.error)
         return
       }
-      toast.success(`Logged. We'll remind you in ${CRM_FACEBOOK_SNOOZE_DAYS} days.`)
+      toast.success(`Logged. Back in ${CRM_FACEBOOK_SNOOZE_DAYS} days.`)
       onMutated()
     } catch (err) {
       console.error("CrmFollowUpQueue.markFollowedUp:", err)
@@ -42,62 +42,51 @@ export function CrmFollowUpQueue({ contacts, onOpen, onMutated }: CrmFollowUpQue
     }
   }
 
-  if (contacts.length === 0) {
-    return (
-      <p className="rounded-xl border border-dashed px-4 py-3 text-sm text-muted-foreground">
-        No follow-ups due. Leads you save come back here in 3 days if they still haven&apos;t listed a board or bought.
-      </p>
-    )
-  }
+  if (contacts.length === 0) return null
 
   return (
-    <section className="overflow-hidden rounded-xl border bg-card shadow-sm">
-      <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
-        <div className="flex items-center gap-2">
-          <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-amber-100 px-2 text-xs font-semibold text-amber-900">
-            {contacts.length}
-          </span>
-          <div>
-            <h2 className="text-sm font-semibold">Time to reach back out</h2>
-            <p className="text-xs text-muted-foreground">No surfboard listed and no purchase yet.</p>
-          </div>
-        </div>
-      </div>
-      <ul>
+    <section className="space-y-1">
+      <p className="text-sm text-muted-foreground">
+        <span className="font-medium text-foreground">{contacts.length} to reach back out</span>
+        <span> · no listing or purchase yet</span>
+      </p>
+      <ul className="divide-y overflow-hidden rounded-xl border bg-card">
         {visible.map((contact) => {
           const name = crmContactDisplayName(contact)
           const when = contact.last_contacted_at
-            ? `Last contact ${formatDistanceToNow(new Date(contact.last_contacted_at), { addSuffix: true })}`
+            ? formatDistanceToNow(new Date(contact.last_contacted_at), { addSuffix: true })
             : "Never contacted"
           return (
-            <li key={contact.id} className="flex flex-col gap-3 border-b px-4 py-3 last:border-b-0 sm:flex-row sm:items-center">
+            <li key={contact.id} className="flex items-center gap-3 px-3 py-2">
               <button type="button" className="min-w-0 flex-1 text-left" onClick={() => onOpen(contact.id)}>
-                <p className="truncate font-medium">{name}</p>
+                <p className="truncate text-sm font-medium">{name}</p>
                 <p className="text-xs text-muted-foreground">{when}</p>
               </button>
-              <div className="flex flex-wrap items-center gap-1.5">
-                <CrmFacebookLinks profileUrl={contact.facebook_profile_url} threadUrl={contact.facebook_thread_url} />
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="secondary"
-                  disabled={busyId === contact.id}
-                  onClick={() => void markFollowedUp(contact.id)}
-                >
-                  {busyId === contact.id ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
-                  Followed up
-                </Button>
-              </div>
+              <CrmFacebookLinks
+                profileUrl={contact.facebook_profile_url}
+                threadUrl={contact.facebook_thread_url}
+                compact
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="shrink-0"
+                title="Reached out. Remind me in 7 days."
+                disabled={busyId === contact.id}
+                onClick={() => void markFollowedUp(contact.id)}
+              >
+                {busyId === contact.id ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+                Done
+              </Button>
             </li>
           )
         })}
       </ul>
-      {contacts.length > 6 ? (
-        <div className="border-t px-4 py-2">
-          <Button type="button" variant="ghost" size="sm" onClick={() => setExpanded((value) => !value)}>
-            {expanded ? "Show fewer" : `Show all ${contacts.length}`}
-          </Button>
-        </div>
+      {contacts.length > 4 ? (
+        <Button type="button" variant="ghost" size="sm" className="h-8 px-2" onClick={() => setExpanded((value) => !value)}>
+          {expanded ? "Show fewer" : `Show all ${contacts.length}`}
+        </Button>
       ) : null}
     </section>
   )
