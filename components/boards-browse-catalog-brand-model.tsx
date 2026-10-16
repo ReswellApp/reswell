@@ -7,6 +7,7 @@ import {
 } from "@/app/actions/marketplace"
 import { SearchInputWithSuggest } from "@/components/search-input-with-suggest"
 import { SurfboardModelCatalogInput } from "@/components/surfboard-model-catalog-input"
+import { SurfboardTitleIndexInput } from "@/components/surfboard-title-index-input"
 import { Label } from "@/components/ui/label"
 import { siteFilterBorderedInputClassName } from "@/components/site-search-bar"
 import { cn } from "@/lib/utils"
@@ -25,6 +26,11 @@ export type BoardsBrowseCatalogBrandModelProps = {
   showLabels?: boolean
   /** Portal model dropdown to body (required inside horizontal overflow filter bars). */
   portaledModelDropdown?: boolean
+  /**
+   * `sell` reuses the `/sell/boards` brand typeahead: directory names in a field-width list.
+   * `directory` is the nav-style brand cards (logo, location, description).
+   */
+  brandSuggest?: "sell" | "directory"
 }
 
 /**
@@ -107,6 +113,7 @@ export function BoardsBrowseCatalogBrandModel({
   field = "both",
   showLabels = false,
   portaledModelDropdown = false,
+  brandSuggest = "directory",
 }: BoardsBrowseCatalogBrandModelProps) {
   const { models, ready: catalogReady } = useBoardsBrowseBrandModelsCatalog()
 
@@ -146,29 +153,49 @@ export function BoardsBrowseCatalogBrandModel({
 
   const brandInput = (
     <div className="min-w-0">
-      <SearchInputWithSuggest
-        id="boards-advanced-brand-catalog"
-        suggestSource="brands"
-        variant="boards"
-        minLength={1}
-        debounceMs={200}
-        listboxId="boards-advanced-brand-suggest"
-        value={brandText}
-        onChange={onBrandTextChange}
-        onCatalogBrandPicked={onCatalogBrandPicked}
-        placeholder="Search brand directory"
-        inputType="text"
-        showClearButton
-        autoOpenDropdownOnFetch
-        showTypeLabels={false}
-        analyticsSurface="other"
-        disableSuggest={false}
-        className="w-full min-w-0"
-        inputClassName={cn(
-          siteFilterBorderedInputClassName(),
-          "rounded-full pl-3 pr-10 text-[15px]",
-        )}
-      />
+      {brandSuggest === "sell" ? (
+        <SurfboardTitleIndexInput
+          id="boards-advanced-brand-catalog"
+          placeholder="Search brand directory"
+          value={brandText}
+          committedDirectoryBrandLabel={brandDirectoryId ? brandText.trim() || null : null}
+          onChange={onBrandTextChange}
+          boardLength=""
+          suggestSurface="other"
+          onSelectModel={(opt) => {
+            onCatalogBrandPicked({
+              id: opt.brandId,
+              name: opt.brandName,
+              slug: opt.brandSlug,
+            })
+          }}
+          className="h-12 rounded-2xl border-[#d5dee8] bg-[#f7f9fb] pl-3 text-[15px] text-[#13233f] shadow-none placeholder:text-[#8b9aab] focus-visible:border-[#3d6b86]/40 focus-visible:ring-[#3d6b86]/25"
+        />
+      ) : (
+        <SearchInputWithSuggest
+          id="boards-advanced-brand-catalog"
+          suggestSource="brands"
+          variant="boards"
+          minLength={1}
+          debounceMs={200}
+          listboxId="boards-advanced-brand-suggest"
+          value={brandText}
+          onChange={onBrandTextChange}
+          onCatalogBrandPicked={onCatalogBrandPicked}
+          placeholder="Search brand directory"
+          inputType="text"
+          showClearButton
+          autoOpenDropdownOnFetch
+          showTypeLabels={false}
+          analyticsSurface="other"
+          disableSuggest={false}
+          className="w-full min-w-0"
+          inputClassName={cn(
+            siteFilterBorderedInputClassName(),
+            "rounded-full pl-3 pr-10 text-[15px]",
+          )}
+        />
+      )}
     </div>
   )
 

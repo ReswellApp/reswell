@@ -12,6 +12,7 @@ import { getBoardModelsCatalogItems, searchBrandsCatalogSuggest } from "@/app/ac
 import { searchFinBrandsCatalogSuggest } from "@/lib/actions/finListingActions"
 import type { BrandCatalogSuggestRow } from "@/lib/services/brandDirectorySearch"
 import { recordSearchSuggestPick } from "@/app/actions/search-suggest-analytics"
+import type { SearchSuggestPickSurface } from "@/lib/elasticsearch/search-suggest-analytics-index"
 import { LISTING_TITLE_MAX_LENGTH } from "@/lib/sell-form-validation"
 import { useIsMobile } from "@/hooks/use-mobile"
 
@@ -66,6 +67,8 @@ type SurfboardTitleIndexInputProps = {
   onRequestBrand?: () => void
   /** Limit brand directory matches to brands tagged with the `fins` product category. */
   finScoped?: boolean
+  /** Where a directory pick is recorded. Board Finder uses `other` so it is not counted as a sell-form pick. */
+  suggestSurface?: SearchSuggestPickSurface
 }
 
 export function SurfboardTitleIndexInput({
@@ -81,6 +84,7 @@ export function SurfboardTitleIndexInput({
   committedDirectoryBrandLabel = null,
   onRequestBrand,
   finScoped = false,
+  suggestSurface = "sell_brand_title",
 }: SurfboardTitleIndexInputProps) {
   const isMobile = useIsMobile()
   const [items, setItems] = React.useState<IndexBoardModelSelection[]>([])
@@ -113,7 +117,7 @@ export function SurfboardTitleIndexInput({
       const q = value.trim()
       if (q.length >= 1) {
         void recordSearchSuggestPick({
-          surface: "sell_brand_title",
+          surface: suggestSurface,
           pickKind: "brand_catalog",
           suggestTrace:
             brandSuggestBackendRef.current === "elasticsearch"
@@ -132,7 +136,7 @@ export function SurfboardTitleIndexInput({
       setOpen(false)
       setDropdownRect(null)
     },
-    [onSelectModel, value],
+    [onSelectModel, suggestSurface, value],
   )
 
   React.useEffect(() => {
