@@ -1,11 +1,7 @@
 "use server"
 
-import { after } from "next/server"
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
-import { trackKlaviyoSavedSearch } from "@/lib/klaviyo/track-saved-search"
-import { newestListingForSavedSearch } from "@/lib/services/newestSavedSearchListing"
-import { getDb } from "@/lib/supabase/db"
 import {
   countBoardSavedSearchesForUser,
   deleteBoardSavedSearchForUser,
@@ -152,32 +148,8 @@ export async function createBoardSavedSearchAction(raw: unknown) {
     return { error: "Could not save search. Try again." as const }
   }
 
-  const savedSearchId = data.id
-  const savedLabel = data.label
-  const emailNotificationsEnabled = data.email_notifications_enabled
-  const savedAt = data.created_at
-
-  after(() => {
-    void (async () => {
-      const hero = await newestListingForSavedSearch(
-        getDb({ consistency: "eventual", purpose: "catalog" }),
-        criteria,
-      )
-      await trackKlaviyoSavedSearch({
-        userId: user.id,
-        email: user.email,
-        savedSearchId,
-        criteria,
-        label: savedLabel,
-        emailNotificationsEnabled,
-        savedAt,
-        hero,
-      })
-    })().catch((err) => {
-      console.error("[saved_search] Klaviyo Saved Search event failed:", err)
-    })
-  })
-
+  // Do not email here. The match email is sent only when a listing goes live
+  // after this row's created_at, and only when that listing has a title, price, and link.
   revalidateSavedSearchPaths()
 
   return {
