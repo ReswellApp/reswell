@@ -85,7 +85,8 @@ import { SantaBarbaraDropoffInstructionsCard } from "@/components/features/sales
 import { RESWELL_WAREHOUSE_ADDRESS } from "@/lib/reswell-warehouse-address"
 import { CarrierAdjustmentNotice } from "@/components/features/shipping/carrier-adjustment-notice"
 import { SellerAdjustmentFeeCard } from "@/components/features/sales/seller-adjustment-fee-card"
-import { listSellerChargedAdjustmentFees } from "@/lib/services/shippingAdjustmentDispute"
+import { SellerShippingAdjustmentNotice } from "@/components/features/sales/seller-shipping-adjustment-notice"
+import { listSellerSaleShippingAdjustments } from "@/lib/services/shippingAdjustmentDispute"
 
 export async function generateMetadata(props: {
   params: Promise<{ id: string }>
@@ -347,11 +348,16 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
   } = amounts
   const carrierTracking = parseOrderTrackingDetail(trackingDetailRaw)
   const serviceSupabase = createServiceRoleClient()
-  const chargedAdjustmentFees = await listSellerChargedAdjustmentFees({
+  const shippingAdjustments = await listSellerSaleShippingAdjustments({
     orderId: id,
     sellerId: user.id,
     trackingCarrier: sale.tracking_carrier,
   })
+  const chargedAdjustmentFees = shippingAdjustments.chargedFees
+  const earningsAfterAdjustment = Math.max(
+    0,
+    Math.round((sellerEarningsAmount - shippingAdjustments.earningsDeductedUsd) * 100) / 100,
+  )
   const preparedShippingLabel = await getLatestPreparedShippingLabelForOrder(serviceSupabase, id)
   const marketplaceLabels = await listOrderShippingLabelsForOrder(serviceSupabase, id)
   const shipments = await listOrderShipmentsWithItems(serviceSupabase, id)
@@ -668,6 +674,22 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
                     ${sellerEarningsAmount.toFixed(2)}
                   </span>
                 </div>
+                {shippingAdjustments.earningsDeductedUsd > 0 && !isRefunded && !isRefunding ? (
+                  <>
+                    <div className="flex justify-between items-baseline text-sm">
+                      <span className="text-muted-foreground">Carrier adjustment</span>
+                      <span className="font-semibold tabular-nums text-rose-700 dark:text-rose-400">
+                        −${shippingAdjustments.earningsDeductedUsd.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-baseline">
+                      <span className="font-semibold">You receive</span>
+                      <span className="text-xl font-bold tabular-nums">
+                        ${earningsAfterAdjustment.toFixed(2)}
+                      </span>
+                    </div>
+                  </>
+                ) : null}
                 {shippingAmount > 0 && !isRefunded && !isRefunding && (
                   <p className="text-xs text-muted-foreground leading-relaxed">
                     Shipping is paid by the buyer to cover the carrier label and is handled by
@@ -685,6 +707,10 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
             </CardContent>
           </Card>
 
+          {shippingAdjustments.covered ? (
+            <SellerShippingAdjustmentNotice adjustment={shippingAdjustments.covered} />
+          ) : null}
+
           <SellerAdjustmentFeeCard
             orderId={sale.id}
             buyerShippingUsd={shippingAmount}
@@ -694,6 +720,8 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
           {!isSantaBarbaraDropoffOrder &&
           sale.fulfillment_method === "shipping" &&
           !isRefunded &&
+          !shippingAdjustments.covered &&
+          chargedAdjustmentFees.length === 0 &&
           (isReswellShippingOrder || hasPreparedShippingLabel) ? (
             <CarrierAdjustmentNotice variant="prominent" />
           ) : null}

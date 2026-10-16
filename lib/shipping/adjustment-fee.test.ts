@@ -29,7 +29,7 @@ describe("sellerAdjustmentFeeExplanation", () => {
     })
     assert.match(copy, /\$170\.73/)
     assert.match(copy, /\$137\.30/)
-    assert.match(copy, /deducted from your balance/)
+    assert.match(copy, /deducted from your earnings on this sale/)
     assert.match(copy, /78 × 18 × 6 in/)
   })
 })
