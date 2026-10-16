@@ -198,9 +198,12 @@ export async function dbGetShopifyConnectionByDomain(
     .from("shopify_connections")
     .select(CONNECTION_SELECT)
     .eq("shop_domain", shopDomain)
-    .maybeSingle()
   if (error) throw new Error(error.message)
-  return (data as unknown as ShopifyConnectionRow | null) ?? null
+  const rows = (
+    Array.isArray(data) ? data : data ? [data] : []
+  ) as ShopifyConnectionRow[]
+  if (rows.length === 0) return null
+  return rows.find((row) => row.status !== "disconnected") ?? rows[0]
 }
 
 export async function dbUpsertShopifyConnection(

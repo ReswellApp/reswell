@@ -107,7 +107,8 @@ type QueryOp = {
   op: "select" | "insert" | "update" | "upsert" | "delete"
   payload: unknown
   options: unknown
-  filters: Array<{ column: string; value: unknown }>
+  resultMode: "maybe" | "one" | "many"
+  filters: Array<{ column: string; value: unknown; op?: "eq" | "neq" }>
 }
 
 function queryClient(
@@ -120,13 +121,32 @@ function queryClient(
         op: "select",
         payload: undefined,
         options: undefined,
+        resultMode: "many",
         filters: [],
       }
-      const finish = () =>
-        handle({
+      const finish = () => {
+        const result = handle({
           ...query,
           filters: query.filters.map((filter) => ({ ...filter })),
         })
+        if (!Array.isArray(result.data)) return result
+        if (query.resultMode === "maybe") {
+          if (result.data.length > 1) {
+            return {
+              data: null,
+              error: {
+                message:
+                  "JSON object requested, multiple (or no) rows returned",
+              },
+            }
+          }
+          return { data: result.data[0] ?? null, error: null }
+        }
+        if (query.resultMode === "one") {
+          return { data: result.data[0] ?? null, error: result.error }
+        }
+        return result
+      }
       const builder: Record<string, unknown> = {
         select() {
           return builder
@@ -152,11 +172,11 @@ function queryClient(
           return builder
         },
         eq(column: string, value: unknown) {
-          query.filters.push({ column, value })
+          query.filters.push({ column, value, op: "eq" })
           return builder
         },
         in(column: string, value: unknown) {
-          query.filters.push({ column, value })
+          query.filters.push({ column, value, op: "eq" })
           return builder
         },
         lt() {
@@ -168,16 +188,19 @@ function queryClient(
         gt() {
           return builder
         },
-        neq() {
+        neq(column: string, value: unknown) {
+          query.filters.push({ column, value, op: "neq" })
           return builder
         },
         or() {
           return builder
         },
         maybeSingle() {
+          query.resultMode = "maybe"
           return Promise.resolve(finish())
         },
         single() {
+          query.resultMode = "one"
           return Promise.resolve(finish())
         },
         then(
@@ -274,20 +297,34 @@ function scenarioSupabase(input: {
   const client = queryClient((op) => {
     ops.push(op)
     if (op.table === "shopify_connections" && op.op === "select") {
-      const userId = op.filters.find((filter) => filter.column === "user_id")?.value
-      const domain = op.filters.find((filter) => filter.column === "shop_domain")?.value
-      const id = op.filters.find((filter) => filter.column === "id")?.value
-      const match = connections.find((row) => {
-        if (userId != null && row.user_id !== userId) return false
-        if (domain != null && row.shop_domain !== domain) return false
-        if (id != null && row.id !== id) return false
-        return userId != null || domain != null || id != null
+      const matches = connections.filter((row) => {
+        if (op.filters.length === 0) return false
+        return op.filters.every((filter) => {
+          const value = row[filter.column as keyof ShopifyConnectionRow]
+          if (filter.op === "neq") return value !== filter.value
+          return value === filter.value
+        })
       })
-      return { data: match ?? null, error: null }
+      return { data: matches, error: null }
     }
     if (op.table === "shopify_connections" && op.op === "upsert") {
       const payload = op.payload as Partial<ShopifyConnectionRow> & {
         user_id: string
+      }
+      const liveConflict = connections.some((row) => {
+        if (row.user_id === payload.user_id) return false
+        if (row.status === "disconnected") return false
+        if (row.shop_domain === payload.shop_domain) return true
+        return Boolean(payload.shop_gid && row.shop_gid === payload.shop_gid)
+      })
+      if (liveConflict) {
+        return {
+          data: null,
+          error: {
+            message:
+              'duplicate key value violates unique constraint "shopify_connections_shop_domain_active_uidx"',
+          },
+        }
       }
       const index = connections.findIndex((row) => row.user_id === payload.user_id)
       if (index >= 0) {
@@ -566,4 +603,78 @@ test("completing OAuth does not take a shop another account actively linked", as
     ops.some((op) => op.op === "upsert"),
     false,
   )
+})
+
+test("a disconnected shop owned by another account does not block OAuth", async () => {
+  useAccountOAuthEnv()
+  const { client, ops } = startClient({
+    forUser: connectionRow(),
+    forDomain: connectionRow({
+      id: "conn-2",
+      user_id: "user-2",
+      shop_domain: "new-store.myshopify.com",
+      shop_gid: "gid://shopify/Shop/2",
+    }),
+  })
+  const href = await startShopifyOAuth({
+    userId: "user-1",
+    shopDomain: "new-store.myshopify.com",
+    serviceSupabase: client,
+  })
+  assert.equal(new URL(href).host, "new-store.myshopify.com")
+  assert.equal(
+    ops.some((op) => op.table === "shopify_oauth_states" && op.op === "insert"),
+    true,
+  )
+})
+
+test("completing OAuth takes over a shop another account disconnected", async () => {
+  useAccountOAuthEnv()
+  const restoreFetch = installShopifyFetch()
+  try {
+    const { client, connections, ops } = scenarioSupabase({
+      connections: [
+        connectionRow(),
+        connectionRow({
+          id: "conn-2",
+          user_id: "user-2",
+          shop_domain: "new-store.myshopify.com",
+          shop_gid: "gid://shopify/Shop/2",
+          shop_name: "New Store",
+        }),
+      ],
+    })
+    const connection = await completeShopifyOAuth({
+      serviceSupabase: client,
+      userId: "user-1",
+      shopDomain: "new-store.myshopify.com",
+      code: "oauth-code",
+    })
+
+    assert.equal(connection.shop_domain, "new-store.myshopify.com")
+    assert.equal(connection.status, "active")
+    assert.equal(connections[0]?.shop_domain, "new-store.myshopify.com")
+    assert.equal(connections[0]?.status, "active")
+    assert.equal(connections[1]?.user_id, "user-2")
+    assert.equal(connections[1]?.shop_domain, "new-store.myshopify.com")
+    assert.equal(connections[1]?.status, "disconnected")
+    assert.equal(
+      ops.filter(
+        (op) => op.table === "shopify_connections" && op.op === "upsert",
+      ).length,
+      1,
+    )
+
+    await assert.rejects(
+      () =>
+        startShopifyOAuth({
+          userId: "user-3",
+          shopDomain: "new-store.myshopify.com",
+          serviceSupabase: client,
+        }),
+      /different Reswell account/,
+    )
+  } finally {
+    restoreFetch()
+  }
 })
