@@ -1,0 +1,73 @@
+{
+  "generated_for": "ARC Surfboards official named standup catalog",
+  "source": "https://www.arcsurfboards.com/boards?format=json (Squarespace product collection — excludes apparel, Modern Simmons action/hold-only gallery, and custom order CTAs)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "arc-surfboards",
+      "name": "ARC Surfboards",
+      "website_url": "https://www.arcsurfboards.com",
+      "location_label": "Tiverton, Rhode Island",
+      "founder_name": "Timmy Smith",
+      "lead_shaper_name": "Timmy Smith",
+      "short_description": "Independent New England surfboard builder founded by shaper Timmy Smith in Tiverton, Rhode Island — named epoxy shortboards, fishes, hybrids, and logs.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/arc-surfboards.png",
+      "models": [
+        {
+          "name": "Sun Dragon",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5d7173f59079ce0001c45b20/a2792718-15c2-411b-97c4-dd84ee95994f/my-project-page-1.jpg",
+          "description": "For the past few years, I found myself reaching for a 6’0 yellow fish about 90% of the time. Whether the surf was waist-high or overhead, I’d try to make it work simply because of how easily it paddles and the effortless speed it generates. It became my go-to travel companion, though there were definitely days I found myself forcing it into waves it wasn’t suited for. The Sun Dragon was born from that exact dilemma: the desire to maintain that iconic San-Diego-style fish DNA while unlocking a higher level of performance. The Design The Sun Dragon features a front half nearly identical to our Dogfish model, minus the beak with slightly extra flip in the nose. From the center point back, the template gradually tapers into a refined round tail paired with a quad-fin setup. We designed this board to be a dedicated quad. A quad's speed and drive much more closely resemble the feel of a twin-fin, whereas a thruster introduces a completely different feel with the center fin. Why You’ll Love It Fish-Like Paddle Power: The generous width and high-volume nose allow you to scratch into waves early and cruise down the line with minimal effort. Enhanced Control: When the swell picks up, the pulled-in round tail provides the hold and security you need to lean into heavy carves. Quad-Fin Speed: Optimized for maximum drive, the quad offers incredible grip on larger faces without venturing too far from the soul of a classic fish. The Verdict The Sun Dragon is a high-energy hybrid that captures the flow of a fish but offers the reliability of a performance board. If you love the feeling of a twin fish but want a little bit extra, the Sun Dragon is meant to provide a natural transition. Stock Dims: 6’0” x 21 1/4” x 2 11/16” 39 Liters",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Dogfish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5d7173f59079ce0001c45b20/c44509a8-10d7-465d-81ab-78b48480b8fc/PXL_20241122_183516884%7E2.jpg",
+          "description": "The Dogfish is a classic San Diego-style fish. Medium rails and a single to double concave through the swallow. Flat tail rocker and low nose rocker with a slight beak. Glides across sections. It can be super fun in a variety of waves. Good daily driver and travel board for an intermediate surfer. For reference, the photos to the left are the Dogfish on El Salvador rights. If you’re surfing average waves most of the time, this is a great option for a daily driver. Stock Dimensions 5'8\" x 20 3/4\" x 2 5/8\" 33.9L 5'10\" x 21\" x 2 11/16\" 36.5L 6'0\" x 21 3/4\" x 2 5/8\" 39L",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Stealth",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5d7173f59079ce0001c45b20/1632225942174-U1Y2OH3Y5J760QNCP0JZ/20210715_110829+%281%29.jpg",
+          "description": "The Stealth is the evolution of the classic fish - a modern take on a timeless design. There is a double hip behind the front and rear fins which forces water off the rails creating extra release, while the deep swallow adds drive and control. Widepoint is also further back than a traditional fish. The Stealth is meant for sharper, faster turns, whereas a retro-style fish would lend itself to longer, more drawn-out turns. Stock Dimensions 5'8\" x 20 7/8 x 2 1/2 33.5 Liters 5'10\" x 21 1/8 x 2 5/8 36.6 Liters 6'0\" x 21 3/8 x 2 3/4 39.6 Liters 6'2\" x 21 5/8 x 2 7/8 43.1 Liters 6'4\" x 21 7/8 x 3 46.8 Liters 6'6\" x 22 x 3 48.5 Liters",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Witcher",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5d7173f59079ce0001c45b20/1644514378080-C8JM039XDWVJQFT3B1DL/20211026_112410.jpg",
+          "description": "The Witcher is your standard daily driver short board. In a nutshell, it’s a performance shortboard with a little bit extra foam. It has a standard single to double concave with vee out the back which does exactly what you would expect it to do, coupled with a medium entry and exit rocker. The rounded squash tail is the standard for this model since it gives you the best of both worlds - enough squash to get vertical, and enough roundness to do more sweeping drawn-out turns and provide hold. One of the biggest differences between the Witcher and a high-performance shortboard is the tail; instead of a slight hip to straighten out the curve behind the front fins, the curve is continuous to maintain width. The extra surface area creates lift and helps with weaker conditions. Stock Dimensions 5'8\" x 18 3/4 x 2 5/16. 27 Liters 5'10\" x 19 1/4 x 2 7/16 29.9 Liters 5'11\" x 19 1/2 x 2 1/2 31.5 Liters 6'0\" x 19 5/8 x 2 1/2 32 Liters 6'1\" x 19 3/4 x 2 9/16 33.4 Liters 6'2\" x 20 x 2 5/8 35.1 Liters 6'4\" x 20 1/2 x 2 11/16 37.7 Liters 6'6\" x 20 5/8 x 2 3/4 40 Liters",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Mundo",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5d7173f59079ce0001c45b20/1644514541597-TTDWY33DXQMYPA9V4CAM/20220208_094342.jpg",
+          "description": "A variation of one the first ARC shape, made for the mellow waves of Sri Lanka in 2019. It’s a shape that handles anything from clean, waist-high reef break to bigger points. The Mundo model is your “one-board quiver” for fun waves and acts as an amazing travel board. A true hybrid. You can ride it as a twin+trailer, thruster, or quad, as the outline lends itself to all fin setups. The concave is single to double with a slight vee. in the tail. It has a low entry and exit rocker to rip down the line. There’s lots of foam under the chest for easy paddling and it will get you in early. Awesome for weaker days, but the rounded pin tail has amazing hold when it gets good and gives you that extra bit of performance. Stock Dimensions 5'4\" x 19 3/4 x 2 1/4 26.8 Liters 5'6\" x 20 x 2 3/8 29.5 Liters 5'8\" x 20 1/4 x 2 1/2 32.5 Liters 5'10\" x 20 1/2 x 2 5/8 35.6 Liters 6'0\" x 20 3/4 x x 2 11/16 37.9 Liters 6'2\" x 21\" x 2 11/16 39.4 Liters 6'4\" x 21 1/4 x 2 3/4 41.9 Liters 6'6\" x 21 3/8\" x 2 3/4 43.2 Liters 6'8\" x 21 1/2 x 2 13/16 45.7 Liters 6'10\" x 21 5/8 x 2 13/16 47 Liters",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Mundo Mid",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5d7173f59079ce0001c45b20/1632176034661-1BLRZJCT8AO5DWFRCZ99/20210915_100531+%281%29.jpg",
+          "description": "The Mundo was so popular in larger dims it made sense to make a midlength model. It is the original Mundo template stretched out with some tweaks. 2+1 fin setup. The width is pulled in for a sleeker outline to maximize speed and make the board less “eggy,” which is what ended up happening to the regular Mundo as it got longer and wider. Instead of the standard single to double concave, there is now a slightly rolled vee under the nose. Use it as a cruiser for small mushy days, or take it out when conditions improve to beat the crowds with extra paddle power - the rounded pin will hold in bigger waves. One of the best parts about this board is the fin options. We made it super versatile, so ride it as a 2+1, single fin, or even a straight-up twin. Stock Dimensions 6'10\" x 21\" x 2 5/8\" 7'2\" x 21 3/4\" x 2 13/16\" 7'6\" x 22 1/8\" x 3\"",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Cobra",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5d7173f59079ce0001c45b20/1632176838628-YXI7R5RBF8V0ULPUE0HF/20201125_135457+%281%29.jpg",
+          "description": "The Cobra was designed to skate across weaker waves and perform when conditions improve. I’ve had fun surfing the Cobra in everything from waist-high waves to overhead hurricane swell. The versatility is due to the board’s deep single to double concave and parallel outline. The single concave starts at the very tip of the board, since your chest will be further up when paddling. This means quicker planning and more speed. The single concave directs water to the even-deeper concave under the front foot, which is then distributed through the fins and double concave. This helps the extra-wide chop tail create drive and stability. More surface area results in quicker and easier planning. This puts more foam on top of the water, rather than pushing water out of the way like a displacement hull. The result is an effortless glide. The chop nose creates a parallel rail line which increases down-the-line speed. There is also less swing weight without the tip. If you were to continue the rail line to an imaginary point, you would connect somewhere between 4-8” inches past the chop nose, so if you are surfing a 5’8” Cobra, you have a similar rail line and surface area to a 6’0”. If you have room for something different in your quiver I would say the Cobra is a great performance groveler that can be pushed in a variety of conditions. Stock Dimensions 5'4\" x 20 x 2 1/4 28.2 Liters 5'6\" x 20 1/2 x 2 3/8 31.5 Liters 5'8\" x 21 x 2 1/2 34.8 Liters 5'10\" x 21 1/2 x 2 5/8 38.5 Liters 6'0\" x 22 x 2 3/4 42.8 Liters.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "The Log",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5d7173f59079ce0001c45b20/1649118034795-EG9X51K8XRBSM7NBQMGQ/IMG_20220207_092450_983.png",
+          "description": "Designed for cruising, the ARC Log has a fuller nose and a slightly pulled-in chop tail to maximize float and push you through even the sloppiest slop. It’s meant to fly down the line effortlessly, and be your go-to board whether you’re questioning paddling out or simply want to beat the crowds. Stock Dimensions 9'0\" x 23\" x 3\" 9'4\" x 23 1/4 x 3 1/2 9'6\" x 23 1/4 x 3 1/2 9'9\" x 23 1/4 x 3 1/2",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Witcher Traveler",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5d7173f59079ce0001c45b20/d9c40441-bfcd-4d43-b516-b99754097f6e/PXL_20241122_184425931.jpg",
+          "description": "The Witcher Traveler is a beefed up, elongated Witcher with a round tail. There’s plenty of paddle power, and it can be surfed in a wide range of conditions, as a twin +trailer or straight thruster. Compared to the Dogfish or Mundo for example, the Witcher Traveler is a travel board for bigger and better waves. All custom dims. 6’6” x 20” x 2 5/8” 36 CL 6”10” x 21” x 2 11/16” 41 CL 7’2” x 21 1/4” x 2 3/4” 44 CL",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
