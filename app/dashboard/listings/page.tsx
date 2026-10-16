@@ -1,4 +1,5 @@
 import { getCachedDashboardSession } from "@/lib/dashboard-session"
+import { getShopAccountContext } from "@/lib/services/accountAccess"
 import { fetchListingsDeskProfile } from "@/lib/db/shopCategoryPackageSizes"
 import { fetchMyListings } from "@/lib/db/my-listings"
 import { fetchSellerBanState, isSellerBanActive } from "@/lib/db/sellerBan"
@@ -25,12 +26,14 @@ export default async function MyListingsPage({
 }) {
   const { supabase, user } = await getCachedDashboardSession()
   if (!user) return null
+  const shop = await getShopAccountContext()
+  const sellerId = shop?.accountId ?? user.id
 
   const [{ listings, stats, error }, banState, params, deskProfile] = await Promise.all([
-    fetchMyListings(supabase, user.id),
-    fetchSellerBanState(supabase, user.id),
+    fetchMyListings(supabase, sellerId),
+    fetchSellerBanState(supabase, sellerId),
     searchParams,
-    fetchListingsDeskProfile(supabase, user.id),
+    fetchListingsDeskProfile(supabase, sellerId),
   ])
 
   if (error) {
@@ -45,7 +48,7 @@ export default async function MyListingsPage({
     <MyListingsClient
       listings={listings}
       stats={stats}
-      sellerUserId={user.id}
+      sellerUserId={sellerId}
       fetchError={error}
       sellerBanned={isSellerBanActive(banState)}
       initialStatusFilter={parseListingsStatus(params.status)}

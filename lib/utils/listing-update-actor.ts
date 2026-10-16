@@ -29,11 +29,14 @@ export function resolveListingUpdateActor(args: {
   actorIsAdmin: boolean
   actorUserId: string
   listingOwnerId: string | null | undefined
-}): "owner" | "admin" | "forbidden" {
+  /** Active shop member with listings.write on this listing's account. Not admin. */
+  memberCanWriteShop?: boolean
+}): "owner" | "admin" | "member" | "forbidden" {
   const ownerId = args.listingOwnerId?.trim()
   const actorId = args.actorUserId.trim()
   if (!ownerId || !actorId) return "forbidden"
   if (actorId === ownerId) return "owner"
+  if (args.memberCanWriteShop) return "member"
   if (args.actorIsAdmin) return "admin"
   return "forbidden"
 }

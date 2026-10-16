@@ -14,6 +14,7 @@ export interface DashboardOverviewModel {
   shopHref: string | null
   walletBalance: number
   lifetimeEarned: number
+  showPayouts: boolean
   activeListings: number
   listingCount: number
   sellerOrderCount: number

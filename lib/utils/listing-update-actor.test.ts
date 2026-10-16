@@ -50,6 +50,30 @@ describe("resolveListingUpdateActor", () => {
     )
   })
 
+  it("lets a shop member edit the shop listing without becoming an admin", () => {
+    assert.equal(
+      resolveListingUpdateActor({
+        actorIsAdmin: false,
+        actorUserId: "employee",
+        listingOwnerId: "admin-shop",
+        memberCanWriteShop: true,
+      }),
+      "member",
+    )
+  })
+
+  it("does not treat shop membership as admin when the member cannot write that shop", () => {
+    assert.equal(
+      resolveListingUpdateActor({
+        actorIsAdmin: false,
+        actorUserId: "employee",
+        listingOwnerId: "admin-shop",
+        memberCanWriteShop: false,
+      }),
+      "forbidden",
+    )
+  })
+
   it("forbids saves while the listing owner is still unknown", () => {
     assert.equal(
       resolveListingUpdateActor({

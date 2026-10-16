@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { AdminGuard } from './AdminGuard'
 import { AdminAppShell } from '@/components/features/admin/admin-app-shell'
+import { platformAccessForSignedInUser } from '@/lib/account-access/platform-access'
 import { getAdminNavGroupsForUser } from '@/lib/admin-nav'
 import { getCachedAdminNavBadgeCounts } from '@/lib/cache/admin-nav-badge-counts'
 import type { AdminShellUser } from '@/lib/admin/admin-shell-user'
@@ -27,8 +28,10 @@ export default async function AdminLayout({
     .eq('id', user.id)
     .single()
 
-  const isAdmin = profile?.is_admin === true
-  const isEmployee = profile?.is_employee === true
+  // Shop membership never counts. Only this login's own profile flags do.
+  const platformAccess = platformAccessForSignedInUser({ profile })
+  const isAdmin = platformAccess.isAdmin
+  const isEmployee = platformAccess.isEmployee
   if (!isAdmin && !isEmployee) {
     redirect('/')
   }

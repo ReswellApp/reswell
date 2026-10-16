@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
+import { assertAccountPermission } from "@/lib/services/accountAccess"
 import { respondToOfferService } from "@/lib/services/respondToOffer"
 import { respondToOfferSchema } from "@/lib/validations/respond-to-offer"
 import { captureServerEvent } from "@/lib/posthog-server"
@@ -21,7 +22,9 @@ export async function respondToOfferAction(raw: unknown) {
     return { error: "Sign in to respond." as const }
   }
 
-  const result = await respondToOfferService(supabase, user.id, parsed.data)
+  const access = await assertAccountPermission("offers.write")
+  if ("error" in access) return { error: access.error }
+  const result = await respondToOfferService(supabase, access.shop.accountId, parsed.data)
   if (!result.ok) {
     return { error: result.error as string }
   }

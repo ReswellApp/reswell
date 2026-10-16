@@ -3,6 +3,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { privatePageMetadata } from "@/lib/site-metadata"
 import { createClient } from "@/lib/supabase/server"
+import { getShopAccountContext } from "@/lib/services/accountAccess"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -181,6 +182,9 @@ export default async function SalesPage({
   } = await supabase.auth.getUser()
 
   if (!user) return null
+  const shop = await getShopAccountContext()
+  const sellerId = shop?.accountId ?? user.id
+  const showPayouts = shop?.permissions.has("payouts.read") ?? true
 
   const params = await searchParams
   const activeFilter = parseSalesListFilter(params.filter)
@@ -219,7 +223,7 @@ export default async function SalesPage({
       )
     `
     )
-    .eq("seller_id", user.id)
+    .eq("seller_id", sellerId)
     .match(REAL_MARKETPLACE_SALES_FILTER)
     .in("status", [...ORDER_STATUS_LIST])
     .order("created_at", { ascending: false })
@@ -257,7 +261,7 @@ export default async function SalesPage({
       .from("orders")
       .select("id, tracking_detail")
       .in("id", trackingOrderIds)
-      .eq("seller_id", user.id)
+      .eq("seller_id", sellerId)
 
     for (const row of trackingRows ?? []) {
       const detail = parseOrderTrackingDetail(
@@ -537,6 +541,7 @@ export default async function SalesPage({
                         ${amounts.sellerSaleTotal.toFixed(2)}
                       </span>
                     </div>
+                    {showPayouts ? (
                     <div className="flex justify-between font-semibold text-foreground pt-1">
                       <span>
                         {orderStatusIsRefunded(sale.status)
@@ -557,6 +562,7 @@ export default async function SalesPage({
                         ${amounts.sellerEarningsAmount.toFixed(2)}
                       </span>
                     </div>
+                    ) : null}
                   </div>
 
                   {orderStatusIsRefundInProgress(sale.status) && (

@@ -16,6 +16,7 @@ export interface DashboardMobilePageChromeProps {
   isShipper?: boolean
   isDropoffLocation?: boolean
   hasShopifyAccess?: boolean
+  showEarnings?: boolean
 }
 
 export function DashboardMobilePageChrome({
@@ -24,6 +25,7 @@ export function DashboardMobilePageChrome({
   isShipper = false,
   isDropoffLocation = false,
   hasShopifyAccess = false,
+  showEarnings = true,
 }: DashboardMobilePageChromeProps) {
   const pathname = usePathname() ?? ""
   const { sectionName, description } = resolveDashboardSectionMeta(pathname)
@@ -38,6 +40,7 @@ export function DashboardMobilePageChrome({
         isShipper={isShipper}
         isDropoffLocation={isDropoffLocation}
         hasShopifyAccess={hasShopifyAccess}
+        showEarnings={showEarnings}
         variant="account"
       />
 

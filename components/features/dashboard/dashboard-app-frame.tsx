@@ -4,6 +4,7 @@ import { Suspense, type ReactNode } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Plus } from "lucide-react"
+import { AccountSwitcher, type AccountSwitcherOption } from "@/components/features/dashboard/account-switcher"
 import { DashboardMobilePageChrome } from "@/components/features/dashboard/dashboard-mobile-page-chrome"
 import { DashboardSidebarNav } from "@/components/features/dashboard/dashboard-sidebar-nav"
 import { Button } from "@/components/ui/button"
@@ -20,6 +21,14 @@ interface DashboardAppFrameProps {
   isShipper?: boolean
   isDropoffLocation?: boolean
   hasShopifyAccess?: boolean
+  showEarnings?: boolean
+  accountOptions?: AccountSwitcherOption[]
+  activeAccountId?: string
+  actorUserId?: string
+  actingAsShop?: boolean
+  shopLabel?: string
+  actorEmail?: string | null
+  showShopAdminWarning?: boolean
   children: ReactNode
 }
 
@@ -29,6 +38,14 @@ export function DashboardAppFrame({
   isShipper = false,
   isDropoffLocation = false,
   hasShopifyAccess = false,
+  showEarnings = true,
+  accountOptions = [],
+  activeAccountId,
+  actorUserId,
+  actingAsShop = false,
+  shopLabel,
+  actorEmail,
+  showShopAdminWarning = false,
   children,
 }: DashboardAppFrameProps) {
   const pathname = usePathname() ?? ""
@@ -51,11 +68,40 @@ export function DashboardAppFrame({
         isShipper={isShipper}
         isDropoffLocation={isDropoffLocation}
         hasShopifyAccess={hasShopifyAccess}
+        showEarnings={showEarnings}
       />
+      {actorUserId && activeAccountId ? (
+        <div className="mt-4 lg:hidden">
+          <AccountSwitcher
+            options={accountOptions}
+            activeAccountId={activeAccountId}
+            actorUserId={actorUserId}
+          />
+        </div>
+      ) : null}
+      {actingAsShop ? (
+        <p className="mt-3 text-sm text-muted-foreground lg:hidden">
+          Signed in as {actorEmail ?? "your email"}, working in {shopLabel ?? "this shop"}.
+          {showShopAdminWarning ? " This does not open the Reswell admin panel." : ""}
+        </p>
+      ) : null}
 
       <div className="mt-5 flex flex-col gap-6 lg:mt-0 lg:flex-row lg:gap-12 xl:gap-14">
         <aside className={cn("hidden shrink-0 lg:block", dashboardSidebarWidthClass)}>
           <div className="sticky top-24 space-y-6">
+            {actorUserId && activeAccountId ? (
+              <AccountSwitcher
+                options={accountOptions}
+                activeAccountId={activeAccountId}
+                actorUserId={actorUserId}
+              />
+            ) : null}
+            {actingAsShop ? (
+              <p className="text-sm text-muted-foreground">
+                Signed in as {actorEmail ?? "your email"}, working in {shopLabel ?? "this shop"}.
+                {showShopAdminWarning ? " This does not open the Reswell admin panel." : ""}
+              </p>
+            ) : null}
             <Button asChild className={dashboardSidebarCreateButtonClass}>
               <Link href="/sell?new=1">
                 <Plus className="mr-2 h-5 w-5" />
@@ -70,6 +116,7 @@ export function DashboardAppFrame({
                 isShipper={isShipper}
                 isDropoffLocation={isDropoffLocation}
                 hasShopifyAccess={hasShopifyAccess}
+                showEarnings={showEarnings}
                 size="large"
               />
             </Suspense>
