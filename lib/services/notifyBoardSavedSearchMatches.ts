@@ -1,31 +1,26 @@
-import {
-  fetchBoardSavedSearchesWithEmailEnabled,
-  tryInsertBoardSavedSearchAlertSent,
-} from "@/lib/db/savedSearches"
+import { fetchBoardSavedSearchesWithEmailEnabled } from "@/lib/db/savedSearches"
 import { createServiceRoleClient } from "@/lib/supabase/server"
-import { trackKlaviyoBoardAlertMatch } from "@/lib/klaviyo/track-board-alert-match"
-import { publicSiteOrigin } from "@/lib/public-site-origin"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
+import { listingListedAfterSavedSearch } from "@/lib/services/boardSavedSearchAlertWindow"
 import {
   ensureListingIndexedForSavedSearchAlerts,
   listingMatchesSavedSearch,
+  surfboardAlertIndexState,
   type ListingRowForBoardAlert,
 } from "@/lib/services/boardSavedSearchMatch"
-import { savedSearchAbsoluteUrl } from "@/lib/klaviyo/saved-search-url"
-import { inferSavedSearchAlertKind } from "@/lib/utils/saved-search-alert-kind"
-import { boardSavedSearchCriteriaSchema } from "@/lib/validations/boardSavedSearch"
+import {
+  clearSurfboardAlertRetry,
+  scheduleSurfboardAlertRetry,
+} from "@/lib/services/savedSearchAlertRetry"
+import { sendBoardSavedSearchAlert } from "@/lib/services/sendBoardSavedSearchAlert"
 
 export type { ListingRowForBoardAlert }
 export { listingMatchesBoardSavedCriteria } from "@/lib/services/boardSavedSearchMatch"
 
-function listingPublicPath(listing: ListingRowForBoardAlert): string {
-  const slug = listing.slug?.trim()
-  if (slug) return `/l/${encodeURIComponent(slug)}`
-  return `/l/${listing.id}`
-}
-
 /**
  * When a peer listing goes live, notify users whose saved searches would return that listing.
+ * Surfboard alerts only go out when the board was first published after the search was saved.
+ * If the surfboard is not in the search index yet, field-match now and retry for about an hour.
  */
 export async function notifyBoardSavedSearchMatchesForListing(
   listingId: string,
@@ -55,8 +50,41 @@ export async function notifyBoardSavedSearchMatchesForListing(
     return { attempted: 0, sent: 0, skippedReason: "listing_not_alertable" }
   }
 
+  let listedAt: string | null = null
+  let indexReady = false
   if (row.section === "surfboards") {
     await ensureListingIndexedForSavedSearchAlerts(listingId)
+    const { data: createdEvent, error: createdErr } = await service
+      .from("listing_creation_events")
+      .select("listed_at")
+      .eq("listing_id", listingId)
+      .maybeSingle()
+    if (createdErr) {
+      console.error("[saved_search] listing listed_at:", createdErr)
+      return { attempted: 0, sent: 0, skippedReason: "listing_not_newly_listed" }
+    }
+    listedAt = createdEvent?.listed_at ? String(createdEvent.listed_at) : null
+    if (!listedAt) {
+      return { attempted: 0, sent: 0, skippedReason: "listing_not_newly_listed" }
+    }
+    const indexState = await surfboardAlertIndexState(listingId)
+    if (indexState === "ready") {
+      indexReady = true
+      try {
+        await clearSurfboardAlertRetry(service, listingId)
+      } catch (err) {
+        console.error("[saved_search] clear index retry:", err)
+      }
+    } else if (indexState === "pending") {
+      try {
+        const plan = await scheduleSurfboardAlertRetry(service, listingId, listedAt, new Date())
+        if (!plan.matchNow) {
+          return { attempted: 0, sent: 0, skippedReason: "index_retry_exhausted" }
+        }
+      } catch (err) {
+        console.error("[saved_search] schedule index retry:", err)
+      }
+    }
   }
 
   const { data: searches, error: searchErr } = await fetchBoardSavedSearchesWithEmailEnabled(
@@ -68,14 +96,20 @@ export async function notifyBoardSavedSearchMatchesForListing(
     return { attempted: 0, sent: 0, skippedReason: "fetch_searches_failed" }
   }
 
-  const candidates = searches.filter((s) => s.user_id !== row.user_id)
+  const candidates = searches.filter((s) => {
+    if (s.user_id === row.user_id) return false
+    if (row.section === "surfboards" && !listingListedAfterSavedSearch(listedAt, s.created_at)) {
+      return false
+    }
+    return true
+  })
   const eligible: typeof candidates = []
   for (const s of candidates) {
-    const matches = await listingMatchesSavedSearch(listingId, row, s.criteria)
+    const matches = await listingMatchesSavedSearch(listingId, row, s.criteria, {
+      indexReady: row.section === "surfboards" ? indexReady : undefined,
+    })
     if (matches) eligible.push(s)
   }
-
-  const origin = publicSiteOrigin()
 
   const { data: firstImage } = await service
     .from("listing_images")
@@ -93,39 +127,8 @@ export async function notifyBoardSavedSearchMatchesForListing(
 
   let sent = 0
   for (const sub of eligible) {
-    const claim = await tryInsertBoardSavedSearchAlertSent(service, sub.id, listingId)
-    if (claim.error) {
-      console.error("[saved_search] alert idempotency insert:", claim.error)
-      continue
-    }
-    if (!claim.inserted) continue
-
-    const priceNum = typeof row.price === "number" ? row.price : Number(row.price ?? NaN)
-    const parsedCriteria = boardSavedSearchCriteriaSchema.safeParse(sub.criteria)
-
-    void trackKlaviyoBoardAlertMatch({
-      subscriberUserId: sub.user_id,
-      savedSearchId: sub.id,
-      listingId: row.id,
-      listingTitle: String(row.title ?? ""),
-      listingPrice: Number.isFinite(priceNum) ? priceNum : 0,
-      listingAbsoluteUrl: `${origin}${listingPublicPath(row)}`,
-      listingPhotoUrl: photoUrl,
-      brand: row.brand,
-      model: row.model,
-      dimensions: row.dimensions,
-      condition: row.condition,
-      boardType: row.board_type,
-      section: row.section,
-      alertKind: parsedCriteria.success
-        ? inferSavedSearchAlertKind(parsedCriteria.data)
-        : "search",
-      savedSearchLabel: sub.label,
-      searchQuery: parsedCriteria.success ? (parsedCriteria.data.q?.trim() ?? "") : "",
-      searchUrl: parsedCriteria.success ? savedSearchAbsoluteUrl(parsedCriteria.data) : "",
-      criteria: parsedCriteria.success ? parsedCriteria.data : null,
-    })
-    sent += 1
+    const result = await sendBoardSavedSearchAlert(service, sub, row, photoUrl)
+    if (result === "sent") sent += 1
   }
 
   return { attempted: eligible.length, sent }
