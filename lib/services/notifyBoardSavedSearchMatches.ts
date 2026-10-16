@@ -12,6 +12,7 @@ import {
   type ListingRowForBoardAlert,
 } from "@/lib/services/boardSavedSearchMatch"
 import { savedSearchAbsoluteUrl } from "@/lib/klaviyo/saved-search-url"
+import { resolveBoardAlertPhotoUrl } from "@/lib/services/resolveBoardAlertPhoto"
 import {
   boardAlertListingContent,
   listingListedAfterSavedSearch,
@@ -142,10 +143,14 @@ export async function notifyBoardSavedSearchMatchesForListing(
     .limit(1)
     .maybeSingle()
 
-  const photoUrl =
-    (firstImage?.url && String(firstImage.url).trim()) ||
-    (firstImage?.thumbnail_url && String(firstImage.thumbnail_url).trim()) ||
-    null
+  const storedPhotoUrl = firstImage?.url ? String(firstImage.url) : null
+  const storedThumbUrl = firstImage?.thumbnail_url ? String(firstImage.thumbnail_url) : null
+  const photoUrl = await resolveBoardAlertPhotoUrl(storedPhotoUrl, storedThumbUrl)
+  if ((storedPhotoUrl?.trim() || storedThumbUrl?.trim()) && !photoUrl) {
+    console.warn("[saved_search] omitted listing photo; storage object missing", {
+      listingId,
+    })
+  }
 
   let sent = 0
   for (const sub of eligible) {

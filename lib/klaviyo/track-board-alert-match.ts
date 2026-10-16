@@ -24,6 +24,15 @@ import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
 import { boardAlertListingContent } from "@/lib/services/savedSearchAlertEligibility"
 import type { BoardSavedSearchCriteria } from "@/lib/validations/boardSavedSearch"
 
+/** Keep a `/media/listings` link. Other stored URLs are rewritten to that host. */
+function emailListingPhotoUrl(raw: string | null | undefined): string {
+  const trimmed = raw?.trim() ?? ""
+  if (/^https?:\/\/[^/]+\/media\/listings\//i.test(trimmed)) {
+    return trimmed.split(/[?#]/)[0] ?? trimmed
+  }
+  return klaviyoMediaListingPhotoUrl(trimmed)
+}
+
 export type KlaviyoBoardAlertMatchPayload = {
   subscriberUserId: string
   subscriberEmail?: string | null
@@ -85,7 +94,7 @@ export async function trackKlaviyoBoardAlertMatch(
       Title: content.title,
       Price: content.price,
       Listing_URL: content.listingUrl,
-      photo_url: klaviyoMediaListingPhotoUrl(payload.listingPhotoUrl),
+      photo_url: emailListingPhotoUrl(payload.listingPhotoUrl),
       Brand: payload.brand ?? "",
       Model: payload.model ?? "",
       Dimensions: payload.dimensions ?? "",
