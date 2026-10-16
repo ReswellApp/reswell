@@ -1,14 +1,5 @@
 import type { CoastalCoverageStop, CoastalDashboardJob } from "@/lib/types/coastal-delivery"
 
-type PinIconApi = {
-  divIcon: (options: {
-    html: string
-    className: string
-    iconSize: [number, number]
-    iconAnchor: [number, number]
-  }) => unknown
-}
-
 export type CoastalMapPin = {
   key: string
   jobId: string
@@ -59,23 +50,20 @@ export function coastalPinDisplayPoint(pin: CoastalMapPin, pins: CoastalMapPin[]
   return [pin.latitude, pin.longitude + offset * 0.012]
 }
 
-export function coastalPinHtml(pin: CoastalMapPin, size: number, selected: boolean): string {
-  const radius = pin.role === "pickup" ? "50%" : "8px"
+/** SVG marker for the Maps JavaScript API. Pickup is a circle, drop-off is a rounded square. */
+export function coastalPinMarkerIcon(pin: CoastalMapPin, selected: boolean): { url: string; size: number } {
+  const size = selected ? 34 : 26
   const fill = pin.kind === "house" ? "#111111" : "#ffffff"
   const color = pin.kind === "house" ? "#ffffff" : "#111111"
-  const border = selected ? "3px solid #111111" : "2px solid #111111"
+  const stroke = selected ? 3 : 2
   const mark = pin.role === "pickup" ? "P" : "D"
-  return `<div style="width:${size}px;height:${size}px;border-radius:${radius};background:${fill};color:${color};border:${border};box-shadow:0 2px 8px rgba(0,0,0,0.28);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;line-height:1;">${mark}</div>`
-}
-
-export function coastalPinIcon(leaflet: PinIconApi, pin: CoastalMapPin, selected: boolean) {
-  const size = selected ? 34 : 26
-  return leaflet.divIcon({
-    html: coastalPinHtml(pin, size, selected),
-    className: "",
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2],
-  })
+  const mid = size / 2
+  const shape =
+    pin.role === "pickup"
+      ? `<circle cx="${mid}" cy="${mid}" r="${mid - stroke}" fill="${fill}" stroke="#111111" stroke-width="${stroke}"/>`
+      : `<rect x="${stroke / 2}" y="${stroke / 2}" width="${size - stroke}" height="${size - stroke}" rx="8" fill="${fill}" stroke="#111111" stroke-width="${stroke}"/>`
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${shape}<text x="${mid}" y="${mid}" text-anchor="middle" dominant-baseline="central" fill="${color}" font-family="ui-sans-serif,system-ui,sans-serif" font-size="11" font-weight="600">${mark}</text></svg>`
+  return { url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`, size }
 }
 
 export function coastalCorridorLine(coverage: CoastalCoverageStop[]): [number, number][] {

@@ -7,47 +7,16 @@ import {
   coastalCorridorLine,
   coastalMapPins,
   coastalPinDisplayPoint,
-  coastalPinIcon,
+  coastalPinMarkerIcon,
+  type CoastalMapPin,
 } from "@/components/features/coastal-delivery/coastal-map-pins"
+import { loadGoogleMaps } from "@/lib/maps/load-google-maps"
 import type { CoastalCoverageStop, CoastalDashboardJob } from "@/lib/types/coastal-delivery"
 
-const CORRIDOR_CENTER: [number, number] = [37.6, -122.4]
-
-type LeafletMapHandle = {
-  remove: () => void
-  invalidateSize: () => void
-  getSize: () => { x: number; y: number }
-  setView: (latlng: [number, number], zoom?: number) => void
-  fitBounds: (bounds: unknown, options?: { padding?: [number, number]; maxZoom?: number }) => void
-  flyTo: (latlng: [number, number], zoom?: number, options?: { duration?: number }) => void
-}
-
-type LeafletMarker = {
-  addTo: (map: LeafletMapHandle) => void
-  on: (event: "click", handler: () => void) => void
-  setIcon: (icon: unknown) => void
-  setZIndexOffset: (offset: number) => void
-}
-
-type LeafletNamespace = {
-  map: (
-    el: HTMLElement,
-    options: { center: [number, number]; zoom: number; scrollWheelZoom: boolean; dragging: boolean },
-  ) => LeafletMapHandle
-  tileLayer: (url: string, options: { attribution: string; maxZoom: number }) => { addTo: (map: LeafletMapHandle) => void }
-  polyline: (
-    latlngs: [number, number][],
-    options: { color: string; weight: number; opacity: number },
-  ) => { addTo: (map: LeafletMapHandle) => void }
-  divIcon: (options: {
-    html: string
-    className: string
-    iconSize: [number, number]
-    iconAnchor: [number, number]
-  }) => unknown
-  marker: (latlng: [number, number], options: { icon: unknown; zIndexOffset?: number }) => LeafletMarker
-  latLngBounds: (latlngs: [number, number][]) => unknown
-}
+const CORRIDOR_CENTER: google.maps.LatLngLiteral = { lat: 37.6, lng: -122.4 }
+const FIT_PADDING = 32
+const FIT_MAX_ZOOM = 11
+const FOCUS_ZOOM = 12
 
 interface CoastalShipperMapProps {
   coverage: CoastalCoverageStop[]
@@ -55,6 +24,29 @@ interface CoastalShipperMapProps {
   selectedJobId: string | null
   onSelectJob: (jobId: string) => void
   emptyMessage: string | null
+}
+
+function mapLoadMessage(error: unknown): string {
+  const message = error instanceof Error ? error.message : ""
+  if (message.includes("NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is not set")) {
+    return "Google Maps is not configured."
+  }
+  return "Map could not load."
+}
+
+function toLatLng(point: [number, number]): google.maps.LatLngLiteral {
+  return { lat: point[0], lng: point[1] }
+}
+
+function markerIcon(maps: typeof google.maps, pin: CoastalMapPin, selected: boolean): google.maps.Icon {
+  const { url, size } = coastalPinMarkerIcon(pin, selected)
+  const px = new maps.Size(size, size)
+  return {
+    url,
+    size: px,
+    scaledSize: px,
+    anchor: new maps.Point(size / 2, size / 2),
+  }
 }
 
 export function CoastalShipperMap({
@@ -65,110 +57,165 @@ export function CoastalShipperMap({
   emptyMessage,
 }: CoastalShipperMapProps) {
   const mapElRef = useRef<HTMLDivElement>(null)
-  const mapRef = useRef<LeafletMapHandle | null>(null)
-  const leafletRef = useRef<LeafletNamespace | null>(null)
-  const markersRef = useRef<Map<string, LeafletMarker>>(new Map())
+  const mapRef = useRef<google.maps.Map | null>(null)
+  const mapsRef = useRef<typeof google.maps | null>(null)
+  const markersRef = useRef<Map<string, google.maps.Marker>>(new Map())
   const onSelectRef = useRef(onSelectJob)
   onSelectRef.current = onSelectJob
   const [ready, setReady] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   const pins = coastalMapPins(jobs, selectedJobId)
   const pinSignature = pins.map((pin) => `${pin.key}:${pin.latitude}:${pin.longitude}:${pin.kind}`).join("|")
   const coverageSignature = coverage.map((stop) => `${stop.id}:${stop.latitude}:${stop.longitude}`).join("|")
   const pinsRef = useRef(pins)
   pinsRef.current = pins
+  const coverageRef = useRef(coverage)
+  coverageRef.current = coverage
   const skipInitialFocus = useRef(true)
-  const resizeObserverRef = useRef<ResizeObserver | null>(null)
+  const fitToken = useRef(0)
 
   useEffect(() => {
+    if (emptyMessage) {
+      setReady(false)
+      setLoadError(null)
+      return
+    }
+
     let mounted = true
     skipInitialFocus.current = true
     setReady(false)
+    setLoadError(null)
     const el = mapElRef.current
     if (!el) return
 
-    async function init() {
-      const leaflet = (await import("leaflet")) as LeafletNamespace
-      await import("leaflet/dist/leaflet.css")
-      if (!mounted || !mapElRef.current) return
+    const markers = new Map<string, google.maps.Marker>()
+    let polyline: google.maps.Polyline | null = null
+    let map: google.maps.Map | null = null
+    let mapsApi: typeof google.maps | null = null
+    let resizeObserver: ResizeObserver | null = null
+    const token = ++fitToken.current
 
-      const map = leaflet.map(mapElRef.current, {
+    async function init() {
+      let g: typeof google
+      try {
+        g = await loadGoogleMaps()
+      } catch (error) {
+        if (mounted) setLoadError(mapLoadMessage(error))
+        return
+      }
+      const container = mapElRef.current
+      if (!mounted || !container) return
+
+      const maps = g.maps
+      mapsApi = maps
+      map = new maps.Map(container, {
         center: CORRIDOR_CENTER,
         zoom: 8,
-        scrollWheelZoom: true,
-        dragging: true,
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: false,
+        gestureHandling: "greedy",
+        clickableIcons: false,
       })
-      leaflet
-        .tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-          attribution:
-            '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-          maxZoom: 19,
-        })
-        .addTo(map)
 
       const drawn = pinsRef.current
-      const corridor = coastalCorridorLine(coverage)
-      const bounds = [...corridor]
+      const corridor = coastalCorridorLine(coverageRef.current)
+      const boundsPoints = corridor.map(toLatLng)
       if (corridor.length > 1) {
-        leaflet.polyline(corridor, { color: "#111111", weight: 3, opacity: 0.45 }).addTo(map)
-      }
-      const markers = new Map<string, LeafletMarker>()
-      for (const pin of drawn) {
-        const at = coastalPinDisplayPoint(pin, drawn)
-        bounds.push(at)
-        const marker = leaflet.marker(at, {
-          icon: coastalPinIcon(leaflet, pin, false),
-          zIndexOffset: pin.role === "pickup" ? 200 : 100,
+        polyline = new maps.Polyline({
+          path: boundsPoints,
+          strokeColor: "#111111",
+          strokeWeight: 3,
+          strokeOpacity: 0.45,
+          clickable: false,
+          map,
         })
-        marker.on("click", () => onSelectRef.current(pin.jobId))
-        marker.addTo(map)
+      }
+      for (const pin of drawn) {
+        const at = toLatLng(coastalPinDisplayPoint(pin, drawn))
+        boundsPoints.push(at)
+        const marker = new maps.Marker({
+          position: at,
+          map,
+          icon: markerIcon(maps, pin, false),
+          zIndex: pin.role === "pickup" ? 200 : 100,
+        })
+        marker.addListener("click", () => onSelectRef.current(pin.jobId))
         markers.set(pin.key, marker)
       }
+
       markersRef.current = markers
-      leafletRef.current = leaflet
+      mapsRef.current = maps
       mapRef.current = map
 
       let fitted = false
       const fit = () => {
-        map.invalidateSize()
-        const size = map.getSize()
-        if (fitted || size.x < 40 || size.y < 40) return
+        if (!mounted || !map || fitted) return
+        const rect = container.getBoundingClientRect()
+        if (rect.width < 40 || rect.height < 40) return
         fitted = true
-        if (bounds.length === 1) map.setView(bounds[0], 11)
-        else if (bounds.length > 1) map.fitBounds(leaflet.latLngBounds(bounds), { padding: [32, 32], maxZoom: 11 })
+        if (boundsPoints.length === 1) {
+          map.setCenter(boundsPoints[0])
+          map.setZoom(FIT_MAX_ZOOM)
+          return
+        }
+        if (boundsPoints.length < 2) return
+        const bounds = new maps.LatLngBounds()
+        for (const point of boundsPoints) bounds.extend(point)
+        map.fitBounds(bounds, FIT_PADDING)
+        const captured = token
+        maps.event.addListenerOnce(map, "idle", () => {
+          if (!mounted || !map || fitToken.current !== captured) return
+          const zoom = map.getZoom()
+          if (zoom != null && zoom > FIT_MAX_ZOOM) map.setZoom(FIT_MAX_ZOOM)
+        })
       }
-      resizeObserverRef.current?.disconnect()
-      resizeObserverRef.current = new ResizeObserver(() => fit())
-      if (mapElRef.current) resizeObserverRef.current.observe(mapElRef.current)
-      fit()
+
+      let mapIdle = false
+      maps.event.addListenerOnce(map, "idle", () => {
+        if (!mounted) return
+        mapIdle = true
+        fit()
+      })
+      resizeObserver = new ResizeObserver(() => {
+        if (mapIdle) fit()
+      })
+      resizeObserver.observe(container)
       if (mounted) setReady(true)
     }
 
     void init()
     return () => {
       mounted = false
+      fitToken.current += 1
+      resizeObserver?.disconnect()
+      markers.forEach((marker) => {
+        mapsApi?.event.clearInstanceListeners(marker)
+        marker.setMap(null)
+      })
+      if (map && mapsApi) mapsApi.event.clearInstanceListeners(map)
+      polyline?.setMap(null)
       markersRef.current = new Map()
-      leafletRef.current = null
-      resizeObserverRef.current?.disconnect()
-      resizeObserverRef.current = null
-      mapRef.current?.remove()
+      mapsRef.current = null
       mapRef.current = null
+      if (mapElRef.current) mapElRef.current.replaceChildren()
     }
     // Redraw when the stops or job pins change, not when the selection changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pinSignature, coverageSignature])
+  }, [emptyMessage, pinSignature, coverageSignature])
 
   useEffect(() => {
-    const leaflet = leafletRef.current
     const map = mapRef.current
-    if (!leaflet || !map || !ready) return
+    const maps = mapsRef.current
+    if (!map || !maps || !ready) return
     const drawn = pinsRef.current
     for (const pin of drawn) {
       const marker = markersRef.current.get(pin.key)
       if (!marker) continue
       const selected = pin.jobId === selectedJobId
-      marker.setIcon(coastalPinIcon(leaflet, pin, selected))
-      marker.setZIndexOffset(selected ? 500 : pin.role === "pickup" ? 200 : 100)
+      marker.setIcon(markerIcon(maps, pin, selected))
+      marker.setZIndex(selected ? 500 : pin.role === "pickup" ? 200 : 100)
     }
     const focus = drawn.find((pin) => pin.focus)
     if (skipInitialFocus.current) {
@@ -176,7 +223,10 @@ export function CoastalShipperMap({
       return
     }
     if (!focus) return
-    map.flyTo(coastalPinDisplayPoint(focus, drawn), 12, { duration: 0.45 })
+    const at = toLatLng(coastalPinDisplayPoint(focus, drawn))
+    fitToken.current += 1
+    map.panTo(at)
+    map.setZoom(FOCUS_ZOOM)
   }, [ready, selectedJobId, pinSignature])
 
   return (
@@ -186,8 +236,11 @@ export function CoastalShipperMap({
         <div className="absolute inset-0 flex items-center justify-center bg-muted/80 px-6 text-center text-sm text-muted-foreground">
           {emptyMessage}
         </div>
-      ) : null}
-      {!ready && !emptyMessage ? (
+      ) : loadError ? (
+        <div className="absolute inset-0 flex items-center justify-center bg-muted px-6 text-center text-sm text-muted-foreground">
+          {loadError}
+        </div>
+      ) : !ready ? (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
@@ -195,4 +248,3 @@ export function CoastalShipperMap({
     </div>
   )
 }
-
