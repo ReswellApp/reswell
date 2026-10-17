@@ -4,15 +4,27 @@ import {
   dbClaimShopifyPendingInstallation,
   dbGetShopifyPendingInstallationPreview,
 } from "@/lib/db/shopifyPendingInstallations"
-import { dbGetShopifyConnectionById } from "@/lib/db/shopifyConnections"
-import { dbReviveDeadShopifyInventoryJobs } from "@/lib/db/shopifyQueue"
+import {
+  dbGetShopifyConnectionById,
+  dbGetShopifyConnectionForUser,
+  dbMarkShopifyConnectionStatus,
+} from "@/lib/db/shopifyConnections"
+import { dbUnpublishAllShopifyListingsForConnection } from "@/lib/db/shopifyCatalog"
+import {
+  dbCancelShopifyInventoryJobsForConnection,
+  dbReviveDeadShopifyInventoryJobs,
+} from "@/lib/db/shopifyQueue"
 import { hashShopifyClaimSecret } from "@/lib/shopify/crypto"
 import type { ShopifyPendingInstallationPreview } from "@/lib/shopify/types"
+import { applyShopifyListingSideEffects } from "@/lib/services/shopifyCatalog"
 import {
   getShopifyAccessToken,
   registerShopifyWebhooks,
 } from "@/lib/services/shopifyOAuth"
-import { dbMarkShopifyConnectionStatus } from "@/lib/db/shopifyConnections"
+import { shopifyClaimShouldReviveInventory } from "@/lib/shopify/claim-switch"
+
+const SHOP_MOVE_INVENTORY_CANCEL_REASON =
+  "Canceled because this Reswell account connected a different Shopify store"
 
 export async function previewShopifyPendingClaim(
   claimSecret: string | undefined | null,
@@ -31,6 +43,10 @@ export async function claimShopifyPendingInstallation(input: {
 }): Promise<{ connectionId: string; shopDomain: string }> {
   const serviceSupabase = createServiceRoleClient()
   const claimSecretHash = hashShopifyClaimSecret(input.claimSecret.trim())
+  const previous = await dbGetShopifyConnectionForUser(
+    serviceSupabase,
+    input.userId,
+  )
   await dbApproveShopifyInstallClaimant(serviceSupabase, {
     claimSecretHash,
     userId: input.userId,
@@ -48,7 +64,25 @@ export async function claimShopifyPendingInstallation(input: {
     throw new Error("Shopify connection was not found after claim")
   }
 
-  await dbReviveDeadShopifyInventoryJobs(serviceSupabase, connection.id)
+  if (
+    shopifyClaimShouldReviveInventory(
+      previous?.shop_domain ?? null,
+      claimed.shopDomain,
+    )
+  ) {
+    await dbReviveDeadShopifyInventoryJobs(serviceSupabase, connection.id)
+  } else {
+    const listingIds = await dbUnpublishAllShopifyListingsForConnection(
+      serviceSupabase,
+      connection.id,
+    )
+    await dbCancelShopifyInventoryJobsForConnection(
+      serviceSupabase,
+      connection.id,
+      SHOP_MOVE_INVENTORY_CANCEL_REASON,
+    )
+    await applyShopifyListingSideEffects(serviceSupabase, listingIds)
+  }
 
   try {
     const accessToken = await getShopifyAccessToken(serviceSupabase, connection)
