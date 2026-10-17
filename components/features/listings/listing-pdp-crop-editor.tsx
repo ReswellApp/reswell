@@ -13,6 +13,8 @@ import {
 import { Loader2, Minus, Plus } from "lucide-react"
 import { toast } from "sonner"
 import { useListingPdpCropGestures } from "@/components/features/listings/hooks/use-listing-pdp-crop-gestures"
+import { ListingPhotoToneCanvas } from "@/components/features/listings/listing-photo-tone-canvas"
+import { ListingPhotoTonePanel } from "@/components/features/listings/listing-photo-tone-panel"
 import { Slider } from "@/components/ui/slider"
 import { listingHeroAspectCss } from "@/lib/listing-hero-frame"
 import { cn } from "@/lib/utils"
@@ -28,12 +30,22 @@ import {
   type ListingPdpCrop,
   type ListingPdpCropLayout,
 } from "@/lib/utils/listing-pdp-crop"
+import {
+  LISTING_PHOTO_TONE_IDENTITY,
+  clampListingPhotoTone,
+  listingPhotoTonesEqual,
+  type ListingPhotoTone,
+  type ListingPhotoToneSavedImage,
+} from "@/lib/utils/listing-photo-tone"
 
 export type ListingPdpCropEditorImage = {
   id: string
   src: string
   previewSrc?: string
+  /** Unedited photo. Tone preview rebases from this so adjustments do not stack. */
+  sourceSrc?: string
   crop: ListingPdpCrop | null
+  tone?: ListingPhotoTone | null
 }
 
 type ListingPdpCropEditorProps = {
@@ -42,7 +54,12 @@ type ListingPdpCropEditorProps = {
   listingId: string
   images: ListingPdpCropEditorImage[]
   initialIndex?: number
+  /** Listing owner can crop the /l hero. */
+  canCrop?: boolean
+  /** Admin can bake brightness, highlights, shadows, and contrast. */
+  canTone?: boolean
   onSaved?: (crops: Record<string, ListingPdpCrop | null>) => void
+  onToneSaved?: (images: ListingPhotoToneSavedImage[]) => void
 }
 
 function cropOrDefault(crop: ListingPdpCrop | null): ListingPdpCrop {
@@ -61,18 +78,27 @@ function rememberNaturalSize(
   setNatural((prev) => retainMeasuredSize(prev, w, h))
 }
 
+function toneOrIdentity(tone: ListingPhotoTone | null | undefined): ListingPhotoTone {
+  return tone ? clampListingPhotoTone(tone) : { ...LISTING_PHOTO_TONE_IDENTITY }
+}
+
 export function ListingPdpCropEditor({
   open,
   onOpenChange,
   listingId,
   images,
   initialIndex = 0,
+  canCrop = true,
+  canTone = false,
   onSaved,
+  onToneSaved,
 }: ListingPdpCropEditorProps) {
   const frameRef = useRef<HTMLDivElement>(null)
   const photoImgRef = useRef<HTMLImageElement | null>(null)
   const [index, setIndex] = useState(initialIndex)
   const [crops, setCrops] = useState<Record<string, ListingPdpCrop>>({})
+  const [tones, setTones] = useState<Record<string, ListingPhotoTone>>({})
+  const [mode, setMode] = useState<"crop" | "light">(canCrop ? "crop" : "light")
   const [natural, setNatural] = useState<{ w: number; h: number } | null>(null)
   const [frame, setFrame] = useState<{ w: number; h: number } | null>(null)
   const [layout, setLayout] = useState<ListingPdpCropLayout | null>(null)
@@ -81,6 +107,10 @@ export function ListingPdpCropEditor({
 
   const photo = images[index] ?? images[0] ?? null
   const currentCrop = photo ? cropOrDefault(crops[photo.id] ?? photo.crop) : LISTING_PDP_CROP_FIT
+  const currentTone = photo
+    ? (tones[photo.id] ?? toneOrIdentity(photo.tone))
+    : LISTING_PHOTO_TONE_IDENTITY
+  const lightMode = canTone && (mode === "light" || !canCrop)
   const attachPhotoImage = useCallback((img: HTMLImageElement | null) => {
     photoImgRef.current = img
     // iOS Chrome / Google app often skip onLoad for cached images.
@@ -93,11 +123,23 @@ export function ListingPdpCropEditor({
     return next
   }, [images])
 
+  const initialTones = useMemo(() => {
+    const next: Record<string, ListingPhotoTone> = {}
+    for (const image of images) next[image.id] = toneOrIdentity(image.tone)
+    return next
+  }, [images])
+
   useEffect(() => {
     if (!open) return
     const next: Record<string, ListingPdpCrop> = {}
-    for (const image of images) next[image.id] = cropOrDefault(image.crop)
+    const nextTones: Record<string, ListingPhotoTone> = {}
+    for (const image of images) {
+      next[image.id] = cropOrDefault(image.crop)
+      nextTones[image.id] = toneOrIdentity(image.tone)
+    }
     setCrops(next)
+    setTones(nextTones)
+    setMode(canCrop ? "crop" : "light")
     const nextIndex = Math.min(Math.max(0, initialIndex), Math.max(0, images.length - 1))
     setIndex(nextIndex)
     const nextPhoto = images[nextIndex] ?? images[0] ?? null
@@ -114,7 +156,7 @@ export function ListingPdpCropEditor({
       setNatural(null)
     }
     setLayout(null)
-  }, [open, images, initialIndex])
+  }, [open, images, initialIndex, canCrop])
 
   useEffect(() => {
     if (!open) return
@@ -168,7 +210,7 @@ export function ListingPdpCropEditor({
   }
 
   const gestures = useListingPdpCropGestures({
-    enabled: open && Boolean(layout && natural && frame),
+    enabled: open && !lightMode && Boolean(layout && natural && frame),
     frameRef,
     layout,
     frame,
@@ -177,9 +219,9 @@ export function ListingPdpCropEditor({
     onInteracting: setInteracting,
   })
 
-  async function handleSave() {
-    if (!photo) return
-    const changed = images
+  function changedCrops(): Array<{ id: string } & ListingPdpCrop> {
+    if (!canCrop) return []
+    return images
       .map((image) => {
         const next = crops[image.id] ?? cropOrDefault(image.crop)
         const prev = initialCrops[image.id] ?? null
@@ -187,35 +229,74 @@ export function ListingPdpCropEditor({
         return { id: image.id, ...next }
       })
       .filter((row): row is { id: string } & ListingPdpCrop => row != null)
+  }
 
-    if (changed.length === 0) {
+  function changedTones(): Array<{ id: string } & ListingPhotoTone> {
+    if (!canTone) return []
+    return images.flatMap((image) => {
+      const next = clampListingPhotoTone(tones[image.id] ?? toneOrIdentity(image.tone))
+      const prev = initialTones[image.id] ?? LISTING_PHOTO_TONE_IDENTITY
+      if (listingPhotoTonesEqual(next, prev)) return []
+      return [{ id: image.id, ...next }]
+    })
+  }
+
+  async function handleSave() {
+    if (!photo) return
+    const cropWrites = changedCrops()
+    const toneWrites = changedTones()
+    if (cropWrites.length === 0 && toneWrites.length === 0) {
       onOpenChange(false)
       return
     }
 
     setSaving(true)
     try {
-      const res = await fetch(`/api/listings/${listingId}/pdp-crop`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ images: changed }),
-      })
-      const json = (await res.json()) as {
-        data?: { images?: Array<{ id: string } & ListingPdpCrop> }
-        error?: string
-      }
-      if (!res.ok) throw new Error(json.error || "Could not save crop")
+      if (cropWrites.length > 0) {
+        const res = await fetch(`/api/listings/${listingId}/pdp-crop`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ images: cropWrites }),
+        })
+        const json = (await res.json()) as {
+          data?: { images?: Array<{ id: string } & ListingPdpCrop> }
+          error?: string
+        }
+        if (!res.ok) throw new Error(json.error || "Could not save crop")
 
-      const saved: Record<string, ListingPdpCrop | null> = {}
-      for (const image of json.data?.images ?? changed) {
-        saved[image.id] = isListingPdpCropDefault(image) ? null : image
+        const saved: Record<string, ListingPdpCrop | null> = {}
+        for (const image of json.data?.images ?? cropWrites) {
+          saved[image.id] = isListingPdpCropDefault(image) ? null : image
+        }
+        onSaved?.(saved)
       }
-      onSaved?.(saved)
+
+      if (toneWrites.length > 0) {
+        const res = await fetch(`/api/listings/${listingId}/photo-tone`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ images: toneWrites }),
+        })
+        const json = (await res.json()) as {
+          data?: { images?: ListingPhotoToneSavedImage[] }
+          error?: string
+        }
+        if (!res.ok) throw new Error(json.error || "Could not save photo adjustments")
+        onToneSaved?.(json.data?.images ?? [])
+      }
+
       onOpenChange(false)
-      toast.success("Photo crop saved")
+      toast.success(
+        toneWrites.length > 0 && cropWrites.length > 0
+          ? "Photo saved"
+          : toneWrites.length > 0
+            ? "Photo adjustments saved"
+            : "Photo crop saved",
+      )
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Could not save crop")
+      toast.error(err instanceof Error ? err.message : "Could not save photo")
     } finally {
       setSaving(false)
     }
@@ -249,7 +330,7 @@ export function ListingPdpCropEditor({
           type="button"
           className="min-h-11 min-w-14 text-right text-[17px] font-semibold text-[#0a84ff] disabled:opacity-50"
           onClick={() => void handleSave()}
-          disabled={saving || !natural}
+          disabled={saving || (!lightMode && !natural)}
         >
           {saving ? "Saving…" : "Done"}
         </button>
@@ -260,7 +341,7 @@ export function ListingPdpCropEditor({
           ref={frameRef}
           className={cn(
             "relative w-full max-w-[22rem] overflow-hidden rounded-[28px] bg-[#111] shadow-[0_0_0_1px_rgba(255,255,255,0.12)] touch-none select-none sm:max-w-[26rem]",
-            natural ? "cursor-grab active:cursor-grabbing" : "cursor-wait",
+            lightMode ? "cursor-default" : natural ? "cursor-grab active:cursor-grabbing" : "cursor-wait",
           )}
           style={{
             aspectRatio:
@@ -277,7 +358,14 @@ export function ListingPdpCropEditor({
           onPointerUp={gestures.onPointerUp}
           onPointerCancel={gestures.onPointerUp}
         >
-          {src ? (
+          {lightMode && photo ? (
+            <ListingPhotoToneCanvas
+              key={photo.id}
+              src={photo.sourceSrc || src}
+              tone={currentTone}
+              onNaturalSize={(size) => setNatural((prev) => retainMeasuredSize(prev, size.w, size.h))}
+            />
+          ) : src ? (
             <img
               key={photo?.id}
               src={src}
@@ -301,14 +389,14 @@ export function ListingPdpCropEditor({
               }}
             />
           ) : null}
-          {interacting ? (
+          {interacting && !lightMode ? (
             <div className="pointer-events-none absolute inset-0 grid grid-cols-3 grid-rows-3">
               {Array.from({ length: 9 }).map((_, i) => (
                 <span key={i} className="border border-white/25" />
               ))}
             </div>
           ) : null}
-          {!natural ? (
+          {!natural && !lightMode ? (
             <div className="absolute inset-0 flex items-center justify-center">
               <Loader2 className="size-6 animate-spin text-white/50" aria-hidden />
             </div>
@@ -316,7 +404,45 @@ export function ListingPdpCropEditor({
         </div>
       </div>
 
-      <div className="mx-auto w-full max-w-md space-y-4 px-6 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-1">
+      <div className="mx-auto max-h-[min(22rem,48svh)] w-full max-w-md space-y-4 overflow-y-auto px-6 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-1">
+        {canCrop && canTone ? (
+          <div className="flex justify-center gap-2" role="tablist" aria-label="Adjust mode">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={!lightMode}
+              className={cn(
+                "rounded-full px-4 py-1.5 text-[13px] font-medium transition-colors",
+                !lightMode ? "bg-white text-black" : "bg-white/12 text-white hover:bg-white/18",
+              )}
+              onClick={() => setMode("crop")}
+            >
+              Crop
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={lightMode}
+              className={cn(
+                "rounded-full px-4 py-1.5 text-[13px] font-medium transition-colors",
+                lightMode ? "bg-white text-black" : "bg-white/12 text-white hover:bg-white/18",
+              )}
+              onClick={() => setMode("light")}
+            >
+              Light
+            </button>
+          </div>
+        ) : null}
+        {lightMode && photo ? (
+          <ListingPhotoTonePanel
+            tone={currentTone}
+            disabled={saving}
+            onChange={(tone) => {
+              setTones((prev) => ({ ...prev, [photo.id]: tone }))
+            }}
+          />
+        ) : (
+          <>
         <div className="flex justify-center gap-2">
           <button
             type="button"
@@ -392,6 +518,8 @@ export function ListingPdpCropEditor({
           Pinch to zoom · drag to move
           <span className="sr-only"> {zoomPct} percent zoom</span>
         </p>
+          </>
+        )}
 
         {images.length > 1 ? (
           <div className="flex justify-center gap-2 overflow-x-auto pb-1">
