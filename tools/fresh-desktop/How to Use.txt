@@ -1,0 +1,42 @@
+Fresh Desktop
+=============
+
+Fresh Desktop moves screenshot files that are sitting on your Desktop
+into the Trash at the end of the day. Open the Trash to put a file back.
+The app does not permanently delete files.
+
+Install
+1. Open this disk image.
+2. Drag Fresh Desktop onto the Applications folder.
+3. Eject the disk image.
+4. In Applications, Control-click Fresh Desktop and choose Open, then
+   Open again. macOS asks because this copy is not notarized.
+5. Choose "Set up end-of-day cleanup". The suggested time is 11:55 PM.
+6. If a later cleanup does not see the Desktop, open System Settings,
+   Privacy & Security, Full Disk Access, and turn Fresh Desktop on.
+   Quit and reopen the app after changing that setting.
+
+What it moves
+Only files placed directly on the Desktop, not files inside folders,
+whose names look like macOS screenshots. For example:
+
+  Screenshot 2026-10-17 at 9.41.03 PM.png
+  Screen Shot 2026-10-17 at 9.41.03 PM.png
+
+"Choose which files" edits the name patterns. A pattern has to begin
+with at least four letters or numbers, such as:
+
+  Screenshot *.png
+  Screen Recording *.mov
+
+"Add a folder" adds another folder you pick. The home folder itself,
+Library, and Trash are refused.
+
+"Clean Desktop now" moves the current matches to the Trash immediately.
+
+"Turn off schedule" stops the nightly cleanup. The app stays installed.
+
+A run that finds more than 300 matches is skipped, and the reason is
+written to:
+
+  ~/Library/Logs/Fresh Desktop/cleanup.log
