@@ -1,5 +1,6 @@
 import { SymbolView } from "expo-symbols"
 import { Pressable, StyleSheet, Text, View } from "react-native"
+import { ListingLayoutSwitch, type ListingLayout } from "@/components/listing-layout-switch"
 import { fontFamily, useReswellColors } from "@/theme"
 
 export function CategoryToolbar({
@@ -12,10 +13,10 @@ export function CategoryToolbar({
 }: {
   sortLabel: string
   filterCount: number
-  layout: "grid" | "list"
+  layout: ListingLayout
   onSort: () => void
   onFilter: () => void
-  onLayout: (next: "grid" | "list") => void
+  onLayout: (next: ListingLayout) => void
 }) {
   const colors = useReswellColors()
   return (
@@ -42,28 +43,7 @@ export function CategoryToolbar({
           </View>
         ) : null}
       </Pressable>
-      <View style={[styles.switch, { backgroundColor: colors.image }]}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityState={{ selected: layout === "list" }}
-          onPress={() => onLayout("list")}
-          style={[styles.switchItem, layout === "list" && { backgroundColor: colors.background }]}
-        >
-          <SymbolView name={{ ios: "list.bullet", android: "view_list", web: "view_list" }} size={18} tintColor={colors.foreground} />
-        </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityState={{ selected: layout === "grid" }}
-          onPress={() => onLayout("grid")}
-          style={[styles.switchItem, layout === "grid" && { backgroundColor: colors.background }]}
-        >
-          <SymbolView
-            name={{ ios: "square.grid.2x2.fill", android: "grid_view", web: "grid_view" }}
-            size={18}
-            tintColor={colors.foreground}
-          />
-        </Pressable>
-      </View>
+      <ListingLayoutSwitch layout={layout} onLayout={onLayout} />
     </View>
   )
 }
@@ -101,6 +81,4 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   badgeLabel: { fontSize: 10, fontWeight: "700" },
-  switch: { flexDirection: "row", borderRadius: 22, padding: 3 },
-  switchItem: { width: 36, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" },
 })

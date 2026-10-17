@@ -1,9 +1,10 @@
-import { Pressable, ScrollView, StyleSheet, Text } from "react-native"
+import { Pressable, StyleSheet, Text } from "react-native"
 import {
   MOBILE_CATEGORY_CHIPS,
   type MobileBrowseRailItem,
   type MobileListingCategory,
 } from "@reswell/api-contract"
+import { HorizontalRail } from "@/components/horizontal-rail"
 import { SellerResourcesSheet } from "@/components/seller-resources-sheet"
 import { fontFamily, useReswellColors } from "@/theme"
 
@@ -28,12 +29,7 @@ export function CategorySlider({
   const rail = items && items.length > 0 ? items : FALLBACK_ITEMS
 
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      style={styles.scroller}
-      contentContainerStyle={styles.categoryRow}
-    >
+    <HorizontalRail contentStyle={styles.categoryRow}>
       {rail.map((item) =>
         item.kind === "menu" ? (
           <SellerResourcesSheet key={item.id} label={item.label} items={item.items} onOpenResource={onOpenResource} />
@@ -50,12 +46,11 @@ export function CategorySlider({
           </Pressable>
         ),
       )}
-    </ScrollView>
+    </HorizontalRail>
   )
 }
 
 const styles = StyleSheet.create({
-  scroller: { flexGrow: 0 },
   categoryRow: {
     alignItems: "center",
     gap: 10,

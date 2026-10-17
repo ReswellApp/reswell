@@ -17,6 +17,7 @@ import {
   mobileHomeSchema,
   mobileMarketplaceFeedSchema,
   mobileListingDetailSchema,
+  mobileListingRailsSchema,
   mobileListingsPageSchema,
   mobileMeSchema,
   mobileMessageResultSchema,
@@ -50,6 +51,7 @@ import {
   type MobileFollowing,
   type MobileHome,
   type MobileListingDetail,
+  type MobileListingRails,
   type MobileMarketplaceFeed,
   type MobileMarketplaceFeedTab,
   type MobileListingsPage,
@@ -311,6 +313,13 @@ export function fetchProfileReviews(slug: string, offset = 0): Promise<MobileRev
 export function fetchListing(id: string, accessToken?: string | null): Promise<MobileListingDetail> {
   return getJson(`/api/mobile/v1/listings/${encodeURIComponent(id)}`, accessToken).then((data) =>
     mobileListingDetailSchema.parse(data),
+  )
+}
+
+/** Same horizontal sections the website renders under `/l`. */
+export function fetchListingRails(id: string, accessToken?: string | null): Promise<MobileListingRails> {
+  return getJson(`/api/mobile/v1/listings/${encodeURIComponent(id)}/rails`, accessToken).then((data) =>
+    mobileListingRailsSchema.parse(data),
   )
 }
 

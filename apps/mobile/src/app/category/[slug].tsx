@@ -9,7 +9,7 @@ import {
   Text,
   View,
 } from "react-native"
-import type { MobileBoardType, MobileCategory, MobileCategoryListingsQuery, MobileCategorySortId, MobileListingCard, MobileListingsPage } from "@reswell/api-contract"
+import type { MobileCategory, MobileCategorySortId, MobileListingCard, MobileListingsPage } from "@reswell/api-contract"
 import { CategoryFilters } from "@/components/category-filters"
 import { CategoryHero } from "@/components/category-hero"
 import { type CategoryPlace, type CategoryRadius } from "@/components/category-location-filter"
@@ -17,10 +17,9 @@ import { CategoryToolbar } from "@/components/category-toolbar"
 import { HomeHeader } from "@/components/home-header"
 import { ListingCard } from "@/components/listing-card"
 import { fetchCategory, fetchCategoryListings } from "@/lib/api"
+import { categoryListingQuery, type SelectedFacets } from "@/lib/category-listing-query"
 import { useAuth } from "@/lib/auth-context"
 import { fontFamily, useReswellColors } from "@/theme"
-
-type SelectedFacets = Record<string, string[]>
 
 export default function CategoryScreen() {
   const colors = useReswellColors()
@@ -48,7 +47,7 @@ export default function CategoryScreen() {
     setLoading(true)
     Promise.all([
       fetchCategory(slug),
-      fetchCategoryListings(slug, listingQuery(0, sort, shipping, selected, boardType, place, radius)),
+      fetchCategoryListings(slug, categoryListingQuery(0, sort, shipping, selected, boardType, place, radius)),
     ])
       .then(([nextCategory, nextPage]) => {
         if (!cancelled) {
@@ -75,7 +74,7 @@ export default function CategoryScreen() {
   function loadMore() {
     if (!page?.has_more || loadingMore || loading || !slug) return
     setLoadingMore(true)
-    fetchCategoryListings(slug, listingQuery(page.offset + page.limit, sort, shipping, selected, boardType, place, radius))
+    fetchCategoryListings(slug, categoryListingQuery(page.offset + page.limit, sort, shipping, selected, boardType, place, radius))
       .then((next) => {
         setPage((current) =>
           current ? { ...next, listings: [...current.listings, ...next.listings] } : next,
@@ -204,55 +203,6 @@ export default function CategoryScreen() {
         onClose={() => setFiltersOpen(false)}
       />
     </View>
-  )
-}
-
-function listingQuery(
-  offset: number,
-  sort: MobileCategorySortId,
-  shipping: boolean,
-  selected: SelectedFacets,
-  boardType: string | undefined,
-  place: CategoryPlace | null,
-  radius: CategoryRadius,
-): Partial<MobileCategoryListingsQuery> & { offset: number } {
-  const query: Partial<MobileCategoryListingsQuery> & { offset: number } = { offset, sort }
-  if (shipping) query.shipping = "1"
-  if (isBoardType(boardType)) query.type = boardType
-  if (place?.label) {
-    query.location = place.label
-    if (place.lat != null && place.lng != null) {
-      query.lat = place.lat
-      query.lng = place.lng
-    }
-    if (radius !== "any") query.radius = radius
-  }
-  for (const [key, values] of Object.entries(selected)) {
-    if (values.length === 0) continue
-    const joined = values.join(",")
-    if (key === "style") query.style = joined
-    else if (key === "condition") query.condition = joined
-    else if (key === "fin") query.fin = joined
-    else if (key === "finSystem") query.finSystem = joined
-    else if (key === "construction") query.construction = joined
-    else if (key === "length") query.length = joined
-    else if (key === "volume") query.volume = joined
-    else if (key === "size") query.size = joined
-    else if (key === "kind") query.kind = joined
-  }
-  return query
-}
-
-function isBoardType(value: string | undefined): value is MobileBoardType {
-  return (
-    value === "shortboard" ||
-    value === "groveler" ||
-    value === "fish" ||
-    value === "asym" ||
-    value === "hybrid" ||
-    value === "longboard" ||
-    value === "step-up-gun" ||
-    value === "other"
   )
 }
 

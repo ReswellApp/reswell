@@ -74,10 +74,9 @@ import {
   HomeListingScrollRow,
   type HomePeerScrollListing,
 } from "@/components/features/home"
-import {
-  HOME_PEER_LISTING_WITH_PROFILE_SELECT,
-  hydrateHomePeerListingRows,
-} from "@/lib/db/home-peer-listing-feed"
+import { hydrateHomePeerListingRows } from "@/lib/db/home-peer-listing-feed"
+import { fetchMoreFromSellerListings } from "@/lib/db/listing-pdp-seller-listings"
+import { sellerListingRailTitle, similarListingRailTitle } from "@/lib/listing-pdp-rail-titles"
 import {
   getCachedReswellPlatformReviewSummary,
   getCachedSellerReviewSummary,
@@ -164,16 +163,12 @@ async function renderBoardbagsListingDetailPage({
     getCachedSellerReviewSummary(sellerId),
     listSellerReviewPreviews(supabase, sellerId),
     getCachedReswellPlatformReviewSummary(),
-    supabase
-      .from("listings")
-      .select(HOME_PEER_LISTING_WITH_PROFILE_SELECT)
-      .eq("user_id", sellerId)
-      .eq("status", "active")
-      .eq("section", BOARDBAGS_SECTION)
-      .eq("hidden_from_site", false)
-      .neq("id", boardbag.id)
-      .order("created_at", { ascending: false })
-      .limit(SELLER_BOARDBAGS_PDP_LIMIT),
+    fetchMoreFromSellerListings(supabase, {
+      sellerId,
+      section: BOARDBAGS_SECTION,
+      excludeListingId: boardbag.id as string,
+      limit: SELLER_BOARDBAGS_PDP_LIMIT,
+    }),
     brandId ? getBrandById(supabase, brandId) : Promise.resolve(null),
     fetchSimilarPeerListingsForListingPdp(supabase, {
       excludeListingId: boardbag.id as string,
@@ -191,7 +186,7 @@ async function renderBoardbagsListingDetailPage({
     sellerReviewSummaryRes
   const sellerReviewPreviews = sellerReviewPreviewRes.data ?? []
   const reswellPlatformReviewSummary = reswellPlatformReviewSummaryRes
-  const sellerBoardbags = hydrateHomePeerListingRows((sellerBoardbagsRes.data ?? []) as Record<string, unknown>[])
+  const sellerBoardbags = sellerBoardbagsRes
   const similarBoardbags = hydrateHomePeerListingRows(similarBoardbagsRaw)
 
   const sellerBoardbagIds = (sellerBoardbags ?? []).map((f) => f.id)
@@ -725,7 +720,7 @@ async function renderBoardbagsListingDetailPage({
             {similarBoardbags.length > 0 ? (
               <div className="col-span-full min-w-0 max-w-full max-lg:order-5 lg:[grid-area:similar] lg:order-none">
                 <section className="mt-10 border-t border-neutral-200/90 pt-8 dark:border-neutral-700/70">
-                  <h2 className="mb-8 text-2xl font-bold text-foreground">Similar boardbags</h2>
+                  <h2 className="mb-8 text-2xl font-bold text-foreground">{similarListingRailTitle(BOARDBAGS_SECTION)}</h2>
                   <HomeListingScrollRow uniformCardHeights>
                     {similarBoardbags.map((row) => (
                       <HomePeerListingScrollTile
@@ -743,7 +738,7 @@ async function renderBoardbagsListingDetailPage({
 
         {sellerBoardbags && sellerBoardbags.length > 0 && (
           <section className="mt-16 min-w-0 w-full border-t border-neutral-200/90 pt-12 dark:border-neutral-700/70">
-            <h2 className="mb-8 text-2xl font-bold text-foreground">More boardbags from this seller</h2>
+            <h2 className="mb-8 text-2xl font-bold text-foreground">{sellerListingRailTitle(BOARDBAGS_SECTION)}</h2>
             <HomeListingScrollRow uniformCardHeights>
               {sellerBoardbags.map((item) => (
                 <HomePeerListingScrollTile

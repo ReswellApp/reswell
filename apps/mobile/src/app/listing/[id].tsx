@@ -1,12 +1,14 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router"
 import { SymbolView } from "expo-symbols"
 import { useEffect, useState } from "react"
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
-import type { MobileListingDetail } from "@reswell/api-contract"
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native"
+import type { MobileListingDetail, MobileListingRailSection } from "@reswell/api-contract"
 import { ListingActions } from "@/components/listing-actions"
 import { ListingDetail } from "@/components/listing-detail"
 import { ListingGallery } from "@/components/listing-gallery"
-import { fetchListing } from "@/lib/api"
+import { VerticalScroll } from "@/components/horizontal-rail"
+import { ListingRails } from "@/components/listing-rails"
+import { fetchListing, fetchListingRails } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
 import { fontFamily, useReswellColors } from "@/theme"
 
@@ -17,6 +19,7 @@ export default function ListingScreen() {
   const { session } = useAuth()
   const token = session?.access_token
   const [listing, setListing] = useState<MobileListingDetail | null>(null)
+  const [rails, setRails] = useState<MobileListingRailSection[]>([])
   const [error, setError] = useState<string | null>(null)
   const [attempt, setAttempt] = useState(0)
 
@@ -24,12 +27,20 @@ export default function ListingScreen() {
     if (!id) return
     let cancelled = false
     setError(null)
+    setRails([])
     fetchListing(id, token)
       .then((next) => {
         if (!cancelled) setListing(next)
       })
       .catch((cause: unknown) => {
         if (!cancelled) setError(cause instanceof Error ? cause.message : "Unable to load listing")
+      })
+    fetchListingRails(id, token)
+      .then((next) => {
+        if (!cancelled) setRails(next.sections)
+      })
+      .catch(() => {
+        if (!cancelled) setRails([])
       })
     return () => {
       cancelled = true
@@ -73,10 +84,20 @@ export default function ListingScreen() {
         </View>
       ) : (
         <>
-          <ScrollView contentInsetAdjustmentBehavior="never">
+          <VerticalScroll
+            style={styles.scroll}
+            contentContainerStyle={styles.scrollContent}
+            contentInsetAdjustmentBehavior="never"
+          >
             <ListingGallery urls={listing.image_urls} sold={listing.status === "sold"} />
             <ListingDetail listing={listing} />
-          </ScrollView>
+            <ListingRails
+              sections={rails}
+              onOpenListing={(item) =>
+                router.push({ pathname: "/listing/[id]", params: { id: item.slug || item.id } })
+              }
+            />
+          </VerticalScroll>
           {listing.status === "sold" ? null : <ListingActions listing={listing} onChange={setListing} />}
         </>
       )}
@@ -86,6 +107,8 @@ export default function ListingScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
+  scroll: { flex: 1 },
+  scrollContent: { paddingBottom: 140 },
   back: {
     width: 36,
     height: 36,

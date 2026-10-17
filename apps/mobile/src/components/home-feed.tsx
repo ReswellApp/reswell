@@ -1,7 +1,9 @@
 import { Image } from "expo-image"
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from "react-native"
+import { Pressable, StyleSheet, Text, View } from "react-native"
+import { RefreshControl } from "react-native-gesture-handler"
 import type { MobileBrowseRailItem, MobileHomeSection, MobileListingCard, MobileListingCategory } from "@reswell/api-contract"
 import { CategorySlider } from "@/components/browse-chips"
+import { HorizontalRail, VerticalScroll } from "@/components/horizontal-rail"
 import { ListingCard } from "@/components/listing-card"
 import { fontFamily, useReswellColors } from "@/theme"
 
@@ -28,18 +30,14 @@ export function HomeFeed({
 }) {
   const colors = useReswellColors()
   return (
-    <ScrollView
+    <VerticalScroll
       style={styles.feed}
       contentContainerStyle={styles.page}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.foreground} />}
     >
       <CategorySlider items={rail} onOpenCategory={onOpenCategory} onOpenResource={onOpenResource} />
       {continueListings.length > 0 ? (
-        <ListingSection
-          title="Pick up where you left off"
-          listings={continueListings}
-          onOpenListing={onOpenListing}
-        />
+        <ListingSection title="Pick up where you left off" listings={continueListings} onOpenListing={onOpenListing} />
       ) : null}
       {sections.map((section) =>
         section.kind === "listings" ? (
@@ -53,16 +51,16 @@ export function HomeFeed({
         ) : section.kind === "brands" ? (
           <View key={section.id} style={styles.section}>
             <SectionTitle title={section.title} />
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.rail}>
+            <HorizontalRail contentStyle={styles.rail}>
               {section.brands.map((brand) => (
                 <BrandMark key={brand.id} name={brand.name} logoUrl={brand.logo_url} />
               ))}
-            </ScrollView>
+            </HorizontalRail>
           </View>
         ) : (
           <View key={section.id} style={styles.section}>
             <SectionTitle title={section.title} />
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.rail}>
+            <HorizontalRail contentStyle={styles.rail}>
               {section.shops.map((shop) => {
                 const slug = shop.seller_slug
                 return (
@@ -75,11 +73,11 @@ export function HomeFeed({
                   />
                 )
               })}
-            </ScrollView>
+            </HorizontalRail>
           </View>
         ),
       )}
-    </ScrollView>
+    </VerticalScroll>
   )
 }
 
@@ -97,13 +95,13 @@ function ListingSection({
   return (
     <View style={styles.section}>
       <SectionTitle title={title} />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.rail}>
+      <HorizontalRail contentStyle={styles.rail}>
         {listings.map((listing) => (
           <View key={listing.id} style={styles.railCard}>
             <ListingCard item={listing} badge={badge} onPress={() => onOpenListing(listing)} />
           </View>
         ))}
-      </ScrollView>
+      </HorizontalRail>
     </View>
   )
 }

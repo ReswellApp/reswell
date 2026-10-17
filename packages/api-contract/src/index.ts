@@ -622,6 +622,21 @@ export const mobileListingParamSchema = z.object({
 })
 
 /**
+ * Horizontal rails under `/l`. Titles, membership, and order come from the server
+ * so a sort or query change on the website shows up in the app without a release.
+ * Unknown future fields are ignored by older clients that only read these keys.
+ */
+export const mobileListingRailSectionSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(1),
+  listings: z.array(mobileListingCardSchema).min(1),
+})
+
+export const mobileListingRailsSchema = z.object({
+  sections: z.array(mobileListingRailSectionSchema),
+})
+
+/**
  * Public storefront. Look up by `seller_slug`.
  * Private account fields stay on `GET /me`.
  */
@@ -665,6 +680,8 @@ export const mobileApiErrorSchema = z.object({
 export type MobileMe = z.infer<typeof mobileMeSchema>
 export type MobileListingCard = z.infer<typeof mobileListingCardSchema>
 export type MobileListingDetail = z.infer<typeof mobileListingDetailSchema>
+export type MobileListingRailSection = z.infer<typeof mobileListingRailSectionSchema>
+export type MobileListingRails = z.infer<typeof mobileListingRailsSchema>
 export type MobileListingsPage = z.infer<typeof mobileListingsPageSchema>
 export type MobileMarketplaceFeedTab = z.infer<typeof mobileMarketplaceFeedTabSchema>
 export type MobileMarketplaceFeedQuery = z.infer<typeof mobileMarketplaceFeedQuerySchema>

@@ -1,6 +1,7 @@
 import { useFonts } from "expo-font"
 import { Stack } from "expo-router"
 import { View } from "react-native"
+import { GestureHandlerRootView } from "react-native-gesture-handler"
 import { FloatingTabBar } from "@/components/floating-tab-bar"
 import { AuthProvider } from "@/lib/auth-context"
 import { ListingMarksProvider } from "@/lib/listing-marks"
@@ -18,6 +19,7 @@ export default function RootLayout() {
   const type = fontError ? undefined : fontFamily.headline
 
   return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
     <AuthProvider>
       <ListingMarksProvider>
         <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -41,5 +43,6 @@ export default function RootLayout() {
         </View>
       </ListingMarksProvider>
     </AuthProvider>
+    </GestureHandlerRootView>
   )
 }

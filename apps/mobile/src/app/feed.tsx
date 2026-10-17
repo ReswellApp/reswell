@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import type { MobileListingCard, MobileMarketplaceFeed, MobileMarketplaceFeedTab } from "@reswell/api-contract"
 import { ListingCard } from "@/components/listing-card"
+import { ListingLayoutSwitch, type ListingLayout } from "@/components/listing-layout-switch"
 import { fetchMarketplaceFeed } from "@/lib/api"
 import { fontFamily, useReswellColors } from "@/theme"
 
@@ -66,6 +67,7 @@ export default function FeedScreen() {
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [filterOpen, setFilterOpen] = useState(false)
+  const [layout, setLayout] = useState<ListingLayout>("grid")
   const requestId = useRef(0)
   const loadingMoreRef = useRef(false)
   const tabRef = useRef(tab)
@@ -139,7 +141,7 @@ export default function FeedScreen() {
     router.push({ pathname: "/listing/[id]", params: { id: listing.slug || listing.id } })
   }
 
-  const grid = listings.length % 2 === 1 ? [...listings, null] : listings
+  const grid = layout === "grid" && listings.length % 2 === 1 ? [...listings, null] : listings
   const empty = EMPTY_COPY[tab]
   const selected = FEEDS.find((item) => item.tab === tab)
   const title = feed?.title ?? selected?.label ?? "Feed"
@@ -152,20 +154,23 @@ export default function FeedScreen() {
       <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <View style={styles.titleRow}>
           <Text style={[styles.title, { color: colors.foreground, fontFamily: fontFamily.headline }]}>{title}</Text>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Choose a feed"
-            onPress={() => setFilterOpen(true)}
-            hitSlop={8}
-            style={styles.filter}
-          >
-            <SymbolView
-              name={{ ios: "slider.horizontal.3", android: "tune", web: "tune" }}
-              size={22}
-              tintColor={colors.foreground}
-            />
-            {tab !== "new" ? <View style={[styles.dot, { backgroundColor: colors.foreground }]} /> : null}
-          </Pressable>
+          <View style={styles.headerActions}>
+            <ListingLayoutSwitch layout={layout} onLayout={setLayout} />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Choose a feed"
+              onPress={() => setFilterOpen(true)}
+              hitSlop={8}
+              style={styles.filter}
+            >
+              <SymbolView
+                name={{ ios: "slider.horizontal.3", android: "tune", web: "tune" }}
+                size={22}
+                tintColor={colors.foreground}
+              />
+              {tab !== "new" ? <View style={[styles.dot, { backgroundColor: colors.foreground }]} /> : null}
+            </Pressable>
+          </View>
         </View>
         {subtitle ? (
           <Text style={[styles.subtitle, { color: colors.muted, fontFamily: fontFamily.text }]}>{subtitle}</Text>
@@ -182,11 +187,12 @@ export default function FeedScreen() {
         </View>
       ) : (
         <FlatList
+          key={layout}
           data={grid}
           keyExtractor={(item) => item?.id ?? "spacer"}
-          numColumns={2}
-          columnWrapperStyle={styles.columns}
-          contentContainerStyle={styles.list}
+          numColumns={layout === "grid" ? 2 : 1}
+          columnWrapperStyle={layout === "grid" ? styles.columns : undefined}
+          contentContainerStyle={layout === "grid" ? styles.list : [styles.list, styles.listSingle]}
           refreshing={loading}
           onRefresh={() => load(tab)}
           onEndReached={loadMore}
@@ -261,6 +267,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   header: { paddingHorizontal: 16, paddingBottom: 8, gap: 6 },
   titleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
+  headerActions: { flexDirection: "row", alignItems: "center", gap: 8 },
   title: { flex: 1, fontSize: 28, fontWeight: "700" },
   subtitle: { fontSize: 15, lineHeight: 21 },
   filter: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
@@ -268,6 +275,7 @@ const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, padding: 24 },
   retry: { fontSize: 16, fontWeight: "600" },
   list: { paddingTop: 8, paddingBottom: 120 },
+  listSingle: { paddingHorizontal: 12 },
   columns: { gap: 12, paddingHorizontal: 12 },
   stats: { marginHorizontal: 16, marginBottom: 14, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12 },
   statsText: { textAlign: "center", fontSize: 14, fontWeight: "600" },

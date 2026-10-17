@@ -67,10 +67,9 @@ import {
   HomeListingScrollRow,
   type HomePeerScrollListing,
 } from "@/components/features/home"
-import {
-  HOME_PEER_LISTING_WITH_PROFILE_SELECT,
-  hydrateHomePeerListingRows,
-} from "@/lib/db/home-peer-listing-feed"
+import { hydrateHomePeerListingRows } from "@/lib/db/home-peer-listing-feed"
+import { fetchMoreFromSellerListings } from "@/lib/db/listing-pdp-seller-listings"
+import { sellerListingRailTitle, similarListingRailTitle } from "@/lib/listing-pdp-rail-titles"
 import {
   getCachedReswellPlatformReviewSummary,
   getCachedSellerReviewSummary,
@@ -154,16 +153,12 @@ async function renderMagazinesListingDetailPage({
     getCachedSellerReviewSummary(sellerId),
     listSellerReviewPreviews(supabase, sellerId),
     getCachedReswellPlatformReviewSummary(),
-    supabase
-      .from("listings")
-      .select(HOME_PEER_LISTING_WITH_PROFILE_SELECT)
-      .eq("user_id", sellerId)
-      .eq("status", "active")
-      .eq("section", MAGAZINES_SECTION)
-      .eq("hidden_from_site", false)
-      .neq("id", magazine.id)
-      .order("created_at", { ascending: false })
-      .limit(SELLER_MAGAZINES_PDP_LIMIT),
+    fetchMoreFromSellerListings(supabase, {
+      sellerId,
+      section: MAGAZINES_SECTION,
+      excludeListingId: magazine.id as string,
+      limit: SELLER_MAGAZINES_PDP_LIMIT,
+    }),
     fetchSimilarPeerListingsForListingPdp(supabase, {
       excludeListingId: magazine.id as string,
       section: MAGAZINES_SECTION,
@@ -180,7 +175,7 @@ async function renderMagazinesListingDetailPage({
     sellerReviewSummaryRes
   const sellerReviewPreviews = sellerReviewPreviewRes.data ?? []
   const reswellPlatformReviewSummary = reswellPlatformReviewSummaryRes
-  const sellerMagazines = hydrateHomePeerListingRows((sellerMagazinesRes.data ?? []) as Record<string, unknown>[])
+  const sellerMagazines = sellerMagazinesRes
   const similarMagazines = hydrateHomePeerListingRows(similarMagazinesRaw)
 
   const sellerMagazineIds = (sellerMagazines ?? []).map((f) => f.id)
@@ -663,7 +658,7 @@ async function renderMagazinesListingDetailPage({
             {similarMagazines.length > 0 ? (
               <div className="col-span-full min-w-0 max-w-full max-lg:order-5 lg:[grid-area:similar] lg:order-none">
                 <section className="mt-10 border-t border-neutral-200/90 pt-8 dark:border-neutral-700/70">
-                  <h2 className="mb-8 text-2xl font-bold text-foreground">Similar magazines</h2>
+                  <h2 className="mb-8 text-2xl font-bold text-foreground">{similarListingRailTitle(MAGAZINES_SECTION)}</h2>
                   <HomeListingScrollRow uniformCardHeights>
                     {similarMagazines.map((row) => (
                       <HomePeerListingScrollTile
@@ -681,7 +676,7 @@ async function renderMagazinesListingDetailPage({
 
         {sellerMagazines && sellerMagazines.length > 0 && (
           <section className="mt-16 min-w-0 w-full border-t border-neutral-200/90 pt-12 dark:border-neutral-700/70">
-            <h2 className="mb-8 text-2xl font-bold text-foreground">More magazines from this seller</h2>
+            <h2 className="mb-8 text-2xl font-bold text-foreground">{sellerListingRailTitle(MAGAZINES_SECTION)}</h2>
             <HomeListingScrollRow uniformCardHeights>
               {sellerMagazines.map((item) => (
                 <HomePeerListingScrollTile
