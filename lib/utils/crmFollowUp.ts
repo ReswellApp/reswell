@@ -24,6 +24,19 @@ export function contactConvertedOnReswell(activity: CrmReswellActivity): boolean
   return activity.listedSurfboard || activity.bought
 }
 
+export const CRM_FOLLOW_UP_TEMPLATE_DEFAULT =
+  "Hey {name}, circling back in case you are still looking for a board. Happy to help if you want to list or buy one."
+
+export function followUpGreetingName(displayName: string): string {
+  const first = displayName.trim().split(/\s+/)[0]
+  if (!first || first.toLowerCase() === "facebook") return "there"
+  return first
+}
+
+export function renderFollowUpMessage(template: string, name: string): string {
+  return template.replaceAll("{name}", name)
+}
+
 /**
  * Due for a Marketplace-style check-in: follow-up date has arrived (or they
  * have gone quiet), they are still an open lead, and they have not listed a
