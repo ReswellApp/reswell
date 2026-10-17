@@ -21,7 +21,17 @@ import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
 import { boardAlertMatchFinderProperties } from "@/lib/klaviyo/board-alert-match-details"
 import { klaviyoMediaListingPhotoUrl } from "@/lib/klaviyo/catalog-product"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
+import { boardAlertListingContent } from "@/lib/services/savedSearchAlertEligibility"
 import type { BoardSavedSearchCriteria } from "@/lib/validations/boardSavedSearch"
+
+/** Keep a `/media/listings` link. Other stored URLs are rewritten to that host. */
+function emailListingPhotoUrl(raw: string | null | undefined): string {
+  const trimmed = raw?.trim() ?? ""
+  if (/^https?:\/\/[^/]+\/media\/listings\//i.test(trimmed)) {
+    return trimmed.split(/[?#]/)[0] ?? trimmed
+  }
+  return klaviyoMediaListingPhotoUrl(trimmed)
+}
 
 export type KlaviyoBoardAlertMatchPayload = {
   subscriberUserId: string
@@ -57,23 +67,34 @@ export type KlaviyoBoardAlertMatchPayload = {
 export async function trackKlaviyoBoardAlertMatch(
   payload: KlaviyoBoardAlertMatchPayload,
 ): Promise<void> {
+  const content = boardAlertListingContent({
+    title: payload.listingTitle,
+    price: payload.listingPrice,
+    listingUrl: payload.listingAbsoluteUrl,
+  })
+  const listingId = payload.listingId.trim()
+  if (!content || !listingId) {
+    console.error("[saved_search] skipped Board Alert Match with no listing to show", {
+      savedSearchId: payload.savedSearchId,
+      listingId: payload.listingId,
+    })
+    return
+  }
+
   let email = payload.subscriberEmail?.trim() || null
   if (!email) {
     email = await getAuthEmailForUserId(payload.subscriberUserId)
   }
 
-  const priceNum =
-    typeof payload.listingPrice === "number" ? payload.listingPrice : Number(payload.listingPrice)
-
   await sendKlaviyoServerEvent({
     metricName: "Board Alert Match",
     properties: {
-      Listing_ID: payload.listingId,
+      Listing_ID: listingId,
       Saved_Search_ID: payload.savedSearchId,
-      Title: payload.listingTitle,
-      Price: Number.isFinite(priceNum) ? priceNum : payload.listingPrice,
-      Listing_URL: payload.listingAbsoluteUrl,
-      photo_url: klaviyoMediaListingPhotoUrl(payload.listingPhotoUrl),
+      Title: content.title,
+      Price: content.price,
+      Listing_URL: content.listingUrl,
+      photo_url: emailListingPhotoUrl(payload.listingPhotoUrl),
       Brand: payload.brand ?? "",
       Model: payload.model ?? "",
       Dimensions: payload.dimensions ?? "",
@@ -90,8 +111,8 @@ export async function trackKlaviyoBoardAlertMatch(
       external_id: payload.subscriberUserId,
       email,
     },
-    uniqueId: `board-alert-${payload.savedSearchId}-${payload.listingId}`,
-    value: Number.isFinite(priceNum) ? priceNum : undefined,
+    uniqueId: `board-alert-${payload.savedSearchId}-${listingId}`,
+    value: content.price,
     valueCurrency: "USD",
   })
 }

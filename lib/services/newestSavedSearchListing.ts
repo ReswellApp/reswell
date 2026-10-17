@@ -1,6 +1,6 @@
 /**
  * Newest active listing that would appear in a saved search.
- * Attached to the Klaviyo `Saved Search` event. Not rendered in the save-search bar.
+ * Not emailed when the search is saved, and not rendered in the save-search bar.
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js"

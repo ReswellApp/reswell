@@ -114,7 +114,7 @@ export async function deleteBoardSavedSearchForUser(
 
 export async function fetchBoardSavedSearchesWithEmailEnabled(
   service: SupabaseClient,
-  options?: { section?: string | null },
+  options?: { section?: string | null; createdBefore?: string | null },
 ): Promise<{ data: SavedSearchRow[]; error: Error | null }> {
   let query = service
     .from("saved_searches")
@@ -124,6 +124,11 @@ export async function fetchBoardSavedSearchesWithEmailEnabled(
   // Section-scoped alerts: include exact section matches + any-section (NULL) searches.
   if (options?.section) {
     query = query.or(`section.eq.${options.section},section.is.null`)
+  }
+
+  // Only searches saved strictly before the listing went live.
+  if (options?.createdBefore) {
+    query = query.lt("created_at", options.createdBefore)
   }
 
   const { data, error } = await query
