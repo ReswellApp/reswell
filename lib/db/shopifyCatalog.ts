@@ -5,6 +5,11 @@ import {
   type ShopCategoryPackageSizeMap,
 } from "@/lib/shop-category-package-sizes"
 import {
+  EMPTY_SHOP_SHIPPING_DEFAULTS,
+  readShopShippingDefaults,
+  type ShopShippingDefaults,
+} from "@/lib/shop-shipping-defaults"
+import {
   resolveShopifyListingLocality,
   type ShopifyMerchantProfileLocality,
 } from "@/lib/shopify/listing-locality"
@@ -152,11 +157,12 @@ export async function dbLoadShopifyImportShippingProfile(
 ): Promise<{
   hasShipFromAddress: boolean
   packageSizes: ShopCategoryPackageSizeMap
+  shippingDefaults: ShopShippingDefaults
 }> {
   const [profileResult, addressResult] = await Promise.all([
     supabase
       .from("profiles")
-      .select("shop_category_package_sizes")
+      .select("shop_category_package_sizes, shop_shipping_defaults")
       .eq("id", userId)
       .maybeSingle(),
     supabase
@@ -165,14 +171,30 @@ export async function dbLoadShopifyImportShippingProfile(
       .eq("profile_id", userId)
       .limit(1),
   ])
+  if (addressResult.error) throw new Error(addressResult.error.message)
+  const hasShipFromAddress = (addressResult.data ?? []).length > 0
+
+  if (profileResult.error?.message.includes("shop_shipping_defaults")) {
+    const packageOnly = await supabase
+      .from("profiles")
+      .select("shop_category_package_sizes")
+      .eq("id", userId)
+      .maybeSingle()
+    if (packageOnly.error) throw new Error(packageOnly.error.message)
+    if (!packageOnly.data) throw new Error("Shopify merchant profile not found")
+    return {
+      hasShipFromAddress,
+      packageSizes: parseShopCategoryPackageSizeMap(packageOnly.data.shop_category_package_sizes),
+      shippingDefaults: { ...EMPTY_SHOP_SHIPPING_DEFAULTS, savedPackages: [], boardSizes: {} },
+    }
+  }
+
   if (profileResult.error) throw new Error(profileResult.error.message)
   if (!profileResult.data) throw new Error("Shopify merchant profile not found")
-  if (addressResult.error) throw new Error(addressResult.error.message)
   return {
-    hasShipFromAddress: (addressResult.data ?? []).length > 0,
-    packageSizes: parseShopCategoryPackageSizeMap(
-      profileResult.data.shop_category_package_sizes,
-    ),
+    hasShipFromAddress,
+    packageSizes: parseShopCategoryPackageSizeMap(profileResult.data.shop_category_package_sizes),
+    shippingDefaults: readShopShippingDefaults(profileResult.data.shop_shipping_defaults),
   }
 }
 

@@ -56,13 +56,13 @@ export function ShopifyShippingReadinessCard({
           <div className="flex gap-3 rounded-lg border p-3">
             <PackageCheck className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
             <div>
-              <p className="text-sm font-medium">Category package defaults</p>
+              <p className="text-sm font-medium">Shop shipping default</p>
               <p className="mt-0.5 text-xs text-muted-foreground">
                 {readiness.packageDefaults.length > 0
-                  ? `${readiness.packageDefaults.length} configured categor${
-                      readiness.packageDefaults.length === 1 ? "y" : "ies"
+                  ? `${readiness.packageDefaults.length} saved package${
+                      readiness.packageDefaults.length === 1 ? "" : "s"
                     }.`
-                  : "Choose a package size for each category you plan to import."}
+                  : "Save a shop box before enabling shipping on imports."}
               </p>
             </div>
           </div>
@@ -71,7 +71,7 @@ export function ShopifyShippingReadinessCard({
         {readiness.packageDefaults.length > 0 ? (
           <div className="flex flex-wrap gap-2">
             {readiness.packageDefaults.map((entry) => (
-              <Badge key={entry.section} variant="outline">
+              <Badge key={`${entry.section}-${entry.packageSizeId}`} variant="outline">
                 {entry.sectionLabel}: {entry.packageLabel}
               </Badge>
             ))}
@@ -92,7 +92,7 @@ export function ShopifyShippingReadinessCard({
           ) : null}
           <Button variant="outline" asChild>
             <Link href="/dashboard/listings?view=advanced">
-              Configure package defaults
+              Set shop shipping default
               <ArrowRight className="ml-2 h-4 w-4" aria-hidden />
             </Link>
           </Button>

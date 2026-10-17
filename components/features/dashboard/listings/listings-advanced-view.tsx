@@ -7,11 +7,8 @@ import { ListingsAdvancedTools } from "@/components/features/dashboard/listings/
 import { ShopCategoryPackagePanel } from "@/components/features/dashboard/listings/shop-category-package-panel"
 import type { ListingQuickEditSaved } from "@/lib/actions/listingQuickEdit"
 import type { ListingsDeskAnalyticsInput } from "@/lib/listings-desk-analytics"
-import {
-  type ListingPackageColumns,
-  type ShopCategoryPackageSizeMap,
-  type ShopPackageSizeId,
-} from "@/lib/shop-category-package-sizes"
+import type { ListingPackageColumns } from "@/lib/shop-category-package-sizes"
+import type { ShopShippingDefaults } from "@/lib/shop-shipping-defaults"
 
 type DeskListing = ListingsDeskAnalyticsInput & {
   slug: string | null
@@ -57,9 +54,9 @@ interface ListingsAdvancedViewProps {
   visibleListings: DeskListing[]
   sellerStoreHref: string | null
   sellerBanned: boolean
-  shopCategoryPackageSizes: ShopCategoryPackageSizeMap
+  shopShippingDefaults: ShopShippingDefaults
   onListingSaved: (listingId: string, saved: ListingQuickEditSaved) => void
-  onPackageApplied: (section: string, columns: ListingPackageColumns) => void
+  onShippingApplied: (groups: { ids: string[]; columns: ListingPackageColumns }[]) => void
 }
 
 export function ListingsAdvancedView({
@@ -67,15 +64,10 @@ export function ListingsAdvancedView({
   visibleListings,
   sellerStoreHref,
   sellerBanned,
-  shopCategoryPackageSizes,
+  shopShippingDefaults,
   onListingSaved,
-  onPackageApplied,
+  onShippingApplied,
 }: ListingsAdvancedViewProps) {
-  const [packageSync, setPackageSync] = useState<{
-    nonce: number
-    section: string
-    packageSizeId: ShopPackageSizeId
-  } | null>(null)
   const [openEditorId, setOpenEditorId] = useState<string | null>(null)
 
   return (
@@ -88,16 +80,8 @@ export function ListingsAdvancedView({
       <ListingsAdvancedAnalytics listings={allListings} />
       <ListingsAdvancedTools sellerStoreHref={sellerStoreHref} sellerBanned={sellerBanned} />
       <ShopCategoryPackagePanel
-        sizes={shopCategoryPackageSizes}
-        listings={allListings}
-        onApplied={(result) => {
-          setPackageSync((current) => ({
-            nonce: (current?.nonce ?? 0) + 1,
-            section: result.section,
-            packageSizeId: result.packageSizeId,
-          }))
-          onPackageApplied(result.section, result.columns)
-        }}
+        shippingDefaults={shopShippingDefaults}
+        onShippingApplied={onShippingApplied}
       />
       <section className="space-y-3" aria-labelledby="listings-editor-heading">
         <div>
@@ -121,18 +105,6 @@ export function ListingsAdvancedView({
                   listing={listing}
                   expanded={openEditorId === listing.id}
                   onExpandedChange={(open) => setOpenEditorId(open ? listing.id : null)}
-                  appliedPackageSizeId={
-                    packageSync?.section === listing.section &&
-                    listing.inventory_source !== "shopify"
-                      ? packageSync.packageSizeId
-                      : null
-                  }
-                  packageSyncNonce={
-                    packageSync?.section === listing.section &&
-                    listing.inventory_source !== "shopify"
-                      ? packageSync.nonce
-                      : 0
-                  }
                   onSaved={onListingSaved}
                 />
               ))}

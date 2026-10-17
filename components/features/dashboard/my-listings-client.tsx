@@ -60,8 +60,8 @@ import {
 import { ShopVacationButton } from "@/components/features/dashboard/listings/shop-vacation-button"
 import type { ListingQuickEditSaved } from "@/lib/actions/listingQuickEdit"
 import type { MyListingRow, MyListingsDashboardStats } from "@/lib/db/my-listings"
-import type { ListingPackageColumns, ShopCategoryPackageSizeMap } from "@/lib/shop-category-package-sizes"
-import { canQuickEditListing } from "@/lib/listing-quick-edit-access"
+import type { ListingPackageColumns } from "@/lib/shop-category-package-sizes"
+import { EMPTY_SHOP_SHIPPING_DEFAULTS, type ShopShippingDefaults } from "@/lib/shop-shipping-defaults"
 import { shopVacationTargetIds } from "@/lib/shop-vacation"
 import { cn } from "@/lib/utils"
 import {
@@ -112,7 +112,7 @@ interface MyListingsClientProps {
   initialStatusFilter?: StatusFilter
   initialView?: ListingsDeskView
   sellerStoreHref?: string | null
-  shopCategoryPackageSizes?: ShopCategoryPackageSizeMap
+  shopShippingDefaults?: ShopShippingDefaults
 }
 
 function listingRowImageSrc(listing: MyListingRow): string | null {
@@ -327,7 +327,7 @@ export function MyListingsClient({
   initialStatusFilter = "all",
   initialView = "basic",
   sellerStoreHref = null,
-  shopCategoryPackageSizes = {},
+  shopShippingDefaults = EMPTY_SHOP_SHIPPING_DEFAULTS,
 }: MyListingsClientProps) {
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState("")
@@ -462,18 +462,13 @@ export function MyListingsClient({
     }))
   }
 
-  function handlePackageApplied(section: string, columns: ListingPackageColumns) {
+  function handleShippingApplied(groups: { ids: string[]; columns: ListingPackageColumns }[]) {
     setListingPatches((current) => {
       const next = { ...current }
-      for (const listing of listings) {
-        if (
-          listing.section !== section ||
-          listing.inventory_source === "shopify" ||
-          !canQuickEditListing(listing.status)
-        ) {
-          continue
+      for (const group of groups) {
+        for (const id of group.ids) {
+          next[id] = { ...next[id], ...group.columns }
         }
-        next[listing.id] = { ...next[listing.id], ...columns }
       }
       return next
     })
@@ -648,9 +643,9 @@ export function MyListingsClient({
           }
           sellerStoreHref={sellerStoreHref}
           sellerBanned={sellerBanned}
-          shopCategoryPackageSizes={shopCategoryPackageSizes}
+          shopShippingDefaults={shopShippingDefaults}
           onListingSaved={handleListingSaved}
-          onPackageApplied={handlePackageApplied}
+          onShippingApplied={handleShippingApplied}
         />
       ) : null}
 
