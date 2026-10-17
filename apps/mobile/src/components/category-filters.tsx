@@ -199,9 +199,7 @@ function FilterHome({
         <View style={styles.top}>
           <Text style={[styles.topLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}>Top filters</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-            {ship ? (
-              <FilterChip label="Ship to me" active={shipping} onPress={onToggleShipping} />
-            ) : null}
+            {ship ? <ShipToMeChip active={shipping} onPress={onToggleShipping} /> : null}
             {condition?.options.map((option) => (
               <FilterChip
                 key={option.value}
@@ -312,6 +310,40 @@ function FilterHeader({
         </Text>
       </Pressable>
     </View>
+  )
+}
+
+const SHIP_NAVY = "#001A4A"
+const SHIP_WASH = "#E8EEF8"
+
+function ShipToMeChip({ active, onPress }: { active: boolean; onPress: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected: active }}
+      accessibilityLabel={active ? "Showing listings that ship. Clear ship to me." : "Show only listings that ship to you"}
+      onPress={onPress}
+      style={[
+        styles.chip,
+        styles.shipChip,
+        active
+          ? { backgroundColor: SHIP_NAVY, borderColor: SHIP_NAVY }
+          : { backgroundColor: SHIP_WASH, borderColor: "rgba(0, 26, 74, 0.2)" },
+      ]}
+    >
+      <SymbolView
+        name={
+          active
+            ? { ios: "checkmark", android: "check", web: "check" }
+            : { ios: "box.truck", android: "local_shipping", web: "local_shipping" }
+        }
+        size={16}
+        tintColor={active ? "#FFFFFF" : SHIP_NAVY}
+      />
+      <Text style={{ color: active ? "#FFFFFF" : SHIP_NAVY, fontFamily: fontFamily.text, fontSize: 15, fontWeight: "600" }}>
+        Ship to me
+      </Text>
+    </Pressable>
   )
 }
 
@@ -460,6 +492,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
   },
+  shipChip: { flexDirection: "row", alignItems: "center", gap: 6 },
   link: {
     minHeight: 64,
     paddingHorizontal: 16,

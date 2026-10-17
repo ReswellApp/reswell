@@ -68,21 +68,26 @@ export default function ListingsScreen() {
     router.push({ pathname: "/seller-resources/[slug]", params: { slug: screen } })
   }
 
+  function openPage(page: "sellers" | "sold") {
+    if (page === "sellers") {
+      router.push("/sellers")
+      return
+    }
+    router.push({ pathname: "/feed", params: { tab: "sold" } })
+  }
+
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <Stack.Screen options={{ headerShown: false }} />
-      <HomeHeader
-        onNotifications={() => router.push(session ? "/account/messages" : "/sign-in")}
-        onCart={() => router.push(session ? "/account/cart" : "/sign-in")}
-      />
+      <HomeHeader onCart={() => router.push(session ? "/account/cart" : "/sign-in")} />
       {loading && !home ? (
         <ScrollView>
-          <CategorySlider items={rail?.items ?? null} onOpenCategory={openCategory} onOpenResource={openResource} />
+          <CategorySlider items={rail?.items ?? null} onOpenCategory={openCategory} onOpenResource={openResource} onOpenPage={openPage} />
           <ActivityIndicator style={styles.centered} color={colors.foreground} />
         </ScrollView>
       ) : error && !home ? (
         <ScrollView>
-          <CategorySlider items={rail?.items ?? null} onOpenCategory={openCategory} onOpenResource={openResource} />
+          <CategorySlider items={rail?.items ?? null} onOpenCategory={openCategory} onOpenResource={openResource} onOpenPage={openPage} />
           <View style={styles.centered}>
             <Text style={{ color: colors.foreground, fontFamily: fontFamily.text }}>{error}</Text>
             <Pressable onPress={load}>
@@ -102,6 +107,7 @@ export default function ListingsScreen() {
           onOpenShop={(slug) => router.push({ pathname: "/profile/[slug]", params: { slug } })}
           onOpenCategory={openCategory}
           onOpenResource={openResource}
+          onOpenPage={openPage}
           rail={rail?.items ?? null}
         />
       )}

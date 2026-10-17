@@ -25,6 +25,8 @@ import {
   mobileOffersSchema,
   mobileOrdersSchema,
   mobileProfileSchema,
+  mobileSellerPageSchema,
+  mobileSellersPageSchema,
   mobileRecentlyViewedSchema,
   mobileReviewsPageSchema,
   mobileSavedSearchSchema,
@@ -38,6 +40,8 @@ import {
   mobilePlaceDetailsSchema,
   mobilePlaceSuggestionsSchema,
   type MobileBrowseRail,
+  type MobileSellerPage,
+  type MobileSellersPage,
   type MobileSellerResource,
   type MobileCategory,
   type MobileCategoryListingsQuery,
@@ -146,6 +150,20 @@ export function fetchHome(): Promise<MobileHome> {
 /** Website category rail and Seller Resources dropdown. Refetched on each home visit. */
 export function fetchBrowseRail(): Promise<MobileBrowseRail> {
   return read("/api/mobile/v1/browse-rail", (data) => mobileBrowseRailSchema.parse(data))
+}
+
+/** `/sellers`. Copy, order, and lines follow the website directory. */
+export function fetchSellers(query?: string): Promise<MobileSellersPage> {
+  const params = new URLSearchParams()
+  const q = query?.trim()
+  if (q) params.set("q", q)
+  const path = params.size > 0 ? `/api/mobile/v1/sellers?${params.toString()}` : "/api/mobile/v1/sellers"
+  return read(path, (data) => mobileSellersPageSchema.parse(data))
+}
+
+/** `/sellers/[slug]`. Profile and current listings from the same page as the website. */
+export function fetchSeller(slug: string, accessToken?: string | null): Promise<MobileSellerPage> {
+  return read(`/api/mobile/v1/sellers/${encodeURIComponent(slug)}`, (data) => mobileSellerPageSchema.parse(data), accessToken)
 }
 
 /** Seller resource page. Copy comes from the same source as the website. */

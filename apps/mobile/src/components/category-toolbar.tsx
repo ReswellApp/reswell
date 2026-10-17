@@ -3,76 +3,93 @@ import { Pressable, StyleSheet, Text, View } from "react-native"
 import { ListingLayoutSwitch, type ListingLayout } from "@/components/listing-layout-switch"
 import { fontFamily, useReswellColors } from "@/theme"
 
+/** Circular filter, Sort by pill, and result count. Shared by category and search. */
 export function CategoryToolbar({
-  sortLabel,
+  count,
   filterCount,
-  layout,
   onSort,
   onFilter,
+  layout,
   onLayout,
 }: {
-  sortLabel: string
+  count: number
   filterCount: number
-  layout: ListingLayout
   onSort: () => void
   onFilter: () => void
-  onLayout: (next: ListingLayout) => void
+  layout?: ListingLayout
+  onLayout?: (next: ListingLayout) => void
 }) {
   const colors = useReswellColors()
   return (
-    <View style={styles.row}>
-      <Pressable
-        accessibilityRole="button"
-        onPress={onSort}
-        style={[styles.sort, { backgroundColor: colors.image }]}
-      >
-        <Text numberOfLines={1} style={[styles.sortLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}>
-          {sortLabel}
-        </Text>
-        <SymbolView name={{ ios: "chevron.down", android: "expand_more", web: "expand_more" }} size={16} tintColor={colors.foreground} />
-      </Pressable>
-      <Pressable accessibilityRole="button" onPress={onFilter} hitSlop={8} style={styles.filter}>
-        <SymbolView
-          name={{ ios: "slider.horizontal.3", android: "tune", web: "tune" }}
-          size={22}
-          tintColor={colors.foreground}
-        />
-        {filterCount > 0 ? (
-          <View style={[styles.badge, { backgroundColor: colors.foreground }]}>
-            <Text style={[styles.badgeLabel, { color: colors.primaryForeground }]}>{filterCount}</Text>
+    <View style={styles.block}>
+      <View style={styles.row}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Filter"
+          onPress={onFilter}
+          style={[styles.filter, { backgroundColor: colors.image }]}
+        >
+          <SymbolView
+            name={{ ios: "slider.horizontal.3", android: "tune", web: "tune" }}
+            size={20}
+            tintColor={colors.foreground}
+          />
+          {filterCount > 0 ? (
+            <View style={[styles.badge, { backgroundColor: colors.foreground }]}>
+              <Text style={[styles.badgeLabel, { color: colors.primaryForeground }]}>{filterCount}</Text>
+            </View>
+          ) : null}
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Sort by"
+          onPress={onSort}
+          style={[styles.sort, { backgroundColor: colors.image }]}
+        >
+          <Text style={[styles.sortLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}>Sort by</Text>
+          <SymbolView
+            name={{ ios: "chevron.down", android: "expand_more", web: "expand_more" }}
+            size={16}
+            tintColor={colors.foreground}
+          />
+        </Pressable>
+        {layout && onLayout ? (
+          <View style={styles.layout}>
+            <ListingLayoutSwitch layout={layout} onLayout={onLayout} />
           </View>
         ) : null}
-      </Pressable>
-      <ListingLayoutSwitch layout={layout} onLayout={onLayout} />
+      </View>
+      <Text style={[styles.count, { color: colors.muted, fontFamily: fontFamily.text }]}>
+        {count} {count === 1 ? "result" : "results"}
+      </Text>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  row: {
-    flexDirection: "row",
+  block: { paddingHorizontal: 4, paddingTop: 14, paddingBottom: 12, gap: 12 },
+  row: { flexDirection: "row", alignItems: "center", gap: 10 },
+  layout: { marginLeft: "auto" },
+  filter: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: "center",
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingTop: 14,
-    paddingBottom: 8,
+    justifyContent: "center",
   },
   sort: {
-    flex: 1,
     minHeight: 44,
     borderRadius: 22,
     paddingHorizontal: 16,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
     gap: 6,
   },
   sortLabel: { fontSize: 15, fontWeight: "700" },
-  filter: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
   badge: {
     position: "absolute",
-    top: 0,
-    right: 0,
+    top: 4,
+    right: 4,
     minWidth: 16,
     height: 16,
     borderRadius: 8,
@@ -81,4 +98,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   badgeLabel: { fontSize: 10, fontWeight: "700" },
+  count: { fontSize: 14 },
 })

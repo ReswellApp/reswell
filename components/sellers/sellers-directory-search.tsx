@@ -19,6 +19,7 @@ import {
 } from "@/app/actions/sellers"
 import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
+import { sellersDirectoryPageCopy } from "@/lib/sellers/directory-page-copy"
 
 const DEBOUNCE_MS = 200
 const MIN_QUERY_LENGTH = 1
@@ -55,7 +56,7 @@ export function SellersDirectorySearch({
   directoryQuery,
   onDirectoryQuery,
   className,
-  placeholder = "Search sellers by name, shop, or city…",
+  placeholder = sellersDirectoryPageCopy.searchPlaceholder,
 }: SellersDirectorySearchProps) {
   const router = useRouter()
   const [value, setValue] = React.useState(defaultValue)

@@ -16,6 +16,7 @@ export function HomeFeed({
   onOpenShop,
   onOpenCategory,
   onOpenResource,
+  onOpenPage,
   rail,
 }: {
   sections: MobileHomeSection[]
@@ -26,6 +27,7 @@ export function HomeFeed({
   onOpenShop: (slug: string) => void
   onOpenCategory: (category: MobileListingCategory) => void
   onOpenResource: (screen: string) => void
+  onOpenPage: (page: "sellers" | "sold") => void
   rail: MobileBrowseRailItem[] | null
 }) {
   const colors = useReswellColors()
@@ -35,7 +37,7 @@ export function HomeFeed({
       contentContainerStyle={styles.page}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.foreground} />}
     >
-      <CategorySlider items={rail} onOpenCategory={onOpenCategory} onOpenResource={onOpenResource} />
+      <CategorySlider items={rail} onOpenCategory={onOpenCategory} onOpenResource={onOpenResource} onOpenPage={onOpenPage} />
       {continueListings.length > 0 ? (
         <ListingSection title="Pick up where you left off" listings={continueListings} onOpenListing={onOpenListing} />
       ) : null}

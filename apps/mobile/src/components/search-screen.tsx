@@ -112,11 +112,16 @@ export function SearchScreen({ onClose }: { onClose: (after?: () => void) => voi
             onSubmitEditing={openResults}
             style={[styles.input, { color: colors.foreground, fontFamily: fontFamily.text }]}
           />
-          {query.length > 0 ? (
-            <Pressable accessibilityRole="button" accessibilityLabel="Clear search" hitSlop={8} onPress={() => setQuery("")}>
-              <SymbolView name={{ ios: "xmark.circle.fill", android: "cancel", web: "cancel" }} size={18} tintColor={colors.muted} />
-            </Pressable>
-          ) : null}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Clear search"
+            hitSlop={8}
+            disabled={query.length === 0}
+            onPress={() => setQuery("")}
+            style={query.length === 0 ? styles.clearHidden : null}
+          >
+            <SymbolView name={{ ios: "xmark.circle.fill", android: "cancel", web: "cancel" }} size={18} tintColor={colors.muted} />
+          </Pressable>
         </View>
       </View>
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.body}>
@@ -250,6 +255,7 @@ const styles = StyleSheet.create({
     paddingRight: 12,
   },
   input: { flex: 1, fontSize: 16, paddingVertical: 8 },
+  clearHidden: { opacity: 0 },
   body: { paddingBottom: 40 },
   idle: { gap: 28 },
   block: { gap: 4, paddingTop: 12 },

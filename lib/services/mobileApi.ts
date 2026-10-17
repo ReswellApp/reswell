@@ -18,9 +18,10 @@ import {
 } from "@/lib/db/mobile-profiles"
 import {
   listMobileListingRows,
-  MOBILE_LISTING_SELECT,
+  MOBILE_LISTING_DETAIL_SELECT,
   type MobileListingRow,
   type MobileListingSellerRow,
+  type MobileListingVideoRow,
 } from "@/lib/db/mobile-listings"
 import { isSellerBanActive } from "@/lib/db/sellerBan"
 import { getSellerReviewSummary } from "@/lib/db/seller-reviews"
@@ -45,7 +46,8 @@ import {
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { absoluteProxiedProfileMediaUrl } from "@/lib/public-media-display-src"
 import { configuredReswellShopOwnerUserId } from "@/lib/services/resolveReswellShopOwnerUser"
-import { absolutePublicMediaUrl } from "@/lib/site-metadata"
+import { listingPdpVideoPlaybackSrc } from "@/lib/listing-media-proxy-url"
+import { absolutePublicMediaUrl, absoluteUrl } from "@/lib/site-metadata"
 import { getDb } from "@/lib/supabase/db"
 import type { SupabaseClient, User } from "@supabase/supabase-js"
 
@@ -95,6 +97,41 @@ function buyerFacingDimensions(raw: string | null | undefined): {
     dimensions: geometry ?? (volume ? null : formatStoredListingDimensions(text)),
     volume_label: volume,
   }
+}
+
+function listingVideoPlaybackUrl(raw: string | null | undefined): string | null {
+  const src = listingPdpVideoPlaybackSrc(raw)
+  if (!src) return null
+  if (/^https?:\/\//i.test(src)) return src
+  if (src.startsWith("/")) return absoluteUrl(src)
+  return null
+}
+
+function durationSeconds(value: number | string | null | undefined): number | null {
+  if (value == null || value === "") return null
+  const amount = typeof value === "number" ? value : Number(value)
+  if (!Number.isFinite(amount) || amount < 0) return null
+  return Math.round(amount * 10) / 10
+}
+
+/** Same order as the website gallery: first playable clip by sort order. */
+function listingVideos(rows: MobileListingVideoRow[] | null | undefined) {
+  const sorted = [...(rows ?? [])].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+  const videos = []
+  for (const row of sorted) {
+    const id = nullableText(row.id)
+    const url = listingVideoPlaybackUrl(row.url)
+    if (!id || !url) continue
+    videos.push({
+      id,
+      url,
+      poster_url: mediaUrl(row.thumbnail_url),
+      content_type: nullableText(row.content_type),
+      duration_seconds: durationSeconds(row.duration_seconds),
+    })
+    if (videos.length >= 4) break
+  }
+  return videos
 }
 
 function shippingCostMode(
@@ -163,6 +200,7 @@ export function toMobileListingDetail(
     status: row.status,
     description: nullableText(row.description),
     image_urls: imageUrls,
+    videos: listingVideos(row.listing_videos),
     seller: {
       name: getPublicSellerDisplayName(seller),
       seller_slug: nullableText(seller?.seller_slug),
@@ -400,7 +438,7 @@ export async function getMobileListingService(
 ): Promise<MobileApiResult<MobileListingDetail>> {
   const supabase = getDb({ consistency: "eventual", purpose: "catalog" })
   const found = await findListingByParam(supabase, listingParam, {
-    select: MOBILE_LISTING_SELECT,
+    select: MOBILE_LISTING_DETAIL_SELECT,
   })
   if (found.queryFailed) {
     return { ok: false, status: 500, error: "Unable to load listing right now" }

@@ -37,10 +37,21 @@ export const mobileListingCardSchema = z.object({
   pickup_label: z.string().nullable(),
 })
 
+/** Playable listing clip. `url` is the `/media/listing-videos` stream, not the storage object. */
+export const mobileListingVideoSchema = z.object({
+  id: z.string().uuid(),
+  url: z.string().url(),
+  poster_url: z.string().url().nullable(),
+  content_type: z.string().nullable(),
+  duration_seconds: z.number().nullable(),
+})
+
 export const mobileListingDetailSchema = mobileListingCardSchema.extend({
   status: z.string(),
   description: z.string().nullable(),
   image_urls: z.array(z.string()),
+  /** Sort order matches `/l`. Empty when the seller did not upload a video. */
+  videos: z.array(mobileListingVideoSchema),
   seller: z.object({
     name: z.string(),
     seller_slug: z.string().nullable(),
@@ -377,6 +388,8 @@ export type MobileSellerResource = z.infer<typeof mobileSellerResourceSchema>
  * Homepage slider. Categories match the website rail. Menus match a website dropdown,
  * including Seller Resources. The app fetches this on each visit.
  */
+export const MOBILE_BROWSE_PAGES = ["sellers", "sold"] as const
+
 export const mobileBrowseRailItemSchema = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("category"),
@@ -389,6 +402,12 @@ export const mobileBrowseRailItemSchema = z.discriminatedUnion("kind", [
     id: z.string(),
     label: z.string(),
     items: z.array(mobileBrowseLinkSchema).min(1),
+  }),
+  z.object({
+    kind: z.literal("page"),
+    label: z.string(),
+    href: z.string(),
+    page: z.enum(MOBILE_BROWSE_PAGES).nullable(),
   }),
 ])
 
@@ -664,6 +683,37 @@ export const mobileProfileSchema = z.object({
   following: z.boolean().optional(),
 })
 
+/** `/sellers` directory. Order, copy, and lines come from the same catalog as the website. */
+export const mobileSellerCardSchema = z.object({
+  id: z.string().uuid(),
+  slug: z.string().min(1),
+  name: z.string(),
+  verified: z.boolean(),
+  avatar_url: z.string().nullable(),
+  image_urls: z.array(z.string()).max(3),
+  lines: z.array(z.string()).max(6),
+})
+
+export const mobileSellersQuerySchema = z.object({
+  q: z.string().trim().max(80).optional(),
+})
+
+export const mobileSellersPageSchema = z.object({
+  title: z.string(),
+  description: z.string(),
+  search_placeholder: z.string(),
+  summary: z.string().nullable(),
+  empty_title: z.string(),
+  empty_body: z.string(),
+  sellers: z.array(mobileSellerCardSchema),
+})
+
+/** `/sellers/[slug]`. Profile facts plus the current inventory the website shows. */
+export const mobileSellerPageSchema = z.object({
+  profile: mobileProfileSchema,
+  listings: z.array(mobileListingCardSchema),
+})
+
 export const mobileProfileParamSchema = z.object({
   slug: z
     .string()
@@ -679,6 +729,7 @@ export const mobileApiErrorSchema = z.object({
 
 export type MobileMe = z.infer<typeof mobileMeSchema>
 export type MobileListingCard = z.infer<typeof mobileListingCardSchema>
+export type MobileListingVideo = z.infer<typeof mobileListingVideoSchema>
 export type MobileListingDetail = z.infer<typeof mobileListingDetailSchema>
 export type MobileListingRailSection = z.infer<typeof mobileListingRailSectionSchema>
 export type MobileListingRails = z.infer<typeof mobileListingRailsSchema>
@@ -756,6 +807,9 @@ export function savedSearchCardCopy(input: { saved: boolean; compact: boolean; n
     button: input.saved ? "Saved" : "Save Search",
   }
 }
+export type MobileSellerCard = z.infer<typeof mobileSellerCardSchema>
+export type MobileSellersPage = z.infer<typeof mobileSellersPageSchema>
+export type MobileSellerPage = z.infer<typeof mobileSellerPageSchema>
 export type MobileProfile = z.infer<typeof mobileProfileSchema>
 
 const mobilePageFields = {

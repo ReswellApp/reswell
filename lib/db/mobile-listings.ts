@@ -31,7 +31,17 @@ export type MobileListingRow = {
   shipping_price: number | string | null
   board_shipping_cost_mode: string | null
   listing_images: ListingImageForCard[] | null
+  listing_videos?: MobileListingVideoRow[] | null
   profiles: MobileListingSellerRow | MobileListingSellerRow[] | null
+}
+
+export type MobileListingVideoRow = {
+  id?: string | null
+  url?: string | null
+  thumbnail_url?: string | null
+  content_type?: string | null
+  duration_seconds?: number | string | null
+  sort_order?: number | null
 }
 
 export const MOBILE_LISTING_SELECT = `
@@ -57,6 +67,12 @@ export const MOBILE_LISTING_SELECT = `
   archived_at,
   listing_images (url, thumbnail_url, is_primary, sort_order),
   ${LISTING_SELLER_PROFILES_EMBED} (seller_slug, display_name)
+`
+
+/** Detail only. Feeds stay on `MOBILE_LISTING_SELECT` so cards do not pull video rows. */
+export const MOBILE_LISTING_DETAIL_SELECT = `
+  ${MOBILE_LISTING_SELECT},
+  listing_videos (id, url, thumbnail_url, content_type, duration_seconds, sort_order)
 `
 
 export type MobileListingListQuery = {

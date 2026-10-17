@@ -20,10 +20,12 @@ export function CategorySlider({
   items,
   onOpenCategory,
   onOpenResource,
+  onOpenPage,
 }: {
   items: MobileBrowseRailItem[] | null
   onOpenCategory: (category: MobileListingCategory) => void
   onOpenResource: (screen: string) => void
+  onOpenPage: (page: "sellers" | "sold") => void
 }) {
   const colors = useReswellColors()
   const rail = items && items.length > 0 ? items : FALLBACK_ITEMS
@@ -35,9 +37,13 @@ export function CategorySlider({
           <SellerResourcesSheet key={item.id} label={item.label} items={item.items} onOpenResource={onOpenResource} />
         ) : (
           <Pressable
-            key={item.href || item.category || item.label}
+            key={item.href || item.label}
             accessibilityRole="button"
             onPress={() => {
+              if (item.kind === "page") {
+                if (item.page) onOpenPage(item.page)
+                return
+              }
               if (item.category) onOpenCategory(item.category)
             }}
             style={[styles.chip, { backgroundColor: colors.background, borderColor: colors.border }]}

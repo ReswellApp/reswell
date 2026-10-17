@@ -65,6 +65,7 @@ function tabBarHidden(pathname: string): boolean {
     pathname.startsWith("/listing") ||
     pathname.startsWith("/profile") ||
     pathname.startsWith("/seller-resources") ||
+    pathname.startsWith("/sellers") ||
     pathname.startsWith("/sell/") ||
     pathname === "/sign-in"
   )

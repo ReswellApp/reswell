@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router"
-import { SymbolView } from "expo-symbols"
+import { SearchCartHeader } from "@/components/search-cart-header"
 import { useEffect, useState } from "react"
 import {
   ActivityIndicator,
@@ -8,10 +8,8 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native"
-import { useSafeAreaInsets } from "react-native-safe-area-context"
 import {
   MOBILE_LISTING_CATEGORIES,
   type MobileCategory,
@@ -22,6 +20,7 @@ import {
   type MobileSearchResults,
 } from "@reswell/api-contract"
 import { CategoryFilters } from "@/components/category-filters"
+import { CategoryToolbar } from "@/components/category-toolbar"
 import { type CategoryPlace, type CategoryRadius } from "@/components/category-location-filter"
 import { ListingCard } from "@/components/listing-card"
 import { SaveSearchCard } from "@/components/save-search-card"
@@ -39,7 +38,6 @@ const SORTS: { id: MobileCategorySortId; label: string }[] = [
 
 export default function SearchResultsScreen() {
   const colors = useReswellColors()
-  const insets = useSafeAreaInsets()
   const router = useRouter()
   const { session } = useAuth()
   const params = useLocalSearchParams<{ q?: string }>()
@@ -190,45 +188,14 @@ export default function SearchResultsScreen() {
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <Stack.Screen options={{ headerShown: false }} />
-      <View style={[styles.header, { paddingTop: insets.top, borderBottomColor: colors.border }]}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Back" hitSlop={8} onPress={() => router.back()}>
-          <SymbolView name={{ ios: "chevron.left", android: "arrow_back", web: "arrow_back" }} size={22} tintColor={colors.foreground} />
-        </Pressable>
-        <View style={[styles.field, { borderColor: colors.border }]}>
-          <TextInput
-            value={draft}
-            onChangeText={setDraft}
-            placeholder="Search surfboards, fins, wetsuits or apparel…"
-            placeholderTextColor={colors.muted}
-            autoCapitalize="none"
-            autoCorrect={false}
-            returnKeyType="search"
-            onSubmitEditing={submitSearch}
-            style={[styles.input, { color: colors.foreground, fontFamily: fontFamily.text }]}
-          />
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Search"
-            onPress={submitSearch}
-            style={[styles.searchButton, { backgroundColor: colors.primary }]}
-          >
-            <SymbolView
-              name={{ ios: "magnifyingglass", android: "search", web: "search" }}
-              size={16}
-              tintColor={colors.primaryForeground}
-              weight="semibold"
-            />
-          </Pressable>
-        </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Cart"
-          hitSlop={6}
-          onPress={() => router.push(session ? "/account/cart" : "/sign-in")}
-        >
-          <SymbolView name={{ ios: "cart", android: "shopping_cart", web: "shopping_cart" }} size={22} tintColor={colors.foreground} />
-        </Pressable>
-      </View>
+      <SearchCartHeader
+        mode="input"
+        value={draft}
+        onChangeText={setDraft}
+        onSubmit={submitSearch}
+        onBack={() => router.back()}
+        onCart={() => router.push(session ? "/account/cart" : "/sign-in")}
+      />
       {loading && listings.length === 0 ? (
         <ActivityIndicator style={styles.centered} color={colors.foreground} />
       ) : error && listings.length === 0 ? (
@@ -245,43 +212,12 @@ export default function SearchResultsScreen() {
           onEndReached={loadMore}
           onEndReachedThreshold={0.4}
           ListHeaderComponent={
-            <View style={styles.toolsBlock}>
-              <View style={styles.tools}>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Filter"
-                  onPress={() => setFiltersOpen(true)}
-                  style={[styles.tool, { backgroundColor: colors.image }]}
-                >
-                  <SymbolView
-                    name={{ ios: "slider.horizontal.3", android: "tune", web: "tune" }}
-                    size={20}
-                    tintColor={colors.foreground}
-                  />
-                  {filterCount > 0 ? (
-                    <View style={[styles.badge, { backgroundColor: colors.foreground }]}>
-                      <Text style={[styles.badgeLabel, { color: colors.primaryForeground }]}>{filterCount}</Text>
-                    </View>
-                  ) : null}
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Sort by"
-                  onPress={() => setSortOpen(true)}
-                  style={[styles.sort, { backgroundColor: colors.image }]}
-                >
-                  <Text style={[styles.sortLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}>Sort by</Text>
-                  <SymbolView
-                    name={{ ios: "chevron.down", android: "expand_more", web: "expand_more" }}
-                    size={16}
-                    tintColor={colors.foreground}
-                  />
-                </Pressable>
-              </View>
-              <Text style={[styles.count, { color: colors.muted, fontFamily: fontFamily.text }]}>
-                {listings.length} {listings.length === 1 ? "result" : "results"}
-              </Text>
-            </View>
+            <CategoryToolbar
+              count={listings.length}
+              filterCount={filterCount}
+              onFilter={() => setFiltersOpen(true)}
+              onSort={() => setSortOpen(true)}
+            />
           }
           ListEmptyComponent={
             loading ? null : (
@@ -396,66 +332,9 @@ function filterSearchListings(
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingHorizontal: 16,
-    paddingBottom: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  field: {
-    flex: 1,
-    minHeight: 44,
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingLeft: 14,
-    paddingRight: 4,
-  },
-  input: { flex: 1, fontSize: 16, paddingVertical: 8 },
-  searchButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   centered: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24 },
   list: { paddingTop: 8, paddingBottom: 120, paddingHorizontal: 12 },
   columns: { gap: 12 },
-  toolsBlock: { paddingBottom: 12, gap: 12 },
-  tools: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 4 },
-  tool: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  sort: {
-    minHeight: 44,
-    borderRadius: 22,
-    paddingHorizontal: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  sortLabel: { fontSize: 15, fontWeight: "700" },
-  badge: {
-    position: "absolute",
-    top: 4,
-    right: 4,
-    minWidth: 16,
-    height: 16,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 4,
-  },
-  badgeLabel: { fontSize: 10, fontWeight: "700" },
-  count: { paddingHorizontal: 4, fontSize: 14 },
   empty: { textAlign: "center", marginTop: 32, fontSize: 16 },
   footer: { marginVertical: 16 },
   spacer: { flex: 1 },

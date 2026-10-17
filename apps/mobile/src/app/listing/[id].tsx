@@ -89,7 +89,16 @@ export default function ListingScreen() {
             contentContainerStyle={styles.scrollContent}
             contentInsetAdjustmentBehavior="never"
           >
-            <ListingGallery urls={listing.image_urls} sold={listing.status === "sold"} />
+            <ListingGallery
+              urls={listing.image_urls}
+              video={
+                listing.videos[0]
+                  ? { url: listing.videos[0].url, posterUrl: listing.videos[0].poster_url }
+                  : null
+              }
+              sold={listing.status === "sold"}
+              dimensionsLine={listingDimensionsLine(listing.dimensions, listing.volume_label)}
+            />
             <ListingDetail listing={listing} />
             <ListingRails
               sections={rails}
@@ -103,6 +112,12 @@ export default function ListingScreen() {
       )}
     </View>
   )
+}
+
+/** Same caption the website prints in the enlarge view. */
+function listingDimensionsLine(dimensions: string | null, volume: string | null): string | null {
+  if (dimensions && volume) return `${dimensions} · ${volume}`
+  return dimensions ?? volume
 }
 
 const styles = StyleSheet.create({

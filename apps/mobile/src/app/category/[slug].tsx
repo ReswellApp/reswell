@@ -14,7 +14,7 @@ import { CategoryFilters } from "@/components/category-filters"
 import { CategoryHero } from "@/components/category-hero"
 import { type CategoryPlace, type CategoryRadius } from "@/components/category-location-filter"
 import { CategoryToolbar } from "@/components/category-toolbar"
-import { HomeHeader } from "@/components/home-header"
+import { SearchCartHeader } from "@/components/search-cart-header"
 import { ListingCard } from "@/components/listing-card"
 import { fetchCategory, fetchCategoryListings } from "@/lib/api"
 import { categoryListingQuery, type SelectedFacets } from "@/lib/category-listing-query"
@@ -90,15 +90,15 @@ export default function CategoryScreen() {
 
   const listings = page?.listings ?? []
   const grid = layout === "grid" && listings.length % 2 === 1 ? [...listings, null] : listings
-  const sortLabel = category?.sorts.find((item) => item.id === sort)?.label ?? "Most Relevant"
   const filterCount =
     Object.values(selected).reduce((sum, values) => sum + values.length, 0) + (shipping ? 1 : 0) + (place ? 1 : 0)
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <Stack.Screen options={{ headerShown: false }} />
-      <HomeHeader
-        onNotifications={() => router.push(session ? "/account/messages" : "/sign-in")}
+      <SearchCartHeader
+        mode="open"
+        onBack={() => router.back()}
         onCart={() => router.push(session ? "/account/cart" : "/sign-in")}
       />
       {loading && !category ? (
@@ -126,7 +126,7 @@ export default function CategoryScreen() {
             <View>
               <CategoryHero title={category.title} imageUrl={category.image_url} imagePosition={category.image_position} />
               <CategoryToolbar
-                sortLabel={sortLabel}
+                count={listings.length}
                 filterCount={filterCount}
                 layout={layout}
                 onSort={() => setSortOpen(true)}

@@ -20,6 +20,13 @@ describe("mobile browse rail", () => {
       menu.items.map((item) => item.screen),
       ["for-surf-shops", "how-to-sell", "how-to-ship", "sales-map", "seller-resources"],
     )
+    const pages = rail.items.filter((item) => item.kind === "page")
+    assert.deepEqual(
+      pages.map((item) => (item.kind === "page" ? item.label : "")),
+      ["Sellers", "Sold"],
+    )
+    assert.equal(pages[0]?.kind === "page" ? pages[0].page : null, "sellers")
+    assert.equal(pages[1]?.kind === "page" ? pages[1].page : null, "sold")
   })
 
   it("sends known catalog paths to native category screens", () => {

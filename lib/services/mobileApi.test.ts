@@ -109,7 +109,49 @@ describe("mobile listings contract", () => {
     assert.equal(detail.seller.name, "North Shop")
     assert.equal(detail.seller.seller_slug, "north-shop")
     assert.deepEqual(detail.image_urls, ["https://cdn.example.com/full.jpg"])
+    assert.deepEqual(detail.videos, [])
     assert.equal(detail.description, "Light use.")
+  })
+
+  it("returns the playable video stream in gallery order", () => {
+    const detail = toMobileListingDetail({
+      ...ROW,
+      listing_videos: [
+        {
+          id: "22222222-2222-4222-8222-222222222222",
+          url: "https://cdn.example.com/later.mp4",
+          thumbnail_url: null,
+          content_type: "video/mp4",
+          duration_seconds: "3",
+          sort_order: 2,
+        },
+        {
+          id: "11111111-1111-4111-8111-111111111111",
+          url: "https://cdn.example.com/clip.mp4",
+          thumbnail_url: "https://cdn.example.com/poster.jpg",
+          content_type: "video/quicktime",
+          duration_seconds: 8.2,
+          sort_order: 0,
+        },
+        {
+          id: "33333333-3333-4333-8333-333333333333",
+          url: "   ",
+          thumbnail_url: null,
+          content_type: null,
+          duration_seconds: null,
+          sort_order: 1,
+        },
+      ],
+    })
+    if (!detail) throw new Error("expected a listing detail")
+    assert.deepEqual(
+      detail.videos.map((video) => video.id),
+      ["11111111-1111-4111-8111-111111111111", "22222222-2222-4222-8222-222222222222"],
+    )
+    assert.equal(detail.videos[0]?.url, "https://cdn.example.com/clip.mp4")
+    assert.equal(detail.videos[0]?.poster_url, "https://cdn.example.com/poster.jpg")
+    assert.equal(detail.videos[0]?.duration_seconds, 8.2)
+    assert.equal(detail.videos[1]?.duration_seconds, 3)
   })
 })
 

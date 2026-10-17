@@ -1,4 +1,4 @@
-import { Stack, useRouter } from "expo-router"
+import { Stack, useLocalSearchParams, useRouter } from "expo-router"
 import { SymbolView } from "expo-symbols"
 import { useCallback, useEffect, useRef, useState } from "react"
 import {
@@ -56,11 +56,18 @@ function badgeFor(tab: MobileMarketplaceFeedTab): string | undefined {
   return undefined
 }
 
+function requestedFeedTab(value: string | string[] | undefined): MobileMarketplaceFeedTab | null {
+  const tab = Array.isArray(value) ? value[0] : value
+  if (tab === "sold" || tab === "shipped" || tab === "new") return tab
+  return null
+}
+
 export default function FeedScreen() {
   const colors = useReswellColors()
   const router = useRouter()
+  const params = useLocalSearchParams<{ tab?: string }>()
   const insets = useSafeAreaInsets()
-  const [tab, setTab] = useState<MobileMarketplaceFeedTab>("new")
+  const [tab, setTab] = useState<MobileMarketplaceFeedTab>(requestedFeedTab(params.tab) ?? "new")
   const [feed, setFeed] = useState<MobileMarketplaceFeed | null>(null)
   const [listings, setListings] = useState<MobileListingCard[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -93,6 +100,11 @@ export default function FeedScreen() {
         if (requestId.current === id) setLoading(false)
       })
   }, [])
+
+  useEffect(() => {
+    const requested = requestedFeedTab(params.tab)
+    if (requested && requested !== tabRef.current) setTab(requested)
+  }, [params.tab])
 
   useEffect(() => {
     load(tab)
@@ -161,11 +173,11 @@ export default function FeedScreen() {
               accessibilityLabel="Choose a feed"
               onPress={() => setFilterOpen(true)}
               hitSlop={8}
-              style={styles.filter}
+              style={[styles.filter, { backgroundColor: colors.image }]}
             >
               <SymbolView
                 name={{ ios: "slider.horizontal.3", android: "tune", web: "tune" }}
-                size={22}
+                size={20}
                 tintColor={colors.foreground}
               />
               {tab !== "new" ? <View style={[styles.dot, { backgroundColor: colors.foreground }]} /> : null}
@@ -270,8 +282,8 @@ const styles = StyleSheet.create({
   headerActions: { flexDirection: "row", alignItems: "center", gap: 8 },
   title: { flex: 1, fontSize: 28, fontWeight: "700" },
   subtitle: { fontSize: 15, lineHeight: 21 },
-  filter: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
-  dot: { position: "absolute", top: 6, right: 4, width: 7, height: 7, borderRadius: 4 },
+  filter: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
+  dot: { position: "absolute", top: 8, right: 8, width: 7, height: 7, borderRadius: 4 },
   centered: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, padding: 24 },
   retry: { fontSize: 16, fontWeight: "600" },
   list: { paddingTop: 8, paddingBottom: 120 },

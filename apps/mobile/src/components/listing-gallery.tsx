@@ -1,16 +1,32 @@
 import { Image } from "expo-image"
 import { useState } from "react"
-import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native"
+import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native"
+import { ListingGalleryVideo } from "@/components/listing-gallery-video"
+import { ListingImageLightbox } from "@/components/listing-image-lightbox"
 import { fontFamily, useReswellColors } from "@/theme"
 
 /** Same default frame as the website listing hero: 3:4, whole photo visible. */
 const HERO_ASPECT = 3 / 4
 
-export function ListingGallery({ urls, sold = false }: { urls: string[]; sold?: boolean }) {
+export function ListingGallery({
+  urls,
+  video = null,
+  sold = false,
+  dimensionsLine = null,
+}: {
+  urls: string[]
+  /** First playable clip, shown after the photos the way `/l` does. */
+  video?: { url: string; posterUrl: string | null } | null
+  sold?: boolean
+  /** Same enlarge caption as the website, e.g. `5'11″ × 18 3/8″ × 2 1/4″ · 27 L`. */
+  dimensionsLine?: string | null
+}) {
   const colors = useReswellColors()
   const { width } = useWindowDimensions()
   const [index, setIndex] = useState(0)
-  const frames = urls.length > 0 ? urls : [null]
+  const [enlarged, setEnlarged] = useState(false)
+  const photos = urls.filter((url) => url.length > 0)
+  const frames = photos.length > 0 || video ? photos.length + (video ? 1 : 0) : 1
 
   return (
     <View>
@@ -23,36 +39,66 @@ export function ListingGallery({ urls, sold = false }: { urls: string[]; sold?: 
           setIndex(next)
         }}
       >
-        {frames.map((uri, frame) =>
-          uri ? (
-            <Image
-              key={uri}
-              source={{ uri }}
-              style={[styles.frame, { width, backgroundColor: colors.background }]}
-              contentFit="contain"
-            />
-          ) : (
-            <View key={frame} style={[styles.frame, { width, backgroundColor: colors.image }]} />
-          ),
-        )}
+        {Array.from({ length: frames }, (_, frame) => {
+          const uri = photos[frame]
+          if (uri) {
+            return (
+              <Pressable
+                key={uri}
+                accessibilityRole="button"
+                accessibilityLabel="View enlarged photo"
+                onPress={() => {
+                  setIndex(frame)
+                  setEnlarged(true)
+                }}
+              >
+                <Image
+                  source={{ uri }}
+                  style={[styles.frame, { width, backgroundColor: colors.background }]}
+                  contentFit="contain"
+                />
+              </Pressable>
+            )
+          }
+          if (video && frame === photos.length) {
+            return (
+              <ListingGalleryVideo
+                key={video.url}
+                url={video.url}
+                posterUrl={video.posterUrl}
+                width={width}
+                active={index === frame}
+              />
+            )
+          }
+          return <View key={frame} style={[styles.frame, { width, backgroundColor: colors.image }]} />
+        })}
       </ScrollView>
       {sold ? (
         <View style={[styles.sold, { backgroundColor: colors.foreground }]} pointerEvents="none">
           <Text style={[styles.soldLabel, { color: colors.primaryForeground, fontFamily: fontFamily.text }]}>Sold</Text>
         </View>
       ) : null}
-      {frames.length > 1 ? (
+      {frames > 1 ? (
         <View style={styles.dots} pointerEvents="none">
           <View style={styles.dotsPill}>
-            {frames.map((uri, frame) => (
+            {Array.from({ length: frames }, (_, frame) => (
               <View
-                key={uri ?? frame}
+                key={frame}
                 style={[styles.dot, { backgroundColor: frame === index ? "#FFFFFF" : "rgba(255,255,255,0.45)" }]}
               />
             ))}
           </View>
         </View>
       ) : null}
+      <ListingImageLightbox
+        visible={enlarged}
+        urls={photos}
+        index={Math.min(index, Math.max(photos.length - 1, 0))}
+        dimensionsLine={dimensionsLine ?? null}
+        onIndexChange={setIndex}
+        onClose={() => setEnlarged(false)}
+      />
     </View>
   )
 }

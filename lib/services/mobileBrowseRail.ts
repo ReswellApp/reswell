@@ -9,6 +9,7 @@ import {
 import {
   sellerResourcesNavLinks,
   siteHeaderMobileCategoryNavLinks,
+  siteHeaderMobileSecondaryNavLinks,
 } from "@/lib/site-category-directory"
 
 const CATEGORY_BY_PATH: Record<string, MobileListingCategory> = {
@@ -23,6 +24,11 @@ const CATEGORY_BY_PATH: Record<string, MobileListingCategory> = {
   "/leashes": "leashes",
   "/accessories": "accessories",
 }
+
+const PAGE_BY_PATH = {
+  "/sellers": "sellers",
+  "/sold": "sold",
+} as const
 
 const SCREEN_BY_PATH: Record<string, MobileSellerResourceSlug> = {
   "/for-surf-shops": "for-surf-shops",
@@ -75,6 +81,19 @@ export function getMobileBrowseRail(): MobileBrowseRail {
     if (!href) return []
     return [{ label: link.label, href, category: categoryForHref(href), screen: screenForHref(href) }]
   })
+  const pages = siteHeaderMobileSecondaryNavLinks.flatMap((link) => {
+    const href = siteHref(link.href)
+    if (!href) return []
+    const path = href.split("?")[0]?.replace(/\/$/, "") || "/"
+    return [
+      {
+        kind: "page" as const,
+        label: link.label,
+        href,
+        page: PAGE_BY_PATH[path as keyof typeof PAGE_BY_PATH] ?? null,
+      },
+    ]
+  })
   const items = [
     ...categories,
     ...(resources.length > 0
@@ -87,6 +106,7 @@ export function getMobileBrowseRail(): MobileBrowseRail {
           },
         ]
       : []),
+    ...pages,
   ]
   return mobileBrowseRailSchema.parse({ items })
 }
