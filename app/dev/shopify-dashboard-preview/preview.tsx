@@ -34,7 +34,12 @@ function connection(
   }
 }
 
-function listing(id: string, title: string): ShopifyLinkedListing {
+function listing(
+  id: string,
+  title: string,
+  state: ShopifyLinkedListing["state"],
+): ShopifyLinkedListing {
+  const live = state === "live"
   return {
     mappingId: id,
     listingId: `listing-${id}`,
@@ -45,15 +50,15 @@ function listing(id: string, title: string): ShopifyLinkedListing {
     imageUrl: null,
     price: 640,
     shopifyQuantity: 2,
-    reswellStock: 0,
-    reswellStatus: "removed",
+    reswellStock: live ? 2 : 0,
+    reswellStatus: live ? "active" : "removed",
     section: "surfboards",
     slug: "preview-board",
-    syncStatus: "unselected",
-    selected: false,
+    syncStatus: live ? "synced" : "unselected",
+    selected: live,
     lastSyncedAt: TWO_HOURS_AGO,
     shopifyProductStatus: "active",
-    state: "unpublished",
+    state,
     adminUrl: "https://admin.shopify.com",
   }
 }
@@ -62,12 +67,12 @@ function catalog(listings: ShopifyLinkedListing[]): ShopifyCatalogManagerData {
   return {
     summary: {
       total: listings.length,
-      live: 0,
-      outOfStock: 0,
-      deleted: 0,
-      unpublished: listings.length,
-      errors: 0,
-      needsRemoval: 0,
+      live: listings.filter((item) => item.state === "live").length,
+      outOfStock: listings.filter((item) => item.state === "out_of_stock").length,
+      deleted: listings.filter((item) => item.state === "deleted_in_shopify").length,
+      unpublished: listings.filter((item) => item.state === "unpublished").length,
+      errors: listings.filter((item) => item.state === "error").length,
+      needsRemoval: listings.filter((item) => item.state === "needs_removal").length,
     },
     health: {
       queuedJobs: 0,
@@ -114,7 +119,10 @@ const product: ShopifyCatalogProduct = {
 }
 
 function dashboard(mode: "connected" | "empty" | "disconnected" | "reconnect"): ShopifyDashboardData {
-  const listings = mode === "connected" ? [listing("1", "Twinzer"), listing("2", "Step-down")] : []
+  const listings =
+    mode === "connected"
+      ? [listing("1", "Twinzer", "live"), listing("2", "Step-down", "unpublished")]
+      : []
   return {
     enabled: true,
     configured: true,
@@ -137,7 +145,7 @@ export function ShopifyDashboardPreview({
   mode: "connected" | "empty" | "disconnected" | "reconnect"
 }) {
   return (
-    <div className="min-h-dvh w-full bg-[#f6f6f7] px-4 py-6 text-[#202223] sm:px-6 lg:px-8 lg:py-8">
+    <div className="min-h-dvh w-full bg-[#f1f1f1] px-4 py-6 text-[#303030] sm:px-6 lg:px-8 lg:py-8">
       <ShopifyIntegrationDashboard
         key={mode}
         initialData={dashboard(mode)}

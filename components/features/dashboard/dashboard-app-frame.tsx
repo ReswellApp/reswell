@@ -65,7 +65,7 @@ export function DashboardAppFrame({
     <div
       className={cn(
         shopifyAdmin
-          ? "w-full flex-1 bg-[#f6f6f7] px-4 pb-8 pt-4 text-[#202223] sm:px-6 lg:px-8 lg:pb-10 lg:pt-6 dark:bg-zinc-950 dark:text-foreground"
+          ? "w-full flex-1 bg-[#f1f1f1] px-4 pb-8 pt-4 text-[#303030] sm:px-6 lg:px-8 lg:pb-10 lg:pt-6 dark:bg-zinc-950 dark:text-foreground"
           : "container mx-auto flex-1 pb-3 pt-5 sm:pb-6 sm:pt-6 lg:py-8",
       )}
     >

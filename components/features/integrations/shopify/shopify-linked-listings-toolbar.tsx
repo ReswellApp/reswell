@@ -9,7 +9,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { shopifyFieldClass } from "@/components/features/integrations/shopify/shopify-admin-styles"
+import {
+  shopifyFieldClass,
+  shopifySearchClass,
+} from "@/components/features/integrations/shopify/shopify-admin-styles"
 import {
   PEER_LISTING_SECTION_LABELS,
   PEER_LISTING_SECTIONS,
@@ -43,25 +46,25 @@ export function ShopifyLinkedListingsToolbar({
   onSectionChange,
 }: ShopifyLinkedListingsToolbarProps) {
   return (
-    <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
+    <>
       <form
-        className="relative min-w-0 w-full flex-1"
+        className="relative w-full min-w-0 md:w-auto md:min-w-[14rem] md:flex-1"
         onSubmit={(event) => {
           event.preventDefault()
           onSearchSubmit()
         }}
       >
         <Search
-          className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#6d7175]"
+          className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8a8a8a]"
           aria-hidden
         />
         <Input
           type="search"
           value={search}
           onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="Search linked listings by title"
+          placeholder="Search and filter"
           aria-label="Search linked listings"
-          className={cn(shopifyFieldClass, "w-full min-w-0 pl-8")}
+          className={cn(shopifySearchClass, "w-full min-w-0 pl-8")}
         />
       </form>
       <Select
@@ -71,7 +74,7 @@ export function ShopifyLinkedListingsToolbar({
         }
       >
         <SelectTrigger
-          className={cn(shopifyFieldClass, "w-full shrink-0 sm:w-48")}
+          className={cn(shopifyFieldClass, "w-full shrink-0 md:w-44")}
           aria-label="Section filter"
         >
           <SelectValue />
@@ -85,6 +88,6 @@ export function ShopifyLinkedListingsToolbar({
           ))}
         </SelectContent>
       </Select>
-    </div>
+    </>
   )
 }

@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Image from "next/image"
-import { Check, Loader2, PackageOpen } from "lucide-react"
+import { Check, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Select,
@@ -15,8 +15,9 @@ import {
   shopifyFieldClass,
   shopifyMutedClass,
   shopifyPrimaryButtonClass,
-  shopifyQuietDangerButtonClass,
+  shopifySecondaryButtonClass,
   shopifySuccessBadgeClass,
+  shopifyThumbClass,
 } from "@/components/features/integrations/shopify/shopify-admin-styles"
 import {
   PEER_LISTING_SECTION_LABELS,
@@ -60,24 +61,20 @@ export function ShopifyProductCard({
   return (
     <div className="flex flex-col gap-4 px-5 py-4 lg:flex-row lg:items-center">
       <div className="flex min-w-0 flex-1 gap-3">
-        <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-[#e1e3e5] bg-[#f6f6f7] dark:border-border dark:bg-muted">
+        <div className={shopifyThumbClass}>
           {product.imageUrl ? (
             <Image
               src={product.imageUrl}
               alt=""
               fill
               className="object-cover"
-              sizes="48px"
+              sizes="40px"
             />
-          ) : (
-            <div className={`flex h-full items-center justify-center ${shopifyMutedClass}`}>
-              <PackageOpen className="h-4 w-4" aria-hidden />
-            </div>
-          )}
+          ) : null}
         </div>
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-[14px] font-semibold leading-5 text-[#202223] dark:text-foreground">
+            <h3 className="text-[13px] font-medium leading-5 text-[#303030] dark:text-foreground">
               {product.title}
             </h3>
             {product.selected ? (
@@ -127,10 +124,10 @@ export function ShopifyProductCard({
         {product.selected ? (
           <Button
             type="button"
-            variant="ghost"
+            variant="outline"
             onClick={() => onUnpublish(product.id)}
             disabled={busy}
-            className={shopifyQuietDangerButtonClass}
+            className={shopifySecondaryButtonClass}
           >
             Unpublish
           </Button>

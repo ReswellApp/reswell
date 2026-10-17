@@ -37,7 +37,11 @@ export function ShopifyCatalogSummary({
   ]
 
   return (
-    <div className="flex flex-wrap gap-2" role="toolbar" aria-label="Listing filters">
+    <div
+      className="flex min-w-0 max-w-full flex-wrap items-center gap-1"
+      role="toolbar"
+      aria-label="Listing filters"
+    >
       {filters.map((item) => {
         const active = activeFilter === item.filter
         return (
@@ -47,19 +51,19 @@ export function ShopifyCatalogSummary({
             onClick={() => onFilterChange(item.filter)}
             aria-pressed={active}
             className={cn(
-              "inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[13px] leading-5",
+              "inline-flex h-7 items-center gap-1 rounded-lg px-2 text-[13px] leading-5",
               active
-                ? "border-[#202223] bg-[#202223] font-medium text-white dark:border-foreground dark:bg-foreground dark:text-background"
-                : "border-[#c9cccf] bg-white font-medium text-[#202223] hover:bg-[#f6f6f7] dark:border-border dark:bg-card dark:text-foreground dark:hover:bg-muted",
-              !active && item.tone === "alert" && "border-[#d72c0d] text-[#d72c0d]",
+                ? "bg-[#303030] font-medium text-white dark:bg-foreground dark:text-background"
+                : "font-medium text-[#303030] hover:bg-[#f1f1f1] dark:text-foreground dark:hover:bg-muted",
+              !active && item.tone === "alert" && "text-[#8e1f0b]",
             )}
           >
             {item.label}
             <span
               className={cn(
                 "tabular-nums",
-                active ? "text-white/80 dark:text-background/80" : "text-[#6d7175] dark:text-muted-foreground",
-                !active && item.tone === "alert" && "text-[#d72c0d]",
+                active ? "text-white/70 dark:text-background/70" : "text-[#616161] dark:text-muted-foreground",
+                !active && item.tone === "alert" && "text-[#8e1f0b]",
               )}
             >
               {item.value}

@@ -42,7 +42,7 @@ export function ShopifyPluginConnectOption({
       <ol className="mb-3 space-y-1.5">
         {STEPS.map((step) => (
           <li key={step} className="flex items-start gap-2 text-[13px] leading-5 text-[#202223] dark:text-foreground">
-            <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#008060]" aria-hidden />
+            <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#303030] dark:text-foreground" aria-hidden />
             {step}
           </li>
         ))}

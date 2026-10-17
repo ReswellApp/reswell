@@ -19,30 +19,6 @@ function Timestamp({ iso, empty }: { iso: string | null; empty: string }) {
   )
 }
 
-function Fact({
-  label,
-  children,
-  alert,
-}: {
-  label: string
-  children: React.ReactNode
-  alert?: boolean
-}) {
-  return (
-    <span>
-      {label}{" "}
-      <span
-        className={cn(
-          "font-medium text-[#202223] dark:text-foreground",
-          alert && "text-[#d72c0d] dark:text-red-400",
-        )}
-      >
-        {children}
-      </span>
-    </span>
-  )
-}
-
 export function ShopifySyncStatusLine({
   connection,
   health,
@@ -63,29 +39,54 @@ export function ShopifySyncStatusLine({
         ? "On"
         : "Off"
 
+  const facts: Array<{ label: string; value: React.ReactNode; alert?: boolean }> = [
+    {
+      label: "Last Shopify update",
+      value: <Timestamp iso={connection.last_webhook_at} empty="None yet" />,
+    },
+    {
+      label: "Last full sync",
+      value: <Timestamp iso={connection.last_reconciled_at} empty="Not run yet" />,
+    },
+  ]
+  if (queueValue) {
+    facts.push({
+      label: "Queue",
+      value: queueValue,
+      alert: Boolean(health && health.deadJobs > 0),
+    })
+  }
+  if (salesValue) {
+    facts.push({ label: "Sales to stock", value: salesValue })
+  }
+
   return (
-    <p className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[13px] leading-5 text-[#6d7175] dark:text-muted-foreground">
-      <Fact label="Last Shopify update">
-        <Timestamp iso={connection.last_webhook_at} empty="None yet" />
-      </Fact>
-      <span aria-hidden>·</span>
-      <Fact label="Last full sync">
-        <Timestamp iso={connection.last_reconciled_at} empty="Not run yet" />
-      </Fact>
-      {queueValue ? (
-        <>
-          <span aria-hidden>·</span>
-          <Fact label="Queue" alert={Boolean(health && health.deadJobs > 0)}>
-            {queueValue}
-          </Fact>
-        </>
-      ) : null}
-      {salesValue ? (
-        <>
-          <span aria-hidden>·</span>
-          <Fact label="Sales → stock">{salesValue}</Fact>
-        </>
-      ) : null}
-    </p>
+    <dl className="grid grid-cols-2 lg:flex lg:items-stretch">
+      {facts.map((fact, index) => (
+        <div
+          key={fact.label}
+          className={cn(
+            "min-w-0 py-1 lg:flex-1 lg:py-0",
+            index % 2 === 0 ? "pr-4" : "border-l border-[#e3e3e3] pl-4 dark:border-border",
+            index >= 2 &&
+              "mt-3 border-t border-[#e3e3e3] pt-3 lg:mt-0 lg:border-t-0 lg:pt-0 dark:border-border",
+            index === 0 && "lg:pl-0 lg:pr-6",
+            index > 0 && "lg:border-l lg:border-[#e3e3e3] lg:px-6 dark:lg:border-border",
+          )}
+        >
+          <dt className="text-[12px] leading-4 text-[#616161] dark:text-muted-foreground">
+            {fact.label}
+          </dt>
+          <dd
+            className={cn(
+              "mt-1 text-[15px] font-semibold leading-5 text-[#303030] dark:text-foreground",
+              fact.alert && "text-[#8e1f0b] dark:text-red-300",
+            )}
+          >
+            {fact.value}
+          </dd>
+        </div>
+      ))}
+    </dl>
   )
 }

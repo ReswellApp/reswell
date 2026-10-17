@@ -40,7 +40,14 @@ export function ShopifyLinkedListingsPanel({
 
   return (
     <section className={shopifySurfaceClass} aria-busy={loading}>
-      <div className={`flex flex-col gap-3 border-b px-4 py-4 sm:px-5 ${shopifyDividerClass}`}>
+      <div
+        className={`flex flex-col gap-2 border-b px-3 py-2 md:flex-row md:flex-wrap md:items-center md:gap-x-3 md:gap-y-2 md:px-4 ${shopifyDividerClass}`}
+      >
+        <ShopifyCatalogSummary
+          summary={catalog.summary}
+          activeFilter={params.filter}
+          onFilterChange={(filter) => void controller.load({ filter, page: 1 })}
+        />
         <ShopifyLinkedListingsToolbar
           search={controller.search}
           section={params.section}
@@ -50,18 +57,13 @@ export function ShopifyLinkedListingsPanel({
           }
           onSectionChange={(section) => void controller.load({ section, page: 1 })}
         />
-        <ShopifyCatalogSummary
-          summary={catalog.summary}
-          activeFilter={params.filter}
-          onFilterChange={(filter) => void controller.load({ filter, page: 1 })}
-        />
       </div>
 
       {page.listings.length > 0 ? (
         <div>
           <div
             className={cn(
-              "hidden border-b bg-[#fafbfb] px-5 py-2 text-[12px] font-medium dark:bg-muted/40 md:grid",
+              "hidden border-b px-4 py-2 text-[12px] font-medium dark:bg-transparent md:grid",
               shopifyDividerClass,
               shopifyMutedClass,
               shopifyIndexGridClass,

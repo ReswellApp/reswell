@@ -9,12 +9,12 @@ const STATE_COPY: Record<
     label: "Live",
     description: "Active on Reswell and in stock in Shopify.",
     className:
-      "bg-[#aee9d1] text-[#008060] dark:bg-emerald-950 dark:text-emerald-300",
+      "bg-[#affebf] text-[#014b40] dark:bg-emerald-950 dark:text-emerald-300",
   },
   out_of_stock: {
     label: "Out of stock",
     description: "Hidden on Reswell until Shopify has stock again.",
-    className: "bg-[#f1f2f3] text-[#6d7175] dark:bg-muted dark:text-muted-foreground",
+    className: "bg-[#e3e3e3] text-[#616161] dark:bg-muted dark:text-muted-foreground",
   },
   not_active_in_shopify: {
     label: "Draft in Shopify",
@@ -24,7 +24,7 @@ const STATE_COPY: Record<
   deleted_in_shopify: {
     label: "Deleted in Shopify",
     description: "The Shopify product or variant was deleted. Reswell removed the listing.",
-    className: "bg-[#f1f2f3] text-[#6d7175] dark:bg-muted dark:text-muted-foreground",
+    className: "bg-[#e3e3e3] text-[#616161] dark:bg-muted dark:text-muted-foreground",
   },
   needs_removal: {
     label: "Deleted in Shopify · still live",
@@ -35,7 +35,7 @@ const STATE_COPY: Record<
   unpublished: {
     label: "Unpublished",
     description: "You unpublished this product. It stays linked so you can publish it again.",
-    className: "bg-[#f1f2f3] text-[#6d7175] dark:bg-muted dark:text-muted-foreground",
+    className: "bg-[#e3e3e3] text-[#616161] dark:bg-muted dark:text-muted-foreground",
   },
   error: {
     label: "Sync error",
@@ -64,7 +64,7 @@ export function ShopifyListingStateBadge({
     <span
       title={copy.description}
       className={cn(
-        "inline-flex shrink-0 items-center rounded-md px-1.5 py-0.5 text-[12px] font-medium leading-4",
+        "inline-flex shrink-0 items-center rounded-lg px-2 py-0.5 text-[12px] font-medium leading-4",
         copy.className,
         className,
       )}
