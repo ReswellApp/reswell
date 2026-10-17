@@ -44,7 +44,9 @@ test("uses a surfboard shop default before an older category preset", () => {
     },
   })
   assert.equal(defaults.shipping_available, true)
-  assert.equal(defaults.shipping_package_band, "shortboard_compact")
+  assert.equal(defaults.shipping_packed_length_in, 72)
+  assert.equal(defaults.shipping_package_tier, "shortboard")
+  assert.equal(defaults.shipping_package_band, null)
 })
 
 test("keeps a category preset for soft goods when one is already saved", () => {

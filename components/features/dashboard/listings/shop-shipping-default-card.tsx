@@ -3,7 +3,6 @@
 import { useEffect, useId, useRef, useState, type FocusEvent, type ReactNode } from "react"
 import { Check, ChevronDown, ChevronsUpDown, Info, Package, X } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
-import { isShopPackageSizeId, type ShopPackageSizeId } from "@/lib/shop-category-package-sizes"
 import {
   SHOP_STORE_DEFAULT_PACKAGE_NAME,
   createShopSavedPackageId,
@@ -13,8 +12,6 @@ import {
   lengthFromInches,
   shopBoardPackSizeMaxLengthIn,
   shopBoardPackSizes,
-  shopPresetPackedSize,
-  shopPresetPackedSizes,
   shopShippingDefaultsFromDraft,
   shopShippingDraftFromDefaults,
   weightFromLb,
@@ -29,28 +26,21 @@ import { cn } from "@/lib/utils"
 
 interface ShopShippingDefaultCardProps {
   defaults: ShopShippingDefaults
-  suggestedPresetId?: string | null
   resetKey: number
   busy: boolean
-  children?: ReactNode
   onCommit: (draft: ShopShippingDraftInput) => void
   onInvalid: (message: string) => void
 }
 
-const BOARD_PRESETS = ["shortboard_compact", "shortboard_medium", "midlength", "longboard"] as const
-const SOFT_PRESETS = ["small", "medium", "large"] as const
-
 export function ShopShippingDefaultCard({
   defaults,
-  suggestedPresetId,
   resetKey,
   busy,
-  children,
   onCommit,
   onInvalid,
 }: ShopShippingDefaultCardProps) {
   const physicalId = useId()
-  const [draft, setDraft] = useState(() => shopShippingDraftFromDefaults(defaults, suggestedPresetId))
+  const [draft, setDraft] = useState(() => shopShippingDraftFromDefaults(defaults))
   const [seenKey, setSeenKey] = useState(resetKey)
   const [menuOpen, setMenuOpen] = useState(false)
   const [advancedOpen, setAdvancedOpen] = useState(false)
@@ -61,7 +51,7 @@ export function ShopShippingDefaultCard({
 
   if (resetKey !== seenKey) {
     setSeenKey(resetKey)
-    const next = shopShippingDraftFromDefaults(defaults, suggestedPresetId)
+    const next = shopShippingDraftFromDefaults(defaults)
     draftRef.current = next
     dirtyRef.current = false
     setDraft(next)
@@ -121,17 +111,9 @@ export function ShopShippingDefaultCard({
     }
   }
 
-  function selectPreset(sizeId: ShopPackageSizeId) {
-    const preset = shopPresetPackedSize(sizeId)
-    if (!preset) return
-    setMenuOpen(false)
-    replace(fillFromPackage(preset, sizeId), "notify")
-  }
-
   function selectSaved(pkg: ShopShippingDraftPackage) {
     setMenuOpen(false)
-    const presetId = pkg.presetId && isShopPackageSizeId(pkg.presetId) ? pkg.presetId : null
-    replace(fillFromPackage(pkg, presetId), "notify")
+    replace(fillFromPackage(pkg, null), "notify")
   }
 
   function editMeasure(key: "length" | "width" | "height" | "weight", value: string) {
@@ -174,7 +156,7 @@ export function ShopShippingDefaultCard({
             widthIn: source.widthIn,
             heightIn: source.heightIn,
             weightLb: source.weightLb,
-            presetId: source.presetId,
+            presetId: null,
           },
         ],
       },
@@ -194,13 +176,6 @@ export function ShopShippingDefaultCard({
     : null
   const triggerLabel = formatStoreDefaultPackageLabel(draft.name || SHOP_STORE_DEFAULT_PACKAGE_NAME, summary)
   const fieldsDisabled = busy || !draft.physicalProduct
-  const presets = shopPresetPackedSizes()
-  const boardPresets = presets.filter((preset) =>
-    (BOARD_PRESETS as readonly string[]).includes(preset.presetId ?? ""),
-  )
-  const softPresets = presets.filter((preset) =>
-    (SOFT_PRESETS as readonly string[]).includes(preset.presetId ?? ""),
-  )
 
   return (
     <section className="rounded-2xl border border-border/70 bg-card shadow-sm" aria-labelledby="shop-shipping-heading">
@@ -243,37 +218,19 @@ export function ShopShippingDefaultCard({
                 aria-label="Package when shipped alone"
                 className="absolute left-0 top-[calc(100%+4px)] z-30 max-h-80 w-max min-w-full max-w-[28rem] overflow-y-auto rounded-xl border border-border bg-card py-1 shadow-lg"
               >
-                <MenuGroup label="Saved packed sizes">
-                  {boardPresets.map((preset) => (
-                    <PackageOption
-                      key={preset.id}
-                      pkg={preset}
-                      units={draft}
-                      selected={draft.presetId === preset.presetId}
-                      onSelect={() => preset.presetId && selectPreset(preset.presetId)}
-                    />
-                  ))}
-                  {draft.savedPackages.map((pkg) => (
-                    <PackageOption
-                      key={pkg.id}
-                      pkg={pkg}
-                      units={draft}
-                      selected={false}
-                      onSelect={() => selectSaved(pkg)}
-                    />
-                  ))}
-                </MenuGroup>
-                <MenuGroup label="Smaller packages">
-                  {softPresets.map((preset) => (
-                    <PackageOption
-                      key={preset.id}
-                      pkg={preset}
-                      units={draft}
-                      selected={draft.presetId === preset.presetId}
-                      onSelect={() => preset.presetId && selectPreset(preset.presetId)}
-                    />
-                  ))}
-                </MenuGroup>
+                {draft.savedPackages.length > 0 ? (
+                  <MenuGroup label="Saved packed sizes">
+                    {draft.savedPackages.map((pkg) => (
+                      <PackageOption
+                        key={pkg.id}
+                        pkg={pkg}
+                        units={draft}
+                        selected={false}
+                        onSelect={() => selectSaved(pkg)}
+                      />
+                    ))}
+                  </MenuGroup>
+                ) : null}
                 <button
                   type="button"
                   className="w-full px-3 py-2 text-left text-sm font-medium text-foreground hover:bg-muted disabled:opacity-50"
@@ -381,7 +338,7 @@ export function ShopShippingDefaultCard({
               <input
                 value={draft.name}
                 maxLength={48}
-                disabled={busy || Boolean(draft.presetId)}
+                disabled={busy}
                 onChange={(event) => replace({ ...draftRef.current, name: event.target.value })}
                 onBlur={() => commit("silent")}
                 className="mt-1 h-10 w-full rounded-xl bg-muted px-3 text-sm outline-none focus:ring-2 focus:ring-foreground/15 disabled:opacity-60"
@@ -412,11 +369,6 @@ export function ShopShippingDefaultCard({
                         }}
                       >
                         <option value="store_default">{triggerLabel}</option>
-                        {boardPresets.map((preset) => (
-                          <option key={preset.id} value={preset.id}>
-                            {preset.name} - {formatShopPackedSizeSummary(preset, draft)}
-                          </option>
-                        ))}
                         {draft.savedPackages.map((pkg) => (
                           <option key={pkg.id} value={pkg.id}>
                             {pkg.name} - {formatShopPackedSizeSummary(pkg, draft)}
@@ -483,17 +435,6 @@ export function ShopShippingDefaultCard({
               </ul>
             ) : null}
           </div>
-          {children ? (
-            <div className="space-y-3 border-t border-border/60 pt-5">
-              <div>
-                <h3 className="text-sm font-medium text-foreground">Other categories</h3>
-                <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-                  Fins, wetsuits, and the rest keep their own box. Open listings in that category update when you pick a size.
-                </p>
-              </div>
-              {children}
-            </div>
-          ) : null}
         </div>
       ) : null}
 
@@ -505,7 +446,6 @@ export function ShopShippingDefaultCard({
       >
         <span className="flex flex-wrap gap-2 py-2.5">
           <FooterChip>Board sizes</FooterChip>
-          <FooterChip>Categories</FooterChip>
         </span>
         <ChevronDown
           className={cn("h-4 w-4 shrink-0 text-muted-foreground transition-transform", advancedOpen && "rotate-180")}
@@ -522,7 +462,6 @@ function packageLengthForRef(
   storePackage: ShopSavedPackedSize | null,
 ): number | null {
   if (ref === "store_default") return storePackage?.lengthIn ?? null
-  if (isShopPackageSizeId(ref)) return shopPresetPackedSize(ref)?.lengthIn ?? null
   return draft.savedPackages.find((pkg) => pkg.id === ref)?.lengthIn ?? null
 }
 

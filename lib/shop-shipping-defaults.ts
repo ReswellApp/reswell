@@ -7,9 +7,6 @@ import { totalBoardLengthInchesFromCombinedInput } from "@/lib/board-measurement
 import { parseListingDimensionsColumn } from "@/lib/listing-dimensions-storage"
 import { isPeerListingSection, type PeerListingSection } from "@/lib/peer-listing-sections"
 import {
-  isShopPackageSizeAllowed,
-  isShopPackageSizeId,
-  listingPackageColumnsForShopSize,
   shopPackageSizeLabel,
   type ListingPackageColumns,
   type ShopCategoryPackageSizeMap,
@@ -201,52 +198,6 @@ export function formatStoreDefaultPackageLabel(
   return `Store default • ${title} - ${summary}`
 }
 
-export function shopPresetPackedSize(sizeId: ShopPackageSizeId): ShopSavedPackedSize | null {
-  const section: PeerListingSection =
-    sizeId === "small" || sizeId === "medium" || sizeId === "large" ? "accessories" : "surfboards"
-  const columns = listingPackageColumnsForShopSize(section, sizeId)
-  if (
-    columns?.shipping_packed_length_in == null ||
-    columns.shipping_packed_width_in == null ||
-    columns.shipping_packed_height_in == null ||
-    columns.shipping_packed_weight_oz == null
-  ) {
-    return null
-  }
-  return {
-    id: sizeId,
-    name: shopPackageSizeLabel(sizeId),
-    lengthIn: columns.shipping_packed_length_in,
-    widthIn: columns.shipping_packed_width_in,
-    heightIn: columns.shipping_packed_height_in,
-    weightLb: round2(columns.shipping_packed_weight_oz / 16),
-    presetId: sizeId,
-  }
-}
-
-export function shopPresetPackedSizes(): ShopSavedPackedSize[] {
-  const sizes: ShopSavedPackedSize[] = []
-  for (const sizeId of [
-    "shortboard_compact",
-    "shortboard_medium",
-    "midlength",
-    "longboard",
-    "small",
-    "medium",
-    "large",
-  ] as const) {
-    const preset = shopPresetPackedSize(sizeId)
-    if (preset) sizes.push(preset)
-  }
-  return sizes
-}
-
-function storeDefaultFromPreset(sizeId: ShopPackageSizeId): ShopSavedPackedSize | null {
-  const preset = shopPresetPackedSize(sizeId)
-  if (!preset) return null
-  return { ...preset, id: SHOP_STORE_DEFAULT_ID }
-}
-
 export function shopBoardPackSizeHint(sizeId: ShopBoardPackSizeId): string {
   if (sizeId === "shortboard_compact") {
     return `Up to about ${formatSurfboardTierBoardLengthLabel(
@@ -381,9 +332,6 @@ function resolveReferencedPackage(
   ref: string,
 ): ShopSavedPackedSize | null {
   if (ref === SHOP_STORE_DEFAULT_ID) return defaults.storeDefault
-  if (isShopPackageSizeId(ref) && isShopPackageSizeAllowed("surfboards", ref)) {
-    return shopPresetPackedSize(ref)
-  }
   return defaults.savedPackages.find((pkg) => pkg.id === ref) ?? null
 }
 
@@ -394,9 +342,6 @@ export function shopShippingColumnsForRef(
 ): ListingPackageColumns | null {
   const pkg = resolveReferencedPackage(defaults, ref)
   if (!pkg) return null
-  if (pkg.presetId && isShopPackageSizeAllowed("surfboards", pkg.presetId)) {
-    return listingPackageColumnsForShopSize("surfboards", pkg.presetId)
-  }
   return customColumns(pkg, tierForBoardSize(boardSize))
 }
 
@@ -406,9 +351,6 @@ export function shopShippingColumnsForSoftSection(
 ): ListingPackageColumns | null {
   const pkg = defaults.storeDefault
   if (!pkg || section === "surfboards") return null
-  if (pkg.presetId && isShopPackageSizeAllowed(section, pkg.presetId)) {
-    return listingPackageColumnsForShopSize(section, pkg.presetId)
-  }
   const columns = customColumns(pkg, null)
   return packageFitsSmallParcel(columns) ? columns : null
 }
@@ -460,11 +402,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value)
 }
 
-function readPresetId(value: unknown): ShopPackageSizeId | null {
-  if (typeof value !== "string" || !isShopPackageSizeId(value)) return null
-  return value
-}
-
 function readPackage(value: unknown, id: string): ShopSavedPackedSize | null {
   if (!isRecord(value)) return null
   const name = typeof value.name === "string" ? value.name.trim() : ""
@@ -482,7 +419,7 @@ function readPackage(value: unknown, id: string): ShopSavedPackedSize | null {
     widthIn: round4(widthIn),
     heightIn: round4(heightIn),
     weightLb: round4(weightLb),
-    presetId: readPresetId(value.presetId),
+    presetId: null,
   }
 }
 
@@ -494,13 +431,11 @@ function packageError(pkg: ShopShippingDraftPackage): string | null {
   if (pkg.lengthIn > 210 || pkg.widthIn > 80 || pkg.heightIn > 80 || pkg.weightLb > 150) {
     return "That package is larger than we can ship."
   }
-  if (pkg.presetId && !isShopPackageSizeId(pkg.presetId)) return "That packed size isn't available."
   return null
 }
 
 function boardRefError(defaults: ShopShippingDefaults, ref: string): string | null {
   if (ref === SHOP_STORE_DEFAULT_ID) return null
-  if (isShopBoardPackSizeId(ref)) return null
   if (SAVED_PACKAGE_ID.test(ref) && defaults.savedPackages.some((pkg) => pkg.id === ref)) return null
   return "Choose a saved packed size for that board length."
 }
@@ -559,42 +494,36 @@ export function shopShippingDefaultsFromDraft(
   draft: ShopShippingDraftInput,
 ): { ok: true; defaults: ShopShippingDefaults } | { ok: false; error: string } {
   let storeDefault: ShopSavedPackedSize | null = null
-  if (draft.presetId) {
-    if (!isShopPackageSizeId(draft.presetId)) return { ok: false, error: "That packed size isn't available." }
-    storeDefault = storeDefaultFromPreset(draft.presetId)
-    if (!storeDefault) return { ok: false, error: "That packed size isn't available." }
-  } else {
-    const parts = [draft.length, draft.width, draft.height, draft.weight].map(readMeasure)
-    if (parts.some((part) => part.kind === "invalid")) {
-      return { ok: false, error: "Enter length, width, height, and weight as numbers." }
-    }
-    const filled = parts.filter((part) => part.kind === "value")
-    if (filled.length > 0 && filled.length < 4) {
+  const parts = [draft.length, draft.width, draft.height, draft.weight].map(readMeasure)
+  if (parts.some((part) => part.kind === "invalid")) {
+    return { ok: false, error: "Enter length, width, height, and weight as numbers." }
+  }
+  const filled = parts.filter((part) => part.kind === "value")
+  if (filled.length > 0 && filled.length < 4) {
+    return { ok: false, error: "Enter length, width, height, and weight for the shop box." }
+  }
+  if (filled.length === 4) {
+    const [length, width, height, weight] = parts
+    if (
+      length?.kind !== "value" ||
+      width?.kind !== "value" ||
+      height?.kind !== "value" ||
+      weight?.kind !== "value"
+    ) {
       return { ok: false, error: "Enter length, width, height, and weight for the shop box." }
     }
-    if (filled.length === 4) {
-      const [length, width, height, weight] = parts
-      if (
-        length?.kind !== "value" ||
-        width?.kind !== "value" ||
-        height?.kind !== "value" ||
-        weight?.kind !== "value"
-      ) {
-        return { ok: false, error: "Enter length, width, height, and weight for the shop box." }
-      }
-      const pkg: ShopSavedPackedSize = {
-        id: SHOP_STORE_DEFAULT_ID,
-        name: draft.name.trim() || SHOP_STORE_DEFAULT_PACKAGE_NAME,
-        lengthIn: round4(lengthToInches(length.value, draft.dimensionUnit)),
-        widthIn: round4(lengthToInches(width.value, draft.dimensionUnit)),
-        heightIn: round4(lengthToInches(height.value, draft.dimensionUnit)),
-        weightLb: round4(weightToLb(weight.value, draft.weightUnit)),
-        presetId: null,
-      }
-      const invalid = packageError(pkg)
-      if (invalid) return { ok: false, error: invalid }
-      storeDefault = pkg
+    const pkg: ShopSavedPackedSize = {
+      id: SHOP_STORE_DEFAULT_ID,
+      name: draft.name.trim() || SHOP_STORE_DEFAULT_PACKAGE_NAME,
+      lengthIn: round4(lengthToInches(length.value, draft.dimensionUnit)),
+      widthIn: round4(lengthToInches(width.value, draft.dimensionUnit)),
+      heightIn: round4(lengthToInches(height.value, draft.dimensionUnit)),
+      weightLb: round4(weightToLb(weight.value, draft.weightUnit)),
+      presetId: null,
     }
+    const invalid = packageError(pkg)
+    if (invalid) return { ok: false, error: invalid }
+    storeDefault = pkg
   }
 
   if (draft.savedPackages.length > SHOP_SAVED_PACKAGE_LIMIT) {
@@ -616,7 +545,7 @@ export function shopShippingDefaultsFromDraft(
     widthIn: round4(pkg.widthIn),
     heightIn: round4(pkg.heightIn),
     weightLb: round4(pkg.weightLb),
-    presetId: pkg.presetId && isShopPackageSizeId(pkg.presetId) ? pkg.presetId : null,
+    presetId: null,
   }))
   const defaults: ShopShippingDefaults = {
     physicalProduct: draft.physicalProduct,
@@ -638,38 +567,20 @@ export function shopShippingDefaultsFromDraft(
   return { ok: true, defaults }
 }
 
-export function shopShippingDraftFromDefaults(
-  defaults: ShopShippingDefaults,
-  suggestedPresetId?: string | null,
-): ShopShippingDraftInput {
-  const base: ShopShippingDraftInput = {
+export function shopShippingDraftFromDefaults(defaults: ShopShippingDefaults): ShopShippingDraftInput {
+  const pkg = defaults.storeDefault
+  return {
     physicalProduct: defaults.physicalProduct,
     dimensionUnit: defaults.dimensionUnit,
     weightUnit: defaults.weightUnit,
-    name: SHOP_STORE_DEFAULT_PACKAGE_NAME,
+    name: pkg?.name || SHOP_STORE_DEFAULT_PACKAGE_NAME,
     presetId: null,
-    length: "",
-    width: "",
-    height: "",
-    weight: "",
-    savedPackages: defaults.savedPackages,
+    length: pkg ? formatShopMeasure(lengthFromInches(pkg.lengthIn, defaults.dimensionUnit)) : "",
+    width: pkg ? formatShopMeasure(lengthFromInches(pkg.widthIn, defaults.dimensionUnit)) : "",
+    height: pkg ? formatShopMeasure(lengthFromInches(pkg.heightIn, defaults.dimensionUnit)) : "",
+    weight: pkg ? formatShopMeasure(weightFromLb(pkg.weightLb, defaults.weightUnit)) : "",
+    savedPackages: defaults.savedPackages.map((saved) => ({ ...saved, presetId: null })),
     boardSizes: { ...defaults.boardSizes },
-  }
-  const stored = defaults.storeDefault
-  const suggested =
-    !stored && suggestedPresetId && isShopPackageSizeId(suggestedPresetId)
-      ? storeDefaultFromPreset(suggestedPresetId)
-      : null
-  const pkg = stored ?? suggested
-  if (!pkg) return base
-  return {
-    ...base,
-    name: pkg.name,
-    presetId: pkg.presetId,
-    length: formatShopMeasure(lengthFromInches(pkg.lengthIn, defaults.dimensionUnit)),
-    width: formatShopMeasure(lengthFromInches(pkg.widthIn, defaults.dimensionUnit)),
-    height: formatShopMeasure(lengthFromInches(pkg.heightIn, defaults.dimensionUnit)),
-    weight: formatShopMeasure(weightFromLb(pkg.weightLb, defaults.weightUnit)),
   }
 }
 

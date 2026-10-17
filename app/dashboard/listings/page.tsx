@@ -53,7 +53,6 @@ export default async function MyListingsPage({
       sellerStoreHref={
         deskProfile.sellerSlug ? sellerProfileHref({ seller_slug: deskProfile.sellerSlug }) : null
       }
-      shopCategoryPackageSizes={deskProfile.shopCategoryPackageSizes}
       shopShippingDefaults={deskProfile.shopShippingDefaults}
     />
   )

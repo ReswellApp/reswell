@@ -1,6 +1,5 @@
 import assert from "node:assert/strict"
 import test from "node:test"
-import { listingPackageColumnsForShopSize } from "@/lib/shop-category-package-sizes"
 import {
   EMPTY_SHOP_SHIPPING_DEFAULTS,
   SHOP_STORE_DEFAULT_ID,
@@ -10,9 +9,9 @@ import {
   planShopShippingListingUpdates,
   readShopShippingDefaults,
   shopBoardPackSizeForLength,
-  shopPresetPackedSize,
   shopShippingDefaultsFromDraft,
   shopShippingDefaultsToJson,
+  type ShopSavedPackedSize,
   type ShopShippingDefaults,
   type ShopShippingListingTarget,
 } from "@/lib/shop-shipping-defaults"
@@ -49,11 +48,9 @@ test("maps board length onto the packed-size bands", () => {
 })
 
 test("labels the store default the way the shipping card reads", () => {
-  const compact = shopPresetPackedSize("shortboard_compact")
-  assert.ok(compact)
   assert.equal(
-    formatStoreDefaultPackageLabel(compact.name, "72 × 22 × 5 in, 14 lb"),
-    "Store default • Shortboard · Compact - 72 × 22 × 5 in, 14 lb",
+    formatStoreDefaultPackageLabel("Shop box", "72 × 22 × 5 in, 14 lb"),
+    "Store default • Shop box - 72 × 22 × 5 in, 14 lb",
   )
 })
 
@@ -86,7 +83,7 @@ test("reads a saved shop default and drops unknown board assignments", () => {
   assert.equal(defaults.dimensionUnit, "cm")
   assert.equal(defaults.storeDefault?.presetId, null)
   assert.equal(defaults.savedPackages.length, 1)
-  assert.equal(defaults.boardSizes.shortboard_compact, "shortboard_compact")
+  assert.equal(defaults.boardSizes.shortboard_compact, undefined)
   assert.equal(defaults.boardSizes.shortboard_medium, savedId)
   assert.equal(defaults.boardSizes.midlength, undefined)
   assert.deepEqual(readShopShippingDefaults(null), {
@@ -108,15 +105,32 @@ test("converts a draft in centimeters into the stored shop box", () => {
     height: "4.064",
     weight: "0.907",
     savedPackages: [],
-    boardSizes: { shortboard_compact: "shortboard_compact" },
+    boardSizes: {},
   })
   assert.equal(saved.ok, true)
   if (!saved.ok) return
   assert.equal(saved.defaults.storeDefault?.lengthIn, 8.6)
   assert.equal(saved.defaults.storeDefault?.widthIn, 5.4)
   assert.equal(saved.defaults.storeDefault?.heightIn, 1.6)
+  assert.equal(saved.defaults.storeDefault?.presetId, null)
   assert.ok(Math.abs((saved.defaults.storeDefault?.weightLb ?? 0) - 2) < 0.02)
-  assert.equal(saved.defaults.boardSizes.shortboard_compact, "shortboard_compact")
+})
+
+test("rejects a catalog packed size as a board assignment", () => {
+  const saved = shopShippingDefaultsFromDraft({
+    physicalProduct: true,
+    dimensionUnit: "in",
+    weightUnit: "lb",
+    name: "Shop box",
+    presetId: "shortboard_compact",
+    length: "74",
+    width: "22",
+    height: "5",
+    weight: "14",
+    savedPackages: [],
+    boardSizes: { shortboard_compact: "shortboard_compact" },
+  })
+  assert.equal(saved.ok, false)
 })
 
 test("rejects a half-filled shop box", () => {
@@ -136,14 +150,29 @@ test("rejects a half-filled shop box", () => {
   assert.equal(saved.ok, false)
 })
 
-test("applies each board length to its packed size and leaves a too-small box alone", () => {
-  const compact = shopPresetPackedSize("shortboard_compact")
-  const medium = shopPresetPackedSize("shortboard_medium")
-  assert.ok(compact && medium)
+test("applies each board length to its saved box and leaves a too-small box alone", () => {
+  const mediumBox: ShopSavedPackedSize = {
+    id: "box_medium01",
+    name: "Medium boards",
+    lengthIn: 80,
+    widthIn: 24,
+    heightIn: 6,
+    weightLb: 16,
+    presetId: null,
+  }
   const defaults: ShopShippingDefaults = {
     ...EMPTY_SHOP_SHIPPING_DEFAULTS,
-    storeDefault: { ...compact, id: SHOP_STORE_DEFAULT_ID },
-    boardSizes: { shortboard_medium: "shortboard_medium" },
+    storeDefault: {
+      id: SHOP_STORE_DEFAULT_ID,
+      name: "Shop box",
+      lengthIn: 74,
+      widthIn: 22,
+      heightIn: 5,
+      weightLb: 14,
+      presetId: null,
+    },
+    savedPackages: [mediumBox],
+    boardSizes: { shortboard_medium: mediumBox.id },
   }
   const plan = planShopShippingListingUpdates({
     defaults,
@@ -159,13 +188,13 @@ test("applies each board length to its packed size and leaves a too-small box al
   assert.equal(plan.skippedBecausePackageDoesNotFit, 1)
   const compactUpdate = plan.updates.find((row) => row.id === "compact-board")
   const mediumUpdate = plan.updates.find((row) => row.id === "medium-board")
-  assert.equal(compactUpdate?.columns.shipping_package_band, "shortboard_compact")
-  assert.equal(mediumUpdate?.columns.shipping_package_band, "shortboard_medium")
+  assert.equal(compactUpdate?.columns.shipping_packed_length_in, 74)
+  assert.equal(compactUpdate?.columns.shipping_package_tier, "shortboard")
+  assert.equal(compactUpdate?.columns.shipping_package_band, null)
+  assert.equal(mediumUpdate?.columns.shipping_packed_length_in, 80)
+  assert.equal(mediumUpdate?.columns.shipping_package_tier, "shortboard")
+  assert.equal(mediumUpdate?.columns.shipping_package_band, null)
   assert.equal(packageFitsSurfboardListing(compactUpdate!.columns), true)
-  assert.deepEqual(
-    mediumUpdate?.columns,
-    listingPackageColumnsForShopSize("surfboards", "shortboard_medium"),
-  )
 })
 
 test("writes a custom shop box onto boards that fit inside it", () => {
@@ -198,10 +227,10 @@ test("uses the shop box for other categories that do not already have a preset",
     weightUnit: "lb",
     name: "Mailer",
     presetId: "small",
-    length: "",
-    width: "",
-    height: "",
-    weight: "",
+    length: "12",
+    width: "10",
+    height: "4",
+    weight: "2",
     savedPackages: [],
     boardSizes: {},
   })
@@ -214,6 +243,8 @@ test("uses the shop box for other categories that do not already have a preset",
   })
   assert.equal(open.updates.length, 1)
   assert.equal(open.updates[0]?.columns.shipping_packed_length_in, 12)
+  assert.equal(open.updates[0]?.columns.shipping_package_band, null)
+  assert.equal(saved.defaults.storeDefault?.presetId, null)
   const held = planShopShippingListingUpdates({
     defaults: saved.defaults,
     categoryPresets: { fins: "large" },
@@ -223,13 +254,19 @@ test("uses the shop box for other categories that do not already have a preset",
 })
 
 test("does not rewrite listings while physical product is off", () => {
-  const compact = shopPresetPackedSize("shortboard_compact")
-  assert.ok(compact)
   const plan = planShopShippingListingUpdates({
     defaults: {
       ...EMPTY_SHOP_SHIPPING_DEFAULTS,
       physicalProduct: false,
-      storeDefault: { ...compact, id: SHOP_STORE_DEFAULT_ID },
+      storeDefault: {
+        id: SHOP_STORE_DEFAULT_ID,
+        name: "Shop box",
+        lengthIn: 74,
+        widthIn: 22,
+        heightIn: 5,
+        weightLb: 14,
+        presetId: null,
+      },
     },
     categoryPresets: {},
     listings: [listing("board", "surfboards", 66)],
