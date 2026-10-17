@@ -44,6 +44,7 @@ export function AdminGuard({
         pathname === '/admin/fbcatalog' ||
         pathname === '/admin/facebook-marketplace-bulk' ||
         pathname === '/admin/shop' ||
+        pathname === '/admin/saved-searches' ||
         pathname === '/admin/hayden-shop' ||
         pathname.startsWith('/admin/hayden-shop/')
       ) {

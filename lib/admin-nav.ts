@@ -84,6 +84,7 @@ const EMPLOYEE_EXCLUDED_HREFS = new Set<string>([
   '/admin/shop',
   '/admin/shop/orders',
   '/admin/hayden-shop',
+  '/admin/saved-searches',
 ])
 
 export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
@@ -142,6 +143,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
       { href: '/admin/pickup-only-boards', label: 'Pickup-only boards', icon: 'mapPin' },
       { href: '/admin/used-board-market-dashboard?tab=catalog', label: 'Brand catalog explorer', icon: 'folderTree' },
       { href: '/admin/search-analytics', label: 'Search analytics', icon: 'lineChart' },
+      { href: '/admin/saved-searches', label: 'Saved searches', icon: 'bellRing' },
       { href: '/admin/search-daily-report', label: 'Search reports', icon: 'fileText' },
       { href: '/admin/listing-views', label: 'Listing views', icon: 'activity' },
       { href: '/admin/sell-funnel', label: 'Sell funnel', icon: 'lineChart' },
