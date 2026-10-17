@@ -3,6 +3,11 @@
 import Image from "next/image"
 import { PackageOpen } from "lucide-react"
 import { formatDistanceToNowLabel, RelativeTime } from "@/components/ui/relative-time"
+import {
+  shopifyDividerClass,
+  shopifyIndexGridClass,
+  shopifyMutedClass,
+} from "@/components/features/integrations/shopify/shopify-admin-styles"
 import { ShopifyLinkedListingActions } from "@/components/features/integrations/shopify/shopify-linked-listing-actions"
 import { ShopifyListingStateBadge } from "@/components/features/integrations/shopify/shopify-listing-state-badge"
 import { PEER_LISTING_SECTION_LABELS } from "@/lib/peer-listing-sections"
@@ -29,19 +34,6 @@ interface ShopifyLinkedListingRowProps {
   onUnpublish: (productId: string) => void
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="min-w-0">
-      <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">
-        {label}
-      </dt>
-      <dd className="mt-0.5 truncate text-sm font-medium tabular-nums text-foreground">
-        {children}
-      </dd>
-    </div>
-  )
-}
-
 export function ShopifyLinkedListingRow({
   listing,
   busy,
@@ -50,64 +42,71 @@ export function ShopifyLinkedListingRow({
   onUnpublish,
 }: ShopifyLinkedListingRowProps) {
   const flagged = listing.state === "needs_removal" || listing.state === "error"
+  const reswellLabel =
+    RESWELL_STATUS_LABELS[listing.reswellStatus] ?? listing.reswellStatus
+  const price = listing.price != null ? currency.format(listing.price) : "—"
+  const shopifyQty =
+    listing.shopifyQuantity ?? (listing.state === "needs_removal" ? "Gone" : "—")
+
   return (
     <li
       className={cn(
-        "flex gap-3 rounded-xl border bg-card p-3 sm:gap-4 sm:p-4",
-        flagged && "border-red-200 dark:border-red-900",
+        "relative block border-b px-3 py-3 last:border-b-0",
+        shopifyDividerClass,
+        shopifyIndexGridClass,
+        flagged && "bg-[#fff4f4] dark:bg-red-950/30",
       )}
     >
-      <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-border/60 bg-muted sm:h-20 sm:w-20">
-        {listing.imageUrl ? (
-          <Image
-            src={listing.imageUrl}
-            alt=""
-            fill
-            className="object-cover"
-            sizes="80px"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center text-muted-foreground">
-            <PackageOpen className="h-6 w-6" aria-hidden />
+      <div className="flex min-w-0 gap-3 pr-8 sm:pr-0">
+        <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md border border-[#e1e3e5] bg-[#f6f6f7] dark:border-border dark:bg-muted">
+          {listing.imageUrl ? (
+            <Image
+              src={listing.imageUrl}
+              alt=""
+              fill
+              className="object-cover"
+              sizes="40px"
+            />
+          ) : (
+            <div className={`flex h-full items-center justify-center ${shopifyMutedClass}`}>
+              <PackageOpen className="h-4 w-4" aria-hidden />
+            </div>
+          )}
+        </div>
+        <div className="min-w-0">
+          <h3 className="truncate text-[13px] font-semibold leading-5 text-[#202223] dark:text-foreground">
+            {listing.title}
+          </h3>
+          <p className={`truncate text-[12px] leading-4 ${shopifyMutedClass}`}>
+            {listing.variantTitle ?? "Single variant"} ·{" "}
+            {PEER_LISTING_SECTION_LABELS[listing.section]} · {price}
+          </p>
+          <div className="mt-1 sm:hidden">
+            <ShopifyListingStateBadge state={listing.state} />
           </div>
-        )}
+        </div>
       </div>
 
-      <div className="min-w-0 flex-1 space-y-3">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h3 className="truncate font-semibold text-foreground">
-                {listing.title}
-              </h3>
-              <ShopifyListingStateBadge state={listing.state} />
-            </div>
-            <p className="mt-0.5 truncate text-sm text-muted-foreground">
-              {listing.variantTitle ?? "Single variant"} ·{" "}
-              {PEER_LISTING_SECTION_LABELS[listing.section]}
-            </p>
-          </div>
-          <ShopifyLinkedListingActions
-            listing={listing}
-            busy={busy}
-            canSync={canSync}
-            onResync={onResync}
-            onUnpublish={onUnpublish}
-          />
-        </div>
+      <div className="hidden sm:block">
+        <ShopifyListingStateBadge state={listing.state} />
+      </div>
 
-        <dl className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-4">
-          <Field label="Price">
-            {listing.price != null ? currency.format(listing.price) : "—"}
-          </Field>
-          <Field label="Shopify qty">
-            {listing.shopifyQuantity ?? (listing.state === "needs_removal" ? "Gone" : "—")}
-          </Field>
-          <Field label="Reswell">
-            {RESWELL_STATUS_LABELS[listing.reswellStatus] ?? listing.reswellStatus}
-            {listing.reswellStatus === "active" ? ` · ${listing.reswellStock} in stock` : ""}
-          </Field>
-          <Field label="Last sync">
+      <div className="mt-2 grid grid-cols-2 gap-2 sm:contents">
+        <div>
+          <p className={`text-[12px] leading-4 sm:hidden ${shopifyMutedClass}`}>Stock</p>
+          <p className="text-[13px] leading-5 text-[#202223] dark:text-foreground">
+            Shopify {shopifyQty}
+          </p>
+          <p className={`text-[12px] leading-4 ${shopifyMutedClass}`}>
+            Reswell {reswellLabel}
+            {listing.reswellStatus === "active"
+              ? ` · ${listing.reswellStock} in stock`
+              : ""}
+          </p>
+        </div>
+        <div>
+          <p className={`text-[12px] leading-4 sm:hidden ${shopifyMutedClass}`}>Sync</p>
+          <p className="text-[13px] leading-5 text-[#202223] dark:text-foreground">
             {listing.lastSyncedAt ? (
               <RelativeTime
                 iso={listing.lastSyncedAt}
@@ -117,16 +116,26 @@ export function ShopifyLinkedListingRow({
             ) : (
               "Never"
             )}
-          </Field>
-        </dl>
-
-        {listing.state === "needs_removal" ? (
-          <p className="text-xs text-red-700 dark:text-red-300">
-            Shopify no longer has this variant. Reswell removes it on the next
-            sync, or right away with Sync now.
           </p>
-        ) : null}
+        </div>
       </div>
+
+      <div className="absolute right-1 top-2 sm:static sm:justify-self-end">
+        <ShopifyLinkedListingActions
+          listing={listing}
+          busy={busy}
+          canSync={canSync}
+          onResync={onResync}
+          onUnpublish={onUnpublish}
+        />
+      </div>
+
+      {listing.state === "needs_removal" ? (
+        <p className="mt-2 text-[12px] leading-4 text-[#d72c0d] sm:col-span-5 dark:text-red-300">
+          Shopify no longer has this variant. Reswell removes it on the next
+          sync, or right away with Sync now.
+        </p>
+      ) : null}
     </li>
   )
 }

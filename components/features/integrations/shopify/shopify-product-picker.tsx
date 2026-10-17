@@ -3,6 +3,14 @@
 import { Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import {
+  shopifyBodyClass,
+  shopifyDividerClass,
+  shopifyFieldClass,
+  shopifySecondaryButtonClass,
+  shopifySectionTitleClass,
+  shopifySurfaceClass,
+} from "@/components/features/integrations/shopify/shopify-admin-styles"
 import { ShopifyProductCard } from "@/components/features/integrations/shopify/shopify-product-card"
 import type { PeerListingSection } from "@/lib/peer-listing-sections"
 import type { ShopifyCatalogProduct } from "@/lib/shopify/types"
@@ -38,12 +46,10 @@ export function ShopifyProductPicker({
 }: ShopifyProductPickerProps) {
   const searched = query.trim() !== ""
   return (
-    <section className="space-y-4">
-      <div>
-        <h2 className="font-headline text-xl font-semibold text-foreground">
-          Add products from Shopify
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
+    <section className={shopifySurfaceClass}>
+      <div className={`border-b px-4 py-3 ${shopifyDividerClass}`}>
+        <h2 className={shopifySectionTitleClass}>Add products from Shopify</h2>
+        <p className={`mt-1 ${shopifyBodyClass}`}>
           Each Shopify variant becomes a Reswell listing. Shopify continues to
           control titles, prices, images, and inventory. New imports start as
           local pickup; add package details from My Listings before enabling shipping.
@@ -51,7 +57,7 @@ export function ShopifyProductPicker({
       </div>
 
       <form
-        className="flex gap-2"
+        className={`flex gap-2 border-b px-3 py-2 ${shopifyDividerClass}`}
         onSubmit={(event) => {
           event.preventDefault()
           onSearch()
@@ -62,34 +68,41 @@ export function ShopifyProductPicker({
           onChange={(event) => onQueryChange(event.target.value)}
           placeholder="Search Shopify products"
           aria-label="Search Shopify products"
+          className={shopifyFieldClass}
         />
-        <Button type="submit" variant="outline" disabled={loading}>
-          <Search className="mr-2 h-4 w-4" aria-hidden />
+        <Button
+          type="submit"
+          variant="outline"
+          disabled={loading}
+          className={shopifySecondaryButtonClass}
+        >
+          <Search aria-hidden />
           Search
         </Button>
       </form>
 
       {products.length > 0 ? (
-        <div className="space-y-3">
+        <ul className="divide-y divide-[#e1e3e5] dark:divide-border">
           {products.map((product) => (
-            <ShopifyProductCard
-              key={product.id}
-              product={product}
-              busy={busyProductId === product.id}
-              onPublish={onPublish}
-              onUnpublish={onUnpublish}
-            />
+            <li key={product.id}>
+              <ShopifyProductCard
+                product={product}
+                busy={busyProductId === product.id}
+                onPublish={onPublish}
+                onUnpublish={onUnpublish}
+              />
+            </li>
           ))}
-        </div>
+        </ul>
       ) : (
-        <div className="space-y-2 rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
+        <div className={`px-4 py-10 text-center ${shopifyBodyClass}`}>
           {loading ? (
             <p>Loading products…</p>
           ) : searched ? (
             <p>No Shopify products match “{query.trim()}”.</p>
           ) : (
-            <>
-              <p className="font-medium text-foreground">
+            <div className="space-y-2">
+              <p className="font-semibold text-[#202223] dark:text-foreground">
                 Shopify returned no products for this store.
               </p>
               <p>
@@ -99,24 +112,33 @@ export function ShopifyProductPicker({
                   : " Add a product in Shopify, then search again."}
               </p>
               {linkedCount > 0 && onViewLinked ? (
-                <Button type="button" variant="outline" size="sm" onClick={onViewLinked}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={onViewLinked}
+                  className={shopifySecondaryButtonClass}
+                >
                   View {linkedCount} linked listing{linkedCount === 1 ? "" : "s"}
                 </Button>
               ) : null}
-            </>
+            </div>
           )}
         </div>
       )}
 
       {hasNextPage ? (
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onLoadMore}
-          disabled={loading}
-        >
-          {loading ? "Loading…" : "Load more"}
-        </Button>
+        <div className={`border-t px-3 py-2 ${shopifyDividerClass}`}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onLoadMore}
+            disabled={loading}
+            className={shopifySecondaryButtonClass}
+          >
+            {loading ? "Loading…" : "Load more"}
+          </Button>
+        </div>
       ) : null}
     </section>
   )

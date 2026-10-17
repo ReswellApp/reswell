@@ -1,7 +1,10 @@
 "use client"
 
-import { Activity, ArrowDownToLine, Clock, ListChecks } from "lucide-react"
 import { formatDistanceToNowLabel, RelativeTime } from "@/components/ui/relative-time"
+import {
+  shopifyDividerClass,
+  shopifyMutedClass,
+} from "@/components/features/integrations/shopify/shopify-admin-styles"
 import type {
   PublicShopifyConnection,
   ShopifySyncHealth,
@@ -20,71 +23,83 @@ function Timestamp({ iso, empty }: { iso: string | null; empty: string }) {
   )
 }
 
-function Tile({
-  icon: Icon,
-  label,
-  children,
-  detail,
-  alert,
-}: {
-  icon: typeof Activity
-  label: string
-  children: React.ReactNode
-  detail: string
-  alert?: boolean
-}) {
-  return (
-    <div className="flex gap-3 rounded-lg border p-3">
-      <Icon
-        className={cn(
-          "mt-0.5 h-4 w-4 shrink-0 text-muted-foreground",
-          alert && "text-red-600 dark:text-red-400",
-        )}
-        aria-hidden
-      />
-      <div className="min-w-0">
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="mt-0.5 text-sm font-medium text-foreground">{children}</p>
-        <p className="mt-0.5 text-xs text-muted-foreground">{detail}</p>
-      </div>
-    </div>
-  )
-}
-
-export function ShopifySyncHealthTiles({ connection, health }: ShopifySyncHealthProps) {
+export function ShopifySyncHealthSummary({
+  connection,
+  health,
+}: ShopifySyncHealthProps) {
   const backlog = health.queuedJobs + health.retryJobs
-  return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-      <Tile icon={Activity} label="Last Shopify update" detail="Product, stock, and delete notices">
+  const facts: Array<{
+    label: string
+    value: React.ReactNode
+    detail: string
+    alert?: boolean
+  }> = [
+    {
+      label: "Last Shopify update",
+      value: (
         <Timestamp iso={connection.last_webhook_at} empty="None received yet" />
-      </Tile>
-      <Tile icon={Clock} label="Last full sync" detail="Runs every 6 hours, or with Sync now">
+      ),
+      detail: "Product, stock, and delete notices",
+    },
+    {
+      label: "Last full sync",
+      value: (
         <Timestamp iso={connection.last_reconciled_at} empty="Not run yet" />
-      </Tile>
-      <Tile
-        icon={ListChecks}
-        label="Sync queue"
-        alert={health.deadJobs > 0}
-        detail={
-          health.deadJobs > 0
-            ? `${health.deadJobs} failed after retries`
-            : "Deleted Shopify products are removed automatically"
-        }
-      >
-        {backlog === 0 ? "Up to date" : `${backlog} pending`}
-        {health.retryJobs > 0 ? ` · ${health.retryJobs} retrying` : ""}
-      </Tile>
-      <Tile
-        icon={ArrowDownToLine}
-        label="Reswell sales → Shopify stock"
-        detail={
-          health.pendingInventoryWrites > 0
-            ? `${health.pendingInventoryWrites} sale${health.pendingInventoryWrites === 1 ? "" : "s"} waiting to update Shopify`
-            : "Sold items lower Shopify inventory when on"
-        }
-      >
-        {health.inventoryWritesEnabled ? "On" : "Off"}
-      </Tile>
-    </div>
+      ),
+      detail: "Runs every 6 hours, or with Sync now",
+    },
+    {
+      label: "Sync queue",
+      value: (
+        <>
+          {backlog === 0 ? "Up to date" : `${backlog} pending`}
+          {health.retryJobs > 0 ? ` · ${health.retryJobs} retrying` : ""}
+        </>
+      ),
+      detail:
+        health.deadJobs > 0
+          ? `${health.deadJobs} failed after retries`
+          : "Deleted Shopify products are removed automatically",
+      alert: health.deadJobs > 0,
+    },
+    {
+      label: "Reswell sales → Shopify stock",
+      value: health.inventoryWritesEnabled ? "On" : "Off",
+      detail:
+        health.pendingInventoryWrites > 0
+          ? `${health.pendingInventoryWrites} sale${health.pendingInventoryWrites === 1 ? "" : "s"} waiting to update Shopify`
+          : "Sold items lower Shopify inventory when on",
+    },
+  ]
+
+  return (
+    <dl className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+      {facts.map((fact, index) => (
+        <div
+          key={fact.label}
+          className={cn(
+            "border-b px-4 py-3 last:border-b-0",
+            shopifyDividerClass,
+            "sm:border-b-0",
+            index % 2 === 0 && "sm:border-r",
+            index < 2 && "sm:border-b lg:border-b-0",
+            index < facts.length - 1 && "lg:border-r",
+          )}
+        >
+          <dt className={`text-[12px] leading-4 ${shopifyMutedClass}`}>{fact.label}</dt>
+          <dd
+            className={cn(
+              "mt-1 text-[13px] font-semibold leading-5 text-[#202223] dark:text-foreground",
+              fact.alert && "text-[#d72c0d] dark:text-red-400",
+            )}
+          >
+            {fact.value}
+          </dd>
+          <dd className={`mt-0.5 text-[12px] leading-4 ${shopifyMutedClass}`}>
+            {fact.detail}
+          </dd>
+        </div>
+      ))}
+    </dl>
   )
 }

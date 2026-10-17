@@ -3,6 +3,7 @@
 import { AlertTriangle, Info, Loader2, RefreshCw } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
+import { shopifyPrimaryButtonClass } from "@/components/features/integrations/shopify/shopify-admin-styles"
 import type { ShopifyCatalogManagerData } from "@/lib/shopify/types"
 
 interface ShopifyCatalogNoticeProps {
@@ -16,6 +17,9 @@ interface ShopifyCatalogNoticeProps {
 function plural(count: number, word: string): string {
   return `${count} ${word}${count === 1 ? "" : "s"}`
 }
+
+const bannerClass =
+  "rounded-lg border border-[#e1e3e5] bg-white py-3 text-[#202223] shadow-none dark:border-border dark:bg-card dark:text-foreground"
 
 export function ShopifyCatalogNotice({
   shopDomain,
@@ -35,23 +39,32 @@ export function ShopifyCatalogNotice({
   return (
     <div className="space-y-3">
       {stillLive > 0 ? (
-        <Alert variant="destructive">
+        <Alert
+          variant="destructive"
+          className={`${bannerClass} border-l-4 border-l-[#d72c0d] [&>svg]:text-[#d72c0d]`}
+        >
           <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>
+          <AlertTitle className="text-[13px] font-semibold">
             {plural(stillLive, "listing")} deleted in Shopify{" "}
             {stillLive === 1 ? "is" : "are"} still live on Reswell
           </AlertTitle>
-          <AlertDescription className="space-y-3">
+          <AlertDescription className="space-y-3 text-[13px] text-[#6d7175] dark:text-muted-foreground">
             <p>
               Shopify no longer has these variants. Reswell removes them
               automatically on the next sync. Remove them now so buyers cannot
               check out on a product you no longer stock.
             </p>
-            <Button type="button" size="sm" onClick={onSyncNow} disabled={busy}>
+            <Button
+              type="button"
+              size="sm"
+              onClick={onSyncNow}
+              disabled={busy}
+              className={shopifyPrimaryButtonClass}
+            >
               {busy ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+                <Loader2 className="animate-spin" aria-hidden />
               ) : (
-                <RefreshCw className="mr-2 h-4 w-4" aria-hidden />
+                <RefreshCw aria-hidden />
               )}
               Remove now
             </Button>
@@ -60,10 +73,12 @@ export function ShopifyCatalogNotice({
       ) : null}
 
       {showEmpty ? (
-        <Alert>
-          <Info className="h-4 w-4" />
-          <AlertTitle>Shopify returned no products for {shopDomain}</AlertTitle>
-          <AlertDescription>
+        <Alert className={bannerClass}>
+          <Info className="h-4 w-4 text-[#6d7175]" />
+          <AlertTitle className="text-[13px] font-semibold">
+            Shopify returned no products for {shopDomain}
+          </AlertTitle>
+          <AlertDescription className="text-[13px] text-[#6d7175] dark:text-muted-foreground">
             Reswell still has {plural(catalog.summary.total, "linked variant")}{" "}
             from this store, shown below. A product deleted in Shopify disappears
             from Shopify&apos;s product list right away, so it can no longer be
@@ -75,7 +90,7 @@ export function ShopifyCatalogNotice({
       ) : null}
 
       {shopifyUnreachable ? (
-        <p className="text-xs text-muted-foreground">
+        <p className="text-[12px] leading-4 text-[#6d7175] dark:text-muted-foreground">
           Shopify could not be reached to confirm quantities and deletions.
           Showing the last synced values.
         </p>

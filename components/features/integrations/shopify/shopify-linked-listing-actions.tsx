@@ -46,6 +46,7 @@ export function ShopifyLinkedListingActions({
           size="icon"
           disabled={busy}
           aria-label={`Actions for ${listing.title}`}
+          className="h-8 w-8 text-[#6d7175] hover:bg-[#f6f6f7] hover:text-[#202223] dark:text-muted-foreground dark:hover:bg-muted dark:hover:text-foreground"
         >
           {busy ? (
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden />

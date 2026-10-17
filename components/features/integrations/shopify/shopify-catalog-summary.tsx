@@ -12,12 +12,12 @@ interface ShopifyCatalogSummaryProps {
   onFilterChange: (filter: ShopifyLinkedListingFilter) => void
 }
 
-export function ShopifyCatalogSummaryTiles({
+export function ShopifyCatalogSummary({
   summary,
   activeFilter,
   onFilterChange,
 }: ShopifyCatalogSummaryProps) {
-  const tiles: Array<{
+  const filters: Array<{
     filter: ShopifyLinkedListingFilter
     label: string
     value: number
@@ -37,29 +37,32 @@ export function ShopifyCatalogSummaryTiles({
   ]
 
   return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
-      {tiles.map((tile) => (
-        <button
-          key={tile.filter}
-          type="button"
-          onClick={() => onFilterChange(tile.filter)}
-          aria-pressed={activeFilter === tile.filter}
-          className={cn(
-            "rounded-xl border bg-card p-3 text-left transition-colors hover:bg-muted/60",
-            activeFilter === tile.filter && "border-foreground/30 bg-muted/60",
-          )}
-        >
-          <p
+    <div
+      className="flex flex-wrap border-b border-[#e1e3e5] px-1 dark:border-border"
+      role="toolbar"
+      aria-label="Listing summary"
+    >
+      {filters.map((item) => {
+        const active = activeFilter === item.filter
+        return (
+          <button
+            key={item.filter}
+            type="button"
+            onClick={() => onFilterChange(item.filter)}
+            aria-pressed={active}
             className={cn(
-              "text-2xl font-semibold tabular-nums text-foreground",
-              tile.tone === "alert" && "text-red-600 dark:text-red-400",
+              "-mb-px inline-flex items-baseline gap-1.5 border-b-2 px-2.5 py-2 text-[13px] leading-5",
+              active
+                ? "border-[#202223] font-semibold text-[#202223] dark:border-foreground dark:text-foreground"
+                : "border-transparent font-medium text-[#6d7175] hover:text-[#202223] dark:text-muted-foreground dark:hover:text-foreground",
+              item.tone === "alert" && "text-[#d72c0d] dark:text-red-400",
             )}
           >
-            {tile.value}
-          </p>
-          <p className="mt-0.5 text-xs text-muted-foreground">{tile.label}</p>
-        </button>
-      ))}
+            {item.label}
+            <span className="tabular-nums">{item.value}</span>
+          </button>
+        )
+      })}
     </div>
   )
 }

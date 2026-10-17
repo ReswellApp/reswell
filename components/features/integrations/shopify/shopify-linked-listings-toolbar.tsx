@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { shopifyFieldClass } from "@/components/features/integrations/shopify/shopify-admin-styles"
 import {
   PEER_LISTING_SECTION_LABELS,
   PEER_LISTING_SECTIONS,
@@ -18,10 +19,6 @@ import {
   SHOPIFY_LINKED_LISTING_FILTERS,
   type ShopifyLinkedListingFilter,
 } from "@/lib/shopify/types"
-import {
-  dashboardFilterSelectClass,
-  dashboardSearchInputClass,
-} from "@/lib/utils/dashboard-display-styles"
 import { cn } from "@/lib/utils"
 
 export const SHOPIFY_FILTER_LABELS: Record<ShopifyLinkedListingFilter, string> = {
@@ -53,16 +50,16 @@ export function ShopifyLinkedListingsToolbar({
   onSectionChange,
 }: ShopifyLinkedListingsToolbarProps) {
   return (
-    <div className="flex flex-col gap-2 lg:flex-row">
+    <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
       <form
-        className="relative flex-1"
+        className="relative min-w-0 flex-1"
         onSubmit={(event) => {
           event.preventDefault()
           onSearchSubmit()
         }}
       >
         <Search
-          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+          className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#6d7175]"
           aria-hidden
         />
         <Input
@@ -71,14 +68,17 @@ export function ShopifyLinkedListingsToolbar({
           onChange={(event) => onSearchChange(event.target.value)}
           placeholder="Search linked listings by title"
           aria-label="Search linked listings"
-          className={dashboardSearchInputClass}
+          className={cn(shopifyFieldClass, "pl-8")}
         />
       </form>
       <Select
         value={filter}
         onValueChange={(value) => onFilterChange(value as ShopifyLinkedListingFilter)}
       >
-        <SelectTrigger className={dashboardFilterSelectClass} aria-label="Status filter">
+        <SelectTrigger
+          className={cn(shopifyFieldClass, "lg:w-[200px]")}
+          aria-label="Status filter"
+        >
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -96,7 +96,7 @@ export function ShopifyLinkedListingsToolbar({
         }
       >
         <SelectTrigger
-          className={cn(dashboardFilterSelectClass, "sm:w-[180px]")}
+          className={cn(shopifyFieldClass, "lg:w-[180px]")}
           aria-label="Section filter"
         >
           <SelectValue />
