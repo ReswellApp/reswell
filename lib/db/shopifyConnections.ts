@@ -51,19 +51,6 @@ export async function dbShopifyUserIsEligible(
   return data?.shopify_connect_enabled === true
 }
 
-export async function dbShopifyUserManualCanaryEnabled(
-  supabase: SupabaseClient,
-  userId: string,
-): Promise<boolean> {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("shopify_manual_canary_enabled")
-    .eq("id", userId)
-    .maybeSingle()
-  if (error) throw new Error(error.message)
-  return data?.shopify_manual_canary_enabled === true
-}
-
 export async function dbPeekShopifyOAuthState(
   supabase: SupabaseClient,
   stateHash: string,

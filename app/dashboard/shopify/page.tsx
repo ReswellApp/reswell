@@ -82,7 +82,7 @@ export default async function ShopifyIntegrationPage({
   }
 
   const connectOptions = access.allowed
-    ? await getShopifyDashboardConnectOptions(supabase, user.id)
+    ? getShopifyDashboardConnectOptions()
     : SHOPIFY_CONNECT_OPTIONS_UNAVAILABLE
 
   const params = await searchParams

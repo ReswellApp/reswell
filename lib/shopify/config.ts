@@ -32,13 +32,6 @@ export function isShopifyPublicOAuthEnabled(): boolean {
   )
 }
 
-export function isShopifyManualCanaryEnabled(): boolean {
-  return (
-    isShopifyIntegrationEnabled() &&
-    process.env.SHOPIFY_MANUAL_CANARY_ENABLED?.trim().toLowerCase() === "true"
-  )
-}
-
 export function areShopifyInventoryWritesEnabled(): boolean {
   return (
     isShopifyIntegrationEnabled() &&
@@ -49,7 +42,7 @@ export function areShopifyInventoryWritesEnabled(): boolean {
 export function isShopifyConfigured(): boolean {
   return (
     Boolean(process.env.SHOPIFY_TOKEN_ENCRYPTION_KEY?.trim()) &&
-    (isShopifyAccountOAuthConfigured() || isShopifyManualCanaryEnabled())
+    isShopifyAccountOAuthConfigured()
   )
 }
 
@@ -88,12 +81,6 @@ export function shopifyOAuthRedirectUri(): string {
 
 export function shopifyWebhookUri(): string {
   return `${publicSiteOrigin()}/api/webhooks/shopify`
-}
-
-export function shopifyManualWebhookUri(routeKey: string): string {
-  return `${publicSiteOrigin()}/api/webhooks/shopify/manual/${encodeURIComponent(
-    routeKey,
-  )}`
 }
 
 const SHOPIFY_APP_INSTALL_HOSTS = new Set([

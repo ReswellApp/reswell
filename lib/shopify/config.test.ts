@@ -3,7 +3,6 @@ import test from "node:test"
 import {
   isShopifyAccountOAuthConfigured,
   isShopifyConfigured,
-  isShopifyManualCanaryEnabled,
   isShopifyPublicOAuthConfigured,
   isShopifyPublicOAuthEnabled,
   missingShopifyReadScopes,
@@ -11,12 +10,10 @@ import {
   parseShopifyAppInstallUrl,
   shopifyAppInstallUrl,
 } from "@/lib/shopify/config"
-import { shopifyManualConnectBodySchema } from "@/lib/validations/shopify"
 
 const keys = [
   "SHOPIFY_INTEGRATION_ENABLED",
   "SHOPIFY_PUBLIC_OAUTH_ENABLED",
-  "SHOPIFY_MANUAL_CANARY_ENABLED",
   "SHOPIFY_TOKEN_ENCRYPTION_KEY",
   "SHOPIFY_API_KEY",
   "SHOPIFY_API_SECRET",
@@ -87,10 +84,9 @@ test("parses Shopify-owned HTTPS install URLs without crashing on invalid hosts"
   assert.equal(isShopifyPublicOAuthConfigured(), false)
 })
 
-test("public OAuth and manual canary flags stay independent", () => {
+test("public OAuth is configured from the Reswell app credentials", () => {
   process.env.SHOPIFY_INTEGRATION_ENABLED = "true"
   process.env.SHOPIFY_PUBLIC_OAUTH_ENABLED = "true"
-  process.env.SHOPIFY_MANUAL_CANARY_ENABLED = "false"
   process.env.SHOPIFY_TOKEN_ENCRYPTION_KEY = Buffer.alloc(32, 3).toString("base64")
   process.env.SHOPIFY_API_KEY = "key"
   process.env.SHOPIFY_API_SECRET = "secret"
@@ -98,19 +94,16 @@ test("public OAuth and manual canary flags stay independent", () => {
 
   assert.equal(isShopifyPublicOAuthEnabled(), true)
   assert.equal(isShopifyPublicOAuthConfigured(), true)
-  assert.equal(isShopifyManualCanaryEnabled(), false)
   assert.equal(isShopifyConfigured(), true)
 
   delete process.env.SHOPIFY_API_KEY
-  process.env.SHOPIFY_MANUAL_CANARY_ENABLED = "true"
   assert.equal(isShopifyPublicOAuthConfigured(), false)
-  assert.equal(isShopifyManualCanaryEnabled(), true)
-  assert.equal(isShopifyConfigured(), true)
+  assert.equal(isShopifyAccountOAuthConfigured(), false)
+  assert.equal(isShopifyConfigured(), false)
 })
 
 test("Reswell-started OAuth does not need SHOPIFY_APP_INSTALL_URL", () => {
   process.env.SHOPIFY_INTEGRATION_ENABLED = "true"
-  process.env.SHOPIFY_MANUAL_CANARY_ENABLED = "false"
   process.env.SHOPIFY_TOKEN_ENCRYPTION_KEY = Buffer.alloc(32, 3).toString("base64")
   process.env.SHOPIFY_API_KEY = "key"
   process.env.SHOPIFY_API_SECRET = "secret"
@@ -125,7 +118,7 @@ test("Reswell-started OAuth does not need SHOPIFY_APP_INSTALL_URL", () => {
   assert.equal(isShopifyConfigured(), false)
 })
 
-test("manual setup reports the read scopes a Dev Dashboard app is missing", () => {
+test("reports Shopify read scopes that were not granted", () => {
   assert.deepEqual(
     missingShopifyReadScopes(["read_products", "read_inventory", "read_locations"]),
     [],
@@ -134,24 +127,4 @@ test("manual setup reports the read scopes a Dev Dashboard app is missing", () =
     "read_inventory",
     "read_locations",
   ])
-})
-
-test("merchant custom connect requires client credentials, not a static token", () => {
-  const parsed = shopifyManualConnectBodySchema.safeParse({
-    shop: "reswell-pilot.myshopify.com",
-    clientId: "shopify-app-client-id",
-    clientSecret: "shopify-app-client-secret",
-    accessToken: "shpat_should_be_ignored",
-  })
-  assert.equal(parsed.success, true)
-  if (parsed.success) {
-    assert.equal("accessToken" in parsed.data, false)
-  }
-  assert.equal(
-    shopifyManualConnectBodySchema.safeParse({
-      shop: "reswell-pilot.myshopify.com",
-      accessToken: "shpat_only",
-    }).success,
-    false,
-  )
 })
