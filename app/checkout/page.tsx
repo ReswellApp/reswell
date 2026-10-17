@@ -51,6 +51,7 @@ import { KlaviyoCheckoutStartedTracker } from "@/components/features/checkout/kl
 import { assertBuyerMayPurchaseListingsExclusiveWindow } from "@/lib/services/listingBuyerExclusiveWindow"
 import { peerCheckoutCopyFromSections } from "@/lib/peer-listing-item-nouns"
 import { getSurfboardShippedCheckoutSeed } from "@/lib/services/surfboardShippedOffer"
+import { getAdminReswellBucksCheckoutOffer } from "@/lib/services/reswellBucksCheckout"
 import type { SurfboardShippedCheckoutSeed } from "@/lib/services/surfboardShippedOffer"
 
 async function surfboardShippedSeedForCheckout(
@@ -107,6 +108,11 @@ export default async function CheckoutPage(props: {
   const {
     data: { user },
   } = await supabase.auth.getUser()
+
+  const reswellBucksCheckout =
+    user && !isAnonymousSupabaseUser(user)
+      ? await getAdminReswellBucksCheckoutOffer(supabase, user.id)
+      : null
 
   if (offerParam) {
     const checkoutReturnPath = `/checkout?offer=${encodeURIComponent(offerParam)}`
@@ -192,6 +198,7 @@ export default async function CheckoutPage(props: {
             offerId={offer.id}
             suggestedFulfillment={loaded.fulfillment}
             surfboardShippedSeed={await surfboardShippedSeedForCheckout(user.id, checkoutListings)}
+            reswellBucksCheckout={reswellBucksCheckout}
           />
         </div>
       </main>
@@ -338,6 +345,7 @@ export default async function CheckoutPage(props: {
                 : null
             }
             acceptedOfferListingIds={acceptedOfferListingIds}
+            reswellBucksCheckout={reswellBucksCheckout}
             suggestedFulfillment={
               matchedOffer && acceptedOfferMatchesListingIds(matchedOffer, checkoutListings.map((l) => l.id))
                 ? suggestedFulfillmentFromOfferAndListings(
@@ -594,6 +602,7 @@ export default async function CheckoutPage(props: {
           offerId={matchedOfferId}
           suggestedFulfillment={matchedOfferFulfillment}
           surfboardShippedSeed={surfboardShippedSeed}
+          reswellBucksCheckout={reswellBucksCheckout}
         />
       </div>
     </main>

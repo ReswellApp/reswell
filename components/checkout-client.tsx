@@ -85,6 +85,8 @@ interface CheckoutClientProps {
   acceptedOfferListingIds?: string[]
   /** Admin checkout seed. Null hides Surfboard Shipped. */
   surfboardShippedSeed?: SurfboardShippedCheckoutSeed | null
+  /** Admin pilot. Null hides Pay with Reswell Bucks. */
+  reswellBucksCheckout?: { spendableUsd: number } | null
 }
 
 function CheckoutShippingArrival({ rate }: { rate: PeerCheckoutShippingRateOption }) {
@@ -116,6 +118,7 @@ export function CheckoutClient({
   suggestedFulfillment = null,
   acceptedOfferListingIds,
   surfboardShippedSeed = null,
+  reswellBucksCheckout = null,
 }: CheckoutClientProps) {
   const isBundle = listings.length > 1
   const offerSuggestedFulfillment = normalizeOfferFulfillment(suggestedFulfillment)
@@ -1017,6 +1020,7 @@ export function CheckoutClient({
                   hideStripeFooter
                   buyerEmail={buyerEmail ?? null}
                   surfboardShipped={surfboardShippedSelected}
+                  reswellBucks={surfboardShippedSelected ? null : reswellBucksCheckout}
                 />
                 <p className="mt-3 text-center text-[12px] text-neutral-500">
                   Secure payment processed by{" "}

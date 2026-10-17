@@ -4,6 +4,7 @@ import dynamic from "next/dynamic"
 import Link from "next/link"
 import { Loader2 } from "lucide-react"
 import { stripeCardCheckoutEnabled } from "@/lib/stripe/client-checkout-enabled"
+import { ReswellBucksPayButton } from "@/components/features/checkout/reswell-bucks-pay-button"
 
 const StripeCardCheckout = dynamic(
   () =>
@@ -51,6 +52,8 @@ interface PurchaseOptionsProps {
   buyerEmail?: string | null
   /** Flat Surfboard Shipped checkout. Skips the carrier quote. */
   surfboardShipped?: boolean
+  /** Admin pilot. Null hides Reswell Bucks checkout. */
+  reswellBucks?: { spendableUsd: number } | null
 }
 
 function purchaseDetailsPlaceholder(needsShipping: boolean): string {
@@ -77,6 +80,7 @@ export function PurchaseOptions({
   hideStripeFooter = false,
   buyerEmail,
   surfboardShipped = false,
+  reswellBucks = null,
 }: PurchaseOptionsProps) {
   const showCard = stripeCardCheckoutEnabled()
 
@@ -105,6 +109,23 @@ export function PurchaseOptions({
         </div>
       ) : (
         <div className="flex flex-1 flex-col space-y-3">
+          {reswellBucks ? (
+            <>
+              <ReswellBucksPayButton
+                listingIds={listingIds}
+                price={price}
+                spendableUsd={reswellBucks.spendableUsd}
+                fulfillment={fulfillment ?? null}
+                shippingAddressId={shippingAddressId ?? null}
+                offerId={offerId ?? null}
+                promoCode={promoCode ?? null}
+                shippingQuoteToken={shippingQuoteToken ?? null}
+                packagingMode={packagingMode}
+                className={submitButtonClassName}
+              />
+              <p className="text-center text-[12px] text-neutral-400">or pay with card</p>
+            </>
+          ) : null}
           <StripeCardCheckout
             listingIds={listingIds}
             listingTitle={listingTitle}

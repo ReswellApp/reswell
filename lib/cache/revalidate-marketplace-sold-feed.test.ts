@@ -47,8 +47,8 @@ describe("sold feed invalidation", () => {
       /revalidateMarketplaceSoldFeedCatalog\(\)/,
     )
     assert.match(
-      readRepo("app/api/wallet/purchase/route.ts"),
-      /revalidateMarketplaceSoldFeedCatalog\(\)/,
+      readRepo("lib/services/reswellBucksCheckoutSideEffects.ts"),
+      /safeRevalidateAfterMarketplaceOrderCommit\(/,
     )
     assert.match(
       readRepo("lib/cache/safe-revalidate-after-order.ts"),
