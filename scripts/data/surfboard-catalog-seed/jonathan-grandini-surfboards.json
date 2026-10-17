@@ -1,0 +1,115 @@
+{
+  "generated_for": "Jonathan Grandini Surfboards official named standup catalog",
+  "source": "https://jonathangrandini.com/models (official public model API at https://crmjonathan.lovable.app/api/public/models — excludes SUPs, kiteboards, accessories, stock dimension SKUs, and custom-order CTAs)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "jonathan-grandini-surfboards",
+      "name": "Jonathan Grandini Surfboards",
+      "website_url": "https://jonathangrandini.com",
+      "location_label": "San Clemente, California",
+      "founder_name": "Jonathan Grandini",
+      "lead_shaper_name": "Jonathan Grandini",
+      "short_description": "Hand-shaped surfboards from Jonathan Grandini in San Clemente, California — performance shortboards, grovelers, fishes, mid-lengths, longboards, and guns built for Trestles and beyond.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/jonathan-grandini-surfboards.png",
+      "models": [
+        {
+          "name": "Be Happy",
+          "image_url": "https://crmjonathan.lovable.app/__l5e/assets-v1/369c57e2-bca1-487c-9b25-4808c0f129e9/be-happy-hero.jpg",
+          "description": "Inspired by my travels up and down the California coast, exploring the endless variety of waves only this place can offer, the Be Happy was born - a model made to spark happiness and have you surfing with a smile from ear to ear. Built for ease and fun, it combines generous volume with flowing lines, delivering powerful paddling and smooth wave entries. Low rocker maximizes speed and flow, while a light center concave transitions into a double concave through the tail for quick response and control. Full rails blending into a refined tail nail the balance between stability and maneuverability, handling small to medium waves with ease. Perfect for every level of surfer. Also available in the XTRA version, with more volume for easier paddling and float.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Monster",
+          "image_url": "https://crmjonathan.lovable.app/__l5e/assets-v1/a7a47cab-e964-42c6-8089-fef6f75bd887/monster-hero.jpg",
+          "description": "The Monster is one of the most versatile high-performance boards you'll ever ride - built to deliver in any kind of wave, anywhere in the world. This model didn't happen by accident. It's the result of over 20 years of dedication, testing, and constant refinement, always fine-tuned to your body type, your surf style, and the kind of waves you ride most. A Squash tail with a tri-fin setup delivers speed and explosive turns, while a Round tail with a 5-fin option gives you more control, flow, and confidence in heavier, more critical waves. Designed for intermediate, advanced, or high-level surfers looking to push their progression forward.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Plow Driver",
+          "image_url": "https://crmjonathan.lovable.app/__l5e/assets-v1/93582ec4-c754-48d9-9d28-c38f7283945d/plow-driver-hero.jpg",
+          "description": "Lately, many friends who gained weight due to the rush of everyday life started asking for a board that would be easy to get going on, since they were having difficulties with their current boards. They wanted something that, besides making paddling easier, provided explosiveness, stability in the drop, and was easy to maneuver. That's how the Plowdriver came about. Starting from the base of a performance board, the rocker was adjusted flatter to gain speed and projection. The bottom has a concave at the front for acceleration through sections, while the back combines a double concave and V-bottom with a thin tail for drive and performance. Recommended for waves up to 6 feet, for all surfing levels.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "All4",
+          "image_url": "https://crmjonathan.lovable.app/__l5e/assets-v1/f4566550-8661-4848-9977-64d4ae19a88f/all4-hero.jpg",
+          "description": "The All4 was born in 2014, inspired by the 4 main groveler boards here in California, with small tweaks made every year since. For 2024, it received a major redesign focused on acceleration and speed with super comfortable paddling, ideal for all types of waves, from small mushy days to bigger, more hollow surf. It features 4 types of bottom contours that channel water flow, delivering speed, projection, and quick rail-to-rail transitions - plus 4 wings on the back foot for easy, loose short turns even in low-pressure waves. It comes with 4 tail style options and a 5th round pin option. Recommended setup: ride it as a step-down, 2 to 4 inches shorter than your height.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Mavericks",
+          "image_url": "https://crmjonathan.lovable.app/__l5e/assets-v1/1423825a-c070-4604-982f-6325b5a893d4/mavericks-hero.jpg",
+          "description": "Imagine living in San Francisco, a time of intense learning, especially when it comes to gun surfboards. We're talking about the real guns built to face the giant waves of Mavericks - and there's nothing better than naming it the Mavericks Gun. Almost every day visiting Half Moon Bay, I gathered all my shaping knowledge from the last 30 years and designed this board. With a super comfortable and fast paddle, it puts you inside the wave. The design fits into curves with ease, generating projection, speed and, most importantly, safety to complete the wave. Paired with 4 fins it gets even faster; the most recommended tails are Pin tail and mini swallow. The ideal choice for facing the biggest waves in the world with confidence and control.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Summertime",
+          "image_url": "https://crmjonathan.lovable.app/__l5e/assets-v1/8b057b8e-a25c-4d72-9627-d23172453266/summertime-hero.jpg",
+          "description": "Inspired by Steve Lis' iconic Keel Fish, created in the late 60s in San Diego, the Summertime is a tribute to the essence and history of surfing - modernized while keeping its classic soul. With two wing-shaped keel fins, it delivers exceptional speed and fluidity. The bottom combines a concave under the front foot evolving into a double concave and V-bottom between the fins, ensuring control, agility and smooth transitions. The high central volume makes paddling easier, while full rails and a thin tail offer stability and quick response. Perfect for small and medium waves, all levels, and for anyone wanting to reconnect with the nostalgic flow of retro surfing.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Sunshine",
+          "image_url": "https://crmjonathan.lovable.app/__l5e/assets-v1/1f1a937a-22dd-44a6-972e-044db1045566/sunshine-hero.jpg",
+          "description": "Created almost 30 years ago, the Sunshine is one of the first FunBoard models, entering its 3rd generation in 2024 since its final design in the late 90s. Inspired by a passion for hybrid boards, it combines the stability and easy paddling of longboards with the agility and performance of step-up boards. Perfect for surfers of all levels - beginners looking for safety and progression, or intermediates exploring more challenging maneuvers. With a wide outline, well-balanced rocker and versatile design, it delivers performance and comfort in all conditions. Once you have it, you won't want to put it down - the perfect board for your quiver.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Big Nose",
+          "image_url": "https://crmjonathan.lovable.app/__l5e/assets-v1/f984b6ca-1e18-4f52-869c-9e2cf44d7b7f/big-nose-hero.jpg",
+          "description": "The Big Nose is a versatile board with a generous nose, designed to make paddling and wave entry easier while keeping solid performance. Available from 4'6\" to 6'6\" with a Swallow tail, it takes a Thruster, Quad or 5 fin plug setup. Also available in the XTRA version, with more volume and thickness for surfers looking for extra float and stability.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Super 8",
+          "image_url": "https://crmjonathan.lovable.app/__l5e/assets-v1/e65fe222-d190-4f7b-8cc6-5306cfc3de09/super8-hero.jpg",
+          "description": "The Super8 is a mid-length cruiser built for effortless glide, running 6'10\" to 8'6\" with a 2+1 single-fin setup. Round and Round Pin tail options keep it smooth through turns while the generous length makes paddling and wave-catching easy. Built for surfers who want a longboard-adjacent feel with more maneuverability underfoot.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Fish 1",
+          "image_url": "https://crmjonathan.lovable.app/__l5e/assets-v1/fd4b913e-f48f-4855-ad3a-7a5c21a315bb/fish-1-hero.jpg",
+          "description": "Fish-1 is our classic take on the fish shape, running 5'4\" to 6'6\" with a Wing Swallow tail for that signature fish speed and release. Built with Thruster, Quad, or 5-plug fin options, it's a shorter, wider board designed to generate speed in smaller, softer surf while staying fun and easy to ride.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Hipster",
+          "image_url": "https://crmjonathan.lovable.app/__l5e/assets-v1/a21aa37f-1039-4e54-87a7-8b2c2f2e07b4/hipster-hero.jpg",
+          "description": "The Hipster runs the full range from 5'0\" to 7'0\" with a Round Pin tail, built with Thruster, Quad, or 5-plug fin setups. Its broad size range makes it a versatile pick across a wide spread of wave conditions and rider sizes, with the round pin keeping things smooth and controlled in the pocket.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Holiday",
+          "image_url": "https://crmjonathan.lovable.app/__l5e/assets-v1/544e72ae-9469-41a8-a11b-c65fbca4a28b/holiday-hero.jpg",
+          "description": "The Holiday is our classic longboard, running 9'0\" to 9'6\" with Round or Squash tail options and a 2+1 fin setup. Built for effortless paddling, smooth nose rides, and that easy, flowing style longboarding is all about - a board that feels like a permanent vacation.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Iboard",
+          "image_url": "https://crmjonathan.lovable.app/__l5e/assets-v1/81aa51c2-25ed-4b73-b060-663ba190d508/iboard-hero.jpg",
+          "description": "The Iboard runs 5'2\" to 6'10\" with Round or Squash tail options and a Thruster, Quad, or 5-plug fin setup. A do-it-all shortboard shape built to feel dialed across a wide range of wave conditions.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Mid Fun",
+          "image_url": "https://crmjonathan.lovable.app/__l5e/assets-v1/73c9b8eb-8bcd-40e3-a5b8-0c5a6b3c92f1/mid-fun-hero.jpg",
+          "description": "The Mid Fun bridges the gap between shortboard and longboard, running 6'6\" to 8'0\" with Round or Round Pin tail options and a 2+1 single-fin setup. Extra glide and stability for surfers who want a mid-length feel without giving up maneuverability.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Pufferfish",
+          "image_url": "https://crmjonathan.lovable.app/__l5e/assets-v1/eded5851-7a53-46d9-9a58-069a72f8aef8/puffer-fish-hero.jpg",
+          "description": "Puffer Fish runs 5'4\" to 6'8\" with Swallow, Wing Swallow, or Double Wing Swallow tail options, built with Thruster, Quad, or 5-plug fin setups. A fuller fish outline that keeps paddling easy while still delivering the speed and release the fish shape is known for.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Space Rocket",
+          "image_url": "https://crmjonathan.lovable.app/__l5e/assets-v1/392cd472-270a-4e89-86fe-153db9b27d58/space-rocket-hero.jpg",
+          "description": "The Space Rocket features its own signature Space Rocket tail shape, running 5'2\" to 6'4\" on a 5-plug fin setup only. A distinctive shortboard built for surfers who want a unique release and pivot point unlike a standard tail shape.",
+          "board_category_slug": "groveler"
+        }
+      ]
+    }
+  ]
+}
