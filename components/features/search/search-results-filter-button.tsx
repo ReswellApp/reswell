@@ -12,7 +12,7 @@ export function SearchResultsFilterButton({ href }: SearchResultsFilterButtonPro
     <Button
       asChild
       variant="outline"
-      className="h-10 shrink-0 gap-2 rounded-full border-[#001A4A]/15 bg-white px-4 text-sm font-medium text-[#001A4A] shadow-none hover:bg-[#F9F9F2]"
+      className="h-10 w-fit shrink-0 gap-2 self-start rounded-full border-[#001A4A]/15 bg-white px-4 text-sm font-medium text-[#001A4A] shadow-none hover:bg-[#F9F9F2] sm:self-auto"
     >
       <Link href={href}>
         <SlidersHorizontal className="h-4 w-4 stroke-[1.75]" aria-hidden="true" />
