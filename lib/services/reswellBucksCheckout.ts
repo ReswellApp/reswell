@@ -95,6 +95,12 @@ function mapSettleError(message: string): ReswellBucksCheckoutFailure {
   if (message.includes("unbalanced")) {
     return fail(500, "This Reswell Bucks payment could not be balanced.")
   }
+  if (
+    message.includes("admin_settle_reswell_bucks_checkout") ||
+    message.includes("schema cache")
+  ) {
+    return fail(503, "Reswell Bucks checkout is not available until the ledger migration is applied.")
+  }
   console.error("[reswell-bucks] settle", message)
   return fail(500, "Could not complete Reswell Bucks checkout.")
 }
