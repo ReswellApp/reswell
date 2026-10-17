@@ -661,7 +661,7 @@ export function CrmAdminClient() {
                     aria-label="More filters"
                   >
                     <SlidersHorizontal className="h-4 w-4" />
-                    {currentSegment == null ? (
+                    {currentSegment == null || currentSegment === "hot" || currentSegment === "new" ? (
                       <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-teal-500" />
                     ) : null}
                   </Button>

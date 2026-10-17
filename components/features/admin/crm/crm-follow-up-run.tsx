@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { formatDistanceToNow } from "date-fns"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
@@ -40,6 +40,7 @@ export function CrmFollowUpRun({ contacts, onMutated }: CrmFollowUpRunProps) {
   const [editingTemplate, setEditingTemplate] = useState(false)
   const [draft, setDraft] = useState("")
   const [busy, setBusy] = useState(false)
+  const dialogOpenRef = useRef(false)
 
   useEffect(() => {
     const saved = window.localStorage.getItem(TEMPLATE_KEY)
@@ -77,6 +78,7 @@ export function CrmFollowUpRun({ contacts, onMutated }: CrmFollowUpRunProps) {
     setSentCount(0)
     setSkipCount(0)
     setDraft(message)
+    dialogOpenRef.current = true
     setOpen(true)
     openChat(first, message)
   }
@@ -98,11 +100,6 @@ export function CrmFollowUpRun({ contacts, onMutated }: CrmFollowUpRunProps) {
       toast.error("Write a message before logging it")
       return
     }
-    const next = batch[index + 1]
-    const nextMessage = next
-      ? renderFollowUpMessage(template, followUpGreetingName(crmContactDisplayName(next)))
-      : ""
-    if (next) openChat(next, nextMessage)
     setBusy(true)
     try {
       const logged = await logCrmInteractionAction({
@@ -124,8 +121,11 @@ export function CrmFollowUpRun({ contacts, onMutated }: CrmFollowUpRunProps) {
         return
       }
       setSentCount((count) => count + 1)
-      if (next) setDraft(nextMessage)
-      setIndex(index + 1)
+      if (dialogOpenRef.current) {
+        advance(index + 1)
+      } else {
+        onMutated()
+      }
     } catch (err) {
       console.error("CrmFollowUpRun.sentAndNext:", err)
       toast.error("Could not log that follow-up")
@@ -135,6 +135,7 @@ export function CrmFollowUpRun({ contacts, onMutated }: CrmFollowUpRunProps) {
   }
 
   function close(nextOpen: boolean) {
+    dialogOpenRef.current = nextOpen
     setOpen(nextOpen)
     if (!nextOpen && (sentCount > 0 || index > 0)) onMutated()
   }
