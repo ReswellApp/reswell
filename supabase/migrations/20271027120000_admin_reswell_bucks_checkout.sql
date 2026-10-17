@@ -55,20 +55,99 @@ CREATE TABLE IF NOT EXISTS public.reswell_bucks_entries (
   direction text NOT NULL CHECK (direction IN ('debit', 'credit')),
   amount_cents bigint NOT NULL CHECK (amount_cents > 0),
   wallet_id uuid REFERENCES public.wallets (id),
+  wallet_transaction_id uuid REFERENCES public.wallet_transactions (id),
   user_id uuid,
   source_key text,
   memo text NOT NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
-  CONSTRAINT reswell_bucks_entries_source_key_uidx UNIQUE (source_key)
+  CONSTRAINT reswell_bucks_entries_source_key_uidx UNIQUE (source_key),
+  CONSTRAINT reswell_bucks_entries_wallet_link_check CHECK (
+    (
+      account_code IN ('buyer_available', 'seller_pending')
+      AND wallet_id IS NOT NULL
+      AND wallet_transaction_id IS NOT NULL
+    )
+    OR (
+      account_code NOT IN ('buyer_available', 'seller_pending')
+      AND wallet_id IS NULL
+      AND wallet_transaction_id IS NULL
+    )
+  )
 );
 
 CREATE INDEX IF NOT EXISTS reswell_bucks_entries_settlement_idx
   ON public.reswell_bucks_entries (settlement_id);
 CREATE INDEX IF NOT EXISTS reswell_bucks_entries_account_idx
   ON public.reswell_bucks_entries (account_code);
+CREATE INDEX IF NOT EXISTS reswell_bucks_entries_wallet_idx
+  ON public.reswell_bucks_entries (wallet_id)
+  WHERE wallet_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS reswell_bucks_entries_wallet_tx_idx
+  ON public.reswell_bucks_entries (wallet_transaction_id)
+  WHERE wallet_transaction_id IS NOT NULL;
 
 COMMENT ON TABLE public.reswell_bucks_entries IS
-  'Immutable double-entry legs for a Reswell Bucks settlement. Debits equal credits per settlement.';
+  'Immutable double-entry legs. User balances point at public.wallets and the wallet_transactions row that moved them. Fee, promo, and shipping are platform accounts, not user wallets.';
+
+CREATE OR REPLACE FUNCTION public.reswell_bucks_entry_matches_wallet()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
+DECLARE
+  r_tx public.wallet_transactions%ROWTYPE;
+  v_balance numeric(12, 2);
+BEGIN
+  IF NEW.account_code NOT IN ('buyer_available', 'seller_pending') THEN
+    RETURN NEW;
+  END IF;
+
+  SELECT *
+  INTO r_tx
+  FROM public.wallet_transactions
+  WHERE id = NEW.wallet_transaction_id;
+
+  IF NOT FOUND OR r_tx.wallet_id IS DISTINCT FROM NEW.wallet_id THEN
+    RAISE EXCEPTION 'wallet_balance_mismatch';
+  END IF;
+
+  IF round(abs(r_tx.amount)::numeric * 100)::bigint IS DISTINCT FROM NEW.amount_cents THEN
+    RAISE EXCEPTION 'wallet_balance_mismatch';
+  END IF;
+
+  IF NEW.account_code = 'buyer_available'
+    AND (NEW.direction IS DISTINCT FROM 'debit' OR r_tx.amount >= 0 OR r_tx.reference_type IS DISTINCT FROM 'reswell_bucks_checkout')
+  THEN
+    RAISE EXCEPTION 'wallet_balance_mismatch';
+  END IF;
+
+  IF NEW.account_code = 'seller_pending'
+    AND (NEW.direction IS DISTINCT FROM 'credit' OR r_tx.amount <= 0 OR r_tx.reference_type IS DISTINCT FROM 'order_pending_earnings')
+  THEN
+    RAISE EXCEPTION 'wallet_balance_mismatch';
+  END IF;
+
+  -- Buyer spend is a change to wallets.balance. The transaction snapshot must be that row.
+  IF NEW.account_code = 'buyer_available' THEN
+    SELECT w.balance
+    INTO v_balance
+    FROM public.wallets w
+    WHERE w.id = NEW.wallet_id;
+
+    IF round(COALESCE(v_balance, 0)::numeric, 2) IS DISTINCT FROM round(COALESCE(r_tx.balance_after, 0)::numeric, 2) THEN
+      RAISE EXCEPTION 'wallet_balance_mismatch';
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS reswell_bucks_entries_match_wallet ON public.reswell_bucks_entries;
+CREATE TRIGGER reswell_bucks_entries_match_wallet
+  BEFORE INSERT ON public.reswell_bucks_entries
+  FOR EACH ROW
+  EXECUTE FUNCTION public.reswell_bucks_entry_matches_wallet();
 
 ALTER TABLE public.reswell_bucks_accounts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.reswell_bucks_settlements ENABLE ROW LEVEL SECURITY;
@@ -182,6 +261,8 @@ DECLARE
   v_debits bigint;
   v_credits bigint;
   v_seller_missing boolean := true;
+  v_buyer_tx_id uuid;
+  v_seller_tx_id uuid;
 BEGIN
   IF p_payload IS NULL OR jsonb_typeof(p_payload) <> 'object' THEN
     RAISE EXCEPTION 'invalid_payload';
@@ -499,12 +580,6 @@ BEGIN
   RETURNING id INTO v_settlement_id;
 
   IF v_amount_cents > 0 THEN
-    INSERT INTO public.reswell_bucks_entries (
-      settlement_id, account_code, direction, amount_cents, wallet_id, user_id, memo
-    ) VALUES (
-      v_settlement_id, 'buyer_available', 'debit', v_amount_cents, v_buyer.id, v_buyer_id,
-      format('Buyer paid order %s', coalesce(v_order_num, v_order_id::text))
-    );
     INSERT INTO public.wallet_transactions (
       wallet_id, user_id, type, amount, balance_after, description, reference_id, reference_type
     ) VALUES (
@@ -516,6 +591,14 @@ BEGIN
       format('Purchased "%s" with Reswell Bucks', v_title),
       v_order_id::text,
       'reswell_bucks_checkout'
+    )
+    RETURNING id INTO v_buyer_tx_id;
+
+    INSERT INTO public.reswell_bucks_entries (
+      settlement_id, account_code, direction, amount_cents, wallet_id, wallet_transaction_id, user_id, memo
+    ) VALUES (
+      v_settlement_id, 'buyer_available', 'debit', v_amount_cents, v_buyer.id, v_buyer_tx_id, v_buyer_id,
+      format('Buyer paid order %s', coalesce(v_order_num, v_order_id::text))
     );
   END IF;
 
@@ -527,13 +610,6 @@ BEGIN
       format('Promo subsidy for order %s', coalesce(v_order_num, v_order_id::text))
     );
   END IF;
-
-  INSERT INTO public.reswell_bucks_entries (
-    settlement_id, account_code, direction, amount_cents, wallet_id, user_id, memo
-  ) VALUES (
-    v_settlement_id, 'seller_pending', 'credit', v_earnings_cents, v_seller.id, v_seller_id,
-    format('Pending earnings for order %s', coalesce(v_order_num, v_order_id::text))
-  );
 
   INSERT INTO public.wallet_transactions (
     wallet_id, user_id, type, amount, balance_after, description, reference_id, reference_type
@@ -550,6 +626,14 @@ BEGIN
     ),
     v_order_id::text,
     'order_pending_earnings'
+  )
+  RETURNING id INTO v_seller_tx_id;
+
+  INSERT INTO public.reswell_bucks_entries (
+    settlement_id, account_code, direction, amount_cents, wallet_id, wallet_transaction_id, user_id, memo
+  ) VALUES (
+    v_settlement_id, 'seller_pending', 'credit', v_earnings_cents, v_seller.id, v_seller_tx_id, v_seller_id,
+    format('Pending earnings for order %s', coalesce(v_order_num, v_order_id::text))
   );
 
   IF v_fee_cents > 0 THEN
@@ -753,6 +837,39 @@ AS $$
     'seller_pending_cents', (
       SELECT COALESCE(SUM(amount_cents), 0) FROM legs
       WHERE account_code = 'seller_pending' AND direction = 'credit'
+    ),
+    'wallet_link_drift_count', (
+      SELECT count(*)
+      FROM public.reswell_bucks_entries e
+      LEFT JOIN public.wallet_transactions wt ON wt.id = e.wallet_transaction_id
+      LEFT JOIN public.wallets w ON w.id = e.wallet_id
+      WHERE e.account_code IN ('buyer_available', 'seller_pending')
+        AND (
+          wt.id IS NULL
+          OR w.id IS NULL
+          OR wt.wallet_id IS DISTINCT FROM w.id
+          OR round(abs(wt.amount)::numeric * 100)::bigint IS DISTINCT FROM e.amount_cents
+        )
+    ),
+    'buyer_wallets_stored_cents', (
+      SELECT COALESCE(SUM(round(w.balance::numeric * 100))::bigint, 0)
+      FROM public.wallets w
+      WHERE w.id IN (
+        SELECT e.wallet_id
+        FROM public.reswell_bucks_entries e
+        WHERE e.account_code = 'buyer_available'
+          AND e.wallet_id IS NOT NULL
+      )
+    ),
+    'seller_wallets_pending_cents', (
+      SELECT COALESCE(SUM(round(COALESCE(w.pending_balance, 0)::numeric * 100))::bigint, 0)
+      FROM public.wallets w
+      WHERE w.id IN (
+        SELECT e.wallet_id
+        FROM public.reswell_bucks_entries e
+        WHERE e.account_code = 'seller_pending'
+          AND e.wallet_id IS NOT NULL
+      )
     ),
     'platform_fee_cents', COALESCE((SELECT net_cents FROM nets WHERE account_code = 'platform_fee'), 0),
     'shipping_clearing_cents', COALESCE((SELECT net_cents FROM nets WHERE account_code = 'shipping_clearing'), 0),

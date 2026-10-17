@@ -77,6 +77,9 @@ export type ReswellBucksReconcileSummary = {
   total_credit_cents: number
   buyer_spent_cents: number
   seller_pending_cents: number
+  wallet_link_drift_count: number
+  buyer_wallets_stored_cents: number
+  seller_wallets_pending_cents: number
   platform_fee_cents: number
   shipping_clearing_cents: number
   promo_subsidy_cents: number
@@ -101,6 +104,9 @@ export async function fetchReswellBucksReconcileSummary(
     total_credit_cents: Number(row.total_credit_cents ?? 0),
     buyer_spent_cents: Number(row.buyer_spent_cents ?? 0),
     seller_pending_cents: Number(row.seller_pending_cents ?? 0),
+    wallet_link_drift_count: Number(row.wallet_link_drift_count ?? 0),
+    buyer_wallets_stored_cents: Number(row.buyer_wallets_stored_cents ?? 0),
+    seller_wallets_pending_cents: Number(row.seller_wallets_pending_cents ?? 0),
     platform_fee_cents: Number(row.platform_fee_cents ?? 0),
     shipping_clearing_cents: Number(row.shipping_clearing_cents ?? 0),
     promo_subsidy_cents: Number(row.promo_subsidy_cents ?? 0),

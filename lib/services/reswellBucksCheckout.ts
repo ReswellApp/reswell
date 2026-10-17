@@ -92,6 +92,9 @@ function mapSettleError(message: string): ReswellBucksCheckoutFailure {
   if (message.includes("own_listing")) {
     return fail(400, "Cannot purchase your own listing.")
   }
+  if (message.includes("wallet_balance_mismatch")) {
+    return fail(500, "Wallet balance did not match the ledger line.")
+  }
   if (message.includes("unbalanced")) {
     return fail(500, "This Reswell Bucks payment could not be balanced.")
   }

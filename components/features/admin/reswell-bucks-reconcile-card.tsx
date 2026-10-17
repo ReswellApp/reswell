@@ -9,6 +9,9 @@ type ReconcileSummary = {
   unbalanced_count: number
   buyer_spent_cents: number
   seller_pending_cents: number
+  wallet_link_drift_count: number
+  buyer_wallets_stored_cents: number
+  seller_wallets_pending_cents: number
   platform_fee_cents: number
   shipping_clearing_cents: number
   promo_subsidy_cents: number
@@ -63,8 +66,9 @@ export function ReswellBucksReconcileCard() {
         </span>
       </div>
       <p className="mt-1 text-xs text-muted-foreground">
-        Admin checkout only. Each payment debits the buyer and credits the seller, the marketplace fee, and shipping
-        clearing. Shipping clearing stays open until a label cost is matched.
+        User balances are the wallets rows. Each Bucks leg points at that wallet and its transaction. Fee, promo, and
+        shipping are platform accounts. Stored balances below are the current wallet rows, after later releases and
+        cash outs.
       </p>
       {summary ? (
         <dl className="mt-3 grid gap-2 text-xs sm:grid-cols-2 lg:grid-cols-4">
@@ -77,8 +81,16 @@ export function ReswellBucksReconcileCard() {
             <dd className="font-medium tabular-nums">{usd(summary.buyer_spent_cents)}</dd>
           </div>
           <div>
-            <dt className="text-muted-foreground">Seller pending</dt>
+            <dt className="text-muted-foreground">Buyer wallets now</dt>
+            <dd className="font-medium tabular-nums">{usd(summary.buyer_wallets_stored_cents)}</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Seller pending credited</dt>
             <dd className="font-medium tabular-nums">{usd(summary.seller_pending_cents)}</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Seller wallets pending now</dt>
+            <dd className="font-medium tabular-nums">{usd(summary.seller_wallets_pending_cents)}</dd>
           </div>
           <div>
             <dt className="text-muted-foreground">Marketplace fee</dt>
@@ -107,6 +119,10 @@ export function ReswellBucksReconcileCard() {
           <div>
             <dt className="text-muted-foreground">Unbalanced journals</dt>
             <dd className="font-medium tabular-nums">{summary.unbalanced_count}</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Wallet rows that disagree</dt>
+            <dd className="font-medium tabular-nums">{summary.wallet_link_drift_count}</dd>
           </div>
         </dl>
       ) : null}

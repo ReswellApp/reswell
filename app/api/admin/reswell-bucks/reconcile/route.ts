@@ -17,7 +17,9 @@ export async function GET() {
       return NextResponse.json({ error: "Could not load Reswell Bucks reconciliation." }, { status: 500 })
     }
     const balanced =
-      summary.unbalanced_count === 0 && summary.total_debit_cents === summary.total_credit_cents
+      summary.unbalanced_count === 0 &&
+      summary.wallet_link_drift_count === 0 &&
+      summary.total_debit_cents === summary.total_credit_cents
     return NextResponse.json({ data: { ...summary, balanced } })
   } catch (err) {
     console.error("[admin/reswell-bucks/reconcile]", err)
