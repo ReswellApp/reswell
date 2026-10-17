@@ -87,23 +87,22 @@ export function ShopifyIntegrationDashboard({
       <ShopifyPageHeader
         connection={connection}
         showConnection={showConnection}
+        health={catalog?.health ?? null}
         busy={integration.connectionBusy}
         onSync={() => void syncNow()}
         onDisconnect={() => void integration.disconnect()}
       />
 
       <ShopifyDashboardAlerts
-        connected={connected}
         runtimeReady={runtimeReady}
         configured={initialData.configured}
         error={callbackError ?? initialData.loadError}
       />
 
-      {runtimeReady ? (
+      {runtimeReady && (!connection || connection.status === "disconnected") ? (
         <ShopifyConnectionCard
           connection={connection}
           connectOptions={initialData.connectOptions}
-          health={catalog?.health ?? null}
         />
       ) : null}
 

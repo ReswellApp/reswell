@@ -1,10 +1,10 @@
 /** Visual tokens for the merchant Shopify page. Scoped here so the rest of the dashboard stays unchanged. */
 
 export const shopifyCanvasClass =
-  "space-y-4 rounded-xl bg-[#f6f6f7] p-3 text-[#202223] sm:p-4 dark:bg-zinc-900/50 dark:text-foreground"
+  "w-full min-w-0 space-y-5 text-[#202223] dark:text-foreground"
 
 export const shopifySurfaceClass =
-  "overflow-hidden rounded-lg border border-[#e1e3e5] bg-white dark:border-border dark:bg-card"
+  "w-full min-w-0 overflow-hidden rounded-xl border border-[#e1e3e5] bg-white dark:border-border dark:bg-card"
 
 export const shopifyTitleClass =
   "text-xl font-semibold leading-6 tracking-tight text-[#202223] dark:text-foreground"
@@ -49,4 +49,4 @@ export const shopifyTabTriggerClass =
   "-mb-px h-auto flex-none rounded-none border-b-2 border-transparent bg-transparent px-3 py-2 text-[13px] font-medium text-[#6d7175] shadow-none ring-offset-transparent hover:text-[#202223] focus-visible:ring-[#008060] data-[state=active]:border-[#202223] data-[state=active]:bg-transparent data-[state=active]:text-[#202223] data-[state=active]:shadow-none disabled:opacity-40 dark:text-muted-foreground dark:hover:text-foreground dark:data-[state=active]:border-foreground dark:data-[state=active]:text-foreground"
 
 export const shopifyIndexGridClass =
-  "sm:grid sm:grid-cols-[minmax(0,1.7fr)_7rem_8rem_8rem_2.25rem] sm:items-start sm:gap-3"
+  "md:grid md:grid-cols-[minmax(0,1.5fr)_9.5rem_12rem_10rem_2.5rem] md:items-center md:gap-4"

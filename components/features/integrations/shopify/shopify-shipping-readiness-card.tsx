@@ -24,10 +24,10 @@ export function ShopifyShippingReadinessCard({
 
   return (
     <section className={shopifySurfaceClass}>
-      <div className={`flex flex-wrap items-start justify-between gap-3 border-b px-4 py-3 ${shopifyDividerClass}`}>
-        <div>
+      <div className={`flex flex-wrap items-start justify-between gap-3 px-5 py-4 ${shopifyDividerClass}`}>
+        <div className="min-w-0">
           <h2 className={shopifySectionTitleClass}>Shipping setup</h2>
-          <p className={`mt-1 ${shopifyBodyClass}`}>
+          <p className={`mt-1 max-w-3xl ${shopifyBodyClass}`}>
             Shopify products use Reswell checkout, live ShipEngine rates, and
             Reswell-generated labels.
           </p>
@@ -37,29 +37,32 @@ export function ShopifyShippingReadinessCard({
         </span>
       </div>
 
-      <dl className="grid sm:grid-cols-2">
-        <div className={`border-b px-4 py-3 sm:border-b-0 sm:border-r ${shopifyDividerClass}`}>
-          <dt className={shopifySectionTitleClass}>Ship-from address</dt>
-          <dd className={`mt-1 ${shopifyBodyClass}`}>
+      <div className={`space-y-4 border-t px-5 py-4 ${shopifyDividerClass}`}>
+        <div>
+          <h3 className="text-[13px] font-semibold text-[#202223] dark:text-foreground">
+            Ship-from address
+          </h3>
+          <p className={`mt-1 ${shopifyBodyClass}`}>
             {readiness.hasShipFromAddress
               ? "Saved and ready for carrier quotes."
               : "Add a saved address before enabling shipping."}
-          </dd>
+          </p>
         </div>
-        <div className="px-4 py-3">
-          <dt className={shopifySectionTitleClass}>Shop shipping default</dt>
-          <dd className={`mt-1 ${shopifyBodyClass}`}>
+        <div>
+          <h3 className="text-[13px] font-semibold text-[#202223] dark:text-foreground">
+            Shop shipping default
+          </h3>
+          <p className={`mt-1 ${shopifyBodyClass}`}>
             {readiness.packageDefaults.length > 0
               ? `${readiness.packageDefaults.length} saved package${
                   readiness.packageDefaults.length === 1 ? "" : "s"
                 }.`
               : "Save a shop box before enabling shipping on imports."}
-          </dd>
+          </p>
         </div>
-      </dl>
 
       {readiness.packageDefaults.length > 0 ? (
-        <div className={`flex flex-wrap gap-2 border-t px-4 py-3 ${shopifyDividerClass}`}>
+        <div className="flex flex-wrap gap-2">
           {readiness.packageDefaults.map((entry) => (
             <span
               key={`${entry.section}-${entry.packageSizeId}`}
@@ -71,7 +74,7 @@ export function ShopifyShippingReadinessCard({
         </div>
       ) : null}
 
-      <div className={`space-y-3 border-t px-4 py-3 ${shopifyDividerClass}`}>
+      <div className="space-y-3">
         <p className={shopifyBodyClass}>
           New imports with both requirements ready offer local pickup and live
           shipping. Otherwise they start pickup-only. Listing-level fulfillment
@@ -90,6 +93,7 @@ export function ShopifyShippingReadinessCard({
             </Link>
           </Button>
         </div>
+      </div>
       </div>
     </section>
   )

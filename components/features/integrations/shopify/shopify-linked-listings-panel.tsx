@@ -40,30 +40,28 @@ export function ShopifyLinkedListingsPanel({
 
   return (
     <section className={shopifySurfaceClass} aria-busy={loading}>
-      <div className={`border-b p-3 ${shopifyDividerClass}`}>
+      <div className={`flex flex-col gap-3 border-b px-4 py-4 sm:px-5 ${shopifyDividerClass}`}>
         <ShopifyLinkedListingsToolbar
           search={controller.search}
-          filter={params.filter}
           section={params.section}
           onSearchChange={controller.setSearch}
           onSearchSubmit={() =>
             void controller.load({ query: controller.search.trim(), page: 1 })
           }
-          onFilterChange={(filter) => void controller.load({ filter, page: 1 })}
           onSectionChange={(section) => void controller.load({ section, page: 1 })}
         />
+        <ShopifyCatalogSummary
+          summary={catalog.summary}
+          activeFilter={params.filter}
+          onFilterChange={(filter) => void controller.load({ filter, page: 1 })}
+        />
       </div>
-      <ShopifyCatalogSummary
-        summary={catalog.summary}
-        activeFilter={params.filter}
-        onFilterChange={(filter) => void controller.load({ filter, page: 1 })}
-      />
 
       {page.listings.length > 0 ? (
         <div>
           <div
             className={cn(
-              "hidden border-b bg-[#fafbfb] px-3 py-2 text-[12px] font-medium dark:bg-muted/40 sm:grid",
+              "hidden border-b bg-[#fafbfb] px-5 py-2 text-[12px] font-medium dark:bg-muted/40 md:grid",
               shopifyDividerClass,
               shopifyMutedClass,
               shopifyIndexGridClass,
@@ -71,7 +69,7 @@ export function ShopifyLinkedListingsPanel({
           >
             <span>Product</span>
             <span>Status</span>
-            <span>Stock</span>
+            <span>Inventory</span>
             <span>Sync</span>
             <span className="sr-only">Actions</span>
           </div>

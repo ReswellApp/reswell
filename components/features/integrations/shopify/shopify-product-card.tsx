@@ -58,9 +58,9 @@ export function ShopifyProductCard({
   )
 
   return (
-    <div className="flex flex-col gap-3 px-3 py-3 sm:flex-row sm:items-center">
+    <div className="flex flex-col gap-4 px-5 py-4 lg:flex-row lg:items-center">
       <div className="flex min-w-0 flex-1 gap-3">
-        <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md border border-[#e1e3e5] bg-[#f6f6f7] dark:border-border dark:bg-muted">
+        <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-[#e1e3e5] bg-[#f6f6f7] dark:border-border dark:bg-muted">
           {product.imageUrl ? (
             <Image
               src={product.imageUrl}
@@ -77,7 +77,7 @@ export function ShopifyProductCard({
         </div>
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="truncate text-[13px] font-semibold leading-5 text-[#202223] dark:text-foreground">
+            <h3 className="text-[14px] font-semibold leading-5 text-[#202223] dark:text-foreground">
               {product.title}
             </h3>
             {product.selected ? (
@@ -87,7 +87,7 @@ export function ShopifyProductCard({
               </span>
             ) : null}
           </div>
-          <p className={`mt-0.5 text-[12px] leading-4 ${shopifyMutedClass}`}>
+          <p className={`mt-0.5 text-[13px] leading-5 ${shopifyMutedClass}`}>
             {product.vendor || "Shopify"} · {productPrice(product)} ·{" "}
             {product.variants.length} variant
             {product.variants.length === 1 ? "" : "s"} · {stock} available
@@ -95,7 +95,7 @@ export function ShopifyProductCard({
         </div>
       </div>
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+      <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:items-center lg:w-auto">
         <Select
           value={section}
           onValueChange={(value) => setSection(value as PeerListingSection)}

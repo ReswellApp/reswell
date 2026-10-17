@@ -49,6 +49,7 @@ export function DashboardAppFrame({
   children,
 }: DashboardAppFrameProps) {
   const pathname = usePathname() ?? ""
+  const shopifyAdmin = pathname === "/dashboard/shopify"
 
   if (isDashboardSupportDeskPath(pathname)) {
     return (
@@ -61,7 +62,13 @@ export function DashboardAppFrame({
   }
 
   return (
-    <div className="container mx-auto flex-1 pb-3 pt-5 sm:pb-6 sm:pt-6 lg:py-8">
+    <div
+      className={cn(
+        shopifyAdmin
+          ? "w-full flex-1 bg-[#f6f6f7] px-4 pb-8 pt-4 text-[#202223] sm:px-6 lg:px-8 lg:pb-10 lg:pt-6 dark:bg-zinc-950 dark:text-foreground"
+          : "container mx-auto flex-1 pb-3 pt-5 sm:pb-6 sm:pt-6 lg:py-8",
+      )}
+    >
       <DashboardMobilePageChrome
         sellerProfileHref={sellerProfileHref}
         isAdmin={isAdmin}
@@ -86,7 +93,12 @@ export function DashboardAppFrame({
         </p>
       ) : null}
 
-      <div className="mt-5 flex flex-col gap-6 lg:mt-0 lg:flex-row lg:gap-12 xl:gap-14">
+      <div
+        className={cn(
+          "mt-5 flex flex-col lg:mt-0 lg:flex-row",
+          shopifyAdmin ? "gap-6 lg:gap-8" : "gap-6 lg:gap-12 xl:gap-14",
+        )}
+      >
         <aside className={cn("hidden shrink-0 lg:block", dashboardSidebarWidthClass)}>
           <div className="sticky top-24 space-y-6">
             {actorUserId && activeAccountId ? (

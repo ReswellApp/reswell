@@ -7,7 +7,7 @@ import {
 export function ShopifyInventoryScopeNote() {
   return (
     <section className={shopifySurfaceClass}>
-      <div className="space-y-2 px-4 py-3">
+      <div className="space-y-2 px-5 py-4">
         <h2 className={shopifySectionTitleClass}>Inventory-only access</h2>
         <p className={shopifyBodyClass}>
           Reswell does not read or sync Shopify orders, customers, payments,

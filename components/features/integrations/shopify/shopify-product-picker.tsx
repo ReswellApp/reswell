@@ -47,9 +47,9 @@ export function ShopifyProductPicker({
   const searched = query.trim() !== ""
   return (
     <section className={shopifySurfaceClass}>
-      <div className={`border-b px-4 py-3 ${shopifyDividerClass}`}>
+      <div className={`border-b px-5 py-4 ${shopifyDividerClass}`}>
         <h2 className={shopifySectionTitleClass}>Add products from Shopify</h2>
-        <p className={`mt-1 ${shopifyBodyClass}`}>
+        <p className={`mt-1 max-w-3xl ${shopifyBodyClass}`}>
           Each Shopify variant becomes a Reswell listing. Shopify continues to
           control titles, prices, images, and inventory. New imports start as
           local pickup; add package details from My Listings before enabling shipping.
@@ -57,7 +57,7 @@ export function ShopifyProductPicker({
       </div>
 
       <form
-        className={`flex gap-2 border-b px-3 py-2 ${shopifyDividerClass}`}
+        className={`flex flex-col gap-2 border-b px-5 py-4 sm:flex-row ${shopifyDividerClass}`}
         onSubmit={(event) => {
           event.preventDefault()
           onSearch()
@@ -68,7 +68,7 @@ export function ShopifyProductPicker({
           onChange={(event) => onQueryChange(event.target.value)}
           placeholder="Search Shopify products"
           aria-label="Search Shopify products"
-          className={shopifyFieldClass}
+          className={`${shopifyFieldClass} min-w-0 w-full`}
         />
         <Button
           type="submit"
