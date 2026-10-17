@@ -52,6 +52,9 @@ function hideSiteChrome(pathname: string | null): boolean {
   if (pathname === "/admin" || pathname.startsWith("/admin/")) {
     return true
   }
+  if (pathname === "/dev/shopify-dashboard-preview") {
+    return true
+  }
   if (pathname === "/coastal-delivery" || pathname.startsWith("/coastal-delivery/")) {
     return true
   }
@@ -73,6 +76,7 @@ function hideFooter(pathname: string | null): boolean {
     pathname.startsWith("/import/") ||
     pathname === "/admin" ||
     pathname.startsWith("/admin/") ||
+    pathname === "/dev/shopify-dashboard-preview" ||
     pathname === "/coastal-delivery" ||
     pathname.startsWith("/coastal-delivery/") ||
     isShopifyClaimPath(pathname) ||

@@ -7,15 +7,17 @@ import { ShopifyConnectionCard } from "@/components/features/integrations/shopif
 import { ShopifyDashboardAlerts } from "@/components/features/integrations/shopify/shopify-dashboard-alerts"
 import { ShopifyInventoryScopeNote } from "@/components/features/integrations/shopify/shopify-inventory-scope-note"
 import { ShopifyLinkedListingsPanel } from "@/components/features/integrations/shopify/shopify-linked-listings-panel"
+import { ShopifyPageHeader } from "@/components/features/integrations/shopify/shopify-page-header"
 import { ShopifyProductPicker } from "@/components/features/integrations/shopify/shopify-product-picker"
 import { ShopifyShippingReadinessCard } from "@/components/features/integrations/shopify/shopify-shipping-readiness-card"
+import {
+  shopifyCanvasClass,
+  shopifyTabListClass,
+  shopifyTabTriggerClass,
+} from "@/components/features/integrations/shopify/shopify-admin-styles"
 import { useShopifyIntegration } from "@/components/features/integrations/shopify/hooks/use-shopify-integration"
 import { useShopifyLinkedListings } from "@/components/features/integrations/shopify/hooks/use-shopify-linked-listings"
 import type { ShopifyDashboardData } from "@/lib/shopify/types"
-import {
-  dashboardPageSubtitleClass,
-  dashboardPageTitleClass,
-} from "@/lib/utils/dashboard-display-styles"
 
 type DashboardTab = "listings" | "add" | "setup"
 
@@ -45,6 +47,9 @@ export function ShopifyIntegrationDashboard({
     !integration.loading &&
     integration.products.length === 0 &&
     integration.query.trim() === ""
+  const showConnection = Boolean(
+    runtimeReady && connection && connection.status !== "disconnected",
+  )
 
   const picker = connectedAndActive ? (
     <ShopifyProductPicker
@@ -78,43 +83,47 @@ export function ShopifyIntegrationDashboard({
   }
 
   return (
-    <div className="space-y-6">
-      <header>
-        <h1 className={dashboardPageTitleClass}>Shopify</h1>
-        <p className={dashboardPageSubtitleClass}>
-          Sell Shopify products on Reswell. Shopify stays the source of truth
-          for titles, prices, images, variants, and stock.
-        </p>
-      </header>
+    <div className={shopifyCanvasClass}>
+      <ShopifyPageHeader
+        connection={connection}
+        showConnection={showConnection}
+        health={catalog?.health ?? null}
+        busy={integration.connectionBusy}
+        onSync={() => void syncNow()}
+        onDisconnect={() => void integration.disconnect()}
+      />
 
       <ShopifyDashboardAlerts
-        connected={connected}
         runtimeReady={runtimeReady}
         configured={initialData.configured}
         error={callbackError ?? initialData.loadError}
       />
 
-      {runtimeReady ? (
+      {runtimeReady && (!connection || connection.status === "disconnected") ? (
         <ShopifyConnectionCard
           connection={connection}
-          busy={integration.connectionBusy}
           connectOptions={initialData.connectOptions}
-          health={catalog?.health ?? null}
-          onSync={() => void syncNow()}
-          onDisconnect={() => void integration.disconnect()}
         />
       ) : null}
 
       {catalog && connection ? (
         <Tabs value={tab} onValueChange={(value) => setTab(value as DashboardTab)}>
-          <TabsList className="grid w-full max-w-md grid-cols-3">
-            <TabsTrigger value="listings">Listings</TabsTrigger>
-            <TabsTrigger value="add" disabled={!connectedAndActive}>
+          <TabsList className={shopifyTabListClass}>
+            <TabsTrigger value="listings" className={shopifyTabTriggerClass}>
+              Listings
+            </TabsTrigger>
+            <TabsTrigger
+              value="add"
+              className={shopifyTabTriggerClass}
+              disabled={!connectedAndActive}
+            >
               Add products
             </TabsTrigger>
-            <TabsTrigger value="setup">Setup</TabsTrigger>
+            <TabsTrigger value="setup" className={shopifyTabTriggerClass}>
+              Setup
+            </TabsTrigger>
           </TabsList>
-          <TabsContent value="listings" className="mt-6 space-y-4 focus-visible:ring-0">
+          <TabsContent value="listings" className="mt-4 space-y-3 focus-visible:ring-0">
             <ShopifyCatalogNotice
               shopDomain={connection.shop_domain}
               catalog={catalog}
@@ -130,10 +139,10 @@ export function ShopifyIntegrationDashboard({
               onBrowseShopify={() => setTab("add")}
             />
           </TabsContent>
-          <TabsContent value="add" className="mt-6 focus-visible:ring-0">
+          <TabsContent value="add" className="mt-4 focus-visible:ring-0">
             {picker}
           </TabsContent>
-          <TabsContent value="setup" className="mt-6 space-y-6 focus-visible:ring-0">
+          <TabsContent value="setup" className="mt-4 space-y-3 focus-visible:ring-0">
             <ShopifyShippingReadinessCard readiness={initialData.shippingReadiness} />
             <ShopifyInventoryScopeNote />
           </TabsContent>

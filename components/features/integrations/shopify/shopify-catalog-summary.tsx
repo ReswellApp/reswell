@@ -12,21 +12,21 @@ interface ShopifyCatalogSummaryProps {
   onFilterChange: (filter: ShopifyLinkedListingFilter) => void
 }
 
-export function ShopifyCatalogSummaryTiles({
+export function ShopifyCatalogSummary({
   summary,
   activeFilter,
   onFilterChange,
 }: ShopifyCatalogSummaryProps) {
-  const tiles: Array<{
+  const filters: Array<{
     filter: ShopifyLinkedListingFilter
     label: string
     value: number
     tone?: "alert"
   }> = [
-    { filter: "all", label: "Linked variants", value: summary.total },
-    { filter: "live", label: "Live on Reswell", value: summary.live },
+    { filter: "all", label: "All", value: summary.total },
+    { filter: "live", label: "Live", value: summary.live },
     { filter: "out_of_stock", label: "Out of stock", value: summary.outOfStock },
-    { filter: "deleted", label: "Deleted in Shopify", value: summary.deleted },
+    { filter: "deleted", label: "Deleted", value: summary.deleted },
     { filter: "unpublished", label: "Unpublished", value: summary.unpublished },
     {
       filter: "error",
@@ -37,29 +37,40 @@ export function ShopifyCatalogSummaryTiles({
   ]
 
   return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
-      {tiles.map((tile) => (
-        <button
-          key={tile.filter}
-          type="button"
-          onClick={() => onFilterChange(tile.filter)}
-          aria-pressed={activeFilter === tile.filter}
-          className={cn(
-            "rounded-xl border bg-card p-3 text-left transition-colors hover:bg-muted/60",
-            activeFilter === tile.filter && "border-foreground/30 bg-muted/60",
-          )}
-        >
-          <p
+    <div
+      className="flex min-w-0 max-w-full flex-wrap items-center gap-1"
+      role="toolbar"
+      aria-label="Listing filters"
+    >
+      {filters.map((item) => {
+        const active = activeFilter === item.filter
+        return (
+          <button
+            key={item.filter}
+            type="button"
+            onClick={() => onFilterChange(item.filter)}
+            aria-pressed={active}
             className={cn(
-              "text-2xl font-semibold tabular-nums text-foreground",
-              tile.tone === "alert" && "text-red-600 dark:text-red-400",
+              "inline-flex h-7 items-center gap-1 rounded-lg px-2 text-[13px] leading-5",
+              active
+                ? "bg-[#303030] font-medium text-white dark:bg-foreground dark:text-background"
+                : "font-medium text-[#303030] hover:bg-[#f1f1f1] dark:text-foreground dark:hover:bg-muted",
+              !active && item.tone === "alert" && "text-[#8e1f0b]",
             )}
           >
-            {tile.value}
-          </p>
-          <p className="mt-0.5 text-xs text-muted-foreground">{tile.label}</p>
-        </button>
-      ))}
+            {item.label}
+            <span
+              className={cn(
+                "tabular-nums",
+                active ? "text-white/70 dark:text-background/70" : "text-[#616161] dark:text-muted-foreground",
+                !active && item.tone === "alert" && "text-[#8e1f0b]",
+              )}
+            >
+              {item.value}
+            </span>
+          </button>
+        )
+      })}
     </div>
   )
 }

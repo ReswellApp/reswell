@@ -9,38 +9,38 @@ const STATE_COPY: Record<
     label: "Live",
     description: "Active on Reswell and in stock in Shopify.",
     className:
-      "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300",
+      "bg-[#affebf] text-[#014b40] dark:bg-emerald-950 dark:text-emerald-300",
   },
   out_of_stock: {
     label: "Out of stock",
     description: "Hidden on Reswell until Shopify has stock again.",
-    className: "bg-muted text-muted-foreground",
+    className: "bg-[#e3e3e3] text-[#616161] dark:bg-muted dark:text-muted-foreground",
   },
   not_active_in_shopify: {
     label: "Draft in Shopify",
     description: "The Shopify product is draft or archived, so Reswell hides it.",
-    className: "bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200",
+    className: "bg-[#ffd79d] text-[#5c4813] dark:bg-amber-950 dark:text-amber-200",
   },
   deleted_in_shopify: {
     label: "Deleted in Shopify",
     description: "The Shopify product or variant was deleted. Reswell removed the listing.",
-    className: "bg-muted text-muted-foreground",
+    className: "bg-[#e3e3e3] text-[#616161] dark:bg-muted dark:text-muted-foreground",
   },
   needs_removal: {
     label: "Deleted in Shopify · still live",
     description:
       "Shopify no longer has this variant. Reswell is removing it; Sync now removes it immediately.",
-    className: "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300",
+    className: "bg-[#fed3d1] text-[#d72c0d] dark:bg-red-950 dark:text-red-300",
   },
   unpublished: {
     label: "Unpublished",
     description: "You unpublished this product. It stays linked so you can publish it again.",
-    className: "bg-muted text-muted-foreground",
+    className: "bg-[#e3e3e3] text-[#616161] dark:bg-muted dark:text-muted-foreground",
   },
   error: {
     label: "Sync error",
     description: "The last sync failed. Resync to try again.",
-    className: "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300",
+    className: "bg-[#fed3d1] text-[#d72c0d] dark:bg-red-950 dark:text-red-300",
   },
 }
 
@@ -64,7 +64,7 @@ export function ShopifyListingStateBadge({
     <span
       title={copy.description}
       className={cn(
-        "inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-xs font-medium",
+        "inline-flex shrink-0 items-center rounded-lg px-2 py-0.5 text-[12px] font-medium leading-4",
         copy.className,
         className,
       )}

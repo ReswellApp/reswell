@@ -1,6 +1,5 @@
 "use client"
 
-import { Activity, ArrowDownToLine, Clock, ListChecks } from "lucide-react"
 import { formatDistanceToNowLabel, RelativeTime } from "@/components/ui/relative-time"
 import type {
   PublicShopifyConnection,
@@ -8,9 +7,9 @@ import type {
 } from "@/lib/shopify/types"
 import { cn } from "@/lib/utils"
 
-interface ShopifySyncHealthProps {
+interface ShopifySyncStatusLineProps {
   connection: PublicShopifyConnection
-  health: ShopifySyncHealth
+  health: ShopifySyncHealth | null
 }
 
 function Timestamp({ iso, empty }: { iso: string | null; empty: string }) {
@@ -20,71 +19,74 @@ function Timestamp({ iso, empty }: { iso: string | null; empty: string }) {
   )
 }
 
-function Tile({
-  icon: Icon,
-  label,
-  children,
-  detail,
-  alert,
-}: {
-  icon: typeof Activity
-  label: string
-  children: React.ReactNode
-  detail: string
-  alert?: boolean
-}) {
-  return (
-    <div className="flex gap-3 rounded-lg border p-3">
-      <Icon
-        className={cn(
-          "mt-0.5 h-4 w-4 shrink-0 text-muted-foreground",
-          alert && "text-red-600 dark:text-red-400",
-        )}
-        aria-hidden
-      />
-      <div className="min-w-0">
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="mt-0.5 text-sm font-medium text-foreground">{children}</p>
-        <p className="mt-0.5 text-xs text-muted-foreground">{detail}</p>
-      </div>
-    </div>
-  )
-}
+export function ShopifySyncStatusLine({
+  connection,
+  health,
+}: ShopifySyncStatusLineProps) {
+  const backlog = health ? health.queuedJobs + health.retryJobs : 0
+  const queueValue = !health
+    ? null
+    : health.deadJobs > 0
+      ? `${health.deadJobs} failed after retries`
+      : backlog === 0
+        ? "Up to date"
+        : `${backlog} pending${health.retryJobs > 0 ? ` · ${health.retryJobs} retrying` : ""}`
+  const salesValue = !health
+    ? null
+    : health.pendingInventoryWrites > 0
+      ? `${health.inventoryWritesEnabled ? "On" : "Off"} · ${health.pendingInventoryWrites} waiting`
+      : health.inventoryWritesEnabled
+        ? "On"
+        : "Off"
 
-export function ShopifySyncHealthTiles({ connection, health }: ShopifySyncHealthProps) {
-  const backlog = health.queuedJobs + health.retryJobs
+  const facts: Array<{ label: string; value: React.ReactNode; alert?: boolean }> = [
+    {
+      label: "Last Shopify update",
+      value: <Timestamp iso={connection.last_webhook_at} empty="None yet" />,
+    },
+    {
+      label: "Last full sync",
+      value: <Timestamp iso={connection.last_reconciled_at} empty="Not run yet" />,
+    },
+  ]
+  if (queueValue) {
+    facts.push({
+      label: "Queue",
+      value: queueValue,
+      alert: Boolean(health && health.deadJobs > 0),
+    })
+  }
+  if (salesValue) {
+    facts.push({ label: "Sales to stock", value: salesValue })
+  }
+
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-      <Tile icon={Activity} label="Last Shopify update" detail="Product, stock, and delete notices">
-        <Timestamp iso={connection.last_webhook_at} empty="None received yet" />
-      </Tile>
-      <Tile icon={Clock} label="Last full sync" detail="Runs every 6 hours, or with Sync now">
-        <Timestamp iso={connection.last_reconciled_at} empty="Not run yet" />
-      </Tile>
-      <Tile
-        icon={ListChecks}
-        label="Sync queue"
-        alert={health.deadJobs > 0}
-        detail={
-          health.deadJobs > 0
-            ? `${health.deadJobs} failed after retries`
-            : "Deleted Shopify products are removed automatically"
-        }
-      >
-        {backlog === 0 ? "Up to date" : `${backlog} pending`}
-        {health.retryJobs > 0 ? ` · ${health.retryJobs} retrying` : ""}
-      </Tile>
-      <Tile
-        icon={ArrowDownToLine}
-        label="Reswell sales → Shopify stock"
-        detail={
-          health.pendingInventoryWrites > 0
-            ? `${health.pendingInventoryWrites} sale${health.pendingInventoryWrites === 1 ? "" : "s"} waiting to update Shopify`
-            : "Sold items lower Shopify inventory when on"
-        }
-      >
-        {health.inventoryWritesEnabled ? "On" : "Off"}
-      </Tile>
-    </div>
+    <dl className="grid grid-cols-2 lg:flex lg:items-stretch">
+      {facts.map((fact, index) => (
+        <div
+          key={fact.label}
+          className={cn(
+            "min-w-0 py-1 lg:flex-1 lg:py-0",
+            index % 2 === 0 ? "pr-4" : "border-l border-[#e3e3e3] pl-4 dark:border-border",
+            index >= 2 &&
+              "mt-3 border-t border-[#e3e3e3] pt-3 lg:mt-0 lg:border-t-0 lg:pt-0 dark:border-border",
+            index === 0 && "lg:pl-0 lg:pr-6",
+            index > 0 && "lg:border-l lg:border-[#e3e3e3] lg:px-6 dark:lg:border-border",
+          )}
+        >
+          <dt className="text-[12px] leading-4 text-[#616161] dark:text-muted-foreground">
+            {fact.label}
+          </dt>
+          <dd
+            className={cn(
+              "mt-1 text-[15px] font-semibold leading-5 text-[#303030] dark:text-foreground",
+              fact.alert && "text-[#8e1f0b] dark:text-red-300",
+            )}
+          >
+            {fact.value}
+          </dd>
+        </div>
+      ))}
+    </dl>
   )
 }

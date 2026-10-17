@@ -1,14 +1,15 @@
 import Link from "next/link"
-import { ArrowRight, MapPin, PackageCheck, Truck } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
+import { ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+  shopifyBodyClass,
+  shopifyDividerClass,
+  shopifyNeutralBadgeClass,
+  shopifySecondaryButtonClass,
+  shopifySectionTitleClass,
+  shopifySuccessBadgeClass,
+  shopifySurfaceClass,
+} from "@/components/features/integrations/shopify/shopify-admin-styles"
 import type { ShopifyShippingReadiness } from "@/lib/shopify/types"
 
 interface ShopifyShippingReadinessCardProps {
@@ -22,82 +23,78 @@ export function ShopifyShippingReadinessCard({
     readiness.hasShipFromAddress && readiness.packageDefaults.length > 0
 
   return (
-    <Card className={shippingReady ? "border-emerald-200/80" : undefined}>
-      <CardHeader>
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <CardTitle className="flex items-center gap-2 text-xl">
-              <Truck className="h-5 w-5" aria-hidden />
-              Shipping setup
-            </CardTitle>
-            <CardDescription className="mt-1">
-              Shopify products use Reswell checkout, live ShipEngine rates, and
-              Reswell-generated labels.
-            </CardDescription>
-          </div>
-          <Badge variant={shippingReady ? "secondary" : "outline"}>
-            {shippingReady ? "Defaults ready" : "Setup needed"}
-          </Badge>
+    <section className={shopifySurfaceClass}>
+      <div className={`flex flex-wrap items-start justify-between gap-3 px-5 py-4 ${shopifyDividerClass}`}>
+        <div className="min-w-0">
+          <h2 className={shopifySectionTitleClass}>Shipping setup</h2>
+          <p className={`mt-1 max-w-3xl ${shopifyBodyClass}`}>
+            Shopify products use Reswell checkout, live ShipEngine rates, and
+            Reswell-generated labels.
+          </p>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="flex gap-3 rounded-lg border p-3">
-            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-            <div>
-              <p className="text-sm font-medium">Ship-from address</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                {readiness.hasShipFromAddress
-                  ? "Saved and ready for carrier quotes."
-                  : "Add a saved address before enabling shipping."}
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-3 rounded-lg border p-3">
-            <PackageCheck className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-            <div>
-              <p className="text-sm font-medium">Shop shipping default</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                {readiness.packageDefaults.length > 0
-                  ? `${readiness.packageDefaults.length} saved package${
-                      readiness.packageDefaults.length === 1 ? "" : "s"
-                    }.`
-                  : "Save a shop box before enabling shipping on imports."}
-              </p>
-            </div>
-          </div>
+        <span className={shippingReady ? shopifySuccessBadgeClass : shopifyNeutralBadgeClass}>
+          {shippingReady ? "Defaults ready" : "Setup needed"}
+        </span>
+      </div>
+
+      <div className={`space-y-4 border-t px-5 py-4 ${shopifyDividerClass}`}>
+        <div>
+          <h3 className="text-[13px] font-semibold text-[#202223] dark:text-foreground">
+            Ship-from address
+          </h3>
+          <p className={`mt-1 ${shopifyBodyClass}`}>
+            {readiness.hasShipFromAddress
+              ? "Saved and ready for carrier quotes."
+              : "Add a saved address before enabling shipping."}
+          </p>
+        </div>
+        <div>
+          <h3 className="text-[13px] font-semibold text-[#202223] dark:text-foreground">
+            Shop shipping default
+          </h3>
+          <p className={`mt-1 ${shopifyBodyClass}`}>
+            {readiness.packageDefaults.length > 0
+              ? `${readiness.packageDefaults.length} saved package${
+                  readiness.packageDefaults.length === 1 ? "" : "s"
+                }.`
+              : "Save a shop box before enabling shipping on imports."}
+          </p>
         </div>
 
-        {readiness.packageDefaults.length > 0 ? (
-          <div className="flex flex-wrap gap-2">
-            {readiness.packageDefaults.map((entry) => (
-              <Badge key={`${entry.section}-${entry.packageSizeId}`} variant="outline">
-                {entry.sectionLabel}: {entry.packageLabel}
-              </Badge>
-            ))}
-          </div>
-        ) : null}
+      {readiness.packageDefaults.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {readiness.packageDefaults.map((entry) => (
+            <span
+              key={`${entry.section}-${entry.packageSizeId}`}
+              className={shopifyNeutralBadgeClass}
+            >
+              {entry.sectionLabel}: {entry.packageLabel}
+            </span>
+          ))}
+        </div>
+      ) : null}
 
-        <p className="text-sm leading-relaxed text-muted-foreground">
+      <div className="space-y-3">
+        <p className={shopifyBodyClass}>
           New imports with both requirements ready offer local pickup and live
           shipping. Otherwise they start pickup-only. Listing-level fulfillment
           and package overrides remain editable from My Listings.
         </p>
-
         <div className="flex flex-wrap gap-2">
           {!readiness.hasShipFromAddress ? (
-            <Button variant="outline" asChild>
+            <Button variant="outline" asChild className={shopifySecondaryButtonClass}>
               <Link href="/dashboard/profile">Add ship-from address</Link>
             </Button>
           ) : null}
-          <Button variant="outline" asChild>
+          <Button variant="outline" asChild className={shopifySecondaryButtonClass}>
             <Link href="/dashboard/listings?view=advanced">
               Set shop shipping default
-              <ArrowRight className="ml-2 h-4 w-4" aria-hidden />
+              <ArrowRight aria-hidden />
             </Link>
           </Button>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+      </div>
+    </section>
   )
 }

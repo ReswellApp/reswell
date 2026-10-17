@@ -10,18 +10,15 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import {
+  shopifyFieldClass,
+  shopifySearchClass,
+} from "@/components/features/integrations/shopify/shopify-admin-styles"
+import {
   PEER_LISTING_SECTION_LABELS,
   PEER_LISTING_SECTIONS,
   type PeerListingSection,
 } from "@/lib/peer-listing-sections"
-import {
-  SHOPIFY_LINKED_LISTING_FILTERS,
-  type ShopifyLinkedListingFilter,
-} from "@/lib/shopify/types"
-import {
-  dashboardFilterSelectClass,
-  dashboardSearchInputClass,
-} from "@/lib/utils/dashboard-display-styles"
+import type { ShopifyLinkedListingFilter } from "@/lib/shopify/types"
 import { cn } from "@/lib/utils"
 
 export const SHOPIFY_FILTER_LABELS: Record<ShopifyLinkedListingFilter, string> = {
@@ -35,60 +32,41 @@ export const SHOPIFY_FILTER_LABELS: Record<ShopifyLinkedListingFilter, string> =
 
 interface ShopifyLinkedListingsToolbarProps {
   search: string
-  filter: ShopifyLinkedListingFilter
   section: PeerListingSection | null
   onSearchChange: (value: string) => void
   onSearchSubmit: () => void
-  onFilterChange: (filter: ShopifyLinkedListingFilter) => void
   onSectionChange: (section: PeerListingSection | null) => void
 }
 
 export function ShopifyLinkedListingsToolbar({
   search,
-  filter,
   section,
   onSearchChange,
   onSearchSubmit,
-  onFilterChange,
   onSectionChange,
 }: ShopifyLinkedListingsToolbarProps) {
   return (
-    <div className="flex flex-col gap-2 lg:flex-row">
+    <>
       <form
-        className="relative flex-1"
+        className="relative w-full min-w-0 md:w-auto md:min-w-[14rem] md:flex-1"
         onSubmit={(event) => {
           event.preventDefault()
           onSearchSubmit()
         }}
       >
         <Search
-          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+          className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8a8a8a]"
           aria-hidden
         />
         <Input
           type="search"
           value={search}
           onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="Search linked listings by title"
+          placeholder="Search and filter"
           aria-label="Search linked listings"
-          className={dashboardSearchInputClass}
+          className={cn(shopifySearchClass, "w-full min-w-0 pl-8")}
         />
       </form>
-      <Select
-        value={filter}
-        onValueChange={(value) => onFilterChange(value as ShopifyLinkedListingFilter)}
-      >
-        <SelectTrigger className={dashboardFilterSelectClass} aria-label="Status filter">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {SHOPIFY_LINKED_LISTING_FILTERS.map((value) => (
-            <SelectItem key={value} value={value}>
-              {SHOPIFY_FILTER_LABELS[value]}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
       <Select
         value={section ?? "all"}
         onValueChange={(value) =>
@@ -96,7 +74,7 @@ export function ShopifyLinkedListingsToolbar({
         }
       >
         <SelectTrigger
-          className={cn(dashboardFilterSelectClass, "sm:w-[180px]")}
+          className={cn(shopifyFieldClass, "w-full shrink-0 md:w-44")}
           aria-label="Section filter"
         >
           <SelectValue />
@@ -110,6 +88,6 @@ export function ShopifyLinkedListingsToolbar({
           ))}
         </SelectContent>
       </Select>
-    </div>
+    </>
   )
 }
