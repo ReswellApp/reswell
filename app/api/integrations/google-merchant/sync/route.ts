@@ -5,7 +5,10 @@ import { isGoogleMerchantConfigured } from "@/lib/google-merchant/config"
 import { syncAllActiveListingsToGoogleMerchant } from "@/lib/services/googleMerchantSync"
 
 /**
- * Bulk sync active peer listings (surfboards, fins, wetsuits, magazines, apparel, traction) to Google Merchant Center.
+ * Bulk sync active peer listings to Google Merchant Center.
+ * Surfboards without shipping are removed from the primary feed.
+ * When GOOGLE_MERCHANT_SHIPPABLE_SURFBOARDS_DATA_SOURCE_NAME is set, the same
+ * run also fills that data source with shippable surfboards only.
  * POST /api/integrations/google-merchant/sync
  *
  * Auth: admin session or Bearer SEARCH_REINDEX_SECRET / GOOGLE_MERCHANT_SETUP_SECRET / CRON_SECRET.

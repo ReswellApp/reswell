@@ -1,3 +1,4 @@
+import { isShippableSurfboardListing } from "@/lib/ads/shippable-surfboard"
 import { withGoogleShoppingTracking } from "@/lib/ads/tracking-urls"
 import { googleMerchantProductLink } from "@/lib/google-merchant/product-link"
 import {
@@ -109,6 +110,8 @@ export type GoogleMerchantProductInputPayload = {
     customLabel0?: string
     /** Seller shop filter for Google Ads — e.g. OutSurfing only. */
     customLabel1?: string
+    /** Shippable-surfboard feed sets this to Shipping. */
+    customLabel2?: string
     shipping?: GoogleMerchantShipping[]
     taxes?: GoogleMerchantTax[]
   }
@@ -302,6 +305,7 @@ function mapListingTaxAttributes(): GoogleMerchantTax[] | undefined {
 
 export function isGoogleMerchantEligibleListing(listing: GoogleMerchantListingRow): boolean {
   if (!isGoogleMerchantPeerSection(listing.section)) return false
+  if (listing.section === "surfboards" && !isShippableSurfboardListing(listing)) return false
   if (
     !isListingDiscoveryEligible({
       status: listing.status,
@@ -318,9 +322,22 @@ export function isGoogleMerchantEligibleListing(listing: GoogleMerchantListingRo
   return true
 }
 
+/** Primary-feed rules plus section surfboards and shipping_available. */
+export function isShippableSurfboardGoogleMerchantListing(
+  listing: GoogleMerchantListingRow,
+): boolean {
+  return isShippableSurfboardListing(listing) && isGoogleMerchantEligibleListing(listing)
+}
+
+export type MapListingToProductInputOptions = {
+  feedLabel?: string
+  customLabel2?: string
+}
+
 export function mapListingToProductInput(
   listing: GoogleMerchantListingRow,
   context?: GoogleMerchantProductInputContext,
+  options?: MapListingToProductInputOptions,
 ): GoogleMerchantProductInputPayload | null {
   if (!isGoogleMerchantEligibleListing(listing)) return null
 
@@ -337,11 +354,12 @@ export function mapListingToProductInput(
   const videoLinks = listingVideoLinks(listing)
   const customLabel0 = getGoogleMerchantCustomLabel0ForSection(listing.section)
   const customLabel1 = getGoogleMerchantCustomLabel1ForListing(listing, context)
+  const customLabel2 = options?.customLabel2?.trim() || undefined
 
   return {
     offerId: listing.id,
     contentLanguage: getGoogleMerchantContentLanguage(),
-    feedLabel: getGoogleMerchantFeedLabel(),
+    feedLabel: options?.feedLabel?.trim() || getGoogleMerchantFeedLabel(),
     productAttributes: {
       title: listing.title.trim(),
       description,
@@ -361,6 +379,7 @@ export function mapListingToProductInput(
       googleProductCategory: getGoogleMerchantProductCategoryForSection(listing.section),
       ...(customLabel0 ? { customLabel0 } : {}),
       ...(customLabel1 ? { customLabel1 } : {}),
+      ...(customLabel2 ? { customLabel2 } : {}),
       ...(shipping ? { shipping } : {}),
       ...(taxes ? { taxes } : {}),
     },

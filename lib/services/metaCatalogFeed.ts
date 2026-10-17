@@ -1,8 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { z } from "zod"
+import { isShippableSurfboardListing } from "@/lib/ads/shippable-surfboard"
 import {
   fetchMetaCatalogFeedPage,
   fetchMetaCatalogFeedPageForLocation,
+  fetchShippableSurfboardMetaCatalogFeedPage,
 } from "@/lib/db/metaCatalogFeed"
 import { isListingDiscoveryEligible } from "@/lib/listing-public-visibility"
 import {
@@ -137,6 +139,36 @@ export async function buildMetaCatalogFeed(
 
     for (const row of page.rows) {
       if (items.length >= maxItems) break
+      const item = listingToMetaCatalogFeedItem(row, feedContext)
+      if (item) items.push(item)
+    }
+
+    if (page.nextOffset == null) break
+    offset = page.nextOffset
+  }
+
+  return items
+}
+
+/**
+ * Active surfboards with shipping on. Pickup-only boards and other sections are omitted.
+ * Same columns and auth as the main catalog feed so it can be a second Meta data source.
+ */
+export async function buildMetaShippableSurfboardCatalogFeed(
+  supabase: SupabaseClient,
+): Promise<MetaCatalogFeedItem[]> {
+  const maxItems = catalogFeedMaxItems()
+  const feedContext = await resolveMetaCatalogShopContext(supabase)
+  const items: MetaCatalogFeedItem[] = []
+  let offset = 0
+
+  while (items.length < maxItems) {
+    const page = await fetchShippableSurfboardMetaCatalogFeedPage(supabase, offset)
+    if (page.rows.length === 0) break
+
+    for (const row of page.rows) {
+      if (items.length >= maxItems) break
+      if (!isShippableSurfboardListing(row)) continue
       const item = listingToMetaCatalogFeedItem(row, feedContext)
       if (item) items.push(item)
     }

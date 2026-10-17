@@ -54,6 +54,37 @@ export function getGoogleMerchantFeedLabel(): string {
   return process.env.GOOGLE_MERCHANT_FEED_LABEL?.trim() || "US"
 }
 
+/** Feed label for the shippable-surfboard data source. Must differ from the primary feed label. */
+export const GOOGLE_MERCHANT_DEFAULT_SHIPPABLE_SURFBOARDS_FEED_LABEL = "SHIP"
+
+/** customLabel2 on the shippable-surfboard feed. Every row in that feed ships. */
+export const GOOGLE_MERCHANT_SHIPPING_CUSTOM_LABEL = "Shipping"
+
+export function getGoogleMerchantShippableSurfboardsFeedLabel(): string {
+  return (
+    process.env.GOOGLE_MERCHANT_SHIPPABLE_SURFBOARDS_FEED_LABEL?.trim() ||
+    GOOGLE_MERCHANT_DEFAULT_SHIPPABLE_SURFBOARDS_FEED_LABEL
+  )
+}
+
+/** Full resource name for the shippable-surfboard API data source, when created. */
+export function getGoogleMerchantShippableSurfboardsDataSourceName(): string | null {
+  const raw = process.env.GOOGLE_MERCHANT_SHIPPABLE_SURFBOARDS_DATA_SOURCE_NAME?.trim()
+  return raw || null
+}
+
+/**
+ * True when Merchant API auth can write the shippable-surfboard data source.
+ * The scheduled TSV feed does not require this.
+ */
+export function isGoogleMerchantShippableSurfboardsFeedConfigured(): boolean {
+  return Boolean(
+    getGoogleMerchantAccountId() &&
+      getGoogleMerchantShippableSurfboardsDataSourceName() &&
+      getGoogleMerchantAuthMode() !== "none",
+  )
+}
+
 export function getGoogleMerchantContentLanguage(): string {
   return process.env.GOOGLE_MERCHANT_CONTENT_LANGUAGE?.trim() || "en"
 }
@@ -323,13 +354,17 @@ export type GoogleMerchantFeedProductIdentity = {
  */
 export function matchesGoogleMerchantFeedProduct(
   product: GoogleMerchantFeedProductIdentity,
+  target?: { feedLabel?: string; dataSourceName?: string | null },
 ): boolean {
   const offerId = product.offerId?.trim()
   if (!offerId) return false
 
   const contentLanguage = getGoogleMerchantContentLanguage()
-  const feedLabel = getGoogleMerchantFeedLabel()
-  const dataSourceName = getGoogleMerchantDataSourceName()
+  const feedLabel = target?.feedLabel ?? getGoogleMerchantFeedLabel()
+  const dataSourceName =
+    target && "dataSourceName" in target
+      ? target.dataSourceName
+      : getGoogleMerchantDataSourceName()
 
   const lang = product.contentLanguage?.trim()
   const label = product.feedLabel?.trim()
