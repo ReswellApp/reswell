@@ -126,6 +126,7 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
   const staticPages: SitemapUrlEntry[] = [
     { url: `${BASE}/`, lastModified: now, changeFrequency: "daily", priority: 1.0 },
     { url: `${BASE}/boards`, lastModified: now, changeFrequency: "daily", priority: 1.0 },
+    { url: `${BASE}/explore`, lastModified: now, changeFrequency: "daily", priority: 0.7 },
     { url: `${BASE}/fins`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
     { url: `${BASE}/wetsuits`, lastModified: now, changeFrequency: "daily", priority: 0.75 },
     { url: `${BASE}/boardbags`, lastModified: now, changeFrequency: "daily", priority: 0.75 },
