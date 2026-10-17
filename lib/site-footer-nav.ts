@@ -11,6 +11,7 @@ export const siteFooterNavLinks: {
   legal: readonly SiteFooterNavLink[]
 } = {
   marketplace: [
+    { name: "Explore", href: "/explore" },
     { name: "Shop from Reswell", href: "/reswell/shop" },
     { name: "Board Finder", href: "/board-finder" },
     { name: "Recently sold", href: "/sold" },

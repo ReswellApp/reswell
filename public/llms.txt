@@ -79,6 +79,7 @@ Authorization: Bearer <auth_token>
 
 - Search: https://www.reswell.app/search?q={query}
 - Boards browse: https://www.reswell.app/boards
+- Explore: https://www.reswell.app/explore
 - Brand pages: https://www.reswell.app/brands/{brandSlug}
 - Recently sold: https://www.reswell.app/sold
 - Listings: https://www.reswell.app/l/{slug}
