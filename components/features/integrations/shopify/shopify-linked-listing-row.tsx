@@ -74,10 +74,10 @@ export function ShopifyLinkedListingRow({
           )}
         </div>
         <div className="min-w-0">
-          <h3 className="truncate text-[13px] font-semibold leading-5 text-[#202223] dark:text-foreground">
+          <h3 className="line-clamp-2 text-[13px] font-semibold leading-5 text-[#202223] dark:text-foreground">
             {listing.title}
           </h3>
-          <p className={`truncate text-[12px] leading-4 ${shopifyMutedClass}`}>
+          <p className={`text-[12px] leading-4 ${shopifyMutedClass}`}>
             {listing.variantTitle ?? "Single variant"} ·{" "}
             {PEER_LISTING_SECTION_LABELS[listing.section]} · {price}
           </p>

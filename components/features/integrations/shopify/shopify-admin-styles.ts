@@ -49,4 +49,4 @@ export const shopifyTabTriggerClass =
   "-mb-px h-auto flex-none rounded-none border-b-2 border-transparent bg-transparent px-3 py-2 text-[13px] font-medium text-[#6d7175] shadow-none ring-offset-transparent hover:text-[#202223] focus-visible:ring-[#008060] data-[state=active]:border-[#202223] data-[state=active]:bg-transparent data-[state=active]:text-[#202223] data-[state=active]:shadow-none disabled:opacity-40 dark:text-muted-foreground dark:hover:text-foreground dark:data-[state=active]:border-foreground dark:data-[state=active]:text-foreground"
 
 export const shopifyIndexGridClass =
-  "sm:grid sm:grid-cols-[minmax(0,1.6fr)_8.75rem_9.5rem_7.5rem_2.25rem] sm:items-center sm:gap-3"
+  "sm:grid sm:grid-cols-[minmax(0,1.7fr)_7rem_8rem_8rem_2.25rem] sm:items-start sm:gap-3"
