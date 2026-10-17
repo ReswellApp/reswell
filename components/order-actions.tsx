@@ -341,9 +341,12 @@ export function SellerRequestSupportButton({
 export function SellerRefundedBanner({
   amount,
   refundedAt,
+  disclosePaidAmount = true,
 }: {
   amount: number
   refundedAt: string | null
+  /** False when a Reswell promo covered part of checkout — sellers must not see what the buyer paid. */
+  disclosePaidAmount?: boolean
 }) {
   const dateStr = refundedAt
     ? new Date(refundedAt).toLocaleDateString(undefined, { dateStyle: "medium" })
@@ -357,9 +360,18 @@ export function SellerRefundedBanner({
       <div>
         <p className="text-sm font-semibold text-destructive">Order refunded</p>
         <p className="text-sm text-muted-foreground mt-0.5">
-          The buyer receives a full refund of ${amount.toFixed(2)}
-          {dateStr ? ` on ${dateStr}` : ""} — the entire amount they paid. Your net earnings after fees
-          are reversed from your account.
+          {disclosePaidAmount ? (
+            <>
+              The buyer receives a full refund of ${amount.toFixed(2)}
+              {dateStr ? ` on ${dateStr}` : ""} — the entire amount they paid. Your net earnings after fees
+              are reversed from your account.
+            </>
+          ) : (
+            <>
+              The buyer was refunded{dateStr ? ` on ${dateStr}` : ""}. Your net earnings after fees
+              are reversed from your account.
+            </>
+          )}
         </p>
       </div>
     </div>
@@ -370,9 +382,12 @@ export function SellerRefundedBanner({
 export function SellerRefundInProgressBanner({
   amount,
   paidWithCard,
+  disclosePaidAmount = true,
 }: {
   amount: number
   paidWithCard: boolean
+  /** False when a Reswell promo covered part of checkout — sellers must not see what the buyer paid. */
+  disclosePaidAmount?: boolean
 }) {
   return (
     <div className="rounded-xl border border-amber-500/25 bg-amber-500/[0.06] p-4 flex items-start gap-3">
@@ -382,7 +397,11 @@ export function SellerRefundInProgressBanner({
       <div>
         <p className="text-sm font-semibold text-amber-950 dark:text-amber-100">Refund in progress</p>
         <p className="text-sm text-muted-foreground mt-0.5">
-          A refund of ${amount.toFixed(2)} is processing
+          {disclosePaidAmount ? (
+            <>A refund of ${amount.toFixed(2)} is processing</>
+          ) : (
+            <>A refund is processing</>
+          )}
           {paidWithCard ? " to the buyer’s card through Stripe" : ""}. This sale will show as fully
           refunded when it completes.{" "}
           {paidWithCard

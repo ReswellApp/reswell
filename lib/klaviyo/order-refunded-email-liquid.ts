@@ -350,7 +350,7 @@ ${listingMetaBlock}
       <td style="padding:0 20px;">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">
           <tr>
-            <td style="${metaRowStyle}">Order total</td>
+            <td style="${metaRowStyle}">Sale total</td>
             <td align="right" style="${metaRowStyle}white-space:nowrap;font-weight:700;color:${C.price};">{{ event|lookup:'amount_display' }}</td>
           </tr>
         </table>

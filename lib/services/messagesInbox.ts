@@ -2,6 +2,7 @@ import { createServiceRoleClient } from "@/lib/supabase/server"
 import { listConversationIdsLinkedToSupportTickets } from "@/lib/db/contactMessages"
 import { listConversationIdsLinkedToOrderSupport } from "@/lib/db/order-support"
 import { loadMessagesInboxForUser, type MessagesInboxPayload } from "@/lib/db/messagesInbox"
+import { redactPromoBuyerPaidTotalsForSeller } from "@/lib/messages/redact-seller-buyer-paid-total"
 import {
   redactShippingLabelArtifactsFromMessage,
   shippingLabelOrderIdFromMessage,
@@ -92,6 +93,27 @@ export async function getMessagesInboxForUser(userId: string): Promise<MessagesI
             }),
           }
         })
+
+  const sellerConversations = redactedConversations.filter(
+    (conversation) => conversation.seller_id === userId,
+  )
+  if (sellerConversations.length > 0) {
+    try {
+      const supabase = createServiceRoleClient()
+      const promoRedacted = await redactPromoBuyerPaidTotalsForSeller(
+        supabase,
+        sellerConversations.flatMap((conversation) => conversation.messages),
+      )
+      let promoCursor = 0
+      for (const conversation of sellerConversations) {
+        const count = conversation.messages.length
+        conversation.messages = promoRedacted.slice(promoCursor, promoCursor + count)
+        promoCursor += count
+      }
+    } catch (err) {
+      console.warn("[messagesInbox] promo buyer-paid redaction skipped", err)
+    }
+  }
 
   return {
     conversations: redactedConversations,
