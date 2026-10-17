@@ -3,6 +3,10 @@ import { Button } from "@/components/ui/button"
 import { EndListingButton } from "@/components/end-listing-button"
 import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
 import { listingCanBePermanentlyDeleted } from "@/lib/db/listingDeleteEligibility"
+import {
+  isShopifyManagedListing,
+  SHOPIFY_LISTING_DELETE_BLOCKED_MESSAGE,
+} from "@/lib/shopify/listing"
 import { getListingCartHolderCount } from "@/lib/db/listing-cart-holders"
 import { isPeerListingSection, peerListingEditHref } from "@/lib/peer-listing-sections"
 import type { ListingEnrichmentGap } from "@/lib/sell-flow/listing-enrichment"
@@ -82,10 +86,21 @@ async function renderListingOwnerManageActions({
     !isSold &&
     !hiddenFromSite
 
-  const [canDelete, cartHolderCount] = await Promise.all([
+  const [sourceRes, canDeleteOrder, cartHolderCount] = await Promise.all([
+    supabase.from("listings").select("inventory_source").eq("id", listingId).maybeSingle(),
     isDraft ? Promise.resolve(false) : listingCanBePermanentlyDeleted(supabase, listingId),
     canOfferToCart ? getListingCartHolderCount(supabase, listingId) : Promise.resolve(0),
   ])
+  const shopifyManaged =
+    canDeleteOrder &&
+    isShopifyManagedListing({
+      inventory_source:
+        sourceRes.data &&
+        typeof sourceRes.data.inventory_source === "string"
+          ? sourceRes.data.inventory_source
+          : null,
+    })
+  const canDelete = canDeleteOrder && !shopifyManaged
 
   if (!user) return null
 
@@ -101,6 +116,7 @@ async function renderListingOwnerManageActions({
       enrichmentGaps={enrichmentGaps}
       userId={user.id}
       canDelete={canDelete}
+      deleteBlockedReason={shopifyManaged ? SHOPIFY_LISTING_DELETE_BLOCKED_MESSAGE : undefined}
       cartHolderCount={cartHolderCount}
     />
   )

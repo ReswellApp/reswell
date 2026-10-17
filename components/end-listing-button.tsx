@@ -11,6 +11,7 @@ interface EndListingButtonProps {
   listingStatus?: string | null
   vacationMode?: boolean
   canDelete?: boolean
+  deleteBlockedReason?: string
   /** Applied to the primary trigger button only (dialog buttons unchanged). */
   triggerClassName?: string
 }
@@ -21,6 +22,7 @@ export function EndListingButton({
   listingStatus,
   vacationMode,
   canDelete,
+  deleteBlockedReason,
   triggerClassName,
 }: EndListingButtonProps) {
   const [open, setOpen] = useState(false)
@@ -43,6 +45,7 @@ export function EndListingButton({
         listingStatus={listingStatus}
         vacationMode={vacationMode}
         canDelete={canDelete}
+        deleteBlockedReason={deleteBlockedReason}
         open={open}
         onOpenChange={setOpen}
       />
