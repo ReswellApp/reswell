@@ -24,7 +24,7 @@ type EndChoice = "delete" | "mark_sold" | "vacation" | null
 type DialogStep = "main" | "sold_survey" | "delete_survey"
 
 export type EndListingDialogResult =
-  | { mode: "delete" }
+  | { mode: "delete" | "archive" }
   | { mode: "mark_sold" }
   | { mode: "vacation"; vacationMode: boolean }
 
@@ -44,7 +44,7 @@ export function EndListingDialog({
   listingPriceUsd,
   listingStatus,
   vacationMode = false,
-  canDelete = false,
+  canDelete = true,
   open,
   onOpenChange,
   onComplete,
@@ -57,6 +57,7 @@ export function EndListingDialog({
   const [soldThanks, setSoldThanks] = useState(false)
   const markedSoldRef = useRef(false)
   const deletedRef = useRef(false)
+  const archivedRef = useRef(false)
   const tipCheckoutActiveRef = useRef(false)
   const router = useRouter()
 
@@ -78,13 +79,17 @@ export function EndListingDialog({
   function closeAndRefreshIfEnded() {
     const sold = markedSoldRef.current
     const deleted = deletedRef.current
+    const archived = archivedRef.current
     resetState()
     markedSoldRef.current = false
     deletedRef.current = false
+    archivedRef.current = false
     onOpenChange(false)
     if (deleted) {
-      toast.success("Listing deleted")
-      onComplete?.({ mode: "delete" })
+      toast.success(
+        archived ? "Listing archived. Order history stays on file." : "Listing deleted",
+      )
+      onComplete?.({ mode: archived ? "archive" : "delete" })
       router.push("/dashboard/listings")
       router.refresh()
       return
@@ -237,8 +242,9 @@ export function EndListingDialog({
                 onMarkedSold={() => {
                   markedSoldRef.current = true
                 }}
-                onDeleted={() => {
+                onDeleted={(mode) => {
                   deletedRef.current = true
+                  archivedRef.current = mode === "archive"
                 }}
               />
             ) : null}
@@ -252,8 +258,8 @@ export function EndListingDialog({
                   ? "Vacation mode temporarily hides a live listing until you go live again. "
                   : null}
                 {canDelete
-                  ? "Delete removes the listing immediately."
-                  : "This listing is tied to an order or payment, so it cannot be permanently deleted."}{" "}
+                  ? "Delete removes the listing. If an order is attached, it is archived and kept for that order. "
+                  : null}
                 Mark as sold keeps it on file when you closed the sale elsewhere.
               </DialogDescription>
             </DialogHeader>

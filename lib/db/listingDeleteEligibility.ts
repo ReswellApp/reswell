@@ -9,7 +9,7 @@ function collectListingIds(rows: Array<{ listing_id?: string | null }> | null): 
 }
 
 /**
- * Listing ids that cannot be permanently deleted because an order, order line,
+ * Listing ids that must be archived instead of erased. An order, order line,
  * or return still references them (`ON DELETE RESTRICT`).
  */
 export async function listingIdsBlockedFromPermanentDelete(
