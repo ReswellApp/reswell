@@ -7,7 +7,7 @@ import {
   parseFacebookProfileInput,
   parseFacebookThreadInput,
 } from "./facebookLead.ts"
-import { contactCircleBackDue } from "./crmFollowUp.ts"
+import { contactCircleBackDue, followUpGreetingName, renderFollowUpMessage } from "./crmFollowUp.ts"
 
 describe("parseFacebookProfileInput", () => {
   it("reads a numeric profile id from profile.php", () => {
@@ -124,5 +124,13 @@ describe("contactCircleBackDue", () => {
       false,
     )
     assert.equal(contactCircleBackDue({ ...open, status: "customer" }, quiet, now), false)
+  })
+})
+
+describe("renderFollowUpMessage", () => {
+  it("uses a real first name and a neutral greeting when the name is still a placeholder", () => {
+    assert.equal(followUpGreetingName("Nando Costa"), "Nando")
+    assert.equal(followUpGreetingName("Facebook 678901"), "there")
+    assert.equal(renderFollowUpMessage("Hey {name}", "Nando"), "Hey Nando")
   })
 })

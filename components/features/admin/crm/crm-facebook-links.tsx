@@ -12,7 +12,7 @@ interface CrmFacebookLinksProps {
   compact?: boolean
 }
 
-function safeFacebookHref(url: string | null): string | null {
+export function safeFacebookHref(url: string | null): string | null {
   if (!url) return null
   try {
     const parsed = new URL(url)

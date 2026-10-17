@@ -8,6 +8,7 @@ import { markCrmContactedAction } from "@/lib/actions/crmAdmin"
 import { crmContactDisplayName, type CrmContactWithProfile } from "@/lib/db/crm"
 import { addDaysIso, CRM_FACEBOOK_SNOOZE_DAYS } from "@/lib/utils/facebookLead"
 import { CrmFacebookLinks } from "@/components/features/admin/crm/crm-facebook-links"
+import { CrmFollowUpRun } from "@/components/features/admin/crm/crm-follow-up-run"
 import { Button } from "@/components/ui/button"
 
 interface CrmFollowUpQueueProps {
@@ -46,10 +47,13 @@ export function CrmFollowUpQueue({ contacts, onOpen, onMutated }: CrmFollowUpQue
 
   return (
     <section className="space-y-1">
-      <p className="text-sm text-muted-foreground">
-        <span className="font-medium text-foreground">{contacts.length} to reach back out</span>
-        <span> · no listing or purchase yet</span>
-      </p>
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm text-muted-foreground">
+          <span className="font-medium text-foreground">{contacts.length} to reach back out</span>
+          <span> · no listing or purchase yet</span>
+        </p>
+        <CrmFollowUpRun contacts={contacts} onMutated={onMutated} />
+      </div>
       <ul className="divide-y overflow-hidden rounded-xl border bg-card">
         {visible.map((contact) => {
           const name = crmContactDisplayName(contact)
