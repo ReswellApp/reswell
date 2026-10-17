@@ -5,6 +5,8 @@ import { redirect } from "next/navigation"
 import { getDb } from "@/lib/supabase/db"
 import { createClient } from "@/lib/supabase/server"
 import { marketplaceModelPageHrefFromParsed } from "@/lib/models/search-redirect"
+import { SearchResultsFilterButton } from "@/components/features/search/search-results-filter-button"
+import { searchResultsFilterHref } from "@/lib/utils/search-results-filter-href"
 import { SearchCategoryFilters } from "./search-section-filters"
 import type { RecentListing } from "@/components/recent-feed-client"
 import { RecentFeedClient } from "@/components/recent-feed-client"
@@ -92,7 +94,6 @@ function searchResultsHeading({
   modelName,
   lengthToken,
   brandTypoCorrected,
-  browseFacetsHref,
 }: {
   brandUnknown: boolean
   query: string
@@ -100,7 +101,6 @@ function searchResultsHeading({
   modelName: string | null
   lengthToken: string | null
   brandTypoCorrected: boolean
-  browseFacetsHref: string | null
 }): { title: ReactNode; subtitle: ReactNode } {
   if (brandUnknown) {
     return {
@@ -123,25 +123,7 @@ function searchResultsHeading({
     }
     if (modelName) {
       const detail = [modelName, brandName, lengthToken].filter(Boolean).join(" · ")
-      return {
-        title,
-        subtitle: (
-          <>
-            {detail}
-            {browseFacetsHref ? (
-              <>
-                {" · "}
-                <a
-                  href={browseFacetsHref}
-                  className="font-medium text-foreground underline underline-offset-2"
-                >
-                  More filters
-                </a>
-              </>
-            ) : null}
-          </>
-        ),
-      }
+      return { title, subtitle: detail }
     }
     if (brandName) {
       return { title, subtitle: brandName }
@@ -425,19 +407,16 @@ export async function SearchPageView({
     modelName: parsedQuery?.model?.name ?? null,
     lengthToken: parsedQuery?.lengthToken ?? null,
     brandTypoCorrected,
-    browseFacetsHref:
-      parsedQuery?.model && queryTrimmed
-        ? `/boards?q=${encodeURIComponent(queryTrimmed)}${
-            parsedQuery.model.id
-              ? `&brandModelId=${encodeURIComponent(parsedQuery.model.id)}`
-              : ""
-          }${
-            parsedQuery.lengthToken
-              ? `&dimLength=${encodeURIComponent(parsedQuery.lengthToken)}`
-              : ""
-          }`
-        : null,
   })
+  const filtersHref = queryTrimmed
+    ? searchResultsFilterHref({
+        query: queryTrimmed,
+        section: parsedQuery?.sectionIntent ?? null,
+        brandModelId: parsedQuery?.model?.id ?? null,
+        brandId: brandUnknown ? null : (brandRow?.id ?? null),
+        lengthToken: parsedQuery?.lengthToken ?? null,
+      })
+    : null
 
   return (
     <main className="flex-1">
@@ -449,7 +428,9 @@ export async function SearchPageView({
               <p className="mt-1 text-sm text-muted-foreground">{heading.subtitle}</p>
             ) : null}
           </div>
-          {queryTrimmed ? null : (
+          {filtersHref ? (
+            <SearchResultsFilterButton href={filtersHref} />
+          ) : (
             <Suspense fallback={null}>
               <SearchCategoryFilters
                 query={rawQuery}
