@@ -192,15 +192,8 @@ export interface ShopifyShippingReadiness {
   }>
 }
 
-/**
- * `disabled`: SHOPIFY_MANUAL_CANARY_ENABLED is off.
- * `needs_approval`: the profile lacks shopify_manual_canary_enabled.
- */
-export type ShopifyManualSetupState = "available" | "disabled" | "needs_approval"
-
 export interface ShopifyConnectOptions {
   pluginAvailable: boolean
-  manualSetup: ShopifyManualSetupState
 }
 
 /** A live Shopify variant, or `null` when Shopify confirms it no longer exists. */

@@ -10,7 +10,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { ShopifyManualConnectOption } from "@/components/features/integrations/shopify/shopify-manual-connect-option"
 import { ShopifyPluginConnectOption } from "@/components/features/integrations/shopify/shopify-plugin-connect-option"
 import { ShopifySyncHealthTiles } from "@/components/features/integrations/shopify/shopify-sync-health"
 import type {
@@ -45,19 +44,17 @@ export function ShopifyConnectionCard({
             Connect your Shopify store
           </CardTitle>
           <CardDescription>
-            Choose how Reswell connects. Both options link the store to this
-            account and sync the same products and stock.
+            Install the Reswell Shopify app and approve it on your store.
+            Products and stock then sync to this account.
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-4 lg:grid-cols-2">
+        <CardContent>
           <ShopifyPluginConnectOption available={connectOptions.pluginAvailable} />
-          <ShopifyManualConnectOption state={connectOptions.manualSetup} />
         </CardContent>
       </Card>
     )
   }
 
-  const isManual = connection.credential_provider === "merchant_custom"
   const needsReconnect =
     connection.status === "reauthorization_required" ||
     connection.status === "error"
@@ -75,7 +72,9 @@ export function ShopifyConnectionCard({
             </CardTitle>
             <CardDescription className="mt-1">
               {connection.shop_domain}
-              {isManual ? " · Manual setup" : " · Reswell Shopify app"}
+              {connection.credential_provider === "public_oauth"
+                ? " · Reswell Shopify app"
+                : null}
             </CardDescription>
           </div>
           <Badge variant={needsReconnect ? "destructive" : "secondary"}>
@@ -89,14 +88,12 @@ export function ShopifyConnectionCard({
         ) : null}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-muted-foreground">
-            {needsReconnect && isManual
-              ? "Disconnect, then connect again with your Dev Dashboard client ID and secret."
-              : needsReconnect
-                ? "Reconnect to resume syncing. Deleted Shopify products are still removed from Reswell."
-                : "Sync now removes products deleted in Shopify and refreshes every linked variant."}
+            {needsReconnect
+              ? "Reconnect with the Reswell Shopify app to resume syncing. Deleted Shopify products are still removed from Reswell."
+              : "Sync now removes products deleted in Shopify and refreshes every linked variant."}
           </p>
           <div className="flex flex-wrap gap-2">
-            {needsReconnect && !isManual ? (
+            {needsReconnect ? (
               <Button type="button" asChild disabled={busy}>
                 <a href={reconnectHref}>Reconnect</a>
               </Button>

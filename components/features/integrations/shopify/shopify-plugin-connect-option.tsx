@@ -79,8 +79,7 @@ export function ShopifyPluginConnectOption({
         </form>
       ) : (
         <p className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
-          The Reswell Shopify app is not available right now. Use manual setup,
-          or check back soon.
+          The Reswell Shopify app is not available right now. Check back soon.
         </p>
       )}
     </ShopifyConnectOptionPanel>
