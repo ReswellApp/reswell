@@ -89,6 +89,130 @@ export async function listMobileFavoriteRows(
   return { ok: true, rows }
 }
 
+export async function listMobileFollowers(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<QueryResult<MobileFollowedSellerRow[]>> {
+  const { data, error } = await supabase
+    .from("seller_follows")
+    .select("follower_id")
+    .eq("seller_id", userId)
+    .limit(100)
+
+  if (error) return { ok: false, message: error.message }
+  const ids = [...new Set((data ?? []).map((row) => String((row as { follower_id?: string }).follower_id ?? "")).filter(Boolean))]
+  if (ids.length === 0) return { ok: true, rows: [] }
+
+  const { data: profiles, error: profileError } = await supabase
+    .from("profiles")
+    .select("id, seller_slug, display_name, avatar_url, city, is_shop, shop_name, shop_logo_url, shop_verified")
+    .in("id", ids)
+
+  if (profileError) return { ok: false, message: profileError.message }
+  return { ok: true, rows: (profiles ?? []) as MobileFollowedSellerRow[] }
+}
+
+export type MobileDashboardFacts = {
+  following_count: number
+  favorite_count: number
+  purchase_count: number
+  sale_count: number
+  pending_offer_count: number
+  unread_message_count: number
+  active_listing_count: number
+  wallet_balance_usd: number
+}
+
+export async function fetchMobileDashboardFacts(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<QueryResult<MobileDashboardFacts>> {
+  const [following, favorites, purchases, sales, offers, profile, listings, wallet] = await Promise.all([
+    supabase.from("seller_follows").select("id", { count: "exact", head: true }).eq("follower_id", userId),
+    supabase.from("favorites").select("id", { count: "exact", head: true }).eq("user_id", userId),
+    supabase
+      .from("orders")
+      .select("id", { count: "exact", head: true })
+      .eq("buyer_id", userId)
+      .match(REAL_MARKETPLACE_PURCHASES_FILTER)
+      .in("status", [...ORDER_STATUS_LIST]),
+    supabase
+      .from("orders")
+      .select("id", { count: "exact", head: true })
+      .eq("seller_id", userId)
+      .match(REAL_MARKETPLACE_PURCHASES_FILTER)
+      .in("status", [...ORDER_STATUS_LIST]),
+    supabase.from("offers").select("id", { count: "exact", head: true }).eq("seller_id", userId).eq("status", "PENDING"),
+    supabase.from("profiles").select("unread_message_count").eq("id", userId).maybeSingle(),
+    supabase
+      .from("listings")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("status", "active")
+      .is("archived_at", null),
+    supabase.from("wallets").select("balance, pending_balance").eq("user_id", userId).maybeSingle(),
+  ])
+
+  const failed = [following, favorites, purchases, sales, offers, profile, listings, wallet].find((result) => result.error)
+  if (failed?.error) return { ok: false, message: failed.error.message }
+
+  const balance = usd(wallet.data?.balance) + usd(wallet.data?.pending_balance)
+  return {
+    ok: true,
+    rows: {
+      following_count: following.count ?? 0,
+      favorite_count: favorites.count ?? 0,
+      purchase_count: purchases.count ?? 0,
+      sale_count: sales.count ?? 0,
+      pending_offer_count: offers.count ?? 0,
+      unread_message_count: Math.max(0, Math.floor(Number(profile.data?.unread_message_count) || 0)),
+      active_listing_count: listings.count ?? 0,
+      wallet_balance_usd: balance,
+    },
+  }
+}
+
+export type MobileDashboardAccess = {
+  isAdmin: boolean
+  isShipper: boolean
+  hasShopifyAccess: boolean
+  hasSellerProfile: boolean
+}
+
+/** Flags that decide which dashboard sections this account can open. */
+export async function fetchMobileDashboardAccess(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<QueryResult<MobileDashboardAccess>> {
+  const [profile, shipper] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("is_admin, is_shop, shopify_connect_enabled")
+      .eq("id", userId)
+      .maybeSingle(),
+    supabase.from("coastal_shippers").select("id").eq("user_id", userId).maybeSingle(),
+  ])
+  if (profile.error) return { ok: false, message: profile.error.message }
+
+  const row = profile.data
+  const shipperId = shipper.data?.id
+  return {
+    ok: true,
+    rows: {
+      isAdmin: row?.is_admin === true,
+      isShipper: !shipper.error && typeof shipperId === "string" && shipperId.length > 0,
+      hasShopifyAccess: row?.shopify_connect_enabled === true,
+      hasSellerProfile: row?.is_shop === true,
+    },
+  }
+}
+
+function usd(value: number | string | null | undefined): number {
+  const amount = typeof value === "number" ? value : Number(value)
+  if (!Number.isFinite(amount)) return 0
+  return Math.round(amount * 100) / 100
+}
+
 export async function listMobileFollowedSellers(
   supabase: SupabaseClient,
   userId: string,

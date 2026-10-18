@@ -4,6 +4,7 @@ import { Platform } from "react-native"
 import { publicApiUrl } from "@/lib/public-env"
 import {
   mobileCartResultSchema,
+  mobileDashboardSchema,
   mobileCartSchema,
   mobileConversationDetailSchema,
   mobileConversationsSchema,
@@ -24,7 +25,9 @@ import {
   mobileOfferActionResultSchema,
   mobileOffersSchema,
   mobileOrdersSchema,
+  mobileProfileAvatarResultSchema,
   mobileProfileSchema,
+  mobileProfileSettingsSchema,
   mobileSellerPageSchema,
   mobileSellersPageSchema,
   mobileRecentlyViewedSchema,
@@ -32,7 +35,15 @@ import {
   mobileSavedSearchSchema,
   mobileSearchResultsSchema,
   mobileSearchSchema,
+  mobileBalanceSheetSchema,
   mobileSalesSchema,
+  mobileShipperActionResultSchema,
+  mobileShipperSchema,
+  mobileShopifyActionResultSchema,
+  mobileShopifySchema,
+  mobileSupportCasesSchema,
+  mobileSupportReplyResultSchema,
+  mobileSupportThreadSchema,
   mobileSellBoardSpecsSchema,
   mobileSellCatalogSearchSchema,
   mobileSellDropoffLocationsSchema,
@@ -46,6 +57,7 @@ import {
   type MobileCategory,
   type MobileCategoryListingsQuery,
   type MobileCart,
+  type MobileDashboard,
   type MobileCartResult,
   type MobileConversationDetail,
   type MobileConversationPreview,
@@ -66,12 +78,25 @@ import {
   type MobileOfferActionResult,
   type MobileOrder,
   type MobileProfile,
+  type MobileProfileAvatarResult,
+  type MobileProfileSettings,
+  type MobileProfileSettingsPatch,
   type MobileRecentlyViewed,
   type MobileReviewsPage,
   type MobileSavedSearch,
   type MobileSearch,
   type MobileSearchResults,
+  type MobileBalanceSheet,
   type MobileSale,
+  type MobileShipper,
+  type MobileShipperActionBody,
+  type MobileShipperActionResult,
+  type MobileShopify,
+  type MobileShopifyActionBody,
+  type MobileShopifyActionResult,
+  type MobileSupportCases,
+  type MobileSupportReplyResult,
+  type MobileSupportThread,
   type MobileSellBoardSpecs,
   type MobileSellCatalogSearch,
   type MobileSellDropoffLocations,
@@ -411,8 +436,55 @@ export function actOnOffer(
   )
 }
 
+export function fetchProfileSettings(accessToken: string): Promise<MobileProfileSettings> {
+  return read("/api/mobile/v1/me/profile", (data) => mobileProfileSettingsSchema.parse(data), accessToken)
+}
+
+export function saveProfileSettings(accessToken: string, body: MobileProfileSettingsPatch): Promise<MobileProfileSettings> {
+  return read("/api/mobile/v1/me/profile", (data) => mobileProfileSettingsSchema.parse(data), accessToken, body)
+}
+
+export async function uploadProfileAvatar(accessToken: string, uri: string): Promise<MobileProfileAvatarResult> {
+  const form = new FormData()
+  form.append("file", { uri, name: "avatar.jpg", type: "image/jpeg" } as unknown as Blob)
+  const response = await fetch(`${apiOrigin()}/api/mobile/v1/me/profile/avatar`, {
+    method: "POST",
+    headers: { Accept: "application/json", Authorization: `Bearer ${accessToken}` },
+    body: form,
+  })
+  const body: unknown = await response.json()
+  if (!response.ok) {
+    const message = body && typeof body === "object" && "error" in body && typeof body.error === "string" ? body.error : "Upload failed"
+    throw new Error(message)
+  }
+  if (!body || typeof body !== "object" || !("data" in body)) throw new Error("Unexpected response")
+  return mobileProfileAvatarResultSchema.parse(body.data)
+}
+
+export async function removeProfileAvatar(accessToken: string): Promise<MobileProfileAvatarResult> {
+  const response = await fetch(`${apiOrigin()}/api/mobile/v1/me/profile/avatar`, {
+    method: "DELETE",
+    headers: { Accept: "application/json", Authorization: `Bearer ${accessToken}` },
+  })
+  const body: unknown = await response.json()
+  if (!response.ok) {
+    const message = body && typeof body === "object" && "error" in body && typeof body.error === "string" ? body.error : "Unable to remove photo"
+    throw new Error(message)
+  }
+  if (!body || typeof body !== "object" || !("data" in body)) throw new Error("Unexpected response")
+  return mobileProfileAvatarResultSchema.parse(body.data)
+}
+
 export function fetchMe(accessToken: string): Promise<MobileMe> {
   return read("/api/mobile/v1/me", (data) => mobileMeSchema.parse(data), accessToken)
+}
+
+export function fetchDashboard(accessToken: string): Promise<MobileDashboard> {
+  return read("/api/mobile/v1/me/dashboard", (data) => mobileDashboardSchema.parse(data), accessToken)
+}
+
+export function fetchFollowers(accessToken: string): Promise<MobileFollowing> {
+  return read("/api/mobile/v1/me/followers", (data) => mobileFollowingSchema.parse(data), accessToken)
 }
 
 export function fetchFavorites(accessToken: string): Promise<{ favorites: MobileFavorite[] }> {
@@ -437,6 +509,51 @@ export function fetchPurchases(accessToken: string): Promise<{ orders: MobileOrd
 
 export function fetchSales(accessToken: string): Promise<{ sales: MobileSale[] }> {
   return read("/api/mobile/v1/me/sales", (data) => mobileSalesSchema.parse(data), accessToken)
+}
+
+export function fetchSupportCases(accessToken: string): Promise<MobileSupportCases> {
+  return read("/api/mobile/v1/me/support", (data) => mobileSupportCasesSchema.parse(data), accessToken)
+}
+
+export function fetchSupportThread(accessToken: string, caseId: string): Promise<MobileSupportThread> {
+  return read(
+    `/api/mobile/v1/me/support/${encodeURIComponent(caseId)}`,
+    (data) => mobileSupportThreadSchema.parse(data),
+    accessToken,
+  )
+}
+
+export function replySupportCase(accessToken: string, caseId: string, body: string): Promise<MobileSupportReplyResult> {
+  return read(
+    `/api/mobile/v1/me/support/${encodeURIComponent(caseId)}`,
+    (data) => mobileSupportReplyResultSchema.parse(data),
+    accessToken,
+    { body },
+  )
+}
+
+export function fetchShipper(accessToken: string): Promise<MobileShipper> {
+  return read("/api/mobile/v1/me/shipper", (data) => mobileShipperSchema.parse(data), accessToken)
+}
+
+export function actOnShipper(accessToken: string, body: MobileShipperActionBody): Promise<MobileShipperActionResult> {
+  return read("/api/mobile/v1/me/shipper", (data) => mobileShipperActionResultSchema.parse(data), accessToken, body)
+}
+
+export function fetchBalanceSheet(accessToken: string, page = 1): Promise<MobileBalanceSheet> {
+  return read(
+    `/api/mobile/v1/me/balance-sheet?page=${encodeURIComponent(String(page))}`,
+    (data) => mobileBalanceSheetSchema.parse(data),
+    accessToken,
+  )
+}
+
+export function fetchShopify(accessToken: string): Promise<MobileShopify> {
+  return read("/api/mobile/v1/me/shopify", (data) => mobileShopifySchema.parse(data), accessToken)
+}
+
+export function actOnShopify(accessToken: string, body: MobileShopifyActionBody): Promise<MobileShopifyActionResult> {
+  return read("/api/mobile/v1/me/shopify", (data) => mobileShopifyActionResultSchema.parse(data), accessToken, body)
 }
 
 export function fetchConversations(accessToken: string): Promise<{ conversations: MobileConversationPreview[] }> {

@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "dependencies": {
     "@expo/ui": "~57.0.25",
+    "@react-native-google-signin/google-signin": "^16.1.5",
     "@reswell/api-contract": "file:../../packages/api-contract",
     "@supabase/supabase-js": "^2.117.3",
     "expo": "~57.0.30",
@@ -24,7 +25,6 @@
     "expo-symbols": "~57.0.3",
     "expo-system-ui": "~57.0.4",
     "expo-video": "~57.0.5",
-    "expo-web-browser": "~57.0.3",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.3",
@@ -47,6 +47,7 @@
     "ios": "expo start --ios --dev-client",
     "web": "expo start --web",
     "lint": "expo lint",
+    "build:simulator": "eas build --platform ios --profile simulator",
     "build:development": "eas build --profile development",
     "build:preview": "eas build --profile preview",
     "build:production": "eas build --profile production"

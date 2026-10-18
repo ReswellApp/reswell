@@ -7,11 +7,21 @@ import type { ListingImageForCard } from "@/lib/listing-image-display"
 export type MobileListingSellerRow = {
   seller_slug?: string | null
   display_name?: string | null
+  avatar_url?: string | null
+  location?: string | null
+  created_at?: string | null
+  shop_verified?: boolean | null
+  is_shop?: boolean | null
+  shop_name?: string | null
+  shop_logo_url?: string | null
 }
 
 export type MobileListingRow = {
   id: string
+  user_id?: string | null
   slug: string | null
+  created_at?: string | null
+  views?: number | string | null
   title: string | null
   description: string | null
   status: string
@@ -46,7 +56,10 @@ export type MobileListingVideoRow = {
 
 export const MOBILE_LISTING_SELECT = `
   id,
+  user_id,
   slug,
+  created_at,
+  views,
   title,
   description,
   status,
@@ -66,7 +79,17 @@ export const MOBILE_LISTING_SELECT = `
   hidden_from_site,
   archived_at,
   listing_images (url, thumbnail_url, is_primary, sort_order),
-  ${LISTING_SELLER_PROFILES_EMBED} (seller_slug, display_name)
+  ${LISTING_SELLER_PROFILES_EMBED} (
+    seller_slug,
+    display_name,
+    avatar_url,
+    location,
+    created_at,
+    shop_verified,
+    is_shop,
+    shop_name,
+    shop_logo_url
+  )
 `
 
 /** Detail only. Feeds stay on `MOBILE_LISTING_SELECT` so cards do not pull video rows. */

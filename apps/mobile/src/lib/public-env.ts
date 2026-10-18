@@ -17,3 +17,13 @@ export function publicSupabaseAnonKey(): string {
 export function publicApiUrl(): string {
   return process.env.NEXT_PUBLIC_URL?.trim() || "http://localhost:3000"
 }
+
+/** Web OAuth client ID. Supabase checks the Google ID token against this audience. */
+export function publicGoogleWebClientId(): string {
+  return process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID?.trim() ?? ""
+}
+
+/** iOS OAuth client ID. The reversed value is the URL scheme applied at build time. */
+export function publicGoogleIosClientId(): string {
+  return process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID?.trim() ?? ""
+}

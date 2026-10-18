@@ -24,6 +24,8 @@ import {
   type MobileListingVideoRow,
 } from "@/lib/db/mobile-listings"
 import { isSellerBanActive } from "@/lib/db/sellerBan"
+import { getListingCartHolderCount } from "@/lib/db/listing-cart-holders"
+import { getListingFavoriteCount } from "@/lib/db/listing-favorite-count"
 import { getSellerReviewSummary } from "@/lib/db/seller-reviews"
 import { listingPickupCaption } from "@/lib/listing-fulfillment"
 import {
@@ -179,9 +181,60 @@ export function toMobileListingCard(row: MobileListingRow): MobileListingCard | 
   return parsed.data
 }
 
+export type MobileListingDetailStats = {
+  watcherCount: number
+  cartHolderCount: number
+  ratingAverage: number
+  reviewCount: number
+}
+
+function countField(value: number | string | null | undefined): number {
+  const amount = typeof value === "number" ? value : Number(value)
+  if (!Number.isFinite(amount) || amount < 0) return 0
+  return Math.floor(amount)
+}
+
+function sellerDisplayName(seller: MobileListingSellerRow | null): string {
+  if (seller?.is_shop) {
+    const shop = nullableText(seller.shop_name)
+    if (shop) return shop
+  }
+  return getPublicSellerDisplayName(seller)
+}
+
+function joinedYear(value: string | null | undefined): string | null {
+  const text = nullableText(value)
+  if (!text) return null
+  const joined = new Date(text)
+  if (Number.isNaN(joined.getTime())) return null
+  return String(joined.getUTCFullYear())
+}
+
+/** Same relative phrasing `/l` prints next to Listed. */
+function listedLabel(value: string | null | undefined): string | null {
+  const text = nullableText(value)
+  if (!text) return null
+  const listed = new Date(text)
+  if (Number.isNaN(listed.getTime())) return null
+  const days = Math.max(0, Math.floor((Date.now() - listed.getTime()) / 86_400_000))
+  if (days === 0) return "today"
+  if (days === 1) return "1 day ago"
+  if (days < 30) return `${days} days ago`
+  const months = Math.floor(days / 30)
+  if (months < 12) return months === 1 ? "1 month ago" : `${months} months ago`
+  const years = Math.floor(months / 12)
+  return years === 1 ? "1 year ago" : `${years} years ago`
+}
+
+function locationLine(city: string | null | undefined, state: string | null | undefined): string | null {
+  const line = [nullableText(city), nullableText(state)].filter(Boolean).join(", ")
+  return line ? line.toUpperCase() : null
+}
+
 export function toMobileListingDetail(
   row: MobileListingRow,
   viewer?: { favorited: boolean; in_cart: boolean },
+  stats?: MobileListingDetailStats,
 ): MobileListingDetail | null {
   const card = toMobileListingCard(row)
   if (!card) return null
@@ -195,15 +248,29 @@ export function toMobileListingDetail(
     imageUrls.push(url)
     if (imageUrls.length >= 12) break
   }
+  const avatar = seller?.is_shop
+    ? profileMedia(seller.shop_logo_url) ?? profileMedia(seller.avatar_url)
+    : profileMedia(seller?.avatar_url)
   const detail = {
     ...card,
     status: row.status,
     description: nullableText(row.description),
     image_urls: imageUrls,
     videos: listingVideos(row.listing_videos),
+    view_count: countField(row.views),
+    watcher_count: countField(stats?.watcherCount),
+    cart_holder_count: countField(stats?.cartHolderCount),
+    listed_label: listedLabel(row.created_at),
+    location_line: locationLine(row.city, row.state),
     seller: {
-      name: getPublicSellerDisplayName(seller),
+      name: sellerDisplayName(seller),
       seller_slug: nullableText(seller?.seller_slug),
+      avatar_url: avatar,
+      location_label: nullableText(seller?.location),
+      verified: Boolean(seller?.is_shop && seller.shop_verified),
+      joined_year: joinedYear(seller?.created_at),
+      rating_average: Math.min(5, Math.max(0, stats?.ratingAverage ?? 0)),
+      review_count: countField(stats?.reviewCount),
     },
     ...(viewer ? { favorited: viewer.favorited, in_cart: viewer.in_cart } : {}),
   }
@@ -449,26 +516,38 @@ export async function getMobileListingService(
     return { ok: false, status: 404, error: "Listing not found" }
   }
 
-  let viewerState: { favorited: boolean; in_cart: boolean } | undefined
-  if (viewer) {
-    const [favorite, cart] = await Promise.all([
-      viewer.supabase
-        .from("favorites")
-        .select("id")
-        .eq("user_id", viewer.userId)
-        .eq("listing_id", row.id)
-        .maybeSingle(),
-      viewer.supabase
-        .from("cart_items")
-        .select("id")
-        .eq("profile_id", viewer.userId)
-        .eq("listing_id", row.id)
-        .maybeSingle(),
-    ])
-    viewerState = { favorited: Boolean(favorite.data), in_cart: Boolean(cart.data) }
-  }
+  const sold = row.status === "sold"
+  const sellerId = nullableText(row.user_id)
+  const [viewerState, watcherCount, cartHolderCount, reviews] = await Promise.all([
+    viewer
+      ? Promise.all([
+          viewer.supabase
+            .from("favorites")
+            .select("id")
+            .eq("user_id", viewer.userId)
+            .eq("listing_id", row.id)
+            .maybeSingle(),
+          viewer.supabase
+            .from("cart_items")
+            .select("id")
+            .eq("profile_id", viewer.userId)
+            .eq("listing_id", row.id)
+            .maybeSingle(),
+        ]).then(([favorite, cart]) => ({ favorited: Boolean(favorite.data), in_cart: Boolean(cart.data) }))
+      : Promise.resolve(undefined),
+    sold ? Promise.resolve(0) : getListingFavoriteCount(supabase, row.id),
+    sold ? Promise.resolve(0) : getListingCartHolderCount(supabase, row.id),
+    sellerId
+      ? getSellerReviewSummary(supabase, sellerId)
+      : Promise.resolve({ data: { avgRating: 0, reviewCount: 0 }, error: null }),
+  ])
 
-  const detail = toMobileListingDetail(row, viewerState)
+  const detail = toMobileListingDetail(row, viewerState, {
+    watcherCount,
+    cartHolderCount,
+    ratingAverage: reviews.data.avgRating,
+    reviewCount: reviews.data.reviewCount,
+  })
   if (!detail) {
     return { ok: false, status: 500, error: "Unable to load listing right now" }
   }

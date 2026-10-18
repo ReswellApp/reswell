@@ -1,12 +1,8 @@
-import type { Session, SupabaseClient } from "@supabase/supabase-js"
+import type { Session } from "@supabase/supabase-js"
 import * as AppleAuthentication from "expo-apple-authentication"
-import * as Linking from "expo-linking"
-import * as WebBrowser from "expo-web-browser"
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react"
-import { publicApiUrl } from "@/lib/public-env"
+import { signInWithGoogleNative, signOutGoogleNative } from "@/lib/google-sign-in"
 import { getSupabase } from "@/lib/supabase"
-
-WebBrowser.maybeCompleteAuthSession()
 
 type AuthContextValue = {
   ready: boolean
@@ -57,21 +53,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       async signInWithGoogle() {
         if (!supabase) return "Supabase is not configured in this build."
-        const redirectTo = Linking.createURL("auth/callback")
-        const { data, error } = await supabase.auth.signInWithOAuth({
-          provider: "google",
-          options: {
-            redirectTo,
-            skipBrowserRedirect: true,
-            queryParams: { prompt: "select_account" },
-          },
-        })
-        if (error) return error.message
-        if (!data.url) return "Could not start Google sign-in."
-        const result = await WebBrowser.openAuthSessionAsync(googleSignInStartUrl(data.url), redirectTo)
-        if (result.type === "cancel" || result.type === "dismiss") return null
-        if (result.type !== "success") return "Google sign-in did not finish."
-        return finishSupabaseOAuth(supabase, result.url)
+        const message = await signInWithGoogleNative(supabase)
+        return message || null
       },
       async signInWithApple() {
         if (!supabase) return "Supabase is not configured in this build."
@@ -103,6 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       },
       async signOut() {
+        await signOutGoogleNative()
         if (!supabase) return
         await supabase.auth.signOut()
       },
@@ -111,45 +95,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
-}
-
-/**
- * iOS prints the host of this URL on the sign-in sheet. Start on Reswell so
- * the sheet does not name the Supabase project.
- *
- * Expo Go on this Mac uses the local Reswell server, so the sheet says
- * localhost. A build that talks to the live site says reswell.app.
- */
-function googleSignInStartUrl(authorizeUrl: string): string {
-  const configured = publicApiUrl().replace(/\/$/, "")
-  const origin = __DEV__ && configured ? configured : "https://reswell.app"
-  const start = new URL("/api/mobile/v1/auth/google", origin)
-  start.searchParams.set("url", authorizeUrl)
-  return start.toString()
-}
-
-function oauthParam(url: string, name: string): string | null {
-  const [beforeHash, hash = ""] = url.split("#")
-  const query = beforeHash.split("?")[1] ?? ""
-  return new URLSearchParams(query).get(name) ?? new URLSearchParams(hash).get(name)
-}
-
-async function finishSupabaseOAuth(supabase: SupabaseClient, returnedUrl: string): Promise<string | null> {
-  const code = oauthParam(returnedUrl, "code")
-  if (code) {
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
-    return error?.message ?? null
-  }
-  const accessToken = oauthParam(returnedUrl, "access_token")
-  const refreshToken = oauthParam(returnedUrl, "refresh_token")
-  if (accessToken && refreshToken) {
-    const { error } = await supabase.auth.setSession({
-      access_token: accessToken,
-      refresh_token: refreshToken,
-    })
-    return error?.message ?? null
-  }
-  return oauthParam(returnedUrl, "error_description") ?? "Google sign-in did not return a session."
 }
 
 export function useAuth(): AuthContextValue {

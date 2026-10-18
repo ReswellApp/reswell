@@ -1,7 +1,10 @@
 import {
   mobileCartSchema,
   mobileConversationDetailSchema,
+  mobileDashboardSchema,
+  mobileFavoriteSchema,
   mobileFavoritesSchema,
+  mobileFollowersSchema,
   mobileFollowingSchema,
   mobileOffersSchema,
   mobileOrdersSchema,
@@ -9,6 +12,7 @@ import {
   mobileSalesSchema,
   type MobileCart,
   type MobileConversationDetail,
+  type MobileDashboard,
   type MobileConversationPreview,
   type MobileFavorite,
   type MobileFollowing,
@@ -20,9 +24,12 @@ import {
 } from "@reswell/api-contract"
 import { userParticipatesInConversation } from "@/lib/db/conversations"
 import {
+  fetchMobileDashboardAccess,
+  fetchMobileDashboardFacts,
   listMobileCartRows,
   listMobileFavoriteRows,
   listMobileFollowedSellers,
+  listMobileFollowers,
   listMobileMessageRows,
   listMobileOrderRows,
   listMobileReviewRows,
@@ -44,11 +51,15 @@ import {
   toMobileSale,
 } from "@/lib/services/mobileAccountMap"
 import {
+  getMobileMeService,
+  getMobileProfileService,
   loadPublicMobileProfileRow,
   toMobileListingCard,
   type MobileApiResult,
 } from "@/lib/services/mobileApi"
-import type { SupabaseClient } from "@supabase/supabase-js"
+import { getMySellerEarningsTotals } from "@/lib/db/sellerEarningsTotals"
+import { mobileDashboardPages } from "@/lib/services/mobileDashboardPages"
+import type { SupabaseClient, User } from "@supabase/supabase-js"
 
 function text(value: string | null | undefined): string | null {
   const trimmed = value?.trim()
@@ -165,6 +176,71 @@ function followedSeller(row: MobileFollowedSellerRow) {
     is_shop: isShop,
     verified: isShop && Boolean(row.shop_verified),
   }
+}
+
+export async function listMobileFollowersService(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<MobileApiResult<MobileFollowing>> {
+  const listed = await listMobileFollowers(supabase, userId)
+  if (!listed.ok) return { ok: false, status: 500, error: "Unable to load followers right now" }
+  const sellers = listed.rows.map(followedSeller).filter((seller) => seller != null)
+  const parsed = mobileFollowersSchema.safeParse({ sellers })
+  if (!parsed.success) return { ok: false, status: 500, error: "Unable to load followers right now" }
+  return { ok: true, data: parsed.data }
+}
+
+export async function getMobileDashboardService(
+  supabase: SupabaseClient,
+  user: User,
+): Promise<MobileApiResult<MobileDashboard>> {
+  const [me, facts, earnings, access] = await Promise.all([
+    getMobileMeService(supabase, user),
+    fetchMobileDashboardFacts(supabase, user.id),
+    getMySellerEarningsTotals(supabase),
+    fetchMobileDashboardAccess(supabase, user.id),
+  ])
+  if (!me.ok) return me
+  if (!facts.ok || !access.ok) return { ok: false, status: 500, error: "Unable to load your dashboard right now" }
+
+  const slug = me.data.seller_slug
+  const profile = slug ? await getMobileProfileService(slug, { supabase, userId: user.id }) : null
+  if (profile && !profile.ok && profile.status !== 404) return profile
+
+  const publicProfile = profile && profile.ok ? profile.data : null
+  const lifetime = earnings?.lifetimeSoldUsd ?? 0
+  const wallet = facts.rows.wallet_balance_usd
+  const dashboard = {
+    id: me.data.id,
+    email: me.data.email,
+    display_name: publicProfile?.name ?? me.data.display_name,
+    seller_slug: me.data.seller_slug,
+    avatar_url: publicProfile?.avatar_url ?? me.data.avatar_url,
+    about: publicProfile?.about ?? null,
+    website_url: publicProfile?.website_url ?? null,
+    follower_count: publicProfile?.follower_count ?? 0,
+    following_count: facts.rows.following_count,
+    review_count: publicProfile?.review_count ?? 0,
+    rating_average: publicProfile?.rating_average ?? 0,
+    active_listing_count: publicProfile?.listing_count ?? facts.rows.active_listing_count,
+    sold_count: facts.rows.sale_count,
+    purchase_count: facts.rows.purchase_count,
+    favorite_count: facts.rows.favorite_count,
+    pending_offer_count: facts.rows.pending_offer_count,
+    unread_message_count: facts.rows.unread_message_count,
+    earnings_lifetime_usd: lifetime,
+    earnings_lifetime_label: money(lifetime),
+    wallet_balance_usd: wallet,
+    wallet_balance_label: money(wallet),
+    pages: mobileDashboardPages(access.rows),
+  }
+  const parsed = mobileDashboardSchema.safeParse(dashboard)
+  if (!parsed.success) return { ok: false, status: 500, error: "Unable to load your dashboard right now" }
+  return { ok: true, data: parsed.data }
+}
+
+function money(amount: number): string {
+  return `$${amount.toFixed(2)}`
 }
 
 export async function listMobileFollowingService(

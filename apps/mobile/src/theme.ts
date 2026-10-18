@@ -13,6 +13,7 @@ export const lightColors = {
   /** Sell Continue / progress. Same as website `listingHeart`. */
   listingHeart: "#355185",
   shipping: "#4263EB",
+  protection: "#EEF2FF",
   sold: "#163060",
   destructive: "#DC2626",
 }
@@ -29,6 +30,7 @@ export const darkColors = {
   /** Sell Continue / progress. Same as website `listingHeart`. */
   listingHeart: "#355185",
   shipping: "#4263EB",
+  protection: "#1B2436",
   sold: "#9BB6F0",
   destructive: "#D4D4D4",
 }

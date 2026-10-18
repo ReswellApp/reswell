@@ -2,6 +2,43 @@ import { z } from "zod"
 
 /** Stable `/api/mobile/v1` shapes. Add fields freely. Renames and removals wait for v2. */
 
+export const mobileProfileAddressSchema = z.object({
+  id: z.string().uuid(),
+  label: z.string().nullable(),
+  full_name: z.string(),
+  line: z.string(),
+  is_default: z.boolean(),
+})
+
+/** Same profile settings the website dashboard edits. */
+export const mobileProfileSettingsSchema = z.object({
+  display_name: z.string(),
+  seller_slug: z.string().nullable(),
+  email: z.string().nullable(),
+  avatar_url: z.string().nullable(),
+  bio: z.string().nullable(),
+  location: z.string().nullable(),
+  city: z.string().nullable(),
+  shop_banner_url: z.string().nullable(),
+  shop_tile_banner_url: z.string().nullable(),
+  signed_in_with: z.enum(["google", "email"]),
+  message_sms_opt_in: z.boolean(),
+  sms_phone: z.string().nullable(),
+  addresses: z.array(mobileProfileAddressSchema),
+})
+
+export const mobileProfileSettingsPatchSchema = z.object({
+  display_name: z.string().trim().min(5).max(50),
+  bio: z.string().trim().max(2000).optional(),
+  location: z.string().trim().max(160).optional(),
+  city: z.string().trim().max(80).optional(),
+  message_sms_opt_in: z.boolean().optional(),
+})
+
+export const mobileProfileAvatarResultSchema = z.object({
+  avatar_url: z.string().nullable(),
+})
+
 export const mobileMeSchema = z.object({
   id: z.string().uuid(),
   email: z.string().nullable(),
@@ -52,9 +89,22 @@ export const mobileListingDetailSchema = mobileListingCardSchema.extend({
   image_urls: z.array(z.string()),
   /** Sort order matches `/l`. Empty when the seller did not upload a video. */
   videos: z.array(mobileListingVideoSchema),
+  view_count: z.number().int().nonnegative(),
+  watcher_count: z.number().int().nonnegative(),
+  cart_holder_count: z.number().int().nonnegative(),
+  /** Same relative line as `/l`, e.g. `15 days ago`. */
+  listed_label: z.string().nullable(),
+  /** City and state, same uppercase line as `/l`. */
+  location_line: z.string().nullable(),
   seller: z.object({
     name: z.string(),
     seller_slug: z.string().nullable(),
+    avatar_url: z.string().nullable(),
+    location_label: z.string().nullable(),
+    verified: z.boolean(),
+    joined_year: z.string().nullable(),
+    rating_average: z.number().min(0).max(5),
+    review_count: z.number().int().nonnegative(),
   }),
   /** Present when the request includes a signed-in session. */
   favorited: z.boolean().optional(),
@@ -727,6 +777,9 @@ export const mobileApiErrorSchema = z.object({
   error: z.string(),
 })
 
+export type MobileProfileSettings = z.infer<typeof mobileProfileSettingsSchema>
+export type MobileProfileSettingsPatch = z.infer<typeof mobileProfileSettingsPatchSchema>
+export type MobileProfileAvatarResult = z.infer<typeof mobileProfileAvatarResultSchema>
 export type MobileMe = z.infer<typeof mobileMeSchema>
 export type MobileListingCard = z.infer<typeof mobileListingCardSchema>
 export type MobileListingVideo = z.infer<typeof mobileListingVideoSchema>
@@ -863,6 +916,207 @@ export const mobileFollowedSellerSchema = z.object({
 
 export const mobileFollowingSchema = z.object({
   sellers: z.array(mobileFollowedSellerSchema),
+})
+
+export const mobileFollowersSchema = mobileFollowingSchema
+
+/** Same destinations as the website dashboard sidebar, already filtered for this account. */
+export const MOBILE_DASHBOARD_PAGE_IDS = [
+  "overview",
+  "shipper",
+  "profile",
+  "earnings",
+  "balance-sheet",
+  "listings",
+  "shopify",
+  "offers",
+  "messages",
+  "support",
+  "purchases",
+  "sales",
+  "favorites",
+  "following",
+  "seller-profile",
+] as const
+
+export const mobileDashboardPageSchema = z.object({
+  id: z.enum(MOBILE_DASHBOARD_PAGE_IDS),
+  label: z.string().min(1),
+})
+
+/**
+ * Signed-in seller home. Counts and earnings match the website dashboard.
+ * `pages` is the account menu: only the sections this user is allowed to open.
+ */
+export const mobileDashboardSchema = z.object({
+  id: z.string().uuid(),
+  email: z.string().nullable(),
+  display_name: z.string(),
+  seller_slug: z.string().nullable(),
+  avatar_url: z.string().nullable(),
+  about: z.string().nullable(),
+  website_url: z.string().nullable(),
+  follower_count: z.number().int().nonnegative(),
+  following_count: z.number().int().nonnegative(),
+  review_count: z.number().int().nonnegative(),
+  rating_average: z.number().min(0).max(5),
+  active_listing_count: z.number().int().nonnegative(),
+  sold_count: z.number().int().nonnegative(),
+  purchase_count: z.number().int().nonnegative(),
+  favorite_count: z.number().int().nonnegative(),
+  pending_offer_count: z.number().int().nonnegative(),
+  unread_message_count: z.number().int().nonnegative(),
+  earnings_lifetime_usd: z.number().nonnegative(),
+  earnings_lifetime_label: z.string(),
+  wallet_balance_usd: z.number().nonnegative(),
+  wallet_balance_label: z.string(),
+  pages: z.array(mobileDashboardPageSchema),
+})
+
+export const mobileSupportCaseSchema = z.object({
+  id: z.string().uuid(),
+  status: z.string(),
+  status_label: z.string(),
+  subject: z.string(),
+  preview: z.string(),
+  order_ref: z.string().nullable(),
+  updated_at: z.string(),
+  unread_count: z.number().int().nonnegative(),
+  closed: z.boolean(),
+})
+
+export const mobileSupportCasesSchema = z.object({
+  cases: z.array(mobileSupportCaseSchema),
+})
+
+export const mobileSupportMessageSchema = z.object({
+  id: z.string().uuid(),
+  body: z.string(),
+  created_at: z.string(),
+  mine: z.boolean(),
+  author_role: z.enum(["customer", "agent", "system"]),
+})
+
+export const mobileSupportThreadSchema = z.object({
+  id: z.string().uuid(),
+  subject: z.string(),
+  status_label: z.string(),
+  closed: z.boolean(),
+  messages: z.array(mobileSupportMessageSchema),
+})
+
+export const mobileSupportReplyBodySchema = z.object({
+  body: z.string().trim().min(1).max(4000),
+})
+
+export const mobileSupportReplyResultSchema = z.object({
+  case_id: z.string().uuid(),
+})
+
+export const MOBILE_SHIPPER_STATUSES = ["waiting_for_run", "picked_up", "dropped_off", "cancelled"] as const
+
+export const mobileShipperJobSchema = z.object({
+  id: z.string().min(1),
+  listing_title: z.string(),
+  sale_label: z.string(),
+  status: z.enum(MOBILE_SHIPPER_STATUSES),
+  status_label: z.string(),
+  pickup_label: z.string(),
+  dropoff_label: z.string(),
+  next_handoff: z.string(),
+  actions: z.array(z.object({ status: z.enum(MOBILE_SHIPPER_STATUSES), label: z.string() })),
+})
+
+export const mobileShipperSchema = z.object({
+  shipper_id: z.string().uuid(),
+  display_name: z.string(),
+  week_label: z.string(),
+  schedule_enabled: z.boolean(),
+  price_label: z.string(),
+  job_count: z.number().int().nonnegative(),
+  run_count: z.number().int().nonnegative(),
+  jobs: z.array(mobileShipperJobSchema),
+})
+
+export const mobileShipperActionBodySchema = z
+  .object({
+    action: z.enum(["schedule", "job"]),
+    enabled: z.boolean().optional(),
+    job_id: z.string().min(1).optional(),
+    status: z.enum(MOBILE_SHIPPER_STATUSES).optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.action === "schedule" && typeof data.enabled !== "boolean") {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Choose on or off.", path: ["enabled"] })
+    }
+    if (data.action === "job" && (!data.job_id || !data.status)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Choose a board and a status.", path: ["job_id"] })
+    }
+  })
+
+export const mobileShipperActionResultSchema = z.object({
+  updated: z.boolean(),
+})
+
+export const mobileBalanceSheetEntrySchema = z.object({
+  id: z.string().min(1),
+  listing_id: z.string().uuid(),
+  title: z.string(),
+  section_label: z.string(),
+  sold_label: z.string(),
+  profit_label: z.string().nullable(),
+  sold_at: z.string(),
+  order_number: z.string().nullable(),
+})
+
+export const mobileBalanceSheetSchema = z.object({
+  inventory_listings: z.number().int().nonnegative(),
+  inventory_asking_label: z.string(),
+  inventory_cost_label: z.string(),
+  realized_sales: z.number().int().nonnegative(),
+  gross_sales_label: z.string(),
+  fees_label: z.string(),
+  realized_profit_label: z.string(),
+  missing_cost_basis: z.number().int().nonnegative(),
+  entries: z.array(mobileBalanceSheetEntrySchema),
+  page: z.number().int().positive(),
+  total_pages: z.number().int().positive(),
+})
+
+export const mobileShopifySectionSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+})
+
+export const mobileShopifyProductSchema = z.object({
+  id: z.string().min(1),
+  title: z.string(),
+  image_url: z.string().nullable(),
+  price_label: z.string().nullable(),
+  selected: z.boolean(),
+  section_label: z.string().nullable(),
+})
+
+export const mobileShopifySchema = z.object({
+  shop_name: z.string().nullable(),
+  shop_domain: z.string().nullable(),
+  connected: z.boolean(),
+  sync_enabled: z.boolean(),
+  status_label: z.string(),
+  message: z.string().nullable(),
+  products: z.array(mobileShopifyProductSchema),
+  sections: z.array(mobileShopifySectionSchema),
+})
+
+export const mobileShopifyActionBodySchema = z.object({
+  action: z.enum(["publish", "unpublish"]),
+  product_id: z.string().min(1).max(300),
+  section: z.string().min(1).max(40).optional(),
+})
+
+export const mobileShopifyActionResultSchema = z.object({
+  product_id: z.string().min(1),
+  selected: z.boolean(),
 })
 
 export const mobileCartItemSchema = z.object({
@@ -1033,6 +1287,22 @@ export type MobileReview = z.infer<typeof mobileReviewSchema>
 export type MobileReviewsPage = z.infer<typeof mobileReviewsPageSchema>
 export type MobileFavorite = z.infer<typeof mobileFavoriteSchema>
 export type MobileFollowing = z.infer<typeof mobileFollowingSchema>
+export type MobileFollowers = z.infer<typeof mobileFollowersSchema>
+export type MobileSupportCase = z.infer<typeof mobileSupportCaseSchema>
+export type MobileSupportCases = z.infer<typeof mobileSupportCasesSchema>
+export type MobileSupportThread = z.infer<typeof mobileSupportThreadSchema>
+export type MobileSupportReplyBody = z.infer<typeof mobileSupportReplyBodySchema>
+export type MobileSupportReplyResult = z.infer<typeof mobileSupportReplyResultSchema>
+export type MobileShipper = z.infer<typeof mobileShipperSchema>
+export type MobileShipperActionBody = z.infer<typeof mobileShipperActionBodySchema>
+export type MobileShipperActionResult = z.infer<typeof mobileShipperActionResultSchema>
+export type MobileBalanceSheet = z.infer<typeof mobileBalanceSheetSchema>
+export type MobileShopify = z.infer<typeof mobileShopifySchema>
+export type MobileShopifyActionBody = z.infer<typeof mobileShopifyActionBodySchema>
+export type MobileShopifyActionResult = z.infer<typeof mobileShopifyActionResultSchema>
+export type MobileDashboardPageId = (typeof MOBILE_DASHBOARD_PAGE_IDS)[number]
+export type MobileDashboardPage = z.infer<typeof mobileDashboardPageSchema>
+export type MobileDashboard = z.infer<typeof mobileDashboardSchema>
 export type MobileCart = z.infer<typeof mobileCartSchema>
 export type MobileOffer = z.infer<typeof mobileOfferSchema>
 export type MobileOrder = z.infer<typeof mobileOrderSchema>

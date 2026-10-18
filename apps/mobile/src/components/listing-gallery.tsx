@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
   sold: {
     position: "absolute",
     top: 16,
-    left: 16,
+    right: 16,
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 4,

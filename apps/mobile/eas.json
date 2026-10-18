@@ -8,11 +8,26 @@
       "developmentClient": true,
       "distribution": "internal"
     },
+    "simulator": {
+      "extends": "development",
+      "environment": "development",
+      "ios": {
+        "simulator": true
+      }
+    },
     "preview": {
       "distribution": "internal"
     },
     "production": {
       "autoIncrement": true
+    },
+    "development-simulator": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
+      },
+      "environment": "development"
     }
   },
   "submit": {

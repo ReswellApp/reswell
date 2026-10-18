@@ -108,6 +108,10 @@ describe("mobile listings contract", () => {
     if (!detail) throw new Error("expected a listing detail")
     assert.equal(detail.seller.name, "North Shop")
     assert.equal(detail.seller.seller_slug, "north-shop")
+    assert.equal(detail.seller.avatar_url, null)
+    assert.equal(detail.seller.review_count, 0)
+    assert.equal(detail.view_count, 0)
+    assert.equal(detail.location_line, "SANTA CRUZ, CA")
     assert.deepEqual(detail.image_urls, ["https://cdn.example.com/full.jpg"])
     assert.deepEqual(detail.videos, [])
     assert.equal(detail.description, "Light use.")
@@ -152,6 +156,36 @@ describe("mobile listings contract", () => {
     assert.equal(detail.videos[0]?.poster_url, "https://cdn.example.com/poster.jpg")
     assert.equal(detail.videos[0]?.duration_seconds, 8.2)
     assert.equal(detail.videos[1]?.duration_seconds, 3)
+  })
+
+  it("keeps a shop profile when the member has no display name", () => {
+    const detail = toMobileListingDetail(
+      {
+        ...ROW,
+        views: 465,
+        profiles: {
+          display_name: null,
+          seller_slug: "hayden",
+          is_shop: true,
+          shop_name: "Hayden Garfields Shop",
+          shop_verified: true,
+          location: "California",
+          created_at: "2026-02-01T00:00:00.000Z",
+          avatar_url: "https://cdn.example.com/face.jpg",
+        },
+      },
+      undefined,
+      { watcherCount: 0, cartHolderCount: 1, ratingAverage: 5, reviewCount: 38 },
+    )
+    if (!detail) throw new Error("expected a listing detail")
+    assert.equal(detail.seller.name, "Hayden Garfields Shop")
+    assert.equal(detail.seller.verified, true)
+    assert.equal(detail.seller.location_label, "California")
+    assert.equal(detail.seller.joined_year, "2026")
+    assert.equal(detail.seller.avatar_url, "https://cdn.example.com/face.jpg")
+    assert.equal(detail.seller.review_count, 38)
+    assert.equal(detail.view_count, 465)
+    assert.equal(detail.cart_holder_count, 1)
   })
 })
 

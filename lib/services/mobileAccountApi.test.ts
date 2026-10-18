@@ -1,6 +1,9 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
+import { mobileDashboardSchema } from "@reswell/api-contract"
 import { toMobileOffer, toMobileOrder, toMobileReview, toMobileSale } from "./mobileAccountMap.ts"
+import { mobileDashboardPages } from "./mobileDashboardPages.ts"
+import { shipperJobActions, supportStatusLabel } from "./mobileDashboardSectionMap.ts"
 import type { MobileOrderRow, MobileReviewRow } from "@/lib/db/mobile-account"
 import type { DashboardOfferRow } from "@/lib/types/offers-dashboard"
 
@@ -97,5 +100,88 @@ describe("mobile account contract", () => {
     assert.equal(review.role, "seller")
     assert.equal(review.comment, "Fast ship.")
     assert.equal(review.reviewer_name, "Alex")
+  })
+
+  it("accepts a seller dashboard summary", () => {
+    const parsed = mobileDashboardSchema.parse({
+      id: "33333333-3333-4333-8333-333333333333",
+      email: "seller@reswell.app",
+      display_name: "North Shop",
+      seller_slug: "north-shop",
+      avatar_url: null,
+      about: "Used boards",
+      website_url: "https://www.reswell.app",
+      follower_count: 2,
+      following_count: 1,
+      review_count: 0,
+      rating_average: 0,
+      active_listing_count: 3,
+      sold_count: 1,
+      purchase_count: 4,
+      favorite_count: 6,
+      pending_offer_count: 1,
+      unread_message_count: 0,
+      earnings_lifetime_usd: 680,
+      earnings_lifetime_label: "$680.00",
+      wallet_balance_usd: 120.5,
+      wallet_balance_label: "$120.50",
+      pages: [{ id: "overview", label: "Overview" }],
+    })
+    assert.equal(parsed.sold_count, 1)
+    assert.equal(parsed.purchase_count, 4)
+    assert.equal(parsed.earnings_lifetime_label, "$680.00")
+  })
+
+  it("returns the dashboard pages this account is allowed to open", () => {
+    const member = mobileDashboardPages({
+      isAdmin: false,
+      isShipper: false,
+      hasShopifyAccess: false,
+      hasSellerProfile: false,
+    }).map((page) => page.label)
+    assert.deepEqual(member, [
+      "Overview",
+      "Profile",
+      "Earnings",
+      "My Listings",
+      "Offers",
+      "Messages",
+      "Support",
+      "Purchases",
+      "Sales",
+      "Favorites",
+      "Following",
+    ])
+
+    const shop = mobileDashboardPages({
+      isAdmin: true,
+      isShipper: true,
+      hasShopifyAccess: true,
+      hasSellerProfile: true,
+    }).map((page) => page.id)
+    assert.equal(supportStatusLabel("waiting_on_you"), "Waiting on you")
+    assert.deepEqual(
+      shipperJobActions("waiting_for_run", true).map((action) => action.status),
+      ["picked_up", "cancelled"],
+    )
+    assert.equal(shipperJobActions("picked_up", false).length, 0)
+
+    assert.deepEqual(shop, [
+      "overview",
+      "shipper",
+      "profile",
+      "earnings",
+      "balance-sheet",
+      "listings",
+      "shopify",
+      "offers",
+      "messages",
+      "support",
+      "purchases",
+      "sales",
+      "favorites",
+      "following",
+      "seller-profile",
+    ])
   })
 })

@@ -1,4 +1,5 @@
 import * as AppleAuthentication from "expo-apple-authentication"
+import { useRouter } from "expo-router"
 import { useEffect, useState } from "react"
 import {
   ActivityIndicator,
@@ -8,44 +9,27 @@ import {
   TextInput,
   View,
 } from "react-native"
-import type { MobileMe } from "@reswell/api-contract"
 import { Wordmark } from "@/components/wordmark"
-import { fetchMe } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
 import { fontFamily, useReswellColors } from "@/theme"
 
 export default function SignInScreen() {
   const colors = useReswellColors()
-  const { configured, session, signIn, signInWithGoogle, signInWithApple, signOut } = useAuth()
+  const router = useRouter()
+  const { configured, session, signIn, signInWithGoogle, signInWithApple } = useAuth()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [appleAvailable, setAppleAvailable] = useState(false)
-  const [me, setMe] = useState<MobileMe | null>(null)
 
   useEffect(() => {
     AppleAuthentication.isAvailableAsync().then(setAppleAvailable).catch(() => setAppleAvailable(false))
   }, [])
 
   useEffect(() => {
-    const token = session?.access_token
-    if (!token) {
-      setMe(null)
-      return
-    }
-    let cancelled = false
-    fetchMe(token)
-      .then((next) => {
-        if (!cancelled) setMe(next)
-      })
-      .catch(() => {
-        if (!cancelled) setMe(null)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [session?.access_token])
+    if (session) router.dismissTo("/")
+  }, [router, session])
 
   async function submit() {
     setBusy(true)
@@ -62,21 +46,7 @@ export default function SignInScreen() {
         <Text style={{ color: colors.foreground, fontFamily: fontFamily.text }}>
           Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to the repo .env.local.
         </Text>
-      ) : session ? (
-        <View style={styles.stack}>
-          <Text style={[styles.title, { color: colors.foreground, fontFamily: fontFamily.headline }]}>
-            {me?.display_name ?? "Signed in"}
-          </Text>
-          {me?.email ? (
-            <Text style={{ color: colors.muted, fontFamily: fontFamily.text }}>{me.email}</Text>
-          ) : null}
-          <Pressable onPress={() => void signOut()} style={[styles.button, { backgroundColor: colors.primary }]}>
-            <Text style={[styles.buttonLabel, { color: colors.primaryForeground, fontFamily: fontFamily.text }]}>
-              Sign out
-            </Text>
-          </Pressable>
-        </View>
-      ) : (
+      ) : session ? null : (
         <View style={styles.stack}>
           <Text style={[styles.title, { color: colors.foreground, fontFamily: fontFamily.headline }]}>Sign in</Text>
           <Pressable
