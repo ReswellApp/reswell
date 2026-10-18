@@ -27,6 +27,8 @@ import {
 import { ProfileShopTab } from "@/components/features/dashboard/profile-settings/profile-shop-tab"
 import { ProfileSignInTab } from "@/components/features/dashboard/profile-settings/profile-sign-in-tab"
 import { ProfileNotificationsTab } from "@/components/features/dashboard/profile-settings/profile-notifications-tab"
+import { AccountTeamPanel } from "@/components/features/dashboard/account-team-panel"
+import type { AccountTeamPanelData } from "@/lib/services/accountAccess"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import type { DashboardProfileRow } from "@/lib/db/dashboard-profile"
 import type { ProfileAddressRow } from "@/lib/profile-address"
@@ -40,6 +42,7 @@ interface DashboardProfileSettingsProps {
   initialHasSmsPhone?: boolean
   initialSmsPhone?: string | null
   variant?: "dashboard" | "threads"
+  team?: AccountTeamPanelData | null
 }
 
 export function DashboardProfileSettings({
@@ -51,6 +54,7 @@ export function DashboardProfileSettings({
   initialHasSmsPhone = false,
   initialSmsPhone = null,
   variant = "dashboard",
+  team = null,
 }: DashboardProfileSettingsProps) {
   const isThreads = variant === "threads"
   const { t } = useLocale()
@@ -636,23 +640,26 @@ export function DashboardProfileSettings({
       ) : null}
 
       {activeTab === "sign-in" ? (
-        <ProfileSignInTab
-          email={profile.email || ""}
-          copy={{
-            ...a,
-            loginMethods: a.loginMethods,
-            signedInWithGoogle: a.signedInWithGoogle,
-            signedInWithEmail: a.signedInWithEmail,
-            emailVerification: a.emailVerification,
-            verified: a.verified,
-            changeEmailTitle: a.changeEmailTitle,
-            newEmail: a.newEmail,
-            updateEmail: a.updateEmail,
-          }}
-          resetPasswordSending={resetPasswordSending}
-          onSendPasswordReset={() => void handleSendPasswordReset()}
-          onSignOut={() => void handleSignOut()}
-        />
+        <div className="mx-auto max-w-xl space-y-10 pt-2">
+          {team ? <AccountTeamPanel {...team} /> : null}
+          <ProfileSignInTab
+            email={profile.email || ""}
+            copy={{
+              ...a,
+              loginMethods: a.loginMethods,
+              signedInWithGoogle: a.signedInWithGoogle,
+              signedInWithEmail: a.signedInWithEmail,
+              emailVerification: a.emailVerification,
+              verified: a.verified,
+              changeEmailTitle: a.changeEmailTitle,
+              newEmail: a.newEmail,
+              updateEmail: a.updateEmail,
+            }}
+            resetPasswordSending={resetPasswordSending}
+            onSendPasswordReset={() => void handleSendPasswordReset()}
+            onSignOut={() => void handleSignOut()}
+          />
+        </div>
       ) : null}
 
       {activeTab === "addresses" ? (
