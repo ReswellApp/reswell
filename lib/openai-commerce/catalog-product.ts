@@ -231,7 +231,7 @@ function productNoun(section: string): string {
   return "surfboard"
 }
 
-function catalogDescription(listing: OpenAiCatalogListingRow): string {
+function catalogDescription(listing: OpenAiCatalogListingRow, listingPageUrl: string): string {
   const title = listingTitle(listing) || "Listing"
   const section = listing.section ?? "surfboards"
   const notes = stripHtml(typeof listing.description === "string" ? listing.description : "")
@@ -256,6 +256,7 @@ function catalogDescription(listing: OpenAiCatalogListingRow): string {
   const size = listingSize(listing)
   if (size) specs.push(`Size: ${size}`)
   if (specs.length > 0) parts.push(`${specs.join(". ")}.`)
+  parts.push(`Exact listing page: ${listingPageUrl}`)
 
   return clip(parts.join(" ").replace(/\s+/g, " ").trim(), OPENAI_CATALOG_MAX_DESCRIPTION_LENGTH)
 }
@@ -445,7 +446,8 @@ export function listingToOpenAiCatalogFeedItem(
   const section = listing.section ?? "surfboards"
   const origin = publicSiteOrigin()
   const identifier = listing.slug?.trim() || listing.id
-  const url = withOpenAiCatalogTracking(`${origin}/l/${encodeURIComponent(identifier)}`, listing.id)
+  const listingPageUrl = `${origin}/l/${encodeURIComponent(identifier)}`
+  const url = withOpenAiCatalogTracking(listingPageUrl, listing.id)
   const availability = listingAvailability(listing)
   const inStock = availability === "in_stock"
   const ships = listing.shipping_available !== false || isReswellShopListing(section)
@@ -462,7 +464,7 @@ export function listingToOpenAiCatalogFeedItem(
     is_ads_eligible: formatBoolean(inStock),
     item_id: listing.id,
     title: listingTitle(listing),
-    description: catalogDescription(listing),
+    description: catalogDescription(listing, listingPageUrl),
     url,
     brand: listingBrand(listing),
     image_url: imageUrl,
