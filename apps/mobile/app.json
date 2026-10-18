@@ -55,7 +55,10 @@
         }
       ],
       "expo-video",
-      "@stripe/stripe-react-native"
+      [
+        "@stripe/stripe-react-native",
+        {}
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
