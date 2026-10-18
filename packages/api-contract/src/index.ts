@@ -1306,6 +1306,88 @@ export const mobileCartSchema = z.object({
   item_count: z.number().int().nonnegative(),
 })
 
+export const mobileCheckoutConfigSchema = z.object({
+  publishable_key: z.string().min(1),
+})
+
+export const mobileCheckoutAddressSchema = z.object({
+  id: z.string().uuid(),
+  full_name: z.string(),
+  line1: z.string(),
+  line2: z.string().nullable(),
+  city: z.string(),
+  state: z.string().nullable(),
+  postal_code: z.string(),
+  country: z.string(),
+  phone: z.string().nullable(),
+  is_default: z.boolean(),
+  label_line: z.string(),
+})
+
+export const mobileCheckoutAddressesSchema = z.object({
+  addresses: z.array(mobileCheckoutAddressSchema),
+})
+
+export const mobileCheckoutAddressBodySchema = z.object({
+  full_name: z.string().trim().min(1).max(120),
+  line1: z.string().trim().min(1).max(160),
+  line2: z.string().trim().max(160).optional(),
+  city: z.string().trim().min(1).max(80),
+  state: z.string().trim().max(40).optional(),
+  postal_code: z.string().trim().min(3).max(20),
+  country: z.string().trim().min(2).max(2).default("US"),
+  phone: z.string().trim().max(30).optional(),
+})
+
+export const mobileCheckoutRateSchema = z.object({
+  rate_id: z.string(),
+  service_code: z.string(),
+  service_name: z.string(),
+  label: z.string(),
+  amount_usd: z.number(),
+  amount_label: z.string(),
+  delivery_days: z.number().int().nullable(),
+})
+
+export const mobileCheckoutQuoteSchema = z.object({
+  item_usd: z.number(),
+  item_label: z.string(),
+  shipping_usd: z.number(),
+  shipping_label: z.string(),
+  total_usd: z.number(),
+  total_label: z.string(),
+  quote_token: z.string().nullable(),
+  rates: z.array(mobileCheckoutRateSchema),
+})
+
+export const mobileCheckoutQuoteBodySchema = z.object({
+  listing_ids: z.array(z.string().uuid()).min(1).max(20),
+  address_id: z.string().uuid(),
+  service_code: z.string().trim().max(80).optional(),
+})
+
+export const mobileCheckoutPaymentBodySchema = z.object({
+  listing_ids: z.array(z.string().uuid()).min(1).max(20),
+  fulfillment: z.enum(["shipping", "pickup"]),
+  address_id: z.string().uuid().optional(),
+  quote_token: z.string().trim().max(4000).optional(),
+})
+
+export const mobileCheckoutPaymentSchema = z.object({
+  client_secret: z.string().min(1),
+  shipping_usd: z.number(),
+  total_usd: z.number(),
+  total_label: z.string(),
+})
+
+export const mobileCheckoutFinalizeBodySchema = z.object({
+  payment_intent_id: z.string().trim().min(1).max(120),
+})
+
+export const mobileCheckoutFinalizeSchema = z.object({
+  order_id: z.string().uuid(),
+})
+
 export const mobileOfferSchema = z.object({
   id: z.string().uuid(),
   status: z.string(),
@@ -1581,6 +1663,12 @@ export type MobileDashboardPageId = (typeof MOBILE_DASHBOARD_PAGE_IDS)[number]
 export type MobileDashboardPage = z.infer<typeof mobileDashboardPageSchema>
 export type MobileDashboard = z.infer<typeof mobileDashboardSchema>
 export type MobileCart = z.infer<typeof mobileCartSchema>
+export type MobileCheckoutConfig = z.infer<typeof mobileCheckoutConfigSchema>
+export type MobileCheckoutAddress = z.infer<typeof mobileCheckoutAddressSchema>
+export type MobileCheckoutAddresses = z.infer<typeof mobileCheckoutAddressesSchema>
+export type MobileCheckoutQuote = z.infer<typeof mobileCheckoutQuoteSchema>
+export type MobileCheckoutPayment = z.infer<typeof mobileCheckoutPaymentSchema>
+export type MobileCheckoutFinalize = z.infer<typeof mobileCheckoutFinalizeSchema>
 export type MobileOffer = z.infer<typeof mobileOfferSchema>
 export type MobileOrder = z.infer<typeof mobileOrderSchema>
 export type MobileSale = z.infer<typeof mobileSaleSchema>

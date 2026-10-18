@@ -9,6 +9,11 @@ import {
   mobileEarningsSchema,
   mobilePayoutOnboardingSchema,
   mobileCartSchema,
+  mobileCheckoutAddressesSchema,
+  mobileCheckoutConfigSchema,
+  mobileCheckoutFinalizeSchema,
+  mobileCheckoutPaymentSchema,
+  mobileCheckoutQuoteSchema,
   mobileConversationDetailSchema,
   mobileConversationsSchema,
   mobileFavoriteResultSchema,
@@ -71,6 +76,11 @@ import {
   type MobileCategory,
   type MobileCategoryListingsQuery,
   type MobileCart,
+  type MobileCheckoutAddresses,
+  type MobileCheckoutConfig,
+  type MobileCheckoutFinalize,
+  type MobileCheckoutPayment,
+  type MobileCheckoutQuote,
   type MobileCashOutResult,
   type MobileDashboard,
   type MobileEarnings,
@@ -580,6 +590,53 @@ export function fetchFollowing(accessToken: string): Promise<MobileFollowing> {
 
 export function fetchCart(accessToken: string): Promise<MobileCart> {
   return read("/api/mobile/v1/me/cart", (data) => mobileCartSchema.parse(data), accessToken)
+}
+
+export function fetchCheckoutConfig(accessToken: string): Promise<MobileCheckoutConfig> {
+  return read("/api/mobile/v1/me/checkout", (data) => mobileCheckoutConfigSchema.parse(data), accessToken)
+}
+
+export function fetchCheckoutAddresses(accessToken: string): Promise<MobileCheckoutAddresses> {
+  return read("/api/mobile/v1/me/checkout/addresses", (data) => mobileCheckoutAddressesSchema.parse(data), accessToken)
+}
+
+export function saveCheckoutAddress(
+  accessToken: string,
+  address: {
+    full_name: string
+    line1: string
+    line2?: string
+    city: string
+    state?: string
+    postal_code: string
+    country?: string
+    phone?: string
+  },
+): Promise<MobileCheckoutAddresses> {
+  return read("/api/mobile/v1/me/checkout/addresses", (data) => mobileCheckoutAddressesSchema.parse(data), accessToken, address)
+}
+
+export function quoteCheckout(
+  accessToken: string,
+  body: { listing_ids: string[]; address_id: string; service_code?: string },
+): Promise<MobileCheckoutQuote> {
+  return read("/api/mobile/v1/me/checkout/quote", (data) => mobileCheckoutQuoteSchema.parse(data), accessToken, body)
+}
+
+export function startCheckoutPayment(
+  accessToken: string,
+  body: { listing_ids: string[]; fulfillment: "shipping" | "pickup"; address_id?: string; quote_token?: string },
+): Promise<MobileCheckoutPayment> {
+  return read("/api/mobile/v1/me/checkout/payment", (data) => mobileCheckoutPaymentSchema.parse(data), accessToken, body)
+}
+
+export function finalizeCheckout(accessToken: string, paymentIntentId: string): Promise<MobileCheckoutFinalize> {
+  return read(
+    "/api/mobile/v1/me/checkout/finalize",
+    (data) => mobileCheckoutFinalizeSchema.parse(data),
+    accessToken,
+    { payment_intent_id: paymentIntentId },
+  )
 }
 
 export function fetchOffers(accessToken: string): Promise<{ offers: MobileOffer[] }> {

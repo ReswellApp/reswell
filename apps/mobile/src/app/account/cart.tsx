@@ -1,7 +1,8 @@
+import { Image } from "expo-image"
 import { useRouter } from "expo-router"
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native"
+import { Pressable, StyleSheet, Text, View } from "react-native"
 import { AccountState } from "@/components/account-state"
-import { ListingCard } from "@/components/listing-card"
+import { VerticalScroll } from "@/components/horizontal-rail"
 import { fetchCart, setCartItem } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
 import { useAccountResource } from "@/lib/use-account-resource"
@@ -13,7 +14,7 @@ export default function CartScreen() {
   const { session } = useAuth()
   const { data, error, loading, reload } = useAccountResource(fetchCart)
   const items = data?.items ?? []
-  const grid = items.length % 2 === 1 ? [...items, null] : items
+  const subtotal = items.reduce((sum, item) => sum + item.listing.price_usd * item.quantity, 0)
 
   return (
     <AccountState
@@ -24,55 +25,86 @@ export default function CartScreen() {
       empty="Your cart is empty."
       isEmpty={items.length === 0}
     >
-      <FlatList
-        data={grid}
-        keyExtractor={(item) => item?.listing.id ?? "spacer"}
-        numColumns={2}
-        columnWrapperStyle={styles.row}
-        contentContainerStyle={styles.list}
-        refreshing={loading}
-        onRefresh={reload}
-        renderItem={({ item }) =>
-          item ? (
-            <View style={styles.cell}>
-              <ListingCard
-                item={item.listing}
-                onPress={() =>
-                  router.push({
-                    pathname: "/listing/[id]",
-                    params: { id: item.listing.slug || item.listing.id },
-                  })
-                }
-              />
-              {item.quantity > 1 ? (
-                <Text style={[styles.qty, { color: colors.muted, fontFamily: fontFamily.text }]}>
-                  Qty {item.quantity}
+      <VerticalScroll contentContainerStyle={styles.list}>
+        {items.map((item) => (
+          <View key={item.listing.id} style={[styles.row, { borderColor: colors.border }]}>
+            <Pressable
+              onPress={() =>
+                router.push({ pathname: "/listing/[id]", params: { id: item.listing.slug || item.listing.id } })
+              }
+              style={styles.item}
+            >
+              {item.listing.image_url ? (
+                <Image source={{ uri: item.listing.image_url }} style={[styles.image, { backgroundColor: colors.image }]} contentFit="cover" />
+              ) : (
+                <View style={[styles.image, { backgroundColor: colors.image }]} />
+              )}
+              <View style={styles.copy}>
+                <Text numberOfLines={2} style={[styles.title, { color: colors.foreground, fontFamily: fontFamily.text }]}>
+                  {item.listing.title}
                 </Text>
-              ) : null}
-              <Pressable
-                onPress={() => {
-                  const token = session?.access_token
-                  if (!token) return
-                  void setCartItem(token, item.listing.id, 0).then(() => reload())
-                }}
-              >
-                <Text style={[styles.remove, { color: colors.destructive, fontFamily: fontFamily.text }]}>Remove</Text>
-              </Pressable>
-            </View>
-          ) : (
-            <View style={styles.spacer} />
-          )
-        }
-      />
+                <Text style={[styles.price, { color: colors.foreground, fontFamily: fontFamily.text }]}>
+                  {item.listing.price_label}
+                  {item.quantity > 1 ? ` · Qty ${item.quantity}` : ""}
+                </Text>
+                <Text style={[styles.meta, { color: colors.muted, fontFamily: fontFamily.text }]}>
+                  {[item.listing.shipping_available ? "Shipping" : null, item.listing.local_pickup ? "Local pickup" : null]
+                    .filter(Boolean)
+                    .join(" · ") || "Checkout"}
+                </Text>
+              </View>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                const token = session?.access_token
+                if (!token) return
+                void setCartItem(token, item.listing.id, 0).then(() => reload())
+              }}
+            >
+              <Text style={[styles.remove, { color: colors.destructive, fontFamily: fontFamily.text }]}>Remove</Text>
+            </Pressable>
+          </View>
+        ))}
+      </VerticalScroll>
+      <View style={[styles.footer, { borderColor: colors.border, backgroundColor: colors.background }]}>
+        <View>
+          <Text style={[styles.meta, { color: colors.muted, fontFamily: fontFamily.text }]}>Subtotal</Text>
+          <Text style={[styles.total, { color: colors.foreground, fontFamily: fontFamily.headline }]}>
+            ${subtotal.toFixed(2)}
+          </Text>
+        </View>
+        <Pressable onPress={() => router.push("/account/checkout")} style={[styles.checkout, { backgroundColor: colors.foreground }]}>
+          <Text style={[styles.checkoutLabel, { color: colors.primaryForeground, fontFamily: fontFamily.text }]}>Checkout</Text>
+        </Pressable>
+      </View>
     </AccountState>
   )
 }
 
 const styles = StyleSheet.create({
-  list: { paddingTop: 12, paddingBottom: 120 },
-  row: { gap: 12, paddingHorizontal: 12 },
-  cell: { flex: 1 },
-  spacer: { flex: 1 },
-  qty: { fontSize: 13, marginTop: -12, marginBottom: 4 },
-  remove: { fontSize: 15, fontWeight: "600", marginBottom: 12 },
+  list: { paddingHorizontal: 16, paddingBottom: 140 },
+  row: { borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 14, gap: 8 },
+  item: { flexDirection: "row", gap: 12 },
+  image: { width: 84, height: 84, borderRadius: 12 },
+  copy: { flex: 1, gap: 4 },
+  title: { fontSize: 16, fontWeight: "600", lineHeight: 21 },
+  price: { fontSize: 15, fontWeight: "700" },
+  meta: { fontSize: 13 },
+  remove: { fontSize: 14, fontWeight: "600" },
+  footer: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 108,
+  },
+  total: { fontSize: 22, fontWeight: "700" },
+  checkout: { borderRadius: 999, paddingHorizontal: 22, paddingVertical: 12 },
+  checkoutLabel: { fontSize: 16, fontWeight: "700" },
 })

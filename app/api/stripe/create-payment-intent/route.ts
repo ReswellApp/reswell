@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
+import type { SupabaseClient, User } from "@supabase/supabase-js"
 import { NextRequest, NextResponse } from "next/server"
 import Stripe from "stripe"
 import { z } from "zod"
@@ -88,6 +89,24 @@ export async function POST(request: NextRequest) {
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  return createPaymentIntentForUser(supabase, user, rawBody)
+}
+
+/** Same card charge the website checkout creates. Reads cart quantities for this buyer. */
+export async function createPaymentIntentForUser(
+  supabase: SupabaseClient,
+  user: User,
+  rawBody: unknown,
+): Promise<NextResponse> {
+  if (!process.env.STRIPE_SECRET_KEY?.trim()) {
+    return NextResponse.json({ error: "Card payments are not configured" }, { status: 503 })
+  }
+
+  const keyConfigError = getStripeCheckoutKeyConfigError()
+  if (keyConfigError) {
+    return NextResponse.json({ error: keyConfigError }, { status: 503 })
   }
 
   if (isAnonymousSupabaseUser(user)) {
