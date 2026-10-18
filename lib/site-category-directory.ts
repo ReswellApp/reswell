@@ -20,7 +20,7 @@ export const surfboardBrowseLinks: CategoryLink[] = [
   { label: "Other", href: "/boards?type=other" },
 ]
 
-/** All peer gear browse routes (footer, sitemap — routes stay live). */
+/** All peer gear browse routes (sitemap and directory — routes stay live). */
 export const siteHeaderPeerProductNavLinks: CategoryLink[] = [
   { label: "Fins", href: "/fins" },
   { label: "Wetsuits", href: "/wetsuits" },
@@ -32,42 +32,84 @@ export const siteHeaderPeerProductNavLinks: CategoryLink[] = [
   { label: "Traction", href: "/traction" },
 ]
 
-/** Peer gear shown in the desktop + mobile main category bar. Accessories stay off the rail. */
-export const siteHeaderMainPeerProductNavLinks: CategoryLink[] = [
-  { label: "Fins", href: "/fins" },
-  { label: "Traction", href: "/traction" },
-  { label: "Wetsuits", href: "/wetsuits" },
+export type HeaderShopperNavItem = {
+  label: string
+  href: string
+  /**
+   * The label opens `menu` and does not navigate.
+   * Used when the department groups several catalogs.
+   */
+  menuOnly?: boolean
+  menu?: CategoryLink[]
+}
+
+/** Shapes inside the Surfboards menu. The rail link itself stays `/boards`. */
+export const headerSurfboardShapeLinks: CategoryLink[] = surfboardBrowseLinks.filter(
+  (link) => link.href !== "/boards",
+)
+
+/**
+ * Small gear grouped under Accessories.
+ * `/accessories` stays in the menu so it is not a top-level peer.
+ */
+export const headerAccessoryMenuLinks: CategoryLink[] = [
   { label: "Boardbags", href: "/boardbags" },
   { label: "Surfpacks", href: "/surfpacks" },
   { label: "Leashes", href: "/leashes" },
+  { label: "Traction", href: "/traction" },
+  { label: "All accessories", href: "/accessories" },
+]
+
+/**
+ * Shopper departments, in purchase order.
+ * Seller tools and marketplace modes stay off this rail.
+ */
+export const siteHeaderShopperNavItems: HeaderShopperNavItem[] = [
+  {
+    label: surfboardsBrowseRootLabel,
+    href: "/boards",
+    menu: [{ label: "All surfboards", href: "/boards" }, ...headerSurfboardShapeLinks],
+  },
+  { label: "Wetsuits", href: "/wetsuits" },
+  { label: "Fins", href: "/fins" },
   { label: "Apparel", href: "/apparel" },
+  {
+    label: "Accessories",
+    href: "/accessories",
+    menuOnly: true,
+    menu: headerAccessoryMenuLinks,
+  },
   { label: "Magazines", href: "/magazines" },
 ]
 
-/**
- * Full category rail — desktop header (Surfboards root, then peer gear).
- * Shape browse links (`/boards?type=…`) stay in filters — not in the top rail.
- */
-export const siteHeaderDesktopCategoryNavLinks: CategoryLink[] = [
-  surfboardBrowseLinks[0],
-  ...siteHeaderMainPeerProductNavLinks,
-]
+/** Flat top-level destinations. Grouped catalogs stay on `siteHeaderShopperNavItems`. */
+export const siteHeaderDesktopCategoryNavLinks: CategoryLink[] = siteHeaderShopperNavItems
+  .filter((item) => !item.menuOnly)
+  .map(({ label, href }) => ({ label, href }))
 
 /**
- * Category pill strip — mobile/tablet category bar and hamburger menu.
- * Same category links as desktop (Surfboards + peer gear only).
+ * Category pill strip — same shopper departments as the desktop rail.
  */
 export const siteHeaderMobileCategoryNavLinks: CategoryLink[] = siteHeaderDesktopCategoryNavLinks
+
 /** Header Categories dropdown: surfboards only. */
 export const allCategoriesForNav: CategoryLink[] = surfboardBrowseLinks
 
 /**
- * Footer Categories column — Surfboards root plus peer gear (same as the header rail).
- * Shape browse links (`/boards?type=…`) stay in filters.
+ * Footer Categories column — shopper departments, with accessory catalogs expanded.
+ * Shape browse links (`/boards?type=…`) stay in the Surfboards menu and filters.
  */
 export const footerCategoryLinks: CategoryLink[] = [
-  surfboardBrowseLinks[0],
-  ...siteHeaderMainPeerProductNavLinks,
+  { label: surfboardsBrowseRootLabel, href: "/boards" },
+  { label: "Wetsuits", href: "/wetsuits" },
+  { label: "Fins", href: "/fins" },
+  { label: "Apparel", href: "/apparel" },
+  { label: "Boardbags", href: "/boardbags" },
+  { label: "Surfpacks", href: "/surfpacks" },
+  { label: "Leashes", href: "/leashes" },
+  { label: "Traction", href: "/traction" },
+  { label: "Accessories", href: "/accessories" },
+  { label: "Magazines", href: "/magazines" },
 ]
 
 export type CategoryDirectorySection = {
@@ -184,6 +226,25 @@ export function boardBrowseNavItemIsActive(
     if (searchParams.get(key) !== required.get(key)) return false
   }
   return pathname === path
+}
+
+/** Active department, including shape filters and accessory catalogs grouped under a menu. */
+export function headerShopperNavItemIsActive(
+  pathname: string | null,
+  searchParams: Pick<URLSearchParams, "get">,
+  item: HeaderShopperNavItem,
+): boolean {
+  if (!pathname) return false
+  if (item.href === "/boards") {
+    const normalized = pathname.replace(/\/$/, "") || "/"
+    if (normalized === "/boards" || normalized.startsWith("/boards/")) return true
+  }
+  if (!item.menuOnly && boardBrowseNavItemIsActive(pathname, searchParams, item.href)) {
+    return true
+  }
+  return (item.menu ?? []).some((child) =>
+    boardBrowseNavItemIsActive(pathname, searchParams, child.href),
+  )
 }
 
 /** Desktop header right rail — Sellers, Sold. `/explore` and `/brands` stay live; hidden from nav for now. */
