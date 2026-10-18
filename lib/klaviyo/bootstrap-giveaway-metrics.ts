@@ -5,6 +5,7 @@
 
 import "@/lib/klaviyo/bootstrap-env"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
+import { SURFBOARD_GIVEAWAY_CAMPAIGN_ENABLED } from "@/lib/giveaways/catalog"
 import {
   GIVEAWAY_ENTERED_METRIC,
   GIVEAWAY_LISTING_REMINDER_METRIC,
@@ -25,6 +26,9 @@ export type BootstrapGiveawayMetricResult = {
 export async function bootstrapGiveawayMetrics(): Promise<{
   results: BootstrapGiveawayMetricResult[]
 }> {
+  if (!SURFBOARD_GIVEAWAY_CAMPAIGN_ENABLED) {
+    return { results: [] }
+  }
   const time = new Date().toISOString()
   const seeds = [
     {

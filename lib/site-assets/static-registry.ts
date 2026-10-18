@@ -72,10 +72,7 @@ export function listStaticSiteAssets(): SiteAssetEntry[] {
       notes: "Used in listing share cards and brand metadata — not visible in page body.",
     }),
 
-    publicImage("home/hero-backdrop-tahiti.jpg", "Homepage and giveaway hero backdrop", "home", [
-      "/",
-      "/giveaways",
-    ]),
+    publicImage("home/hero-backdrop-tahiti.jpg", "Homepage hero backdrop", "home", ["/"]),
     publicImage("home/hero-backdrop-mesa-v2.jpg", "Legacy homepage hero backdrop", "orphan", [], {
       status: "orphan",
     }),
