@@ -9,6 +9,7 @@ import {
   mobileOffersSchema,
   mobileOrdersSchema,
   mobileReviewsPageSchema,
+  mobileSaleDetailSchema,
   mobileSalesSchema,
   type MobileCart,
   type MobileConversationDetail,
@@ -21,8 +22,9 @@ import {
   type MobileReview,
   type MobileReviewsPage,
   type MobileSale,
+  type MobileSaleDetail,
 } from "@reswell/api-contract"
-import { userParticipatesInConversation } from "@/lib/db/conversations"
+import { getConversationForBuyerSellerListing, userParticipatesInConversation } from "@/lib/db/conversations"
 import {
   fetchMobileDashboardAccess,
   fetchMobileDashboardFacts,
@@ -31,6 +33,7 @@ import {
   listMobileFollowedSellers,
   listMobileFollowers,
   listMobileMessageRows,
+  getMobileSaleDetailRow,
   listMobileOrderRows,
   listMobileReviewRows,
   type MobileFollowedSellerRow,
@@ -39,6 +42,8 @@ import {
 import { listMobileListingRows, type MobileListingRow } from "@/lib/db/mobile-listings"
 import { fetchDashboardOffersPartitioned } from "@/lib/db/offers-dashboard"
 import { getPublicSellerDisplayName } from "@/lib/listing-labels"
+import { mobileSaleHasLabel } from "@/lib/services/mobileSaleLabel"
+import { resolveSellerOrderDisplayAmounts } from "@/lib/seller-order-display-amounts"
 import { isListingPubliclyVisible, isListingVisibleInSavedList } from "@/lib/listing-public-visibility"
 import { redactShippingLabelArtifactsFromMessage } from "@/lib/messages/redact-seller-shipping-label"
 import { absoluteProxiedProfileMediaUrl } from "@/lib/public-media-display-src"
@@ -335,6 +340,57 @@ export async function listMobileSalesService(
   const parsed = mobileSalesSchema.safeParse({ sales })
   if (!parsed.success) return { ok: false, status: 500, error: "Unable to load sales right now" }
   return { ok: true, data: parsed.data }
+}
+
+export async function getMobileSaleDetailService(
+  supabase: SupabaseClient,
+  userId: string,
+  orderId: string,
+): Promise<MobileApiResult<MobileSaleDetail>> {
+  const loaded = await getMobileSaleDetailRow(supabase, userId, orderId)
+  if (!loaded.ok) return { ok: false, status: 500, error: "Unable to load this sale right now" }
+  if (!loaded.rows) return { ok: false, status: 404, error: "Sale not found" }
+
+  const sale = toMobileSale(loaded.rows)
+  if (!sale) return { ok: false, status: 500, error: "Unable to load this sale right now" }
+  const amounts = resolveSellerOrderDisplayAmounts({
+    amount: loaded.rows.amount ?? 0,
+    shipping_amount: loaded.rows.shipping_amount,
+    platform_fee: loaded.rows.platform_fee,
+    seller_earnings: loaded.rows.seller_earnings ?? 0,
+    promo_discount_usd: loaded.rows.promo_discount_usd,
+  })
+  const [conversation, labelAvailable] = await Promise.all([
+    getConversationForBuyerSellerListing(
+    supabase,
+    loaded.rows.buyer_id,
+    userId,
+    sale.listing_id,
+    ),
+    mobileSaleHasLabel(supabase, userId, orderId, loaded.rows.tracking_number),
+  ])
+  const created = new Date(loaded.rows.created_at)
+  const parsed = mobileSaleDetailSchema.safeParse({
+    ...sale,
+    created_label: Number.isNaN(created.getTime())
+      ? ""
+      : created.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+    buyer_paid_label: moneyLabel(amounts.buyerPaidTotal),
+    shipping_label: moneyLabel(amounts.shippingAmount),
+    fee_label: moneyLabel(amounts.platformFee),
+    ship_to: loaded.rows.ship_to,
+    tracking_carrier: loaded.rows.tracking_carrier,
+    payout_status: loaded.rows.payout_status,
+    conversation_id: conversation?.id ?? null,
+    listing_slug: loaded.rows.listing_slug,
+    label_available: labelAvailable,
+  })
+  if (!parsed.success) return { ok: false, status: 500, error: "Unable to load this sale right now" }
+  return { ok: true, data: parsed.data }
+}
+
+function moneyLabel(amount: number): string {
+  return `$${amount.toFixed(2)}`
 }
 
 export async function listMobileConversationsService(

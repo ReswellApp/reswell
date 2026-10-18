@@ -109,6 +109,10 @@ export const mobileListingDetailSchema = mobileListingCardSchema.extend({
   /** Present when the request includes a signed-in session. */
   favorited: z.boolean().optional(),
   in_cart: z.boolean().optional(),
+  /** Directory brand page. Null when the listing brand is not in the catalog. */
+  brand_slug: z.string().nullable(),
+  /** Catalog model page under that brand. Null when the model is not in the catalog. */
+  model_slug: z.string().nullable(),
 })
 
 export const mobileListingsPageSchema = z.object({
@@ -236,6 +240,106 @@ export const mobileHomeSectionSchema = z.discriminatedUnion("kind", [
 
 export const mobileHomeSchema = z.object({
   sections: z.array(mobileHomeSectionSchema),
+})
+
+const mobileCatalogSlugSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(80)
+  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/i)
+
+export const mobileBrandParamSchema = z.object({
+  slug: mobileCatalogSlugSchema,
+})
+
+export const mobileModelParamSchema = mobileBrandParamSchema.extend({
+  model: mobileCatalogSlugSchema,
+})
+
+export const mobileBrandCardSchema = z.object({
+  id: z.string().uuid(),
+  slug: z.string(),
+  name: z.string(),
+  logo_url: z.string().nullable(),
+  short_description: z.string().nullable(),
+  location_label: z.string().nullable(),
+  listing_count: z.number().int().nonnegative(),
+  model_count: z.number().int().nonnegative(),
+})
+
+export const mobileBrandsPageSchema = z.object({
+  brands: z.array(mobileBrandCardSchema),
+})
+
+export const mobileBrandModelCardSchema = z.object({
+  id: z.string().uuid(),
+  slug: z.string(),
+  name: z.string(),
+  image_url: z.string().nullable(),
+  category_label: z.string(),
+})
+
+export const mobileBrandPageSchema = z.object({
+  id: z.string().uuid(),
+  slug: z.string(),
+  name: z.string(),
+  logo_url: z.string().nullable(),
+  short_description: z.string().nullable(),
+  website_url: z.string().nullable(),
+  location_label: z.string().nullable(),
+  founder_name: z.string().nullable(),
+  lead_shaper_name: z.string().nullable(),
+  models: z.array(mobileBrandModelCardSchema),
+  listings: z.array(mobileListingCardSchema),
+  sold_listings: z.array(mobileListingCardSchema),
+  listings_capped: z.boolean(),
+  sold_capped: z.boolean(),
+})
+
+export const mobileModelVariantSchema = z.object({
+  id: z.string().uuid(),
+  label: z.string(),
+})
+
+export const mobileModelReviewSchema = z.object({
+  id: z.string().uuid(),
+  rating: z.number().min(1).max(5),
+  comment: z.string().nullable(),
+  author_name: z.string(),
+  created_label: z.string(),
+})
+
+export const mobileModelPriceGuideSchema = z.object({
+  range_label: z.string(),
+  sold_median_label: z.string(),
+  asking_median_label: z.string(),
+  sold_count: z.number().int().nonnegative(),
+  confidence_label: z.string(),
+  bands: z.array(
+    z.object({
+      condition_label: z.string(),
+      typical_label: z.string(),
+      comps: z.number().int().nonnegative(),
+    }),
+  ),
+})
+
+export const mobileModelPageSchema = z.object({
+  brand_slug: z.string(),
+  brand_name: z.string(),
+  model_slug: z.string(),
+  name: z.string(),
+  description: z.string().nullable(),
+  category_label: z.string(),
+  hero_image_url: z.string().nullable(),
+  variants: z.array(mobileModelVariantSchema),
+  listings: z.array(mobileListingCardSchema),
+  sold_listings: z.array(mobileListingCardSchema),
+  price_guide: mobileModelPriceGuideSchema.nullable(),
+  review_average: z.number().min(0).max(5),
+  review_count: z.number().int().nonnegative(),
+  reviews: z.array(mobileModelReviewSchema),
 })
 
 /** Signed-in history from `user_recently_viewed_listings`, newest view first. */
@@ -792,6 +896,10 @@ export type MobileMarketplaceFeedQuery = z.infer<typeof mobileMarketplaceFeedQue
 export type MobileMarketplaceFeed = z.infer<typeof mobileMarketplaceFeedSchema>
 export type MobileMarketplaceFeedStats = z.infer<typeof mobileMarketplaceFeedStatsSchema>
 export type MobileHome = z.infer<typeof mobileHomeSchema>
+export type MobileBrandCard = z.infer<typeof mobileBrandCardSchema>
+export type MobileBrandsPage = z.infer<typeof mobileBrandsPageSchema>
+export type MobileBrandPage = z.infer<typeof mobileBrandPageSchema>
+export type MobileModelPage = z.infer<typeof mobileModelPageSchema>
 export type MobileRecentlyViewed = z.infer<typeof mobileRecentlyViewedSchema>
 export type MobileCategory = z.infer<typeof mobileCategorySchema>
 export type MobileCategorySortId = (typeof MOBILE_CATEGORY_SORTS)[number]
@@ -1245,6 +1353,26 @@ export const mobileSaleSchema = mobileOrderSchema.extend({
 export const mobileSalesSchema = z.object({
   sales: z.array(mobileSaleSchema),
 })
+
+/** One seller order. The sales list stays a summary; this is the order itself. */
+export const mobileSaleDetailSchema = mobileSaleSchema.extend({
+  created_label: z.string(),
+  buyer_paid_label: z.string(),
+  shipping_label: z.string(),
+  fee_label: z.string(),
+  ship_to: z.string().nullable(),
+  tracking_carrier: z.string().nullable(),
+  payout_status: z.string().nullable(),
+  conversation_id: z.string().uuid().nullable(),
+  listing_slug: z.string().nullable(),
+  label_available: z.boolean(),
+})
+
+export const mobileSaleLabelSchema = z.object({
+  url: z.string().url(),
+})
+
+export type MobileSaleDetail = z.infer<typeof mobileSaleDetailSchema>
 
 export const mobileMyListingSchema = z.object({
   id: z.string().uuid(),

@@ -105,6 +105,8 @@ export default function ListingsScreen() {
           onRefresh={load}
           onOpenListing={(listing) => openListing(listing.slug || listing.id)}
           onOpenShop={(slug) => router.push({ pathname: "/profile/[slug]", params: { slug } })}
+          onOpenBrand={(slug) => router.push({ pathname: "/brands/[slug]", params: { slug } })}
+          onOpenDirectory={() => router.push("/brands")}
           onOpenCategory={openCategory}
           onOpenResource={openResource}
           onOpenPage={openPage}

@@ -14,6 +14,8 @@ export function HomeFeed({
   onRefresh,
   onOpenListing,
   onOpenShop,
+  onOpenBrand,
+  onOpenDirectory,
   onOpenCategory,
   onOpenResource,
   onOpenPage,
@@ -25,6 +27,8 @@ export function HomeFeed({
   onRefresh: () => void
   onOpenListing: (listing: MobileListingCard) => void
   onOpenShop: (slug: string) => void
+  onOpenBrand: (slug: string) => void
+  onOpenDirectory: () => void
   onOpenCategory: (category: MobileListingCategory) => void
   onOpenResource: (screen: string) => void
   onOpenPage: (page: "sellers" | "sold") => void
@@ -53,9 +57,12 @@ export function HomeFeed({
         ) : section.kind === "brands" ? (
           <View key={section.id} style={styles.section}>
             <SectionTitle title={section.title} />
+            <Pressable onPress={onOpenDirectory} style={styles.directory}>
+              <Text style={[styles.directoryLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}>All brands</Text>
+            </Pressable>
             <HorizontalRail contentStyle={styles.rail}>
               {section.brands.map((brand) => (
-                <BrandMark key={brand.id} name={brand.name} logoUrl={brand.logo_url} />
+                <BrandMark key={brand.id} name={brand.name} logoUrl={brand.logo_url} onPress={() => onOpenBrand(brand.slug)} />
               ))}
             </HorizontalRail>
           </View>
@@ -115,10 +122,10 @@ function SectionTitle({ title }: { title: string }) {
   )
 }
 
-function BrandMark({ name, logoUrl }: { name: string; logoUrl: string | null }) {
+function BrandMark({ name, logoUrl, onPress }: { name: string; logoUrl: string | null; onPress: () => void }) {
   const colors = useReswellColors()
   return (
-    <View style={styles.brand}>
+    <Pressable onPress={onPress} style={styles.brand}>
       {logoUrl ? (
         <Image source={{ uri: logoUrl }} style={[styles.logo, { backgroundColor: colors.image }]} contentFit="contain" />
       ) : (
@@ -127,7 +134,7 @@ function BrandMark({ name, logoUrl }: { name: string; logoUrl: string | null }) 
       <Text numberOfLines={1} style={[styles.brandName, { color: colors.foreground, fontFamily: fontFamily.text }]}>
         {name}
       </Text>
-    </View>
+    </Pressable>
   )
 }
 
@@ -169,6 +176,8 @@ const styles = StyleSheet.create({
   page: { paddingBottom: 120 },
   section: { marginTop: 20 },
   title: { fontSize: 22, fontWeight: "700", letterSpacing: -0.4, paddingHorizontal: 16, marginBottom: 12 },
+  directory: { paddingHorizontal: 16, marginTop: -6, marginBottom: 10 },
+  directoryLabel: { fontSize: 14, fontWeight: "700", textDecorationLine: "underline" },
   rail: { paddingHorizontal: 16, gap: 12 },
   railCard: { width: 168 },
   brand: { width: 88, alignItems: "center", gap: 6 },

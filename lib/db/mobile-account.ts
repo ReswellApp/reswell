@@ -254,6 +254,113 @@ export async function listMobileCartRows(
   return { ok: true, rows }
 }
 
+export type MobileSaleDetailRow = MobileOrderRow & {
+  buyer_id: string
+  shipping_amount: number | string | null
+  platform_fee: number | string | null
+  promo_discount_usd: number | string | null
+  tracking_carrier: string | null
+  ship_to: string | null
+  listing_slug: string | null
+  payout_status: string | null
+}
+
+function shipToLabel(value: unknown): string | null {
+  if (!value || typeof value !== "object") return null
+  const address = value as {
+    name?: string | null
+    address?: {
+      line1?: string | null
+      line2?: string | null
+      city?: string | null
+      state?: string | null
+      postal_code?: string | null
+    } | null
+  }
+  const line = address.address
+  const parts = [address.name, line?.line1, line?.line2, [line?.city, line?.state, line?.postal_code].filter(Boolean).join(", ")]
+    .map((part) => part?.trim())
+    .filter((part): part is string => Boolean(part))
+  return parts.length > 0 ? parts.join("\n") : null
+}
+
+/** One marketplace sale owned by this seller. */
+export async function getMobileSaleDetailRow(
+  supabase: SupabaseClient,
+  userId: string,
+  orderId: string,
+): Promise<QueryResult<MobileSaleDetailRow | null>> {
+  const { data, error } = await supabase
+    .from("orders")
+    .select(
+      `
+      id,
+      order_num,
+      amount,
+      shipping_amount,
+      platform_fee,
+      seller_earnings,
+      promo_discount_usd,
+      status,
+      delivery_status,
+      tracking_number,
+      tracking_carrier,
+      created_at,
+      fulfillment_method,
+      shipping_address,
+      buyer_id,
+      listings ( id, slug, title, listing_images (url, thumbnail_url, is_primary, sort_order) )
+    `,
+    )
+    .eq("id", orderId)
+    .eq("seller_id", userId)
+    .match(REAL_MARKETPLACE_PURCHASES_FILTER)
+    .in("status", [...ORDER_STATUS_LIST])
+    .maybeSingle()
+
+  if (error) return { ok: false, message: error.message }
+  if (!data) return { ok: true, rows: null }
+
+  const raw = data as Record<string, unknown>
+  const listing = one(
+    raw.listings as (MobileOrderRow["listing"] & { slug?: string | null }) | Array<MobileOrderRow["listing"] & { slug?: string | null }> | null,
+  )
+  const buyerId = String(raw.buyer_id ?? "")
+  const [buyer, payout] = await Promise.all([
+    buyerId
+      ? supabase.from("profiles").select("display_name").eq("id", buyerId).maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
+    supabase.from("payouts").select("status").eq("order_id", orderId).maybeSingle(),
+  ])
+  if (buyer.error) return { ok: false, message: buyer.error.message }
+
+  const listingSlug = listing && "slug" in listing && typeof listing.slug === "string" ? listing.slug : null
+  return {
+    ok: true,
+    rows: {
+      id: String(raw.id),
+      order_num: typeof raw.order_num === "string" ? raw.order_num : null,
+      amount: raw.amount as number | string | null,
+      seller_earnings: raw.seller_earnings as number | string | null,
+      status: String(raw.status ?? ""),
+      delivery_status: typeof raw.delivery_status === "string" ? raw.delivery_status : null,
+      tracking_number: typeof raw.tracking_number === "string" ? raw.tracking_number : null,
+      created_at: String(raw.created_at ?? ""),
+      fulfillment_method: typeof raw.fulfillment_method === "string" ? raw.fulfillment_method : null,
+      listing,
+      counterparty_name: (buyer.data as { display_name?: string | null } | null)?.display_name ?? null,
+      buyer_id: buyerId,
+      shipping_amount: raw.shipping_amount as number | string | null,
+      platform_fee: raw.platform_fee as number | string | null,
+      promo_discount_usd: raw.promo_discount_usd as number | string | null,
+      tracking_carrier: typeof raw.tracking_carrier === "string" ? raw.tracking_carrier : null,
+      ship_to: shipToLabel(raw.shipping_address),
+      listing_slug: listingSlug,
+      payout_status: typeof payout.data?.status === "string" ? payout.data.status : null,
+    },
+  }
+}
+
 export async function listMobileOrderRows(
   supabase: SupabaseClient,
   userId: string,

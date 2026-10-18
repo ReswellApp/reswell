@@ -50,6 +50,7 @@ import { absoluteProxiedProfileMediaUrl } from "@/lib/public-media-display-src"
 import { configuredReswellShopOwnerUserId } from "@/lib/services/resolveReswellShopOwnerUser"
 import { listingPdpVideoPlaybackSrc } from "@/lib/listing-media-proxy-url"
 import { absolutePublicMediaUrl, absoluteUrl } from "@/lib/site-metadata"
+import { resolveListingCatalogSlugs } from "@/lib/services/mobileListingCatalog"
 import { getDb } from "@/lib/supabase/db"
 import type { SupabaseClient, User } from "@supabase/supabase-js"
 
@@ -235,6 +236,7 @@ export function toMobileListingDetail(
   row: MobileListingRow,
   viewer?: { favorited: boolean; in_cart: boolean },
   stats?: MobileListingDetailStats,
+  catalog?: { brandSlug: string | null; modelSlug: string | null },
 ): MobileListingDetail | null {
   const card = toMobileListingCard(row)
   if (!card) return null
@@ -273,6 +275,8 @@ export function toMobileListingDetail(
       review_count: countField(stats?.reviewCount),
     },
     ...(viewer ? { favorited: viewer.favorited, in_cart: viewer.in_cart } : {}),
+    brand_slug: catalog?.brandSlug ?? null,
+    model_slug: catalog?.modelSlug ?? null,
   }
   const parsed = mobileListingDetailSchema.safeParse(detail)
   if (!parsed.success) return null
@@ -518,7 +522,7 @@ export async function getMobileListingService(
 
   const sold = row.status === "sold"
   const sellerId = nullableText(row.user_id)
-  const [viewerState, watcherCount, cartHolderCount, reviews] = await Promise.all([
+  const [viewerState, watcherCount, cartHolderCount, reviews, catalog] = await Promise.all([
     viewer
       ? Promise.all([
           viewer.supabase
@@ -540,14 +544,24 @@ export async function getMobileListingService(
     sellerId
       ? getSellerReviewSummary(supabase, sellerId)
       : Promise.resolve({ data: { avgRating: 0, reviewCount: 0 }, error: null }),
+    resolveListingCatalogSlugs(supabase, {
+      brandId: row.brand_id ?? null,
+      brandName: row.brand,
+      modelName: row.model,
+    }),
   ])
 
-  const detail = toMobileListingDetail(row, viewerState, {
-    watcherCount,
-    cartHolderCount,
-    ratingAverage: reviews.data.avgRating,
-    reviewCount: reviews.data.reviewCount,
-  })
+  const detail = toMobileListingDetail(
+    row,
+    viewerState,
+    {
+      watcherCount,
+      cartHolderCount,
+      ratingAverage: reviews.data.avgRating,
+      reviewCount: reviews.data.reviewCount,
+    },
+    catalog,
+  )
   if (!detail) {
     return { ok: false, status: 500, error: "Unable to load listing right now" }
   }

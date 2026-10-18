@@ -7,7 +7,7 @@ import { ListingCard } from "@/components/listing-card"
 import { MeProfileHeader, type MeTab } from "@/components/me-profile-header"
 import { OrderAccountCard } from "@/components/order-account-card"
 import { ShopListingTile } from "@/components/shop-listing-tile"
-import { fetchDashboard, fetchFavorites, fetchProfileListings, fetchPurchases } from "@/lib/api"
+import { fetchDashboard, fetchFavorites, fetchProfileListings, fetchPurchases, fetchSales } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
 import { useAccountResource } from "@/lib/use-account-resource"
 import { fontFamily, useReswellColors } from "@/theme"
@@ -25,6 +25,7 @@ export default function AccountScreen() {
   const [sold, setSold] = useState<MobileListingCard[] | null>(null)
   const [purchases, setPurchases] = useState<MobileOrder[] | null>(null)
   const [likes, setLikes] = useState<MobileFavorite[] | null>(null)
+  const [saleByListing, setSaleByListing] = useState<Map<string, string>>(new Map())
   const [inventoryError, setInventoryError] = useState<string | null>(null)
   const [shopLoaded, setShopLoaded] = useState(false)
 
@@ -62,6 +63,15 @@ export default function AccountScreen() {
       fetchProfileListings(slug, { status: "sold" })
         .then((page) => setSold(page.listings))
         .catch(() => setSold([]))
+      fetchSales(token)
+        .then((page) => {
+          const nextMap = new Map<string, string>()
+          for (const sale of page.sales) {
+            if (sale.listing_id) nextMap.set(sale.listing_id, sale.id)
+          }
+          setSaleByListing(nextMap)
+        })
+        .catch(() => setSaleByListing(new Map()))
     }
     if (next === "purchases" && !purchases) {
       fetchPurchases(token)
@@ -168,7 +178,14 @@ export default function AccountScreen() {
               <ShopListingTile
                 item={item}
                 status={tab === "sold" ? "Sold" : "Active"}
-                onPress={() => router.push({ pathname: "/listing/[id]", params: { id: item.slug || item.id } })}
+                onPress={() => {
+                  const saleId = saleByListing.get(item.id)
+                  if (tab === "sold" && saleId) {
+                    router.push({ pathname: "/account/sales/[id]", params: { id: saleId } })
+                    return
+                  }
+                  router.push({ pathname: "/listing/[id]", params: { id: item.slug || item.id } })
+                }}
               />
             )
           }}

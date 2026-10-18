@@ -17,12 +17,20 @@ function trackingUrl(trackingNumber: string): string {
   return `https://www.google.com/search?q=${encodeURIComponent(`track package ${number}`)}`
 }
 
-export function OrderAccountCard({ order, earnings }: { order: MobileOrder | MobileSale; earnings?: string | null }) {
+export function OrderAccountCard({
+  order,
+  earnings,
+  onOpen,
+}: {
+  order: MobileOrder | MobileSale
+  earnings?: string | null
+  onOpen?: () => void
+}) {
   const colors = useReswellColors()
   const router = useRouter()
   return (
     <View style={[styles.card, { borderColor: colors.border }]}>
-      <View style={styles.top}>
+      <Pressable disabled={!onOpen} onPress={onOpen} style={styles.top}>
         {order.listing_image_url ? (
           <Image source={{ uri: order.listing_image_url }} style={[styles.image, { backgroundColor: colors.image }]} contentFit="cover" />
         ) : (
@@ -39,7 +47,7 @@ export function OrderAccountCard({ order, earnings }: { order: MobileOrder | Mob
             {earnings ? `You earn ${earnings}` : order.amount_label}
           </Text>
         </View>
-      </View>
+      </Pressable>
       <View style={styles.actions}>
         {order.listing_id ? (
           <Pressable

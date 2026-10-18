@@ -35,7 +35,7 @@ export function ListingDetail({ listing }: { listing: MobileListingDetail }) {
       <Text numberOfLines={2} style={[styles.title, { color: colors.foreground, fontFamily: fontFamily.headline }]}>
         {listing.title}
       </Text>
-      <Identity brand={listing.brand} model={listing.model} />
+      <Identity brand={listing.brand} model={listing.model} brandSlug={listing.brand_slug} modelSlug={listing.model_slug} />
       {sold ? null : <Engagement listing={listing} />}
       {sold ? (
         <View style={[styles.soldBanner, { backgroundColor: colors.foreground }]}>
@@ -129,16 +129,49 @@ function KlarnaLine({ listingId }: { listingId: string }) {
   )
 }
 
-function Identity({ brand, model }: { brand: string | null; model: string | null }) {
+function Identity({
+  brand,
+  model,
+  brandSlug,
+  modelSlug,
+}: {
+  brand: string | null
+  model: string | null
+  brandSlug: string | null
+  modelSlug: string | null
+}) {
   const colors = useReswellColors()
+  const router = useRouter()
   const name = brand?.trim() || null
   const shape = model?.trim() || null
   if (!name && !shape) return null
   return (
     <Text style={[styles.identity, { color: colors.foreground, fontFamily: fontFamily.text }]}>
-      {name ? <Text style={styles.identityStrong}>{name}</Text> : null}
+      {name ? (
+        <Text
+          style={brandSlug ? styles.identityStrong : undefined}
+          onPress={
+            brandSlug
+              ? () => router.push({ pathname: "/brands/[slug]", params: { slug: brandSlug } })
+              : undefined
+          }
+        >
+          {name}
+        </Text>
+      ) : null}
       {name && shape ? <Text style={{ color: colors.border }}> · </Text> : null}
-      {shape ? <Text style={styles.identityStrong}>{shape}</Text> : null}
+      {shape ? (
+        <Text
+          style={brandSlug && modelSlug ? styles.identityStrong : undefined}
+          onPress={
+            brandSlug && modelSlug
+              ? () => router.push({ pathname: "/brands/[slug]/[model]", params: { slug: brandSlug, model: modelSlug } })
+              : undefined
+          }
+        >
+          {shape}
+        </Text>
+      ) : null}
     </Text>
   )
 }

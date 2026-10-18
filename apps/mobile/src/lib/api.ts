@@ -15,6 +15,8 @@ import {
   mobileFavoritesSchema,
   mobileFollowResultSchema,
   mobileFollowingSchema,
+  mobileBrandPageSchema,
+  mobileBrandsPageSchema,
   mobileBrowseRailSchema,
   mobileSellerResourceSchema,
   mobileCategorySchema,
@@ -27,6 +29,7 @@ import {
   mobileListingRailsSchema,
   mobileListingsPageSchema,
   mobileMeSchema,
+  mobileModelPageSchema,
   mobileMessageResultSchema,
   mobileOfferActionResultSchema,
   mobileOffersSchema,
@@ -42,6 +45,8 @@ import {
   mobileSearchResultsSchema,
   mobileSearchSchema,
   mobileBalanceSheetSchema,
+  mobileSaleDetailSchema,
+  mobileSaleLabelSchema,
   mobileSalesSchema,
   mobileShipperActionResultSchema,
   mobileShipperSchema,
@@ -57,6 +62,8 @@ import {
   mobileSellTaxonomySchema,
   mobilePlaceDetailsSchema,
   mobilePlaceSuggestionsSchema,
+  type MobileBrandPage,
+  type MobileBrandsPage,
   type MobileBrowseRail,
   type MobileSellerPage,
   type MobileSellersPage,
@@ -83,6 +90,7 @@ import {
   type MobileMarketplaceFeedTab,
   type MobileListingsPage,
   type MobileMe,
+  type MobileModelPage,
   type MobileMessageResult,
   type MobileOffer,
   type MobileOfferActionBody,
@@ -99,6 +107,7 @@ import {
   type MobileSearchResults,
   type MobileBalanceSheet,
   type MobileSale,
+  type MobileSaleDetail,
   type MobileShipper,
   type MobileShipperActionBody,
   type MobileShipperActionResult,
@@ -195,6 +204,21 @@ export function fetchSellers(query?: string): Promise<MobileSellersPage> {
   if (q) params.set("q", q)
   const path = params.size > 0 ? `/api/mobile/v1/sellers?${params.toString()}` : "/api/mobile/v1/sellers"
   return read(path, (data) => mobileSellersPageSchema.parse(data))
+}
+
+export function fetchBrands(): Promise<MobileBrandsPage> {
+  return read("/api/mobile/v1/brands", (data) => mobileBrandsPageSchema.parse(data))
+}
+
+export function fetchBrand(slug: string): Promise<MobileBrandPage> {
+  return read(`/api/mobile/v1/brands/${encodeURIComponent(slug)}`, (data) => mobileBrandPageSchema.parse(data))
+}
+
+export function fetchModel(brandSlug: string, modelSlug: string): Promise<MobileModelPage> {
+  return read(
+    `/api/mobile/v1/brands/${encodeURIComponent(brandSlug)}/models/${encodeURIComponent(modelSlug)}`,
+    (data) => mobileModelPageSchema.parse(data),
+  )
 }
 
 /** `/sellers/[slug]`. Profile and current listings from the same page as the website. */
@@ -568,6 +592,18 @@ export function fetchPurchases(accessToken: string): Promise<{ orders: MobileOrd
 
 export function fetchSales(accessToken: string): Promise<{ sales: MobileSale[] }> {
   return read("/api/mobile/v1/me/sales", (data) => mobileSalesSchema.parse(data), accessToken)
+}
+
+export function fetchSale(accessToken: string, orderId: string): Promise<MobileSaleDetail> {
+  return read(`/api/mobile/v1/me/sales/${encodeURIComponent(orderId)}`, (data) => mobileSaleDetailSchema.parse(data), accessToken)
+}
+
+export function fetchSaleLabel(accessToken: string, orderId: string): Promise<{ url: string }> {
+  return read(
+    `/api/mobile/v1/me/sales/${encodeURIComponent(orderId)}/label`,
+    (data) => mobileSaleLabelSchema.parse(data),
+    accessToken,
+  )
 }
 
 export function fetchSupportCases(accessToken: string): Promise<MobileSupportCases> {
