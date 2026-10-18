@@ -77,7 +77,7 @@ import { buildLeashListingPersistFields } from "@/lib/leash-listing-persist-fiel
 import { computeLeashSellSectionCompletion } from "@/lib/leash-sell-section-completion"
 import { sellFormConditionValue } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
-import { navigateAfterListingSave } from "@/lib/sell-flow/navigate-after-listing-save"
+import { returnToScreenAfterListingEdit } from "@/lib/sell-flow/navigate-after-listing-save"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import {
   clearImpersonation,
@@ -866,7 +866,7 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
             durationMs: Date.now() - publishStartedAt,
           })
           toast.success("Listing updated")
-          navigateAfterListingSave(`/l/${updated.slug ?? editId}`)
+          returnToScreenAfterListingEdit(`/l/${updated.slug ?? editId}`)
           return
         }
 
@@ -905,7 +905,7 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
           durationMs: Date.now() - publishStartedAt,
         })
         toast.success("Listing updated")
-        navigateAfterListingSave(`/l/${updated.slug}`)
+        returnToScreenAfterListingEdit(`/l/${updated.slug}`)
         return
       }
 

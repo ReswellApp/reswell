@@ -2,6 +2,7 @@ import { after, NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { getSafeRouteUser, resolveServerAuth } from "@/lib/auth/get-safe-server-user"
 import { expirePublicListingSurfacesAfterEdit } from "@/lib/cache/revalidate-listing-after-edit"
+import { revalidateListingDetailPage } from "@/lib/cache/revalidate-listing-public-detail"
 import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { fetchListingForEditById, fetchOwnedListingForEdit } from "@/lib/db/listingEdit"
 import {
@@ -201,6 +202,7 @@ export async function PUT(
     }>
     catalog_snapshot?: SellFormBoardCatalogSlice
     publishFromDraft?: boolean
+    mediaUnchanged?: boolean
   }
   try {
     body = (await request.json()) as typeof body
@@ -328,11 +330,14 @@ export async function PUT(
     videos: videos as PersistPeerListingVideoOp[],
     catalogSnapshot: body.catalog_snapshot,
     publishFromDraft,
+    mediaUnchanged: body.mediaUnchanged === true,
   })
 
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: result.status })
   }
+
+  revalidateListingDetailPage(listingId, result.slug)
 
   after(() => {
     expirePublicListingSurfacesAfterEdit(listingId, result.slug)

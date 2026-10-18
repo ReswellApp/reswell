@@ -66,7 +66,10 @@ import { buildFinListingPersistFields } from "@/lib/fin-listing-persist-fields"
 import { computeFinSellSectionCompletion } from "@/lib/fin-sell-section-completion"
 import { sellFormConditionValue } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
-import { navigateAfterListingSave } from "@/lib/sell-flow/navigate-after-listing-save"
+import {
+  navigateAfterListingSave,
+  returnToScreenAfterListingEdit,
+} from "@/lib/sell-flow/navigate-after-listing-save"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { singleFinSetupSlugForForm } from "@/lib/listing-fin-setup-tags"
 import {
@@ -1025,7 +1028,11 @@ export default function SellFinsFlow({
               ? "Your fin is live!"
               : "Listing updated",
           )
-          navigateAfterListingSave(`/l/${updated.slug ?? editId}`)
+          if (updated.published === true || listingIsDraft || isLocalOnlyServerDraftSubmit) {
+            navigateAfterListingSave(`/l/${updated.slug ?? editId}`)
+          } else {
+            returnToScreenAfterListingEdit(`/l/${updated.slug ?? editId}`)
+          }
           return
         }
 
@@ -1071,7 +1078,11 @@ export default function SellFinsFlow({
         toast.success(
           listingIsDraft || isLocalOnlyServerDraftSubmit ? "Your fin is live!" : "Listing updated",
         )
-        navigateAfterListingSave(`/l/${updated.slug}`)
+        if (listingIsDraft || isLocalOnlyServerDraftSubmit) {
+          navigateAfterListingSave(`/l/${updated.slug}`)
+        } else {
+          returnToScreenAfterListingEdit(`/l/${updated.slug}`)
+        }
         return
       }
 

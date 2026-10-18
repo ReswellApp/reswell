@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { after } from "next/server"
 import { upsertUserListingBoardModelDataFromSellForm } from "@/lib/db/user-listing-board-model-data"
 import { omitClientAutoPriceDropSchedule } from "@/lib/listing-auto-price-drop"
 import {
@@ -78,6 +79,8 @@ export async function persistPeerListingUpdate(input: {
   videos: PersistPeerListingVideoOp[]
   catalogSnapshot?: SellFormBoardCatalogSlice
   publishFromDraft: boolean
+  /** Photos and video already match the stored rows — skip those round trips. */
+  mediaUnchanged?: boolean
 }): Promise<PersistPeerListingUpdateResult> {
   if (input.existingListing.status === "sold") {
     return { ok: false, status: 400, error: "Sold listings cannot be edited" }
@@ -203,48 +206,50 @@ export async function persistPeerListingUpdate(input: {
         ? (publishSlug ?? "")
         : String(input.existingListing.slug ?? "").trim()
 
-  try {
-    await syncListingImages(
-      input.db,
-      input.listingId,
-      input.removedImageIds,
-      input.images.map((img) => ({
-        id: img.id,
-        url: typeof img.url === "string" ? img.url : "",
-        thumbnailUrl: img.thumbnail_url ?? null,
-        isPrimary: img.is_primary,
-        sortOrder: img.sort_order,
-      })),
-    )
-  } catch (error) {
-    console.error("[listing-update] listing image sync error:", error)
-    return {
-      ok: false,
-      status: 500,
-      error:
-        error instanceof Error && error.message.trim()
-          ? error.message.trim()
-          : "Failed to save listing photos",
-    }
-  }
-
-  if (input.removedVideoIds.length > 0 || input.videos.length > 0) {
+  if (!input.mediaUnchanged) {
     try {
-      await syncListingVideos(
+      await syncListingImages(
         input.db,
         input.listingId,
-        input.removedVideoIds,
-        listingVideosToUpdateOps(input.videos),
+        input.removedImageIds,
+        input.images.map((img) => ({
+          id: img.id,
+          url: typeof img.url === "string" ? img.url : "",
+          thumbnailUrl: img.thumbnail_url ?? null,
+          isPrimary: img.is_primary,
+          sortOrder: img.sort_order,
+        })),
       )
     } catch (error) {
-      console.error("[listing-update] listing video sync error:", error)
+      console.error("[listing-update] listing image sync error:", error)
       return {
         ok: false,
         status: 500,
         error:
           error instanceof Error && error.message.trim()
             ? error.message.trim()
-            : "Failed to save listing video",
+            : "Failed to save listing photos",
+      }
+    }
+
+    if (input.removedVideoIds.length > 0 || input.videos.length > 0) {
+      try {
+        await syncListingVideos(
+          input.db,
+          input.listingId,
+          input.removedVideoIds,
+          listingVideosToUpdateOps(input.videos),
+        )
+      } catch (error) {
+        console.error("[listing-update] listing video sync error:", error)
+        return {
+          ok: false,
+          status: 500,
+          error:
+            error instanceof Error && error.message.trim()
+              ? error.message.trim()
+              : "Failed to save listing video",
+        }
       }
     }
   }
@@ -257,14 +262,21 @@ export async function persistPeerListingUpdate(input: {
     input.catalogSnapshot &&
     typeof input.catalogSnapshot === "object"
   ) {
-    const r = await upsertUserListingBoardModelDataFromSellForm(input.db, {
-      listingId: input.listingId,
-      sellerUserId: input.ownerUserId,
-      form: input.catalogSnapshot,
+    const catalogSnapshot = input.catalogSnapshot
+    const db = input.db
+    const listingId = input.listingId
+    const sellerUserId = input.ownerUserId
+    after(() => {
+      void upsertUserListingBoardModelDataFromSellForm(db, {
+        listingId,
+        sellerUserId,
+        form: catalogSnapshot,
+      }).then((r) => {
+        if (!r.ok) {
+          console.warn("[listing-update] user_listing_board_model_data:", r.error)
+        }
+      })
     })
-    if (!r.ok) {
-      console.warn("[listing-update] user_listing_board_model_data:", r.error)
-    }
   }
 
   return {
