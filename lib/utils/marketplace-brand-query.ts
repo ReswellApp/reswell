@@ -16,6 +16,12 @@ const MARKETPLACE_SEARCH_NOISE_WORDS = new Set([
   "fins",
   "wetsuit",
   "wetsuits",
+  "boardbag",
+  "boardbags",
+  "surfpack",
+  "surfpacks",
+  "leash",
+  "leashes",
   "magazine",
   "magazines",
   "traction",
@@ -73,6 +79,12 @@ const SECTION_INTENT_BY_TOKEN: Record<string, ElasticsearchIndexedListingSection
   fins: "fins",
   wetsuit: "wetsuits",
   wetsuits: "wetsuits",
+  boardbag: "boardbags",
+  boardbags: "boardbags",
+  surfpack: "surfpacks",
+  surfpacks: "surfpacks",
+  leash: "leashes",
+  leashes: "leashes",
   magazine: "magazines",
   magazines: "magazines",
   traction: "traction",
@@ -87,6 +99,9 @@ const SECTION_INTENT_BY_TOKEN: Record<string, ElasticsearchIndexedListingSection
 const SECTION_INTENT_PRIORITY: ElasticsearchIndexedListingSection[] = [
   "fins",
   "wetsuits",
+  "boardbags",
+  "surfpacks",
+  "leashes",
   "magazines",
   "apparel",
   "traction",
@@ -146,6 +161,12 @@ export function marketplaceSectionBrowseHref(
       return "/fins"
     case "wetsuits":
       return "/wetsuits"
+    case "boardbags":
+      return "/boardbags"
+    case "surfpacks":
+      return "/surfpacks"
+    case "leashes":
+      return "/leashes"
     case "magazines":
       return "/magazines"
     case "surfboards":

@@ -11,7 +11,7 @@ export type ExploreDestination = {
 
 /**
  * Starting points on `/explore`. Category routes match the header rail
- * (peer gear that is still hidden from nav stays off this page too).
+ * (peer gear still hidden from nav stays off this page too).
  */
 export const exploreDestinations: readonly ExploreDestination[] = [
   {
@@ -33,6 +33,21 @@ export const exploreDestinations: readonly ExploreDestination[] = [
     label: "Wetsuits",
     href: "/wetsuits",
     description: "Used suits by size, thickness, and brand.",
+  },
+  {
+    label: "Boardbags",
+    href: "/boardbags",
+    description: "Used boardbags listed by surfers, ready to ship or pick up.",
+  },
+  {
+    label: "Surfpacks",
+    href: "/surfpacks",
+    description: "Used surfpacks from surfers who ship or meet locally.",
+  },
+  {
+    label: "Leashes",
+    href: "/leashes",
+    description: "Used leashes by size and brand.",
   },
   {
     label: "Apparel",

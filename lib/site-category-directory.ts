@@ -32,17 +32,20 @@ export const siteHeaderPeerProductNavLinks: CategoryLink[] = [
   { label: "Traction", href: "/traction" },
 ]
 
-/** Peer gear shown in the desktop + mobile main category bar (others hidden until launch). */
+/** Peer gear shown in the desktop + mobile main category bar. Accessories stay off the rail. */
 export const siteHeaderMainPeerProductNavLinks: CategoryLink[] = [
   { label: "Fins", href: "/fins" },
   { label: "Traction", href: "/traction" },
   { label: "Wetsuits", href: "/wetsuits" },
+  { label: "Boardbags", href: "/boardbags" },
+  { label: "Surfpacks", href: "/surfpacks" },
+  { label: "Leashes", href: "/leashes" },
   { label: "Apparel", href: "/apparel" },
   { label: "Magazines", href: "/magazines" },
 ]
 
 /**
- * Full category rail — desktop header (Surfboards root, then Fins, Traction, Wetsuits, Apparel, Magazines).
+ * Full category rail — desktop header (Surfboards root, then peer gear).
  * Shape browse links (`/boards?type=…`) stay in filters — not in the top rail.
  */
 export const siteHeaderDesktopCategoryNavLinks: CategoryLink[] = [

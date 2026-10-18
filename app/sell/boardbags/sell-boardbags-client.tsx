@@ -22,6 +22,14 @@ import {
 } from "@/components/ui/breadcrumb"
 import { LocationPicker } from "@/components/location-picker"
 import { SellFormSection } from "@/components/features/sell/sell-form-section"
+import {
+  takeSellCatalogHandoff,
+  sellCatalogHandoffToSelectionCard,
+} from "@/lib/sell-flow/catalog-handoff"
+import {
+  SellCatalogSelectionCard,
+  type SellCatalogSelectionCardData,
+} from "@/components/features/sell/sell-catalog-selection-card"
 import { SellListingPhotoEmptyDropzone } from "@/components/features/sell/sell-listing-photo-empty-dropzone"
 import { SellSimplePhotoTile } from "@/components/features/sell/sell-simple-photo-tile"
 import { useSimpleListingPhotoRotate } from "@/components/features/sell/hooks/use-simple-listing-photo-rotate"
@@ -257,6 +265,10 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
   const [editListingOwnerId, setEditListingOwnerId] = useState<string | null>(null)
   const [actorIsAdmin, setActorIsAdmin] = useState<boolean | null>(null)
   const [removedImageIds, setRemovedImageIds] = useState<string[]>([])
+  const catalogHandoffTakenRef = useRef(false)
+  const catalogHandoffAppliedRef = useRef(false)
+  const [catalogSelectionCard, setCatalogSelectionCard] =
+    useState<SellCatalogSelectionCardData | null>(null)
 
   const sellVideoReturnPath = useCallback(
     () =>
@@ -311,7 +323,27 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
     onRestoreForm: restoreBoardbagDraftForm,
     setImages: noopSetDraftImages,
     retryPhotoSlot: noopRetryDraftPhotoSlot,
+    skipRestore: () => catalogHandoffAppliedRef.current,
   })
+
+  useEffect(() => {
+    if (catalogHandoffTakenRef.current || editId) return
+    catalogHandoffTakenRef.current = true
+    const handoff = takeSellCatalogHandoff("boardbags")
+    if (!handoff) return
+    catalogHandoffAppliedRef.current = true
+    setCatalogSelectionCard(sellCatalogHandoffToSelectionCard(handoff))
+    setForm((prev) => ({
+      ...prev,
+      title: prev.title.trim() ? prev.title : handoff.suggestedTitle,
+      description:
+        prev.description.trim() || !handoff.suggestedDescription
+          ? prev.description
+          : handoff.suggestedDescription,
+      brand: handoff.brandName,
+      model: handoff.selectionKind === "model" ? handoff.modelName : "",
+    }))
+  }, [editId])
 
   const hydrateBoardbagEdit = useCallback(
     async (listing: OwnedListingForEditRow) => {
@@ -1031,6 +1063,12 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
                 complete={sellSectionCompletion["sell-boardbags-section-photos-title"] === true}
               >
                 <div className="space-y-8">
+                  {catalogSelectionCard && form.brand === catalogSelectionCard.brandName ? (
+                    <SellCatalogSelectionCard
+                      selection={catalogSelectionCard}
+                      onRemove={() => setCatalogSelectionCard(null)}
+                    />
+                  ) : null}
                   <div className="space-y-3">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 space-y-1">

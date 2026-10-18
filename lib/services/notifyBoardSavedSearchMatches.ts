@@ -75,7 +75,7 @@ export async function notifyBoardSavedSearchMatchesForListing(
   const { data: listing, error: listingErr } = await service
     .from("listings")
     .select(
-      "id, user_id, section, status, hidden_from_site, title, description, price, brand, model, dimensions, board_type, condition, brand_id, brand_model_id, slug, fins_setup, fin_system, fin_size, wetsuit_size, apparel_kind, magazine_year, created_at",
+      "id, user_id, section, status, hidden_from_site, title, description, price, brand, model, dimensions, board_type, condition, brand_id, brand_model_id, slug, fins_setup, fin_system, fin_size, wetsuit_size, boardbag_size, surfpack_size, leash_size, apparel_kind, magazine_year, traction_size, created_at",
     )
     .eq("id", listingId)
     .maybeSingle()

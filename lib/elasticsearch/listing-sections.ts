@@ -4,6 +4,9 @@ export const ELASTICSEARCH_INDEXED_LISTING_SECTIONS = [
   "fins",
   "magazines",
   "wetsuits",
+  "boardbags",
+  "surfpacks",
+  "leashes",
   "apparel",
   "traction",
 ] as const
