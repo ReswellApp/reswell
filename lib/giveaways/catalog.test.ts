@@ -40,5 +40,13 @@ describe("custom surfboard entry deadline", () => {
     assert.match(giveaway.scheduleLabel, /tonight at 11:59pm PT/)
     assert.match(giveaway.howItWorks[1]?.body ?? "", /tonight at 11:59pm PT/)
     assert.ok(giveaway.rules.some((rule) => rule.includes("tonight at 11:59pm PT")))
+    assert.ok(
+      giveaway.rules.some(
+        (rule) =>
+          rule.includes("standard shortboard or fish") &&
+          rule.includes("no resin tints") &&
+          rule.includes("built clear"),
+      ),
+    )
   })
 })

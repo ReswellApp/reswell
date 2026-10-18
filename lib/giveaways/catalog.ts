@@ -101,7 +101,7 @@ const WIN_A_SURFBOARD_GIVEAWAY: Giveaway = {
     "Listings must be real surfboards offered for sale on Reswell. Drafts do not count.",
     "No purchase necessary beyond creating a free listing. Shipping or selling the board is not required to stay entered.",
     `Entries close ${WIN_A_SURFBOARD_ENTRY_DEADLINE_COPY}. The winner is selected at random from qualified entries on October 10th and notified by email.`,
-    "Prize is one custom surfboard from any of the prize brands, coordinated by Reswell. The winner may switch makers if they change their mind. Exact model, dimensions, and build details are confirmed with the winner.",
+    "Prize is one custom surfboard from any of the prize brands, coordinated by Reswell. The board is a standard shortboard or fish, built clear, with no resin tints. The winner may switch makers if they change their mind. Exact model and dimensions are confirmed with the winner.",
     "Reswell may disqualify entries that are fake, duplicate, or violate the Terms of Service.",
     `This giveaway is run by Reswell and is not sponsored, endorsed, or administered by ${GIVEAWAY_PRIZE_BRAND_LIST_COPY}.`,
   ],
