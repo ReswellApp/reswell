@@ -973,6 +973,66 @@ export const mobileDashboardSchema = z.object({
   pages: z.array(mobileDashboardPageSchema),
 })
 
+export const mobileEarningsActivitySchema = z.object({
+  id: z.string().uuid(),
+  title: z.string().min(1),
+  status_label: z.string().min(1),
+  amount_usd: z.number(),
+  amount_label: z.string(),
+  created_at: z.string(),
+})
+
+/** Wallet the seller can cash out, plus pending sales and recent ledger rows. */
+export const mobileEarningsSchema = z.object({
+  available_usd: z.number().nonnegative(),
+  available_label: z.string(),
+  ready_usd: z.number().nonnegative(),
+  ready_label: z.string(),
+  pending_usd: z.number().nonnegative(),
+  pending_label: z.string(),
+  cashed_out_usd: z.number().nonnegative(),
+  cashed_out_label: z.string(),
+  earned_last_30d_usd: z.number().nonnegative(),
+  earned_last_30d_label: z.string(),
+  payout_label: z.string(),
+  payout_detail: z.string(),
+  cash_out_ready: z.boolean(),
+  minimum_usd: z.number().positive(),
+  instant_fee_rate: z.number().nonnegative(),
+  banks: z.array(
+    z.object({
+      id: z.string().regex(/^ba_/),
+      label: z.string().min(1),
+      default: z.boolean(),
+    }),
+  ),
+  activity: z.array(mobileEarningsActivitySchema),
+})
+
+export type MobileEarnings = z.infer<typeof mobileEarningsSchema>
+
+export const mobileCashOutBodySchema = z.object({
+  amount: z.coerce.number().finite().min(10, "Minimum payout amount is $10.00"),
+  speed: z.enum(["standard", "instant"]).default("standard"),
+  externalAccountId: z
+    .string()
+    .trim()
+    .regex(/^ba_/)
+    .optional(),
+})
+
+export const mobileCashOutResultSchema = z.object({
+  message: z.string(),
+  amount_label: z.string(),
+  available_label: z.string(),
+})
+
+export type MobileCashOutResult = z.infer<typeof mobileCashOutResultSchema>
+
+export const mobilePayoutOnboardingSchema = z.object({
+  url: z.string().url(),
+})
+
 export const mobileSupportCaseSchema = z.object({
   id: z.string().uuid(),
   status: z.string(),
@@ -987,6 +1047,15 @@ export const mobileSupportCaseSchema = z.object({
 
 export const mobileSupportCasesSchema = z.object({
   cases: z.array(mobileSupportCaseSchema),
+})
+
+export const mobileSupportCreateBodySchema = z.object({
+  subject: z.string().trim().min(3).max(120),
+  body: z.string().trim().min(10).max(4000),
+})
+
+export const mobileSupportCreateResultSchema = z.object({
+  id: z.string().uuid(),
 })
 
 export const mobileSupportMessageSchema = z.object({
@@ -1176,6 +1245,68 @@ export const mobileSaleSchema = mobileOrderSchema.extend({
 export const mobileSalesSchema = z.object({
   sales: z.array(mobileSaleSchema),
 })
+
+export const mobileMyListingSchema = z.object({
+  id: z.string().uuid(),
+  slug: z.string().nullable(),
+  title: z.string(),
+  price_label: z.string(),
+  status: z.string(),
+  status_label: z.string(),
+  image_url: z.string().nullable(),
+  views: z.number().int().nonnegative(),
+  cart_count: z.number().int().nonnegative(),
+  favorite_count: z.number().int().nonnegative(),
+  on_vacation: z.boolean(),
+  can_vacation: z.boolean(),
+  can_relist: z.boolean(),
+  created_label: z.string(),
+})
+
+export const mobileMyListingsSchema = z.object({
+  total_listings: z.number().int().nonnegative(),
+  total_views: z.number().int().nonnegative(),
+  in_carts: z.number().int().nonnegative(),
+  saved: z.number().int().nonnegative(),
+  listings: z.array(mobileMyListingSchema),
+})
+
+export type MobileMyListings = z.infer<typeof mobileMyListingsSchema>
+
+export const mobileListingVacationBodySchema = z.object({
+  enabled: z.boolean(),
+  listing_id: z.string().uuid().optional(),
+})
+
+export const mobileListingRelistBodySchema = z.object({
+  listing_id: z.string().uuid(),
+})
+
+export const mobileListingActionResultSchema = z.object({
+  message: z.string(),
+})
+
+export const mobileInboxItemSchema = z.object({
+  id: z.string().min(1),
+  kind: z.enum(["message", "notification"]),
+  title: z.string(),
+  preview: z.string().nullable(),
+  created_at: z.string(),
+  time_label: z.string(),
+  unread: z.boolean(),
+  image_url: z.string().nullable(),
+  bucket: z.enum(["selling", "buying", "activity"]),
+  conversation_id: z.string().uuid().nullable(),
+  listing_id: z.string().uuid().nullable(),
+  support_case_id: z.string().uuid().nullable(),
+})
+
+export const mobileInboxSchema = z.object({
+  unread_count: z.number().int().nonnegative(),
+  items: z.array(mobileInboxItemSchema),
+})
+
+export type MobileInbox = z.infer<typeof mobileInboxSchema>
 
 export const mobileConversationPreviewSchema = z.object({
   id: z.string().uuid(),

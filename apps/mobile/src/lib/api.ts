@@ -4,7 +4,10 @@ import { Platform } from "react-native"
 import { publicApiUrl } from "@/lib/public-env"
 import {
   mobileCartResultSchema,
+  mobileCashOutResultSchema,
   mobileDashboardSchema,
+  mobileEarningsSchema,
+  mobilePayoutOnboardingSchema,
   mobileCartSchema,
   mobileConversationDetailSchema,
   mobileConversationsSchema,
@@ -16,8 +19,11 @@ import {
   mobileSellerResourceSchema,
   mobileCategorySchema,
   mobileHomeSchema,
+  mobileInboxSchema,
   mobileMarketplaceFeedSchema,
+  mobileListingActionResultSchema,
   mobileListingDetailSchema,
+  mobileMyListingsSchema,
   mobileListingRailsSchema,
   mobileListingsPageSchema,
   mobileMeSchema,
@@ -42,6 +48,7 @@ import {
   mobileShopifyActionResultSchema,
   mobileShopifySchema,
   mobileSupportCasesSchema,
+  mobileSupportCreateResultSchema,
   mobileSupportReplyResultSchema,
   mobileSupportThreadSchema,
   mobileSellBoardSpecsSchema,
@@ -57,7 +64,9 @@ import {
   type MobileCategory,
   type MobileCategoryListingsQuery,
   type MobileCart,
+  type MobileCashOutResult,
   type MobileDashboard,
+  type MobileEarnings,
   type MobileCartResult,
   type MobileConversationDetail,
   type MobileConversationPreview,
@@ -66,7 +75,9 @@ import {
   type MobileFollowResult,
   type MobileFollowing,
   type MobileHome,
+  type MobileInbox,
   type MobileListingDetail,
+  type MobileMyListings,
   type MobileListingRails,
   type MobileMarketplaceFeed,
   type MobileMarketplaceFeedTab,
@@ -332,6 +343,31 @@ export function fetchListings(
   return read(`/api/mobile/v1/listings?${params.toString()}`, (data) => mobileListingsPageSchema.parse(data))
 }
 
+export function fetchMyListings(accessToken: string): Promise<MobileMyListings> {
+  return read("/api/mobile/v1/me/listings", (data) => mobileMyListingsSchema.parse(data), accessToken)
+}
+
+export function setListingVacation(
+  accessToken: string,
+  body: { enabled: boolean; listing_id?: string },
+): Promise<{ message: string }> {
+  return read(
+    "/api/mobile/v1/me/listings/vacation",
+    (data) => mobileListingActionResultSchema.parse(data),
+    accessToken,
+    body,
+  )
+}
+
+export function relistListing(accessToken: string, listingId: string): Promise<{ message: string }> {
+  return read(
+    "/api/mobile/v1/me/listings/relist",
+    (data) => mobileListingActionResultSchema.parse(data),
+    accessToken,
+    { listing_id: listingId },
+  )
+}
+
 export function fetchProfileListings(
   slug: string,
   query?: { offset?: number; status?: "current" | "sold" },
@@ -479,8 +515,31 @@ export function fetchMe(accessToken: string): Promise<MobileMe> {
   return read("/api/mobile/v1/me", (data) => mobileMeSchema.parse(data), accessToken)
 }
 
+export function fetchEarnings(accessToken: string): Promise<MobileEarnings> {
+  return read("/api/mobile/v1/me/earnings", (data) => mobileEarningsSchema.parse(data), accessToken)
+}
+
+export function startPayoutOnboarding(accessToken: string): Promise<{ url: string }> {
+  return read("/api/mobile/v1/me/earnings/onboarding", (data) => mobilePayoutOnboardingSchema.parse(data), accessToken, {})
+}
+
+export function cashOutEarnings(
+  accessToken: string,
+  body: { amount: number; speed: "standard" | "instant"; externalAccountId?: string },
+): Promise<MobileCashOutResult> {
+  return read("/api/mobile/v1/me/earnings/cash-out", (data) => mobileCashOutResultSchema.parse(data), accessToken, body)
+}
+
 export function fetchDashboard(accessToken: string): Promise<MobileDashboard> {
   return read("/api/mobile/v1/me/dashboard", (data) => mobileDashboardSchema.parse(data), accessToken)
+}
+
+export function fetchMyReviews(accessToken: string, offset = 0): Promise<MobileReviewsPage> {
+  return read(
+    `/api/mobile/v1/me/reviews?limit=20&offset=${offset}`,
+    (data) => mobileReviewsPageSchema.parse(data),
+    accessToken,
+  )
 }
 
 export function fetchFollowers(accessToken: string): Promise<MobileFollowing> {
@@ -513,6 +572,10 @@ export function fetchSales(accessToken: string): Promise<{ sales: MobileSale[] }
 
 export function fetchSupportCases(accessToken: string): Promise<MobileSupportCases> {
   return read("/api/mobile/v1/me/support", (data) => mobileSupportCasesSchema.parse(data), accessToken)
+}
+
+export function openSupportCase(accessToken: string, body: { subject: string; body: string }): Promise<{ id: string }> {
+  return read("/api/mobile/v1/me/support", (data) => mobileSupportCreateResultSchema.parse(data), accessToken, body)
 }
 
 export function fetchSupportThread(accessToken: string, caseId: string): Promise<MobileSupportThread> {
@@ -554,6 +617,10 @@ export function fetchShopify(accessToken: string): Promise<MobileShopify> {
 
 export function actOnShopify(accessToken: string, body: MobileShopifyActionBody): Promise<MobileShopifyActionResult> {
   return read("/api/mobile/v1/me/shopify", (data) => mobileShopifyActionResultSchema.parse(data), accessToken, body)
+}
+
+export function fetchInbox(accessToken: string): Promise<MobileInbox> {
+  return read("/api/mobile/v1/me/inbox", (data) => mobileInboxSchema.parse(data), accessToken)
 }
 
 export function fetchConversations(accessToken: string): Promise<{ conversations: MobileConversationPreview[] }> {

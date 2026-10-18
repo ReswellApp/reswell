@@ -1,4 +1,4 @@
-import { Stack, useLocalSearchParams } from "expo-router"
+import { Stack, useLocalSearchParams, useRouter } from "expo-router"
 import { useCallback, useState } from "react"
 import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native"
 import { AccountState } from "@/components/account-state"
@@ -9,6 +9,7 @@ import { fontFamily, useReswellColors } from "@/theme"
 
 export default function ConversationScreen() {
   const colors = useReswellColors()
+  const router = useRouter()
   const { session } = useAuth()
   const { id } = useLocalSearchParams<{ id: string }>()
   const [draft, setDraft] = useState("")
@@ -35,6 +36,13 @@ export default function ConversationScreen() {
     >
       <Stack.Screen options={{ title: data?.listing_title ?? data?.other_name ?? "Messages" }} />
       <View style={styles.thread}>
+      {data?.listing_id ? (
+        <Pressable onPress={() => router.push({ pathname: "/listing/[id]", params: { id: data.listing_id ?? "" } })} style={styles.listingLink}>
+          <Text style={[styles.listingLinkLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}>
+            View {data.listing_title ?? "listing"}
+          </Text>
+        </Pressable>
+      ) : null}
       <FlatList
         data={messages}
         keyExtractor={(item) => item.id}
@@ -105,6 +113,8 @@ const styles = StyleSheet.create({
   theirs: { alignSelf: "flex-start" },
   body: { fontSize: 16, lineHeight: 22, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 10, overflow: "hidden" },
   thread: { flex: 1 },
+  listingLink: { paddingHorizontal: 16, paddingTop: 12 },
+  listingLinkLabel: { fontSize: 14, fontWeight: "700" },
   composer: { flexDirection: "row", alignItems: "center", gap: 12, borderTopWidth: StyleSheet.hairlineWidth, padding: 12 },
   input: { flex: 1, fontSize: 16, paddingVertical: 8 },
   send: { fontSize: 16, fontWeight: "600" },

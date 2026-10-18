@@ -39,7 +39,7 @@ export function ListingSellerPanel({ listing }: { listing: MobileListingDetail }
       <MessageButton listingId={listing.id} open={contactOpen} onOpen={() => setContactOpen(true)} />
       {seller.seller_slug ? (
         <Link href={{ pathname: "/profile/[slug]", params: { slug: seller.seller_slug } }} asChild>
-          <Pressable style={[styles.button, { backgroundColor: colors.image }]}>
+          <Pressable style={StyleSheet.flatten([styles.button, { backgroundColor: colors.image }])}>
             <Text style={[styles.buttonLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}>
               View more from this shop
             </Text>

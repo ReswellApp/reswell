@@ -110,14 +110,11 @@ export async function listMobileProfileListingsService(
   }
 }
 
-export async function listMobileProfileReviewsService(
-  slug: string,
+export async function listMobileReviewsForUserService(
+  userId: string,
   query: { limit: number; offset: number },
 ): Promise<MobileApiResult<MobileReviewsPage>> {
-  const profile = await loadPublicMobileProfileRow(slug)
-  if (!profile.ok) return profile
-
-  const listed = await listMobileReviewRows(profile.data.id, query.limit, query.offset)
+  const listed = await listMobileReviewRows(userId, query.limit, query.offset)
   if (!listed.ok) {
     console.error("[mobile-api] reviews failed", {
       timestamp: new Date().toISOString(),
@@ -128,7 +125,7 @@ export async function listMobileProfileReviewsService(
 
   const reviews: MobileReview[] = []
   for (const row of listed.rows) {
-    const review = toMobileReview(row, profile.data.id)
+    const review = toMobileReview(row, userId)
     if (review) reviews.push(review)
   }
   const page = {
@@ -140,6 +137,15 @@ export async function listMobileProfileReviewsService(
   const parsed = mobileReviewsPageSchema.safeParse(page)
   if (!parsed.success) return { ok: false, status: 500, error: "Unable to load reviews right now" }
   return { ok: true, data: parsed.data }
+}
+
+export async function listMobileProfileReviewsService(
+  slug: string,
+  query: { limit: number; offset: number },
+): Promise<MobileApiResult<MobileReviewsPage>> {
+  const profile = await loadPublicMobileProfileRow(slug)
+  if (!profile.ok) return profile
+  return listMobileReviewsForUserService(profile.data.id, query)
 }
 
 export async function listMobileFavoritesService(

@@ -5,6 +5,7 @@ import {
   mobileShopifyActionBodySchema,
   mobileShopifySchema,
   mobileSupportCasesSchema,
+  mobileSupportCreateResultSchema,
   mobileSupportReplyResultSchema,
   mobileSupportThreadSchema,
   type MobileBalanceSheet,
@@ -18,6 +19,7 @@ import {
   type MobileSupportReplyResult,
   type MobileSupportThread,
 } from "@reswell/api-contract"
+import { createSupportCaseWithOpeningMessage } from "@/lib/services/supportCaseOpen"
 import { shipperJobActions, supportStatusLabel } from "@/lib/services/mobileDashboardSectionMap"
 import {
   getCoastalShipperDashboard,
@@ -73,6 +75,29 @@ export async function listMobileSupportCasesService(
     })),
   })
   if (!parsed.success) return { ok: false, status: 500, error: "Unable to load support right now" }
+  return { ok: true, data: parsed.data }
+}
+
+export async function openMobileSupportCaseService(
+  supabase: SupabaseClient,
+  user: User,
+  input: { subject: string; body: string },
+): Promise<MobileApiResult<{ id: string }>> {
+  const opened = await createSupportCaseWithOpeningMessage(supabase, {
+    kind: "general",
+    subject: input.subject,
+    preview: input.body.slice(0, 180),
+    body: input.body,
+    requester_user_id: user.id,
+    requester_email: user.email ?? null,
+    requester_role: "member",
+    authorUserId: user.id,
+    source_channel: "mobile",
+    opened_by: "requester",
+  })
+  if (!opened) return { ok: false, status: 500, error: "Unable to open a support case right now" }
+  const parsed = mobileSupportCreateResultSchema.safeParse({ id: opened.id })
+  if (!parsed.success) return { ok: false, status: 500, error: "Unable to open a support case right now" }
   return { ok: true, data: parsed.data }
 }
 

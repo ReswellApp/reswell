@@ -2,10 +2,11 @@ import { Stack, useRouter } from "expo-router"
 import { useCallback, useEffect, useState } from "react"
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
-import type { MobileListingCard, MobileOrder } from "@reswell/api-contract"
-import { AccountRow } from "@/components/account-row"
+import type { MobileFavorite, MobileListingCard, MobileOrder } from "@reswell/api-contract"
 import { ListingCard } from "@/components/listing-card"
 import { MeProfileHeader, type MeTab } from "@/components/me-profile-header"
+import { OrderAccountCard } from "@/components/order-account-card"
+import { ShopListingTile } from "@/components/shop-listing-tile"
 import { fetchDashboard, fetchFavorites, fetchProfileListings, fetchPurchases } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
 import { useAccountResource } from "@/lib/use-account-resource"
@@ -22,8 +23,8 @@ export default function AccountScreen() {
   const [tab, setTab] = useState<MeTab>("shop")
   const [shop, setShop] = useState<MobileListingCard[]>([])
   const [sold, setSold] = useState<MobileListingCard[] | null>(null)
-  const [likes, setLikes] = useState<MobileListingCard[] | null>(null)
   const [purchases, setPurchases] = useState<MobileOrder[] | null>(null)
+  const [likes, setLikes] = useState<MobileFavorite[] | null>(null)
   const [inventoryError, setInventoryError] = useState<string | null>(null)
   const [shopLoaded, setShopLoaded] = useState(false)
 
@@ -56,20 +57,21 @@ export default function AccountScreen() {
 
   function showTab(next: MeTab) {
     setTab(next)
+    if (!token) return
     if (next === "sold" && slug && !sold) {
       fetchProfileListings(slug, { status: "sold" })
         .then((page) => setSold(page.listings))
         .catch(() => setSold([]))
     }
-    if (next === "likes" && token && !likes) {
-      fetchFavorites(token)
-        .then((page) => setLikes(page.favorites.map((item) => item.listing)))
-        .catch(() => setLikes([]))
-    }
-    if (next === "purchases" && token && !purchases) {
+    if (next === "purchases" && !purchases) {
       fetchPurchases(token)
         .then((page) => setPurchases(page.orders))
         .catch(() => setPurchases([]))
+    }
+    if (next === "likes" && !likes) {
+      fetchFavorites(token)
+        .then((page) => setLikes(page.favorites))
+        .catch(() => setLikes([]))
     }
   }
 
@@ -86,8 +88,21 @@ export default function AccountScreen() {
   }
 
   const name = dashboard?.display_name || "Account"
-  const listings = tab === "sold" ? (sold ?? []) : tab === "likes" ? (likes ?? []) : shop
-  const grid: Array<MobileListingCard | null> = listings.length % 2 === 1 ? [...listings, null] : listings
+  const listings = tab === "sold" ? (sold ?? []) : tab === "shop" ? shop : []
+  const listingCount = dashboard?.active_listing_count ?? shop.length
+  const hasShop = listingCount > 0 || (dashboard?.wallet_balance_usd ?? 0) > 0
+  const likeCards = likes ?? []
+  const purchaseCards = purchases ?? []
+  const grid: Array<MobileListingCard | null> =
+    tab === "likes"
+      ? likeCards.length % 2 === 1
+        ? [...likeCards.map((favorite) => favorite.listing), null]
+        : likeCards.map((favorite) => favorite.listing)
+      : tab === "purchases"
+        ? []
+        : listings.length % 2 === 1
+          ? [...listings, null]
+          : listings
   const header = (
     <MeProfileHeader
       username={slug || name}
@@ -98,22 +113,24 @@ export default function AccountScreen() {
       followerCount={dashboard?.follower_count ?? 0}
       followingCount={dashboard?.following_count ?? 0}
       reviewCount={dashboard?.review_count ?? 0}
-      listingCount={dashboard?.active_listing_count ?? shop.length}
+      listingCount={listingCount}
+      showEarnings={hasShop}
       tab={tab}
       onTab={showTab}
       onSell={() => router.push("/sell")}
       onMenu={() => router.push("/account/menu")}
       onFollowers={() => router.push("/account/followers")}
+      onReviews={() => router.push("/account/reviews")}
       onFollowing={() => router.push("/account/following")}
-      onEarnings={() => router.push("/account/sales")}
-      earningsLabel={dashboard?.earnings_lifetime_label ?? "Earnings"}
+      onEarnings={() => router.push("/account/earnings")}
+      availableLabel={dashboard?.wallet_balance_label ?? "$0.00"}
     />
   )
   const empty = (
     <EmptyTab
       tab={tab}
       error={inventoryError}
-      loading={tab === "shop" ? !shopLoaded : tab === "sold" ? sold === null : tab === "likes" ? likes === null : purchases === null}
+      loading={tab === "shop" ? !shopLoaded : tab === "sold" ? sold === null : tab === "purchases" ? purchases === null : likes === null}
       onSell={() => router.push("/sell")}
     />
   )
@@ -125,46 +142,36 @@ export default function AccountScreen() {
         <Text style={[styles.emptyBody, { color: colors.foreground, fontFamily: fontFamily.text }]}>{dashboardResource.error}</Text>
       ) : dashboardResource.loading && !dashboard ? (
         <ActivityIndicator style={styles.centered} color={colors.foreground} />
-      ) : tab === "purchases" ? (
+      ) : (
         <FlatList
-          data={purchases ?? []}
-          keyExtractor={(item) => item.id}
+          key={tab === "purchases" ? "purchases" : "grid"}
+          data={tab === "purchases" ? purchaseCards : grid}
+          keyExtractor={(item, index) => (item && "order_number" in item ? item.id : item?.id) ?? `spacer-${index}`}
+          numColumns={tab === "purchases" ? 1 : 2}
+          columnWrapperStyle={tab !== "purchases" && grid.length > 0 ? styles.row : undefined}
           contentContainerStyle={styles.list}
           ListHeaderComponent={header}
           ListEmptyComponent={empty}
           renderItem={({ item }) => {
-            const listingId = item.listing_id
+            if (!item) return <View style={styles.spacer} />
+            if ("order_number" in item) return <OrderAccountCard order={item} />
+            if (tab === "likes") {
+              return (
+                <ListingCard
+                  item={item}
+                  initialFavorited
+                  onPress={() => router.push({ pathname: "/listing/[id]", params: { id: item.slug || item.id } })}
+                />
+              )
+            }
             return (
-              <AccountRow
-                title={item.listing_title}
-                subtitle={`${item.status_label} · ${item.counterparty_name}`}
-                meta={item.amount_label}
-                imageUrl={item.listing_image_url}
-                onPress={listingId ? () => router.push({ pathname: "/listing/[id]", params: { id: listingId } }) : undefined}
+              <ShopListingTile
+                item={item}
+                status={tab === "sold" ? "Sold" : "Active"}
+                onPress={() => router.push({ pathname: "/listing/[id]", params: { id: item.slug || item.id } })}
               />
             )
           }}
-        />
-      ) : (
-        <FlatList
-          data={grid}
-          keyExtractor={(item, index) => item?.id ?? `spacer-${index}`}
-          numColumns={2}
-          columnWrapperStyle={grid.length > 0 ? styles.row : undefined}
-          contentContainerStyle={styles.list}
-          ListHeaderComponent={header}
-          ListEmptyComponent={empty}
-          renderItem={({ item }) =>
-            item ? (
-              <ListingCard
-                item={item}
-                badge={tab === "sold" ? "Sold" : undefined}
-                onPress={() => router.push({ pathname: "/listing/[id]", params: { id: item.slug || item.id } })}
-              />
-            ) : (
-              <View style={styles.spacer} />
-            )
-          }
         />
       )}
     </View>
@@ -176,6 +183,12 @@ function EmptyTab({ tab, error, loading, onSell }: { tab: MeTab; error: string |
   if (loading) return <ActivityIndicator color={colors.foreground} style={styles.centered} />
   if (error && tab === "shop") {
     return <Text style={[styles.emptyBody, { color: colors.muted, fontFamily: fontFamily.text }]}>{error}</Text>
+  }
+  if (tab === "purchases") {
+    return <Text style={[styles.emptyBody, { color: colors.muted, fontFamily: fontFamily.text }]}>No purchases yet.</Text>
+  }
+  if (tab === "likes") {
+    return <Text style={[styles.emptyBody, { color: colors.muted, fontFamily: fontFamily.text }]}>No liked listings yet.</Text>
   }
   if (tab === "shop") {
     return (
@@ -190,8 +203,7 @@ function EmptyTab({ tab, error, loading, onSell }: { tab: MeTab; error: string |
       </View>
     )
   }
-  const copy = tab === "sold" ? "No sold listings yet." : tab === "likes" ? "No liked listings yet." : "No purchases yet."
-  return <Text style={[styles.emptyBody, { color: colors.muted, fontFamily: fontFamily.text }]}>{copy}</Text>
+  return <Text style={[styles.emptyBody, { color: colors.muted, fontFamily: fontFamily.text }]}>No sold listings yet.</Text>
 }
 
 function initials(name: string): string {

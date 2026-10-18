@@ -15,7 +15,7 @@ type TabItem = {
   label: string
   icon: TabIcon
   activeIcon?: TabIcon
-  href?: "/" | "/feed" | "/sell" | "/favorites" | "/account"
+  href?: "/" | "/feed" | "/sell" | "/inbox" | "/account"
 }
 
 const TABS: TabItem[] = [
@@ -38,10 +38,10 @@ const TABS: TabItem[] = [
     href: "/sell",
   },
   {
-    label: "Favorites",
-    icon: { ios: "heart", android: "favorite_border" },
-    activeIcon: { ios: "heart.fill", android: "favorite" },
-    href: "/favorites",
+    label: "Inbox",
+    icon: { ios: "envelope", android: "mail" },
+    activeIcon: { ios: "envelope.fill", android: "mail" },
+    href: "/inbox",
   },
   {
     label: "Me",
@@ -55,7 +55,7 @@ function tabIsActive(pathname: string, href: TabItem["href"]): boolean {
   if (href === "/") return pathname === "/" || pathname === ""
   if (href === "/feed") return pathname === "/feed"
   if (href === "/sell") return pathname === "/sell" || pathname.startsWith("/sell/")
-  if (href === "/favorites") return pathname === "/favorites"
+  if (href === "/inbox") return pathname === "/inbox" || pathname.startsWith("/account/messages")
   if (href === "/account") return pathname === "/account" || pathname.startsWith("/account/")
   return false
 }
@@ -113,7 +113,7 @@ export function FloatingTabBar() {
                 if (href === "/" && (pathname === "/" || pathname === "")) return
                 if (href === "/feed" && pathname === "/feed") return
                 if (href === "/sell" && pathname === "/sell") return
-                if (href === "/favorites" && pathname === "/favorites") return
+                if (href === "/inbox" && pathname === "/inbox") return
                 if (href === "/account" && pathname === "/account") return
                 router.navigate(href)
               }}

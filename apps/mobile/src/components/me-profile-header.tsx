@@ -22,14 +22,16 @@ export function MeProfileHeader({
   followingCount,
   reviewCount,
   listingCount,
+  showEarnings,
   tab,
   onTab,
   onSell,
   onMenu,
   onFollowing,
   onFollowers,
+  onReviews,
   onEarnings,
-  earningsLabel,
+  availableLabel,
 }: {
   username: string
   avatarUrl: string | null
@@ -40,14 +42,17 @@ export function MeProfileHeader({
   followingCount: number
   reviewCount: number
   listingCount: number
+  /** Hide the available chip when this account has no shop and nothing to cash out. */
+  showEarnings: boolean
   tab: MeTab
   onTab: (tab: MeTab) => void
   onSell: () => void
   onMenu: () => void
   onFollowing: () => void
   onFollowers: () => void
+  onReviews: () => void
   onEarnings: () => void
-  earningsLabel: string
+  availableLabel: string
 }) {
   const colors = useReswellColors()
   return (
@@ -92,20 +97,23 @@ export function MeProfileHeader({
           <Stat
             label={reviewCount === 0 ? "no reviews" : reviewCount === 1 ? "1 review" : `${reviewCount} reviews`}
             icon
+            onPress={onReviews}
           />
         </View>
       </View>
-      <Pressable onPress={onEarnings} style={[styles.earnings, { backgroundColor: colors.image }]}>
-        <SymbolView name={{ ios: "chart.bar", android: "bar_chart", web: "bar_chart" }} size={14} tintColor={colors.foreground} />
-        <Text style={[styles.earningsLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}>{earningsLabel}</Text>
-      </Pressable>
-      {about ? <Text style={[styles.about, { color: colors.foreground, fontFamily: fontFamily.text }]}>{about}</Text> : null}
+      {showEarnings ? (
+        <Pressable onPress={onEarnings} style={[styles.earnings, { backgroundColor: colors.image }]}>
+          <SymbolView name={{ ios: "chart.bar", android: "bar_chart", web: "bar_chart" }} size={14} tintColor={colors.foreground} />
+          <Text style={[styles.earningsLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}>Available {availableLabel}</Text>
+        </Pressable>
+      ) : null}
+      {about ? <Text style={[styles.about, { color: colors.muted, fontFamily: fontFamily.text }]}>{about}</Text> : null}
       {websiteUrl ? (
         <Pressable onPress={() => void Linking.openURL(websiteUrl)}>
           <Text style={[styles.website, { color: colors.foreground, fontFamily: fontFamily.text }]}>{websiteUrl}</Text>
         </Pressable>
       ) : null}
-      {tab === "shop" ? (
+      {tab === "shop" && listingCount > 0 ? (
         <Text style={[styles.active, { color: colors.foreground, fontFamily: fontFamily.headline }]}>
           Active ({listingCount} {listingCount === 1 ? "listing" : "listings"})
         </Text>
@@ -137,7 +145,7 @@ const styles = StyleSheet.create({
   topActions: { width: 72, flexDirection: "row", justifyContent: "flex-end", gap: 16 },
   tabs: { flexDirection: "row", borderBottomWidth: StyleSheet.hairlineWidth },
   tab: { flex: 1, alignItems: "center", borderBottomWidth: 2, paddingVertical: 12 },
-  tabLabel: { fontSize: 15, fontWeight: "700" },
+  tabLabel: { fontSize: 14, fontWeight: "700" },
   identity: { flexDirection: "row", alignItems: "center", gap: 16, paddingHorizontal: 16, paddingTop: 20 },
   avatar: { width: 84, height: 84, borderRadius: 42 },
   initials: { alignItems: "center", justifyContent: "center" },
