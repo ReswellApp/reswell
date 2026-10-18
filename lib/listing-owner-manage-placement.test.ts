@@ -12,7 +12,8 @@ describe("listing owner manage placement", () => {
       new URL("../components/surfboard-listing-detail-page.tsx", import.meta.url),
       "utf8",
     )
-    assert.doesNotMatch(island, /ListingOwnerManageActionsView/)
-    assert.match(surfboard, /<ListingOwnerManageActions/)
+    assert.doesNotMatch(island, /ListingOwnerManageActionsView|ListingSoldOwnerNotice/)
+    assert.match(surfboard, /<ListingOwnerHydratedManageActions/)
+    assert.doesNotMatch(surfboard, /<ListingOwnerManageActions[\s>]/)
   })
 })
