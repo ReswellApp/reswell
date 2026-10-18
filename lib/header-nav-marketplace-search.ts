@@ -8,7 +8,7 @@ import { marketplaceBoardStyleBrowseHref } from "@/lib/utils/marketplace-style-q
 
 /** Marketplace-wide copy for main nav — same on every route. */
 export function headerNavSearchPlaceholder(_section?: string): string {
-  return "Search surfboards, fins, wetsuits or apparel…"
+  return "Search surfboards, fins, bags, packs, or leashes…"
 }
 
 /** Listing sections queried by nav typeahead for a given scope token. */
@@ -18,6 +18,9 @@ export function marketplaceSearchSuggestSections(section: string): string[] {
   if (
     normalized === "fins" ||
     normalized === "wetsuits" ||
+    normalized === "boardbags" ||
+    normalized === "surfpacks" ||
+    normalized === "leashes" ||
     normalized === "magazines" ||
     normalized === "apparel" ||
     normalized === "traction"
@@ -35,6 +38,9 @@ export type NavSearchSuggestSectionKey =
   | "surfboards"
   | "fins"
   | "wetsuits"
+  | "boardbags"
+  | "surfpacks"
+  | "leashes"
   | "magazines"
   | "apparel"
   | "traction"
@@ -46,6 +52,9 @@ export function navSearchSuggestSectionKey(section: string): NavSearchSuggestSec
   if (
     normalized === "fins" ||
     normalized === "wetsuits" ||
+    normalized === "boardbags" ||
+    normalized === "surfpacks" ||
+    normalized === "leashes" ||
     normalized === "magazines" ||
     normalized === "apparel" ||
     normalized === "traction"
