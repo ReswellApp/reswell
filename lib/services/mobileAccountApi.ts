@@ -41,7 +41,10 @@ import {
 } from "@/lib/db/mobile-account"
 import { listMobileListingRows, type MobileListingRow } from "@/lib/db/mobile-listings"
 import { fetchDashboardOffersPartitioned } from "@/lib/db/offers-dashboard"
+import { getSellerReviewSummary } from "@/lib/db/seller-reviews"
 import { getPublicSellerDisplayName } from "@/lib/listing-labels"
+import { absolutePublicMediaUrl } from "@/lib/site-metadata"
+import { parseOrderPlacedMessageMetadata } from "@/lib/validations/order-placed-message-metadata"
 import { mobileSaleHasLabel } from "@/lib/services/mobileSaleLabel"
 import { resolveSellerOrderDisplayAmounts } from "@/lib/seller-order-display-amounts"
 import { isListingPubliclyVisible, isListingVisibleInSavedList } from "@/lib/listing-public-visibility"
@@ -421,9 +424,9 @@ export async function getMobileConversationService(
       listing_id,
       buyer_id,
       seller_id,
-      listing:listings ( title ),
-      buyer:profiles!conversations_buyer_id_fkey ( display_name ),
-      seller:profiles!conversations_seller_id_fkey ( display_name )
+      listing:listings ( title, slug, primary_image_url, primary_thumbnail_url ),
+      buyer:profiles!conversations_buyer_id_fkey ( display_name, avatar_url, created_at ),
+      seller:profiles!conversations_seller_id_fkey ( display_name, avatar_url, created_at )
     `,
     )
     .eq("id", conversationId)
@@ -431,44 +434,101 @@ export async function getMobileConversationService(
 
   if (error || !conversation) return { ok: false, status: 500, error: "Unable to load messages right now" }
 
-  const listed = await listMobileMessageRows(supabase, conversationId)
-  if (!listed.ok) return { ok: false, status: 500, error: "Unable to load messages right now" }
-
   const header = conversation as {
     id: string
     listing_id: string | null
     buyer_id: string
     seller_id: string
-    listing: { title?: string | null } | { title?: string | null }[] | null
-    buyer: { display_name?: string | null } | { display_name?: string | null }[] | null
-    seller: { display_name?: string | null } | { display_name?: string | null }[] | null
+    listing:
+      | { title?: string | null; slug?: string | null; primary_image_url?: string | null; primary_thumbnail_url?: string | null }
+      | { title?: string | null; slug?: string | null; primary_image_url?: string | null; primary_thumbnail_url?: string | null }[]
+      | null
+    buyer: ThreadProfile | ThreadProfile[] | null
+    seller: ThreadProfile | ThreadProfile[] | null
   }
-  const other = header.buyer_id === userId ? oneProfile(header.seller) : oneProfile(header.buyer)
+  const viewerIsSeller = header.seller_id === userId
+  const otherId = viewerIsSeller ? header.buyer_id : header.seller_id
+  const [listed, reviews] = await Promise.all([
+    listMobileMessageRows(supabase, conversationId),
+    getSellerReviewSummary(supabase, otherId),
+  ])
+  if (!listed.ok) return { ok: false, status: 500, error: "Unable to load messages right now" }
+
+  const other = viewerIsSeller ? oneProfile(header.buyer) : oneProfile(header.seller)
   const listing = Array.isArray(header.listing) ? header.listing[0] : header.listing
+  const avatar = text(other?.avatar_url)
+  const listingImage = text(listing?.primary_thumbnail_url) ?? text(listing?.primary_image_url)
   const messages = listed.rows.map((row) => {
     const redacted = redactShippingLabelArtifactsFromMessage(row)
+    const order = orderCard(row.metadata, viewerIsSeller)
     return {
       id: row.id,
-      body: text(typeof redacted.content === "string" ? redacted.content : row.content) ?? "",
+      body: order ? "" : text(typeof redacted.content === "string" ? redacted.content : row.content) ?? "",
       created_at: row.created_at,
       mine: row.sender_id === userId,
+      order,
     }
   })
 
   const parsed = mobileConversationDetailSchema.safeParse({
     id: header.id,
     listing_id: header.listing_id,
+    listing_slug: text(listing?.slug),
     listing_title: text(listing?.title),
+    listing_image_url: listingImage ? absolutePublicMediaUrl(listingImage) ?? null : null,
     other_name: getPublicSellerDisplayName(other),
+    other_avatar_url: avatar ? absoluteProxiedProfileMediaUrl(avatar) ?? null : null,
+    other_joined_label: joinedLabel(other?.created_at),
+    other_review_count: reviews.data.reviewCount,
+    other_rating_average: reviews.data.reviewCount > 0 ? reviews.data.avgRating : null,
+    viewer_is_seller: viewerIsSeller,
     messages,
   })
   if (!parsed.success) return { ok: false, status: 500, error: "Unable to load messages right now" }
   return { ok: true, data: parsed.data }
 }
 
-function oneProfile(
-  value: { display_name?: string | null } | { display_name?: string | null }[] | null,
-): { display_name?: string | null } | null {
+type ThreadProfile = {
+  display_name?: string | null
+  avatar_url?: string | null
+  created_at?: string | null
+}
+
+function oneProfile(value: ThreadProfile | ThreadProfile[] | null): ThreadProfile | null {
   if (value == null) return null
   return Array.isArray(value) ? value[0] ?? null : value
+}
+
+function joinedLabel(value: string | null | undefined): string | null {
+  const raw = value?.trim()
+  if (!raw) return null
+  const date = new Date(raw)
+  if (Number.isNaN(date.getTime())) return null
+  return `Joined ${date.toLocaleDateString("en-US", { month: "short", year: "numeric" })}`
+}
+
+function orderCard(metadata: unknown, viewerIsSeller: boolean) {
+  const order = parseOrderPlacedMessageMetadata(metadata)
+  if (!order) return null
+  const items = (order.listingTitles?.length ? order.listingTitles : [order.listingTitle])
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .slice(0, 8)
+  if (items.length === 0) return null
+  const payment =
+    order.paymentMethod === "reswell_bucks" ? "Wallet" : order.paymentMethod === "cash" ? "Cash" : "Card"
+  const shipping = order.fulfillment === "shipping"
+  return {
+    order_id: order.orderId,
+    order_num: order.orderNum,
+    total_label: `$${order.total.toFixed(2)}`,
+    items,
+    payment_label: `Paid with ${payment}`,
+    fulfillment_label: shipping ? "Shipping" : "Local pickup",
+    hint: shipping
+      ? viewerIsSeller
+        ? "The ship-to address is on the sale. Mark it shipped from Sales when you send it."
+        : "Track it from Purchases once the seller ships."
+      : "Reply here to set a pickup time.",
+  }
 }

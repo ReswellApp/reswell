@@ -1451,18 +1451,36 @@ export const mobileConversationsSchema = z.object({
   conversations: z.array(mobileConversationPreviewSchema),
 })
 
+export const mobileMessageOrderSchema = z.object({
+  order_id: z.string().uuid(),
+  order_num: z.string(),
+  total_label: z.string(),
+  items: z.array(z.string()).min(1).max(8),
+  payment_label: z.string(),
+  fulfillment_label: z.string(),
+  hint: z.string(),
+})
+
 export const mobileMessageSchema = z.object({
   id: z.string().uuid(),
   body: z.string(),
   created_at: z.string(),
   mine: z.boolean(),
+  order: mobileMessageOrderSchema.nullable(),
 })
 
 export const mobileConversationDetailSchema = z.object({
   id: z.string().uuid(),
   listing_id: z.string().uuid().nullable(),
+  listing_slug: z.string().nullable(),
   listing_title: z.string().nullable(),
+  listing_image_url: z.string().nullable(),
   other_name: z.string(),
+  other_avatar_url: z.string().nullable(),
+  other_joined_label: z.string().nullable(),
+  other_review_count: z.number().int().nonnegative(),
+  other_rating_average: z.number().min(0).max(5).nullable(),
+  viewer_is_seller: z.boolean(),
   messages: z.array(mobileMessageSchema),
 })
 
@@ -1567,4 +1585,5 @@ export type MobileOffer = z.infer<typeof mobileOfferSchema>
 export type MobileOrder = z.infer<typeof mobileOrderSchema>
 export type MobileSale = z.infer<typeof mobileSaleSchema>
 export type MobileConversationPreview = z.infer<typeof mobileConversationPreviewSchema>
+export type MobileMessage = z.infer<typeof mobileMessageSchema>
 export type MobileConversationDetail = z.infer<typeof mobileConversationDetailSchema>
