@@ -171,9 +171,7 @@ export default async function ShopifyConnectPage({
       <ShopifyClaimPanel
         preview={preview}
         userEmail={user.email ?? null}
-        shopifyConnectEnabled={
-          access.shopifyConnectEnabled || preview?.ready === true
-        }
+        shopifyConnectEnabled={access.shopifyConnectEnabled}
         accessRequested={Boolean(access.requestedAt)}
         callbackError={params.get("error") === "connection_failed"}
       />
