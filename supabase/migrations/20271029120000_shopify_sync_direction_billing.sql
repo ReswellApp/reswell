@@ -114,8 +114,8 @@ BEGIN
     RAISE EXCEPTION 'service role required for Shopify inventory sales';
   END IF;
 
-  SELECT m, c.source_of_truth, c.billing_status
-  INTO v_mapping, v_source, v_billing
+  SELECT m.*
+  INTO v_mapping
   FROM public.shopify_product_mappings m
   JOIN public.shopify_connections c ON c.id = m.connection_id
   JOIN public.listings l ON l.id = m.listing_id
@@ -130,6 +130,11 @@ BEGIN
     END IF;
     RETURN false;
   END IF;
+
+  SELECT c.source_of_truth, c.billing_status
+  INTO v_source, v_billing
+  FROM public.shopify_connections c
+  WHERE c.id = v_mapping.connection_id;
 
   INSERT INTO public.shopify_sync_jobs (
     connection_id,
