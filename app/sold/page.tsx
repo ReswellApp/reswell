@@ -21,8 +21,9 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
 
 /**
- * Backstop if a sale, purchase, or return misses on-demand revalidation.
- * Those events expire this page immediately via `revalidateMarketplaceSoldFeedCatalog`.
+ * Backstop if a sale, purchase, return, or new listing misses on-demand revalidation.
+ * Those events expire this page immediately via `revalidateMarketplaceSoldFeedCatalog`
+ * or `revalidateMarketplaceNewListingsFeed`.
  */
 export const revalidate = 3600
 

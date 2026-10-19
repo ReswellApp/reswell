@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { deleteListingDocument } from "@/lib/elasticsearch/listings-index"
 import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
+import { revalidateMarketplaceNewListingsFeed } from "@/lib/cache/revalidate-marketplace-sold-feed"
 import { revalidateListingDetailPage } from "@/lib/cache/revalidate-listing-public-detail"
 import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { removeListingFromGoogleMerchantFeed } from "@/lib/services/googleMerchantSync"
@@ -162,6 +163,7 @@ export async function endSellerListing(
   }
 
   revalidateBoardsBrowseCatalog()
+  revalidateMarketplaceNewListingsFeed()
   await revalidateSellersAfterListingChange(supabase, sellerUserId)
 
   return { ok: true, mode: "delete" }

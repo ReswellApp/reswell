@@ -12,6 +12,7 @@ import {
 } from "@/lib/listing-dimensions-display"
 import { revalidatePath } from "next/cache"
 import { revalidateListingPublicDetailCatalog } from "@/lib/cache/revalidate-listing-public-detail"
+import { revalidateMarketplaceNewListingsFeed } from "@/lib/cache/revalidate-marketplace-sold-feed"
 import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { upsertUserListingBoardModelDataFromSellForm } from "@/lib/db/user-listing-board-model-data"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
@@ -251,6 +252,7 @@ export async function POST(request: NextRequest) {
 
   revalidatePath(`/l/${listing.slug}`, "page")
   revalidateListingPublicDetailCatalog()
+  revalidateMarketplaceNewListingsFeed()
   await revalidateSellersAfterListingChange(service, targetUserId)
 
   return NextResponse.json({
