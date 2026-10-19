@@ -6,7 +6,7 @@ const ALLOWED = [
   "Keep Reswell listings in sync when products change",
 ] as const
 
-const DENIED = "Never see your customers, orders, payments, or refunds" as const
+const DENIED = "Never see your customers, payments, or refunds" as const
 
 export function ShopifyConsentPermissions() {
   return (

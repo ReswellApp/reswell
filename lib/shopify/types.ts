@@ -32,6 +32,8 @@ export interface ShopifyConnectionRow {
   active_credential_id: string | null
   catalog_read_enabled: boolean
   sales_enabled: boolean
+  /** True only after the ORDERS_CREATE webhook is subscribed. */
+  orders_sync_enabled: boolean
   inventory_write_enabled: boolean
   source_of_truth: ShopifySourceOfTruth
   billing_status: ShopifyBillingStatus
@@ -71,6 +73,7 @@ export type PublicShopifyConnection = Pick<
   | "credential_provider"
   | "catalog_read_enabled"
   | "sales_enabled"
+  | "orders_sync_enabled"
   | "inventory_write_enabled"
   | "source_of_truth"
   | "billing_status"

@@ -18,6 +18,7 @@ const CONNECTION_SELECT = [
   "active_credential_id",
   "catalog_read_enabled",
   "sales_enabled",
+  "orders_sync_enabled",
   "inventory_write_enabled",
   "source_of_truth",
   "billing_status",
@@ -383,6 +384,21 @@ export async function dbReleaseShopifyTokenRefresh(
     .eq("token_refresh_lock_id", lockId)
 }
 
+export async function dbSetShopifyOrdersSyncEnabled(
+  supabase: SupabaseClient,
+  connectionId: string,
+  ordersSyncEnabled: boolean,
+): Promise<void> {
+  const { error } = await supabase
+    .from("shopify_connections")
+    .update({
+      orders_sync_enabled: ordersSyncEnabled,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", connectionId)
+  if (error) throw new Error(error.message)
+}
+
 export async function dbMarkShopifyConnectionStatus(
   supabase: SupabaseClient,
   connectionId: string,
@@ -507,6 +523,7 @@ export function toPublicShopifyConnection(
     credential_provider: connection.credential_provider,
     catalog_read_enabled: connection.catalog_read_enabled,
     sales_enabled: connection.sales_enabled,
+    orders_sync_enabled: connection.orders_sync_enabled,
     inventory_write_enabled: connection.inventory_write_enabled,
     source_of_truth: connection.source_of_truth,
     billing_status: connection.billing_status,

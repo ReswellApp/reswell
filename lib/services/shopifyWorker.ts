@@ -170,7 +170,13 @@ async function handleWebhookEvent(
   // Deletion only writes Reswell rows, so it runs even while sync is paused or
   // the store needs reauthorization: a deleted product must never stay live.
   if (event.topic === "orders/create") {
-    if (!connection || connection.status !== "active") return
+    if (
+      !connection ||
+      connection.status !== "active" ||
+      !connection.orders_sync_enabled
+    ) {
+      return
+    }
     await applyShopifyOriginatedSale({
       serviceSupabase,
       connection,

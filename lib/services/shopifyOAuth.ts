@@ -16,6 +16,7 @@ import {
   dbInsertShopifyOAuthState,
   dbMarkShopifyConnectionStatus,
   dbMirrorShopifyConnectionTokens,
+  dbSetShopifyOrdersSyncEnabled,
   dbReleaseShopifyTokenRefresh,
   dbUpdateShopifyConnectionTokens,
   dbUpsertShopifyConnection,
@@ -271,16 +272,22 @@ const REQUIRED_WEBHOOKS = [
   "PRODUCTS_DELETE",
   "INVENTORY_LEVELS_UPDATE",
   "APP_UNINSTALLED",
-  "ORDERS_CREATE",
 ] as const
 
+/** Needs Shopify protected-customer-data approval. A rejection must not block connect. */
+const ORDER_SYNC_WEBHOOK = "ORDERS_CREATE"
+
 const OPTIONAL_WEBHOOKS = ["METAFIELDS_UPDATE"] as const
+
+export type ShopifyWebhookRegistration = {
+  ordersCreateSubscribed: boolean
+}
 
 export async function registerShopifyWebhooks(
   shopDomain: string,
   accessToken: string,
   callbackUrl = shopifyWebhookUri(),
-): Promise<void> {
+): Promise<ShopifyWebhookRegistration> {
   const existing = await shopifyGraphqlRequest<{
     webhookSubscriptions: {
       nodes: Array<{ topic: string; endpoint?: { callbackUrl?: string | null } | null }>
@@ -306,10 +313,17 @@ export async function registerShopifyWebhooks(
       .filter((node) => node.endpoint?.callbackUrl === callbackUrl)
       .map((node) => node.topic),
   )
+  let ordersCreateSubscribed = installed.has(ORDER_SYNC_WEBHOOK)
 
-  for (const topic of [...REQUIRED_WEBHOOKS, ...OPTIONAL_WEBHOOKS]) {
+  for (const topic of [
+    ...REQUIRED_WEBHOOKS,
+    ORDER_SYNC_WEBHOOK,
+    ...OPTIONAL_WEBHOOKS,
+  ]) {
     if (installed.has(topic)) continue
-    const optional = (OPTIONAL_WEBHOOKS as readonly string[]).includes(topic)
+    const optional =
+      topic === ORDER_SYNC_WEBHOOK ||
+      (OPTIONAL_WEBHOOKS as readonly string[]).includes(topic)
     try {
       const result = await shopifyGraphqlRequest<{
         webhookSubscriptionCreate: {
@@ -337,11 +351,19 @@ export async function registerShopifyWebhooks(
         },
       })
       throwOnShopifyUserErrors(result.webhookSubscriptionCreate.userErrors)
+      if (topic === ORDER_SYNC_WEBHOOK) ordersCreateSubscribed = true
     } catch (error) {
+      if (topic === ORDER_SYNC_WEBHOOK) {
+        ordersCreateSubscribed = false
+        console.error("[shopify] orders webhook", { topic, error })
+        continue
+      }
       if (!optional) throw error
       console.error("[shopify] optional webhook", { topic, error })
     }
   }
+
+  return { ordersCreateSubscribed }
 }
 
 export async function completeShopifyOAuth(input: {
@@ -410,7 +432,15 @@ export async function completeShopifyOAuth(input: {
     )
   }
   try {
-    await registerShopifyWebhooks(input.shopDomain, token.access_token)
+    const registration = await registerShopifyWebhooks(
+      input.shopDomain,
+      token.access_token,
+    )
+    await dbSetShopifyOrdersSyncEnabled(
+      input.serviceSupabase,
+      connection.id,
+      registration.ordersCreateSubscribed,
+    )
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     await dbMarkShopifyConnectionStatus(input.serviceSupabase, connection.id, {
