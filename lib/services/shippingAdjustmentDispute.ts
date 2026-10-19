@@ -13,16 +13,19 @@ import {
   type AdjustmentDisputeStatus,
   type SellerAdjustmentFeeView,
 } from "@/lib/shipping/adjustment-fee"
+import type { SellerCoveredShippingAdjustment } from "@/lib/shipping/adjustment-strike"
 import {
   adminShippingAdjustmentDisputeSchema,
   submitShippingAdjustmentDisputeSchema,
   type SubmitShippingAdjustmentDisputeInput,
 } from "@/lib/validations/shippingAdjustmentDispute"
 
-type ChargedAdjustmentRow = {
+type SaleAdjustmentRow = {
   id: string
   adjustment_amount_usd: number | string
-  wallet_debited_at: string
+  wallet_debited_at: string | null
+  earnings_deducted_usd: number | string | null
+  coverage: string | null
   actual_length: number | string | null
   actual_width: number | string | null
   actual_height: number | string | null
@@ -31,22 +34,33 @@ type ChargedAdjustmentRow = {
   tracking_number: string | null
 }
 
+export type SellerSaleShippingAdjustments = {
+  covered: SellerCoveredShippingAdjustment | null
+  chargedFees: SellerAdjustmentFeeView[]
+  earningsDeductedUsd: number
+}
+
 function finite(value: number | string | null | undefined): number | null {
   if (value == null) return null
   const parsed = Number(value)
   return Number.isFinite(parsed) ? parsed : null
 }
 
-export async function listSellerChargedAdjustmentFees(params: {
+export async function listSellerSaleShippingAdjustments(params: {
   orderId: string
   sellerId: string
   trackingCarrier?: string | null
-}): Promise<SellerAdjustmentFeeView[]> {
+}): Promise<SellerSaleShippingAdjustments> {
+  const empty: SellerSaleShippingAdjustments = {
+    covered: null,
+    chargedFees: [],
+    earningsDeductedUsd: 0,
+  }
   let supabase: ReturnType<typeof createServiceRoleClient>
   try {
     supabase = createServiceRoleClient()
   } catch {
-    return []
+    return empty
   }
 
   const { data: ownedOrder, error: ownedOrderError } = await supabase
@@ -57,29 +71,31 @@ export async function listSellerChargedAdjustmentFees(params: {
     .maybeSingle()
   if (ownedOrderError || !ownedOrder) {
     if (ownedOrderError) console.error("[seller adjustment fees]", ownedOrderError.message)
-    return []
+    return empty
   }
 
   const { data, error } = await supabase
     .from("shipengine_label_adjustments")
     .select(
-      "id, adjustment_amount_usd, wallet_debited_at, actual_length, actual_width, actual_height, actual_weight, actual_service, tracking_number, order_id, charge_seller_wallet",
+      "id, adjustment_amount_usd, wallet_debited_at, earnings_deducted_usd, coverage, actual_length, actual_width, actual_height, actual_weight, actual_service, tracking_number",
     )
     .eq("order_id", params.orderId)
-    .eq("charge_seller_wallet", true)
     .gt("adjustment_amount_usd", 0)
-    .not("wallet_debited_at", "is", null)
-    .order("wallet_debited_at", { ascending: false })
+    .in("coverage", ["covered_strike", "charged_to_earnings"])
+    .order("created_at", { ascending: true })
 
   if (error) {
     console.error("[seller adjustment fees]", error.message)
-    return []
+    return empty
   }
 
-  const rows = (data ?? []) as ChargedAdjustmentRow[]
+  const rows = (data ?? []) as SaleAdjustmentRow[]
+  const chargedRows = rows.filter(
+    (row) => row.coverage === "charged_to_earnings" && typeof row.wallet_debited_at === "string",
+  )
   const disputes = await dbListDisputesForAdjustments(
     supabase,
-    rows.map((row) => row.id),
+    chargedRows.map((row) => row.id),
   )
   if (disputes.error) {
     console.error("[seller adjustment disputes]", disputes.error.message)
@@ -88,30 +104,60 @@ export async function listSellerChargedAdjustmentFees(params: {
     (disputes.data ?? []).map((dispute) => [dispute.adjustment_id, dispute]),
   )
 
-  return rows
-    .filter((row) => typeof row.wallet_debited_at === "string")
-    .map((row) => ({
-      id: row.id,
-      amountUsd: finite(row.adjustment_amount_usd) ?? 0,
-      debitedAt: row.wallet_debited_at,
-      lengthIn: finite(row.actual_length),
-      widthIn: finite(row.actual_width),
-      heightIn: finite(row.actual_height),
-      weightLb: finite(row.actual_weight),
-      suggestedCarrier: inferAdjustmentCarrier(row.actual_service, params.trackingCarrier),
-      dispute: (() => {
-        const dispute = disputeByAdjustment.get(row.id)
-        if (!dispute) return null
-        return {
-          carrier: dispute.carrier,
-          status: dispute.status,
-          sellerStatement: dispute.seller_statement,
-          reswellNote: dispute.reswell_note,
-          carrierReference: dispute.carrier_reference,
+  const chargedFees = chargedRows
+    .map((row) => {
+      const amountUsd = finite(row.adjustment_amount_usd) ?? 0
+      const deducted = finite(row.earnings_deducted_usd)
+      return {
+        id: row.id,
+        amountUsd,
+        debitedAt: row.wallet_debited_at as string,
+        lengthIn: finite(row.actual_length),
+        widthIn: finite(row.actual_width),
+        heightIn: finite(row.actual_height),
+        weightLb: finite(row.actual_weight),
+        suggestedCarrier: inferAdjustmentCarrier(row.actual_service, params.trackingCarrier),
+        earningsDeductedUsd: deducted ?? amountUsd,
+        dispute: (() => {
+          const dispute = disputeByAdjustment.get(row.id)
+          if (!dispute) return null
+          return {
+            carrier: dispute.carrier,
+            status: dispute.status,
+            sellerStatement: dispute.seller_statement,
+            reswellNote: dispute.reswell_note,
+            carrierReference: dispute.carrier_reference,
+          }
+        })(),
+      }
+    })
+    .filter((row) => row.earningsDeductedUsd > 0)
+
+  const coveredRow = rows.find((row) => row.coverage === "covered_strike")
+  const covered =
+    coveredRow && (finite(coveredRow.adjustment_amount_usd) ?? 0) > 0
+      ? {
+          id: coveredRow.id,
+          amountUsd: finite(coveredRow.adjustment_amount_usd) ?? 0,
+          lengthIn: finite(coveredRow.actual_length),
+          widthIn: finite(coveredRow.actual_width),
+          heightIn: finite(coveredRow.actual_height),
         }
-      })(),
-    }))
-    .filter((row) => row.amountUsd > 0)
+      : null
+
+  const earningsDeductedUsd =
+    Math.round(chargedFees.reduce((sum, fee) => sum + fee.earningsDeductedUsd, 0) * 100) / 100
+
+  return { covered, chargedFees, earningsDeductedUsd }
+}
+
+export async function listSellerChargedAdjustmentFees(params: {
+  orderId: string
+  sellerId: string
+  trackingCarrier?: string | null
+}): Promise<SellerAdjustmentFeeView[]> {
+  const adjustments = await listSellerSaleShippingAdjustments(params)
+  return adjustments.chargedFees
 }
 
 export async function submitShippingAdjustmentDispute(
@@ -138,14 +184,14 @@ export async function submitShippingAdjustmentDispute(
   const input: SubmitShippingAdjustmentDisputeInput = parsed.data
   const { data: adjustment, error: adjustmentError } = await service
     .from("shipengine_label_adjustments")
-    .select("id, order_id, adjustment_amount_usd, charge_seller_wallet, wallet_debited_at")
+    .select("id, order_id, adjustment_amount_usd, charge_seller_wallet, wallet_debited_at, coverage")
     .eq("id", input.adjustmentId)
     .maybeSingle()
 
   if (adjustmentError || !adjustment) {
     return { error: "That adjustment fee could not be found." }
   }
-  if (adjustment.charge_seller_wallet !== true || !adjustment.wallet_debited_at) {
+  if (adjustment.coverage !== "charged_to_earnings" || !adjustment.wallet_debited_at) {
     return { error: "Only a deducted adjustment fee can be disputed." }
   }
   if (typeof adjustment.order_id !== "string") {

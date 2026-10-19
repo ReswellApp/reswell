@@ -87,6 +87,8 @@ export type SellerAdjustmentFeeView = {
   heightIn: number | null
   weightLb: number | null
   suggestedCarrier: AdjustmentDisputeCarrier | null
+  /** Amount removed from this sale's earnings. May be lower than the carrier bill. */
+  earningsDeductedUsd: number
   dispute: SellerAdjustmentFeeDisputeView | null
 }
 
@@ -112,5 +114,5 @@ export function sellerAdjustmentFeeExplanation(params: {
           .map((value) => (value == null ? "—" : String(value)))
           .join(" × ")} in.`
       : " The carrier billed this because the packed package was larger or heavier than the label."
-  return `Adjustment fee of ${fee}. The buyer paid ${paid} for the original label. This extra amount was deducted from your balance.${measured} Your sale earnings stay the sale amount. This line is the fee that left your balance.`
+  return `Adjustment fee of ${fee}. The buyer paid ${paid} for the original label. This amount was deducted from your earnings on this sale.${measured}`
 }

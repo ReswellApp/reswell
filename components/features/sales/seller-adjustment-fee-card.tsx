@@ -1,7 +1,9 @@
 "use client"
 
 import { useState, useTransition } from "react"
+import Link from "next/link"
 import { toast } from "sonner"
+import { SHIPPING_ADJUSTMENT_LEARN_MORE_HREF } from "@/lib/shipping/adjustment-strike"
 import { submitShippingAdjustmentDisputeAction } from "@/lib/actions/shippingAdjustmentDispute"
 import {
   ADJUSTMENT_DISPUTE_CARRIERS,
@@ -30,7 +32,7 @@ export function SellerAdjustmentFeeCard({
   fees,
 }: SellerAdjustmentFeeCardProps) {
   if (fees.length === 0) return null
-  const total = fees.reduce((sum, fee) => sum + fee.amountUsd, 0)
+  const total = fees.reduce((sum, fee) => sum + fee.earningsDeductedUsd, 0)
 
   return (
     <section className="rounded-xl border border-rose-500/30 bg-rose-500/[0.04] p-4 sm:p-5">
@@ -42,13 +44,19 @@ export function SellerAdjustmentFeeCard({
       </div>
       <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
         {sellerAdjustmentFeeExplanation({
-          amountUsd: total,
+          amountUsd: total > 0 ? total : fees.reduce((sum, fee) => sum + fee.amountUsd, 0),
           buyerShippingUsd,
           lengthIn: fees.length === 1 ? fees[0].lengthIn : null,
           widthIn: fees.length === 1 ? fees[0].widthIn : null,
           heightIn: fees.length === 1 ? fees[0].heightIn : null,
         })}
       </p>
+      <Link
+        href={SHIPPING_ADJUSTMENT_LEARN_MORE_HREF}
+        className="mt-3 inline-flex text-sm font-semibold text-foreground underline underline-offset-2"
+      >
+        Learn more about shipping best practices
+      </Link>
       <div className="mt-4 space-y-4">
         {fees.map((fee) => (
           <FeeDispute

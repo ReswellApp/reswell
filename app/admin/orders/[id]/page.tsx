@@ -346,8 +346,8 @@ export default function AdminOrderDetailPage() {
                 </p>
                 <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                   {o.shipping_adjusted_fee_charged > 0
-                    ? `$${o.shipping_adjusted_fee_charged.toFixed(2)} was deducted from the seller wallet as an adjustment fee. The buyer’s shipping payment stays the amount above.`
-                    : "Recorded before seller adjustment fees. The buyer’s shipping payment stays the amount above. Reswell keeps this carrier bill."}
+                    ? `$${o.shipping_adjusted_fee_charged.toFixed(2)} was deducted from the seller’s earnings on this sale. The buyer’s shipping payment stays the amount above.`
+                    : "Reswell is keeping this carrier bill. The first adjustment on a seller is covered. Later ones are deducted from that sale’s earnings."}
                 </p>
               </div>
             ) : null}

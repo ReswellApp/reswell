@@ -23,12 +23,15 @@ export type ShipEngineLabelAdjustmentRow = {
   wallet_transaction_id: string | null
   wallet_debited_at: string | null
   charge_seller_wallet: boolean
+  coverage: "covered_strike" | "charged_to_earnings" | "legacy_absorbed" | null
+  earnings_deducted_usd: number | null
   created_at: string
 }
 
 export type ShipEngineAdjustmentDebitSummary = {
   processed: number
   charged: number
+  covered: number
   alreadyCharged: number
 }
 
@@ -71,6 +74,13 @@ function mapRow(row: Record<string, unknown>): ShipEngineLabelAdjustmentRow {
     wallet_debited_at:
       typeof row.wallet_debited_at === "string" ? row.wallet_debited_at : null,
     charge_seller_wallet: row.charge_seller_wallet === true,
+    coverage:
+      row.coverage === "covered_strike" ||
+      row.coverage === "charged_to_earnings" ||
+      row.coverage === "legacy_absorbed"
+        ? row.coverage
+        : null,
+    earnings_deducted_usd: num(row.earnings_deducted_usd as number | string | null),
     created_at: String(row.created_at),
   }
 }
@@ -95,12 +105,13 @@ export async function dbApplyShipEngineAdjustmentDebits(
   const processed = num(result.processed as number | string | null)
   const charged = num(result.charged as number | string | null)
   const alreadyCharged = num(result.already_charged as number | string | null)
+  const covered = num(result.covered as number | string | null) ?? 0
   if (processed == null || charged == null || alreadyCharged == null) {
     return { data: null, error: new Error("Invalid wallet debit summary") }
   }
 
   return {
-    data: { processed, charged, alreadyCharged },
+    data: { processed, charged, covered, alreadyCharged },
     error: null,
   }
 }
@@ -324,13 +335,15 @@ function addAdjustmentFeeTotals(
   totals: Map<string, OrderAdjustmentFeeTotals>,
   key: string,
   amount: number | string | null,
-  charged: boolean,
+  chargedUsd: number | null,
 ): void {
   const value = num(amount)
   if (value == null || value <= 0) return
   const current = totals.get(key) ?? { recordedUsd: 0, chargedUsd: 0 }
   current.recordedUsd = Math.round((current.recordedUsd + value) * 100) / 100
-  if (charged) current.chargedUsd = Math.round((current.chargedUsd + value) * 100) / 100
+  if (chargedUsd != null && chargedUsd > 0) {
+    current.chargedUsd = Math.round((current.chargedUsd + chargedUsd) * 100) / 100
+  }
   totals.set(key, current)
 }
 
@@ -345,7 +358,9 @@ export async function dbGetIncreasedAdjustmentTotalsByOrderIds(
   for (let i = 0; i < ids.length; i += 100) {
     const { data, error } = await supabase
       .from("shipengine_label_adjustments")
-      .select("order_id, adjustment_amount_usd, charge_seller_wallet, wallet_transaction_id")
+      .select(
+        "order_id, adjustment_amount_usd, charge_seller_wallet, wallet_transaction_id, coverage, earnings_deducted_usd",
+      )
       .in("order_id", ids.slice(i, i + 100))
       .gt("adjustment_amount_usd", 0)
 
@@ -353,9 +368,16 @@ export async function dbGetIncreasedAdjustmentTotalsByOrderIds(
     for (const row of data ?? []) {
       const orderId = typeof row.order_id === "string" ? row.order_id : null
       if (!orderId) continue
+      const deducted = num(row.earnings_deducted_usd as number | string | null)
       const charged =
-        row.charge_seller_wallet === true && typeof row.wallet_transaction_id === "string"
-      addAdjustmentFeeTotals(totals, orderId, row.adjustment_amount_usd, charged)
+        row.coverage === "charged_to_earnings" ||
+        (row.charge_seller_wallet === true && typeof row.wallet_transaction_id === "string")
+      addAdjustmentFeeTotals(
+        totals,
+        orderId,
+        row.adjustment_amount_usd,
+        charged ? (deducted ?? num(row.adjustment_amount_usd as number | string | null)) : null,
+      )
     }
   }
 
