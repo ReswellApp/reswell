@@ -5,7 +5,7 @@ import { ListingInlineEditor } from "@/components/features/dashboard/listings/li
 import { ListingsAdvancedAnalytics } from "@/components/features/dashboard/listings/listings-advanced-analytics"
 import { ListingsAdvancedTools } from "@/components/features/dashboard/listings/listings-advanced-tools"
 import { ShopCategoryPackagePanel } from "@/components/features/dashboard/listings/shop-category-package-panel"
-import type { ListingQuickEditSaved } from "@/lib/actions/listingQuickEdit"
+import type { ListingQuickEditSaved } from "@/lib/services/listingQuickEdit"
 import type { ListingsDeskAnalyticsInput } from "@/lib/listings-desk-analytics"
 import type { ListingPackageColumns } from "@/lib/shop-category-package-sizes"
 import type { ShopShippingDefaults } from "@/lib/shop-shipping-defaults"

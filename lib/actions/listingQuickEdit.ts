@@ -2,9 +2,10 @@
 
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
-import { updateSellerListingQuickEdit, type ListingQuickEditSaved } from "@/lib/services/listingQuickEdit"
-
-export type { ListingQuickEditSaved }
+import {
+  updateSellerListingQuickEdit,
+  type ListingQuickEditSaved,
+} from "@/lib/services/listingQuickEdit"
 import { listingQuickEditBodySchema } from "@/lib/validations/listing-quick-edit"
 
 export type ListingQuickEditActionResult =

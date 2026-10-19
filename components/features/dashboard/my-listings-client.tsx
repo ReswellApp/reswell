@@ -58,7 +58,7 @@ import {
   type ListingsDeskView,
 } from "@/components/features/dashboard/listings/listings-view-tabs"
 import { ShopVacationButton } from "@/components/features/dashboard/listings/shop-vacation-button"
-import type { ListingQuickEditSaved } from "@/lib/actions/listingQuickEdit"
+import type { ListingQuickEditSaved } from "@/lib/services/listingQuickEdit"
 import type { MyListingRow, MyListingsDashboardStats } from "@/lib/db/my-listings"
 import type { ListingPackageColumns } from "@/lib/shop-category-package-sizes"
 import { EMPTY_SHOP_SHIPPING_DEFAULTS, type ShopShippingDefaults } from "@/lib/shop-shipping-defaults"

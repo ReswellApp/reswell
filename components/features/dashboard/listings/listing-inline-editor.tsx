@@ -19,10 +19,8 @@ import {
   ListingEditorDetails,
 } from "@/components/features/dashboard/listings/listing-editor-fields"
 import { ListingEditorSpecs } from "@/components/features/dashboard/listings/listing-editor-specs"
-import {
-  updateListingQuickEditAction,
-  type ListingQuickEditSaved,
-} from "@/lib/actions/listingQuickEdit"
+import { updateListingQuickEditAction } from "@/lib/actions/listingQuickEdit"
+import type { ListingQuickEditSaved } from "@/lib/services/listingQuickEdit"
 import { listingDetailHref } from "@/lib/listing-href"
 import { listingCardImageSrc } from "@/lib/listing-image-display"
 import {
