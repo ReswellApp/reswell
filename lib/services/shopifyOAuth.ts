@@ -30,6 +30,7 @@ import {
   shopifyGraphqlRequest,
   throwOnShopifyUserErrors,
 } from "@/lib/shopify/admin-graphql"
+import { saveShopifyDefaultPackageIfMissing } from "@/lib/services/shopifyDefaultPackage"
 import {
   SHOPIFY_MVP_SCOPES,
   shopifyApiKey,
@@ -431,6 +432,12 @@ export async function completeShopifyOAuth(input: {
       connection.id,
     )
   }
+  await saveShopifyDefaultPackageIfMissing({
+    supabase: input.serviceSupabase,
+    userId: input.userId,
+    shopDomain: input.shopDomain,
+    accessToken: token.access_token,
+  })
   try {
     const registration = await registerShopifyWebhooks(
       input.shopDomain,
