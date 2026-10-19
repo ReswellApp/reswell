@@ -2,6 +2,7 @@ import { DashboardProfileSettings } from "@/components/features/dashboard/dashbo
 import { getCachedDashboardSession } from "@/lib/dashboard-session"
 import { fetchDashboardProfile } from "@/lib/db/dashboard-profile"
 import { fetchProfileAddresses } from "@/lib/db/profile-addresses"
+import { loadAccountTeamPanelData } from "@/lib/services/accountAccess"
 import { loadMessageSmsNotificationsStateForUser } from "@/lib/services/messageSmsNotifications"
 import { privatePageMetadata } from "@/lib/site-metadata"
 
@@ -15,11 +16,12 @@ export default async function DashboardProfilePage() {
   const { supabase, user } = await getCachedDashboardSession()
   if (!user) return null
 
-  const [{ profile, error: profileError }, { addresses, error: addressesError }, smsState] =
+  const [{ profile, error: profileError }, { addresses, error: addressesError }, smsState, team] =
     await Promise.all([
       fetchDashboardProfile(supabase, user.id),
       fetchProfileAddresses(supabase, user.id),
       loadMessageSmsNotificationsStateForUser(user.id, user.phone),
+      loadAccountTeamPanelData(),
     ])
 
   if (profileError) {
@@ -47,6 +49,7 @@ export default async function DashboardProfilePage() {
       initialMessageSmsOptIn={smsState.message_sms_opt_in}
       initialHasSmsPhone={smsState.has_phone}
       initialSmsPhone={smsState.phone}
+      team={team}
     />
   )
 }

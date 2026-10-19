@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import { useState, useTransition } from "react"
+import { ChevronDown, MailPlus, Users } from "lucide-react"
 import {
   acceptAccountInviteAction,
   declineAccountInviteAction,
@@ -12,6 +13,7 @@ import type { GrantableAccountRole } from "@/lib/account-access/permissions"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { cn } from "@/lib/utils"
 import {
   profileCardClass,
   profileInputClass,
@@ -19,35 +21,21 @@ import {
   profileSectionHintClass,
   profileSectionTitleClass,
 } from "@/components/features/dashboard/profile-settings/profile-settings-styles"
-
-export interface AccountTeamMemberView {
-  id: string
-  email: string
-  role: GrantableAccountRole
-  status: "invited" | "active"
-  canRevoke: boolean
-}
-
-export interface AccountInviteView {
-  id: string
-  shopLabel: string
-  role: GrantableAccountRole
-}
-
-interface AccountTeamPanelProps {
-  canManage: boolean
-  canInviteManager: boolean
-  members: AccountTeamMemberView[]
-  pendingInvites: AccountInviteView[]
-  actingAsShop: boolean
-  shopLabel: string
-  actorEmail: string | null
-  showShopAdminWarning: boolean
-}
+import type { AccountTeamPanelData } from "@/lib/services/accountAccess"
 
 const ROLE_LABEL: Record<GrantableAccountRole, string> = {
   manager: "Manager",
   staff: "Staff",
+}
+
+function emailInitials(email: string): string {
+  const local = email.split("@")[0] ?? ""
+  const parts = local.split(/[._+-]+/).filter(Boolean)
+  if (parts.length >= 2) {
+    return `${parts[0]?.[0] ?? ""}${parts[1]?.[0] ?? ""}`.toUpperCase()
+  }
+  const compact = local.replace(/[^a-zA-Z0-9]/g, "")
+  return (compact.slice(0, 2) || "?").toUpperCase()
 }
 
 export function AccountTeamPanel({
@@ -59,7 +47,7 @@ export function AccountTeamPanel({
   shopLabel,
   actorEmail,
   showShopAdminWarning,
-}: AccountTeamPanelProps) {
+}: AccountTeamPanelData) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [email, setEmail] = useState("")
@@ -82,35 +70,56 @@ export function AccountTeamPanel({
     })
   }
 
+  const hasAnythingToShow = canManage || members.length > 0 || pendingInvites.length > 0
+  if (!hasAnythingToShow) return null
+
+  const intro = actingAsShop
+    ? `You're signed in as ${actorEmail ?? "your email"} and working in ${shopLabel}.`
+    : "People you add sign in with their own email. Staff can run listings, orders, offers, and messages. Managers can also add staff. Payouts stay with you."
+
   return (
-    <div className="mx-auto max-w-xl space-y-8">
-      <section className="space-y-2">
-        <h1 className={profileSectionTitleClass}>Team</h1>
-        <p className={profileSectionHintClass}>
-          {actingAsShop
-            ? `You're signed in as ${actorEmail ?? "your email"} and working in ${shopLabel}.`
-            : "Add other emails so people can sign in and help run this account. They keep their own login."}
-        </p>
-        {showShopAdminWarning ? (
-          <p className={profileSectionHintClass}>
-            Shop access does not open the Reswell admin panel. Employee access is a separate grant on their own login.
-          </p>
-        ) : null}
-      </section>
+    <section className="space-y-4">
+      <div className="flex items-start gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-foreground">
+          <Users className="h-4 w-4" aria-hidden />
+        </span>
+        <div className="min-w-0 space-y-1">
+          <h2 className={profileSectionTitleClass}>Who can sign in</h2>
+          <p className={profileSectionHintClass}>{intro}</p>
+          {showShopAdminWarning ? (
+            <p className={profileSectionHintClass}>
+              Shop access does not open the Reswell admin panel. Employee access is a separate grant on their own login.
+            </p>
+          ) : null}
+        </div>
+      </div>
 
       {pendingInvites.length > 0 ? (
-        <section className={`${profileCardClass} space-y-4 p-5 sm:p-6`}>
-          <h2 className={profileSectionTitleClass}>Invites for you</h2>
+        <div className={`${profileCardClass} divide-y divide-neutral-200/80 px-5 sm:px-6`}>
+          <div className="py-4">
+            <h3 className="text-sm font-semibold text-foreground">Invites waiting for you</h3>
+            <p className={cn(profileSectionHintClass, "mt-1")}>
+              Accept to work in that shop. Your own login stays the same.
+            </p>
+          </div>
           {pendingInvites.map((invite) => (
-            <div key={invite.id} className="flex flex-col gap-3 border-t border-neutral-200/80 pt-4 first:border-t-0 first:pt-0 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm font-medium">{invite.shopLabel}</p>
-                <p className="text-sm text-muted-foreground">{ROLE_LABEL[invite.role]}</p>
+            <div
+              key={invite.id}
+              className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-xs font-semibold">
+                  {emailInitials(invite.shopLabel)}
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium">{invite.shopLabel}</p>
+                  <p className="text-sm text-muted-foreground">{ROLE_LABEL[invite.role]}</p>
+                </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 sm:shrink-0">
                 <Button
                   type="button"
-                  className="rounded-full"
+                  className="h-9 rounded-full px-4"
                   disabled={pending}
                   onClick={() => run(() => acceptAccountInviteAction({ memberId: invite.id }), "Invite accepted.")}
                 >
@@ -119,7 +128,7 @@ export function AccountTeamPanel({
                 <Button
                   type="button"
                   variant="outline"
-                  className="rounded-full"
+                  className="h-9 rounded-full px-4"
                   disabled={pending}
                   onClick={() => run(() => declineAccountInviteAction({ memberId: invite.id }), "Invite declined.")}
                 >
@@ -128,83 +137,132 @@ export function AccountTeamPanel({
               </div>
             </div>
           ))}
-        </section>
+        </div>
       ) : null}
 
       {canManage ? (
-        <section className={`${profileCardClass} space-y-4 p-5 sm:p-6`}>
-          <div>
-            <h2 className={profileSectionTitleClass}>Add an email</h2>
-            <p className={`${profileSectionHintClass} mt-1`}>
-              They sign up or sign in with this email, then accept the invite. Staff can run listings, orders, offers, and messages. Managers can also add staff. Payouts stay with the owner.
-            </p>
+        <form
+          className={`${profileCardClass} space-y-4 p-5 sm:p-6`}
+          onSubmit={(event) => {
+            event.preventDefault()
+            run(
+              () => inviteAccountMemberAction({ email, role }),
+              "Invite saved. They'll see it after they sign in with that email.",
+            )
+          }}
+        >
+          <div className="flex items-start gap-3">
+            <MailPlus className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">Add an email</h3>
+              <p className={cn(profileSectionHintClass, "mt-1")}>
+                They sign up or sign in with this address, then accept the invite.
+              </p>
+            </div>
           </div>
-          <form
-            className="space-y-4"
-            onSubmit={(event) => {
-              event.preventDefault()
-              run(() => inviteAccountMemberAction({ email, role }), "Invite saved. They'll see it after they sign in with that email.")
-            }}
-          >
+
+          {error ? (
+            <p className="rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive" role="alert">
+              {error}
+            </p>
+          ) : null}
+          {message ? (
+            <p className="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-foreground" role="status">
+              {message}
+            </p>
+          ) : null}
+
+          <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_9.5rem]">
             <div className="space-y-2">
-              <Label htmlFor="team-email" className={profileLabelClass}>Email</Label>
+              <Label htmlFor="team-email" className={profileLabelClass}>
+                Email
+              </Label>
               <Input
                 id="team-email"
                 type="email"
                 required
                 autoComplete="email"
+                placeholder="name@email.com"
                 className={profileInputClass}
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="team-role" className={profileLabelClass}>Access</Label>
-              <select
-                id="team-role"
-                className={profileInputClass}
-                value={role}
-                onChange={(event) => setRole(event.target.value === "manager" ? "manager" : "staff")}
-              >
-                <option value="staff">Staff</option>
-                {canInviteManager ? <option value="manager">Manager</option> : null}
-              </select>
+              <Label htmlFor="team-role" className={profileLabelClass}>
+                Access
+              </Label>
+              <div className="relative">
+                <select
+                  id="team-role"
+                  className={cn(profileInputClass, "w-full appearance-none px-3 pr-9")}
+                  value={role}
+                  onChange={(event) => setRole(event.target.value === "manager" ? "manager" : "staff")}
+                >
+                  <option value="staff">Staff</option>
+                  {canInviteManager ? <option value="manager">Manager</option> : null}
+                </select>
+                <ChevronDown
+                  className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                  aria-hidden
+                />
+              </div>
             </div>
-            <Button type="submit" className="h-11 rounded-full px-6" disabled={pending}>
-              Add email
-            </Button>
-          </form>
-        </section>
+          </div>
+          <Button type="submit" className="h-11 rounded-full px-6" disabled={pending}>
+            {pending ? "Saving…" : "Add email"}
+          </Button>
+        </form>
+      ) : error || message ? (
+        <div className="space-y-2">
+          {error ? <p className="text-sm text-destructive" role="alert">{error}</p> : null}
+          {message ? <p className="text-sm text-muted-foreground" role="status">{message}</p> : null}
+        </div>
       ) : null}
 
       {members.length > 0 ? (
-        <section className={`${profileCardClass} divide-y divide-neutral-200/80 px-5 py-1 sm:px-6`}>
-          {members.map((member) => (
-            <div key={member.id} className="flex items-center justify-between gap-3 py-4">
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium">{member.email}</p>
-                <p className="text-sm text-muted-foreground">
-                  {ROLE_LABEL[member.role]} · {member.status === "invited" ? "Waiting for them to sign in" : "Active"}
-                </p>
-              </div>
-              {member.canRevoke ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="shrink-0 rounded-full"
-                  disabled={pending}
-                  onClick={() => run(() => revokeAccountMemberAction({ memberId: member.id }), "Access removed.")}
-                >
-                  Remove
-                </Button>
-              ) : null}
-            </div>
-          ))}
-        </section>
+        <ul className={`${profileCardClass} divide-y divide-neutral-200/80 px-5 sm:px-6`}>
+          {members.map((member) => {
+            const waiting = member.status === "invited"
+            return (
+              <li key={member.id} className="flex items-center gap-3 py-4">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-xs font-semibold">
+                  {emailInitials(member.email)}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{member.email}</p>
+                  <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+                    <span>{ROLE_LABEL[member.role]}</span>
+                    <span
+                      className={cn(
+                        "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
+                        waiting
+                          ? "bg-amber-50 text-amber-800"
+                          : "bg-neutral-100 text-foreground",
+                      )}
+                    >
+                      {waiting ? "Waiting to sign in" : "Active"}
+                    </span>
+                  </p>
+                </div>
+                {member.canRevoke ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-9 shrink-0 rounded-full px-4"
+                    disabled={pending}
+                    onClick={() =>
+                      run(() => revokeAccountMemberAction({ memberId: member.id }), "Access removed.")
+                    }
+                  >
+                    Remove
+                  </Button>
+                ) : null}
+              </li>
+            )
+          })}
+        </ul>
       ) : null}
-
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
-      {message ? <p className="text-sm text-muted-foreground">{message}</p> : null}
-    </div>
+    </section>
   )
 }

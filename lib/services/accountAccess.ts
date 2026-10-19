@@ -7,6 +7,7 @@ import {
   permissionsForAccountRole,
   type AccountPermission,
   type AccountRole,
+  type GrantableAccountRole,
 } from "@/lib/account-access/permissions"
 import { platformAccessForSignedInUser } from "@/lib/account-access/platform-access"
 import {
@@ -556,4 +557,90 @@ export async function assertAccountPermission(
   if (!shop) return { error: "Sign in to continue." }
   if (!shop.permissions.has(permission)) return { error: "You don't have access to that." }
   return { shop }
+}
+
+export interface AccountTeamPanelMember {
+  id: string
+  email: string
+  role: GrantableAccountRole
+  status: "invited" | "active"
+  canRevoke: boolean
+}
+
+export interface AccountTeamPanelInvite {
+  id: string
+  shopLabel: string
+  role: GrantableAccountRole
+}
+
+export interface AccountTeamPanelData {
+  canManage: boolean
+  canInviteManager: boolean
+  members: AccountTeamPanelMember[]
+  pendingInvites: AccountTeamPanelInvite[]
+  actingAsShop: boolean
+  shopLabel: string
+  actorEmail: string | null
+  showShopAdminWarning: boolean
+}
+
+async function loadInviteShopLabels(accountIds: string[]): Promise<Map<string, string>> {
+  const labels = new Map<string, string>()
+  if (accountIds.length === 0) return labels
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, shop_name, display_name")
+    .in("id", accountIds)
+  if (error) {
+    console.error("[account-access] invite shop labels failed", {
+      message: error.message,
+      timestamp: new Date().toISOString(),
+    })
+    return labels
+  }
+  for (const row of data ?? []) {
+    const id = typeof row.id === "string" ? row.id : ""
+    if (!id) continue
+    const shopName = typeof row.shop_name === "string" ? row.shop_name.trim() : ""
+    const displayName = typeof row.display_name === "string" ? row.display_name.trim() : ""
+    labels.set(id, shopName || displayName || "Shop")
+  }
+  return labels
+}
+
+/** Team list for the profile Sign-in tab. Null when there is no signed-in shop context. */
+export async function loadAccountTeamPanelData(): Promise<AccountTeamPanelData | null> {
+  const shop = await getShopAccountContext()
+  if (!shop) return null
+
+  const [members, inviteLabels] = await Promise.all([
+    listAccountTeam(),
+    loadInviteShopLabels(shop.pendingInvites.map((invite) => invite.account_id)),
+  ])
+
+  return {
+    canManage: shop.permissions.has("team.manage"),
+    canInviteManager: shop.role === "owner",
+    members: members.map((member) => ({
+      id: member.id,
+      email: member.email,
+      role: member.role,
+      status: member.status === "active" ? "active" : "invited",
+      canRevoke: canGrantAccountRole(shop.role, member.role),
+    })),
+    pendingInvites: shop.pendingInvites.map((invite) => ({
+      id: invite.id,
+      shopLabel: inviteLabels.get(invite.account_id) ?? "Shop",
+      role: invite.role,
+    })),
+    actingAsShop: shop.actingAsShop,
+    shopLabel: shop.shopLabel,
+    actorEmail: shop.actorEmail,
+    showShopAdminWarning:
+      shop.actingAsShop &&
+      shop.accountIsPlatformAdmin &&
+      !shop.platformAdmin &&
+      !shop.platformEmployee,
+  }
 }

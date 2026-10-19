@@ -63,7 +63,7 @@ const SECTION_META_BY_PREFIX: { prefix: string; meta: DashboardSectionMeta }[] =
     prefix: "/dashboard/profile",
     meta: {
       sectionName: "Profile",
-      description: "Update your profile, addresses, and account settings.",
+      description: "Update your profile, sign-in access, addresses, and account settings.",
     },
   },
   {
