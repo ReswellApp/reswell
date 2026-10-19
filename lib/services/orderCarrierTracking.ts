@@ -20,12 +20,15 @@ async function loadOrderForParticipant(
   supabase: SupabaseClient,
   orderId: string,
   userId: string,
+  sellerIds: string[] = [],
 ): Promise<OrderTrackingRow | null> {
+  const sellers = [...new Set([userId, ...sellerIds].map((id) => id.trim()).filter(Boolean))]
+  const sellerClause = sellers.map((id) => `seller_id.eq.${id}`).join(",")
   const { data, error } = await supabase
     .from("orders")
     .select("id, tracking_number, tracking_carrier, tracking_detail")
     .eq("id", orderId)
-    .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
+    .or(`buyer_id.eq.${userId},${sellerClause}`)
     .maybeSingle()
 
   if (error || !data) return null
@@ -114,8 +117,9 @@ export async function getOrderCarrierTrackingForParticipant(
   supabase: SupabaseClient,
   orderId: string,
   userId: string,
+  sellerIds: string[] = [],
 ): Promise<OrderCarrierTrackingResult> {
-  const order = await loadOrderForParticipant(supabase, orderId, userId)
+  const order = await loadOrderForParticipant(supabase, orderId, userId, sellerIds)
   return resolveOrderCarrierTracking(order)
 }
 

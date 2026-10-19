@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Invalid product search" }, { status: 400 })
   }
   const result = await listMerchantShopifyProducts({
-    userId: auth.user.id,
+    userId: auth.accountId,
     ...parsed.data,
   })
   if (!result.ok) {
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     )
   }
   const result = await selectMerchantShopifyProduct({
-    userId: auth.user.id,
+    userId: auth.accountId,
     ...parsed.data,
   })
   if (!result.ok) {
@@ -77,7 +77,7 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Invalid Shopify product" }, { status: 400 })
   }
   const result = await unpublishMerchantShopifyProduct({
-    userId: auth.user.id,
+    userId: auth.accountId,
     productId: parsed.data.productId,
   })
   if (!result.ok) {

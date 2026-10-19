@@ -12,6 +12,7 @@ import { evaluateUserReview } from "@/lib/services/accountRestrictions"
 import { validateSellerReviewForOrder } from "@/lib/services/orderSellerReview"
 import { parseOrderTrackingDetail } from "@/lib/shipping/order-tracking-detail"
 import { orderSellerReviewBodySchema } from "@/lib/validations/order-seller-review"
+import { loadMarketplaceOrderAccess } from "@/lib/account-access/order-operator-session"
 
 export const dynamic = "force-dynamic"
 
@@ -53,6 +54,11 @@ export async function POST(
     return NextResponse.json({ error: "Invalid request", details: parsed.error.flatten() }, { status: 400 })
   }
 
+  const access = await loadMarketplaceOrderAccess(supabase, orderId)
+  if (!access.ok) {
+    return NextResponse.json({ error: access.error }, { status: access.status })
+  }
+
   const { data: order, error: orderErr } = await supabase
     .from("orders")
     .select("id, buyer_id, seller_id, listing_id, status, delivery_status, tracking_detail")
@@ -63,11 +69,8 @@ export async function POST(
     return NextResponse.json({ error: "Order not found" }, { status: 404 })
   }
 
-  const isBuyer = order.buyer_id === user.id
-  const isSeller = order.seller_id === user.id
-  if (!isBuyer && !isSeller) {
-    return NextResponse.json({ error: "Order not found" }, { status: 404 })
-  }
+  const isBuyer = access.role === "buyer"
+  const isSeller = access.role === "seller"
 
   const trackingDetail = parseOrderTrackingDetail(order.tracking_detail)
   const gate = validateSellerReviewForOrder(order, trackingDetail)

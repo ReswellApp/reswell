@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation"
 import { ShopifyIntegrationDashboard } from "@/components/features/integrations/shopify/shopify-integration-dashboard"
 import { getCachedDashboardSession } from "@/lib/dashboard-session"
+import { getShopAccountContext } from "@/lib/services/accountAccess"
 import { privatePageMetadata } from "@/lib/site-metadata"
 import {
   isShopifyConfigured,
@@ -35,15 +36,18 @@ export default async function ShopifyIntegrationPage({
 }) {
   const { supabase, user } = await getCachedDashboardSession()
   if (!user) return null
-  const access = await checkShopifyMerchantAccess(supabase, user.id)
+  const shop = await getShopAccountContext()
+  if (shop && !shop.permissions.has("listings.read")) notFound()
+  const accountId = shop?.accountId ?? user.id
+  const access = await checkShopifyMerchantAccess(supabase, accountId)
   if (!access.allowed && access.reason === "not_approved") notFound()
 
   const status = access.allowed
-    ? await getShopifyConnectionStatus(user.id)
+    ? await getShopifyConnectionStatus(accountId)
     : null
   const shippingReadiness = await getShopifyShippingReadiness(
     supabase,
-    user.id,
+    accountId,
   )
   const connection = status?.ok ? status.data : null
   let products: ShopifyDashboardData["products"] = []
@@ -61,10 +65,10 @@ export default async function ShopifyIntegrationPage({
   if (connection) {
     const [listed, managed] = await Promise.all([
       connection.status === "active" && connection.sync_enabled
-        ? listMerchantShopifyProducts({ userId: user.id })
+        ? listMerchantShopifyProducts({ userId: accountId })
         : null,
       getMerchantShopifyCatalog({
-        userId: user.id,
+        userId: accountId,
         filter: "all",
         section: null,
         query: "",
