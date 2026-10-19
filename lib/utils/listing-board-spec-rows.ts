@@ -8,6 +8,7 @@ import {
 } from "@/lib/listing-dimensions-display"
 import { FIN_SETUP_LABELS, parseFinsSetupFromStorage } from "@/lib/listing-fin-setup-tags"
 import { formatHomePeerListingConditionLine } from "@/lib/listing-labels"
+import { peerBrandNewStockQuantity } from "@/lib/listing-stock-quantity"
 
 export type ListingBoardSpecRow = {
   label: string
@@ -16,6 +17,9 @@ export type ListingBoardSpecRow = {
 }
 
 export type ListingBoardSpecSource = {
+  section?: string | null
+  stock_quantity?: number | null
+  inventory_source?: string | null
   condition?: string | null
   dimensions?: string | null
   construction?: string | null
@@ -30,6 +34,21 @@ export function listingConditionSpecRow(
   const value = formatHomePeerListingConditionLine(condition)?.replace(" — ", " – ") ?? null
   if (!value) return null
   return { label: "Condition", value }
+}
+
+/** Brand-new peer inventory. Hidden for used listings and legacy rows with no stock. */
+export function listingAvailableQuantitySpecRow(listing: {
+  section?: string | null
+  condition?: string | null
+  stock_quantity?: number | null
+  inventory_source?: string | null
+}): ListingBoardSpecRow | null {
+  const quantity = peerBrandNewStockQuantity(listing)
+  if (quantity < 1) return null
+  return {
+    label: "Quantity",
+    value: quantity === 1 ? "1 available" : `${quantity} available`,
+  }
 }
 
 const SKIP_SLUGS = new Set(["other"])
@@ -52,6 +71,8 @@ export function listingBoardSpecRows(input: ListingBoardSpecSource): ListingBoar
 
   const condition = listingConditionSpecRow(input.condition)
   if (condition) rows.push(condition)
+  const quantity = listingAvailableQuantitySpecRow(input)
+  if (quantity) rows.push(quantity)
 
   const geometry = formatListingGeometryLine({ dimensions: input.dimensions })
   if (geometry) rows.push({ label: "Dimensions", value: geometry })

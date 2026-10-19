@@ -83,6 +83,11 @@ import {
 } from "@/lib/sell-flow/update-owned-listing-client"
 import { buildSurfpackListingPersistFields } from "@/lib/surfpack-listing-persist-fields"
 import { computeSurfpackSellSectionCompletion } from "@/lib/surfpack-sell-section-completion"
+import {
+  brandNewQuantityValidationMessage,
+  parseBrandNewListingQuantity,
+  sellFormStockQuantityValue,
+} from "@/lib/listing-stock-quantity"
 import { sellFormConditionValue } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
 import { navigateAfterListingSave } from "@/lib/sell-flow/navigate-after-listing-save"
@@ -162,6 +167,7 @@ type SurfpackFormState = {
   sellerPurchasedFrom: string
   sellerPurchasedOn: string
   condition: string
+  stockQuantity: string
   size: string
   brand: string
   model: string
@@ -190,6 +196,7 @@ const INITIAL_STATE: SurfpackFormState = {
   sellerPurchasedFrom: "",
   sellerPurchasedOn: "",
   condition: "",
+  stockQuantity: "1",
   size: "",
   brand: "",
   model: "",
@@ -399,6 +406,7 @@ export default function SellSurfpacksFlow({ editListingId = null }: { editListin
         sellerPurchasedOn:
           (listing as { seller_purchased_on?: string | null }).seller_purchased_on ?? "",
         condition: sellFormConditionValue(listing.condition),
+        stockQuantity: sellFormStockQuantityValue((listing as { stock_quantity?: number | null }).stock_quantity),
         size: (listing as { surfpack_size?: string | null }).surfpack_size ?? "",
         brand: (listing as { brand?: string | null }).brand?.trim() ?? "",
         model: (listing as { model?: string | null }).model?.trim() ?? "",
@@ -753,6 +761,12 @@ export default function SellSurfpacksFlow({ editListingId = null }: { editListin
       scrollSurfpackSellSectionIntoView("sell-surfpacks-section-details")
       return
     }
+    const quantityMessage = brandNewQuantityValidationMessage(form.condition, form.stockQuantity)
+    if (quantityMessage) {
+      failValidation(quantityMessage)
+      scrollSurfpackSellSectionIntoView("sell-surfpacks-section-details")
+      return
+    }
     if (!form.description.trim()) {
       failValidation("Add a description.")
       scrollSurfpackSellSectionIntoView("sell-surfpacks-section-details")
@@ -798,6 +812,7 @@ export default function SellSurfpacksFlow({ editListingId = null }: { editListin
       description: form.description,
       price: Number(form.price),
       condition: form.condition as CreateSurfpackListingInput["condition"],
+      stockQuantity: parseBrandNewListingQuantity(form.stockQuantity) ?? 1,
       size: form.size || null,
       brand: form.brand,
       model: form.model,
@@ -1215,6 +1230,8 @@ export default function SellSurfpacksFlow({ editListingId = null }: { editListin
                     brand={form.brand}
                     model={form.model}
                     onConditionChange={(v) => setField("condition", v)}
+                    stockQuantity={form.stockQuantity}
+                    onStockQuantityChange={(v) => setField("stockQuantity", v)}
                     onSizeChange={(v) => setField("size", v)}
                     onBrandChange={(v) => setField("brand", v)}
                     onModelChange={(v) => setField("model", v)}

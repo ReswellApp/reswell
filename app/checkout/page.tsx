@@ -6,10 +6,15 @@ import { createClient } from "@/lib/supabase/server"
 import { CheckoutAccountRequired } from "@/components/checkout-account-required"
 import { CheckoutClient } from "@/components/checkout-client"
 import type { CheckoutListing } from "@/components/checkout-types"
+import { attachListingInventorySources } from "@/lib/db/listingInventorySource"
 import { findListingByParam } from "@/lib/listing-query"
 import { isBlockedOwnListingPurchase } from "@/lib/cart-eligibility"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { isReswellShopListing } from "@/lib/reswell-shop"
+import {
+  clampListingBuyerQuantity,
+  peerBrandNewStockQuantity,
+} from "@/lib/listing-stock-quantity"
 import { resolveMixedCheckoutSellerId } from "@/lib/mixed-checkout"
 import { listingDetailHref } from "@/lib/listing-href"
 import { capitalizeWords } from "@/lib/listing-labels"
@@ -97,7 +102,13 @@ function rowToCheckoutListing(
 }
 
 export default async function CheckoutPage(props: {
-  searchParams: Promise<{ listing?: string; from_cart?: string; seller_id?: string; offer?: string }>
+  searchParams: Promise<{
+    listing?: string
+    from_cart?: string
+    seller_id?: string
+    offer?: string
+    qty?: string
+  }>
 }) {
   const searchParams = await props.searchParams
   const fromCart = searchParams.from_cart === "1"
@@ -384,6 +395,8 @@ export default async function CheckoutPage(props: {
   if (redirectSlug) {
     const params = new URLSearchParams()
     params.set("listing", redirectSlug)
+    const qty = searchParams.qty?.trim()
+    if (qty) params.set("qty", qty)
     redirect(`/checkout?${params.toString()}`)
   }
 
@@ -435,7 +448,42 @@ export default async function CheckoutPage(props: {
 
   const listingTitle = capitalizeWords(listing.title)
 
-  let checkoutListing = rowToCheckoutListing(listing as unknown as Record<string, unknown>)
+  const listingQuantityBase = {
+    id: listing.id,
+    section: listing.section,
+    condition: (listing as { condition?: string | null }).condition ?? null,
+    stock_quantity: (listing as { stock_quantity?: number | null }).stock_quantity ?? null,
+  }
+  const sourcedQuantity = await attachListingInventorySources(supabase, [listingQuantityBase])
+  const listingForQuantity = sourcedQuantity.ok
+    ? sourcedQuantity.listings[0] ?? listingQuantityBase
+    : listingQuantityBase
+  const stockBacked =
+    isReswellShopListing(listing.section) || peerBrandNewStockQuantity(listingForQuantity) >= 1
+  let checkoutQuantity = 1
+  if (stockBacked) {
+    const requestedQty = Math.floor(Number(searchParams.qty) || 0)
+    let cartQty: number | null = null
+    if (user && !isAnonymousSupabaseUser(user)) {
+      const { data: cartRow } = await supabase
+        .from("cart_items")
+        .select("quantity")
+        .eq("profile_id", user.id)
+        .eq("listing_id", listing.id)
+        .maybeSingle()
+      if (cartRow) {
+        cartQty = Math.max(1, Math.floor(Number((cartRow as { quantity?: number }).quantity) || 1))
+      }
+    }
+    checkoutQuantity = clampListingBuyerQuantity(
+      listingForQuantity,
+      requestedQty >= 1 ? requestedQty : cartQty ?? 1,
+    )
+  }
+  let checkoutListing = rowToCheckoutListing(
+    listing as unknown as Record<string, unknown>,
+    checkoutQuantity,
+  )
   let matchedOfferId: string | null = null
   let matchedOfferFulfillment: "pickup" | "shipping" | null = null
 
@@ -452,7 +500,10 @@ export default async function CheckoutPage(props: {
       findAcceptedOfferMatchingListings(supabase, user.id, [checkoutListing.id], listing.user_id),
     ])
     if (priced[0]) {
-      checkoutListing = rowToCheckoutListing(priced[0] as unknown as Record<string, unknown>)
+      checkoutListing = rowToCheckoutListing(
+        priced[0] as unknown as Record<string, unknown>,
+        checkoutListing.quantity ?? 1,
+      )
     }
     matchedOfferId = matchedOffer?.id ?? null
     matchedOfferFulfillment = matchedOffer

@@ -1,4 +1,5 @@
 import { applyFinReswellPackageDefaults } from "@/lib/fin-reswell-shipping-defaults"
+import { stockQuantityForSellCondition } from "@/lib/listing-stock-quantity"
 import { finsSetupFieldForDb } from "@/lib/listing-facet-write"
 import {
   FINS_SECTION,
@@ -91,6 +92,7 @@ export function buildFinListingPersistFields(
     description: input.description.trim(),
     price: input.price,
     condition: input.condition,
+    stock_quantity: stockQuantityForSellCondition(input.condition, input.stockQuantity),
     section: FINS_SECTION,
     category_id: USED_FINS_CATEGORY_ID,
     latitude: input.locationLat ?? null,

@@ -10,6 +10,7 @@ import {
   parseVolumeLiters,
 } from "@/lib/board-measurements"
 import { isListingSellableCondition } from "@/lib/listing-labels"
+import { brandNewQuantityValidationMessage } from "@/lib/listing-stock-quantity"
 import {
   isReswellPackedWeightComplete,
   parseReswellPackedWeightToTotalOz,
@@ -43,6 +44,7 @@ export type SellFormValidationInput = {
   price: string
   description: string
   condition: string
+  stockQuantity?: string
   category: string
   brand: string
   /** Surfboard model name (persisted to catalog snapshot `model_name`). */
@@ -130,6 +132,8 @@ export function validateSellListingForm(
   if (!isListingSellableCondition(form.condition)) {
     return "Please select a condition."
   }
+  const quantityMessage = brandNewQuantityValidationMessage(form.condition, form.stockQuantity ?? "1")
+  if (quantityMessage) return quantityMessage
 
   const price = parseFloat(form.price.trim())
   if (!Number.isFinite(price) || price < PRICE_MIN || price > PRICE_MAX) {

@@ -13,6 +13,7 @@ export const listingDraftAutosaveSchema = z.object({
   sellerPurchasedFrom: z.string().max(200).optional(),
   sellerPurchasedOn: z.string().regex(/^$|^\d{4}-\d{2}-\d{2}$/).optional(),
   condition: z.string().optional(),
+  stockQuantity: z.union([z.string(), z.number()]).optional(),
   category: z.string().optional(),
   brand: z.string().optional(),
   boardFulfillment: fulfillment.optional(),

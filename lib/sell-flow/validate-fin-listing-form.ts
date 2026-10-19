@@ -4,6 +4,7 @@ import {
 } from "@/lib/fin-reswell-shipping-defaults"
 import { RESWELL_MAX_REASONABLE_SMALL_PARCEL_LENGTH_IN } from "@/lib/surfboard-shipping-estimates"
 import { isListingSellableCondition } from "@/lib/listing-labels"
+import { brandNewQuantityValidationMessage } from "@/lib/listing-stock-quantity"
 import {
   parseReswellParcelLengthRawToCarrierInches,
   parseReswellParcelWidthHeightRawToCarrierInches,
@@ -22,6 +23,7 @@ export type FinSellFormValidationInput = {
   description: string
   price: string
   condition: string
+  stockQuantity?: string
   locationCity: string
   locationState: string
   shippingAvailable: boolean
@@ -69,6 +71,8 @@ export function validateFinListingForm(
   if (!isListingSellableCondition(form.condition)) {
     return "Please select a condition."
   }
+  const quantityMessage = brandNewQuantityValidationMessage(form.condition, form.stockQuantity ?? "1")
+  if (quantityMessage) return quantityMessage
 
   if (!form.description.trim()) {
     return "Add a description."

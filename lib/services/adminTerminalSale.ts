@@ -12,6 +12,7 @@ import {
   type PeerSurfboardCheckoutListingRow,
 } from "@/lib/services/peerListingShippingQuote"
 import { listingSoldViaCheckoutUpdate } from "@/lib/listing-sold-state"
+import { peerBrandNewStockQuantity } from "@/lib/listing-stock-quantity"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { fetchSellerFeeWaived } from "@/lib/db/profileSellerFee"
 import { getSellerEarnings } from "@/lib/seller-fees"
@@ -179,7 +180,7 @@ async function loadListingForAdminTerminal(
 
   let query = serviceSupabase
     .from("listings")
-    .select(`${PEER_SURFBOARD_CHECKOUT_LISTING_SELECT}, hidden_from_site, archived_at`)
+    .select(`${PEER_SURFBOARD_CHECKOUT_LISTING_SELECT}, hidden_from_site, archived_at, stock_quantity`)
     .limit(1)
 
   query = ref.kind === "id" ? query.eq("id", ref.value) : query.eq("slug", ref.value)
@@ -248,7 +249,7 @@ export async function previewAdminTerminalListingById(
 > {
   const { data, error } = await serviceSupabase
     .from("listings")
-    .select(`${PEER_SURFBOARD_CHECKOUT_LISTING_SELECT}, hidden_from_site, archived_at`)
+    .select(`${PEER_SURFBOARD_CHECKOUT_LISTING_SELECT}, hidden_from_site, archived_at, stock_quantity`)
     .eq("id", listingId)
     .maybeSingle()
 
@@ -440,7 +441,7 @@ async function loadListingForAdminTerminalSale(
 > {
   const { data: listingRaw, error: listingErr } = await service
     .from("listings")
-    .select(`${PEER_SURFBOARD_CHECKOUT_LISTING_SELECT}, hidden_from_site, archived_at`)
+    .select(`${PEER_SURFBOARD_CHECKOUT_LISTING_SELECT}, hidden_from_site, archived_at, stock_quantity`)
     .eq("id", listingId)
     .maybeSingle()
 
@@ -794,14 +795,25 @@ export async function completeAdminTerminalCashSale(
 
   const listingTitle = String(listing.title ?? "")
 
-  const { error: listingErr } = await service
-    .from("listings")
-    .update(listingSoldViaCheckoutUpdate())
-    .eq("id", listing.id)
+  if (peerBrandNewStockQuantity(listing) >= 1) {
+    const { error: stockErr } = await service.rpc("decrement_listing_stock", {
+      p_listing_id: listing.id,
+      p_qty: 1,
+    })
+    if (stockErr) {
+      console.error("[adminTerminalSale] stock decrement:", stockErr)
+      return { ok: false, error: "Could not update listing inventory", status: 409 }
+    }
+  } else {
+    const { error: listingErr } = await service
+      .from("listings")
+      .update(listingSoldViaCheckoutUpdate())
+      .eq("id", listing.id)
 
-  if (listingErr) {
-    console.error("[adminTerminalSale] cash listing update:", listingErr)
-    return { ok: false, error: "Could not mark listing sold", status: 500 }
+    if (listingErr) {
+      console.error("[adminTerminalSale] cash listing update:", listingErr)
+      return { ok: false, error: "Could not mark listing sold", status: 500 }
+    }
   }
 
   await safeRevalidateAfterMarketplaceOrderCommit(service, {

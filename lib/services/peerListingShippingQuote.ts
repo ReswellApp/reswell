@@ -28,6 +28,7 @@ export const PEER_SURFBOARD_CHECKOUT_LISTING_SELECT = `
   title,
   price,
   section,
+  condition,
   shipping_available,
   local_pickup,
   shipping_price,
@@ -76,6 +77,8 @@ export type PeerSurfboardCheckoutListingRow = PeerListingForShippingQuote & {
   price: string | number
   title: string | null
   section: string | null
+  condition?: string | null
+  stock_quantity?: number | null
   /** Set by `attachListingInventorySources` on Shopify-aware purchase paths. */
   inventory_source?: string | null
   status: string | null

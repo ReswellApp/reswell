@@ -1,3 +1,4 @@
+import { peerBrandNewStockQuantity } from "@/lib/listing-stock-quantity"
 import { Suspense, type ComponentProps } from "react"
 import { notFound } from "next/navigation"
 import Link from "next/link"
@@ -245,7 +246,10 @@ async function renderSurfboardListingDetailPage({
     dimensions: (board as { dimensions?: string | null }).dimensions,
   })
   const boardSpecRows = listingBoardSpecRows({
+    section: board.section,
     condition: board.condition,
+    stock_quantity: (board as { stock_quantity?: number | null }).stock_quantity,
+    inventory_source: (board as { inventory_source?: string | null }).inventory_source,
     dimensions: (board as { dimensions?: string | null }).dimensions,
     construction: (board as { construction?: string | null }).construction,
     fin_system: (board as { fin_system?: string | null }).fin_system,
@@ -476,6 +480,12 @@ async function renderSurfboardListingDetailPage({
                     listingId={board.id}
                     checkoutListingParam={board.slug ?? board.id}
                     section="surfboards"
+                    availableQuantity={peerBrandNewStockQuantity({
+                      section: "surfboards",
+                      condition: board.condition as string | null,
+                      stock_quantity: (board as { stock_quantity?: number | null }).stock_quantity,
+                      inventory_source: (board as { inventory_source?: string | null }).inventory_source,
+                    })}
                     isLoggedIn={!!user}
                     makeOffer={makeOfferConfig}
                     agreedCheckoutItemUsd={buyerAgreedPriceUsd}
@@ -574,6 +584,12 @@ async function renderSurfboardListingDetailPage({
                       listingId={board.id}
                       checkoutListingParam={board.slug ?? board.id}
                       section="surfboards"
+                      availableQuantity={peerBrandNewStockQuantity({
+                        section: "surfboards",
+                        condition: board.condition as string | null,
+                        stock_quantity: (board as { stock_quantity?: number | null }).stock_quantity,
+                        inventory_source: (board as { inventory_source?: string | null }).inventory_source,
+                      })}
                       isLoggedIn={!!user}
                       makeOffer={makeOfferConfig}
                       agreedCheckoutItemUsd={buyerAgreedPriceUsd}

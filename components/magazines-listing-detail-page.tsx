@@ -1,3 +1,4 @@
+import { peerBrandNewStockQuantity } from "@/lib/listing-stock-quantity"
 import type { ComponentProps } from "react"
 import { notFound } from "next/navigation"
 import Link from "next/link"
@@ -34,7 +35,7 @@ import { ContactSellerForm } from "@/components/contact-seller-form"
 import { ListingBoardSpecTable } from "@/components/features/listings/listing-board-spec-table"
 import { ListingCatalogIdentity } from "@/components/features/listings/listing-catalog-identity"
 import { ListingPdpDeliveryCaption } from "@/components/features/listings/listing-pdp-delivery-caption"
-import { listingConditionSpecRow } from "@/lib/utils/listing-board-spec-rows"
+import { listingAvailableQuantitySpecRow, listingConditionSpecRow } from "@/lib/utils/listing-board-spec-rows"
 import { fetchSimilarPeerListingsForListingPdp } from "@/lib/db/listing-detail-similar-peer"
 import { FavoriteButton } from "@/components/favorite-button"
 import { cn } from "@/lib/utils"
@@ -294,6 +295,12 @@ async function renderMagazinesListingDetailPage({
 
   const specRows = [
     listingConditionSpecRow(magazine.condition as string | null),
+    listingAvailableQuantitySpecRow({
+      section: magazine.section,
+      condition: magazine.condition as string | null,
+      stock_quantity: (magazine as { stock_quantity?: number | null }).stock_quantity,
+      inventory_source: (magazine as { inventory_source?: string | null }).inventory_source,
+    }),
     magazineYear ? { label: "Year", value: magazineYear } : null,
   ].filter(Boolean) as { label: string; value: string; href?: string | null }[]
 
@@ -437,6 +444,12 @@ async function renderMagazinesListingDetailPage({
                   listingId={magazine.id}
                   checkoutListingParam={magazine.slug ?? magazine.id}
                   section="magazines"
+                  availableQuantity={peerBrandNewStockQuantity({
+                    section: "magazines",
+                    condition: magazine.condition as string | null,
+                    stock_quantity: (magazine as { stock_quantity?: number | null }).stock_quantity,
+                    inventory_source: (magazine as { inventory_source?: string | null }).inventory_source,
+                  })}
                   isLoggedIn={!!user}
                 />
               ) : null}
@@ -508,6 +521,12 @@ async function renderMagazinesListingDetailPage({
                     listingId={magazine.id}
                     checkoutListingParam={magazine.slug ?? magazine.id}
                     section="magazines"
+                    availableQuantity={peerBrandNewStockQuantity({
+                      section: "magazines",
+                      condition: magazine.condition as string | null,
+                      stock_quantity: (magazine as { stock_quantity?: number | null }).stock_quantity,
+                    inventory_source: (magazine as { inventory_source?: string | null }).inventory_source,
+                    })}
                     isLoggedIn={!!user}
                   />
                 </div>

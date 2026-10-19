@@ -64,6 +64,10 @@ import {
 } from "@/lib/sell-flow/update-owned-listing-client"
 import { buildFinListingPersistFields } from "@/lib/fin-listing-persist-fields"
 import { computeFinSellSectionCompletion } from "@/lib/fin-sell-section-completion"
+import {
+  parseBrandNewListingQuantity,
+  sellFormStockQuantityValue,
+} from "@/lib/listing-stock-quantity"
 import { sellFormConditionValue } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
 import { navigateAfterListingSave } from "@/lib/sell-flow/navigate-after-listing-save"
@@ -152,6 +156,7 @@ type FinFormState = {
   sellerPurchasedFrom: string
   sellerPurchasedOn: string
   condition: string
+  stockQuantity: string
   size: string
   finSetup: string
   finSystem: string
@@ -184,6 +189,7 @@ const INITIAL_STATE: FinFormState = {
   sellerPurchasedFrom: "",
   sellerPurchasedOn: "",
   condition: "",
+  stockQuantity: "1",
   size: "",
   finSetup: "",
   finSystem: "",
@@ -432,6 +438,7 @@ export default function SellFinsFlow({
       sellerPurchasedFrom: form.sellerPurchasedFrom,
       sellerPurchasedOn: form.sellerPurchasedOn,
       condition: form.condition,
+      stockQuantity: form.stockQuantity,
       size: form.size || null,
       finSetup: form.finSetup || null,
       finSystem: form.finSystem || null,
@@ -524,6 +531,7 @@ export default function SellFinsFlow({
         sellerPurchasedOn:
           (listing as { seller_purchased_on?: string | null }).seller_purchased_on ?? "",
         condition: sellFormConditionValue(listing.condition),
+        stockQuantity: sellFormStockQuantityValue((listing as { stock_quantity?: number | null }).stock_quantity),
         size: (listing as { fin_size?: string | null }).fin_size ?? "",
         finSetup: singleFinSetupSlugForForm((listing as { fins_setup?: string | null }).fins_setup),
         finSystem: (listing as { fin_system?: string | null }).fin_system ?? "",
@@ -903,6 +911,7 @@ export default function SellFinsFlow({
       description: form.description,
       price: form.price,
       condition: form.condition,
+      stockQuantity: parseBrandNewListingQuantity(form.stockQuantity) ?? 1,
       size: form.size || null,
       finSetup: form.finSetup || null,
       finSystem: form.finSystem || null,
@@ -1327,6 +1336,8 @@ export default function SellFinsFlow({
                     brandId={form.brandId}
                     model={form.model}
                     onConditionChange={(v) => setField("condition", v)}
+                    stockQuantity={form.stockQuantity}
+                    onStockQuantityChange={(v) => setField("stockQuantity", v)}
                     onFinSetupChange={(v) => setField("finSetup", v)}
                     onFinSystemChange={(v) => setField("finSystem", v)}
                     onSizeChange={(v) => setField("size", v)}

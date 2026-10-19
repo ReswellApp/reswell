@@ -9,6 +9,7 @@ import {
   resolveListingFulfillmentFlagsForSellSubmit,
 } from "@/lib/sell-listing-fulfillment-flags"
 import { isListingSellableCondition } from "@/lib/listing-labels"
+import { stockQuantityForSellCondition } from "@/lib/listing-stock-quantity"
 import type { ListingDraftAutosaveInput } from "@/lib/validations/listing-draft-autosave"
 import { LISTING_TITLE_MAX_LENGTH } from "@/lib/sell-form-validation"
 import { minimumOfferAmountToDb } from "@/lib/utils/offers-minimum-amount"
@@ -86,6 +87,7 @@ export function buildSurfboardDraftListingRow(
     description: desc,
     price: Number.isFinite(price) && price >= 0 ? price : 0,
     condition,
+    stock_quantity: stockQuantityForSellCondition(condition, fd.stockQuantity),
     category_id: categoryId,
     section: "surfboards",
     board_type: resolveListingBoardTypeFromCategory(categoryId, fd.boardType),

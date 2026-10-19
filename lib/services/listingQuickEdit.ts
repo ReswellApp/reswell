@@ -26,6 +26,10 @@ import {
   type ListingDeskSource,
 } from "@/lib/listings-desk-fields"
 import type { ListingQuickEditBody } from "@/lib/validations/listing-quick-edit"
+import {
+  isBrandNewListingCondition,
+  stockQuantityForSellCondition,
+} from "@/lib/listing-stock-quantity"
 
 export type ListingQuickEditSaved = {
   title: string
@@ -174,6 +178,12 @@ export async function updateSellerListingQuickEdit(
   }
   if (params.condition !== undefined && params.condition !== row.condition) {
     patch.condition = params.condition
+    const nextStock = isBrandNewListingCondition(params.condition)
+      ? Math.max(1, Math.floor(Number(row.stock_quantity) || 0))
+      : stockQuantityForSellCondition(params.condition, 1)
+    if (nextStock !== Math.floor(Number(row.stock_quantity) || 0)) {
+      patch.stock_quantity = nextStock
+    }
   }
 
   if (params.specs) {

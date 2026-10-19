@@ -1,3 +1,4 @@
+import { peerBrandNewStockQuantity } from "@/lib/listing-stock-quantity"
 import type { ComponentProps } from "react"
 import { notFound } from "next/navigation"
 import Link from "next/link"
@@ -82,7 +83,7 @@ import { ACCESSORIES_SECTION, accessorySizeLabel } from "@/lib/accessory-listing
 import { ListingCatalogIdentity } from "@/components/features/listings/listing-catalog-identity"
 import { ListingPdpDeliveryCaption } from "@/components/features/listings/listing-pdp-delivery-caption"
 import { ListingBoardSpecTable } from "@/components/features/listings/listing-board-spec-table"
-import { listingConditionSpecRow } from "@/lib/utils/listing-board-spec-rows"
+import { listingAvailableQuantitySpecRow, listingConditionSpecRow } from "@/lib/utils/listing-board-spec-rows"
 
 type AboutSellerProfilesProp = ComponentProps<typeof ListingAboutSellerSection>["profiles"]
 
@@ -334,6 +335,12 @@ async function renderAccessoriesListingDetailPage({
 
   const specRows = [
     listingConditionSpecRow(accessory.condition as string | null),
+    listingAvailableQuantitySpecRow({
+      section: accessory.section,
+      condition: accessory.condition as string | null,
+      stock_quantity: (accessory as { stock_quantity?: number | null }).stock_quantity,
+      inventory_source: (accessory as { inventory_source?: string | null }).inventory_source,
+    }),
     sizeLabel ? { label: "Size", value: sizeLabel } : null,
   ].filter(Boolean) as { label: string; value: string; href?: string | null }[]
 
@@ -474,6 +481,12 @@ async function renderAccessoriesListingDetailPage({
                   listingId={accessory.id}
                   checkoutListingParam={accessory.slug ?? accessory.id}
                   section="accessories"
+                  availableQuantity={peerBrandNewStockQuantity({
+                    section: "accessories",
+                    condition: accessory.condition as string | null,
+                    stock_quantity: (accessory as { stock_quantity?: number | null }).stock_quantity,
+                    inventory_source: (accessory as { inventory_source?: string | null }).inventory_source,
+                  })}
                   isLoggedIn={!!user}
                   makeOffer={makeOfferConfig}
                   agreedCheckoutItemUsd={buyerAgreedPriceUsd}
@@ -564,6 +577,12 @@ async function renderAccessoriesListingDetailPage({
                     listingId={accessory.id}
                     checkoutListingParam={accessory.slug ?? accessory.id}
                     section="accessories"
+                    availableQuantity={peerBrandNewStockQuantity({
+                      section: "accessories",
+                      condition: accessory.condition as string | null,
+                      stock_quantity: (accessory as { stock_quantity?: number | null }).stock_quantity,
+                    inventory_source: (accessory as { inventory_source?: string | null }).inventory_source,
+                    })}
                     isLoggedIn={!!user}
                     makeOffer={makeOfferConfig}
                     agreedCheckoutItemUsd={buyerAgreedPriceUsd}
