@@ -566,26 +566,18 @@ export const MANAGED_PAGES: ManagedPage[] = [
   }),
   page("giveaways", "marketing", "Giveaways", {
     title: "Surfboard Giveaways | Reswell",
-    description:
-      "Current Reswell giveaways for sellers. List a surfboard for a chance to win a custom from Channel Islands, Lost, JS, Sharpeye, Hayden Shapes, or Lovemachine.",
+    description: "The custom surfboard giveaway has ended.",
     path: "/giveaways",
-    keywords: ["surfboard giveaway", "win a surfboard", "list surfboard raffle"],
-  }),
+    robotsIndex: false,
+    robotsFollow: true,
+  }, { note: "Closed. /giveaways redirects home. Signup and Klaviyo giveaway events are off." }),
   page("giveaway-win-a-custom-surfboard", "marketing", "Win a custom surfboard", {
     title: "List a surfboard to win a surfboard | Reswell",
-    description:
-      "Publish a surfboard on Reswell and you’re entered to win a custom from Channel Islands, Lost, JS, Sharpeye, Hayden Shapes, or Lovemachine. You pick the brand.",
+    description: "The custom surfboard giveaway has ended.",
     path: "/giveaways/win-a-custom-surfboard",
-    keywords: [
-      "custom surfboard giveaway",
-      "Channel Islands",
-      "Lost",
-      "JS",
-      "Sharpeye",
-      "Hayden Shapes",
-      "Lovemachine",
-    ],
-  }, { note: "Redirects to /giveaways." }),
+    robotsIndex: false,
+    robotsFollow: true,
+  }, { note: "Closed. Redirects home." }),
   page("ratereswell", "marketing", "Rate Reswell", {
     title: "Rate Reswell",
     description:

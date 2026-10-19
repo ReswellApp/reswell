@@ -50,6 +50,13 @@ export const GIVEAWAY_PRIZE_BRAND_LIST_COPY =
 
 export const WIN_A_SURFBOARD_GIVEAWAY_SLUG = "win-a-custom-surfboard"
 
+/**
+ * Master switch for the custom-surfboard raffle.
+ * When false: public UI stays hidden, new entries are rejected, and Klaviyo
+ * giveaway metrics (signup, qualified, listing reminder) are not sent.
+ */
+export const SURFBOARD_GIVEAWAY_CAMPAIGN_ENABLED = false
+
 /** Final entry moment for the custom-surfboard raffle, in Pacific Time. */
 export const WIN_A_SURFBOARD_ENTRY_DEADLINE_COPY = "tonight at 11:59pm PT"
 
@@ -70,7 +77,7 @@ const WIN_A_SURFBOARD_GIVEAWAY: Giveaway = {
   deadlineLabel: WIN_A_SURFBOARD_ENTRY_DEADLINE_COPY,
   scheduleLabel:
     `Deadline to enter is ${WIN_A_SURFBOARD_ENTRY_DEADLINE_COPY} · Raffle winner is chosen on October 10th`,
-  status: "active",
+  status: "ended",
   requiresSurfboardListing: true,
   prizeBrands: [
     "channel-islands",
@@ -122,6 +129,7 @@ export function resolveGiveawayStatus(giveaway: Giveaway, now = Date.now()): Giv
 }
 
 export function isGiveawayOpen(giveaway: Giveaway, now = Date.now()): boolean {
+  if (!SURFBOARD_GIVEAWAY_CAMPAIGN_ENABLED) return false
   return resolveGiveawayStatus(giveaway, now) === "active"
 }
 
@@ -140,6 +148,7 @@ export function listGiveaways(): readonly Giveaway[] {
 }
 
 export function listCurrentGiveaways(now = Date.now()): Giveaway[] {
+  if (!SURFBOARD_GIVEAWAY_CAMPAIGN_ENABLED) return []
   return GIVEAWAYS.filter((giveaway) => {
     const status = resolveGiveawayStatus(giveaway, now)
     return status === "active" || status === "upcoming"
