@@ -58,6 +58,14 @@ export type CoastalRunView = {
   stopsInDriveOrder?: boolean
   /** Null is the repeating weekly trip. A date is that week only. */
   serviceDate?: string | null
+  /** Pickup window. Missing means the single day_of_week. */
+  pickupStartDow?: number | null
+  pickupEndDow?: number | null
+  /** Delivery window. Starts on or after the pickup start. */
+  deliveryStartDow?: number | null
+  deliveryEndDow?: number | null
+  pickupDescription?: string | null
+  deliveryDescription?: string | null
 }
 
 export type CoastalShipperExclusion = {

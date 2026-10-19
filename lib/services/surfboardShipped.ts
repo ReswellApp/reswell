@@ -1,6 +1,7 @@
 import { type CoastalMatchShipper } from "@/lib/services/coastalDeliveryMatch"
 import { soonestEnabledTrip } from "@/lib/services/coastalShipperWeek"
 import { COASTAL_WEEKDAY_LABELS } from "@/lib/types/coastal-delivery"
+import { deliveryDatesForPickup, tripWindowFromRun, weekdaySpanLabel } from "@/lib/utils/shipperTripWindow"
 import { normalizeUsStateProvinceForShipping } from "@/lib/us-state-name-to-code"
 import { isShipperPriceCents, shipperPriceUsd } from "@/lib/utils/shipperPrice"
 
@@ -18,12 +19,17 @@ export type LiveSurfboardShipper = {
   displayName: string
   priceUsd: number
   live: true
+  /** Pickup copy shown on /sell/boards while this shipper is live. */
+  pickupNotes: string[]
+  /** Delivery windows buyers can be matched to, such as Thursday–Saturday. */
+  deliveryLabels: string[]
 }
 
 export type SurfboardShippedWindow = {
   startDate: string
   endDate: string
-  label: typeof SURFBOARD_SHIPPED_WINDOW_LABEL
+  label: string
+  description: string | null
 }
 
 export type SurfboardShippedAttachment = {
@@ -36,6 +42,7 @@ export type SurfboardShippedAttachment = {
   feeUsd: number
   /** Live shippers whose enabled runs cover this corridor, soonest first. */
   availableShippers: LiveSurfboardShipper[]
+  deliveryWindow: SurfboardShippedWindow
 }
 
 export function isCaliforniaAddressState(state: string | null | undefined): boolean {
@@ -50,16 +57,54 @@ export function coastalShipperIsLive(shipper: {
   return shipper.scheduleEnabled === true && shipper.runs.some((run) => run.enabled)
 }
 
+function uniqueCopy(values: readonly (string | null | undefined)[]): string[] {
+  const seen = new Set<string>()
+  const copy: string[] = []
+  for (const value of values) {
+    const text = value?.trim() ?? ""
+    if (!text || seen.has(text)) continue
+    seen.add(text)
+    copy.push(text)
+  }
+  return copy
+}
+
 export function liveSurfboardShippers(shippers: CoastalMatchShipper[]): LiveSurfboardShipper[] {
   return shippers
     .filter(coastalShipperIsLive)
-    .map((shipper) => ({
-      id: shipper.shipperId,
-      displayName: shipper.displayName,
-      priceUsd: shipperPriceUsd(shipper.priceCents),
-      live: true as const,
-    }))
+    .map((shipper) => {
+      const enabled = shipper.runs.filter((run) => run.enabled)
+      return {
+        id: shipper.shipperId,
+        displayName: shipper.displayName,
+        priceUsd: shipperPriceUsd(shipper.priceCents),
+        live: true as const,
+        pickupNotes: uniqueCopy(enabled.map((run) => run.pickupDescription)),
+        deliveryLabels: uniqueCopy(
+          enabled.map((run) => {
+            const window = tripWindowFromRun(run)
+            return weekdaySpanLabel(window.deliveryStart, window.deliveryEnd)
+          }),
+        ),
+      }
+    })
     .sort((a, b) => a.displayName.localeCompare(b.displayName))
+}
+
+export function surfboardShippedSellDropoffCopy(labels: readonly string[]): string {
+  const unique = uniqueCopy(labels)
+  if (unique.length === 0) return `Drop-off is ${SURFBOARD_SHIPPED_WINDOW_LABEL}.`
+  if (unique.length === 1) return `Drop-off is ${unique[0]}.`
+  return `Drop-off is ${unique.join(" or ")}.`
+}
+
+export function surfboardShippedDropoffCopy(
+  window: { label?: string | null; description?: string | null } | null | undefined,
+): string {
+  const label = window?.label?.trim() || SURFBOARD_SHIPPED_WINDOW_LABEL
+  const timing = label === SURFBOARD_SHIPPED_WINDOW_LABEL ? `Drop-off in ${label}` : `Drop-off ${label}`
+  const description = window?.description?.trim()
+  return description ? `${timing}. ${description}` : `${timing}.`
 }
 
 /** Seller option on /sell/boards. Buyer address is not known yet. */
@@ -117,6 +162,7 @@ export function surfboardShippedWindow(now: Date): SurfboardShippedWindow {
     startDate: addPacificDays(now, SURFBOARD_SHIPPED_WINDOW_MIN_DAYS),
     endDate: addPacificDays(now, SURFBOARD_SHIPPED_WINDOW_MAX_DAYS),
     label: SURFBOARD_SHIPPED_WINDOW_LABEL,
+    description: null,
   }
 }
 
@@ -148,6 +194,7 @@ export function attachSurfboardShippedShipper(input: {
 
   const soonest = ranked[0]
   if (!soonest) return null
+  const delivery = deliveryDatesForPickup(soonest.nextRunOn, soonest.run)
 
   return {
     shipperId: soonest.shipper.shipperId,
@@ -157,12 +204,25 @@ export function attachSurfboardShippedShipper(input: {
     weekdayLabel: COASTAL_WEEKDAY_LABELS[soonest.run.dayOfWeek] ?? "Run",
     nextRunOn: soonest.nextRunOn,
     feeUsd: shipperPriceUsd(soonest.shipper.priceCents),
-    availableShippers: ranked.map((row) => ({
-      id: row.shipper.shipperId,
-      displayName: row.shipper.displayName,
-      priceUsd: shipperPriceUsd(row.shipper.priceCents),
-      live: true as const,
-    })),
+    availableShippers: ranked.map((row) => {
+      const shipper = liveSurfboardShippers([row.shipper])[0]
+      return (
+        shipper ?? {
+          id: row.shipper.shipperId,
+          displayName: row.shipper.displayName,
+          priceUsd: shipperPriceUsd(row.shipper.priceCents),
+          live: true as const,
+          pickupNotes: [],
+          deliveryLabels: [],
+        }
+      )
+    }),
+    deliveryWindow: {
+      startDate: delivery.startDate,
+      endDate: delivery.endDate,
+      label: delivery.label,
+      description: soonest.run.deliveryDescription?.trim() || null,
+    },
   }
 }
 

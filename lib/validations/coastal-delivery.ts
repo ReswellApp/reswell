@@ -106,18 +106,46 @@ const coastalTripCitySchema = z.object({
   longitude: z.number().finite().min(-180).max(180),
 })
 
-export const coastalShipperTripSchema = z.object({
-  shipperId: z.string().uuid(),
-  runId: z.string().uuid().optional(),
-  dayOfWeek: z.number().int().min(0).max(6),
-  direction: z.enum(["northbound", "southbound"]),
-  enabled: z.boolean(),
-  stops: z
-    .array(coastalTripCitySchema)
-    .min(2, "Pick a From city and a To city.")
-    .max(20, "A trip can have at most 20 cities."),
-  serviceDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(),
-})
+const weekdaySchema = z.number().int().min(0).max(6)
+const tripDescriptionSchema = z.string().trim().min(2, "Write a short description.").max(160, "Keep that to 160 characters.")
+
+export const coastalShipperTripSchema = z
+  .object({
+    shipperId: z.string().uuid(),
+    runId: z.string().uuid().optional(),
+    dayOfWeek: weekdaySchema,
+    direction: z.enum(["northbound", "southbound"]),
+    enabled: z.boolean(),
+    stops: z
+      .array(coastalTripCitySchema)
+      .min(2, "Pick a From city and a To city.")
+      .max(20, "A trip can have at most 20 cities."),
+    serviceDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(),
+    pickupStartDow: weekdaySchema,
+    pickupEndDow: weekdaySchema,
+    deliveryStartDow: weekdaySchema,
+    deliveryEndDow: weekdaySchema,
+    pickupDescription: tripDescriptionSchema,
+    deliveryDescription: tripDescriptionSchema,
+  })
+  .superRefine((value, context) => {
+    if (value.dayOfWeek !== value.pickupStartDow) {
+      context.addIssue({ code: "custom", message: "Pickup starts on the trip day.", path: ["pickupStartDow"] })
+    }
+    if (value.pickupEndDow < value.pickupStartDow) {
+      context.addIssue({ code: "custom", message: "Pickup ends on or after it starts.", path: ["pickupEndDow"] })
+    }
+    if (value.deliveryStartDow < value.pickupStartDow) {
+      context.addIssue({
+        code: "custom",
+        message: "Delivery starts on or after the pickup start.",
+        path: ["deliveryStartDow"],
+      })
+    }
+    if (value.deliveryEndDow < value.deliveryStartDow) {
+      context.addIssue({ code: "custom", message: "Delivery ends on or after it starts.", path: ["deliveryEndDow"] })
+    }
+  })
 
 export const coastalShipperDeleteTripSchema = z.object({
   shipperId: z.string().uuid(),
