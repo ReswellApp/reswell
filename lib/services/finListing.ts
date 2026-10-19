@@ -10,7 +10,7 @@ import { persistableListingThumbnailUrl } from "@/lib/listing-media-proxy-url"
 import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import { FINS_SECTION } from "@/lib/fin-listing-config"
 import { buildFinListingPersistFields } from "@/lib/fin-listing-persist-fields"
-import { removeListingImageFilesFromStorage } from "@/lib/services/listingStorageCleanup"
+import { deleteListingMediaRowsThenStorage } from "@/lib/services/listingStorageCleanup"
 import {
   insertListingVideos,
   listingVideosToUpdateOps,
@@ -34,22 +34,14 @@ export async function syncFinListingImages(
   removedImageIds: string[],
   images: FinListingImageUpdateOp[],
 ): Promise<void> {
-  if (removedImageIds.length > 0) {
-    const { data: removedRows } = await supabase
-      .from("listing_images")
-      .select("url, thumbnail_url")
-      .eq("listing_id", listingId)
-      .in("id", removedImageIds)
-    const removedUrls: string[] = []
-    for (const r of removedRows ?? []) {
-      if (r.url?.trim()) removedUrls.push(r.url)
-      if (r.thumbnail_url?.trim()) removedUrls.push(r.thumbnail_url)
-    }
-    if (removedUrls.length > 0) {
-      await removeListingImageFilesFromStorage(supabase, removedUrls)
-    }
-    await supabase.from("listing_images").delete().in("id", removedImageIds).eq("listing_id", listingId)
-  }
+  const keptImageIds = new Set(images.flatMap((img) => (img.id ? [img.id] : [])))
+  await deleteListingMediaRowsThenStorage(
+    supabase,
+    "listing_images",
+    listingId,
+    removedImageIds.filter((id) => !keptImageIds.has(id)),
+    images.flatMap((img) => [img.url, img.thumbnailUrl]),
+  )
 
   for (const img of images) {
     if (img.id) {
