@@ -191,6 +191,7 @@ export function SurfboardShippedChoice({
             <SurfboardShippedPickupFields
               form={form}
               saved={saved}
+              selectedId={addressId}
               onPick={(row) => {
                 setAddressId(row.id)
                 setForm({

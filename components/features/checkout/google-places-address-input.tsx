@@ -646,6 +646,7 @@ export function GooglePlacesAddressInput({
           if (e.target instanceof Element && e.target.closest("a")) return
           if (e.pointerType === "mouse") e.preventDefault()
         }}
+        data-address-suggestions=""
         className={cn(
           "pointer-events-auto fixed z-[160] touch-pan-y overflow-hidden rounded-[6px] border border-neutral-200 bg-white text-neutral-900",
           "shadow-[0_10px_40px_-4px_rgba(0,0,0,0.12)]",
