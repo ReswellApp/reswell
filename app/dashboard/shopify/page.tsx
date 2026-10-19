@@ -6,7 +6,7 @@ import {
   isShopifyConfigured,
   isShopifyIntegrationEnabled,
 } from "@/lib/shopify/config"
-import { shopifyConnectErrorMessage } from "@/lib/shopify/connect-errors"
+import { shopifyDashboardCallbackError } from "@/lib/shopify/connect-errors"
 import type { ShopifyDashboardData } from "@/lib/shopify/types"
 import {
   SHOPIFY_CONNECT_OPTIONS_UNAVAILABLE,
@@ -102,9 +102,12 @@ export default async function ShopifyIntegrationPage({
         loadError,
       }}
       connected={params.connected === "1"}
-      callbackError={
-        params.error === "1" ? shopifyConnectErrorMessage(params.detail) : null
-      }
+      callbackError={shopifyDashboardCallbackError({
+        errorFlag: params.error,
+        detail: params.detail,
+        connection,
+        catalogTotal: catalog?.summary.total ?? 0,
+      })}
     />
   )
 }

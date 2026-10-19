@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from "next/server"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
 import { requireShopifyMerchant } from "@/lib/shopify/authorize"
 import { normalizeShopifyDomain } from "@/lib/shopify/config"
-import type { ShopifyConnectErrorDetail } from "@/lib/shopify/connect-errors"
+import {
+  shopifyOAuthCallbackOutcome,
+  type ShopifyConnectErrorDetail,
+} from "@/lib/shopify/connect-errors"
 import { verifyShopifyOAuthHmac, hashShopifyOAuthState } from "@/lib/shopify/crypto"
 import { shopifyClaimCookieOptions } from "@/lib/shopify/claim-cookie"
 import { createServiceRoleClient } from "@/lib/supabase/server"
@@ -97,13 +100,8 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("[shopify] callback", error)
     const message = error instanceof Error ? error.message : ""
-    return dashboardRedirect(
-      "error",
-      message.includes("different Reswell account")
-        ? "store_taken"
-        : message.includes("different Shopify store")
-          ? "already_linked"
-          : "connection_failed",
-    )
+    const outcome = shopifyOAuthCallbackOutcome(message)
+    if (outcome.connected) return dashboardRedirect("connected")
+    return dashboardRedirect("error", outcome.detail)
   }
 }
