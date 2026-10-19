@@ -8,6 +8,7 @@ import {
   type ListingQuickEditRow,
   type ListingQuickFieldPatch,
 } from "@/lib/db/listingQuickEdit"
+import { listingQuantityForCondition } from "@/lib/listing-quantity"
 import { LISTING_QUICK_EDIT_STATUSES } from "@/lib/listing-quick-edit-access"
 import { syncListingToIndex } from "@/lib/elasticsearch/listings-index"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
@@ -31,6 +32,7 @@ export type ListingQuickEditSaved = {
   title: string
   description: string
   condition: string | null
+  quantity: number
   priceUsd: number
   compareAtPriceUsd: number | null
   packageSizeId: ShopPackageSizeId | "custom" | null
@@ -111,6 +113,7 @@ function savedFromRow(
     title: (row.title ?? "").trim(),
     description: (row.description ?? "").trim(),
     condition: row.condition,
+    quantity: listingQuantityForCondition(row.condition, row.quantity),
     priceUsd,
     compareAtPriceUsd,
     packageSizeId: inferShopPackageSizeId({
@@ -174,6 +177,16 @@ export async function updateSellerListingQuickEdit(
   }
   if (params.condition !== undefined && params.condition !== row.condition) {
     patch.condition = params.condition
+  }
+  if (params.condition !== undefined || params.quantity !== undefined) {
+    const nextCondition = params.condition ?? row.condition
+    const nextQuantity = listingQuantityForCondition(
+      nextCondition,
+      params.quantity ?? row.quantity,
+    )
+    if (nextQuantity !== listingQuantityForCondition(row.condition, row.quantity)) {
+      patch.quantity = nextQuantity
+    }
   }
 
   if (params.specs) {
@@ -269,6 +282,7 @@ export async function updateSellerListingQuickEdit(
         title: patch.title ?? fresh.title,
         description: patch.description ?? fresh.description,
         condition: patch.condition ?? fresh.condition,
+        quantity: patch.quantity ?? fresh.quantity,
         shipping_package_tier:
           "shipping_package_tier" in patch ? patch.shipping_package_tier ?? null : fresh.shipping_package_tier,
         shipping_package_band:

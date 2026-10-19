@@ -7,6 +7,7 @@ import { reswellPackageFieldsToDb } from "@/lib/sell-listing-fulfillment-flags"
 import { normalizeSellShippingCostMode } from "@/lib/sell-shipping-cost-mode"
 import type { ListingPersistShippingOptions } from "@/lib/sell-shipping-cost-mode"
 import type { CreateBoardbagListingInput } from "@/lib/validations/boardbag-listing"
+import { listingQuantityForCondition } from "@/lib/listing-quantity"
 
 export function boardbagListingShippingFieldsFor(
   input: CreateBoardbagListingInput,
@@ -82,6 +83,7 @@ export function buildBoardbagListingPersistFields(
     description: input.description.trim(),
     price: input.price,
     condition: input.condition,
+    quantity: listingQuantityForCondition(input.condition, input.quantity),
     section: BOARDBAGS_SECTION,
     category_id: USED_BOARDBAGS_CATEGORY_ID,
     latitude: input.locationLat ?? null,

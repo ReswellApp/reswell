@@ -197,6 +197,8 @@ import {
   isListingSellableCondition,
   sellFormConditionValue,
 } from "@/lib/listing-labels"
+import { listingQuantityForCondition } from "@/lib/listing-quantity"
+import { SellBrandNewQuantityField } from "@/components/features/sell/sell-brand-new-quantity-field"
 import {
   formatBoardLengthForTitle,
   isBoardLengthEntryComplete,
@@ -618,6 +620,7 @@ function createInitialSellFormData() {
     sellerPurchasedOn: "",
     category: "",
     condition: "",
+    quantity: "1",
     brand: "",
     boardFulfillment: "pickup_and_shipping" as BoardFulfillmentChoice,
     boardShippingCostMode: "reswell" as BoardShippingCostMode,
@@ -1333,6 +1336,7 @@ function SellPageContentInner({
       sellerPurchasedFrom: formData.sellerPurchasedFrom,
       sellerPurchasedOn: formData.sellerPurchasedOn,
       condition: formData.condition,
+      quantity: formData.quantity,
       category: formData.category,
       brand: formData.brand,
       boardFulfillment: formData.boardFulfillment,
@@ -1531,6 +1535,12 @@ function SellPageContentInner({
           (listing as { seller_purchased_on?: string | null }).seller_purchased_on ?? "",
         category: listing.category_id ?? "",
         condition: sellFormConditionValue(listing.condition),
+        quantity: String(
+          listingQuantityForCondition(
+            listing.condition,
+            (listing as { quantity?: number | null }).quantity,
+          ),
+        ),
         brand: (listing as { brand?: string | null }).brand?.trim() ?? "",
         boardFulfillment: loadedFulfillment,
         boardShippingCostMode,
@@ -3613,6 +3623,7 @@ function SellPageContentInner({
           description: fd.description,
           price: parseFloat(fd.price),
           condition: fd.condition,
+          quantity: listingQuantityForCondition(fd.condition, fd.quantity),
           section: "surfboards" as const,
           category_id: fd.category,
           board_type: resolveListingBoardTypeFromCategory(fd.category, fd.boardType),
@@ -3721,6 +3732,7 @@ function SellPageContentInner({
           description: fd.description,
           price: parseFloat(fd.price),
           condition: fd.condition,
+          quantity: listingQuantityForCondition(fd.condition, fd.quantity),
           section: "surfboards" as const,
           category_id: fd.category,
           board_type: resolveListingBoardTypeFromCategory(fd.category, fd.boardType),
@@ -4445,6 +4457,8 @@ function SellPageContentInner({
                       setFormData((f) => ({ ...f, condition }))
                     }
                     conditionComplete={isListingSellableCondition(formData.condition)}
+                    quantity={formData.quantity}
+                    onQuantityChange={(quantity) => setFormData((f) => ({ ...f, quantity }))}
                     locationPicker={
                       <LocationPicker
                         key={
@@ -4705,6 +4719,13 @@ function SellPageContentInner({
                             ))}
                           </SelectContent>
                         </Select>
+                      </div>
+                      <SellBrandNewQuantityField
+                        id="sell-board-quantity"
+                        condition={formData.condition}
+                        quantity={formData.quantity}
+                        onQuantityChange={(quantity) => setFormData((f) => ({ ...f, quantity }))}
+                      />
                       </div>
                       </div>
 

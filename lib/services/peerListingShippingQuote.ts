@@ -33,6 +33,8 @@ export const PEER_SURFBOARD_CHECKOUT_LISTING_SELECT = `
   shipping_price,
   board_shipping_cost_mode,
   status,
+  condition,
+  quantity,
   latitude,
   longitude,
   city,
@@ -79,6 +81,8 @@ export type PeerSurfboardCheckoutListingRow = PeerListingForShippingQuote & {
   /** Set by `attachListingInventorySources` on Shopify-aware purchase paths. */
   inventory_source?: string | null
   status: string | null
+  condition?: string | null
+  quantity?: number | null
   local_pickup: boolean | null
   shipping_available: boolean | null
 }

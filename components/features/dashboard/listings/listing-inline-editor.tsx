@@ -32,6 +32,7 @@ import {
   type ListingSellableCondition,
 } from "@/lib/listing-labels"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
+import { listingQuantityForCondition } from "@/lib/listing-quantity"
 import { canQuickEditListing } from "@/lib/listing-quick-edit-access"
 import {
   PEER_LISTING_SECTION_LABELS,
@@ -64,6 +65,7 @@ type ListingQuickDraft = {
   title: string
   description: string
   condition: string
+  quantityInput: string
   priceInput: string
   packageSizeId: string
   spec: ListingDeskSpec
@@ -77,6 +79,7 @@ interface DeskEditorListing {
   status: string
   section: string
   condition: string | null
+  quantity: number | null
   description: string | null
   views: number
   favoriteCount: number
@@ -130,6 +133,7 @@ function draftFromListing(listing: DeskEditorListing): ListingQuickDraft {
     title: listing.title ?? "",
     description: (listing.description ?? "").trim(),
     condition: isListingSellableCondition(listing.condition) ? listing.condition : "",
+    quantityInput: String(listingQuantityForCondition(listing.condition, listing.quantity)),
     priceInput: Number.isFinite(price) ? String(Math.round(price * 100) / 100) : "",
     packageSizeId: inferred ?? "",
     spec: listingDeskSpecFromRow(listing),
@@ -141,6 +145,7 @@ function draftsEqual(a: ListingQuickDraft, b: ListingQuickDraft): boolean {
     a.title.trim() === b.title.trim() &&
     a.description.trim() === b.description.trim() &&
     a.condition === b.condition &&
+    a.quantityInput === b.quantityInput &&
     a.priceInput.trim() === b.priceInput.trim() &&
     a.packageSizeId === b.packageSizeId &&
     listingDeskSpecsEqual(a.spec, b.spec)
@@ -234,6 +239,7 @@ export function ListingInlineEditor({
       title?: string
       description?: string
       condition?: ListingSellableCondition
+      quantity?: number
       priceUsd?: number
       packageSizeId?: ShopPackageSizeId
       specs?: ListingDeskSpec
@@ -263,6 +269,9 @@ export function ListingInlineEditor({
     }
     if (snapshot.condition && snapshot.condition !== saved.condition && isListingSellableCondition(snapshot.condition)) {
       payload.condition = snapshot.condition
+    }
+    if (snapshot.quantityInput !== saved.quantityInput || snapshot.condition !== saved.condition) {
+      payload.quantity = listingQuantityForCondition(snapshot.condition, snapshot.quantityInput)
     }
     if (snapshot.priceInput.trim() !== saved.priceInput.trim()) {
       const price = Number(snapshot.priceInput)
@@ -303,6 +312,7 @@ export function ListingInlineEditor({
         title: result.listing.title,
         description: result.listing.description,
         condition: result.listing.condition ?? snapshot.condition,
+        quantityInput: String(result.listing.quantity),
         priceInput: String(result.listing.priceUsd),
         packageSizeId: result.listing.packageSizeId ?? snapshot.packageSizeId,
       }
@@ -479,6 +489,7 @@ export function ListingInlineEditor({
             section={listing.section}
             description={draft.description}
             condition={draft.condition}
+            quantityInput={draft.quantityInput}
             packageSizeId={draft.packageSizeId}
             disabled={false}
             onChange={updateDraft}
@@ -537,6 +548,7 @@ export function ListingInlineEditor({
                   section={listing.section}
                   description={draft.description}
                   condition={draft.condition}
+                  quantityInput={draft.quantityInput}
                   packageSizeId={draft.packageSizeId}
                   disabled={false}
                   onChange={updateDraft}

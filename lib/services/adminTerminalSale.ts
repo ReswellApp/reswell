@@ -11,6 +11,7 @@ import {
   PEER_SURFBOARD_CHECKOUT_LISTING_SELECT,
   type PeerSurfboardCheckoutListingRow,
 } from "@/lib/services/peerListingShippingQuote"
+import { listingUnitSaleEndsListing, peerBrandNewUnitsRemaining } from "@/lib/listing-quantity"
 import { listingSoldViaCheckoutUpdate } from "@/lib/listing-sold-state"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { fetchSellerFeeWaived } from "@/lib/db/profileSellerFee"
@@ -793,6 +794,10 @@ export async function completeAdminTerminalCashSale(
   // Cash at register never flows through Stripe or the marketplace wallet ledger — order only.
 
   const listingTitle = String(listing.title ?? "")
+  const unitsLeft = peerBrandNewUnitsRemaining(listing)
+  if (unitsLeft != null && unitsLeft < 1) {
+    return { ok: false, error: "This item is out of stock", status: 409 }
+  }
 
   const { error: listingErr } = await service
     .from("listings")
@@ -811,7 +816,9 @@ export async function completeAdminTerminalCashSale(
   })
 
   void syncListingToGoogleMerchantBestEffort(service, listing.id)
-  void markUserListingBoardModelDataSold(service, listing.id, itemPrice)
+  if (listingUnitSaleEndsListing(listing, 1)) {
+    void markUserListingBoardModelDataSold(service, listing.id, itemPrice)
+  }
   if (buyerId) {
     void deleteBuyerCartRowsForListings(service, buyerId, [listing.id])
   }

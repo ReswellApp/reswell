@@ -18,6 +18,7 @@ import {
   type FinFacetOption,
 } from "@/lib/fin-listing-config"
 import { LISTING_CONDITION_SELL_OPTIONS } from "@/lib/listing-labels"
+import { SellBrandNewQuantityField } from "@/components/features/sell/sell-brand-new-quantity-field"
 
 const UNSELECTED = "__unspecified__"
 
@@ -72,6 +73,7 @@ function SellFinFacetSelect({
 
 export type SellFinsFacetFieldsProps = {
   condition: string
+  quantity: string
   finSetup: string
   finSystem: string
   size: string
@@ -79,6 +81,7 @@ export type SellFinsFacetFieldsProps = {
   brandId: string | null
   model: string
   onConditionChange: (value: string) => void
+  onQuantityChange: (value: string) => void
   onFinSetupChange: (value: string) => void
   onFinSystemChange: (value: string) => void
   onSizeChange: (value: string) => void
@@ -89,6 +92,8 @@ export type SellFinsFacetFieldsProps = {
 
 export function SellFinsFacetFields({
   condition,
+  quantity,
+  onQuantityChange,
   finSetup,
   finSystem,
   size,
@@ -105,6 +110,12 @@ export function SellFinsFacetFields({
 }: SellFinsFacetFieldsProps) {
   return (
     <div className="space-y-6">
+      <SellBrandNewQuantityField
+        id="sell-fin-quantity"
+        condition={condition}
+        quantity={quantity}
+        onQuantityChange={onQuantityChange}
+      />
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <SellFinFacetSelect
           id="sell-fin-condition"

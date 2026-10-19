@@ -1,6 +1,7 @@
 import type { ReactNode } from "react"
 import Link from "next/link"
 import { Hourglass, ShieldCheck, Sparkles, Truck } from "lucide-react"
+import { listingScarcityCopy } from "@/lib/listing-quantity"
 import {
   ListingDetailEngagementMetrics,
   type ListingOfferToCartProps,
@@ -92,6 +93,8 @@ export interface ListingMobileBuySummaryProps {
   shippingFlatRate?: number
   locationLine?: string | null
   showScarcity?: boolean
+  condition?: string | null
+  quantity?: number | null
   views?: number
   watchers?: number
   cartHolderCount?: number
@@ -118,6 +121,8 @@ export function ListingMobileBuySummary({
   shippingFlatRate = 0,
   locationLine = null,
   showScarcity = false,
+  condition,
+  quantity,
   views = 0,
   watchers = 0,
   cartHolderCount = 0,
@@ -140,6 +145,7 @@ export function ListingMobileBuySummary({
     locationLine,
   })
   const recentlyListed = !isSold && isRecentlyListed(createdAt)
+  const scarcity = showScarcity ? listingScarcityCopy(condition, quantity ?? 1) : null
   const cartDetail =
     cartHolderCount === 1
       ? "1 other person has this in their cart"
@@ -202,7 +208,7 @@ export function ListingMobileBuySummary({
       {children ? <div className="mt-5">{children}</div> : null}
       {afterPrice ? <div className="mt-5">{afterPrice}</div> : null}
 
-      {shippingRow || showScarcity || recentlyListed || showPurchaseProtection ? (
+      {shippingRow || scarcity || recentlyListed || showPurchaseProtection ? (
         <ul className="mt-5 space-y-2.5">
           {shippingRow ? (
             <li className="flex gap-2.5 text-[14px] leading-snug">
@@ -215,11 +221,12 @@ export function ListingMobileBuySummary({
               </p>
             </li>
           ) : null}
-          {showScarcity ? (
+          {showScarcity && scarcity ? (
             <li className="flex gap-2.5 text-[14px] leading-snug">
               <Hourglass className={iconClassName} aria-hidden />
               <p>
-                <span className="font-semibold text-foreground">Only one available</span>
+                <span className="font-semibold text-foreground">{scarcity.title}</span>
+                <span className="text-muted-foreground"> {scarcity.detail}</span>
                 {cartDetail ? <span className="text-muted-foreground"> {cartDetail}</span> : null}
               </p>
             </li>

@@ -7,6 +7,7 @@ import { reswellPackageFieldsToDb } from "@/lib/sell-listing-fulfillment-flags"
 import { normalizeSellShippingCostMode } from "@/lib/sell-shipping-cost-mode"
 import type { ListingPersistShippingOptions } from "@/lib/sell-shipping-cost-mode"
 import type { CreateSurfpackListingInput } from "@/lib/validations/surfpack-listing"
+import { listingQuantityForCondition } from "@/lib/listing-quantity"
 
 export function surfpackListingShippingFieldsFor(
   input: CreateSurfpackListingInput,
@@ -82,6 +83,7 @@ export function buildSurfpackListingPersistFields(
     description: input.description.trim(),
     price: input.price,
     condition: input.condition,
+    quantity: listingQuantityForCondition(input.condition, input.quantity),
     section: SURFPACKS_SECTION,
     category_id: USED_SURFPACKS_CATEGORY_ID,
     latitude: input.locationLat ?? null,

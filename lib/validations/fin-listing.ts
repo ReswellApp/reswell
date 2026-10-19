@@ -55,6 +55,7 @@ const finListingBaseObject = z.object({
   description: z.string().trim().min(1, "Add a description"),
   price: z.coerce.number().positive("Enter a price greater than $0"),
   condition: z.enum(sellableConditions),
+  quantity: z.coerce.number().int().min(1),
 
   size: optionalSlug(finSizeValues),
   finSetup: optionalSlug(finSetupValues),

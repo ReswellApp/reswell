@@ -28,6 +28,7 @@ import {
 import { validateAcceptedOfferForPaymentIntent } from "@/lib/services/acceptedOfferCheckout"
 import { pendingSaleFeeClause } from "@/lib/seller-fees"
 import { listingSoldViaCheckoutUpdate } from "@/lib/listing-sold-state"
+import { listingUnitSaleEndsListing, peerBrandNewUnitsRemaining } from "@/lib/listing-quantity"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { formatPeerItemCountPhrase } from "@/lib/peer-listing-item-nouns"
 import { isReswellShopListing } from "@/lib/reswell-shop"
@@ -711,6 +712,20 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     }
   }
   if (
+    listingsOrdered.some((listing) => {
+      if (!isPeerListingSection(listing.section) || isShopifyManagedListing(listing)) return false
+      const units = peerBrandNewUnitsRemaining(listing)
+      if (units == null) return false
+      return (quantityByListingId[listing.id] ?? 1) > units
+    })
+  ) {
+    return {
+      ok: false,
+      error: "This item is out of stock. Contact support if you were charged.",
+      status: 409,
+    }
+  }
+  if (
     listingsOrdered.some(
       (listing) =>
         isShopifyManagedListing(listing) &&
@@ -1330,6 +1345,8 @@ export async function completeMarketplaceOrderFromPaymentIntent(
   }
 
   for (const line of bundle.lines) {
+    const listing = listingsOrdered.find((row) => row.id === line.listingId)
+    if (listing && !listingUnitSaleEndsListing(listing, line.quantity)) continue
     void markUserListingBoardModelDataSold(serviceSupabase, line.listingId, line.itemPrice)
   }
 

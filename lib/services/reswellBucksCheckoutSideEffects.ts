@@ -3,6 +3,7 @@ import { safeRevalidateAfterMarketplaceOrderCommit } from "@/lib/cache/safe-reva
 import { deleteBuyerCartRowsForListings } from "@/lib/db/cart-items-server"
 import { insertOrderAdAttribution } from "@/lib/db/orderAdAttribution"
 import { markUserListingBoardModelDataSold } from "@/lib/db/user-listing-board-model-data"
+import { listingUnitSaleEndsListing } from "@/lib/listing-quantity"
 import { insertOrderShipmentsForOrder } from "@/lib/db/orderShipments"
 import { readAdAttributionFromCookies } from "@/lib/ads/read-request-attribution"
 import { fetchPrimaryListingImageUrlsForKlaviyo } from "@/lib/klaviyo/fetch-primary-listing-image-urls"
@@ -25,6 +26,8 @@ export type ReswellBucksCheckoutListing = {
   title?: string | null
   section?: string | null
   slug?: string | null
+  condition?: string | null
+  quantity?: number | null
 }
 
 /**
@@ -129,6 +132,8 @@ export async function runReswellBucksCheckoutSideEffects(
   }
 
   for (const line of params.lines) {
+    const listing = params.listings.find((row) => row.id === line.listingId)
+    if (listing && !listingUnitSaleEndsListing(listing, line.quantity)) continue
     void markUserListingBoardModelDataSold(supabase, line.listingId, line.itemPriceCents / 100)
   }
 

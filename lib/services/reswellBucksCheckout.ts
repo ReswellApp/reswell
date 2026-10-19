@@ -6,6 +6,7 @@ import { attachListingInventorySources } from "@/lib/db/listingInventorySource"
 import { settleAdminReswellBucksCheckout } from "@/lib/db/reswellBucksLedger"
 import { getSellerBalance } from "@/lib/getSellerBalance"
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
+import { peerBrandNewUnitsRemaining } from "@/lib/listing-quantity"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { formatPeerItemCountPhrase } from "@/lib/peer-listing-item-nouns"
 import { profileAddressToOrderShippingJson, type ProfileAddressRow } from "@/lib/profile-address"
@@ -181,6 +182,8 @@ export async function checkoutWithAdminReswellBucks(params: {
         "Reswell Bucks checkout is available for peer listings during the admin pilot. Shop inventory still uses card checkout.",
       )
     }
+    const units = peerBrandNewUnitsRemaining(listing)
+    if (units != null && units < 1) return fail(409, "This item is out of stock.")
     const exclusive = await assertBuyerMayPurchaseListingExclusiveWindow(supabase, listing.id, user.id)
     if (!exclusive.ok) return fail(403, exclusive.message)
   }
@@ -459,6 +462,8 @@ export async function checkoutWithAdminReswellBucks(params: {
           title: listing.title,
           section: listing.section,
           slug: listing.slug,
+          condition: listing.condition,
+          quantity: listing.quantity,
         })),
         lines: settlement.lines,
         fulfillment: impliedFulfillment,

@@ -84,6 +84,7 @@ import {
 import { buildBoardbagListingPersistFields } from "@/lib/boardbag-listing-persist-fields"
 import { computeBoardbagSellSectionCompletion } from "@/lib/boardbag-sell-section-completion"
 import { sellFormConditionValue } from "@/lib/listing-labels"
+import { listingQuantityForCondition } from "@/lib/listing-quantity"
 import { listingDetailHref } from "@/lib/listing-href"
 import { navigateAfterListingSave } from "@/lib/sell-flow/navigate-after-listing-save"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
@@ -162,6 +163,7 @@ type BoardbagFormState = {
   sellerPurchasedFrom: string
   sellerPurchasedOn: string
   condition: string
+  quantity: string
   size: string
   brand: string
   model: string
@@ -190,6 +192,7 @@ const INITIAL_STATE: BoardbagFormState = {
   sellerPurchasedFrom: "",
   sellerPurchasedOn: "",
   condition: "",
+  quantity: "1",
   size: "",
   brand: "",
   model: "",
@@ -399,6 +402,12 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
         sellerPurchasedOn:
           (listing as { seller_purchased_on?: string | null }).seller_purchased_on ?? "",
         condition: sellFormConditionValue(listing.condition),
+        quantity: String(
+          listingQuantityForCondition(
+            listing.condition,
+            (listing as { quantity?: number | null }).quantity,
+          ),
+        ),
         size: (listing as { boardbag_size?: string | null }).boardbag_size ?? "",
         brand: (listing as { brand?: string | null }).brand?.trim() ?? "",
         model: (listing as { model?: string | null }).model?.trim() ?? "",
@@ -798,6 +807,7 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
       description: form.description,
       price: Number(form.price),
       condition: form.condition as CreateBoardbagListingInput["condition"],
+      quantity: listingQuantityForCondition(form.condition, form.quantity),
       size: form.size || null,
       brand: form.brand,
       model: form.model,
@@ -1211,6 +1221,8 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
                 <div className="space-y-8">
                   <SellBoardbagsFacetFields
                     condition={form.condition}
+                    quantity={form.quantity}
+                    onQuantityChange={(v) => setField("quantity", v)}
                     size={form.size}
                     brand={form.brand}
                     model={form.model}

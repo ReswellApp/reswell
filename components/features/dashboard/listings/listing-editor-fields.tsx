@@ -7,6 +7,7 @@ import {
   LISTING_CONDITION_SELL_OPTIONS,
   formatCondition,
 } from "@/lib/listing-labels"
+import { isBrandNewListingCondition } from "@/lib/listing-quantity"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { LISTING_TITLE_MAX_LENGTH } from "@/lib/sell-form-validation"
 import {
@@ -25,6 +26,7 @@ interface DraftPatch {
   title?: string
   description?: string
   condition?: string
+  quantityInput?: string
   priceInput?: string
   packageSizeId?: string
 }
@@ -34,6 +36,7 @@ interface ListingEditorDetailsProps {
   section: string
   description: string
   condition: string
+  quantityInput: string
   packageSizeId: string
   disabled: boolean
   onChange: (patch: DraftPatch) => void
@@ -113,6 +116,7 @@ export function ListingEditorDetails({
   section,
   description,
   condition,
+  quantityInput,
   packageSizeId,
   disabled,
   onChange,
@@ -146,6 +150,27 @@ export function ListingEditorDetails({
           <p className="mt-2 text-[12px] text-muted-foreground">Current: {conditionLabel}</p>
         ) : null}
       </div>
+      {isBrandNewListingCondition(condition) ? (
+        <div>
+          <label htmlFor={`${listingId}-quantity`} className="text-[12px] font-medium text-muted-foreground">
+            Quantity
+          </label>
+          <Input
+            id={`${listingId}-quantity`}
+            inputMode="numeric"
+            value={quantityInput}
+            disabled={disabled}
+            autoComplete="off"
+            aria-label="Quantity"
+            placeholder="1"
+            onChange={(event) => onChange({ quantityInput: event.target.value.replace(/[^\d]/g, "") })}
+            className={cn(quietControlClass, "mt-2 h-10 w-28 px-3 tabular-nums")}
+          />
+          <p className="mt-2 text-[12px] leading-5 text-muted-foreground">
+            Brand new only. Each sale keeps this listing up and reduces the quantity.
+          </p>
+        </div>
+      ) : null}
       {packageSizes.length > 0 ? (
         <div>
           <p className="text-[12px] font-medium text-muted-foreground">Package size</p>

@@ -13,6 +13,7 @@ import { trackMetaAddToCartServerEvent } from "@/lib/meta/track-add-to-cart-serv
 import type { PeerListingCartFields } from "@/lib/peer-listing-cart"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { captureServerEvent } from "@/lib/posthog-server"
+import { peerBrandNewUnitsRemaining } from "@/lib/listing-quantity"
 import { isReswellShopListing } from "@/lib/reswell-shop"
 import { isShopifyManagedListing } from "@/lib/shopify/listing"
 import { acceptedUnitPriceForSingleItemOffer } from "@/lib/services/acceptedOfferCheckout"
@@ -66,6 +67,8 @@ type CartEligibleListing = PeerListingCartFields & {
   archived_at?: string | null
   stock_quantity?: number | null
   inventory_source?: string | null
+  condition?: string | null
+  quantity?: number | null
 }
 
 async function assertListingEligibleForCart(
@@ -76,7 +79,7 @@ async function assertListingEligibleForCart(
   const { data: row, error } = await supabase
     .from("listings")
     .select(
-      "id, user_id, section, status, local_pickup, shipping_available, hidden_from_site, archived_at, stock_quantity",
+      "id, user_id, section, status, condition, quantity, local_pickup, shipping_available, hidden_from_site, archived_at, stock_quantity",
     )
     .eq("id", listingId)
     .maybeSingle()
@@ -119,6 +122,10 @@ async function assertListingEligibleForCart(
   }
 
   if (isPeerListingSection(ready.section)) {
+    const units = peerBrandNewUnitsRemaining(ready)
+    if (units != null && units < 1) {
+      return { ok: false, message: "This item is out of stock" }
+    }
     const exclusiveCheck = await assertBuyerMayPurchaseListingExclusiveWindow(
       supabase,
       listingId,

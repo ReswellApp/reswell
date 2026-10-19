@@ -1,7 +1,7 @@
 import type { ComponentProps } from "react"
 import { notFound } from "next/navigation"
 import Link from "next/link"
-import { Flag, Hourglass, Truck } from "lucide-react"
+import { Flag, Truck } from "lucide-react"
 import {
   Accordion,
   AccordionContent,
@@ -80,6 +80,7 @@ import { getListingFavoriteCount } from "@/lib/db/listing-favorite-count"
 import { formatDistanceToNow } from "date-fns"
 import { MetaViewContentTracker } from "@/components/meta/meta-view-content-tracker"
 import { isMetaCatalogEligibleListing, type MetaListingProductSource } from "@/lib/meta/catalog-product"
+import { ListingScarcityLine } from "@/components/features/listings/listing-scarcity-line"
 
 type AboutSellerProfilesProp = ComponentProps<typeof ListingAboutSellerSection>["profiles"]
 
@@ -417,6 +418,8 @@ async function renderMagazinesListingDetailPage({
               shippingFlatRate={shippingFlatRate}
               locationLine={listingLocationLine}
               showScarcity={canPeerPurchase && magazine.status === "active"}
+              condition={magazine.condition}
+              quantity={(magazine as { quantity?: number | null }).quantity}
               views={listingViews}
               watchers={listingWatchersCount}
               cartHolderCount={cartHolderCount}
@@ -485,13 +488,11 @@ async function renderMagazinesListingDetailPage({
               )}
               <ListingBoardSpecTable rows={specRows} className="mt-5" />
               {!isSold && !isOwnListing && listingPurchasable && magazine.status === "active" ? (
-                <p className="mt-4 flex items-start gap-2 text-[15px] text-foreground">
-                  <Hourglass className="mt-0.5 h-[15px] w-[15px] shrink-0 text-muted-foreground" aria-hidden />
-                  <span>
-                    <span className="font-semibold">Only one available</span>
-                    <span className="text-muted-foreground"> — grab it before it&apos;s gone</span>
-                  </span>
-                </p>
+                <ListingScarcityLine
+                  className="mt-4"
+                  condition={magazine.condition}
+                  quantity={(magazine as { quantity?: number | null }).quantity}
+                />
               ) : null}
               {canPeerPurchase ? (
                 <p className="mt-3 text-[14px] leading-snug text-muted-foreground">

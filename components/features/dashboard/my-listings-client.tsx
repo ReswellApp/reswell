@@ -449,6 +449,7 @@ export function MyListingsClient({
         title: saved.title,
         description: saved.description,
         condition: saved.condition,
+        quantity: saved.quantity,
         price: saved.priceUsd,
         compare_at_price: saved.compareAtPriceUsd,
         shipping_package_tier: saved.shipping_package_tier,
