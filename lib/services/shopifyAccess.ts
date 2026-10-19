@@ -1,9 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { dbShopifyUserIsEligible } from "@/lib/db/shopifyConnections"
 import {
-  isShopifyAccountOAuthConfigured,
   isShopifyConfigured,
   isShopifyIntegrationEnabled,
+  isShopifyPublicOAuthEnabled,
+  parseShopifyAppInstallUrl,
 } from "@/lib/shopify/config"
 import type { ShopifyConnectOptions } from "@/lib/shopify/types"
 
@@ -46,10 +47,15 @@ export async function checkShopifyMerchantAccess(
 
 export const SHOPIFY_CONNECT_OPTIONS_UNAVAILABLE: ShopifyConnectOptions = {
   pluginAvailable: false,
+  installUrl: null,
 }
 
 export function getShopifyDashboardConnectOptions(): ShopifyConnectOptions {
+  const installUrl = isShopifyPublicOAuthEnabled()
+    ? parseShopifyAppInstallUrl()
+    : null
   return {
-    pluginAvailable: isShopifyAccountOAuthConfigured(),
+    pluginAvailable: Boolean(installUrl),
+    installUrl,
   }
 }

@@ -271,7 +271,10 @@ const REQUIRED_WEBHOOKS = [
   "PRODUCTS_DELETE",
   "INVENTORY_LEVELS_UPDATE",
   "APP_UNINSTALLED",
+  "ORDERS_CREATE",
 ] as const
+
+const OPTIONAL_WEBHOOKS = ["METAFIELDS_UPDATE"] as const
 
 export async function registerShopifyWebhooks(
   shopDomain: string,
@@ -304,34 +307,40 @@ export async function registerShopifyWebhooks(
       .map((node) => node.topic),
   )
 
-  for (const topic of REQUIRED_WEBHOOKS) {
+  for (const topic of [...REQUIRED_WEBHOOKS, ...OPTIONAL_WEBHOOKS]) {
     if (installed.has(topic)) continue
-    const result = await shopifyGraphqlRequest<{
-      webhookSubscriptionCreate: {
-        userErrors: Array<{ field?: string[] | null; message?: string | null }>
-      }
-    }>({
-      shopDomain,
-      accessToken,
-      query: `
-        mutation ReswellCreateWebhook(
-          $topic: WebhookSubscriptionTopic!,
-          $subscription: WebhookSubscriptionInput!
-        ) {
-          webhookSubscriptionCreate(
-            topic: $topic,
-            webhookSubscription: $subscription
-          ) {
-            userErrors { field message }
-          }
+    const optional = (OPTIONAL_WEBHOOKS as readonly string[]).includes(topic)
+    try {
+      const result = await shopifyGraphqlRequest<{
+        webhookSubscriptionCreate: {
+          userErrors: Array<{ field?: string[] | null; message?: string | null }>
         }
-      `,
-      variables: {
-        topic,
-        subscription: { uri: callbackUrl, format: "JSON" },
-      },
-    })
-    throwOnShopifyUserErrors(result.webhookSubscriptionCreate.userErrors)
+      }>({
+        shopDomain,
+        accessToken,
+        query: `
+          mutation ReswellCreateWebhook(
+            $topic: WebhookSubscriptionTopic!,
+            $subscription: WebhookSubscriptionInput!
+          ) {
+            webhookSubscriptionCreate(
+              topic: $topic,
+              webhookSubscription: $subscription
+            ) {
+              userErrors { field message }
+            }
+          }
+        `,
+        variables: {
+          topic,
+          subscription: { uri: callbackUrl, format: "JSON" },
+        },
+      })
+      throwOnShopifyUserErrors(result.webhookSubscriptionCreate.userErrors)
+    } catch (error) {
+      if (!optional) throw error
+      console.error("[shopify] optional webhook", { topic, error })
+    }
   }
 }
 

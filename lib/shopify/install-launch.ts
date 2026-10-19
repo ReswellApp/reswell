@@ -1,6 +1,6 @@
 import { shopifyConnectHref, SHOPIFY_CONNECT_PATH } from "@/lib/shopify/claim-path"
 import {
-  missingShopifyReadScopes,
+  missingShopifyOperationalScopes,
   normalizeShopifyDomain,
 } from "@/lib/shopify/config"
 import { verifyShopifyOAuthHmac } from "@/lib/shopify/crypto"
@@ -86,7 +86,7 @@ export function shopifyLinkSkipsReinstall(
   if (!connection) return false
   if (connection.status !== "active" || !connection.sync_enabled) return false
   if (userId && connection.user_id !== userId) return false
-  return missingShopifyReadScopes(connection.scopes).length === 0
+  return missingShopifyOperationalScopes(connection.scopes).length === 0
 }
 
 export function decideShopifyConnectInstall(input: {
@@ -98,6 +98,12 @@ export function decideShopifyConnectInstall(input: {
   if (input.launch.kind === "absent") return { action: "continue_claim" }
   if (input.launch.kind === "rejected") return { action: "reject_install" }
 
+  if (input.publicInstallAvailable) {
+    return {
+      action: "start_public_install",
+      shopDomain: input.launch.shopDomain,
+    }
+  }
   if (!input.signedIn) {
     return {
       action: "sign_in",
@@ -105,13 +111,7 @@ export function decideShopifyConnectInstall(input: {
       shopDomain: input.launch.shopDomain,
     }
   }
-  if (!input.publicInstallAvailable) {
-    return input.shopifyConnectEnabled
-      ? { action: "install_unavailable" }
-      : { action: "request_access", shopDomain: input.launch.shopDomain }
-  }
-  return {
-    action: "start_public_install",
-    shopDomain: input.launch.shopDomain,
-  }
+  return input.shopifyConnectEnabled
+    ? { action: "install_unavailable" }
+    : { action: "request_access", shopDomain: input.launch.shopDomain }
 }

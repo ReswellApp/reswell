@@ -75,3 +75,20 @@ export const shopifyInventoryJobPayloadSchema = z.object({
 export const shopifyReconcileJobPayloadSchema = z.object({
   connectionId: z.string().uuid(),
 })
+
+export const shopifySaleOrderPayloadSchema = z.object({
+  mappingId: z.string().uuid(),
+  listingId: z.string().uuid(),
+  orderId: z.string().uuid(),
+  quantity: z.number().int().min(1).max(100),
+  collectVia: z.enum(["shopify", "stripe"]),
+  sourceOfTruth: z.enum(["shopify", "reswell"]),
+})
+
+export const shopifySourceOfTruthSchema = z.object({
+  sourceOfTruth: z.enum(["shopify", "reswell"]),
+})
+
+export const shopifyReswellPublishSchema = z.object({
+  listingId: z.string().uuid(),
+})

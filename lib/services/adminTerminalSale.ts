@@ -14,6 +14,8 @@ import {
 import { listingSoldViaCheckoutUpdate } from "@/lib/listing-sold-state"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { fetchSellerFeeWaived } from "@/lib/db/profileSellerFee"
+import { dbListShopifyBilledListingIds } from "@/lib/db/shopifySales"
+import { connectedSalePayout } from "@/lib/shopify/billing"
 import { getSellerEarnings } from "@/lib/seller-fees"
 import { completeMarketplaceOrderFromPaymentIntent } from "@/lib/stripe-complete-order"
 import { safeRevalidateAfterMarketplaceOrderCommit } from "@/lib/cache/safe-revalidate-after-order"
@@ -68,7 +70,15 @@ export async function computeAdminTerminalInPersonCheckoutUsd(
   }
 
   const feeWaived = await fetchSellerFeeWaived(listing.user_id)
-  const { marketplaceFee: platformFee, sellerEarnings } = getSellerEarnings(itemPrice, { feeWaived })
+  const shopifyBilled = (
+    await dbListShopifyBilledListingIds(supabase, [listing.id])
+  ).includes(listing.id)
+  const payout = shopifyBilled
+    ? connectedSalePayout(itemPrice, { feeWaived, shopifyBilled: true })
+    : null
+  const { marketplaceFee: platformFee, sellerEarnings } = payout
+    ? { marketplaceFee: payout.platformFee, sellerEarnings: payout.sellerEarnings }
+    : getSellerEarnings(itemPrice, { feeWaived })
 
   return {
     ok: true,

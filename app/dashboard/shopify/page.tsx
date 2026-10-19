@@ -60,7 +60,9 @@ export default async function ShopifyIntegrationPage({
   let catalog: ShopifyDashboardData["catalog"] = null
   if (connection) {
     const [listed, managed] = await Promise.all([
-      connection.status === "active" && connection.sync_enabled
+      connection.status === "active" &&
+      connection.sync_enabled &&
+      connection.billing_status === "active"
         ? listMerchantShopifyProducts({ userId: user.id })
         : null,
       getMerchantShopifyCatalog({

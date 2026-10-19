@@ -57,9 +57,24 @@ test("verified install launch keeps the exact connect URL for sign-in", () => {
     shopifyConnectEnabled: false,
     publicInstallAvailable: true,
   })
+  assert.equal(decision.action, "start_public_install")
+  if (decision.action === "start_public_install") {
+    assert.equal(decision.shopDomain, launch.shopDomain)
+  }
+})
+
+test("unsigned merchant signs in only when public install is unavailable", () => {
+  const launch = assessShopifyInstallLaunch(signedInstallQuery())
+  const decision = decideShopifyConnectInstall({
+    launch,
+    signedIn: false,
+    shopifyConnectEnabled: false,
+    publicInstallAvailable: false,
+  })
   assert.equal(decision.action, "sign_in")
-  if (decision.action === "sign_in") {
+  if (decision.action === "sign_in" && launch.kind === "verified") {
     assert.equal(decision.returnPath, launch.returnPath)
+    assert.equal(decision.shopDomain, launch.shopDomain)
   }
 })
 
@@ -144,7 +159,15 @@ test("only a healthy link owned by the same account skips reinstall", () => {
     user_id: "user-1",
     status: "active" as const,
     sync_enabled: true,
-    scopes: ["read_products", "read_inventory", "read_locations"],
+    scopes: [
+      "read_products",
+      "write_products",
+      "read_inventory",
+      "write_inventory",
+      "read_locations",
+      "read_orders",
+      "write_orders",
+    ],
   }
   assert.equal(shopifyLinkSkipsReinstall(healthy, null), true)
   assert.equal(shopifyLinkSkipsReinstall(healthy, "user-1"), true)
@@ -160,6 +183,16 @@ test("only a healthy link owned by the same account skips reinstall", () => {
   )
   assert.equal(
     shopifyLinkSkipsReinstall({ ...healthy, scopes: ["read_products"] }, null),
+    false,
+  )
+  assert.equal(
+    shopifyLinkSkipsReinstall(
+      {
+        ...healthy,
+        scopes: ["read_products", "read_inventory", "read_locations"],
+      },
+      null,
+    ),
     false,
   )
 })

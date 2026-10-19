@@ -22,6 +22,8 @@ function connection(
     shop_name: "Reswell",
     status,
     sync_enabled: status === "active",
+    source_of_truth: "shopify",
+    billing_status: status === "active" ? "active" : "pending",
     credential_provider: "public_oauth",
     catalog_read_enabled: true,
     sales_enabled: true,
@@ -126,7 +128,10 @@ function dashboard(mode: "connected" | "empty" | "disconnected" | "reconnect"): 
   return {
     enabled: true,
     configured: true,
-    connectOptions: { pluginAvailable: true },
+    connectOptions: {
+      pluginAvailable: true,
+      installUrl: "https://apps.shopify.com/reswell",
+    },
     connection:
       mode === "disconnected"
         ? null

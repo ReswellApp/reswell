@@ -5,9 +5,12 @@ export const SHOPIFY_API_VERSION =
 
 export const SHOPIFY_MVP_SCOPES = [
   "read_products",
+  "write_products",
   "read_inventory",
   "write_inventory",
   "read_locations",
+  "read_orders",
+  "write_orders",
 ] as const
 
 export const SHOPIFY_READ_SCOPES = [
@@ -19,6 +22,16 @@ export const SHOPIFY_READ_SCOPES = [
 export function missingShopifyReadScopes(granted: string[]): string[] {
   const grantedSet = new Set(granted)
   return SHOPIFY_READ_SCOPES.filter((scope) => !grantedSet.has(scope))
+}
+
+export function missingShopifyOperationalScopes(granted: string[]): string[] {
+  const grantedSet = new Set(granted)
+  return SHOPIFY_MVP_SCOPES.filter((scope) => !grantedSet.has(scope))
+}
+
+/** Development stores reject live charges. Production leaves this unset. */
+export function shopifyBillingTestMode(): boolean {
+  return process.env.SHOPIFY_BILLING_TEST?.trim().toLowerCase() === "true"
 }
 
 export function isShopifyIntegrationEnabled(): boolean {
