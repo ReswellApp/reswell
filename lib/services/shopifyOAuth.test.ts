@@ -341,6 +341,18 @@ function installShopifyFetch(): () => void {
     }
     const body = JSON.parse(String(init?.body ?? "{}")) as { query?: string }
     const query = body.query ?? ""
+    if (
+      query.includes("ReswellShopifyDefaultPackage") ||
+      query.includes("ReswellShopifyShopDefaultPackage")
+    ) {
+      return Response.json({
+        errors: [
+          {
+            message: "Field 'shippingPackages' doesn't exist on type 'QueryRoot'",
+          },
+        ],
+      })
+    }
     if (query.includes("ReswellShopIdentity")) {
       return Response.json({
         data: { shop: { id: "gid://shopify/Shop/99", name: "New Store" } },
@@ -616,6 +628,18 @@ test("a rejected ORDERS_CREATE webhook still links the store and leaves order sy
       variables?: { topic?: string }
     }
     const query = body.query ?? ""
+    if (
+      query.includes("ReswellShopifyDefaultPackage") ||
+      query.includes("ReswellShopifyShopDefaultPackage")
+    ) {
+      return Response.json({
+        errors: [
+          {
+            message: "Field 'shippingPackages' doesn't exist on type 'QueryRoot'",
+          },
+        ],
+      })
+    }
     if (query.includes("ReswellShopIdentity")) {
       return Response.json({
         data: { shop: { id: "gid://shopify/Shop/99", name: "New Store" } },
