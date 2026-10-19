@@ -87,7 +87,7 @@ test("authorize URL requests the legacy install flow scopes", async () => {
   )
   assert.equal(
     url.searchParams.get("scope"),
-    "read_products,read_inventory,write_inventory,read_locations",
+    "read_products,write_products,read_inventory,write_inventory,read_locations,read_orders,write_orders",
   )
   assert.equal(url.searchParams.get("client_id"), "shopify-client-id")
   assert.equal(
@@ -208,6 +208,12 @@ function connectionRow(
     catalog_read_enabled: true,
     sales_enabled: true,
     inventory_write_enabled: true,
+    source_of_truth: "shopify",
+    billing_status: "pending",
+    billing_subscription_gid: null,
+    billing_line_item_gid: null,
+    billing_capped_amount: null,
+    billing_approved_at: null,
     access_token_ciphertext: "old-access",
     access_token_iv: "old-iv",
     access_token_tag: "old-tag",
@@ -345,6 +351,8 @@ function installShopifyFetch(): () => void {
               "PRODUCTS_DELETE",
               "INVENTORY_LEVELS_UPDATE",
               "APP_UNINSTALLED",
+              "ORDERS_CREATE",
+              "METAFIELDS_UPDATE",
             ].map((topic) => ({
               topic,
               endpoint: { callbackUrl: callback },

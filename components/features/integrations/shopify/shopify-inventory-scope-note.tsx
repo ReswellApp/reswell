@@ -8,16 +8,12 @@ export function ShopifyInventoryScopeNote() {
   return (
     <section className={shopifySurfaceClass}>
       <div className="space-y-2 px-5 py-4">
-        <h2 className={shopifySectionTitleClass}>Inventory-only access</h2>
+        <h2 className={shopifySectionTitleClass}>How a sale updates Shopify</h2>
         <p className={shopifyBodyClass}>
-          Reswell does not read or sync Shopify orders, customers, payments,
-          fulfillments, cancellations, or refunds. A Reswell sale only
-          decrements the linked Shopify inventory item.
+          A Reswell sale creates at most one paid Shopify order. That order is what changes Shopify stock. Reswell does not also adjust the inventory quantity for the same sale.
         </p>
         <p className={shopifyBodyClass}>
-          Shopify stays the source of truth for titles, prices, images,
-          variants, and stock. Deleting a product or variant in Shopify takes
-          its Reswell listing off the marketplace.
+          The 7% fee on a connected sale is a Shopify usage charge. Sales that are not connected to Shopify keep the usual Reswell payout fee.
         </p>
       </div>
     </section>

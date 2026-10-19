@@ -33,7 +33,10 @@ export function ShopifyConnectionCard({
         </p>
       </div>
       <div className="px-5 py-4">
-        <ShopifyPluginConnectOption available={connectOptions.pluginAvailable} />
+        <ShopifyPluginConnectOption
+          available={connectOptions.pluginAvailable}
+          installUrl={connectOptions.installUrl}
+        />
       </div>
     </section>
   )

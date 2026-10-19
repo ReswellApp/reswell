@@ -10,6 +10,8 @@ import {
   type PeerSurfboardCheckoutListingRow,
 } from "@/lib/services/peerListingShippingQuote"
 import { fetchSellerFeeWaived } from "@/lib/db/profileSellerFee"
+import { dbListShopifyBilledListingIds } from "@/lib/db/shopifySales"
+import { connectedSalePayout } from "@/lib/shopify/billing"
 import { getSellerEarnings } from "@/lib/seller-fees"
 import { resolveMixedCheckoutSellerId } from "@/lib/mixed-checkout"
 import { getReswellShopLineEarnings, isReswellShopListing } from "@/lib/reswell-shop"
@@ -35,6 +37,7 @@ export type PeerCheckoutLineComputation = {
   usedReswellQuote: boolean
   platformFee: number
   sellerEarnings: number
+  shopifyUsageFee: number
   /** Separate packaging: ShipEngine rate for this line (when Reswell-quoted). */
   packageRateId?: string | null
   packageServiceCode?: string | null
@@ -79,6 +82,7 @@ export async function computePeerMultiCheckoutUsd(params: {
       totalItemPriceUsd: number
       totalPlatformFee: number
       totalSellerEarnings: number
+      totalShopifyUsageFee: number
       anyUsedReswellQuote: boolean
       reswellQuote: PeerReswellShippingQuote | null
       packagingMode: ShippingPackagingMode
@@ -166,6 +170,12 @@ export async function computePeerMultiCheckoutUsd(params: {
       : null
 
   const feeWaived = await fetchSellerFeeWaived(sellerId)
+  const shopifyBilled = new Set(
+    await dbListShopifyBilledListingIds(
+      supabase,
+      listingsOrdered.map((listing) => listing.id),
+    ),
+  )
 
   const lines: PeerCheckoutLineComputation[] = []
   let anyUsedReswellQuote = false
@@ -242,10 +252,19 @@ export async function computePeerMultiCheckoutUsd(params: {
 
     let platformFee: number
     let sellerEarnings: number
+    let shopifyUsageFee = 0
     if (isReswellShopListing(listing.section)) {
       const shop = getReswellShopLineEarnings(unitPrice, quantity)
       platformFee = shop.platformFee
       sellerEarnings = shop.sellerEarnings
+    } else if (shopifyBilled.has(listing.id)) {
+      const payout = connectedSalePayout(lineItemTotal, {
+        feeWaived,
+        shopifyBilled: true,
+      })
+      platformFee = payout.platformFee
+      sellerEarnings = payout.sellerEarnings
+      shopifyUsageFee = payout.shopifyUsageFee
     } else {
       ;({ marketplaceFee: platformFee, sellerEarnings } = getSellerEarnings(lineItemTotal, {
         feeWaived,
@@ -285,6 +304,7 @@ export async function computePeerMultiCheckoutUsd(params: {
       usedReswellQuote: totals.usedReswellQuote,
       platformFee,
       sellerEarnings,
+      shopifyUsageFee,
       packageRateId,
       packageServiceCode,
     })
@@ -355,6 +375,8 @@ export async function computePeerMultiCheckoutUsd(params: {
     Math.round(lines.reduce((s, l) => s + l.platformFee, 0) * 100) / 100
   const totalSellerEarnings =
     Math.round(lines.reduce((s, l) => s + l.sellerEarnings, 0) * 100) / 100
+  const totalShopifyUsageFee =
+    Math.round(lines.reduce((s, l) => s + l.shopifyUsageFee, 0) * 100) / 100
 
   return {
     ok: true,
@@ -365,6 +387,7 @@ export async function computePeerMultiCheckoutUsd(params: {
     totalItemPriceUsd,
     totalPlatformFee,
     totalSellerEarnings,
+    totalShopifyUsageFee,
     anyUsedReswellQuote,
     reswellQuote,
     packagingMode,

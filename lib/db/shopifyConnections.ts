@@ -1,7 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type {
   PublicShopifyConnection,
+  ShopifyBillingStatus,
   ShopifyConnectionRow,
+  ShopifySourceOfTruth,
 } from "@/lib/shopify/types"
 
 const CONNECTION_SELECT = [
@@ -17,6 +19,12 @@ const CONNECTION_SELECT = [
   "catalog_read_enabled",
   "sales_enabled",
   "inventory_write_enabled",
+  "source_of_truth",
+  "billing_status",
+  "billing_subscription_gid",
+  "billing_line_item_gid",
+  "billing_capped_amount",
+  "billing_approved_at",
   "access_token_ciphertext",
   "access_token_iv",
   "access_token_tag",
@@ -223,7 +231,7 @@ export async function dbUpsertShopifyConnection(
         shop_gid: input.shopGid ?? null,
         shop_name: input.shopName,
         status: "active",
-        sync_enabled: true,
+        sync_enabled: false,
         access_token_ciphertext: input.accessTokenCiphertext,
         access_token_iv: input.accessTokenIv,
         access_token_tag: input.accessTokenTag,
@@ -400,6 +408,48 @@ export async function dbMarkShopifyConnectionStatus(
   if (error) throw new Error(error.message)
 }
 
+export async function dbUpdateShopifyBilling(
+  supabase: SupabaseClient,
+  connectionId: string,
+  input: {
+    billingStatus: ShopifyBillingStatus
+    subscriptionGid: string | null
+    lineItemGid: string | null
+    cappedAmount: number | null
+    approvedAt: string | null
+    syncEnabled: boolean
+  },
+): Promise<void> {
+  const { error } = await supabase
+    .from("shopify_connections")
+    .update({
+      billing_status: input.billingStatus,
+      billing_subscription_gid: input.subscriptionGid,
+      billing_line_item_gid: input.lineItemGid,
+      billing_capped_amount: input.cappedAmount,
+      billing_approved_at: input.approvedAt,
+      sync_enabled: input.syncEnabled,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", connectionId)
+  if (error) throw new Error(error.message)
+}
+
+export async function dbUpdateShopifySourceOfTruth(
+  supabase: SupabaseClient,
+  connectionId: string,
+  sourceOfTruth: ShopifySourceOfTruth,
+): Promise<void> {
+  const { error } = await supabase
+    .from("shopify_connections")
+    .update({
+      source_of_truth: sourceOfTruth,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", connectionId)
+  if (error) throw new Error(error.message)
+}
+
 export async function dbTouchShopifyWebhook(
   supabase: SupabaseClient,
   connectionId: string,
@@ -458,6 +508,8 @@ export function toPublicShopifyConnection(
     catalog_read_enabled: connection.catalog_read_enabled,
     sales_enabled: connection.sales_enabled,
     inventory_write_enabled: connection.inventory_write_enabled,
+    source_of_truth: connection.source_of_truth,
+    billing_status: connection.billing_status,
     scopes: connection.scopes,
     last_webhook_at: connection.last_webhook_at,
     last_reconciled_at: connection.last_reconciled_at,

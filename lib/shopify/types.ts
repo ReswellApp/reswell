@@ -14,6 +14,12 @@ export type ShopifyCredentialProvider =
   | "public_oauth"
   | "merchant_custom"
 
+export type ShopifySourceOfTruth = "shopify" | "reswell"
+
+export type ShopifyBillingStatus = "pending" | "active" | "declined"
+
+export type ShopifySaleCollectVia = "shopify" | "stripe"
+
 export interface ShopifyConnectionRow {
   id: string
   user_id: string
@@ -27,6 +33,12 @@ export interface ShopifyConnectionRow {
   catalog_read_enabled: boolean
   sales_enabled: boolean
   inventory_write_enabled: boolean
+  source_of_truth: ShopifySourceOfTruth
+  billing_status: ShopifyBillingStatus
+  billing_subscription_gid: string | null
+  billing_line_item_gid: string | null
+  billing_capped_amount: number | null
+  billing_approved_at: string | null
   access_token_ciphertext: string
   access_token_iv: string
   access_token_tag: string
@@ -60,6 +72,8 @@ export type PublicShopifyConnection = Pick<
   | "catalog_read_enabled"
   | "sales_enabled"
   | "inventory_write_enabled"
+  | "source_of_truth"
+  | "billing_status"
   | "scopes"
   | "last_webhook_at"
   | "last_reconciled_at"
@@ -169,6 +183,7 @@ export type ShopifySyncJobType =
   | "inventory_sync"
   | "inventory_decrement"
   | "reconcile_connection"
+  | "sale_order"
 
 export interface ShopifySyncJobRow {
   id: string
@@ -194,6 +209,7 @@ export interface ShopifyShippingReadiness {
 
 export interface ShopifyConnectOptions {
   pluginAvailable: boolean
+  installUrl: string | null
 }
 
 /** A live Shopify variant, or `null` when Shopify confirms it no longer exists. */

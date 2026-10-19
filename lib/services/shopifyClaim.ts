@@ -17,6 +17,7 @@ import {
 import { hashShopifyClaimSecret } from "@/lib/shopify/crypto"
 import type { ShopifyPendingInstallationPreview } from "@/lib/shopify/types"
 import { applyShopifyListingSideEffects } from "@/lib/services/shopifyCatalog"
+import { settleShopifyBilling } from "@/lib/services/shopifyBilling"
 import {
   getShopifyAccessToken,
   registerShopifyWebhooks,
@@ -87,6 +88,7 @@ export async function claimShopifyPendingInstallation(input: {
   try {
     const accessToken = await getShopifyAccessToken(serviceSupabase, connection)
     await registerShopifyWebhooks(connection.shop_domain, accessToken)
+    await settleShopifyBilling(serviceSupabase, connection)
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     await dbMarkShopifyConnectionStatus(serviceSupabase, connection.id, {

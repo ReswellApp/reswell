@@ -7,6 +7,7 @@ import type {
   PublicShopifyConnection,
   ShopifyCatalogProduct,
   ShopifyDashboardData,
+  ShopifySourceOfTruth,
 } from "@/lib/shopify/types"
 
 type ProductPage = {
@@ -178,8 +179,15 @@ export function useShopifyIntegration(initialData: ShopifyDashboardData) {
     }
   }
 
+  function setSourceOfTruth(source: ShopifySourceOfTruth) {
+    setConnection((current) =>
+      current ? { ...current, source_of_truth: source } : current,
+    )
+  }
+
   return {
     connection,
+    setSourceOfTruth,
     products,
     pageInfo,
     query,

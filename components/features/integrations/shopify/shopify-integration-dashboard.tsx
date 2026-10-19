@@ -9,6 +9,8 @@ import { ShopifyInventoryScopeNote } from "@/components/features/integrations/sh
 import { ShopifyLinkedListingsPanel } from "@/components/features/integrations/shopify/shopify-linked-listings-panel"
 import { ShopifyPageHeader } from "@/components/features/integrations/shopify/shopify-page-header"
 import { ShopifyProductPicker } from "@/components/features/integrations/shopify/shopify-product-picker"
+import { ShopifyReswellPublishPanel } from "@/components/features/integrations/shopify/shopify-reswell-publish-panel"
+import { ShopifySetupPanel } from "@/components/features/integrations/shopify/shopify-setup-panel"
 import { ShopifyShippingReadinessCard } from "@/components/features/integrations/shopify/shopify-shipping-readiness-card"
 import {
   shopifyCanvasClass,
@@ -40,7 +42,10 @@ export function ShopifyIntegrationDashboard({
   const runtimeReady = initialData.enabled && initialData.configured
   const connection = integration.connection
   const connectedAndActive =
-    runtimeReady && connection?.status === "active" && connection.sync_enabled
+    runtimeReady &&
+    connection?.status === "active" &&
+    connection.sync_enabled &&
+    connection.billing_status === "active"
   const catalog = connection && connection.status !== "disconnected" ? linked.catalog : null
   const shopifyCatalogEmpty =
     connectedAndActive &&
@@ -117,7 +122,7 @@ export function ShopifyIntegrationDashboard({
               className={shopifyTabTriggerClass}
               disabled={!connectedAndActive}
             >
-              Add products
+              {connection.source_of_truth === "reswell" ? "Add listings" : "Add products"}
             </TabsTrigger>
             <TabsTrigger value="setup" className={shopifyTabTriggerClass}>
               Setup
@@ -140,9 +145,17 @@ export function ShopifyIntegrationDashboard({
             />
           </TabsContent>
           <TabsContent value="add" className="mt-4 focus-visible:ring-0">
-            {picker}
+            {connectedAndActive && connection.source_of_truth === "reswell" ? (
+              <ShopifyReswellPublishPanel />
+            ) : (
+              picker
+            )}
           </TabsContent>
           <TabsContent value="setup" className="mt-4 space-y-3 focus-visible:ring-0">
+            <ShopifySetupPanel
+              connection={connection}
+              onSourceChange={integration.setSourceOfTruth}
+            />
             <ShopifyShippingReadinessCard readiness={initialData.shippingReadiness} />
             <ShopifyInventoryScopeNote />
           </TabsContent>
@@ -150,6 +163,12 @@ export function ShopifyIntegrationDashboard({
       ) : (
         <>
           {picker}
+          {connection && connection.status !== "disconnected" ? (
+            <ShopifySetupPanel
+              connection={connection}
+              onSourceChange={integration.setSourceOfTruth}
+            />
+          ) : null}
           <ShopifyShippingReadinessCard readiness={initialData.shippingReadiness} />
           <ShopifyInventoryScopeNote />
         </>
