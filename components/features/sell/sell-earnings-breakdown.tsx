@@ -3,18 +3,17 @@
 import { BadgeCheck } from "lucide-react"
 
 import { SmoothCollapse } from "@/components/ui/smooth-collapse"
+import { coerceListingPriceUsd } from "@/lib/listing-compare-at-price"
 import {
   MARKETPLACE_FEE_PERCENT,
   getSellerEarnings,
 } from "@/lib/seller-fees"
 import { cn } from "@/lib/utils"
 
-/** Parses the raw price input the same way `SellPriceFields` treats it. */
+/** Parses the raw price input the same way publish does. */
 function parseListingPrice(raw: string): number | null {
-  const t = raw.trim().replace(/,/g, "")
-  if (!t) return null
-  const n = Number.parseFloat(t)
-  if (!Number.isFinite(n) || n < 0.01 || n > 999_999.99) return null
+  const n = coerceListingPriceUsd(raw)
+  if (n == null || n > 999_999.99) return null
   return n
 }
 

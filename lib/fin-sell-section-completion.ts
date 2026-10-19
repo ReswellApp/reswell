@@ -1,3 +1,4 @@
+import { coerceListingPriceUsd } from "@/lib/listing-compare-at-price"
 import {
   applyFinReswellPackageDefaults,
   finReswellPackageDimensionsAllBlank,
@@ -60,8 +61,7 @@ export function computeFinSellSectionCompletion(
     form.shippingAvailable &&
     shippingRateOk
 
-  const priceNum = Number.parseFloat(form.price)
-  const publish = Number.isFinite(priceNum) && priceNum > 0
+  const publish = coerceListingPriceUsd(form.price) != null
 
   return {
     "sell-fins-section-photos-title": photosTitle,
