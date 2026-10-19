@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 import {
   listingImageSiblingPublicUrls,
+  listingImageStandInObjectPaths,
   listingStorageUrlsToRemove,
 } from "./listing-image-storage-siblings.ts"
 
@@ -38,5 +39,39 @@ describe("listingStorageUrlsToRemove", () => {
       listingImageSiblingPublicUrls([FULL]),
     )
     assert.deepEqual(listingStorageUrlsToRemove([THUMB], [FULL]), [])
+  })
+})
+
+describe("listingImageStandInObjectPaths", () => {
+  it("fills a missing thumb from the film, then the card", () => {
+    assert.deepEqual(listingImageStandInObjectPaths("user/1791512250743-photo-thumb.webp"), [
+      "user/1791512250743-photo-film2.webp",
+      "user/1791512250743-photo-film2.jpg",
+      "user/1791512250743-photo-card2.webp",
+      "user/1791512250743-photo-card2.jpg",
+      "user/1791512250743-photo-film.webp",
+      "user/1791512250743-photo-film.jpg",
+      "user/1791512250743-photo-card.webp",
+      "user/1791512250743-photo-card.jpg",
+    ])
+  })
+
+  it("fills a missing full-size file from the card, then the film", () => {
+    assert.deepEqual(listingImageStandInObjectPaths("user/1791512250743-photo-full.jpg"), [
+      "user/1791512250743-photo-card2.jpg",
+      "user/1791512250743-photo-card2.webp",
+      "user/1791512250743-photo-film2.jpg",
+      "user/1791512250743-photo-film2.webp",
+      "user/1791512250743-photo-card.jpg",
+      "user/1791512250743-photo-card.webp",
+      "user/1791512250743-photo-film.jpg",
+      "user/1791512250743-photo-film.webp",
+    ])
+  })
+
+  it("leaves card, film, and other files on their own path", () => {
+    assert.deepEqual(listingImageStandInObjectPaths("user/1791512250743-photo-card2.webp"), [])
+    assert.deepEqual(listingImageStandInObjectPaths("user/1791512250743-photo-film2.webp"), [])
+    assert.deepEqual(listingImageStandInObjectPaths("user/1-video-poster.webp"), [])
   })
 })
