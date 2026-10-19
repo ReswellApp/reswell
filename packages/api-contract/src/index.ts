@@ -465,15 +465,18 @@ export type MobileBoardStyleFilter = {
 }
 
 /**
- * Main category rail. Same order as the website header:
- * Surfboards, Fins, Traction, Wetsuits, Apparel, Magazines.
- * Board shapes stay off this row.
+ * Offline fallback for the category rail. The live strip comes from
+ * `/api/mobile/v1/browse-rail`, which reads the website header list.
+ * Surfboards, Fins, Traction, Wetsuits, Boardbags, Surfpacks, Leashes, Apparel, Magazines.
  */
 export const MOBILE_CATEGORY_CHIPS: readonly MobileCategoryChip[] = [
   { label: "Surfboards", category: "surfboards" },
   { label: "Fins", category: "fins" },
   { label: "Traction", category: "traction" },
   { label: "Wetsuits", category: "wetsuits" },
+  { label: "Boardbags", category: "boardbags" },
+  { label: "Surfpacks", category: "surfpacks" },
+  { label: "Leashes", category: "leashes" },
   { label: "Apparel", category: "apparel" },
   { label: "Magazines", category: "magazines" },
 ]

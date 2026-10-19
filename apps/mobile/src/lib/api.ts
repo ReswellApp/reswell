@@ -1,6 +1,7 @@
 import Constants from "expo-constants"
 import { isDevice } from "expo-device"
 import { Platform } from "react-native"
+import { notifyCartChanged } from "@/lib/cart-count-events"
 import { publicApiUrl } from "@/lib/public-env"
 import {
   mobileCartResultSchema,
@@ -464,6 +465,9 @@ export function setCartItem(accessToken: string, listingId: string, quantity: nu
   return read("/api/mobile/v1/me/cart", (data) => mobileCartResultSchema.parse(data), accessToken, {
     listing_id: listingId,
     quantity,
+  }).then((result) => {
+    notifyCartChanged()
+    return result
   })
 }
 
@@ -636,7 +640,10 @@ export function finalizeCheckout(accessToken: string, paymentIntentId: string): 
     (data) => mobileCheckoutFinalizeSchema.parse(data),
     accessToken,
     { payment_intent_id: paymentIntentId },
-  )
+  ).then((result) => {
+    notifyCartChanged()
+    return result
+  })
 }
 
 export function fetchOffers(accessToken: string): Promise<{ offers: MobileOffer[] }> {

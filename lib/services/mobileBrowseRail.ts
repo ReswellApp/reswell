@@ -1,4 +1,5 @@
 import {
+  MOBILE_BROWSE_PAGES,
   MOBILE_LISTING_CATEGORIES,
   MOBILE_SELLER_RESOURCE_SLUGS,
   mobileBrowseRailSchema,
@@ -6,11 +7,12 @@ import {
   type MobileListingCategory,
   type MobileSellerResourceSlug,
 } from "@reswell/api-contract"
+import { sellerResourcesNavLinks } from "@/lib/seller-resources"
 import {
-  sellerResourcesNavLinks,
   siteHeaderMobileCategoryNavLinks,
   siteHeaderMobileSecondaryNavLinks,
 } from "@/lib/site-category-directory"
+import type { MobileApiResult } from "@/lib/services/mobileApi"
 
 const CATEGORY_BY_PATH: Record<string, MobileListingCategory> = {
   "/boards": "surfboards",
@@ -25,11 +27,6 @@ const CATEGORY_BY_PATH: Record<string, MobileListingCategory> = {
   "/accessories": "accessories",
 }
 
-const PAGE_BY_PATH = {
-  "/sellers": "sellers",
-  "/sold": "sold",
-} as const
-
 const SCREEN_BY_PATH: Record<string, MobileSellerResourceSlug> = {
   "/for-surf-shops": "for-surf-shops",
   "/seller-resources/how-to-sell": "how-to-sell",
@@ -38,75 +35,74 @@ const SCREEN_BY_PATH: Record<string, MobileSellerResourceSlug> = {
   "/seller-resources": "seller-resources",
 }
 
-function screenForHref(href: string): MobileSellerResourceSlug | null {
-  const path = href.split("?")[0]?.replace(/\/$/, "") || "/"
-  const screen = SCREEN_BY_PATH[path]
-  if (!screen || !MOBILE_SELLER_RESOURCE_SLUGS.includes(screen)) return null
-  return screen
+function pathOf(href: string): string {
+  const path = href.split("?")[0] ?? href
+  return path.replace(/\/$/, "") || "/"
 }
 
-function categoryForHref(href: string): MobileListingCategory | null {
-  const path = href.split("?")[0]?.replace(/\/$/, "") || "/"
-  const category = CATEGORY_BY_PATH[path]
-  if (!category || !MOBILE_LISTING_CATEGORIES.includes(category)) return null
-  return category
+function categoryFor(href: string): MobileListingCategory | null {
+  const category = CATEGORY_BY_PATH[pathOf(href)]
+  return category && MOBILE_LISTING_CATEGORIES.includes(category) ? category : null
 }
 
-/** Site paths only. The app opens these on the deployed website. */
-function siteHref(href: string): string | null {
-  const trimmed = href.trim()
-  if (!trimmed.startsWith("/") || trimmed.startsWith("//")) return null
-  return trimmed
+function screenFor(href: string): MobileSellerResourceSlug | null {
+  const screen = SCREEN_BY_PATH[pathOf(href)]
+  return screen && MOBILE_SELLER_RESOURCE_SLUGS.includes(screen) ? screen : null
+}
+
+function pageFor(href: string): (typeof MOBILE_BROWSE_PAGES)[number] | null {
+  const path = pathOf(href)
+  if (path === "/sellers") return "sellers"
+  if (path === "/sold") return "sold"
+  return null
 }
 
 /**
- * Same category chips and Seller Resources dropdown the website renders.
- * A web deploy changes this response, so the app picks up new pages on its next visit.
+ * Homepage category strip. Labels and order come from the website header rail,
+ * including Seller Resources, Sellers, and Sold.
  */
 export function getMobileBrowseRail(): MobileBrowseRail {
-  const categories = siteHeaderMobileCategoryNavLinks.flatMap((link) => {
-    const href = siteHref(link.href)
-    if (!href) return []
-    return [
+  const categories = siteHeaderMobileCategoryNavLinks.map((link) => ({
+    kind: "category" as const,
+    label: link.label,
+    href: link.href,
+    category: categoryFor(link.href),
+  }))
+  const resources = sellerResourcesNavLinks.map((link) => ({
+    label: link.label,
+    href: link.href,
+    category: null,
+    screen: screenFor(link.href),
+  }))
+  const pages = siteHeaderMobileSecondaryNavLinks.map((link) => ({
+    kind: "page" as const,
+    label: link.label,
+    href: link.href,
+    page: pageFor(link.href),
+  }))
+
+  const parsed = mobileBrowseRailSchema.safeParse({
+    items: [
+      ...categories,
       {
-        kind: "category" as const,
-        label: link.label,
-        href,
-        category: categoryForHref(href),
+        kind: "menu",
+        id: "seller-resources",
+        label: "Seller Resources",
+        items: resources,
       },
-    ]
+      ...pages,
+    ],
   })
-  const resources = sellerResourcesNavLinks.flatMap((link) => {
-    const href = siteHref(link.href)
-    if (!href) return []
-    return [{ label: link.label, href, category: categoryForHref(href), screen: screenForHref(href) }]
-  })
-  const pages = siteHeaderMobileSecondaryNavLinks.flatMap((link) => {
-    const href = siteHref(link.href)
-    if (!href) return []
-    const path = href.split("?")[0]?.replace(/\/$/, "") || "/"
-    return [
-      {
-        kind: "page" as const,
-        label: link.label,
-        href,
-        page: PAGE_BY_PATH[path as keyof typeof PAGE_BY_PATH] ?? null,
-      },
-    ]
-  })
-  const items = [
-    ...categories,
-    ...(resources.length > 0
-      ? [
-          {
-            kind: "menu" as const,
-            id: "seller-resources",
-            label: "Seller Resources",
-            items: resources,
-          },
-        ]
-      : []),
-    ...pages,
-  ]
-  return mobileBrowseRailSchema.parse({ items })
+  if (!parsed.success) {
+    throw new Error("Unable to load categories right now")
+  }
+  return parsed.data
+}
+
+export function getMobileBrowseRailService(): MobileApiResult<MobileBrowseRail> {
+  try {
+    return { ok: true, data: getMobileBrowseRail() }
+  } catch {
+    return { ok: false, status: 500, error: "Unable to load categories right now" }
+  }
 }

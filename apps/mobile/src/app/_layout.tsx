@@ -4,6 +4,7 @@ import { View } from "react-native"
 import { GestureHandlerRootView } from "react-native-gesture-handler"
 import { FloatingTabBar } from "@/components/floating-tab-bar"
 import { AuthProvider } from "@/lib/auth-context"
+import { CartCountProvider } from "@/lib/cart-count"
 import { ListingMarksProvider } from "@/lib/listing-marks"
 import { useReswellColors, fontFamily } from "@/theme"
 
@@ -22,6 +23,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
     <AuthProvider>
       <ListingMarksProvider>
+      <CartCountProvider>
         <View style={{ flex: 1, backgroundColor: colors.background }}>
           <Stack
             screenOptions={{
@@ -41,6 +43,7 @@ export default function RootLayout() {
           </Stack>
           <FloatingTabBar />
         </View>
+      </CartCountProvider>
       </ListingMarksProvider>
     </AuthProvider>
     </GestureHandlerRootView>

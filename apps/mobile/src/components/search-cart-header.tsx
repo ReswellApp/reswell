@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react"
 import { Animated, Modal, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { SearchScreen } from "@/components/search-screen"
+import { useCartCount } from "@/lib/cart-count"
 import { fontFamily, useReswellColors } from "@/theme"
 
 const PLACEHOLDER = "Search surfboards, fins, wetsuits or apparel…"
@@ -26,6 +27,7 @@ type SearchCartHeaderProps = {
 /** Search field and cart on one row. Same bar on category pages and search results. */
 export function SearchCartHeader(props: SearchCartHeaderProps) {
   const colors = useReswellColors()
+  const cartCount = useCartCount()
   const insets = useSafeAreaInsets()
   const insetTop = props.insetTop !== false
   const bordered = props.bordered !== false
@@ -114,8 +116,21 @@ export function SearchCartHeader(props: SearchCartHeaderProps) {
           <SearchMark onPress={openSearch} />
         </Pressable>
       )}
-      <Pressable accessibilityRole="button" accessibilityLabel="Cart" hitSlop={6} onPress={props.onCart}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={cartCount > 0 ? `Cart, ${cartCount} items` : "Cart"}
+        hitSlop={6}
+        onPress={props.onCart}
+        style={styles.cart}
+      >
         <SymbolView name={{ ios: "cart", android: "shopping_cart", web: "shopping_cart" }} size={22} tintColor={colors.foreground} />
+        {cartCount > 0 ? (
+          <View style={[styles.ticker, { backgroundColor: colors.foreground }]}>
+            <Text style={[styles.tickerLabel, { color: colors.primaryForeground, fontFamily: fontFamily.text }]}>
+              {cartCount > 9 ? "9+" : cartCount}
+            </Text>
+          </View>
+        ) : null}
       </Pressable>
       {props.mode === "open" ? (
         <Modal visible={open} transparent animationType="none" statusBarTranslucent onRequestClose={() => closeSearch()}>
@@ -181,4 +196,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  cart: { width: 28, height: 28, alignItems: "center", justifyContent: "center" },
+  ticker: {
+    position: "absolute",
+    top: -4,
+    right: -6,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    paddingHorizontal: 3,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tickerLabel: { fontSize: 10, fontWeight: "700", lineHeight: 12 },
 })

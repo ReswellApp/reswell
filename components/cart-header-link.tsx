@@ -121,10 +121,7 @@ export function CartHeaderLink({
           strokeWidth={iconStrokeWidth}
         />
         {count > 0 && (
-          <Badge
-            variant="secondary"
-            className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-0.5 text-[10px] leading-none md:-right-1 md:-top-1 md:h-5 md:min-w-[1.25rem] md:px-1 md:text-xs"
-          >
+          <Badge className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full border-0 bg-foreground px-1 text-[10px] leading-none text-background md:h-5 md:min-w-5 md:text-xs">
             {count > 9 ? "9+" : count}
           </Badge>
         )}

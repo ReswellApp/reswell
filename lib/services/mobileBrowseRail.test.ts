@@ -7,7 +7,17 @@ describe("mobile browse rail", () => {
   it("uses the website category order and the Seller Resources dropdown", () => {
     const rail = getMobileBrowseRail()
     const labels = rail.items.map((item) => item.label)
-    assert.deepEqual(labels.slice(0, 6), ["Surfboards", "Fins", "Traction", "Wetsuits", "Apparel", "Magazines"])
+    assert.deepEqual(labels.slice(0, 9), [
+      "Surfboards",
+      "Fins",
+      "Traction",
+      "Wetsuits",
+      "Boardbags",
+      "Surfpacks",
+      "Leashes",
+      "Apparel",
+      "Magazines",
+    ])
     const menu = rail.items.find((item) => item.kind === "menu")
     assert.equal(menu?.kind, "menu")
     if (menu?.kind !== "menu") return
