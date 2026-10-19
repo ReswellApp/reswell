@@ -8,6 +8,7 @@ import {
   dbGetShopifyConnectionById,
   dbGetShopifyConnectionForUser,
   dbMarkShopifyConnectionStatus,
+  dbSetShopifyOrdersSyncEnabled,
 } from "@/lib/db/shopifyConnections"
 import { dbUnpublishAllShopifyListingsForConnection } from "@/lib/db/shopifyCatalog"
 import {
@@ -87,7 +88,21 @@ export async function claimShopifyPendingInstallation(input: {
 
   try {
     const accessToken = await getShopifyAccessToken(serviceSupabase, connection)
-    await registerShopifyWebhooks(connection.shop_domain, accessToken)
+    const registration = await registerShopifyWebhooks(
+      connection.shop_domain,
+      accessToken,
+    )
+    await dbSetShopifyOrdersSyncEnabled(
+      serviceSupabase,
+      connection.id,
+      registration.ordersCreateSubscribed,
+    )
+    if (connection.status === "error") {
+      await dbMarkShopifyConnectionStatus(serviceSupabase, connection.id, {
+        status: "active",
+        error: null,
+      })
+    }
     await settleShopifyBilling(serviceSupabase, connection)
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)

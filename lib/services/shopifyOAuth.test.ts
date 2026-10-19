@@ -22,8 +22,11 @@ export async function resolve(specifier, context, nextResolve) {
 `),
 )
 
-const { completeShopifyOAuth, createShopifyInstallUrl, startShopifyOAuth } =
-  await import("@/lib/services/shopifyOAuth")
+const {
+  completeShopifyOAuth,
+  createShopifyInstallUrl,
+  startShopifyOAuth,
+} = await import("@/lib/services/shopifyOAuth")
 
 const ENV_KEYS = [
   "SHOPIFY_API_KEY",
@@ -207,6 +210,7 @@ function connectionRow(
     active_credential_id: null,
     catalog_read_enabled: true,
     sales_enabled: true,
+    orders_sync_enabled: true,
     inventory_write_enabled: true,
     source_of_truth: "shopify",
     billing_status: "pending",
@@ -574,4 +578,128 @@ test("completing OAuth does not take a shop another account actively linked", as
     ops.some((op) => op.op === "upsert"),
     false,
   )
+})
+
+function ordersSyncUpdate(ops: QueryOp[]): boolean | undefined {
+  const update = ops.find(
+    (op) =>
+      op.table === "shopify_connections" &&
+      op.op === "update" &&
+      op.payload != null &&
+      typeof op.payload === "object" &&
+      "orders_sync_enabled" in op.payload,
+  )
+  return (update?.payload as { orders_sync_enabled?: boolean } | undefined)
+    ?.orders_sync_enabled
+}
+
+test("a rejected ORDERS_CREATE webhook still links the store and leaves order sync off", async () => {
+  useAccountOAuthEnv()
+  const original = globalThis.fetch
+  const topics: string[] = []
+  globalThis.fetch = (async (
+    input: Parameters<typeof fetch>[0],
+    init?: Parameters<typeof fetch>[1],
+  ) => {
+    const url = String(input)
+    if (url.includes("/admin/oauth/access_token")) {
+      return Response.json({
+        access_token: "shpat_test",
+        refresh_token: "shprt_test",
+        expires_in: 3600,
+        refresh_token_expires_in: 86_400,
+        scope: "read_products",
+      })
+    }
+    const body = JSON.parse(String(init?.body ?? "{}")) as {
+      query?: string
+      variables?: { topic?: string }
+    }
+    const query = body.query ?? ""
+    if (query.includes("ReswellShopIdentity")) {
+      return Response.json({
+        data: { shop: { id: "gid://shopify/Shop/99", name: "New Store" } },
+      })
+    }
+    if (query.includes("ReswellWebhookSubscriptions")) {
+      return Response.json({
+        data: { webhookSubscriptions: { nodes: [] } },
+      })
+    }
+    if (query.includes("ReswellCreateWebhook")) {
+      const topic = body.variables?.topic ?? ""
+      topics.push(topic)
+      if (topic === "ORDERS_CREATE") {
+        return Response.json({
+          data: {
+            webhookSubscriptionCreate: {
+              userErrors: [
+                {
+                  message:
+                    "This app is not approved to subscribe to webhook topics containing protected customer data.",
+                },
+              ],
+            },
+          },
+        })
+      }
+      return Response.json({
+        data: { webhookSubscriptionCreate: { userErrors: [] } },
+      })
+    }
+    throw new Error(`Unexpected Shopify request ${url}`)
+  }) as typeof fetch
+
+  try {
+    const { client, connections, ops } = scenarioSupabase({
+      connections: [connectionRow()],
+    })
+    const connection = await completeShopifyOAuth({
+      serviceSupabase: client,
+      userId: "user-1",
+      shopDomain: "new-store.myshopify.com",
+      code: "oauth-code",
+    })
+    assert.equal(connection.status, "active")
+    assert.equal(connections[0]?.shop_domain, "new-store.myshopify.com")
+    assert.deepEqual(topics, [
+      "PRODUCTS_UPDATE",
+      "PRODUCTS_DELETE",
+      "INVENTORY_LEVELS_UPDATE",
+      "APP_UNINSTALLED",
+      "ORDERS_CREATE",
+      "METAFIELDS_UPDATE",
+    ])
+    assert.equal(ordersSyncUpdate(ops), false)
+    assert.equal(
+      ops.some(
+        (op) =>
+          op.table === "shopify_connections" &&
+          op.op === "update" &&
+          (op.payload as { status?: string } | null)?.status === "error",
+      ),
+      false,
+    )
+  } finally {
+    globalThis.fetch = original
+  }
+})
+
+test("a subscribed ORDERS_CREATE webhook turns order sync on", async () => {
+  useAccountOAuthEnv()
+  const restoreFetch = installShopifyFetch()
+  try {
+    const { client, ops } = scenarioSupabase({
+      connections: [connectionRow({ orders_sync_enabled: false })],
+    })
+    await completeShopifyOAuth({
+      serviceSupabase: client,
+      userId: "user-1",
+      shopDomain: "new-store.myshopify.com",
+      code: "oauth-code",
+    })
+    assert.equal(ordersSyncUpdate(ops), true)
+  } finally {
+    restoreFetch()
+  }
 })

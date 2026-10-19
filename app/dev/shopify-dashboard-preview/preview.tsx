@@ -27,6 +27,7 @@ function connection(
     credential_provider: "public_oauth",
     catalog_read_enabled: true,
     sales_enabled: true,
+    orders_sync_enabled: true,
     inventory_write_enabled: true,
     scopes: [],
     last_webhook_at: FOUR_DAYS_AGO,

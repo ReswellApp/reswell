@@ -12,6 +12,12 @@ const GENERIC = "Could not link this Shopify store. Try installing again from Sh
  */
 export function publicShopifyClaimError(error: unknown): string {
   const message = error instanceof Error ? error.message : ""
+  if (
+    /protected customer data/i.test(message) ||
+    /usage charge is not approved/i.test(message)
+  ) {
+    return GENERIC
+  }
   if (/reswell account is not approved for shopify/i.test(message)) {
     return ACCOUNT_NOT_APPROVED
   }

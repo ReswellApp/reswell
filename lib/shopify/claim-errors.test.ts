@@ -18,6 +18,17 @@ test("a usage charge that is not approved is not an account approval error", () 
   )
 })
 
+test("protected customer data approval is not an account approval error", () => {
+  assert.equal(
+    publicShopifyClaimError(
+      new Error(
+        "This app is not approved to subscribe to webhook topics containing protected customer data.",
+      ),
+    ),
+    "Could not link this Shopify store. Try installing again from Shopify.",
+  )
+})
+
 test("claim still explains a store owned by someone else", () => {
   assert.equal(
     publicShopifyClaimError(
