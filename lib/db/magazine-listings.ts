@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { MAGAZINES_SECTION } from "@/lib/magazine-listing-config"
 import type { MagazinesBrowseFacetSelections } from "@/lib/magazines-browse-facets"
 import { normalizedMagazinesBrowseSort } from "@/lib/magazines-browse-metadata"
-import { listingDetailHref } from "@/lib/listing-href"
+import { fetchActiveSectionListingSitemapEntries } from "@/lib/db/sitemap-section-listings"
 import { hydrateCardListingImages } from "@/lib/listing-image-display"
 
 export const MAGAZINES_BROWSE_PAGE_SIZE = 40
@@ -127,26 +127,10 @@ export async function fetchMagazinesBrowsePage(
   }
 }
 
-export async function fetchMagazineListingSitemapEntries(
-  supabase: SupabaseClient,
-): Promise<{ path: string; updatedAt: string | null }[]> {
-  const { data, error } = await supabase
-    .from("listings")
-    .select("id, slug, updated_at")
-    .eq("section", MAGAZINES_SECTION)
-    .eq("status", "active")
-    .eq("hidden_from_site", false)
-    .is("archived_at", null)
-    .order("created_at", { ascending: false })
-    .limit(48000)
-
-  if (error) {
-    console.error("fetchMagazineListingSitemapEntries:", error.message)
-    return []
-  }
-
-  return (data ?? []).map((row) => ({
-    path: listingDetailHref({ id: row.id as string, slug: (row as { slug?: string | null }).slug }),
-    updatedAt: (row as { updated_at?: string | null }).updated_at ?? null,
-  }))
+export async function fetchMagazineListingSitemapEntries(supabase: SupabaseClient) {
+  return fetchActiveSectionListingSitemapEntries(
+    supabase,
+    MAGAZINES_SECTION,
+    "fetchMagazineListingSitemapEntries",
+  )
 }

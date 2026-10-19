@@ -16,7 +16,7 @@ import {
   finSetupFilterPatterns,
   finSystemFilterPatterns,
 } from "@/lib/fin-listing-effective-facets"
-import { listingDetailHref } from "@/lib/listing-href"
+import { fetchActiveSectionListingSitemapEntries } from "@/lib/db/sitemap-section-listings"
 import { hydrateCardListingImages } from "@/lib/listing-image-display"
 
 export const FINS_BROWSE_PAGE_SIZE = 40
@@ -181,26 +181,6 @@ export async function fetchFinsBrowsePage(
 }
 
 /** Active fin listing detail URLs (`/l/{slug-or-id}`) for the sitemap. */
-export async function fetchFinListingSitemapEntries(
-  supabase: SupabaseClient,
-): Promise<{ path: string; updatedAt: string | null }[]> {
-  const { data, error } = await supabase
-    .from("listings")
-    .select("id, slug, updated_at")
-    .eq("section", FINS_SECTION)
-    .eq("status", "active")
-    .eq("hidden_from_site", false)
-    .is("archived_at", null)
-    .order("created_at", { ascending: false })
-    .limit(48000)
-
-  if (error) {
-    console.error("fetchFinListingSitemapEntries:", error.message)
-    return []
-  }
-
-  return (data ?? []).map((row) => ({
-    path: listingDetailHref({ id: row.id as string, slug: (row as { slug?: string | null }).slug }),
-    updatedAt: (row as { updated_at?: string | null }).updated_at ?? null,
-  }))
+export async function fetchFinListingSitemapEntries(supabase: SupabaseClient) {
+  return fetchActiveSectionListingSitemapEntries(supabase, FINS_SECTION, "fetchFinListingSitemapEntries")
 }

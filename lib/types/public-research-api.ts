@@ -47,6 +47,7 @@ export type PublicApiModelCard = {
     search_html: string
     pricing_api: string
   }
+  image_url: string | null
 }
 
 export type PublicApiSoldComp = {
@@ -57,6 +58,7 @@ export type PublicApiSoldComp = {
   dimensions: string | null
   title: string | null
   listing_url: string | null
+  image_url: string | null
 }
 
 export type PublicApiMarketStats = {

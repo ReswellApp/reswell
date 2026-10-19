@@ -71,6 +71,7 @@ export type PublicResearchSoldListingEmbed = {
   hidden_from_site: boolean | null
   archived_at: string | null
   status: string | null
+  listing_images: PublicResearchListingImageRow[] | null
 }
 
 export type PublicResearchSoldOrderRow = {
@@ -93,7 +94,10 @@ const PRICING_LISTING_SELECT =
 
 const PRICING_ORDERS_SELECT = `
   amount, shipping_amount, created_at, refunded_at,
-  listings:listing_id ( id, slug, title, condition, dimensions, hidden_from_site, archived_at, status )
+  listings:listing_id (
+    id, slug, title, condition, dimensions, hidden_from_site, archived_at, status,
+    listing_images (url, thumbnail_url, is_primary, sort_order)
+  )
 `
 
 function escapeIlikeToken(q: string): string {
@@ -128,6 +132,11 @@ export async function searchPublicResearchListingsIlike(
   q: string,
   sections: string[],
   limit: number,
+  filters?: {
+    brandId?: string | null
+    model?: string | null
+    city?: string | null
+  },
 ): Promise<PublicResearchListingRow[]> {
   const safe = escapeIlikeToken(q)
   const pattern = `"%${safe}%"`
@@ -138,12 +147,25 @@ export async function searchPublicResearchListingsIlike(
     .select(PUBLIC_RESEARCH_LISTING_SELECT)
     .eq("status", "active")
     .eq("hidden_from_site", false)
-    .or(textOr)
     .order("created_at", { ascending: false })
     .limit(limit)
 
+  if (q.trim()) {
+    query = query.or(textOr)
+  }
   if (sections.length > 0) {
     query = query.in("section", sections)
+  }
+  if (filters?.brandId) {
+    query = query.eq("brand_id", filters.brandId)
+  }
+  const model = filters?.model?.trim()
+  if (model) {
+    query = query.ilike("model", `%${escapeIlikeToken(model)}%`)
+  }
+  const city = filters?.city?.trim()
+  if (city) {
+    query = query.ilike("city", city)
   }
 
   const { data, error } = await query
@@ -152,6 +174,69 @@ export async function searchPublicResearchListingsIlike(
     return []
   }
   return data as PublicResearchListingRow[]
+}
+
+export type PublicCatalogModelRow = {
+  id: string
+  name: string
+  imageUrl: string | null
+  brandId: string
+  brandName: string
+  brandSlug: string
+}
+
+type PublicCatalogModelRaw = {
+  id: string
+  name: string
+  image_url: string | null
+  brands:
+    | { id: string; name: string; slug: string }
+    | { id: string; name: string; slug: string }[]
+    | null
+}
+
+export async function searchPublicCatalogModels(
+  supabase: SupabaseClient,
+  filters: { q: string; brandId: string | null; limit: number },
+): Promise<PublicCatalogModelRow[]> {
+  const q = filters.q.trim()
+  if (!q && !filters.brandId) return []
+
+  let query = supabase
+    .from("brand_models")
+    .select("id, name, image_url, brands:brand_id ( id, name, slug )")
+    .order("name", { ascending: true })
+    .limit(filters.limit)
+
+  if (filters.brandId) {
+    query = query.eq("brand_id", filters.brandId)
+  }
+  if (q) {
+    const safe = escapeIlikeToken(q)
+    const pattern = q.length < 4 ? `${safe}%` : `%${safe}%`
+    query = query.ilike("name", pattern)
+  }
+
+  const { data, error } = await query
+  if (error || !data) {
+    if (error) console.error("[public-research-api] catalog models:", error.message)
+    return []
+  }
+
+  const out: PublicCatalogModelRow[] = []
+  for (const row of data as PublicCatalogModelRaw[]) {
+    const brand = Array.isArray(row.brands) ? row.brands[0] : row.brands
+    if (!brand?.id || !brand.slug?.trim() || !row.name?.trim()) continue
+    out.push({
+      id: row.id,
+      name: row.name.trim(),
+      imageUrl: row.image_url?.trim() || null,
+      brandId: brand.id,
+      brandName: brand.name.trim(),
+      brandSlug: brand.slug.trim(),
+    })
+  }
+  return out
 }
 
 export async function selectBrandModelByBrandAndName(

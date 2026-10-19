@@ -10,7 +10,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { APPAREL_SECTION } from "@/lib/apparel-listing-config"
 import type { ApparelBrowseFacetSelections } from "@/lib/apparel-browse-facets"
 import { normalizedApparelBrowseSort } from "@/lib/apparel-browse-metadata"
-import { listingDetailHref } from "@/lib/listing-href"
+import { fetchActiveSectionListingSitemapEntries } from "@/lib/db/sitemap-section-listings"
 import { hydrateCardListingImages } from "@/lib/listing-image-display"
 
 export const APPAREL_BROWSE_PAGE_SIZE = 40
@@ -144,26 +144,10 @@ export async function fetchApparelBrowsePage(
 }
 
 /** Active apparel listing detail URLs (`/l/{slug-or-id}`) for the sitemap. */
-export async function fetchApparelListingSitemapEntries(
-  supabase: SupabaseClient,
-): Promise<{ path: string; updatedAt: string | null }[]> {
-  const { data, error } = await supabase
-    .from("listings")
-    .select("id, slug, updated_at")
-    .eq("section", APPAREL_SECTION)
-    .eq("status", "active")
-    .eq("hidden_from_site", false)
-    .is("archived_at", null)
-    .order("created_at", { ascending: false })
-    .limit(48000)
-
-  if (error) {
-    console.error("fetchApparelListingSitemapEntries:", error.message)
-    return []
-  }
-
-  return (data ?? []).map((row) => ({
-    path: listingDetailHref({ id: row.id as string, slug: (row as { slug?: string | null }).slug }),
-    updatedAt: (row as { updated_at?: string | null }).updated_at ?? null,
-  }))
+export async function fetchApparelListingSitemapEntries(supabase: SupabaseClient) {
+  return fetchActiveSectionListingSitemapEntries(
+    supabase,
+    APPAREL_SECTION,
+    "fetchApparelListingSitemapEntries",
+  )
 }

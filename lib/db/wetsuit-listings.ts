@@ -10,7 +10,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { WETSUITS_SECTION } from "@/lib/wetsuit-listing-config"
 import type { WetsuitsBrowseFacetSelections } from "@/lib/wetsuits-browse-facets"
 import { normalizedWetsuitsBrowseSort } from "@/lib/wetsuits-browse-metadata"
-import { listingDetailHref } from "@/lib/listing-href"
+import { fetchActiveSectionListingSitemapEntries } from "@/lib/db/sitemap-section-listings"
 import { hydrateCardListingImages } from "@/lib/listing-image-display"
 
 export const WETSUITS_BROWSE_PAGE_SIZE = 40
@@ -139,26 +139,10 @@ export async function fetchWetsuitsBrowsePage(
 }
 
 /** Active wetsuit listing detail URLs (`/l/{slug-or-id}`) for the sitemap. */
-export async function fetchWetsuitListingSitemapEntries(
-  supabase: SupabaseClient,
-): Promise<{ path: string; updatedAt: string | null }[]> {
-  const { data, error } = await supabase
-    .from("listings")
-    .select("id, slug, updated_at")
-    .eq("section", WETSUITS_SECTION)
-    .eq("status", "active")
-    .eq("hidden_from_site", false)
-    .is("archived_at", null)
-    .order("created_at", { ascending: false })
-    .limit(48000)
-
-  if (error) {
-    console.error("fetchWetsuitListingSitemapEntries:", error.message)
-    return []
-  }
-
-  return (data ?? []).map((row) => ({
-    path: listingDetailHref({ id: row.id as string, slug: (row as { slug?: string | null }).slug }),
-    updatedAt: (row as { updated_at?: string | null }).updated_at ?? null,
-  }))
+export async function fetchWetsuitListingSitemapEntries(supabase: SupabaseClient) {
+  return fetchActiveSectionListingSitemapEntries(
+    supabase,
+    WETSUITS_SECTION,
+    "fetchWetsuitListingSitemapEntries",
+  )
 }
