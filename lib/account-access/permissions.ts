@@ -28,18 +28,8 @@ export const ACCOUNT_PERMISSIONS = [
 
 export type AccountPermission = (typeof ACCOUNT_PERMISSIONS)[number]
 
-const STAFF_PERMISSIONS = new Set<AccountPermission>([
-  "listings.read",
-  "listings.write",
-  "orders.read",
-  "orders.write",
-  "offers.read",
-  "offers.write",
-  "messages.read",
-  "messages.write",
-])
-
-const MANAGER_EXCLUDED = new Set<AccountPermission>(["payouts.read"])
+/** Earnings and bank/PayPal payouts stay with the account owner. */
+const PAYOUT_EXCLUDED = new Set<AccountPermission>(["payouts.read"])
 
 export function isAccountRole(value: string): value is AccountRole {
   return (ACCOUNT_ROLES as readonly string[]).includes(value)
@@ -51,23 +41,20 @@ export function isGrantableAccountRole(value: string): value is GrantableAccount
 
 export function permissionsForAccountRole(role: AccountRole): ReadonlySet<AccountPermission> {
   if (role === "owner") return new Set(ACCOUNT_PERMISSIONS)
-  if (role === "manager") {
-    return new Set(ACCOUNT_PERMISSIONS.filter((permission) => !MANAGER_EXCLUDED.has(permission)))
-  }
-  return new Set(STAFF_PERMISSIONS)
+  return new Set(ACCOUNT_PERMISSIONS.filter((permission) => !PAYOUT_EXCLUDED.has(permission)))
 }
 
 export function accountRoleHasPermission(role: AccountRole, permission: AccountPermission): boolean {
   return permissionsForAccountRole(role).has(permission)
 }
 
-/** Managers can add and remove staff. Only the owner can add or remove managers. */
+/** Staff and managers can add and remove staff. Only the owner can add or remove managers. */
 export function canGrantAccountRole(
   actorRole: AccountRole,
   targetRole: GrantableAccountRole,
 ): boolean {
   if (actorRole === "owner") return true
-  if (actorRole === "manager") return targetRole === "staff"
+  if (actorRole === "manager" || actorRole === "staff") return targetRole === "staff"
   return false
 }
 

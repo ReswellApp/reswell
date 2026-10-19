@@ -78,7 +78,12 @@ export async function POST(
     return NextResponse.json({ error: gate.error }, { status: 400 })
   }
 
-  const { data: existing } = await getMarketplaceReviewByOrderAndReviewer(supabase, orderId, user.id)
+  const reviewerId = isSeller ? String(order.seller_id ?? "") : user.id
+  if (!reviewerId) {
+    return NextResponse.json({ error: "Order not found" }, { status: 404 })
+  }
+
+  const { data: existing } = await getMarketplaceReviewByOrderAndReviewer(supabase, orderId, reviewerId)
   if (existing) {
     return NextResponse.json({ error: "You already submitted a review for this order." }, { status: 409 })
   }
@@ -99,7 +104,7 @@ export async function POST(
 
   const { data, error } = await insertMarketplaceReviewForOrder(supabase, {
     order_id: orderId,
-    reviewer_id: user.id,
+    reviewer_id: reviewerId,
     reviewed_id: reviewedId,
     listing_id: order.listing_id,
     rating: parsed.data.rating,
@@ -123,7 +128,7 @@ export async function POST(
     void trackKlaviyoSellerReviewedBuyer({
       orderId,
       buyerUserId: order.buyer_id,
-      sellerUserId: user.id,
+      sellerUserId: order.seller_id,
       listingId: order.listing_id,
       rating: parsed.data.rating,
       comment: parsed.data.comment ?? null,

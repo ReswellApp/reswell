@@ -1,3 +1,4 @@
+import { resolveManagedSeller } from "@/lib/account-access/managed-seller"
 import { createClient } from "@/lib/supabase/server"
 import {
   getProfilePersonalInfo,
@@ -55,7 +56,11 @@ export async function saveProfilePersonalInfo(
     return { ok: false, error: "Unauthorized." }
   }
 
-  const priorPersonal = await getProfilePersonalInfo(supabase, user.id)
+  const managed = await resolveManagedSeller("profile.manage")
+  if (!managed.ok) return { ok: false, error: managed.error }
+  const profileId = managed.seller.sellerId
+
+  const priorPersonal = await getProfilePersonalInfo(supabase, profileId)
   const updatePayload = { ...parsed.data }
 
   if (parsed.data.phone !== undefined) {
@@ -64,12 +69,12 @@ export async function saveProfilePersonalInfo(
     updatePayload.transactional_sms_opt_in = Boolean(raw && toE164UsPhone(raw))
   }
 
-  const saved = await updateProfilePersonalInfo(supabase, user.id, updatePayload)
+  const saved = await updateProfilePersonalInfo(supabase, profileId, updatePayload)
   if (!saved.ok) {
     return { ok: false, error: saved.error, code: saved.code }
   }
 
-  if (parsed.data.phone !== undefined) {
+  if (parsed.data.phone !== undefined && !managed.seller.actingAsShop) {
     const phoneE164 = toE164UsPhone(parsed.data.phone?.trim() || "")
     if (phoneE164) {
       void subscribeKlaviyoProfileSmsConsent({
@@ -91,7 +96,10 @@ export async function saveProfilePersonalInfo(
     }
   }
 
-  const personal = await loadProfilePersonalInfoStateForUser(user.id, user.phone)
+  const personal = await loadProfilePersonalInfoStateForUser(
+    profileId,
+    managed.seller.actingAsShop ? null : user.phone,
+  )
   return { ok: true, personal }
 }
 

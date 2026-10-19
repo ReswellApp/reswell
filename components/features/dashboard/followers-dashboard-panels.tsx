@@ -2,6 +2,7 @@ import { redirect } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { getCachedDashboardSession } from "@/lib/dashboard-session"
+import { getShopAccountContext } from "@/lib/services/accountAccess"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -55,6 +56,9 @@ export async function FollowersDashboardPanels() {
   const loginRedirect = "/dashboard/following"
   if (!user) redirect(`/auth/login?redirect=${encodeURIComponent(loginRedirect)}`)
 
+  const shop = await getShopAccountContext()
+  const sellerId = shop?.accountId ?? user.id
+
   const [followsRes, profileRes, newThisMonthRes, myFollowersRes] = await Promise.all([
     supabase
       .from("seller_follows")
@@ -76,11 +80,11 @@ export async function FollowersDashboardPanels() {
     `)
       .eq("follower_id", user.id)
       .order("created_at", { ascending: false }),
-    supabase.from("profiles").select("follower_count").eq("id", user.id).single(),
+    supabase.from("profiles").select("follower_count").eq("id", sellerId).single(),
     supabase
       .from("seller_follows")
       .select("id", { count: "exact", head: true })
-      .eq("seller_id", user.id)
+      .eq("seller_id", sellerId)
       .gte("created_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
     supabase
       .from("seller_follows")
@@ -101,7 +105,7 @@ export async function FollowersDashboardPanels() {
         )
       `,
       )
-      .eq("seller_id", user.id)
+      .eq("seller_id", sellerId)
       .order("created_at", { ascending: false })
       .limit(200),
   ])

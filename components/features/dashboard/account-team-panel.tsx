@@ -30,8 +30,8 @@ const ROLE_LABEL: Record<GrantableAccountRole, string> = {
 }
 
 const ROLE_DETAIL: Record<GrantableAccountRole, string> = {
-  staff: "Listings, orders, offers, and messages",
-  manager: "Staff access, and can add staff",
+  staff: "Runs the shop, except earnings and payouts",
+  manager: "Runs the shop, except earnings and payouts",
 }
 
 function emailInitials(email: string): string {

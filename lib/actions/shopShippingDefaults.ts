@@ -1,6 +1,7 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
+import { resolveManagedSeller } from "@/lib/account-access/managed-seller"
 import { createClient } from "@/lib/supabase/server"
 import { fetchListingsDeskProfile } from "@/lib/db/shopCategoryPackageSizes"
 import { saveShopShippingDefaultsForSeller } from "@/lib/services/shopShippingDefaults"
@@ -32,11 +33,14 @@ export async function saveShopShippingDefaultsAction(
   } = await supabase.auth.getUser()
   if (!user) return { error: "Please sign in to update your shop." }
 
+  const managed = await resolveManagedSeller("listings.write")
+  if (!managed.ok) return { error: managed.error }
+
   try {
-    const profile = await fetchListingsDeskProfile(supabase, user.id)
+    const profile = await fetchListingsDeskProfile(supabase, managed.seller.sellerId)
     const result = await saveShopShippingDefaultsForSeller({
       supabase,
-      userId: user.id,
+      userId: managed.seller.sellerId,
       draft: parsed.data,
       categoryPresets: profile.shopCategoryPackageSizes,
     })

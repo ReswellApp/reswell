@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { resolveManagedSeller } from "@/lib/account-access/managed-seller"
 import { createClient } from "@/lib/supabase/server"
 import { trackKlaviyoListingCreated } from "@/lib/klaviyo/track-listing-created"
 import { trackFirstTimeSellerForListingIfNeeded } from "@/lib/services/klaviyoFirstTimeSeller"
@@ -41,7 +42,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Listing not found" }, { status: 404 })
   }
 
-  if (listing.user_id !== user.id) {
+  const managed = await resolveManagedSeller("listings.write")
+  if (!managed.ok) {
+    return NextResponse.json({ error: managed.error }, { status: managed.status })
+  }
+  if (listing.user_id !== managed.seller.sellerId) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
@@ -59,8 +64,8 @@ export async function POST(request: NextRequest) {
     null
 
   await trackKlaviyoListingCreated({
-    sellerUserId: user.id,
-    sellerEmail: user.email ?? null,
+    sellerUserId: managed.seller.sellerId,
+    sellerEmail: managed.seller.actingAsShop ? null : user.email ?? null,
     listingId: listing.id,
     title: String(listing.title ?? ""),
     price: typeof listing.price === "number" ? listing.price : Number(listing.price),
@@ -71,8 +76,8 @@ export async function POST(request: NextRequest) {
 
   void trackFirstTimeSellerForListingIfNeeded(supabase, {
     listingId: listing.id,
-    sellerUserId: user.id,
-    sellerEmail: user.email ?? null,
+    sellerUserId: managed.seller.sellerId,
+    sellerEmail: managed.seller.actingAsShop ? null : user.email ?? null,
   })
 
   void notifyBoardSavedSearchMatchesForListing(listing.id)

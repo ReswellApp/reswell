@@ -24,22 +24,28 @@ describe("account role permissions", () => {
     assert.equal(permissions.has("payouts.read"), false)
   })
 
-  it("limits staff to day-to-day shop work", () => {
+  it("lets staff run the shop without earnings or payouts", () => {
     const permissions = permissionsForAccountRole("staff")
     assert.equal(permissions.has("listings.write"), true)
     assert.equal(permissions.has("messages.write"), true)
-    assert.equal(permissions.has("team.manage"), false)
-    assert.equal(permissions.has("team.read"), false)
+    assert.equal(permissions.has("orders.write"), true)
+    assert.equal(permissions.has("team.manage"), true)
+    assert.equal(permissions.has("team.read"), true)
+    assert.equal(permissions.has("profile.manage"), true)
     assert.equal(permissions.has("payouts.read"), false)
-    assert.equal(permissions.has("profile.manage"), false)
+    assert.deepEqual(
+      [...permissions].sort(),
+      [...permissionsForAccountRole("manager")].sort(),
+    )
   })
 
-  it("lets managers invite staff and reserves managers for the owner", () => {
+  it("lets staff and managers invite staff and reserves managers for the owner", () => {
     assert.equal(canGrantAccountRole("owner", "manager"), true)
     assert.equal(canGrantAccountRole("owner", "staff"), true)
     assert.equal(canGrantAccountRole("manager", "staff"), true)
     assert.equal(canGrantAccountRole("manager", "manager"), false)
-    assert.equal(canGrantAccountRole("staff", "staff"), false)
+    assert.equal(canGrantAccountRole("staff", "staff"), true)
+    assert.equal(canGrantAccountRole("staff", "manager"), false)
   })
 
   it("normalizes invite emails", () => {

@@ -43,6 +43,8 @@ interface DashboardProfileSettingsProps {
   initialSmsPhone?: string | null
   variant?: "dashboard" | "threads"
   team?: AccountTeamPanelData | null
+  /** Login email for password reset. Stays the signed-in person when the shop profile is loaded. */
+  signInEmail?: string
 }
 
 export function DashboardProfileSettings({
@@ -55,6 +57,7 @@ export function DashboardProfileSettings({
   initialSmsPhone = null,
   variant = "dashboard",
   team = null,
+  signInEmail,
 }: DashboardProfileSettingsProps) {
   const isThreads = variant === "threads"
   const { t } = useLocale()
@@ -498,7 +501,8 @@ export function DashboardProfileSettings({
 
   async function handleSendPasswordReset() {
     const acctStrings = t("settings").account
-    if (!profile?.email) {
+    const resetEmail = (signInEmail || profile?.email || "").trim()
+    if (!resetEmail) {
       toast.error(acctStrings.resetPasswordToastNoEmail)
       return
     }
@@ -517,7 +521,7 @@ export function DashboardProfileSettings({
         }
       }
       const redirectTo = buildPasswordRecoveryCallbackUrl(siteOrigin)
-      const { error } = await supabase.auth.resetPasswordForEmail(profile.email, { redirectTo })
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, { redirectTo })
       if (error) throw error
       toast.success(acctStrings.resetPasswordToastSuccess)
     } catch (err: unknown) {
@@ -643,7 +647,7 @@ export function DashboardProfileSettings({
         <div className="mx-auto max-w-xl space-y-10 pt-2">
           {team ? <AccountTeamPanel {...team} /> : null}
           <ProfileSignInTab
-            email={profile.email || ""}
+            email={signInEmail || profile.email || ""}
             copy={{
               ...a,
               loginMethods: a.loginMethods,

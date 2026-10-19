@@ -2,6 +2,7 @@
 
 import { cookies } from "next/headers"
 import { revalidatePath } from "next/cache"
+import { resolveManagedSeller } from "@/lib/account-access/managed-seller"
 import { createClient } from "@/lib/supabase/server"
 import { checkShopifyMerchantAccess } from "@/lib/services/shopifyAccess"
 import { claimShopifyPendingInstallation } from "@/lib/services/shopifyClaim"
@@ -35,6 +36,9 @@ export async function claimShopifyInstallAction(): Promise<
     return { error: "Sign in to link this Shopify store to Reswell." }
   }
 
+  const managed = await resolveManagedSeller("profile.manage")
+  if (!managed.ok) return { error: managed.error }
+
   const cookieStore = await cookies()
   const claimSecret = cookieStore.get(SHOPIFY_CLAIM_COOKIE)?.value?.trim()
   if (!claimSecret) {
@@ -42,14 +46,14 @@ export async function claimShopifyInstallAction(): Promise<
   }
 
   // A signed install proves store ownership; the claim approves the account.
-  const access = await checkShopifyMerchantAccess(supabase, user.id)
+  const access = await checkShopifyMerchantAccess(supabase, managed.seller.sellerId)
   if (!access.allowed && access.reason !== "not_approved") {
     return { error: access.message }
   }
 
   try {
     await claimShopifyPendingInstallation({
-      userId: user.id,
+      userId: managed.seller.sellerId,
       claimSecret,
     })
     cookieStore.set(SHOPIFY_CLAIM_COOKIE, "", {
