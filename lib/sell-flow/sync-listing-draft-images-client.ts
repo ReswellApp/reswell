@@ -23,11 +23,14 @@ export async function syncListingDraftImagesClient(
           : "Could not remove old photos from storage.",
       )
     }
-    await supabase
+    const { error: deleteError } = await supabase
       .from("listing_images")
       .delete()
       .in("id", removedIds)
       .eq("listing_id", listingId)
+    if (deleteError) {
+      throw new Error("Could not remove these photos from the listing.")
+    }
   }
 
   const newRows = slots

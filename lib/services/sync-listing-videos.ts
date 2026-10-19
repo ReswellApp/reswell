@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { listingStorageObjectPathFromUrl } from "@/lib/listing-media-proxy-url"
-import { removeListingImageFilesFromStorage } from "@/lib/services/listingStorageCleanup"
+import { deleteListingMediaRowsThenStorage } from "@/lib/services/listingStorageCleanup"
 
 export type ListingVideoUpdateOp = {
   id?: string
@@ -100,26 +100,14 @@ export async function syncListingVideos(
   removedVideoIds: string[],
   videos: ListingVideoUpdateOp[],
 ): Promise<void> {
-  if (removedVideoIds.length > 0) {
-    const { data: removedRows } = await supabase
-      .from("listing_videos")
-      .select("url, thumbnail_url")
-      .eq("listing_id", listingId)
-      .in("id", removedVideoIds)
-    const removedUrls: string[] = []
-    for (const r of removedRows ?? []) {
-      if (r.url?.trim()) removedUrls.push(r.url)
-      if (r.thumbnail_url?.trim()) removedUrls.push(r.thumbnail_url)
-    }
-    if (removedUrls.length > 0) {
-      await removeListingImageFilesFromStorage(supabase, removedUrls)
-    }
-    await supabase
-      .from("listing_videos")
-      .delete()
-      .in("id", removedVideoIds)
-      .eq("listing_id", listingId)
-  }
+  const keptVideoIds = new Set(videos.flatMap((video) => (video.id ? [video.id] : [])))
+  await deleteListingMediaRowsThenStorage(
+    supabase,
+    "listing_videos",
+    listingId,
+    removedVideoIds.filter((id) => !keptVideoIds.has(id)),
+    videos.flatMap((video) => [video.url, video.thumbnailUrl]),
+  )
 
   const inserts = videos.filter((v) => !v.id && v.url.trim())
   const updates = videos.filter(

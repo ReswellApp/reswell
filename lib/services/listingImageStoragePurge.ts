@@ -3,9 +3,9 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { removeListingImageFilesFromStorage } from "@/lib/services/listingStorageCleanup"
 
 /**
- * After verifying the listing belongs to `listingOwnerUserId`, loads image row URLs
- * and removes matching objects from the listings bucket. Call before deleting
- * `listing_images` rows so storage does not retain orphaned primary/thumbnail files.
+ * Deletes the photo rows, then their storage objects.
+ * Files stay put when the row delete fails, so a listing cannot keep pointing
+ * at a thumb that has already been removed.
  */
 export async function purgeListingImageStorageForRowIds(
   supabaseUser: SupabaseClient,
@@ -26,20 +26,39 @@ export async function purgeListingImageStorageForRowIds(
     return { ok: false, error: "Forbidden" }
   }
 
-  const { data: rows, error: rowsErr } = await supabaseUser
+  const ids = [...new Set(imageRowIds)]
+  const { data: existing, error: existingErr } = await supabaseUser
     .from("listing_images")
-    .select("id, url, thumbnail_url")
+    .select("id")
     .eq("listing_id", listingId)
-    .in("id", imageRowIds)
+    .in("id", ids)
 
-  if (rowsErr || !rows || rows.length !== imageRowIds.length) {
-    return { ok: false, error: "Images not found" }
+  if (existingErr) {
+    return { ok: false, error: existingErr.message || "Could not remove these photos" }
+  }
+  if (!existing?.length) return { ok: true }
+
+  const { data: deleted, error: deleteErr } = await supabaseUser
+    .from("listing_images")
+    .delete()
+    .eq("listing_id", listingId)
+    .in(
+      "id",
+      existing.map((row) => row.id),
+    )
+    .select("url, thumbnail_url")
+
+  if (deleteErr) {
+    return { ok: false, error: deleteErr.message || "Could not remove these photos" }
+  }
+  if (!deleted?.length) {
+    return { ok: false, error: "Could not remove these photos" }
   }
 
   const urls: string[] = []
-  for (const r of rows) {
-    if (r.url?.trim()) urls.push(r.url)
-    if (r.thumbnail_url?.trim()) urls.push(r.thumbnail_url)
+  for (const row of deleted) {
+    if (row.url?.trim()) urls.push(row.url)
+    if (row.thumbnail_url?.trim()) urls.push(row.thumbnail_url)
   }
 
   await removeListingImageFilesFromStorage(serviceSupabase, urls)

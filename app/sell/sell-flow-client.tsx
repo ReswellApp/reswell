@@ -3123,11 +3123,14 @@ function SellPageContentInner({
       if (!purge.ok) {
         throw new Error(purge.error)
       }
-      await supabase
+      const { error: deleteImagesError } = await supabase
         .from("listing_images")
         .delete()
         .in("id", removedIds)
         .eq("listing_id", listingId)
+      if (deleteImagesError) {
+        throw new Error("Could not remove these photos from the listing.")
+      }
     }
 
     const newRows = slots

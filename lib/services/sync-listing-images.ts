@@ -7,7 +7,7 @@ import {
   orderListingImageWritesForPrimaryTrigger,
   type ListingImageWriteOrder,
 } from "@/lib/services/listing-image-write-order"
-import { removeListingImageFilesFromStorage } from "@/lib/services/listingStorageCleanup"
+import { deleteListingMediaRowsThenStorage } from "@/lib/services/listingStorageCleanup"
 
 export type ListingImageUpdateOp = {
   id?: string
@@ -124,22 +124,14 @@ export async function syncListingImages(
   removedImageIds: string[],
   images: ListingImageUpdateOp[],
 ): Promise<void> {
-  if (removedImageIds.length > 0) {
-    const { data: removedRows } = await supabase
-      .from("listing_images")
-      .select("url, thumbnail_url")
-      .eq("listing_id", listingId)
-      .in("id", removedImageIds)
-    const removedUrls: string[] = []
-    for (const r of removedRows ?? []) {
-      if (r.url?.trim()) removedUrls.push(r.url)
-      if (r.thumbnail_url?.trim()) removedUrls.push(r.thumbnail_url)
-    }
-    if (removedUrls.length > 0) {
-      await removeListingImageFilesFromStorage(supabase, removedUrls)
-    }
-    await supabase.from("listing_images").delete().in("id", removedImageIds).eq("listing_id", listingId)
-  }
+  const keptImageIds = new Set(images.flatMap((img) => (img.id ? [img.id] : [])))
+  await deleteListingMediaRowsThenStorage(
+    supabase,
+    "listing_images",
+    listingId,
+    removedImageIds.filter((id) => !keptImageIds.has(id)),
+    images.flatMap((img) => [img.url, img.thumbnailUrl]),
+  )
 
   if (await listingImagesAlreadySynced(supabase, listingId, [], images)) {
     return
