@@ -317,7 +317,7 @@ export const sellingRetrievalDocs = [
       },
       {
         heading: "Packing and timing",
-        text: `Use a proper board box for surfboards. A New Earth Project makes sustainable board boxes — details are on the Shipping guide. Compare quotes with /shipping-estimator before you list. Ship within ${SHIPPING_DEADLINE_DAYS} days. Message the buyer if you are running behind.`,
+        text: `Use a proper board box for surfboards. Where to buy one is on /seller-resources/surfboard-boxes. A New Earth Project makes sustainable board boxes. Compare quotes with /shipping-estimator before you list. Ship within ${SHIPPING_DEADLINE_DAYS} days. Message the buyer if you are running behind.`,
       },
     ],
   }),
