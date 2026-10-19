@@ -50,6 +50,7 @@ import {
   type AdminUserListingFilter,
 } from '@/components/features/admin/admin-user-detail-listings'
 import { AdminUserDetailOrders } from '@/components/features/admin/admin-user-detail-orders'
+import { AdminUserDetailSaleTips } from '@/components/features/admin/admin-user-detail-sale-tips'
 import { peerListingEditHref } from '@/lib/peer-listing-sections'
 import { withAdminListingEditEntry } from '@/lib/utils/admin-listing-edit-entry'
 import { sellerProfileHref } from '@/lib/seller-slug'
@@ -62,6 +63,7 @@ import type {
   AdminUserDetailListingRow,
   AdminUserDetailProfileRow,
   AdminUserRecentOrder,
+  AdminUserSaleTip,
 } from '@/lib/services/adminUserDetail'
 
 export default function AdminUserDetailPage() {
@@ -74,6 +76,7 @@ export default function AdminUserDetailPage() {
   const [auth, setAuth] = useState<AdminUserAuthFacts | null>(null)
   const [commerce, setCommerce] = useState<AdminUserCommerce | null>(null)
   const [recentOrders, setRecentOrders] = useState<AdminUserRecentOrder[]>([])
+  const [saleTips, setSaleTips] = useState<AdminUserSaleTip[]>([])
   const [loading, setLoading] = useState(true)
   const [listingFilter, setListingFilter] = useState<AdminUserListingFilter>('all')
   const [walletSummary, setWalletSummary] = useState<AdminUserWalletSummary | null>(null)
@@ -126,6 +129,7 @@ export default function AdminUserDetailPage() {
             setAuth(null)
             setCommerce(null)
             setRecentOrders([])
+            setSaleTips([])
           }
           return
         }
@@ -135,6 +139,7 @@ export default function AdminUserDetailPage() {
           setAuth(body.data.auth)
           setCommerce(body.data.commerce)
           setRecentOrders(body.data.recentOrders ?? [])
+          setSaleTips(body.data.saleTips ?? [])
         }
       } catch {
         if (!cancelled) {
@@ -817,6 +822,8 @@ export default function AdminUserDetailPage() {
         }}
         onUpdateStatus={(listingId, status) => void updateListingStatus(listingId, status)}
       />
+
+      <AdminUserDetailSaleTips userId={profile.id} tips={saleTips} />
 
       <AdminUserDetailOrders orders={recentOrders} />
 

@@ -9,6 +9,8 @@ import {
   type AdminUserDetailOrderRow,
   type AdminUserDetailProfileRow,
 } from "@/lib/db/adminUserDetail"
+import { dbListSaleTipsForSeller } from "@/lib/db/adminSaleTips"
+import type { AdminUserSaleTip } from "@/lib/types/adminSaleTips"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 
 export type AdminUserSignupMethod = "google" | "email" | "apple" | "phone" | "other" | "unknown"
@@ -53,12 +55,15 @@ export type AdminUserDetail = {
   auth: AdminUserAuthFacts
   commerce: AdminUserCommerce
   recentOrders: AdminUserRecentOrder[]
+  saleTips: AdminUserSaleTip[]
 }
 
 export type {
   AdminUserDetailListingRow,
   AdminUserDetailProfileRow,
 }
+
+export type { AdminUserSaleTip }
 
 function getServiceOrThrow(): ReturnType<typeof createServiceRoleClient> | null {
   try {
@@ -237,11 +242,12 @@ export async function getAdminUserDetail(userId: string): Promise<
     return { ok: false, message: profileResult.message, status: profileResult.status }
   }
 
-  const [listingsResult, authUser, orders, tippedSales] = await Promise.all([
+  const [listingsResult, authUser, orders, tippedSales, saleTips] = await Promise.all([
     dbListAdminUserDetailListings(supabase, userId),
     dbGetAdminUserAuthUser(supabase, userId),
     dbListAdminUserDetailOrders(supabase, userId),
     dbListAdminUserTippedSales(supabase, userId),
+    dbListSaleTipsForSeller(supabase, userId),
   ])
 
   if (!listingsResult.ok) {
@@ -256,6 +262,7 @@ export async function getAdminUserDetail(userId: string): Promise<
       auth: resolveAdminUserAuthFacts(authUser),
       commerce: buildCommerce(listingsResult.listings, orders, tippedSales, userId),
       recentOrders: buildRecentOrders(orders, userId),
+      saleTips,
     },
   }
 }
