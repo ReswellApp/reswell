@@ -49,7 +49,8 @@ export const headerSurfboardShapeLinks: CategoryLink[] = surfboardBrowseLinks.fi
 )
 
 /**
- * Small gear grouped under Accessories.
+ * Gear grouped under Accessories.
+ * Apparel lives here so the rail stays five departments.
  * `/accessories` stays in the menu so it is not a top-level peer.
  */
 export const headerAccessoryMenuLinks: CategoryLink[] = [
@@ -57,11 +58,12 @@ export const headerAccessoryMenuLinks: CategoryLink[] = [
   { label: "Surfpacks", href: "/surfpacks" },
   { label: "Leashes", href: "/leashes" },
   { label: "Traction", href: "/traction" },
+  { label: "Apparel", href: "/apparel" },
   { label: "All accessories", href: "/accessories" },
 ]
 
 /**
- * Shopper departments, in purchase order.
+ * Shopper departments: Surfboards, Fins, Accessories, Wetsuits, Magazines.
  * Seller tools and marketplace modes stay off this rail.
  */
 export const siteHeaderShopperNavItems: HeaderShopperNavItem[] = [
@@ -70,15 +72,14 @@ export const siteHeaderShopperNavItems: HeaderShopperNavItem[] = [
     href: "/boards",
     menu: [{ label: "All surfboards", href: "/boards" }, ...headerSurfboardShapeLinks],
   },
-  { label: "Wetsuits", href: "/wetsuits" },
   { label: "Fins", href: "/fins" },
-  { label: "Apparel", href: "/apparel" },
   {
     label: "Accessories",
     href: "/accessories",
     menuOnly: true,
     menu: headerAccessoryMenuLinks,
   },
+  { label: "Wetsuits", href: "/wetsuits" },
   { label: "Magazines", href: "/magazines" },
 ]
 
@@ -101,14 +102,14 @@ export const allCategoriesForNav: CategoryLink[] = surfboardBrowseLinks
  */
 export const footerCategoryLinks: CategoryLink[] = [
   { label: surfboardsBrowseRootLabel, href: "/boards" },
-  { label: "Wetsuits", href: "/wetsuits" },
   { label: "Fins", href: "/fins" },
-  { label: "Apparel", href: "/apparel" },
   { label: "Boardbags", href: "/boardbags" },
   { label: "Surfpacks", href: "/surfpacks" },
   { label: "Leashes", href: "/leashes" },
   { label: "Traction", href: "/traction" },
+  { label: "Apparel", href: "/apparel" },
   { label: "Accessories", href: "/accessories" },
+  { label: "Wetsuits", href: "/wetsuits" },
   { label: "Magazines", href: "/magazines" },
 ]
 

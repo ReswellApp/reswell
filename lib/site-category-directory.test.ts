@@ -11,7 +11,7 @@ describe("header shopper nav", () => {
   it("orders departments the way surfers shop", () => {
     assert.deepEqual(
       siteHeaderShopperNavItems.map((item) => item.label),
-      ["Surfboards", "Wetsuits", "Fins", "Apparel", "Accessories", "Magazines"],
+      ["Surfboards", "Fins", "Accessories", "Wetsuits", "Magazines"],
     )
   })
 
@@ -26,7 +26,7 @@ describe("header shopper nav", () => {
     assert.equal(accessories?.menuOnly, true)
     assert.deepEqual(
       accessories?.menu?.map((link) => link.label),
-      ["Boardbags", "Surfpacks", "Leashes", "Traction", "All accessories"],
+      ["Boardbags", "Surfpacks", "Leashes", "Traction", "Apparel", "All accessories"],
     )
   })
 
@@ -52,13 +52,15 @@ describe("header shopper nav", () => {
     const accessories = siteHeaderShopperNavItems.find((item) => item.label === "Accessories")
     assert.ok(accessories)
     assert.equal(headerShopperNavItemIsActive("/leashes", new URLSearchParams(), accessories), true)
+    assert.equal(headerShopperNavItemIsActive("/apparel", new URLSearchParams(), accessories), true)
     assert.equal(headerShopperNavItemIsActive("/fins", new URLSearchParams(), accessories), false)
   })
 
   it("lists accessory catalogs in the footer", () => {
     const hrefs = footerCategoryLinks.map((link) => link.href)
     assert.equal(hrefs.includes("/boardbags"), true)
-    assert.equal(hrefs.includes("/traction"), true)
+    assert.equal(hrefs.includes("/apparel"), true)
     assert.equal(hrefs[0], "/boards")
+    assert.equal(hrefs[1], "/fins")
   })
 })
