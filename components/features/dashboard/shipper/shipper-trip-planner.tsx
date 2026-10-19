@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 
-import { ShipperTripForm, type ShipperTripCityPayload } from "@/components/features/dashboard/shipper/shipper-trip-form"
+import { ShipperTripForm, type ShipperTripSavePayload } from "@/components/features/dashboard/shipper/shipper-trip-form"
 import { ModeButton, TripChip, formatWeek } from "@/components/features/dashboard/shipper/shipper-trip-chip"
 import {
   removeCoastalShipperTripAction,
@@ -12,6 +12,7 @@ import {
 } from "@/lib/actions/coastalShipperActions"
 import { addIsoDays, tripDateForWeek, tripsForWeek } from "@/lib/services/coastalShipperWeek"
 import { tripStopNames } from "@/lib/utils/shipperTripStops"
+import { tripCoversWeekday } from "@/lib/utils/shipperTripWindow"
 import {
   COASTAL_WEEKDAY_LABELS,
   type CoastalDirection,
@@ -33,7 +34,6 @@ export function ShipperTripPlanner({ shipperId, weekStart, stops, trips, preview
   const ordered = useMemo(() => [...stops].sort((a, b) => a.sortOrder - b.sortOrder), [stops])
   const [repeating, setRepeating] = useState(true)
   const [weekOffset, setWeekOffset] = useState(0)
-  const [dayOfWeek, setDayOfWeek] = useState(2)
   const [direction, setDirection] = useState<CoastalDirection>("northbound")
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
@@ -52,9 +52,9 @@ export function ShipperTripPlanner({ shipperId, weekStart, stops, trips, preview
     })
   }
 
-  function onSave(cities: ShipperTripCityPayload[]) {
+  function onSave(trip: ShipperTripSavePayload) {
     if (previewing) return
-    const dated = tripDateForWeek(activeStart, dayOfWeek, repeating)
+    const dated = tripDateForWeek(activeStart, trip.pickupStart, repeating)
     if (!dated) return
     run(() =>
       saveCoastalShipperTripAction({
@@ -62,8 +62,14 @@ export function ShipperTripPlanner({ shipperId, weekStart, stops, trips, preview
         dayOfWeek: dated.dayOfWeek,
         direction,
         enabled: true,
-        stops: cities,
+        stops: trip.stops,
         serviceDate: dated.serviceDate,
+        pickupStartDow: trip.pickupStart,
+        pickupEndDow: trip.pickupEnd,
+        deliveryStartDow: trip.deliveryStart,
+        deliveryEndDow: trip.deliveryEnd,
+        pickupDescription: trip.pickupDescription,
+        deliveryDescription: trip.deliveryDescription,
       }),
     )
   }
@@ -104,7 +110,9 @@ export function ShipperTripPlanner({ shipperId, weekStart, stops, trips, preview
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-7">
         {COASTAL_WEEKDAY_LABELS.map((label, day) => {
           const date = addIsoDays(repeating ? weekStart : activeStart, day)
-          const dayTrips = visible.filter((trip) => trip.dayOfWeek === day && (repeating ? !trip.serviceDate : true))
+          const dayTrips = visible.filter(
+            (trip) => tripCoversWeekday(trip, day) && (repeating ? !trip.serviceDate : true),
+          )
           return (
             <div key={label} className="min-h-24 rounded-xl border border-border/70 bg-background p-3 xl:p-2">
               <p className="text-sm font-medium text-foreground xl:text-xs">{label}</p>
@@ -114,6 +122,7 @@ export function ShipperTripPlanner({ shipperId, weekStart, stops, trips, preview
                   <TripChip
                     key={trip.id}
                     trip={trip}
+                    day={day}
                     names={tripStopNames(trip.stopIds, ordered, trip.stopsInDriveOrder)}
                     pending={pending || previewing}
                     onToggle={(enabled) => run(() => setCoastalShipperRunAction({ shipperId, runId: trip.id, enabled }))}
@@ -131,14 +140,12 @@ export function ShipperTripPlanner({ shipperId, weekStart, stops, trips, preview
       ) : null}
 
       <ShipperTripForm
-        dayOfWeek={dayOfWeek}
         direction={direction}
         pending={pending}
         previewing={previewing}
         repeating={repeating}
         weekLabel={formatWeek(activeStart)}
         error={error}
-        onDay={setDayOfWeek}
         onDirection={setDirection}
         onSave={onSave}
       />

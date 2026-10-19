@@ -21,6 +21,12 @@ export type CoastalMatchRun = {
   stopIds: string[]
   /** Null repeats every week. A date is that calendar day only. */
   serviceDate?: string | null
+  pickupStartDow?: number | null
+  pickupEndDow?: number | null
+  deliveryStartDow?: number | null
+  deliveryEndDow?: number | null
+  pickupDescription?: string | null
+  deliveryDescription?: string | null
 }
 
 export type CoastalMatchShipper = {

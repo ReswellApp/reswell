@@ -24,6 +24,7 @@ import {
   type CoastalShipperScheduleRecord,
 } from "@/lib/db/coastal-delivery"
 import { forwardGeocodePlaceForServer } from "@/lib/maps/forward-geocode-server"
+import { shipperTripDescriptionError, shipperTripWindowError } from "@/lib/utils/shipperTripWindow"
 import {
   addressSnapshotsEqual,
   canSetCoastalStatus,
@@ -165,10 +166,28 @@ export async function saveCoastalShipperTrip(input: {
   enabled: boolean
   stops: { city: string; state: string | null; latitude: number; longitude: number }[]
   serviceDate: string | null
+  pickupStartDow: number
+  pickupEndDow: number
+  deliveryStartDow: number
+  deliveryEndDow: number
+  pickupDescription: string
+  deliveryDescription: string
 }): Promise<Mutation> {
   try {
     const gate = await ownShipper(input.shipperId)
     if (!gate.ok) return gate
+    if (input.dayOfWeek !== input.pickupStartDow) {
+      return { ok: false, error: "Pickup starts on the trip day." }
+    }
+    const windowError = shipperTripWindowError({
+      pickupStart: input.pickupStartDow,
+      pickupEnd: input.pickupEndDow,
+      deliveryStart: input.deliveryStartDow,
+      deliveryEnd: input.deliveryEndDow,
+    })
+    if (windowError) return { ok: false, error: windowError }
+    const descriptionError = shipperTripDescriptionError(input.pickupDescription, input.deliveryDescription)
+    if (descriptionError) return { ok: false, error: descriptionError }
     if (input.serviceDate && isoWeekday(input.serviceDate) !== input.dayOfWeek) {
       return { ok: false, error: "That date does not fall on that day." }
     }
@@ -185,6 +204,12 @@ export async function saveCoastalShipperTrip(input: {
       enabled: input.enabled,
       stopIds,
       serviceDate: input.serviceDate,
+      pickupStartDow: input.pickupStartDow,
+      pickupEndDow: input.pickupEndDow,
+      deliveryStartDow: input.deliveryStartDow,
+      deliveryEndDow: input.deliveryEndDow,
+      pickupDescription: input.pickupDescription.trim(),
+      deliveryDescription: input.deliveryDescription.trim(),
     })
     return { ok: true }
   } catch (error) {

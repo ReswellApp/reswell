@@ -59,7 +59,7 @@ import { previewSurfboardShippedCheckoutAction } from "@/lib/actions/surfboardSh
 import {
   SURFBOARD_SHIPPED_FEE_USD,
   SURFBOARD_SHIPPED_NAME,
-  SURFBOARD_SHIPPED_WINDOW_LABEL,
+  surfboardShippedDropoffCopy,
   isCaliforniaAddressState,
 } from "@/lib/services/surfboardShipped"
 import type {
@@ -816,13 +816,9 @@ export function CheckoutClient({
                     {surfboardPreview?.available ? ` · $${surfboardPreview.feeUsd}` : ""}
                   </span>
                   <p className="mt-1 text-xs leading-relaxed text-neutral-500">
-                    Drop-off in {surfboardPreview?.window?.label ?? SURFBOARD_SHIPPED_WINDOW_LABEL}.
+                    {surfboardShippedDropoffCopy(surfboardPreview?.window)}
                     {surfboardPreview?.matchedShipperName
-                      ? ` ${surfboardPreview.matchedShipperName} is live and driving this coast${
-                          surfboardPreview.matchedWeekday
-                            ? ` (${surfboardPreview.matchedWeekday} runs)`
-                            : ""
-                        }.`
+                      ? ` ${surfboardPreview.matchedShipperName} is live and driving this coast.`
                       : " A shipper picks the board up and drives it to you."}
                   </p>
                   <ul className="mt-2 space-y-1 text-xs text-foreground">
@@ -988,7 +984,7 @@ export function CheckoutClient({
                           : `Reswell recommended shipping (carrier rate) is about $${displayTotals.shipping.toFixed(2)} — included in your total.`
                         : "Free shipping from this seller — included in your total."
                       : surfboardShippedSelected
-                        ? `${SURFBOARD_SHIPPED_NAME} is $${(surfboardPreview?.available ? surfboardPreview.feeUsd : displayTotals.shipping).toFixed(2)} — included in your total. Drop-off in ${surfboardPreview?.window?.label ?? SURFBOARD_SHIPPED_WINDOW_LABEL}.`
+                        ? `${SURFBOARD_SHIPPED_NAME} is $${(surfboardPreview?.available ? surfboardPreview.feeUsd : displayTotals.shipping).toFixed(2)} — included in your total. ${surfboardShippedDropoffCopy(surfboardPreview?.window)}`
                       : displayTotals.shipping > 0
                         ? `Flat $${displayTotals.shipping.toFixed(2)} shipping from the seller — included in your total.`
                         : "Free shipping from this seller — included in your total."}

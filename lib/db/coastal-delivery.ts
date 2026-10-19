@@ -37,6 +37,17 @@ const SHIPPER_SELECT = "id, user_id, display_name, phone, notes, schedule_enable
 const SHIPPER_SELECT_BASE = "id, user_id, display_name, phone, notes, schedule_enabled"
 const RUN_SELECT = "id, shipper_id, day_of_week, direction, enabled, service_date"
 const RUN_SELECT_WEEKLY = "id, shipper_id, day_of_week, direction, enabled"
+const RUN_SELECT_WINDOWS =
+  "id, shipper_id, day_of_week, direction, enabled, service_date, pickup_start_dow, pickup_end_dow, delivery_start_dow, delivery_end_dow, pickup_description, delivery_description"
+
+type RunWindowInput = {
+  pickupStartDow?: number
+  pickupEndDow?: number
+  deliveryStartDow?: number
+  deliveryEndDow?: number
+  pickupDescription?: string
+  deliveryDescription?: string
+}
 const LISTING_SELECT = "id, title, city, state, status, section"
 
 export async function listCoastalStops(supabase: SupabaseClient): Promise<CoastalStopView[]> {
@@ -222,8 +233,15 @@ export async function upsertCoastalShipperRun(
     enabled: boolean
     stopIds: string[]
     serviceDate?: string | null
-  },
+  } & RunWindowInput,
 ): Promise<void> {
+  if (runWindowColumns(input)) {
+    const probe = await supabase.from("coastal_shipper_runs").select("pickup_start_dow").limit(1)
+    if (probe.error && isMissingTripWindowColumn(probe.error.message)) {
+      throw new Error("Run the latest Shipper SQL, then try again.")
+    }
+    if (probe.error) throw probe.error
+  }
   const runId = await resolveRunId(supabase, input)
   const probe = await supabase.from("coastal_shipper_run_stops").select("position").limit(1)
   if (probe.error && isMissingPositionColumn(probe.error.message)) {
@@ -728,6 +746,27 @@ export async function updateCoastalDeliverySnapshots(
   if (error) throw error
 }
 
+function runWindowColumns(input: RunWindowInput): Record<string, number | string> | null {
+  if (
+    input.pickupStartDow == null ||
+    input.pickupEndDow == null ||
+    input.deliveryStartDow == null ||
+    input.deliveryEndDow == null ||
+    input.pickupDescription == null ||
+    input.deliveryDescription == null
+  ) {
+    return null
+  }
+  return {
+    pickup_start_dow: input.pickupStartDow,
+    pickup_end_dow: input.pickupEndDow,
+    delivery_start_dow: input.deliveryStartDow,
+    delivery_end_dow: input.deliveryEndDow,
+    pickup_description: input.pickupDescription.trim(),
+    delivery_description: input.deliveryDescription.trim(),
+  }
+}
+
 async function resolveRunId(
   supabase: SupabaseClient,
   input: {
@@ -737,7 +776,7 @@ async function resolveRunId(
     direction: CoastalDirection
     enabled: boolean
     serviceDate?: string | null
-  },
+  } & RunWindowInput,
 ): Promise<string> {
   const serviceDate = input.serviceDate ?? null
   const patch = {
@@ -745,6 +784,7 @@ async function resolveRunId(
     direction: input.direction,
     enabled: input.enabled,
     service_date: serviceDate,
+    ...runWindowColumns(input),
   }
 
   if (input.runId) {
@@ -788,6 +828,9 @@ async function resolveRunId(
     .insert({ shipper_id: input.shipperId, ...patch })
     .select("id")
     .single()
+  if (error && isMissingTripWindowColumn(error.message)) {
+    throw new Error("Run the latest Shipper SQL, then try again.")
+  }
   if (error && isMissingServiceDateColumn(error.message)) {
     if (serviceDate) throw new Error("Run the latest Shipper SQL before saving a one-week trip.")
     const weekly = await supabase
@@ -880,7 +923,31 @@ function mapRun(
   if (!id || !direction || !Number.isInteger(dayOfWeek)) return null
   const rawDate = stringField(row, "service_date")
   const serviceDate = rawDate && /^\d{4}-\d{2}-\d{2}/.test(rawDate) ? rawDate.slice(0, 10) : null
-  return { id, dayOfWeek, direction, enabled: row.enabled === true, stopIds, stopsInDriveOrder, serviceDate }
+  return {
+    id,
+    dayOfWeek,
+    direction,
+    enabled: row.enabled === true,
+    stopIds,
+    stopsInDriveOrder,
+    serviceDate,
+    pickupStartDow: dowField(row.pickup_start_dow) ?? dayOfWeek,
+    pickupEndDow: dowField(row.pickup_end_dow) ?? dowField(row.pickup_start_dow) ?? dayOfWeek,
+    deliveryStartDow: dowField(row.delivery_start_dow) ?? dowField(row.pickup_start_dow) ?? dayOfWeek,
+    deliveryEndDow:
+      dowField(row.delivery_end_dow) ??
+      dowField(row.delivery_start_dow) ??
+      dowField(row.pickup_start_dow) ??
+      dayOfWeek,
+    pickupDescription: stringField(row, "pickup_description")?.trim() || null,
+    deliveryDescription: stringField(row, "delivery_description")?.trim() || null,
+  }
+}
+
+function dowField(value: unknown): number | null {
+  const parsed = typeof value === "number" ? value : typeof value === "string" ? Number(value) : Number.NaN
+  if (!Number.isInteger(parsed) || parsed < 0 || parsed > 6) return null
+  return parsed
 }
 
 function positionField(value: unknown): number | null {
@@ -919,16 +986,38 @@ function isMissingPriceColumn(message: string | undefined): boolean {
 }
 
 async function selectShipperRuns(supabase: SupabaseClient) {
+  const withWindows = await supabase.from("coastal_shipper_runs").select(RUN_SELECT_WINDOWS)
+  if (
+    !withWindows.error ||
+    (!isMissingTripWindowColumn(withWindows.error.message) && !isMissingServiceDateColumn(withWindows.error.message))
+  ) {
+    return withWindows
+  }
   const withDate = await supabase.from("coastal_shipper_runs").select(RUN_SELECT)
   if (!withDate.error || !isMissingServiceDateColumn(withDate.error.message)) return withDate
   return supabase.from("coastal_shipper_runs").select(RUN_SELECT_WEEKLY)
+}
+
+function isMissingTripWindowColumn(message: string | undefined): boolean {
+  return /pickup_start_dow/i.test(message ?? "") && /does not exist|schema cache/i.test(message ?? "")
 }
 
 async function writeRunPatch(
   supabase: SupabaseClient,
   runId: string,
   shipperId: string,
-  patch: { day_of_week: number; direction: CoastalDirection; enabled: boolean; service_date: string | null },
+  patch: {
+    day_of_week: number
+    direction: CoastalDirection
+    enabled: boolean
+    service_date: string | null
+    pickup_start_dow?: number
+    pickup_end_dow?: number
+    delivery_start_dow?: number
+    delivery_end_dow?: number
+    pickup_description?: string
+    delivery_description?: string
+  },
   serviceDate: string | null,
 ): Promise<string | null> {
   const updated = await supabase
@@ -938,6 +1027,9 @@ async function writeRunPatch(
     .eq("shipper_id", shipperId)
     .select("id")
     .maybeSingle()
+  if (updated.error && isMissingTripWindowColumn(updated.error.message)) {
+    throw new Error("Run the latest Shipper SQL, then try again.")
+  }
   if (updated.error && isMissingServiceDateColumn(updated.error.message)) {
     if (serviceDate) throw new Error("Run the latest Shipper SQL before saving a one-week trip.")
     const weekly = await supabase

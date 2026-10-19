@@ -128,14 +128,24 @@ describe("coastalShipperTripSchema", () => {
     longitude: -119,
   })
 
+  const window = {
+    pickupStartDow: 4,
+    pickupEndDow: 6,
+    deliveryStartDow: 4,
+    deliveryEndDow: 6,
+    pickupDescription: "Side gate on Alberta",
+    deliveryDescription: "Thursday through Saturday",
+  }
+
   it("stores the full ordered city list", () => {
     const parsed = coastalShipperTripSchema.safeParse({
       shipperId: "00000000-0000-4000-8000-000000000001",
-      dayOfWeek: 2,
+      dayOfWeek: 4,
       direction: "northbound",
       enabled: true,
       serviceDate: null,
       stops: [city("Santa Barbara", 34.42), city("Ventura", 34.27), city("Los Angeles", 34.05)],
+      ...window,
     })
     assert.equal(parsed.success, true)
     if (!parsed.success) return
@@ -148,11 +158,26 @@ describe("coastalShipperTripSchema", () => {
   it("rejects a trip with only one city", () => {
     const parsed = coastalShipperTripSchema.safeParse({
       shipperId: "00000000-0000-4000-8000-000000000001",
-      dayOfWeek: 2,
+      dayOfWeek: 4,
       direction: "southbound",
       enabled: true,
       serviceDate: null,
       stops: [city("Santa Barbara", 34.42)],
+      ...window,
+    })
+    assert.equal(parsed.success, false)
+  })
+
+  it("rejects a delivery window that starts before pickup", () => {
+    const parsed = coastalShipperTripSchema.safeParse({
+      shipperId: "00000000-0000-4000-8000-000000000001",
+      dayOfWeek: 4,
+      direction: "northbound",
+      enabled: true,
+      serviceDate: null,
+      stops: [city("Santa Barbara", 34.42), city("Los Angeles", 34.05)],
+      ...window,
+      deliveryStartDow: 2,
     })
     assert.equal(parsed.success, false)
   })

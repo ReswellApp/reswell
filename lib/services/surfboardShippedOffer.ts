@@ -22,7 +22,6 @@ import {
   isCaliforniaAddressState,
   isGoogleCaliforniaStreet,
   liveSurfboardShippers,
-  surfboardShippedWindow,
   type LiveSurfboardShipper,
   type SurfboardShippedWindow,
 } from "@/lib/services/surfboardShipped"
@@ -383,7 +382,7 @@ async function buildCharge(
     feeUsd: attached.feeUsd,
     shipperId: attached.shipperId,
     runId: attached.runId,
-    window: surfboardShippedWindow(new Date()),
+    window: attached.deliveryWindow,
     shippers: attached.availableShippers,
     matchedShipperName: attached.displayName,
     matchedWeekday: attached.weekdayLabel,
@@ -419,6 +418,12 @@ function scheduleToMatchShipper(schedule: CoastalShipperScheduleRecord): Coastal
       enabled: run.enabled,
       stopIds: run.stopIds,
       serviceDate: run.serviceDate ?? null,
+      pickupStartDow: run.pickupStartDow,
+      pickupEndDow: run.pickupEndDow,
+      deliveryStartDow: run.deliveryStartDow,
+      deliveryEndDow: run.deliveryEndDow,
+      pickupDescription: run.pickupDescription,
+      deliveryDescription: run.deliveryDescription,
     })),
   }
 }
