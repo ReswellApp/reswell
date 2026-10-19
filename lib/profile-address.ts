@@ -190,3 +190,22 @@ export function profileAddressesMatch(
     normalizePostalForMatch(a.postal_code) === normalizePostalForMatch(b.postal_code)
   )
 }
+
+/**
+ * One row per street. Callers pass addresses already ordered default-first, then newest.
+ * The selected id wins when that street is stored more than once.
+ */
+export function uniqueProfileAddresses<
+  T extends Pick<ProfileAddressRow, "id" | "line1" | "city" | "postal_code">,
+>(rows: T[], selectedId?: string | null): T[] {
+  const unique: T[] = []
+  for (const row of rows) {
+    const index = unique.findIndex((kept) => profileAddressesMatch(kept, row))
+    if (index === -1) {
+      unique.push(row)
+      continue
+    }
+    if (selectedId && row.id === selectedId) unique[index] = row
+  }
+  return unique
+}
