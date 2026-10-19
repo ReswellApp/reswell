@@ -1,0 +1,656 @@
+#!/bin/bash
+# Fresh Desktop — move chosen Desktop files (screenshots by default) to the Trash.
+# Scheduled runs stay off until the person using the Mac turns them on.
+set -euo pipefail
+
+FRESH_DESKTOP_MAX_DEFAULT=300
+FRESH_DESKTOP_LABEL="com.freshdesktop.cleanup"
+
+fresh_desktop_support_dir() {
+  if [[ -n "${FRESH_DESKTOP_SUPPORT_DIR:-}" ]]; then
+    printf '%s\n' "$FRESH_DESKTOP_SUPPORT_DIR"
+  else
+    printf '%s\n' "$HOME/Library/Application Support/Fresh Desktop"
+  fi
+}
+
+fresh_desktop_log_path() {
+  if [[ -n "${FRESH_DESKTOP_LOG:-}" ]]; then
+    printf '%s\n' "$FRESH_DESKTOP_LOG"
+  else
+    printf '%s\n' "$HOME/Library/Logs/Fresh Desktop/cleanup.log"
+  fi
+}
+
+fresh_desktop_trash_dir() {
+  if [[ -n "${FRESH_DESKTOP_TRASH_DIR:-}" ]]; then
+    printf '%s\n' "$FRESH_DESKTOP_TRASH_DIR"
+  else
+    printf '%s\n' "$HOME/.Trash"
+  fi
+}
+
+fresh_desktop_max() {
+  local max="${FRESH_DESKTOP_MAX:-$FRESH_DESKTOP_MAX_DEFAULT}"
+  if [[ ! "$max" =~ ^[0-9]+$ ]] || [[ "$max" -lt 1 ]]; then
+    printf '%s\n' "$FRESH_DESKTOP_MAX_DEFAULT"
+  else
+    printf '%s\n' "$max"
+  fi
+}
+
+fresh_desktop_log() {
+  local path
+  path=$(fresh_desktop_log_path)
+  mkdir -p "$(dirname "$path")"
+  printf '%s %s\n' "$(date '+%Y-%m-%dT%H:%M:%S%z')" "$*" >>"$path"
+}
+
+fresh_desktop_is_mac() {
+  [[ "$(uname -s)" == "Darwin" ]]
+}
+
+fresh_desktop_script_path() {
+  local src="${BASH_SOURCE[0]}"
+  local dir
+  while [[ -L "$src" ]]; do
+    dir=$(cd "$(dirname "$src")" && pwd)
+    src=$(readlink "$src")
+    [[ "$src" != /* ]] && src="$dir/$src"
+  done
+  dir=$(cd "$(dirname "$src")" && pwd)
+  printf '%s/%s\n' "$dir" "$(basename "$src")"
+}
+
+fresh_desktop_default_patterns() {
+  cat <<'EOF'
+Screen Shot *.png
+Screen Shot *.jpg
+Screen Shot *.jpeg
+Screen Shot *.heic
+Screen Shot.png
+Screenshot *.png
+Screenshot *.jpg
+Screenshot *.jpeg
+Screenshot *.heic
+Screenshot.png
+EOF
+}
+
+fresh_desktop_pattern_ok() {
+  local pat="$1"
+  local prefix
+  [[ -n "$pat" ]] || return 1
+  [[ ${#pat} -ge 5 && ${#pat} -le 180 ]] || return 1
+  case "$pat" in
+    *'/'*|*'..'*) return 1 ;;
+    *[[:cntrl:]]*) return 1 ;;
+  esac
+  prefix="${pat%%[\*\?]*}"
+  case "$prefix" in
+    *[A-Za-z0-9][A-Za-z0-9][A-Za-z0-9][A-Za-z0-9]*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+fresh_desktop_root_allowed() {
+  local real="$1"
+  local home="$2"
+  [[ "$real" == "$home"/* ]] || return 1
+  case "$real" in
+    "$home/Library"|"$home/Library/"*) return 1 ;;
+    "$home/.Trash"|"$home/.Trash/"*) return 1 ;;
+    "$home/.Trashes"|"$home/.Trashes/"*) return 1 ;;
+  esac
+  return 0
+}
+
+fresh_desktop_ensure_config() {
+  local dir
+  dir=$(fresh_desktop_support_dir)
+  mkdir -p "$dir"
+  if [[ ! -f "$dir/settings" ]]; then
+    printf 'hour=23\nminute=55\n' >"$dir/settings"
+  fi
+  if [[ ! -f "$dir/roots" ]]; then
+    printf '%s\n' "$HOME/Desktop" >"$dir/roots"
+  fi
+  if [[ ! -f "$dir/patterns" ]]; then
+    fresh_desktop_default_patterns >"$dir/patterns"
+  fi
+}
+
+fresh_desktop_home_real() {
+  cd "$HOME" && pwd -P
+}
+
+fresh_desktop_roots() {
+  local dir line real home
+  dir=$(fresh_desktop_support_dir)
+  home=$(fresh_desktop_home_real)
+  [[ -f "$dir/roots" ]] || return 0
+  while IFS= read -r line || [[ -n "${line:-}" ]]; do
+    [[ -z "$line" || "$line" == \#* ]] && continue
+    [[ -d "$line" ]] || continue
+    real=$(cd "$line" && pwd -P) || continue
+    fresh_desktop_root_allowed "$real" "$home" || continue
+    printf '%s\n' "$real"
+  done <"$dir/roots"
+}
+
+fresh_desktop_load_patterns() {
+  patterns=()
+  local dir line
+  dir=$(fresh_desktop_support_dir)
+  [[ -f "$dir/patterns" ]] || return 0
+  while IFS= read -r line || [[ -n "${line:-}" ]]; do
+    [[ -z "$line" || "$line" == \#* ]] && continue
+    if fresh_desktop_pattern_ok "$line"; then
+      patterns+=("$line")
+    else
+      fresh_desktop_log "ignored unsafe pattern: $line"
+    fi
+  done <"$dir/patterns"
+}
+
+fresh_desktop_name_matches() {
+  local base="$1"
+  local pat
+  [[ ${#patterns[@]} -gt 0 ]] || return 1
+  for pat in "${patterns[@]}"; do
+    # The pattern is a filename glob on purpose.
+    # shellcheck disable=SC2053
+    [[ "$base" == $pat ]] && return 0
+  done
+  return 1
+}
+
+fresh_desktop_collect_matches() {
+  match_files=()
+  local root file base parent
+  fresh_desktop_load_patterns
+  [[ ${#patterns[@]} -gt 0 ]] || return 0
+  while IFS= read -r root; do
+    [[ -n "$root" ]] || continue
+    while IFS= read -r -d '' file; do
+      base=$(basename -- "$file")
+      fresh_desktop_name_matches "$base" || continue
+      parent=$(cd "$(dirname -- "$file")" && pwd -P) || continue
+      [[ "$parent" == "$root" ]] || continue
+      match_files+=("$file")
+    done < <(find "$root" -maxdepth 1 -type f -print0 2>/dev/null || true)
+  done < <(fresh_desktop_roots | awk '!seen[$0]++')
+}
+
+fresh_desktop_sorted_matches() {
+  local file
+  if [[ ${#match_files[@]} -eq 0 ]]; then
+    return 0
+  fi
+  for file in "${match_files[@]}"; do
+    printf '%s\n' "$file"
+  done | LC_ALL=C sort
+}
+
+fresh_desktop_read_clock() {
+  local dir hour minute normalized
+  dir=$(fresh_desktop_support_dir)
+  hour=23
+  minute=55
+  if [[ -f "$dir/settings" ]]; then
+    hour=$(awk -F= '$1=="hour" {print $2; exit}' "$dir/settings")
+    minute=$(awk -F= '$1=="minute" {print $2; exit}' "$dir/settings")
+  fi
+  hour=${hour:-23}
+  minute=${minute:-55}
+  if ! normalized=$(fresh_desktop_normalize_clock "$hour" "$minute"); then
+    normalized="23 55"
+  fi
+  printf '%s\n' "$normalized"
+}
+
+fresh_desktop_trash_destination() {
+  local base="$1"
+  local trash dest stamp n
+  trash=$(fresh_desktop_trash_dir)
+  mkdir -p "$trash"
+  dest="$trash/$base"
+  if [[ ! -e "$dest" && ! -L "$dest" ]]; then
+    printf '%s\n' "$dest"
+    return 0
+  fi
+  stamp=$(date '+%Y%m%d-%H%M%S')
+  n=0
+  while true; do
+    if [[ "$n" -eq 0 ]]; then
+      dest="$trash/${stamp}-${base}"
+    else
+      dest="$trash/${stamp}-${n}-${base}"
+    fi
+    if [[ ! -e "$dest" && ! -L "$dest" ]]; then
+      printf '%s\n' "$dest"
+      return 0
+    fi
+    n=$((n + 1))
+    [[ "$n" -lt 1000 ]] || return 1
+  done
+}
+
+fresh_desktop_notify() {
+  local count="$1"
+  local noun="files"
+  [[ "$count" -eq 1 ]] && noun="file"
+  fresh_desktop_is_mac || return 0
+  command -v osascript >/dev/null 2>&1 || return 0
+  osascript -e "display notification \"Moved ${count} ${noun} to the Trash.\" with title \"Fresh Desktop\"" >/dev/null 2>&1 || true
+}
+
+fresh_desktop_prepare_run() {
+  local max
+  fresh_desktop_ensure_config
+  fresh_desktop_collect_matches
+  max=$(fresh_desktop_max)
+  if [[ ${#match_files[@]} -gt "$max" ]]; then
+    fresh_desktop_log "skipped run: ${#match_files[@]} matches exceeds limit of $max"
+    printf 'Skipped. %s matches is over the safety limit of %s. Nothing was moved.\n' "${#match_files[@]}" "$max" >&2
+    return 3
+  fi
+  return 0
+}
+
+fresh_desktop_dry_run() {
+  fresh_desktop_prepare_run
+  fresh_desktop_sorted_matches
+}
+
+fresh_desktop_confirm_move() {
+  [[ "${FRESH_DESKTOP_ASSUME_YES:-}" == "1" ]] && return 0
+  [[ -t 0 ]] || return 1
+  local answer
+  printf 'Move these files to the Trash? [y/N] ' >&2
+  IFS= read -r answer || return 1
+  [[ "$answer" == "y" || "$answer" == "Y" ]]
+}
+
+fresh_desktop_perform_move() {
+  local count file dest
+  count=0
+  if [[ ${#match_files[@]} -eq 0 ]]; then
+    printf 'Nothing to move.\n'
+    return 0
+  fi
+  while IFS= read -r file; do
+    [[ -n "$file" ]] || continue
+    [[ -f "$file" ]] || continue
+    dest=$(fresh_desktop_trash_destination "$(basename -- "$file")") || {
+      fresh_desktop_log "could not choose a Trash name for $file"
+      continue
+    }
+    if mv -- "$file" "$dest"; then
+      fresh_desktop_log "trashed $file -> $dest"
+      count=$((count + 1))
+    else
+      fresh_desktop_log "could not move $file"
+    fi
+  done < <(fresh_desktop_sorted_matches)
+  if [[ "$count" -gt 0 ]]; then
+    fresh_desktop_notify "$count"
+  fi
+  printf 'Moved %s to the Trash.\n' "$count"
+}
+
+fresh_desktop_clean_now() {
+  fresh_desktop_prepare_run
+  if [[ ${#match_files[@]} -eq 0 ]]; then
+    printf 'Nothing to move.\n'
+    return 0
+  fi
+  fresh_desktop_sorted_matches >&2
+  if ! fresh_desktop_confirm_move; then
+    printf 'Cancelled. Nothing was moved.\n'
+    return 0
+  fi
+  fresh_desktop_perform_move
+}
+
+fresh_desktop_scheduled_run() {
+  local dir
+  fresh_desktop_ensure_config
+  dir=$(fresh_desktop_support_dir)
+  if [[ ! -f "$dir/schedule-enabled" ]]; then
+    fresh_desktop_log "schedule is off; nothing moved"
+    printf 'Schedule is off. Nothing was moved.\n'
+    return 0
+  fi
+  fresh_desktop_prepare_run
+  fresh_desktop_perform_move
+}
+
+fresh_desktop_normalize_clock() {
+  local hour="$1" minute="$2"
+  [[ "$hour" =~ ^[0-9]{1,2}$ ]] || return 1
+  [[ "$minute" =~ ^[0-9]{1,2}$ ]] || return 1
+  hour=$((10#$hour))
+  minute=$((10#$minute))
+  [[ "$hour" -ge 0 && "$hour" -le 23 ]] || return 1
+  [[ "$minute" -ge 0 && "$minute" -le 59 ]] || return 1
+  printf '%s %s\n' "$hour" "$minute"
+}
+
+fresh_desktop_xml_escape() {
+  printf '%s' "$1" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g'
+}
+
+fresh_desktop_write_settings() {
+  local hour="$1" minute="$2" dir
+  dir=$(fresh_desktop_support_dir)
+  printf 'hour=%s\nminute=%s\n' "$hour" "$minute" >"$dir/settings"
+}
+
+fresh_desktop_plist_path() {
+  printf '%s\n' "$HOME/Library/LaunchAgents/${FRESH_DESKTOP_LABEL}.plist"
+}
+
+fresh_desktop_write_plist() {
+  local hour="$1" minute="$2" program plist
+  program=$(fresh_desktop_xml_escape "$(fresh_desktop_script_path)")
+  plist=$(fresh_desktop_plist_path)
+  mkdir -p "$(dirname "$plist")"
+  cat >"$plist" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>${FRESH_DESKTOP_LABEL}</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>${program}</string>
+		<string>--run</string>
+	</array>
+	<key>StartCalendarInterval</key>
+	<dict>
+		<key>Hour</key>
+		<integer>${hour}</integer>
+		<key>Minute</key>
+		<integer>${minute}</integer>
+	</dict>
+	<key>RunAtLoad</key>
+	<false/>
+</dict>
+</plist>
+EOF
+  printf '%s\n' "$plist"
+}
+
+fresh_desktop_reload_agent() {
+  local plist="$1"
+  local domain
+  domain="gui/$(id -u)"
+  command -v launchctl >/dev/null 2>&1 || return 0
+  launchctl bootout "$domain" "$plist" >/dev/null 2>&1 || launchctl unload "$plist" >/dev/null 2>&1 || true
+  launchctl bootstrap "$domain" "$plist" >/dev/null 2>&1 || launchctl load -w "$plist"
+}
+
+fresh_desktop_install_schedule() {
+  local hour="${1:-}" minute="${2:-}" normalized dir
+  fresh_desktop_ensure_config
+  if [[ -z "$hour" || -z "$minute" ]]; then
+    normalized=$(fresh_desktop_read_clock)
+    hour=${normalized%% *}
+    minute=${normalized##* }
+  fi
+  normalized=$(fresh_desktop_normalize_clock "$hour" "$minute") || {
+    printf 'Use an hour from 0 to 23 and a minute from 0 to 59.\n' >&2
+    return 1
+  }
+  hour=${normalized%% *}
+  minute=${normalized##* }
+  fresh_desktop_write_settings "$hour" "$minute"
+  dir=$(fresh_desktop_support_dir)
+  printf 'enabled %s:%02d\n' "$hour" "$minute" >"$dir/schedule-enabled"
+  fresh_desktop_write_plist "$hour" "$minute" >/dev/null
+  fresh_desktop_reload_agent "$(fresh_desktop_plist_path)"
+  fresh_desktop_log "schedule enabled at ${hour}:$(printf '%02d' "$minute")"
+  printf 'Nightly cleanup is on at %s:%02d. Matching files go to the Trash.\n' "$hour" "$minute"
+}
+
+fresh_desktop_uninstall() {
+  local plist dir
+  fresh_desktop_ensure_config
+  plist=$(fresh_desktop_plist_path)
+  dir=$(fresh_desktop_support_dir)
+  if command -v launchctl >/dev/null 2>&1 && [[ -f "$plist" ]]; then
+    launchctl bootout "gui/$(id -u)" "$plist" >/dev/null 2>&1 || launchctl unload "$plist" >/dev/null 2>&1 || true
+  fi
+  rm -f -- "$plist" "$dir/schedule-enabled"
+  fresh_desktop_log "schedule removed"
+  printf 'Nightly cleanup is off.\n'
+}
+
+fresh_desktop_help() {
+  cat <<'EOF'
+Fresh Desktop moves matching files, screenshots by default, from your
+Desktop into the Trash. Folders are not scanned. Files are not shredded.
+
+  Fresh Desktop.app          set up or clean up from the menu
+  fresh-desktop --dry-run    list what would move
+  fresh-desktop --clean-now  move matches after a yes/no question
+  fresh-desktop --install-schedule HOUR MINUTE
+  fresh-desktop --uninstall  turn the nightly cleanup off
+  fresh-desktop --run        used by the nightly schedule
+
+The nightly job does nothing until --install-schedule has been run.
+A run with more than 300 matches is skipped.
+EOF
+}
+
+fresh_desktop_osascript() {
+  /usr/bin/osascript "$@"
+}
+
+fresh_desktop_prompt_file() {
+  local dir
+  dir=$(fresh_desktop_support_dir)
+  printf '%s\n' "$dir/prompt.txt"
+}
+
+fresh_desktop_gui_choice() {
+  local prompt_file
+  prompt_file=$(fresh_desktop_prompt_file)
+  cat >"$prompt_file" <<'EOF'
+Fresh Desktop moves screenshot files on your Desktop into the Trash so the desktop can start clear. Files stay in the Trash until you empty it. The nightly cleanup stays off until you set it up.
+EOF
+  FRESH_DESKTOP_PROMPT_FILE="$prompt_file" fresh_desktop_osascript <<'EOF'
+set promptPath to system attribute "FRESH_DESKTOP_PROMPT_FILE"
+set msg to read POSIX file promptPath
+set choice to choose from list {"Set up end-of-day cleanup", "Clean Desktop now", "Choose which files", "Add a folder", "Turn off schedule", "Quit"} with title "Fresh Desktop" with prompt msg default items {"Set up end-of-day cleanup"}
+if choice is false then
+  return "Quit"
+end if
+return item 1 of choice
+EOF
+}
+
+fresh_desktop_gui_clock() {
+  local part="$1" fallback="$2" value
+  value=$(fresh_desktop_osascript <<EOF
+set answer to text returned of (display dialog "Enter the ${part} (numbers only)." default answer "${fallback}" buttons {"Cancel", "Continue"} default button "Continue")
+return answer
+EOF
+) || return 1
+  printf '%s\n' "$value"
+}
+
+fresh_desktop_gui_install() {
+  local hour minute normalized
+  hour=$(fresh_desktop_gui_clock "hour from 0 to 23" "23") || return 0
+  minute=$(fresh_desktop_gui_clock "minute from 0 to 59" "55") || return 0
+  normalized=$(fresh_desktop_normalize_clock "$hour" "$minute") || {
+    fresh_desktop_osascript -e 'display dialog "Enter an hour from 0 to 23 and a minute from 0 to 59." buttons {"OK"} default button "OK"' >/dev/null
+    return 0
+  }
+  hour=${normalized%% *}
+  minute=${normalized##* }
+  fresh_desktop_osascript <<EOF
+display dialog "Every day at ${hour}:$(printf '%02d' "$minute"), Fresh Desktop will move matching files from the folders you listed into the Trash. Screenshots on the Desktop are included. Nothing is permanently deleted." buttons {"Cancel", "Turn on"} default button "Cancel"
+EOF
+  fresh_desktop_install_schedule "$hour" "$minute" >/dev/null
+  fresh_desktop_osascript -e "display dialog \"Nightly cleanup is on at ${hour}:$(printf '%02d' "$minute").\" buttons {\"OK\"} default button \"OK\"" >/dev/null
+}
+
+fresh_desktop_gui_clean() {
+  local preview count prompt_file choice
+  if ! fresh_desktop_prepare_run; then
+    fresh_desktop_osascript -e 'display dialog "That cleanup was skipped because too many files matched. Nothing was moved." buttons {"OK"} default button "OK"' >/dev/null || true
+    return 0
+  fi
+  count=${#match_files[@]}
+  if [[ "$count" -eq 0 ]]; then
+    fresh_desktop_osascript -e 'display dialog "No matching files are on the Desktop." buttons {"OK"} default button "OK"' >/dev/null
+    return 0
+  fi
+  preview=$(fresh_desktop_sorted_matches | awk 'NR<=12 {print NR ". " $0} END {if (NR>12) print "... and " NR-12 " more"}')
+  prompt_file=$(fresh_desktop_prompt_file)
+  printf 'Move %s file(s) to the Trash?\n\n%s\n' "$count" "$preview" >"$prompt_file"
+  choice=$(FRESH_DESKTOP_PROMPT_FILE="$prompt_file" fresh_desktop_osascript <<'EOF'
+set promptPath to system attribute "FRESH_DESKTOP_PROMPT_FILE"
+set msg to read POSIX file promptPath
+set answer to button returned of (display dialog msg buttons {"Cancel", "Move to Trash"} default button "Cancel")
+return answer
+EOF
+) || return 0
+  [[ "$choice" == "Move to Trash" ]] || return 0
+  FRESH_DESKTOP_ASSUME_YES=1 fresh_desktop_perform_move >/dev/null
+  fresh_desktop_osascript -e "display dialog \"Moved ${count} file(s) to the Trash.\" buttons {\"OK\"} default button \"OK\"" >/dev/null
+}
+
+fresh_desktop_gui_patterns() {
+  local dir current edited prompt_file kept rejected line
+  dir=$(fresh_desktop_support_dir)
+  current=$(cat "$dir/patterns")
+  prompt_file=$(fresh_desktop_prompt_file)
+  printf '%s\n' "$current" >"$prompt_file"
+  edited=$(FRESH_DESKTOP_PROMPT_FILE="$prompt_file" fresh_desktop_osascript <<'EOF'
+set promptPath to system attribute "FRESH_DESKTOP_PROMPT_FILE"
+set currentText to read POSIX file promptPath
+set answer to text returned of (display dialog "One filename pattern per line. Each pattern must start with at least four letters or numbers." default answer currentText buttons {"Cancel", "Save"} default button "Save")
+return answer
+EOF
+) || return 0
+  kept=""
+  rejected=""
+  while IFS= read -r line || [[ -n "${line:-}" ]]; do
+    [[ -z "$line" || "$line" == \#* ]] && continue
+    if fresh_desktop_pattern_ok "$line"; then
+      kept+="$line"$'\n'
+    else
+      rejected+="$line"$'\n'
+    fi
+  done <<<"$edited"
+  if [[ -z "$kept" ]]; then
+    fresh_desktop_osascript -e 'display dialog "No valid patterns were entered. The previous list was kept." buttons {"OK"} default button "OK"' >/dev/null
+    return 0
+  fi
+  printf '%s' "$kept" >"$dir/patterns"
+  if [[ -n "$rejected" ]]; then
+    printf 'These patterns were not saved:\n%s' "$rejected" >"$prompt_file"
+    FRESH_DESKTOP_PROMPT_FILE="$prompt_file" fresh_desktop_osascript >/dev/null <<'EOF'
+set promptPath to system attribute "FRESH_DESKTOP_PROMPT_FILE"
+set msg to read POSIX file promptPath
+display dialog msg buttons {"OK"} default button "OK"
+EOF
+  else
+    fresh_desktop_osascript -e 'display dialog "Saved the file list." buttons {"OK"} default button "OK"' >/dev/null
+  fi
+}
+
+fresh_desktop_gui_add_folder() {
+  local picked real home dir roots
+  picked=$(fresh_desktop_osascript <<'EOF'
+try
+  set pickedFolder to POSIX path of (choose folder with prompt "Choose a folder whose loose files can be moved to the Trash.")
+  return pickedFolder
+on error
+  return ""
+end try
+EOF
+) || return 0
+  picked=${picked%/}
+  [[ -n "$picked" && -d "$picked" ]] || return 0
+  home=$(fresh_desktop_home_real)
+  real=$(cd "$picked" && pwd -P)
+  if ! fresh_desktop_root_allowed "$real" "$home"; then
+    fresh_desktop_osascript -e 'display dialog "That folder cannot be cleaned. Pick a folder inside your home folder, other than Library or Trash." buttons {"OK"} default button "OK"' >/dev/null
+    return 0
+  fi
+  dir=$(fresh_desktop_support_dir)
+  roots="$dir/roots"
+  if grep -Fxq "$real" "$roots"; then
+    fresh_desktop_osascript -e 'display dialog "That folder is already included." buttons {"OK"} default button "OK"' >/dev/null
+    return 0
+  fi
+  printf '%s\n' "$real" >>"$roots"
+  fresh_desktop_osascript -e "display dialog \"Added ${real}. Only files directly in that folder are considered.\" buttons {\"OK\"} default button \"OK\"" >/dev/null
+}
+
+fresh_desktop_gui() {
+  local choice
+  fresh_desktop_ensure_config
+  while true; do
+    choice=$(fresh_desktop_gui_choice) || choice="Quit"
+    case "$choice" in
+      "Set up end-of-day cleanup") fresh_desktop_gui_install || true ;;
+      "Clean Desktop now") fresh_desktop_gui_clean || true ;;
+      "Choose which files") fresh_desktop_gui_patterns || true ;;
+      "Add a folder") fresh_desktop_gui_add_folder || true ;;
+      "Turn off schedule")
+        fresh_desktop_uninstall >/dev/null
+        fresh_desktop_osascript -e 'display dialog "Nightly cleanup is off." buttons {"OK"} default button "OK"' >/dev/null
+        ;;
+      *) break ;;
+    esac
+  done
+}
+
+fresh_desktop_maybe_relaunch_from_applications() {
+  fresh_desktop_is_mac || return 0
+  [[ $# -eq 0 ]] || return 0
+  local script app_root dest
+  script=$(fresh_desktop_script_path)
+  [[ "$script" == */Contents/MacOS/fresh-desktop ]] || return 0
+  app_root=$(cd "$(dirname "$script")/../.." && pwd)
+  [[ "$app_root" == /Volumes/* ]] || return 0
+  dest="$HOME/Applications/Fresh Desktop.app"
+  mkdir -p "$HOME/Applications"
+  rm -rf -- "$dest"
+  cp -R "$app_root" "$dest"
+  exec "$dest/Contents/MacOS/fresh-desktop"
+}
+
+fresh_desktop_main() {
+  fresh_desktop_maybe_relaunch_from_applications "$@"
+  case "${1:-}" in
+    --run) fresh_desktop_scheduled_run ;;
+    --clean-now) fresh_desktop_clean_now ;;
+    --dry-run) fresh_desktop_dry_run ;;
+    --install-schedule) fresh_desktop_install_schedule "${2:-}" "${3:-}" ;;
+    --uninstall) fresh_desktop_uninstall ;;
+    --help|-h) fresh_desktop_help ;;
+    "")
+      if fresh_desktop_is_mac; then
+        fresh_desktop_gui
+      else
+        fresh_desktop_help
+      fi
+      ;;
+    *)
+      fresh_desktop_help >&2
+      return 1
+      ;;
+  esac
+}
+
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  fresh_desktop_main "$@"
+fi
