@@ -9,6 +9,17 @@ export function isBrandNewListingCondition(condition: string | null | undefined)
 }
 
 /**
+ * Units on a listing row, including 0 after the last brand-new sale.
+ * Missing or non-numeric values default to 1.
+ */
+export function listingStoredQuantity(quantity: unknown): number {
+  if (quantity == null || quantity === "") return 1
+  const n = typeof quantity === "number" ? quantity : Number(quantity)
+  if (!Number.isFinite(n)) return 1
+  return Math.max(0, Math.floor(n))
+}
+
+/**
  * Units stored on `listings.quantity`.
  * Used and unknown conditions are always a single item. Brand new accepts any whole number >= 1.
  */
@@ -17,9 +28,7 @@ export function listingQuantityForCondition(
   quantity: unknown,
 ): number {
   if (!isBrandNewListingCondition(condition)) return 1
-  const n = typeof quantity === "number" ? quantity : Number(quantity)
-  if (!Number.isFinite(n)) return 1
-  const whole = Math.floor(n)
+  const whole = listingStoredQuantity(quantity)
   return whole >= 1 ? whole : 1
 }
 

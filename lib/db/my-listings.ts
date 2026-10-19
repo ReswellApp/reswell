@@ -3,6 +3,7 @@ import {
   listingIdsBlockedFromPermanentDelete,
   listingIdsWithOpenMarketplaceCheckout,
 } from "@/lib/db/listingDeleteEligibility"
+import { listingStoredQuantity } from "@/lib/listing-quantity"
 import { listingCanShowSellerRelist } from "@/lib/listing-sold-state"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import type { ListingCartOfferProspect } from "@/lib/types/listing-cart-holders"
@@ -223,7 +224,7 @@ export async function fetchMyListings(
       wetsuit_size: typeof listing.wetsuit_size === "string" ? listing.wetsuit_size : null,
       apparel_kind: typeof listing.apparel_kind === "string" ? listing.apparel_kind : null,
       traction_size: typeof listing.traction_size === "string" ? listing.traction_size : null,
-      quantity: Math.max(0, Math.floor(Number((listing as { quantity?: number | null }).quantity) || 1)),
+      quantity: listingStoredQuantity((listing as { quantity?: number | null }).quantity),
       cartCount: engagement?.cartCount ?? 0,
       favoriteCount: engagement?.favoriteCount ?? 0,
       canDelete: !blockedIds.has(listing.id),

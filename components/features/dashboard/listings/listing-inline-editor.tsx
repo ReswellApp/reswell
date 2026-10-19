@@ -32,7 +32,11 @@ import {
   type ListingSellableCondition,
 } from "@/lib/listing-labels"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
-import { listingQuantityForCondition } from "@/lib/listing-quantity"
+import {
+  isBrandNewListingCondition,
+  listingQuantityForCondition,
+  listingStoredQuantity,
+} from "@/lib/listing-quantity"
 import { canQuickEditListing } from "@/lib/listing-quick-edit-access"
 import {
   PEER_LISTING_SECTION_LABELS,
@@ -133,7 +137,11 @@ function draftFromListing(listing: DeskEditorListing): ListingQuickDraft {
     title: listing.title ?? "",
     description: (listing.description ?? "").trim(),
     condition: isListingSellableCondition(listing.condition) ? listing.condition : "",
-    quantityInput: String(listingQuantityForCondition(listing.condition, listing.quantity)),
+    quantityInput: String(
+      isBrandNewListingCondition(listing.condition)
+        ? listingStoredQuantity(listing.quantity)
+        : listingQuantityForCondition(listing.condition, listing.quantity),
+    ),
     priceInput: Number.isFinite(price) ? String(Math.round(price * 100) / 100) : "",
     packageSizeId: inferred ?? "",
     spec: listingDeskSpecFromRow(listing),

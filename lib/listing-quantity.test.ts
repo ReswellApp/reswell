@@ -4,6 +4,7 @@ import test from "node:test"
 import {
   listingQuantityForCondition,
   listingScarcityCopy,
+  listingStoredQuantity,
   listingUnitSaleEndsListing,
   peerBrandNewUnitsRemaining,
 } from "@/lib/listing-quantity"
@@ -12,6 +13,14 @@ test("used listings always persist as a single unit", () => {
   assert.equal(listingQuantityForCondition("excellent", 12), 1)
   assert.equal(listingQuantityForCondition("good", ""), 1)
   assert.equal(listingQuantityForCondition(null, 4), 1)
+})
+
+test("stored quantity keeps zero after a sold-out brand-new sale", () => {
+  assert.equal(listingStoredQuantity(0), 0)
+  assert.equal(listingStoredQuantity("0"), 0)
+  assert.equal(listingStoredQuantity(4.2), 4)
+  assert.equal(listingStoredQuantity(null), 1)
+  assert.equal(listingStoredQuantity(""), 1)
 })
 
 test("brand new listings keep any whole quantity of at least 1", () => {
