@@ -7,6 +7,7 @@ import {
 import { reswellPackageFieldsToDb } from "@/lib/sell-listing-fulfillment-flags"
 import type { ListingPersistShippingOptions } from "@/lib/sell-shipping-cost-mode"
 import type { CreateApparelListingInput } from "@/lib/validations/apparel-listing"
+import { listingQuantityForCondition } from "@/lib/listing-quantity"
 
 export function apparelListingShippingFieldsFor(
   input: CreateApparelListingInput,
@@ -58,6 +59,7 @@ export function buildApparelListingPersistFields(
     description: input.description.trim(),
     price: input.price,
     condition: input.condition,
+    quantity: listingQuantityForCondition(input.condition, input.quantity),
     section: APPAREL_SECTION,
     category_id: USED_APPAREL_CATEGORY_ID,
     latitude: input.locationLat ?? null,

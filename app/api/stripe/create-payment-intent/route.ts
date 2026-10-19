@@ -17,6 +17,7 @@ import { validateAcceptedOfferForPaymentIntent } from "@/lib/services/acceptedOf
 import { dedupeIdsPreserveOrder } from "@/lib/stripe-marketplace-metadata"
 import { isAnonymousSupabaseUser } from "@/lib/auth/is-anonymous-user"
 import { isBlockedOwnListingPurchase } from "@/lib/cart-eligibility"
+import { peerBrandNewUnitsRemaining } from "@/lib/listing-quantity"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { formatPeerItemCountPhrase } from "@/lib/peer-listing-item-nouns"
 import { isReswellShopListing } from "@/lib/reswell-shop"
@@ -196,6 +197,10 @@ export async function POST(request: NextRequest) {
       }
     }
     if (isPeerListingSection(listing.section)) {
+      const units = peerBrandNewUnitsRemaining(listing)
+      if (units != null && units < 1) {
+        return NextResponse.json({ error: "This item is out of stock" }, { status: 409 })
+      }
       const exclusiveCheck = await assertBuyerMayPurchaseListingExclusiveWindow(
         supabase,
         listing.id,
@@ -313,6 +318,16 @@ export async function POST(request: NextRequest) {
     }
     if (qty > stock) {
       return NextResponse.json({ error: "Not enough stock available" }, { status: 409 })
+    }
+  }
+
+  for (const listing of listingsOrdered) {
+    if (!isPeerListingSection(listing.section) || isShopifyManagedListing(listing)) continue
+    const units = peerBrandNewUnitsRemaining(listing)
+    if (units == null) continue
+    const qty = quantityByListingId[listing.id] ?? 1
+    if (qty > units) {
+      return NextResponse.json({ error: "Not enough quantity available" }, { status: 409 })
     }
   }
 

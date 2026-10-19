@@ -74,6 +74,7 @@ import {
 import { buildApparelListingPersistFields } from "@/lib/apparel-listing-persist-fields"
 import { computeApparelSellSectionCompletion } from "@/lib/apparel-sell-section-completion"
 import { sellFormConditionValue } from "@/lib/listing-labels"
+import { listingQuantityForCondition } from "@/lib/listing-quantity"
 import { listingDetailHref } from "@/lib/listing-href"
 import { navigateAfterListingSave } from "@/lib/sell-flow/navigate-after-listing-save"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
@@ -146,6 +147,7 @@ type ApparelFormState = {
   sellerPurchasedOn: string
   kind: string
   condition: string
+  quantity: string
   size: string
   brand: string
   model: string
@@ -175,6 +177,7 @@ const INITIAL_STATE: ApparelFormState = {
   sellerPurchasedOn: "",
   kind: "",
   condition: "",
+  quantity: "1",
   size: "",
   brand: "",
   model: "",
@@ -378,6 +381,12 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
           (listing as { seller_purchased_on?: string | null }).seller_purchased_on ?? "",
         kind: (listing as { apparel_kind?: string | null }).apparel_kind ?? "",
         condition: sellFormConditionValue(listing.condition),
+        quantity: String(
+          listingQuantityForCondition(
+            listing.condition,
+            (listing as { quantity?: number | null }).quantity,
+          ),
+        ),
         size: (listing as { apparel_size?: string | null }).apparel_size ?? "",
         brand: (listing as { brand?: string | null }).brand?.trim() ?? "",
         model: (listing as { model?: string | null }).model?.trim() ?? "",
@@ -749,6 +758,7 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
       description: form.description,
       price: Number(form.price),
       condition: form.condition as CreateApparelListingInput["condition"],
+      quantity: listingQuantityForCondition(form.condition, form.quantity),
       kind: form.kind as CreateApparelListingInput["kind"],
       size: form.size || null,
       brand: form.brand,
@@ -1158,6 +1168,8 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
                   <SellApparelFacetFields
                     kind={form.kind}
                     condition={form.condition}
+                    quantity={form.quantity}
+                    onQuantityChange={(v) => setField("quantity", v)}
                     size={form.size}
                     brand={form.brand}
                     model={form.model}

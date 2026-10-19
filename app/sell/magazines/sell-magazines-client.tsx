@@ -63,6 +63,8 @@ import {
   updateMagazineListingSchema,
 } from "@/lib/validations/magazine-listing"
 import { LISTING_CONDITION_SELL_OPTIONS, sellFormConditionValue } from "@/lib/listing-labels"
+import { SellBrandNewQuantityField } from "@/components/features/sell/sell-brand-new-quantity-field"
+import { listingQuantityForCondition } from "@/lib/listing-quantity"
 import { listingDetailHref } from "@/lib/listing-href"
 import { navigateAfterListingSave } from "@/lib/sell-flow/navigate-after-listing-save"
 import { resolveAdminBulkListingAfterCreate } from "@/lib/utils/admin-bulk-listing-navigation"
@@ -75,6 +77,7 @@ type MagazineFormState = {
   description: string
   price: string
   condition: string
+  quantity: string
   brand: string
   year: string
   locationCity: string
@@ -94,6 +97,7 @@ const INITIAL_STATE: MagazineFormState = {
   description: "",
   price: "",
   condition: "",
+  quantity: "1",
   brand: "",
   year: "",
   locationCity: "",
@@ -258,6 +262,12 @@ export default function SellMagazinesFlow({
         description: listing.description?.trim() ?? "",
         price: listing.price != null ? String(listing.price) : "",
         condition: sellFormConditionValue(listing.condition),
+        quantity: String(
+          listingQuantityForCondition(
+            listing.condition,
+            (listing as { quantity?: number | null }).quantity,
+          ),
+        ),
         brand: (listing as { brand?: string | null }).brand?.trim() ?? "",
         year:
           (listing as { magazine_year?: number | string | null }).magazine_year != null &&
@@ -362,6 +372,7 @@ export default function SellMagazinesFlow({
     description: form.description,
     price: form.price,
     condition: form.condition,
+    quantity: listingQuantityForCondition(form.condition, form.quantity),
     brand: form.brand,
     year: form.year,
     locationCity: form.locationCity,
@@ -664,6 +675,13 @@ export default function SellMagazinesFlow({
               </SelectContent>
             </Select>
           </div>
+
+          <SellBrandNewQuantityField
+            id="magazine-quantity"
+            condition={form.condition}
+            quantity={form.quantity}
+            onQuantityChange={(value) => setField("quantity", value)}
+          />
 
           <div className="space-y-2">
             <Label htmlFor="magazine-year">Year *</Label>

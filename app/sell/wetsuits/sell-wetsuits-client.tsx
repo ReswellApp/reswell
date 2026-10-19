@@ -69,6 +69,7 @@ import {
 import { buildWetsuitListingPersistFields } from "@/lib/wetsuit-listing-persist-fields"
 import { computeWetsuitSellSectionCompletion } from "@/lib/wetsuit-sell-section-completion"
 import { sellFormConditionValue } from "@/lib/listing-labels"
+import { listingQuantityForCondition } from "@/lib/listing-quantity"
 import { listingDetailHref } from "@/lib/listing-href"
 import { navigateAfterListingSave } from "@/lib/sell-flow/navigate-after-listing-save"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
@@ -129,6 +130,7 @@ type WetsuitFormState = {
   sellerPurchasedFrom: string
   sellerPurchasedOn: string
   condition: string
+  quantity: string
   size: string
   brand: string
   model: string
@@ -157,6 +159,7 @@ const INITIAL_STATE: WetsuitFormState = {
   sellerPurchasedFrom: "",
   sellerPurchasedOn: "",
   condition: "",
+  quantity: "1",
   size: "",
   brand: "",
   model: "",
@@ -377,6 +380,12 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
         sellerPurchasedOn:
           (listing as { seller_purchased_on?: string | null }).seller_purchased_on ?? "",
         condition: sellFormConditionValue(listing.condition),
+        quantity: String(
+          listingQuantityForCondition(
+            listing.condition,
+            (listing as { quantity?: number | null }).quantity,
+          ),
+        ),
         size: (listing as { wetsuit_size?: string | null }).wetsuit_size ?? "",
         brand: (listing as { brand?: string | null }).brand?.trim() ?? "",
         model: (listing as { model?: string | null }).model?.trim() ?? "",
@@ -634,6 +643,7 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
       description: form.description,
       price: Number(form.price),
       condition: form.condition as CreateWetsuitListingInput["condition"],
+      quantity: listingQuantityForCondition(form.condition, form.quantity),
       size: form.size || null,
       brand: form.brand,
       model: form.model,
@@ -980,6 +990,8 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
                 <div className="space-y-8">
                   <SellWetsuitsFacetFields
                     condition={form.condition}
+                    quantity={form.quantity}
+                    onQuantityChange={(v) => setField("quantity", v)}
                     size={form.size}
                     brand={form.brand}
                     model={form.model}

@@ -65,6 +65,7 @@ import {
 import { buildFinListingPersistFields } from "@/lib/fin-listing-persist-fields"
 import { computeFinSellSectionCompletion } from "@/lib/fin-sell-section-completion"
 import { sellFormConditionValue } from "@/lib/listing-labels"
+import { listingQuantityForCondition } from "@/lib/listing-quantity"
 import { listingDetailHref } from "@/lib/listing-href"
 import { navigateAfterListingSave } from "@/lib/sell-flow/navigate-after-listing-save"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
@@ -152,6 +153,7 @@ type FinFormState = {
   sellerPurchasedFrom: string
   sellerPurchasedOn: string
   condition: string
+  quantity: string
   size: string
   finSetup: string
   finSystem: string
@@ -184,6 +186,7 @@ const INITIAL_STATE: FinFormState = {
   sellerPurchasedFrom: "",
   sellerPurchasedOn: "",
   condition: "",
+  quantity: "1",
   size: "",
   finSetup: "",
   finSystem: "",
@@ -524,6 +527,12 @@ export default function SellFinsFlow({
         sellerPurchasedOn:
           (listing as { seller_purchased_on?: string | null }).seller_purchased_on ?? "",
         condition: sellFormConditionValue(listing.condition),
+        quantity: String(
+          listingQuantityForCondition(
+            listing.condition,
+            (listing as { quantity?: number | null }).quantity,
+          ),
+        ),
         size: (listing as { fin_size?: string | null }).fin_size ?? "",
         finSetup: singleFinSetupSlugForForm((listing as { fins_setup?: string | null }).fins_setup),
         finSystem: (listing as { fin_system?: string | null }).fin_system ?? "",
@@ -903,6 +912,7 @@ export default function SellFinsFlow({
       description: form.description,
       price: form.price,
       condition: form.condition,
+      quantity: listingQuantityForCondition(form.condition, form.quantity),
       size: form.size || null,
       finSetup: form.finSetup || null,
       finSystem: form.finSystem || null,
@@ -1320,6 +1330,8 @@ export default function SellFinsFlow({
                 <div className="space-y-8">
                   <SellFinsFacetFields
                     condition={form.condition}
+                    quantity={form.quantity}
+                    onQuantityChange={(v) => setField("quantity", v)}
                     finSetup={form.finSetup}
                     finSystem={form.finSystem}
                     size={form.size}

@@ -47,6 +47,7 @@ export const listingQuickEditBodySchema = z
     title: z.string().trim().min(1, "Add a title.").max(LISTING_TITLE_MAX_LENGTH).optional(),
     description: z.string().max(LISTING_QUICK_EDIT_DESCRIPTION_MAX).optional(),
     condition: z.enum(LISTING_SELLABLE_CONDITIONS).optional(),
+    quantity: z.number().int().min(1).optional(),
     priceUsd: z.number().min(PRICE_MIN).max(PRICE_MAX).optional(),
     packageSizeId: z.enum(SHOP_PACKAGE_SIZE_IDS).optional(),
     specs: listingDeskSpecSchema.optional(),
@@ -56,6 +57,7 @@ export const listingQuickEditBodySchema = z
       value.title !== undefined ||
       value.description !== undefined ||
       value.condition !== undefined ||
+      value.quantity !== undefined ||
       value.priceUsd !== undefined ||
       value.packageSizeId !== undefined ||
       value.specs !== undefined,

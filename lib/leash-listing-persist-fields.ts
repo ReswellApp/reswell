@@ -7,6 +7,7 @@ import { reswellPackageFieldsToDb } from "@/lib/sell-listing-fulfillment-flags"
 import { normalizeSellShippingCostMode } from "@/lib/sell-shipping-cost-mode"
 import type { ListingPersistShippingOptions } from "@/lib/sell-shipping-cost-mode"
 import type { CreateLeashListingInput } from "@/lib/validations/leash-listing"
+import { listingQuantityForCondition } from "@/lib/listing-quantity"
 
 export function leashListingShippingFieldsFor(
   input: CreateLeashListingInput,
@@ -82,6 +83,7 @@ export function buildLeashListingPersistFields(
     description: input.description.trim(),
     price: input.price,
     condition: input.condition,
+    quantity: listingQuantityForCondition(input.condition, input.quantity),
     section: LEASHES_SECTION,
     category_id: USED_LEASHES_CATEGORY_ID,
     latitude: input.locationLat ?? null,

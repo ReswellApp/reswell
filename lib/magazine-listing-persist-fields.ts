@@ -1,6 +1,7 @@
 import { MAGAZINES_SECTION, USED_MAGAZINES_CATEGORY_ID } from "@/lib/magazine-listing-config"
 import { reswellPackageFieldsToDb } from "@/lib/sell-listing-fulfillment-flags"
 import type { CreateMagazineListingInput } from "@/lib/validations/magazine-listing"
+import { listingQuantityForCondition } from "@/lib/listing-quantity"
 
 function magazineListingShippingFieldsFor(_input: CreateMagazineListingInput): {
   shipping_available: boolean
@@ -37,6 +38,7 @@ export function buildMagazineListingPersistFields(
     description: input.description.trim(),
     price: input.price,
     condition: input.condition,
+    quantity: listingQuantityForCondition(input.condition, input.quantity),
     section: MAGAZINES_SECTION,
     category_id: USED_MAGAZINES_CATEGORY_ID,
     latitude: input.locationLat ?? null,

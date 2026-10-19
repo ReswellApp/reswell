@@ -12,6 +12,7 @@ import {
   type ListingPersistShippingOptions,
 } from "@/lib/sell-shipping-cost-mode"
 import type { CreateFinListingInput } from "@/lib/validations/fin-listing"
+import { listingQuantityForCondition } from "@/lib/listing-quantity"
 
 export function finListingShippingFieldsFor(
   input: CreateFinListingInput,
@@ -91,6 +92,7 @@ export function buildFinListingPersistFields(
     description: input.description.trim(),
     price: input.price,
     condition: input.condition,
+    quantity: listingQuantityForCondition(input.condition, input.quantity),
     section: FINS_SECTION,
     category_id: USED_FINS_CATEGORY_ID,
     latitude: input.locationLat ?? null,

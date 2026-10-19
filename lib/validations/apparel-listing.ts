@@ -45,6 +45,7 @@ const apparelListingBaseSchema = z.object({
   description: z.string().trim().min(1, "Add a description"),
   price: z.coerce.number().positive("Enter a price greater than $0"),
   condition: z.enum(sellableConditions),
+  quantity: z.coerce.number().int().min(1),
 
   /** Apparel category — boardshorts | hat | t_shirt. Required. */
   kind: z.enum(apparelKindValues, { required_error: "Choose a category" }),

@@ -7,6 +7,7 @@ import { QuickPublishBar } from "@/components/features/sell/quick/quick-publish-
 import { SellEarningsBreakdown } from "@/components/features/sell/sell-earnings-breakdown"
 import { SellFacetChipGroup } from "@/components/features/sell/sell-board-facet-fields"
 import { SELL_CONTROL_CLASS } from "@/components/features/sell/sell-form-surface"
+import { SellBrandNewQuantityField } from "@/components/features/sell/sell-brand-new-quantity-field"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
 import { LISTING_CONDITION_SELL_OPTIONS } from "@/lib/listing-labels"
 import { LISTING_TITLE_MAX_LENGTH } from "@/lib/sell-form-validation"
@@ -24,6 +25,8 @@ type BoardSellQuickListFormProps = {
   condition: string
   onConditionChange: (value: string) => void
   conditionComplete: boolean
+  quantity: string
+  onQuantityChange: (value: string) => void
   locationPicker: ReactNode
   locationSet: boolean
   missing: string[]
@@ -45,6 +48,8 @@ export function BoardSellQuickListForm({
   condition,
   onConditionChange,
   conditionComplete,
+  quantity,
+  onQuantityChange,
   locationPicker,
   locationSet,
   missing,
@@ -127,6 +132,12 @@ export function BoardSellQuickListForm({
           value={condition}
           options={LISTING_CONDITION_SELL_OPTIONS}
           onValueChange={onConditionChange}
+        />
+        <SellBrandNewQuantityField
+          id="quick-listing-quantity"
+          condition={condition}
+          quantity={quantity}
+          onQuantityChange={onQuantityChange}
         />
       </QuickEssentialCard>
 

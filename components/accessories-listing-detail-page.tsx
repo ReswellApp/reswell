@@ -1,7 +1,7 @@
 import type { ComponentProps } from "react"
 import { notFound } from "next/navigation"
 import Link from "next/link"
-import { Flag, Hourglass } from "lucide-react"
+import { Flag } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Accordion,
@@ -83,6 +83,7 @@ import { ListingCatalogIdentity } from "@/components/features/listings/listing-c
 import { ListingPdpDeliveryCaption } from "@/components/features/listings/listing-pdp-delivery-caption"
 import { ListingBoardSpecTable } from "@/components/features/listings/listing-board-spec-table"
 import { listingConditionSpecRow } from "@/lib/utils/listing-board-spec-rows"
+import { ListingScarcityLine } from "@/components/features/listings/listing-scarcity-line"
 
 type AboutSellerProfilesProp = ComponentProps<typeof ListingAboutSellerSection>["profiles"]
 
@@ -453,6 +454,8 @@ async function renderAccessoriesListingDetailPage({
               shippingFlatRate={shippingFlatRate}
               locationLine={listingLocationLine}
               showScarcity={canPeerPurchase && accessory.status === "active"}
+              condition={accessory.condition}
+              quantity={(accessory as { quantity?: number | null }).quantity}
               views={listingViews}
               watchers={listingWatchersCount}
               cartHolderCount={cartHolderCount}
@@ -541,13 +544,11 @@ async function renderAccessoriesListingDetailPage({
               )}
               <ListingBoardSpecTable rows={specRows} className="mt-5" />
               {!isSold && !isOwnListing && listingPurchasable && accessory.status === "active" ? (
-                <p className="mt-4 flex items-start gap-2 text-[15px] text-foreground">
-                  <Hourglass className="mt-0.5 h-[15px] w-[15px] shrink-0 text-muted-foreground" aria-hidden />
-                  <span>
-                    <span className="font-semibold">Only one available</span>
-                    <span className="text-muted-foreground"> — grab it before it&apos;s gone</span>
-                  </span>
-                </p>
+                <ListingScarcityLine
+                  className="mt-4"
+                  condition={accessory.condition}
+                  quantity={(accessory as { quantity?: number | null }).quantity}
+                />
               ) : null}
               {canPeerPurchase ? (
                 <p className="mt-3 text-[14px] leading-snug text-muted-foreground">

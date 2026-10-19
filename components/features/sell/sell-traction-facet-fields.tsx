@@ -14,6 +14,7 @@ import {
   type TractionFacetOption,
 } from "@/lib/traction-listing-config"
 import { LISTING_CONDITION_SELL_OPTIONS } from "@/lib/listing-labels"
+import { SellBrandNewQuantityField } from "@/components/features/sell/sell-brand-new-quantity-field"
 
 const UNSELECTED = "__unspecified__"
 
@@ -68,10 +69,12 @@ function SellTractionFacetSelect({
 
 export type SellTractionFacetFieldsProps = {
   condition: string
+  quantity: string
   size: string
   brand: string
   model: string
   onConditionChange: (value: string) => void
+  onQuantityChange: (value: string) => void
   onSizeChange: (value: string) => void
   onBrandChange: (value: string) => void
   onModelChange: (value: string) => void
@@ -79,6 +82,8 @@ export type SellTractionFacetFieldsProps = {
 
 export function SellTractionFacetFields({
   condition,
+  quantity,
+  onQuantityChange,
   size,
   brand,
   model,
@@ -90,6 +95,12 @@ export function SellTractionFacetFields({
   const hasSizeOptions = TRACTION_SIZE_OPTIONS.length > 0
   return (
     <div className="space-y-6">
+      <SellBrandNewQuantityField
+        id="sell-traction-quantity"
+        condition={condition}
+        quantity={quantity}
+        onQuantityChange={onQuantityChange}
+      />
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <SellTractionFacetSelect
           id="sell-traction-condition"

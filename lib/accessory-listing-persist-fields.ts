@@ -7,6 +7,7 @@ import { reswellPackageFieldsToDb } from "@/lib/sell-listing-fulfillment-flags"
 import { normalizeSellShippingCostMode } from "@/lib/sell-shipping-cost-mode"
 import type { ListingPersistShippingOptions } from "@/lib/sell-shipping-cost-mode"
 import type { CreateAccessoryListingInput } from "@/lib/validations/accessory-listing"
+import { listingQuantityForCondition } from "@/lib/listing-quantity"
 
 export function accessoryListingShippingFieldsFor(
   input: CreateAccessoryListingInput,
@@ -82,6 +83,7 @@ export function buildAccessoryListingPersistFields(
     description: input.description.trim(),
     price: input.price,
     condition: input.condition,
+    quantity: listingQuantityForCondition(input.condition, input.quantity),
     section: ACCESSORIES_SECTION,
     category_id: USED_ACCESSORIES_CATEGORY_ID,
     latitude: input.locationLat ?? null,
