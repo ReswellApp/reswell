@@ -41,6 +41,24 @@ describe("sold feed invalidation", () => {
     assert.match(client, /cache:\s*"no-store"/)
   })
 
+  it("expires the new-listings grid when a board is published", () => {
+    const src = readRepo("lib/cache/revalidate-marketplace-sold-feed.ts")
+    assert.match(src, /function revalidateMarketplaceNewListingsFeed/)
+    assert.match(src, /MARKETPLACE_NEW_LISTINGS_FEED_CACHE_TAG/)
+    assert.match(
+      readRepo("lib/services/listingSiteModerationRevalidation.ts"),
+      /revalidateMarketplaceNewListingsFeed\(\)/,
+    )
+    assert.match(
+      readRepo("lib/services/publishImportListing.ts"),
+      /revalidateMarketplaceNewListingsFeed\(\)/,
+    )
+    assert.match(readRepo("lib/services/listingEnd.ts"), /revalidateMarketplaceNewListingsFeed\(\)/)
+    const cache = readRepo("lib/cache/marketplace-sold-feed.ts")
+    assert.match(cache, /MARKETPLACE_NEW_LISTINGS_FEED_CACHE_TAG/)
+    assert.match(cache, /marketplace-new-listings-feed-v4/)
+  })
+
   it("runs that bust after a sale, a purchase, and a return", () => {
     assert.match(
       readRepo("lib/services/listingMarkSold.ts"),

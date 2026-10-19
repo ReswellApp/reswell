@@ -15,9 +15,13 @@ import { getDb } from "@/lib/supabase/db"
 
 /**
  * `/sold` sold, shipped, and new-listings feeds.
- * Held until the next sale, purchase, or return, with an hourly backstop.
+ * Sold and shipped stay cached until the next sale, purchase, or return.
+ * New listings share that backstop and are also dropped as soon as a board
+ * is published, hidden, restored, or deleted.
  */
 export const MARKETPLACE_SOLD_FEED_CACHE_TAG = "marketplace-sold-feed"
+/** New-listings tab only, so a publish does not throw away the sold grid. */
+export const MARKETPLACE_NEW_LISTINGS_FEED_CACHE_TAG = "marketplace-new-listings-feed"
 export const MARKETPLACE_SOLD_FEED_REVALIDATE_SECONDS = 60 * 60
 
 const BRAND_NONE = "__none__"
@@ -123,25 +127,32 @@ export async function getCachedMarketplaceShippedFeedPage(
   return getCachedShippedFeedPagePayload(normalizedBrandSlug || BRAND_NONE, safePage)
 }
 
+async function loadNewListingsFeedPage(page: number) {
+  const supabase = soldFeedReadClient()
+  const { listings, totalCount } = await fetchNewestActiveListingsPage(supabase, {
+    categoryId: null,
+    page,
+  })
+  const totalPages = Math.max(1, Math.ceil(totalCount / NEW_LISTINGS_FEED_PAGE_SIZE))
+  return { listings, totalCount, totalPages }
+}
+
 const getCachedNewListingsFeedPagePayload = unstable_cache(
-  async (page: number) => {
-    const supabase = soldFeedReadClient()
-    const { listings, totalCount } = await fetchNewestActiveListingsPage(supabase, {
-      categoryId: null,
-      page,
-    })
-    const totalPages = Math.max(1, Math.ceil(totalCount / NEW_LISTINGS_FEED_PAGE_SIZE))
-    return { listings, totalCount, totalPages }
-  },
-  ["marketplace-new-listings-feed-v3"],
+  loadNewListingsFeedPage,
+  ["marketplace-new-listings-feed-v4"],
   {
     revalidate: MARKETPLACE_SOLD_FEED_REVALIDATE_SECONDS,
-    tags: [MARKETPLACE_SOLD_FEED_CACHE_TAG],
+    tags: [MARKETPLACE_SOLD_FEED_CACHE_TAG, MARKETPLACE_NEW_LISTINGS_FEED_CACHE_TAG],
   },
 )
 
 export function getCachedMarketplaceNewListingsFeedPage(page: number) {
-  return getCachedNewListingsFeedPagePayload(page)
+  const safePage = Math.max(1, Math.floor(page) || 1)
+  // Dev: skip `unstable_cache` so a just-published board shows up without the 1h TTL.
+  if (process.env.NODE_ENV === "development") {
+    return loadNewListingsFeedPage(safePage)
+  }
+  return getCachedNewListingsFeedPagePayload(safePage)
 }
 
 export const getCachedSoldSurfboardUsedShippingFulfillment = unstable_cache(
