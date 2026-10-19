@@ -9,7 +9,6 @@ export type AppLlmFeatureId =
   | "marketplace_nl_search"
   | "sell_catalog_nl_search"
   | "listing_description"
-  | "business_intelligence"
   | "search_daily_report"
   | "support_reply_draft"
   | "live_chat_cs"
@@ -106,26 +105,6 @@ export const APP_LLM_FEATURES: readonly AppLlmFeatureDefinition[] = [
       "lib/services/searchDailyReportSynonyms.ts",
       "app/api/cron/search-daily-report/route.ts",
       "app/api/cron/search-period-report/route.ts",
-    ],
-  },
-  {
-    id: "business_intelligence",
-    name: "Business intelligence briefings",
-    purpose:
-      "Turns admin marketplace, traffic, and growth snapshots into saved daily/weekly/monthly operating reports with projections and recommendations.",
-    gatewayFeatureTag: "feature:business-intelligence",
-    transport: "vercel_ai_gateway",
-    defaultModel: "google/gemini-2.5-pro",
-    modelEnvVar: "BUSINESS_INTELLIGENCE_MODEL",
-    enabledEnvVar: "BUSINESS_INTELLIGENCE_ENABLED",
-    surfaces: [
-      "/admin/intelligence",
-      "POST /api/admin/intelligence/reports",
-    ],
-    sourceFiles: [
-      "lib/services/businessIntelligence.ts",
-      "lib/services/businessIntelligenceLlm.ts",
-      "lib/services/businessIntelligenceSnapshot.ts",
     ],
   },
   {
