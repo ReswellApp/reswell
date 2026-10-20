@@ -22,6 +22,11 @@ import { boardCategoryMap, resolveListingBoardTypeFromCategory } from "@/lib/uti
 import { boardBrowseFacetFieldsForDb } from "@/lib/listing-facet-write"
 import { listingDimensionsColumnFromSurfboardSellForm } from "@/lib/listing-dimensions-storage"
 import { overlayListingRowWithDropoffParcel } from "@/lib/services/listingDropoffParcel"
+import {
+  assertListingDraftOwnedByActor,
+  resolveDraftListingOwnerId,
+} from "@/lib/services/listingDraftOwner"
+import { parseSellListingPrice } from "@/lib/utils/sell-listing-price"
 
 function shippingPriceToDb(
   fulfillment: BoardFulfillmentChoice,
@@ -61,8 +66,7 @@ export function buildSurfboardDraftListingRow(
     ...fd,
     boardLength: boardLengthCombined,
   })
-  const priceRaw = (fd.price ?? "").trim()
-  const price = priceRaw ? parseFloat(priceRaw.replace(/,/g, "")) : 0
+  const price = parseSellListingPrice(fd.price) ?? 0
   const dimensions = listingDimensionsColumnFromSurfboardSellForm({
     boardLength: boardLengthCombined,
     boardWidthInches: fd.boardWidthInches ?? "",
@@ -125,10 +129,7 @@ export function buildSurfboardDraftListingRow(
     ...packed,
     auto_price_drop_floor: (() => {
       if (fd.autoPriceDrop !== true) return null
-      const t = (fd.autoPriceDropFloor ?? "").trim().replace(/,/g, "")
-      if (!t) return null
-      const n = parseFloat(t)
-      return Number.isFinite(n) ? n : null
+      return parseSellListingPrice(fd.autoPriceDropFloor)
     })(),
     buyer_offers_enabled: fd.buyerOffers !== false,
     minimum_offer_amount: minimumOfferAmountToDb(fd.minimumOfferAmount),
@@ -319,6 +320,7 @@ export async function upsertSurfboardListingDraft(
     throw new Error("No board category configured")
   }
 
+  const ownerId = await resolveDraftListingOwnerId(userId)
   const row = await overlayListingRowWithDropoffParcel(
     supabase,
     {
@@ -340,9 +342,7 @@ export async function upsertSurfboardListingDraft(
     if (exErr || !existing) {
       throw new Error("Draft not found")
     }
-    if ((existing as { user_id: string }).user_id !== userId) {
-      throw new Error("Forbidden")
-    }
+    await assertListingDraftOwnedByActor((existing as { user_id: string }).user_id, userId)
     if ((existing as { status: string }).status !== "draft") {
       throw new Error("Listing is not a draft")
     }
@@ -360,7 +360,7 @@ export async function upsertSurfboardListingDraft(
   }
 
   const insertRow = {
-    user_id: userId,
+    user_id: ownerId,
     ...row,
   }
   let { data: created, error: insErr } = await supabase
@@ -373,7 +373,7 @@ export async function upsertSurfboardListingDraft(
     const retry = await supabase
       .from("listings")
       .insert({
-        user_id: userId,
+        user_id: ownerId,
         ...withoutListingDimensionDisplayDbFields(row),
       })
       .select("id")

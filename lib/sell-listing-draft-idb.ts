@@ -7,6 +7,7 @@
  */
 
 import { isStaleFileNotFoundError } from "@/lib/utils/is-stale-file-not-found-error"
+import { sellListingPriceIsPublishable } from "@/lib/utils/sell-listing-price"
 
 const DB_NAME = "reswell-sell-draft"
 const STORE = "draft"
@@ -75,6 +76,7 @@ function sellDraftFormLooksFilledForBoard(formData: SellListingDraftFormSnapshot
   if (str(formData, "boardBrandModelId")) return true
   if (str(formData, "boardModelName")) return true
   if (str(formData, "boardIndexModelSlug")) return true
+  if (sellListingPriceIsPublishable(formData.price)) return true
   return false
 }
 
@@ -84,6 +86,7 @@ function sellDraftFormLooksFilledForFins(formData: SellListingDraftFormSnapshot)
   if (str(formData, "brandId")) return true
   if (str(formData, "model")) return true
   if (str(formData, "brandModelId")) return true
+  if (sellListingPriceIsPublishable(formData.price)) return true
   return false
 }
 

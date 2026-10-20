@@ -16,6 +16,11 @@ import { reswellPackageFieldsToDb } from "@/lib/sell-listing-fulfillment-flags"
 import type { FinListingDraftAutosaveInput } from "@/lib/validations/fin-listing-draft-autosave"
 import { FIN_LISTING_TITLE_MAX_LENGTH } from "@/lib/validations/fin-listing"
 import { sellerPurchasePriceToDb } from "@/lib/utils/seller-purchase-price"
+import { parseSellListingPrice } from "@/lib/utils/sell-listing-price"
+import {
+  assertListingDraftOwnedByActor,
+  resolveDraftListingOwnerId,
+} from "@/lib/services/listingDraftOwner"
 import {
   isListingDimensionDisplaySchemaCacheError,
   withoutListingDimensionDisplayDbFields,
@@ -68,8 +73,7 @@ export function buildFinListingDraftRow(
     reswellPackageWeightOz: input.reswellPackageWeightOz ?? "",
   })
 
-  const priceRaw = (input.price ?? "").trim()
-  const price = priceRaw ? Number.parseFloat(priceRaw.replace(/,/g, "")) : 0
+  const price = parseSellListingPrice(input.price) ?? 0
 
   return {
     title: resolvedFinDraftTitle(input).slice(0, FIN_LISTING_TITLE_MAX_LENGTH),
@@ -177,6 +181,7 @@ export async function upsertFinListingDraft(
   userId: string,
   input: FinListingDraftAutosaveInput,
 ): Promise<{ id: string }> {
+  const ownerId = await resolveDraftListingOwnerId(userId)
   const row = buildFinListingDraftRow(input, { allowPrivilegedShippingModes: true })
   const listingId = input.listingId?.trim() || null
 
@@ -188,7 +193,7 @@ export async function upsertFinListingDraft(
       .maybeSingle()
 
     if (exErr || !existing) throw new Error("Draft not found")
-    if ((existing as { user_id: string }).user_id !== userId) throw new Error("Forbidden")
+    await assertListingDraftOwnedByActor((existing as { user_id: string }).user_id, userId)
     if ((existing as { status: string }).status !== "draft") {
       throw new Error("Listing is not a draft")
     }
@@ -205,7 +210,7 @@ export async function upsertFinListingDraft(
     return { id: listingId }
   }
 
-  const insertRow = { user_id: userId, ...row }
+  const insertRow = { user_id: ownerId, ...row }
   let { data: created, error: insErr } = await supabase
     .from("listings")
     .insert(insertRow)
@@ -216,7 +221,7 @@ export async function upsertFinListingDraft(
     const retry = await supabase
       .from("listings")
       .insert({
-        user_id: userId,
+        user_id: ownerId,
         ...withoutListingDimensionDisplayDbFields(row),
       })
       .select("id")
