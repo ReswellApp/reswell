@@ -45,6 +45,8 @@ export default async function DashboardLayout({
       showEarnings={shop.permissions.has("payouts.read")}
       actingAsShop={shop.actingAsShop}
       shopLabel={shop.shopLabel}
+      accountRole={shop.role}
+      actorDisplayName={shop.actorDisplayName}
       actorEmail={shop.actorEmail}
       showShopAdminWarning={
         shop.actingAsShop &&

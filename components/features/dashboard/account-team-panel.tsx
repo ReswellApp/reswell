@@ -104,6 +104,7 @@ export function AccountTeamPanel({
   memberships,
   actingAsShop,
   shopLabel,
+  actorDisplayName,
   actorEmail,
   showShopAdminWarning,
 }: AccountTeamPanelData) {
@@ -148,15 +149,36 @@ export function AccountTeamPanel({
     canManage || members.length > 0 || pendingInvites.length > 0 || memberships.length > 0
   if (!hasAnythingToShow) return null
 
+  const workingMembership = memberships.find((membership) => membership.active)
+
   return (
     <section className="space-y-8">
       {memberships.length > 0 ? (
         <div className="space-y-3">
+          <div className={`${profileCardClass} divide-y divide-neutral-200/80`}>
+            <div className="px-5 py-4 sm:px-6">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Signed in</p>
+              <p className="mt-1 text-sm font-medium text-foreground">{actorDisplayName || "Your account"}</p>
+              {actorEmail ? <p className="text-sm text-muted-foreground">{actorEmail}</p> : null}
+            </div>
+            <div className="px-5 py-4 sm:px-6">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Working in</p>
+              <p className="mt-1 text-sm font-medium text-foreground">
+                {actingAsShop ? shopLabel : "Personal"}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {actingAsShop
+                  ? workingMembership
+                    ? ROLE_LABEL[workingMembership.role]
+                    : "Shop"
+                  : "Your own account."}
+              </p>
+            </div>
+          </div>
           <div className="space-y-1">
-            <h2 className={profileSectionTitleClass}>Accounts</h2>
+            <h2 className={profileSectionTitleClass}>Switch account</h2>
             <p className={profileSectionHintClass}>
-              Open the account you want to work in. Personal is your own login
-              {actorEmail ? ` (${actorEmail})` : ""}. Shops are accounts that accepted that email.
+              Personal is the login above. The other rows are shops that accepted that email.
             </p>
           </div>
           {switchError ? (
@@ -249,7 +271,7 @@ export function AccountTeamPanel({
             </h2>
             <p className={profileSectionHintClass}>
               {actingAsShop
-                ? `You're signed in as ${actorEmail ?? "your email"} and working in this shop.`
+                ? `These people can work in ${shopLabel}. You stay signed in as ${actorDisplayName || actorEmail || "your account"}.`
                 : "People you add sign in with their own email, then work inside this account. Payouts stay with you."}
             </p>
             {showShopAdminWarning ? (
