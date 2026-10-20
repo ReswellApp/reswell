@@ -10,6 +10,7 @@ import {
   revokeAccountMemberAction,
   setActiveShopAccountAction,
 } from "@/lib/actions/accountMembers"
+import { dispatchHeaderAuthRefresh } from "@/lib/auth/header-auth-refresh"
 import type { GrantableAccountRole } from "@/lib/account-access/permissions"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -122,6 +123,7 @@ export function AccountTeamPanel({
         setSwitchError(result.error)
         return
       }
+      dispatchHeaderAuthRefresh()
       router.refresh()
     })
   }
@@ -135,6 +137,7 @@ export function AccountTeamPanel({
         setError(result.error)
         return
       }
+      dispatchHeaderAuthRefresh()
       setMessage(success)
       setEmail("")
       router.refresh()

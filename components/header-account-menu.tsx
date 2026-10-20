@@ -33,6 +33,7 @@ export type HeaderAccountMenuProps = {
   isShipper: boolean
   isDropoffLocation: boolean
   shopAccess: HeaderShopAccess | null
+  onActiveAccountChange?: (accountId: string | null) => void
   onSignOut: () => void
 }
 
@@ -49,6 +50,7 @@ function HeaderAccountMenuInner({
   isShipper,
   isDropoffLocation,
   shopAccess,
+  onActiveAccountChange,
   onSignOut,
 }: HeaderAccountMenuProps) {
   const onOpenChange = useCallback((open: boolean) => {
@@ -83,7 +85,10 @@ function HeaderAccountMenuInner({
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="z-[120] w-72">
+      <DropdownMenuContent
+        align="end"
+        className="z-[120] max-h-[min(32rem,calc(100dvh-5rem))] w-72 overflow-y-auto"
+      >
         <div className="flex items-center gap-3 px-2 py-2">
           <Avatar className="h-10 w-10 shrink-0 border border-border">
             {profileAvatarUrl && !avatarImageFailed ? (
@@ -108,6 +113,8 @@ function HeaderAccountMenuInner({
             options={shopAccess.options}
             activeAccountId={shopAccess.activeAccountId}
             actorUserId={shopAccess.actorUserId}
+            actorEmail={shopAccess.actorEmail}
+            onActivated={onActiveAccountChange}
           />
         ) : null}
         {dashboardNavLinks({

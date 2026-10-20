@@ -23,6 +23,8 @@ export interface HeaderShopAccessOption {
   accountId: string
   label: string
   role: AccountRole
+  /** Set when the header loaded this row in the browser. Drives the Shopify link after a switch. */
+  shopifyConnectEnabled?: boolean
 }
 
 /** Accounts this login can work in. Personal stays their own user; shops are memberships. */
