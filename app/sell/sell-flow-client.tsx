@@ -176,6 +176,7 @@ import {
   type SellSavedListingLocation,
 } from "@/lib/utils/sell-saved-listing-locations"
 import { resolveClientSessionForMutation } from "@/lib/auth/resolve-client-session-for-mutation"
+import { orderListingPhotosByCaptureTime } from "@/lib/sell-flow/listing-photo-capture-time"
 import {
   filesFromDataTransfer,
   isListingPhotoFile,
@@ -922,6 +923,11 @@ function SellPageContentInner({
   const [photosFileDragActive, setPhotosFileDragActive] = useState(false)
   const photosFileDragDepthRef = useRef(0)
   const imagesRef = useRef<ListingPhotoSlot[]>([])
+  /**
+   * How many photo slots are already on the board or accepted from a drop that is
+   * still reading capture times. `imagesRef` lags a beat behind `setImages`.
+   */
+  const listingPhotoReservedCountRef = useRef(0)
   /** Authoritative prepare generation per slot — `imagesRef` can lag behind `setState` during re-runs. */
   const latestListingPhotoPrepareSeqRef = useRef<Map<string, number>>(new Map())
   /** Same prepare generation already running — auth refresh must not start a second copy. */
@@ -929,6 +935,9 @@ function SellPageContentInner({
   useEffect(() => {
     imagesRef.current = images
   }, [images])
+  useLayoutEffect(() => {
+    listingPhotoReservedCountRef.current = images.length
+  }, [images.length])
   const [removedImageIds, setRemovedImageIds] = useState<string[]>([])
   const removedImageIdsRef = useRef<string[]>([])
   useEffect(() => {
@@ -2963,7 +2972,7 @@ function SellPageContentInner({
       return
     }
 
-    const currentCount = imagesRef.current.length
+    const currentCount = Math.max(imagesRef.current.length, listingPhotoReservedCountRef.current)
     if (currentCount >= 12) {
       toast.error("Maximum 12 photos allowed.")
       return
@@ -2998,6 +3007,7 @@ function SellPageContentInner({
 
     if (!newSlots.length) return
 
+    listingPhotoReservedCountRef.current = currentCount + newSlots.length
     setImages((prev) => [...prev, ...newSlots])
     for (const slot of newSlots) {
       void optimizeAndUploadSlot(slot)
@@ -3039,7 +3049,10 @@ function SellPageContentInner({
     e.stopPropagation()
     photosFileDragDepthRef.current = 0
     setPhotosFileDragActive(false)
-    addListingPhotoFiles(filesFromDataTransfer(e.dataTransfer))
+    const dropped = filesFromDataTransfer(e.dataTransfer)
+    void orderListingPhotosByCaptureTime(dropped)
+      .catch(() => dropped)
+      .then((ordered) => addListingPhotoFiles(ordered))
   }
 
   function removeImage(index: number) {
@@ -4810,8 +4823,9 @@ function SellPageContentInner({
                         </span>
                       </p>
                       <p className="text-[15px] leading-relaxed text-muted-foreground">
-                        Clear, well-lit shots sell faster. Square photos work best — the first
-                        becomes your cover. Optional: add one short video beside your photos.
+                        Clear, well-lit shots sell faster. Square photos work best. Photos you
+                        drop together are ordered from the first shot to the last, and the first
+                        photo is your cover. Optional: add one short video beside your photos.
                       </p>
                     </div>
                     <SellListingPhotoGrid

@@ -687,8 +687,8 @@ export function SellListingPhotoGrid({
   const resolvedPhotoDescription =
     photoDescription ??
     (videoEnabled
-      ? "Add photos, then drag to reorder — the first is your main image. Optional: add one short video."
-      : "Add photos, then drag to reorder — the first is your main image.")
+      ? "Dropped photos run from the first shot to the last. Drag to reorder — the first is your main image. Optional: add one short video."
+      : "Dropped photos run from the first shot to the last. Drag to reorder — the first is your main image.")
   const videoTile =
     videoEnabled && videoFileInputId && onVideoInputChange && onVideoRemove && onVideoRetry ? (
       <SellListingPhotoGridVideoTile
