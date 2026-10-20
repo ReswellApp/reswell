@@ -1,11 +1,11 @@
 import { Suspense } from "react"
 import type { Metadata } from "next"
+import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
 import { fetchProfileIsAdmin } from "@/lib/db/profileAdmin"
 import { getSurfboardShippedSellOffer } from "@/lib/services/surfboardShippedOffer"
 import { sellerHasPublishedListingInSection } from "@/lib/db/sellerFirstListing"
 import { resolveBoardSellCreateViewMode } from "@/lib/sell-flow/resolve-board-sell-create-view-mode"
 import type { BoardSellViewMode } from "@/lib/sell-flow/board-sell-view-mode"
-import { createClient } from "@/lib/supabase/server"
 import SellFlowShell from "../sell-flow-client"
 
 const title = "Sell your surfboard — Reswell"
@@ -62,10 +62,7 @@ export default async function SellBoardsPage({
   const editId = parseEditListingId(qs.edit)
   const fromGiveaway = firstSearchParam(qs.from) === "giveaway"
 
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { supabase, user } = await getCachedRequestSession()
   const [initialActorIsAdmin, hasPublishedSurfboard] = user
     ? await Promise.all([
         fetchProfileIsAdmin(supabase, user.id),

@@ -62,7 +62,7 @@ export function CartHeaderLink({
         const { data } = await withTimeout(
           supabase.auth.getSession(),
           CART_LOAD_TIMEOUT_MS,
-          { data: { session: null } },
+          { data: { session: null }, error: null },
         )
         resolvedUserId = data.session?.user?.id ?? null
       }
@@ -75,7 +75,14 @@ export function CartHeaderLink({
       const { data: rows, error } = await withTimeout(
         supabase.from("cart_items").select("quantity").eq("profile_id", resolvedUserId),
         CART_LOAD_TIMEOUT_MS,
-        { data: [] as { quantity?: number | null }[], error: null },
+        {
+          data: [] as { quantity: number | null }[],
+          error: null,
+          count: null,
+          status: 200,
+          statusText: "OK",
+          success: true,
+        },
       )
 
       const n = (rows ?? []).reduce(

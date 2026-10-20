@@ -1,12 +1,11 @@
 import { createBrowserClient } from '@supabase/ssr'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { browserAuthLock } from '@/lib/supabase/browser-auth-lock'
 
 let browserClient: SupabaseClient | undefined
 
 /**
  * Single browser Supabase client per tab. Multiple `createBrowserClient` instances
- * contend on auth storage locks and can stall concurrent `getUser()` / `signOut()`.
+ * contend on auth storage and can stall concurrent `getUser()` / `signOut()`.
  */
 export function createClient(): SupabaseClient {
   if (browserClient) return browserClient
@@ -23,10 +22,10 @@ export function createClient(): SupabaseClient {
       flowType: "pkce",
       // PKCE exchange runs on `/auth/callback` (server). Client must not consume ?code= first.
       detectSessionInUrl: false,
-      // Do not use navigator.locks. A frozen Chrome tab can hold that lock
-      // forever, and auth init waits on it with no timeout — login never paints.
-      lock: (name, acquireTimeout, fn) =>
-        browserAuthLock(name, acquireTimeout, fn),
+      // Do not pass a custom `lock`. auth-js 2.118 coordinates refreshes itself
+      // and does not use `navigator.locks`. A custom lock opts back into the
+      // legacy path: every auth call waits on a 5s lock, photo batches time
+      // out, and a failed refresh deletes the session.
     },
   })
   return browserClient
