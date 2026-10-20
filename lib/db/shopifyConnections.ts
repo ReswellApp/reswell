@@ -247,7 +247,7 @@ export async function dbUpsertShopifyConnection(
         scopes: input.scopes,
         credential_provider: input.credentialProvider ?? "public_oauth",
         catalog_read_enabled: input.catalogReadEnabled ?? true,
-        sales_enabled: input.salesEnabled ?? true,
+        sales_enabled: input.salesEnabled ?? false,
         inventory_write_enabled: input.inventoryWriteEnabled ?? true,
         last_error: null,
         connected_at: now,
@@ -445,6 +445,7 @@ export async function dbUpdateShopifyBilling(
       billing_capped_amount: input.cappedAmount,
       billing_approved_at: input.approvedAt,
       sync_enabled: input.syncEnabled,
+      sales_enabled: input.billingStatus === "active",
       updated_at: new Date().toISOString(),
     })
     .eq("id", connectionId)

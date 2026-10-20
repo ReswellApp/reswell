@@ -130,7 +130,7 @@ export function ShopifySetupPanel({
       <div className={`border-t px-5 py-4 ${shopifyDividerClass}`}>
         <h2 className={shopifySectionTitleClass}>7% usage charge</h2>
         <p className={`mt-1 ${shopifyBodyClass}`}>
-          Connected sales are charged 7% once through Shopify Billing. That amount is not also taken from the Stripe payout. Sync stays off until you approve the charge. You can approve it later, including after a reinstall.
+          Connected sales are charged 7% once through Shopify Billing. That amount is not also taken from the Stripe payout. Shopify products stay off Reswell until you approve the charge. You can approve it again later, including after a decline or a reinstall.
         </p>
         <div className="mt-3">
           {billingActive ? (

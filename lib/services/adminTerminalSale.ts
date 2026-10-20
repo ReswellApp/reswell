@@ -14,8 +14,8 @@ import {
 import { listingSoldViaCheckoutUpdate } from "@/lib/listing-sold-state"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { fetchSellerFeeWaived } from "@/lib/db/profileSellerFee"
-import { dbListShopifyBilledListingIds } from "@/lib/db/shopifySales"
 import { connectedSalePayout } from "@/lib/shopify/billing"
+import { shopifyManagedCheckoutBilling } from "@/lib/services/shopifyBilling"
 import { getSellerEarnings } from "@/lib/seller-fees"
 import { completeMarketplaceOrderFromPaymentIntent } from "@/lib/stripe-complete-order"
 import { safeRevalidateAfterMarketplaceOrderCommit } from "@/lib/cache/safe-revalidate-after-order"
@@ -61,7 +61,7 @@ export type AdminTerminalInPersonTotals = {
  * Admin in-person checkout ignores listing pickup/shipping flags — charge list price only.
  */
 export async function computeAdminTerminalInPersonCheckoutUsd(
-  supabase: SupabaseClient,
+  _supabase: SupabaseClient,
   listing: PeerSurfboardCheckoutListingRow,
 ): Promise<{ ok: true; totals: AdminTerminalInPersonTotals } | { ok: false; error: string }> {
   const itemPrice = Math.round(parseFloat(String(listing.price)) * 100) / 100
@@ -69,10 +69,11 @@ export async function computeAdminTerminalInPersonCheckoutUsd(
     return { ok: false, error: "Invalid listing price" }
   }
 
+  const shopifyBilling = await shopifyManagedCheckoutBilling([listing])
+  if (!shopifyBilling.ok) return { ok: false, error: shopifyBilling.error }
+
   const feeWaived = await fetchSellerFeeWaived(listing.user_id)
-  const shopifyBilled = (
-    await dbListShopifyBilledListingIds(supabase, [listing.id])
-  ).includes(listing.id)
+  const shopifyBilled = shopifyBilling.billedListingIds.has(listing.id)
   const payout = shopifyBilled
     ? connectedSalePayout(itemPrice, { feeWaived, shopifyBilled: true })
     : null

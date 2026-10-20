@@ -22,6 +22,7 @@ import { formatPeerItemCountPhrase } from "@/lib/peer-listing-item-nouns"
 import { isReswellShopListing } from "@/lib/reswell-shop"
 import { attachListingInventorySources } from "@/lib/db/listingInventorySource"
 import { isShopifyManagedListing } from "@/lib/shopify/listing"
+import { shopifyManagedCheckoutBilling } from "@/lib/services/shopifyBilling"
 import {
   encodeListingQuantitiesMeta,
   resolveMixedCheckoutSellerId,
@@ -177,6 +178,11 @@ export async function POST(request: NextRequest) {
 
   if (listingsOrdered.some((l) => isBlockedOwnListingPurchase(l, user.id))) {
     return NextResponse.json({ error: "Cannot purchase your own listing" }, { status: 400 })
+  }
+
+  const shopifyBilling = await shopifyManagedCheckoutBilling(listingsOrdered)
+  if (!shopifyBilling.ok) {
+    return NextResponse.json({ error: shopifyBilling.error }, { status: 409 })
   }
 
   for (const listing of listingsOrdered) {

@@ -372,6 +372,41 @@ export async function dbRemoveStaleShopifyListings(
   return removed
 }
 
+/**
+ * Take Shopify-managed listings off the marketplace without unselecting them.
+ * The next inventory projection puts them back when sales are enabled again.
+ */
+export async function dbHoldShopifyListingsForBilling(
+  supabase: SupabaseClient,
+  connectionId: string,
+): Promise<string[]> {
+  const { data: mappings, error: mappingError } = await supabase
+    .from("shopify_product_mappings")
+    .select("listing_id")
+    .eq("connection_id", connectionId)
+  if (mappingError) throw new Error(mappingError.message)
+  const listingIds = [
+    ...new Set((mappings ?? []).map((row) => String(row.listing_id))),
+  ]
+  if (listingIds.length === 0) return []
+  const held: string[] = []
+  for (let index = 0; index < listingIds.length; index += 200) {
+    const { data, error } = await supabase
+      .from("listings")
+      .update({
+        status: "removed",
+        updated_at: new Date().toISOString(),
+      })
+      .in("id", listingIds.slice(index, index + 200))
+      .eq("inventory_source", "shopify")
+      .in("status", ["active", "pending_sale"])
+      .select("id")
+    if (error) throw new Error(error.message)
+    held.push(...(data ?? []).map((row) => String(row.id)))
+  }
+  return held
+}
+
 export async function dbUnpublishAllShopifyListingsForConnection(
   supabase: SupabaseClient,
   connectionId: string,
