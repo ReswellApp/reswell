@@ -7,10 +7,14 @@
  * (in DB order). When empty, the eight static fallbacks are used.
  */
 
-/** Static homepage hero backdrop (replaces the rotating slideshow). */
+/** Still Tahiti frame. Giveaways and tickets use it; the homepage slider does not. */
 export const HOME_HERO_BACKDROP_PATH = "/images/home/hero-backdrop-tahiti.jpg"
 
-/** Default hero art when there are no recent listing images to show. */
+/**
+ * Static homepage hero slides. `/` passes these straight into `HeroSlideshow`.
+ * About and list-your-surfboard may still pad a stack with them when a query
+ * returns nothing.
+ */
 export const FALLBACK_HOME_HERO_SLIDE_PATHS = [
   "/images/home/hero-slide-1.png",
   "/images/home/hero-slide-2.png",

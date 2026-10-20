@@ -109,7 +109,7 @@ export function HeroSlideshow({ slides }: { slides: readonly string[] }) {
                 src={src}
                 alt=""
                 fill
-                quality={isFirstFrame ? 80 : 72}
+                quality={isFirstFrame ? 90 : 72}
                 unoptimized={listingImageShouldBypassOptimization(src)}
                 sizes="100vw"
                 className="object-cover object-center"

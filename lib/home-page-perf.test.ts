@@ -29,10 +29,15 @@ describe("homepage performance constraints", () => {
   })
 
   it("keeps the hero LCP image high quality, prioritized, and full-bleed", () => {
-    const src = readFileSync(new URL("../components/hero-backdrop.tsx", import.meta.url), "utf8")
-    assert.match(src, /quality=\{90\}/)
+    const page = readFileSync(new URL("../app/page.tsx", import.meta.url), "utf8")
+    assert.match(page, /HeroSlideshow/)
+    assert.match(page, /FALLBACK_HOME_HERO_SLIDE_PATHS/)
+    assert.doesNotMatch(page, /loadHomeHeroSlideUrls/)
+    assert.doesNotMatch(page, /HeroBackdrop/)
+
+    const src = readFileSync(new URL("../components/hero-slideshow.tsx", import.meta.url), "utf8")
+    assert.match(src, /quality=\{isFirstFrame \? 90/)
     assert.match(src, /sizes="100vw"/)
-    assert.match(src, /priority/)
-    assert.match(src, /hero-backdrop-tahiti/)
+    assert.match(src, /priority=\{isFirstFrame\}/)
   })
 })

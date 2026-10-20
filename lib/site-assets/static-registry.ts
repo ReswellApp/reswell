@@ -72,7 +72,9 @@ export function listStaticSiteAssets(): SiteAssetEntry[] {
       notes: "Used in listing share cards and brand metadata — not visible in page body.",
     }),
 
-    publicImage("home/hero-backdrop-tahiti.jpg", "Homepage hero backdrop", "home", ["/"]),
+    publicImage("home/hero-backdrop-tahiti.jpg", "Still hero photo", "home", ["/admin/reswelltickets"], {
+      notes: "Ticket workspace banner. The homepage hero is the static slide slider.",
+    }),
     publicImage("home/hero-backdrop-mesa-v2.jpg", "Legacy homepage hero backdrop", "orphan", [], {
       status: "orphan",
     }),
@@ -442,10 +444,10 @@ export function listStaticSiteAssets(): SiteAssetEntry[] {
       label: `Hero slide fallback — ${file.replace("home/", "")}`,
       displaySrc: slidePath,
       category: "marketing",
-      pageUrls: ["/about", "/listyoursurfboard"],
-      status: "fallback",
+      pageUrls: ["/", "/about", "/listyoursurfboard"],
+      status: "active",
       source: `public/images/${file}`,
-      notes: "Used when About / marketing hero stacks need padding; not the live homepage backdrop.",
+      notes: "Static homepage hero slider. Also pads About / marketing stacks when a query is empty.",
     })
   }
 

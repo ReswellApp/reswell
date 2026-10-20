@@ -1,5 +1,6 @@
 import Link from "next/link"
-import { HeroBackdrop } from "@/components/hero-backdrop"
+import { HeroSlideshow } from "@/components/hero-slideshow"
+import { FALLBACK_HOME_HERO_SLIDE_PATHS } from "@/lib/home-hero-slide-urls"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ArrowRight } from "lucide-react"
@@ -38,7 +39,10 @@ export default async function HomePage() {
         {/* Hero + recently listed grid share a white surface on mobile/tablet (Vinted-style overlap). */}
         <div className="max-lg:bg-white">
         <section className="relative overflow-hidden lg:flex lg:min-h-[max(34rem,min(72svh,42rem))] lg:items-center">
-          <HeroBackdrop />
+          {/* Same frame as the still hero. Slides are the static files — this page does not load listings. */}
+          <div className="absolute inset-x-0 top-0 overflow-hidden max-lg:h-[42svh] sm:max-lg:h-[46svh] md:max-lg:h-[50svh] lg:inset-0 lg:h-full">
+            <HeroSlideshow slides={FALLBACK_HOME_HERO_SLIDE_PATHS} />
+          </div>
           <div
             className="absolute inset-x-0 top-0 z-[1] max-lg:h-[42svh] sm:max-lg:h-[46svh] md:max-lg:h-[50svh] max-lg:bg-gradient-to-b max-lg:from-black/5 max-lg:via-transparent max-lg:to-white/10 lg:inset-0 lg:h-full lg:bg-white/15"
             aria-hidden
