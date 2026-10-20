@@ -33,6 +33,8 @@ export interface ShopAccountContext {
   permissions: ReadonlySet<AccountPermission>
   actingAsShop: boolean
   shopLabel: string
+  /** Display name of the login, never the shop brand. */
+  actorDisplayName: string | null
   accountIsPlatformAdmin: boolean
   platformAdmin: boolean
   platformEmployee: boolean
@@ -71,6 +73,26 @@ function profileLabel(row: {
   const email = row.email?.trim()
   if (email) return email
   return "Shop"
+}
+
+/** The person who signed in. Shop brand on their profile is not their name. */
+function actorDisplayName(row: { display_name?: string | null } | null | undefined): string | null {
+  const name = row?.display_name?.trim()
+  return name || null
+}
+
+/** Name of the account being operated. A shop brand wins over the owner's personal name. */
+function workingAccountLabel(
+  row: { shop_name?: string | null; display_name?: string | null; email?: string | null } | null | undefined,
+): string | null {
+  if (!row) return null
+  const shop = row.shop_name?.trim()
+  if (shop) return shop
+  const name = row.display_name?.trim()
+  if (name) return name
+  const email = row.email?.trim()
+  if (email) return email
+  return null
 }
 
 const PROFILE_ACCESS_COLUMNS_WITHOUT_SHOP =
@@ -215,7 +237,12 @@ export const getShopAccountContext = cache(async (): Promise<ShopAccountContext 
     role,
     permissions: permissionsForAccountRole(role),
     actingAsShop,
-    shopLabel: actingAsShop ? (labelById.get(accountId) ?? "Shop") : profileLabel(actor ?? {}),
+    shopLabel: actingAsShop
+      ? workingAccountLabel(accountProfile?.id === accountId ? accountProfile : null) ??
+        labelById.get(accountId) ??
+        "Shop"
+      : actorDisplayName(actor) ?? "Personal",
+    actorDisplayName: actorDisplayName(actor),
     accountIsPlatformAdmin: accountProfile?.is_admin === true,
     platformAdmin: platform.isAdmin,
     platformEmployee: platform.isEmployee,
@@ -588,6 +615,7 @@ export interface AccountTeamPanelData {
   memberships: AccountTeamMembership[]
   actingAsShop: boolean
   shopLabel: string
+  actorDisplayName: string | null
   actorEmail: string | null
   showShopAdminWarning: boolean
 }
@@ -656,6 +684,7 @@ export async function loadAccountTeamPanelData(): Promise<AccountTeamPanelData |
     }),
     actingAsShop: shop.actingAsShop,
     shopLabel: shop.shopLabel,
+    actorDisplayName: shop.actorDisplayName,
     actorEmail: shop.actorEmail,
     showShopAdminWarning:
       shop.actingAsShop &&

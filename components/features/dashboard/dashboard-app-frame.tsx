@@ -5,6 +5,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Plus } from "lucide-react"
 import { OpenPersonalAccountButton } from "@/components/features/dashboard/account-switcher"
+import type { AccountRole } from "@/lib/account-access/permissions"
 import { DashboardMobilePageChrome } from "@/components/features/dashboard/dashboard-mobile-page-chrome"
 import { DashboardSidebarNav } from "@/components/features/dashboard/dashboard-sidebar-nav"
 import { Button } from "@/components/ui/button"
@@ -24,9 +25,46 @@ interface DashboardAppFrameProps {
   showEarnings?: boolean
   actingAsShop?: boolean
   shopLabel?: string
+  accountRole?: AccountRole
+  actorDisplayName?: string | null
   actorEmail?: string | null
   showShopAdminWarning?: boolean
   children: ReactNode
+}
+
+const WORKING_ROLE_LABEL: Record<AccountRole, string> = {
+  owner: "Your account",
+  manager: "Manager",
+  staff: "Staff",
+}
+
+function WorkingInCard({
+  shopLabel,
+  accountRole,
+  actorDisplayName,
+  actorEmail,
+  showShopAdminWarning,
+}: {
+  shopLabel: string
+  accountRole: AccountRole
+  actorDisplayName: string | null
+  actorEmail: string | null
+  showShopAdminWarning: boolean
+}) {
+  return (
+    <div className="rounded-2xl border border-neutral-200/80 bg-white px-4 py-3">
+      <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Working in</p>
+      <p className="mt-1 truncate text-sm font-semibold text-foreground">{shopLabel}</p>
+      <p className="text-xs text-muted-foreground">{WORKING_ROLE_LABEL[accountRole]}</p>
+      <p className="mt-3 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Signed in</p>
+      <p className="mt-1 truncate text-sm font-medium text-foreground">{actorDisplayName || "Your account"}</p>
+      {actorEmail ? <p className="truncate text-xs text-muted-foreground">{actorEmail}</p> : null}
+      {showShopAdminWarning ? (
+        <p className="mt-2 text-xs text-muted-foreground">Shop access does not open the Reswell admin panel.</p>
+      ) : null}
+      <OpenPersonalAccountButton />
+    </div>
+  )
 }
 
 export function DashboardAppFrame({
@@ -38,6 +76,8 @@ export function DashboardAppFrame({
   showEarnings = true,
   actingAsShop = false,
   shopLabel,
+  accountRole = "staff",
+  actorDisplayName = null,
   actorEmail,
   showShopAdminWarning = false,
   children,
@@ -72,13 +112,14 @@ export function DashboardAppFrame({
         showEarnings={showEarnings}
       />
       {actingAsShop ? (
-        <div className="mt-4 rounded-2xl border border-neutral-200/80 bg-white px-4 py-3 lg:hidden">
-          <p className="text-sm font-medium text-foreground">{shopLabel ?? "Shop"}</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            Signed in as {actorEmail ?? "your email"}.
-            {showShopAdminWarning ? " This does not open the Reswell admin panel." : ""}
-          </p>
-          <OpenPersonalAccountButton />
+        <div className="mt-4 lg:hidden">
+          <WorkingInCard
+            shopLabel={shopLabel ?? "Shop"}
+            accountRole={accountRole}
+            actorDisplayName={actorDisplayName}
+            actorEmail={actorEmail ?? null}
+            showShopAdminWarning={showShopAdminWarning}
+          />
         </div>
       ) : null}
 
@@ -91,17 +132,13 @@ export function DashboardAppFrame({
         <aside className={cn("hidden shrink-0 lg:block", dashboardSidebarWidthClass)}>
           <div className="sticky top-24 space-y-6">
             {actingAsShop ? (
-              <div className="rounded-2xl border border-neutral-200/80 bg-white px-4 py-3">
-                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                  Working in
-                </p>
-                <p className="mt-1 truncate text-sm font-medium text-foreground">{shopLabel ?? "Shop"}</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  {actorEmail ?? "Your email"}
-                  {showShopAdminWarning ? " · Admin panel stays separate" : ""}
-                </p>
-                <OpenPersonalAccountButton />
-              </div>
+              <WorkingInCard
+                shopLabel={shopLabel ?? "Shop"}
+                accountRole={accountRole}
+                actorDisplayName={actorDisplayName}
+                actorEmail={actorEmail ?? null}
+                showShopAdminWarning={showShopAdminWarning}
+              />
             ) : null}
             <Button asChild className={dashboardSidebarCreateButtonClass}>
               <Link href="/sell?new=1">

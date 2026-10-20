@@ -46,6 +46,24 @@ describe("header shop access", () => {
     )
   })
 
+  it("keeps the signed-in name even when that profile has a shop brand", () => {
+    const access = headerShopAccessFromRows({
+      userId: USER,
+      email: "haydensbsb@gmail.com",
+      actor: {
+        display_name: "Christian",
+        shop_name: "Hayden Garfields Shop",
+        active_shop_account_id: null,
+      },
+      memberships: [{ account_id: SHOP, role: "staff" }],
+      profiles: [{ id: SHOP, shop_name: "Hayden Garfields Shop", display_name: "Christian" }],
+    })
+
+    assert.equal(access.actingAsShop, false)
+    assert.equal(access.shopLabel, "Christian")
+    assert.equal(access.options[1]?.label, "Hayden Garfields Shop")
+  })
+
   it("falls back to personal when the saved shop is not a membership", () => {
     const access = buildHeaderShopAccess({
       userId: USER,

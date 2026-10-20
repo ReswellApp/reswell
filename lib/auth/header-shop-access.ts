@@ -188,7 +188,7 @@ export function headerShopAccessFromRows(input: {
   return buildHeaderShopAccess({
     userId: input.userId,
     email: input.email,
-    actorLabel: profileLabel(input.actor),
+    actorLabel: readString(input.actor?.display_name) ?? "Personal",
     activeShopAccountId: readString(input.actor?.active_shop_account_id ?? null),
     actorShopifyConnectEnabled: input.actor?.shopify_connect_enabled === true,
     memberships,
