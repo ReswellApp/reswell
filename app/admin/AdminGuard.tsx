@@ -38,6 +38,7 @@ export function AdminGuard({
         pathname === '/admin/site-assets' ||
         pathname === '/admin/llm-usage' ||
         pathname === '/admin/intelligence' ||
+        pathname === '/admin/cohorts' ||
         pathname === '/admin/listings/brand-model-autofills' ||
         pathname === '/admin/orders/terminal' ||
         pathname === '/admin/promo-codes' ||
