@@ -16,7 +16,10 @@ import {
   dbReviveDeadShopifyInventoryJobs,
 } from "@/lib/db/shopifyQueue"
 import { hashShopifyClaimSecret } from "@/lib/shopify/crypto"
-import type { ShopifyPendingInstallationPreview } from "@/lib/shopify/types"
+import type {
+  ShopifyConnectionRow,
+  ShopifyPendingInstallationPreview,
+} from "@/lib/shopify/types"
 import { applyShopifyListingSideEffects } from "@/lib/services/shopifyCatalog"
 import { settleShopifyBilling } from "@/lib/services/shopifyBilling"
 import { saveShopifyDefaultPackageIfMissing } from "@/lib/services/shopifyDefaultPackage"
@@ -25,6 +28,7 @@ import {
   registerShopifyWebhooks,
 } from "@/lib/services/shopifyOAuth"
 import { shopifyClaimShouldReviveInventory } from "@/lib/shopify/claim-switch"
+import { isShopifyOrdersWebhookRejection } from "@/lib/shopify/orders-webhook"
 
 const SHOP_MOVE_INVENTORY_CANCEL_REASON =
   "Canceled because this Reswell account connected a different Shopify store"
@@ -99,20 +103,29 @@ export async function claimShopifyPendingInstallation(input: {
       connection.shop_domain,
       accessToken,
     )
-    await dbSetShopifyOrdersSyncEnabled(
+    await rememberClaimOrderSync(
       serviceSupabase,
       connection.id,
       registration.ordersCreateSubscribed,
     )
     if (connection.status === "error") {
-      await dbMarkShopifyConnectionStatus(serviceSupabase, connection.id, {
-        status: "active",
-        error: null,
-      })
+      await restoreLinkedShopifyConnection(serviceSupabase, connection)
     }
     await settleShopifyBilling(serviceSupabase, connection)
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
+    if (isShopifyOrdersWebhookRejection(message)) {
+      console.error("[shopify] orders webhook", error)
+      await rememberClaimOrderSync(serviceSupabase, connection.id, false)
+      if (connection.status === "error") {
+        await restoreLinkedShopifyConnection(serviceSupabase, connection)
+      }
+      await settleShopifyBilling(serviceSupabase, connection)
+      return {
+        connectionId: claimed.connectionId,
+        shopDomain: claimed.shopDomain,
+      }
+    }
     await dbMarkShopifyConnectionStatus(serviceSupabase, connection.id, {
       status: "error",
       syncEnabled: false,
@@ -125,4 +138,31 @@ export async function claimShopifyPendingInstallation(input: {
     connectionId: claimed.connectionId,
     shopDomain: claimed.shopDomain,
   }
+}
+
+async function rememberClaimOrderSync(
+  supabase: ReturnType<typeof createServiceRoleClient>,
+  connectionId: string,
+  ordersCreateSubscribed: boolean,
+): Promise<void> {
+  try {
+    await dbSetShopifyOrdersSyncEnabled(
+      supabase,
+      connectionId,
+      ordersCreateSubscribed,
+    )
+  } catch (error) {
+    console.error("[shopify] order sync flag", { connectionId, error })
+  }
+}
+
+async function restoreLinkedShopifyConnection(
+  supabase: ReturnType<typeof createServiceRoleClient>,
+  connection: ShopifyConnectionRow,
+): Promise<void> {
+  await dbMarkShopifyConnectionStatus(supabase, connection.id, {
+    status: "active",
+    syncEnabled: connection.billing_status === "active",
+    error: null,
+  })
 }

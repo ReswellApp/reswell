@@ -2,6 +2,7 @@ import { createServiceRoleClient } from "@/lib/supabase/server"
 import {
   dbGetShopifyConnectionForUser,
   dbMarkShopifyConnectionStatus,
+  dbSetShopifyOrdersSyncEnabled,
   toPublicShopifyConnection,
 } from "@/lib/db/shopifyConnections"
 import {
@@ -27,10 +28,45 @@ import {
 } from "@/lib/services/shopifyCatalog"
 import { sweepDeletedShopifyListings } from "@/lib/services/shopifyDeletionSweep"
 import { shopifyCatalogSyncAllowed } from "@/lib/shopify/billing"
+import { isShopifyOrdersWebhookRejection } from "@/lib/shopify/orders-webhook"
 
 export type ServiceResult<T> =
   | { ok: true; data: T }
   | { ok: false; status: number; error: string }
+
+async function releaseOrdersWebhookLinkError(
+  supabase: ReturnType<typeof createServiceRoleClient>,
+  connection: ShopifyConnectionRow,
+): Promise<ShopifyConnectionRow> {
+  if (
+    connection.status !== "error" ||
+    !isShopifyOrdersWebhookRejection(connection.last_error ?? "")
+  ) {
+    return connection
+  }
+  const syncEnabled = connection.billing_status === "active"
+  await dbMarkShopifyConnectionStatus(supabase, connection.id, {
+    status: "active",
+    syncEnabled,
+    error: null,
+  })
+  try {
+    await dbSetShopifyOrdersSyncEnabled(supabase, connection.id, false)
+  } catch (error) {
+    console.error("[shopify] order sync flag", {
+      connectionId: connection.id,
+      error,
+    })
+  }
+  return {
+    ...connection,
+    status: "active",
+    sync_enabled: syncEnabled,
+    last_error: null,
+    orders_sync_enabled: false,
+    disconnected_at: null,
+  }
+}
 
 function serviceClient(): ReturnType<typeof createServiceRoleClient> | null {
   try {
@@ -71,9 +107,12 @@ export async function getShopifyConnectionStatus(
   }
   try {
     const connection = await dbGetShopifyConnectionForUser(service, userId)
+    const linked = connection
+      ? await releaseOrdersWebhookLinkError(service, connection)
+      : null
     return {
       ok: true,
-      data: connection ? toPublicShopifyConnection(connection) : null,
+      data: linked ? toPublicShopifyConnection(linked) : null,
     }
   } catch (error) {
     console.error("[shopify] status", error)

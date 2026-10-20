@@ -44,6 +44,7 @@ import {
   encryptShopifySecret,
   hashShopifyOAuthState,
 } from "@/lib/shopify/crypto"
+import { isShopifyOrdersWebhookRejection } from "@/lib/shopify/orders-webhook"
 import type { ShopifyConnectionRow } from "@/lib/shopify/types"
 
 type ShopifyTokenResponse = {
@@ -432,6 +433,7 @@ export async function completeShopifyOAuth(input: {
       connection.id,
     )
   }
+  let ordersCreateSubscribed = false
   await saveShopifyDefaultPackageIfMissing({
     supabase: input.serviceSupabase,
     userId: input.userId,
@@ -443,13 +445,14 @@ export async function completeShopifyOAuth(input: {
       input.shopDomain,
       token.access_token,
     )
-    await dbSetShopifyOrdersSyncEnabled(
-      input.serviceSupabase,
-      connection.id,
-      registration.ordersCreateSubscribed,
-    )
+    ordersCreateSubscribed = registration.ordersCreateSubscribed
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
+    if (isShopifyOrdersWebhookRejection(message)) {
+      console.error("[shopify] orders webhook", error)
+      await rememberShopifyOrderSync(input.serviceSupabase, connection.id, false)
+      return connection
+    }
     await dbMarkShopifyConnectionStatus(input.serviceSupabase, connection.id, {
       status: "error",
       syncEnabled: false,
@@ -457,7 +460,28 @@ export async function completeShopifyOAuth(input: {
     })
     throw error
   }
+  await rememberShopifyOrderSync(
+    input.serviceSupabase,
+    connection.id,
+    ordersCreateSubscribed,
+  )
   return connection
+}
+
+async function rememberShopifyOrderSync(
+  supabase: SupabaseClient,
+  connectionId: string,
+  ordersCreateSubscribed: boolean,
+): Promise<void> {
+  try {
+    await dbSetShopifyOrdersSyncEnabled(
+      supabase,
+      connectionId,
+      ordersCreateSubscribed,
+    )
+  } catch (error) {
+    console.error("[shopify] order sync flag", { connectionId, error })
+  }
 }
 
 export async function finishShopifyOAuth(input: {
