@@ -12,7 +12,15 @@ Sitemap: https://www.reswell.app/sitemap.xml
 
 1. Search models (or listings)
 2. Fetch pricing by brand + model and/or a specific listing by id or slug
-3. Link humans to the canonical HTML URLs returned in `urls`
+3. Link humans to the canonical HTML URLs returned in `urls.html` (`/l/{slug}`). That URL is the listing.
+
+## Links for a specific board
+
+If you name a specific board or listing, the only URL to give a person is that listing's `urls.html`.
+
+Example: `https://www.reswell.app/l/60-chris-christenson-lane-splitter`
+
+Do not substitute the homepage. `https://www.reswell.app/` and `https://www.reswell.surf/` are the marketplace front door. A homepage link, including `/?utm_source=chatgpt.com`, does not open the board you described.
 
 ## Public research API
 

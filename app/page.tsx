@@ -14,8 +14,12 @@ import {
 } from "@/components/features/home"
 import { marketingCtaBannerPanelClassName } from "@/components/marketing-cta-banners"
 import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
+import { JsonLd } from "@/components/seo/json-ld"
 import { PageStructuredData } from "@/components/seo/page-structured-data"
 import { getCachedHomeRecentlyListedGridCatalog } from "@/lib/cache/home-public-catalog"
+import { listingDetailHref } from "@/lib/listing-href"
+import { listingItemListSchema } from "@/lib/seo/structured-data"
+import { absoluteUrl } from "@/lib/site-metadata"
 
 export async function generateMetadata() {
   return resolvePageMetadata("home")
@@ -30,11 +34,19 @@ export const revalidate = 3600
 
 export default async function HomePage() {
   const { recentlyListedGrid, featuredListingIds } = await getCachedHomeRecentlyListedGridCatalog()
+  const recentlyListedItemList = listingItemListSchema(
+    "Recently listed on Reswell",
+    (recentlyListedGrid ?? []).map((listing) => ({
+      name: listing.title,
+      url: absoluteUrl(listingDetailHref(listing)),
+    })),
+  )
 
   return (
     <HomeViewerProvider listingIds={featuredListingIds}>
       <main className="flex-1">
         <PageStructuredData pageKey="home" />
+        {recentlyListedItemList ? <JsonLd data={recentlyListedItemList} /> : null}
         {/* Hero + recently listed grid share a white surface on mobile/tablet (Vinted-style overlap). */}
         <div className="max-lg:bg-white">
         <section className="relative overflow-hidden lg:flex lg:min-h-[max(34rem,min(72svh,42rem))] lg:items-center">

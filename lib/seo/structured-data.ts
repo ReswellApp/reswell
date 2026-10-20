@@ -85,6 +85,46 @@ export interface ProductSchemaInput {
   condition?: "NewCondition" | "UsedCondition" | "RefurbishedCondition"
 }
 
+export interface ListingItemListEntry {
+  name: string
+  url: string
+}
+
+const LISTING_ITEM_LIST_MAX = 24
+
+/**
+ * Homepage (and other index) list of specific listings.
+ * Each item carries the canonical `/l/{slug}` URL so agents that read this page
+ * can cite the listing instead of the site root.
+ */
+export function listingItemListSchema(
+  name: string,
+  entries: ListingItemListEntry[],
+): JsonLdObject | null {
+  const items = entries
+    .map((entry) => ({ name: entry.name.trim(), url: entry.url.trim() }))
+    .filter((entry) => entry.name.length > 0 && entry.url.startsWith("https://"))
+    .slice(0, LISTING_ITEM_LIST_MAX)
+  if (items.length === 0) return null
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name,
+    itemListElement: items.map((item, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: item.name,
+      url: item.url,
+      item: {
+        "@type": "Product",
+        name: item.name,
+        url: item.url,
+      },
+    })),
+  }
+}
+
 export function productSchema(input: ProductSchemaInput): JsonLdObject {
   const offers: JsonLdObject = {
     "@type": "Offer",

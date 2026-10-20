@@ -11,8 +11,12 @@ describe("robots public allow paths", () => {
     assert.ok(AI_CRAWLER_USER_AGENTS.includes("Google-Extended"))
   })
 
-  it("allows homepage, public API, OpenAPI, and llms.txt", () => {
+  it("allows homepage, listing pages, public API, OpenAPI, and llms.txt", () => {
     assert.ok(ROBOTS_PUBLIC_ALLOW_PATHS.includes("/"))
+    assert.ok(ROBOTS_PUBLIC_ALLOW_PATHS.includes("/l/"))
+    assert.ok(ROBOTS_PUBLIC_ALLOW_PATHS.includes("/boards"))
+    assert.ok(ROBOTS_PUBLIC_ALLOW_PATHS.includes("/search"))
+    assert.ok(ROBOTS_PUBLIC_ALLOW_PATHS.includes("/brands/"))
     assert.ok(ROBOTS_PUBLIC_ALLOW_PATHS.includes("/api/public/"))
     assert.ok(ROBOTS_PUBLIC_ALLOW_PATHS.includes("/openapi.json"))
     assert.ok(ROBOTS_PUBLIC_ALLOW_PATHS.includes("/llms.txt"))
