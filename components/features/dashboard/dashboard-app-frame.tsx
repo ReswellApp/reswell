@@ -4,6 +4,7 @@ import { Suspense, type ReactNode } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Plus } from "lucide-react"
+import { OpenPersonalAccountButton } from "@/components/features/dashboard/account-switcher"
 import { DashboardMobilePageChrome } from "@/components/features/dashboard/dashboard-mobile-page-chrome"
 import { DashboardSidebarNav } from "@/components/features/dashboard/dashboard-sidebar-nav"
 import { Button } from "@/components/ui/button"
@@ -74,9 +75,10 @@ export function DashboardAppFrame({
         <div className="mt-4 rounded-2xl border border-neutral-200/80 bg-white px-4 py-3 lg:hidden">
           <p className="text-sm font-medium text-foreground">{shopLabel ?? "Shop"}</p>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            Signed in as {actorEmail ?? "your email"}. Switch accounts from your profile photo.
+            Signed in as {actorEmail ?? "your email"}.
             {showShopAdminWarning ? " This does not open the Reswell admin panel." : ""}
           </p>
+          <OpenPersonalAccountButton />
         </div>
       ) : null}
 
@@ -98,6 +100,7 @@ export function DashboardAppFrame({
                   {actorEmail ?? "Your email"}
                   {showShopAdminWarning ? " · Admin panel stays separate" : ""}
                 </p>
+                <OpenPersonalAccountButton />
               </div>
             ) : null}
             <Button asChild className={dashboardSidebarCreateButtonClass}>
