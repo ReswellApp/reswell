@@ -3,28 +3,24 @@
 import { useEffect, useState } from "react"
 import { Check, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import {
-  shopifyFieldClass,
-  shopifyPrimaryButtonClass,
-} from "@/components/features/integrations/shopify/shopify-admin-styles"
+import { shopifyPrimaryButtonClass } from "@/components/features/integrations/shopify/shopify-admin-styles"
 import { ShopifyConnectOptionPanel } from "@/components/features/integrations/shopify/shopify-connect-option-panel"
 
 interface ShopifyPluginConnectOptionProps {
   available: boolean
+  installUrl: string | null
 }
 
 const STEPS = [
-  "Enter your store's myshopify.com domain",
-  "Approve the Reswell app in Shopify",
-  "Return here with your products loaded",
+  "Approve the Reswell app on your Shopify store",
+  "Approve the 7% usage charge",
+  "Choose which products to publish",
 ]
 
 export function ShopifyPluginConnectOption({
   available,
+  installUrl,
 }: ShopifyPluginConnectOptionProps) {
-  const [shop, setShop] = useState("")
   const [redirecting, setRedirecting] = useState(false)
 
   useEffect(() => {
@@ -48,44 +44,19 @@ export function ShopifyPluginConnectOption({
         ))}
       </ol>
 
-      {available ? (
-        <form
-          className="space-y-2"
-          onSubmit={(event) => {
-            event.preventDefault()
-            const value = shop.trim()
-            if (!value) return
+      {available && installUrl ? (
+        <Button
+          type="button"
+          className={shopifyPrimaryButtonClass}
+          disabled={redirecting}
+          onClick={() => {
             setRedirecting(true)
-            window.location.assign(
-              `/api/integrations/shopify/connect?shop=${encodeURIComponent(value)}`,
-            )
+            window.location.assign(installUrl)
           }}
         >
-          <Label htmlFor="shopify-plugin-shop" className="text-[13px] text-[#202223] dark:text-foreground">
-            Store domain
-          </Label>
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <Input
-              id="shopify-plugin-shop"
-              value={shop}
-              onChange={(event) => setShop(event.target.value)}
-              placeholder="your-store.myshopify.com"
-              autoComplete="off"
-              required
-              className={shopifyFieldClass}
-            />
-            <Button
-              type="submit"
-              className={`${shopifyPrimaryButtonClass} shrink-0`}
-              disabled={redirecting}
-            >
-              {redirecting ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
-              ) : null}
-              {redirecting ? "Opening Shopify…" : "Connect with Shopify"}
-            </Button>
-          </div>
-        </form>
+          {redirecting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden /> : null}
+          {redirecting ? "Opening Shopify…" : "Connect with Shopify"}
+        </Button>
       ) : (
         <p className="rounded-lg border border-dashed border-[#c9cccf] px-3 py-3 text-[13px] leading-5 text-[#6d7175] dark:border-border dark:text-muted-foreground">
           The Reswell Shopify app is not available right now. Check back soon.

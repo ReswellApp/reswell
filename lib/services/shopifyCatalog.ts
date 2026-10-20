@@ -258,6 +258,9 @@ export async function syncSelectedShopifyProduct(input: {
   productId: string
   section?: PeerListingSection
 }): Promise<{ listingIds: string[]; productMissing: boolean }> {
+  if (input.connection.source_of_truth === "reswell") {
+    return { listingIds: [], productMissing: false }
+  }
   const existing = await dbListShopifyMappingsByProduct(
     input.serviceSupabase,
     input.connection.id,
@@ -369,6 +372,7 @@ export async function syncShopifyInventoryItem(input: {
   connection: ShopifyConnectionRow
   inventoryItemId: string
 }): Promise<string[]> {
+  if (input.connection.source_of_truth === "reswell") return []
   const mappings = await dbListShopifyMappingsByInventoryItem(
     input.serviceSupabase,
     input.connection.id,

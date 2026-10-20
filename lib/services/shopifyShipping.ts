@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { fetchProfileAddresses } from "@/lib/db/profile-addresses"
 import { dbLoadShopifyImportShippingProfile } from "@/lib/db/shopifyCatalog"
 import { fetchListingsDeskProfile } from "@/lib/db/shopCategoryPackageSizes"
+import { saveShopifyDefaultPackageIfMissing } from "@/lib/services/shopifyDefaultPackage"
 import {
   PEER_LISTING_SECTION_LABELS,
   type PeerListingSection,
@@ -22,6 +23,43 @@ import {
   type ShopShippingDefaults,
 } from "@/lib/shop-shipping-defaults"
 import type { ShopifyShippingReadiness } from "@/lib/shopify/types"
+
+async function shopDefaultsWithShopifyPackage(
+  supabase: SupabaseClient,
+  userId: string,
+  current: ShopShippingDefaults,
+): Promise<ShopShippingDefaults> {
+  if (current.storeDefault) return current
+  try {
+    // OAuth is only needed when Shopify might fill an empty shop box.
+    const [{ createServiceRoleClient }, { dbGetShopifyConnectionForUser }, { getShopifyAccessToken }] =
+      await Promise.all([
+        import("@/lib/supabase/server"),
+        import("@/lib/db/shopifyConnections"),
+        import("@/lib/services/shopifyOAuth"),
+      ])
+    const service = createServiceRoleClient()
+    const connection = await dbGetShopifyConnectionForUser(service, userId)
+    if (!connection || connection.status !== "active") return current
+    return await saveShopifyDefaultPackageIfMissing({
+      supabase,
+      userId,
+      shopDomain: connection.shop_domain,
+      accessToken: await getShopifyAccessToken(service, connection),
+      current,
+    })
+  } catch (error) {
+    console.error("[shopifyDefaultPackage] readiness", {
+      userId,
+      timestamp: new Date().toISOString(),
+      message:
+        error instanceof Error
+          ? error.message
+          : "Could not read Shopify's default package",
+    })
+    return current
+  }
+}
 
 export type ShopifyImportFulfillmentDefaults = {
   local_pickup: true
@@ -94,9 +132,14 @@ export async function getShopifyShippingReadiness(
     fetchListingsDeskProfile(supabase, userId),
     fetchProfileAddresses(supabase, userId),
   ])
+  const shippingDefaults = await shopDefaultsWithShopifyPackage(
+    supabase,
+    userId,
+    profile.shopShippingDefaults,
+  )
   const packageDefaults: ShopifyShippingReadiness["packageDefaults"] = []
-  const storeDefault = profile.shopShippingDefaults.storeDefault
-  if (profile.shopShippingDefaults.physicalProduct && storeDefault) {
+  const storeDefault = shippingDefaults.storeDefault
+  if (shippingDefaults.physicalProduct && storeDefault) {
     packageDefaults.push({
       section: "surfboards",
       sectionLabel: "Shop default",

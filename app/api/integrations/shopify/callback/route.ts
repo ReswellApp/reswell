@@ -7,6 +7,7 @@ import { verifyShopifyOAuthHmac, hashShopifyOAuthState } from "@/lib/shopify/cry
 import { shopifyClaimCookieOptions } from "@/lib/shopify/claim-cookie"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { dbPeekShopifyOAuthState } from "@/lib/db/shopifyConnections"
+import { settleShopifyBilling } from "@/lib/services/shopifyBilling"
 import { finishShopifyOAuth } from "@/lib/services/shopifyOAuth"
 import { finishPublicShopifyInstall } from "@/lib/services/shopifyPublicInstall"
 
@@ -87,12 +88,13 @@ export async function GET(request: NextRequest) {
   if (!auth.canManageConnection) return dashboardRedirect("error", "not_approved")
 
   try {
-    await finishShopifyOAuth({
+    const connection = await finishShopifyOAuth({
       userId: auth.accountId,
       shopDomain,
       code,
       state,
     })
+    await settleShopifyBilling(serviceSupabase, connection)
     return dashboardRedirect("connected")
   } catch (error) {
     console.error("[shopify] callback", error)

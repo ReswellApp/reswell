@@ -8,6 +8,7 @@ import {
   dbGetShopifyConnectionById,
   dbGetShopifyConnectionForUser,
   dbMarkShopifyConnectionStatus,
+  dbSetShopifyOrdersSyncEnabled,
 } from "@/lib/db/shopifyConnections"
 import { dbUnpublishAllShopifyListingsForConnection } from "@/lib/db/shopifyCatalog"
 import {
@@ -17,6 +18,8 @@ import {
 import { hashShopifyClaimSecret } from "@/lib/shopify/crypto"
 import type { ShopifyPendingInstallationPreview } from "@/lib/shopify/types"
 import { applyShopifyListingSideEffects } from "@/lib/services/shopifyCatalog"
+import { settleShopifyBilling } from "@/lib/services/shopifyBilling"
+import { saveShopifyDefaultPackageIfMissing } from "@/lib/services/shopifyDefaultPackage"
 import {
   getShopifyAccessToken,
   registerShopifyWebhooks,
@@ -86,7 +89,28 @@ export async function claimShopifyPendingInstallation(input: {
 
   try {
     const accessToken = await getShopifyAccessToken(serviceSupabase, connection)
-    await registerShopifyWebhooks(connection.shop_domain, accessToken)
+    await saveShopifyDefaultPackageIfMissing({
+      supabase: serviceSupabase,
+      userId: input.userId,
+      shopDomain: connection.shop_domain,
+      accessToken,
+    })
+    const registration = await registerShopifyWebhooks(
+      connection.shop_domain,
+      accessToken,
+    )
+    await dbSetShopifyOrdersSyncEnabled(
+      serviceSupabase,
+      connection.id,
+      registration.ordersCreateSubscribed,
+    )
+    if (connection.status === "error") {
+      await dbMarkShopifyConnectionStatus(serviceSupabase, connection.id, {
+        status: "active",
+        error: null,
+      })
+    }
+    await settleShopifyBilling(serviceSupabase, connection)
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     await dbMarkShopifyConnectionStatus(serviceSupabase, connection.id, {

@@ -26,6 +26,7 @@ import {
   unpublishSelectedShopifyProduct,
 } from "@/lib/services/shopifyCatalog"
 import { sweepDeletedShopifyListings } from "@/lib/services/shopifyDeletionSweep"
+import { shopifyCatalogSyncAllowed } from "@/lib/shopify/billing"
 
 export type ServiceResult<T> =
   | { ok: true; data: T }
@@ -49,8 +50,14 @@ async function activeConnection(
   if (!service) return { error: "Server configuration error", status: 503 }
   const connection = await dbGetShopifyConnectionForUser(service, userId)
   if (!connection) return { error: "Connect a Shopify store first", status: 404 }
-  if (connection.status !== "active" || !connection.sync_enabled) {
+  if (connection.status !== "active") {
     return { error: "Reconnect Shopify to continue", status: 409 }
+  }
+  if (!shopifyCatalogSyncAllowed(connection)) {
+    return {
+      error: "Approve the Shopify usage charge before syncing",
+      status: 409,
+    }
   }
   return { service, connection }
 }

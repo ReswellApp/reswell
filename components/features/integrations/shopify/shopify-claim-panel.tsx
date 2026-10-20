@@ -29,12 +29,13 @@ export function ShopifyClaimPanel({
   callbackError,
   installLaunchShop = null,
 }: ShopifyClaimPanelProps) {
+  const hasReadyInstall = Boolean(preview?.ready)
+  const expired = preview != null && Date.parse(preview.expiresAt) <= Date.now()
+  const ready = hasReadyInstall && !expired
+  const canConnect = shopifyConnectEnabled || hasReadyInstall
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
-  const [requestOpen, setRequestOpen] = useState(!shopifyConnectEnabled)
-
-  const expired = preview && Date.parse(preview.expiresAt) <= Date.now()
-  const ready = Boolean(preview?.ready) && !expired
+  const [requestOpen, setRequestOpen] = useState(!canConnect)
   const launchShop = installLaunchShop?.trim() || null
   const shopDomain = ready ? (preview?.shopDomain ?? null) : launchShop
   const shopName = ready ? (preview?.shopName ?? null) : null
@@ -88,7 +89,7 @@ export function ShopifyClaimPanel({
 
         <ShopifyConsentPermissions />
 
-        {!shopifyConnectEnabled ? (
+        {!canConnect ? (
           <Alert>
             <AlertTitle>Shopify access required</AlertTitle>
             <AlertDescription>
@@ -106,7 +107,7 @@ export function ShopifyClaimPanel({
         ) : null}
 
         <div className="space-y-3">
-          {shopifyConnectEnabled ? (
+          {canConnect ? (
             <Button
               type="button"
               size="lg"
@@ -137,7 +138,7 @@ export function ShopifyClaimPanel({
         </div>
       </div>
 
-      {!shopifyConnectEnabled ? (
+      {!canConnect ? (
         <ShopifyAccessRequestDialog
           open={requestOpen}
           onOpenChange={setRequestOpen}

@@ -280,10 +280,14 @@ async function maybeSyncAdminTerminalGuestToCrm(
 }
 
 /** Keep wallet_transactions.description within typical DB limits (long listing titles). */
-function walletPendingSaleDescription(listingTitle: string, platformFeeUsd: number): string {
+function walletPendingSaleDescription(
+  listingTitle: string,
+  platformFeeUsd: number,
+  shopifyUsageFeeUsd = 0,
+): string {
   const safeTitle =
     listingTitle.length > 400 ? `${listingTitle.slice(0, 399)}…` : listingTitle
-  const raw = `Pending — Sold "${safeTitle}" (${pendingSaleFeeClause(platformFeeUsd)}, card — available after fulfillment hold)`
+  const raw = `Pending — Sold "${safeTitle}" (${pendingSaleFeeClause(platformFeeUsd, shopifyUsageFeeUsd)}, card — available after fulfillment hold)`
   return raw.length > 2000 ? `${raw.slice(0, 1999)}…` : raw
 }
 
@@ -839,6 +843,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
           totalItemPriceUsd: itemPrice,
           totalPlatformFee: platformFee,
           totalSellerEarnings: sellerEarnings,
+          totalShopifyUsageFee: 0,
           anyUsedReswellQuote: false,
         }
       })()
@@ -960,6 +965,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
   const chargedUsd = pi.amount / 100
   const platformFee = bundle.totalPlatformFee
   const sellerEarnings = bundle.totalSellerEarnings
+  const shopifyUsageFee = bundle.totalShopifyUsageFee
 
   if (!Number.isFinite(sellerEarnings) || sellerEarnings < 0) {
     console.error("[stripe-complete-order] invalid seller_earnings", {
@@ -1247,7 +1253,11 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       userId: bundleSellerId,
       amountUsd: sellerEarnings,
       orderId: purchase.id,
-      description: walletPendingSaleDescription(walletTitleSummary, platformFee),
+      description: walletPendingSaleDescription(
+        walletTitleSummary,
+        platformFee,
+        shopifyUsageFee,
+      ),
       referenceType: "order_pending_earnings",
     })
     if (!sellerCredit.ok) return sellerCredit
