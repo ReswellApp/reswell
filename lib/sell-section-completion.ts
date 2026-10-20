@@ -19,9 +19,10 @@ import {
   parseReswellParcelWidthHeightRawToCarrierInches,
 } from "@/lib/reswell-parcel-fields"
 import { validateSurfboardLabelParcelLimits } from "@/lib/shipping/surfboard-label-limits"
-
-const PRICE_MIN = 0.01
-const PRICE_MAX = 999_999.99
+import {
+  parseSellListingPrice,
+  sellListingPriceIsPublishable,
+} from "@/lib/utils/sell-listing-price"
 
 function titleComplete(form: SellFormValidationInput): boolean {
   if (!form.title?.trim()) return false
@@ -123,16 +124,12 @@ function deliverySectionComplete(form: SellFormValidationInput): boolean {
 }
 
 function pricePublishFieldsComplete(form: SellFormValidationInput): boolean {
-  const priceRaw = form.price?.trim() ?? ""
-  if (!priceRaw) return false
-  const price = Number.parseFloat(priceRaw.replace(/,/g, ""))
-  if (!Number.isFinite(price) || price < PRICE_MIN || price > PRICE_MAX) return false
+  if (!sellListingPriceIsPublishable(form.price)) return false
+  const price = parseSellListingPrice(form.price) ?? 0
 
   if (form.autoPriceDrop) {
-    const floorRaw = form.autoPriceDropFloor?.trim() ?? ""
-    if (!floorRaw) return false
-    const floor = Number.parseFloat(floorRaw.replace(/,/g, ""))
-    if (!Number.isFinite(floor) || floor < PRICE_MIN || floor > PRICE_MAX) return false
+    const floor = parseSellListingPrice(form.autoPriceDropFloor)
+    if (floor == null || !sellListingPriceIsPublishable(floor)) return false
     if (floor >= price) return false
   }
 

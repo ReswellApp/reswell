@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { sellListingPriceField } from "@/lib/validations/sell-listing-price"
 import { listingStockQuantityField } from "@/lib/validations/listing-stock-quantity"
 import { addReswellPackedWeightZodIssues } from "@/lib/validations/reswell-packed-weight"
 import {
@@ -43,7 +44,7 @@ const leashListingImageSchema = z.object({
 const leashListingBaseSchema = z.object({
   title: z.string().trim().min(3, "Add a title").max(LEASH_LISTING_TITLE_MAX_LENGTH),
   description: z.string().trim().min(1, "Add a description"),
-  price: z.coerce.number().positive("Enter a price greater than $0"),
+  price: sellListingPriceField,
   condition: z.enum(sellableConditions),
   stockQuantity: listingStockQuantityField,
 

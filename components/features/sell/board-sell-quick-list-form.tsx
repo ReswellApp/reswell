@@ -12,6 +12,7 @@ import { SellBrandNewQuantityField } from "@/components/features/sell/sell-brand
 import { LISTING_CONDITION_SELL_OPTIONS } from "@/lib/listing-labels"
 import { LISTING_TITLE_MAX_LENGTH } from "@/lib/sell-form-validation"
 import { cn } from "@/lib/utils"
+import { useAdoptAutofilledSellPrice } from "@/components/features/sell/use-adopt-autofilled-sell-price"
 
 type BoardSellQuickListFormProps = {
   photoHero: ReactNode
@@ -58,6 +59,7 @@ export function BoardSellQuickListForm({
   validationBanner,
   toolbar,
 }: BoardSellQuickListFormProps) {
+  useAdoptAutofilledSellPrice("quick-listing-price", price, onPriceChange)
   return (
     <div className="space-y-4 sm:space-y-5">
       {photoHero}

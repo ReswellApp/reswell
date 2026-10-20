@@ -18,13 +18,19 @@ import {
   parseReswellParcelWidthHeightRawToCarrierInches,
 } from "@/lib/reswell-parcel-fields"
 import { validateSurfboardLabelParcelLimits } from "@/lib/shipping/surfboard-label-limits"
+import {
+  SELL_LISTING_PRICE_MAX,
+  SELL_LISTING_PRICE_MIN,
+  parseSellListingPrice,
+  sellListingPriceValidationMessage,
+} from "@/lib/utils/sell-listing-price"
 
 /** How shipping cost is set when shipping is enabled (surfboard sell flow). */
 /** Surfboard /sell UI is Reswell-only; `free` / `flat` remain for legacy DB rows & other sell flows. */
 export type BoardShippingCostMode = "reswell" | "free" | "flat"
 
-const PRICE_MIN = 0.01
-const PRICE_MAX = 999_999.99
+const PRICE_MIN = SELL_LISTING_PRICE_MIN
+const PRICE_MAX = SELL_LISTING_PRICE_MAX
 
 /**
  * Listing titles become URL slugs; keep them short so links stay readable in messages and search.
@@ -114,9 +120,10 @@ export function validateSellListingForm(
   if (!form.title?.trim()) {
     return "Please enter a listing title."
   }
-  if (!form.price?.trim()) {
-    return "Enter a listing price."
-  }
+  const priceMessage = sellListingPriceValidationMessage(form.price)
+  if (priceMessage) return priceMessage
+  const price = parseSellListingPrice(form.price) ?? 0
+
   if (!form.condition) {
     return "Please select a condition."
   }
@@ -134,11 +141,6 @@ export function validateSellListingForm(
   }
   const quantityMessage = brandNewQuantityValidationMessage(form.condition, form.stockQuantity ?? "1")
   if (quantityMessage) return quantityMessage
-
-  const price = parseFloat(form.price.trim())
-  if (!Number.isFinite(price) || price < PRICE_MIN || price > PRICE_MAX) {
-    return `Enter a valid price between $${PRICE_MIN} and $${PRICE_MAX.toLocaleString()}.`
-  }
 
   if (!form.category?.trim()) {
     return "Please select a category."
@@ -281,11 +283,11 @@ export function validateSellListingForm(
 
   if (!relaxed && form.autoPriceDrop) {
     const floorRaw = form.autoPriceDropFloor?.trim() ?? ""
-    if (!floorRaw) {
+    if (!floorRaw || parseSellListingPrice(floorRaw) == null) {
       return "Enter the lowest price you allow after 2 weeks, or turn off automatic price drop."
     }
-    const floor = parseFloat(floorRaw.replace(/,/g, ""))
-    if (!Number.isFinite(floor) || floor < PRICE_MIN || floor > PRICE_MAX) {
+    const floor = parseSellListingPrice(floorRaw) ?? 0
+    if (floor < PRICE_MIN || floor > PRICE_MAX) {
       return `Lowest-after-drop price must be between $${PRICE_MIN} and $${PRICE_MAX.toLocaleString()}.`
     }
     if (floor >= price) {

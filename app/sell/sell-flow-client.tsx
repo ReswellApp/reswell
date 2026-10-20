@@ -129,6 +129,11 @@ import {
 } from "@/lib/sell-flow/sell-submit-error"
 import { minimumOfferAmountFromDb, minimumOfferAmountToDb } from "@/lib/utils/offers-minimum-amount"
 import { sellerPurchasePriceToDb } from "@/lib/utils/seller-purchase-price"
+import {
+  parseSellListingPrice,
+  readLiveSellListingPrice,
+  sellListingPriceIsPublishable,
+} from "@/lib/utils/sell-listing-price"
 import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import {
   logSellForkToFull,
@@ -1343,7 +1348,7 @@ function SellPageContentInner({
       listingId,
       title: formData.title,
       description: formData.description,
-      price: formData.price,
+      price: readLiveSellListingPrice(formData.price),
       sellerPurchasePrice: formData.sellerPurchasePrice,
       sellerPurchasedFrom: formData.sellerPurchasedFrom,
       sellerPurchasedOn: formData.sellerPurchasedOn,
@@ -2079,10 +2084,10 @@ function SellPageContentInner({
     [sellStepChecklistBySection],
   )
 
-  const quickListPriceValid = useMemo(() => {
-    const n = Number.parseFloat(formData.price.trim().replace(/,/g, ""))
-    return Number.isFinite(n) && n > 0
-  }, [formData.price])
+  const quickListPriceValid = useMemo(
+    () => sellListingPriceIsPublishable(formData.price),
+    [formData.price],
+  )
 
   const quickListLocationSet = Boolean(
     formData.locationCity.trim() && formData.locationState.trim(),
@@ -3344,7 +3349,12 @@ function SellPageContentInner({
         listingOwnerId: editListingOwnerId,
       })
 
-      const submitForm = formData
+      const livePrice = readLiveSellListingPrice(formData.price)
+      const submitForm =
+        livePrice === formData.price ? formData : { ...formData, price: livePrice }
+      if (livePrice !== formData.price) {
+        setFormData((fd) => (fd.price === livePrice ? fd : { ...fd, price: livePrice }))
+      }
 
       const imagesUploadReady = !images.some(
         (im) =>
@@ -3638,7 +3648,7 @@ function SellPageContentInner({
         const editListingFields = {
           title: resolvedListingTitle,
           description: fd.description,
-          price: parseFloat(fd.price),
+          price: parseSellListingPrice(fd.price) ?? 0,
           condition: fd.condition,
           stock_quantity: stockQuantityForSellCondition(fd.condition, fd.stockQuantity),
           section: "surfboards" as const,
@@ -3673,8 +3683,8 @@ function SellPageContentInner({
           seller_purchased_from: fd.sellerPurchasedFrom.trim() || null,
           seller_purchased_on: fd.sellerPurchasedOn || null,
           compare_at_price: resolveCompareAtPriceOnUpdate({
-            currentPriceUsd: fd.loadedPublishedPriceUsd ?? parseFloat(fd.price),
-            nextPriceUsd: parseFloat(fd.price),
+            currentPriceUsd: fd.loadedPublishedPriceUsd ?? parseSellListingPrice(fd.price) ?? 0,
+            nextPriceUsd: parseSellListingPrice(fd.price) ?? 0,
             existingCompareAtUsd: fd.loadedCompareAtPriceUsd,
             showPriceMarkdown: fd.showPriceMarkdown === true,
           }),
@@ -3747,7 +3757,7 @@ function SellPageContentInner({
         const listingFields = {
           title: resolvedListingTitle,
           description: fd.description,
-          price: parseFloat(fd.price),
+          price: parseSellListingPrice(fd.price) ?? 0,
           condition: fd.condition,
           stock_quantity: stockQuantityForSellCondition(fd.condition, fd.stockQuantity),
           section: "surfboards" as const,
@@ -4932,25 +4942,25 @@ function SellPageContentInner({
                   <SellPriceFields
                     listingPrice={formData.price}
                     onListingPriceChange={(value) =>
-                      setFormData({ ...formData, price: value })
+                      setFormData((fd) => ({ ...fd, price: value }))
                     }
                     sellerPurchasePrice={formData.sellerPurchasePrice}
                     onSellerPurchasePriceChange={(value) =>
-                      setFormData({ ...formData, sellerPurchasePrice: value })
+                      setFormData((fd) => ({ ...fd, sellerPurchasePrice: value }))
                     }
                     sellerPurchasedFrom={formData.sellerPurchasedFrom}
                     onSellerPurchasedFromChange={(value) =>
-                      setFormData({ ...formData, sellerPurchasedFrom: value })
+                      setFormData((fd) => ({ ...fd, sellerPurchasedFrom: value }))
                     }
                     sellerPurchasedOn={formData.sellerPurchasedOn}
                     onSellerPurchasedOnChange={(value) =>
-                      setFormData({ ...formData, sellerPurchasedOn: value })
+                      setFormData((fd) => ({ ...fd, sellerPurchasedOn: value }))
                     }
                     publishedPriceUsd={formData.loadedPublishedPriceUsd}
                     existingCompareAtPriceUsd={formData.loadedCompareAtPriceUsd}
                     showPriceMarkdown={formData.showPriceMarkdown === true}
                     onShowPriceMarkdownChange={(value) =>
-                      setFormData({ ...formData, showPriceMarkdown: value })
+                      setFormData((fd) => ({ ...fd, showPriceMarkdown: value }))
                     }
                     afterListingPrice={
                       <div className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-sm">

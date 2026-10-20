@@ -19,13 +19,12 @@ import {
   parseOptionalUsdAmount,
   resolveCompareAtPriceOnUpdate,
 } from "@/lib/listing-compare-at-price"
+import { sellListingPriceIsPublishable } from "@/lib/utils/sell-listing-price"
+import { useAdoptAutofilledSellPrice } from "@/components/features/sell/use-adopt-autofilled-sell-price"
 
 /** Mirrors the listing-price rule in `pricePublishFieldsComplete` (sell-section-completion). */
 function listingPriceComplete(raw: string): boolean {
-  const t = raw.trim().replace(/,/g, "")
-  if (!t) return false
-  const n = Number.parseFloat(t)
-  return Number.isFinite(n) && n >= 0.01 && n <= 999_999.99
+  return sellListingPriceIsPublishable(raw)
 }
 
 export interface SellPriceFieldsProps {
@@ -66,6 +65,7 @@ export function SellPriceFields({
   showPriceMarkdown = false,
   onShowPriceMarkdownChange,
 }: SellPriceFieldsProps) {
+  useAdoptAutofilledSellPrice("sell-listing-price", listingPrice, onListingPriceChange)
   const nextPrice = parseOptionalUsdAmount(listingPrice)
   const canOfferMarkdown =
     publishedPriceUsd != null &&
