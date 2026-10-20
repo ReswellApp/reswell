@@ -125,8 +125,10 @@ export function ListingGalleryPhoto({
   const cssFit = listingPdpCropCssFit(crop)
   const objectPosition = crop ? listingPdpCropObjectPosition(crop) : undefined
   const precise = listingPdpCropNeedsPreciseLayout(crop)
+  // Below cover (zoom < 1) the measured box is smaller than the frame and
+  // leaves a gap. Those photos center and scale up to cover instead.
   const box =
-    precise && crop && natural && frame
+    precise && crop && crop.zoom >= 1 && natural && frame
       ? listingPdpCropToLayout(frame.width, frame.height, natural.w, natural.h, crop)
       : null
 
@@ -146,31 +148,48 @@ export function ListingGalleryPhoto({
     return () => observer.disconnect()
   }, [precise, frameEl])
 
-  const resolvedFit = crop ? cssFit : objectFit
+  const resolvedFit = crop ? (cssFit === "contain" ? "cover" : cssFit) : objectFit
   const fitClass = box
     ? "inset-auto h-auto w-auto max-w-none"
     : resolvedFit === "contain"
       ? "object-contain"
       : "object-cover"
-  // Seller crops opt out of the listing-hero contain !important rule.
+  /**
+   * One bitmap, pinned to the frame. Center it, then scale until both edges
+   * are covered. A second background-image of the same photo reads as a
+   * doubled tail under the board.
+   */
+  const frameFillStyle: CSSProperties = {
+    position: "absolute",
+    inset: 0,
+    width: "100%",
+    height: "100%",
+    maxWidth: "none",
+    objectFit: resolvedFit === "contain" ? "contain" : "cover",
+    objectPosition: objectPosition ?? "center center",
+  }
+  // Seller crops opt out of the listing-hero cover rule via their class.
   const cropStyle: CSSProperties | undefined = box
     ? {
+        position: "absolute",
         width: box.width,
         height: box.height,
         left: box.left,
         top: box.top,
+        maxWidth: "none",
         objectFit: "fill",
         ["--listing-pdp-object-fit" as string]: "fill",
-        ["--listing-pdp-object-position" as string]: objectPosition ?? "center",
+        ["--listing-pdp-object-position" as string]: objectPosition ?? "center center",
       }
     : crop
       ? {
-          objectFit: cssFit,
-          ...(objectPosition ? { objectPosition } : {}),
-          ["--listing-pdp-object-fit" as string]: cssFit,
-          ["--listing-pdp-object-position" as string]: objectPosition ?? "center",
+          ...frameFillStyle,
+          objectFit: resolvedFit === "contain" ? "contain" : "cover",
+          objectPosition: objectPosition ?? "center center",
+          ["--listing-pdp-object-fit" as string]: resolvedFit === "contain" ? "contain" : "cover",
+          ["--listing-pdp-object-position" as string]: objectPosition ?? "center center",
         }
-      : undefined
+      : frameFillStyle
   const layerClass = cn(PHOTO_LAYER, fitClass, crop && "listing-pdp-seller-crop")
 
   const attachFrame = useCallback((img: HTMLImageElement | null) => {
@@ -217,7 +236,7 @@ export function ListingGalleryPhoto({
             layerClass,
             "pointer-events-none z-[1]",
             className,
-            previewReady ? "opacity-100" : "opacity-0",
+            previewReady && !srcReady ? "opacity-100" : "opacity-0",
           )}
           style={cropStyle}
           sizes={sizes}
