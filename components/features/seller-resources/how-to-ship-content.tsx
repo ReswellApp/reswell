@@ -2,6 +2,7 @@ import Link from "next/link"
 import { MapPin, Package, Printer } from "lucide-react"
 import { HowToSellSection } from "@/components/features/seller-resources/how-to-sell-section"
 import { HowToShipPackingPhotos } from "@/components/features/seller-resources/how-to-ship-packing-photos"
+import { HowToShipPackingVideos } from "@/components/features/seller-resources/how-to-ship-packing-videos"
 import { SellerResourcesCta } from "@/components/features/seller-resources/seller-resources-cta"
 import { SellerResourcesHero } from "@/components/features/seller-resources/seller-resources-hero"
 import { SellerResourcesHowCard } from "@/components/features/seller-resources/seller-resources-how-card"
@@ -111,16 +112,7 @@ export function HowToShipContent() {
       >
         <div className="space-y-8">
           <HowToShipPackingPhotos />
-          <div className="overflow-hidden rounded-[1.75rem] bg-muted shadow-sm ring-1 ring-border">
-            <iframe
-              src="https://www.youtube.com/embed/NzDaFE4d9V4?start=14"
-              title="How to pack a surfboard for shipping"
-              className="aspect-video w-full border-0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              allowFullScreen
-              loading="lazy"
-            />
-          </div>
+          <HowToShipPackingVideos />
         </div>
       </HowToSellSection>
 
