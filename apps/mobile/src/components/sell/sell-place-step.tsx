@@ -11,17 +11,40 @@ import { fontFamily, useReswellColors } from "@/theme"
 export function SellPlaceStep({
   draft,
   fulfillment,
+  categoryChosen,
+  taxonomyLoading,
+  taxonomyError,
+  onRetryTaxonomy,
   onChange,
 }: {
   draft: SellDraft
   fulfillment: MobileSellFulfillment | null
+  /** False until the seller picks a category. Shipping options come from that category. */
+  categoryChosen: boolean
+  taxonomyLoading: boolean
+  taxonomyError: string | null
+  onRetryTaxonomy: () => void
   onChange: (patch: Partial<SellDraft>) => void
 }) {
   const colors = useReswellColors()
   if (!fulfillment) {
+    if (taxonomyError) {
+      return (
+        <View style={styles.noteStack}>
+          <Text style={[styles.note, { color: colors.destructive, fontFamily: fontFamily.text }]}>{taxonomyError}</Text>
+          <Pressable accessibilityRole="button" onPress={onRetryTaxonomy}>
+            <Text style={[styles.retry, { color: colors.foreground, fontFamily: fontFamily.text }]}>Try again</Text>
+          </Pressable>
+        </View>
+      )
+    }
     return (
       <Text style={[styles.note, { color: colors.muted, fontFamily: fontFamily.text }]}>
-        Loading shipping options…
+        {taxonomyLoading
+          ? "Loading shipping options…"
+          : categoryChosen
+            ? "This category doesn’t have shipping options yet."
+            : "Choose a category under Info. Shipping options come from that category."}
       </Text>
     )
   }
@@ -107,12 +130,14 @@ export function SellPlaceStep({
                   {selected ? <View style={[styles.radioDot, { backgroundColor: colors.listingHeart }]} /> : null}
                 </View>
                 <View style={styles.optionCopy}>
-                  <View style={styles.optionTitleRow}>
-                    <Text style={[styles.optionLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}>
-                      {option.label}
-                    </Text>
-                    {option.badge ? <Badge label={option.badge} /> : null}
-                  </View>
+                  <Text style={[styles.optionLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}>
+                    {option.label}
+                  </Text>
+                  {option.badge ? (
+                    <View style={styles.badgeWrap}>
+                      <Badge label={option.badge} />
+                    </View>
+                  ) : null}
                   {selected ? (
                     <Text style={[styles.optionDetail, { color: colors.muted, fontFamily: fontFamily.text }]}>
                       {option.detail}
@@ -141,13 +166,25 @@ export function SellPlaceStep({
         </Text>
       ) : null}
 
-      {showPackage ? <PackageFields draft={draft} onChange={onChange} /> : null}
       {showDropoff ? (
         <DropoffChoices
           selectedId={draft.dropoffLocationId}
-          onSelect={(dropoffLocationId) => onChange({ dropoffLocationId })}
+          boardLength={draft.specs.length ?? ""}
+          boardWidth={draft.specs.width ?? ""}
+          onSelect={(location) =>
+            onChange({
+              dropoffLocationId: location.id,
+              packageLength: location.package?.length ?? draft.packageLength,
+              packageWidth: location.package?.width ?? draft.packageWidth,
+              packageHeight: location.package?.height ?? draft.packageHeight,
+              packageWeightLb: location.package?.weight_lb ?? draft.packageWeightLb,
+              packageWeightOz: location.package?.weight_oz ?? draft.packageWeightOz,
+            })
+          }
+          onClear={() => onChange({ dropoffLocationId: "" })}
         />
       ) : null}
+      {showPackage && !draft.dropoffLocationId ? <PackageFields draft={draft} onChange={onChange} /> : null}
 
     </View>
   )
@@ -256,10 +293,16 @@ function PackageInput({
 
 function DropoffChoices({
   selectedId,
+  boardLength,
+  boardWidth,
   onSelect,
+  onClear,
 }: {
   selectedId: string
-  onSelect: (id: string) => void
+  boardLength: string
+  boardWidth: string
+  onSelect: (location: MobileSellDropoffLocations["locations"][number]) => void
+  onClear: () => void
 }) {
   const colors = useReswellColors()
   const [locations, setLocations] = useState<MobileSellDropoffLocations["locations"] | null>(null)
@@ -269,7 +312,7 @@ function DropoffChoices({
   useEffect(() => {
     let cancelled = false
     setError(false)
-    fetchSellDropoffLocations()
+    fetchSellDropoffLocations(boardLength, boardWidth)
       .then((result) => {
         if (!cancelled) setLocations(result.locations)
       })
@@ -279,7 +322,7 @@ function DropoffChoices({
     return () => {
       cancelled = true
     }
-  }, [reload])
+  }, [reload, boardLength, boardWidth])
 
   return (
     <View style={styles.options}>
@@ -289,7 +332,7 @@ function DropoffChoices({
       <Pressable
         accessibilityRole="radio"
         accessibilityState={{ selected: selectedId === "" }}
-        onPress={() => onSelect("")}
+        onPress={onClear}
         style={[styles.option, { borderColor: selectedId === "" ? colors.foreground : colors.border }]}
       >
         <View style={styles.optionCopy}>
@@ -321,14 +364,32 @@ function DropoffChoices({
               No drop-off cities are available right now. Pack and ship it yourself.
             </Text>
           ) : (
-            locations.map((location) => (
-              <Text
-                key={location.id}
-                style={[styles.optionDetail, { color: colors.muted, fontFamily: fontFamily.text }]}
-              >
-                {location.city}, {location.state} — add board length with the photos to drop off here.
-              </Text>
-            ))
+            locations.map((location) => {
+              const selected = selectedId === location.id
+              return (
+                <Pressable
+                  key={location.id}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected, disabled: !location.available }}
+                  disabled={!location.available}
+                  onPress={() => onSelect(location)}
+                  style={[
+                    styles.city,
+                    {
+                      borderColor: selected ? colors.foreground : colors.border,
+                      opacity: location.available ? 1 : 0.7,
+                    },
+                  ]}
+                >
+                  <Text style={[styles.optionLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}>
+                    {location.city}, {location.state}
+                  </Text>
+                  <Text style={[styles.optionDetail, { color: colors.muted, fontFamily: fontFamily.text }]}>
+                    {location.detail}
+                  </Text>
+                </Pressable>
+              )
+            })
           )}
         </View>
       </View>
@@ -341,6 +402,8 @@ const styles = StyleSheet.create({
   delivery: { gap: 10 },
   sectionTitle: { fontSize: 16, fontWeight: "700" },
   note: { fontSize: 14, lineHeight: 20 },
+  noteStack: { gap: 8 },
+  retry: { fontSize: 14, fontWeight: "700", textDecorationLine: "underline" },
   checkRow: { flexDirection: "row", alignItems: "center", gap: 10, minHeight: 28 },
   box: { width: 18, height: 18, borderRadius: 4, borderWidth: 1.5, alignItems: "center", justifyContent: "center" },
   checkLabel: { fontSize: 15, fontWeight: "600" },
@@ -352,10 +415,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 14,
   },
-  optionCopy: { flex: 1, gap: 6 },
-  optionTitleRow: { flex: 1, flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8 },
-  optionLabel: { fontSize: 15, fontWeight: "700", flexShrink: 1 },
+  optionCopy: { flex: 1, minWidth: 0, gap: 6 },
+  optionLabel: { fontSize: 15, fontWeight: "700", lineHeight: 20 },
+  badgeWrap: { alignSelf: "flex-start" },
   optionDetail: { fontSize: 14, lineHeight: 20 },
+  city: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, gap: 4 },
   radio: {
     width: 20,
     height: 20,

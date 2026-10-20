@@ -1,13 +1,16 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { listMobileSellDropoffLocations } from "@/lib/services/mobileSellDropoff"
 import { mobileFailure } from "@/lib/utils/mobile-api-response"
 
 export const dynamic = "force-dynamic"
 
 /** GET `/api/mobile/v1/sell/dropoff-locations` — cities where Reswell packs and ships a board. */
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const data = await listMobileSellDropoffLocations()
+    const data = await listMobileSellDropoffLocations({
+      boardLength: req.nextUrl.searchParams.get("board_length") ?? "",
+      boardWidthInches: req.nextUrl.searchParams.get("board_width") ?? "",
+    })
     return NextResponse.json(
       { data },
       { status: 200, headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" } },

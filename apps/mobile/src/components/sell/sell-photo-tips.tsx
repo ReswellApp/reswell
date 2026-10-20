@@ -1,6 +1,7 @@
 import { SymbolView } from "expo-symbols"
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
+import { SellPhotoExampleGrid } from "@/components/sell/sell-photo-examples"
 import { fontFamily, useReswellColors } from "@/theme"
 
 const TIPS = [
@@ -26,7 +27,7 @@ const TIPS = [
   },
 ] as const
 
-export function SellPhotoTips({ onClose }: { onClose: () => void }) {
+export function SellPhotoTips({ onClose, title = "Photo guide" }: { onClose: () => void; title?: string }) {
   const colors = useReswellColors()
   const insets = useSafeAreaInsets()
 
@@ -35,13 +36,14 @@ export function SellPhotoTips({ onClose }: { onClose: () => void }) {
       <View style={[styles.screen, { backgroundColor: colors.background, paddingTop: insets.top }]}>
         <View style={[styles.header, { borderBottomColor: colors.border }]}>
           <Text style={[styles.title, { color: colors.foreground, fontFamily: fontFamily.headline }]}>
-            Tips for top-notch photos
+            {title}
           </Text>
           <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={onClose} style={styles.close}>
             <SymbolView name={{ ios: "xmark", android: "close", web: "close" }} size={18} tintColor={colors.foreground} />
           </Pressable>
         </View>
         <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 24 }]}>
+          <SellPhotoExampleGrid />
           {TIPS.map((tip, index) => (
             <View key={tip.title} style={styles.tip}>
               <Text style={[styles.tipTitle, { color: colors.foreground, fontFamily: fontFamily.headline }]}>

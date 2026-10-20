@@ -98,6 +98,7 @@ export function SellBoardSpecs({
             label: decimals && option.decimal_label ? option.decimal_label : option.label,
           }))}
           selected={values[openField.id] ?? ""}
+          focusValue={openField.focus_value}
           onSelect={(value) => {
             onChange({ ...values, [openField.id]: value })
             setOpenFieldId(null)

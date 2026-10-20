@@ -658,6 +658,11 @@ export const mobileSellSpecFieldSchema = z.object({
   placeholder: z.string().nullable(),
   suffix: z.string().min(1).nullable(),
   options: z.array(mobileSellSpecOptionSchema),
+  /**
+   * Option value to center in the picker when nothing is selected yet.
+   * Matches website `BOARD_*_FOCUS_VALUE` for length / width / thickness.
+   */
+  focus_value: z.string().min(1).nullable(),
 })
 
 export const mobileSellSpecSectionSchema = z.object({
@@ -675,11 +680,24 @@ export const mobileSellBoardSpecsSchema = z.object({
 export type MobileSellBoardSpecs = z.infer<typeof mobileSellBoardSpecsSchema>
 export type MobileSellSpecField = z.infer<typeof mobileSellSpecFieldSchema>
 
+export const mobileSellDropoffPackageSchema = z.object({
+  length: z.string().min(1),
+  width: z.string().min(1),
+  height: z.string().min(1),
+  weight_lb: z.string().min(1),
+  weight_oz: z.string().min(1),
+})
+
 export const mobileSellDropoffLocationSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   city: z.string().min(1),
   state: z.string().min(1),
+  /** True when this board's length and width fit a box this city packs. */
+  available: z.boolean(),
+  detail: z.string().min(1),
+  /** Packed box to store when the seller chooses this city. Null until the board fits. */
+  package: mobileSellDropoffPackageSchema.nullable(),
 })
 
 export const mobileSellDropoffLocationsSchema = z.object({

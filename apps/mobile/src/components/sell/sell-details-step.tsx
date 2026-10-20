@@ -7,22 +7,25 @@ import { fontFamily, useReswellColors } from "@/theme"
 export function SellDetailsStep({
   draft,
   onChange,
+  showCondition = true,
 }: {
   draft: SellDraft
   onChange: (patch: Partial<SellDraft>) => void
+  showCondition?: boolean
 }) {
   const colors = useReswellColors()
 
   return (
     <View style={styles.stack}>
       <SellField
-        label="Description"
+        label=""
+        accessibilityLabel="Description"
         value={draft.description}
         onChangeText={(description) => onChange({ description })}
         placeholder="Condition notes, dimensions, what's included"
         multiline
       />
-      <View style={styles.conditions}>
+      {showCondition ? <View style={styles.conditions}>
         <Text style={[styles.label, { color: colors.muted, fontFamily: fontFamily.text }]}>Condition</Text>
         {SELL_CONDITIONS.map((option) => {
           const selected = draft.condition === option.value
@@ -48,7 +51,7 @@ export function SellDetailsStep({
             </Pressable>
           )
         })}
-      </View>
+      </View> : null}
     </View>
   )
 }

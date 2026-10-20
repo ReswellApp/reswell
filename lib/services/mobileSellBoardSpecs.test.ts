@@ -1,6 +1,11 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
-import { BOARD_LENGTH_OPTIONS } from "@/lib/board-dimension-options"
+import {
+  BOARD_LENGTH_FOCUS_VALUE,
+  BOARD_LENGTH_OPTIONS,
+  BOARD_THICKNESS_FOCUS_VALUE,
+  BOARD_WIDTH_FOCUS_VALUE,
+} from "@/lib/board-dimension-options"
 import { FIN_SETUP_OPTIONS } from "@/lib/boards-browse-facets"
 import { getMobileSellBoardSpecs } from "@/lib/services/mobileSellBoardSpecs"
 
@@ -26,6 +31,12 @@ describe("mobile sell board specs", () => {
 
     const width = dimensions?.fields.find((field) => field.id === "width")
     assert.ok(width?.options.some((option) => option.decimal_label))
+    assert.equal(length?.focus_value, BOARD_LENGTH_FOCUS_VALUE)
+    assert.equal(width?.focus_value, BOARD_WIDTH_FOCUS_VALUE)
+    assert.equal(
+      dimensions?.fields.find((field) => field.id === "thickness")?.focus_value,
+      BOARD_THICKNESS_FOCUS_VALUE,
+    )
 
     const finSetup = facets?.fields.find((field) => field.id === "fin_setup")
     assert.equal(finSetup?.options[0]?.label, "Not specified")

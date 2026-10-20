@@ -1,7 +1,10 @@
 import { mobileSellBoardSpecsSchema, type MobileSellBoardSpecs } from "@reswell/api-contract"
 import {
+  BOARD_LENGTH_FOCUS_VALUE,
   BOARD_LENGTH_OPTIONS,
+  BOARD_THICKNESS_FOCUS_VALUE,
   BOARD_THICKNESS_OPTIONS,
+  BOARD_WIDTH_FOCUS_VALUE,
   BOARD_WIDTH_OPTIONS,
   withInchesDecimalLabels,
   type BoardDimensionOption,
@@ -59,6 +62,7 @@ export function getMobileSellBoardSpecs(): MobileSellBoardSpecs {
             placeholder: "—",
             suffix: null,
             options: dimensionOptions(BOARD_LENGTH_OPTIONS, false),
+            focus_value: BOARD_LENGTH_FOCUS_VALUE,
           },
           {
             id: "width",
@@ -69,6 +73,7 @@ export function getMobileSellBoardSpecs(): MobileSellBoardSpecs {
             placeholder: "—",
             suffix: null,
             options: dimensionOptions(BOARD_WIDTH_OPTIONS, true),
+            focus_value: BOARD_WIDTH_FOCUS_VALUE,
           },
           {
             id: "thickness",
@@ -79,6 +84,7 @@ export function getMobileSellBoardSpecs(): MobileSellBoardSpecs {
             placeholder: "—",
             suffix: null,
             options: dimensionOptions(BOARD_THICKNESS_OPTIONS, true),
+            focus_value: BOARD_THICKNESS_FOCUS_VALUE,
           },
           {
             id: "volume",
@@ -89,6 +95,7 @@ export function getMobileSellBoardSpecs(): MobileSellBoardSpecs {
             placeholder: "—",
             suffix: "L",
             options: [],
+            focus_value: null,
           },
         ],
       },
@@ -106,6 +113,7 @@ export function getMobileSellBoardSpecs(): MobileSellBoardSpecs {
             placeholder: "Not specified",
             suffix: null,
             options: selectOptions(FIN_SETUP_OPTIONS, true),
+            focus_value: null,
           },
           {
             id: "fin_system",
@@ -116,6 +124,7 @@ export function getMobileSellBoardSpecs(): MobileSellBoardSpecs {
             placeholder: "Not specified",
             suffix: null,
             options: selectOptions(FIN_SYSTEM_OPTIONS, true),
+            focus_value: null,
           },
           {
             id: "fins_included",
@@ -126,6 +135,7 @@ export function getMobileSellBoardSpecs(): MobileSellBoardSpecs {
             placeholder: "Not specified",
             suffix: null,
             options: selectOptions(FINS_INCLUDED_OPTIONS, true),
+            focus_value: null,
           },
           {
             id: "construction",
@@ -136,6 +146,7 @@ export function getMobileSellBoardSpecs(): MobileSellBoardSpecs {
             placeholder: "Not specified",
             suffix: null,
             options: selectOptions(CONSTRUCTION_OPTIONS, true),
+            focus_value: null,
           },
         ],
       },

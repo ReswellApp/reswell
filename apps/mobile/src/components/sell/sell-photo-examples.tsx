@@ -11,6 +11,24 @@ const EXAMPLES: { label: string; ios: SFSymbol; android: AndroidSymbol }[] = [
   { label: "Imperfections", ios: "exclamationmark.circle", android: "error_outline" },
 ]
 
+export function SellPhotoExampleGrid() {
+  const colors = useReswellColors()
+  return (
+    <View style={styles.grid}>
+      {EXAMPLES.map((example) => (
+        <View key={example.label} style={[styles.card, { borderColor: colors.border }]}>
+          <SymbolView
+            name={{ ios: example.ios, android: example.android, web: example.android }}
+            size={28}
+            tintColor={colors.muted}
+          />
+          <Text style={[styles.label, { color: colors.foreground, fontFamily: fontFamily.text }]}>{example.label}</Text>
+        </View>
+      ))}
+    </View>
+  )
+}
+
 export function SellPhotoExamples({ open, onToggle }: { open: boolean; onToggle: () => void }) {
   const colors = useReswellColors()
 
@@ -22,20 +40,7 @@ export function SellPhotoExamples({ open, onToggle }: { open: boolean; onToggle:
           <Text style={[styles.hide, { color: colors.muted, fontFamily: fontFamily.text }]}>{open ? "Hide" : "Show"}</Text>
         </Pressable>
       </View>
-      {open ? (
-        <View style={styles.grid}>
-          {EXAMPLES.map((example) => (
-            <View key={example.label} style={[styles.card, { borderColor: colors.border }]}>
-              <SymbolView
-                name={{ ios: example.ios, android: example.android, web: example.android }}
-                size={28}
-                tintColor={colors.muted}
-              />
-              <Text style={[styles.label, { color: colors.foreground, fontFamily: fontFamily.text }]}>{example.label}</Text>
-            </View>
-          ))}
-        </View>
-      ) : null}
+      {open ? <SellPhotoExampleGrid /> : null}
     </View>
   )
 }

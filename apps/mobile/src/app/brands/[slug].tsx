@@ -1,4 +1,3 @@
-import { Image } from "expo-image"
 import { Stack, useLocalSearchParams, useRouter } from "expo-router"
 import { useEffect, useState } from "react"
 import { ActivityIndicator, FlatList, Linking, Pressable, StyleSheet, Text, View } from "react-native"
@@ -65,9 +64,6 @@ export default function BrandScreen() {
           ListHeaderComponent={
             <View style={styles.header}>
               <View style={styles.titleRow}>
-                {brand.logo_url ? (
-                  <Image source={{ uri: brand.logo_url }} style={[styles.logo, { backgroundColor: colors.image }]} contentFit="contain" />
-                ) : null}
                 <View style={styles.titleCopy}>
                   <Text style={[styles.title, { color: colors.foreground, fontFamily: fontFamily.headline }]}>{brand.name}</Text>
                   {brand.location_label ? (
@@ -100,11 +96,6 @@ export default function BrandScreen() {
                         }
                         style={styles.model}
                       >
-                        {model.image_url ? (
-                          <Image source={{ uri: model.image_url }} style={[styles.modelImage, { backgroundColor: colors.image }]} contentFit="cover" />
-                        ) : (
-                          <View style={[styles.modelImage, { backgroundColor: colors.image }]} />
-                        )}
                         <Text numberOfLines={2} style={[styles.modelName, { color: colors.foreground, fontFamily: fontFamily.text }]}>
                           {model.name}
                         </Text>
@@ -167,7 +158,6 @@ const styles = StyleSheet.create({
   columns: { paddingHorizontal: 12, gap: 8 },
   header: { paddingHorizontal: 16, paddingTop: 8, gap: 10 },
   titleRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  logo: { width: 64, height: 64, borderRadius: 12 },
   titleCopy: { flex: 1, gap: 2 },
   title: { fontSize: 28, fontWeight: "700", letterSpacing: -0.4 },
   meta: { fontSize: 14 },
@@ -177,7 +167,6 @@ const styles = StyleSheet.create({
   section: { fontSize: 20, fontWeight: "700" },
   modelRail: { gap: 12, paddingRight: 16 },
   model: { width: 112, gap: 6 },
-  modelImage: { width: 112, height: 112, borderRadius: 12 },
   modelName: { fontSize: 13, fontWeight: "600" },
   tabs: { flexDirection: "row", gap: 8, marginTop: 8, marginBottom: 12 },
   tab: { borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },

@@ -753,9 +753,15 @@ export function fetchSellBoardSpecs(): Promise<MobileSellBoardSpecs> {
   return read("/api/mobile/v1/sell/board-specs", (data) => mobileSellBoardSpecsSchema.parse(data))
 }
 
-/** Surfboard drop-off cities. Same list as the website sell flow. */
-export function fetchSellDropoffLocations(): Promise<MobileSellDropoffLocations> {
-  return read("/api/mobile/v1/sell/dropoff-locations", (data) => mobileSellDropoffLocationsSchema.parse(data))
+/** Surfboard drop-off cities. Same list as the website sell flow. Availability follows board length and width. */
+export function fetchSellDropoffLocations(boardLength: string, boardWidth: string): Promise<MobileSellDropoffLocations> {
+  const params = new URLSearchParams()
+  if (boardLength.trim()) params.set("board_length", boardLength.trim())
+  if (boardWidth.trim()) params.set("board_width", boardWidth.trim())
+  const query = params.toString()
+  return read(`/api/mobile/v1/sell/dropoff-locations${query ? `?${query}` : ""}`, (data) =>
+    mobileSellDropoffLocationsSchema.parse(data),
+  )
 }
 
 export type StructuredPlace = {

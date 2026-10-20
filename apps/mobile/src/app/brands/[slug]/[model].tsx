@@ -1,4 +1,3 @@
-import { Image } from "expo-image"
 import { Stack, useLocalSearchParams, useRouter } from "expo-router"
 import { useEffect, useState } from "react"
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native"
@@ -97,9 +96,6 @@ function ModelHeader({
   const colors = useReswellColors()
   return (
     <View style={styles.header}>
-      {page.hero_image_url ? (
-        <Image source={{ uri: page.hero_image_url }} style={[styles.hero, { backgroundColor: colors.image }]} contentFit="cover" />
-      ) : null}
       <Text style={[styles.brand, { color: colors.foreground, fontFamily: fontFamily.text }]} onPress={onBrand}>
         {page.brand_name}
       </Text>
@@ -182,7 +178,6 @@ const styles = StyleSheet.create({
   list: { paddingBottom: 120 },
   columns: { paddingHorizontal: 12, gap: 8 },
   header: { paddingHorizontal: 16, paddingTop: 8, gap: 8 },
-  hero: { width: "100%", height: 220, borderRadius: 16 },
   brand: { fontSize: 15, fontWeight: "700", textDecorationLine: "underline" },
   title: { fontSize: 28, fontWeight: "700", letterSpacing: -0.4 },
   meta: { fontSize: 14 },

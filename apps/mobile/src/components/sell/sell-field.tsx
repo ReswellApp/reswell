@@ -22,6 +22,7 @@ export function SellField({
   autoCapitalize = "sentences",
   required = false,
   onFocus,
+  accessibilityLabel,
 }: {
   label: string
   value: string
@@ -32,12 +33,13 @@ export function SellField({
   autoCapitalize?: "none" | "sentences" | "words" | "characters"
   required?: boolean
   onFocus?: () => void
+  accessibilityLabel?: string
 }) {
   const colors = useReswellColors()
 
   return (
     <View style={styles.wrap}>
-      <FieldLabel label={label} required={required} />
+      {label ? <FieldLabel label={label} required={required} /> : null}
       <TextInput
         value={value}
         onChangeText={onChangeText}
@@ -48,6 +50,7 @@ export function SellField({
         autoCapitalize={autoCapitalize}
         autoCorrect={autoCapitalize !== "characters"}
         onFocus={onFocus}
+        accessibilityLabel={accessibilityLabel || label || placeholder || "Text field"}
         style={[
           styles.input,
           multiline ? styles.multiline : null,
@@ -109,7 +112,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 14,
   },
-  multiline: { minHeight: 120, textAlignVertical: "top" },
+  multiline: { minHeight: 200, textAlignVertical: "top" },
   select: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
   selectLabel: { flex: 1, fontSize: 16 },
 })

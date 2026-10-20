@@ -1,4 +1,3 @@
-import { Image } from "expo-image"
 import { Stack, useRouter } from "expo-router"
 import { useEffect, useMemo, useState } from "react"
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native"
@@ -67,11 +66,6 @@ export default function BrandsScreen() {
               onPress={() => router.push({ pathname: "/brands/[slug]", params: { slug: brand.slug } })}
               style={[styles.row, { borderColor: colors.border }]}
             >
-              {brand.logo_url ? (
-                <Image source={{ uri: brand.logo_url }} style={[styles.logo, { backgroundColor: colors.image }]} contentFit="contain" />
-              ) : (
-                <View style={[styles.logo, { backgroundColor: colors.image }]} />
-              )}
               <View style={styles.copy}>
                 <Text style={[styles.name, { color: colors.foreground, fontFamily: fontFamily.text }]}>{brand.name}</Text>
                 <Text style={[styles.meta, { color: colors.muted, fontFamily: fontFamily.text }]}>
@@ -93,7 +87,6 @@ const styles = StyleSheet.create({
   list: { padding: 16, gap: 8 },
   search: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16 },
   row: { flexDirection: "row", alignItems: "center", gap: 12, borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 10 },
-  logo: { width: 48, height: 48, borderRadius: 8 },
   copy: { flex: 1, gap: 2 },
   name: { fontSize: 16, fontWeight: "600" },
   meta: { fontSize: 13 },

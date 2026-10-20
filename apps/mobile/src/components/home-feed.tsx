@@ -62,7 +62,7 @@ export function HomeFeed({
             </Pressable>
             <HorizontalRail contentStyle={styles.rail}>
               {section.brands.map((brand) => (
-                <BrandMark key={brand.id} name={brand.name} logoUrl={brand.logo_url} onPress={() => onOpenBrand(brand.slug)} />
+                <BrandMark key={brand.id} name={brand.name} onPress={() => onOpenBrand(brand.slug)} />
               ))}
             </HorizontalRail>
           </View>
@@ -122,15 +122,14 @@ function SectionTitle({ title }: { title: string }) {
   )
 }
 
-function BrandMark({ name, logoUrl, onPress }: { name: string; logoUrl: string | null; onPress: () => void }) {
+function BrandMark({ name, onPress }: { name: string; onPress: () => void }) {
   const colors = useReswellColors()
+  const initial = name.trim().charAt(0).toUpperCase() || "?"
   return (
     <Pressable onPress={onPress} style={styles.brand}>
-      {logoUrl ? (
-        <Image source={{ uri: logoUrl }} style={[styles.logo, { backgroundColor: colors.image }]} contentFit="contain" />
-      ) : (
-        <View style={[styles.logo, { backgroundColor: colors.image }]} />
-      )}
+      <View style={[styles.logo, { backgroundColor: colors.image }]}>
+        <Text style={[styles.logoInitial, { color: colors.foreground, fontFamily: fontFamily.headline }]}>{initial}</Text>
+      </View>
       <Text numberOfLines={1} style={[styles.brandName, { color: colors.foreground, fontFamily: fontFamily.text }]}>
         {name}
       </Text>
@@ -181,7 +180,8 @@ const styles = StyleSheet.create({
   rail: { paddingHorizontal: 16, gap: 12 },
   railCard: { width: 168 },
   brand: { width: 88, alignItems: "center", gap: 6 },
-  logo: { width: 72, height: 72, borderRadius: 36 },
+  logo: { width: 72, height: 72, borderRadius: 36, alignItems: "center", justifyContent: "center" },
+  logoInitial: { fontSize: 28, fontWeight: "700" },
   brandName: { fontSize: 13, fontWeight: "600", textAlign: "center" },
   shop: { width: 120, alignItems: "center", gap: 4 },
   avatar: { width: 72, height: 72, borderRadius: 36 },

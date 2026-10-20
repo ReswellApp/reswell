@@ -114,7 +114,6 @@ export default function SellHubScreen() {
           key={`${row.kind}-${row.id}`}
           title={row.title}
           subtitle={row.model_name ? `${row.brand_name} · ${row.category_label}` : row.category_label}
-          imageUrl={row.image_url}
           onPress={() => openResult(row)}
         />
       ))}

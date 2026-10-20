@@ -134,6 +134,15 @@ export function formatSellPrice(raw: string): string {
   return priceUsd(raw).toLocaleString("en-US", { style: "currency", currency: "USD" })
 }
 
+/** Every section of the one-screen listing form, except the unused review step. */
+export function sellDraftIsReady(
+  draft: SellDraft,
+  categories: readonly SellCategoryChoice[] = [],
+  boardSpecs: MobileSellBoardSpecs | null = null,
+): boolean {
+  return SELL_STEPS.every((step) => step === "review" || stepIsReady(step, draft, categories, boardSpecs))
+}
+
 export function stepIsReady(
   step: SellStep,
   draft: SellDraft,
