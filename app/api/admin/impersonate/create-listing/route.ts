@@ -10,8 +10,10 @@ import {
   isListingDimensionDisplaySchemaCacheError,
   withoutListingDimensionDisplayDbFields,
 } from "@/lib/listing-dimensions-display"
-import { revalidatePath } from "next/cache"
-import { revalidateListingPublicDetailCatalog } from "@/lib/cache/revalidate-listing-public-detail"
+import {
+  revalidateListingDetailPage,
+  revalidateListingPublicDetailCatalog,
+} from "@/lib/cache/revalidate-listing-public-detail"
 import { revalidateMarketplaceNewListingsFeed } from "@/lib/cache/revalidate-marketplace-sold-feed"
 import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { upsertUserListingBoardModelDataFromSellForm } from "@/lib/db/user-listing-board-model-data"
@@ -250,7 +252,7 @@ export async function POST(request: NextRequest) {
   void notifyFollowersNewListingKlaviyo(listing.id)
   void syncListingToGoogleMerchantBestEffort(service, listing.id)
 
-  revalidatePath(`/l/${listing.slug}`, "page")
+  revalidateListingDetailPage(String(listing.id), typeof listing.slug === "string" ? listing.slug : null)
   revalidateListingPublicDetailCatalog()
   revalidateMarketplaceNewListingsFeed()
   await revalidateSellersAfterListingChange(service, targetUserId)

@@ -2,6 +2,7 @@ import { revalidatePath } from "next/cache"
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
+import { revalidateListingDetailPage } from "@/lib/cache/revalidate-listing-public-detail"
 import {
   revalidateSellersAfterListingChange,
   revalidateSellersDirectoryCatalog,
@@ -87,9 +88,7 @@ export async function PATCH(
     listingRow && typeof (listingRow as { slug?: unknown }).slug === "string"
       ? String((listingRow as { slug: string }).slug).trim()
       : ""
-  if (slug) {
-    revalidatePath(`/l/${slug}`, "page")
-  }
+  revalidateListingDetailPage(listingId.trim(), slug || null)
 
   revalidatePath("/boards")
   revalidatePath("/fins")
