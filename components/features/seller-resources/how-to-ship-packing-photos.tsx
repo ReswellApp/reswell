@@ -9,6 +9,7 @@ type PackingPhoto = {
   alt: string
   caption: string
   portrait?: boolean
+  className?: string
 }
 
 const PACKING_PHOTOS: readonly PackingPhoto[] = [
@@ -56,13 +57,44 @@ const PACKING_PHOTOS: readonly PackingPhoto[] = [
     caption: "Labeled cartons ready to drop off.",
     portrait: true,
   },
+  {
+    src: "/images/seller-resources/how-to-ship/sleeve-full.jpg",
+    alt: "A surfboard wrapped in a honeycomb cardboard sleeve, lying in front of a garage door",
+    caption: "A honeycomb sleeve over the whole board.",
+  },
+  {
+    src: "/images/seller-resources/how-to-ship/sleeve-closeup.jpg",
+    alt: "Close-up of a honeycomb cardboard sleeve over a white surfboard deck",
+    caption: "The sleeve sits on the deck.",
+  },
+  {
+    src: "/images/seller-resources/how-to-ship/sleeve-nose.jpg",
+    alt: "The nose of a surfboard covered by a honeycomb cardboard sleeve",
+    caption: "It follows the outline of the nose.",
+    portrait: true,
+    className: "lg:col-span-2",
+  },
+  {
+    src: "/images/seller-resources/how-to-ship/sleeve-band.jpg",
+    alt: "A red surfboard in a honeycomb sleeve with a cardboard band, seen from above",
+    caption: "A band holds the sleeve in place.",
+    portrait: true,
+    className: "lg:col-span-2",
+  },
+  {
+    src: "/images/seller-resources/how-to-ship/boxes-outside.jpg",
+    alt: "Two labeled surfboard boxes on a brick walkway outside a building",
+    caption: "Boxed and labeled, ready to ship.",
+    portrait: true,
+    className: "sm:col-span-2 lg:col-span-2",
+  },
 ]
 
 export function HowToShipPackingPhotos() {
   return (
     <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:items-start lg:grid-cols-6">
       {PACKING_PHOTOS.map((photo) => (
-        <li key={photo.src} className="lg:col-span-3">
+        <li key={photo.src} className={cn("lg:col-span-3", photo.className)}>
           <figure>
             <div
               className={cn(
