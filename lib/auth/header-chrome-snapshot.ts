@@ -4,6 +4,14 @@ import { z } from "zod"
 /** localStorage key. Display-only — never a session token. */
 export const HEADER_CHROME_SNAPSHOT_STORAGE_KEY = "rw-header-chrome"
 
+/**
+ * sessionStorage latch set the moment sign-out starts. The next document's
+ * boot script sees it, drops the remembered account, and clears it. The
+ * in-memory copy stays on the signing-out page so an in-flight profile
+ * refetch cannot write the snapshot back after `localStorage` was cleared.
+ */
+export const HEADER_CHROME_SIGNED_OUT_STORAGE_KEY = "rw-header-signed-out"
+
 /** Set by the boot script when a returning account or auth cookie is recognized. */
 export const HEADER_CHROME_KNOWN_CLASS = "rw-known-auth"
 
@@ -56,8 +64,53 @@ export type HeaderChromeSnapshot = z.infer<typeof headerChromeSnapshotSchema>
  * reads the last confirmed account snapshot (and a visible auth cookie) and
  * flags `<html>` before the header paints, so returning visitors do not see
  * Log in while `getUser()` is still in flight.
+ *
+ * A sign-out latch skips that paint and deletes the snapshot. An in-flight
+ * header refetch can write the account back into localStorage after sign-out
+ * clears it and before the next document loads; without this, the homepage
+ * shows the previous photo, name, and unread counts with no session.
  */
-export const HEADER_CHROME_BOOT_SCRIPT = `(function(){try{var root=document.documentElement;var hasAuthCookie=document.cookie.split(";").some(function(part){var name=(part.trim().split("=")[0]||"");return name.indexOf("sb-")===0&&name.indexOf("auth-token")!==-1;});var raw=null;try{raw=localStorage.getItem(${JSON.stringify(HEADER_CHROME_SNAPSHOT_STORAGE_KEY)});}catch(e){raw=null;}var snap=null;if(raw){try{snap=JSON.parse(raw);}catch(e){snap=null;}}var valid=!!(snap&&snap.v===1&&typeof snap.userId==="string"&&snap.userId.length>0);if(!valid&&!hasAuthCookie)return;root.classList.add(${JSON.stringify(HEADER_CHROME_KNOWN_CLASS)});if(!valid)return;var name=typeof snap.displayName==="string"?snap.displayName.trim():"";var email=typeof snap.email==="string"?snap.email.trim():"";var source=name||email;var initial="";try{var match=source.match(/\\p{L}/u);initial=(match?match[0]:(source.charAt(0)||"")).toUpperCase();}catch(e){initial=(source.charAt(0)||"").toUpperCase();}if(initial){root.classList.add(${JSON.stringify(HEADER_CHROME_INITIAL_CLASS)});root.style.setProperty("--rw-header-initial",JSON.stringify(initial));}var avatar=typeof snap.avatarUrl==="string"?snap.avatarUrl.trim():"";if(avatar.length>0&&avatar.length<=${AVATAR_URL_MAX}&&(/^https:\\/\\/[^\\\\"'()\\s]+$/.test(avatar)||/^\\/[^\\\\"'()\\s]+$/.test(avatar))){root.classList.add(${JSON.stringify(HEADER_CHROME_AVATAR_CLASS)});root.style.setProperty("--rw-header-avatar",'url("'+avatar+'")');}}catch(e){}})();`
+export const HEADER_CHROME_BOOT_SCRIPT = `(function(){try{var root=document.documentElement;var signedOutKey=${JSON.stringify(HEADER_CHROME_SIGNED_OUT_STORAGE_KEY)};var signedOut=false;try{signedOut=sessionStorage.getItem(signedOutKey)==="1";}catch(e){signedOut=false;}if(!signedOut){try{signedOut=document.cookie.split(";").some(function(part){return (part.trim().split("=")[0]||"")===signedOutKey;});}catch(e){signedOut=false;}}if(signedOut){try{localStorage.removeItem(${JSON.stringify(HEADER_CHROME_SNAPSHOT_STORAGE_KEY)});}catch(e){}try{sessionStorage.removeItem(signedOutKey);}catch(e){}try{document.cookie=signedOutKey+"=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; samesite=lax";}catch(e){}return;}var hasAuthCookie=document.cookie.split(";").some(function(part){var name=(part.trim().split("=")[0]||"");return name.indexOf("sb-")===0&&name.indexOf("auth-token")!==-1;});var raw=null;try{raw=localStorage.getItem(${JSON.stringify(HEADER_CHROME_SNAPSHOT_STORAGE_KEY)});}catch(e){raw=null;}var snap=null;if(raw){try{snap=JSON.parse(raw);}catch(e){snap=null;}}var valid=!!(snap&&snap.v===1&&typeof snap.userId==="string"&&snap.userId.length>0);if(!valid&&!hasAuthCookie)return;root.classList.add(${JSON.stringify(HEADER_CHROME_KNOWN_CLASS)});if(!valid)return;var name=typeof snap.displayName==="string"?snap.displayName.trim():"";var email=typeof snap.email==="string"?snap.email.trim():"";var source=name||email;var initial="";try{var match=source.match(/\\p{L}/u);initial=(match?match[0]:(source.charAt(0)||"")).toUpperCase();}catch(e){initial=(source.charAt(0)||"").toUpperCase();}if(initial){root.classList.add(${JSON.stringify(HEADER_CHROME_INITIAL_CLASS)});root.style.setProperty("--rw-header-initial",JSON.stringify(initial));}var avatar=typeof snap.avatarUrl==="string"?snap.avatarUrl.trim():"";if(avatar.length>0&&avatar.length<=${AVATAR_URL_MAX}&&(/^https:\\/\\/[^\\\\"'()\\s]+$/.test(avatar)||/^\\/[^\\\\"'()\\s]+$/.test(avatar))){root.classList.add(${JSON.stringify(HEADER_CHROME_AVATAR_CLASS)});root.style.setProperty("--rw-header-avatar",'url("'+avatar+'")');}}catch(e){}})();`
+
+/** True on the page that started sign-out, including after it is restored from bfcache. */
+let signOutLatch = false
+
+export function headerChromeSignOutLatched(): boolean {
+  if (signOutLatch) return true
+  if (typeof window === "undefined") return false
+  try {
+    return sessionStorage.getItem(HEADER_CHROME_SIGNED_OUT_STORAGE_KEY) === "1"
+  } catch {
+    return false
+  }
+}
+
+/** Allow a later sign-in in this tab to remember the account again. */
+export function clearHeaderChromeSignOutLatch(): void {
+  signOutLatch = false
+  if (typeof window === "undefined") return
+  try {
+    sessionStorage.removeItem(HEADER_CHROME_SIGNED_OUT_STORAGE_KEY)
+  } catch {
+    // Storage can throw in private mode; the in-memory latch is already clear.
+  }
+}
+
+/**
+ * Call before navigating to `/auth/sign-out`. Blocks snapshot writes on this
+ * page and tells the next document not to paint the remembered account.
+ */
+export function markHeaderChromeSignedOut(): void {
+  signOutLatch = true
+  if (typeof window !== "undefined") {
+    try {
+      sessionStorage.setItem(HEADER_CHROME_SIGNED_OUT_STORAGE_KEY, "1")
+    } catch {
+      // The in-memory latch still blocks writes in this document.
+    }
+  }
+  clearHeaderChromeSnapshot()
+}
 
 let memory: { raw: string | null; snapshot: HeaderChromeSnapshot | null } | null = null
 
@@ -86,8 +139,12 @@ export function readHeaderChromeSnapshot(): HeaderChromeSnapshot | null {
 }
 
 export function writeHeaderChromeSnapshot(input: HeaderChromeSnapshot): void {
+  // A profile refetch started before sign-out can resolve afterwards and would
+  // put the account back in localStorage for the next page to paint.
+  if (headerChromeSignOutLatched()) return
   const parsed = headerChromeSnapshotSchema.safeParse(input)
   if (!parsed.success) return
+  if (headerChromeSignOutLatched()) return
   const snapshot = parsed.data
   const raw = JSON.stringify(snapshot)
   memory = { raw, snapshot }

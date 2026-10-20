@@ -75,8 +75,10 @@ import { isAbortError } from "@/lib/utils/is-abort-error"
 import { signOutAndRedirect } from "@/lib/auth/sign-out-and-redirect"
 import { waitForClientSession } from "@/lib/auth/wait-for-client-session"
 import {
+  clearHeaderChromeSignOutLatch,
   clearHeaderChromeSnapshot,
   headerChromeAvatarCssValue,
+  headerChromeSignOutLatched,
   headerChromeSnapshotUser,
   markHeaderChromeHydrated,
   readHeaderChromeSnapshot,
@@ -619,15 +621,41 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     serverHeaderAuth.bootstrap?.shopAccess?.actingAsShop,
   ])
 
+  const applyGuestHeader = useCallback(() => {
+    clearHeaderChromeSnapshot()
+    markHeaderChromeHydrated()
+    setAuthSessionReady(false)
+    const guest = deriveHeaderNavState({ user: null, bootstrap: null })
+    setUser(guest.user)
+    setProfileAvatarUrl(guest.profileAvatarUrl)
+    setProfileDisplayName(guest.profileDisplayName)
+    setIsAdmin(guest.isAdmin)
+    setIsShipper(guest.isShipper)
+    setIsDropoffLocation(guest.isDropoffLocation)
+    setUnreadMessages(guest.unreadMessages)
+    setUnreadSupport(guest.unreadSupport)
+    clientWalletTotalRef.current = null
+    setWalletBalance(guest.walletBalance)
+    setAuthLoaded(true)
+  }, [])
+
   useLayoutEffect(() => {
     const d = deriveHeaderNavState(serverHeaderAuth)
     // Soft `router.refresh()` after OAuth can return a guest snapshot before cookies are
     // visible to RSC — do not paint logged-out over a verified client session.
-    if (!d.user && user) return
+    // Sign-out is the exception: the remembered account must not stay on screen.
+    if (!d.user && user && !headerChromeSignOutLatched()) return
 
     // Cached HTML is anonymous. Paint the last confirmed account before GoTrue
     // responds so a returning visitor does not sit on Log in for a few seconds.
     if (!d.user) {
+      // Sign-out already dropped the session. Do not paint localStorage over that,
+      // and do not clear the latch here — the signing-out page must keep blocking
+      // snapshot writes until it unloads.
+      if (headerChromeSignOutLatched()) {
+        applyGuestHeader()
+        return
+      }
       const remembered = readHeaderChromeSnapshot()
       if (remembered) {
         setUser(headerChromeSnapshotUser(remembered))
@@ -734,9 +762,11 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
   }, [user, authLoaded])
 
   const refetchFromClient = useCallback(async () => {
+    if (headerChromeSignOutLatched()) return
     if (user) setAuthLoaded(true)
     try {
       const userResult = await getAuthUserWithRetry(supabase)
+      if (headerChromeSignOutLatched()) return
       if (!userResult.ok) {
         if (!isAbortError(userResult.error)) {
           console.warn(
@@ -747,21 +777,10 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         return
       }
       const resolvedUser = userResult.user
+      if (headerChromeSignOutLatched()) return
       setUser(resolvedUser)
       if (!resolvedUser) {
-        clearHeaderChromeSnapshot()
-        markHeaderChromeHydrated()
-        setAuthSessionReady(false)
-        const guest = deriveHeaderNavState({ user: null, bootstrap: null })
-        setProfileAvatarUrl(guest.profileAvatarUrl)
-        setProfileDisplayName(guest.profileDisplayName)
-        setIsAdmin(guest.isAdmin)
-        setIsShipper(guest.isShipper)
-        setIsDropoffLocation(guest.isDropoffLocation)
-        setUnreadMessages(guest.unreadMessages)
-        setUnreadSupport(guest.unreadSupport)
-        clientWalletTotalRef.current = null
-        setWalletBalance(guest.walletBalance)
+        applyGuestHeader()
         return
       }
       setAuthSessionReady(true)
@@ -777,6 +796,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         supabase.from("coastal_shippers").select("id").eq("user_id", resolvedUser.id).maybeSingle(),
         supabase.from("dropoff_location_grants").select("id").eq("user_id", resolvedUser.id).maybeSingle(),
       ])
+      if (headerChromeSignOutLatched()) return
       const isShipperMember = coastalShipperMembership({
         rowId: shipperRes.data?.id,
         queryFailed: Boolean(shipperRes.error),
@@ -809,6 +829,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         .select("balance, pending_balance, lifetime_earned, lifetime_spent, lifetime_cashed_out")
         .eq("user_id", resolvedUser.id)
         .single()
+      if (headerChromeSignOutLatched()) return
       const total = wallet ? walletTotalBalanceUsd(wallet) : 0
       setWalletBalance(total)
       if (
@@ -817,7 +838,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       ) {
         clientWalletTotalRef.current = null
       }
-      if (profile) {
+      if (profile && !headerChromeSignOutLatched()) {
         const persistedAvatar = headerChromeAvatarCssValue(nextAvatarUrl) ? nextAvatarUrl : null
         const persistedName = nextDisplayName?.trim().slice(0, 80) || null
         writeHeaderChromeSnapshot({
@@ -837,7 +858,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     } finally {
       setAuthLoaded(true)
     }
-  }, [supabase, user])
+  }, [applyGuestHeader, supabase, user])
 
   useEffect(() => {
     if (authLoaded) return
@@ -935,6 +956,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "INITIAL_SESSION") {
+        if (headerChromeSignOutLatched()) return
         if (session?.user) {
           setAuthSessionReady(true)
           setUser(session.user)
@@ -944,21 +966,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       }
 
       if (event === "SIGNED_OUT") {
-        clearHeaderChromeSnapshot()
-        markHeaderChromeHydrated()
-        setAuthSessionReady(false)
-        const guest = deriveHeaderNavState({ user: null, bootstrap: null })
-        setUser(guest.user)
-        setProfileAvatarUrl(guest.profileAvatarUrl)
-        setProfileDisplayName(guest.profileDisplayName)
-        setIsAdmin(guest.isAdmin)
-        setIsShipper(guest.isShipper)
-        setIsDropoffLocation(guest.isDropoffLocation)
-        setUnreadMessages(guest.unreadMessages)
-        setUnreadSupport(guest.unreadSupport)
-        clientWalletTotalRef.current = null
-        setWalletBalance(guest.walletBalance)
-        setAuthLoaded(true)
+        applyGuestHeader()
         router.refresh()
         return
       }
@@ -967,6 +975,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         (event === "SIGNED_IN" || event === "USER_UPDATED") &&
         session?.user
       ) {
+        if (event === "SIGNED_IN") clearHeaderChromeSignOutLatch()
         setAuthSessionReady(true)
         setUser(session.user)
         setAuthLoaded(true)
@@ -982,7 +991,26 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       window.removeEventListener("focus", refreshUnreadCount)
       subscription.unsubscribe()
     }
-  }, [supabase, router, refetchFromClient])
+  }, [applyGuestHeader, supabase, router, refetchFromClient])
+
+  /**
+   * Back/forward can restore the signed-in page from bfcache after `/auth/sign-out`
+   * already dropped the session. The boot script does not run again, so the
+   * React tree still has the previous photo and account menu until we reset it.
+   */
+  useEffect(() => {
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (!event.persisted || !headerChromeSignOutLatched()) return
+      if (hasSupabaseAuthCookiesClient()) {
+        clearHeaderChromeSignOutLatch()
+        void refetchFromClient()
+        return
+      }
+      applyGuestHeader()
+    }
+    window.addEventListener("pageshow", onPageShow)
+    return () => window.removeEventListener("pageshow", onPageShow)
+  }, [applyGuestHeader, refetchFromClient])
 
   /** Messaging profile and conversations — one Realtime channel per signed-in tab. */
   useEffect(() => {
