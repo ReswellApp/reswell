@@ -47,6 +47,38 @@ describe("header chrome snapshot", () => {
     )
   })
 
+  it("remembers shop accounts and ignores a broken shop list", () => {
+    const shopAccess = {
+      actorUserId: "user-1",
+      activeAccountId: "shop-1",
+      actingAsShop: true,
+      shopLabel: "Hayden Garfields Shop",
+      role: "staff" as const,
+      actorEmail: "hayden@reswell.app",
+      showEarnings: false,
+      hasShopifyAccess: false,
+      options: [
+        { accountId: "user-1", label: "My account", role: "owner" as const },
+        { accountId: "shop-1", label: "Hayden Garfields Shop", role: "staff" as const },
+      ],
+    }
+    const withShop = sampleSnapshot({ shopAccess })
+    assert.deepEqual(parseHeaderChromeSnapshot(JSON.stringify(withShop)), withShop)
+    assert.deepEqual(
+      parseHeaderChromeSnapshot(JSON.stringify({ ...sampleSnapshot(), shopAccess: { nope: true } })),
+      sampleSnapshot(),
+    )
+    assert.deepEqual(
+      parseHeaderChromeSnapshot(
+        JSON.stringify({
+          ...sampleSnapshot(),
+          shopAccess: { ...shopAccess, actorUserId: "someone-else" },
+        }),
+      ),
+      sampleSnapshot(),
+    )
+  })
+
   it("only allows http(s) and same-origin avatar urls in css", () => {
     assert.equal(
       headerChromeAvatarCssValue("https://cdn.example.com/a.png?w=64"),

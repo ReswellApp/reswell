@@ -1,5 +1,6 @@
 import type { User } from "@supabase/supabase-js"
 import { z } from "zod"
+import type { HeaderShopAccess } from "@/lib/auth/header-site-bootstrap"
 
 /** localStorage key. Display-only — never a session token. */
 export const HEADER_CHROME_SNAPSHOT_STORAGE_KEY = "rw-header-chrome"
@@ -34,6 +35,28 @@ export function headerChromeAvatarCssValue(url: string | null): string | null {
   return `url("${trimmed}")`
 }
 
+const headerShopAccessSnapshotSchema = z.object({
+  actorUserId: z.string().min(1).max(128),
+  activeAccountId: z.string().min(1).max(128),
+  actingAsShop: z.boolean(),
+  shopLabel: z.string().min(1).max(120),
+  role: z.enum(["owner", "manager", "staff"]),
+  actorEmail: z.string().max(320).nullable(),
+  showEarnings: z.boolean(),
+  hasShopifyAccess: z.boolean(),
+  options: z
+    .array(
+      z.object({
+        accountId: z.string().min(1).max(128),
+        label: z.string().min(1).max(120),
+        role: z.enum(["owner", "manager", "staff"]),
+        shopifyConnectEnabled: z.boolean().optional(),
+      }),
+    )
+    .min(1)
+    .max(40),
+})
+
 const headerChromeSnapshotSchema = z.object({
   v: z.literal(1),
   userId: z.string().min(1).max(128),
@@ -55,9 +78,13 @@ const headerChromeSnapshotSchema = z.object({
   unreadMessages: z.number().int().nonnegative().max(1_000_000),
   unreadSupport: z.number().int().nonnegative().max(1_000_000),
   walletBalance: z.number().finite().nullable(),
+  /** Validated in `parseHeaderChromeSnapshot`. A bad value must not drop the account. */
+  shopAccess: z.unknown().optional(),
 })
 
-export type HeaderChromeSnapshot = z.infer<typeof headerChromeSnapshotSchema>
+export type HeaderChromeSnapshot = Omit<z.infer<typeof headerChromeSnapshotSchema>, "shopAccess"> & {
+  shopAccess?: HeaderShopAccess
+}
 
 /**
  * Blocking boot script for the root layout. Cached HTML is anonymous; this
@@ -118,7 +145,11 @@ export function parseHeaderChromeSnapshot(raw: string | null): HeaderChromeSnaps
   if (!raw) return null
   try {
     const parsed = headerChromeSnapshotSchema.safeParse(JSON.parse(raw))
-    return parsed.success ? parsed.data : null
+    if (!parsed.success) return null
+    const { shopAccess: rawShop, ...account } = parsed.data
+    const shop = headerShopAccessSnapshotSchema.safeParse(rawShop)
+    if (!shop.success || shop.data.actorUserId !== account.userId) return account
+    return { ...account, shopAccess: shop.data }
   } catch {
     return null
   }
@@ -145,8 +176,8 @@ export function writeHeaderChromeSnapshot(input: HeaderChromeSnapshot): void {
   const parsed = headerChromeSnapshotSchema.safeParse(input)
   if (!parsed.success) return
   if (headerChromeSignOutLatched()) return
-  const snapshot = parsed.data
-  const raw = JSON.stringify(snapshot)
+  const raw = JSON.stringify(parsed.data)
+  const snapshot = parseHeaderChromeSnapshot(raw)
   memory = { raw, snapshot }
   if (typeof window === "undefined") return
   try {

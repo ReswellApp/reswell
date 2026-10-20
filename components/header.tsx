@@ -84,6 +84,11 @@ import {
   readHeaderChromeSnapshot,
   writeHeaderChromeSnapshot,
 } from "@/lib/auth/header-chrome-snapshot"
+import type { HeaderShopAccess } from "@/lib/auth/header-site-bootstrap"
+import {
+  headerShopAccessWithActiveAccount,
+  loadHeaderShopAccess,
+} from "@/lib/auth/header-shop-access"
 import { HeaderKnownAuthPreview } from "@/components/header-known-auth-preview"
 import type { SiteChromeAuthPayload } from "@/lib/auth/get-site-chrome-auth"
 import { CartHeaderLink } from "@/components/cart-header-link"
@@ -509,6 +514,16 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
   const [unreadMessages, setUnreadMessages] = useState(initNav.unreadMessages)
   const [unreadSupport, setUnreadSupport] = useState(initNav.unreadSupport)
   const [walletBalance, setWalletBalance] = useState<number | null>(initNav.walletBalance)
+  /**
+   * Public HTML has no session, so memberships are not on `serverHeaderAuth`.
+   * The menu loads them with the browser session.
+   */
+  const [shopAccess, setShopAccess] = useState<HeaderShopAccess | null>(
+    serverHeaderAuth.bootstrap?.shopAccess ?? null,
+  )
+  const shopAccessRef = useRef<HeaderShopAccess | null>(serverHeaderAuth.bootstrap?.shopAccess ?? null)
+  /** Bumps when a newer shop list should win over an in-flight header refetch. */
+  const shopAccessRequestRef = useRef(0)
   /** Client-synced total from earnings (or other wallet UI); wins over stale server bootstrap. */
   const clientWalletTotalRef = useRef<number | null>(null)
   /**
@@ -636,6 +651,9 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     setUnreadSupport(guest.unreadSupport)
     clientWalletTotalRef.current = null
     setWalletBalance(guest.walletBalance)
+    shopAccessRequestRef.current += 1
+    shopAccessRef.current = null
+    setShopAccess(null)
     setAuthLoaded(true)
   }, [])
 
@@ -667,6 +685,12 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         setUnreadMessages(remembered.unreadMessages)
         setUnreadSupport(remembered.unreadSupport)
         setWalletBalance(remembered.walletBalance)
+        const rememberedShop =
+          remembered.shopAccess && remembered.shopAccess.actorUserId === remembered.userId
+            ? remembered.shopAccess
+            : null
+        shopAccessRef.current = rememberedShop
+        setShopAccess(rememberedShop)
         setAuthLoaded(true)
         return
       }
@@ -747,6 +771,9 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
 
     // Never drop back to skeleton / logged-out chrome while the client session is still valid.
     setAuthLoaded(d.user ? d.authLoaded || Boolean(user) : d.authLoaded)
+    const serverShop = d.user ? (serverHeaderAuth.bootstrap?.shopAccess ?? null) : null
+    shopAccessRef.current = serverShop
+    setShopAccess(serverShop)
 
     if (isPartialBootstrap && user) {
       void refetchFromClient()
@@ -785,7 +812,8 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       }
       setAuthSessionReady(true)
 
-      const [{ data: profile }, shipperRes, dropoffRes] = await Promise.all([
+      const shopGeneration = ++shopAccessRequestRef.current
+      const [{ data: profile }, shipperRes, dropoffRes, shopLoad] = await Promise.all([
         supabase
           .from("profiles")
           .select(
@@ -795,8 +823,13 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
           .single(),
         supabase.from("coastal_shippers").select("id").eq("user_id", resolvedUser.id).maybeSingle(),
         supabase.from("dropoff_location_grants").select("id").eq("user_id", resolvedUser.id).maybeSingle(),
+        loadHeaderShopAccess(supabase, resolvedUser.id, resolvedUser.email ?? null),
       ])
       if (headerChromeSignOutLatched()) return
+      if (shopGeneration === shopAccessRequestRef.current && shopLoad.ok) {
+        shopAccessRef.current = shopLoad.access
+        setShopAccess(shopLoad.access)
+      }
       const isShipperMember = coastalShipperMembership({
         rowId: shipperRes.data?.id,
         queryFailed: Boolean(shipperRes.error),
@@ -841,6 +874,10 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       if (profile && !headerChromeSignOutLatched()) {
         const persistedAvatar = headerChromeAvatarCssValue(nextAvatarUrl) ? nextAvatarUrl : null
         const persistedName = nextDisplayName?.trim().slice(0, 80) || null
+        const shopForSnapshot =
+          shopGeneration === shopAccessRequestRef.current && shopLoad.ok
+            ? shopLoad.access
+            : shopAccessRef.current
         writeHeaderChromeSnapshot({
           v: 1,
           userId: resolvedUser.id,
@@ -853,6 +890,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
           unreadMessages: Math.max(0, Number(profile.unread_message_count ?? 0) || 0),
           unreadSupport: Math.max(0, Number(profile.unread_support_count ?? 0) || 0),
           walletBalance: total,
+          ...(shopForSnapshot ? { shopAccess: shopForSnapshot } : {}),
         })
       }
     } finally {
@@ -1174,6 +1212,15 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     setMobileMenuOpen(false)
   }, [])
 
+  const onActiveShopAccount = useCallback((accountId: string | null) => {
+    shopAccessRequestRef.current += 1
+    setShopAccess((current) => {
+      const next = current ? headerShopAccessWithActiveAccount(current, accountId) : current
+      shopAccessRef.current = next
+      return next
+    })
+  }, [])
+
   const handleSignOut = useCallback(async () => {
     setUser(null)
     setAuthLoaded(true)
@@ -1196,7 +1243,8 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         isAdmin={isAdmin}
         isShipper={isShipper}
         isDropoffLocation={isDropoffLocation}
-        shopAccess={serverHeaderAuth.bootstrap?.shopAccess ?? null}
+        shopAccess={shopAccess}
+        onActiveAccountChange={onActiveShopAccount}
         onSignOut={handleSignOut}
       />
     ) : null
