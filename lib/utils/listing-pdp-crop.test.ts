@@ -27,8 +27,8 @@ describe("resolveListingPdpCrop", () => {
     assert.equal(resolveListingPdpCrop(null, null, null), null)
     assert.equal(listingPdpCropFromImageRow({}), null)
     assert.equal(isListingPdpCropDefault(null), true)
-    assert.equal(isListingPdpCropDefault(LISTING_PDP_CROP_FIT), true)
-    assert.equal(isListingPdpCropDefault(LISTING_PDP_CROP_COVER), false)
+    assert.equal(isListingPdpCropDefault(LISTING_PDP_CROP_FIT), false)
+    assert.equal(isListingPdpCropDefault(LISTING_PDP_CROP_COVER), true)
   })
 
   it("fills missing pieces when any crop column is set", () => {
@@ -187,8 +187,8 @@ describe("listingPdpCropCssFit", () => {
     assert.equal(listingPdpCropNeedsPreciseLayout(LISTING_PDP_CROP_FIT), false)
     assert.equal(listingPdpCropNeedsPreciseLayout(LISTING_PDP_CROP_COVER), false)
     assert.equal(listingPdpCropNeedsPreciseLayout({ zoom: 0.4, x: 50, y: 50 }), true)
-    assert.equal(listingPdpCropsEqual(LISTING_PDP_CROP_FIT, null), true)
-    assert.equal(listingPdpCropsEqual(LISTING_PDP_CROP_COVER, null), false)
+    assert.equal(listingPdpCropsEqual(LISTING_PDP_CROP_FIT, null), false)
+    assert.equal(listingPdpCropsEqual(LISTING_PDP_CROP_COVER, null), true)
   })
 })
 

@@ -27,7 +27,7 @@ export interface ListingGalleryPhotoProps {
   alt: string
   sizes: string
   className?: string
-  /** Listing PDP hero uses contain so the full photo is on the page. Thumbs stay cover. */
+  /** Listing PDP hero and tiles cover the locked 3:4 frame. Thumbs stay cover. */
   objectFit?: "cover" | "contain"
   priority?: boolean
   fetchPriority?: "high" | "low" | "auto"

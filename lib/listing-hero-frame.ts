@@ -1,10 +1,11 @@
 /**
- * Listing PDP hero frame (`/l/*`).
+ * Listing photo frame — marketplace tiles and the `/l/*` hero.
  *
- * The photo must stay visible without opening enlarge. Never force a 3:4
- * `object-cover` crop — Chrome / Google on iOS and tablet `md:` widths were
- * clipping nose and tail. Custom-property aspect-ratio must be slash-form
- * (`750 / 1000`); unitless values are ignored in those WebViews.
+ * Locked at 3:4 (portrait). Photos cover that box from the center so a
+ * landscape upload does not letterbox and swiping photos does not resize
+ * the hero. Enlarge still shows the full bitmap. Custom-property
+ * aspect-ratio must be slash-form (`750 / 1000`); unitless values are
+ * ignored in iOS Chrome and the Google app.
  */
 
 export const DEFAULT_LISTING_HERO_ASPECT = 3 / 4

@@ -44,7 +44,7 @@ export function clampListingPdpCrop(crop: ListingPdpCrop): ListingPdpCrop {
   }
 }
 
-/** Null columns mean no seller crop. The /l hero then uses contain. */
+/** Null columns mean no seller crop. The /l hero then covers the 3:4 frame. */
 export function resolveListingPdpCrop(
   zoom: unknown,
   x: unknown,
@@ -69,13 +69,13 @@ export function listingPdpCropFromImageRow(row: {
   return resolveListingPdpCrop(row.pdp_crop_zoom, row.pdp_crop_x, row.pdp_crop_y)
 }
 
-/** Unset or Fit — the /l hero already contains. Fill (cover) is an explicit save. */
+/** Unset or centered Fill. Fit (contain) is an explicit save. */
 export function isListingPdpCropDefault(crop: ListingPdpCrop | null | undefined): boolean {
   if (!crop) return true
   return (
-    Math.abs(crop.zoom - LISTING_PDP_CROP_FIT.zoom) < ZOOM_EPS &&
-    Math.abs(crop.x - LISTING_PDP_CROP_FIT.x) < 0.05 &&
-    Math.abs(crop.y - LISTING_PDP_CROP_FIT.y) < 0.05
+    Math.abs(crop.zoom - LISTING_PDP_CROP_COVER.zoom) < ZOOM_EPS &&
+    Math.abs(crop.x - LISTING_PDP_CROP_COVER.x) < 0.05 &&
+    Math.abs(crop.y - LISTING_PDP_CROP_COVER.y) < 0.05
   )
 }
 

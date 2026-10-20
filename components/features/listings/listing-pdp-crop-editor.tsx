@@ -14,7 +14,7 @@ import { Loader2, Minus, Plus } from "lucide-react"
 import { toast } from "sonner"
 import { useListingPdpCropGestures } from "@/components/features/listings/hooks/use-listing-pdp-crop-gestures"
 import { Slider } from "@/components/ui/slider"
-import { listingHeroAspectCss } from "@/lib/listing-hero-frame"
+import { DEFAULT_LISTING_HERO_ASPECT, listingHeroAspectCss } from "@/lib/listing-hero-frame"
 import { cn } from "@/lib/utils"
 import {
   LISTING_PDP_CROP_COVER,
@@ -46,7 +46,7 @@ type ListingPdpCropEditorProps = {
 }
 
 function cropOrDefault(crop: ListingPdpCrop | null): ListingPdpCrop {
-  return crop ?? LISTING_PDP_CROP_FIT
+  return crop ?? LISTING_PDP_CROP_COVER
 }
 
 function rememberNaturalSize(
@@ -80,7 +80,7 @@ export function ListingPdpCropEditor({
   const [saving, setSaving] = useState(false)
 
   const photo = images[index] ?? images[0] ?? null
-  const currentCrop = photo ? cropOrDefault(crops[photo.id] ?? photo.crop) : LISTING_PDP_CROP_FIT
+  const currentCrop = photo ? cropOrDefault(crops[photo.id] ?? photo.crop) : LISTING_PDP_CROP_COVER
   const attachPhotoImage = useCallback((img: HTMLImageElement | null) => {
     photoImgRef.current = img
     // iOS Chrome / Google app often skip onLoad for cached images.
@@ -263,14 +263,8 @@ export function ListingPdpCropEditor({
             natural ? "cursor-grab active:cursor-grabbing" : "cursor-wait",
           )}
           style={{
-            aspectRatio:
-              natural && natural.h > 0
-                ? listingHeroAspectCss(natural.w / natural.h)
-                : "3 / 4",
-            width:
-              natural && natural.h > 0
-                ? `min(100%, 22rem, calc(min(58svh, 32rem) * ${natural.w} / ${natural.h}))`
-                : undefined,
+            aspectRatio: listingHeroAspectCss(DEFAULT_LISTING_HERO_ASPECT),
+            width: "min(100%, 22rem, calc(min(58svh, 32rem) * 0.75))",
           }}
           onPointerDown={gestures.onPointerDown}
           onPointerMove={gestures.onPointerMove}
@@ -293,7 +287,7 @@ export function ListingPdpCropEditor({
                       left: layout.left,
                       top: layout.top,
                     }
-                  : { inset: 0, width: "100%", height: "100%", objectFit: "contain" }
+                  : { inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }
               }
               ref={attachPhotoImage}
               onLoad={(event) => {
