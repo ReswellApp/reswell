@@ -329,29 +329,6 @@ export function UsaSalesFlowMap({
               </ul>
             </div>
           ) : null}
-
-          {!isCompact ? (
-            <div className="pointer-events-none absolute bottom-2 left-2 right-2 rounded-lg border border-border/70 bg-background/90 px-2 py-1.5 shadow-sm backdrop-blur-sm sm:bottom-3 sm:left-3 sm:right-auto sm:rounded-xl sm:px-2.5 sm:py-2">
-              <div className="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-[10px] text-muted-foreground sm:justify-start sm:gap-x-3 sm:text-xs">
-                {isMobileView && !selection ? (
-                  <span className="w-full text-center font-medium text-foreground/80 sm:w-auto">
-                    Tap a state for stats
-                  </span>
-                ) : null}
-                <span className="inline-flex items-center gap-1">
-                  <span className="h-2 w-4 rounded-full bg-[#dc2626]/70 sm:h-2.5 sm:w-6" />
-                  Flow
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <span
-                    className="h-2 w-2 rounded-full sm:h-2.5 sm:w-2.5"
-                    style={{ backgroundColor: BRAND_CTA_BLUE }}
-                  />
-                  Active states
-                </span>
-              </div>
-            </div>
-          ) : null}
         </div>
 
         {selectionLabel && isMobileView ? (
@@ -373,6 +350,26 @@ export function UsaSalesFlowMap({
                 Close
               </button>
             </div>
+          </div>
+        ) : null}
+
+        {!isCompact ? (
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 border-t border-border/70 px-3 py-2 text-[11px] text-muted-foreground sm:justify-start sm:px-4 sm:py-2.5 sm:text-xs">
+            {isMobileView && !selection ? (
+              <span className="font-medium text-foreground/80">Tap a state for stats</span>
+            ) : null}
+            <span className="inline-flex items-center gap-1.5">
+              <span className="h-2 w-4 rounded-full bg-[#dc2626]/70 sm:h-2.5 sm:w-6" aria-hidden />
+              Flow
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span
+                className="h-2 w-2 rounded-full sm:h-2.5 sm:w-2.5"
+                style={{ backgroundColor: BRAND_CTA_BLUE }}
+                aria-hidden
+              />
+              Active states
+            </span>
           </div>
         ) : null}
       </div>
