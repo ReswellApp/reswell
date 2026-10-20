@@ -24,6 +24,11 @@ import { attachListingInventorySources } from "@/lib/db/listingInventorySource"
 import { isShopifyManagedListing } from "@/lib/shopify/listing"
 import { shopifyManagedCheckoutBilling } from "@/lib/services/shopifyBilling"
 import {
+  clampListingBuyerQuantity,
+  listingBuyerQuantityCap,
+  peerBrandNewStockQuantity,
+} from "@/lib/listing-stock-quantity"
+import {
   encodeListingQuantitiesMeta,
   resolveMixedCheckoutSellerId,
 } from "@/lib/mixed-checkout"
@@ -121,6 +126,7 @@ export async function POST(request: NextRequest) {
     promo_code?: string | null
     quote_token?: string | null
     packaging_mode?: string | null
+    quantities?: unknown
   }
 
   const fromArray = Array.isArray(body.listing_ids)
@@ -191,7 +197,8 @@ export async function POST(request: NextRequest) {
     }
     if (
       isReswellShopListing(listing.section) ||
-      isShopifyManagedListing(listing)
+      isShopifyManagedListing(listing) ||
+      peerBrandNewStockQuantity(listing) >= 1
     ) {
       const stock = Math.max(
         0,
@@ -217,8 +224,15 @@ export async function POST(request: NextRequest) {
    * unless paying via an accepted offer bundle (`offer_id`). */
   const offerIdParam = body.offer_id?.trim() || null
   let validatedOfferId: string | null = null
+  const requestedQuantities = new Map<string, number>()
+  if (body.quantities && typeof body.quantities === "object") {
+    for (const [id, raw] of Object.entries(body.quantities as Record<string, unknown>)) {
+      const qty = Math.floor(Number(raw) || 0)
+      if (UUID_RE.test(id) && qty >= 1) requestedQuantities.set(id, qty)
+    }
+  }
   const quantityByListingId: Record<string, number> = {}
-  for (const id of listingIdsOrdered) quantityByListingId[id] = 1
+  for (const id of listingIdsOrdered) quantityByListingId[id] = requestedQuantities.get(id) ?? 1
 
   /** Price from the explicit offer id when present so promo math matches the UI. */
   let listingsForTotals = listingsOrdered
@@ -275,9 +289,12 @@ export async function POST(request: NextRequest) {
       listingsOrdered,
     )
   } else {
-    // Single shop line may still carry quantity from cart.
+    // Single stock-backed line uses the checkout quantity, then the cart.
     const onlyId = listingIdsOrdered[0]!
-    if (isReswellShopListing(listingsOrdered[0]!.section)) {
+    const onlyListing = listingsOrdered[0]!
+    const stockBacked =
+      isReswellShopListing(onlyListing.section) || peerBrandNewStockQuantity(onlyListing) >= 1
+    if (stockBacked && !requestedQuantities.has(onlyId)) {
       const { data: cartRow } = await supabase
         .from("cart_items")
         .select("quantity")
@@ -300,26 +317,28 @@ export async function POST(request: NextRequest) {
   }
 
   for (const listing of listingsOrdered) {
-    if (
-      !isReswellShopListing(listing.section) &&
-      !isShopifyManagedListing(listing)
-    ) {
+    const qty = quantityByListingId[listing.id] ?? 1
+    if (isShopifyManagedListing(listing)) {
+      if (qty !== 1) {
+        return NextResponse.json(
+          { error: "Shopify-synced listings are limited to one unit per checkout" },
+          { status: 400 },
+        )
+      }
+      quantityByListingId[listing.id] = 1
       continue
     }
-    const stock = Math.max(
-      0,
-      Math.floor(Number((listing as { stock_quantity?: number }).stock_quantity) || 0),
-    )
-    const qty = quantityByListingId[listing.id] ?? 1
-    if (isShopifyManagedListing(listing) && qty !== 1) {
-      return NextResponse.json(
-        { error: "Shopify-synced listings are limited to one unit per checkout" },
-        { status: 400 },
-      )
+    const stockBacked =
+      isReswellShopListing(listing.section) || peerBrandNewStockQuantity(listing) >= 1
+    if (!stockBacked) {
+      quantityByListingId[listing.id] = 1
+      continue
     }
-    if (qty > stock) {
+    const cap = listingBuyerQuantityCap(listing)
+    if (qty > cap) {
       return NextResponse.json({ error: "Not enough stock available" }, { status: 409 })
     }
+    quantityByListingId[listing.id] = clampListingBuyerQuantity(listing, qty)
   }
 
   const mixedSeller = resolveMixedCheckoutSellerId(

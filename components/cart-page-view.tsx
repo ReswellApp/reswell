@@ -14,6 +14,7 @@ import {
   type CartPageItem,
 } from "@/app/actions/cart"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
+import { listingBuyerQuantityCap, listingSupportsBuyerQuantity } from "@/lib/listing-stock-quantity"
 import { isReswellShopListing } from "@/lib/reswell-shop"
 import { listingDetailHref } from "@/lib/listing-href"
 import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
@@ -290,6 +291,7 @@ export function CartPageView({
                 const img = listingTitleThumbnailSrc(listing.listing_images ?? null)
                 const seller = listing.profiles
                 const isShop = isReswellShopListing(listing.section)
+                const canAdjustQuantity = listingSupportsBuyerQuantity(listing)
                 const sellerName = isShop ? "Reswell" : getPublicSellerDisplayName(seller)
                 const sellerHref = isShop ? "/reswell/shop" : sellerProfileHref(seller)
                 const available = listingAvailable(listing)
@@ -300,7 +302,9 @@ export function CartPageView({
                 const unitPrice = hasAcceptedOffer ? agreedPriceUsd : listPrice
                 const qty = Math.max(1, quantity || 1)
                 const lineTotal = unitPrice * qty
-                const stockMax = Math.max(1, Math.floor(Number(listing.stock_quantity) || qty))
+                const stockMax = canAdjustQuantity
+                  ? Math.max(1, listingBuyerQuantityCap(listing))
+                  : 1
                 const condition = formatCondition(listing.condition)
                 const boardType = formatBoardType(listing.board_type)
                 const lengthLine = formatListingBoardLengthSubtitle({
@@ -382,7 +386,7 @@ export function CartPageView({
                         )}
 
                         <div className="mt-4 flex flex-wrap items-center gap-2 sm:justify-end">
-                          {isShop ? (
+                          {canAdjustQuantity ? (
                             <div className="flex h-9 items-center gap-1 rounded-lg border border-neutral-200 bg-white px-1 dark:border-white/15 dark:bg-transparent">
                               <button
                                 type="button"

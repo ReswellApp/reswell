@@ -1,6 +1,7 @@
 "use client"
 
 import { Input } from "@/components/ui/input"
+import { SellBrandNewQuantityField } from "@/components/features/sell/sell-brand-new-quantity-field"
 import { Label } from "@/components/ui/label"
 import {
   Select,
@@ -72,6 +73,8 @@ export type SellSurfpacksFacetFieldsProps = {
   brand: string
   model: string
   onConditionChange: (value: string) => void
+  stockQuantity: string
+  onStockQuantityChange: (value: string) => void
   onSizeChange: (value: string) => void
   onBrandChange: (value: string) => void
   onModelChange: (value: string) => void
@@ -83,6 +86,8 @@ export function SellSurfpacksFacetFields({
   brand,
   model,
   onConditionChange,
+  stockQuantity,
+  onStockQuantityChange,
   onSizeChange,
   onBrandChange,
   onModelChange,
@@ -109,6 +114,13 @@ export function SellSurfpacksFacetFields({
           />
         ) : null}
       </div>
+
+      <SellBrandNewQuantityField
+        id="sell-surfpack-quantity"
+        condition={condition}
+        value={stockQuantity}
+        onChange={onStockQuantityChange}
+      />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">

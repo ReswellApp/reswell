@@ -275,6 +275,7 @@ function CheckoutForm({
 
 export function StripeCardCheckout({
   listingIds,
+  quantities,
   listingTitle,
   price,
   fulfillment,
@@ -291,6 +292,7 @@ export function StripeCardCheckout({
   buyerEmail,
 }: {
   listingIds: string[]
+  quantities?: Record<string, number>
   listingTitle: string
   price: number
   fulfillment?: "pickup" | "shipping" | null
@@ -360,6 +362,7 @@ export function StripeCardCheckout({
           credentials: "include",
           body: JSON.stringify({
             listing_ids: listingIds,
+            ...(quantities ? { quantities } : {}),
             ...(fulfillment ? { fulfillment } : {}),
             ...(needsShipping && shippingAddressId ? { address_id: shippingAddressId } : {}),
             ...(offerId ? { offer_id: offerId } : {}),
@@ -405,6 +408,7 @@ export function StripeCardCheckout({
     }
   }, [
     listingIdsKey,
+    quantities,
     fulfillment,
     price,
     shippingAddressId,

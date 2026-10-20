@@ -11,6 +11,7 @@ import {
   finSizeSlugForDb,
 } from "@/lib/fin-listing-config"
 import { isListingSellableCondition } from "@/lib/listing-labels"
+import { stockQuantityForSellCondition } from "@/lib/listing-stock-quantity"
 import { reswellPackageFieldsToDb } from "@/lib/sell-listing-fulfillment-flags"
 import type { FinListingDraftAutosaveInput } from "@/lib/validations/fin-listing-draft-autosave"
 import { FIN_LISTING_TITLE_MAX_LENGTH } from "@/lib/validations/fin-listing"
@@ -75,6 +76,10 @@ export function buildFinListingDraftRow(
     description: (input.description ?? "").trim() || " ",
     price: Number.isFinite(price) && price >= 0 ? price : 0,
     condition: resolvedFinDraftCondition(input),
+    stock_quantity: stockQuantityForSellCondition(
+      resolvedFinDraftCondition(input),
+      input.stockQuantity,
+    ),
     section: FINS_SECTION,
     category_id: USED_FINS_CATEGORY_ID,
     latitude: input.locationLat ?? null,

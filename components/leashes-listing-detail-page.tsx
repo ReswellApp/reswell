@@ -1,3 +1,4 @@
+import { peerBrandNewStockQuantity } from "@/lib/listing-stock-quantity"
 import type { ComponentProps } from "react"
 import { notFound } from "next/navigation"
 import Link from "next/link"
@@ -36,7 +37,7 @@ import { ContactSellerForm } from "@/components/contact-seller-form"
 import { ListingBoardSpecTable } from "@/components/features/listings/listing-board-spec-table"
 import { ListingCatalogIdentity } from "@/components/features/listings/listing-catalog-identity"
 import { ListingPdpDeliveryCaption } from "@/components/features/listings/listing-pdp-delivery-caption"
-import { listingConditionSpecRow } from "@/lib/utils/listing-board-spec-rows"
+import { listingAvailableQuantitySpecRow, listingConditionSpecRow } from "@/lib/utils/listing-board-spec-rows"
 import { fetchSimilarPeerListingsForListingPdp } from "@/lib/db/listing-detail-similar-peer"
 import { FavoriteButton } from "@/components/favorite-button"
 import { cn } from "@/lib/utils"
@@ -346,6 +347,12 @@ async function renderLeashesListingDetailPage({
 
   const specRows = [
     listingConditionSpecRow(leash.condition as string | null),
+    listingAvailableQuantitySpecRow({
+      section: leash.section,
+      condition: leash.condition as string | null,
+      stock_quantity: (leash as { stock_quantity?: number | null }).stock_quantity,
+      inventory_source: (leash as { inventory_source?: string | null }).inventory_source,
+    }),
     sizeLabel ? { label: "Size", value: sizeLabel } : null,
   ].filter(Boolean) as { label: string; value: string; href?: string | null }[]
 
@@ -486,6 +493,12 @@ async function renderLeashesListingDetailPage({
                   listingId={leash.id}
                   checkoutListingParam={leash.slug ?? leash.id}
                   section="leashes"
+                  availableQuantity={peerBrandNewStockQuantity({
+                    section: "leashes",
+                    condition: leash.condition as string | null,
+                    stock_quantity: (leash as { stock_quantity?: number | null }).stock_quantity,
+                    inventory_source: (leash as { inventory_source?: string | null }).inventory_source,
+                  })}
                   isLoggedIn={!!user}
                   makeOffer={makeOfferConfig}
                   agreedCheckoutItemUsd={buyerAgreedPriceUsd}
@@ -576,6 +589,12 @@ async function renderLeashesListingDetailPage({
                     listingId={leash.id}
                     checkoutListingParam={leash.slug ?? leash.id}
                     section="leashes"
+                    availableQuantity={peerBrandNewStockQuantity({
+                      section: "leashes",
+                      condition: leash.condition as string | null,
+                      stock_quantity: (leash as { stock_quantity?: number | null }).stock_quantity,
+                    inventory_source: (leash as { inventory_source?: string | null }).inventory_source,
+                    })}
                     isLoggedIn={!!user}
                     makeOffer={makeOfferConfig}
                     agreedCheckoutItemUsd={buyerAgreedPriceUsd}

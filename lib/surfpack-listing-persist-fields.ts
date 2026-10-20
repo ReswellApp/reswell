@@ -3,6 +3,7 @@ import {
   USED_SURFPACKS_CATEGORY_ID,
   surfpackSizeSlugForDb,
 } from "@/lib/surfpack-listing-config"
+import { stockQuantityForSellCondition } from "@/lib/listing-stock-quantity"
 import { reswellPackageFieldsToDb } from "@/lib/sell-listing-fulfillment-flags"
 import { normalizeSellShippingCostMode } from "@/lib/sell-shipping-cost-mode"
 import type { ListingPersistShippingOptions } from "@/lib/sell-shipping-cost-mode"
@@ -82,6 +83,7 @@ export function buildSurfpackListingPersistFields(
     description: input.description.trim(),
     price: input.price,
     condition: input.condition,
+    stock_quantity: stockQuantityForSellCondition(input.condition, input.stockQuantity),
     section: SURFPACKS_SECTION,
     category_id: USED_SURFPACKS_CATEGORY_ID,
     latitude: input.locationLat ?? null,

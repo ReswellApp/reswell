@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { Check, Loader2, ShoppingCart } from "lucide-react"
+import { Check, Loader2, Minus, Plus, ShoppingCart } from "lucide-react"
 import type * as React from "react"
 
 import { Button } from "@/components/ui/button"
@@ -58,6 +58,8 @@ export type ListingDetailPeerPurchaseActionsProps = {
   exclusivePurchaseAccess?: ListingExclusivePurchaseAccess
   /** Viewer already has a PENDING or COUNTERED offer — link to that thread. */
   openOfferHref?: string | null
+  /** Brand-new units still for sale. Above 1, buyers can choose a quantity. */
+  availableQuantity?: number
 }
 
 export function ListingDetailPeerPurchaseActions({
@@ -70,7 +72,11 @@ export function ListingDetailPeerPurchaseActions({
   offerRowTrailingSlot,
   exclusivePurchaseAccess = { kind: "open" },
   openOfferHref = null,
+  availableQuantity = 1,
 }: ListingDetailPeerPurchaseActionsProps) {
+  const stock = Math.max(1, Math.floor(availableQuantity) || 1)
+  const canChooseQuantity = stock > 1
+  const [quantity, setQuantity] = useState(1)
   const [loading, setLoading] = useState(false)
   const [cartAdded, setCartAdded] = useState(false)
   const [offerOpen, setOfferOpen] = useState(false)
@@ -82,6 +88,8 @@ export function ListingDetailPeerPurchaseActions({
   const pathname = usePathname()
   const here = pathname || "/"
   const checkoutHref = peerListingCheckoutHref(section, checkoutListingParam)
+  const checkoutHrefForQuantity =
+    canChooseQuantity && quantity > 1 ? `${checkoutHref}&qty=${quantity}` : checkoutHref
 
   useEffect(() => {
     if (!loggedIn) return
@@ -96,6 +104,50 @@ export function ListingDetailPeerPurchaseActions({
     }
   }
 
+  async function addSelectedQuantityToCart(): Promise<boolean> {
+    const browserSignals = await collectMetaClientBrowserSignals().catch(() => ({
+      fbc: null,
+      fbp: null,
+    }))
+    const r = await addCartItem(
+      listingId,
+      {
+        fbc: browserSignals.fbc ?? undefined,
+        fbp: browserSignals.fbp ?? undefined,
+      },
+      canChooseQuantity ? quantity : 1,
+    )
+    if (!r.ok) {
+      toast.error(r.error ?? "Could not add to cart")
+      return false
+    }
+    trackMetaAddToCart({
+      contentId: listingId,
+      value: r.value,
+      contentName: r.contentName,
+      eventId: r.metaEventId,
+    })
+    reportAddedToCart(r)
+    return true
+  }
+
+  async function handleBuyNow(e: React.MouseEvent) {
+    if (!canChooseQuantity || quantity <= 1) return
+    e.preventDefault()
+    if (!loggedIn) {
+      openLoginGate(checkoutHrefForQuantity)
+      return
+    }
+    setLoading(true)
+    try {
+      const added = await addSelectedQuantityToCart()
+      if (!added) return
+      router.push(checkoutHrefForQuantity)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   async function handleAddToCart(e: React.MouseEvent) {
     e.preventDefault()
     if (!loggedIn) {
@@ -104,26 +156,9 @@ export function ListingDetailPeerPurchaseActions({
     }
     setLoading(true)
     try {
-      const browserSignals = await collectMetaClientBrowserSignals().catch(() => ({
-        fbc: null,
-        fbp: null,
-      }))
-      const r = await addCartItem(listingId, {
-        fbc: browserSignals.fbc ?? undefined,
-        fbp: browserSignals.fbp ?? undefined,
-      })
-      if (!r.ok) {
-        toast.error(r.error ?? "Could not add to cart")
-        return
-      }
-      trackMetaAddToCart({
-        contentId: listingId,
-        value: r.value,
-        contentName: r.contentName,
-        eventId: r.metaEventId,
-      })
+      const added = await addSelectedQuantityToCart()
+      if (!added) return
       setCartAdded(true)
-      reportAddedToCart(r)
       window.setTimeout(() => setCartAdded(false), 2000)
     } finally {
       setLoading(false)
@@ -174,13 +209,44 @@ export function ListingDetailPeerPurchaseActions({
       ) : null}
       {!purchaseBlocked ? (
       <div className="flex flex-col gap-[10px]">
+        {canChooseQuantity ? (
+          <div className="flex items-center justify-between gap-3 rounded-xl bg-[#f2f3f5] px-3 py-2 dark:bg-secondary">
+            <div>
+              <p className="text-[13px] font-medium text-foreground">Quantity</p>
+              <p className="text-[12px] text-muted-foreground">{stock} available</p>
+            </div>
+            <div className="flex h-9 items-center gap-1 rounded-lg border border-black/10 bg-white px-1 dark:border-white/15 dark:bg-transparent">
+              <button
+                type="button"
+                disabled={quantity <= 1}
+                onClick={() => setQuantity((current) => Math.max(1, current - 1))}
+                className="flex h-7 w-7 items-center justify-center rounded-md text-neutral-600 hover:bg-neutral-100 disabled:opacity-40"
+                aria-label="Decrease quantity"
+              >
+                <Minus className="h-3.5 w-3.5" />
+              </button>
+              <span className="min-w-[1.5rem] text-center text-[15px] tabular-nums text-foreground">
+                {quantity}
+              </span>
+              <button
+                type="button"
+                disabled={quantity >= stock}
+                onClick={() => setQuantity((current) => Math.min(stock, current + 1))}
+                className="flex h-7 w-7 items-center justify-center rounded-md text-neutral-600 hover:bg-neutral-100 disabled:opacity-40"
+                aria-label="Increase quantity"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+        ) : null}
         {loggedIn ? (
           <Button
             size="lg"
             className="min-h-[52px] w-full justify-center rounded-xl border-0 bg-[#5574AD] px-6 text-[15px] font-semibold text-white shadow-none hover:bg-[#5574AD]/90 hover:text-white dark:bg-[#5574AD] dark:hover:bg-[#5574AD]/90"
             asChild
           >
-            <Link href={checkoutHref} prefetch>
+            <Link href={checkoutHrefForQuantity} prefetch onClick={handleBuyNow}>
               Buy it now
             </Link>
           </Button>
@@ -189,7 +255,7 @@ export function ListingDetailPeerPurchaseActions({
             type="button"
             size="lg"
             className="min-h-[52px] w-full justify-center rounded-xl border-0 bg-[#5574AD] px-6 text-[15px] font-semibold text-white shadow-none hover:bg-[#5574AD]/90 hover:text-white dark:bg-[#5574AD] dark:hover:bg-[#5574AD]/90"
-            onClick={() => openLoginGate(checkoutHref)}
+            onClick={() => openLoginGate(checkoutHrefForQuantity)}
           >
             Buy it now
           </Button>

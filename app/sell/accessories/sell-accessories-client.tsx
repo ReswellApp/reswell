@@ -75,6 +75,11 @@ import {
 } from "@/lib/sell-flow/update-owned-listing-client"
 import { buildAccessoryListingPersistFields } from "@/lib/accessory-listing-persist-fields"
 import { computeAccessorySellSectionCompletion } from "@/lib/accessory-sell-section-completion"
+import {
+  brandNewQuantityValidationMessage,
+  parseBrandNewListingQuantity,
+  sellFormStockQuantityValue,
+} from "@/lib/listing-stock-quantity"
 import { sellFormConditionValue } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
 import { navigateAfterListingSave } from "@/lib/sell-flow/navigate-after-listing-save"
@@ -154,6 +159,7 @@ type AccessoryFormState = {
   sellerPurchasedFrom: string
   sellerPurchasedOn: string
   condition: string
+  stockQuantity: string
   size: string
   brand: string
   model: string
@@ -182,6 +188,7 @@ const INITIAL_STATE: AccessoryFormState = {
   sellerPurchasedFrom: "",
   sellerPurchasedOn: "",
   condition: "",
+  stockQuantity: "1",
   size: "",
   brand: "",
   model: "",
@@ -367,6 +374,7 @@ export default function SellAccessoriesFlow({ editListingId = null }: { editList
         sellerPurchasedOn:
           (listing as { seller_purchased_on?: string | null }).seller_purchased_on ?? "",
         condition: sellFormConditionValue(listing.condition),
+        stockQuantity: sellFormStockQuantityValue((listing as { stock_quantity?: number | null }).stock_quantity),
         size: (listing as { accessory_size?: string | null }).accessory_size ?? "",
         brand: (listing as { brand?: string | null }).brand?.trim() ?? "",
         model: (listing as { model?: string | null }).model?.trim() ?? "",
@@ -721,6 +729,12 @@ export default function SellAccessoriesFlow({ editListingId = null }: { editList
       scrollAccessorySellSectionIntoView("sell-accessories-section-details")
       return
     }
+    const quantityMessage = brandNewQuantityValidationMessage(form.condition, form.stockQuantity)
+    if (quantityMessage) {
+      failValidation(quantityMessage)
+      scrollAccessorySellSectionIntoView("sell-accessories-section-details")
+      return
+    }
     if (!form.description.trim()) {
       failValidation("Add a description.")
       scrollAccessorySellSectionIntoView("sell-accessories-section-details")
@@ -766,6 +780,7 @@ export default function SellAccessoriesFlow({ editListingId = null }: { editList
       description: form.description,
       price: Number(form.price),
       condition: form.condition as CreateAccessoryListingInput["condition"],
+      stockQuantity: parseBrandNewListingQuantity(form.stockQuantity) ?? 1,
       size: form.size || null,
       brand: form.brand,
       model: form.model,
@@ -1177,6 +1192,8 @@ export default function SellAccessoriesFlow({ editListingId = null }: { editList
                     brand={form.brand}
                     model={form.model}
                     onConditionChange={(v) => setField("condition", v)}
+                    stockQuantity={form.stockQuantity}
+                    onStockQuantityChange={(v) => setField("stockQuantity", v)}
                     onSizeChange={(v) => setField("size", v)}
                     onBrandChange={(v) => setField("brand", v)}
                     onModelChange={(v) => setField("model", v)}

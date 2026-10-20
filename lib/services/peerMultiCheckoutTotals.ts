@@ -15,6 +15,7 @@ import { shopifyManagedCheckoutBilling } from "@/lib/services/shopifyBilling"
 import { getSellerEarnings } from "@/lib/seller-fees"
 import { resolveMixedCheckoutSellerId } from "@/lib/mixed-checkout"
 import { getReswellShopLineEarnings, isReswellShopListing } from "@/lib/reswell-shop"
+import { peerBrandNewStockQuantity } from "@/lib/listing-stock-quantity"
 import {
   countSurfboardListings,
   peerCheckoutSurfboardCountError,
@@ -143,10 +144,11 @@ export async function computePeerMultiCheckoutUsd(params: {
   }
   const sellerId = sellerResolved.sellerId
 
-  const qtyFor = (listingId: string, section: string | null) => {
-    if (isReswellShopListing(section)) {
-      return Math.max(1, Math.floor(quantityByListingId?.[listingId] ?? 1))
-    }
+  const qtyFor = (listing: (typeof listingsOrdered)[number]) => {
+    const requested = Math.max(1, Math.floor(quantityByListingId?.[listing.id] ?? 1))
+    if (isReswellShopListing(listing.section)) return requested
+    const peerStock = peerBrandNewStockQuantity(listing)
+    if (peerStock >= 1) return Math.min(requested, peerStock)
     return 1
   }
 
@@ -206,7 +208,7 @@ export async function computePeerMultiCheckoutUsd(params: {
 
   for (let i = 0; i < listingsOrdered.length; i++) {
     const listing = listingsOrdered[i]!
-    const quantity = qtyFor(listing.id, listing.section)
+    const quantity = qtyFor(listing)
     const lineOverride = shipSeparately
       ? (() => {
           const pkg = preverifiedByListing.get(listing.id)

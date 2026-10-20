@@ -1,3 +1,4 @@
+import { peerBrandNewStockQuantity } from "@/lib/listing-stock-quantity"
 import type { ComponentProps } from "react"
 import { notFound } from "next/navigation"
 import Link from "next/link"
@@ -36,7 +37,7 @@ import { ContactSellerForm } from "@/components/contact-seller-form"
 import { ListingBoardSpecTable } from "@/components/features/listings/listing-board-spec-table"
 import { ListingCatalogIdentity } from "@/components/features/listings/listing-catalog-identity"
 import { ListingPdpDeliveryCaption } from "@/components/features/listings/listing-pdp-delivery-caption"
-import { listingConditionSpecRow } from "@/lib/utils/listing-board-spec-rows"
+import { listingAvailableQuantitySpecRow, listingConditionSpecRow } from "@/lib/utils/listing-board-spec-rows"
 import { fetchSimilarPeerListingsForListingPdp } from "@/lib/db/listing-detail-similar-peer"
 import { FavoriteButton } from "@/components/favorite-button"
 import { cn } from "@/lib/utils"
@@ -359,6 +360,12 @@ async function renderFinsListingDetailPage({
 
   const specRows = [
     listingConditionSpecRow(fin.condition as string | null),
+    listingAvailableQuantitySpecRow({
+      section: fin.section,
+      condition: fin.condition as string | null,
+      stock_quantity: (fin as { stock_quantity?: number | null }).stock_quantity,
+      inventory_source: (fin as { inventory_source?: string | null }).inventory_source,
+    }),
     sizeLabel ? { label: "Size", value: sizeLabel } : null,
     setupLabel ? { label: "Fin setup", value: setupLabel } : null,
     systemLabel ? { label: "Fin system", value: systemLabel } : null,
@@ -508,6 +515,12 @@ async function renderFinsListingDetailPage({
                   listingId={fin.id}
                   checkoutListingParam={fin.slug ?? fin.id}
                   section="fins"
+                  availableQuantity={peerBrandNewStockQuantity({
+                    section: "fins",
+                    condition: fin.condition as string | null,
+                    stock_quantity: (fin as { stock_quantity?: number | null }).stock_quantity,
+                    inventory_source: (fin as { inventory_source?: string | null }).inventory_source,
+                  })}
                   isLoggedIn={!!user}
                   makeOffer={makeOfferConfig}
                   agreedCheckoutItemUsd={buyerAgreedPriceUsd}
@@ -598,6 +611,12 @@ async function renderFinsListingDetailPage({
                     listingId={fin.id}
                     checkoutListingParam={fin.slug ?? fin.id}
                     section="fins"
+                    availableQuantity={peerBrandNewStockQuantity({
+                      section: "fins",
+                      condition: fin.condition as string | null,
+                      stock_quantity: (fin as { stock_quantity?: number | null }).stock_quantity,
+                    inventory_source: (fin as { inventory_source?: string | null }).inventory_source,
+                    })}
                     isLoggedIn={!!user}
                     makeOffer={makeOfferConfig}
                     agreedCheckoutItemUsd={buyerAgreedPriceUsd}

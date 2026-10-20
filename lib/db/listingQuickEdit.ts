@@ -13,6 +13,7 @@ export type ListingQuickEditRow = {
   price: string | number | null
   compare_at_price: string | number | null
   condition: string | null
+  stock_quantity: number | null
   slug: string | null
   section: string | null
   archived_at: string | null
@@ -48,7 +49,7 @@ export type ListingQuickEditRow = {
 }
 
 const LISTING_QUICK_EDIT_SELECT =
-  "id, user_id, status, title, description, price, compare_at_price, condition, slug, section, archived_at, shipping_package_tier, shipping_package_band, shipping_packed_length_in, shipping_packed_width_in, shipping_packed_height_in, shipping_packed_weight_oz, brand, model, city, state, latitude, longitude, local_pickup, shipping_available, board_shipping_cost_mode, shipping_price, dropoff_location_id, dimensions, length_total_inches, volume_liters, fins_setup, fin_system, construction, fins_included, tail_shape, fin_size, wetsuit_size, apparel_kind, traction_size"
+  "id, user_id, status, title, description, price, compare_at_price, condition, stock_quantity, slug, section, archived_at, shipping_package_tier, shipping_package_band, shipping_packed_length_in, shipping_packed_width_in, shipping_packed_height_in, shipping_packed_weight_oz, brand, model, city, state, latitude, longitude, local_pickup, shipping_available, board_shipping_cost_mode, shipping_price, dropoff_location_id, dimensions, length_total_inches, volume_liters, fins_setup, fin_system, construction, fins_included, tail_shape, fin_size, wetsuit_size, apparel_kind, traction_size"
 
 export async function loadListingQuickEditRow(
   supabase: SupabaseClient,
@@ -68,6 +69,7 @@ export type ListingQuickFieldPatch = {
   title?: string
   description?: string
   condition?: string
+  stock_quantity?: number
   brand?: string | null
   model?: string | null
   city?: string | null

@@ -31,6 +31,7 @@ import { listingSoldViaCheckoutUpdate } from "@/lib/listing-sold-state"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { formatPeerItemCountPhrase } from "@/lib/peer-listing-item-nouns"
 import { isReswellShopListing } from "@/lib/reswell-shop"
+import { peerBrandNewStockQuantity } from "@/lib/listing-stock-quantity"
 import {
   dbListShopifyMappedListingIds,
   dbOrderContainsListingItems,
@@ -1263,12 +1264,13 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     if (!sellerCredit.ok) return sellerCredit
   }
 
-  // Peer listings: mark sold. Shop inventory: atomically decrement stock (sold when 0).
+  // Unique peer listings: mark sold. Brand-new and shop inventory: decrement stock.
   const peerListingIds = listingsOrdered
     .filter(
       (listing) =>
         isPeerListingSection(listing.section) &&
-        !isShopifyManagedListing(listing),
+        !isShopifyManagedListing(listing) &&
+        peerBrandNewStockQuantity(listing) < 1,
     )
     .map((l) => l.id)
   if (peerListingIds.length > 0) {
@@ -1285,7 +1287,10 @@ export async function completeMarketplaceOrderFromPaymentIntent(
 
   for (const line of bundle.lines) {
     const listing = listingsOrdered.find((l) => l.id === line.listingId)
-    if (!listing || !isReswellShopListing(listing.section)) continue
+    if (!listing) continue
+    const decrementStock =
+      isReswellShopListing(listing.section) || peerBrandNewStockQuantity(listing) >= 1
+    if (!decrementStock) continue
     const { error: stockErr } = await serviceSupabase.rpc("decrement_listing_stock", {
       p_listing_id: line.listingId,
       p_qty: line.quantity,
@@ -1294,7 +1299,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       console.error("[stripe-complete-order] stock decrement:", stockErr)
       return {
         ok: false,
-        error: "Could not update shop inventory. Contact support if you were charged.",
+        error: "Could not update listing inventory. Contact support if you were charged.",
         status: 409,
       }
     }
@@ -1392,7 +1397,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     listingSlug: listing.slug ?? null,
     listingImageUrl: listingImageUrls.get(listing.id) ?? null,
     price: bundle.lines[idx]?.itemPrice ?? parseFloat(String(listing.price)),
-    quantity: 1,
+    quantity: bundle.lines[idx]?.quantity ?? 1,
   }))
 
   const promoCode =

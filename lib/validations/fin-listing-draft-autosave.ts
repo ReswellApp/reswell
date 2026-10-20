@@ -12,6 +12,7 @@ export const finListingDraftAutosaveSchema = z.object({
   sellerPurchasedFrom: z.string().max(200).optional(),
   sellerPurchasedOn: z.string().regex(/^$|^\d{4}-\d{2}-\d{2}$/).optional(),
   condition: z.string().optional(),
+  stockQuantity: z.union([z.string(), z.number()]).optional(),
   size: z.string().optional().nullable(),
   finSetup: z.string().optional().nullable(),
   finSystem: z.string().optional().nullable(),

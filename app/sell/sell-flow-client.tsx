@@ -198,6 +198,10 @@ import {
   sellFormConditionValue,
 } from "@/lib/listing-labels"
 import {
+  sellFormStockQuantityValue,
+  stockQuantityForSellCondition,
+} from "@/lib/listing-stock-quantity"
+import {
   formatBoardLengthForTitle,
   isBoardLengthEntryComplete,
   isTapeStyleInchesEntryComplete,
@@ -262,6 +266,7 @@ import {
 import { SellSectionNavMobileProgress } from "@/components/features/sell/sell-section-nav-mobile-progress"
 import { BoardSellViewToolbar } from "@/components/features/sell/board-sell-view-toolbar"
 import { BoardSellQuickListForm } from "@/components/features/sell/board-sell-quick-list-form"
+import { SellBrandNewQuantityField } from "@/components/features/sell/sell-brand-new-quantity-field"
 import { QuickPhotoHero } from "@/components/features/sell/quick/quick-photo-hero"
 import {
   computeSellSectionCompletion,
@@ -618,6 +623,7 @@ function createInitialSellFormData() {
     sellerPurchasedOn: "",
     category: "",
     condition: "",
+    stockQuantity: "1",
     brand: "",
     boardFulfillment: "pickup_and_shipping" as BoardFulfillmentChoice,
     boardShippingCostMode: "reswell" as BoardShippingCostMode,
@@ -1333,6 +1339,7 @@ function SellPageContentInner({
       sellerPurchasedFrom: formData.sellerPurchasedFrom,
       sellerPurchasedOn: formData.sellerPurchasedOn,
       condition: formData.condition,
+      stockQuantity: formData.stockQuantity,
       category: formData.category,
       brand: formData.brand,
       boardFulfillment: formData.boardFulfillment,
@@ -1531,6 +1538,9 @@ function SellPageContentInner({
           (listing as { seller_purchased_on?: string | null }).seller_purchased_on ?? "",
         category: listing.category_id ?? "",
         condition: sellFormConditionValue(listing.condition),
+        stockQuantity: sellFormStockQuantityValue(
+          (listing as { stock_quantity?: number | null }).stock_quantity,
+        ),
         brand: (listing as { brand?: string | null }).brand?.trim() ?? "",
         boardFulfillment: loadedFulfillment,
         boardShippingCostMode,
@@ -1978,6 +1988,7 @@ function SellPageContentInner({
       price: formData.price,
       description: formData.description,
       condition: formData.condition,
+      stockQuantity: formData.stockQuantity,
       category: formData.category,
       brand: formData.brand,
       boardModelName: formData.boardModelName,
@@ -3616,6 +3627,7 @@ function SellPageContentInner({
           description: fd.description,
           price: parseFloat(fd.price),
           condition: fd.condition,
+          stock_quantity: stockQuantityForSellCondition(fd.condition, fd.stockQuantity),
           section: "surfboards" as const,
           category_id: fd.category,
           board_type: resolveListingBoardTypeFromCategory(fd.category, fd.boardType),
@@ -3724,6 +3736,7 @@ function SellPageContentInner({
           description: fd.description,
           price: parseFloat(fd.price),
           condition: fd.condition,
+          stock_quantity: stockQuantityForSellCondition(fd.condition, fd.stockQuantity),
           section: "surfboards" as const,
           category_id: fd.category,
           board_type: resolveListingBoardTypeFromCategory(fd.category, fd.boardType),
@@ -4448,6 +4461,10 @@ function SellPageContentInner({
                       setFormData((f) => ({ ...f, condition }))
                     }
                     conditionComplete={isListingSellableCondition(formData.condition)}
+                    stockQuantity={formData.stockQuantity}
+                    onStockQuantityChange={(stockQuantity) =>
+                      setFormData((f) => ({ ...f, stockQuantity }))
+                    }
                     locationPicker={
                       <LocationPicker
                         key={
@@ -4709,6 +4726,14 @@ function SellPageContentInner({
                           </SelectContent>
                         </Select>
                       </div>
+                      <SellBrandNewQuantityField
+                        id="sell-board-quantity"
+                        condition={formData.condition}
+                        value={formData.stockQuantity}
+                        onChange={(stockQuantity) =>
+                          setFormData((current) => ({ ...current, stockQuantity }))
+                        }
+                      />
                       </div>
 
                       <Separator className="bg-border" />

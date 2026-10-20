@@ -25,6 +25,8 @@ const StripeCardCheckout = dynamic(
 
 interface PurchaseOptionsProps {
   listingIds: string[]
+  /** Units per listing. Single-listing checkout sends this to the payment intent. */
+  quantities?: Record<string, number>
   listingTitle: string
   /** Total charged (item + shipping when applicable). */
   price: number
@@ -65,6 +67,7 @@ function purchaseDetailsPlaceholder(needsShipping: boolean): string {
 
 export function PurchaseOptions({
   listingIds,
+  quantities,
   listingTitle,
   price,
   fulfillment,
@@ -128,6 +131,7 @@ export function PurchaseOptions({
           ) : null}
           <StripeCardCheckout
             listingIds={listingIds}
+            quantities={quantities}
             listingTitle={listingTitle}
             price={price}
             fulfillment={fulfillment ?? null}

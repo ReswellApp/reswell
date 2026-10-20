@@ -3,6 +3,7 @@ import {
   USED_TRACTION_CATEGORY_ID,
   tractionSizeSlugForDb,
 } from "@/lib/traction-listing-config"
+import { stockQuantityForSellCondition } from "@/lib/listing-stock-quantity"
 import { reswellPackageFieldsToDb } from "@/lib/sell-listing-fulfillment-flags"
 import { normalizeSellShippingCostMode } from "@/lib/sell-shipping-cost-mode"
 import type { ListingPersistShippingOptions } from "@/lib/sell-shipping-cost-mode"
@@ -82,6 +83,7 @@ export function buildTractionListingPersistFields(
     description: input.description.trim(),
     price: input.price,
     condition: input.condition,
+    stock_quantity: stockQuantityForSellCondition(input.condition, input.stockQuantity),
     section: TRACTION_SECTION,
     category_id: USED_TRACTION_CATEGORY_ID,
     latitude: input.locationLat ?? null,
