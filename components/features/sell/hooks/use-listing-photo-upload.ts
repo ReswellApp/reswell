@@ -28,6 +28,7 @@ import { resolveClientSessionForMutation } from "@/lib/auth/resolve-client-sessi
 import { assertListingOriginalSize } from "@/lib/listing-image-pipeline"
 import { uploadListingImagePairToSupabase } from "@/lib/listing-image-storage"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
+import { orderListingPhotosByCaptureTime } from "@/lib/sell-flow/listing-photo-capture-time"
 import {
   filesFromDataTransfer,
   isOsFileDragEvent,
@@ -105,6 +106,11 @@ export function useListingPhotoUpload({
   const [photosFileDragActive, setPhotosFileDragActive] = useState(false)
   const photosFileDragDepthRef = useRef(0)
   const imagesRef = useRef<ListingPhotoSlot[]>([])
+  /**
+   * Slots already shown, or accepted from a drop that is still reading capture
+   * times. `imagesRef` lags a beat behind `setImages`.
+   */
+  const listingPhotoReservedCountRef = useRef(0)
   const latestListingPhotoPrepareSeqRef = useRef<Map<string, number>>(new Map())
   /** Same prepare generation already running — auth refresh must not start a second copy. */
   const listingPhotoInFlightSeqRef = useRef<Map<string, number>>(new Map())
@@ -116,6 +122,10 @@ export function useListingPhotoUpload({
   promptSignInOnUploadRef.current = promptSignInOnUpload
 
   imagesRef.current = images
+
+  useLayoutEffect(() => {
+    listingPhotoReservedCountRef.current = images.length
+  }, [images.length])
 
   useEffect(() => {
     return () => {
@@ -526,7 +536,7 @@ export function useListingPhotoUpload({
         return
       }
 
-      const currentCount = imagesRef.current.length
+      const currentCount = Math.max(imagesRef.current.length, listingPhotoReservedCountRef.current)
       if (currentCount >= maxPhotos) {
         toast.error(`Maximum ${maxPhotos} photos allowed.`)
         return
@@ -561,6 +571,7 @@ export function useListingPhotoUpload({
 
       if (!newSlots.length) return
 
+      listingPhotoReservedCountRef.current = currentCount + newSlots.length
       setImages((prev) => [...prev, ...newSlots])
       for (const slot of newSlots) void optimizeAndUploadSlot(slot)
     },
@@ -606,7 +617,10 @@ export function useListingPhotoUpload({
       e.stopPropagation()
       photosFileDragDepthRef.current = 0
       setPhotosFileDragActive(false)
-      addListingPhotoFiles(filesFromDataTransfer(e.dataTransfer))
+      const dropped = filesFromDataTransfer(e.dataTransfer)
+      void orderListingPhotosByCaptureTime(dropped)
+        .catch(() => dropped)
+        .then((ordered) => addListingPhotoFiles(ordered))
     },
     [addListingPhotoFiles],
   )

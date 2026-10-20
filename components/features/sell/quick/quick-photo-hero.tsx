@@ -27,8 +27,8 @@ export function QuickPhotoHero({ className, ...gridProps }: QuickPhotoHeroProps)
         photoDescription={
           gridProps.photoDescription ??
           (gridProps.videoFileInputId
-            ? "Photos sell boards. Drag to reorder — the first one is your cover. Optional: add one short video."
-            : "Photos sell boards. Drag to reorder — the first one is your cover.")
+            ? "Photos sell boards. A dropped batch runs from the first shot to the last — drag to reorder. The first photo is your cover. Optional: add one short video."
+            : "Photos sell boards. A dropped batch runs from the first shot to the last — drag to reorder. The first photo is your cover.")
         }
         photoTips={gridProps.photoTips ?? ["Deck", "Bottom", "Rails", "Any dings"]}
       />
