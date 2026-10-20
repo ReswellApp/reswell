@@ -1,7 +1,6 @@
 "use client"
 
 import {
-  type CSSProperties,
   type PointerEvent,
   type ReactNode,
   useCallback,
@@ -15,11 +14,7 @@ import dynamic from "next/dynamic"
 import useEmblaCarousel from "embla-carousel-react"
 import { cn } from "@/lib/utils"
 import { listingFilmImageSrcFromRow, listingTileImageSrcFromRow } from "@/lib/listing-image-display"
-import {
-  DEFAULT_LISTING_HERO_ASPECT,
-  LISTING_PDP_HERO_IMAGE_SIZES,
-  listingHeroFrameVars,
-} from "@/lib/listing-hero-frame"
+import { LISTING_PDP_HERO_IMAGE_SIZES } from "@/lib/listing-hero-frame"
 import {
   proxiedListingImageSrc,
   withListingMediaPdpVariant,
@@ -67,7 +62,7 @@ interface ImageGalleryProps {
   video?: ListingPdpVideoSource | null
   /** Sold listings: SOLD badge on the hero. */
   sold?: boolean
-  /** Mobile PDP: edge-to-edge hero, natural ratio, height-capped so title stays nearby. */
+  /** Mobile PDP: edge-to-edge hero. The frame stays 3:4 on every photo. */
   compactMobile?: boolean
   /** Share / favorite controls — rendered on the hero tile so they track its bounds. */
   heroOverlay?: ReactNode
@@ -111,11 +106,9 @@ export function ImageGallery({
   /** Mount once the zoom chunk is ready so the first enlarge is a state change, not a white shell. */
   const [lightboxMounted, setLightboxMounted] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(0)
-  /** Natural width/height per slide — mobile hero uses this instead of a fixed crop frame. */
+  /** Natural width/height per slide — lightbox only. The hero frame stays 3:4. */
   const [imageAspectRatios, setImageAspectRatios] = useState<Record<number, number>>({})
   const [cropOverrides, setCropOverrides] = useState<Record<string, ListingPdpCrop | null>>({})
-  /** Aspect frame follows the settled slide so the hero height does not jump mid-swipe. */
-  const [frameIndex, setFrameIndex] = useState(0)
   const pointerStartRef = useRef<{ x: number; y: number } | null>(null)
   const suppressHeroClickRef = useRef(false)
   const thumbRowRef = useRef<HTMLDivElement>(null)
@@ -156,7 +149,6 @@ export function ImageGallery({
     const next =
       direction > 0 ? (prev === slideCount - 1 ? 0 : prev + 1) : prev === 0 ? slideCount - 1 : prev - 1
     setSelectedIndex(next)
-    setFrameIndex(next)
   }
   useListingGallerySwipe(
     canSwipe,
@@ -173,10 +165,6 @@ export function ImageGallery({
   )
 
   const isVideoSelected = hasVideo && selectedIndex === videoIndex
-  const isVideoFrame = hasVideo && frameIndex === videoIndex
-  const mobileHeroAspectRatio = isVideoFrame
-    ? DEFAULT_LISTING_HERO_ASPECT
-    : imageAspectRatios[frameIndex] ?? imageAspectRatios[selectedIndex] ?? DEFAULT_LISTING_HERO_ASPECT
 
   /** Photo URLs only — video is a trailing carousel slide and stays out of the lightbox. */
   const proxiedUrls = useMemo(
@@ -230,22 +218,12 @@ export function ImageGallery({
     const onSelect = () => {
       setSelectedIndex(emblaApi.selectedScrollSnap())
     }
-    const onSettle = () => {
-      setFrameIndex(emblaApi.selectedScrollSnap())
-    }
-    const onReInit = () => {
-      onSelect()
-      onSettle()
-    }
     onSelect()
-    onSettle()
     emblaApi.on("select", onSelect)
-    emblaApi.on("settle", onSettle)
-    emblaApi.on("reInit", onReInit)
+    emblaApi.on("reInit", onSelect)
     return () => {
       emblaApi.off("select", onSelect)
-      emblaApi.off("settle", onSettle)
-      emblaApi.off("reInit", onReInit)
+      emblaApi.off("reInit", onSelect)
     }
   }, [emblaApi])
 
@@ -297,8 +275,7 @@ export function ImageGallery({
   if (slideCount === 0) {
     return (
       <div
-        className="relative w-full rounded-2xl bg-[#f5f5f7] text-muted-foreground shadow-sm ring-1 ring-black/[0.04] dark:bg-muted dark:ring-white/[0.06]"
-        style={{ paddingBottom: "133.33%" }}
+        className="listing-pdp-hero relative rounded-2xl bg-muted text-muted-foreground shadow-sm ring-1 ring-black/[0.04] dark:ring-white/[0.06]"
       >
         <span className="absolute inset-0 flex items-center justify-center">No images available</span>
       </div>
@@ -367,7 +344,6 @@ export function ImageGallery({
               return
             }
             setSelectedIndex(lightboxIndex)
-            setFrameIndex(lightboxIndex)
           }}
           proxiedUrls={proxiedUrls}
           title={title}
@@ -379,7 +355,7 @@ export function ImageGallery({
         />
       ) : null}
 
-      {/* Main image — natural ratio, contain (never 3:4 cover-crop the listing photo) */}
+      {/* Main image — locked 3:4 tile. Photos cover the frame from the center. */}
       <div
         className={cn(
           compactMobile &&
@@ -388,16 +364,11 @@ export function ImageGallery({
       >
         <div
           className={cn(
-            "relative overflow-hidden bg-transparent select-none",
+            "listing-pdp-hero relative overflow-hidden bg-muted select-none",
             compactMobile
-              ? "listing-pdp-hero max-md:rounded-none md:h-auto md:w-full md:rounded-2xl md:shadow-sm md:ring-1 md:ring-black/[0.04] dark:md:ring-white/[0.06]"
-              : "w-full rounded-2xl shadow-sm ring-1 ring-black/[0.04] dark:ring-white/[0.06]",
+              ? "max-md:rounded-none md:rounded-2xl md:shadow-sm md:ring-1 md:ring-black/[0.04] dark:md:ring-white/[0.06]"
+              : "rounded-2xl shadow-sm ring-1 ring-black/[0.04] dark:ring-white/[0.06]",
           )}
-          style={
-            compactMobile
-              ? (listingHeroFrameVars(mobileHeroAspectRatio) as CSSProperties)
-              : { paddingBottom: "133.33%" }
-          }
         >
         {heroOverlay ? (
           <div className="absolute right-2 top-2 z-[15] flex items-start gap-2 sm:right-3 sm:top-3 md:right-4 md:top-4">
@@ -460,19 +431,15 @@ export function ImageGallery({
                   className="relative h-full min-w-0 shrink-0 grow-0 basis-full overflow-hidden backface-hidden transform-gpu"
                   style={listingPhotoBackdropStyle(
                     slideSrc,
-                    crop
-                      ? listingPdpCropCssFit(crop)
-                      : compactMobile
-                        ? "contain"
-                        : "cover",
-                    crop ? listingPdpCropObjectPosition(crop) : undefined,
+                    crop ? listingPdpCropCssFit(crop) : "cover",
+                    crop ? listingPdpCropObjectPosition(crop) : "center",
                   )}
                   aria-hidden={!isSelected}
                 >
                   <ListingGalleryPhoto
                     src={heroUrls[i] || "/placeholder.svg"}
                     previewSrc={previewUrls[i]}
-                    objectFit={compactMobile ? "contain" : "cover"}
+                    objectFit="cover"
                     alt={`${title} - Image ${i + 1}`}
                     priority={i === 0 && selectedIndex === 0}
                     fetchPriority={isSelected ? "high" : "auto"}
@@ -572,7 +539,6 @@ export function ImageGallery({
                   return
                 }
                 setSelectedIndex(index)
-                setFrameIndex(index)
               }}
               aria-label={`Show photo ${index + 1} in gallery`}
               className={cn(
@@ -618,7 +584,6 @@ export function ImageGallery({
                   return
                 }
                 setSelectedIndex(videoIndex)
-                setFrameIndex(videoIndex)
               }}
               aria-label="Show video in gallery"
               className={cn(

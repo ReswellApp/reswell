@@ -193,7 +193,7 @@ function SellListingPhotoTile({
         touchAction: sortable.isDragging ? "none" : "pan-y",
       }}
       className={cn(
-        "relative aspect-square overflow-hidden rounded-lg border border-transparent bg-muted flex flex-col select-none",
+        "relative aspect-[3/4] overflow-hidden rounded-lg border border-transparent bg-muted flex flex-col select-none",
         sortable.isDragging && "z-[60] opacity-70 shadow-lg ring-2 ring-primary/40 scale-[1.02]",
         !isFailure && !skeletonVisible && "cursor-grab active:cursor-grabbing",
       )}
@@ -335,7 +335,7 @@ export function SellListingVideoAddTile({
 
   return (
     <>
-      <div className="relative aspect-square overflow-hidden rounded-lg border-2 border-dashed border-slate-400/80 bg-slate-50/60 transition-colors hover:border-primary/50 hover:bg-primary/[0.03]">
+      <div className="relative aspect-[3/4] overflow-hidden rounded-lg border-2 border-dashed border-slate-400/80 bg-slate-50/60 transition-colors hover:border-primary/50 hover:bg-primary/[0.03]">
         <button
           type="button"
           className="absolute inset-0 flex flex-col items-center justify-center px-2 touch-manipulation"
@@ -389,7 +389,7 @@ export function SellListingVideoFilledTile({
   return (
     <>
       <div
-        className="relative aspect-square overflow-hidden rounded-lg border border-transparent bg-muted flex flex-col select-none"
+        className="relative aspect-[3/4] overflow-hidden rounded-lg border border-transparent bg-muted flex flex-col select-none"
         aria-busy={uploading ? true : undefined}
         aria-live="polite"
       >
@@ -545,7 +545,7 @@ function SellListingPhotoAddTile({
 }) {
   if (compact) {
     return (
-      <div className="relative aspect-square overflow-hidden rounded-lg border-2 border-dashed border-slate-400/80 bg-slate-50/60 transition-colors hover:border-primary/50 hover:bg-primary/[0.03]">
+      <div className="relative aspect-[3/4] overflow-hidden rounded-lg border-2 border-dashed border-slate-400/80 bg-slate-50/60 transition-colors hover:border-primary/50 hover:bg-primary/[0.03]">
         <div
           className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-2"
           aria-hidden

@@ -32,7 +32,7 @@ export const SellSimplePhotoTile = memo(function SellSimplePhotoTile({
     !photo.previewUrl.startsWith("blob:")
 
   return (
-    <div className="relative aspect-square overflow-hidden rounded-lg border border-transparent bg-muted">
+    <div className="relative aspect-[3/4] overflow-hidden rounded-lg border border-transparent bg-muted">
       {showImage ? (
         <Image
           src={photo.previewUrl}

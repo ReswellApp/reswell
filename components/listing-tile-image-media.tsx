@@ -103,8 +103,8 @@ function ListingTileCarouselSlide({
         "transition-[opacity,transform] duration-300",
         active ? "z-[2] opacity-100" : "z-[1] opacity-0",
         "group-hover:scale-105",
-        imageFit === "cover" && "object-cover",
-        imageFit === "contain" && "object-contain",
+        imageFit === "cover" && "object-cover object-center",
+        imageFit === "contain" && "object-contain object-center",
         imageClassName,
       )}
       ref={(img) => {
