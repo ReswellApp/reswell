@@ -16,6 +16,7 @@ import { ListingDetailPublicOrAuthenticated } from "@/components/features/listin
 import type { PublicListingRow } from "@/components/features/listings/listing-detail-public-body"
 import { ListingDetailRouteSkeleton } from "@/components/listing-detail-page-loading"
 import { ListingPublishedCelebration } from "@/components/features/listings/listing-published-celebration"
+import { publicSiteOrigin } from "@/lib/public-site-origin"
 
 /** ISR shell — keep in sync with `LISTING_PUBLIC_DETAIL_REVALIDATE_SECONDS`. */
 export const revalidate = 3600
@@ -72,6 +73,7 @@ export default async function ListingDetailPage(props: {
 
     return (
       <>
+        <link rel="describedby" href={`${publicSiteOrigin()}/llms.txt`} />
         <Suspense fallback={<ListingDetailRouteSkeleton />}>
           <ListingDetailPublicOrAuthenticated
             listingParam={listingParam}
@@ -86,6 +88,7 @@ export default async function ListingDetailPage(props: {
 
   return (
     <>
+      <link rel="describedby" href={`${publicSiteOrigin()}/llms.txt`} />
       <Suspense fallback={<ListingDetailRouteSkeleton />}>
         <ListingDetailDynamicGate
           listingParam={listingParam}

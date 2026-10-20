@@ -1,8 +1,8 @@
 import { getDb } from "@/lib/supabase/db"
-import { searchBrandModelsWithBrandsForSuggest } from "@/lib/db/brand-models"
 import {
   PUBLIC_RESEARCH_LISTING_SELECT,
   searchPublicResearchListingsIlike,
+  searchPublicCatalogModels,
   selectActiveSurfboardAskingForPricing,
   selectBrandModelByBrandAndName,
   selectPublicResearchListingsByIds,
@@ -181,8 +181,8 @@ export function getPublicApiCatalog(): PublicApiCatalog {
     endpoints: [
       {
         method: "GET",
-        path: "/api/public/search?q={query}&type=models&limit=5",
-        summary: "Find a catalog model or a specific listing",
+        path: "/api/public/search?q={query}&type=listings&brand={brand}&model={model}&city={city}&limit=5",
+        summary: "Find a catalog model or a specific listing. q is optional when a filter is set.",
       },
       {
         method: "GET",
@@ -204,7 +204,17 @@ export async function searchPublicResearchService(
   const supabase = getDb({ consistency: "eventual" })
 
   if (input.type === "models") {
-    const models = await searchBrandModelsWithBrandsForSuggest(researchDb(), input.q, input.limit)
+    let brandId: string | null = null
+    if (input.brand) {
+      const brand = await resolveDirectoryBrandRowFromLabel(supabase, input.brand)
+      if (!brand) return { ok: false, status: 404, error: "Brand not found" }
+      brandId = brand.id
+    }
+    const models = await searchPublicCatalogModels(researchDb(), {
+      q: input.q ?? "",
+      brandId,
+      limit: input.limit,
+    })
     const results: PublicApiModelCard[] = models.map((model) => {
       const q = `${model.brandName} ${model.name}`
       return {
@@ -212,6 +222,7 @@ export async function searchPublicResearchService(
         name: model.name,
         brand: model.brandName,
         brand_slug: model.brandSlug,
+        image_url: absoluteMediaUrl(model.imageUrl),
         urls: {
           brand_html: absoluteUrl(`/brands/${model.brandSlug}`),
           search_html: absoluteUrl(`/search?q=${encodeURIComponent(q)}`),
@@ -224,11 +235,28 @@ export async function searchPublicResearchService(
     return { ok: true, data: { type: "models", results } }
   }
 
-  const parsed = await parseMarketplaceQuery(supabase, input.q)
+  const queryText = input.q ?? ""
+  const parsed = await parseMarketplaceQuery(supabase, queryText)
   const sections = parsed.sectionIntent
     ? [parsed.sectionIntent]
     : marketplaceSearchSuggestSections("marketplace")
-  const textQuery = parsed.textQuery || input.q
+
+  let brandId = parsed.modelIds.length > 0 ? null : parsed.brand?.id ?? null
+  let brandModelId: string | null = null
+  if (input.brand) {
+    const brand = await resolveDirectoryBrandRowFromLabel(supabase, input.brand)
+    if (!brand) return { ok: false, status: 404, error: "Brand not found" }
+    brandId = brand.id
+    if (input.model) {
+      const catalogModel = await selectBrandModelByBrandAndName(supabase, brand.id, input.model)
+      brandModelId = catalogModel?.id ?? null
+    }
+  }
+
+  const textQuery = [parsed.textQuery || queryText, brandModelId ? "" : (input.model ?? "")]
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .join(" ")
 
   let rows: PublicResearchListingRow[] = []
   if (isElasticsearchConfigured()) {
@@ -236,9 +264,11 @@ export async function searchPublicResearchService(
       const ids = await searchListingIdsFromElasticsearch(textQuery, input.limit, {
         sections,
         expansions: parsed.expansions,
-        brandId: parsed.modelIds.length > 0 ? null : parsed.brand?.id ?? null,
-        brandModelIds: parsed.modelIds.length > 0 ? parsed.modelIds : null,
+        brandId: brandModelId ? null : brandId,
+        brandModelId,
+        brandModelIds: brandModelId ? null : parsed.modelIds.length > 0 ? parsed.modelIds : null,
         lengthInches: parsed.lengthInches,
+        city: input.city ?? null,
       })
       rows = await selectPublicResearchListingsByIds(supabase, ids)
     } catch (error) {
@@ -250,7 +280,11 @@ export async function searchPublicResearchService(
   }
 
   if (rows.length === 0) {
-    rows = await searchPublicResearchListingsIlike(supabase, textQuery, sections, input.limit)
+    rows = await searchPublicResearchListingsIlike(supabase, textQuery, sections, input.limit, {
+      brandId,
+      model: brandModelId ? null : input.model,
+      city: input.city,
+    })
   }
 
   const visible = rows
@@ -428,5 +462,6 @@ function toSoldComp(row: PublicResearchSoldOrderRow, price: number): PublicApiSo
     dimensions: formatStoredListingDimensions(listing?.dimensions),
     title: listing?.title?.trim() || null,
     listing_url: href ? absoluteUrl(href) : null,
+    image_url: listingImageUrl(listing?.listing_images),
   }
 }

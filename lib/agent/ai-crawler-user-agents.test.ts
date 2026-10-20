@@ -10,6 +10,7 @@ const REQUIRED_TOKENS = [
   "Applebot-Extended",
   "PerplexityBot",
   "DeepSeekBot",
+  "GrokBot",
 ] as const
 
 describe("AI crawler user agents", () => {

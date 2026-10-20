@@ -761,6 +761,8 @@ export async function searchListingIdsFromElasticsearch(
     brandModelId?: string | null
     /** Multiple catalog model ids (e.g. Dumpster Diver + Dumpster Diver 2). */
     brandModelIds?: string[] | null
+    /** City name. Match phrase against the indexed city field. */
+    city?: string | null
     /** Exact board length in inches (±1" range). */
     lengthInches?: number | null
     /** Canonical board-style slugs (`listings.board_type` / surfboard category). */
@@ -814,6 +816,11 @@ export async function searchListingIdsFromElasticsearch(
 
     const boardTypeFilter = listingBoardTypesFilterClause(options?.boardTypes)
     if (boardTypeFilter) filter.push(boardTypeFilter)
+
+    const city = options?.city?.trim()
+    if (city) {
+      filter.push({ match_phrase: { city } })
+    }
 
     const q = rawQuery.trim()
     const queryBody = options?.typoFallback

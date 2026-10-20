@@ -22,6 +22,9 @@ export async function GET(request: NextRequest) {
       q: request.nextUrl.searchParams.get("q") ?? "",
       type: request.nextUrl.searchParams.get("type") ?? undefined,
       limit: request.nextUrl.searchParams.get("limit") ?? undefined,
+      brand: request.nextUrl.searchParams.get("brand") ?? undefined,
+      model: request.nextUrl.searchParams.get("model") ?? undefined,
+      city: request.nextUrl.searchParams.get("city") ?? undefined,
     })
     if (!parsed.success) {
       return publicApiJson(

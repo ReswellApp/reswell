@@ -353,11 +353,16 @@ export async function buildListingSitemapUrlEntries(): Promise<SitemapUrlEntry[]
     ...tractionEntries,
   ]
 
-  const normalized: { path: string; lastModified: Date }[] = [
-    ...listingEntries.map((e) => ({ path: e.path, lastModified: e.lastModified })),
+  const normalized: { path: string; lastModified: Date; imageUrl: string | null }[] = [
+    ...listingEntries.map((e) => ({
+      path: e.path,
+      lastModified: e.lastModified,
+      imageUrl: e.imageUrl,
+    })),
     ...peerEntries.map((e) => ({
       path: e.path,
       lastModified: e.updatedAt ? new Date(e.updatedAt) : new Date(),
+      imageUrl: e.imageUrl,
     })),
   ]
 
@@ -372,6 +377,7 @@ export async function buildListingSitemapUrlEntries(): Promise<SitemapUrlEntry[]
       lastModified: e.lastModified,
       changeFrequency: "daily",
       priority: 0.75,
+      ...(e.imageUrl ? { images: [e.imageUrl] } : {}),
     })
   }
   return entries

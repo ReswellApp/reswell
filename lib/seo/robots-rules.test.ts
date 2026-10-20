@@ -8,6 +8,7 @@ describe("robots public allow paths", () => {
     assert.ok(AI_CRAWLER_USER_AGENTS.includes("GPTBot"))
     assert.ok(AI_CRAWLER_USER_AGENTS.includes("ChatGPT-User"))
     assert.ok(AI_CRAWLER_USER_AGENTS.includes("ClaudeBot"))
+    assert.ok(AI_CRAWLER_USER_AGENTS.includes("GrokBot"))
     assert.ok(AI_CRAWLER_USER_AGENTS.includes("Google-Extended"))
   })
 

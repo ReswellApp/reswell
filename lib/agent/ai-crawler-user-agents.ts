@@ -14,6 +14,8 @@ export const AI_CRAWLER_USER_AGENTS = [
   "Applebot-Extended",
   "PerplexityBot",
   "Perplexity-User",
+  "GrokBot",
+  "xAI-Grok",
   "DeepSeekBot",
   "Amazonbot",
   "Bytespider",

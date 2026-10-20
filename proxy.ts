@@ -2,6 +2,8 @@ import { ACCOUNT_BANNED_ERROR } from '@/lib/messages/account-ban-errors'
 import { attachDeviceCookie, isSignupPath } from '@/lib/messages/access-signals'
 import { isNextRequestAccessBanned } from '@/lib/services/requestAccessBan'
 import { updateSession } from '@/lib/supabase/proxy'
+import { listingAgentLinkHeader } from '@/lib/agent/listing-agent-links'
+import { publicSiteOrigin } from '@/lib/public-site-origin'
 import { type NextRequest, NextResponse } from 'next/server'
 import { resolveSeoRedirect } from '@/lib/seo/edge-redirects'
 import {
@@ -12,6 +14,16 @@ import {
   publicMarketplaceCdnCacheControl,
   shouldAttachDeviceCookieOnDocument,
 } from '@/lib/crawler/public-marketplace-paths'
+
+function applyListingAgentLinks(request: NextRequest, response: NextResponse): NextResponse {
+  if (request.method !== 'GET' && request.method !== 'HEAD') return response
+  if (response.status >= 300 && response.status < 400) return response
+  const match = request.nextUrl.pathname.match(/^\/l\/([^/]+)$/)
+  const listingParam = match?.[1] ? decodeURIComponent(match[1]) : ''
+  if (!listingParam) return response
+  response.headers.append('Link', listingAgentLinkHeader(publicSiteOrigin(), listingParam))
+  return response
+}
 
 function applyPublicMarketplaceCacheHints(
   request: NextRequest,
@@ -66,13 +78,13 @@ export async function proxy(request: NextRequest) {
       ? attachDeviceCookie(request, response)
       : response
 
-    return applyPublicMarketplaceCacheHints(request, withDevice)
+    return applyListingAgentLinks(request, applyPublicMarketplaceCacheHints(request, withDevice))
   } catch (error) {
     console.error('[middleware] proxy failed; passing through', {
       pathname,
       message: error instanceof Error ? error.message : String(error),
     })
-    const passthrough = NextResponse.next({ request })
+    const passthrough = applyListingAgentLinks(request, NextResponse.next({ request }))
     return shouldAttachDeviceCookieOnDocument(pathname)
       ? attachDeviceCookie(request, passthrough)
       : passthrough

@@ -1,13 +1,9 @@
 import { capitalizeWords } from "@/lib/listing-labels"
-import {
-  googleMerchantListingImageSourceUrl,
-  googleMerchantListingImageUrl,
-} from "@/lib/google-merchant/product-image-link"
 import { googleMerchantProductLink } from "@/lib/google-merchant/product-link"
 import { buildGoogleMerchantProductDescription } from "@/lib/google-merchant/product-description"
 import { mapListingConditionToSchemaOrg } from "@/lib/google-merchant/condition"
 import { productSchema } from "@/lib/seo/structured-data"
-import { asListingImageArray } from "@/lib/listing-image-display"
+import { listingSchemaImageUrls } from "@/lib/sitemap/listing-sitemap-image"
 import type { GoogleMerchantListingRow } from "@/lib/google-merchant/map-listing-to-product-input"
 
 type ListingProductSchemaInput = Pick<
@@ -56,15 +52,12 @@ export function googleMerchantListingProductSchema(listing: ListingProductSchema
   const price = Number(listing.price)
   if (!Number.isFinite(price) || price <= 0) return null
 
-  const images = asListingImageArray(listing.listing_images)
-  const primary = images.find((i) => i.is_primary) || images[0]
-  const imageRaw = primary ? googleMerchantListingImageSourceUrl(primary) : null
-  const image = imageRaw ? googleMerchantListingImageUrl(imageRaw) : undefined
+  const images = listingSchemaImageUrls(listing.listing_images)
 
   return productSchema({
     name: capitalizeWords(title),
     description: buildGoogleMerchantProductDescription(listing),
-    image,
+    image: images.length > 0 ? images : undefined,
     brand: listing.brand?.trim() || undefined,
     sku: listing.id,
     url: googleMerchantProductLink(listing),

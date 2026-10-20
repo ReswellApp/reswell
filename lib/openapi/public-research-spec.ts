@@ -1,4 +1,4 @@
-export const PUBLIC_RESEARCH_OPENAPI_VERSION = "1.0.0"
+export const PUBLIC_RESEARCH_OPENAPI_VERSION = "1.1.0"
 
 export type OpenApiDocument = {
   openapi: "3.1.0"
@@ -125,9 +125,10 @@ export function getPublicResearchOpenApiSpec(origin: string): OpenApiDocument {
             {
               name: "q",
               in: "query",
-              required: true,
-              schema: { type: "string", minLength: 1, maxLength: 200 },
-              description: "Search query (brand, model, or listing text).",
+              required: false,
+              schema: { type: "string", maxLength: 200 },
+              description:
+                "Search query (brand, model, or listing text). Optional when brand, model, or city is set.",
             },
             {
               name: "type",
@@ -142,6 +143,27 @@ export function getPublicResearchOpenApiSpec(origin: string): OpenApiDocument {
               required: false,
               schema: { type: "integer", minimum: 1, maximum: 10, default: 5 },
               description: "Page 1 only. Maximum 10 results.",
+            },
+            {
+              name: "brand",
+              in: "query",
+              required: false,
+              schema: { type: "string", maxLength: 120 },
+              description: "Brand slug or name. Unknown brands return 404.",
+            },
+            {
+              name: "model",
+              in: "query",
+              required: false,
+              schema: { type: "string", maxLength: 120 },
+              description: "Model name or slug.",
+            },
+            {
+              name: "city",
+              in: "query",
+              required: false,
+              schema: { type: "string", maxLength: 120 },
+              description: "Listing city. Used when type=listings.",
             },
           ],
           responses: {
@@ -336,12 +358,13 @@ export function getPublicResearchOpenApiSpec(origin: string): OpenApiDocument {
         ModelCard: {
           type: "object",
           additionalProperties: false,
-          required: ["id", "name", "brand", "brand_slug", "urls"],
+          required: ["id", "name", "brand", "brand_slug", "image_url", "urls"],
           properties: {
             id: { type: "string" },
             name: { type: "string" },
             brand: { type: "string" },
             brand_slug: { type: "string" },
+            image_url: { type: ["string", "null"], format: "uri" },
             urls: {
               type: "object",
               additionalProperties: false,
@@ -504,6 +527,7 @@ export function getPublicResearchOpenApiSpec(origin: string): OpenApiDocument {
             "dimensions",
             "title",
             "listing_url",
+            "image_url",
           ],
           properties: {
             sold_price_usd: { type: "number" },
@@ -513,6 +537,7 @@ export function getPublicResearchOpenApiSpec(origin: string): OpenApiDocument {
             dimensions: { type: ["string", "null"] },
             title: { type: ["string", "null"] },
             listing_url: { type: ["string", "null"], format: "uri" },
+            image_url: { type: ["string", "null"], format: "uri" },
           },
         },
       },

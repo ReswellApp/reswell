@@ -1,20 +1,18 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { listingDetailHref } from "@/lib/listing-href"
+import {
+  SITEMAP_LISTING_SELECT,
+  toSectionSitemapEntry,
+} from "@/lib/db/sitemap-section-listings"
 
 const PAGE_SIZE = 1000
 
 /** Stay under Google's 50k URL cap per sitemap after static + filter URLs. */
 const MAX_URLS = 48_000
 
-type ListingSitemapRow = {
-  id: string
-  slug: string | null
-  updated_at: string | null
-}
-
 export interface SurfboardListingSitemapEntry {
   path: string
   lastModified: Date
+  imageUrl: string | null
 }
 
 /**
@@ -32,7 +30,7 @@ export async function fetchSurfboardListingSitemapEntries(
 
     const { data, error } = await supabase
       .from("listings")
-      .select("id, slug, updated_at")
+      .select(SITEMAP_LISTING_SELECT)
       .eq("status", "active")
       .eq("section", "surfboards")
       .eq("hidden_from_site", false)
@@ -45,13 +43,16 @@ export async function fetchSurfboardListingSitemapEntries(
       break
     }
 
-    const rows = (data ?? []) as ListingSitemapRow[]
+    const rows = (data ?? []) as Parameters<typeof toSectionSitemapEntry>[0][]
     if (rows.length === 0) break
 
     for (const row of rows) {
-      const path = listingDetailHref({ id: row.id, slug: row.slug })
-      const lastModified = row.updated_at ? new Date(row.updated_at) : new Date()
-      entries.push({ path, lastModified })
+      const mapped = toSectionSitemapEntry(row)
+      entries.push({
+        path: mapped.path,
+        lastModified: mapped.updatedAt ? new Date(mapped.updatedAt) : new Date(),
+        imageUrl: mapped.imageUrl,
+      })
     }
 
     if (rows.length < batchSize) break

@@ -134,12 +134,18 @@ export function metadataForListingDetail(
   const fallbackBrandImage = absoluteUrl("/og-image.jpg")
   const shareImageUrl = listingImageAbs ?? fallbackBrandImage
   const canonicalPath = listingDetailPath(listing)
+  const identifier = listing.slug?.trim() || listing.id
   const ogTitle = `${displayTitle}${titleSuffix}`
 
   return {
     title,
     description,
-    alternates: { canonical: canonicalPath },
+    alternates: {
+      canonical: canonicalPath,
+      types: {
+        "application/json": `/api/public/listings/${encodeURIComponent(identifier)}`,
+      },
+    },
     openGraph: {
       title: ogTitle,
       description,

@@ -12,7 +12,7 @@ const endpoints = [
   {
     name: "Search",
     href: "/api/public/search?q=channel+islands+twin+pin&type=models&limit=5",
-    detail: "GET /api/public/search?q={query}&type=models|listings&limit=5",
+    detail: "GET /api/public/search?q={query}&type=models|listings&brand={brand}&model={model}&city={city}&limit=5",
   },
   {
     name: "Pricing",
