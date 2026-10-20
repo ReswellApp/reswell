@@ -4,6 +4,9 @@ import Link from "next/link"
 import { memo, useCallback } from "react"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
 import { LogOut, User } from "lucide-react"
+import { AccountMenuSwitcher } from "@/components/features/dashboard/account-switcher"
+import type { HeaderShopAccess } from "@/lib/auth/header-site-bootstrap"
+import type { AccountRole } from "@/lib/account-access/permissions"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -29,6 +32,7 @@ export type HeaderAccountMenuProps = {
   isAdmin: boolean
   isShipper: boolean
   isDropoffLocation: boolean
+  shopAccess: HeaderShopAccess | null
   onSignOut: () => void
 }
 
@@ -44,11 +48,22 @@ function HeaderAccountMenuInner({
   isAdmin,
   isShipper,
   isDropoffLocation,
+  shopAccess,
   onSignOut,
 }: HeaderAccountMenuProps) {
   const onOpenChange = useCallback((open: boolean) => {
     if (!open) forceReleaseBodyScrollLock()
   }, [])
+
+  const roleLabel: Record<AccountRole, string> = {
+    owner: "You",
+    manager: "Manager",
+    staff: "Staff",
+  }
+  const workingName = shopAccess?.actingAsShop ? shopAccess.shopLabel : resolvedDisplayName
+  const workingDetail = shopAccess?.actingAsShop
+    ? `${user.email ?? "Signed in"} · ${roleLabel[shopAccess.role]}`
+    : user.email
 
   return (
     <DropdownMenu modal={false} onOpenChange={onOpenChange}>
@@ -68,7 +83,7 @@ function HeaderAccountMenuInner({
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="z-[120] w-56">
+      <DropdownMenuContent align="end" className="z-[120] w-72">
         <div className="flex items-center gap-3 px-2 py-2">
           <Avatar className="h-10 w-10 shrink-0 border border-border">
             {profileAvatarUrl && !avatarImageFailed ? (
@@ -83,12 +98,25 @@ function HeaderAccountMenuInner({
             <AvatarFallback className="text-sm text-foreground">{resolvedInitial}</AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium">{resolvedDisplayName}</p>
-            <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+            <p className="truncate text-sm font-medium">{workingName}</p>
+            <p className="truncate text-xs text-muted-foreground">{workingDetail}</p>
           </div>
         </div>
         <DropdownMenuSeparator />
-        {dashboardNavLinks({ isAdmin, isShipper, isDropoffLocation }).map((link) => {
+        {shopAccess ? (
+          <AccountMenuSwitcher
+            options={shopAccess.options}
+            activeAccountId={shopAccess.activeAccountId}
+            actorUserId={shopAccess.actorUserId}
+          />
+        ) : null}
+        {dashboardNavLinks({
+          isAdmin,
+          isShipper,
+          isDropoffLocation,
+          hasShopifyAccess: shopAccess?.hasShopifyAccess === true,
+          showEarnings: shopAccess ? shopAccess.showEarnings : true,
+        }).map((link) => {
           const Icon = link.icon
           if (link.href === "/dashboard/earnings") {
             return (

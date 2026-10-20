@@ -1,5 +1,6 @@
 "use server"
 
+import { resolveManagedSeller } from "@/lib/account-access/managed-seller"
 import { createClient } from "@/lib/supabase/server"
 import { revalidateListingMutationPaths } from "@/lib/cache/revalidate-listing-mutation-paths"
 import { evaluateSellerCanSell } from "@/lib/services/sellerBan"
@@ -54,21 +55,27 @@ export async function createApparelListingAction(
     return { error: "Please sign in to list apparel." }
   }
 
-  const gateError = await assertCanSellApparel(supabase, user.id)
-  if (gateError) return { error: gateError }
+  const managed = await resolveManagedSeller("listings.write")
+  if (!managed.ok) return { error: managed.error }
+  const sellerId = managed.seller.sellerId
 
+  const gateError = await assertCanSellApparel(supabase, sellerId)
+  if (gateError) {
+    const actorGate = sellerId === user.id ? gateError : await assertCanSellApparel(supabase, user.id)
+    if (actorGate) return { error: gateError }
+  }
 
-  const sellGuard = await evaluateSellerCanSell(supabase, user.id)
+  const sellGuard = await evaluateSellerCanSell(supabase, sellerId)
   if (!sellGuard.ok) {
     return { error: sellGuard.userMessage }
   }
 
   try {
-    const result = await createApparelListing(supabase, user.id, parsed.data)
+    const result = await createApparelListing(supabase, sellerId, parsed.data)
     void trackFirstTimeSellerForListingIfNeeded(supabase, {
       listingId: result.listingId,
-      sellerUserId: user.id,
-      sellerEmail: user.email ?? null,
+      sellerUserId: sellerId,
+      sellerEmail: managed.seller.actingAsShop ? null : user.email ?? null,
     })
     revalidateListingMutationPaths("/apparel", result.slug)
     return { success: true, listingId: result.listingId, slug: result.slug }
@@ -99,11 +106,25 @@ export async function updateApparelListingAction(
     return { error: "Please sign in to edit this listing." }
   }
 
-  const gateError = await assertCanSellApparel(supabase, user.id)
-  if (gateError) return { error: gateError }
+  const managed = await resolveManagedSeller("listings.write")
+  if (!managed.ok) return { error: managed.error }
+
+  const gateError = await assertCanSellApparel(supabase, managed.seller.sellerId)
+  if (gateError) {
+    const actorGate =
+      managed.seller.sellerId === user.id
+        ? gateError
+        : await assertCanSellApparel(supabase, user.id)
+    if (actorGate) return { error: gateError }
+  }
 
   try {
-    const result = await updateApparelListing(supabase, parsed.data.listingId, user.id, parsed.data)
+    const result = await updateApparelListing(
+      supabase,
+      parsed.data.listingId,
+      managed.seller.sellerId,
+      parsed.data,
+    )
     revalidateListingMutationPaths("/apparel", result.slug)
     return { success: true, slug: result.slug }
   } catch (error) {

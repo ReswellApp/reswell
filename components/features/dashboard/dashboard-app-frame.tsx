@@ -4,7 +4,6 @@ import { Suspense, type ReactNode } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Plus } from "lucide-react"
-import { AccountSwitcher, type AccountSwitcherOption } from "@/components/features/dashboard/account-switcher"
 import { DashboardMobilePageChrome } from "@/components/features/dashboard/dashboard-mobile-page-chrome"
 import { DashboardSidebarNav } from "@/components/features/dashboard/dashboard-sidebar-nav"
 import { Button } from "@/components/ui/button"
@@ -22,9 +21,6 @@ interface DashboardAppFrameProps {
   isDropoffLocation?: boolean
   hasShopifyAccess?: boolean
   showEarnings?: boolean
-  accountOptions?: AccountSwitcherOption[]
-  activeAccountId?: string
-  actorUserId?: string
   actingAsShop?: boolean
   shopLabel?: string
   actorEmail?: string | null
@@ -39,9 +35,6 @@ export function DashboardAppFrame({
   isDropoffLocation = false,
   hasShopifyAccess = false,
   showEarnings = true,
-  accountOptions = [],
-  activeAccountId,
-  actorUserId,
   actingAsShop = false,
   shopLabel,
   actorEmail,
@@ -77,20 +70,14 @@ export function DashboardAppFrame({
         hasShopifyAccess={hasShopifyAccess}
         showEarnings={showEarnings}
       />
-      {actorUserId && activeAccountId ? (
-        <div className="mt-4 lg:hidden">
-          <AccountSwitcher
-            options={accountOptions}
-            activeAccountId={activeAccountId}
-            actorUserId={actorUserId}
-          />
-        </div>
-      ) : null}
       {actingAsShop ? (
-        <p className="mt-3 text-sm text-muted-foreground lg:hidden">
-          Signed in as {actorEmail ?? "your email"}, working in {shopLabel ?? "this shop"}.
-          {showShopAdminWarning ? " This does not open the Reswell admin panel." : ""}
-        </p>
+        <div className="mt-4 rounded-2xl border border-neutral-200/80 bg-white px-4 py-3 lg:hidden">
+          <p className="text-sm font-medium text-foreground">{shopLabel ?? "Shop"}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Signed in as {actorEmail ?? "your email"}. Switch accounts from your profile photo.
+            {showShopAdminWarning ? " This does not open the Reswell admin panel." : ""}
+          </p>
+        </div>
       ) : null}
 
       <div
@@ -101,18 +88,17 @@ export function DashboardAppFrame({
       >
         <aside className={cn("hidden shrink-0 lg:block", dashboardSidebarWidthClass)}>
           <div className="sticky top-24 space-y-6">
-            {actorUserId && activeAccountId ? (
-              <AccountSwitcher
-                options={accountOptions}
-                activeAccountId={activeAccountId}
-                actorUserId={actorUserId}
-              />
-            ) : null}
             {actingAsShop ? (
-              <p className="text-sm text-muted-foreground">
-                Signed in as {actorEmail ?? "your email"}, working in {shopLabel ?? "this shop"}.
-                {showShopAdminWarning ? " This does not open the Reswell admin panel." : ""}
-              </p>
+              <div className="rounded-2xl border border-neutral-200/80 bg-white px-4 py-3">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                  Working in
+                </p>
+                <p className="mt-1 truncate text-sm font-medium text-foreground">{shopLabel ?? "Shop"}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  {actorEmail ?? "Your email"}
+                  {showShopAdminWarning ? " · Admin panel stays separate" : ""}
+                </p>
+              </div>
             ) : null}
             <Button asChild className={dashboardSidebarCreateButtonClass}>
               <Link href="/sell?new=1">

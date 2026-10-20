@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Invalid listing filters" }, { status: 400 })
   }
   const result = await getMerchantShopifyCatalog({
-    userId: auth.user.id,
+    userId: auth.accountId,
     ...parsed.data,
   })
   if (!result.ok) {

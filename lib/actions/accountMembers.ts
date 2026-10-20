@@ -20,6 +20,7 @@ function revalidateAccountSurfaces() {
   revalidatePath("/dashboard/profile/team")
   revalidatePath("/dashboard/listings")
   revalidatePath("/dashboard/sales")
+  revalidatePath("/dashboard/shopify")
   revalidatePath("/dashboard/offers")
   revalidatePath("/messages")
 }

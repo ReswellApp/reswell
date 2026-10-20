@@ -2,6 +2,7 @@
 
 import { z } from "zod"
 
+import { resolveManagedSeller } from "@/lib/account-access/managed-seller"
 import { purgeListingImageStorageForRowIds } from "@/lib/services/listingImageStoragePurge"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 
@@ -24,6 +25,9 @@ export async function purgeListingImageStorageAction(raw: unknown) {
     return { error: "Unauthorized" as const }
   }
 
+  const managed = await resolveManagedSeller("listings.write")
+  if (!managed.ok) return { error: managed.error }
+
   let service
   try {
     service = createServiceRoleClient()
@@ -34,7 +38,7 @@ export async function purgeListingImageStorageAction(raw: unknown) {
   const result = await purgeListingImageStorageForRowIds(
     supabase,
     service,
-    user.id,
+    managed.seller.sellerId,
     parsed.data.listingId,
     parsed.data.imageRowIds,
   )

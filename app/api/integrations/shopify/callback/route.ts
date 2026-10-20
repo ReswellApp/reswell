@@ -88,9 +88,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(signInUrl)
   }
 
+  if (!auth.canManageConnection) return dashboardRedirect("error", "not_approved")
+
   try {
     const connection = await finishShopifyOAuth({
-      userId: auth.user.id,
+      userId: auth.accountId,
       shopDomain,
       code,
       state,

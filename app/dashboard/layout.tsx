@@ -43,9 +43,6 @@ export default async function DashboardLayout({
       isDropoffLocation={isDropoffLocation}
       hasShopifyAccess={shop.shopifyConnectEnabled}
       showEarnings={shop.permissions.has("payouts.read")}
-      accountOptions={shop.options}
-      activeAccountId={shop.accountId}
-      actorUserId={shop.actorUserId}
       actingAsShop={shop.actingAsShop}
       shopLabel={shop.shopLabel}
       actorEmail={shop.actorEmail}

@@ -11,6 +11,7 @@ import { toast } from "sonner"
 import { validateDisplayName } from "@/lib/display-name-validation"
 import { useLocale } from "@/components/locale-provider"
 import { revalidateListingDetailAfterProfileUpdate } from "@/app/actions/listing-detail-cache"
+import { updateOperatingProfileAction } from "@/lib/actions/shopProfile"
 import { dispatchHeaderAuthRefresh } from "@/lib/auth/header-auth-refresh"
 import { PROFILE_AVATAR_MAX_INPUT_BYTES } from "@/lib/validations/profileAvatar"
 import { PROFILE_BANNER_MAX_INPUT_BYTES } from "@/lib/validations/profileBanner"
@@ -43,6 +44,8 @@ interface DashboardProfileSettingsProps {
   initialSmsPhone?: string | null
   variant?: "dashboard" | "threads"
   team?: AccountTeamPanelData | null
+  /** Login email for password reset. Stays the signed-in person when the shop profile is loaded. */
+  signInEmail?: string
 }
 
 export function DashboardProfileSettings({
@@ -55,6 +58,7 @@ export function DashboardProfileSettings({
   initialSmsPhone = null,
   variant = "dashboard",
   team = null,
+  signInEmail,
 }: DashboardProfileSettingsProps) {
   const isThreads = variant === "threads"
   const { t } = useLocale()
@@ -135,25 +139,21 @@ export function DashboardProfileSettings({
     }
 
     setSaving(true)
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        display_name: profile.display_name,
-        location: profile.location,
-        city: profile.city,
-        bio: profile.bio,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", profile.id)
+    const result = await updateOperatingProfileAction({
+      displayName: profile.display_name,
+      location: profile.location,
+      city: profile.city,
+      bio: profile.bio,
+    })
 
-    if (!error) {
+    if (!("error" in result)) {
       setProfileSavedFlash(true)
       window.setTimeout(() => setProfileSavedFlash(false), 2000)
       void revalidateListingDetailAfterProfileUpdate()
       dispatchHeaderAuthRefresh()
       router.refresh()
     } else {
-      toast.error("Failed to update profile")
+      toast.error(result.error)
     }
     setSaving(false)
   }
@@ -498,7 +498,8 @@ export function DashboardProfileSettings({
 
   async function handleSendPasswordReset() {
     const acctStrings = t("settings").account
-    if (!profile?.email) {
+    const resetEmail = (signInEmail || profile?.email || "").trim()
+    if (!resetEmail) {
       toast.error(acctStrings.resetPasswordToastNoEmail)
       return
     }
@@ -517,7 +518,7 @@ export function DashboardProfileSettings({
         }
       }
       const redirectTo = buildPasswordRecoveryCallbackUrl(siteOrigin)
-      const { error } = await supabase.auth.resetPasswordForEmail(profile.email, { redirectTo })
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, { redirectTo })
       if (error) throw error
       toast.success(acctStrings.resetPasswordToastSuccess)
     } catch (err: unknown) {
@@ -643,7 +644,7 @@ export function DashboardProfileSettings({
         <div className="mx-auto max-w-xl space-y-10 pt-2">
           {team ? <AccountTeamPanel {...team} /> : null}
           <ProfileSignInTab
-            email={profile.email || ""}
+            email={signInEmail || profile.email || ""}
             copy={{
               ...a,
               loginMethods: a.loginMethods,

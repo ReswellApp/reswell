@@ -1,4 +1,6 @@
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
+import { canOperateOrderAsSeller } from "@/lib/account-access/order-operator"
+import { loadOrderOperator } from "@/lib/account-access/order-operator-session"
 import {
   dbGetShippingAdjustmentDispute,
   dbInsertShippingAdjustmentDispute,
@@ -157,14 +159,26 @@ export async function submitShippingAdjustmentDispute(
     .select("id, seller_id")
     .eq("id", adjustment.order_id)
     .maybeSingle()
-  if (orderError || !order || order.seller_id !== user.id) {
+  const orderSellerId = typeof order?.seller_id === "string" ? order.seller_id : ""
+  const operating = await loadOrderOperator()
+  if (!operating.ok) return { error: "Sign in required" }
+  if (
+    orderError ||
+    !orderSellerId ||
+    !canOperateOrderAsSeller({
+      orderSellerId,
+      actorUserId: operating.operator.actorUserId,
+      operatingSellerId: operating.operator.operatingSellerId,
+      canWriteOrders: operating.operator.canWriteOrders,
+    })
+  ) {
     return { error: "You can dispute an adjustment fee on your own sale." }
   }
 
   const inserted = await dbInsertShippingAdjustmentDispute(service, {
     adjustmentId: input.adjustmentId,
     orderId: adjustment.order_id,
-    sellerId: user.id,
+    sellerId: orderSellerId,
     carrier: input.carrier,
     reasonCode: input.reasonCode,
     sellerStatement: input.sellerStatement,

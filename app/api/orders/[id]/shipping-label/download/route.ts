@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { loadOrderOperator } from "@/lib/account-access/order-operator-session"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { loadShippingLabelPdfBytes } from "@/lib/services/resolveOrderShippingLabelPdf"
@@ -38,6 +39,11 @@ export async function GET(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  const operating = await loadOrderOperator()
+  if (!operating.ok) {
+    return NextResponse.json({ error: operating.error }, { status: operating.status })
+  }
+
   const { data: order, error: orderErr } = await supabase
     .from("orders")
     .select(
@@ -51,7 +57,7 @@ export async function GET(
     `,
     )
     .eq("id", orderId)
-    .eq("seller_id", user.id)
+    .in("seller_id", operating.operator.sellerIds)
     .maybeSingle()
 
   if (orderErr || !order) {

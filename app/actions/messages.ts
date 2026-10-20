@@ -2,6 +2,7 @@
 
 import { z } from "zod"
 import { revalidateMessagesInboxForParticipants } from "@/lib/cache/revalidate-messages-inbox"
+import { resolveOperableOrderSellerId } from "@/lib/account-access/order-operator-session"
 import { getShopAccountContext, viewerForConversation } from "@/lib/services/accountAccess"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { findMessagesSupportTicketMetaByConversationId } from "@/lib/db/contactMessages"
@@ -658,7 +659,7 @@ export async function sendConversationReply(input: {
   }
 
   const viewer = await viewerForConversation(user.id, conv.buyer_id, conv.seller_id)
-  if (!viewer.allowed) {
+  if (!viewer.allowed || (viewer.senderId !== user.id && !viewer.useServiceRole)) {
     return { error: "Forbidden" as const }
   }
 
@@ -739,7 +740,8 @@ export async function sendConversationReply(input: {
     const service = createServiceRoleClient()
     const ticketMeta = await findMessagesSupportTicketMetaByConversationId(service, conv.id)
     /** Support teammate is always `seller_id` in member↔support threads opened from Messages. */
-    const supportStaffReply = user.id === conv.seller_id && ticketMeta != null && ticketMeta.email.trim() !== ""
+    const supportStaffReply =
+      viewer.senderId === conv.seller_id && ticketMeta != null && ticketMeta.email.trim() !== ""
 
     if (supportStaffReply) {
       const shadow = await getSupportCaseByContactMessageId(service, ticketMeta.id)
@@ -781,9 +783,22 @@ export async function sendConversationMediaReply(input: unknown) {
   )
   if (unlockDenied) return unlockDenied
 
+  const { data: conv, error: convErr } = await supabase
+    .from("conversations")
+    .select("buyer_id, seller_id")
+    .eq("id", parsed.data.conversation_id)
+    .maybeSingle()
+  if (convErr || !conv) {
+    return { error: "Conversation not found" as const }
+  }
+  const viewer = await viewerForConversation(user.id, conv.buyer_id, conv.seller_id)
+  if (!viewer.allowed || (viewer.senderId !== user.id && !viewer.useServiceRole)) {
+    return { error: "Forbidden" as const }
+  }
+
   const result = await sendMarketplaceMediaMessage({
     conversationId: parsed.data.conversation_id,
-    senderId: user.id,
+    senderId: viewer.senderId,
     attachment: parsed.data.attachment,
     caption: parsed.data.caption,
   })
@@ -814,9 +829,19 @@ export async function discardConversationMediaUpload(input: unknown) {
     return { error: "Unauthorized" as const }
   }
 
+  const { data: conv } = await supabase
+    .from("conversations")
+    .select("buyer_id, seller_id")
+    .eq("id", parsed.data.conversation_id)
+    .maybeSingle()
+  const viewer = conv
+    ? await viewerForConversation(user.id, conv.buyer_id, conv.seller_id)
+    : null
+  const senderId = viewer?.allowed ? viewer.senderId : user.id
+
   const result = await discardUnsentMessageAttachment({
     conversationId: parsed.data.conversation_id,
-    senderId: user.id,
+    senderId,
     path: parsed.data.path,
   })
 
@@ -863,11 +888,12 @@ export async function sendConversationLocationReply(input: unknown) {
     return { error: "Conversation not found" as const }
   }
 
-  if (user.id !== conv.buyer_id && user.id !== conv.seller_id) {
+  const viewer = await viewerForConversation(user.id, conv.buyer_id, conv.seller_id)
+  if (!viewer.allowed || (viewer.senderId !== user.id && !viewer.useServiceRole)) {
     return { error: "Forbidden" as const }
   }
 
-  const receiverId = user.id === conv.buyer_id ? conv.seller_id : conv.buyer_id
+  const receiverId = viewer.viewerId === conv.buyer_id ? conv.seller_id : conv.buyer_id
 
   const sendGuard = await evaluateUserMessageSend(supabase, user.id, receiverId)
   if (!sendGuard.ok) {
@@ -905,11 +931,12 @@ export async function sendConversationLocationReply(input: unknown) {
 
   const body = composeLocationShareMessageBody(formattedAddress)
 
-  const { data: inserted, error: msgError } = await supabase
+  const writeDb = viewer.useServiceRole ? createServiceRoleClient() : supabase
+  const { data: inserted, error: msgError } = await writeDb
     .from("messages")
     .insert({
       conversation_id: conv.id,
-      sender_id: user.id,
+      sender_id: viewer.senderId,
       content: body,
       metadata: metadataPayload,
     })
@@ -923,21 +950,21 @@ export async function sendConversationLocationReply(input: unknown) {
 
   await broadcastInsertedMarketplaceMessage(inserted, conv.id)
 
-  await supabase
+  await writeDb
     .from("conversations")
     .update({ last_message_at: new Date().toISOString() })
     .eq("id", conv.id)
 
   revalidateMessagesInboxForParticipants(conv.buyer_id, conv.seller_id)
 
-  const { data: senderProfile } = await supabase
+  const { data: senderProfile } = await writeDb
     .from("profiles")
     .select("display_name, shop_name, is_shop")
-    .eq("id", user.id)
+    .eq("id", viewer.senderId)
     .maybeSingle()
 
   void trackKlaviyoMessageSent({
-    senderUserId: user.id,
+    senderUserId: viewer.senderId,
     receiverUserId: receiverId,
     message: body,
     conversationId: conv.id,
@@ -953,7 +980,8 @@ export async function sendConversationLocationReply(input: unknown) {
   try {
     const service = createServiceRoleClient()
     const ticketMeta = await findMessagesSupportTicketMetaByConversationId(service, conv.id)
-    const supportStaffReply = user.id === conv.seller_id && ticketMeta != null && ticketMeta.email.trim() !== ""
+    const supportStaffReply =
+      viewer.senderId === conv.seller_id && ticketMeta != null && ticketMeta.email.trim() !== ""
 
     if (supportStaffReply) {
       const shadow = await getSupportCaseByContactMessageId(service, ticketMeta.id)
@@ -989,7 +1017,10 @@ export async function sendSellerReviewRequest(input: unknown) {
     return { error: "Unauthorized" as const }
   }
 
-  const result = await sendSellerReviewRequestForOrder(supabase, user.id, parsed.data.order_id, {
+  const seller = await resolveOperableOrderSellerId(supabase, parsed.data.order_id)
+  if (!seller.ok) return { error: seller.error }
+
+  const result = await sendSellerReviewRequestForOrder(supabase, seller.sellerId, parsed.data.order_id, {
     email: user.email ?? null,
   })
 
@@ -1071,6 +1102,9 @@ export async function loadCounterpartyThreads(
   }
 
   const service = createServiceRoleClient()
+  const shop = await getShopAccountContext()
+  const viewerId =
+    shop?.actingAsShop && shop.permissions.has("messages.read") ? shop.accountId : user.id
 
   const [{ data: profile }, { data: convData }] = await Promise.all([
     service
@@ -1082,7 +1116,7 @@ export async function loadCounterpartyThreads(
       .from("conversations")
       .select(COUNTERPARTY_CONVERSATIONS_SELECT)
       .or(
-        `and(buyer_id.eq.${user.id},seller_id.eq.${otherUserId}),and(buyer_id.eq.${otherUserId},seller_id.eq.${user.id})`,
+        `and(buyer_id.eq.${viewerId},seller_id.eq.${otherUserId}),and(buyer_id.eq.${otherUserId},seller_id.eq.${viewerId})`,
       )
       .order("last_message_at", { ascending: false })
       .order("created_at", { ascending: false, referencedTable: "messages" })
@@ -1107,7 +1141,7 @@ export async function loadCounterpartyThreads(
       .select("id, content, is_read, sender_id, created_at, metadata, conversation_id")
       .in("conversation_id", conversationIds)
       .eq("is_read", false)
-      .neq("sender_id", user.id)
+      .neq("sender_id", viewerId)
 
     const unreadByConversation = new Map<string, InboxConversationRow["messages"]>()
     for (const row of (unreadData ?? []) as Array<
@@ -1129,7 +1163,7 @@ export async function loadCounterpartyThreads(
     }
   }
 
-  const sellerThreads = threads.filter((thread) => thread.seller_id === user.id)
+  const sellerThreads = threads.filter((thread) => thread.seller_id === viewerId)
   if (sellerThreads.length > 0) {
     const combined = sellerThreads.flatMap((thread) => thread.messages)
     const redacted = await redactSantaBarbaraDropoffShippingLabels(service, combined)
@@ -1143,7 +1177,7 @@ export async function loadCounterpartyThreads(
   }
 
   return {
-    currentUserId: user.id,
+    currentUserId: viewerId,
     otherUser: (profile as CounterpartyThreadProfile | null) ?? {
       id: otherUserId,
       display_name: "Member",

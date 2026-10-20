@@ -37,9 +37,11 @@ export async function GET(request: NextRequest) {
     : null
   if (!shopDomain) return dashboardError("invalid_shop")
 
+  if (!auth.canManageConnection) return dashboardError("not_approved")
+
   try {
     const url = await startShopifyOAuth({
-      userId: auth.user.id,
+      userId: auth.accountId,
       shopDomain,
     })
     return NextResponse.redirect(url)

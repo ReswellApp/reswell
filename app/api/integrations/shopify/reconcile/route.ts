@@ -5,7 +5,7 @@ import { requestShopifyReconciliation } from "@/lib/services/shopifyConnection"
 export async function POST() {
   const auth = await requireShopifyMerchant()
   if (!auth.ok) return auth.response
-  const result = await requestShopifyReconciliation(auth.user.id)
+  const result = await requestShopifyReconciliation(auth.accountId)
   if (!result.ok) {
     return NextResponse.json(
       { error: result.error },

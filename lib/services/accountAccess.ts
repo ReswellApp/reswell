@@ -573,11 +573,19 @@ export interface AccountTeamPanelInvite {
   role: GrantableAccountRole
 }
 
+export interface AccountTeamMembership {
+  accountId: string
+  label: string
+  role: GrantableAccountRole
+  active: boolean
+}
+
 export interface AccountTeamPanelData {
   canManage: boolean
   canInviteManager: boolean
   members: AccountTeamPanelMember[]
   pendingInvites: AccountTeamPanelInvite[]
+  memberships: AccountTeamMembership[]
   actingAsShop: boolean
   shopLabel: string
   actorEmail: string | null
@@ -634,6 +642,18 @@ export async function loadAccountTeamPanelData(): Promise<AccountTeamPanelData |
       shopLabel: inviteLabels.get(invite.account_id) ?? "Shop",
       role: invite.role,
     })),
+    memberships: shop.options.flatMap((option) => {
+      if (option.accountId === shop.actorUserId) return []
+      if (option.role !== "manager" && option.role !== "staff") return []
+      return [
+        {
+          accountId: option.accountId,
+          label: option.label,
+          role: option.role,
+          active: option.accountId === shop.accountId,
+        },
+      ]
+    }),
     actingAsShop: shop.actingAsShop,
     shopLabel: shop.shopLabel,
     actorEmail: shop.actorEmail,

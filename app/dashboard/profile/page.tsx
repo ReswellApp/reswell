@@ -2,7 +2,7 @@ import { DashboardProfileSettings } from "@/components/features/dashboard/dashbo
 import { getCachedDashboardSession } from "@/lib/dashboard-session"
 import { fetchDashboardProfile } from "@/lib/db/dashboard-profile"
 import { fetchProfileAddresses } from "@/lib/db/profile-addresses"
-import { loadAccountTeamPanelData } from "@/lib/services/accountAccess"
+import { getShopAccountContext, loadAccountTeamPanelData } from "@/lib/services/accountAccess"
 import { loadMessageSmsNotificationsStateForUser } from "@/lib/services/messageSmsNotifications"
 import { privatePageMetadata } from "@/lib/site-metadata"
 
@@ -16,10 +16,14 @@ export default async function DashboardProfilePage() {
   const { supabase, user } = await getCachedDashboardSession()
   if (!user) return null
 
+  const shop = await getShopAccountContext()
+  const profileId =
+    shop?.permissions.has("profile.manage") ? shop.accountId : user.id
+
   const [{ profile, error: profileError }, { addresses, error: addressesError }, smsState, team] =
     await Promise.all([
-      fetchDashboardProfile(supabase, user.id),
-      fetchProfileAddresses(supabase, user.id),
+      fetchDashboardProfile(supabase, profileId),
+      fetchProfileAddresses(supabase, profileId),
       loadMessageSmsNotificationsStateForUser(user.id, user.phone),
       loadAccountTeamPanelData(),
     ])
@@ -50,6 +54,7 @@ export default async function DashboardProfilePage() {
       initialHasSmsPhone={smsState.has_phone}
       initialSmsPhone={smsState.phone}
       team={team}
+      signInEmail={user.email ?? ""}
     />
   )
 }

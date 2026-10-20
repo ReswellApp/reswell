@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid Shopify product" }, { status: 400 })
   }
   const result = await resyncMerchantShopifyProduct({
-    userId: auth.user.id,
+    userId: auth.accountId,
     productId: parsed.data.productId,
   })
   if (!result.ok) {

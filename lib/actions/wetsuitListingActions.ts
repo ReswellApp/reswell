@@ -1,5 +1,6 @@
 "use server"
 
+import { resolveManagedSeller } from "@/lib/account-access/managed-seller"
 import { createClient } from "@/lib/supabase/server"
 import { revalidateListingMutationPaths } from "@/lib/cache/revalidate-listing-mutation-paths"
 import { evaluateSellerCanSell } from "@/lib/services/sellerBan"
@@ -41,17 +42,21 @@ export async function createWetsuitListingAction(
   }
 
 
-  const sellGuard = await evaluateSellerCanSell(supabase, user.id)
+  const managed = await resolveManagedSeller("listings.write")
+  if (!managed.ok) return { error: managed.error }
+  const sellerId = managed.seller.sellerId
+
+  const sellGuard = await evaluateSellerCanSell(supabase, sellerId)
   if (!sellGuard.ok) {
     return { error: sellGuard.userMessage }
   }
 
   try {
-    const result = await createWetsuitListing(supabase, user.id, parsed.data)
+    const result = await createWetsuitListing(supabase, sellerId, parsed.data)
     void trackFirstTimeSellerForListingIfNeeded(supabase, {
       listingId: result.listingId,
-      sellerUserId: user.id,
-      sellerEmail: user.email ?? null,
+      sellerUserId: sellerId,
+      sellerEmail: managed.seller.actingAsShop ? null : user.email ?? null,
     })
     revalidateListingMutationPaths("/wetsuits", result.slug)
     return { success: true, listingId: result.listingId, slug: result.slug }
@@ -83,10 +88,12 @@ export async function updateWetsuitListingAction(
   }
 
   try {
+    const managed = await resolveManagedSeller("listings.write")
+    if (!managed.ok) return { error: managed.error }
     const result = await updateWetsuitListing(
       supabase,
       parsed.data.listingId,
-      user.id,
+      managed.seller.sellerId,
       parsed.data,
     )
     revalidateListingMutationPaths("/wetsuits", result.slug)

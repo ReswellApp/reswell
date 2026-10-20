@@ -600,6 +600,8 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       String(b?.profile?.is_admin ?? ""),
       String(b?.isShipper ?? ""),
       String(b?.isDropoffLocation ?? ""),
+      b?.shopAccess?.activeAccountId ?? "",
+      String(b?.shopAccess?.actingAsShop ?? ""),
     ].join("|")
   }, [
     serverHeaderAuth.user?.id,
@@ -613,6 +615,8 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     serverHeaderAuth.bootstrap?.profile?.is_admin,
     serverHeaderAuth.bootstrap?.isShipper,
     serverHeaderAuth.bootstrap?.isDropoffLocation,
+    serverHeaderAuth.bootstrap?.shopAccess?.activeAccountId,
+    serverHeaderAuth.bootstrap?.shopAccess?.actingAsShop,
   ])
 
   useLayoutEffect(() => {
@@ -1164,6 +1168,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         isAdmin={isAdmin}
         isShipper={isShipper}
         isDropoffLocation={isDropoffLocation}
+        shopAccess={serverHeaderAuth.bootstrap?.shopAccess ?? null}
         onSignOut={handleSignOut}
       />
     ) : null

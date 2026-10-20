@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { loadMarketplaceOrderAccess } from "@/lib/account-access/order-operator-session"
 import { z } from "zod"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { getOrderItemReturnById } from "@/lib/db/orderItemReturns"
@@ -36,30 +37,14 @@ export async function GET(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const { data: order } = await supabase
-    .from("orders")
-    .select("id, order_num, buyer_id, seller_id")
-    .eq("id", id)
-    .maybeSingle()
-
-  if (!order) {
-    return NextResponse.json({ error: "Order not found" }, { status: 404 })
-  }
-
-  const orderRow = order as {
-    id: string
-    order_num: string | null
-    buyer_id: string
-    seller_id: string
-  }
-  if (orderRow.buyer_id !== user.id && orderRow.seller_id !== user.id) {
-    return NextResponse.json({ error: "Order not found" }, { status: 404 })
+  const access = await loadMarketplaceOrderAccess(supabase, id)
+  if (!access.ok) {
+    return NextResponse.json({ error: access.error }, { status: access.status })
   }
 
   const service = createServiceRoleClient()
   if (
-    orderRow.seller_id === user.id &&
-    orderRow.buyer_id !== user.id &&
+    access.role === "seller" &&
     (await fetchSantaBarbaraDropoffOrderIds(service, [id])).has(id)
   ) {
     return NextResponse.json({ error: "No paperless QR for this return" }, { status: 404 })
@@ -76,7 +61,15 @@ export async function GET(
   }
 
   const inline = request.nextUrl.searchParams.get("inline") !== "0"
-  const fileName = `return-label-qr-${formatOrderNumForCustomer(orderRow.order_num, orderRow.id)}.png`
+  const { data: orderMeta } = await service
+    .from("orders")
+    .select("order_num")
+    .eq("id", id)
+    .maybeSingle()
+  const fileName = `return-label-qr-${formatOrderNumForCustomer(
+    typeof orderMeta?.order_num === "string" ? orderMeta.order_num : null,
+    id,
+  )}.png`
 
   if (label.paperless_qr_storage_path?.trim()) {
     const { data: blob, error: dlErr } = await service.storage
