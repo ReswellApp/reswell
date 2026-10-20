@@ -11,8 +11,9 @@ export type HowToSellBoxCalculatorPreset = {
 
 /**
  * Seller-facing carton sizes for /seller-resources/how-to-sell.
- * Best-rate target is 76×22×5 (or smaller). Crossing 77″ / 23″ / 6″ is the
- * large-parcel cliff that typically adds about $100 to the buyer label.
+ * Boards 5′10 and under: 76×22×5 (and smaller) or 76×23×4. Both sit on the
+ * 130″ length + girth line. Boards 5′11 and over need a larger box. UPS and
+ * other carriers then add a large-package fee, normally about $100 more.
  */
 export const HOW_TO_SELL_BEST_RATE_BOX = {
   lengthIn: 76,
@@ -20,17 +21,30 @@ export const HOW_TO_SELL_BEST_RATE_BOX = {
   heightIn: 5,
 } as const
 
+/** Flatter best-rate carton for boards 5′10 and under. Width 23 stays cheap at 4″ tall. */
+export const HOW_TO_SELL_BEST_RATE_FLAT_BOX = {
+  lengthIn: 76,
+  widthIn: 23,
+  heightIn: 4,
+} as const
+
 export const HOW_TO_SELL_BEST_RATE_MAX_LENGTH_IN = HOW_TO_SELL_BEST_RATE_BOX.lengthIn
 
-/** First inch that leaves the cheap parcel band on each side. */
+/** Longest bare board that still uses a best-rate carton. */
+export const HOW_TO_SELL_BEST_RATE_MAX_BOARD_LENGTH = "5′10"
+
+/**
+ * One inch past 76×22×5 on each side. Width 23 is still a best-rate carton
+ * when height stays at 4″ (76×23×4); length + girth is what trips the fee.
+ */
 export const HOW_TO_SELL_LARGE_PARCEL_CLIFF = {
   lengthIn: 77,
   widthIn: 23,
   heightIn: 6,
 } as const
 
-/** Bare board length where a packed carton usually exceeds the best-rate box. */
-export const HOW_TO_SELL_LARGE_PARCEL_BOARD_LENGTH = "6′0"
+/** Shortest bare board that should ship in a larger carton. */
+export const HOW_TO_SELL_LARGE_PARCEL_BOARD_LENGTH = "5′11"
 
 export const HOW_TO_SELL_BEST_RATE_TYPICAL_USD = {
   inStateLow: 40,
@@ -47,13 +61,45 @@ export const HOW_TO_SELL_LARGE_PARCEL_TYPICAL_USD = {
 const compact = SURFBOARD_SHIPPING_PACK_BANDS.shortboard_compact
 const medium = SURFBOARD_SHIPPING_PACK_BANDS.shortboard_medium
 
+export function howToSellBoxSizeLabel(box: {
+  lengthIn: number
+  widthIn: number
+  heightIn: number
+}): string {
+  return `${box.lengthIn}×${box.widthIn}×${box.heightIn}`
+}
+
+/** One-line note beside the surfboard package fields. */
+export function howToSellBestBoxSizesFormNote(): string {
+  const square = howToSellBoxSizeLabel(HOW_TO_SELL_BEST_RATE_BOX)
+  const flat = howToSellBoxSizeLabel(HOW_TO_SELL_BEST_RATE_FLAT_BOX)
+  const jump = HOW_TO_SELL_LARGE_PARCEL_TYPICAL_USD.jump
+  return `Boards ${HOW_TO_SELL_BEST_RATE_MAX_BOARD_LENGTH} and under: ${square} (and smaller) or ${flat}. Boards ${HOW_TO_SELL_LARGE_PARCEL_BOARD_LENGTH} and over need a larger box, usually about $${jump} more.`
+}
+
+/** Full seller guidance for the how-to-sell box section and measurement tips. */
+export function howToSellBestBoxSizesLead(): string {
+  const square = howToSellBoxSizeLabel(HOW_TO_SELL_BEST_RATE_BOX)
+  const flat = howToSellBoxSizeLabel(HOW_TO_SELL_BEST_RATE_FLAT_BOX)
+  const jump = HOW_TO_SELL_LARGE_PARCEL_TYPICAL_USD.jump
+  return `Boards ${HOW_TO_SELL_BEST_RATE_MAX_BOARD_LENGTH} and under ship best in ${square} (and smaller) or ${flat}. Boards ${HOW_TO_SELL_LARGE_PARCEL_BOARD_LENGTH} and over need a larger box. UPS and other carriers then charge a large-package fee, normally about $${jump} more than a board under ${HOW_TO_SELL_BEST_RATE_MAX_BOARD_LENGTH}.`
+}
+
 export const HOW_TO_SELL_BOX_CALCULATOR_PRESETS: HowToSellBoxCalculatorPreset[] = [
   {
     id: "best-rate",
-    label: `${HOW_TO_SELL_BEST_RATE_BOX.lengthIn}×${HOW_TO_SELL_BEST_RATE_BOX.widthIn}×${HOW_TO_SELL_BEST_RATE_BOX.heightIn} · best rates`,
+    label: `${howToSellBoxSizeLabel(HOW_TO_SELL_BEST_RATE_BOX)} · best rates`,
     lengthIn: HOW_TO_SELL_BEST_RATE_BOX.lengthIn,
     widthIn: HOW_TO_SELL_BEST_RATE_BOX.widthIn,
     heightIn: HOW_TO_SELL_BEST_RATE_BOX.heightIn,
+    weightLb: compact.weightLb,
+  },
+  {
+    id: "best-rate-flat",
+    label: `${howToSellBoxSizeLabel(HOW_TO_SELL_BEST_RATE_FLAT_BOX)} · best rates`,
+    lengthIn: HOW_TO_SELL_BEST_RATE_FLAT_BOX.lengthIn,
+    widthIn: HOW_TO_SELL_BEST_RATE_FLAT_BOX.widthIn,
+    heightIn: HOW_TO_SELL_BEST_RATE_FLAT_BOX.heightIn,
     weightLb: compact.weightLb,
   },
   {

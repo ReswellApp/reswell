@@ -133,6 +133,7 @@ export function ListingDeskBoardShipping({
                 disabled={disabled}
                 readOnly={Boolean(spec.dropoffLocationId)}
                 exactCartonMode
+                showSurfboardBoxSizes
                 onChange={onChange}
               />
             )}
@@ -231,18 +232,21 @@ export function PackageCard({
   disabled,
   readOnly,
   exactCartonMode,
+  showSurfboardBoxSizes = false,
   onChange,
 }: {
   spec: ListingDeskSpec
   disabled: boolean
   readOnly?: boolean
   exactCartonMode?: boolean
+  showSurfboardBoxSizes?: boolean
   onChange: (patch: Partial<ListingDeskSpec>) => void
 }) {
   return (
     <ReswellPackageDimensionsCard
       showHeading
       exactCartonMode={exactCartonMode}
+      showSurfboardBoxSizes={showSurfboardBoxSizes}
       showCarrierAdjustmentNotice={exactCartonMode}
       readOnly={readOnly || disabled}
       lengthPlaceholder={exactCartonMode ? "0" : "e.g. 10"}

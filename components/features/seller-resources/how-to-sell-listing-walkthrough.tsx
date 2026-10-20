@@ -10,10 +10,7 @@ import {
 import { HowToSellSection } from "@/components/features/seller-resources/how-to-sell-section"
 import { SellerResourcesHowCard } from "@/components/features/seller-resources/seller-resources-how-card"
 import { SURFBOARD_SELL_BOARDS_CREATE_HREF } from "@/lib/sell-flow/surfboard-sell-paths"
-import {
-  HOW_TO_SELL_BEST_RATE_BOX,
-  HOW_TO_SELL_BEST_RATE_MAX_LENGTH_IN,
-} from "@/lib/seller-resources-box-guide"
+import { howToSellBestBoxSizesLead } from "@/lib/seller-resources-box-guide"
 
 const SHOTS = [
   { title: "Full deck", Icon: SurfboardDeckIcon },
@@ -83,9 +80,7 @@ const STEPS: {
     body: (
       <>
         Pin your location, then offer Reswell shipping, pickup, or both. Enter the outer box you
-        will pack into — not the bare board. {HOW_TO_SELL_BEST_RATE_BOX.lengthIn}×
-        {HOW_TO_SELL_BEST_RATE_BOX.widthIn}×{HOW_TO_SELL_BEST_RATE_BOX.heightIn} and anything
-        under {HOW_TO_SELL_BEST_RATE_MAX_LENGTH_IN}″ length gets the best rates.
+        will pack into — not the bare board. {howToSellBestBoxSizesLead()}
       </>
     ),
   },

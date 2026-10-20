@@ -502,7 +502,7 @@ export const MANAGED_PAGES: ManagedPage[] = [
   page("seller-resources-how-to-sell", "marketing", "How to Sell", {
     title: "How to Sell a Surfboard on Reswell",
     description:
-      "List a surfboard on Reswell — photo examples, the Sell walkthrough, shipping and 76×22×5 box sizes, and how top shops build reviews. Free to post.",
+      "List a surfboard on Reswell — photo examples, the Sell walkthrough, 76×22×5 and 76×23×4 box sizes, and how top shops build reviews. Free to post.",
     path: "/seller-resources/how-to-sell",
     keywords: [
       "how to sell a surfboard",

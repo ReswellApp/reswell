@@ -18,6 +18,10 @@ import {
   parseReswellPackedWeightToTotalOz,
 } from "@/lib/reswell-parcel-fields"
 import {
+  howToSellBestBoxSizesFormNote,
+  howToSellBestBoxSizesLead,
+} from "@/lib/seller-resources-box-guide"
+import {
   RESWELL_UPS_DIMENSION_BUFFER_IN,
   SURFBOARD_LABEL_MAX_UPS_DIMENSION_TOTAL_IN,
   SURFBOARD_LABEL_MAX_WEIGHT_LB,
@@ -48,6 +52,8 @@ export interface ReswellPackageDimensionsCardProps {
   /** Matched dropoff carton — shown so sellers see what is stored on the listing. */
   readOnly?: boolean
   showCarrierAdjustmentNotice?: boolean
+  /** Surfboard sell/edit: show the 5′10 best-rate cartons in measurement tips. */
+  showSurfboardBoxSizes?: boolean
 }
 
 /** Compact cell: label inside the field so L/W/H can sit in one row on mobile. */
@@ -130,8 +136,17 @@ const MEASUREMENT_TIPS = [
   },
 ] as const
 
-function MeasurementTipsTrigger({ label }: { label: string }) {
+function MeasurementTipsTrigger({
+  label,
+  showSurfboardBoxSizes = false,
+}: {
+  label: string
+  showSurfboardBoxSizes?: boolean
+}) {
   const [open, setOpen] = useState(false)
+  const tips = showSurfboardBoxSizes
+    ? [{ title: "Best box sizes", body: howToSellBestBoxSizesLead() }, ...MEASUREMENT_TIPS]
+    : MEASUREMENT_TIPS
   return (
     <>
       <button
@@ -160,7 +175,7 @@ function MeasurementTipsTrigger({ label }: { label: string }) {
             </DialogDescription>
           </DialogHeader>
           <div className="max-h-[min(60vh,22rem)] space-y-3 overflow-y-auto px-5 py-4 sm:px-6">
-            {MEASUREMENT_TIPS.map((tip) => (
+            {tips.map((tip) => (
               <div
                 key={tip.title}
                 className="rounded-lg border border-border/80 bg-muted/30 px-3.5 py-3"
@@ -196,6 +211,7 @@ export function ReswellPackageDimensionsCard({
   onWeightOzChange,
   readOnly = false,
   showCarrierAdjustmentNotice = false,
+  showSurfboardBoxSizes = false,
 }: ReswellPackageDimensionsCardProps) {
   const uid = useId()
   const lengthId = `${uid}-length`
@@ -245,15 +261,25 @@ export function ReswellPackageDimensionsCard({
               </span>
             ) : (
               <>
-                <span className="sm:hidden">
-                  Outer box you&apos;ll ship in. <MeasurementTipsTrigger label="Tips" />
-                </span>
-                <span className="hidden sm:inline">
-                  {exactCartonMode
-                    ? "Enter the exact outer box you'll ship in. Inaccurate measurements may incur additional charges from the carrier. "
-                    : "Inaccurate measurements may incur additional charges from the carrier. "}
-                  <MeasurementTipsTrigger label="Measurement tips" />
-                </span>
+                {showSurfboardBoxSizes ? (
+                  <>
+                    Enter the exact outer box you&apos;ll ship in. {howToSellBestBoxSizesFormNote()}{" "}
+                    Inaccurate measurements may incur additional charges from the carrier.{" "}
+                    <MeasurementTipsTrigger label="Tips" showSurfboardBoxSizes />
+                  </>
+                ) : (
+                  <>
+                    <span className="sm:hidden">
+                      Outer box you&apos;ll ship in. <MeasurementTipsTrigger label="Tips" />
+                    </span>
+                    <span className="hidden sm:inline">
+                      {exactCartonMode
+                        ? "Enter the exact outer box you'll ship in. Inaccurate measurements may incur additional charges from the carrier. "
+                        : "Inaccurate measurements may incur additional charges from the carrier. "}
+                      <MeasurementTipsTrigger label="Measurement tips" />
+                    </span>
+                  </>
+                )}
               </>
             )}
           </p>

@@ -2,10 +2,14 @@ import { HowToSellBoxRateCalculator } from "@/components/features/seller-resourc
 import { HowToSellSection } from "@/components/features/seller-resources/how-to-sell-section"
 import {
   HOW_TO_SELL_BEST_RATE_BOX,
+  HOW_TO_SELL_BEST_RATE_FLAT_BOX,
   HOW_TO_SELL_BEST_RATE_TYPICAL_USD,
   HOW_TO_SELL_BOX_CALCULATOR_PRESETS,
+  HOW_TO_SELL_LARGE_PARCEL_BOARD_LENGTH,
   HOW_TO_SELL_LARGE_PARCEL_TYPICAL_USD,
+  howToSellBestBoxSizesLead,
   howToSellBoxPresetToEstimator,
+  howToSellBoxSizeLabel,
 } from "@/lib/seller-resources-box-guide"
 
 const BOX_ESTIMATOR_PRESETS = HOW_TO_SELL_BOX_CALCULATOR_PRESETS.map(howToSellBoxPresetToEstimator)
@@ -13,30 +17,41 @@ const BEST_RATE_WEIGHT_LB = String(HOW_TO_SELL_BOX_CALCULATOR_PRESETS[0]?.weight
 
 export function HowToSellBoxGuide() {
   const box = HOW_TO_SELL_BEST_RATE_BOX
+  const flat = HOW_TO_SELL_BEST_RATE_FLAT_BOX
   const cheap = HOW_TO_SELL_BEST_RATE_TYPICAL_USD
   const expensive = HOW_TO_SELL_LARGE_PARCEL_TYPICAL_USD
-  const boxLabel = `${box.lengthIn}×${box.widthIn}×${box.heightIn}`
+  const cheapLabel = `$${cheap.inStateLow}–$${cheap.crossCountry}`
+  const rows = [
+    {
+      label: `${howToSellBoxSizeLabel(box)} and under`,
+      price: cheapLabel,
+    },
+    {
+      label: howToSellBoxSizeLabel(flat),
+      price: cheapLabel,
+    },
+    {
+      label: `Larger box · ${HOW_TO_SELL_LARGE_PARCEL_BOARD_LENGTH} and over`,
+      price: `$${expensive.low}–$${expensive.high}`,
+    },
+  ]
 
   return (
     <HowToSellSection
       id="boxes"
       wash
       title="Best box sizes"
-      lead={`Stay at or under ${boxLabel}. One inch over usually adds about $${expensive.jump}.`}
+      lead={howToSellBestBoxSizesLead()}
     >
-      <dl className="mx-auto max-w-xs space-y-3">
-        <div className="flex items-baseline justify-between gap-6">
-          <dt className="text-sm text-[#5c6b89]">{boxLabel}</dt>
-          <dd className="font-headline text-xl font-bold tabular-nums tracking-tight text-[#001A4A]">
-            ${cheap.inStateLow}–${cheap.crossCountry}
-          </dd>
-        </div>
-        <div className="flex items-baseline justify-between gap-6">
-          <dt className="text-sm text-[#5c6b89]">One inch over</dt>
-          <dd className="font-headline text-xl font-bold tabular-nums tracking-tight text-[#001A4A]">
-            ${expensive.low}–${expensive.high}
-          </dd>
-        </div>
+      <dl className="mx-auto max-w-md space-y-3">
+        {rows.map((row) => (
+          <div key={row.label} className="flex items-baseline justify-between gap-6">
+            <dt className="text-sm text-[#5c6b89]">{row.label}</dt>
+            <dd className="font-headline text-xl font-bold tabular-nums tracking-tight text-[#001A4A]">
+              {row.price}
+            </dd>
+          </div>
+        ))}
       </dl>
 
       <details className="mx-auto mt-8 max-w-lg">

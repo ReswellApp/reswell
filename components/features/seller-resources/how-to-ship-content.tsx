@@ -11,7 +11,11 @@ import { HOW_TO_SELL_HREF } from "@/lib/seller-resources"
 import { SANTA_BARBARA_DROPOFF_HREF } from "@/lib/dropoff-santa-barbara"
 import {
   HOW_TO_SELL_BEST_RATE_BOX,
-  HOW_TO_SELL_BEST_RATE_MAX_LENGTH_IN,
+  HOW_TO_SELL_BEST_RATE_FLAT_BOX,
+  HOW_TO_SELL_BEST_RATE_MAX_BOARD_LENGTH,
+  HOW_TO_SELL_LARGE_PARCEL_BOARD_LENGTH,
+  HOW_TO_SELL_LARGE_PARCEL_TYPICAL_USD,
+  howToSellBoxSizeLabel,
 } from "@/lib/seller-resources-box-guide"
 import { SURFBOARD_SELL_BOARDS_CREATE_HREF } from "@/lib/sell-flow/surfboard-sell-paths"
 import { SHIPPING_DEADLINE_DAYS } from "@/lib/shipping-deadline"
@@ -100,9 +104,11 @@ export function HowToShipContent() {
             >
               A New Earth Project
             </a>
-            . For the best rates, pack into {HOW_TO_SELL_BEST_RATE_BOX.lengthIn}×
-            {HOW_TO_SELL_BEST_RATE_BOX.widthIn}×{HOW_TO_SELL_BEST_RATE_BOX.heightIn} or stay under{" "}
-            {HOW_TO_SELL_BEST_RATE_MAX_LENGTH_IN}″ length — see the{" "}
+            . Boards {HOW_TO_SELL_BEST_RATE_MAX_BOARD_LENGTH} and under pack best in{" "}
+            {howToSellBoxSizeLabel(HOW_TO_SELL_BEST_RATE_BOX)} (and smaller) or{" "}
+            {howToSellBoxSizeLabel(HOW_TO_SELL_BEST_RATE_FLAT_BOX)}. Boards{" "}
+            {HOW_TO_SELL_LARGE_PARCEL_BOARD_LENGTH} and over need a larger box. UPS and other
+            carriers then add about ${HOW_TO_SELL_LARGE_PARCEL_TYPICAL_USD.jump} more. See the{" "}
             <Link href={`${HOW_TO_SELL_HREF}#boxes`} className="font-medium text-[#001A4A] underline underline-offset-2">
               box size guide
             </Link>
