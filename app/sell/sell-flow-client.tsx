@@ -68,7 +68,14 @@ import { LocationPicker, type LocationPrefillSuggested } from "@/components/loca
 import { listingDetailHref } from "@/lib/listing-href"
 import type { ListingImageForCard } from "@/lib/listing-image-display"
 import { setJustPublishedListingMarker } from "@/lib/sell-flow/just-published"
-import { navigateAfterListingSave } from "@/lib/sell-flow/navigate-after-listing-save"
+import {
+  listingMediaSignature,
+  listingMediaUnchanged,
+} from "@/lib/sell-flow/listing-media-unchanged"
+import {
+  navigateAfterListingSave,
+  returnToScreenAfterListingEdit,
+} from "@/lib/sell-flow/navigate-after-listing-save"
 import {
   boardFulfillmentFromChecks,
   boardFulfillmentFromFlags,
@@ -916,6 +923,7 @@ function SellPageContentInner({
   const [photosFileDragActive, setPhotosFileDragActive] = useState(false)
   const photosFileDragDepthRef = useRef(0)
   const imagesRef = useRef<ListingPhotoSlot[]>([])
+  const loadedMediaSignatureRef = useRef<string | null>(null)
   /** Authoritative prepare generation per slot — `imagesRef` can lag behind `setState` during re-runs. */
   const latestListingPhotoPrepareSeqRef = useRef<Map<string, number>>(new Map())
   /** Same prepare generation already running — auth refresh must not start a second copy. */
@@ -1690,6 +1698,26 @@ function SellPageContentInner({
       } else {
         hydrateExistingVideo(null)
       }
+
+      loadedMediaSignatureRef.current = listingMediaSignature({
+        images: existingImages.map((img) => ({
+          id: img.id,
+          url: img.url,
+          thumbnailUrl: img.thumbnailUrl,
+        })),
+        removedImageIds: [],
+        video: firstVideo?.url?.trim()
+          ? {
+              id: firstVideo.id,
+              url: firstVideo.url,
+              thumbnailUrl: firstVideo.thumbnail_url?.trim() || null,
+              contentType: firstVideo.content_type ?? null,
+              durationSeconds: firstVideo.duration_seconds ?? null,
+              byteSize: firstVideo.byte_size ?? null,
+            }
+          : null,
+        removedVideoIds: [],
+      })
 
       return { status: "ready" as const }
     },
@@ -3271,21 +3299,29 @@ function SellPageContentInner({
       clearImpersonationStorageIfCookieMissing()
 
       let submitActorIsAdmin = actorIsAdmin === true || initialActorIsAdmin === true
-      try {
-        const { data: actorProfile, error: actorProfileError } = await supabase
+      const [actorProfileSettled, actingShopAccountId] = await Promise.all([
+        supabase
           .from("profiles")
           .select("is_admin")
           .eq("id", user.id)
           .maybeSingle()
+          .then(
+            (result) => ({ ok: true as const, result }),
+            (profileError: unknown) => ({ ok: false as const, profileError }),
+          ),
+        fetchActingShopAccountId(),
+      ])
+      if (actorProfileSettled.ok) {
+        const { data: actorProfile, error: actorProfileError } = actorProfileSettled.result
         if (!actorProfileError && actorProfile) {
           submitActorIsAdmin = actorProfile.is_admin === true
           setActorIsAdmin(submitActorIsAdmin)
         }
-      } catch (profileError) {
-        // Token-refresh aborts must not drop admin impersonation mid-save.
-        if (!isSellSubmitAbortError(profileError) && process.env.NODE_ENV === "development") {
-          console.warn("[sell] is_admin lookup:", profileError)
-        }
+      } else if (
+        !isSellSubmitAbortError(actorProfileSettled.profileError) &&
+        process.env.NODE_ENV === "development"
+      ) {
+        console.warn("[sell] is_admin lookup:", actorProfileSettled.profileError)
       }
 
       /** Cookie first, localStorage fallback — APIs still require the HTTP cookie. */
@@ -3300,7 +3336,6 @@ function SellPageContentInner({
        * Editing your own listing never uses impersonation — drop a stale cookie so Save
        * stays on the normal owner update path (admin flat/free included).
        */
-      const actingShopAccountId = await fetchActingShopAccountId()
       const editingOwnListing =
         Boolean(editId) &&
         Boolean(editListingOwnerId) &&
@@ -3542,6 +3577,7 @@ function SellPageContentInner({
       } as SellFormValidationInput)
 
       const flowImpersonation = !!listingImpersonation
+      const liveListingEdit = Boolean(editId) && !listingIsDraft
       if (!editId && !flowImpersonation) {
         const labels = [
           "Saving your listing...",
@@ -3564,25 +3600,28 @@ function SellPageContentInner({
         setUploadPhaseLabels(labels)
       }
 
-      setPublishPreview({
-        title: resolvedListingTitle,
-        price: fd.price,
-        coverUrl:
-          images[0]?.thumbnailUrl ||
-          images[0]?.url ||
-          images[0]?.previewUrl ||
-          "/placeholder.svg",
-        status: "publishing",
-        condition: fd.condition,
-        boardType: fd.boardType,
-        shippingAvailable: fulfillmentFlags.shipping_available,
-        localPickup: fulfillmentFlags.local_pickup,
-        listingImages: listingImagesForPublishPreview(images),
-      })
+      if (!liveListingEdit) {
+        setPublishPreview({
+          title: resolvedListingTitle,
+          price: fd.price,
+          coverUrl:
+            images[0]?.thumbnailUrl ||
+            images[0]?.url ||
+            images[0]?.previewUrl ||
+            "/placeholder.svg",
+          status: "publishing",
+          condition: fd.condition,
+          boardType: fd.boardType,
+          shippingAvailable: fulfillmentFlags.shipping_available,
+          localPickup: fulfillmentFlags.local_pickup,
+          listingImages: listingImagesForPublishPreview(images),
+        })
+      }
 
       let listingId: string | null = effectiveEditId
       let listingSlug: string | null = null
       let listingPersistedViaApi = false
+      let surfboardShippedPersisted = false
       let publishedDraftNeedsSideEffects = false
       const isLocalOnlyServerDraftSubmit = Boolean(localServerDraftId && !editId)
 
@@ -3679,6 +3718,31 @@ function SellPageContentInner({
           }
           listingPersistedViaApi = true
           goSubmitStep(1)
+          const mediaUnchanged = listingMediaUnchanged(loadedMediaSignatureRef.current, {
+            images: images.map((img) => ({
+              id: img.id,
+              url: img.url,
+              thumbnailUrl: img.thumbnailUrl,
+            })),
+            removedImageIds,
+            video: readyVideo,
+            removedVideoIds,
+          })
+          const surfboardShippedSave =
+            surfboardShippedSell &&
+            isCaliforniaAddressState(fd.locationState) &&
+            effectiveEditId
+              ? saveListingSurfboardShippedAction(
+                  surfboardShippedDraft.enabled && surfboardShippedDraft.address
+                    ? {
+                        listingId: effectiveEditId,
+                        enabled: true,
+                        addressId: surfboardShippedDraft.addressId,
+                        address: surfboardShippedDraft.address,
+                      }
+                    : { listingId: effectiveEditId, enabled: false },
+                )
+              : null
           const updated = await updateOwnedListingViaApi({
             listingId: effectiveEditId,
             listing: editListingFields,
@@ -3688,7 +3752,15 @@ function SellPageContentInner({
             videos: readyVideo ? [readyVideo] : [],
             catalog_snapshot: boardCatalogSnapshotFromSellForm(fd),
             publishFromDraft: publishingFromDraftRow,
+            mediaUnchanged,
           })
+          if (surfboardShippedSave) {
+            const savedChoice = await surfboardShippedSave
+            if (savedChoice.error) {
+              throw new Error(savedChoice.error)
+            }
+            surfboardShippedPersisted = true
+          }
           if (!updated.ok) {
             throw new Error(sellActionErrorMessage(updated.error || "Failed to update listing"))
           }
@@ -3900,6 +3972,7 @@ function SellPageContentInner({
 
       if (listingId) {
         if (
+          !surfboardShippedPersisted &&
           surfboardShippedSell &&
           isCaliforniaAddressState(fd.locationState)
         ) {
@@ -4033,6 +4106,12 @@ function SellPageContentInner({
           section: "surfboards",
         })
       }
+      if (editId && listingId && !publishedDraftNeedsSideEffects) {
+        allowDocumentUnloadRef.current = true
+        retainPublishOverlayUntilNavigation = true
+        returnToScreenAfterListingEdit(detailPath)
+        return
+      }
       if (listingImpersonation) {
         leaveSellDocument(detailPath)
         return
@@ -4100,8 +4179,9 @@ function SellPageContentInner({
   const optimizingAny = images.some((im) => im.optimizePhase === "running")
 
   /** Covers publish gate (in-flight, live, or error) and rare early loading without preview. */
+  const liveListingEdit = Boolean(editId) && !listingIsDraft
   const fullscreenSellBlocking =
-    Boolean(publishPreview) || (loading && !editLoading)
+    Boolean(publishPreview) || (loading && !editLoading && !liveListingEdit)
   const showBoardModeHeader = !editId && !editLoading && !getImpersonation()
 
   if (editLoadError) {
@@ -5395,16 +5475,23 @@ function SellPageContentInner({
                     </div>
                   </div>
 
-                {!loading ? (
+                {!loading || liveListingEdit ? (
                   <Button
                     type="submit"
                     size="lg"
+                    disabled={loading}
                     className={cn(
                       "w-full relative transition-shadow",
                       SELL_PRIMARY_BUTTON_CLASS,
                     )}
                   >
-                    {editId ? (listingIsDraft ? "Publish listing" : "Save changes") : "Create Listing"}
+                    {loading
+                      ? "Saving…"
+                      : editId
+                        ? listingIsDraft
+                          ? "Publish listing"
+                          : "Save changes"
+                        : "Create Listing"}
                   </Button>
                 ) : null}
                 </SellFormSection>

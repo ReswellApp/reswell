@@ -34,6 +34,7 @@ export async function updateOwnedListingViaApi(params: {
   videos?: UpdateImpersonatedListingVideoOp[]
   catalog_snapshot?: unknown
   publishFromDraft?: boolean
+  mediaUnchanged?: boolean
 }): Promise<
   | { ok: true; slug: string; published: boolean }
   | { ok: false; error: string }
@@ -51,6 +52,7 @@ export async function updateOwnedListingViaApi(params: {
         videos: params.videos ?? [],
         catalog_snapshot: params.catalog_snapshot,
         publishFromDraft: params.publishFromDraft === true,
+        mediaUnchanged: params.mediaUnchanged === true,
       }),
     }),
   )

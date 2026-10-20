@@ -64,7 +64,10 @@ import {
 } from "@/lib/validations/magazine-listing"
 import { LISTING_CONDITION_SELL_OPTIONS, sellFormConditionValue } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
-import { navigateAfterListingSave } from "@/lib/sell-flow/navigate-after-listing-save"
+import {
+  navigateAfterListingSave,
+  returnToScreenAfterListingEdit,
+} from "@/lib/sell-flow/navigate-after-listing-save"
 import { resolveAdminBulkListingAfterCreate } from "@/lib/utils/admin-bulk-listing-navigation"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import type { OwnedListingForEditRow } from "@/lib/db/listingEdit"
@@ -498,7 +501,7 @@ export default function SellMagazinesFlow({
           durationMs: Date.now() - publishStartedAt,
         })
         toast.success("Magazine listing updated.")
-        navigateAfterListingSave(listingDetailHref({ id: editId, slug: updated.slug }))
+        returnToScreenAfterListingEdit(listingDetailHref({ id: editId, slug: updated.slug }))
         return
       }
 

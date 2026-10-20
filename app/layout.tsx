@@ -12,6 +12,7 @@ import { GoogleAdsGtag } from '@/components/google-ads-gtag'
 import { GoogleAnalyticsGtag } from '@/components/google-analytics-gtag'
 import { GoogleSignUpWelcomeRedirect } from '@/components/auth/google-sign-up-welcome-redirect'
 import { DeferredMarketingRuntime } from '@/components/deferred-marketing-runtime'
+import { ListingEditReturnRefresh } from '@/components/features/sell/listing-edit-return-refresh'
 import { MetaPixel } from '@/components/meta-pixel'
 import { OpenAiAdsPixel } from '@/components/openai-ads-pixel'
 import { MetaCapiParamBootstrap } from '@/components/meta/meta-capi-param-bootstrap'
@@ -105,6 +106,7 @@ export default function RootLayout({
             <GoogleSignUpWelcomeRedirect />
           </Suspense>
           <SiteChromeShell>{children}</SiteChromeShell>
+          <ListingEditReturnRefresh />
           <Suspense fallback={null}>
             <LiveChatWidgetGate />
           </Suspense>
