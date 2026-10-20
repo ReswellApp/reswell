@@ -8,9 +8,13 @@ import {
   HEADER_CHROME_HYDRATED_CLASS,
   HEADER_CHROME_INITIAL_CLASS,
   HEADER_CHROME_KNOWN_CLASS,
+  HEADER_CHROME_SIGNED_OUT_STORAGE_KEY,
   HEADER_CHROME_SNAPSHOT_STORAGE_KEY,
+  clearHeaderChromeSignOutLatch,
   headerChromeAvatarCssValue,
+  markHeaderChromeSignedOut,
   parseHeaderChromeSnapshot,
+  writeHeaderChromeSnapshot,
   type HeaderChromeSnapshot,
 } from "./header-chrome-snapshot.ts"
 
@@ -72,6 +76,23 @@ describe("header chrome snapshot", () => {
     const guest = runBoot({ raw: null, cookie: "rw_did=1" })
     assert.equal(guest.classes.has(HEADER_CHROME_KNOWN_CLASS), false)
 
+    const signedOut = runBoot({
+      raw: JSON.stringify(sampleSnapshot()),
+      cookie: "sb-abc-auth-token=1",
+      signedOut: true,
+    })
+    assert.equal(signedOut.classes.has(HEADER_CHROME_KNOWN_CLASS), false)
+    assert.equal(signedOut.classes.has(HEADER_CHROME_AVATAR_CLASS), false)
+    assert.equal(signedOut.storage.get(HEADER_CHROME_SNAPSHOT_STORAGE_KEY), undefined)
+    assert.equal(signedOut.session.get(HEADER_CHROME_SIGNED_OUT_STORAGE_KEY), undefined)
+
+    const signedOutCookie = runBoot({
+      raw: JSON.stringify(sampleSnapshot({ displayName: "Kai" })),
+      cookie: `${HEADER_CHROME_SIGNED_OUT_STORAGE_KEY}=1; sb-abc-auth-token=1`,
+    })
+    assert.equal(signedOutCookie.classes.has(HEADER_CHROME_AVATAR_CLASS), false)
+    assert.equal(signedOutCookie.storage.get(HEADER_CHROME_SNAPSHOT_STORAGE_KEY), undefined)
+
     const injected = runBoot({
       raw: JSON.stringify(sampleSnapshot({ avatarUrl: 'https://cdn.example.com/a.png");color:red' })),
       cookie: "",
@@ -88,15 +109,36 @@ describe("header chrome snapshot", () => {
     assert.match(css, new RegExp(HEADER_CHROME_KNOWN_CLASS))
     assert.match(css, new RegExp(HEADER_CHROME_HYDRATED_CLASS))
     assert.match(HEADER_CHROME_BOOT_SCRIPT, new RegExp(HEADER_CHROME_SNAPSHOT_STORAGE_KEY))
+    assert.match(HEADER_CHROME_BOOT_SCRIPT, new RegExp(HEADER_CHROME_SIGNED_OUT_STORAGE_KEY))
+  })
+
+  it("does not write the remembered account after sign-out starts", () => {
+    const store = new Map<string, string>()
+    const session = new Map<string, string>([[HEADER_CHROME_SIGNED_OUT_STORAGE_KEY, "1"]])
+    const previous = installStorage(store, session)
+    try {
+      markHeaderChromeSignedOut()
+      writeHeaderChromeSnapshot(sampleSnapshot())
+      assert.equal(store.get(HEADER_CHROME_SNAPSHOT_STORAGE_KEY), undefined)
+    } finally {
+      clearHeaderChromeSignOutLatch()
+      restoreStorage(previous)
+    }
   })
 })
 
-function runBoot(input: { raw: string | null; cookie: string }): {
+function runBoot(input: { raw: string | null; cookie: string; signedOut?: boolean }): {
   classes: Set<string>
   props: Map<string, string>
+  storage: Map<string, string>
+  session: Map<string, string>
 } {
   const classes = new Set<string>()
   const props = new Map<string, string>()
+  const storage = new Map<string, string>()
+  const session = new Map<string, string>()
+  if (input.raw) storage.set(HEADER_CHROME_SNAPSHOT_STORAGE_KEY, input.raw)
+  if (input.signedOut) session.set(HEADER_CHROME_SIGNED_OUT_STORAGE_KEY, "1")
   const context = {
     document: {
       cookie: input.cookie,
@@ -115,12 +157,79 @@ function runBoot(input: { raw: string | null; cookie: string }): {
     },
     localStorage: {
       getItem(key: string) {
-        if (key !== HEADER_CHROME_SNAPSHOT_STORAGE_KEY) return null
-        return input.raw
+        return storage.get(key) ?? null
+      },
+      removeItem(key: string) {
+        storage.delete(key)
+      },
+    },
+    sessionStorage: {
+      getItem(key: string) {
+        return session.get(key) ?? null
+      },
+      removeItem(key: string) {
+        session.delete(key)
       },
     },
     JSON,
   }
   runInNewContext(HEADER_CHROME_BOOT_SCRIPT, context)
-  return { classes, props }
+  return { classes, props, storage, session }
+}
+
+function installStorage(store: Map<string, string>, session: Map<string, string>) {
+  const target = globalThis as {
+    window?: unknown
+    localStorage?: unknown
+    sessionStorage?: unknown
+    document?: unknown
+  }
+  const previous = {
+    window: target.window,
+    localStorage: target.localStorage,
+    sessionStorage: target.sessionStorage,
+    document: target.document,
+  }
+  target.window = {}
+  target.localStorage = mapStorage(store)
+  target.sessionStorage = mapStorage(session)
+  target.document = {
+    documentElement: {
+      classList: { remove() {} },
+      style: { removeProperty() {} },
+    },
+  }
+  return previous
+}
+
+function mapStorage(store: Map<string, string>) {
+  return {
+    getItem(key: string) {
+      return store.get(key) ?? null
+    },
+    setItem(key: string, value: string) {
+      store.set(key, value)
+    },
+    removeItem(key: string) {
+      store.delete(key)
+    },
+  }
+}
+
+function restoreStorage(previous: {
+  window: unknown
+  localStorage: unknown
+  sessionStorage: unknown
+  document: unknown
+}) {
+  const target = globalThis as {
+    window?: unknown
+    localStorage?: unknown
+    sessionStorage?: unknown
+    document?: unknown
+  }
+  target.window = previous.window
+  target.localStorage = previous.localStorage
+  target.sessionStorage = previous.sessionStorage
+  target.document = previous.document
 }
