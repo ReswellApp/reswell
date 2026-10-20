@@ -285,15 +285,24 @@ BEGIN
     'timezone', v_tz,
     'activityDefinition',
       'Product activity (listings, orders, messages, favorites, offers, signed-in listing views) and last sign-in.',
-    'summary', (
-      SELECT jsonb_build_object(
-        'totalUsers', s.total_users,
-        'returnedUsers', s.returned_users,
-        'returnedRate', s.returned_rate,
-        'm1RetentionRate', s.m1_retention_rate,
-        'avgReturnMonths', s.avg_return_months
+    'summary', COALESCE(
+      (
+        SELECT jsonb_build_object(
+          'totalUsers', s.total_users,
+          'returnedUsers', s.returned_users,
+          'returnedRate', s.returned_rate,
+          'm1RetentionRate', s.m1_retention_rate,
+          'avgReturnMonths', s.avg_return_months
+        )
+        FROM summary s
+      ),
+      jsonb_build_object(
+        'totalUsers', 0,
+        'returnedUsers', 0,
+        'returnedRate', NULL,
+        'm1RetentionRate', NULL,
+        'avgReturnMonths', NULL
       )
-      FROM summary s
     ),
     'cohorts', (
       SELECT COALESCE(
@@ -315,21 +324,7 @@ BEGIN
   )
   INTO v_result;
 
-  RETURN COALESCE(v_result, jsonb_build_object(
-    'cohortMonths', v_cohort_months,
-    'horizonMonths', v_horizon_months,
-    'timezone', v_tz,
-    'activityDefinition',
-      'Product activity (listings, orders, messages, favorites, offers, signed-in listing views) and last sign-in.',
-    'summary', jsonb_build_object(
-      'totalUsers', 0,
-      'returnedUsers', 0,
-      'returnedRate', NULL,
-      'm1RetentionRate', NULL,
-      'avgReturnMonths', NULL
-    ),
-    'cohorts', '[]'::jsonb
-  ));
+  RETURN v_result;
 END;
 $$;
 
