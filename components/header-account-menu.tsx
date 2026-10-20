@@ -6,7 +6,6 @@ import type { User as SupabaseUser } from "@supabase/supabase-js"
 import { LogOut, User } from "lucide-react"
 import { AccountMenuSwitcher } from "@/components/features/dashboard/account-switcher"
 import type { HeaderShopAccess } from "@/lib/auth/header-site-bootstrap"
-import type { AccountRole } from "@/lib/account-access/permissions"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -57,16 +56,6 @@ function HeaderAccountMenuInner({
     if (!open) forceReleaseBodyScrollLock()
   }, [])
 
-  const roleLabel: Record<AccountRole, string> = {
-    owner: "You",
-    manager: "Manager",
-    staff: "Staff",
-  }
-  const workingName = shopAccess?.actingAsShop ? shopAccess.shopLabel : resolvedDisplayName
-  const workingDetail = shopAccess?.actingAsShop
-    ? `${user.email ?? "Signed in"} · ${roleLabel[shopAccess.role]}`
-    : user.email
-
   return (
     <DropdownMenu modal={false} onOpenChange={onOpenChange}>
       <DropdownMenuTrigger asChild>
@@ -103,11 +92,10 @@ function HeaderAccountMenuInner({
             <AvatarFallback className="text-sm text-foreground">{resolvedInitial}</AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium">{workingName}</p>
-            <p className="truncate text-xs text-muted-foreground">{workingDetail}</p>
+            <p className="truncate text-sm font-medium">{resolvedDisplayName}</p>
+            <p className="truncate text-xs text-muted-foreground">{user.email}</p>
           </div>
         </div>
-        <DropdownMenuSeparator />
         {shopAccess ? (
           <AccountMenuSwitcher
             options={shopAccess.options}
@@ -117,6 +105,7 @@ function HeaderAccountMenuInner({
             onActivated={onActiveAccountChange}
           />
         ) : null}
+        <DropdownMenuSeparator />
         {dashboardNavLinks({
           isAdmin,
           isShipper,
