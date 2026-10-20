@@ -1,6 +1,7 @@
 import Image from "next/image"
 import { FALLBACK_HOME_HERO_SLIDE_PATHS } from "@/lib/home-hero-slide-urls"
 import { portraitShimmer } from "@/lib/image-shimmer"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { cn } from "@/lib/utils"
 
 const HERO_STACK_SIZE = 4
@@ -82,7 +83,7 @@ export function AboutHeroBoardStack({
             src={src}
             alt=""
             fill
-            className="object-cover"
+            className={listingPhotoFillClassName}
             sizes="(max-width: 768px) 40vw, 200px"
             placeholder="blur"
             blurDataURL={portraitShimmer}

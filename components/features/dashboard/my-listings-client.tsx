@@ -7,6 +7,7 @@ import Image from "next/image"
 import { format } from "date-fns"
 import { listingDetailHref } from "@/lib/listing-href"
 import { listingCardImageSrc } from "@/lib/listing-image-display"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -821,7 +822,7 @@ function ListingRow({
             src={imageSrc}
             alt={capitalizeWords(listing.title)}
             fill
-            className="object-cover object-center"
+            className={listingPhotoFillClassName}
             sizes={listingPortraitThumbSizes}
             unoptimized={listingImageShouldBypassOptimization(imageSrc)}
           />

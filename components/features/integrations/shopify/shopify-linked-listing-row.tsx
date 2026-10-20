@@ -12,6 +12,7 @@ import { ShopifyLinkedListingActions } from "@/components/features/integrations/
 import { ShopifyListingStateBadge } from "@/components/features/integrations/shopify/shopify-listing-state-badge"
 import { PEER_LISTING_SECTION_LABELS } from "@/lib/peer-listing-sections"
 import type { ShopifyLinkedListing } from "@/lib/shopify/types"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { cn } from "@/lib/utils"
 
 const currency = new Intl.NumberFormat("en-US", {
@@ -49,7 +50,7 @@ function ProductThumb({ listing }: { listing: ShopifyLinkedListing }) {
           src={listing.imageUrl}
           alt=""
           fill
-          className="object-cover"
+          className={listingPhotoFillClassName}
           sizes="40px"
         />
       ) : null}

@@ -22,6 +22,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { cn } from "@/lib/utils"
 
 const PAGE_SIZE = 50
@@ -227,7 +228,7 @@ export function AdminMarketplaceMessagesClient() {
                             src={proxiedListingImageSrc(thumb)}
                             alt={listingTitle || "Listing"}
                             fill
-                            className="object-cover"
+                            className={listingPhotoFillClassName}
                             unoptimized
                           />
                         ) : (

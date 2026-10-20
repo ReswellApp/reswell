@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils"
 import type { FollowNotification } from "@/lib/follows/types"
 import { getFollowNotifications, markFollowNotificationsRead } from "@/app/actions/follows"
 import { listingDetailHref } from "@/lib/listing-href"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
 
@@ -200,7 +201,7 @@ export function NotificationDrawer() {
                           src={proxiedListingImageSrc(primaryImg.url)}
                           alt={listing?.title || ""}
                           fill
-                          className="object-cover"
+                          className={listingPhotoFillClassName}
                           sizes="56px"
                           unoptimized
                         />

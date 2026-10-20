@@ -9,6 +9,8 @@ import {
 } from "@/lib/actions/emailStudio"
 import { emailImageSrc } from "@/lib/email-studio/email-image-url"
 import { EMAIL_MERGE_TOKENS } from "@/lib/email-studio/tokens"
+import { listingPhotoCoverClassName } from "@/lib/listing-photo-fill"
+import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -377,7 +379,7 @@ function ProductFields({
             <div key={item.id} className="flex items-center gap-2 rounded-md border p-2">
               {/* Listing photos come from dynamic marketplace storage. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={item.imageUrl} alt="" className="h-12 w-12 rounded object-cover" />
+              <img src={item.imageUrl} alt="" className={cn(listingPhotoCoverClassName, "h-12 w-12 rounded")} />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-xs font-medium">{item.title}</p>
                 <p className="text-[11px] text-muted-foreground">{item.priceDisplay || "No price"} · {item.availability}</p>
@@ -404,7 +406,7 @@ function ProductFields({
                 onClick={() => add(item)}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={item.imageUrl} alt="" className="h-10 w-10 rounded object-cover" />
+                <img src={item.imageUrl} alt="" className={cn(listingPhotoCoverClassName, "h-10 w-10 rounded")} />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-xs font-medium">{item.title}</span>
                   <span className="block text-[11px] text-muted-foreground">{item.priceDisplay || "No price"} · {item.availability}</span>

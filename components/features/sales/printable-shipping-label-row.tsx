@@ -5,6 +5,7 @@ import Link from "next/link"
 import { Printer } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { listingPortraitThumbClass, listingPortraitThumbSizes } from "@/lib/utils/dashboard-display-styles"
 import { cn } from "@/lib/utils"
@@ -48,7 +49,7 @@ export function PrintableShippingLabelRow({
                 src={sale.imageUrl}
                 alt=""
                 fill
-                className="object-cover"
+                className={listingPhotoFillClassName}
                 sizes={listingPortraitThumbSizes}
                 unoptimized={listingImageShouldBypassOptimization(sale.imageUrl)}
               />

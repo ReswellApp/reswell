@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { VerifiedBadge } from "@/components/verified-badge"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { listingTitleThumbnailSrc, type ListingImageForCard } from "@/lib/listing-image-display"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { MessageProfileAvatar } from "@/components/features/messages/message-profile-avatar"
 import { cn } from "@/lib/utils"
@@ -215,7 +216,7 @@ export function CounterpartyThreadsClient({
                         alt={title}
                         fill
                         sizes="64px"
-                        className="object-cover"
+                        className={listingPhotoFillClassName}
                         unoptimized={listingImageShouldBypassOptimization(thumb)}
                       />
                     ) : (

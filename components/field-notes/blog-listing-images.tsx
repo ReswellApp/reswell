@@ -2,6 +2,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { listingDetailHref } from "@/lib/listing-href"
 import { listingHeroSlideSrc, type ListingImageForCard } from "@/lib/listing-image-display"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import type { BlogEmbedListing } from "@/lib/types/blog-listing-embed"
 import { cn } from "@/lib/utils"
@@ -56,7 +57,7 @@ export function BlogListingImages({
               alt={listing.title}
               fill
               sizes={grid ? "(max-width: 768px) 50vw, 336px" : "(max-width: 768px) 100vw, 672px"}
-              className="object-cover"
+              className={listingPhotoFillClassName}
               unoptimized={listingImageShouldBypassOptimization(photo.src)}
             />
           </Link>

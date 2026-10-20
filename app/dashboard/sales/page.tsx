@@ -51,6 +51,7 @@ import {
 import { REAL_MARKETPLACE_SALES_FILTER } from "@/lib/order-admin-test"
 import { resolveMarketplaceOrderBuyerLabel } from "@/lib/order-buyer-display"
 import { resolveSellerOrderDisplayAmounts } from "@/lib/seller-order-display-amounts"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { listingPortraitThumbClass, listingPortraitThumbSizes } from "@/lib/utils/dashboard-display-styles"
 import { listingsUseSantaBarbaraDropoff } from "@/lib/dropoff-santa-barbara"
 
@@ -514,7 +515,7 @@ export default async function SalesPage({
                   <div className="flex gap-3">
                     <div className={listingPortraitThumbClass}>
                       {img ? (
-                        <Image src={img} alt="" fill className="object-cover" sizes={listingPortraitThumbSizes} unoptimized={listingImageShouldBypassOptimization(img)} />
+                        <Image src={img} alt="" fill className={listingPhotoFillClassName} sizes={listingPortraitThumbSizes} unoptimized={listingImageShouldBypassOptimization(img)} />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center">
                           <Package className="h-6 w-6 text-muted-foreground" />

@@ -61,6 +61,7 @@ import {
   parseOrderTrackingDetail,
 } from "@/lib/shipping/order-tracking-detail"
 import { OrderDetailRealtimeRefresh } from "@/components/order-realtime-refresh"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { listingPortraitThumbClass, listingPortraitThumbSizes } from "@/lib/utils/dashboard-display-styles"
 import { getMarketplaceReviewByOrderAndReviewer } from "@/lib/db/order-reviews"
 import { existingMarketplaceReviewFromRow } from "@/lib/marketplace-review-photos"
@@ -564,7 +565,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
                     <div key={lineListing.id} className="flex gap-4 p-6">
                       <div className={listingPortraitThumbClass}>
                         {rowImg ? (
-                          <Image src={rowImg} alt={rowTitle} fill className="object-cover" sizes={listingPortraitThumbSizes} unoptimized={listingImageShouldBypassOptimization(rowImg)} />
+                          <Image src={rowImg} alt={rowTitle} fill className={listingPhotoFillClassName} sizes={listingPortraitThumbSizes} unoptimized={listingImageShouldBypassOptimization(rowImg)} />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center">
                             <Package className="h-6 w-6 text-muted-foreground" />

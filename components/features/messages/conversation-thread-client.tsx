@@ -17,6 +17,7 @@ import { toast } from 'sonner'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { listingDetailPath } from '@/lib/listing-query'
 import { listingTitleThumbnailSrc, type ListingImageForCard } from "@/lib/listing-image-display"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import {
   sendConversationReply,
@@ -898,7 +899,7 @@ export function ConversationThreadClient({
                           alt=""
                           fill
                           sizes="36px"
-                          className="object-cover object-center"
+                          className={listingPhotoFillClassName}
                           unoptimized={listingImageShouldBypassOptimization(threadListingThumbSrc)}
                           onLoad={() => setListingBannerImageReady(true)}
                         />
@@ -954,7 +955,7 @@ export function ConversationThreadClient({
                       alt={capitalizeWords(displayListing.title)}
                       fill
                       sizes="(max-width: 640px) 56px, 72px"
-                      className="object-cover object-center"
+                      className={listingPhotoFillClassName}
                       unoptimized={listingImageShouldBypassOptimization(threadListingThumbSrc)}
                       onLoad={() => setListingBannerImageReady(true)}
                     />

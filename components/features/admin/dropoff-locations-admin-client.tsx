@@ -16,6 +16,7 @@ import type {
 } from "@/lib/services/dropoffLocations"
 import type { DropoffLocationRow } from "@/lib/db/dropoff-locations"
 import type { DropoffBoxRule } from "@/lib/dropoff-location-box-rules"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -305,7 +306,7 @@ function ListingParcelCard({
     <article className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 sm:flex-row">
       <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-muted">
         {listing.thumbnailUrl ? (
-          <Image src={listing.thumbnailUrl} alt="" fill className="object-cover" sizes="96px" />
+          <Image src={listing.thumbnailUrl} alt="" fill className={listingPhotoFillClassName} sizes="96px" />
         ) : null}
       </div>
       <div className="min-w-0 flex-1 space-y-3">

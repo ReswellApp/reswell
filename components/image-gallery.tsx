@@ -20,15 +20,10 @@ import {
   withListingMediaPdpVariant,
 } from "@/lib/listing-media-proxy-url"
 import { Maximize2, Play } from "lucide-react"
-import {
-  ListingGalleryPhoto,
-  listingPhotoBackdropStyle,
-} from "@/components/features/listings/listing-gallery-photo"
+import { ListingGalleryPhoto } from "@/components/features/listings/listing-gallery-photo"
 import { ListingPdpCropIsland } from "@/components/features/listings/listing-pdp-crop-island"
 import {
-  listingPdpCropCssFit,
   listingPdpCropFromImageRow,
-  listingPdpCropObjectPosition,
   type ListingPdpCrop,
 } from "@/lib/utils/listing-pdp-crop"
 import { useListingGallerySwipe } from "@/components/features/listings/hooks/use-passive-gallery-swipe"
@@ -423,17 +418,11 @@ export function ImageGallery({
           <div className="flex h-full [touch-action:manipulation]">
             {images.map((image, i) => {
               const isSelected = i === selectedIndex
-              const slideSrc = previewUrls[i] || heroUrls[i]
               const crop = cropForImage(image)
               return (
                 <div
                   key={image.id || `hero-${i}-${image.url}`}
-                  className="relative h-full min-w-0 shrink-0 grow-0 basis-full overflow-hidden backface-hidden transform-gpu"
-                  style={listingPhotoBackdropStyle(
-                    slideSrc,
-                    crop ? listingPdpCropCssFit(crop) : "cover",
-                    crop ? listingPdpCropObjectPosition(crop) : "center",
-                  )}
+                  className="relative h-full min-w-0 shrink-0 grow-0 basis-full overflow-hidden bg-muted backface-hidden transform-gpu"
                   aria-hidden={!isSelected}
                 >
                   <ListingGalleryPhoto

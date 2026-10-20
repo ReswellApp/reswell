@@ -3,6 +3,7 @@
 import Image from "next/image"
 import { useCallback, useEffect, useMemo, useState, type SyntheticEvent } from "react"
 import type { ReactNode } from "react"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { cn } from "@/lib/utils"
 
 /** Shared geometry for header nav typeahead “Top listings” and idle personalization rows. */
@@ -93,7 +94,7 @@ export function NavSearchTopListingThumb({
           src={src}
           alt=""
           fill
-          className="object-cover"
+          className={listingPhotoFillClassName}
           sizes={imageSizes}
           unoptimized
           onError={handleError}

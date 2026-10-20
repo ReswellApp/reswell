@@ -58,6 +58,7 @@ import { listingImageShouldBypassOptimization } from '@/lib/listing-media-proxy-
 import { capitalizeWords } from '@/lib/listing-labels'
 import { profileMediaDisplaySrc } from '@/lib/public-media-display-src'
 import type { AdminOrdersDashboardPayload } from '@/lib/services/adminOrdersStats'
+import { listingPhotoCoverClassName } from '@/lib/listing-photo-fill'
 import { cn } from '@/lib/utils'
 
 type PartyLabel = { display_name: string | null; email: string | null; avatar_url: string | null }
@@ -645,7 +646,7 @@ export default function AdminOrdersPage() {
                             width={40}
                             height={40}
                             unoptimized={listingImageShouldBypassOptimization(r.listing.imageUrl)}
-                            className="h-10 w-10 shrink-0 rounded-lg object-cover"
+                            className={cn(listingPhotoCoverClassName, 'h-10 w-10 shrink-0 rounded-lg')}
                           />
                         ) : (
                           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500 dark:bg-muted">

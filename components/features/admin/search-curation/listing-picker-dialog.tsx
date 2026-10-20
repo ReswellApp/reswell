@@ -13,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Loader2, Plus, Check } from "lucide-react"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 
 type PickerHit = {
   id: string
@@ -131,7 +132,7 @@ export function ListingPickerDialog({
                         alt=""
                         fill
                         sizes="48px"
-                        className="object-cover"
+                        className={listingPhotoFillClassName}
                       />
                     ) : null}
                   </div>

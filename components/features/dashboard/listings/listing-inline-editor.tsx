@@ -23,6 +23,7 @@ import { updateListingQuickEditAction } from "@/lib/actions/listingQuickEdit"
 import type { ListingQuickEditSaved } from "@/lib/services/listingQuickEdit"
 import { listingDetailHref } from "@/lib/listing-href"
 import { listingCardImageSrc } from "@/lib/listing-image-display"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import {
   capitalizeWords,
   formatCondition,
@@ -364,7 +365,7 @@ export function ListingInlineEditor({
               src={imageSrc}
               alt=""
               fill
-              className="object-cover object-center"
+              className={listingPhotoFillClassName}
               sizes={listingPortraitThumbSizes}
               unoptimized={listingImageShouldBypassOptimization(imageSrc)}
             />
@@ -499,7 +500,7 @@ export function ListingInlineEditor({
                   src={imageSrc}
                   alt={displayTitle}
                   fill
-                  className="object-cover"
+                  className={listingPhotoFillClassName}
                   sizes="400px"
                   unoptimized={listingImageShouldBypassOptimization(imageSrc)}
                 />

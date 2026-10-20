@@ -3,6 +3,7 @@
 import { memo } from "react"
 import Image from "next/image"
 import { Loader2, RotateCw, X } from "lucide-react"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import {
   canRotateSimpleSellPhoto,
   type SimpleSellPhotoSlot,
@@ -39,7 +40,7 @@ export const SellSimplePhotoTile = memo(function SellSimplePhotoTile({
           alt={`Photo ${index + 1}`}
           fill
           sizes="120px"
-          className="object-cover object-center"
+          className={listingPhotoFillClassName}
           unoptimized
           loading={photo.localPreviewReady ? "eager" : undefined}
         />

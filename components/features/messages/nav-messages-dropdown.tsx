@@ -16,6 +16,7 @@ import { markInboxNotificationsRead, refreshMessagesInbox } from "@/app/actions/
 import type { MessagesInboxNotification } from "@/lib/db/messagesInbox"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import {
   counterpartyInboxHref,
@@ -213,7 +214,7 @@ function NavMessagesPanelBody({
                             alt=""
                             fill
                             sizes="44px"
-                            className="object-cover"
+                            className={listingPhotoFillClassName}
                             unoptimized={listingImageShouldBypassOptimization(thumb)}
                           />
                         ) : (
