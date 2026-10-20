@@ -18,6 +18,7 @@ import { listingBuyerQuantityCap, listingSupportsBuyerQuantity } from "@/lib/lis
 import { isReswellShopListing } from "@/lib/reswell-shop"
 import { listingDetailHref } from "@/lib/listing-href"
 import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { formatBoardType, formatCondition, getPublicSellerDisplayName } from "@/lib/listing-labels"
 import { formatListingBoardLengthSubtitle } from "@/lib/listing-dimensions-display"
@@ -329,7 +330,7 @@ export function CartPageView({
                             src={img}
                             alt={title}
                             fill
-                            className="object-cover"
+                            className={listingPhotoFillClassName}
                             sizes="120px"
                             unoptimized={listingImageShouldBypassOptimization(img)}
                           />

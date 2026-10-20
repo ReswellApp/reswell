@@ -10,6 +10,7 @@ import {
   homeUniformScrollLinkClass,
   homeUniformScrollTitleSlotClass,
 } from "@/lib/home-listing-scroll-styles"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import type { CityTopSeller } from "@/lib/types/city-top-sellers"
 import { cn } from "@/lib/utils"
@@ -54,7 +55,7 @@ export function CityTopSellerCard({
                 "pointer-events-none",
                 seller.imageFit === "contain"
                   ? "object-contain object-center p-1.5"
-                  : "object-cover object-center",
+                  : listingPhotoFillClassName,
               )}
               unoptimized={listingImageShouldBypassOptimization(seller.imageSrc)}
             />

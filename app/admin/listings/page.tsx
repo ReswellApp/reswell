@@ -71,6 +71,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { toast } from 'sonner'
 import { format, formatDistanceToNow } from 'date-fns'
 import { capitalizeWords } from '@/lib/listing-labels'
+import { listingPhotoFillClassName } from '@/lib/listing-photo-fill'
 import { cn } from '@/lib/utils'
 import { getAdminSession } from '@/app/actions/account'
 import { AdminPageHeader } from '@/components/features/admin/admin-page-header'
@@ -1317,7 +1318,10 @@ export default function AdminListingsPage() {
                               alt=""
                               fill
                               sizes="40px"
-                              className="object-cover object-center transition-transform duration-200 group-hover:scale-110"
+                              className={cn(
+                                listingPhotoFillClassName,
+                                'transition-transform duration-200 group-hover:scale-110',
+                              )}
                               unoptimized
                             />
                           ) : (

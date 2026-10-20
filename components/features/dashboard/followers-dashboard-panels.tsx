@@ -13,6 +13,7 @@ import { DashboardPageHeader } from "@/components/features/dashboard/dashboard-p
 import { capitalizeWords } from "@/lib/listing-labels"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { listingDetailHref } from "@/lib/listing-href"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import {
   listingImageShouldBypassOptimization,
   proxiedListingImageSrc,
@@ -411,7 +412,7 @@ export async function FollowersDashboardPanels() {
                                       src={proxiedListingImageSrc(img.url)}
                                       alt=""
                                       fill
-                                      className="object-cover"
+                                      className={listingPhotoFillClassName}
                                       sizes="36px"
                                       unoptimized
                                     />

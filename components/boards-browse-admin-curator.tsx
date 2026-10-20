@@ -36,6 +36,7 @@ import { browserProfileIsAdmin } from "@/lib/auth/browser-profile-is-admin"
 import { createClient } from "@/lib/supabase/client"
 import { boardsBrowseBoardTypeLabel } from "@/lib/marketplace-slug-metadata"
 import { listingDetailHref } from "@/lib/listing-href"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { cn } from "@/lib/utils"
 
 type AdminListingRow = {
@@ -1037,7 +1038,7 @@ function ListingPickRow({
             alt=""
             fill
             sizes="80px"
-            className="object-cover"
+            className={listingPhotoFillClassName}
             unoptimized={imageUrl.startsWith("/")}
           />
         ) : (

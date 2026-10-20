@@ -1,5 +1,6 @@
 import Image from "next/image"
 import { Package } from "lucide-react"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { cn } from "@/lib/utils"
 
@@ -24,7 +25,7 @@ export function EarningsListingThumb({
           src={src}
           alt={alt}
           fill
-          className="object-cover"
+          className={listingPhotoFillClassName}
           sizes="36px"
           unoptimized={listingImageShouldBypassOptimization(src)}
         />

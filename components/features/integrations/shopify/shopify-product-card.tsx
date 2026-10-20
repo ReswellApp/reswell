@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import Image from "next/image"
 import { Check, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -67,7 +68,7 @@ export function ShopifyProductCard({
               src={product.imageUrl}
               alt=""
               fill
-              className="object-cover"
+              className={listingPhotoFillClassName}
               sizes="40px"
             />
           ) : null}

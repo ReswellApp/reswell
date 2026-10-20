@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import {
   addedToCartHeading,
@@ -66,7 +67,7 @@ export function AddedToCartDialog({ preview, open, onOpenChange }: AddedToCartDi
                   alt=""
                   fill
                   sizes="(max-width: 639px) 70vw, 280px"
-                  className="object-contain"
+                  className={listingPhotoFillClassName}
                   unoptimized={listingImageShouldBypassOptimization(preview.imageUrl)}
                 />
               ) : (

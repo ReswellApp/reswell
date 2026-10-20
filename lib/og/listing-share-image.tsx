@@ -102,15 +102,13 @@ export async function listingShareImageResponse(opts: {
         overflow: "hidden",
       }}
     >
-        {/* Hero — white field + centered product (contain), Reverb-style */}
+        {/* Hero — center the listing photo, then scale until the frame is covered. */}
         <div
           style={{
             position: "relative",
             width: "100%",
             height: IMAGE_SECTION_HEIGHT,
             display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
             background: "#ffffff",
             overflow: "hidden",
           }}
@@ -135,32 +133,21 @@ export async function listingShareImageResponse(opts: {
               Sold
             </div>
           ) : null}
-          <div
+          <img
+            src={imgSrc}
+            alt=""
+            width={1200}
+            height={IMAGE_SECTION_HEIGHT}
             style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
               width: "100%",
               height: "100%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "12px 20px",
-              boxSizing: "border-box",
+              objectFit: "cover",
+              objectPosition: "center",
             }}
-          >
-            <img
-              src={imgSrc}
-              alt=""
-              width={1160}
-              height={IMAGE_SECTION_HEIGHT - 24}
-              style={{
-                maxWidth: "100%",
-                maxHeight: "100%",
-                width: "auto",
-                height: "auto",
-                objectFit: "contain",
-                objectPosition: "center",
-              }}
-            />
-          </div>
+          />
         </div>
 
         {/* Title + domain only (top border separates hero from meta, no extra pixel vs 630 canvas) */}

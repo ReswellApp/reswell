@@ -1,6 +1,7 @@
 import Image from "next/image"
 import Link from "next/link"
 import { Package, Truck } from "lucide-react"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { cn } from "@/lib/utils"
 import { CarrierAdjustmentNotice } from "@/components/features/shipping/carrier-adjustment-notice"
@@ -41,7 +42,7 @@ export function AwaitingDropoffTiles({ sales }: { sales: AwaitingDropoffSale[] }
                     src={sale.imageUrl}
                     alt=""
                     fill
-                    className="object-cover"
+                    className={listingPhotoFillClassName}
                     sizes="(min-width: 1024px) 180px, (min-width: 640px) 30vw, 45vw"
                     unoptimized={listingImageShouldBypassOptimization(sale.imageUrl)}
                   />

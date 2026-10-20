@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
 import { listingCardImageSrc } from "@/lib/listing-image-display"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { portraitShimmer } from "@/lib/image-shimmer"
 import { homeListingScrollImageSizes } from "@/lib/home-listing-scroll-styles"
@@ -218,7 +219,7 @@ export function OfferRow({
               unoptimized={listingImageShouldBypassOptimization(imageSrc)}
               placeholder="blur"
               blurDataURL={portraitShimmer}
-              className="object-cover transition-transform duration-300 group-hover:scale-105"
+              className={cn(listingPhotoFillClassName, "transition-transform duration-300 group-hover:scale-105")}
             />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground">

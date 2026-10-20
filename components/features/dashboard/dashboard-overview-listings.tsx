@@ -3,7 +3,9 @@ import Image from "next/image"
 import { ArrowRight, Package } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { capitalizeWords } from "@/lib/listing-labels"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
+import { cn } from "@/lib/utils"
 import { formatUsd } from "@/lib/utils/format-usd"
 import type { DashboardOverviewListingPreview } from "@/components/features/dashboard/dashboard-overview-model"
 
@@ -106,7 +108,7 @@ function ListingPreviewCard({
             alt={title}
             fill
             sizes="(min-width: 1280px) 220px, (min-width: 1024px) 30vw, (min-width: 640px) 45vw, 160px"
-            className="object-cover object-center transition-transform duration-500 motion-safe:group-hover:scale-[1.03]"
+            className={cn(listingPhotoFillClassName, "transition-transform duration-500 motion-safe:group-hover:scale-[1.03]")}
             unoptimized={listingImageShouldBypassOptimization(imageSrc)}
           />
         ) : (

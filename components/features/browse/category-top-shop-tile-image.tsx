@@ -1,6 +1,7 @@
 "use client"
 
 import Image from "next/image"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { cn } from "@/lib/utils"
 import { useCategoryTopShopsImageWarm } from "@/components/features/browse/category-top-shops-image-warm"
@@ -39,7 +40,7 @@ export function CategoryTopShopTileImage({
         "pointer-events-none",
         imageFit === "contain"
           ? "object-contain object-center p-3"
-          : "object-cover object-center",
+          : listingPhotoFillClassName,
       )}
       unoptimized={listingImageShouldBypassOptimization(src)}
     />

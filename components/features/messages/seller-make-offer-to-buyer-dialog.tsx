@@ -26,6 +26,7 @@ import {
 } from "@/lib/offer-listing-shipping"
 import { effectiveBoardShippingMode } from "@/lib/services/peerListingShippingQuote"
 import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import type { SellerOfferListing } from "@/lib/types/seller-offer-listing"
 
 function roundMoney(n: number): number {
@@ -95,7 +96,7 @@ function ListingThumb({
           src={proxiedListingImageSrc(src) || src}
           alt=""
           fill
-          className="object-cover"
+          className={listingPhotoFillClassName}
           sizes={size === "sm" ? "44px" : "56px"}
           unoptimized
         />

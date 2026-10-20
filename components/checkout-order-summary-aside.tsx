@@ -6,6 +6,7 @@ import { capitalizeWords } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
 import { listingShipFromDisplayLine } from "@/lib/listing-ship-from-display"
 import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { resolvePayableAmount } from "@/lib/purchase-amount"
 import { sellerProfileHref } from "@/lib/seller-slug"
@@ -101,7 +102,7 @@ export function CheckoutOrderSummaryAside({
                       src={imageUrl}
                       alt={capitalizeWords(listing.title)}
                       fill
-                      className="object-cover"
+                      className={listingPhotoFillClassName}
                       sizes="72px"
                       unoptimized={listingImageShouldBypassOptimization(imageUrl)}
                       priority={idx === 0}

@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { FACEBOOK_MARKETPLACE_BULK_UPLOAD_MAX } from "@/lib/facebook-marketplace/categories"
 import { listingDetailHref } from "@/lib/listing-href"
 import { formatCondition } from "@/lib/listing-labels"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import type { FacebookMarketplaceBulkListingPreview } from "@/lib/services/facebookMarketplaceBulkExport"
 
@@ -136,7 +137,7 @@ export function FacebookMarketplaceListingSelectPanel({
                         alt=""
                         fill
                         sizes="48px"
-                        className="object-cover"
+                        className={listingPhotoFillClassName}
                         unoptimized={listingImageShouldBypassOptimization(listing.thumbnail_url)}
                       />
                     </span>

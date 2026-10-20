@@ -13,7 +13,9 @@ import { capitalizeWords } from "@/lib/listing-labels"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { getFollowingFeedPage } from "@/app/actions/follows"
 import { listingDetailHref } from "@/lib/listing-href"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
+import { cn } from "@/lib/utils"
 import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
 
 type Listing = {
@@ -208,7 +210,10 @@ export function FollowingFeedClient({
                                 src={proxiedListingImageSrc(img.url)}
                                 alt={listing.title}
                                 fill
-                                className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                className={cn(
+                                  listingPhotoFillClassName,
+                                  "transition-transform duration-300 group-hover:scale-105",
+                                )}
                                 sizes="(max-width: 640px) 50vw, 33vw"
                                 unoptimized
                               />

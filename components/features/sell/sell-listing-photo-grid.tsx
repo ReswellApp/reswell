@@ -40,6 +40,7 @@ import {
 } from "@/lib/sell-flow/listing-video-slot"
 import { SellListingVideoRecorderDialog } from "@/components/features/sell/sell-listing-video-recorder-dialog"
 import { SELL_COMPLETE_BADGE_CLASS } from "@/components/features/sell/sell-form-surface"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { cn } from "@/lib/utils"
 import { sellListingThumbLoadedSrcByClientId } from "@/components/features/sell/hooks/use-listing-photo-upload"
 
@@ -210,7 +211,8 @@ function SellListingPhotoTile({
             fill
             draggable={false}
             className={cn(
-              "pointer-events-none object-cover object-center transition-opacity ease-out motion-reduce:duration-150 [-webkit-touch-callout:none]",
+              listingPhotoFillClassName,
+              "pointer-events-none transition-opacity ease-out motion-reduce:duration-150 [-webkit-touch-callout:none]",
               isLocalListingPhotoPreviewUrl(rawPreview) ? "duration-150" : "duration-500",
               thumbLoaded ? "opacity-100" : "opacity-0",
             )}
@@ -405,11 +407,11 @@ export function SellListingVideoFilledTile({
         <div className="relative flex-1 min-h-0 bg-black/90">
           {preview && isListingVideoImagePreviewUrl(preview) ? (
             // eslint-disable-next-line @next/next/no-img-element -- local blob / storage poster
-            <img src={preview} alt="" className="h-full w-full object-cover" />
+            <img src={preview} alt="" className={listingPhotoFillClassName} />
           ) : video.previewUrl || video.url ? (
             <video
               src={video.url ?? video.previewUrl ?? undefined}
-              className="h-full w-full object-cover"
+              className={listingPhotoFillClassName}
               muted
               playsInline
               preload="metadata"

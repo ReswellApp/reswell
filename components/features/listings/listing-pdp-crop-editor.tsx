@@ -15,6 +15,7 @@ import { toast } from "sonner"
 import { useListingPdpCropGestures } from "@/components/features/listings/hooks/use-listing-pdp-crop-gestures"
 import { Slider } from "@/components/ui/slider"
 import { DEFAULT_LISTING_HERO_ASPECT, listingHeroAspectCss } from "@/lib/listing-hero-frame"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { cn } from "@/lib/utils"
 import {
   LISTING_PDP_CROP_COVER,
@@ -400,14 +401,14 @@ export function ListingPdpCropEditor({
                   setLayout(null)
                 }}
                 className={cn(
-                  "size-12 shrink-0 overflow-hidden rounded-xl bg-white/10",
+                  "relative size-12 shrink-0 overflow-hidden rounded-xl bg-white/10",
                   i === index ? "ring-2 ring-white ring-offset-2 ring-offset-black" : "opacity-70",
                 )}
               >
                 <img
                   src={image.previewSrc || image.src}
                   alt=""
-                  className="h-full w-full object-cover"
+                  className={listingPhotoFillClassName}
                 />
               </button>
             ))}

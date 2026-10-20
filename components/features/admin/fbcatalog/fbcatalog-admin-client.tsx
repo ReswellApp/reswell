@@ -55,6 +55,7 @@ import {
 } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
+import { listingPhotoCoverClassName } from "@/lib/listing-photo-fill"
 import { cn } from "@/lib/utils"
 
 type StatusFilter = "all" | "pending" | "converted" | "dismissed"
@@ -133,7 +134,7 @@ function CatalogImage({
   }
   return (
     // FB CDN hosts are not in next/image remotePatterns — use native img in admin tooling.
-    <img src={url} alt={alt} className={cn("rounded-md border object-cover", className)} />
+    <img src={url} alt={alt} className={cn(listingPhotoCoverClassName, "rounded-md border", className)} />
   )
 }
 

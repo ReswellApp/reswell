@@ -1,6 +1,7 @@
 "use client"
 
 import { ListingMediaFillImage } from "@/components/listing-media-fill-image"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import {
   Fragment,
   useCallback,
@@ -99,12 +100,12 @@ function ListingTileCarouselSlide({
       loading={imagePriority && active ? "eager" : "lazy"}
       className={cn(
         // `scale-100` keeps a compositor layer so hover scale does not flash white.
-        "absolute inset-0 backface-hidden transform-gpu scale-100 ease-in-out",
+        listingPhotoFillClassName,
+        "backface-hidden transform-gpu scale-100 ease-in-out",
         "transition-[opacity,transform] duration-300",
         active ? "z-[2] opacity-100" : "z-[1] opacity-0",
         "group-hover:scale-105",
-        imageFit === "cover" && "object-cover object-center",
-        imageFit === "contain" && "object-contain object-center",
+        imageFit === "contain" && "object-contain",
         imageClassName,
       )}
       ref={(img) => {

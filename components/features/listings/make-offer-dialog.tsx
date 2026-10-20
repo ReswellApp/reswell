@@ -36,6 +36,7 @@ import {
   type OfferShippingCostMode,
 } from "@/lib/offer-listing-shipping"
 import { cn } from "@/lib/utils"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { peerListingItemNounForm } from "@/lib/peer-listing-item-nouns"
 import { prefetchStripeJs } from "@/components/stripe-card-checkout"
@@ -369,7 +370,7 @@ export function MakeOfferDialog({
                         src={primaryImageUrl}
                         alt=""
                         fill
-                        className="object-cover"
+                        className={listingPhotoFillClassName}
                         sizes="64px"
                         unoptimized={listingImageShouldBypassOptimization(primaryImageUrl)}
                       />
