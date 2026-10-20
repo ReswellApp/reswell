@@ -11,6 +11,7 @@ import { toast } from "sonner"
 import { validateDisplayName } from "@/lib/display-name-validation"
 import { useLocale } from "@/components/locale-provider"
 import { revalidateListingDetailAfterProfileUpdate } from "@/app/actions/listing-detail-cache"
+import { updateOperatingProfileAction } from "@/lib/actions/shopProfile"
 import { dispatchHeaderAuthRefresh } from "@/lib/auth/header-auth-refresh"
 import { PROFILE_AVATAR_MAX_INPUT_BYTES } from "@/lib/validations/profileAvatar"
 import { PROFILE_BANNER_MAX_INPUT_BYTES } from "@/lib/validations/profileBanner"
@@ -138,25 +139,21 @@ export function DashboardProfileSettings({
     }
 
     setSaving(true)
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        display_name: profile.display_name,
-        location: profile.location,
-        city: profile.city,
-        bio: profile.bio,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", profile.id)
+    const result = await updateOperatingProfileAction({
+      displayName: profile.display_name,
+      location: profile.location,
+      city: profile.city,
+      bio: profile.bio,
+    })
 
-    if (!error) {
+    if (!("error" in result)) {
       setProfileSavedFlash(true)
       window.setTimeout(() => setProfileSavedFlash(false), 2000)
       void revalidateListingDetailAfterProfileUpdate()
       dispatchHeaderAuthRefresh()
       router.refresh()
     } else {
-      toast.error("Failed to update profile")
+      toast.error(result.error)
     }
     setSaving(false)
   }

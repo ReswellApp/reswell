@@ -1,7 +1,8 @@
 "use server"
 
+import type { SupabaseClient } from "@supabase/supabase-js"
 import { resolveManagedSeller } from "@/lib/account-access/managed-seller"
-import { createClient } from "@/lib/supabase/server"
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { resolveAddressShippingIdentity } from "@/lib/db/addressShippingIdentity"
 import { profileAddressInputSchema, profileAddressPatchSchema } from "@/lib/address-input"
 import { googleAddressSnapshot, isMissingGoogleAddressColumn, withoutGoogleAddressColumns } from "@/lib/profile-address"
@@ -16,13 +17,19 @@ import {
   verifyGoogleStreetAddress,
 } from "@/lib/services/addressGeocoding"
 
-async function loadAddressAccount(): Promise<
-  | { supabase: Awaited<ReturnType<typeof createClient>>; profileId: string }
-  | { error: string }
-> {
-  const supabase = await createClient()
+async function loadAddressAccount(
+  access: "read" | "write",
+): Promise<{ supabase: SupabaseClient; profileId: string } | { error: string }> {
   const managed = await resolveManagedSeller("profile.manage")
   if (!managed.ok) return { error: managed.error }
+  if (access === "write" && managed.seller.actingAsShop) {
+    try {
+      return { supabase: createServiceRoleClient(), profileId: managed.seller.sellerId }
+    } catch {
+      return { error: "Could not update this shop right now." }
+    }
+  }
+  const supabase = await createClient()
   return { supabase, profileId: managed.seller.sellerId }
 }
 
@@ -30,7 +37,7 @@ export async function getProfileAddresses(): Promise<{
   addresses: ProfileAddressRow[]
   error: string | null
 }> {
-  const account = await loadAddressAccount()
+  const account = await loadAddressAccount("read")
   if ("error" in account) {
     return { addresses: [], error: account.error }
   }
@@ -44,7 +51,7 @@ export async function getProfileAddresses(): Promise<{
 export async function createProfileAddress(
   raw: unknown,
 ): Promise<{ address: ProfileAddressRow | null; error: string | null }> {
-  const account = await loadAddressAccount()
+  const account = await loadAddressAccount("write")
   if ("error" in account) {
     return { address: null, error: account.error }
   }
@@ -154,7 +161,7 @@ export async function updateProfileAddress(
     return { address: null, error: "Missing address id" }
   }
 
-  const account = await loadAddressAccount()
+  const account = await loadAddressAccount("write")
   if ("error" in account) {
     return { address: null, error: account.error }
   }
@@ -326,7 +333,7 @@ export async function deleteProfileAddress(addressId: string): Promise<{ ok: boo
     return { ok: false, error: "Missing address id" }
   }
 
-  const account = await loadAddressAccount()
+  const account = await loadAddressAccount("write")
   if ("error" in account) {
     return { ok: false, error: account.error }
   }

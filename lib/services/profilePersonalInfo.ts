@@ -1,5 +1,6 @@
+import type { SupabaseClient } from "@supabase/supabase-js"
 import { resolveManagedSeller } from "@/lib/account-access/managed-seller"
-import { createClient } from "@/lib/supabase/server"
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import {
   getProfilePersonalInfo,
   resolveProfilePhoneE164,
@@ -69,7 +70,16 @@ export async function saveProfilePersonalInfo(
     updatePayload.transactional_sms_opt_in = Boolean(raw && toE164UsPhone(raw))
   }
 
-  const saved = await updateProfilePersonalInfo(supabase, profileId, updatePayload)
+  let writeClient: SupabaseClient = supabase
+  if (managed.seller.actingAsShop) {
+    try {
+      writeClient = createServiceRoleClient()
+    } catch {
+      return { ok: false, error: "Could not update this shop right now." }
+    }
+  }
+
+  const saved = await updateProfilePersonalInfo(writeClient, profileId, updatePayload)
   if (!saved.ok) {
     return { ok: false, error: saved.error, code: saved.code }
   }

@@ -18,8 +18,9 @@ import {
   decideSignInShipFromPrompt,
   type SignInShipFromPromptResult,
 } from "@/lib/services/signInShipFromPrompt"
+import type { SupabaseClient } from "@supabase/supabase-js"
 import { resolveManagedSeller } from "@/lib/account-access/managed-seller"
-import { createClient } from "@/lib/supabase/server"
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { toE164UsPhone } from "@/lib/utils/phone-e164-us"
 
 const saveSellerShipFromSchema = shippingAddressFormSchema.extend({
@@ -143,11 +144,18 @@ export async function saveSellerShipFromAddress(
   locality: ListingLocalityFromAddress | null
   error: string | null
 }> {
-  const supabase = await createClient()
+  let supabase: SupabaseClient = await createClient()
   const managed = await resolveManagedSeller("profile.manage")
 
   if (!managed.ok) {
     return { locality: null, error: managed.error }
+  }
+  if (managed.seller.actingAsShop) {
+    try {
+      supabase = createServiceRoleClient()
+    } catch {
+      return { locality: null, error: "Could not update this shop right now." }
+    }
   }
   const profileId = managed.seller.sellerId
 

@@ -1,6 +1,7 @@
+import type { SupabaseClient } from "@supabase/supabase-js"
 import { revalidateListYourSurfboardShowcase } from "@/lib/cache/revalidate-list-your-surfboard-showcase"
 import { revalidateSellerProfileAndDirectoryCatalog } from "@/lib/cache/revalidate-sellers-directory-catalog"
-import { createClient } from "@/lib/supabase/server"
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
 import {
   insertMarketplaceReviewForOrder,
@@ -102,7 +103,16 @@ export async function POST(
     return NextResponse.json({ error: attachmentMeta.error }, { status: 400 })
   }
 
-  const { data, error } = await insertMarketplaceReviewForOrder(supabase, {
+  let reviewClient: SupabaseClient = supabase
+  if (reviewerId !== user.id) {
+    try {
+      reviewClient = createServiceRoleClient()
+    } catch {
+      return NextResponse.json({ error: "Could not save your review" }, { status: 503 })
+    }
+  }
+
+  const { data, error } = await insertMarketplaceReviewForOrder(reviewClient, {
     order_id: orderId,
     reviewer_id: reviewerId,
     reviewed_id: reviewedId,

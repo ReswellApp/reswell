@@ -39,9 +39,9 @@ export async function resolveManagedSeller(
 }
 
 /**
- * Profile and media writes for the operating account. Shop rows use the
- * service role so storage paths owned by the shop can be updated. Privilege
- * and payout columns are frozen in the database when the actor is not the row.
+ * Writes for the account this login is operating. A shop row is written with
+ * the service role after the permission check, and only the columns the caller
+ * sets. The teammate's session still cannot update another profile.
  */
 export async function resolveManagedProfileWriter(
   permission: AccountPermission = "profile.manage",
