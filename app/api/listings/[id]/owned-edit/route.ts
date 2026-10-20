@@ -334,8 +334,15 @@ export async function PUT(
     return NextResponse.json({ error: result.error }, { status: result.status })
   }
 
-  after(() => {
+  try {
+    // Before the JSON returns. The sell form navigates to `/l` as soon as this
+    // response arrives; `after()` runs too late and the hourly shell is already served.
     expirePublicListingSurfacesAfterEdit(listingId, result.slug)
+  } catch (error) {
+    console.error("[owned-edit] listing revalidate:", error)
+  }
+
+  after(() => {
     void revalidateSellersAfterListingChange(writeDb, ownerUserId).catch((error) => {
       console.error("[owned-edit] seller revalidate:", error)
     })

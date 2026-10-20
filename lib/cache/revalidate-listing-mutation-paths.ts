@@ -1,5 +1,6 @@
 import { after } from "next/server"
 import { revalidatePath } from "next/cache"
+import { revalidateListingDetailPage } from "@/lib/cache/revalidate-listing-public-detail"
 
 /**
  * Revalidate browse + listing PDP after the Server Action response is sent.
@@ -10,6 +11,6 @@ export function revalidateListingMutationPaths(browsePath: string, slug: string)
   const trimmed = slug.trim()
   after(() => {
     revalidatePath(browsePath)
-    if (trimmed) revalidatePath(`/l/${trimmed}`)
+    if (trimmed) revalidateListingDetailPage(trimmed, trimmed)
   })
 }

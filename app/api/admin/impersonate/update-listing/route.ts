@@ -344,9 +344,14 @@ async function putImpersonatedListing(request: NextRequest) {
 
   const slug = slugTrim
 
+  try {
+    expirePublicListingSurfacesAfterEdit(listingId, slug)
+  } catch (error) {
+    console.error("[impersonate] listing path revalidate error:", error)
+  }
+
   after(() => {
     try {
-      expirePublicListingSurfacesAfterEdit(listingId, slug)
       if (listingSection === "fins") {
         revalidatePath("/fins")
       }
