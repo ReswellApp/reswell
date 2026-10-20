@@ -15,6 +15,7 @@ import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { captureServerEvent } from "@/lib/posthog-server"
 import { isReswellShopListing } from "@/lib/reswell-shop"
 import { isShopifyManagedListing } from "@/lib/shopify/listing"
+import { shopifyManagedCheckoutBilling } from "@/lib/services/shopifyBilling"
 import { acceptedUnitPriceForSingleItemOffer } from "@/lib/services/acceptedOfferCheckout"
 import { assertBuyerMayPurchaseListingExclusiveWindow } from "@/lib/services/listingBuyerExclusiveWindow"
 import {
@@ -116,6 +117,10 @@ async function assertListingEligibleForCart(
     if (stock < 1) {
       return { ok: false, message: "This item is out of stock" }
     }
+  }
+  const shopifyBilling = await shopifyManagedCheckoutBilling([ready])
+  if (!shopifyBilling.ok) {
+    return { ok: false, message: shopifyBilling.error }
   }
 
   if (isPeerListingSection(ready.section)) {

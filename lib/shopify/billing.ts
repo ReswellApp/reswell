@@ -79,6 +79,18 @@ export function shopifyCollectVia(
   return billingStatus === "active" ? "shopify" : "stripe"
 }
 
+/** Shopify-managed listings can be bought only while the usage charge is active. */
+export function shopifyManagedListingSaleAllowed(input: {
+  inventorySource: string | null | undefined
+  billingStatus: string | null | undefined
+}): boolean {
+  if (input.inventorySource !== "shopify") return true
+  return input.billingStatus === "active"
+}
+
+export const SHOPIFY_MANAGED_SALE_BLOCKED_MESSAGE =
+  "This Shopify item is not available for purchase."
+
 export function isReswellOriginatedShopifyOrder(input: {
   tags?: string | null
   note?: string | null

@@ -5,6 +5,7 @@ import {
   isReswellOriginatedShopifyOrder,
   shopifyCatalogSyncAllowed,
   shopifyCollectVia,
+  shopifyManagedListingSaleAllowed,
   shopifySaleIdempotencyKey,
 } from "@/lib/shopify/billing"
 
@@ -51,6 +52,39 @@ test("Reswell-created Shopify orders are skipped on the way back", () => {
       noteAttributes: [{ name: "source", value: "web" }],
     }),
     false,
+  )
+})
+
+test("a Shopify listing is for sale only while billing is active", () => {
+  assert.equal(
+    shopifyManagedListingSaleAllowed({
+      inventorySource: "shopify",
+      billingStatus: "active",
+    }),
+    true,
+  )
+  for (const billingStatus of ["pending", "declined", "paused", null, undefined]) {
+    assert.equal(
+      shopifyManagedListingSaleAllowed({
+        inventorySource: "shopify",
+        billingStatus,
+      }),
+      false,
+    )
+  }
+  assert.equal(
+    shopifyManagedListingSaleAllowed({
+      inventorySource: "reswell",
+      billingStatus: "declined",
+    }),
+    true,
+  )
+  assert.equal(
+    shopifyManagedListingSaleAllowed({
+      inventorySource: null,
+      billingStatus: "pending",
+    }),
+    true,
   )
 })
 

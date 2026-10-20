@@ -1,16 +1,23 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { dbHoldShopifyListingsForBilling } from "@/lib/db/shopifyCatalog"
 import { dbUpdateShopifyBilling } from "@/lib/db/shopifyConnections"
+import { loadListingInventorySources } from "@/lib/db/listingInventorySource"
+import { dbEnqueueShopifyJob } from "@/lib/db/shopifyQueue"
+import { dbListShopifyBilledListingIds } from "@/lib/db/shopifySales"
 import {
   shopifyGraphqlRequest,
   throwOnShopifyUserErrors,
 } from "@/lib/shopify/admin-graphql"
 import {
+  SHOPIFY_MANAGED_SALE_BLOCKED_MESSAGE,
   SHOPIFY_USAGE_CAP_USD,
   SHOPIFY_USAGE_TERMS,
 } from "@/lib/shopify/billing"
 import { shopifyBillingTestMode } from "@/lib/shopify/config"
+import { applyShopifyListingSideEffects } from "@/lib/services/shopifyCatalog"
 import type { ShopifyConnectionRow } from "@/lib/shopify/types"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
+import { createServiceRoleClient } from "@/lib/supabase/server"
 import { getShopifyAccessToken } from "@/lib/services/shopifyOAuth"
 import { pushShopifySourceOfTruth } from "@/lib/services/shopifySource"
 
@@ -208,7 +215,7 @@ async function saveBilling(
   connection: ShopifyConnectionRow,
   subscription: UsageSubscription | null,
   declined: boolean,
-): Promise<void> {
+): Promise<"active" | "inactive"> {
   if (subscription) {
     await dbUpdateShopifyBilling(serviceSupabase, connection.id, {
       billingStatus: "active",
@@ -218,7 +225,7 @@ async function saveBilling(
       approvedAt: new Date().toISOString(),
       syncEnabled: true,
     })
-    return
+    return "active"
   }
   await dbUpdateShopifyBilling(serviceSupabase, connection.id, {
     billingStatus: declined ? "declined" : "pending",
@@ -228,6 +235,32 @@ async function saveBilling(
     approvedAt: null,
     syncEnabled: false,
   })
+  return "inactive"
+}
+
+async function applyBillingSaleGate(
+  serviceSupabase: SupabaseClient,
+  connectionId: string,
+  outcome: "active" | "inactive",
+): Promise<void> {
+  if (outcome === "active") {
+    try {
+      await dbEnqueueShopifyJob(serviceSupabase, {
+        connectionId,
+        jobType: "reconcile_connection",
+        payload: { connectionId },
+        dedupeKey: `reconcile:${connectionId}`,
+      })
+    } catch (error) {
+      console.error("[shopify] billing reconcile", { connectionId, error })
+    }
+    return
+  }
+  const listingIds = await dbHoldShopifyListingsForBilling(
+    serviceSupabase,
+    connectionId,
+  )
+  await applyShopifyListingSideEffects(serviceSupabase, listingIds)
 }
 
 /** After install or a billing return, turn sync on only when the usage charge is active. */
@@ -236,13 +269,14 @@ export async function settleShopifyBilling(
   connection: ShopifyConnectionRow,
   options?: { declined?: boolean },
 ): Promise<void> {
+  let outcome: "active" | "inactive" = "inactive"
   try {
     const accessToken = await getShopifyAccessToken(serviceSupabase, connection)
     const subscription = await readShopifyUsageSubscription(
       connection.shop_domain,
       accessToken,
     )
-    await saveBilling(
+    outcome = await saveBilling(
       serviceSupabase,
       connection,
       subscription,
@@ -259,6 +293,66 @@ export async function settleShopifyBilling(
       connectionId: connection.id,
       error,
     })
-    await saveBilling(serviceSupabase, connection, null, options?.declined === true)
+    outcome = await saveBilling(
+      serviceSupabase,
+      connection,
+      null,
+      options?.declined === true,
+    )
   }
+  await applyBillingSaleGate(serviceSupabase, connection.id, outcome)
+}
+
+/**
+ * Shopify-managed listings are not for sale unless that shop's usage charge is active.
+ * Inventory source is read with the service role so a caller that did not attach it
+ * cannot fall through to a Stripe marketplace fee. `billedListingIds` is the subset
+ * that may use the Shopify usage fee. Other listings are ignored.
+ */
+export async function shopifyManagedCheckoutBilling(
+  listings: Array<{ id: string; inventory_source?: string | null }>,
+): Promise<
+  | { ok: true; billedListingIds: Set<string> }
+  | { ok: false; error: string }
+> {
+  const ids = [
+    ...new Set(listings.map((listing) => listing.id).filter((id) => id.length > 0)),
+  ]
+  if (ids.length === 0) return { ok: true, billedListingIds: new Set() }
+
+  const callerSource = new Map(
+    listings.map((listing) => [listing.id, listing.inventory_source]),
+  )
+  let managedIds: string[]
+  let serviceSupabase: ReturnType<typeof createServiceRoleClient>
+  try {
+    serviceSupabase = createServiceRoleClient()
+    const loaded = await loadListingInventorySources(serviceSupabase, ids)
+    if (!loaded.ok) {
+      return { ok: false, error: SHOPIFY_MANAGED_SALE_BLOCKED_MESSAGE }
+    }
+    managedIds = ids.filter((id) => {
+      const source = loaded.sources.has(id)
+        ? loaded.sources.get(id)
+        : callerSource.get(id)
+      return source === "shopify"
+    })
+  } catch (error) {
+    console.error("[shopify] sale billing check", error)
+    return { ok: false, error: SHOPIFY_MANAGED_SALE_BLOCKED_MESSAGE }
+  }
+  if (managedIds.length === 0) return { ok: true, billedListingIds: new Set() }
+
+  let billed: string[]
+  try {
+    billed = await dbListShopifyBilledListingIds(serviceSupabase, managedIds)
+  } catch (error) {
+    console.error("[shopify] sale billing check", error)
+    return { ok: false, error: SHOPIFY_MANAGED_SALE_BLOCKED_MESSAGE }
+  }
+  const billedListingIds = new Set(billed)
+  if (!managedIds.every((id) => billedListingIds.has(id))) {
+    return { ok: false, error: SHOPIFY_MANAGED_SALE_BLOCKED_MESSAGE }
+  }
+  return { ok: true, billedListingIds }
 }

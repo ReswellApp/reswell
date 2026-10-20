@@ -10,8 +10,8 @@ import {
   type PeerSurfboardCheckoutListingRow,
 } from "@/lib/services/peerListingShippingQuote"
 import { fetchSellerFeeWaived } from "@/lib/db/profileSellerFee"
-import { dbListShopifyBilledListingIds } from "@/lib/db/shopifySales"
 import { connectedSalePayout } from "@/lib/shopify/billing"
+import { shopifyManagedCheckoutBilling } from "@/lib/services/shopifyBilling"
 import { getSellerEarnings } from "@/lib/seller-fees"
 import { resolveMixedCheckoutSellerId } from "@/lib/mixed-checkout"
 import { getReswellShopLineEarnings, isReswellShopListing } from "@/lib/reswell-shop"
@@ -104,6 +104,12 @@ export async function computePeerMultiCheckoutUsd(params: {
     return { ok: false, error: "No listings to checkout" }
   }
 
+  const shopifyBilling = await shopifyManagedCheckoutBilling(listingsOrdered)
+  if (!shopifyBilling.ok) {
+    return { ok: false, error: shopifyBilling.error }
+  }
+  const shopifyBilled = shopifyBilling.billedListingIds
+
   const packagingMode =
     fulfillment === "shipping" && listingsOrdered.length > 1
       ? resolveShippingPackagingMode(params.packagingMode, DEFAULT_SHIPPING_PACKAGING_MODE)
@@ -170,12 +176,6 @@ export async function computePeerMultiCheckoutUsd(params: {
       : null
 
   const feeWaived = await fetchSellerFeeWaived(sellerId)
-  const shopifyBilled = new Set(
-    await dbListShopifyBilledListingIds(
-      supabase,
-      listingsOrdered.map((listing) => listing.id),
-    ),
-  )
 
   const lines: PeerCheckoutLineComputation[] = []
   let anyUsedReswellQuote = false
