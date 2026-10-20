@@ -22,6 +22,7 @@ import type {
 } from "@/lib/shopify/types"
 import { applyShopifyListingSideEffects } from "@/lib/services/shopifyCatalog"
 import { settleShopifyBilling } from "@/lib/services/shopifyBilling"
+import { saveShopifyDefaultPackageIfMissing } from "@/lib/services/shopifyDefaultPackage"
 import {
   getShopifyAccessToken,
   registerShopifyWebhooks,
@@ -92,6 +93,12 @@ export async function claimShopifyPendingInstallation(input: {
 
   try {
     const accessToken = await getShopifyAccessToken(serviceSupabase, connection)
+    await saveShopifyDefaultPackageIfMissing({
+      supabase: serviceSupabase,
+      userId: input.userId,
+      shopDomain: connection.shop_domain,
+      accessToken,
+    })
     const registration = await registerShopifyWebhooks(
       connection.shop_domain,
       accessToken,
