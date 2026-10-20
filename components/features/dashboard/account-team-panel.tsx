@@ -34,6 +34,57 @@ const ROLE_DETAIL: Record<GrantableAccountRole, string> = {
   manager: "Runs the shop, except earnings and payouts",
 }
 
+function AccountOpenRow({
+  initials,
+  title,
+  detail,
+  tone,
+  active,
+  pending,
+  onOpen,
+}: {
+  initials: string
+  title: string
+  detail: string
+  tone: "personal" | "shop"
+  active: boolean
+  pending: boolean
+  onOpen: () => void
+}) {
+  return (
+    <li className="flex items-center gap-3 px-5 py-4 sm:px-6">
+      <span
+        className={cn(
+          "flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
+          tone === "shop" ? "bg-neutral-950 text-white" : "bg-neutral-100 text-foreground",
+        )}
+      >
+        {initials}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium text-foreground">{title}</p>
+        <p className="text-sm text-muted-foreground">{detail}</p>
+      </div>
+      {active ? (
+        <span className="inline-flex items-center gap-1 text-sm font-medium text-foreground">
+          <Check className="h-3.5 w-3.5" aria-hidden />
+          Open
+        </span>
+      ) : (
+        <Button
+          type="button"
+          variant="outline"
+          className="h-9 shrink-0 rounded-full px-4"
+          disabled={pending}
+          onClick={onOpen}
+        >
+          Open
+        </Button>
+      )}
+    </li>
+  )
+}
+
 function emailInitials(email: string): string {
   const local = email.split("@")[0] ?? ""
   const parts = local.split(/[._+-]+/).filter(Boolean)
@@ -61,6 +112,19 @@ export function AccountTeamPanel({
   const [role, setRole] = useState<GrantableAccountRole>("staff")
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [switchError, setSwitchError] = useState<string | null>(null)
+
+  function openAccount(accountId: string | null) {
+    setSwitchError(null)
+    startTransition(async () => {
+      const result = await setActiveShopAccountAction({ accountId })
+      if ("error" in result && result.error) {
+        setSwitchError(result.error)
+        return
+      }
+      router.refresh()
+    })
+  }
 
   function run(task: () => Promise<{ error?: string; success?: true }>, success: string) {
     setError(null)
@@ -86,44 +150,38 @@ export function AccountTeamPanel({
       {memberships.length > 0 ? (
         <div className="space-y-3">
           <div className="space-y-1">
-            <h2 className={profileSectionTitleClass}>Shops</h2>
+            <h2 className={profileSectionTitleClass}>Accounts</h2>
             <p className={profileSectionHintClass}>
-              These are shops that accepted your email. Open one to work inside it. Your login stays{" "}
-              {actorEmail ?? "this email"}.
+              Open the account you want to work in. Personal is your own login
+              {actorEmail ? ` (${actorEmail})` : ""}. Shops are accounts that accepted that email.
             </p>
           </div>
+          {switchError ? (
+            <p className="text-sm text-destructive" role="alert">
+              {switchError}
+            </p>
+          ) : null}
           <ul className={`${profileCardClass} divide-y divide-neutral-200/80`}>
+            <AccountOpenRow
+              initials={emailInitials(actorEmail ?? "me")}
+              title="Personal"
+              detail="Your login"
+              tone="personal"
+              active={!actingAsShop}
+              pending={pending}
+              onOpen={() => openAccount(null)}
+            />
             {memberships.map((membership) => (
-              <li key={membership.accountId} className="flex items-center gap-3 px-5 py-4 sm:px-6">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-950 text-xs font-semibold text-white">
-                  {emailInitials(membership.label)}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-foreground">{membership.label}</p>
-                  <p className="text-sm text-muted-foreground">{ROLE_LABEL[membership.role]}</p>
-                </div>
-                {membership.active ? (
-                  <span className="inline-flex items-center gap-1 text-sm font-medium text-foreground">
-                    <Check className="h-3.5 w-3.5" aria-hidden />
-                    Open
-                  </span>
-                ) : (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="h-9 shrink-0 rounded-full px-4"
-                    disabled={pending}
-                    onClick={() =>
-                      run(
-                        () => setActiveShopAccountAction({ accountId: membership.accountId }),
-                        `Opened ${membership.label}.`,
-                      )
-                    }
-                  >
-                    Open
-                  </Button>
-                )}
-              </li>
+              <AccountOpenRow
+                key={membership.accountId}
+                initials={emailInitials(membership.label)}
+                title={membership.label}
+                detail={ROLE_LABEL[membership.role]}
+                tone="shop"
+                active={membership.active}
+                pending={pending}
+                onOpen={() => openAccount(membership.accountId)}
+              />
             ))}
           </ul>
         </div>

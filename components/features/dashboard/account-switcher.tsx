@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation"
 import { useState, useTransition } from "react"
 import { Check } from "lucide-react"
 import { setActiveShopAccountAction } from "@/lib/actions/accountMembers"
+import { Button } from "@/components/ui/button"
 import type { AccountRole } from "@/lib/account-access/permissions"
 import {
   DropdownMenuItem,
@@ -33,6 +34,42 @@ const ROLE_LABEL: Record<AccountRole, string> = {
 function accountTitle(option: AccountSwitcherOption, actorUserId: string): string {
   if (option.accountId === actorUserId) return "Personal"
   return option.label
+}
+
+/** Leaves the shop and opens the signed-in person's own account. */
+export function OpenPersonalAccountButton({ className }: { className?: string }) {
+  const router = useRouter()
+  const [pending, startTransition] = useTransition()
+  const [error, setError] = useState<string | null>(null)
+
+  return (
+    <div className={className}>
+      <Button
+        type="button"
+        variant="outline"
+        className="mt-2 h-8 rounded-full px-3 text-xs"
+        disabled={pending}
+        onClick={() => {
+          setError(null)
+          startTransition(async () => {
+            const result = await setActiveShopAccountAction({ accountId: null })
+            if ("error" in result && result.error) {
+              setError(result.error)
+              return
+            }
+            router.refresh()
+          })
+        }}
+      >
+        {pending ? "Opening…" : "Open personal"}
+      </Button>
+      {error ? (
+        <p className="mt-1 text-xs text-destructive" role="alert">
+          {error}
+        </p>
+      ) : null}
+    </div>
+  )
 }
 
 export function AccountMenuSwitcher({
