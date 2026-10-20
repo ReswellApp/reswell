@@ -2,11 +2,6 @@ import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 import { listingListedAfterSavedSearch } from "./boardSavedSearchAlertWindow.ts"
 import { savedSearchBrandAndModelMatch } from "./savedSearchBrandModelMatch.ts"
-import {
-  nextSavedSearchAlertRetry,
-  SAVED_SEARCH_ALERT_LOOKBACK_MS,
-  savedSearchAlertLookbackStart,
-} from "./savedSearchAlertRetryWindow.ts"
 
 const BRAND_ID = "11111111-1111-4111-8111-111111111111"
 const MODEL_ID = "22222222-2222-4222-8222-222222222222"
@@ -157,47 +152,5 @@ describe("savedSearchBrandAndModelMatch", () => {
       }),
       false,
     )
-  })
-})
-
-describe("saved search alert retry window", () => {
-  const listedAt = "2026-10-16T18:00:00.000Z"
-
-  it("schedules the next pass 15 minutes out, inside the hour", () => {
-    const next = nextSavedSearchAlertRetry({
-      listedAt,
-      now: new Date("2026-10-16T18:00:00.000Z"),
-      attempts: 0,
-    })
-    assert.equal(next?.attempts, 1)
-    assert.equal(next?.nextAttemptAt, "2026-10-16T18:15:00.000Z")
-    assert.equal(next?.giveUpAt, "2026-10-16T19:00:00.000Z")
-  })
-
-  it("stops after four attempts or an hour", () => {
-    assert.equal(
-      nextSavedSearchAlertRetry({
-        listedAt,
-        now: new Date("2026-10-16T18:40:00.000Z"),
-        attempts: 4,
-      }),
-      null,
-    )
-    assert.equal(
-      nextSavedSearchAlertRetry({
-        listedAt,
-        now: new Date("2026-10-16T19:00:00.000Z"),
-        attempts: 1,
-      }),
-      null,
-    )
-  })
-
-  it("caps a stuck watermark to the lookback", () => {
-    const now = new Date("2026-10-16T18:00:00.000Z")
-    const recent = savedSearchAlertLookbackStart("2026-10-16T17:00:00.000Z", now)
-    assert.equal(recent, "2026-10-16T17:00:00.000Z")
-    const stuck = savedSearchAlertLookbackStart("2026-09-01T00:00:00.000Z", now)
-    assert.equal(stuck, new Date(now.getTime() - SAVED_SEARCH_ALERT_LOOKBACK_MS).toISOString())
   })
 })

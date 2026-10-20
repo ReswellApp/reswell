@@ -8,11 +8,15 @@ import {
   surfboardAlertIndexState,
   type ListingRowForBoardAlert,
 } from "@/lib/services/boardSavedSearchMatch"
-import {
-  clearSurfboardAlertRetry,
-  scheduleSurfboardAlertRetry,
-} from "@/lib/services/savedSearchAlertRetry"
 import { sendBoardSavedSearchAlert } from "@/lib/services/sendBoardSavedSearchAlert"
+
+export type NotifyBoardSavedSearchResult = {
+  attempted: number
+  sent: number
+  skippedReason?: string
+  /** Deliver this listing again. The index is late, or the publish time was not readable yet. */
+  retry: boolean
+}
 
 export type { ListingRowForBoardAlert }
 export { listingMatchesBoardSavedCriteria } from "@/lib/services/boardSavedSearchMatch"
@@ -20,16 +24,17 @@ export { listingMatchesBoardSavedCriteria } from "@/lib/services/boardSavedSearc
 /**
  * When a peer listing goes live, notify users whose saved searches would return that listing.
  * Surfboard alerts only go out when the board was first published after the search was saved.
- * If the surfboard is not in the search index yet, field-match now and retry for about an hour.
+ * `retry` means the search index does not have the surfboard yet. The caller delivers again.
  */
 export async function notifyBoardSavedSearchMatchesForListing(
   listingId: string,
-): Promise<{ attempted: number; sent: number; skippedReason?: string }> {
+): Promise<NotifyBoardSavedSearchResult> {
   let service: ReturnType<typeof createServiceRoleClient>
   try {
     service = createServiceRoleClient()
-  } catch {
-    return { attempted: 0, sent: 0, skippedReason: "missing_service_role" }
+  } catch (err) {
+    console.error("[saved_search] missing service role:", err)
+    throw err
   }
 
   const { data: listing, error: listingErr } = await service
@@ -40,18 +45,23 @@ export async function notifyBoardSavedSearchMatchesForListing(
     .eq("id", listingId)
     .maybeSingle()
 
-  if (listingErr || !listing) {
-    return { attempted: 0, sent: 0, skippedReason: "listing_not_found" }
+  if (listingErr) {
+    console.error("[saved_search] load listing:", listingErr)
+    throw new Error(listingErr.message)
+  }
+  if (!listing) {
+    return { attempted: 0, sent: 0, skippedReason: "listing_not_found", retry: false }
   }
 
   const row = listing as ListingRowForBoardAlert
 
   if (!isPeerListingSection(row.section) || row.status !== "active" || row.hidden_from_site) {
-    return { attempted: 0, sent: 0, skippedReason: "listing_not_alertable" }
+    return { attempted: 0, sent: 0, skippedReason: "listing_not_alertable", retry: false }
   }
 
   let listedAt: string | null = null
   let indexReady = false
+  let retry = false
   if (row.section === "surfboards") {
     await ensureListingIndexedForSavedSearchAlerts(listingId)
     const { data: createdEvent, error: createdErr } = await service
@@ -61,30 +71,15 @@ export async function notifyBoardSavedSearchMatchesForListing(
       .maybeSingle()
     if (createdErr) {
       console.error("[saved_search] listing listed_at:", createdErr)
-      return { attempted: 0, sent: 0, skippedReason: "listing_not_newly_listed" }
+      throw new Error(createdErr.message)
     }
     listedAt = createdEvent?.listed_at ? String(createdEvent.listed_at) : null
     if (!listedAt) {
-      return { attempted: 0, sent: 0, skippedReason: "listing_not_newly_listed" }
+      return { attempted: 0, sent: 0, skippedReason: "listing_not_newly_listed", retry: true }
     }
     const indexState = await surfboardAlertIndexState(listingId)
-    if (indexState === "ready") {
-      indexReady = true
-      try {
-        await clearSurfboardAlertRetry(service, listingId)
-      } catch (err) {
-        console.error("[saved_search] clear index retry:", err)
-      }
-    } else if (indexState === "pending") {
-      try {
-        const plan = await scheduleSurfboardAlertRetry(service, listingId, listedAt, new Date())
-        if (!plan.matchNow) {
-          return { attempted: 0, sent: 0, skippedReason: "index_retry_exhausted" }
-        }
-      } catch (err) {
-        console.error("[saved_search] schedule index retry:", err)
-      }
-    }
+    indexReady = indexState === "ready"
+    retry = indexState === "pending"
   }
 
   const { data: searches, error: searchErr } = await fetchBoardSavedSearchesWithEmailEnabled(
@@ -93,7 +88,7 @@ export async function notifyBoardSavedSearchMatchesForListing(
   )
   if (searchErr) {
     console.error("[saved_search] fetch enabled searches:", searchErr)
-    return { attempted: 0, sent: 0, skippedReason: "fetch_searches_failed" }
+    throw new Error(searchErr.message)
   }
 
   const candidates = searches.filter((s) => {
@@ -131,5 +126,5 @@ export async function notifyBoardSavedSearchMatchesForListing(
     if (result === "sent") sent += 1
   }
 
-  return { attempted: eligible.length, sent }
+  return { attempted: eligible.length, sent, retry }
 }

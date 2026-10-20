@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { trackKlaviyoListingCreated } from "@/lib/klaviyo/track-listing-created"
 import { trackFirstTimeSellerForListingIfNeeded } from "@/lib/services/klaviyoFirstTimeSeller"
-import { notifyBoardSavedSearchMatchesForListing } from "@/lib/services/notifyBoardSavedSearchMatches"
+import { enqueueBoardSavedSearchAlert } from "@/lib/services/enqueueBoardSavedSearchAlert"
 import { notifyFollowersNewListingKlaviyo } from "@/lib/services/notifyFollowersNewListingKlaviyo"
 
 /**
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
     sellerEmail: user.email ?? null,
   })
 
-  void notifyBoardSavedSearchMatchesForListing(listing.id)
+  await enqueueBoardSavedSearchAlert(listing.id)
   void notifyFollowersNewListingKlaviyo(listing.id)
 
   return NextResponse.json({ ok: true })

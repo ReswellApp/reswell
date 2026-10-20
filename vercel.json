@@ -107,10 +107,6 @@
       "schedule": "30 14 * * *"
     },
     {
-      "path": "/api/cron/board-finder-new-listings",
-      "schedule": "7,22,37,52 * * * *"
-    },
-    {
       "path": "/api/cron/search-period-report",
       "schedule": "0 15 1 * *"
     },
@@ -146,5 +142,13 @@
       "path": "/api/cron/live-chat-escalate-unanswered",
       "schedule": "40 * * * *"
     }
-  ]
+  ],
+  "functions": {
+    "app/api/queues/board-saved-search-alert/route.ts": {
+      "maxDuration": 300,
+      "experimentalTriggers": [
+        { "type": "queue/v2beta", "topic": "board-saved-search-alert" }
+      ]
+    }
+  }
 }

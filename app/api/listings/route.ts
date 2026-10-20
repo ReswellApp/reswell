@@ -8,7 +8,7 @@ import { syncListingToGoogleMerchantBestEffort } from '@/lib/services/googleMerc
 import { slugify } from '@/lib/slugify'
 import { trackKlaviyoListingCreated } from '@/lib/klaviyo/track-listing-created'
 import { trackFirstTimeSellerForListingIfNeeded } from '@/lib/services/klaviyoFirstTimeSeller'
-import { notifyBoardSavedSearchMatchesForListing } from '@/lib/services/notifyBoardSavedSearchMatches'
+import { enqueueBoardSavedSearchAlert } from '@/lib/services/enqueueBoardSavedSearchAlert'
 import { notifyFollowersNewListingKlaviyo } from '@/lib/services/notifyFollowersNewListingKlaviyo'
 import { evaluateSellerCanSell } from '@/lib/services/sellerBan'
 import { qualifyPublishedListingForGiveaways } from '@/lib/services/giveawayEntry'
@@ -267,7 +267,7 @@ export async function POST(request: NextRequest) {
     sellerUserId: user.id,
     sellerEmail: user.email ?? null,
   })
-  void notifyBoardSavedSearchMatchesForListing(listing.id)
+  await enqueueBoardSavedSearchAlert(listing.id)
   void notifyFollowersNewListingKlaviyo(listing.id)
 
   if (section === 'surfboards') {

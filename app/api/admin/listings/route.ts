@@ -4,7 +4,7 @@ import { createServiceRoleClient } from '@/lib/supabase/server'
 import { slugify } from '@/lib/slugify'
 import { trackKlaviyoListingCreated } from '@/lib/klaviyo/track-listing-created'
 import { trackFirstTimeSellerForListingIfNeeded } from '@/lib/services/klaviyoFirstTimeSeller'
-import { notifyBoardSavedSearchMatchesForListing } from '@/lib/services/notifyBoardSavedSearchMatches'
+import { enqueueBoardSavedSearchAlert } from '@/lib/services/enqueueBoardSavedSearchAlert'
 import { notifyFollowersNewListingKlaviyo } from '@/lib/services/notifyFollowersNewListingKlaviyo'
 import {
   isListingDimensionDisplaySchemaCacheError,
@@ -274,7 +274,7 @@ export async function POST(request: NextRequest) {
     sellerUserId: targetUserId,
     sellerEmail: null,
   })
-  void notifyBoardSavedSearchMatchesForListing(listing.id)
+  await enqueueBoardSavedSearchAlert(listing.id)
   void notifyFollowersNewListingKlaviyo(listing.id)
 
   return NextResponse.json({ success: true, listing_id: listing.id })

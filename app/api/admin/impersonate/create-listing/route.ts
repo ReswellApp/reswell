@@ -4,7 +4,7 @@ import { IMPERSONATION_COOKIE, parseImpersonationCookie } from "@/lib/impersonat
 import { slugify } from "@/lib/slugify"
 import { trackKlaviyoListingCreated } from "@/lib/klaviyo/track-listing-created"
 import { trackFirstTimeSellerForListingIfNeeded } from "@/lib/services/klaviyoFirstTimeSeller"
-import { notifyBoardSavedSearchMatchesForListing } from "@/lib/services/notifyBoardSavedSearchMatches"
+import { enqueueBoardSavedSearchAlert } from "@/lib/services/enqueueBoardSavedSearchAlert"
 import { notifyFollowersNewListingKlaviyo } from "@/lib/services/notifyFollowersNewListingKlaviyo"
 import {
   isListingDimensionDisplaySchemaCacheError,
@@ -245,7 +245,7 @@ export async function POST(request: NextRequest) {
     sellerUserId: targetUserId,
     sellerEmail: null,
   })
-  void notifyBoardSavedSearchMatchesForListing(listing.id)
+  await enqueueBoardSavedSearchAlert(listing.id)
   void notifyFollowersNewListingKlaviyo(listing.id)
   void syncListingToGoogleMerchantBestEffort(service, listing.id)
 
