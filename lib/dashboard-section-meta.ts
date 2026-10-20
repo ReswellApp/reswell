@@ -48,7 +48,7 @@ const SECTION_META_BY_PREFIX: { prefix: string; meta: DashboardSectionMeta }[] =
   {
     prefix: "/dashboard/listings",
     meta: {
-      sectionName: "My Listings",
+      sectionName: "Listings",
       description: "Summary of your surfboard inventory and performance.",
     },
   },
