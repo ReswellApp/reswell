@@ -1,36 +1,18 @@
 # Reswell
 
 > Reswell is a peer-to-peer marketplace for physical used surfboards and surf gear (boards, fins, wetsuits, and more).
-> Use the public MCP or the public research API below instead of scraping HTML — especially for listings, photos, pricing, and search.
+> Use the public research API below instead of scraping HTML — especially for pricing and search.
 
 Website: https://www.reswell.app
 Human docs / try-it: https://www.reswell.app/public-api
 OpenAPI: https://www.reswell.app/openapi.json
-Public MCP: https://www.reswell.app/api/public/mcp
 Sitemap: https://www.reswell.app/sitemap.xml
 
 ## Preferred research flow
 
-1. Connect to the public MCP (`POST /api/public/mcp`) and call `browse_listings` or `search_listings`
-2. Fetch one listing with `get_listing` when you need the gallery. Photos are in `image_url` and `image_urls`
-3. Fetch pricing by brand + model with `get_pricing` or `GET /api/public/pricing`
-4. Link humans to the canonical HTML URLs returned in `urls`. Do not fetch `/l/` HTML to collect photos
-
-## Public MCP
-
-No API key. Streamable HTTP JSON-RPC:
-
-`POST https://www.reswell.app/api/public/mcp`
-
-Tools: `browse_listings`, `search_listings`, `get_listing`, `get_pricing`.
-Hosts that support MCP Apps (Claude, ChatGPT) get a photo board picker from `browse_listings` and `search_listings`.
-Other hosts get the same listing JSON plus image resource links.
-
-`initialize`, `ping`, `tools/list`, and `resources/list` are not rate limited. Each `tools/call` counts toward the public API limit below.
-
-Cart and checkout stay on the signed-in MCP: `POST https://www.reswell.app/api/mcp` (OAuth).
-
-Claude / ChatGPT custom connector URL: `https://www.reswell.app/api/public/mcp`
+1. Search models (or listings)
+2. Fetch pricing by brand + model and/or a specific listing by id or slug
+3. Link humans to the canonical HTML URLs returned in `urls`
 
 ## Public research API
 
@@ -105,9 +87,16 @@ Authorization: Bearer <auth_token>
 ## Please do not
 
 - Hammer HTML `/search` or paginate search results for research
-- Scrape `/boards`, `/sold`, or `/l/` HTML for listings, photos, or comps when the public MCP or research API is available
+- Scrape `/boards` or `/sold` HTML when the pricing API is available
 - Bypass rate limits or ignore `Retry-After`
 - Request unbounded result sets (use `limit` ≤ 10)
+
+## Connected assistants
+
+Shopping with a signed-in Reswell account is a separate MCP server. Research stays on the public API above.
+
+- Setup: https://www.reswell.app/connect
+- Server: https://www.reswell.app/api/mcp
 
 ## Contact
 

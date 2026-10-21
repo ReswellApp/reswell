@@ -1,5 +1,5 @@
-import Link from "next/link"
 import { PublicApiPlayground } from "@/components/features/public-api/public-api-playground"
+import { PublicApiReference } from "@/components/features/public-api/public-api-reference"
 import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
 
 export const revalidate = 86400
@@ -8,28 +8,12 @@ export async function generateMetadata() {
   return resolvePageMetadata("public-api")
 }
 
-const endpoints = [
-  {
-    name: "MCP",
-    href: null,
-    detail:
-      "POST /api/public/mcp — browse_listings, search_listings, get_listing (photos), get_pricing. No API key.",
-  },
-  {
-    name: "Search",
-    href: "/api/public/search?q=channel+islands+twin+pin&type=models&limit=5",
-    detail: "GET /api/public/search?q={query}&type=models|listings&limit=5",
-  },
-  {
-    name: "Pricing",
-    href: "/api/public/pricing?brand=channel-islands&model=twin-pin",
-    detail: "GET /api/public/pricing?brand={brand}&model={model}",
-  },
-  {
-    name: "Listing",
-    href: "/api/public/listings/{id}",
-    detail: "GET /api/public/listings/{id} — id or slug",
-  },
+const facts = [
+  "No API key",
+  "CORS open",
+  "Free: 10 req/min",
+  "Registered: 30 req/min",
+  "JSON only",
 ] as const
 
 export default function PublicApiPage() {
@@ -44,61 +28,25 @@ export default function PublicApiPage() {
             Public research API
           </h1>
           <p className="mt-4 text-base leading-relaxed text-muted-foreground md:text-lg">
-            Clean JSON and a public MCP for listings, photos, used-board comps, and catalog
-            search. Built for LLMs and research bots — use this instead of scraping HTML.
+            Clean JSON for listings, used-board comps, and catalog search. Built for LLMs and
+            research bots — use this instead of scraping HTML.
           </p>
-          <p className="mt-3 text-sm text-muted-foreground">
-            Machine-readable guides:{" "}
-            <Link href="/llms.txt" className="text-primary underline">
-              /llms.txt
-            </Link>
-            {" · "}
-            <Link href="/openapi.json" className="text-primary underline">
-              /openapi.json
-            </Link>
-            {" · "}
-            <span className="font-mono text-xs">POST /api/public/mcp</span>
-          </p>
-        </div>
-      </section>
-
-      <section className="container mx-auto max-w-3xl space-y-10 px-4 py-12 sm:px-6">
-        <div>
-          <h2 className="font-headline text-2xl font-bold tracking-tight">Endpoints</h2>
-          <ul className="mt-4 space-y-3">
-            {endpoints.map((endpoint) => (
-              <li key={endpoint.name} className="rounded-2xl border border-border/80 bg-card p-4">
-                <p className="text-sm font-semibold text-foreground">{endpoint.name}</p>
-                <p className="mt-1 font-mono text-xs text-muted-foreground">{endpoint.detail}</p>
-                {endpoint.href == null || endpoint.href.includes("{id}") ? null : (
-                  <Link href={endpoint.href} className="mt-2 inline-block text-sm text-primary underline">
-                    Open example
-                  </Link>
-                )}
+          <ul className="mt-5 flex flex-wrap gap-2">
+            {facts.map((fact) => (
+              <li
+                key={fact}
+                className="rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground"
+              >
+                {fact}
               </li>
             ))}
           </ul>
         </div>
+      </section>
 
-        <div>
-          <h2 className="font-headline text-2xl font-bold tracking-tight">Rate limits</h2>
-          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-            Free: 10 requests / minute per IP. Signed-in or{" "}
-            <code className="rounded bg-muted px-1 py-0.5 text-xs">Authorization: Bearer</code>{" "}
-            from a Reswell account: 30 / minute. Over limit returns HTTP 429 and{" "}
-            <code className="rounded bg-muted px-1 py-0.5 text-xs">Retry-After</code>.
-          </p>
-        </div>
-
+      <section className="container mx-auto max-w-3xl space-y-6 px-4 py-12 sm:px-6">
         <PublicApiPlayground />
-
-        <p className="text-sm text-muted-foreground">
-          Questions?{" "}
-          <Link href="/help" className="text-primary underline">
-            Help center
-          </Link>
-          .
-        </p>
+        <PublicApiReference />
       </section>
     </main>
   )

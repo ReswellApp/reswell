@@ -355,8 +355,14 @@ export const MANAGED_PAGES: ManagedPage[] = [
   page("public-api", "marketplace", "Public research API", {
     title: "Public research API — Reswell",
     description:
-      "JSON API and public MCP for Reswell listings, photos, used-board pricing comps, and catalog search. Built for LLMs and research bots.",
+      "JSON API for Reswell listings, used-board pricing comps, and catalog search. Built for LLMs and research bots.",
     path: "/public-api",
+  }),
+  page("connect", "marketplace", "Connect an assistant", {
+    title: "Connect an assistant — Reswell",
+    description:
+      "Sign in with Reswell so Claude, ChatGPT, Grok, or any remote MCP client can search listings, read your cart, and start checkout. The assistant cannot charge your card.",
+    path: "/connect",
   }),
   // ---- Content & community ----
   page("blog", "content", "Blog index", {
