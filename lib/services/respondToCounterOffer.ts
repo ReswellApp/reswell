@@ -8,6 +8,7 @@ import { deleteOfferRecord } from "@/lib/services/offerCleanup"
 import { parseOfferLineItems } from "@/lib/types/offer-line-item"
 import type { RespondToCounterOfferInput } from "@/lib/validations/respond-to-counter-offer"
 import { reconcileOfferFulfillmentWithListings } from "@/lib/offer-listing-shipping"
+import { publishOfferNotification } from "@/lib/services/notifications/publish"
 
 function roundMoney(n: number): number {
   return Math.round(n * 100) / 100
@@ -130,11 +131,13 @@ export async function respondToCounterOfferService(
     )
 
     if (service) {
-      await service.from("notifications").insert({
-        user_id: offer.seller_id,
+      await publishOfferNotification(service, {
+        recipientId: offer.seller_id,
+        actorId: buyerUserId,
+        listingId: offer.listing_id,
+        offerId,
         type: "offer_declined",
-        listing_id: offer.listing_id,
-        actor_id: buyerUserId,
+        amountUsd: current,
         message: `${title}: the buyer declined your counter of $${current.toFixed(2)}.`,
       })
     }
@@ -244,11 +247,13 @@ export async function respondToCounterOfferService(
   await appendNegotiationLine(supabase, offer, buyerUserId, acceptText)
 
   if (service) {
-    await service.from("notifications").insert({
-      user_id: offer.seller_id,
+    await publishOfferNotification(service, {
+      recipientId: offer.seller_id,
+      actorId: buyerUserId,
+      listingId: offer.listing_id,
+      offerId,
       type: "offer_accepted",
-      listing_id: offer.listing_id,
-      actor_id: buyerUserId,
+      amountUsd: current,
       message: `${title}: buyer accepted your counter of $${current.toFixed(2)}.`,
     })
   }
