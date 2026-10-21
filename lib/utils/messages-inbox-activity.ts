@@ -22,13 +22,8 @@ export function activityKindLabel(type: string | undefined): string {
   if (t.startsWith("offer_")) return "Offer"
   if (t === "order_delivered" || t === "order_delivered_payout") return "Order"
   if (t === "payout_info_required") return "Payout"
-  if (
-    t === "seller_message_waiting" ||
-    t === "seller_listing_hide_warning" ||
-    t === "seller_listing_auto_hidden"
-  ) {
-    return "Reply"
-  }
+  if (t === "seller_message_waiting") return "Reply"
+  if (t === "seller_listing_hide_warning" || t === "seller_listing_auto_hidden") return "Vacation"
   return "Activity"
 }
 

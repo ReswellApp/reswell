@@ -301,20 +301,26 @@ export function sellerMessageWaitingBody(title: string): string {
   return `Are you still here? Someone messaged you about ${listingName(title)} and you never responded.`
 }
 
+export const VACATION_MODE_HIDDEN_LABEL = "Vacation mode (hidden)"
+
 export function sellerListingHideWarningTitle(): string {
-  return "Listing will be hidden"
+  return "Vacation mode"
 }
 
 export function sellerListingHideWarningBody(title: string): string {
-  return `Still here? ${listingName(title)} will be hidden if you don't reply. Do you still have this listing?`
+  return `If you don't reply, ${listingName(title)} goes into vacation mode (hidden). Do you still have this listing? You can turn it back on whenever you like.`
 }
 
 export function sellerListingAutoHiddenTitle(): string {
-  return "Listing hidden"
+  return VACATION_MODE_HIDDEN_LABEL
 }
 
 export function sellerListingAutoHiddenBody(title: string): string {
-  return `We hid ${listingName(title)} because someone messaged you and you never responded.`
+  return `${listingName(title)} is in vacation mode (hidden). You can turn it back on whenever you like.`
+}
+
+export function sellerListingAutoHiddenEmailBody(): string {
+  return "Your listing is in vacation mode (hidden). You can turn it back on whenever you like."
 }
 
 export const LISTING_SAVED_DIGEST_HREF = "/dashboard/listings"

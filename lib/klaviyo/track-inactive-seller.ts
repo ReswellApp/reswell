@@ -20,6 +20,10 @@ import { listingDetailHref } from "@/lib/listing-href"
 import { publicSiteOriginForEmail } from "@/lib/public-site-origin"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
 import { SELLER_MESSAGE_INACTIVITY_DAYS } from "@/lib/db/sellerMessageInactivity"
+import {
+  sellerListingAutoHiddenEmailBody,
+  VACATION_MODE_HIDDEN_LABEL,
+} from "@/lib/services/notifications/catalog"
 
 const MESSAGE_PROP_MAX = 2000
 
@@ -116,6 +120,9 @@ export async function trackKlaviyoInactiveSeller(
       time: eventTime,
       days_unanswered: SELLER_MESSAGE_INACTIVITY_DAYS,
       vacation_mode_applied: payload.vacationModeApplied,
+      vacation_label: VACATION_MODE_HIDDEN_LABEL,
+      email_headline: VACATION_MODE_HIDDEN_LABEL,
+      email_body: sellerListingAutoHiddenEmailBody(),
       seller_user_id: payload.sellerUserId,
       seller_display_name: payload.sellerDisplayName?.trim() ?? "",
       listing_id: payload.listingId,

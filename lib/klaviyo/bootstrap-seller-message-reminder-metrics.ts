@@ -81,7 +81,7 @@ export async function bootstrapSellerMessageReminderMetrics(): Promise<{
     daysUntilHidden: SELLER_MESSAGE_INACTIVITY_DAYS - SELLER_MESSAGE_WARNING_DAYS,
     emailHeadline: "Still have this listing?",
     emailBody:
-      "Your listing will be hidden if there's no response. Just checking in to see if you still have it.",
+      "If there's no response, your listing goes into vacation mode (hidden). You can turn it back on whenever you like.",
   })
 
   return { results: [stillHere, hideWarning] }

@@ -5,8 +5,8 @@
  * Flow copy: "Still here? Someone is waiting for a response on your listing."
  *
  * **Day 6 metric:** `Seller Listing Hide Warning`
- * Flow copy: "Your listing will be hidden if there's no response. Just checking
- * in to see if you still have it."
+ * Flow copy: the listing goes into vacation mode (hidden) if there's no response.
+ * The seller can turn it back on whenever they like.
  *
  * Profile is the seller. Ignore events where `reswell_metric_seed` is true.
  * Use `email_headline`, `email_body`, `messages_url`, `Title`, and `photo_url`
@@ -93,7 +93,7 @@ function stageCopy(stage: SellerMessageReminderKlaviyoStage): {
     daysUntilHidden: SELLER_MESSAGE_INACTIVITY_DAYS - SELLER_MESSAGE_WARNING_DAYS,
     emailHeadline: "Still have this listing?",
     emailBody:
-      "Your listing will be hidden if there's no response. Just checking in to see if you still have it.",
+      "If there's no response, your listing goes into vacation mode (hidden). You can turn it back on whenever you like.",
     uniquePrefix: "seller-listing-hide-warning",
   }
 }

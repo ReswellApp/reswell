@@ -112,7 +112,7 @@ function inAppNotice(group: ListingInactivityGroup): InAppNotificationInput | nu
   const conversationId = oldestConversationId(group.rows)
   if (!messageKey || !conversationId) return null
 
-  const href = `/messages/${conversationId}`
+  const threadHref = `/messages/${conversationId}`
   const title = group.listingTitle
   const metadata = {
     listingId: group.listingId,
@@ -128,7 +128,7 @@ function inAppNotice(group: ListingInactivityGroup): InAppNotificationInput | nu
       listingId: group.listingId,
       title: sellerMessageWaitingTitle(),
       body: sellerMessageWaitingBody(title),
-      href,
+      href: threadHref,
       dedupeKey: sellerMessageWaitingDedupeKey(group.listingId, messageKey),
       metadata,
     }
@@ -140,7 +140,7 @@ function inAppNotice(group: ListingInactivityGroup): InAppNotificationInput | nu
       listingId: group.listingId,
       title: sellerListingHideWarningTitle(),
       body: sellerListingHideWarningBody(title),
-      href,
+      href: threadHref,
       dedupeKey: sellerListingHideWarningDedupeKey(group.listingId, messageKey),
       metadata,
     }
@@ -151,7 +151,7 @@ function inAppNotice(group: ListingInactivityGroup): InAppNotificationInput | nu
     listingId: group.listingId,
     title: sellerListingAutoHiddenTitle(),
     body: sellerListingAutoHiddenBody(title),
-    href,
+    href: "/dashboard/listings",
     dedupeKey: sellerListingAutoHiddenDedupeKey(group.listingId, messageKey),
     metadata,
   }

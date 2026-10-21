@@ -9,9 +9,11 @@
  * **Building the flow in Klaviyo:**
  * 1. Flows → Create flow → Metric → **Listing Auto Vacation**.
  * 2. Trigger filter: `reswell_metric_seed` is not true (ignore bootstrap).
- * 3. CTA: `{{ event.manage_url }}` (dashboard listings) or `{{ event.edit_url }}`.
+ * 3. CTA: `{{ event.manage_url }}` (My Listings, where they turn vacation mode off).
+ *    Seller-facing copy: `{{ event.email_headline }}` is "Vacation mode (hidden)" and
+ *    `{{ event.email_body }}` says they can turn it back on whenever they like.
  *    Also available: `Title`, `Price`, `price_display`, `photo_url`, `listing_url`,
- *    `hide_reason_label`, `days_unanswered`.
+ *    `vacation_label`, `days_unanswered`.
  *
  * Fires from `setListingVacationModeForSeller` only on a hide transition with
  * source `seller_inactivity` (the seller-message inactivity cron).
@@ -30,6 +32,10 @@ import {
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
 import { SELLER_MESSAGE_INACTIVITY_DAYS } from "@/lib/db/sellerMessageInactivity"
 import { listingVisibilitySourceLabel } from "@/lib/listing-visibility-sources"
+import {
+  sellerListingAutoHiddenEmailBody,
+  VACATION_MODE_HIDDEN_LABEL,
+} from "@/lib/services/notifications/catalog"
 import { listingDetailHref } from "@/lib/listing-href"
 import {
   isPeerListingSection,
@@ -106,6 +112,9 @@ export async function trackKlaviyoListingAutoVacation(
       time: eventTime,
       hide_reason: LISTING_AUTO_VACATION_HIDE_REASON,
       hide_reason_label: listingVisibilitySourceLabel(LISTING_AUTO_VACATION_HIDE_REASON),
+      vacation_label: VACATION_MODE_HIDDEN_LABEL,
+      email_headline: VACATION_MODE_HIDDEN_LABEL,
+      email_body: sellerListingAutoHiddenEmailBody(),
       days_unanswered: SELLER_MESSAGE_INACTIVITY_DAYS,
       seller_user_id: payload.sellerUserId,
       listing_id: payload.listingId,

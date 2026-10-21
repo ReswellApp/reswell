@@ -7,6 +7,10 @@ import "@/lib/klaviyo/bootstrap-env"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
 import { INACTIVE_SELLER_METRIC } from "@/lib/klaviyo/track-inactive-seller"
 import { SELLER_MESSAGE_INACTIVITY_DAYS } from "@/lib/db/sellerMessageInactivity"
+import {
+  sellerListingAutoHiddenEmailBody,
+  VACATION_MODE_HIDDEN_LABEL,
+} from "@/lib/services/notifications/catalog"
 
 const SEED_PROFILE_EXTERNAL_ID = "reswell-metric-seed-inactive-seller"
 
@@ -34,6 +38,9 @@ export async function bootstrapInactiveSellerMetric(): Promise<{
       reswell_metric_seed: true,
       days_unanswered: SELLER_MESSAGE_INACTIVITY_DAYS,
       vacation_mode_applied: true,
+      vacation_label: VACATION_MODE_HIDDEN_LABEL,
+      email_headline: VACATION_MODE_HIDDEN_LABEL,
+      email_body: sellerListingAutoHiddenEmailBody(),
     },
   })
 
