@@ -7,6 +7,7 @@ import {
 } from "@/lib/seller-resources-box-guide"
 
 const linkClass = "font-medium text-[#355185] underline underline-offset-2"
+const cardClass = "rounded-2xl border border-border bg-white px-5 py-6 sm:px-6"
 
 const SOURCES: readonly { title: string; body: ReactNode }[] = [
   {
@@ -63,7 +64,7 @@ export function HowToShipBoxes() {
         </header>
         <ul className="mx-auto mt-10 grid max-w-4xl gap-4 sm:grid-cols-2">
           {SOURCES.map((source) => (
-            <li key={source.title} className="rounded-2xl bg-[#f7f5f1] px-5 py-6 sm:px-6">
+            <li key={source.title} className={cardClass}>
               <h3 className="text-xl font-semibold tracking-tight text-[#001A4A]">{source.title}</h3>
               <p className="mt-2 text-base leading-relaxed text-[#243044]">{source.body}</p>
             </li>

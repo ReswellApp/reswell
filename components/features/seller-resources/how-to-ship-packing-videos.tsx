@@ -16,7 +16,7 @@ export function HowToShipPackingVideos() {
     <div className="grid gap-5 lg:grid-cols-2">
       {PACKING_VIDEOS.map((video) => (
         <figure key={video.src}>
-          <div className="overflow-hidden rounded-2xl bg-[#efece6]">
+          <div className="overflow-hidden rounded-2xl border border-border bg-muted">
             <iframe
               src={video.src}
               title={video.title}

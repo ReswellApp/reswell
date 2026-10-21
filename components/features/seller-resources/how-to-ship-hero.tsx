@@ -6,7 +6,7 @@ import { SURFBOARD_SELL_BOARDS_CREATE_HREF } from "@/lib/sell-flow/surfboard-sel
 
 export function HowToShipHero() {
   return (
-    <section className="bg-[#d5eef4]">
+    <section className="border-b border-border bg-white">
       <div className="mx-auto grid max-w-6xl items-center gap-8 px-4 py-10 sm:px-6 sm:py-12 lg:grid-cols-[1.15fr_0.85fr] lg:gap-10 lg:py-0">
         <div className="mx-auto max-w-xl text-center lg:mx-0 lg:py-16 lg:text-left">
           <h1 className="font-headline text-4xl font-bold tracking-tight text-[#001A4A] sm:text-5xl sm:leading-[1.05]">
@@ -28,13 +28,13 @@ export function HowToShipHero() {
               asChild
               size="lg"
               variant="outline"
-              className="rounded-full border-[#001A4A]/20 bg-white/70 px-8 font-semibold text-[#001A4A] hover:bg-white"
+              className="rounded-full border-[#001A4A]/20 bg-white px-8 font-semibold text-[#001A4A] hover:bg-[#F9F9F2]"
             >
               <Link href="/shipping-estimator">Shipping estimator</Link>
             </Button>
           </div>
         </div>
-        <div className="relative mx-auto aspect-[4/3] w-full max-w-md overflow-hidden rounded-2xl bg-[#c5e4ec] lg:mx-0 lg:aspect-auto lg:h-80 lg:max-w-none lg:rounded-none">
+        <div className="relative mx-auto aspect-[4/3] w-full max-w-md overflow-hidden rounded-2xl bg-muted lg:mx-0 lg:aspect-auto lg:h-80 lg:max-w-none">
           <Image
             src="/images/seller-resources/how-to-ship/sleeve-full.jpg"
             alt="A surfboard wrapped in a honeycomb cardboard sleeve, ready to box"
