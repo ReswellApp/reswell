@@ -59,11 +59,17 @@ export type MetaCatalogFeedItem = {
   google_product_category: string
   additional_image_link?: string
   identifier_exists: "no"
-  /** Product-set filter for Meta Ads — e.g. HaydenGarfield / OutSurfing / Brownstone shop only. */
+  /**
+   * Product-set filter. Main and city feeds: shop (HaydenGarfield / OutSurfing / Brownstone).
+   * Gear feed: section (Apparel, Traction, Boardbags, Surfpacks, Leashes, Fins).
+   */
   custom_label_0?: string
   /** City product-set filter — e.g. SantaBarbara / Ventura. */
   custom_label_1?: string
-  /** Shipping product-set filter — Shipping when the surfboard offers shipping. */
+  /**
+   * Main and city feeds: Shipping when the surfboard offers shipping.
+   * Gear feed: shop label when the seller is Hayden, OutSurfing, or Brownstone.
+   */
   custom_label_2?: string
   /** Direct downloadable video file URL (Meta Advantage+ catalog ads). */
   "video[0].url"?: string
@@ -76,6 +82,16 @@ export type MetaCatalogFeedContext = {
   brownstoneShopUserId: string | null
   /** Override city label when building a dedicated city catalog page. */
   cityCustomLabel?: string
+  /**
+   * Sections this feed may include. Defaults to the main catalog sections.
+   * The gear feed passes apparel, traction, boardbags, surfpacks, leashes, and fins.
+   */
+  allowedSections?: readonly string[]
+  /**
+   * Write the listing section onto `custom_label_0`. A matching shop label
+   * moves to `custom_label_2` so product sets can split the gear feed by type.
+   */
+  sectionAsCustomLabel0?: boolean
 }
 
 const MAX_DESCRIPTION_LENGTH = 5000
@@ -95,6 +111,40 @@ export type MetaCatalogPeerSection = (typeof META_CATALOG_PEER_SECTIONS)[number]
 
 export function isMetaCatalogPeerSection(section: string): section is MetaCatalogPeerSection {
   return (META_CATALOG_PEER_SECTIONS as readonly string[]).includes(section)
+}
+
+/**
+ * Gear catalog: apparel, traction, board bags, surfpacks, leashes, and fins.
+ * Board bags, surfpacks, and leashes are not in the main catalog feed.
+ */
+export const META_CATALOG_GEAR_SECTIONS = [
+  "apparel",
+  "traction",
+  "boardbags",
+  "surfpacks",
+  "leashes",
+  "fins",
+] as const
+
+export type MetaCatalogGearSection = (typeof META_CATALOG_GEAR_SECTIONS)[number]
+
+export function isMetaCatalogGearSection(section: string): section is MetaCatalogGearSection {
+  return (META_CATALOG_GEAR_SECTIONS as readonly string[]).includes(section)
+}
+
+/** `custom_label_0` values on the gear feed (Meta product-set filter). */
+const META_CATALOG_GEAR_SECTION_CUSTOM_LABELS: Record<MetaCatalogGearSection, string> = {
+  apparel: "Apparel",
+  traction: "Traction",
+  boardbags: "Boardbags",
+  surfpacks: "Surfpacks",
+  leashes: "Leashes",
+  fins: "Fins",
+}
+
+export function getMetaCatalogGearSectionCustomLabel(section: string): string | undefined {
+  if (!isMetaCatalogGearSection(section)) return undefined
+  return META_CATALOG_GEAR_SECTION_CUSTOM_LABELS[section]
 }
 
 /** Google taxonomy: Sporting Goods > … > Surfing > Surfboard Fins (3525). */
@@ -145,11 +195,55 @@ export function getMetaCatalogApparelGoogleProductCategory(): string {
   )
 }
 
+/** Google taxonomy: Sporting Goods > … > Surfing > Surfing Tail Pads (3762). */
+export const META_CATALOG_DEFAULT_TRACTION_GOOGLE_PRODUCT_CATEGORY = "3762"
+
+/** Google taxonomy: Sporting Goods > … > Surfing > Surfboard Cases & Bags (3579). */
+export const META_CATALOG_DEFAULT_BOARDBAGS_GOOGLE_PRODUCT_CATEGORY = "3579"
+
+/** Google taxonomy: Sporting Goods > … > Surfing > Surf Leashes (3649). */
+export const META_CATALOG_DEFAULT_LEASHES_GOOGLE_PRODUCT_CATEGORY = "3649"
+
+/** Google taxonomy: Luggage & Bags > Backpacks (100). Surfpacks are day packs, not board bags. */
+export const META_CATALOG_DEFAULT_SURFPACKS_GOOGLE_PRODUCT_CATEGORY = "100"
+
+export function getMetaCatalogTractionGoogleProductCategory(): string {
+  return (
+    process.env.META_CATALOG_TRACTION_GOOGLE_PRODUCT_CATEGORY?.trim() ||
+    META_CATALOG_DEFAULT_TRACTION_GOOGLE_PRODUCT_CATEGORY
+  )
+}
+
+export function getMetaCatalogBoardbagsGoogleProductCategory(): string {
+  return (
+    process.env.META_CATALOG_BOARDBAGS_GOOGLE_PRODUCT_CATEGORY?.trim() ||
+    META_CATALOG_DEFAULT_BOARDBAGS_GOOGLE_PRODUCT_CATEGORY
+  )
+}
+
+export function getMetaCatalogLeashesGoogleProductCategory(): string {
+  return (
+    process.env.META_CATALOG_LEASHES_GOOGLE_PRODUCT_CATEGORY?.trim() ||
+    META_CATALOG_DEFAULT_LEASHES_GOOGLE_PRODUCT_CATEGORY
+  )
+}
+
+export function getMetaCatalogSurfpacksGoogleProductCategory(): string {
+  return (
+    process.env.META_CATALOG_SURFPACKS_GOOGLE_PRODUCT_CATEGORY?.trim() ||
+    META_CATALOG_DEFAULT_SURFPACKS_GOOGLE_PRODUCT_CATEGORY
+  )
+}
+
 export function getMetaCatalogGoogleProductCategoryForSection(section: string): string {
   if (section === "fins") return getMetaCatalogFinsGoogleProductCategory()
   if (section === "magazines") return getMetaCatalogMagazinesGoogleProductCategory()
   if (section === "wetsuits") return getMetaCatalogWetsuitsGoogleProductCategory()
   if (section === "apparel") return getMetaCatalogApparelGoogleProductCategory()
+  if (section === "traction") return getMetaCatalogTractionGoogleProductCategory()
+  if (section === "boardbags") return getMetaCatalogBoardbagsGoogleProductCategory()
+  if (section === "leashes") return getMetaCatalogLeashesGoogleProductCategory()
+  if (section === "surfpacks") return getMetaCatalogSurfpacksGoogleProductCategory()
   return getMetaCatalogGoogleProductCategory()
 }
 
@@ -390,8 +484,11 @@ function formatMetaPrice(amount: number): string {
   return `${amount.toFixed(2)} USD`
 }
 
-export function isMetaCatalogEligibleListing(listing: MetaListingProductSource): boolean {
-  if (!listing.section || !isMetaCatalogPeerSection(listing.section)) return false
+export function isMetaCatalogEligibleListing(
+  listing: MetaListingProductSource,
+  allowedSections: readonly string[] = META_CATALOG_PEER_SECTIONS,
+): boolean {
+  if (!listing.section || !allowedSections.includes(listing.section)) return false
   if (listing.status !== "active") return false
   if (listing.hidden_from_site === true) return false
   if (!listing.id?.trim()) return false
@@ -405,7 +502,8 @@ export function listingToMetaCatalogFeedItem(
   listing: MetaListingProductSource,
   context?: MetaCatalogFeedContext,
 ): MetaCatalogFeedItem | null {
-  if (!isMetaCatalogEligibleListing(listing)) return null
+  const allowedSections = context?.allowedSections ?? META_CATALOG_PEER_SECTIONS
+  if (!isMetaCatalogEligibleListing(listing, allowedSections)) return null
 
   const priceAmount = parseMetaListingPrice(listing.price)
   if (priceAmount == null) return null
@@ -414,9 +512,12 @@ export function listingToMetaCatalogFeedItem(
   if (!imageLink) return null
 
   const brand = typeof listing.brand === "string" ? listing.brand.trim() : ""
-  const customLabel0 = getMetaCatalogCustomLabel0ForListing(listing, context)
+  const shopLabel = getMetaCatalogCustomLabel0ForListing(listing, context)
+  const sectionLabel = getMetaCatalogGearSectionCustomLabel(listing.section ?? "")
+  const useSectionLabel = context?.sectionAsCustomLabel0 === true && Boolean(sectionLabel)
+  const customLabel0 = useSectionLabel ? sectionLabel : shopLabel
   const customLabel1 = getMetaCatalogCustomLabel1ForListing(listing, context)
-  const customLabel2 = getMetaCatalogCustomLabel2ForListing(listing)
+  const customLabel2 = useSectionLabel ? shopLabel : getMetaCatalogCustomLabel2ForListing(listing)
   const videoLink = primaryVideoLink(listing)
 
   return {
