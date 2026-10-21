@@ -3,11 +3,13 @@
  *
  * **Flow setup**
  * 1. Flows → Create flow → Metric → **Order Shipping Update**
+ *    The app only emits this metric for out for delivery, a delivery attempt,
+ *    available for pickup, an exception, or delivered. Facility scans do not send.
  * 2. Optional split: `status_code` equals `DE`
  *    - Delivered → paste `KLAVIYO_ORDER_DELIVERED_EMAIL_HTML`
  *    - Everyone else → paste `KLAVIYO_ORDER_SHIPPING_UPDATE_EMAIL_HTML`
  * 3. Preview with a recent **Order Shipping Update** event to verify variables
- * 4. In-transit subject: `{{ event.status_label }} — {{ event.Title }}`
+ * 4. Update subject: `{{ event.status_label }} — {{ event.Title }}`
  *    Delivered subject: `Your order has been delivered — {{ event.Title }}`
  *
  * **Event variables** (from `track-order-shipping-update.ts`):
@@ -15,7 +17,7 @@
  * - `status_label`, `latest_event_description`, `latest_event_location`
  * - `tracking_number`, `tracking_carrier`, `tracking_url`, `estimated_delivery_date`
  * - `tracking_url` is the Reswell branded tracker when ShipEngine created one
- * - `is_delivered`, `status_code`
+ * - `is_delivered`, `status_code`, `sms_milestone`, `notification_kind`
  *
  * **Klaviyo notes**
  * - No `{% if %}`, `{% for %}`, or `{% elsif %}` — those often print as raw text

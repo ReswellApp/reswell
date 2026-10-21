@@ -77,6 +77,7 @@ export async function bootstrapOrderShippingUpdateMetric(): Promise<{
         is_delivered: seed.milestone === "delivered",
         order_url: "https://reswell.app/dashboard/purchases",
         sms_milestone: seed.milestone,
+        notification_kind: seed.milestone,
         has_sms_phone: false,
       },
     })
