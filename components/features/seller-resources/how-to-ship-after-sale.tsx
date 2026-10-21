@@ -1,6 +1,5 @@
 import type { ReactNode } from "react"
 import Link from "next/link"
-import { helpArticlePath } from "@/lib/help-center/paths"
 import { SHIPPING_DEADLINE_DAYS } from "@/lib/shipping-deadline"
 
 const linkClass = "font-medium text-[#355185] underline underline-offset-2"
@@ -28,15 +27,7 @@ const STEPS: readonly { title: string; body: ReactNode }[] = [
   },
   {
     title: "Get paid",
-    body: (
-      <>
-        Shipped earnings move to ready 4 days after the carrier confirms delivery.{" "}
-        <Link href={helpArticlePath("selling", "how-long-to-get-paid")} className={linkClass}>
-          How long it takes
-        </Link>
-        .
-      </>
-    ),
+    body: "Earnings are available 4 days after delivery is marked for new sellers. Become a trusted seller and your payout is ready 2 days after delivery.",
   },
 ]
 
