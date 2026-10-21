@@ -10,12 +10,6 @@ export async function generateMetadata() {
 
 const endpoints = [
   {
-    name: "MCP",
-    href: null,
-    detail:
-      "POST /api/public/mcp — browse_listings, search_listings, get_listing (photos), get_pricing. No API key.",
-  },
-  {
     name: "Search",
     href: "/api/public/search?q=channel+islands+twin+pin&type=models&limit=5",
     detail: "GET /api/public/search?q={query}&type=models|listings&limit=5",
@@ -44,8 +38,8 @@ export default function PublicApiPage() {
             Public research API
           </h1>
           <p className="mt-4 text-base leading-relaxed text-muted-foreground md:text-lg">
-            Clean JSON and a public MCP for listings, photos, used-board comps, and catalog
-            search. Built for LLMs and research bots — use this instead of scraping HTML.
+            Clean JSON for listings, used-board comps, and catalog search. Built for LLMs and
+            research bots — use this instead of scraping HTML.
           </p>
           <p className="mt-3 text-sm text-muted-foreground">
             Machine-readable guides:{" "}
@@ -56,8 +50,6 @@ export default function PublicApiPage() {
             <Link href="/openapi.json" className="text-primary underline">
               /openapi.json
             </Link>
-            {" · "}
-            <span className="font-mono text-xs">POST /api/public/mcp</span>
           </p>
         </div>
       </section>
@@ -70,7 +62,7 @@ export default function PublicApiPage() {
               <li key={endpoint.name} className="rounded-2xl border border-border/80 bg-card p-4">
                 <p className="text-sm font-semibold text-foreground">{endpoint.name}</p>
                 <p className="mt-1 font-mono text-xs text-muted-foreground">{endpoint.detail}</p>
-                {endpoint.href == null || endpoint.href.includes("{id}") ? null : (
+                {endpoint.href.includes("{id}") ? null : (
                   <Link href={endpoint.href} className="mt-2 inline-block text-sm text-primary underline">
                     Open example
                   </Link>
