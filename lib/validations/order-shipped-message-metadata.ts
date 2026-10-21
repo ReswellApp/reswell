@@ -7,6 +7,7 @@ export const orderShippedMessageMetadataSchema = z.object({
   listingTitle: z.string().optional(),
   trackingNumber: z.string().optional(),
   trackingCarrier: z.string().nullable().optional(),
+  trackingUrl: z.string().max(500).optional(),
 })
 
 export type OrderShippedMessagePayload = z.infer<typeof orderShippedMessageMetadataSchema>

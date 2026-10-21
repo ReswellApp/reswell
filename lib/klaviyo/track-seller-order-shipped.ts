@@ -8,7 +8,7 @@
  * that metric drives buyer “your order shipped” email/SMS.
  *
  * Template variables: `{{ event.order_num }}`, `{{ event.Title }}`, `{{ event.sale_url }}`,
- * `{{ event.tracking_number }}`, `{{ event.tracking_carrier }}`.
+ * `{{ event.tracking_number }}`, `{{ event.tracking_carrier }}`, `{{ event.tracking_url }}`.
  */
 
 import { sellerSaleUrl } from "@/lib/klaviyo/seller-sale-event-helpers"
@@ -23,6 +23,7 @@ export type KlaviyoSellerOrderShippedPayload = {
   listingTitle: string
   trackingNumber: string
   trackingCarrier: string | null
+  trackingUrl?: string | null
 }
 
 export async function trackKlaviyoSellerOrderShipped(
@@ -45,6 +46,7 @@ export async function trackKlaviyoSellerOrderShipped(
       sale_url: sellerSaleUrl(payload.orderId),
       tracking_number: trackingNumber,
       tracking_carrier: payload.trackingCarrier?.trim() ?? "",
+      tracking_url: payload.trackingUrl?.trim() || sellerSaleUrl(payload.orderId),
     },
   })
 }

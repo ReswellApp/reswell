@@ -8,6 +8,7 @@ import { resolveOpenOrderShippingLabelFailures } from "@/lib/db/orderShippingLab
 import { buildShippingLabelThreadPlainText } from "@/lib/messages/shipping-label-thread"
 import { broadcastInsertedMarketplaceMessage } from "@/lib/services/broadcastMarketplaceThreadMessage"
 import { fetchSantaBarbaraDropoffOrderIds } from "@/lib/services/santaBarbaraDropoffOrderAccess"
+import { ensureOrderBrandedTrackingUrl } from "@/lib/services/ensureOrderBrandedTrackingUrl"
 import { downloadAndStoreLabelPdf } from "@/lib/services/storeOrderShippingLabelAssets"
 import type { AdminShippingLabelMessagePayload } from "@/lib/validations/shipping-label-message-metadata"
 
@@ -111,6 +112,7 @@ export async function attachAdminShippingLabelToOrder(params: {
     trackingNumber: track,
     trackingCarrier: car,
   })
+  const brandedUrl = track ? await ensureOrderBrandedTrackingUrl(u.id) : null
   const metadata: AdminShippingLabelMessagePayload = {
     kind: "admin_shipping_label",
     orderId: u.id,
@@ -118,6 +120,7 @@ export async function attachAdminShippingLabelToOrder(params: {
     listingTitle: params.listingTitle,
     trackingNumber: track,
     trackingCarrier: car,
+    ...(brandedUrl ? { trackingUrl: brandedUrl } : {}),
     labelPdfUrl: messageLabelPdfUrl,
     hasPaperlessQr: hideLabelFromSeller
       ? false

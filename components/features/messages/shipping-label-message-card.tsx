@@ -6,7 +6,7 @@ import { Download, Printer } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ThreadTrackingDetails } from "@/components/features/messages/thread-tracking-details"
 import { adminShippingLabelMessageLinks } from "@/lib/admin/admin-order-label-visibility"
-import { carrierTrackingUrl } from "@/lib/utils/carrier-tracking-url"
+import { preferredTrackingUrl } from "@/lib/utils/carrier-tracking-url"
 import { cn } from "@/lib/utils"
 import type { ShippingLabelThreadPayload } from "@/lib/messages/shipping-label-thread"
 
@@ -65,10 +65,11 @@ export function ShippingLabelMessageCard({
               : "/admin/orders"
   const dashboardLabel =
     viewerRole === "seller" ? "View sale" : viewerRole === "buyer" ? "View purchase" : "View order"
-  const trackHref =
-    payload.trackingNumber != null
-      ? carrierTrackingUrl(payload.trackingNumber, payload.trackingCarrier)
-      : null
+  const trackHref = preferredTrackingUrl({
+    brandedUrl: payload.trackingUrl,
+    trackingNumber: payload.trackingNumber,
+    trackingCarrier: payload.trackingCarrier,
+  })
   const sellerLabelHidden = hideLabelFromSeller && viewerRole === "seller"
   const adminLabelLinks =
     viewerRole === "admin" ? adminShippingLabelMessageLinks(payload.orderId) : null
