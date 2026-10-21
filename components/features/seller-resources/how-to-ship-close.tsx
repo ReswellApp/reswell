@@ -72,11 +72,7 @@ export function HowToShipQuestions() {
           Questions?
         </h2>
         <p className="mx-auto mt-3 max-w-xl text-base leading-relaxed text-[#243044]">
-          Buyer-side label details live in the{" "}
-          <Link href="/shipping" className={linkClass}>
-            shipping guide
-          </Link>
-          . Order steps are in Help Center, or write us if a sale needs a person.
+          Shipping help covers the label and drop-off. Contact us if you want to talk to someone.
         </p>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
           <Button

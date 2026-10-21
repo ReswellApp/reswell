@@ -63,25 +63,16 @@ export function HowToShipPackGuide() {
             id="how-to-ship-pack-heading"
             className="mt-2 font-headline text-3xl font-bold tracking-tight text-[#001A4A] sm:text-4xl"
           >
-            A board box, not a guess
+            Pack the board
           </h2>
           <p className="mt-3 text-base leading-relaxed text-[#243044]">
-            Need a box? Order a recyclable carton from{" "}
-            <a
-              href="https://anewearthproject.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className={linkClass}
-            >
-              A New Earth Project
-            </a>
+            Need a carton first?{" "}
+            <Link href="#find-a-box" className={linkClass}>
+              Where to find a box
+            </Link>
             . For the best rates, pack into {HOW_TO_SELL_BEST_RATE_BOX.lengthIn}×
             {HOW_TO_SELL_BEST_RATE_BOX.widthIn}×{HOW_TO_SELL_BEST_RATE_BOX.heightIn} or stay under{" "}
-            {HOW_TO_SELL_BEST_RATE_MAX_LENGTH_IN}″ — see the{" "}
-            <Link href={`${HOW_TO_SELL_HREF}#boxes`} className={linkClass}>
-              box size guide
-            </Link>
-            .
+            {HOW_TO_SELL_BEST_RATE_MAX_LENGTH_IN}″.
           </p>
         </header>
 
