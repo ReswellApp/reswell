@@ -51,12 +51,9 @@ const ENLARGED_FRAME_STYLE: CSSProperties = {
 
 function markPaintedAfterDecode(img: HTMLImageElement | null, mark: () => void): void {
   if (!img || !img.complete || img.naturalWidth === 0) return
-  const finish = () => mark()
-  if (typeof img.decode === "function") {
-    void img.decode().then(finish).catch(finish)
-    return
-  }
-  finish()
+  // Already decoded. Waiting on img.decode() lets the white shimmer paint
+  // over a photo the browser can draw on this frame.
+  mark()
 }
 const LIGHTBOX_IMAGE_SIZES =
   "(max-width: 768px) 100vw, (max-width: 1280px) 70vw, 60vw"

@@ -1,7 +1,8 @@
 "use client"
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type SyntheticEvent } from "react"
+import { useCallback, useEffect, useRef, useState, type SyntheticEvent } from "react"
 import { ListingMediaFillImage } from "@/components/listing-media-fill-image"
+import { useCachedPhotoReady } from "@/components/features/listings/hooks/use-cached-photo-ready"
 import type { SellerDirectoryMosaicSlot } from "@/lib/sellers/directory-mosaic-images"
 import { cn } from "@/lib/utils"
 
@@ -23,19 +24,20 @@ export function SellerDirectoryMosaicImage({
   onExhausted,
 }: SellerDirectoryMosaicImageProps) {
   const [candidateIndex, setCandidateIndex] = useState(0)
-  const [loaded, setLoaded] = useState(false)
-  const frameRef = useRef<HTMLDivElement>(null)
   const exhaustedRef = useRef(false)
 
   const candidatesKey = slot.candidates.join("|")
-
-  useEffect(() => {
-    setCandidateIndex(0)
-    setLoaded(false)
+  const candidatesKeyRef = useRef(candidatesKey)
+  let resolvedIndex = candidateIndex
+  if (candidatesKeyRef.current !== candidatesKey) {
+    candidatesKeyRef.current = candidatesKey
+    resolvedIndex = 0
     exhaustedRef.current = false
-  }, [candidatesKey])
+    if (candidateIndex !== 0) setCandidateIndex(0)
+  }
 
-  const src = slot.candidates[candidateIndex] ?? ""
+  const src = slot.candidates[resolvedIndex] ?? ""
+  const { ready, markReady } = useCachedPhotoReady(src)
 
   useEffect(() => {
     if (src || slot.candidates.length > 0 || exhaustedRef.current) return
@@ -43,13 +45,12 @@ export function SellerDirectoryMosaicImage({
     onExhausted?.()
   }, [src, slot.candidates.length, onExhausted])
 
-  const handleLoad = useCallback((_event: SyntheticEvent<HTMLImageElement>) => {
-    setLoaded(true)
-  }, [])
+  const handleLoad = useCallback(() => {
+    markReady(src)
+  }, [markReady, src])
 
   const handleError = useCallback(
     (_event: SyntheticEvent<HTMLImageElement>) => {
-      setLoaded(false)
       if (candidateIndex + 1 < slot.candidates.length) {
         setCandidateIndex((index) => index + 1)
         return
@@ -61,21 +62,12 @@ export function SellerDirectoryMosaicImage({
     [candidateIndex, slot.candidates.length, onExhausted],
   )
 
-  useLayoutEffect(() => {
-    const img = frameRef.current?.querySelector("img")
-    if (img?.complete && img.naturalWidth > 0) {
-      setLoaded(true)
-    }
-  }, [src])
-
   if (!src) {
     return <div className={cn("bg-muted", className)} aria-hidden />
   }
 
-  const showShimmer = !loaded
-
   return (
-    <div ref={frameRef} className={cn("relative min-h-0 overflow-hidden bg-muted", className)}>
+    <div className={cn("relative min-h-0 overflow-hidden bg-muted", className)}>
       <ListingMediaFillImage
         key={src}
         src={src}
@@ -84,22 +76,16 @@ export function SellerDirectoryMosaicImage({
         className="object-cover"
         style={slot.objectPosition ? { objectPosition: slot.objectPosition } : undefined}
         ref={(img) => {
-          if (img?.complete && img.naturalWidth > 0) {
-            setLoaded(true)
-          }
+          if (img?.complete && img.naturalWidth > 0) markReady(src)
         }}
         onLoad={handleLoad}
         onError={handleError}
         priority={priority}
       />
 
-      <div
-        className={cn(
-          "listing-tile-shimmer listing-tile-shimmer-overlay absolute inset-0 z-[3]",
-          !showShimmer && "pointer-events-none opacity-0",
-        )}
-        aria-hidden
-      />
+      {ready ? null : (
+        <div className="listing-tile-shimmer absolute inset-0 z-[3]" aria-hidden />
+      )}
     </div>
   )
 }

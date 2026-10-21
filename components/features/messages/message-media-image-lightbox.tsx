@@ -41,12 +41,8 @@ export interface MessageMediaImageLightboxItem {
 
 function markPaintedAfterDecode(img: HTMLImageElement | null, mark: () => void): void {
   if (!img || !img.complete || img.naturalWidth === 0) return
-  const finish = () => mark()
-  if (typeof img.decode === "function") {
-    void img.decode().then(finish).catch(finish)
-    return
-  }
-  finish()
+  // Already decoded. Waiting on img.decode() paints the white veil for a frame.
+  mark()
 }
 
 function useMaxMd() {
