@@ -91,6 +91,20 @@ export type McpToolDefinition = {
   description: string
   inputSchema: Record<string, unknown>
   requiredScope: McpScope
+  /** When true, tools/list includes MCP Apps / ChatGPT widget _meta. */
+  ui?: boolean
+  annotations?: {
+    readOnlyHint?: boolean
+    openWorldHint?: boolean
+    destructiveHint?: boolean
+  }
+}
+
+export type McpToolCallResult = {
+  content: Array<{ type: "text"; text: string }>
+  structuredContent?: Record<string, unknown>
+  _meta?: Record<string, unknown>
+  isError?: boolean
 }
 
 export type McpConnectionSummary = {
