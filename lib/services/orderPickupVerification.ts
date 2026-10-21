@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { publishOrderDeliveredNotifications } from "@/lib/services/notifications/publishOrderDelivered"
 import { releaseOrderSellerEarningsAfterFulfillment } from "@/lib/services/releaseOrderSellerEarnings"
 import { sendFulfillmentReviewPrompts } from "@/lib/services/fulfillmentReviewPrompts"
 
@@ -63,6 +64,11 @@ export async function verifyOrderPickupForSeller(
   }
 
   void sendFulfillmentReviewPrompts(orderId)
+  void publishOrderDeliveredNotifications({
+    orderId,
+    buyerEvent: "picked_up",
+    sellerPayout: "available",
+  })
 
   return {
     ok: true,

@@ -20,6 +20,7 @@ export function activityKindLabel(type: string | undefined): string {
   if (t.includes("favorite") || t.includes("save") || t === "listing_saved") return "Favorite"
   if (t.includes("follow")) return "Follow"
   if (t.startsWith("offer_")) return "Offer"
+  if (t === "order_delivered" || t === "order_delivered_payout") return "Order"
   if (t === "payout_info_required") return "Payout"
   return "Activity"
 }
@@ -46,6 +47,8 @@ export function inboxActivityNotificationHref(n: MessagesInboxNotification): str
   if (isSupportActivityType(n.type) && n.id.startsWith("support:")) {
     return supportCaseResponseHref(n.id.slice("support:".length))
   }
+  const href = n.href?.trim()
+  if (href && href.startsWith("/") && !href.startsWith("//")) return href
   if (n.type === "payout_info_required") return "/dashboard/earnings"
   const listing = n.listings
   if (n.listing_id && listing?.section) {

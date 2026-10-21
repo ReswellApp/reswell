@@ -8,6 +8,7 @@ import { trackKlaviyoFollowedSellerNewListing } from "@/lib/klaviyo/track-follow
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { publicSiteOriginForEmail } from "@/lib/public-site-origin"
 import { sellerProfileHref } from "@/lib/seller-slug"
+import { enqueueNewListingInAppFanout } from "@/lib/services/notifications/fanout"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 
 export type NotifyFollowersNewListingKlaviyoResult = {
@@ -100,6 +101,15 @@ export async function notifyFollowersNewListingKlaviyo(
 
   if (followerIds.length === 0) {
     return { followerCount: 0, emitted: 0, skippedEmailPref: 0 }
+  }
+
+  try {
+    await enqueueNewListingInAppFanout(service, listing.id)
+  } catch (error) {
+    console.error(
+      "[notifications] new listing fanout enqueue:",
+      error instanceof Error ? error.message : error,
+    )
   }
 
   const [{ data: seller }, { data: firstImage }, { data: prefRows }] = await Promise.all([
