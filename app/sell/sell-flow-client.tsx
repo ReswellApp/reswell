@@ -19,7 +19,6 @@ import { createClient } from "@/lib/supabase/client"
 import { saveDefaultListingLocationClient } from "@/lib/sell-flow/save-default-listing-location-client"
 import {
   applyPublishedListingSideEffectsClient,
-  purgeListingImagesClient,
   revalidateListingMutationClient,
   updateOwnedListingViaApi,
 } from "@/lib/sell-flow/update-owned-listing-client"
@@ -188,10 +187,7 @@ import {
   isOsFileDragEvent,
   listingPhotoSlotsForDraftPersist,
 } from "@/lib/sell-flow/listing-photo-slot"
-import {
-  attachKnownListingImageIds,
-  insertListingImageReturningId,
-} from "@/lib/sell-flow/sync-listing-draft-images-client"
+import { syncListingDraftImagesClient } from "@/lib/sell-flow/sync-listing-draft-images-client"
 import {
   listingPhotoOrientationPrepareOptions,
   listingPhotoQuarterTurnsAfterAdjust,
@@ -3174,92 +3170,6 @@ function SellPageContentInner({
     }))
   }
 
-  /**
-   * Writes current photo URLs to `listing_images` for a draft (or live) listing.
-   * Uses explicit slots + removed ids so callers can pass `imagesRef` / refs (e.g. Save draft, pagehide).
-   */
-  async function syncListingImagesFromSnapshot(
-    listingId: string,
-    slots: ListingPhotoSlot[],
-    removedIds: string[],
-  ): Promise<{ nextSlots: ListingPhotoSlot[]; didInsert: boolean }> {
-    if (removedIds.length) {
-      const purge = await purgeListingImagesClient(listingId, removedIds)
-      if (!purge.ok) {
-        throw new Error(purge.error)
-      }
-      const { error: deleteImagesError } = await supabase
-        .from("listing_images")
-        .delete()
-        .in("id", removedIds)
-        .eq("listing_id", listingId)
-      if (deleteImagesError) {
-        throw new Error("Could not remove these photos from the listing.")
-      }
-    }
-
-    const knownSlots = await attachKnownListingImageIds(supabase, listingId, slots)
-    const adoptedExistingId = knownSlots.some(
-      (slot, index) => Boolean(slot.id) && slot.id !== slots[index]?.id,
-    )
-
-    const newRows = knownSlots
-      .map((img, index) => ({ img, index }))
-      .filter(({ img }) => !img.id && img.url)
-
-    const insertResults = await Promise.all(
-      newRows.map(async ({ img, index }) => {
-        try {
-          const id = await insertListingImageReturningId(supabase, listingId, {
-            url: img.url!,
-            thumbnailUrl: img.thumbnailUrl ?? null,
-            isPrimary: index === 0,
-            sortOrder: index,
-          })
-          return { index, id }
-        } catch (error) {
-          const message = error instanceof Error ? error.message : ""
-          throw new Error(message || `Photo ${index + 1} could not be saved to your listing.`)
-        }
-      }),
-    )
-
-    let working = [...knownSlots]
-    if (insertResults.length) {
-      for (const { index, id } of insertResults) {
-        working[index] = { ...working[index], id }
-      }
-    }
-
-    await Promise.all(
-      working.map(async (img, index) => {
-        if (!img.id) return
-        const url = (img.url ?? "").trim()
-        const thumb = (img.thumbnailUrl ?? "").trim()
-        const { error } = await supabase
-          .from("listing_images")
-          .update({
-            sort_order: index,
-            is_primary: index === 0,
-            ...(url
-              ? { url, thumbnail_url: thumb || null }
-              : {}),
-          })
-          .eq("id", img.id)
-          .eq("listing_id", listingId)
-        if (error) {
-          console.error("listing_images update:", error)
-          throw new Error(`Could not update photo order (image ${index + 1}).`)
-        }
-      }),
-    )
-
-    return {
-      nextSlots: working,
-      didInsert: insertResults.length > 0 || adoptedExistingId,
-    }
-  }
-
   function rememberListingImageRowIds(slots: ListingPhotoSlot[]) {
     for (const slot of slots) {
       if (slot.clientId && slot.id) {
@@ -3277,13 +3187,13 @@ function SellPageContentInner({
   }
 
   /**
-   * One draft photo save at a time. Publish awaits this so it updates the rows
-   * the autosave just inserted instead of inserting them again.
+   * One gallery save at a time, through the server reconcile. Publish waits
+   * for an in-flight save, then writes the gallery once itself.
    */
   function enqueueDraftListingImageSync(listingId: string): Promise<void> {
     const run = async () => {
       const slots = slotsWithKnownListingImageIds(imagesRef.current)
-      const { nextSlots, didInsert } = await syncListingImagesFromSnapshot(
+      const { nextSlots, didInsert } = await syncListingDraftImagesClient(
         listingId,
         slots,
         removedImageIdsRef.current,
@@ -3319,8 +3229,13 @@ function SellPageContentInner({
     return enqueueDraftListingImageSync(listingId)
   }
 
-  const syncListingImagesFromSnapshotRef = useRef(syncListingImagesFromSnapshot)
-  syncListingImagesFromSnapshotRef.current = syncListingImagesFromSnapshot
+  /** Wait for a draft photo save already running. Does not start another one. */
+  function settleDraftListingImageSync(): Promise<void> {
+    return draftImageSyncChainRef.current.then(
+      () => undefined,
+      () => undefined,
+    )
+  }
 
   function dismissUploadProgressToast() {
     const tid = uploadToastIdRef.current
@@ -3785,9 +3700,7 @@ function SellPageContentInner({
               clearTimeout(draftImageSyncTimerRef.current)
               draftImageSyncTimerRef.current = null
             }
-            // Autosave may already be inserting these photos. Wait for that save
-            // and reuse its row ids so publish does not insert them again.
-            await enqueueDraftListingImageSync(effectiveEditId)
+            await settleDraftListingImageSync()
           }
           const photoSlots = imagesRef.current.map((slot) => ({
             ...slot,

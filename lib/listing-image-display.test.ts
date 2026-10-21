@@ -10,7 +10,6 @@ import {
   listingTileCarouselImageCandidateLists,
   listingTileImageSrcCandidatesFromRow,
   listingTitleThumbnailCandidates,
-  orderedListingGalleryImages,
 } from "./listing-image-display.ts"
 
 const STORAGE = "https://proj.supabase.co/storage/v1/object/public/listings"
@@ -106,32 +105,6 @@ describe("listing tile vs compact thumb sources", () => {
     ])
     assert.equal(candidates[0], "/media/listings/u/1-thumb.webp")
     assert.equal(candidates[1], "/media/listings/u/1-card2.webp")
-  })
-})
-
-describe("orderedListingGalleryImages", () => {
-  it("shows one slide when the same photo was saved twice", () => {
-    const images = orderedListingGalleryImages([
-      {
-        url: `${STORAGE}/u/1-full.webp`,
-        is_primary: false,
-        sort_order: 1,
-      },
-      {
-        url: `${STORAGE}/u/1-full.webp`,
-        is_primary: true,
-        sort_order: 0,
-      },
-      {
-        url: `${STORAGE}/u/2-full.webp`,
-        is_primary: false,
-        sort_order: 2,
-      },
-    ])
-    assert.equal(images.length, 2)
-    assert.equal(images[0]?.url, `${STORAGE}/u/1-full.webp`)
-    assert.equal(images[0]?.is_primary, true)
-    assert.equal(images[1]?.url, `${STORAGE}/u/2-full.webp`)
   })
 })
 

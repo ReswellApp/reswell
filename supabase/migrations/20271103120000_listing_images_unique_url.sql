@@ -1,6 +1,7 @@
--- Draft autosave and publish can insert the same photo twice when the
--- client has not learned the row id yet. Collapse those copies, then reject
--- a second row with the same URL.
+-- A listing photo is one storage object. Draft save and publish both
+-- reconcile through syncListingImages; this index is what makes that
+-- reconcile safe when two requests overlap. Collapse copies already stored,
+-- then reject a second row with the same URL.
 
 ALTER TABLE public.listing_images
   DISABLE TRIGGER guard_shopify_managed_listing_images_trigger;

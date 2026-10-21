@@ -19,6 +19,15 @@ export type ListingImageUpdateOp = {
   sortOrder: number
 }
 
+/** Row the reconcile persisted. Callers stamp `id` back onto the photo slot. */
+export type SyncedListingImage = {
+  id: string
+  url: string
+  thumbnailUrl: string | null
+  isPrimary: boolean
+  sortOrder: number
+}
+
 type ExistingListingImageRow = {
   id: string
   sort_order: number
@@ -135,21 +144,40 @@ async function adoptExistingListingImage(
   return true
 }
 
+async function readSyncedListingImages(
+  supabase: SupabaseClient,
+  listingId: string,
+): Promise<SyncedListingImage[]> {
+  const { data, error } = await supabase
+    .from("listing_images")
+    .select("id, url, thumbnail_url, is_primary, sort_order")
+    .eq("listing_id", listingId)
+    .order("sort_order", { ascending: true })
+  if (error) throw new Error(error.message)
+  return (data ?? []).map((row) => ({
+    id: String(row.id),
+    url: typeof row.url === "string" ? row.url : "",
+    thumbnailUrl: typeof row.thumbnail_url === "string" ? row.thumbnail_url : null,
+    isPrimary: row.is_primary === true,
+    sortOrder: typeof row.sort_order === "number" ? row.sort_order : 0,
+  }))
+}
+
 /**
- * Syncs `listing_images` for a listing update. Removes deleted rows, inserts new
- * photos, and updates order/metadata. Skips unchanged rows. Remaining writes run
- * one at a time, new primary last, so the cover trigger stamps photo 1.
+ * One reconcile for a listing gallery. Draft save and publish both call this.
  *
- * Photos that already exist (draft autosave racing publish) are claimed by URL
- * instead of inserted again. A unique violation from a concurrent insert is
- * adopted the same way.
+ * The file is uploaded before a row exists, so the storage object is the
+ * identity. A photo with no id claims the row that already points at that
+ * file. Writes run one at a time, new primary last, so the cover trigger
+ * stamps photo 1. A unique violation means a concurrent reconcile won the
+ * insert; this one adopts that row instead of adding a second.
  */
 export async function syncListingImages(
   supabase: SupabaseClient,
   listingId: string,
   removedImageIds: string[],
   images: ListingImageUpdateOp[],
-): Promise<void> {
+): Promise<SyncedListingImage[]> {
   const keptImageIds = new Set(images.flatMap((img) => (img.id ? [img.id] : [])))
   await deleteListingMediaRowsThenStorage(
     supabase,
@@ -185,7 +213,7 @@ export async function syncListingImages(
   }
 
   if (await listingImagesAlreadySynced(supabase, listingId, [], imagesToWrite)) {
-    return
+    return readSyncedListingImages(supabase, listingId)
   }
 
   const inserts = imagesToWrite.filter((img) => !img.id && img.url.trim())
@@ -282,4 +310,6 @@ export async function syncListingImages(
       .eq("listing_id", listingId)
     if (error) throw new Error(error.message)
   }
+
+  return readSyncedListingImages(supabase, listingId)
 }

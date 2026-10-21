@@ -289,7 +289,6 @@ export function useSellServerDraft(options: UseSellServerDraftOptions): UseSellS
       const slots = options.imagesRef.current
       if (!listingPhotosReadyForDraftSync(slots)) return
       const { nextSlots, didInsert } = await syncListingDraftImagesClient(
-        options.supabase,
         listingId,
         slots,
         options.removedImageIdsRef.current,
@@ -427,7 +426,7 @@ export function useSellServerDraft(options: UseSellServerDraftOptions): UseSellS
         const savedId =
           typeof json?.data?.id === "string" && json.data.id ? json.data.id : outgoingId
         if (signedIn && savedId && listingPhotosReadyForDraftSync(slots)) {
-          await syncListingDraftImagesClient(options.supabase, savedId, slots, removedIds)
+          await syncListingDraftImagesClient(savedId, slots, removedIds)
         }
         void reloadDrafts()
       } catch {

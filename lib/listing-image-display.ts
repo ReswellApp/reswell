@@ -9,7 +9,6 @@
  * - `listingHeroSlideSrc` — large hero imagery: full `url` only.
  */
 
-import { listingImageUrlKey } from "./listing-image-identity.ts"
 import {
   listingFullImageUrlFromRef,
   proxiedListingImageSrc,
@@ -95,57 +94,6 @@ export function listingFilmImageSrcCandidatesFromRow(img: ListingImageForCard): 
   return out
 }
 
-function listingImageDedupeKey(img: ListingImageForCard): string | null {
-  const urlKey = listingImageUrlKey(img.url)
-  if (urlKey) return urlKey
-  const thumbKey = listingImageUrlKey(img.thumbnail_url)
-  return thumbKey ? `thumb:${thumbKey}` : null
-}
-
-function listingImageRowPreferred(
-  candidate: ListingImageForCard,
-  current: ListingImageForCard,
-): boolean {
-  const candidatePrimary = candidate.is_primary === true
-  const currentPrimary = current.is_primary === true
-  if (candidatePrimary !== currentPrimary) return candidatePrimary
-
-  const candidateOrder = (candidate as { sort_order?: number | null }).sort_order
-  const currentOrder = (current as { sort_order?: number | null }).sort_order
-  if (
-    typeof candidateOrder === "number" &&
-    typeof currentOrder === "number" &&
-    candidateOrder !== currentOrder
-  ) {
-    return candidateOrder < currentOrder
-  }
-  return false
-}
-
-/** One gallery slide per stored photo. Repeated rows from a double save collapse. */
-export function uniqueListingImagesByUrl<T extends ListingImageForCard>(images: readonly T[]): T[] {
-  const best = new Map<string, T>()
-  const order: string[] = []
-  const unkeyed: T[] = []
-
-  for (const img of images) {
-    const key = listingImageDedupeKey(img)
-    if (!key) {
-      unkeyed.push(img)
-      continue
-    }
-    const prev = best.get(key)
-    if (!prev) {
-      best.set(key, img)
-      order.push(key)
-      continue
-    }
-    if (listingImageRowPreferred(img, prev)) best.set(key, img)
-  }
-
-  return [...order.map((key) => best.get(key) as T), ...unkeyed]
-}
-
 /**
  * PostgREST embeds are arrays on success. A failed embed can arrive as an error
  * object (`{ message, code }`) — never call `.find` / `.sort` on that value.
@@ -154,9 +102,7 @@ export function asListingImageArray(
   images: ListingImageForCard[] | ListingImageForCard | null | undefined | unknown,
 ): ListingImageForCard[] {
   if (Array.isArray(images)) {
-    return uniqueListingImagesByUrl(
-      images.filter((img): img is ListingImageForCard => !!img && typeof img === "object"),
-    )
+    return images.filter((img): img is ListingImageForCard => !!img && typeof img === "object")
   }
   if (images && typeof images === "object" && "url" in images) {
     return [images as ListingImageForCard]
@@ -234,7 +180,7 @@ function asTileGalleryImages(value: unknown): ListingImageForCard[] {
     })
     if (out.length >= LISTING_TILE_GALLERY_MAX_IMAGES) break
   }
-  return uniqueListingImagesByUrl(out).slice(0, LISTING_TILE_GALLERY_MAX_IMAGES)
+  return out
 }
 
 /**
@@ -267,7 +213,7 @@ export function coalesceListingImagesForCard(row: {
   tile_gallery_images?: unknown
 }): ListingImageForCard[] | null {
   if (Array.isArray(row.listing_images) && row.listing_images.length > 0) {
-    return asListingImageArray(row.listing_images)
+    return row.listing_images
   }
   return listingImagesFromPrimaryFields(
     row.primary_image_url,
