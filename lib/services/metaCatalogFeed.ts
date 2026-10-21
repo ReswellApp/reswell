@@ -3,14 +3,12 @@ import { z } from "zod"
 import {
   fetchMetaCatalogFeedPage,
   fetchMetaCatalogFeedPageForLocation,
-  fetchMetaCatalogFeedPageForSections,
   type MetaCatalogFeedPageResult,
 } from "@/lib/db/metaCatalogFeed"
 import { isListingDiscoveryEligible } from "@/lib/listing-public-visibility"
 import {
   listingToMetaCatalogFeedItem,
   META_CATALOG_BROWNSTONE_SHOP_SELLER_EMAIL,
-  META_CATALOG_GEAR_SECTIONS,
   META_CATALOG_HAYDEN_SHOP_SELLER_EMAIL,
   META_CATALOG_OUTSURFING_SHOP_SELLER_EMAIL,
   type MetaCatalogFeedContext,
@@ -157,25 +155,6 @@ export async function buildMetaCatalogFeed(
   const feedContext = await resolveMetaCatalogShopContext(supabase)
   return collectMetaCatalogFeedItems(feedContext, (offset) =>
     fetchMetaCatalogFeedPage(supabase, offset),
-  )
-}
-
-/**
- * Active apparel, traction, board bags, surfpacks, leashes, and fins.
- * `custom_label_0` is the section so Meta product sets can split the catalog.
- * A known shop seller is `custom_label_2` (HaydenGarfield, OutSurfing, Brownstone).
- */
-export async function buildMetaCatalogGearFeed(
-  supabase: SupabaseClient,
-): Promise<MetaCatalogFeedItem[]> {
-  const shopContext = await resolveMetaCatalogShopContext(supabase)
-  return collectMetaCatalogFeedItems(
-    {
-      ...shopContext,
-      allowedSections: META_CATALOG_GEAR_SECTIONS,
-      sectionAsCustomLabel0: true,
-    },
-    (offset) => fetchMetaCatalogFeedPageForSections(supabase, META_CATALOG_GEAR_SECTIONS, offset),
   )
 }
 

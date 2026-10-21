@@ -4,27 +4,23 @@ import {
   getMetaCatalogApparelGoogleProductCategory,
   getMetaCatalogBoardbagsGoogleProductCategory,
   getMetaCatalogFinsGoogleProductCategory,
-  getMetaCatalogGearSectionCustomLabel,
+  getMetaCatalogGearCustomLabel,
+  getMetaCatalogShippingCustomLabel,
   getMetaCatalogGoogleProductCategoryForSection,
   getMetaCatalogHaydenShopCustomLabel,
   getMetaCatalogLeashesGoogleProductCategory,
-  getMetaCatalogOutSurfingShopCustomLabel,
   getMetaCatalogSurfpacksGoogleProductCategory,
   getMetaCatalogTractionGoogleProductCategory,
   isMetaCatalogEligibleListing,
-  isMetaCatalogGearSection,
   listingToMetaCatalogFeedItem,
-  META_CATALOG_GEAR_SECTIONS,
   type MetaCatalogFeedContext,
   type MetaListingProductSource,
 } from "./catalog-product.ts"
 
-const GEAR_CONTEXT: MetaCatalogFeedContext = {
+const SHOP_CONTEXT: MetaCatalogFeedContext = {
   haydenShopUserId: "user-hayden",
   outSurfingShopUserId: "user-outsurfing",
   brownstoneShopUserId: "user-brownstone",
-  allowedSections: META_CATALOG_GEAR_SECTIONS,
-  sectionAsCustomLabel0: true,
 }
 
 function gearListing(
@@ -49,47 +45,26 @@ function gearListing(
   }
 }
 
-describe("gear catalog sections", () => {
-  it("labels each gear section for product sets", () => {
-    assert.equal(getMetaCatalogGearSectionCustomLabel("apparel"), "Apparel")
-    assert.equal(getMetaCatalogGearSectionCustomLabel("traction"), "Traction")
-    assert.equal(getMetaCatalogGearSectionCustomLabel("boardbags"), "Boardbags")
-    assert.equal(getMetaCatalogGearSectionCustomLabel("surfpacks"), "Surfpacks")
-    assert.equal(getMetaCatalogGearSectionCustomLabel("leashes"), "Leashes")
-    assert.equal(getMetaCatalogGearSectionCustomLabel("fins"), "Fins")
-    assert.equal(getMetaCatalogGearSectionCustomLabel("surfboards"), undefined)
-    assert.equal(isMetaCatalogGearSection("boardbags"), true)
-    assert.equal(isMetaCatalogGearSection("wetsuits"), false)
+describe("gear rows on the main catalog feed", () => {
+  it("includes board bags, surfpacks, and leashes", () => {
+    assert.equal(isMetaCatalogEligibleListing(gearListing({ section: "boardbags" })), true)
+    assert.equal(isMetaCatalogEligibleListing(gearListing({ section: "surfpacks" })), true)
+    assert.equal(isMetaCatalogEligibleListing(gearListing({ section: "leashes" })), true)
   })
 
-  it("maps gear sections to their Google product categories", () => {
-    assert.equal(
-      getMetaCatalogGoogleProductCategoryForSection("traction"),
-      getMetaCatalogTractionGoogleProductCategory(),
+  it("shares custom_label_2 and keeps the shop on custom_label_0", () => {
+    const item = listingToMetaCatalogFeedItem(
+      gearListing({ section: "fins", user_id: "user-hayden", title: "Twin set" }),
+      SHOP_CONTEXT,
     )
-    assert.equal(
-      getMetaCatalogGoogleProductCategoryForSection("boardbags"),
-      getMetaCatalogBoardbagsGoogleProductCategory(),
-    )
-    assert.equal(
-      getMetaCatalogGoogleProductCategoryForSection("leashes"),
-      getMetaCatalogLeashesGoogleProductCategory(),
-    )
-    assert.equal(
-      getMetaCatalogGoogleProductCategoryForSection("surfpacks"),
-      getMetaCatalogSurfpacksGoogleProductCategory(),
-    )
-    assert.equal(
-      getMetaCatalogGoogleProductCategoryForSection("fins"),
-      getMetaCatalogFinsGoogleProductCategory(),
-    )
-    assert.equal(
-      getMetaCatalogGoogleProductCategoryForSection("apparel"),
-      getMetaCatalogApparelGoogleProductCategory(),
-    )
+    assert.ok(item)
+    assert.equal(item.custom_label_0, getMetaCatalogHaydenShopCustomLabel())
+    assert.equal(item.custom_label_1, "SantaBarbara")
+    assert.equal(item.custom_label_2, getMetaCatalogGearCustomLabel())
+    assert.equal(item.google_product_category, getMetaCatalogFinsGoogleProductCategory())
   })
 
-  it("uses the taxonomy leaf ids when overrides are unset", () => {
+  it("maps each gear section to its Google category", () => {
     const keys = [
       "META_CATALOG_TRACTION_GOOGLE_PRODUCT_CATEGORY",
       "META_CATALOG_BOARDBAGS_GOOGLE_PRODUCT_CATEGORY",
@@ -113,62 +88,38 @@ describe("gear catalog sections", () => {
         else process.env[key] = value
       }
     }
-  })
-})
 
-describe("gear catalog feed items", () => {
-  it("keeps board bags, surfpacks, and leashes off the main feed", () => {
-    assert.equal(isMetaCatalogEligibleListing(gearListing({ section: "boardbags" })), false)
-    assert.equal(isMetaCatalogEligibleListing(gearListing({ section: "surfpacks" })), false)
-    assert.equal(isMetaCatalogEligibleListing(gearListing({ section: "leashes" })), false)
-    assert.equal(listingToMetaCatalogFeedItem(gearListing()), null)
-  })
-
-  it("writes the section on custom_label_0 and keeps the city label", () => {
-    const item = listingToMetaCatalogFeedItem(gearListing(), GEAR_CONTEXT)
-    assert.ok(item)
-    assert.equal(item.custom_label_0, "Leashes")
-    assert.equal(item.custom_label_1, "SantaBarbara")
-    assert.equal(item.custom_label_2, undefined)
-    assert.equal(item.google_product_category, getMetaCatalogLeashesGoogleProductCategory())
-    assert.equal(item.availability, "in stock")
-  })
-
-  it("moves a known shop onto custom_label_2", () => {
-    const item = listingToMetaCatalogFeedItem(
-      gearListing({ section: "fins", user_id: "user-hayden", title: "Twin set" }),
-      GEAR_CONTEXT,
+    assert.equal(
+      getMetaCatalogGoogleProductCategoryForSection("traction"),
+      getMetaCatalogTractionGoogleProductCategory(),
     )
-    assert.ok(item)
-    assert.equal(item.custom_label_0, "Fins")
-    assert.equal(item.custom_label_2, getMetaCatalogHaydenShopCustomLabel())
-    assert.equal(item.google_product_category, getMetaCatalogFinsGoogleProductCategory())
+    assert.equal(
+      getMetaCatalogGoogleProductCategoryForSection("boardbags"),
+      getMetaCatalogBoardbagsGoogleProductCategory(),
+    )
+    assert.equal(
+      getMetaCatalogGoogleProductCategoryForSection("leashes"),
+      getMetaCatalogLeashesGoogleProductCategory(),
+    )
+    assert.equal(
+      getMetaCatalogGoogleProductCategoryForSection("surfpacks"),
+      getMetaCatalogSurfpacksGoogleProductCategory(),
+    )
+    assert.equal(
+      getMetaCatalogGoogleProductCategoryForSection("apparel"),
+      getMetaCatalogApparelGoogleProductCategory(),
+    )
   })
 
-  it("leaves shop on custom_label_0 for the main feed", () => {
+  it("does not mark a shipping surfboard as gear", () => {
     const item = listingToMetaCatalogFeedItem(
       gearListing({
-        section: "apparel",
-        user_id: "user-outsurfing",
-        title: "Boardshorts",
+        section: "surfboards",
+        title: "Shortboard",
+        shipping_available: true,
       }),
-      {
-        haydenShopUserId: "user-hayden",
-        outSurfingShopUserId: "user-outsurfing",
-        brownstoneShopUserId: "user-brownstone",
-      },
     )
     assert.ok(item)
-    assert.equal(item.custom_label_0, getMetaCatalogOutSurfingShopCustomLabel())
-    assert.equal(item.custom_label_2, undefined)
-    assert.equal(item.google_product_category, getMetaCatalogApparelGoogleProductCategory())
-  })
-
-  it("rejects surfboards on the gear feed", () => {
-    const item = listingToMetaCatalogFeedItem(
-      gearListing({ section: "surfboards", title: "Shortboard" }),
-      GEAR_CONTEXT,
-    )
-    assert.equal(item, null)
+    assert.equal(item.custom_label_2, getMetaCatalogShippingCustomLabel())
   })
 })
