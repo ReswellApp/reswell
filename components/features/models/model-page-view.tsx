@@ -50,7 +50,7 @@ export function ModelPageView({
   const severalConditions =
     (page.priceGuide?.condition_bands.filter((band) => band.sample_count > 0).length ?? 0) > 1
   const showPrice = hasSales || (Boolean(usedRange) && page.listings.length > 0) || severalConditions
-  const showListings = page.listings.length > 0
+  const showListings = page.listings.length > 0 || page.soldListings.length > 0
   const showReviews = page.reviewStats.reviewCount > 0
   const tabs = visibleTabs({
     showListings,
@@ -89,6 +89,7 @@ export function ModelPageView({
                 brandName={page.brand.name}
                 modelName={page.model.name}
                 listings={page.listings}
+                soldListings={page.soldListings}
                 topPick={page.topPick}
                 criteria={criteria}
                 initialSavedSearchId={initialSavedSearchId}
