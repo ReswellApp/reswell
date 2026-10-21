@@ -22,22 +22,6 @@ const SOURCES: readonly { title: string; body: ReactNode }[] = [
     ),
   },
   {
-    title: "Order online",
-    body: (
-      <>
-        <a
-          href="https://anewearthproject.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className={linkClass}
-        >
-          A New Earth Project
-        </a>{" "}
-        sells recyclable surfboard cartons made for this kind of shipment.
-      </>
-    ),
-  },
-  {
     title: "Buy from Reswell",
     body: (
       <>
@@ -77,7 +61,7 @@ export function HowToShipBoxes() {
             .
           </p>
         </header>
-        <ul className="mt-10 grid gap-4 lg:grid-cols-3">
+        <ul className="mx-auto mt-10 grid max-w-4xl gap-4 sm:grid-cols-2">
           {SOURCES.map((source) => (
             <li key={source.title} className="rounded-2xl bg-[#f7f5f1] px-5 py-6 sm:px-6">
               <h3 className="text-xl font-semibold tracking-tight text-[#001A4A]">{source.title}</h3>
