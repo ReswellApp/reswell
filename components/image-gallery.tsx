@@ -101,8 +101,6 @@ export function ImageGallery({
   /** Mount once the zoom chunk is ready so the first enlarge is a state change, not a white shell. */
   const [lightboxMounted, setLightboxMounted] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(0)
-  /** Natural width/height per slide — lightbox only. The hero frame stays 3:4. */
-  const [imageAspectRatios, setImageAspectRatios] = useState<Record<number, number>>({})
   const [cropOverrides, setCropOverrides] = useState<Record<string, ListingPdpCrop | null>>({})
   const pointerStartRef = useRef<{ x: number; y: number } | null>(null)
   const suppressHeroClickRef = useRef(false)
@@ -344,7 +342,6 @@ export function ImageGallery({
           title={title}
           index={lightboxIndex}
           onIndexChange={setLightboxIndex}
-          aspectRatios={imageAspectRatios}
           dimensionsLine={dimensionsLine}
           previewUrls={previewUrls}
         />
@@ -435,13 +432,6 @@ export function ImageGallery({
                     loading="eager"
                     crop={crop}
                     sizes={LISTING_PDP_HERO_IMAGE_SIZES}
-                    onLoaded={({ naturalWidth, naturalHeight }) => {
-                      const ratio = naturalWidth / naturalHeight
-                      setImageAspectRatios((prev) => {
-                        if (prev[i] === ratio) return prev
-                        return { ...prev, [i]: ratio }
-                      })
-                    }}
                   />
                 </div>
               )

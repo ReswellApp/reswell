@@ -3,8 +3,7 @@ import type { CSSProperties } from "react"
 /**
  * Center a listing photo, then scale until both edges of its box are covered.
  * In-flow thumbs (the image is the box) use this. Framed layers use
- * {@link listingPhotoFillClassName}. Enlarge (lightbox) opts out and shows
- * the full photo.
+ * {@link listingPhotoFillClassName}. Enlarge uses the same 3:4 cover.
  */
 export const listingPhotoCoverClassName = "max-w-none object-cover object-center"
 
