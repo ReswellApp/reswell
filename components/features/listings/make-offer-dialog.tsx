@@ -40,6 +40,7 @@ import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { peerListingItemNounForm } from "@/lib/peer-listing-item-nouns"
 import { prefetchStripeJs } from "@/components/stripe-card-checkout"
+import { dashboardOffersPath } from "@/lib/utils/offers-dashboard-display"
 
 function roundMoney(n: number): number {
   return Math.round(n * 100) / 100
@@ -58,33 +59,31 @@ type OfferStep = "offer" | "delivery" | "pay" | "success"
 type SubmitNotice =
   | {
       kind: "duplicate_offer"
-      conversationId: string | null
+      offerId: string | null
     }
   | {
       kind: "error"
       message: string
     }
 
+function readOfferId(value: unknown): string | null {
+  return typeof value === "string" && value.trim() !== "" ? value : null
+}
+
 function parseOfferSubmitResponse(json: unknown): {
   error: string
   code?: string
-  conversationId?: string | null
+  offerId: string | null
 } {
   if (typeof json !== "object" || json === null) {
-    return { error: "Could not send your offer." }
+    return { error: "Could not send your offer.", offerId: null }
   }
   const row = json as Record<string, unknown>
   const data = row.data && typeof row.data === "object" ? (row.data as Record<string, unknown>) : null
   const error = typeof row.error === "string" ? row.error : "Could not send your offer."
   const code = typeof row.code === "string" ? row.code : undefined
-  const conversationIdRaw = data?.conversationId ?? row.conversationId
-  const conversationId =
-    typeof conversationIdRaw === "string"
-      ? conversationIdRaw
-      : conversationIdRaw === null
-        ? null
-        : undefined
-  return { error, code, conversationId }
+  const offerId = readOfferId(data?.offerId) ?? readOfferId(row.offerId)
+  return { error, code, offerId }
 }
 
 export type MakeOfferDialogProps = {
@@ -105,6 +104,8 @@ export type MakeOfferDialogProps = {
   onOpenChange: (open: boolean) => void
   /** When true, the minimum is hidden until user enters below it */
   hideMinimumUntilViolated?: boolean
+  /** Fired once an offer exists so the page can show View offer without leaving. */
+  onOfferCreated?: (offerId: string) => void
 }
 
 export function MakeOfferDialog({
@@ -123,6 +124,7 @@ export function MakeOfferDialog({
   open,
   onOpenChange,
   hideMinimumUntilViolated = false,
+  onOfferCreated,
 }: MakeOfferDialogProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -144,7 +146,7 @@ export function MakeOfferDialog({
     shippingUsd: null,
     quoteError: null,
   })
-  const [successConversationId, setSuccessConversationId] = useState<string | null>(null)
+  const [successOfferId, setSuccessOfferId] = useState<string | null>(null)
   const [reservedTotal, setReservedTotal] = useState<number | null>(null)
 
   const resetDialog = useCallback(() => {
@@ -161,7 +163,7 @@ export function MakeOfferDialog({
       shippingUsd: null,
       quoteError: null,
     })
-    setSuccessConversationId(null)
+    setSuccessOfferId(null)
     setReservedTotal(null)
   }, [canPick, canShip])
 
@@ -273,8 +275,9 @@ export function MakeOfferDialog({
           if (parsed.code === "offer_already_open") {
             setSubmitNotice({
               kind: "duplicate_offer",
-              conversationId: parsed.conversationId ?? null,
+              offerId: parsed.offerId,
             })
+            if (parsed.offerId) onOfferCreated?.(parsed.offerId)
             return
           }
           setSubmitNotice({ kind: "error", message: parsed.error })
@@ -282,26 +285,35 @@ export function MakeOfferDialog({
         }
         const parsed = parseOfferSubmitResponse(json)
         setReservedTotal(totalPreview)
-        setSuccessConversationId(parsed.conversationId ?? null)
+        setSuccessOfferId(parsed.offerId)
+        if (parsed.offerId) onOfferCreated?.(parsed.offerId)
         setStep("success")
         router.refresh()
       } finally {
         setSubmitting(false)
       }
     },
-    [delivery.addressId, delivery.quoteToken, fulfillment, listingId, message, offerAmount, router, totalPreview],
+    [
+      delivery.addressId,
+      delivery.quoteToken,
+      fulfillment,
+      listingId,
+      message,
+      offerAmount,
+      onOfferCreated,
+      router,
+      totalPreview,
+    ],
   )
 
   const methodLocked = (canPick && !canShip) || (!canPick && canShip)
 
   const duplicateOfferHref =
-    submitNotice?.kind === "duplicate_offer" && submitNotice.conversationId
-      ? `/messages/${submitNotice.conversationId}`
-      : "/dashboard/offers"
+    submitNotice?.kind === "duplicate_offer"
+      ? dashboardOffersPath({ role: "buyer", offerId: submitNotice.offerId })
+      : dashboardOffersPath({ role: "buyer" })
 
-  const successHref = successConversationId
-    ? `/messages/${successConversationId}`
-    : "/dashboard/offers"
+  const successHref = dashboardOffersPath({ role: "buyer", offerId: successOfferId })
 
   const stepLabel =
     step === "offer"
@@ -347,15 +359,8 @@ export function MakeOfferDialog({
               <Button type="button" variant="outline" className="h-10 flex-1" onClick={() => onOpenChange(false)}>
                 Close
               </Button>
-              <Button
-                type="button"
-                className="h-10 flex-1"
-                onClick={() => {
-                  onOpenChange(false)
-                  router.push(successHref)
-                }}
-              >
-                {successConversationId ? "Open messages" : "View your offers"}
+              <Button type="button" className="h-10 flex-1" asChild>
+                <Link href={successHref}>View offer</Link>
               </Button>
             </DialogFooter>
           </div>
@@ -569,20 +574,11 @@ export function MakeOfferDialog({
                           <div className="space-y-0.5">
                             <p className="font-semibold leading-snug">You already sent an offer</p>
                             <p className="text-xs leading-relaxed text-muted-foreground">
-                              Your offer is waiting on the seller. Open Messages to follow up, or check
-                              Offers for status.
+                              Your offer is waiting on the seller. Open it to see where it stands.
                             </p>
                           </div>
-                          <Button
-                            type="button"
-                            size="sm"
-                            className="h-8 w-full sm:w-auto"
-                            onClick={() => {
-                              onOpenChange(false)
-                              router.push(duplicateOfferHref)
-                            }}
-                          >
-                            {submitNotice.conversationId ? "Open messages" : "View your offers"}
+                          <Button type="button" size="sm" className="h-8 w-full sm:w-auto" asChild>
+                            <Link href={duplicateOfferHref}>View offer</Link>
                           </Button>
                         </>
                       ) : (

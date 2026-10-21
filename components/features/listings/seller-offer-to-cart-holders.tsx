@@ -15,10 +15,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { SellerMakeOfferToBuyerDialog } from "@/components/features/messages/seller-make-offer-to-buyer-dialog"
-import { revokeSellerOfferAction } from "@/lib/actions/revokeSellerOffer"
 import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
 import { LISTING_SHIPPING_EMPHASIS_CLASS } from "@/lib/listing-fulfillment"
-import { offerMessagesHref } from "@/lib/utils/offer-messages-href"
+import { dashboardOffersPath } from "@/lib/utils/offers-dashboard-display"
 import { cn } from "@/lib/utils"
 import type { ListingCartHolder } from "@/lib/types/listing-cart-holders"
 
@@ -64,7 +63,6 @@ export function SellerOfferToCartHolders({
   const [holders, setHolders] = useState<ListingCartHolder[]>([])
   const [loading, setLoading] = useState(false)
   const [offerBuyerId, setOfferBuyerId] = useState<string | null>(null)
-  const [revokingOfferId, setRevokingOfferId] = useState<string | null>(null)
 
   const loadHolders = useCallback(async () => {
     setLoading(true)
@@ -103,21 +101,6 @@ export function SellerOfferToCartHolders({
 
   function handleMakeOffer(buyerUserId: string) {
     setOfferBuyerId(buyerUserId)
-  }
-
-  async function handleRevoke(offerId: string) {
-    setRevokingOfferId(offerId)
-    try {
-      const result = await revokeSellerOfferAction({ offerId })
-      if ("error" in result && result.error) {
-        toast.error(result.error)
-        return
-      }
-      toast.success("Offer revoked.")
-      await loadHolders()
-    } finally {
-      setRevokingOfferId(null)
-    }
   }
 
   function handleDialogOpenChange(open: boolean) {
@@ -179,10 +162,21 @@ export function SellerOfferToCartHolders({
               embedded
               open
               onOpenChange={(open) => {
-                if (!open) {
-                  setOfferBuyerId(null)
-                  setListOpen(false)
-                }
+                if (!open) setOfferBuyerId(null)
+              }}
+              onOfferSent={(payload) => {
+                setHolders((current) =>
+                  current.map((holder) =>
+                    holder.buyerUserId === payload.buyerUserId
+                      ? {
+                          ...holder,
+                          openOfferId: payload.offerId,
+                          openOfferSellerInitiated: true,
+                        }
+                      : holder,
+                  ),
+                )
+                void loadHolders()
               }}
               listingId={listingId}
               buyerUserId={offerBuyerId}
@@ -242,63 +236,13 @@ export function SellerOfferToCartHolders({
                                 : addedAgo(holder.addedAt)}
                             </p>
                           </div>
-                          {hasOpenOffer && holder.openOfferId && holder.openOfferSellerInitiated ? (
-                            <div className="flex shrink-0 items-center gap-1.5">
-                              <Button
-                                type="button"
-                                size="sm"
-                                className="rounded-full"
-                                onClick={() => handleMakeOffer(holder.buyerUserId)}
-                              >
-                                Update
-                              </Button>
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                className="rounded-full"
-                                disabled={revokingOfferId === holder.openOfferId}
-                                onClick={() => {
-                                  const offerId = holder.openOfferId
-                                  if (offerId) void handleRevoke(offerId)
-                                }}
-                              >
-                                {revokingOfferId === holder.openOfferId ? (
-                                  <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-                                ) : (
-                                  "Revoke"
-                                )}
-                              </Button>
-                              <Button asChild size="sm" variant="ghost" className="rounded-full px-2">
-                                <Link
-                                  href={offerMessagesHref(
-                                    {
-                                      id: holder.openOfferId,
-                                      listing_id: listingId,
-                                      buyer_id: holder.buyerUserId,
-                                      seller_id: sellerUserId,
-                                    },
-                                    "seller",
-                                    holder.conversationId,
-                                  )}
-                                >
-                                  View
-                                </Link>
-                              </Button>
-                            </div>
-                          ) : hasOpenOffer ? (
+                          {hasOpenOffer && holder.openOfferId ? (
                             <Button asChild size="sm" variant="outline" className="shrink-0 rounded-full">
                               <Link
-                                href={offerMessagesHref(
-                                  {
-                                    id: holder.openOfferId ?? undefined,
-                                    listing_id: listingId,
-                                    buyer_id: holder.buyerUserId,
-                                    seller_id: sellerUserId,
-                                  },
-                                  "seller",
-                                  holder.conversationId,
-                                )}
+                                href={dashboardOffersPath({
+                                  role: "seller",
+                                  offerId: holder.openOfferId,
+                                })}
                               >
                                 View offer
                               </Link>

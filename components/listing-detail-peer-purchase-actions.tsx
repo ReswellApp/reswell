@@ -29,6 +29,7 @@ import {
 } from "@/components/features/listings/make-offer-dialog"
 import type { OfferShippingCostMode } from "@/lib/offer-listing-shipping"
 import type { ListingExclusivePurchaseAccess } from "@/lib/services/listingBuyerExclusiveWindow"
+import { dashboardOffersPath } from "@/lib/utils/offers-dashboard-display"
 
 export type ListingMakeOfferConfig = {
   listingTitle: string
@@ -80,6 +81,7 @@ export function ListingDetailPeerPurchaseActions({
   const [loading, setLoading] = useState(false)
   const [cartAdded, setCartAdded] = useState(false)
   const [offerOpen, setOfferOpen] = useState(false)
+  const [sentOfferHref, setSentOfferHref] = useState<string | null>(null)
   const authModal = useOptionalAuthModal()
   const viewer = useListingViewer()
   const loggedIn = useHydratedIsLoggedIn(isLoggedIn)
@@ -88,6 +90,7 @@ export function ListingDetailPeerPurchaseActions({
   const pathname = usePathname()
   const here = pathname || "/"
   const checkoutHref = peerListingCheckoutHref(section, checkoutListingParam)
+  const viewOfferHref = sentOfferHref ?? openOfferHref
   const checkoutHrefForQuantity =
     canChooseQuantity && quantity > 1 ? `${checkoutHref}&qty=${quantity}` : checkoutHref
 
@@ -303,39 +306,42 @@ export function ListingDetailPeerPurchaseActions({
       </div>
       ) : null}
 
-      {openOfferHref ? (
+      {viewOfferHref ? (
         <div className="flex gap-2">
           <div className="min-w-0 flex-1">
-            <ViewOfferTriggerButton href={openOfferHref} />
+            <ViewOfferTriggerButton href={viewOfferHref} />
           </div>
           {offerRowTrailingSlot ? <div className="shrink-0">{offerRowTrailingSlot}</div> : null}
         </div>
       ) : !purchaseBlocked && makeOffer ? (
-        <>
-          <div className="flex gap-2">
-            <div className="min-w-0 flex-1">
-              <MakeOfferTriggerButton onClick={openMakeOffer} />
-            </div>
-            {offerRowTrailingSlot ? <div className="shrink-0">{offerRowTrailingSlot}</div> : null}
+        <div className="flex gap-2">
+          <div className="min-w-0 flex-1">
+            <MakeOfferTriggerButton onClick={openMakeOffer} />
           </div>
-          <MakeOfferDialog
-            listingId={listingId}
-            listingTitle={makeOffer.listingTitle}
-            listPrice={makeOffer.listPrice}
-            minOfferAmount={makeOffer.minOfferAmount}
-            minOfferPct={makeOffer.minOfferPct}
-            primaryImageUrl={makeOffer.primaryImageUrl}
-            canPick={makeOffer.canPick}
-            canShip={makeOffer.canShip}
-            shippingFlatRate={makeOffer.shippingFlatRate}
-            shippingCostMode={makeOffer.shippingCostMode ?? null}
-            section={section}
-            isLoggedIn={loggedIn}
-            open={offerOpen}
-            onOpenChange={setOfferOpen}
-            hideMinimumUntilViolated={makeOffer.hideMinimumUntilViolated}
-          />
-        </>
+          {offerRowTrailingSlot ? <div className="shrink-0">{offerRowTrailingSlot}</div> : null}
+        </div>
+      ) : null}
+      {!purchaseBlocked && makeOffer ? (
+        <MakeOfferDialog
+          listingId={listingId}
+          listingTitle={makeOffer.listingTitle}
+          listPrice={makeOffer.listPrice}
+          minOfferAmount={makeOffer.minOfferAmount}
+          minOfferPct={makeOffer.minOfferPct}
+          primaryImageUrl={makeOffer.primaryImageUrl}
+          canPick={makeOffer.canPick}
+          canShip={makeOffer.canShip}
+          shippingFlatRate={makeOffer.shippingFlatRate}
+          shippingCostMode={makeOffer.shippingCostMode ?? null}
+          section={section}
+          isLoggedIn={loggedIn}
+          open={offerOpen}
+          onOpenChange={setOfferOpen}
+          hideMinimumUntilViolated={makeOffer.hideMinimumUntilViolated}
+          onOfferCreated={(offerId) => {
+            setSentOfferHref(dashboardOffersPath({ role: "buyer", offerId }))
+          }}
+        />
       ) : null}
     </div>
   )
