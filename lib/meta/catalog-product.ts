@@ -59,16 +59,13 @@ export type MetaCatalogFeedItem = {
   google_product_category: string
   additional_image_link?: string
   identifier_exists: "no"
-  /**
-   * Product-set filter. Main and city feeds: shop (HaydenGarfield / OutSurfing / Brownstone).
-   * Gear feed: section (Apparel, Traction, Boardbags, Surfpacks, Leashes, Fins).
-   */
+  /** Product-set filter for Meta Ads — e.g. HaydenGarfield / OutSurfing / Brownstone shop only. */
   custom_label_0?: string
   /** City product-set filter — e.g. SantaBarbara / Ventura. */
   custom_label_1?: string
   /**
-   * Main and city feeds: Shipping when the surfboard offers shipping.
-   * Gear feed: shop label when the seller is Hayden, OutSurfing, or Brownstone.
+   * Product-set filter. Shipping when the surfboard offers shipping.
+   * Gear for apparel, traction, board bags, surfpacks, leashes, and fins.
    */
   custom_label_2?: string
   /** Direct downloadable video file URL (Meta Advantage+ catalog ads). */
@@ -82,16 +79,6 @@ export type MetaCatalogFeedContext = {
   brownstoneShopUserId: string | null
   /** Override city label when building a dedicated city catalog page. */
   cityCustomLabel?: string
-  /**
-   * Sections this feed may include. Defaults to the main catalog sections.
-   * The gear feed passes apparel, traction, boardbags, surfpacks, leashes, and fins.
-   */
-  allowedSections?: readonly string[]
-  /**
-   * Write the listing section onto `custom_label_0`. A matching shop label
-   * moves to `custom_label_2` so product sets can split the gear feed by type.
-   */
-  sectionAsCustomLabel0?: boolean
 }
 
 const MAX_DESCRIPTION_LENGTH = 5000
@@ -105,6 +92,9 @@ export const META_CATALOG_PEER_SECTIONS = [
   "magazines",
   "apparel",
   "traction",
+  "boardbags",
+  "surfpacks",
+  "leashes",
 ] as const
 
 export type MetaCatalogPeerSection = (typeof META_CATALOG_PEER_SECTIONS)[number]
@@ -114,8 +104,8 @@ export function isMetaCatalogPeerSection(section: string): section is MetaCatalo
 }
 
 /**
- * Gear catalog: apparel, traction, board bags, surfpacks, leashes, and fins.
- * Board bags, surfpacks, and leashes are not in the main catalog feed.
+ * Sections that share `custom_label_2` = Gear on the main catalog feed.
+ * Product set filter: Custom Label 2 = Gear.
  */
 export const META_CATALOG_GEAR_SECTIONS = [
   "apparel",
@@ -130,21 +120,6 @@ export type MetaCatalogGearSection = (typeof META_CATALOG_GEAR_SECTIONS)[number]
 
 export function isMetaCatalogGearSection(section: string): section is MetaCatalogGearSection {
   return (META_CATALOG_GEAR_SECTIONS as readonly string[]).includes(section)
-}
-
-/** `custom_label_0` values on the gear feed (Meta product-set filter). */
-const META_CATALOG_GEAR_SECTION_CUSTOM_LABELS: Record<MetaCatalogGearSection, string> = {
-  apparel: "Apparel",
-  traction: "Traction",
-  boardbags: "Boardbags",
-  surfpacks: "Surfpacks",
-  leashes: "Leashes",
-  fins: "Fins",
-}
-
-export function getMetaCatalogGearSectionCustomLabel(section: string): string | undefined {
-  if (!isMetaCatalogGearSection(section)) return undefined
-  return META_CATALOG_GEAR_SECTION_CUSTOM_LABELS[section]
 }
 
 /** Google taxonomy: Sporting Goods > … > Surfing > Surfboard Fins (3525). */
@@ -268,6 +243,9 @@ export const META_CATALOG_BROWNSTONE_SHOP_SELLER_EMAIL = "eric@questavolta.com"
 /** Default `custom_label_2` for surfboards that offer shipping (Meta product-set / ads filter). */
 export const META_CATALOG_DEFAULT_SHIPPING_CUSTOM_LABEL = "Shipping"
 
+/** Default `custom_label_2` for apparel, traction, board bags, surfpacks, leashes, and fins. */
+export const META_CATALOG_DEFAULT_GEAR_CUSTOM_LABEL = "Gear"
+
 /**
  * Meta Commerce `custom_label_0` for Hayden Garfield shop listings.
  * Override with `META_CATALOG_HAYDEN_SHOP_CUSTOM_LABEL`.
@@ -313,6 +291,17 @@ export function getMetaCatalogShippingCustomLabel(): string {
 }
 
 /**
+ * Meta Commerce `custom_label_2` shared by apparel, traction, board bags,
+ * surfpacks, leashes, and fins. Override with `META_CATALOG_GEAR_CUSTOM_LABEL`.
+ */
+export function getMetaCatalogGearCustomLabel(): string {
+  return (
+    process.env.META_CATALOG_GEAR_CUSTOM_LABEL?.trim() ||
+    META_CATALOG_DEFAULT_GEAR_CUSTOM_LABEL
+  )
+}
+
+/**
  * `custom_label_0` for a listing — shop label when `user_id` matches a known seller, else omitted.
  * Use in Meta Ads: Catalog → Product sets → filter Custom Label 0 = HaydenGarfield | OutSurfing | Brownstone.
  */
@@ -350,13 +339,17 @@ export function getMetaCatalogCustomLabel1ForListing(
 }
 
 /**
- * `custom_label_2` for Meta product sets — Shipping.
- * Surfboards only (`section` = surfboards) when `shipping_available` is true.
- * Use in Meta Ads: Catalog → Product sets → filter Custom Label 2 = Shipping.
+ * `custom_label_2` for Meta product sets.
+ * Gear for apparel, traction, board bags, surfpacks, leashes, and fins.
+ * Shipping for surfboards when `shipping_available` is true.
+ * Use in Meta Ads: Catalog → Product sets → filter Custom Label 2 = Gear, or Shipping.
  */
 export function getMetaCatalogCustomLabel2ForListing(
   listing: Pick<MetaListingProductSource, "section" | "shipping_available">,
 ): string | undefined {
+  if (listing.section && isMetaCatalogGearSection(listing.section)) {
+    return getMetaCatalogGearCustomLabel()
+  }
   if (listing.section !== "surfboards") return undefined
   if (listing.shipping_available !== true) return undefined
   return getMetaCatalogShippingCustomLabel()
@@ -484,11 +477,8 @@ function formatMetaPrice(amount: number): string {
   return `${amount.toFixed(2)} USD`
 }
 
-export function isMetaCatalogEligibleListing(
-  listing: MetaListingProductSource,
-  allowedSections: readonly string[] = META_CATALOG_PEER_SECTIONS,
-): boolean {
-  if (!listing.section || !allowedSections.includes(listing.section)) return false
+export function isMetaCatalogEligibleListing(listing: MetaListingProductSource): boolean {
+  if (!listing.section || !isMetaCatalogPeerSection(listing.section)) return false
   if (listing.status !== "active") return false
   if (listing.hidden_from_site === true) return false
   if (!listing.id?.trim()) return false
@@ -502,8 +492,7 @@ export function listingToMetaCatalogFeedItem(
   listing: MetaListingProductSource,
   context?: MetaCatalogFeedContext,
 ): MetaCatalogFeedItem | null {
-  const allowedSections = context?.allowedSections ?? META_CATALOG_PEER_SECTIONS
-  if (!isMetaCatalogEligibleListing(listing, allowedSections)) return null
+  if (!isMetaCatalogEligibleListing(listing)) return null
 
   const priceAmount = parseMetaListingPrice(listing.price)
   if (priceAmount == null) return null
@@ -512,12 +501,9 @@ export function listingToMetaCatalogFeedItem(
   if (!imageLink) return null
 
   const brand = typeof listing.brand === "string" ? listing.brand.trim() : ""
-  const shopLabel = getMetaCatalogCustomLabel0ForListing(listing, context)
-  const sectionLabel = getMetaCatalogGearSectionCustomLabel(listing.section ?? "")
-  const useSectionLabel = context?.sectionAsCustomLabel0 === true && Boolean(sectionLabel)
-  const customLabel0 = useSectionLabel ? sectionLabel : shopLabel
+  const customLabel0 = getMetaCatalogCustomLabel0ForListing(listing, context)
   const customLabel1 = getMetaCatalogCustomLabel1ForListing(listing, context)
-  const customLabel2 = useSectionLabel ? shopLabel : getMetaCatalogCustomLabel2ForListing(listing)
+  const customLabel2 = getMetaCatalogCustomLabel2ForListing(listing)
   const videoLink = primaryVideoLink(listing)
 
   return {

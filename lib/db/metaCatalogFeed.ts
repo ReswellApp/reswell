@@ -70,7 +70,7 @@ export async function fetchMetaCatalogFeedPageForSections(
 }
 
 /**
- * Active, site-visible peer listings (surfboards, fins, wetsuits, magazines, apparel, traction) for Meta Commerce catalog sync (newest first).
+ * Active, site-visible peer listings (surfboards, fins, wetsuits, magazines, apparel, traction, boardbags, surfpacks, leashes) for Meta Commerce catalog sync (newest first).
  */
 export async function fetchMetaCatalogFeedPage(
   supabase: SupabaseClient,
