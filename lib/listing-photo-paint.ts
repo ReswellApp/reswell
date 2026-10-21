@@ -1,50 +1,22 @@
 /**
- * URLs this document has already drawn. Soft navigation remounts tiles but
- * keeps this module alive, so back from `/l` can skip the white shimmer
- * without probing `Image()` (that probe starts a fetch and defeats lazy load).
+ * The mounted listing `<img>` already has a bitmap. This is the back-navigation
+ * case: the browser decoded the photo on the way in, so the gray wave must not
+ * paint over it. Checked on the element itself — a `new Image()` probe would
+ * start a fetch and pull lazy tiles early.
  */
-const paintedListingPhotoUrls = new Set<string>()
-
-export function rememberPaintedListingPhoto(src: string | undefined): void {
-  if (!src || src === "/placeholder.svg") return
-  paintedListingPhotoUrls.add(src)
-}
-
-export function listingPhotoWasPainted(src: string | undefined): boolean {
-  if (!src || src === "/placeholder.svg") return false
-  return paintedListingPhotoUrls.has(src)
-}
-
-/** Test hook. Production code only adds URLs. */
-export function clearPaintedListingPhotos(): void {
-  paintedListingPhotoUrls.clear()
+export function listingImageIsDecoded(
+  img: { complete: boolean; naturalWidth: number } | null | undefined,
+): boolean {
+  return Boolean(img && img.complete && img.naturalWidth > 0)
 }
 
 /**
- * Whether a listing photo well should treat its bitmap as already on screen.
- *
- * Back from `/l` (and every other soft navigation) remounts the tile. The
- * near-white shimmer must not cover a URL this document already drew.
- * A candidate change with nothing painted yet starts over. Otherwise a
- * decoded photo stays painted — a mount effect must not clear it.
- */
-export function resolveListingPhotoPainted(input: {
-  candidatesChanged: boolean
-  cached: boolean
-  loaded: boolean
-}): boolean {
-  if (input.cached) return true
-  if (input.candidatesChanged) return false
-  return input.loaded
-}
-
-/**
- * Sync cache probe. `img.complete` is true on the first tick when this URL
- * is already decoded, which is the back-navigation case.
+ * Sync cache probe for a single photo the shopper just asked to open (the
+ * lightbox). Do not use this on a grid — assigning `src` starts a download.
  */
 export function listingPhotoIsCached(src: string | undefined): boolean {
   if (!src || src === "/placeholder.svg" || typeof window === "undefined") return false
   const probe = new window.Image()
   probe.src = src
-  return probe.complete && probe.naturalWidth > 0
+  return listingImageIsDecoded(probe)
 }

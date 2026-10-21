@@ -9,7 +9,8 @@ import {
   type DragEvent,
 } from "react"
 import { ListingMediaFillImage } from "@/components/listing-media-fill-image"
-import { useCachedPhotoReady } from "@/components/features/listings/hooks/use-cached-photo-ready"
+import { useListingPhotoReady } from "@/components/features/listings/hooks/use-listing-photo-ready"
+import { listingImageIsDecoded } from "@/lib/listing-photo-paint"
 import { listingPhotoFrameFillStyle } from "@/lib/listing-photo-fill"
 import { ListingTileShimmer } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
@@ -69,10 +70,9 @@ export function listingPhotoBackdropStyle(
 export { listingPhotoIsCached } from "@/lib/listing-photo-paint"
 
 /**
- * Listing gallery photo. A cached tile or PDP URL is ready before paint, so
- * the near-white wave never covers a photo the shopper already has in memory.
- * An uncached bitmap stays under the wave until it decodes. The preview stays
- * under the sharp image.
+ * Listing gallery photo. Before paint we ask the mounted image if it already
+ * has pixels. A cached tile or PDP photo skips the wave. An uncached bitmap
+ * stays under it until decode. The preview stays under the sharp image.
  */
 export function ListingGalleryPhoto({
   src,
@@ -95,8 +95,8 @@ export function ListingGalleryPhoto({
 
   const preview =
     previewSrc && previewSrc !== src && previewSrc !== "/placeholder.svg" ? previewSrc : ""
-  const sourcePaint = useCachedPhotoReady(src)
-  const previewPaint = useCachedPhotoReady(preview)
+  const sourcePaint = useListingPhotoReady(src)
+  const previewPaint = useListingPhotoReady(preview)
   const srcReady = sourcePaint.ready
   const previewReady = previewPaint.ready
   const painted = srcReady || previewReady
@@ -173,9 +173,9 @@ export function ListingGalleryPhoto({
 
   const attachPreview = useCallback(
     (img: HTMLImageElement | null) => {
-      if (img?.complete && img.naturalWidth > 0) previewPaint.markReady(preview)
+      previewPaint.ref(img)
     },
-    [preview, previewPaint.markReady],
+    [previewPaint.ref],
   )
 
   const rememberNaturalSize = useCallback((img: HTMLImageElement) => {
@@ -190,12 +190,11 @@ export function ListingGalleryPhoto({
   const attachSource = useCallback(
     (img: HTMLImageElement | null) => {
       attachFrame(img)
-      if (!img?.complete || img.naturalWidth === 0) return
+      sourcePaint.ref(img)
       // iOS Chrome / Google app often skip onLoad for cached images.
-      sourcePaint.markReady(src)
-      rememberNaturalSize(img)
+      if (img && listingImageIsDecoded(img)) rememberNaturalSize(img)
     },
-    [attachFrame, rememberNaturalSize, sourcePaint.markReady, src],
+    [attachFrame, rememberNaturalSize, sourcePaint.ref],
   )
 
   return (
@@ -220,7 +219,7 @@ export function ListingGalleryPhoto({
           ref={attachPreview}
           onLoad={(event) => {
             // Preview is paint-only — never size the hero from the tile derivative.
-            if (event.currentTarget.naturalWidth > 0) previewPaint.markReady(preview)
+            previewPaint.onLoad(event.currentTarget)
           }}
         />
       ) : null}
@@ -245,9 +244,8 @@ export function ListingGalleryPhoto({
         ref={attachSource}
         onLoad={(event) => {
           const img = event.currentTarget
-          if (img.naturalWidth === 0) return
-          sourcePaint.markReady(src)
-          rememberNaturalSize(img)
+          sourcePaint.onLoad(img)
+          if (listingImageIsDecoded(img)) rememberNaturalSize(img)
         }}
       />
       {painted ? null : (

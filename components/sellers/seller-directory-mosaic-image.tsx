@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type SyntheticEvent } from "react"
 import { ListingMediaFillImage } from "@/components/listing-media-fill-image"
-import { useCachedPhotoReady } from "@/components/features/listings/hooks/use-cached-photo-ready"
+import { useListingPhotoReady } from "@/components/features/listings/hooks/use-listing-photo-ready"
 import type { SellerDirectoryMosaicSlot } from "@/lib/sellers/directory-mosaic-images"
 import { cn } from "@/lib/utils"
 
@@ -37,7 +37,7 @@ export function SellerDirectoryMosaicImage({
   }
 
   const src = slot.candidates[resolvedIndex] ?? ""
-  const { ready, markReady } = useCachedPhotoReady(src)
+  const photo = useListingPhotoReady(src)
 
   useEffect(() => {
     if (src || slot.candidates.length > 0 || exhaustedRef.current) return
@@ -45,9 +45,12 @@ export function SellerDirectoryMosaicImage({
     onExhausted?.()
   }, [src, slot.candidates.length, onExhausted])
 
-  const handleLoad = useCallback(() => {
-    markReady(src)
-  }, [markReady, src])
+  const handleLoad = useCallback(
+    (event: SyntheticEvent<HTMLImageElement>) => {
+      photo.onLoad(event.currentTarget)
+    },
+    [photo.onLoad],
+  )
 
   const handleError = useCallback(
     (_event: SyntheticEvent<HTMLImageElement>) => {
@@ -73,17 +76,15 @@ export function SellerDirectoryMosaicImage({
         src={src}
         alt={slot.alt}
         sizes={sizes}
-        className="object-cover"
+        className={cn("object-cover", photo.ready ? "opacity-100" : "opacity-0")}
         style={slot.objectPosition ? { objectPosition: slot.objectPosition } : undefined}
-        ref={(img) => {
-          if (img?.complete && img.naturalWidth > 0) markReady(src)
-        }}
+        ref={photo.ref}
         onLoad={handleLoad}
         onError={handleError}
         priority={priority}
       />
 
-      {ready ? null : (
+      {photo.ready ? null : (
         <div className="listing-tile-shimmer absolute inset-0 z-[3]" aria-hidden />
       )}
     </div>

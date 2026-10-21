@@ -1,7 +1,7 @@
 "use client"
 
 import { ListingMediaFillImage } from "@/components/listing-media-fill-image"
-import { useCachedPhotoReady } from "@/components/features/listings/hooks/use-cached-photo-ready"
+import { useListingPhotoReady } from "@/components/features/listings/hooks/use-listing-photo-ready"
 import {
   listingPhotoFillClassName,
   listingPhotoFrameFillStyle,
@@ -60,7 +60,7 @@ function ListingTileCarouselSlide({
   }
 
   const src = candidates[resolvedIndex] ?? ""
-  const { ready, markReady } = useCachedPhotoReady(src)
+  const photo = useListingPhotoReady(src)
 
   useEffect(() => {
     if (!src && candidates.length === 0) {
@@ -68,9 +68,12 @@ function ListingTileCarouselSlide({
     }
   }, [src, candidates.length, onExhausted])
 
-  const handleLoad = useCallback(() => {
-    markReady(src)
-  }, [markReady, src])
+  const handleLoad = useCallback(
+    (event: SyntheticEvent<HTMLImageElement>) => {
+      photo.onLoad(event.currentTarget)
+    },
+    [photo.onLoad],
+  )
 
   const handleError = useCallback(
     (_event: SyntheticEvent<HTMLImageElement>) => {
@@ -98,8 +101,8 @@ function ListingTileCarouselSlide({
           // `scale-100` keeps a compositor layer so hover scale does not flash white.
           listingPhotoFillClassName,
           "backface-hidden transform-gpu scale-100 ease-in-out",
-          "transition-[opacity,transform] duration-300",
-          active ? "z-[2] opacity-100" : "z-[1] opacity-0",
+          "transition-transform duration-300",
+          active && photo.ready ? "z-[2] opacity-100" : "z-[1] opacity-0",
           "group-hover:scale-105",
           imageFit === "contain" && "object-contain",
           imageClassName,
@@ -109,14 +112,12 @@ function ListingTileCarouselSlide({
             ? { ...listingPhotoFrameFillStyle, objectFit: "contain" }
             : listingPhotoFrameFillStyle
         }
-        ref={(img) => {
-          if (img?.complete && img.naturalWidth > 0) markReady(src)
-        }}
+        ref={photo.ref}
         onLoad={handleLoad}
         onError={handleError}
         priority={imagePriority && active}
       />
-      {active && !ready ? (
+      {active && !photo.ready ? (
         <div
           className="listing-tile-shimmer absolute inset-0 z-[3]"
           aria-hidden
