@@ -87,8 +87,16 @@ function warmHeroSlideNeighbors(urls: string[], activeIndex: number): void {
   }
 }
 
+type ReplacedGalleryImage = {
+  url: string
+  thumbnail_url: string | null
+  pdp_crop_zoom: number | null
+  pdp_crop_x: number | null
+  pdp_crop_y: number | null
+}
+
 export function ImageGallery({
-  images,
+  images: imagesProp,
   title,
   video,
   sold,
@@ -104,6 +112,15 @@ export function ImageGallery({
   /** Natural width/height per slide — lightbox only. The hero frame stays 3:4. */
   const [imageAspectRatios, setImageAspectRatios] = useState<Record<number, number>>({})
   const [cropOverrides, setCropOverrides] = useState<Record<string, ListingPdpCrop | null>>({})
+  const [replacedImages, setReplacedImages] = useState<Record<string, ReplacedGalleryImage>>({})
+  const images = useMemo(
+    () =>
+      imagesProp.map((image) => {
+        const next = replacedImages[image.id]
+        return next ? { ...image, ...next } : image
+      }),
+    [imagesProp, replacedImages],
+  )
   const pointerStartRef = useRef<{ x: number; y: number } | null>(null)
   const suppressHeroClickRef = useRef(false)
   const thumbRowRef = useRef<HTMLDivElement>(null)
@@ -383,6 +400,26 @@ export function ImageGallery({
           hidden={isVideoSelected}
           onCropsSaved={(saved) => {
             setCropOverrides((prev) => ({ ...prev, ...saved }))
+          }}
+          onImagesRotated={(rotated) => {
+            setReplacedImages((prev) => {
+              const next = { ...prev }
+              for (const image of rotated) {
+                next[image.id] = {
+                  url: image.url,
+                  thumbnail_url: image.thumbnailUrl,
+                  pdp_crop_zoom: image.crop?.zoom ?? null,
+                  pdp_crop_x: image.crop?.x ?? null,
+                  pdp_crop_y: image.crop?.y ?? null,
+                }
+              }
+              return next
+            })
+            setCropOverrides((prev) => {
+              const next = { ...prev }
+              for (const image of rotated) next[image.id] = image.crop
+              return next
+            })
           }}
         />
 

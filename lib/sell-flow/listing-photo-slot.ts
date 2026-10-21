@@ -26,6 +26,13 @@ export type ListingPhotoSlot = {
   prepared?: PreparedListingImagePair
   /** True = apply 180° after automatic landscape→portrait step (toggle). */
   userRotate180?: boolean
+  /** Extra clockwise 90° turns on top of automatic camera orientation. */
+  userQuarterTurns?: 0 | 1 | 2 | 3
+  /**
+   * `sourceFile` is an already-straightened listing photo, not the camera original.
+   * The landscape→portrait pass must stay off or a 90° fix gets undone.
+   */
+  sourceIsDerivative?: boolean
   /**
    * After upload, drop `sourceFile` so the next rotation re-downloads from `url`.
    * Server-hydrated rows and temporary fetches for editing use this; user-picked files do not.

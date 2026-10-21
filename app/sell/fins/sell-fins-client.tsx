@@ -1281,7 +1281,7 @@ export default function SellFinsFlow({
                     onDragEnd={handlePhotosDragEnd}
                     onRemove={handlePhotoTileRemove}
                     onRetry={handlePhotoTileRetry}
-                    onRotate180={handlePhotoTileRotate}
+                    onRotateQuarterTurns={handlePhotoTileRotate}
                     photoDragSensors={photoDragSensors}
                     video={video}
                     videoFileInputId={videoFileInputId}
