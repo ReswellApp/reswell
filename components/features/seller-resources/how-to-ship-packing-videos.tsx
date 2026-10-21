@@ -16,7 +16,7 @@ export function HowToShipPackingVideos() {
     <div className="grid gap-5 lg:grid-cols-2">
       {PACKING_VIDEOS.map((video) => (
         <figure key={video.src}>
-          <div className="overflow-hidden rounded-2xl bg-[#efece6]">
+          <div className="overflow-hidden rounded-2xl bg-[#F9F9F2]">
             <iframe
               src={video.src}
               title={video.title}
@@ -26,7 +26,7 @@ export function HowToShipPackingVideos() {
               loading="lazy"
             />
           </div>
-          <figcaption className="mt-2 text-sm leading-snug text-[#5c6b89]">{video.caption}</figcaption>
+          <figcaption className="mt-2 text-sm leading-snug text-[#355185]">{video.caption}</figcaption>
         </figure>
       ))}
     </div>

@@ -33,7 +33,7 @@ const STEPS: readonly { title: string; body: ReactNode }[] = [
 
 export function HowToShipAfterSale() {
   return (
-    <section id="after-sale" className="bg-[#d5eef4]" aria-labelledby="how-to-ship-after-heading">
+    <section id="after-sale" className="bg-[#7F9DD5]/30" aria-labelledby="how-to-ship-after-heading">
       <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
         <header className="mx-auto max-w-2xl text-center">
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#355185]">
@@ -48,10 +48,10 @@ export function HowToShipAfterSale() {
         </header>
         <ol className="mt-10 grid gap-4 sm:grid-cols-2">
           {STEPS.map((step, index) => (
-            <li key={step.title} className="flex flex-col rounded-2xl bg-[#f7f5f1] px-5 py-6 sm:px-6">
+            <li key={step.title} className="flex flex-col rounded-2xl bg-[#F9F9F2] px-5 py-6 sm:px-6">
               <p className="font-headline text-4xl font-bold leading-none text-[#355185]">{index + 1}</p>
               <h3 className="mt-3 text-xl font-semibold tracking-tight text-[#001A4A]">{step.title}</h3>
-              <p className="mt-2 text-base leading-relaxed text-[#243044]">{step.body}</p>
+              <p className="mt-2 text-base leading-relaxed text-[#163060]">{step.body}</p>
             </li>
           ))}
         </ol>
