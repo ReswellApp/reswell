@@ -355,7 +355,7 @@ export const MANAGED_PAGES: ManagedPage[] = [
   page("public-api", "marketplace", "Public research API", {
     title: "Public research API — Reswell",
     description:
-      "JSON API and public MCP for Reswell listings, photos, used-board pricing comps, and catalog search. Built for LLMs and research bots.",
+      "JSON API for Reswell listings, used-board pricing comps, and catalog search. Built for LLMs and research bots.",
     path: "/public-api",
   }),
   // ---- Content & community ----
