@@ -581,7 +581,9 @@ export function MyListingsClient({
             type="search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search your listings"
+            placeholder={
+              view === "advanced" ? "title, brand or model" : "Search your listings"
+            }
             className={dashboardSearchInputClass}
             aria-label="Search your listings"
           />
@@ -645,8 +647,12 @@ export function MyListingsClient({
           sellerStoreHref={sellerStoreHref}
           sellerBanned={sellerBanned}
           shopShippingDefaults={shopShippingDefaults}
+          listedSort={sort === "oldest" ? "oldest" : "recent"}
+          onListedSortChange={(next) => setSort(next)}
           onListingSaved={handleListingSaved}
           onShippingApplied={handleShippingApplied}
+          onEndListing={setEndListingId}
+          onDiscardDraft={handleDiscardDraft}
         />
       ) : null}
 

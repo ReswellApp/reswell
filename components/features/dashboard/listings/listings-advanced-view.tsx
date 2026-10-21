@@ -1,13 +1,12 @@
 "use client"
 
-import { useState } from "react"
-import { ListingInlineEditor } from "@/components/features/dashboard/listings/listing-inline-editor"
+import { ListingDeskTable } from "@/components/features/dashboard/listings/listing-desk-table"
 import { ListingsAdvancedAnalytics } from "@/components/features/dashboard/listings/listings-advanced-analytics"
 import { ListingsAdvancedTools } from "@/components/features/dashboard/listings/listings-advanced-tools"
 import { ShopCategoryPackagePanel } from "@/components/features/dashboard/listings/shop-category-package-panel"
 import type { ListingQuickEditSaved } from "@/lib/services/listingQuickEdit"
 import type { ListingsDeskAnalyticsInput } from "@/lib/listings-desk-analytics"
-import type { ListingPackageColumns } from "@/lib/shop-category-package-sizes"
+import type { ListingPackageColumns, ShopPackageSizeId } from "@/lib/shop-category-package-sizes"
 import type { ShopShippingDefaults } from "@/lib/shop-shipping-defaults"
 
 type DeskListing = ListingsDeskAnalyticsInput & {
@@ -17,6 +16,7 @@ type DeskListing = ListingsDeskAnalyticsInput & {
   archived_at: string | null
   inventory_source: string
   site_visibility_reason: string | null
+  canDelete: boolean
   listing_images: { url: string; thumbnail_url?: string | null; is_primary: boolean | null }[] | null
   shipping_package_tier: string | null
   shipping_package_band: string | null
@@ -55,8 +55,13 @@ interface ListingsAdvancedViewProps {
   sellerStoreHref: string | null
   sellerBanned: boolean
   shopShippingDefaults: ShopShippingDefaults
+  listedSort: "recent" | "oldest"
+  onListedSortChange: (sort: "recent" | "oldest") => void
   onListingSaved: (listingId: string, saved: ListingQuickEditSaved) => void
   onShippingApplied: (groups: { ids: string[]; columns: ListingPackageColumns }[]) => void
+  onEndListing: (listingId: string) => void
+  onDiscardDraft?: (listingId: string) => void
+  packageSyncById?: Record<string, { sizeId: ShopPackageSizeId; nonce: number }>
 }
 
 export function ListingsAdvancedView({
@@ -65,11 +70,14 @@ export function ListingsAdvancedView({
   sellerStoreHref,
   sellerBanned,
   shopShippingDefaults,
+  listedSort,
+  onListedSortChange,
   onListingSaved,
   onShippingApplied,
+  onEndListing,
+  onDiscardDraft,
+  packageSyncById,
 }: ListingsAdvancedViewProps) {
-  const [openEditorId, setOpenEditorId] = useState<string | null>(null)
-
   return (
     <div
       id="listings-view-panel-advanced"
@@ -83,35 +91,15 @@ export function ListingsAdvancedView({
         shippingDefaults={shopShippingDefaults}
         onShippingApplied={onShippingApplied}
       />
-      <section className="space-y-3" aria-labelledby="listings-editor-heading">
-        <div>
-          <h2 id="listings-editor-heading" className="text-base font-semibold text-foreground">
-            Edit listings
-          </h2>
-          <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            Title and price save as you type. Open a listing to edit shipping, condition, and the rest of it. Photo changes use the full editor.
-          </p>
-        </div>
-        {visibleListings.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-border px-4 py-10 text-center text-sm text-muted-foreground">
-            No listings match this view.
-          </p>
-        ) : (
-          <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm">
-            <div className="divide-y divide-border/60">
-              {visibleListings.map((listing) => (
-                <ListingInlineEditor
-                  key={listing.id}
-                  listing={listing}
-                  expanded={openEditorId === listing.id}
-                  onExpandedChange={(open) => setOpenEditorId(open ? listing.id : null)}
-                  onSaved={onListingSaved}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-      </section>
+      <ListingDeskTable
+        listings={visibleListings}
+        listedSort={listedSort}
+        onListedSortChange={onListedSortChange}
+        onListingSaved={onListingSaved}
+        onEndListing={onEndListing}
+        onDiscardDraft={onDiscardDraft}
+        packageSyncById={packageSyncById}
+      />
     </div>
   )
 }
