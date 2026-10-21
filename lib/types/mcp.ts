@@ -101,7 +101,16 @@ export type McpToolDefinition = {
 }
 
 export type McpToolCallResult = {
-  content: Array<{ type: "text"; text: string }>
+  content: Array<
+    | { type: "text"; text: string }
+    | {
+        type: "resource_link"
+        uri: string
+        name: string
+        title?: string
+        mimeType?: string
+      }
+  >
   structuredContent?: Record<string, unknown>
   _meta?: Record<string, unknown>
   isError?: boolean

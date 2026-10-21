@@ -73,7 +73,7 @@ export function getPublicResearchOpenApiSpec(origin: string): OpenApiDocument {
       title: "Reswell public research API",
       summary: "Search used surfboard listings, catalog models, and sold comps.",
       description: [
-        "JSON API for listings, used-board comps, and catalog search.",
+        "JSON API and public MCP for listings, photos, used-board comps, and catalog search.",
         "No API key required. CORS is open (`Access-Control-Allow-Origin: *`).",
         "Success responses use `{ \"success\": true, \"data\": { ... } }`.",
         `Human docs: ${base}/public-api. Agent guide: ${base}/llms.txt.`,
@@ -95,6 +95,10 @@ export function getPublicResearchOpenApiSpec(origin: string): OpenApiDocument {
       { name: "Search", description: "Find a catalog model or listing" },
       { name: "Pricing", description: "Asking and sold comps for a brand / model" },
       { name: "Listings", description: "A specific used board or gear listing" },
+      {
+        name: "MCP",
+        description: "Public read-only MCP for search, listing photos, and pricing",
+      },
     ],
     paths: {
       "/api/public": {
@@ -258,6 +262,47 @@ export function getPublicResearchOpenApiSpec(origin: string): OpenApiDocument {
           },
         },
       },
+      "/api/public/mcp": {
+        post: {
+          operationId: "postPublicMcp",
+          tags: ["MCP"],
+          summary: "Public MCP JSON-RPC",
+          description: [
+            "Read-only MCP for browse_listings, search_listings, get_listing, and get_pricing.",
+            "No API key. Listing photos are returned as image_url, image_urls, and image resource links.",
+            "initialize, tools/list, and resources/list are not rate limited. Each tools/call counts as one public API request.",
+            "Cart and checkout use the signed-in MCP at /api/mcp.",
+          ].join(" "),
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: { type: "object", additionalProperties: true },
+              },
+            },
+          },
+          responses: {
+            "200": {
+              description: "JSON-RPC result",
+              content: {
+                "application/json": {
+                  schema: { type: "object", additionalProperties: true },
+                },
+              },
+            },
+            "202": { description: "JSON-RPC notification accepted" },
+            "400": {
+              description: "Invalid JSON-RPC",
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/ErrorResponse" },
+                },
+              },
+            },
+            "429": { $ref: "#/components/responses/RateLimited" },
+          },
+        },
+      },
     },
     components: {
       responses: {
@@ -285,12 +330,13 @@ export function getPublicResearchOpenApiSpec(origin: string): OpenApiDocument {
         Catalog: {
           type: "object",
           additionalProperties: false,
-          required: ["name", "docs", "llms_txt", "openapi_json", "endpoints"],
+          required: ["name", "docs", "llms_txt", "openapi_json", "mcp", "endpoints"],
           properties: {
             name: { type: "string" },
             docs: { type: "string", format: "uri" },
             llms_txt: { type: "string", format: "uri" },
             openapi_json: { type: "string", format: "uri" },
+            mcp: { type: "string", format: "uri" },
             endpoints: {
               type: "array",
               items: { $ref: "#/components/schemas/CatalogEndpoint" },
@@ -302,7 +348,7 @@ export function getPublicResearchOpenApiSpec(origin: string): OpenApiDocument {
           additionalProperties: false,
           required: ["method", "path", "summary"],
           properties: {
-            method: { type: "string", const: "GET" },
+            method: { type: "string", enum: ["GET", "POST"] },
             path: { type: "string" },
             summary: { type: "string" },
           },

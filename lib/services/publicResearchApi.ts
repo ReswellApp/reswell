@@ -178,7 +178,13 @@ export function getPublicApiCatalog(): PublicApiCatalog {
     docs: `${origin}/public-api`,
     llms_txt: `${origin}/llms.txt`,
     openapi_json: `${origin}/openapi.json`,
+    mcp: `${origin}/api/public/mcp`,
     endpoints: [
+      {
+        method: "POST",
+        path: "/api/public/mcp",
+        summary: "Public MCP for listing search, photos, and pricing. No API key.",
+      },
       {
         method: "GET",
         path: "/api/public/search?q={query}&type=models&limit=5",

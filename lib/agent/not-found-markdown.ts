@@ -12,6 +12,7 @@ export function buildAgentNotFoundMarkdown(origin: string): string {
     `- [llms.txt](${base}/llms.txt)`,
     `- [OpenAPI](${base}/openapi.json)`,
     `- [Public API docs](${base}/public-api)`,
+    `- [Public MCP](${base}/api/public/mcp)`,
     "",
   ].join("\n")
 }
