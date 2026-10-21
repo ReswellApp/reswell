@@ -11,11 +11,12 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { dashboardNavLinks } from "@/lib/dashboard-nav-links"
+import { dashboardNavSections } from "@/lib/dashboard-nav-links"
 import { forceReleaseBodyScrollLock } from "@/hooks/use-body-scroll-lock"
 import { NavUnreadCountBadge } from "@/components/nav-unread-count-badge"
 
@@ -105,54 +106,62 @@ function HeaderAccountMenuInner({
             onActivated={onActiveAccountChange}
           />
         ) : null}
-        <DropdownMenuSeparator />
-        {dashboardNavLinks({
+        {dashboardNavSections({
           isAdmin,
           isShipper,
           isDropoffLocation,
           hasShopifyAccess: shopAccess?.hasShopifyAccess === true,
           showEarnings: shopAccess ? shopAccess.showEarnings : true,
-        }).map((link) => {
-          const Icon = link.icon
-          if (link.href === "/dashboard/earnings") {
-            return (
-              <DropdownMenuItem key={link.href} asChild>
-                <Link href={link.href} className="flex items-center justify-between">
-                  <span className="flex items-center">
+        }).map((section) => (
+          <div key={section.id}>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="text-xs font-semibold text-foreground">
+              {section.label}
+            </DropdownMenuLabel>
+            {section.links.map((link) => {
+              const Icon = link.icon
+              const itemKey = link.id ?? link.href
+              if (link.href === "/dashboard/earnings") {
+                return (
+                  <DropdownMenuItem key={itemKey} asChild>
+                    <Link href={link.href} className="flex items-center justify-between">
+                      <span className="flex items-center">
+                        <Icon className="mr-2 h-4 w-4" />
+                        {link.name}
+                      </span>
+                      {walletBalance !== null && (
+                        <span className="ml-2 text-xs font-medium tabular-nums text-foreground dark:text-white">
+                          ${walletBalance.toFixed(2)}
+                        </span>
+                      )}
+                    </Link>
+                  </DropdownMenuItem>
+                )
+              }
+              if (link.href === "/dashboard/support") {
+                return (
+                  <DropdownMenuItem key={itemKey} asChild>
+                    <Link href={link.href} className="flex items-center justify-between">
+                      <span className="flex items-center">
+                        <Icon className="mr-2 h-4 w-4" />
+                        {link.name}
+                      </span>
+                      <NavUnreadCountBadge count={unreadSupport} className="h-4 min-w-4 text-[10px]" />
+                    </Link>
+                  </DropdownMenuItem>
+                )
+              }
+              return (
+                <DropdownMenuItem key={itemKey} asChild>
+                  <Link href={link.href} className="flex items-center">
                     <Icon className="mr-2 h-4 w-4" />
                     {link.name}
-                  </span>
-                  {walletBalance !== null && (
-                    <span className="ml-2 text-xs font-medium tabular-nums text-foreground dark:text-white">
-                      ${walletBalance.toFixed(2)}
-                    </span>
-                  )}
-                </Link>
-              </DropdownMenuItem>
-            )
-          }
-          if (link.href === "/dashboard/support") {
-            return (
-              <DropdownMenuItem key={link.href} asChild>
-                <Link href={link.href} className="flex items-center justify-between">
-                  <span className="flex items-center">
-                    <Icon className="mr-2 h-4 w-4" />
-                    {link.name}
-                  </span>
-                  <NavUnreadCountBadge count={unreadSupport} className="h-4 min-w-4 text-[10px]" />
-                </Link>
-              </DropdownMenuItem>
-            )
-          }
-          return (
-            <DropdownMenuItem key={link.href} asChild>
-              <Link href={link.href} className="flex items-center">
-                <Icon className="mr-2 h-4 w-4" />
-                {link.name}
-              </Link>
-            </DropdownMenuItem>
-          )
-        })}
+                  </Link>
+                </DropdownMenuItem>
+              )
+            })}
+          </div>
+        ))}
         {isAdmin ? (
           <>
             <DropdownMenuSeparator />

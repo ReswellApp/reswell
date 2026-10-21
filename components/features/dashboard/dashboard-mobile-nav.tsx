@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useSearchParams } from "next/navigation"
 import { ChevronDown, Store } from "lucide-react"
 import {
   Collapsible,
@@ -10,7 +10,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import {
-  dashboardNavLinks,
+  dashboardNavSections,
   type DashboardNavLink,
 } from "@/lib/dashboard-nav-links"
 import { isMostSpecificDashboardNavMatch } from "@/lib/dashboard-nav-match"
@@ -21,9 +21,14 @@ function isMessageThreadRoute(pathname: string): boolean {
   return /^\/messages\/[^/]+$/.test(pathname) && pathname !== "/messages/offers"
 }
 
+function navLinkKey(link: DashboardNavLink & { key?: string }): string {
+  return link.key ?? link.id ?? link.href
+}
+
 function resolveActiveLink(
   pathname: string,
   links: (DashboardNavLink & { key: string })[],
+  searchParams: { get(name: string): string | null },
 ): DashboardNavLink & { key: string } {
   const exactSeller = links.find(
     (link) =>
@@ -36,7 +41,8 @@ function resolveActiveLink(
   const active =
     links.find(
       (link) =>
-        link.key !== "seller-profile" && isMostSpecificDashboardNavMatch(pathname, link.href, hrefs),
+        link.key !== "seller-profile" &&
+        isMostSpecificDashboardNavMatch(pathname, link.href, hrefs, searchParams),
     ) ?? links[0]
 
   return active
@@ -64,29 +70,48 @@ export function DashboardMobileNav({
 }: DashboardMobileNavProps) {
   const isAccountVariant = variant === "account"
   const pathname = usePathname() ?? ""
+  const searchParams = useSearchParams()
   const [open, setOpen] = useState(false)
 
-  const links: (DashboardNavLink & { key: string })[] = useMemo(() => {
-    const sellerLink: (DashboardNavLink & { key: string }) | null = sellerProfileHref
-      ? {
-          key: "seller-profile",
-          name: "My Seller Profile",
-          href: sellerProfileHref,
-          icon: Store,
-        }
-      : null
+  const sections = useMemo(
+    () =>
+      dashboardNavSections({
+        isAdmin,
+        isShipper,
+        isDropoffLocation,
+        hasShopifyAccess,
+        showEarnings,
+      }),
+    [hasShopifyAccess, isAdmin, isDropoffLocation, isShipper, showEarnings],
+  )
 
-    return [
-      ...dashboardNavLinks({ isAdmin, isShipper, isDropoffLocation, hasShopifyAccess, showEarnings }).map((l) => ({
+  const links: (DashboardNavLink & { key: string })[] = useMemo(() => {
+    const flat = sections.flatMap((section) =>
+      section.links.map((l) => ({
         ...l,
-        key: l.href,
+        key: navLinkKey(l),
       })),
-      ...(sellerLink ? [sellerLink] : []),
-    ]
-  }, [hasShopifyAccess, isAdmin, isDropoffLocation, isShipper, sellerProfileHref, showEarnings])
+    )
+
+    if (!sellerProfileHref) return flat
+
+    const sellerLink: DashboardNavLink & { key: string } = {
+      key: "seller-profile",
+      name: "My Seller Profile",
+      href: sellerProfileHref,
+      icon: Store,
+    }
+
+    // Keep seller profile with Selling items for mobile active-label resolution order.
+    const sellingCount = sections.find((s) => s.id === "selling")?.links.length ?? 0
+    return [...flat.slice(0, sellingCount), sellerLink, ...flat.slice(sellingCount)]
+  }, [sections, sellerProfileHref])
 
   const navHrefs = useMemo(() => links.map((link) => link.href), [links])
-  const activeLink = useMemo(() => resolveActiveLink(pathname, links), [links, pathname])
+  const activeLink = useMemo(
+    () => resolveActiveLink(pathname, links, searchParams),
+    [links, pathname, searchParams],
+  )
 
   useEffect(() => {
     if (isMessageThreadRoute(pathname)) {
@@ -138,32 +163,70 @@ export function DashboardMobileNav({
           </CollapsibleTrigger>
 
           <CollapsibleContent className="overflow-hidden">
-            <ul>
-              {links.map((link) => {
-                const active = isMostSpecificDashboardNavMatch(pathname, link.href, navHrefs)
+            <div className="pb-1">
+              {sections.map((section) => (
+                <div key={section.id} className="pt-2">
+                  <p className="px-4 pb-1 text-[13px] font-semibold text-foreground">
+                    {section.label}
+                  </p>
+                  <ul>
+                    {section.links.map((link) => {
+                      const active = isMostSpecificDashboardNavMatch(
+                        pathname,
+                        link.href,
+                        navHrefs,
+                        searchParams,
+                      )
+                      const key = navLinkKey(link)
 
-                return (
-                  <li key={link.key}>
-                    <Link
-                      href={link.href}
-                      onClick={() => setOpen(false)}
-                      className={cn(
-                        "flex items-center justify-between gap-3 px-4 py-3 text-[15px] leading-snug transition-colors",
-                        active
-                          ? "bg-primary/10 font-semibold text-primary"
-                          : "font-medium text-muted-foreground hover:bg-muted/30 hover:text-foreground",
-                      )}
-                      aria-current={active ? "page" : undefined}
-                    >
-                      <span>{link.name}</span>
-                      {link.href === "/dashboard/support" ? (
-                        <SupportUnreadTicker className="h-4 min-w-4 text-[10px]" />
-                      ) : null}
-                    </Link>
-                  </li>
-                )
-              })}
-            </ul>
+                      return (
+                        <li key={key}>
+                          <Link
+                            href={link.href}
+                            onClick={() => setOpen(false)}
+                            className={cn(
+                              "flex items-center justify-between gap-3 px-4 py-2.5 text-[15px] leading-snug transition-colors",
+                              active
+                                ? "bg-primary/10 font-semibold text-primary"
+                                : "font-medium text-muted-foreground hover:bg-muted/30 hover:text-foreground",
+                            )}
+                            aria-current={active ? "page" : undefined}
+                          >
+                            <span>{link.name}</span>
+                            {link.href === "/dashboard/support" ? (
+                              <SupportUnreadTicker className="h-4 min-w-4 text-[10px]" />
+                            ) : null}
+                          </Link>
+                        </li>
+                      )
+                    })}
+                    {section.id === "selling" && sellerProfileHref ? (
+                      <li>
+                        <Link
+                          href={sellerProfileHref}
+                          onClick={() => setOpen(false)}
+                          className={cn(
+                            "flex items-center justify-between gap-3 px-4 py-2.5 text-[15px] leading-snug transition-colors",
+                            pathname.replace(/\/$/, "") ===
+                              sellerProfileHref.replace(/\/$/, "")
+                              ? "bg-primary/10 font-semibold text-primary"
+                              : "font-medium text-muted-foreground hover:bg-muted/30 hover:text-foreground",
+                          )}
+                          aria-current={
+                            pathname.replace(/\/$/, "") ===
+                            sellerProfileHref.replace(/\/$/, "")
+                              ? "page"
+                              : undefined
+                          }
+                        >
+                          <span>My Seller Profile</span>
+                        </Link>
+                      </li>
+                    ) : null}
+                  </ul>
+                </div>
+              ))}
+            </div>
           </CollapsibleContent>
         </div>
       </Collapsible>

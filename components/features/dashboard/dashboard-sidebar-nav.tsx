@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useSearchParams } from "next/navigation"
 import { ChevronDown, Store } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -10,7 +10,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import {
-  dashboardNavLinks,
+  dashboardNavSections,
   type DashboardNavLink,
 } from "@/lib/dashboard-nav-links"
 import { isMostSpecificDashboardNavMatch } from "@/lib/dashboard-nav-match"
@@ -20,6 +20,10 @@ import {
 } from "@/lib/utils/dashboard-display-styles"
 import { SupportUnreadTicker } from "@/components/features/support/support-unread-ticker"
 import { cn } from "@/lib/utils"
+
+function navLinkKey(link: DashboardNavLink): string {
+  return link.id ?? link.href
+}
 
 function DashboardNavItem({
   link,
@@ -31,7 +35,9 @@ function DashboardNavItem({
   navHrefs: readonly string[]
 }) {
   const pathname = usePathname() ?? ""
-  const isActive = (href: string) => isMostSpecificDashboardNavMatch(pathname, href, navHrefs)
+  const searchParams = useSearchParams()
+  const isActive = (href: string) =>
+    isMostSpecificDashboardNavMatch(pathname, href, navHrefs, searchParams)
   const Icon = link.icon
   const isLarge = size === "large"
   const itemClass = isLarge
@@ -146,40 +152,61 @@ export function DashboardSidebarNav({
   const iconClass = isLarge
     ? dashboardSidebarNavIconClass
     : "h-4 w-4 lg:h-[18px] lg:w-[18px]"
-  const links = dashboardNavLinks({
+  const sections = dashboardNavSections({
     isAdmin,
     isShipper,
     isDropoffLocation,
     hasShopifyAccess,
     showEarnings,
   })
-  const navHrefs = links.flatMap((item) => [
-    item.href,
-    ...(item.children?.map((child) => child.href) ?? []),
-  ])
+  const navHrefs = sections.flatMap((section) =>
+    section.links.flatMap((item) => [
+      item.href,
+      ...(item.children?.map((child) => child.href) ?? []),
+    ]),
+  )
 
   return (
     <nav
-      className={cn("hidden lg:block", isLarge ? "space-y-2" : "space-y-1.5")}
+      className={cn("hidden lg:block", isLarge ? "space-y-6" : "space-y-5")}
       aria-label="Dashboard"
     >
-      {links.map((link) => (
-        <DashboardNavItem key={link.href} link={link} size={size} navHrefs={navHrefs} />
+      {sections.map((section) => (
+        <div key={section.id} className={cn(isLarge ? "space-y-1.5" : "space-y-1")}>
+          <p
+            className={cn(
+              "px-3 font-semibold tracking-tight text-foreground",
+              isLarge ? "px-4 text-[15px]" : "text-sm lg:px-4 lg:text-[15px]",
+            )}
+          >
+            {section.label}
+          </p>
+          <div className={cn(isLarge ? "space-y-1" : "space-y-0.5")}>
+            {section.links.map((link) => (
+              <DashboardNavItem
+                key={navLinkKey(link)}
+                link={link}
+                size={size}
+                navHrefs={navHrefs}
+              />
+            ))}
+            {section.id === "selling" && sellerProfileHref ? (
+              <Link
+                href={sellerProfileHref}
+                className={cn(
+                  itemClass,
+                  pathname.replace(/\/$/, "") === sellerProfileHref.replace(/\/$/, "")
+                    ? "bg-primary/5 text-primary"
+                    : "text-primary hover:bg-primary/5 hover:text-primary",
+                )}
+              >
+                <Store className={iconClass} />
+                My Seller Profile
+              </Link>
+            ) : null}
+          </div>
+        </div>
       ))}
-      {sellerProfileHref ? (
-        <Link
-          href={sellerProfileHref}
-          className={cn(
-            itemClass,
-            pathname.replace(/\/$/, "") === sellerProfileHref.replace(/\/$/, "")
-              ? "bg-primary/5 text-primary"
-              : "text-primary hover:bg-primary/5 hover:text-primary",
-          )}
-        >
-          <Store className={iconClass} />
-          My Seller Profile
-        </Link>
-      ) : null}
     </nav>
   )
 }
