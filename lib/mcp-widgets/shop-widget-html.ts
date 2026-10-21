@@ -3,7 +3,9 @@
  * Hosts render this HTML in a sandboxed iframe (Claude / ChatGPT / Goose).
  */
 
-export function buildReswellShopWidgetHtml(): string {
+export function buildReswellShopWidgetHtml(options?: { shopping?: boolean }): string {
+  const shopping = options?.shopping !== false
+  const chromeHidden = shopping ? "" : " hidden"
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -257,16 +259,16 @@ export function buildReswellShopWidgetHtml(): string {
 <body>
   <header class="brand">
     <h1>Reswell<span>Shop surfboards in chat</span></h1>
-    <div class="pill" id="cartPill">Cart · 0</div>
+    <div class="pill" id="cartPill"${chromeHidden}>Cart · 0</div>
   </header>
-  <div class="tabs" id="tabs" role="tablist">
+  <div class="tabs" id="tabs" role="tablist"${chromeHidden}>
     <button class="tab" id="tabBrowse" aria-selected="true" type="button">Boards</button>
     <button class="tab" id="tabCart" aria-selected="false" type="button">Cart</button>
   </div>
   <p class="status" id="status">Waiting for listings…</p>
   <section id="browsePane"></section>
   <section id="cartPane" hidden></section>
-  <div class="dock" id="dock">
+  <div class="dock" id="dock"${chromeHidden}>
     <div><span id="dockCount">0 boards</span> · <strong id="dockTotal">$0</strong></div>
     <button class="action" id="dockCheckout" type="button">Checkout</button>
   </div>
@@ -278,7 +280,7 @@ export function buildReswellShopWidgetHtml(): string {
     listings: [],
     cart: { items: [], item_count: 0 },
     checkoutUrls: [],
-    shopping: true,
+    shopping: ${shopping},
     busy: false,
     hostReady: false,
   };

@@ -1,5 +1,6 @@
 import { MCP_UI_EXTENSION_ID, MCP_UI_MIME } from "@/lib/mcp-widgets/constants"
 import { listMcpUiResources, readMcpUiResource } from "@/lib/mcp-widgets/resources"
+import { buildReswellShopWidgetHtml } from "@/lib/mcp-widgets/shop-widget-html"
 import { withPublicMcpPhotos } from "@/lib/services/publicMcpContent"
 import { MCP_PROTOCOL_VERSION } from "@/lib/services/mcpConfig"
 import {
@@ -68,11 +69,11 @@ function isPublicToolName(name: string): boolean {
   return (PUBLIC_MCP_TOOL_NAMES as readonly string[]).includes(name)
 }
 
-function requestIncludesToolCall(body: unknown): boolean {
+function countToolCalls(body: unknown): number {
   if (Array.isArray(body)) {
-    return body.some((item) => isJsonRpcRequest(item) && item.method === "tools/call")
+    return body.filter((item) => isJsonRpcRequest(item) && item.method === "tools/call").length
   }
-  return isJsonRpcRequest(body) && body.method === "tools/call"
+  return isJsonRpcRequest(body) && body.method === "tools/call" ? 1 : 0
 }
 
 async function handlePublicMcpMethod(
@@ -171,7 +172,7 @@ async function handlePublicMcpMethod(
           {
             uri: resource.uri,
             mimeType: resource.mimeType,
-            text: resource.text,
+            text: buildReswellShopWidgetHtml({ shopping: false }),
             ...(resource._meta ? { _meta: resource._meta } : {}),
           },
         ],
@@ -232,7 +233,8 @@ export async function handlePublicMcpHttpRequest(input: {
   }
 
   let rateHeaders: Record<string, string> | undefined
-  if (requestIncludesToolCall(input.body)) {
+  const toolCalls = countToolCalls(input.body)
+  for (let i = 0; i < toolCalls; i++) {
     const limited = await input.consumeToolCall()
     if (!limited.ok) {
       return {

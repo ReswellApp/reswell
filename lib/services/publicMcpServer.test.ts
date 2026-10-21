@@ -146,6 +146,108 @@ test("public tools/call rate limit does not execute the tool", async () => {
   assert.equal(result.headers["Retry-After"], "30")
 })
 
+test("batch tools/call consumes one quota slot per call", async () => {
+  let consumed = 0
+  let calls = 0
+  const result = await handlePublicMcpHttpRequest({
+    method: "POST",
+    body: [
+      { jsonrpc: "2.0", id: 1, method: "initialize", params: {} },
+      {
+        jsonrpc: "2.0",
+        id: 2,
+        method: "tools/call",
+        params: { name: "get_listing", arguments: { listing_id: "a" } },
+      },
+      {
+        jsonrpc: "2.0",
+        id: 3,
+        method: "tools/call",
+        params: { name: "get_listing", arguments: { listing_id: "b" } },
+      },
+    ],
+    consumeToolCall: async () => {
+      consumed += 1
+      return allow()
+    },
+    callTool: async () => {
+      calls += 1
+      return { content: [{ type: "text" as const, text: "ok" }] }
+    },
+  })
+  assert.equal(consumed, 2)
+  assert.equal(calls, 2)
+  assert.equal(result.kind, "json")
+})
+
+test("batch tools/call rate limit does not execute any tool", async () => {
+  let consumed = 0
+  let calls = 0
+  const result = await handlePublicMcpHttpRequest({
+    method: "POST",
+    body: [
+      {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: { name: "get_listing", arguments: { listing_id: "a" } },
+      },
+      {
+        jsonrpc: "2.0",
+        id: 2,
+        method: "tools/call",
+        params: { name: "get_listing", arguments: { listing_id: "b" } },
+      },
+    ],
+    consumeToolCall: async () => {
+      consumed += 1
+      if (consumed === 2) {
+        return {
+          ok: false as const,
+          status: 429 as const,
+          body: { error: "Too many requests" },
+          headers: { "Retry-After": "30" },
+        }
+      }
+      return allow()
+    },
+    callTool: async () => {
+      calls += 1
+      return { content: [{ type: "text" as const, text: "no" }], isError: true }
+    },
+  })
+  assert.equal(consumed, 2)
+  assert.equal(calls, 0)
+  assert.equal(result.kind, "rate_limited")
+})
+
+test("public resources/read serves a browse-only picker", async () => {
+  const listed = await handlePublicMcpHttpRequest({
+    method: "POST",
+    body: { jsonrpc: "2.0", id: 7, method: "resources/list" },
+    consumeToolCall: allow,
+  })
+  assert.equal(listed.kind, "json")
+  if (listed.kind !== "json") return
+  const uris = (listed.body as { result: { resources: Array<{ uri: string }> } }).result.resources
+  const uri = uris[0]?.uri
+  assert.ok(uri)
+
+  const read = await handlePublicMcpHttpRequest({
+    method: "POST",
+    body: { jsonrpc: "2.0", id: 8, method: "resources/read", params: { uri } },
+    consumeToolCall: allow,
+  })
+  assert.equal(read.kind, "json")
+  if (read.kind !== "json") return
+  const html = (read.body as { result: { contents: Array<{ text?: string }> } }).result.contents[0]
+    ?.text
+  assert.match(String(html), /shopping: false/)
+  assert.match(String(html), /id="cartPill" hidden/)
+  assert.match(String(html), /id="tabs" role="tablist" hidden/)
+  assert.match(String(html), /id="dock" hidden/)
+})
+
 test("injected tool results gain photo links", async () => {
   const result = await handlePublicMcpHttpRequest({
     method: "POST",
