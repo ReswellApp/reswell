@@ -189,6 +189,10 @@ import {
   listingPhotoSlotsForDraftPersist,
 } from "@/lib/sell-flow/listing-photo-slot"
 import {
+  attachKnownListingImageIds,
+  insertListingImageReturningId,
+} from "@/lib/sell-flow/sync-listing-draft-images-client"
+import {
   listingPhotoOrientationPrepareOptions,
   listingPhotoQuarterTurnsAfterAdjust,
   type ListingPhotoQuarterTurnDelta,
@@ -1271,6 +1275,10 @@ function SellPageContentInner({
     "idle" | "saving" | "saved"
   >("idle")
   const draftImageSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  /** Serializes draft photo saves so a second pass cannot insert the same URLs. */
+  const draftImageSyncChainRef = useRef<Promise<void>>(Promise.resolve())
+  /** Row ids learned from an in-flight save before React state catches up. */
+  const listingImageRowIdByClientIdRef = useRef<Map<string, string>>(new Map())
   const draftPhotosPendingRef = useRef<ListingPhotoSlot[] | null>(null)
   /** Slots from IndexedDB restore — optimized in useLayoutEffect after `optimizeAndUploadSlot` exists. */
   const idbRestoreOptimizeQueueRef = useRef<ListingPhotoSlot[] | null>(null)
@@ -2605,7 +2613,8 @@ function SellPageContentInner({
     if (draftImageSyncTimerRef.current) clearTimeout(draftImageSyncTimerRef.current)
     draftImageSyncTimerRef.current = setTimeout(() => {
       draftImageSyncTimerRef.current = null
-      void syncListingImages(draftRowForImages).catch((e) => {
+      if (publishInFlightRef.current) return
+      void enqueueDraftListingImageSync(draftRowForImages).catch((e) => {
         if (process.env.NODE_ENV === "development") {
           console.warn("[sell] draft listing_images sync", e)
         }
@@ -3090,8 +3099,14 @@ function SellPageContentInner({
         sellListingThumbLoadedSrcByClientId.delete(toRemove.clientId)
         latestListingPhotoPrepareSeqRef.current.delete(toRemove.clientId)
       }
-      if (toRemove?.id) {
-        setRemovedImageIds((ids) => [...ids, toRemove.id!])
+      const dbId =
+        toRemove?.id ??
+        (toRemove?.clientId
+          ? listingImageRowIdByClientIdRef.current.get(toRemove.clientId)
+          : undefined)
+      if (dbId) {
+        setRemovedImageIds((ids) => (ids.includes(dbId) ? ids : [...ids, dbId]))
+        if (toRemove?.clientId) listingImageRowIdByClientIdRef.current.delete(toRemove.clientId)
       }
       return prev.filter((_, i) => i !== index)
     })
@@ -3183,34 +3198,33 @@ function SellPageContentInner({
       }
     }
 
-    const newRows = slots
+    const knownSlots = await attachKnownListingImageIds(supabase, listingId, slots)
+    const adoptedExistingId = knownSlots.some(
+      (slot, index) => Boolean(slot.id) && slot.id !== slots[index]?.id,
+    )
+
+    const newRows = knownSlots
       .map((img, index) => ({ img, index }))
       .filter(({ img }) => !img.id && img.url)
 
     const insertResults = await Promise.all(
       newRows.map(async ({ img, index }) => {
-        const { data: inserted, error: insertError } = await supabase
-          .from("listing_images")
-          .insert({
-            listing_id: listingId,
+        try {
+          const id = await insertListingImageReturningId(supabase, listingId, {
             url: img.url!,
-            thumbnail_url: img.thumbnailUrl ?? null,
-            is_primary: index === 0,
-            sort_order: index,
+            thumbnailUrl: img.thumbnailUrl ?? null,
+            isPrimary: index === 0,
+            sortOrder: index,
           })
-          .select("id")
-          .single()
-
-        if (insertError || !inserted?.id) {
-          throw new Error(
-            insertError?.message || `Photo ${index + 1} could not be saved to your listing.`,
-          )
+          return { index, id }
+        } catch (error) {
+          const message = error instanceof Error ? error.message : ""
+          throw new Error(message || `Photo ${index + 1} could not be saved to your listing.`)
         }
-        return { index, id: inserted.id as string }
       }),
     )
 
-    let working = [...slots]
+    let working = [...knownSlots]
     if (insertResults.length) {
       for (const { index, id } of insertResults) {
         working[index] = { ...working[index], id }
@@ -3240,16 +3254,69 @@ function SellPageContentInner({
       }),
     )
 
-    return { nextSlots: working, didInsert: insertResults.length > 0 }
+    return {
+      nextSlots: working,
+      didInsert: insertResults.length > 0 || adoptedExistingId,
+    }
   }
 
-  async function syncListingImages(listingId: string) {
-    const { nextSlots, didInsert } = await syncListingImagesFromSnapshot(
-      listingId,
-      images,
-      removedImageIds,
-    )
-    if (didInsert) setImages(nextSlots)
+  function rememberListingImageRowIds(slots: ListingPhotoSlot[]) {
+    for (const slot of slots) {
+      if (slot.clientId && slot.id) {
+        listingImageRowIdByClientIdRef.current.set(slot.clientId, slot.id)
+      }
+    }
+  }
+
+  function slotsWithKnownListingImageIds(slots: ListingPhotoSlot[]): ListingPhotoSlot[] {
+    return slots.map((slot) => {
+      if (slot.id) return slot
+      const known = listingImageRowIdByClientIdRef.current.get(slot.clientId)
+      return known ? { ...slot, id: known } : slot
+    })
+  }
+
+  /**
+   * One draft photo save at a time. Publish awaits this so it updates the rows
+   * the autosave just inserted instead of inserting them again.
+   */
+  function enqueueDraftListingImageSync(listingId: string): Promise<void> {
+    const run = async () => {
+      const slots = slotsWithKnownListingImageIds(imagesRef.current)
+      const { nextSlots, didInsert } = await syncListingImagesFromSnapshot(
+        listingId,
+        slots,
+        removedImageIdsRef.current,
+      )
+      rememberListingImageRowIds(nextSlots)
+      const idByClient = new Map(
+        nextSlots.flatMap((slot) => (slot.id ? [[slot.clientId, slot.id] as const] : [])),
+      )
+      imagesRef.current = imagesRef.current.map((slot) => {
+        const id = idByClient.get(slot.clientId)
+        return id && slot.id !== id ? { ...slot, id } : slot
+      })
+      if (didInsert) {
+        setImages((prev) => {
+          let changed = false
+          const next = prev.map((slot) => {
+            const id = idByClient.get(slot.clientId)
+            if (!id || slot.id === id) return slot
+            changed = true
+            return { ...slot, id }
+          })
+          return changed ? next : prev
+        })
+      }
+    }
+
+    const job = draftImageSyncChainRef.current.then(run, run)
+    draftImageSyncChainRef.current = job
+    return job
+  }
+
+  function syncListingImages(listingId: string): Promise<void> {
+    return enqueueDraftListingImageSync(listingId)
   }
 
   const syncListingImagesFromSnapshotRef = useRef(syncListingImagesFromSnapshot)
@@ -3713,6 +3780,19 @@ function SellPageContentInner({
 
         if (ownerEditsOwnListing || adminEditsOtherListing) {
           const publishingFromDraftRow = listingIsDraft || isLocalOnlyServerDraftSubmit
+          if (publishingFromDraftRow) {
+            if (draftImageSyncTimerRef.current) {
+              clearTimeout(draftImageSyncTimerRef.current)
+              draftImageSyncTimerRef.current = null
+            }
+            // Autosave may already be inserting these photos. Wait for that save
+            // and reuse its row ids so publish does not insert them again.
+            await enqueueDraftListingImageSync(effectiveEditId)
+          }
+          const photoSlots = imagesRef.current.map((slot) => ({
+            ...slot,
+            id: slot.id ?? listingImageRowIdByClientIdRef.current.get(slot.clientId),
+          }))
           const imageOps: {
             id?: string
             url?: string
@@ -3720,9 +3800,9 @@ function SellPageContentInner({
             is_primary: boolean
             sort_order: number
           }[] = []
-          for (let i = 0; i < images.length; i++) {
-            const img = images[i]
-            if (!img.url?.trim() || !img.thumbnailUrl?.trim()) {
+          for (let i = 0; i < photoSlots.length; i++) {
+            const img = photoSlots[i]
+            if (!img?.url?.trim() || !img.thumbnailUrl?.trim()) {
               throw new Error(`Photo ${i + 1} is still uploading. Wait or retry before saving.`)
             }
             imageOps.push({
