@@ -18,6 +18,8 @@ import {
  *
  * Product `id` matches listing UUID — align Meta Pixel `content_ids` with this value for dynamic ads.
  * Includes active peer listings (`section` surfboards | fins | wetsuits | magazines | apparel | traction).
+ * Gear-only feed (apparel, traction, boardbags, surfpacks, leashes, fins):
+ *   https://www.reswell.app/api/integrations/meta/catalog-feed/gear?token=YOUR_SECRET
  * Shop listings get `custom_label_0` for Meta product-set ads:
  * HaydenGarfield (Hayden Garfield), OutSurfing, and Brownstone.
  * City listings get `custom_label_1`: SantaBarbara | Ventura
