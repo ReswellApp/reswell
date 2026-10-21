@@ -8,7 +8,8 @@
  *
  * Template variables: `{{ event.order_num }}`, `{{ event.Title }}`, `{{ event.status_label }}`,
  * `{{ event.latest_event_description }}`, `{{ event.latest_event_location }}`,
- * `{{ event.tracking_number }}`, `{{ event.tracking_carrier }}`, `{{ event.estimated_delivery_date }}`,
+ * `{{ event.tracking_number }}`, `{{ event.tracking_carrier }}`, `{{ event.tracking_url }}`,
+ * `{{ event.estimated_delivery_date }}`,
  * `{{ event.is_delivered }}`, `{{ event.order_url }}`, `{{ event.sms_milestone }}`,
  * `{{ event.has_sms_phone }}`.
  * Buyer email HTML: `KLAVIYO_ORDER_SHIPPING_UPDATE_EMAIL_HTML` in
@@ -46,6 +47,7 @@ export type KlaviyoOrderShippingUpdatePayload = {
   listingTitle: string
   trackingNumber: string
   trackingCarrier: string | null
+  trackingUrl?: string | null
   detail: OrderTrackingDetail
   /** Set only on first transition into OFD / delivered / exception */
   smsMilestone?: OrderShippingSmsMilestone | null
@@ -83,6 +85,7 @@ export async function trackKlaviyoOrderShippingUpdate(
       Title: payload.listingTitle,
       tracking_number: payload.trackingNumber,
       tracking_carrier: payload.trackingCarrier ?? "",
+      tracking_url: payload.trackingUrl?.trim() || orderUrl,
       status_code: detail.status_code ?? "",
       status_label: resolveCarrierStatusHeadline(detail),
       latest_event_description: latestEvent?.description?.trim() ?? "",

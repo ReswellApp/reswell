@@ -27,6 +27,7 @@ import {
   listingPhotoIsCached,
   preventNativeListingImageDrag,
 } from "@/components/features/listings/listing-gallery-photo"
+import { listingPhotoFrameFillStyle } from "@/lib/listing-photo-fill"
 import { withListingMediaPdpVariant } from "@/lib/listing-media-proxy-url"
 import { useListingGallerySwipe } from "@/components/features/listings/hooks/use-passive-gallery-swipe"
 import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock"
@@ -34,11 +35,19 @@ import { LISTING_GALLERY_EMBLA_WATCH_DRAG } from "@/lib/utils/listing-gallery-to
 import { cn } from "@/lib/utils"
 
 const ZOOM_TOLERANCE = 0.015
-const DEFAULT_ASPECT_RATIO = 3 / 4
+/** Same portrait frame as marketplace tiles and the /l hero. */
+const LISTING_FRAME_ASPECT = 3 / 4
 /** Chrome around the photo — never used as the photo canvas itself. */
 const LIGHTBOX_SURFACE_CLASS = "bg-[#f3f4f6] dark:bg-muted"
 const PHOTO_LAYER =
-  "bg-transparent select-none object-contain object-center backface-hidden transform-gpu [-webkit-user-drag:none] [-webkit-touch-callout:default]"
+  "bg-transparent select-none object-cover object-center backface-hidden transform-gpu [-webkit-user-drag:none] [-webkit-touch-callout:default]"
+
+/** Largest 3:4 box that fits the lightbox stage. Slash-form ratio for iOS Chrome. */
+const ENLARGED_FRAME_STYLE: CSSProperties = {
+  aspectRatio: "3 / 4",
+  width: `min(100cqi, calc(100cqh * ${LISTING_FRAME_ASPECT}))`,
+  height: `min(100cqh, calc(100cqi / ${LISTING_FRAME_ASPECT}))`,
+}
 
 function markPaintedAfterDecode(img: HTMLImageElement | null, mark: () => void): void {
   if (!img || !img.complete || img.naturalWidth === 0) return
@@ -54,22 +63,6 @@ const LIGHTBOX_IMAGE_SIZES =
 
 const CHROME_BUTTON_CLASS =
   "h-11 w-11 shrink-0 rounded-full border border-border/55 bg-background/90 text-foreground shadow-sm backdrop-blur-md hover:bg-muted/40 [&_svg]:size-5"
-
-function useMaxMd() {
-  const [match, setMatch] = useState(() =>
-    typeof window !== "undefined" ? window.matchMedia("(max-width: 767px)").matches : false,
-  )
-
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 767px)")
-    const sync = () => setMatch(mq.matches)
-    sync()
-    mq.addEventListener("change", sync)
-    return () => mq.removeEventListener("change", sync)
-  }, [])
-
-  return match
-}
 
 function usePrefersCoarsePointer() {
   const [coarse, setCoarse] = useState(() =>
@@ -95,8 +88,6 @@ interface LightboxSlideProps {
   slideIndex: number
   isActive: boolean
   coarsePointer: boolean
-  isMaxMd: boolean
-  initialAspectRatio: number
   priority?: boolean
   onScaleChange: (scale: number) => void
   onBackdropClick: () => void
@@ -110,8 +101,6 @@ function LightboxSlide({
   slideIndex,
   isActive,
   coarsePointer,
-  isMaxMd,
-  initialAspectRatio,
   priority = false,
   onScaleChange,
   onBackdropClick,
@@ -136,7 +125,6 @@ function LightboxSlide({
     setLoadedSrc(null)
     setPlaceholderLoaded(false)
   }
-  const [aspectRatio, setAspectRatio] = useState(initialAspectRatio)
   const pinchRef = useRef<ReactZoomPanPinchContentRef | null>(null)
 
   const setPinchRef = useCallback(
@@ -146,10 +134,6 @@ function LightboxSlide({
     },
     [registerPinchRef, slideIndex],
   )
-
-  useEffect(() => {
-    setAspectRatio(initialAspectRatio)
-  }, [initialAspectRatio])
 
   useEffect(() => {
     if (!isActive) {
@@ -166,50 +150,29 @@ function LightboxSlide({
   const scaleRef = useRef(1)
   scaleRef.current = scale
   useEffect(() => {
-    if (!isActive || isMaxMd) return
+    if (!isActive) return
     if (scaleRef.current > 1 + ZOOM_TOLERANCE) return
     const id = requestAnimationFrame(() => {
       pinchRef.current?.centerView(1, 0)
     })
     return () => cancelAnimationFrame(id)
-  }, [aspectRatio, isActive, isMaxMd])
-
-  const rememberAspectRatio = (naturalWidth: number, naturalHeight: number) => {
-    if (naturalWidth <= 0 || naturalHeight <= 0) return
-    const next = naturalWidth / naturalHeight
-    setAspectRatio((prev) => (Math.abs(prev - next) < 0.001 ? prev : next))
-  }
-
-  const fitCard = !isMaxMd
-  const frameStyle: CSSProperties | undefined = fitCard
-    ? {
-        aspectRatio,
-        width: `min(100cqi, calc(100cqh * ${aspectRatio}))`,
-        height: `min(100cqh, calc(100cqi / ${aspectRatio}))`,
-      }
-    : undefined
+  }, [isActive])
 
   return (
     <div
-      className={cn(
-        "flex h-full w-full justify-center",
-        fitCard ? "[container-type:size] items-center px-16 py-10" : "items-start",
-      )}
+      className="flex h-full w-full items-center justify-center px-4 py-6 [container-type:size] md:px-16 md:py-10"
       onClick={(event) => {
         if (event.target === event.currentTarget) onBackdropClick()
       }}
     >
       <div
         className={cn(
-          "relative overflow-hidden backface-hidden transform-gpu",
+          "listing-tile-frame relative overflow-hidden rounded-2xl bg-muted shadow-sm ring-1 ring-black/[0.06] backface-hidden transform-gpu dark:ring-white/[0.06]",
           !backdropSrc && LIGHTBOX_SURFACE_CLASS,
-          fitCard
-            ? "rounded-2xl shadow-sm ring-1 ring-black/[0.06] dark:ring-white/[0.06]"
-            : "h-full w-full",
         )}
         style={{
-          ...listingPhotoBackdropStyle(backdropSrc, "contain"),
-          ...frameStyle,
+          ...listingPhotoBackdropStyle(backdropSrc, "cover", "center center"),
+          ...ENLARGED_FRAME_STYLE,
         }}
         onClick={(event) => event.stopPropagation()}
       >
@@ -226,15 +189,12 @@ function LightboxSlide({
               "pointer-events-none z-[1]",
               placeholderLoaded ? "opacity-100" : "opacity-0",
             )}
+            style={listingPhotoFrameFillStyle}
             sizes={LIGHTBOX_IMAGE_SIZES}
             priority={priority}
             ref={(img) => markPaintedAfterDecode(img, () => setPlaceholderLoaded(true))}
             onLoad={(event) => {
-              const img = event.currentTarget
-              markPaintedAfterDecode(img, () => {
-                setPlaceholderLoaded(true)
-                rememberAspectRatio(img.naturalWidth, img.naturalHeight)
-              })
+              markPaintedAfterDecode(event.currentTarget, () => setPlaceholderLoaded(true))
             }}
           />
         ) : null}
@@ -251,8 +211,8 @@ function LightboxSlide({
           initialScale={1}
           minScale={1}
           maxScale={5}
-          centerOnInit={!isMaxMd}
-          centerZoomedOut={!isMaxMd}
+          centerOnInit
+          centerZoomedOut
           limitToBounds
           smooth
           wheel={{ step: 0.12, disabled: !isActive }}
@@ -290,22 +250,20 @@ function LightboxSlide({
                   : null,
                 loadedSrc === src ? "opacity-100" : "opacity-0",
               )}
+              style={listingPhotoFrameFillStyle}
               sizes={LIGHTBOX_IMAGE_SIZES}
               priority={priority}
               ref={(img) =>
                 markPaintedAfterDecode(img, () => {
                   setLoadedSrc(src)
                   setPlaceholderLoaded(true)
-                  if (img) rememberAspectRatio(img.naturalWidth, img.naturalHeight)
                 })
               }
               onLoad={(event) => {
-                const img = event.currentTarget
-                markPaintedAfterDecode(img, () => {
+                markPaintedAfterDecode(event.currentTarget, () => {
                   setLoadedSrc(src)
                   setPlaceholderLoaded(true)
-                  rememberAspectRatio(img.naturalWidth, img.naturalHeight)
-                  if (isActive && !isMaxMd) {
+                  if (isActive) {
                     requestAnimationFrame(() => {
                       pinchRef.current?.centerView(1, 0)
                     })
@@ -329,8 +287,6 @@ interface ListingImageLightboxProps {
   /** Index controlled by parent (opening slide). */
   index: number
   onIndexChange: (next: number) => void
-  /** Natural width/height per slide — sizes the photo frame before decode. */
-  aspectRatios?: Record<number, number>
   /** Length × width × thickness · volume — shown above the thumbnail slider. */
   dimensionsLine?: string | null
   /** Browse/tile URLs aligned with `proxiedUrls` — first paint when already cached. */
@@ -344,7 +300,6 @@ export function ListingImageLightbox({
   title,
   index,
   onIndexChange,
-  aspectRatios,
   dimensionsLine,
   previewUrls,
 }: ListingImageLightboxProps) {
@@ -352,7 +307,6 @@ export function ListingImageLightbox({
   const pinchRefs = useRef<Map<number, ReactZoomPanPinchContentRef | null>>(new Map())
   const isZoomedOutRef = useRef(true)
   const coarsePointer = usePrefersCoarsePointer()
-  const isMaxMd = useMaxMd()
   // Radix's modal lock (react-remove-scroll) calls preventDefault() on the
   // first touchmove inside this full-screen dialog. On a phone that freezes
   // the whole screen the moment a swipe starts.
@@ -522,8 +476,6 @@ export function ListingImageLightbox({
         slideIndex={slideIndex}
         isActive={slideIndex === index}
         coarsePointer={coarsePointer}
-        isMaxMd={isMaxMd}
-        initialAspectRatio={aspectRatios?.[slideIndex] ?? DEFAULT_ASPECT_RATIO}
         priority={priority}
         onScaleChange={handleActiveScaleChange}
         onBackdropClick={closeIfZoomedOut}

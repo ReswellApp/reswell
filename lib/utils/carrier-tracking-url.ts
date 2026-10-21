@@ -1,3 +1,20 @@
+import { normalizeBrandedTrackingUrl } from "@/lib/utils/branded-tracking-url"
+
+/**
+ * Prefer the stored ShipEngine branded page. Otherwise the carrier's public tracker.
+ */
+export function preferredTrackingUrl(params: {
+  brandedUrl?: string | null
+  trackingNumber?: string | null
+  trackingCarrier?: string | null
+}): string | null {
+  const branded = normalizeBrandedTrackingUrl(params.brandedUrl)
+  if (branded) return branded
+  const trackingNumber = params.trackingNumber?.trim()
+  if (!trackingNumber) return null
+  return carrierTrackingUrl(trackingNumber, params.trackingCarrier)
+}
+
 /**
  * Best-effort public tracking URLs from free-text carrier + tracking number.
  * Does not guarantee the carrier matches; sellers should enter carrier names consistently.

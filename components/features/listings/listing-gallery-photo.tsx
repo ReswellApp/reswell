@@ -9,6 +9,7 @@ import {
   type DragEvent,
 } from "react"
 import { ListingMediaFillImage } from "@/components/listing-media-fill-image"
+import { listingPhotoFrameFillStyle } from "@/lib/listing-photo-fill"
 import { ListingTileShimmer } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import {
@@ -160,11 +161,7 @@ export function ListingGalleryPhoto({
    * doubled tail under the board.
    */
   const frameFillStyle: CSSProperties = {
-    position: "absolute",
-    inset: 0,
-    width: "100%",
-    height: "100%",
-    maxWidth: "none",
+    ...listingPhotoFrameFillStyle,
     objectFit: resolvedFit === "contain" ? "contain" : "cover",
     objectPosition: objectPosition ?? "center center",
   }

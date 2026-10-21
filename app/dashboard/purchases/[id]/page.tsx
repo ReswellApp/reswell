@@ -37,7 +37,7 @@ import {
 } from "@/lib/purchase-detail-timeline"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
-import { carrierTrackingUrl } from "@/lib/utils/carrier-tracking-url"
+import { preferredTrackingUrl } from "@/lib/utils/carrier-tracking-url"
 import { formatCarrierDisplayName } from "@/lib/shipping/resolve-carrier-code"
 import { helpHubHref } from "@/lib/help/help-hub-intents"
 import {
@@ -45,6 +45,7 @@ import {
   getShippingDeadlineDate,
   isEligibleForShippingDeadlineAutoCancel,
 } from "@/lib/shipping-deadline"
+import { ensureOrderBrandedTrackingUrl } from "@/lib/services/ensureOrderBrandedTrackingUrl"
 
 export async function generateMetadata(props: {
   params: Promise<{ id: string }>
@@ -280,9 +281,6 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
       fulfillment_method: order.fulfillment_method,
       delivery_status: order.delivery_status,
     })
-  const trackUrl = order.tracking_number?.trim()
-    ? carrierTrackingUrl(order.tracking_number.trim(), order.tracking_carrier)
-    : null
   const shopListing = displayLines[0]?.listing
   const sellerHref = sellerProfileHref({ seller_slug: sellerHandle })
   const shopHref = shopListing ? listingDetailHref(shopListing) : sellerHref
@@ -331,6 +329,15 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
       .eq("conversation_id", conversationId)
       .neq("sender_id", user.id)
   }
+
+  const brandedTrackingUrl = order.tracking_number?.trim()
+    ? await ensureOrderBrandedTrackingUrl(order.id)
+    : null
+  const trackUrl = preferredTrackingUrl({
+    brandedUrl: brandedTrackingUrl,
+    trackingNumber: order.tracking_number,
+    trackingCarrier: order.tracking_carrier,
+  })
 
   return (
     <div className="space-y-8">

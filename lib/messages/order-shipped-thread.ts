@@ -11,6 +11,7 @@ export type OrderShippedThreadPayload = {
   listingTitle: string | null
   trackingNumber: string | null
   trackingCarrier: string | null
+  trackingUrl: string | null
 }
 
 export function buildOrderShippedPlainText(params: {
@@ -52,5 +53,6 @@ function mergeShippedPayload(
     listingTitle: firstText(fromMeta?.listingTitle, fromContent?.listingTitle),
     trackingNumber: firstText(fromMeta?.trackingNumber, fromContent?.trackingNumber),
     trackingCarrier: firstText(fromMeta?.trackingCarrier, fromContent?.trackingCarrier),
+    trackingUrl: fromMeta?.trackingUrl?.trim() || null,
   }
 }

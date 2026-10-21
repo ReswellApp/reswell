@@ -188,6 +188,11 @@ import {
   isOsFileDragEvent,
   listingPhotoSlotsForDraftPersist,
 } from "@/lib/sell-flow/listing-photo-slot"
+import {
+  listingPhotoOrientationPrepareOptions,
+  listingPhotoQuarterTurnsAfterAdjust,
+  type ListingPhotoQuarterTurnDelta,
+} from "@/lib/sell-flow/listing-photo-orientation"
 import type { OwnedListingForEditRow } from "@/lib/db/listingEdit"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import {
@@ -489,14 +494,20 @@ type ListingPhotoSlot = {
   url?: string
   thumbnailUrl?: string
   optimizePhase: "idle" | "running" | "done" | "error"
-  uploadPhase: "idle" | "uploading" | "done" | "error"
+  uploadPhase: "idle" | "uploading" | "done" | "error" | "pending_auth"
   progressFull: number
   progressThumb: number
   errorMessage?: string
   sourceFile?: File
+  /** True once `previewUrl` is a small derivative safe to paint during upload. */
+  localPreviewReady?: boolean
   prepared?: PreparedListingImagePair
-  /** True = apply 180° after automatic landscape→portrait step (toggle). */
+  /** @deprecated Session leftover. Quarter turns replace this. */
   userRotate180?: boolean
+  /** Extra clockwise 90° turns on top of automatic camera orientation. */
+  userQuarterTurns?: 0 | 1 | 2 | 3
+  /** Downloaded listing file. Skip the landscape→portrait pass. */
+  sourceIsDerivative?: boolean
   /**
    * After upload, drop `sourceFile` so the next rotation re-downloads from `url`.
    * Server-hydrated rows and temporary fetches for editing use this; user-picked files do not.
@@ -2660,9 +2671,10 @@ function SellPageContentInner({
         if (!src) return
         let paintedInstant = Boolean(slot.localPreviewReady)
         if (!paintedInstant) {
-          const instantUrl = await revealListingPhotoPreviewUrl(src, {
-            rotate180: Boolean(slot.userRotate180),
-          })
+            const instantUrl = await revealListingPhotoPreviewUrl(
+              src,
+              listingPhotoOrientationPrepareOptions(slot),
+            )
           if (!listingPhotoPrepareSeqInSync(clientId, prepareSeq)) {
             if (instantUrl) URL.revokeObjectURL(instantUrl)
             return
@@ -2685,9 +2697,10 @@ function SellPageContentInner({
           }
         }
 
-        prepared = await prepareDecodableListingPhoto(src, {
-          rotate180: Boolean(slot.userRotate180),
-        })
+          prepared = await prepareDecodableListingPhoto(
+            src,
+            listingPhotoOrientationPrepareOptions(slot),
+          )
         if (!listingPhotoPrepareSeqInSync(clientId, prepareSeq)) return
         const swapped = swapListingPhotoPreviewToPreparedThumb(
           paintedInstant,
@@ -2869,7 +2882,7 @@ function SellPageContentInner({
     void optimizeAndUploadSlot(next)
   }
 
-  function rotateListingPhoto180(clientId: string) {
+  function rotateListingPhoto(clientId: string, quarterTurns: ListingPhotoQuarterTurnDelta) {
     const live = imagesRef.current.find((s) => s.clientId === clientId)
     if (!live) return
     if (live.optimizePhase === "error" || live.uploadPhase === "error") return
@@ -2886,9 +2899,13 @@ function SellPageContentInner({
           sellListingThumbLoadedSrcByClientId.delete(s.clientId)
           const nextSeq = (s.prepareSeq ?? 0) + 1
           latestListingPhotoPrepareSeqRef.current.set(clientId, nextSeq)
+          const orientation = listingPhotoQuarterTurnsAfterAdjust(s, quarterTurns)
           nextSlot = {
             ...s,
-            userRotate180: !s.userRotate180,
+            userQuarterTurns: orientation.userQuarterTurns,
+            sourceIsDerivative: orientation.sourceIsDerivative,
+            userRotate180: undefined,
+            dropSourceFileAfterUpload: false,
             prepareSeq: nextSeq,
             prepared: undefined,
             optimizePhase: "running",
@@ -2942,9 +2959,12 @@ function SellPageContentInner({
             sellListingThumbLoadedSrcByClientId.delete(s.clientId)
             const nextSeq = (s.prepareSeq ?? 0) + 1
             latestListingPhotoPrepareSeqRef.current.set(clientId, nextSeq)
+            const orientation = listingPhotoQuarterTurnsAfterAdjust(s, quarterTurns)
             nextSlot = {
               ...s,
-              userRotate180: !s.userRotate180,
+              userQuarterTurns: orientation.userQuarterTurns,
+              sourceIsDerivative: orientation.sourceIsDerivative,
+              userRotate180: undefined,
               prepareSeq: nextSeq,
               prepared: undefined,
               optimizePhase: "running",
@@ -2956,7 +2976,7 @@ function SellPageContentInner({
               previewUrl: URL.createObjectURL(file),
               localPreviewReady: false,
               sourceFile: file,
-              dropSourceFileAfterUpload: true,
+              dropSourceFileAfterUpload: false,
               errorMessage: undefined,
             }
             return nextSlot
@@ -3085,14 +3105,14 @@ function SellPageContentInner({
   const photoTileActionsRef = useRef({
     remove: (_clientId: string) => {},
     retry: (_clientId: string) => {},
-    rotate: (_clientId: string) => {},
+    rotate: (_clientId: string, _quarterTurns: ListingPhotoQuarterTurnDelta) => {},
   })
   photoTileActionsRef.current.remove = (clientId: string) => {
     const idx = imagesRef.current.findIndex((s) => s.clientId === clientId)
     if (idx >= 0) removeImage(idx)
   }
   photoTileActionsRef.current.retry = retryListingPhotoUpload
-  photoTileActionsRef.current.rotate = rotateListingPhoto180
+  photoTileActionsRef.current.rotate = rotateListingPhoto
 
   const handlePhotoTileRemove = useCallback(
     (clientId: string) => photoTileActionsRef.current.remove(clientId),
@@ -3103,7 +3123,8 @@ function SellPageContentInner({
     [],
   )
   const handlePhotoTileRotate = useCallback(
-    (clientId: string) => photoTileActionsRef.current.rotate(clientId),
+    (clientId: string, quarterTurns: ListingPhotoQuarterTurnDelta) =>
+      photoTileActionsRef.current.rotate(clientId, quarterTurns),
     [],
   )
 
@@ -4460,7 +4481,7 @@ function SellPageContentInner({
                         onDragEnd={handlePhotosDragEnd}
                         onRemove={handlePhotoTileRemove}
                         onRetry={handlePhotoTileRetry}
-                        onRotate180={handlePhotoTileRotate}
+                        onRotateQuarterTurns={handlePhotoTileRotate}
                         photoDragSensors={photoDragSensors}
                         minPhotos={LISTING_MIN_PHOTOS}
                         video={video}
@@ -4835,7 +4856,8 @@ function SellPageContentInner({
                       <p className="text-[15px] leading-relaxed text-muted-foreground">
                         Clear, well-lit shots sell faster. Square photos work best. Photos you
                         drop together are ordered from the first shot to the last, and the first
-                        photo is your cover. Optional: add one short video beside your photos.
+                        photo is your cover. Turn a photo 90° if it lands sideways. Optional: add
+                        one short video beside your photos.
                       </p>
                     </div>
                     <SellListingPhotoGrid
@@ -4851,7 +4873,7 @@ function SellPageContentInner({
                       onDragEnd={handlePhotosDragEnd}
                       onRemove={handlePhotoTileRemove}
                       onRetry={handlePhotoTileRetry}
-                      onRotate180={handlePhotoTileRotate}
+                      onRotateQuarterTurns={handlePhotoTileRotate}
                       photoDragSensors={photoDragSensors}
                       hideHeader
                       belowGrid={<SellPhotoExamplesBanner />}

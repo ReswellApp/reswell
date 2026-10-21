@@ -6,6 +6,7 @@ import {
 } from "@/lib/shipping/carrier-delivery-payout-hold"
 import type { OrderTrackingDetail } from "@/lib/shipping/order-tracking-detail"
 import { sendFulfillmentReviewPrompts } from "@/lib/services/fulfillmentReviewPrompts"
+import { publishOrderDeliveredNotifications } from "@/lib/services/notifications/publishOrderDelivered"
 import {
   getOrderShipmentById,
   updateOrderShipmentCarrierFields,
@@ -242,6 +243,11 @@ async function syncLegacyOrderCarrierDelivery(
 
     if (deliveryStatusUpdated) {
       void sendFulfillmentReviewPrompts(orderId)
+      void publishOrderDeliveredNotifications({
+        orderId,
+        buyerEvent: "delivered",
+        sellerPayout: "soon",
+      })
     }
 
     await supabase

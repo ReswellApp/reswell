@@ -90,7 +90,7 @@ export function ListingOwnerManageActionsView({
               onClick={() => openListingPdpCropEditor()}
             >
               <Crop className="size-3.5" aria-hidden />
-              Adjust photos
+              Edit photos
             </Button>
           ) : null}
           {showQuickPriceEdit && !isDraft ? (

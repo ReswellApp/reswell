@@ -249,6 +249,28 @@ export function listingPdpCropNeedsPreciseLayout(crop: ListingPdpCrop | null): b
   return Math.abs(crop.zoom - 1) > ZOOM_EPS
 }
 
+/**
+ * Move a saved frame with a clockwise quarter turn so the same part of the
+ * photo stays under the hero after the pixels rotate.
+ * Centered Fill has nothing to preserve.
+ */
+export function rotateListingPdpCropClockwise(
+  crop: ListingPdpCrop | null,
+  quarterTurns: number,
+): ListingPdpCrop | null {
+  if (!crop || isListingPdpCropDefault(crop)) return null
+  const turns = ((Math.trunc(quarterTurns) % 4) + 4) % 4
+  let next = clampListingPdpCrop(crop)
+  for (let i = 0; i < turns; i += 1) {
+    next = clampListingPdpCrop({
+      zoom: next.zoom,
+      x: 100 - next.y,
+      y: next.x,
+    })
+  }
+  return isListingPdpCropDefault(next) ? null : next
+}
+
 export function listingPdpCropsEqual(
   a: ListingPdpCrop | null | undefined,
   b: ListingPdpCrop | null | undefined,

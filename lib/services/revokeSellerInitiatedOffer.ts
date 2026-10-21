@@ -3,6 +3,7 @@ import { createServiceRoleClient } from "@/lib/supabase/server"
 import { appendConversationMessageWithClient, rewriteOfferThreadMessages } from "@/lib/services/conversationThread"
 import { appendOfferTimelineEntry } from "@/lib/services/appendOfferTimeline"
 import { deleteOfferRecord } from "@/lib/services/offerCleanup"
+import { publishOfferNotification } from "@/lib/services/notifications/publish"
 
 export type RevokeSellerInitiatedOfferResult =
   | { ok: true; conversationId: string | null }
@@ -90,16 +91,14 @@ export async function revokeSellerInitiatedOffer(
     .maybeSingle()
   const title = ((listing?.title as string | undefined) ?? "A listing").trim() || "A listing"
 
-  const { error: notifErr } = await service.from("notifications").insert({
-    user_id: offer.buyer_id,
+  await publishOfferNotification(service, {
+    recipientId: offer.buyer_id,
+    actorId: sellerUserId,
+    listingId: offer.listing_id,
+    offerId,
     type: "offer_withdrawn",
-    listing_id: offer.listing_id,
-    actor_id: sellerUserId,
     message: `${title}: the seller revoked their offer.`,
   })
-  if (notifErr) {
-    console.error("[revokeSellerInitiatedOffer] notification:", notifErr)
-  }
 
   try {
     await deleteOfferRecord(service, offerId)

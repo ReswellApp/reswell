@@ -440,7 +440,7 @@ export const EMAIL_STUDIO_PREVIEW_SAMPLE: EmailPreviewData = {
     seller_payout: "$576",
     carrier: "UPS",
     tracking_number: "1Z999AA10123456784",
-    tracking_url: "https://www.ups.com/track?tracknum=1Z999AA10123456784",
+    tracking_url: "https://track.shipengine.com/se/v1/preview",
     review_url: "https://www.reswell.app/dashboard/purchases",
   },
 }

@@ -13,7 +13,8 @@
  * **Event variables** (from `track-order-shipping-update.ts`):
  * - `Title`, `order_num`, `order_url`
  * - `status_label`, `latest_event_description`, `latest_event_location`
- * - `tracking_number`, `tracking_carrier`, `estimated_delivery_date`
+ * - `tracking_number`, `tracking_carrier`, `tracking_url`, `estimated_delivery_date`
+ * - `tracking_url` is the Reswell branded tracker when ShipEngine created one
  * - `is_delivered`, `status_code`
  *
  * **Klaviyo notes**
@@ -150,6 +151,11 @@ export const KLAVIYO_ORDER_SHIPPING_UPDATE_EMAIL_HTML = `<table role="presentati
 </tr>
 
 <tr>
+<td align="center" style="padding:0 ${KLAVIYO_EMAIL_HORIZONTAL_PADDING} 8px ${KLAVIYO_EMAIL_HORIZONTAL_PADDING};">
+  <a href="{{ event|lookup:'tracking_url'|default:'${siteOrigin}/dashboard/purchases' }}" style="${pillButtonStyle}">Track package</a>
+</td>
+</tr>
+<tr>
 <td align="center" style="padding:0 ${KLAVIYO_EMAIL_HORIZONTAL_PADDING} 12px ${KLAVIYO_EMAIL_HORIZONTAL_PADDING};">
   <a href="{{ event|lookup:'order_url' }}" style="${pillButtonStyle}">View order</a>
 </td>
@@ -271,6 +277,11 @@ export const KLAVIYO_ORDER_DELIVERED_EMAIL_HTML = `<table role="presentation" ce
 </td>
 </tr>
 
+<tr>
+<td align="center" style="padding:0 ${KLAVIYO_EMAIL_HORIZONTAL_PADDING} 8px ${KLAVIYO_EMAIL_HORIZONTAL_PADDING};">
+  <a href="{{ event|lookup:'tracking_url'|default:'${siteOrigin}/dashboard/purchases' }}" style="${pillButtonStyle}">Track package</a>
+</td>
+</tr>
 <tr>
 <td align="center" style="padding:0 ${KLAVIYO_EMAIL_HORIZONTAL_PADDING} 12px ${KLAVIYO_EMAIL_HORIZONTAL_PADDING};">
   <a href="{{ event|lookup:'order_url' }}" style="${pillButtonStyle}">View order</a>

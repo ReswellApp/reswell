@@ -70,6 +70,7 @@ import {
   type ListingPhotoSlot,
 } from "@/lib/sell-flow/listing-photo-slot"
 import { listingPhotoPreviewFromPrepared } from "@/lib/sell-flow/simple-listing-photo-rotate"
+import { listingPhotoOrientationPrepareOptions } from "@/lib/sell-flow/listing-photo-orientation"
 import { stageListingPhotoInstantPreview } from "@/lib/sell-flow/reveal-listing-photo-preview"
 import type { OwnedListingForEditRow } from "@/lib/db/listingEdit"
 import { assertListingOriginalSize } from "@/lib/listing-image-pipeline"
@@ -140,6 +141,8 @@ type PhotoSlot = {
   progress: number
   errorMessage?: string
   userRotate180?: boolean
+  userQuarterTurns?: 0 | 1 | 2 | 3
+  sourceIsDerivative?: boolean
   localPreviewReady?: boolean
 }
 
@@ -544,15 +547,14 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
       if (!slot.file) return
       let failureContext: "add" | "upload" = "add"
       try {
+        const orientation = listingPhotoOrientationPrepareOptions(slot)
         const showedInstant = await stageListingPhotoInstantPreview(
           slot.file,
           slot.previewUrl,
-          { rotate180: Boolean(slot.userRotate180) },
+          orientation,
           (previewUrl) => updateSlot(slot.clientId, { previewUrl, localPreviewReady: true }),
         )
-        const prepared = await prepareDecodableListingPhoto(slot.file, {
-          rotate180: Boolean(slot.userRotate180),
-        })
+        const prepared = await prepareDecodableListingPhoto(slot.file, orientation)
         const nextPreviewUrl = showedInstant
           ? null
           : listingPhotoPreviewFromPrepared(slot.previewUrl, prepared.thumb)
@@ -1138,7 +1140,7 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
                           key={photo.clientId}
                           photo={photo}
                           index={index}
-                          onRotate180={rotatePhoto180}
+                          onRotateQuarterTurns={rotatePhoto180}
                           onMakePrimary={makePrimary}
                           onRemove={removePhoto}
                         />

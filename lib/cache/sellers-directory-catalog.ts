@@ -6,6 +6,7 @@ import type {
 import { listSellersDirectoryDemotedProfileIdsOrdered } from "@/lib/db/sellers-directory-demotions"
 import {
   buildSellerDirectoryMosaicSlots,
+  SELLER_DIRECTORY_MOSAIC_COVER_POOL,
   type SellerDirectoryMosaicSlot,
 } from "@/lib/sellers/directory-mosaic-images"
 import { listingImagesFromPrimaryFields } from "@/lib/listing-image-display"
@@ -28,7 +29,8 @@ export { filterSellersDirectoryCatalog }
 export const SELLERS_DIRECTORY_CACHE_TAG = "sellers-directory"
 export const SELLERS_DIRECTORY_REVALIDATE_SECONDS = 60 * 60 * 24 * 7
 
-const THUMB_PER_SELLER = 4
+/** Keep pace with the mosaic cover pool so 404s can promote the next listing. */
+const THUMB_PER_SELLER = SELLER_DIRECTORY_MOSAIC_COVER_POOL
 const LISTINGS_FETCH_CAP = 4000
 
 const profilePublicFields =
@@ -208,7 +210,7 @@ async function loadSellersDirectoryCatalogUncached(): Promise<SellersDirectoryCa
 
 export const getCachedSellersDirectoryCatalog = unstable_cache(
   loadSellersDirectoryCatalogUncached,
-  ["sellers-directory-catalog-v8"],
+  ["sellers-directory-catalog-v9"],
   {
     revalidate: SELLERS_DIRECTORY_REVALIDATE_SECONDS,
     tags: [SELLERS_DIRECTORY_CACHE_TAG],

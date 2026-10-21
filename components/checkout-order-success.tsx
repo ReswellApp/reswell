@@ -10,7 +10,7 @@ import { ArrowRight, Check, ExternalLink, Package, Truck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { formatPeerItemCountPhrase } from "@/lib/peer-listing-item-nouns"
 import { formatCarrierDisplayName } from "@/lib/shipping/resolve-carrier-code"
-import { carrierTrackingUrl } from "@/lib/utils/carrier-tracking-url"
+import { preferredTrackingUrl } from "@/lib/utils/carrier-tracking-url"
 
 export type CheckoutOrderSuccessPayload = {
   orderId: string
@@ -55,6 +55,7 @@ export type CheckoutOrderSuccessPayload = {
    */
   trackingNumber: string | null
   trackingCarrier: string | null
+  brandedTrackingUrl?: string | null
 }
 
 function money(n: number) {
@@ -112,9 +113,11 @@ export function CheckoutOrderSuccess({ data }: { data: CheckoutOrderSuccessPaylo
   const fulfill = data.fulfillmentMethod
   const trackingNumber = data.trackingNumber?.trim() || null
   const trackingCarrier = data.trackingCarrier?.trim() || null
-  const trackUrl = trackingNumber
-    ? carrierTrackingUrl(trackingNumber, trackingCarrier)
-    : null
+  const trackUrl = preferredTrackingUrl({
+    brandedUrl: data.brandedTrackingUrl,
+    trackingNumber,
+    trackingCarrier,
+  })
   const carrierLabel = trackingNumber
     ? formatCarrierDisplayName(trackingCarrier, null)
     : null

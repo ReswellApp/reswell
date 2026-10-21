@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { SellerDirectoryMosaicImage } from "@/components/sellers/seller-directory-mosaic-image"
+import { SellerDirectoryStorefrontMosaic } from "@/components/sellers/seller-directory-storefront-mosaic"
 import { VerifiedBadge } from "@/components/verified-badge"
 import {
   sellerDirectoryMosaicHasRenderableImage,
@@ -8,12 +8,6 @@ import {
 } from "@/lib/sellers/directory-mosaic-images"
 import type { SellerDirectorySignature } from "@/lib/sellers/directory-signature"
 import { cn } from "@/lib/utils"
-
-const STOREFRONT_SIZES = {
-  full: "(max-width: 639px) 50vw, (max-width: 1023px) 50vw, (max-width: 1279px) 33vw, 25vw",
-  hero: "(max-width: 639px) 32vw, (max-width: 1023px) 32vw, (max-width: 1279px) 22vw, 16vw",
-  stack: "(max-width: 639px) 20vw, (max-width: 1023px) 20vw, (max-width: 1279px) 14vw, 10vw",
-} as const
 
 type SellerDirectoryStorefrontWindowProps = {
   href: string
@@ -28,69 +22,26 @@ type SellerDirectoryStorefrontWindowProps = {
   imagePriority?: boolean
 }
 
-function MosaicCell({
-  slot,
-  sizes,
-  imagePriority,
-  className,
+function MonogramPanel({
+  monogram,
+  signature,
 }: {
-  slot: SellerDirectoryMosaicSlot
-  sizes: string
-  imagePriority?: boolean
-  className?: string
+  monogram: string
+  signature: SellerDirectorySignature
 }) {
   return (
-    <div className={cn("relative min-h-0 min-w-0", className)}>
-      <SellerDirectoryMosaicImage
-        slot={slot}
-        className="h-full w-full"
-        sizes={sizes}
-        priority={imagePriority}
-      />
-    </div>
-  )
-}
-
-function StorefrontMosaic({
-  slots,
-  imagePriority,
-}: {
-  slots: SellerDirectoryMosaicSlot[]
-  imagePriority?: boolean
-}) {
-  if (slots.length === 1) {
-    // Listing photos and tile banners are absolutely positioned, so this cell
-    // has no in-flow height. Multi-photo grids stretch via `h-full`; a lone
-    // photo has to do the same or the card background shows through as white.
-    return (
-      <MosaicCell
-        slot={slots[0]!}
-        sizes={STOREFRONT_SIZES.full}
-        imagePriority={imagePriority}
-        className="h-full"
-      />
-    )
-  }
-
-  if (slots.length === 2) {
-    return (
-      <div className="grid h-full grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)] gap-[3px]">
-        <MosaicCell slot={slots[0]!} sizes={STOREFRONT_SIZES.hero} imagePriority={imagePriority} />
-        <MosaicCell slot={slots[1]!} sizes={STOREFRONT_SIZES.stack} />
-      </div>
-    )
-  }
-
-  return (
-    <div className="grid h-full grid-cols-[minmax(0,1.25fr)_minmax(0,0.75fr)] grid-rows-2 gap-[3px]">
-      <MosaicCell
-        slot={slots[0]!}
-        sizes={STOREFRONT_SIZES.hero}
-        imagePriority={imagePriority}
-        className="row-span-2"
-      />
-      <MosaicCell slot={slots[1]!} sizes={STOREFRONT_SIZES.stack} />
-      <MosaicCell slot={slots[2]!} sizes={STOREFRONT_SIZES.stack} />
+    <div
+      className={cn("flex h-full w-full items-center justify-center", signature.panelClass)}
+      aria-hidden
+    >
+      <span
+        className={cn(
+          "font-headline text-5xl font-bold tracking-tight sm:text-6xl",
+          signature.monogramClass,
+        )}
+      >
+        {monogram}
+      </span>
     </div>
   )
 }
@@ -108,6 +59,7 @@ export function SellerDirectoryStorefrontWindow({
   imagePriority = false,
 }: SellerDirectoryStorefrontWindowProps) {
   const hasImages = sellerDirectoryMosaicHasRenderableImage(slots)
+  const monogramPanel = <MonogramPanel monogram={monogram} signature={signature} />
 
   return (
     <Link
@@ -115,21 +67,13 @@ export function SellerDirectoryStorefrontWindow({
       className="relative block aspect-[4/3] w-full overflow-hidden rounded-t-xl outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
     >
       {hasImages ? (
-        <StorefrontMosaic slots={slots} imagePriority={imagePriority} />
+        <SellerDirectoryStorefrontMosaic
+          slots={slots}
+          imagePriority={imagePriority}
+          emptyFallback={monogramPanel}
+        />
       ) : (
-        <div
-          className={cn("flex h-full w-full items-center justify-center", signature.panelClass)}
-          aria-hidden
-        >
-          <span
-            className={cn(
-              "font-headline text-5xl font-bold tracking-tight sm:text-6xl",
-              signature.monogramClass,
-            )}
-          >
-            {monogram}
-          </span>
-        </div>
+        monogramPanel
       )}
 
       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/40 to-transparent px-2.5 pb-2 pt-10">

@@ -72,10 +72,26 @@ export function listingTileImageSrcFromRow(img: ListingImageForCard): string {
 
 /** Filmstrip thumb (~400px) beside the listing hero. Not the hero stand-in. */
 export function listingFilmImageSrcFromRow(img: ListingImageForCard): string {
+  return listingFilmImageSrcCandidatesFromRow(img)[0] ?? ""
+}
+
+/**
+ * Film first, then the same card/full fallbacks marketplace tiles use when a
+ * stored `*-film2.*` object is missing or the media proxy 404s.
+ */
+export function listingFilmImageSrcCandidatesFromRow(img: ListingImageForCard): string[] {
+  const out: string[] = []
+  const seen = new Set<string>()
+
   const fullRaw = img.url?.trim() || ""
   const full = listingFullImageUrlFromRef(fullRaw) ?? fullRaw
-  if (!full) return listingTileImageSrcFromRow(img)
-  return listingDerivativeProxySrc(full, "film")
+  if (full) {
+    pushUniqueCandidate(out, seen, listingDerivativeProxySrc(full, "film"))
+  }
+  for (const candidate of listingTileImageSrcCandidatesFromRow(img)) {
+    pushUniqueCandidate(out, seen, candidate)
+  }
+  return out
 }
 
 /**

@@ -8,6 +8,8 @@ import {
   mcpWwwAuthenticateHeader,
 } from "@/lib/services/mcpConfig"
 import { listMcpToolsForPrincipal, MCP_INSTRUCTIONS } from "@/lib/services/mcpToolCatalog"
+import { listMcpUiResources, readMcpUiResource } from "@/lib/mcp-widgets/resources"
+import { MCP_UI_EXTENSION_ID, MCP_UI_MIME } from "@/lib/mcp-widgets/constants"
 import type {
   McpAccessPrincipal,
   McpJsonRpcFailure,
@@ -64,11 +66,17 @@ async function handleMcpMethod(
         protocolVersion: requested === MCP_PROTOCOL_VERSION ? requested : MCP_PROTOCOL_VERSION,
         capabilities: {
           tools: { listChanged: false },
+          resources: { listChanged: false },
+          extensions: {
+            [MCP_UI_EXTENSION_ID]: {
+              mimeTypes: [MCP_UI_MIME],
+            },
+          },
         },
         serverInfo: {
           name: "reswell-mcp",
           title: "Reswell",
-          version: "1.0.0",
+          version: "1.1.0",
         },
         instructions: MCP_INSTRUCTIONS,
       })
@@ -98,6 +106,41 @@ async function handleMcpMethod(
       const { callMcpToolService } = await import("@/lib/services/mcpTools")
       const result = await callMcpToolService(principal, params.name.trim(), params.arguments ?? {})
       return success(id, result)
+    }
+    case "resources/list": {
+      if (isNotification) return null
+      return success(id, {
+        resources: listMcpUiResources(),
+      })
+    }
+    case "resources/read": {
+      if (isNotification) return null
+      const params =
+        request.params && typeof request.params === "object"
+          ? (request.params as { uri?: string })
+          : {}
+      const uri = params.uri?.trim()
+      if (!uri) {
+        return failure(id, -32602, "resources/read requires params.uri")
+      }
+      const resource = readMcpUiResource(uri)
+      if (!resource) {
+        return failure(id, -32002, `Resource not found: ${uri}`)
+      }
+      return success(id, {
+        contents: [
+          {
+            uri: resource.uri,
+            mimeType: resource.mimeType,
+            text: resource.text,
+            ...(resource._meta ? { _meta: resource._meta } : {}),
+          },
+        ],
+      })
+    }
+    case "resources/templates/list": {
+      if (isNotification) return null
+      return success(id, { resourceTemplates: [] })
     }
     default: {
       if (isNotification) return null

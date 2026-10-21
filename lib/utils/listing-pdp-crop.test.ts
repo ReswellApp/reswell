@@ -15,6 +15,7 @@ import {
   listingPdpCropNeedsPreciseLayout,
   listingPdpCropToLayout,
   listingPdpCropsEqual,
+  rotateListingPdpCropClockwise,
   listingPdpLayoutToCrop,
   listingPdpRenderScale,
   listingPdpZoomFromRenderScale,
@@ -189,6 +190,26 @@ describe("listingPdpCropCssFit", () => {
     assert.equal(listingPdpCropNeedsPreciseLayout({ zoom: 0.4, x: 50, y: 50 }), true)
     assert.equal(listingPdpCropsEqual(LISTING_PDP_CROP_FIT, null), false)
     assert.equal(listingPdpCropsEqual(LISTING_PDP_CROP_COVER, null), true)
+  })
+})
+
+describe("rotateListingPdpCropClockwise", () => {
+  it("leaves a centered fill alone", () => {
+    assert.equal(rotateListingPdpCropClockwise(null, 1), null)
+    assert.equal(rotateListingPdpCropClockwise(LISTING_PDP_CROP_COVER, 1), null)
+  })
+
+  it("walks a focal point clockwise around the photo", () => {
+    assert.deepEqual(rotateListingPdpCropClockwise({ zoom: 1.4, x: 50, y: 0 }, 1), {
+      zoom: 1.4,
+      x: 100,
+      y: 50,
+    })
+    assert.deepEqual(rotateListingPdpCropClockwise({ zoom: 1.4, x: 20, y: 80 }, 2), {
+      zoom: 1.4,
+      x: 80,
+      y: 20,
+    })
   })
 })
 

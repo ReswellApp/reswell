@@ -21,6 +21,7 @@ import { effectiveMinimumOfferAmount } from "@/lib/utils/offers-minimum-amount"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { evaluateUserMessageSend } from "@/lib/services/accountRestrictions"
 import { assertBuyerMayPurchaseListingExclusiveWindow } from "@/lib/services/listingBuyerExclusiveWindow"
+import { publishOfferNotification } from "@/lib/services/notifications/publish"
 
 function roundMoney(n: number): number {
   return Math.round(n * 100) / 100
@@ -225,17 +226,15 @@ export async function createListingOffer(
     return { ok: true, offerId, conversationId: threadResult.ok ? threadResult.conversationId : null }
   }
 
-  const { error: notifErr } = await service.from("notifications").insert({
-    user_id: listing.user_id,
+  await publishOfferNotification(service, {
+    recipientId: listing.user_id,
+    actorId: buyerId,
+    listingId,
+    offerId,
     type: "offer_received",
-    listing_id: listingId,
-    actor_id: buyerId,
     message: `New offer of $${amount.toFixed(2)} on ${title}`,
+    amountUsd: amount,
   })
-
-  if (notifErr) {
-    console.error("[createListingOffer] notification:", notifErr)
-  }
 
   try {
     await trackKlaviyoOfferMade({

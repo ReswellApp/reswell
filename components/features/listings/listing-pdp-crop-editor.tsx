@@ -10,8 +10,10 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react"
+import { useRouter } from "next/navigation"
 import { Loader2, Minus, Plus } from "lucide-react"
 import { toast } from "sonner"
+import { ListingPhotoRotateControls } from "@/components/features/listings/listing-photo-orientation-controls"
 import { useListingPdpCropGestures } from "@/components/features/listings/hooks/use-listing-pdp-crop-gestures"
 import { Slider } from "@/components/ui/slider"
 import { DEFAULT_LISTING_HERO_ASPECT, listingHeroAspectCss } from "@/lib/listing-hero-frame"
@@ -29,6 +31,7 @@ import {
   type ListingPdpCrop,
   type ListingPdpCropLayout,
 } from "@/lib/utils/listing-pdp-crop"
+import type { ListingPhotoQuarterTurns } from "@/lib/sell-flow/listing-photo-orientation"
 
 export type ListingPdpCropEditorImage = {
   id: string
@@ -44,6 +47,14 @@ type ListingPdpCropEditorProps = {
   images: ListingPdpCropEditorImage[]
   initialIndex?: number
   onSaved?: (crops: Record<string, ListingPdpCrop | null>) => void
+  onImagesRotated?: (
+    images: Array<{
+      id: string
+      url: string
+      thumbnailUrl: string
+      crop: ListingPdpCrop | null
+    }>,
+  ) => void
 }
 
 function cropOrDefault(crop: ListingPdpCrop | null): ListingPdpCrop {
@@ -69,7 +80,9 @@ export function ListingPdpCropEditor({
   images,
   initialIndex = 0,
   onSaved,
+  onImagesRotated,
 }: ListingPdpCropEditorProps) {
+  const router = useRouter()
   const frameRef = useRef<HTMLDivElement>(null)
   const photoImgRef = useRef<HTMLImageElement | null>(null)
   const [index, setIndex] = useState(initialIndex)
@@ -79,9 +92,11 @@ export function ListingPdpCropEditor({
   const [layout, setLayout] = useState<ListingPdpCropLayout | null>(null)
   const [interacting, setInteracting] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [quarterTurns, setQuarterTurns] = useState<Record<string, ListingPhotoQuarterTurns>>({})
 
   const photo = images[index] ?? images[0] ?? null
   const currentCrop = photo ? cropOrDefault(crops[photo.id] ?? photo.crop) : LISTING_PDP_CROP_COVER
+  const currentTurns: ListingPhotoQuarterTurns = photo ? (quarterTurns[photo.id] ?? 0) : 0
   const attachPhotoImage = useCallback((img: HTMLImageElement | null) => {
     photoImgRef.current = img
     // iOS Chrome / Google app often skip onLoad for cached images.
@@ -100,6 +115,7 @@ export function ListingPdpCropEditor({
     for (const image of images) next[image.id] = cropOrDefault(image.crop)
     setCrops(next)
     const nextIndex = Math.min(Math.max(0, initialIndex), Math.max(0, images.length - 1))
+    setQuarterTurns({})
     setIndex(nextIndex)
     const nextPhoto = images[nextIndex] ?? images[0] ?? null
     const img = photoImgRef.current
@@ -169,7 +185,7 @@ export function ListingPdpCropEditor({
   }
 
   const gestures = useListingPdpCropGestures({
-    enabled: open && Boolean(layout && natural && frame),
+    enabled: open && currentTurns === 0 && Boolean(layout && natural && frame),
     frameRef,
     layout,
     frame,
@@ -180,8 +196,15 @@ export function ListingPdpCropEditor({
 
   async function handleSave() {
     if (!photo) return
+    const rotations = images.flatMap((image) => {
+      const turns = quarterTurns[image.id] ?? 0
+      if (turns === 0) return []
+      return [{ id: image.id, quarterTurns: turns }]
+    })
+    const rotatedIds = new Set(rotations.map((rotation) => rotation.id))
     const changed = images
       .map((image) => {
+        if (rotatedIds.has(image.id)) return null
         const next = crops[image.id] ?? cropOrDefault(image.crop)
         const prev = initialCrops[image.id] ?? null
         if (listingPdpCropsEqual(next, prev)) return null
@@ -189,34 +212,80 @@ export function ListingPdpCropEditor({
       })
       .filter((row): row is { id: string } & ListingPdpCrop => row != null)
 
-    if (changed.length === 0) {
+    if (rotations.length === 0 && changed.length === 0) {
       onOpenChange(false)
       return
     }
 
     setSaving(true)
     try {
-      const res = await fetch(`/api/listings/${listingId}/pdp-crop`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ images: changed }),
-      })
-      const json = (await res.json()) as {
-        data?: { images?: Array<{ id: string } & ListingPdpCrop> }
-        error?: string
+      if (rotations.length > 0) {
+        const rotated: Array<{
+          id: string
+          url: string
+          thumbnailUrl: string
+          crop: ListingPdpCrop | null
+        }> = []
+        for (const rotation of rotations) {
+          const res = await fetch(
+            `/api/listings/${listingId}/images/${rotation.id}/rotate`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+              body: JSON.stringify({ quarterTurns: rotation.quarterTurns }),
+            },
+          )
+          const json = (await res.json()) as {
+            data?: {
+              image?: {
+                id: string
+                url: string
+                thumbnailUrl: string
+                crop: ListingPdpCrop | null
+              }
+            }
+            error?: string
+          }
+          if (!res.ok || !json.data?.image) {
+            throw new Error(json.error || "Could not rotate photo")
+          }
+          rotated.push(json.data.image)
+        }
+        onImagesRotated?.(rotated)
+        router.refresh()
       }
-      if (!res.ok) throw new Error(json.error || "Could not save crop")
 
-      const saved: Record<string, ListingPdpCrop | null> = {}
-      for (const image of json.data?.images ?? changed) {
-        saved[image.id] = isListingPdpCropDefault(image) ? null : image
+      if (changed.length > 0) {
+        const res = await fetch(`/api/listings/${listingId}/pdp-crop`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ images: changed }),
+        })
+        const json = (await res.json()) as {
+          data?: { images?: Array<{ id: string } & ListingPdpCrop> }
+          error?: string
+        }
+        if (!res.ok) throw new Error(json.error || "Could not save crop")
+
+        const saved: Record<string, ListingPdpCrop | null> = {}
+        for (const image of json.data?.images ?? changed) {
+          saved[image.id] = isListingPdpCropDefault(image) ? null : image
+        }
+        onSaved?.(saved)
       }
-      onSaved?.(saved)
+
       onOpenChange(false)
-      toast.success("Photo crop saved")
+      toast.success(
+        rotations.length > 0 && changed.length > 0
+          ? "Photos updated"
+          : rotations.length > 0
+            ? "Photo turned"
+            : "Photo crop saved",
+      )
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Could not save crop")
+      toast.error(err instanceof Error ? err.message : "Could not save photo")
     } finally {
       setSaving(false)
     }
@@ -244,13 +313,13 @@ export function ListingPdpCropEditor({
           Cancel
         </button>
         <h2 id="listing-pdp-crop-title" className="text-[17px] font-semibold tracking-tight">
-          Adjust Photo
+          Edit photo
         </h2>
         <button
           type="button"
           className="min-h-11 min-w-14 text-right text-[17px] font-semibold text-[#0a84ff] disabled:opacity-50"
           onClick={() => void handleSave()}
-          disabled={saving || !natural}
+          disabled={saving || (currentTurns === 0 && !natural)}
         >
           {saving ? "Saving…" : "Done"}
         </button>
@@ -261,7 +330,11 @@ export function ListingPdpCropEditor({
           ref={frameRef}
           className={cn(
             "relative w-full max-w-[22rem] overflow-hidden rounded-[28px] bg-[#111] shadow-[0_0_0_1px_rgba(255,255,255,0.12)] touch-none select-none sm:max-w-[26rem]",
-            natural ? "cursor-grab active:cursor-grabbing" : "cursor-wait",
+            currentTurns !== 0
+              ? "cursor-default"
+              : natural
+                ? "cursor-grab active:cursor-grabbing"
+                : "cursor-wait",
           )}
           style={{
             aspectRatio: listingHeroAspectCss(DEFAULT_LISTING_HERO_ASPECT),
@@ -272,7 +345,16 @@ export function ListingPdpCropEditor({
           onPointerUp={gestures.onPointerUp}
           onPointerCancel={gestures.onPointerUp}
         >
-          {src ? (
+          {currentTurns !== 0 && src ? (
+            <img
+              src={src}
+              alt=""
+              draggable={false}
+              className="absolute inset-0 h-full w-full object-contain"
+              style={{ transform: `rotate(${currentTurns * 90}deg)` }}
+            />
+          ) : null}
+          {src && currentTurns === 0 ? (
             <img
               key={photo?.id}
               src={src}
@@ -303,7 +385,7 @@ export function ListingPdpCropEditor({
               ))}
             </div>
           ) : null}
-          {!natural ? (
+          {currentTurns === 0 && !natural ? (
             <div className="absolute inset-0 flex items-center justify-center">
               <Loader2 className="size-6 animate-spin text-white/50" aria-hidden />
             </div>
@@ -312,6 +394,16 @@ export function ListingPdpCropEditor({
       </div>
 
       <div className="mx-auto w-full max-w-md space-y-4 px-6 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-1">
+        <ListingPhotoRotateControls
+          quarterTurns={currentTurns}
+          disabled={saving || !photo}
+          onQuarterTurnsChange={(turns) => {
+            if (!photo) return
+            setQuarterTurns((prev) => ({ ...prev, [photo.id]: turns }))
+          }}
+        />
+        {currentTurns === 0 ? (
+        <>
         <div className="flex justify-center gap-2">
           <button
             type="button"
@@ -387,6 +479,12 @@ export function ListingPdpCropEditor({
           Pinch to zoom · drag to move
           <span className="sr-only"> {zoomPct} percent zoom</span>
         </p>
+        </>
+        ) : (
+          <p className="text-center text-[13px] text-white/55">
+            Save the turn, then drag to reframe.
+          </p>
+        )}
 
         {images.length > 1 ? (
           <div className="flex justify-center gap-2 overflow-x-auto pb-1">
@@ -409,6 +507,7 @@ export function ListingPdpCropEditor({
                   src={image.previewSrc || image.src}
                   alt=""
                   className={listingPhotoFillClassName}
+                  style={{ transform: `rotate(${(quarterTurns[image.id] ?? 0) * 90}deg)` }}
                 />
               </button>
             ))}
