@@ -84,7 +84,7 @@ const SECTION_META_BY_PREFIX: { prefix: string; meta: DashboardSectionMeta }[] =
     prefix: "/dashboard/purchases",
     meta: {
       sectionName: "Purchases",
-      description: "Used gear and peer-to-peer buys.",
+      description: "Track and manage your orders.",
     },
   },
   {

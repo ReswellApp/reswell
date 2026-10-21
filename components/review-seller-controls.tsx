@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import { useState } from "react"
-import { Star } from "lucide-react"
+import { ChevronRight, Info, Star } from "lucide-react"
 import { ratingStarEmptyClassName, ratingStarFilledClassName } from "@/lib/rating-star-styles"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -43,6 +43,8 @@ type ReviewSellerControlsProps = {
   existingReview: ExistingSellerReview | null
   /** When true, use compact layout (e.g. purchases list). */
   compact?: boolean
+  /** Row matches the purchase details list style. */
+  appearance?: "button" | "row"
   /** Called after a new review is saved (e.g. refetch client-loaded purchase lists). */
   onSuccess?: () => void
 }
@@ -53,6 +55,7 @@ export function ReviewSellerControls({
   canReview,
   existingReview,
   compact,
+  appearance = "button",
   onSuccess,
 }: ReviewSellerControlsProps) {
   const router = useRouter()
@@ -96,16 +99,31 @@ export function ReviewSellerControls({
 
   return (
     <>
-      <Button
-        type="button"
-        variant={compact ? "outline" : "default"}
-        size={compact ? "sm" : "default"}
-        className={cn("gap-2", compact && "w-full sm:w-auto")}
-        onClick={() => setOpen(true)}
-      >
-        <Star className={cn("h-4 w-4", ratingStarFilledClassName)} strokeWidth={0} />
-        Review seller
-      </Button>
+      {appearance === "row" ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="flex w-full items-center gap-3 rounded-xl bg-slate-50 px-4 py-3 text-left dark:bg-slate-900/40"
+        >
+          <Star className={cn("h-4 w-4 shrink-0", ratingStarFilledClassName)} strokeWidth={0} aria-hidden />
+          <span className="min-w-0 flex-1 text-sm font-medium text-foreground">
+            Leave a review for the seller
+          </span>
+          <Info className="h-4 w-4 shrink-0 text-blue-500" aria-hidden />
+          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+        </button>
+      ) : (
+        <Button
+          type="button"
+          variant={compact ? "outline" : "default"}
+          size={compact ? "sm" : "default"}
+          className={cn("gap-2", compact && "w-full sm:w-auto")}
+          onClick={() => setOpen(true)}
+        >
+          <Star className={cn("h-4 w-4", ratingStarFilledClassName)} strokeWidth={0} />
+          Review seller
+        </Button>
+      )}
 
       <SellerReviewDialog
         orderId={orderId}
