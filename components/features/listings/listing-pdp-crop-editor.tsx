@@ -218,14 +218,19 @@ export function ListingPdpCropEditor({
     }
 
     setSaving(true)
+    const rotated: Array<{
+      id: string
+      url: string
+      thumbnailUrl: string
+      crop: ListingPdpCrop | null
+    }> = []
+    const commitRotations = () => {
+      if (rotated.length === 0) return
+      onImagesRotated?.(rotated)
+      router.refresh()
+    }
     try {
       if (rotations.length > 0) {
-        const rotated: Array<{
-          id: string
-          url: string
-          thumbnailUrl: string
-          crop: ListingPdpCrop | null
-        }> = []
         for (const rotation of rotations) {
           const res = await fetch(
             `/api/listings/${listingId}/images/${rotation.id}/rotate`,
@@ -251,9 +256,11 @@ export function ListingPdpCropEditor({
             throw new Error(json.error || "Could not rotate photo")
           }
           rotated.push(json.data.image)
+          // Server already rewrote this file. Drop the pending turn so a
+          // later failure / retry cannot apply the same rotation again.
+          setQuarterTurns((prev) => ({ ...prev, [rotation.id]: 0 }))
         }
-        onImagesRotated?.(rotated)
-        router.refresh()
+        commitRotations()
       }
 
       if (changed.length > 0) {
@@ -285,6 +292,7 @@ export function ListingPdpCropEditor({
             : "Photo crop saved",
       )
     } catch (err: unknown) {
+      commitRotations()
       toast.error(err instanceof Error ? err.message : "Could not save photo")
     } finally {
       setSaving(false)
