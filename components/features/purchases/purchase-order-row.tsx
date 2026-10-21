@@ -15,7 +15,13 @@ const STATUS_PILL_CLASS: Record<PurchaseStatusTone, string> = {
   neutral: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
 }
 
-export function PurchaseOrderRow({ item }: { item: PurchaseListItem }) {
+export function PurchaseOrderRow({
+  item,
+  imagePriority = false,
+}: {
+  item: PurchaseListItem
+  imagePriority?: boolean
+}) {
   const detailsLabel = `More details for ${item.title}, order ${item.orderNumber}`
 
   return (
@@ -27,6 +33,7 @@ export function PurchaseOrderRow({ item }: { item: PurchaseListItem }) {
               src={item.imageUrl}
               alt=""
               fill
+              priority={imagePriority}
               className={listingPhotoFillClassName}
               sizes="80px"
               unoptimized={item.imageUnoptimized}
@@ -50,13 +57,13 @@ export function PurchaseOrderRow({ item }: { item: PurchaseListItem }) {
             {item.detailLine ? (
               <p className="text-sm text-muted-foreground">{item.detailLine}</p>
             ) : null}
-            <p className="mt-1.5 text-[15px] leading-snug">
-              <span
-                className={cn(
-                  "font-bold text-blue-600 dark:text-blue-400",
-                  item.amountStruck && "line-through",
-                )}
-              >
+            <p
+              className={cn(
+                "mt-1.5 text-[15px] leading-snug",
+                item.amountStruck && "line-through decoration-slate-400",
+              )}
+            >
+              <span className="font-bold text-blue-600 dark:text-blue-400">
                 {formatUsd(item.itemAmount)}
               </span>
               {item.showShipping ? (

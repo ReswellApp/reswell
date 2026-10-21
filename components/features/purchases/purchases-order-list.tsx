@@ -62,8 +62,8 @@ export function PurchasesOrderList({ items }: PurchasesOrderListProps) {
         </p>
       ) : (
         <ul id="purchases-list" className="pt-2">
-          {visible.map((item) => (
-            <PurchaseOrderRow key={item.id} item={item} />
+          {visible.map((item, index) => (
+            <PurchaseOrderRow key={item.id} item={item} imagePriority={index === 0} />
           ))}
         </ul>
       )}
