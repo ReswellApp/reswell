@@ -4,7 +4,8 @@ import Image from "next/image"
 import Link from "next/link"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
-import { AlertCircle, Check, ImageOff, Loader2 } from "lucide-react"
+import { AlertCircle, ImageOff, Loader2 } from "lucide-react"
+import { toast } from "sonner"
 import {
   Dialog,
   DialogContent,
@@ -54,7 +55,7 @@ function parseAmountInput(raw: string): number | null {
   return roundMoney(n)
 }
 
-type OfferStep = "offer" | "delivery" | "pay" | "success"
+type OfferStep = "offer" | "delivery" | "pay"
 
 type SubmitNotice =
   | {
@@ -146,8 +147,6 @@ export function MakeOfferDialog({
     shippingUsd: null,
     quoteError: null,
   })
-  const [successOfferId, setSuccessOfferId] = useState<string | null>(null)
-  const [reservedTotal, setReservedTotal] = useState<number | null>(null)
 
   const resetDialog = useCallback(() => {
     setStep("offer")
@@ -163,8 +162,6 @@ export function MakeOfferDialog({
       shippingUsd: null,
       quoteError: null,
     })
-    setSuccessOfferId(null)
-    setReservedTotal(null)
   }, [canPick, canShip])
 
   useEffect(() => {
@@ -284,10 +281,15 @@ export function MakeOfferDialog({
           return
         }
         const parsed = parseOfferSubmitResponse(json)
-        setReservedTotal(totalPreview)
-        setSuccessOfferId(parsed.offerId)
         if (parsed.offerId) onOfferCreated?.(parsed.offerId)
-        setStep("success")
+        const reserved =
+          totalPreview != null ? ` $${totalPreview.toFixed(2)} is reserved` : ""
+        toast.success(
+          reserved
+            ? `Offer sent.${reserved} until they accept, decline, or it expires.`
+            : "Offer sent.",
+        )
+        onOpenChange(false)
         router.refresh()
       } finally {
         setSubmitting(false)
@@ -301,6 +303,7 @@ export function MakeOfferDialog({
       message,
       offerAmount,
       onOfferCreated,
+      onOpenChange,
       router,
       totalPreview,
     ],
@@ -312,8 +315,6 @@ export function MakeOfferDialog({
     submitNotice?.kind === "duplicate_offer"
       ? dashboardOffersPath({ role: "buyer", offerId: submitNotice.offerId })
       : dashboardOffersPath({ role: "buyer" })
-
-  const successHref = dashboardOffersPath({ role: "buyer", offerId: successOfferId })
 
   const stepLabel =
     step === "offer"
@@ -333,39 +334,13 @@ export function MakeOfferDialog({
         )}
       >
         <DialogHeader className="shrink-0 space-y-0 px-3 pb-2 pt-3 text-center sm:px-0 sm:pb-0 sm:pt-0">
-          <DialogTitle className="text-base font-semibold sm:text-xl">
-            {step === "success" ? "Offer sent" : "Make an offer"}
-          </DialogTitle>
+          <DialogTitle className="text-base font-semibold sm:text-xl">Make an offer</DialogTitle>
           {stepLabel ? (
             <p className="text-[11px] text-muted-foreground sm:text-xs">Step {stepLabel}</p>
           ) : null}
         </DialogHeader>
 
-        {step === "success" ? (
-          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-3 pb-3 sm:px-0 sm:pb-0">
-            <div className="flex flex-col items-center rounded-2xl border border-border/60 bg-muted/30 px-4 py-6 text-center">
-              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-                <Check className="h-5 w-5" aria-hidden />
-              </span>
-              <p className="mt-3 text-sm font-semibold">You’re all set</p>
-              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                We’ve reserved{" "}
-                {reservedTotal != null ? `$${reservedTotal.toFixed(2)}` : "your total"}. If they
-                accept, this becomes your order — nothing else to do. The reserve drops off if they
-                decline or the offer expires in 48 hours.
-              </p>
-            </div>
-            <DialogFooter className="gap-2 sm:flex-row">
-              <Button type="button" variant="outline" className="h-10 flex-1" onClick={() => onOpenChange(false)}>
-                Close
-              </Button>
-              <Button type="button" className="h-10 flex-1" asChild>
-                <Link href={successHref}>View offer</Link>
-              </Button>
-            </DialogFooter>
-          </div>
-        ) : (
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
             <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-3 pb-2 sm:space-y-4 sm:px-0 sm:pb-0">
               <div className="rounded-lg border border-border/60 bg-muted/40 p-2 sm:p-3">
                 <div className="flex items-start gap-2.5">
@@ -647,7 +622,6 @@ export function MakeOfferDialog({
               </div>
             )}
           </div>
-        )}
       </DialogContent>
     </Dialog>
   )

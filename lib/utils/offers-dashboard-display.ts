@@ -1,3 +1,4 @@
+import { offerIsBinding } from "@/lib/listing-offer-authorization"
 import type { DashboardListingEmbed, DashboardOfferRow } from "@/lib/types/offers-dashboard"
 
 export type OffersRoleTab = "seller" | "buyer"
@@ -108,6 +109,44 @@ export function offerAwaitsUser(
   if (offerIsSoldPresentation(offer) || isInactiveOffer(offer, nowMs)) return false
   if (role === "seller") return offer.status === "PENDING"
   return offer.status === "COUNTERED"
+}
+
+function plainStatusLabel(status: string): string {
+  switch (status) {
+    case "PENDING":
+      return "Pending"
+    case "ACCEPTED":
+      return "Accepted"
+    case "DECLINED":
+      return "Declined"
+    case "COUNTERED":
+      return "Countered"
+    case "EXPIRED":
+      return "Expired"
+    case "WITHDRAWN":
+      return "Withdrawn"
+    case "COMPLETED":
+      return "Completed"
+    default:
+      return status
+  }
+}
+
+/** Pill copy for the person looking at the offer. Actionable rows say Needs you. */
+export function offerStatusLabel(
+  offer: DashboardOfferRow,
+  role: "buyer" | "seller",
+  nowMs = Date.now(),
+): string {
+  if (offerIsSoldPresentation(offer)) return "Sold"
+  if (offerAwaitsUser(offer, role, nowMs)) return "Needs you"
+  if (role === "seller" && offer.seller_initiated && offer.status === "COUNTERED") return "Offer sent"
+  if (role === "seller" && offer.status === "COUNTERED") return "Waiting on buyer"
+  if (role === "buyer" && offer.status === "PENDING") return "Waiting on seller"
+  if (offer.status === "ACCEPTED" && !offerIsBinding(offer)) {
+    return role === "buyer" ? "Ready to pay" : "Waiting on payment"
+  }
+  return plainStatusLabel(offer.status)
 }
 
 /** Whether `userId` is the buyer or seller on this offer row. */

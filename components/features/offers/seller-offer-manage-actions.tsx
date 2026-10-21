@@ -32,7 +32,7 @@ export function SellerOfferManageActions({
   const [revoking, setRevoking] = useState(false)
   const [updateOpen, setUpdateOpen] = useState(false)
   const buttonClass = compact
-    ? "h-7 rounded-md px-2.5 text-[11px] font-medium"
+    ? "h-9 rounded-md px-3.5 text-[13px] font-semibold"
     : "h-10 rounded-xl text-[14px] font-semibold"
 
   return (

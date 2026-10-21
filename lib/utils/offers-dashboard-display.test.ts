@@ -4,6 +4,7 @@ import type { DashboardOfferRow } from "@/lib/types/offers-dashboard"
 import {
   dashboardOffersPath,
   offerAwaitsUser,
+  offerStatusLabel,
   offersPageLoginRedirect,
   parseOfferFocusId,
   parseOffersTab,
@@ -91,6 +92,39 @@ describe("offersPageLoginRedirect", () => {
     assert.equal(
       offersPageLoginRedirect("/dashboard/offers", { tab: "received", offer: "nope" }),
       `/auth/login?redirect=${encodeURIComponent("/dashboard/offers?tab=received")}`,
+    )
+  })
+})
+
+describe("offerStatusLabel", () => {
+  const now = Date.parse("2026-06-01T00:00:00.000Z")
+
+  it("names the next step instead of the stored status", () => {
+    assert.equal(offerStatusLabel(row(), "seller", now), "Needs you")
+    assert.equal(offerStatusLabel(row(), "buyer", now), "Waiting on seller")
+    assert.equal(
+      offerStatusLabel(row({ status: "COUNTERED", seller_initiated: true }), "seller", now),
+      "Offer sent",
+    )
+    assert.equal(
+      offerStatusLabel(row({ status: "COUNTERED", seller_initiated: true }), "buyer", now),
+      "Needs you",
+    )
+    assert.equal(
+      offerStatusLabel(row({ status: "COUNTERED", seller_initiated: false }), "seller", now),
+      "Waiting on buyer",
+    )
+    assert.equal(
+      offerStatusLabel(row({ status: "ACCEPTED", payment_intent_id: null }), "buyer", now),
+      "Ready to pay",
+    )
+    assert.equal(
+      offerStatusLabel(row({ status: "ACCEPTED", payment_intent_id: "pi_123" }), "buyer", now),
+      "Accepted",
+    )
+    assert.equal(
+      offerStatusLabel(row({ status: "ACCEPTED", payment_intent_id: null }), "seller", now),
+      "Waiting on payment",
     )
   })
 })

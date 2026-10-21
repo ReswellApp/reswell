@@ -14,7 +14,7 @@ export default async function MessagesPage({
   const params = await searchParams
 
   if (params.tab === "offers") {
-    redirect("/messages/offers")
+    redirect("/dashboard/offers")
   }
 
   if (params.tab === "activity") {

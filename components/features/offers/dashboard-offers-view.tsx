@@ -345,11 +345,8 @@ export function DashboardOffersView({
       </header>
 
       {showingFocus && focusedOffer ? (
-        <section className="mt-6" aria-label="Opened offer">
-          <h2 className="text-[13px] font-semibold tracking-tight text-listingHeart">
-            Opened from your link
-          </h2>
-          <div className="mt-2">{renderOffer(focusedOffer, true)}</div>
+        <section className="mt-6" aria-label="This offer">
+          {renderOffer(focusedOffer, true)}
         </section>
       ) : null}
 
