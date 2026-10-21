@@ -49,7 +49,7 @@ export function modelPageHeroOffer(input: {
   const { listingCount, lowestPriceUsd, lengthLabel, conditionLabel, usedRange } = input
 
   if (listingCount === 1 && lowestPriceUsd != null) {
-    // The price block sits directly under this header, so the range is not repeated here.
+    // The used range is the price panel under the boards for sale, so it is not repeated here.
     return { kind: "listing", supporting: singleLead(lengthLabel, conditionLabel) }
   }
 
