@@ -28,12 +28,12 @@ export function getShipEngineLabelImageId(): string | null {
   return id && id.length > 0 ? id : null
 }
 
-import {
-  RESWELL_UPS_CARRIER_ID_DEFAULT,
-  isReswellUpsCarrierId,
-} from "@/lib/shipengine/reswell-carriers"
+import { RESWELL_UPS_CARRIER_ID_DEFAULT } from "@/lib/shipengine/reswell-carriers"
 
-/** Reswell UPS carrier in ShipEngine; optional env override for non-default accounts. */
+/**
+ * Legacy personally connected UPS carrier. Postage recovery uses this to
+ * classify old UPS-invoice voids. Quotes and new labels ignore it.
+ */
 export function getReswellUpsCarrierId(): string {
   const id = process.env.SHIPENGINE_RESWELL_UPS_CARRIER_ID?.trim()
   return id && id.length > 0 ? id : RESWELL_UPS_CARRIER_ID_DEFAULT

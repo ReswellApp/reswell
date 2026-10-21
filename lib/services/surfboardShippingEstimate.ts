@@ -1,6 +1,7 @@
 import { shipEngineRequest } from "@/lib/shipengine/client"
 import { isShipEngineConfigured } from "@/lib/shipengine/config"
 import { formatShipEngineApiError } from "@/lib/shipengine/errors"
+import { filterToShipEngineWalletCarrierIds } from "@/lib/shipengine/reswell-carriers"
 import {
   buildShipmentBody,
   extractCarrierIdsFromCarriersResponse,
@@ -41,7 +42,7 @@ async function fetchCarrierIds(): Promise<string[]> {
         (typeof data === "string" ? data : "Could not load shipping carriers"),
     )
   }
-  return extractCarrierIdsFromCarriersResponse(data)
+  return filterToShipEngineWalletCarrierIds(extractCarrierIdsFromCarriersResponse(data))
 }
 
 /**
@@ -66,7 +67,7 @@ export async function getTopSurfboardShippingRates(
   }
 
   if (carrierIds.length === 0) {
-    return { ok: false, error: "No shipping carriers are configured yet." }
+    return { ok: false, error: "ShipEngine One Balance carriers are not connected." }
   }
 
   const payload = {

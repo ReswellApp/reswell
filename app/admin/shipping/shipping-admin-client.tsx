@@ -48,7 +48,7 @@ import { ShippingRateCalculator } from './rate-calculator'
 import { ReswellUpsCarrierStatus } from './reswell-ups-carrier-status'
 import { ShippingAnalytics } from './shipping-analytics'
 import { NavUnreadCountBadge } from '@/components/nav-unread-count-badge'
-import { isReswellUpsCarrier } from '@/lib/shipengine/reswell-carriers'
+import { isShipEngineWalletCarrierId } from '@/lib/shipengine/reswell-carriers'
 
 type ApiSlice = { ok: boolean; status: number; data: unknown }
 
@@ -540,16 +540,7 @@ export function AdminShippingClient() {
               <CardHeader className="space-y-1 pb-2">
                 <CardTitle className="text-lg font-semibold tracking-tight">Carriers</CardTitle>
                 <CardDescription className="text-sm">
-                  Use <code className="rounded-md bg-muted/80 px-1.5 py-0.5 text-[12px] font-mono">carrier_id</code> in
-                  rate and label calls.{' '}
-                  <Link
-                    href="https://www.shipengine.com/docs/carriers/setup/"
-                    className="font-medium text-foreground/75 underline decoration-border underline-offset-4 hover:text-foreground"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Setup guide
-                  </Link>
+                  Quotes and labels use only the ShipEngine One Balance accounts. Any other connection is ignored.
                 </CardDescription>
               </CardHeader>
               <CardContent className="overflow-x-auto pt-2">
@@ -565,20 +556,25 @@ export function AdminShippingClient() {
                     </TableHeader>
                     <TableBody>
                       {carriersList(overview.carriers.data).map((c, i) => {
-                        const reswellUps = isReswellUpsCarrier(c)
+                        const carrierId = typeof c.carrier_id === 'string' ? c.carrier_id : null
+                        const walletCarrier = isShipEngineWalletCarrierId(carrierId)
                         return (
                         <TableRow
                           key={String(c.carrier_id ?? c.carrier_code ?? i)}
-                          className={reswellUps ? 'bg-emerald-500/5' : undefined}
+                          className={walletCarrier ? 'bg-emerald-500/5' : undefined}
                         >
                           <TableCell className="max-w-[200px] truncate">
                             <div className="flex flex-wrap items-center gap-2">
                               <span>{formatCell(c.friendly_name ?? c.nickname ?? c.description)}</span>
-                              {reswellUps ? (
-                                <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-400">
-                                  Reswell UPS
-                                </span>
-                              ) : null}
+                              <span
+                                className={
+                                  walletCarrier
+                                    ? 'rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-400'
+                                    : 'rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-400'
+                                }
+                              >
+                                {walletCarrier ? 'In use' : 'Not used'}
+                              </span>
                             </div>
                           </TableCell>
                           <TableCell>{formatCell(c.carrier_code)}</TableCell>
