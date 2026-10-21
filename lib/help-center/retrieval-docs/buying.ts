@@ -149,7 +149,7 @@ export const buyingRetrievalDocs = [
       "buying/how-board-finder-works",
     ],
     quickAnswer:
-      "Tap the heart on any listing to save it. Open Favorites from the profile menu or /dashboard/favorites. Sold listings stay on the list with a sold badge.",
+      "Tap the heart on any listing to save it. Open Favorites from the header heart or /favorites. Sold listings stay on the list with a sold badge.",
     sections: [
       {
         heading: "Saving a listing",

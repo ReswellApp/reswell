@@ -65,4 +65,15 @@ describe("dashboardNavSections", () => {
 
     assert.equal(buyingOffers?.href, "/dashboard/offers?tab=buyer")
   })
+
+  it("links Favorites to /favorites from the dashboard nav", () => {
+    const favorites = dashboardNavSections({
+      isAdmin: false,
+      isShipper: false,
+    })
+      .find((s) => s.id === "buying")
+      ?.links.find((l) => l.name === "Favorites")
+
+    assert.equal(favorites?.href, "/favorites")
+  })
 })

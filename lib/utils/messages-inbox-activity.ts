@@ -54,7 +54,7 @@ export function inboxActivityNotificationHref(n: MessagesInboxNotification): str
   if (n.listing_id && listing?.section) {
     return listingDetailHref(listing)
   }
-  return "/dashboard/favorites"
+  return "/favorites"
 }
 
 export function countUnreadInboxActivityNotifications(
