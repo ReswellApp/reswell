@@ -36,6 +36,14 @@ type ListingPdpCropIslandProps = {
   initialIndex?: number
   hidden?: boolean
   onCropsSaved?: (crops: Record<string, ListingPdpCrop | null>) => void
+  onImagesRotated?: (
+    images: Array<{
+      id: string
+      url: string
+      thumbnailUrl: string
+      crop: ListingPdpCrop | null
+    }>,
+  ) => void
 }
 
 export function ListingPdpCropIsland({
@@ -43,6 +51,7 @@ export function ListingPdpCropIsland({
   initialIndex = 0,
   hidden = false,
   onCropsSaved,
+  onImagesRotated,
 }: ListingPdpCropIslandProps) {
   const viewer = useListingViewer()
   const listingId = viewer?.listingId?.trim() ?? ""
@@ -98,7 +107,7 @@ export function ListingPdpCropIsland({
           )}
         >
           <Crop className="size-3.5 opacity-80" aria-hidden />
-          Adjust
+          Edit
         </button>
       )}
       {typeof document !== "undefined"
@@ -113,6 +122,7 @@ export function ListingPdpCropIsland({
                 setSavedCrops((prev) => ({ ...prev, ...saved }))
                 onCropsSaved?.(saved)
               }}
+              onImagesRotated={onImagesRotated}
             />,
             document.body,
           )

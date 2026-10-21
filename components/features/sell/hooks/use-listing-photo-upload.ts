@@ -28,6 +28,11 @@ import { resolveClientSessionForMutation } from "@/lib/auth/resolve-client-sessi
 import { assertListingOriginalSize } from "@/lib/listing-image-pipeline"
 import { uploadListingImagePairToSupabase } from "@/lib/listing-image-storage"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
+import {
+  listingPhotoOrientationPrepareOptions,
+  listingPhotoQuarterTurnsAfterAdjust,
+  type ListingPhotoQuarterTurnDelta,
+} from "@/lib/sell-flow/listing-photo-orientation"
 import { orderListingPhotosByCaptureTime } from "@/lib/sell-flow/listing-photo-capture-time"
 import {
   filesFromDataTransfer,
@@ -86,7 +91,7 @@ export type UseListingPhotoUploadResult = {
   handlePhotosDragEnd: (event: DragEndEvent) => void
   handlePhotoTileRemove: (clientId: string) => void
   handlePhotoTileRetry: (clientId: string) => void
-  handlePhotoTileRotate: (clientId: string) => void
+  handlePhotoTileRotate: (clientId: string, quarterTurns: ListingPhotoQuarterTurnDelta) => void
   idbRestoreOptimizeQueueRef: React.MutableRefObject<ListingPhotoSlot[] | null>
   hydrateExistingImages: (slots: ListingPhotoSlot[]) => void
 }
@@ -156,9 +161,10 @@ export function useListingPhotoUpload({
           if (!src) return
           let paintedInstant = Boolean(slot.localPreviewReady)
           if (!paintedInstant) {
-            const instantUrl = await revealListingPhotoPreviewUrl(src, {
-              rotate180: Boolean(slot.userRotate180),
-            })
+            const instantUrl = await revealListingPhotoPreviewUrl(
+              src,
+              listingPhotoOrientationPrepareOptions(slot),
+            )
             if (!listingPhotoPrepareSeqInSync(clientId, prepareSeq)) {
               if (instantUrl) URL.revokeObjectURL(instantUrl)
               return
@@ -181,9 +187,10 @@ export function useListingPhotoUpload({
             }
           }
 
-          prepared = await prepareDecodableListingPhoto(src, {
-            rotate180: Boolean(slot.userRotate180),
-          })
+          prepared = await prepareDecodableListingPhoto(
+            src,
+            listingPhotoOrientationPrepareOptions(slot),
+          )
           if (!listingPhotoPrepareSeqInSync(clientId, prepareSeq)) return
           const swapped = swapListingPhotoPreviewToPreparedThumb(
             paintedInstant,
@@ -382,8 +389,8 @@ export function useListingPhotoUpload({
     [optimizeAndUploadSlot],
   )
 
-  const rotateListingPhoto180 = useCallback(
-    (clientId: string) => {
+  const rotateListingPhoto = useCallback(
+    (clientId: string, quarterTurns: ListingPhotoQuarterTurnDelta) => {
       const live = imagesRef.current.find((s) => s.clientId === clientId)
       if (!live) return
       if (live.optimizePhase === "error" || live.uploadPhase === "error") return
@@ -400,9 +407,13 @@ export function useListingPhotoUpload({
             sellListingThumbLoadedSrcByClientId.delete(s.clientId)
             const nextSeq = (s.prepareSeq ?? 0) + 1
             latestListingPhotoPrepareSeqRef.current.set(clientId, nextSeq)
+            const orientation = listingPhotoQuarterTurnsAfterAdjust(s, quarterTurns)
             nextSlot = {
               ...s,
-              userRotate180: !s.userRotate180,
+              userQuarterTurns: orientation.userQuarterTurns,
+              sourceIsDerivative: orientation.sourceIsDerivative,
+              userRotate180: undefined,
+              dropSourceFileAfterUpload: false,
               prepareSeq: nextSeq,
               prepared: undefined,
               optimizePhase: "running",
@@ -454,25 +465,28 @@ export function useListingPhotoUpload({
               if (s.clientId !== clientId) return s
               if (s.previewUrl.startsWith("blob:")) URL.revokeObjectURL(s.previewUrl)
               sellListingThumbLoadedSrcByClientId.delete(s.clientId)
-              const nextSeq = (s.prepareSeq ?? 0) + 1
-              latestListingPhotoPrepareSeqRef.current.set(clientId, nextSeq)
-              nextSlot = {
-                ...s,
-                userRotate180: !s.userRotate180,
-                prepareSeq: nextSeq,
-                prepared: undefined,
-                optimizePhase: "running",
-                uploadPhase: "idle",
-                url: undefined,
-                thumbnailUrl: undefined,
-                progressFull: 0,
-                progressThumb: 0,
-                previewUrl: URL.createObjectURL(file),
-                localPreviewReady: false,
-                sourceFile: file,
-                dropSourceFileAfterUpload: true,
-                errorMessage: undefined,
-              }
+            const nextSeq = (s.prepareSeq ?? 0) + 1
+            latestListingPhotoPrepareSeqRef.current.set(clientId, nextSeq)
+            const orientation = listingPhotoQuarterTurnsAfterAdjust(s, quarterTurns)
+            nextSlot = {
+              ...s,
+              userQuarterTurns: orientation.userQuarterTurns,
+              sourceIsDerivative: orientation.sourceIsDerivative,
+              userRotate180: undefined,
+              prepareSeq: nextSeq,
+              prepared: undefined,
+              optimizePhase: "running",
+              uploadPhase: "idle",
+              url: undefined,
+              thumbnailUrl: undefined,
+              progressFull: 0,
+              progressThumb: 0,
+              previewUrl: URL.createObjectURL(file),
+              localPreviewReady: false,
+              sourceFile: file,
+              dropSourceFileAfterUpload: false,
+              errorMessage: undefined,
+            }
               return nextSlot
             }),
           )
@@ -506,14 +520,14 @@ export function useListingPhotoUpload({
   const photoTileActionsRef = useRef({
     remove: (_clientId: string) => {},
     retry: (_clientId: string) => {},
-    rotate: (_clientId: string) => {},
+    rotate: (_clientId: string, _quarterTurns: ListingPhotoQuarterTurnDelta) => {},
   })
   photoTileActionsRef.current.remove = (clientId: string) => {
     const idx = imagesRef.current.findIndex((s) => s.clientId === clientId)
     if (idx >= 0) removeImage(idx)
   }
   photoTileActionsRef.current.retry = retryListingPhotoUpload
-  photoTileActionsRef.current.rotate = rotateListingPhoto180
+  photoTileActionsRef.current.rotate = rotateListingPhoto
 
   const handlePhotoTileRemove = useCallback(
     (clientId: string) => photoTileActionsRef.current.remove(clientId),
@@ -524,7 +538,8 @@ export function useListingPhotoUpload({
     [],
   )
   const handlePhotoTileRotate = useCallback(
-    (clientId: string) => photoTileActionsRef.current.rotate(clientId),
+    (clientId: string, quarterTurns: ListingPhotoQuarterTurnDelta) =>
+      photoTileActionsRef.current.rotate(clientId, quarterTurns),
     [],
   )
 

@@ -22,6 +22,7 @@ import {
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { CheckCircle2, Film, Loader2, Plus, RefreshCw, RotateCw, Upload, X } from "lucide-react"
+import { ListingPhotoOrientationDialog } from "@/components/features/sell/listing-photo-orientation-dialog"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { LISTING_VIDEO_ACCEPT } from "@/lib/listing-video-pipeline"
@@ -41,6 +42,7 @@ import {
 import { SellListingVideoRecorderDialog } from "@/components/features/sell/sell-listing-video-recorder-dialog"
 import { SELL_COMPLETE_BADGE_CLASS } from "@/components/features/sell/sell-form-surface"
 import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
+import type { ListingPhotoQuarterTurnDelta } from "@/lib/sell-flow/listing-photo-orientation"
 import { cn } from "@/lib/utils"
 import { sellListingThumbLoadedSrcByClientId } from "@/components/features/sell/hooks/use-listing-photo-upload"
 
@@ -65,7 +67,7 @@ export type SellListingPhotoGridProps = {
   onDragEnd: (event: DragEndEvent) => void
   onRemove: (clientId: string) => void
   onRetry: (clientId: string) => void
-  onRotate180: (clientId: string) => void
+  onRotateQuarterTurns: (clientId: string, quarterTurns: ListingPhotoQuarterTurnDelta) => void
   /** When omitted, grid creates its own dnd sensors (same as surfboard sell flow). */
   photoDragSensors?: ReturnType<typeof useSensors>
   photoDescription?: string
@@ -92,13 +94,13 @@ const SellListingPhotoSortableTile = React.memo(function SellListingPhotoSortabl
   index,
   onRemove,
   onRetry,
-  onRotate180,
+  onRotateQuarterTurns,
 }: {
   image: ListingPhotoSlot
   index: number
   onRemove: (clientId: string) => void
   onRetry: (clientId: string) => void
-  onRotate180: (clientId: string) => void
+  onRotateQuarterTurns: (clientId: string, quarterTurns: ListingPhotoQuarterTurnDelta) => void
 }) {
   const {
     attributes,
@@ -118,7 +120,7 @@ const SellListingPhotoSortableTile = React.memo(function SellListingPhotoSortabl
       index={index}
       onRemove={() => onRemove(image.clientId)}
       onRetry={() => onRetry(image.clientId)}
-      onRotate180={() => onRotate180(image.clientId)}
+      onRotateQuarterTurns={(quarterTurns) => onRotateQuarterTurns(image.clientId, quarterTurns)}
       sortable={{
         setNodeRef,
         style: {
@@ -138,14 +140,14 @@ function SellListingPhotoTile({
   index,
   onRemove,
   onRetry,
-  onRotate180,
+  onRotateQuarterTurns,
   sortable,
 }: {
   image: ListingPhotoSlot
   index: number
   onRemove: () => void
   onRetry: () => void
-  onRotate180: () => void
+  onRotateQuarterTurns: (quarterTurns: ListingPhotoQuarterTurnDelta) => void
   sortable: {
     setNodeRef: (node: HTMLElement | null) => void
     style: React.CSSProperties
@@ -180,10 +182,16 @@ function SellListingPhotoTile({
 
   const skeletonVisible = listingPhotoTileSkeletonVisible(image, thumbLoaded)
 
-  const canRotate180 =
+  const [straightenOpen, setStraightenOpen] = useState(false)
+  const canRotate =
     !isFailure &&
     (Boolean(image.sourceFile) ||
       (image.uploadPhase === "done" && Boolean((image.url ?? "").trim())))
+  const straightenSrc = isLocalListingPhotoPreviewUrl(rawPreview)
+    ? rawPreview
+    : rawPreview
+      ? (proxiedListingImageSrc(rawPreview) ?? rawPreview)
+      : ""
 
   return (
     <div
@@ -247,22 +255,22 @@ function SellListingPhotoTile({
             <div
               className={cn(
                 "absolute inset-x-1 top-1 z-[5] flex gap-1 pointer-events-none",
-                canRotate180 ? "justify-between" : "justify-end",
+                canRotate ? "justify-between" : "justify-end",
               )}
             >
-              {canRotate180 ? (
+              {canRotate ? (
                 <button
                   type="button"
                   onPointerDown={(e) => e.stopPropagation()}
-                  onClick={onRotate180}
+                  onClick={() => setStraightenOpen(true)}
                   className={cn(
                     "pointer-events-auto flex h-7 w-7 shrink-0 items-center justify-center rounded-full touch-manipulation hover:bg-background sm:h-9 sm:w-9",
                     skeletonVisible
                       ? "bg-background/90 shadow-sm ring-1 ring-black/5"
                       : "bg-background/80",
                   )}
-                  aria-label={`Rotate photo ${index + 1} 180 degrees`}
-                  title="Rotate 180°"
+                  aria-label={`Straighten photo ${index + 1}`}
+                  title="Turn 90°"
                 >
                   <RotateCw className="h-3.5 w-3.5 sm:h-3 sm:w-3" aria-hidden />
                 </button>
@@ -321,6 +329,15 @@ function SellListingPhotoTile({
           </Button>
         </div>
       ) : null}
+      <ListingPhotoOrientationDialog
+        open={straightenOpen}
+        src={straightenSrc}
+        onOpenChange={setStraightenOpen}
+        onApply={(quarterTurns) => {
+          setStraightenOpen(false)
+          onRotateQuarterTurns(quarterTurns)
+        }}
+      />
     </div>
   )
 }
@@ -655,7 +672,7 @@ export function SellListingPhotoGrid({
   onDragEnd,
   onRemove,
   onRetry,
-  onRotate180,
+  onRotateQuarterTurns,
   photoDragSensors: externalSensors,
   photoDescription,
   photoTips,
@@ -689,8 +706,8 @@ export function SellListingPhotoGrid({
   const resolvedPhotoDescription =
     photoDescription ??
     (videoEnabled
-      ? "Dropped photos run from the first shot to the last. Drag to reorder — the first is your main image. Optional: add one short video."
-      : "Dropped photos run from the first shot to the last. Drag to reorder — the first is your main image.")
+      ? "Dropped photos run from the first shot to the last. Drag to reorder — the first is your main image. Turn a photo 90° if it lands sideways. Optional: add one short video."
+      : "Dropped photos run from the first shot to the last. Drag to reorder — the first is your main image. Turn a photo 90° if it lands sideways.")
   const videoTile =
     videoEnabled && videoFileInputId && onVideoInputChange && onVideoRemove && onVideoRetry ? (
       <SellListingPhotoGridVideoTile
@@ -790,7 +807,7 @@ export function SellListingPhotoGrid({
                     index={index}
                     onRemove={onRemove}
                     onRetry={onRetry}
-                    onRotate180={onRotate180}
+                    onRotateQuarterTurns={onRotateQuarterTurns}
                   />
                 ))}
               </SortableContext>

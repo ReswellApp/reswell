@@ -632,9 +632,9 @@ export default function SellMagazinesFlow({
           onDragEnd={handlePhotosDragEnd}
           onRemove={handlePhotoTileRemove}
           onRetry={handlePhotoTileRetry}
-          onRotate180={handlePhotoTileRotate}
+          onRotateQuarterTurns={handlePhotoTileRotate}
           photoDragSensors={photoDragSensors}
-          photoDescription="Add cover and interior shots. Drag to reorder — the first photo is the main image on browse tiles. Optional: add one short video."
+          photoDescription="Add cover and interior shots. Drag to reorder — the first photo is the main image on browse tiles. Turn a photo 90° if it lands sideways. Optional: add one short video."
           video={video}
           videoFileInputId={videoFileInputId}
           onVideoInputChange={handleVideoInputChange}
