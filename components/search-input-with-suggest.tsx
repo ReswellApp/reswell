@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from "react"
 import { createPortal } from "react-dom"
-import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Input } from "@/components/ui/input"
@@ -27,6 +26,7 @@ import {
   NavSearchTopListingSectionHeader,
   NavSearchTopListingText,
   NavSearchTopListingThumb,
+  navSearchBrandNameTileClassName,
   navSearchTopListingRowClassName,
 } from "@/components/features/search/nav-search-top-listing-row"
 
@@ -313,13 +313,10 @@ function MarketplaceSuggestPanelSkeleton({
       {showBrandStrip && !boardsTitleStyle ? (
         <div className="shrink-0 border-t border-border/60 px-3 pb-3 pt-2.5 sm:px-4 sm:pb-3.5 sm:pt-3">
           <Skeleton className="mb-2 h-3 w-14" />
-          <div className="flex gap-3 sm:gap-4">
-            {[0, 1, 2, 4].map((i) => (
-              <div key={i} className="flex flex-col items-center gap-1.5">
-                <Skeleton className="h-11 w-11 rounded-full sm:h-12 sm:w-12" />
-                <Skeleton className="h-3 w-14" />
-              </div>
-            ))}
+          <div className="flex flex-wrap gap-2">
+            <Skeleton className="h-9 w-24 rounded-lg" />
+            <Skeleton className="h-9 w-36 rounded-lg" />
+            <Skeleton className="h-9 w-20 rounded-lg" />
           </div>
         </div>
       ) : null}
@@ -339,7 +336,6 @@ export function NavSuggestPanelSkeleton() {
             key={i}
             className="mx-1 flex gap-2 px-2 py-2.5 sm:gap-3 sm:rounded-xl sm:py-2.5"
           >
-            <Skeleton className="h-12 w-12 shrink-0 rounded-md sm:h-14 sm:w-14 sm:rounded-lg" />
             <div className="min-w-0 flex-1 space-y-2">
               <Skeleton className="h-4 w-full max-w-[200px]" />
               <Skeleton className="h-3 w-40 max-w-[90%]" />
@@ -1212,22 +1208,6 @@ export function SearchInputWithSuggest({
                       onMouseLeave={() => cancelSuggestHover(`bc:${item.id}`)}
                       onClick={() => handleBrandCatalogPick(item)}
                     >
-                      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md bg-muted sm:h-14 sm:w-14 sm:rounded-lg">
-                        {item.logo_url ? (
-                          <Image
-                            src={item.logo_url}
-                            alt=""
-                            fill
-                            className="object-contain p-1.5"
-                            sizes="(max-width:640px) 48px, 56px"
-                            unoptimized
-                          />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center text-sm font-bold text-cerulean sm:text-base">
-                            {item.name.slice(0, 1).toUpperCase()}
-                          </div>
-                        )}
-                      </div>
                       <div className="min-w-0 flex-1">
                         <p className="line-clamp-2 text-sm font-semibold leading-snug text-foreground sm:text-base">
                           {item.name}
@@ -1397,34 +1377,18 @@ export function SearchInputWithSuggest({
                         )
                       }
                     >
-                      <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md bg-muted">
-                        {brand.logo_url ? (
-                          <Image
-                            src={brand.logo_url}
-                            alt=""
-                            fill
-                            className="object-contain p-1"
-                            sizes="36px"
-                            unoptimized
-                          />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center text-xs font-bold text-cerulean">
-                            {brand.listingLabel.slice(0, 1).toUpperCase()}
-                          </div>
-                        )}
-                      </div>
                       <span className="truncate font-medium text-foreground">{brand.listingLabel}</span>
                     </button>
                   </li>
                 ))}
               </ul>
             ) : (
-              <div className="flex gap-3 overflow-x-auto overscroll-x-contain pb-1 pl-0.5 pr-1 [-ms-overflow-style:none] [scrollbar-width:none] [scroll-padding-inline:8px] sm:gap-4 [&::-webkit-scrollbar]:hidden">
+              <div className="flex flex-wrap gap-2">
                 {suggestions!.brands!.map((brand) => (
                   <button
                     key={brand.listingLabel}
                     type="button"
-                    className="flex min-w-[4rem] max-w-[4.75rem] flex-col items-center gap-1.5 text-center sm:min-w-[4.5rem] sm:max-w-[5.5rem]"
+                    className={navSearchBrandNameTileClassName}
                     onMouseDown={(e) => e.preventDefault()}
                     onMouseEnter={() =>
                       scheduleSuggestHover(`brand-strip:${brand.listingLabel}`, {
@@ -1437,29 +1401,13 @@ export function SearchInputWithSuggest({
                     onClick={() =>
                       pickMarketplaceBrandLabel(
                         brand.listingLabel,
-                        boardsTitleStyle ? "brand_row" : "brand_strip",
+                        "brand_strip",
                         brand.slug,
                         brand.logo_url,
                       )
                     }
                   >
-                    <span className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-muted text-sm font-bold text-cerulean sm:h-12 sm:w-12 sm:text-base">
-                      {brand.logo_url ? (
-                        <Image
-                          src={brand.logo_url}
-                          alt=""
-                          fill
-                          className="object-contain p-1"
-                          sizes="44px"
-                          unoptimized
-                        />
-                      ) : (
-                        brand.listingLabel.slice(0, 1).toUpperCase()
-                      )}
-                    </span>
-                    <span className="line-clamp-2 w-full text-[11px] font-medium leading-tight text-foreground sm:text-xs">
-                      {brand.listingLabel}
-                    </span>
+                    {brand.listingLabel}
                   </button>
                 ))}
               </div>
