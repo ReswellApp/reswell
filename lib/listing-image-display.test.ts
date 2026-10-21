@@ -4,6 +4,7 @@ import {
   LISTING_TILE_GALLERY_MAX_IMAGES,
   coalesceListingImagesForCard,
   listingCoverImageForCard,
+  listingFilmImageSrcCandidatesFromRow,
   listingFilmImageSrcFromRow,
   listingImagesFromPrimaryFields,
   listingTileCarouselImageCandidateLists,
@@ -69,6 +70,17 @@ describe("listing tile vs compact thumb sources", () => {
         thumbnail_url: `${STORAGE}/u/1-thumb.webp`,
       }),
       "/media/listings/u/1-film2.webp",
+    )
+    assert.deepEqual(
+      listingFilmImageSrcCandidatesFromRow({
+        url: `${STORAGE}/u/1-full.webp`,
+        thumbnail_url: `${STORAGE}/u/1-thumb.webp`,
+      }),
+      [
+        "/media/listings/u/1-film2.webp",
+        "/media/listings/u/1-card2.webp",
+        "/media/listings/u/1-full.webp",
+      ],
     )
     assert.equal(
       candidates.some((src) => src.includes("-thumb.")),
