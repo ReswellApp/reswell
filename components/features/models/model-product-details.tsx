@@ -1,9 +1,4 @@
-import type { ReactNode } from "react"
-import Link from "next/link"
 import { ModelPageSectionHeading } from "@/components/features/models/model-page-section"
-import { BRANDS_BASE } from "@/lib/brands/routes"
-import { brandProductCategoryLabel } from "@/lib/brand-product-categories"
-import { formatBoardType } from "@/lib/listing-labels"
 import type { BrandModelVariantRow } from "@/lib/db/brand-model-variants"
 import type { ModelPageData } from "@/lib/services/modelPage"
 
@@ -31,64 +26,62 @@ function dimensionLabel(variant: BrandModelVariantRow): string {
     .join(" × ")
 }
 
-export function ModelProductDetails({ page }: { page: ModelPageData }) {
-  const { brand, model, variants } = page
-  const materials = uniqueLabels(variants.map((row) => row.material?.replace(/_/g, " ")))
-  const fins = uniqueLabels(variants.map(finLabel))
-  const dimensions = uniqueLabels(variants.map(dimensionLabel)).slice(0, 12)
-  const boardType = formatBoardType(model.board_category_slug)
+export type ModelProductDetail = {
+  description: string | null
+  sizes: string[]
+  facts: { label: string; value: string }[]
+}
 
-  const specs: { label: string; value: ReactNode }[] = [
-    {
-      label: "Brand",
-      value: (
-        <Link
-          href={`${BRANDS_BASE}/${brand.slug}`}
-          className="underline-offset-4 hover:underline"
-        >
-          {brand.name}
-        </Link>
-      ),
-    },
-    { label: "Model", value: model.name },
-    { label: "Category", value: brandProductCategoryLabel(model.product_category_slug) },
-  ]
-  if (boardType) specs.push({ label: "Board type", value: boardType })
-  if (brand.location_label?.trim()) specs.push({ label: "Made in", value: brand.location_label.trim() })
-  if (materials.length) specs.push({ label: "Construction", value: materials.join(", ") })
-  if (fins.length) specs.push({ label: "Fin setup", value: fins.join(", ") })
-  if (dimensions.length) {
-    specs.push({
-      label: "Available sizes",
-      value: (
-        <ul className="flex flex-wrap gap-2">
-          {dimensions.map((label) => (
-            <li
-              key={label}
-              className="inline-flex rounded-full border border-border/70 bg-muted/40 px-2.5 py-1 text-xs font-medium tabular-nums text-muted-foreground"
-            >
-              {label}
-            </li>
-          ))}
-        </ul>
-      ),
-    })
-  }
+/** Facts that are not already in the title. Null when the section would only repeat the header. */
+export function getModelProductDetail(page: ModelPageData): ModelProductDetail | null {
+  const description = page.model.description?.trim() || null
+  const sizes = uniqueLabels(page.variants.map(dimensionLabel)).slice(0, 12)
+  const materials = uniqueLabels(page.variants.map((row) => row.material?.replace(/_/g, " ")))
+  const fins = uniqueLabels(page.variants.map(finLabel))
+  const facts: { label: string; value: string }[] = []
+  if (materials.length) facts.push({ label: "Construction", value: materials.join(", ") })
+  if (fins.length) facts.push({ label: "Fin setup", value: fins.join(", ") })
+  if (!description && sizes.length === 0 && facts.length === 0) return null
+  return { description, sizes, facts }
+}
 
+export function ModelProductDetails({ detail }: { detail: ModelProductDetail }) {
   return (
     <div>
-      <ModelPageSectionHeading>Product specs</ModelPageSectionHeading>
-      <dl className="mt-6 max-w-3xl divide-y divide-border/70 border-y border-border/70">
-        {specs.map((spec) => (
-          <div
-            key={spec.label}
-            className="grid grid-cols-[7.5rem_1fr] gap-4 py-3.5 text-sm sm:grid-cols-[9rem_1fr]"
-          >
-            <dt className="text-muted-foreground">{spec.label}</dt>
-            <dd className="font-medium text-foreground">{spec.value}</dd>
-          </div>
-        ))}
-      </dl>
+      <ModelPageSectionHeading>Details</ModelPageSectionHeading>
+      {detail.description ? (
+        <p className="mt-4 max-w-2xl whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
+          {detail.description}
+        </p>
+      ) : null}
+      {detail.sizes.length > 0 ? (
+        <div className={detail.description ? "mt-6" : "mt-4"}>
+          <h3 className="text-sm font-medium text-foreground">Sizes</h3>
+          <ul className="mt-3 flex flex-wrap gap-2">
+            {detail.sizes.map((label) => (
+              <li
+                key={label}
+                className="inline-flex rounded-full border border-border/70 bg-muted/40 px-2.5 py-1 text-xs font-medium tabular-nums text-muted-foreground"
+              >
+                {label}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      {detail.facts.length > 0 ? (
+        <dl className="mt-6 max-w-3xl divide-y divide-border/70 border-y border-border/70">
+          {detail.facts.map((fact) => (
+            <div
+              key={fact.label}
+              className="grid grid-cols-[7.5rem_1fr] gap-4 py-3.5 text-sm sm:grid-cols-[9rem_1fr]"
+            >
+              <dt className="text-muted-foreground">{fact.label}</dt>
+              <dd className="font-medium text-foreground">{fact.value}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
     </div>
   )
 }
