@@ -13,10 +13,10 @@ const PACKING_VIDEOS = [
 
 export function HowToShipPackingVideos() {
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
+    <div className="grid gap-5 lg:grid-cols-2">
       {PACKING_VIDEOS.map((video) => (
         <figure key={video.src}>
-          <div className="overflow-hidden rounded-[1.75rem] bg-muted shadow-sm ring-1 ring-border">
+          <div className="overflow-hidden rounded-2xl bg-[#efece6]">
             <iframe
               src={video.src}
               title={video.title}
