@@ -460,7 +460,11 @@ export function ImageGallery({
                   aria-hidden={!isSelected}
                 >
                   <ListingGalleryPhoto
-                    src={heroUrls[i] || "/placeholder.svg"}
+                    src={
+                      crop && crop.zoom > 1
+                        ? proxiedUrls[i] || heroUrls[i] || "/placeholder.svg"
+                        : heroUrls[i] || "/placeholder.svg"
+                    }
                     previewSrc={previewUrls[i]}
                     objectFit="cover"
                     alt={`${title} - Image ${i + 1}`}

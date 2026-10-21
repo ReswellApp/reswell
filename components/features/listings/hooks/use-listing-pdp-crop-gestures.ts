@@ -39,6 +39,8 @@ export function useListingPdpCropGestures(params: {
   const pinchRef = useRef<{
     distance: number
     layout: ListingPdpCropLayout
+    originX: number
+    originY: number
   } | null>(null)
   const layoutRef = useRef(layout)
   const frameSizeRef = useRef(frame)
@@ -59,12 +61,24 @@ export function useListingPdpCropGestures(params: {
     return { x: clientX - rect.left, y: clientY - rect.top }
   }
 
+  function emit(next: ListingPdpCropLayout) {
+    layoutRef.current = next
+    onLayoutRef.current(next)
+  }
+
   function beginGesture() {
     const pts = [...pointersRef.current.values()]
     const current = layoutRef.current
     if (!current) return
     if (pts.length >= 2) {
-      pinchRef.current = { distance: Math.max(1, distance(pts[0], pts[1])), layout: current }
+      const mid = midpoint(pts[0], pts[1])
+      const origin = framePoint(mid.x, mid.y)
+      pinchRef.current = {
+        distance: Math.max(1, distance(pts[0], pts[1])),
+        layout: current,
+        originX: origin?.x ?? 0,
+        originY: origin?.y ?? 0,
+      }
       panRef.current = null
       return
     }
@@ -92,18 +106,19 @@ export function useListingPdpCropGestures(params: {
 
     const pts = [...pointersRef.current.values()]
     if (pts.length >= 2 && pinchRef.current) {
-      const origin = framePoint(
-        midpoint(pts[0], pts[1]).x,
-        midpoint(pts[0], pts[1]).y,
-      )
-      if (!origin) return
+      const mid = midpoint(pts[0], pts[1])
+      const target = framePoint(mid.x, mid.y)
+      if (!target) return
       const nextDist = Math.max(1, distance(pts[0], pts[1]))
-      onLayoutRef.current(
+      const pinch = pinchRef.current
+      emit(
         applyListingPdpCropZoom({
-          layout: pinchRef.current.layout,
-          factor: nextDist / pinchRef.current.distance,
-          originX: origin.x,
-          originY: origin.y,
+          layout: pinch.layout,
+          factor: nextDist / pinch.distance,
+          originX: pinch.originX,
+          originY: pinch.originY,
+          targetX: target.x,
+          targetY: target.y,
           frameW: frameSize.w,
           frameH: frameSize.h,
           imageW: imageSize.w,
@@ -115,7 +130,7 @@ export function useListingPdpCropGestures(params: {
 
     const pan = panRef.current
     if (pts.length === 1 && pan) {
-      onLayoutRef.current(
+      emit(
         applyListingPdpCropPan({
           layout: pan.layout,
           deltaX: pts[0].x - pan.x,
@@ -154,7 +169,7 @@ export function useListingPdpCropGestures(params: {
       const origin = framePoint(event.clientX, event.clientY)
       if (!origin) return
       const factor = Math.exp(-event.deltaY * 0.0016)
-      onLayoutRef.current(
+      emit(
         applyListingPdpCropZoom({
           layout: layoutRef.current,
           factor,

@@ -18,9 +18,12 @@ import {
   rotateListingPdpCropClockwise,
   listingPdpLayoutToCrop,
   listingPdpRenderScale,
+  listingPdpSliderPositionFromZoom,
   listingPdpZoomFromRenderScale,
+  listingPdpZoomFromSliderPosition,
   resolveListingPdpCrop,
   retainMeasuredSize,
+  stepListingPdpCropZoom,
 } from "./listing-pdp-crop.ts"
 
 describe("resolveListingPdpCrop", () => {
@@ -106,6 +109,24 @@ describe("listingPdpCropToLayout / listingPdpLayoutToCrop", () => {
     assert.ok(Math.abs(back.zoom - 0) < 0.01)
   })
 
+  it("keeps the photo's aspect ratio at every zoom", () => {
+    const image = { w: 200, h: 500 }
+    for (const zoom of [0, 0.35, 1, 1.7, 4]) {
+      const layout = listingPdpCropToLayout(300, 400, image.w, image.h, {
+        zoom,
+        x: 30,
+        y: 70,
+      })
+      assert.ok(Math.abs(layout.width / layout.height - image.w / image.h) < 1e-9)
+      if (zoom >= 1) {
+        assert.ok(layout.left <= 0.5)
+        assert.ok(layout.left + layout.width >= 300 - 0.5)
+        assert.ok(layout.top <= 0.5)
+        assert.ok(layout.top + layout.height >= 400 - 0.5)
+      }
+    }
+  })
+
   it("round-trips a panned cover crop", () => {
     const crop = { zoom: 2, x: 20, y: 80 }
     const layout = listingPdpCropToLayout(300, 400, 600, 600, crop)
@@ -113,6 +134,39 @@ describe("listingPdpCropToLayout / listingPdpLayoutToCrop", () => {
     assert.ok(Math.abs(back.zoom - 2) < 0.01)
     assert.ok(Math.abs(back.x - 20) < 0.2)
     assert.ok(Math.abs(back.y - 80) < 0.2)
+  })
+})
+
+describe("slider zoom", () => {
+  it("spreads a same-aspect photo across the whole slider", () => {
+    const frame = { w: 300, h: 400 }
+    const image = { w: 300, h: 400 }
+    assert.equal(listingPdpZoomFromSliderPosition(frame.w, frame.h, image.w, image.h, 0), 0)
+    const maxZoom = listingPdpZoomFromSliderPosition(frame.w, frame.h, image.w, image.h, 1)
+    assert.ok(Math.abs(maxZoom - 4) < 1e-6)
+    const midZoom = listingPdpZoomFromSliderPosition(frame.w, frame.h, image.w, image.h, 0.5)
+    const midScale = listingPdpRenderScale(frame.w, frame.h, image.w, image.h, midZoom)
+    assert.ok(Math.abs(midScale - 2.5) < 1e-6)
+    assert.ok(
+      Math.abs(listingPdpSliderPositionFromZoom(frame.w, frame.h, image.w, image.h, midZoom) - 0.5) <
+        1e-6,
+    )
+  })
+
+  it("steps size by a constant factor instead of the stored zoom unit", () => {
+    const frame = { w: 300, h: 400 }
+    const image = { w: 300, h: 400 }
+    const stepped = stepListingPdpCropZoom({
+      frameW: frame.w,
+      frameH: frame.h,
+      imageW: image.w,
+      imageH: image.h,
+      zoom: 0,
+      factor: 1.25,
+    })
+    const scale = listingPdpRenderScale(frame.w, frame.h, image.w, image.h, stepped)
+    const fitted = listingPdpRenderScale(frame.w, frame.h, image.w, image.h, 0)
+    assert.ok(Math.abs(scale / fitted - 1.25) < 1e-6)
   })
 })
 
@@ -158,6 +212,27 @@ describe("clamp and gestures", () => {
     assert.ok(zoomed.top <= 0)
     assert.ok(zoomed.left + zoomed.width >= 300 - 1e-6)
     assert.ok(zoomed.top + zoomed.height >= 400 - 1e-6)
+    assert.ok(Math.abs(zoomed.width / zoomed.height - 300 / 400) < 1e-9)
+  })
+
+  it("moves the photo with a two-finger drag and keeps the aspect ratio", () => {
+    const start = listingPdpCropToLayout(300, 400, 300, 400, { zoom: 2, x: 50, y: 50 })
+    const moved = applyListingPdpCropZoom({
+      layout: start,
+      factor: 1,
+      originX: 150,
+      originY: 200,
+      targetX: 180,
+      targetY: 230,
+      frameW: 300,
+      frameH: 400,
+      imageW: 300,
+      imageH: 400,
+    })
+    assert.ok(Math.abs(moved.width - start.width) < 1e-6)
+    assert.ok(Math.abs(moved.height - start.height) < 1e-6)
+    assert.ok(Math.abs(moved.left - (start.left + 30)) < 1e-6)
+    assert.ok(Math.abs(moved.top - (start.top + 30)) < 1e-6)
   })
 })
 
