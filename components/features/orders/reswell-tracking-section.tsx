@@ -98,6 +98,8 @@ export function ReswellTrackingSection(props: {
   marketplaceDeliveryStatus: string
   variant?: "buyer" | "seller"
   className?: string
+  /** Keep live carrier polling without rendering the tracking card. */
+  pollOnly?: boolean
   /** Defaults to `/api/orders/:id/carrier-tracking` (buyer/seller). Pass admin path for staff views. */
   carrierTrackingFetchPath?: string
   sectionTitle?: string
@@ -111,6 +113,7 @@ export function ReswellTrackingSection(props: {
     marketplaceDeliveryStatus,
     variant = "buyer",
     className,
+    pollOnly = false,
     carrierTrackingFetchPath,
     sectionTitle = "Reswell tracking",
     sectionDescription = "Live carrier scans for your shipment.",
@@ -240,6 +243,8 @@ export function ReswellTrackingSection(props: {
       toast.error("Could not copy tracking number")
     }
   }
+
+  if (pollOnly) return null
 
   return (
     <Card className={cn("overflow-hidden border-primary/20", className)}>
