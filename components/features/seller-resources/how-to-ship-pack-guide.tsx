@@ -1,6 +1,7 @@
 import type { ReactNode } from "react"
 import Image from "next/image"
 import Link from "next/link"
+import { SurfboardDingIcon } from "@/components/features/sell/sell-photo-example-icons"
 import { HowToShipPackingVideos } from "@/components/features/seller-resources/how-to-ship-packing-videos"
 import { wideShimmer } from "@/lib/image-shimmer"
 import { HOW_TO_SELL_HREF } from "@/lib/seller-resources"
@@ -14,14 +15,21 @@ const linkClass = "font-medium text-[#355185] underline underline-offset-2"
 const STEPS: readonly {
   title: string
   body: ReactNode
-  src: string
-  alt: string
+  src?: string
+  alt?: string
 }[] = [
   {
-    title: "Tape the rails",
-    body: "Press tape along both rails before the board goes in the box.",
-    src: "/images/seller-resources/how-to-ship/rail-tape.jpg",
-    alt: "Gloved hands pressing protective tape onto the rail of a black surfboard",
+    title: "Repair or show dings",
+    body: (
+      <>
+        Ship a fully repaired board. If any dings are still open, the listing needs clear photos
+        that show each one.{" "}
+        <Link href={`${HOW_TO_SELL_HREF}#photos`} className={linkClass}>
+          See the photo examples
+        </Link>
+        .
+      </>
+    ),
   },
   {
     title: "Add a sleeve",
@@ -90,18 +98,24 @@ export function HowToShipPackGuide() {
                   </h3>
                   <p className="mt-2 text-base leading-relaxed text-[#243044]">{step.body}</p>
                 </div>
-                <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-[#efece6]">
-                  <Image
-                    src={step.src}
-                    alt={step.alt}
-                    fill
-                    sizes="(max-width: 640px) 100vw, 360px"
-                    quality={75}
-                    className="object-cover"
-                    placeholder="blur"
-                    blurDataURL={wideShimmer}
-                  />
-                </div>
+                {step.src && step.alt ? (
+                  <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-[#efece6]">
+                    <Image
+                      src={step.src}
+                      alt={step.alt}
+                      fill
+                      sizes="(max-width: 640px) 100vw, 360px"
+                      quality={75}
+                      className="object-cover"
+                      placeholder="blur"
+                      blurDataURL={wideShimmer}
+                    />
+                  </div>
+                ) : (
+                  <div className="flex aspect-[4/3] items-center justify-center rounded-xl bg-white">
+                    <SurfboardDingIcon className="h-36 w-36 text-[#001A4A]" />
+                  </div>
+                )}
               </div>
             </li>
           ))}
