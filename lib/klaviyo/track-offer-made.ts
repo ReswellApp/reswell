@@ -9,6 +9,8 @@
  * `{{ event.Title }}`, `{{ event.offer_amount_display }}`, `{{ event.list_price_display }}`,
  * `{{ event.offer_from.display_name }}`, `{{ event.offer_note }}`, `{{ event.fulfillment_label }}`,
  * `{{ event.listing_url }}`, `{{ event.offers_url }}`, `{{ event.messages_url }}`, `{{ event.photo_url }}`.
+ * `offers_url` opens Selling on that offer (`?tab=received&offer=`). Link the button to
+ * `{{ event.offers_url }}` directly — Klaviyo appends its own tracking params.
  */
 
 import { createServiceRoleClient } from "@/lib/supabase/server"
@@ -22,6 +24,7 @@ import {
 } from "@/lib/klaviyo/catalog-product"
 import { listingDetailHref } from "@/lib/listing-href"
 import { publicSiteOriginForEmail } from "@/lib/public-site-origin"
+import { dashboardOffersPath } from "@/lib/utils/offers-dashboard-display"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
 
 function displayNameFromProfileRow(data: {
@@ -118,7 +121,10 @@ export async function trackKlaviyoOfferMade(
     section: payload.listingSection,
   })
   const listingUrl = `${origin}${path}`
-  const offersUrl = `${origin}/dashboard/offers?tab=received`
+  const offersUrl = `${origin}${dashboardOffersPath({
+    role: "seller",
+    offerId: payload.offerId,
+  })}`
   const conversationId =
     typeof payload.conversationId === "string" ? payload.conversationId.trim() : ""
   const messagesUrl = conversationId

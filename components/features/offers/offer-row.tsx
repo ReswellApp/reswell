@@ -3,15 +3,10 @@
 import Link from "next/link"
 import Image from "next/image"
 import { formatDistanceToNow } from "date-fns"
-import {
-  ArrowUpRight,
-  Clock,
-  MessageCircle,
-  Timer,
-} from "lucide-react"
+import { Clock, Timer } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { capitalizeWords } from "@/lib/listing-labels"
-import { listingDetailHref } from "@/lib/listing-href"
+import { acceptedOfferCheckoutHref, listingDetailHref } from "@/lib/listing-href"
 import { listingCardImageSrc } from "@/lib/listing-image-display"
 import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
@@ -23,7 +18,11 @@ import type {
   DashboardProfileLite,
 } from "@/lib/types/offers-dashboard"
 import { offerFulfillmentLabel } from "@/lib/utils/offer-message-display"
-import { dashboardListingForOffer, offerIsSoldPresentation } from "@/lib/utils/offers-dashboard-display"
+import {
+  dashboardListingForOffer,
+  offerIsSoldPresentation,
+  offerStatusLabel,
+} from "@/lib/utils/offers-dashboard-display"
 import { listingOfferTileCompactClass } from "@/lib/utils/dashboard-display-styles"
 import { offerMessagesHref } from "@/lib/utils/offer-messages-href"
 import { OfferWithdrawButton } from "@/components/features/offers/offer-withdraw-button"
@@ -34,33 +33,6 @@ function money(n: unknown): string {
   const v = typeof n === "number" ? n : parseFloat(String(n ?? "0"))
   if (!Number.isFinite(v)) return "0.00"
   return v.toFixed(2)
-}
-
-function statusLabel(status: string): string {
-  switch (status) {
-    case "PENDING":
-      return "Pending"
-    case "ACCEPTED":
-      return "Accepted"
-    case "DECLINED":
-      return "Declined"
-    case "COUNTERED":
-      return "Countered"
-    case "EXPIRED":
-      return "Expired"
-    case "WITHDRAWN":
-      return "Withdrawn"
-    case "COMPLETED":
-      return "Completed"
-    default:
-      return status
-  }
-}
-
-/** Status pill on “I made” tiles — seller-opened negotiations read as “From seller”. */
-export function buyerMadeOfferStatusLabel(offer: DashboardOfferRow): string {
-  if (offer.status === "COUNTERED" && offer.seller_initiated) return "From seller"
-  return statusLabel(offer.status)
 }
 
 export function counterOfferResponseExpired(offer: DashboardOfferRow): boolean {
@@ -149,6 +121,7 @@ export function OfferRow({
   compact = false,
   conversationId = null,
   onWithdrawn,
+  highlighted = false,
 }: {
   offer: DashboardOfferRow
   role: "buyer" | "seller"
@@ -161,6 +134,8 @@ export function OfferRow({
   /** When set, Messages links directly to the listing thread (skips inbox redirect). */
   conversationId?: string | null
   onWithdrawn?: () => void | Promise<void>
+  /** Pins the row opened from an email or other deep link. */
+  highlighted?: boolean
 }) {
   const listing = dashboardListingForOffer(offer)
   const isSold = offerIsSoldPresentation(offer)
@@ -186,6 +161,32 @@ export function OfferRow({
 
   const listPriceKnown = !!listing && Number.isFinite(listPrice) && listPrice > 0
   const priceLines = offerTilePriceLines(role, offer, listPriceKnown, listPrice)
+  const showCheckout =
+    role === "buyer" &&
+    offer.status === "ACCEPTED" &&
+    !isSold &&
+    !offerIsBinding(offer)
+  const actionable = showRespond || showViewCounter || showCheckout
+  const primaryButtonClass = "h-9 rounded-md px-3.5 text-[13px] font-semibold"
+  const quietLinkClass =
+    "text-[12px] font-medium text-muted-foreground underline decoration-foreground/20 underline-offset-2 transition-colors hover:text-foreground"
+  const statusHint = isSold
+    ? null
+    : role === "seller" && offer.seller_initiated && offer.status === "COUNTERED"
+      ? "Waiting for the buyer to respond."
+      : role === "seller" && offer.status === "COUNTERED"
+        ? "Waiting for the buyer to reply to your counter."
+        : role === "seller" && offer.status === "ACCEPTED" && !offerIsBinding(offer)
+          ? "Waiting for the buyer to pay."
+          : showCheckout
+            ? "Pay at the agreed price to finish this order."
+            : null
+  const note =
+    role === "seller"
+      ? offer.buyer_note?.trim() || ""
+      : offer.status === "COUNTERED"
+        ? offer.seller_counter_note?.trim() || ""
+        : ""
   const shippingAmount =
     offer.shipping_amount != null ? parseFloat(String(offer.shipping_amount)) : null
   const fulfillmentLabel = offerFulfillmentLabel(
@@ -195,9 +196,11 @@ export function OfferRow({
 
   return (
     <article
+      id={`offer-${offer.id}`}
       className={cn(
-        "group overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm transition-[border-color,box-shadow] duration-200 dark:bg-card/80",
+        "group scroll-mt-24 overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm transition-[border-color,box-shadow] duration-200 dark:bg-card/80",
         "hover:border-border/90 hover:shadow",
+        highlighted && "border-listingHeart/50 ring-2 ring-listingHeart/30",
       )}
     >
       <div className={cn("flex flex-col sm:flex-row sm:items-stretch", compact && "sm:flex-row")}>
@@ -245,17 +248,15 @@ export function OfferRow({
             </div>
             <span
               className={cn(
-                "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ring-1",
+                "shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1",
                 isSold
                   ? "bg-neutral-200 text-neutral-900 ring-neutral-300/60 dark:bg-neutral-700 dark:text-neutral-100 dark:ring-neutral-600/50"
-                  : "bg-muted/80 text-muted-foreground ring-border/40",
+                  : actionable || offer.status === "ACCEPTED"
+                    ? "bg-listingHeart/10 text-listingHeart ring-listingHeart/25"
+                    : "bg-muted/80 text-muted-foreground ring-border/40",
               )}
             >
-              {isSold
-                ? "Sold"
-                : role === "buyer"
-                  ? buyerMadeOfferStatusLabel(offer)
-                  : statusLabel(offer.status)}
+              {offerStatusLabel(offer, role)}
             </span>
           </div>
 
@@ -296,6 +297,12 @@ export function OfferRow({
               Payment reserved — if they accept, this becomes your order.
             </p>
           ) : null}
+          {note ? (
+            <p className="mt-2 line-clamp-2 text-[13px] leading-relaxed text-foreground/80">{note}</p>
+          ) : null}
+          {statusHint ? (
+            <p className="mt-1 text-[12px] text-muted-foreground">{statusHint}</p>
+          ) : null}
 
           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
             <span className="inline-flex items-center gap-1">
@@ -313,72 +320,65 @@ export function OfferRow({
             )}
           </div>
 
-          <div className="mt-2.5 flex flex-wrap items-center gap-1.5 border-t border-border/40 pt-2.5">
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 rounded-md border-border/70 px-2.5 text-[11px] font-medium"
-              asChild
-            >
-              <Link href={href}>
-                <ArrowUpRight className="h-3 w-3 opacity-75" aria-hidden />
+          <div className="mt-2.5 flex flex-col gap-2 border-t border-border/40 pt-2.5">
+            <div className="flex flex-wrap items-center gap-1.5">
+              {showCheckout ? (
+                <Button size="sm" className={primaryButtonClass} asChild>
+                  <Link href={acceptedOfferCheckoutHref(offer.id)}>Checkout</Link>
+                </Button>
+              ) : null}
+              {showViewCounter ? (
+                <Button
+                  size="sm"
+                  className={primaryButtonClass}
+                  type="button"
+                  onClick={() => onViewCounterOpen?.(offer)}
+                >
+                  Accept or decline
+                </Button>
+              ) : null}
+              {showRespond ? (
+                <Button
+                  size="sm"
+                  className={primaryButtonClass}
+                  type="button"
+                  onClick={() => onRespondOpen(offer)}
+                >
+                  {offerIsBinding(offer) ? "Accept & complete" : "Respond to offer"}
+                </Button>
+              ) : null}
+              {role === "seller" &&
+              offer.seller_initiated &&
+              offer.status === "COUNTERED" &&
+              !isSold &&
+              onWithdrawn ? (
+                <SellerOfferManageActions
+                  compact
+                  offerId={offer.id}
+                  listingId={offer.listing_id}
+                  buyerUserId={offer.buyer_id}
+                  sellerUserId={offer.seller_id}
+                  listingTitle={listingTitle}
+                  listPrice={listPrice}
+                  onCompleted={onWithdrawn}
+                />
+              ) : null}
+              {role === "buyer" && offer.status === "PENDING" && offerIsBinding(offer) && onWithdrawn ? (
+                <OfferWithdrawButton
+                  offerId={offer.id}
+                  onCompleted={onWithdrawn}
+                  className="h-9 rounded-md px-3.5 text-[13px] font-medium"
+                />
+              ) : null}
+            </div>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <Link href={href} className={quietLinkClass}>
                 View listing
               </Link>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 rounded-md border-border/70 px-2.5 text-[11px] font-medium"
-              asChild
-            >
-              <Link href={messagesHref} prefetch={!!conversationId}>
-                <MessageCircle className="h-3 w-3 opacity-75" aria-hidden />
+              <Link href={messagesHref} prefetch={!!conversationId} className={quietLinkClass}>
                 Messages
               </Link>
-            </Button>
-            {showViewCounter && (
-              <Button
-                size="sm"
-                className="h-7 rounded-md px-3 text-[11px] font-semibold"
-                type="button"
-                onClick={() => onViewCounterOpen?.(offer)}
-              >
-                Accept or decline
-              </Button>
-            )}
-            {showRespond && (
-              <Button
-                size="sm"
-                className="h-7 rounded-md px-3 text-[11px] font-semibold"
-                type="button"
-                onClick={() => onRespondOpen(offer)}
-              >
-                {offerIsBinding(offer) ? "Accept & complete" : "Respond to offer"}
-              </Button>
-            )}
-            {role === "buyer" && offer.status === "PENDING" && offerIsBinding(offer) && onWithdrawn ? (
-              <OfferWithdrawButton
-                offerId={offer.id}
-                onCompleted={onWithdrawn}
-                className="h-7 rounded-md px-2.5 text-[11px] font-medium"
-              />
-            ) : null}
-            {role === "seller" &&
-            offer.seller_initiated &&
-            offer.status === "COUNTERED" &&
-            !isSold &&
-            onWithdrawn ? (
-              <SellerOfferManageActions
-                compact
-                offerId={offer.id}
-                listingId={offer.listing_id}
-                buyerUserId={offer.buyer_id}
-                sellerUserId={offer.seller_id}
-                listingTitle={listingTitle}
-                listPrice={listPrice}
-                onCompleted={onWithdrawn}
-              />
-            ) : null}
+            </div>
           </div>
         </div>
       </div>

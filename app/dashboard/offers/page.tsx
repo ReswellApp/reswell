@@ -1,7 +1,11 @@
 import { redirect } from "next/navigation"
 import { privatePageMetadata } from "@/lib/site-metadata"
 import { DashboardOffersView } from "@/components/features/offers/dashboard-offers-view"
-import { parseOffersTab } from "@/lib/utils/offers-dashboard-display"
+import {
+  offersPageLoginRedirect,
+  parseOfferFocusId,
+  parseOffersTab,
+} from "@/lib/utils/offers-dashboard-display"
 import { getCachedDashboardSession } from "@/lib/dashboard-session"
 import { getShopAccountContext } from "@/lib/services/accountAccess"
 import { fetchDashboardOffersPartitioned } from "@/lib/db/offers-dashboard"
@@ -28,14 +32,15 @@ function mergeOffers(sent: DashboardOfferRow[], received: DashboardOfferRow[]): 
 export default async function DashboardOffersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string }>
+  searchParams: Promise<{ tab?: string; offer?: string }>
 }) {
   const sp = await searchParams
   const defaultTab = parseOffersTab(sp.tab)
+  const focusOfferId = parseOfferFocusId(sp.offer)
 
   const { supabase, user } = await getCachedDashboardSession()
   if (!user) {
-    redirect("/auth/login?redirect=/dashboard/offers")
+    redirect(offersPageLoginRedirect("/dashboard/offers", sp))
   }
   const shop = await getShopAccountContext()
   const sellerId = shop?.accountId ?? user.id
@@ -96,6 +101,7 @@ export default async function DashboardOffersPage({
         minPctByListingId={minPctByListingId}
         conversationIdByOfferKey={conversationIdByOfferKey}
         cartOfferProspects={cartOfferProspects}
+        focusOfferId={focusOfferId}
       />
     </div>
   )

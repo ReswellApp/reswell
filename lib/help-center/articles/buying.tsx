@@ -184,7 +184,7 @@ export const buyingHelpArticles: HelpArticle[] = [
           <>
             <p>
               Your offer shows up in {helpLink("/messages", "Messages")} and on{" "}
-              {helpLink("/dashboard/offers", "Offers")} under <strong>I made</strong>. From there the
+              {helpLink("/dashboard/offers?tab=buyer", "Offers")} under <strong>Buying</strong>. From there the
               seller can:
             </p>
             <BulletList

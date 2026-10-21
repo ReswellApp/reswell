@@ -27,6 +27,7 @@ import {
 import { buildOrderSuccessPath } from "@/lib/google-ads/purchase-success-path"
 import { acceptedOfferCheckoutHref, listingDetailHref } from "@/lib/listing-href"
 import { publicSiteOriginForEmail } from "@/lib/public-site-origin"
+import { dashboardOffersPath } from "@/lib/utils/offers-dashboard-display"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
 
 function displayNameFromProfileRow(data: {
@@ -128,7 +129,10 @@ export async function trackKlaviyoOfferAccepted(
   const checkoutUrl = orderId
     ? `${origin}${buildOrderSuccessPath(orderId)}`
     : `${origin}${acceptedOfferCheckoutHref(payload.offerId)}`
-  const offersUrl = `${origin}/dashboard/offers?tab=buyer`
+  const offersUrl = `${origin}${dashboardOffersPath({
+    role: "buyer",
+    offerId: payload.offerId,
+  })}`
   const conversationId =
     typeof payload.conversationId === "string" ? payload.conversationId.trim() : ""
   const messagesUrl = conversationId
