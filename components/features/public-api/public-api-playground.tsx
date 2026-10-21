@@ -116,14 +116,12 @@ export function PublicApiPlayground() {
           (kind === "listing" && !listingId.trim())
         }
       >
-        {loading ? "Loading…" : "Fetch JSON"}
+        {loading ? "Loading…" : "Run request"}
       </Button>
 
-      {output ? (
-        <pre className="mt-4 max-h-96 overflow-auto rounded-xl bg-muted p-4 text-xs leading-relaxed text-foreground">
-          {output}
-        </pre>
-      ) : null}
+      <pre className="mt-4 max-h-96 overflow-auto rounded-xl bg-muted p-4 text-xs leading-relaxed text-foreground">
+        {output || "// Click “Run request” to see a live JSON response"}
+      </pre>
     </div>
   )
 }
