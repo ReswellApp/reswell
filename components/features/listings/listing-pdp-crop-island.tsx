@@ -73,13 +73,13 @@ export function ListingPdpCropIsland({
         .map((image) => {
           const proxied = proxiedListingImageSrc(image.url) || image.url
           const hero = proxied === "/placeholder.svg" ? proxied : withListingMediaPdpVariant(proxied)
+          const thumb =
+            listingTileImageSrcFromRow(image) || listingFilmImageSrcFromRow(image) || hero
           return {
             id: image.id,
-            src: hero,
-            previewSrc:
-              listingTileImageSrcFromRow(image) ||
-              listingFilmImageSrcFromRow(image) ||
-              hero,
+            src: proxied,
+            previewSrc: hero !== proxied ? hero : undefined,
+            thumbSrc: thumb,
             crop: Object.prototype.hasOwnProperty.call(savedCrops, image.id)
               ? savedCrops[image.id]
               : listingPdpCropFromImageRow(image),

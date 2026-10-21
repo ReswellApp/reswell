@@ -126,10 +126,10 @@ export function ListingGalleryPhoto({
   const cssFit = listingPdpCropCssFit(crop)
   const objectPosition = crop ? listingPdpCropObjectPosition(crop) : undefined
   const precise = listingPdpCropNeedsPreciseLayout(crop)
-  // Below cover (zoom < 1) the measured box is smaller than the frame and
-  // leaves a gap. Those photos center and scale up to cover instead.
+  // Fit is object-fit: contain. Anything between fit and a plain cover, and
+  // any zoom past cover, needs the measured box so the hero matches the editor.
   const box =
-    precise && crop && crop.zoom >= 1 && natural && frame
+    precise && crop && natural && frame
       ? listingPdpCropToLayout(frame.width, frame.height, natural.w, natural.h, crop)
       : null
 
@@ -149,7 +149,7 @@ export function ListingGalleryPhoto({
     return () => observer.disconnect()
   }, [precise, frameEl])
 
-  const resolvedFit = crop ? (cssFit === "contain" ? "cover" : cssFit) : objectFit
+  const resolvedFit = crop ? cssFit : objectFit
   const fitClass = box
     ? "inset-auto h-auto w-auto max-w-none"
     : resolvedFit === "contain"
@@ -174,9 +174,10 @@ export function ListingGalleryPhoto({
         left: box.left,
         top: box.top,
         maxWidth: "none",
-        objectFit: "fill",
-        ["--listing-pdp-object-fit" as string]: "fill",
-        ["--listing-pdp-object-position" as string]: objectPosition ?? "center center",
+        objectFit: "contain",
+        objectPosition: "center center",
+        ["--listing-pdp-object-fit" as string]: "contain",
+        ["--listing-pdp-object-position" as string]: "center center",
       }
     : crop
       ? {
