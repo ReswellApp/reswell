@@ -6,9 +6,13 @@ import { getCachedDashboardSession } from "@/lib/dashboard-session"
 import { fetchDashboardOffersPartitioned } from "@/lib/db/offers-dashboard"
 import { fetchMyListingCartOfferProspects } from "@/lib/db/my-listings"
 import { DashboardOffersView } from "@/components/features/offers/dashboard-offers-view"
-import { parseOffersTab } from "@/lib/utils/offers-dashboard-display"
+import {
+  offersPageLoginRedirect,
+  parseOfferFocusId,
+  parseOffersTab,
+  shouldShowOfferInMessagesTab,
+} from "@/lib/utils/offers-dashboard-display"
 import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
-import { shouldShowOfferInMessagesTab } from "@/lib/utils/offers-dashboard-display"
 import type { DashboardOfferRow } from "@/lib/types/offers-dashboard"
 import { MessagesOffersPageSkeleton } from "@/components/features/messages/messages-page-skeletons"
 
@@ -31,14 +35,15 @@ function mergeOffers(sent: DashboardOfferRow[], received: DashboardOfferRow[]): 
 async function MessagesOffersContent({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string }>
+  searchParams: Promise<{ tab?: string; offer?: string }>
 }) {
   const sp = await searchParams
   const defaultTab = parseOffersTab(sp.tab)
+  const focusOfferId = parseOfferFocusId(sp.offer)
 
   const { supabase, user } = await getCachedDashboardSession()
   if (!user) {
-    redirect("/auth/login?redirect=/messages/offers")
+    redirect(offersPageLoginRedirect("/messages/offers", sp))
   }
 
   const [{ sent, received, sellersById, buyersById, conversationIdByOfferKey }, cartOfferProspects] =
@@ -77,6 +82,7 @@ async function MessagesOffersContent({
       minPctByListingId={minPctByListingId}
       conversationIdByOfferKey={conversationIdByOfferKey}
       cartOfferProspects={cartOfferProspects}
+      focusOfferId={focusOfferId}
       activeOnlyDefault
       basePath="/messages/offers"
     />
@@ -86,16 +92,17 @@ async function MessagesOffersContent({
 export default async function MessagesOffersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string }>
+  searchParams: Promise<{ tab?: string; offer?: string }>
 }) {
+  const sp = await searchParams
   const { user } = await getCachedRequestSession()
   if (!user) {
-    redirect("/auth/login?redirect=/messages/offers")
+    redirect(offersPageLoginRedirect("/messages/offers", sp))
   }
 
   return (
     <Suspense fallback={<MessagesOffersPageSkeleton />}>
-      <MessagesOffersContent searchParams={searchParams} />
+      <MessagesOffersContent searchParams={Promise.resolve(sp)} />
     </Suspense>
   )
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
@@ -34,6 +34,7 @@ import type {
 import {
   dashboardListingForOffer,
   isInactiveOffer,
+  offerAwaitsUser,
   offerIsSoldPresentation,
   partitionOffersByRole,
   type OffersRoleTab,
@@ -122,6 +123,8 @@ export interface DashboardOffersViewProps {
   cartOfferProspects?: ListingCartOfferProspect[]
   /** Listing threads keyed by `listingId:buyerId:sellerId`. */
   conversationIdByOfferKey?: Record<string, string>
+  /** Offer to pin at the top (`?offer=` from an email). */
+  focusOfferId?: string | null
 }
 
 export function DashboardOffersView({
@@ -135,9 +138,15 @@ export function DashboardOffersView({
   basePath = "/dashboard/offers",
   cartOfferProspects = [],
   conversationIdByOfferKey = {},
+  focusOfferId = null,
 }: DashboardOffersViewProps) {
   const router = useRouter()
-  const [tab, setTab] = useState<OffersRoleTab>(defaultTab)
+  const focusedOffer = useMemo(() => {
+    if (!focusOfferId) return null
+    return offers.find((offer) => offer.id === focusOfferId) ?? null
+  }, [offers, focusOfferId])
+  const focusedRole = focusedOffer ? userParticipationRole(focusedOffer, userId) : null
+  const [tab, setTab] = useState<OffersRoleTab>(focusedRole ?? defaultTab)
   const [searchQuery, setSearchQuery] = useState("")
   const [sort, setSort] = useState<OffersSort>("recent")
   const [statusFilter, setStatusFilter] = useState<OffersStatusFilter>("all")
@@ -149,14 +158,27 @@ export function DashboardOffersView({
   const [buyerCounterOffer, setBuyerCounterOffer] = useState<DashboardOfferRow | null>(null)
   const [buyerCounterOpen, setBuyerCounterOpen] = useState(false)
 
+  const scrolledToOfferId = useRef<string | null>(null)
+
   useEffect(() => {
-    setTab(defaultTab)
-  }, [defaultTab])
+    setTab(focusedRole ?? defaultTab)
+  }, [defaultTab, focusedRole])
+
+  useEffect(() => {
+    if (!focusOfferId || tab !== focusedRole) return
+    if (scrolledToOfferId.current === focusOfferId) return
+    const node = document.getElementById(`offer-${focusOfferId}`)
+    if (!node) return
+    scrolledToOfferId.current = focusOfferId
+    node.scrollIntoView({ block: "center" })
+  }, [focusOfferId, focusedRole, tab])
 
   const { seller: sellerOffers, buyer: buyerOffers } = useMemo(
     () => partitionOffersByRole(offers, userId),
     [offers, userId],
   )
+  const sellerAttention = sellerOffers.filter((offer) => offerAwaitsUser(offer, "seller")).length
+  const buyerAttention = buyerOffers.filter((offer) => offerAwaitsUser(offer, "buyer")).length
 
   const syncUrl = (next: OffersRoleTab) => {
     const path = next === "buyer" ? `${basePath}?tab=buyer` : basePath
@@ -185,6 +207,13 @@ export function DashboardOffersView({
       tab,
     ],
   )
+  const showingFocus = Boolean(focusedOffer && tab === focusedRole)
+  const listOffers = useMemo(
+    () => visibleOffers.filter((offer) => offer.id !== focusedOffer?.id),
+    [visibleOffers, focusedOffer],
+  )
+  const awaitingOffers = listOffers.filter((offer) => offerAwaitsUser(offer, tab))
+  const otherOffers = listOffers.filter((offer) => !offerAwaitsUser(offer, tab))
 
   const openRespond = (o: DashboardOfferRow) => {
     setDialogOffer(o)
@@ -232,11 +261,39 @@ export function DashboardOffersView({
 
   const subtitle =
     tab === "seller"
-      ? "Send discounted offers to interested buyers who have your listings in their carts."
-      : "Send offers to sellers on listings you're looking for."
+      ? "Bids on your listings, and offers you've sent to buyers."
+      : "Offers you've made on listings you want."
+
+  const tabs: { id: OffersRoleTab; label: string; attention: number }[] = [
+    { id: "seller", label: "Selling", attention: sellerAttention },
+    { id: "buyer", label: "Buying", attention: buyerAttention },
+  ]
+
+  const renderOffer = (offer: DashboardOfferRow, highlighted = false) => {
+    const role = userParticipationRole(offer, userId) ?? "buyer"
+    return (
+      <OfferRow
+        key={offer.id}
+        offer={offer}
+        role={role}
+        compact
+        highlighted={highlighted}
+        counterparty={counterpartyForOffer(offer, role, sellersById, buyersById)}
+        listingTitle={dashboardListingForOffer(offer)?.title ?? ""}
+        onRespondOpen={openRespond}
+        onViewCounterOpen={role === "buyer" ? openBuyerCounter : undefined}
+        onWithdrawn={() => router.refresh()}
+        conversationId={
+          conversationIdByOfferKey[
+            offerConversationKey(offer.listing_id, offer.buyer_id, offer.seller_id)
+          ] ?? null
+        }
+      />
+    )
+  }
 
   return (
-    <div className="space-y-0">
+    <div className="space-y-0 pb-8">
       <header className="border-b border-border/60 pb-6">
         <div className="hidden lg:block">
           <h1 className={dashboardPageTitleClass}>Offers</h1>
@@ -249,58 +306,55 @@ export function DashboardOffersView({
             "lg:mt-6",
           )}
           role="tablist"
-          aria-label="Seller and buyer offers"
+          aria-label="Selling and buying offers"
         >
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === "seller"}
-            onClick={() => {
-              setTab("seller")
-              syncUrl("seller")
-            }}
-            className={cn(
-              "flex min-h-touch flex-1 items-center justify-center rounded-lg px-4 text-[14px] font-semibold transition-colors",
-              tab === "seller"
-                ? "bg-card text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            Seller
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === "buyer"}
-            onClick={() => {
-              setTab("buyer")
-              syncUrl("buyer")
-            }}
-            className={cn(
-              "flex min-h-touch flex-1 items-center justify-center rounded-lg px-4 text-[14px] font-semibold transition-colors",
-              tab === "buyer"
-                ? "bg-card text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            Buyer
-          </button>
+          {tabs.map((item) => {
+            const selected = tab === item.id
+            return (
+              <button
+                key={item.id}
+                type="button"
+                role="tab"
+                aria-selected={selected}
+                aria-label={
+                  item.attention > 0
+                    ? `${item.label}, ${item.attention} need a response`
+                    : item.label
+                }
+                onClick={() => {
+                  setTab(item.id)
+                  syncUrl(item.id)
+                }}
+                className={cn(
+                  "flex min-h-touch flex-1 items-center justify-center gap-2 rounded-lg px-4 text-[14px] font-semibold transition-colors",
+                  selected
+                    ? "bg-card text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {item.label}
+                {item.attention > 0 ? (
+                  <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-listingHeart px-1.5 text-[11px] font-semibold tabular-nums text-white">
+                    {item.attention}
+                  </span>
+                ) : null}
+              </button>
+            )
+          })}
         </div>
       </header>
 
-      {tab === "buyer" ? (
-        <div className="mt-6 rounded-2xl border border-rose-100/80 bg-rose-50/60 px-4 py-4 dark:border-rose-950/40 dark:bg-rose-950/20 sm:px-5 sm:py-5">
-          <p className="text-[15px] font-semibold text-foreground">Make offers on any listing</p>
-          <p className="mt-1 max-w-2xl text-[14px] leading-relaxed text-muted-foreground">
-            Open a listing you want, tap Make an offer, and your negotiations will appear here on the
-            Buyer tab.
-          </p>
-        </div>
-      ) : (
-        <SellerCartOfferProspects sellerUserId={userId} prospects={cartOfferProspects} />
-      )}
+      {showingFocus && focusedOffer ? (
+        <section className="mt-6" aria-label="Opened offer">
+          <h2 className="text-[13px] font-semibold tracking-tight text-listingHeart">
+            Opened from your link
+          </h2>
+          <div className="mt-2">{renderOffer(focusedOffer, true)}</div>
+        </section>
+      ) : null}
 
-      <div className="mt-6 flex flex-col gap-4 border-b border-border/60 pb-5">
+      {roleOffers.length > 0 ? (
+        <div className="mt-6 flex flex-col gap-4 border-b border-border/60 pb-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative min-w-0 flex-1">
             <Search
@@ -381,41 +435,60 @@ export function DashboardOffersView({
             </div>
           </div>
         )}
-      </div>
-
-      <p className="mt-4 text-[13px] text-muted-foreground">
-        {visibleOffers.length === 0 ? "No offers found" : `${visibleOffers.length} offer${visibleOffers.length === 1 ? "" : "s"}`}
-      </p>
+        </div>
+      ) : null}
 
       {roleOffers.length === 0 ? (
-        <OffersEmptyState role={tab} />
-      ) : visibleOffers.length === 0 ? (
+        <OffersEmptyState
+          role={tab}
+          hasCartProspects={tab === "seller" && cartOfferProspects.length > 0}
+        />
+      ) : listOffers.length === 0 && !showingFocus ? (
         <p className="py-16 text-center text-[15px] text-muted-foreground">No offers match your filters.</p>
       ) : (
-        <div className="mt-2 space-y-3 pb-6">
-          {visibleOffers.map((o) => {
-            const role = userParticipationRole(o, userId) ?? "buyer"
-            return (
-              <OfferRow
-                key={o.id}
-                offer={o}
-                role={role}
-                compact
-                counterparty={counterpartyForOffer(o, role, sellersById, buyersById)}
-                listingTitle={dashboardListingForOffer(o)?.title ?? ""}
-                onRespondOpen={openRespond}
-                onViewCounterOpen={role === "buyer" ? openBuyerCounter : undefined}
-                onWithdrawn={() => router.refresh()}
-                conversationId={
-                  conversationIdByOfferKey[
-                    offerConversationKey(o.listing_id, o.buyer_id, o.seller_id)
-                  ] ?? null
-                }
-              />
-            )
-          })}
-        </div>
+        <>
+          {awaitingOffers.length > 0 ? (
+            <section className="mt-6" aria-label="Needs a response">
+              <h2 className="text-[13px] font-semibold tracking-tight text-foreground">
+                Needs a response
+                <span className="ml-2 font-medium tabular-nums text-muted-foreground">
+                  {awaitingOffers.length}
+                </span>
+              </h2>
+              <div className="mt-2 space-y-3">
+                {awaitingOffers.map((offer) => renderOffer(offer))}
+              </div>
+            </section>
+          ) : null}
+          {otherOffers.length > 0 ? (
+            <section className="mt-6" aria-label="Other offers">
+              {awaitingOffers.length > 0 || showingFocus ? (
+                <h2 className="text-[13px] font-semibold tracking-tight text-foreground">
+                  Other offers
+                  <span className="ml-2 font-medium tabular-nums text-muted-foreground">
+                    {otherOffers.length}
+                  </span>
+                </h2>
+              ) : (
+                <p className="text-[13px] text-muted-foreground">
+                  {otherOffers.length} offer{otherOffers.length === 1 ? "" : "s"}
+                </p>
+              )}
+              <div className="mt-2 space-y-3">
+                {otherOffers.map((offer) => renderOffer(offer))}
+              </div>
+            </section>
+          ) : null}
+        </>
       )}
+
+      {tab === "seller" ? (
+        <SellerCartOfferProspects
+          sellerUserId={userId}
+          prospects={cartOfferProspects}
+          defaultOpen={sellerOffers.length === 0}
+        />
+      ) : null}
 
       {offerRowLite ? (
         <SellerOfferResponseDialog

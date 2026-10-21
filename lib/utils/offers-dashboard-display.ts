@@ -8,6 +8,40 @@ export function parseOffersTab(tab: string | undefined): OffersRoleTab {
   return "seller"
 }
 
+const OFFER_ID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+/** Offer id from `?offer=` on the dashboard offers page. Rejects anything that is not a UUID. */
+export function parseOfferFocusId(value: string | undefined): string | null {
+  const id = value?.trim() ?? ""
+  return OFFER_ID_PATTERN.test(id) ? id : null
+}
+
+/** Canonical offers URL. Seller links keep `tab=received` so older emails still land here. */
+export function dashboardOffersPath(input: {
+  role: OffersRoleTab
+  offerId?: string | null
+}): string {
+  const params = new URLSearchParams()
+  params.set("tab", input.role === "buyer" ? "buyer" : "received")
+  const offerId = input.offerId?.trim()
+  if (offerId) params.set("offer", offerId)
+  return `/dashboard/offers?${params.toString()}`
+}
+
+export function offersPageLoginRedirect(
+  basePath: string,
+  search: { tab?: string; offer?: string },
+): string {
+  const params = new URLSearchParams()
+  const tab = search.tab?.trim()
+  const offerId = parseOfferFocusId(search.offer)
+  if (tab) params.set("tab", tab)
+  if (offerId) params.set("offer", offerId)
+  const dest = params.size > 0 ? `${basePath}?${params.toString()}` : basePath
+  return `/auth/login?redirect=${encodeURIComponent(dest)}`
+}
+
 function singleListing(
   row: DashboardOfferRow["listings"],
 ): DashboardListingEmbed | null {
@@ -60,6 +94,20 @@ export function shouldShowOfferInDashboard(offer: DashboardOfferRow): boolean {
 
 export function offerIsSoldPresentation(offer: DashboardOfferRow): boolean {
   return isWinningSoldOffer(offer)
+}
+
+/**
+ * True when this person still has to act: a seller on a pending bid, or a buyer
+ * on a counter that has not expired.
+ */
+export function offerAwaitsUser(
+  offer: DashboardOfferRow,
+  role: "buyer" | "seller",
+  nowMs = Date.now(),
+): boolean {
+  if (offerIsSoldPresentation(offer) || isInactiveOffer(offer, nowMs)) return false
+  if (role === "seller") return offer.status === "PENDING"
+  return offer.status === "COUNTERED"
 }
 
 /** Whether `userId` is the buyer or seller on this offer row. */

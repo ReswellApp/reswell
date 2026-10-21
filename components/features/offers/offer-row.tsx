@@ -149,6 +149,7 @@ export function OfferRow({
   compact = false,
   conversationId = null,
   onWithdrawn,
+  highlighted = false,
 }: {
   offer: DashboardOfferRow
   role: "buyer" | "seller"
@@ -161,6 +162,8 @@ export function OfferRow({
   /** When set, Messages links directly to the listing thread (skips inbox redirect). */
   conversationId?: string | null
   onWithdrawn?: () => void | Promise<void>
+  /** Pins the row opened from an email or other deep link. */
+  highlighted?: boolean
 }) {
   const listing = dashboardListingForOffer(offer)
   const isSold = offerIsSoldPresentation(offer)
@@ -186,6 +189,16 @@ export function OfferRow({
 
   const listPriceKnown = !!listing && Number.isFinite(listPrice) && listPrice > 0
   const priceLines = offerTilePriceLines(role, offer, listPriceKnown, listPrice)
+  const actionable = showRespond || showViewCounter
+  const note =
+    role === "seller"
+      ? offer.buyer_note?.trim() || ""
+      : offer.status === "COUNTERED"
+        ? offer.seller_counter_note?.trim() || ""
+        : ""
+  const primaryButtonClass = highlighted
+    ? "h-9 rounded-md px-3.5 text-[13px] font-semibold"
+    : "h-7 rounded-md px-3 text-[11px] font-semibold"
   const shippingAmount =
     offer.shipping_amount != null ? parseFloat(String(offer.shipping_amount)) : null
   const fulfillmentLabel = offerFulfillmentLabel(
@@ -195,9 +208,11 @@ export function OfferRow({
 
   return (
     <article
+      id={`offer-${offer.id}`}
       className={cn(
-        "group overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm transition-[border-color,box-shadow] duration-200 dark:bg-card/80",
+        "group scroll-mt-24 overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm transition-[border-color,box-shadow] duration-200 dark:bg-card/80",
         "hover:border-border/90 hover:shadow",
+        highlighted && "border-listingHeart/50 ring-2 ring-listingHeart/30",
       )}
     >
       <div className={cn("flex flex-col sm:flex-row sm:items-stretch", compact && "sm:flex-row")}>
@@ -245,10 +260,12 @@ export function OfferRow({
             </div>
             <span
               className={cn(
-                "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ring-1",
+                "shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1",
                 isSold
                   ? "bg-neutral-200 text-neutral-900 ring-neutral-300/60 dark:bg-neutral-700 dark:text-neutral-100 dark:ring-neutral-600/50"
-                  : "bg-muted/80 text-muted-foreground ring-border/40",
+                  : actionable || offer.status === "ACCEPTED"
+                    ? "bg-listingHeart/10 text-listingHeart ring-listingHeart/25"
+                    : "bg-muted/80 text-muted-foreground ring-border/40",
               )}
             >
               {isSold
@@ -296,6 +313,9 @@ export function OfferRow({
               Payment reserved — if they accept, this becomes your order.
             </p>
           ) : null}
+          {note ? (
+            <p className="mt-2 line-clamp-2 text-[13px] leading-relaxed text-foreground/80">{note}</p>
+          ) : null}
 
           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
             <span className="inline-flex items-center gap-1">
@@ -339,7 +359,7 @@ export function OfferRow({
             {showViewCounter && (
               <Button
                 size="sm"
-                className="h-7 rounded-md px-3 text-[11px] font-semibold"
+                className={primaryButtonClass}
                 type="button"
                 onClick={() => onViewCounterOpen?.(offer)}
               >
@@ -349,7 +369,7 @@ export function OfferRow({
             {showRespond && (
               <Button
                 size="sm"
-                className="h-7 rounded-md px-3 text-[11px] font-semibold"
+                className={primaryButtonClass}
                 type="button"
                 onClick={() => onRespondOpen(offer)}
               >
