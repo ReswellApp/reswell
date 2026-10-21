@@ -73,6 +73,7 @@ const EMPLOYEE_EXCLUDED_HREFS = new Set<string>([
   '/admin/site-assets',
   '/admin/llm-usage',
   '/admin/intelligence',
+  '/admin/cohorts',
   '/admin/listings/brand-requests',
   '/admin/listings/board-catalog-data',
   '/admin/boards-archive',
@@ -137,6 +138,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
     label: 'Analytics',
     items: [
       { href: '/admin/intelligence', label: 'Intelligence', icon: 'brain' },
+      { href: '/admin/cohorts', label: 'Cohorts', icon: 'users' },
       { href: '/admin/google-merchant', label: 'Google Merchant', icon: 'shoppingCart' },
       { href: '/admin/google-analytics', label: 'Google Analytics', icon: 'lineChart' },
       { href: '/admin/ad-sales', label: 'Ad sales', icon: 'megaphone' },
