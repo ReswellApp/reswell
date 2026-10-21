@@ -65,7 +65,7 @@ export function HowToShipPackGuide() {
           >
             Pack the board
           </h2>
-          <p className="mt-3 text-base leading-relaxed text-[#243044]">
+          <p className="mt-3 text-base leading-relaxed text-[#163060]">
             Need a carton first?{" "}
             <Link href="#find-a-box" className={linkClass}>
               Where to find a box
@@ -78,7 +78,7 @@ export function HowToShipPackGuide() {
 
         <ol className="mt-10 grid gap-5 lg:grid-cols-2">
           {STEPS.map((step, index) => (
-            <li key={step.title} className="rounded-2xl bg-[#f7f5f1] p-5 sm:p-6">
+            <li key={step.title} className="rounded-2xl bg-[#F9F9F2] p-5 sm:p-6">
               <div className="grid items-center gap-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]">
                 <div>
                   <p className="font-headline text-4xl font-bold leading-none text-[#355185]">
@@ -87,10 +87,10 @@ export function HowToShipPackGuide() {
                   <h3 className="mt-3 text-xl font-semibold tracking-tight text-[#001A4A]">
                     {step.title}
                   </h3>
-                  <p className="mt-2 text-base leading-relaxed text-[#243044]">{step.body}</p>
+                  <p className="mt-2 text-base leading-relaxed text-[#163060]">{step.body}</p>
                 </div>
                 {step.src && step.alt ? (
-                  <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-[#efece6]">
+                  <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-[#F9F9F2]">
                     <Image
                       src={step.src}
                       alt={step.alt}

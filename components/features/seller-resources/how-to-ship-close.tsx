@@ -50,9 +50,9 @@ export function HowToShipOptions() {
         </h2>
         <ul className="mx-auto mt-8 grid max-w-4xl gap-4 sm:grid-cols-2">
           {OPTIONS.map((option) => (
-            <li key={option.id} id={option.id} className="rounded-2xl bg-[#f7f5f1] px-5 py-6 sm:px-6">
+            <li key={option.id} id={option.id} className="rounded-2xl bg-[#F9F9F2] px-5 py-6 sm:px-6">
               <h3 className="text-xl font-semibold tracking-tight text-[#001A4A]">{option.title}</h3>
-              <p className="mt-2 text-base leading-relaxed text-[#243044]">{option.body}</p>
+              <p className="mt-2 text-base leading-relaxed text-[#163060]">{option.body}</p>
             </li>
           ))}
         </ul>
@@ -64,14 +64,14 @@ export function HowToShipOptions() {
 export function HowToShipQuestions() {
   return (
     <section className="bg-white px-4 sm:px-6" aria-labelledby="how-to-ship-questions-heading">
-      <div className="mx-auto max-w-6xl rounded-2xl bg-[#d5eef4] px-6 py-14 text-center sm:px-10 sm:py-16">
+      <div className="mx-auto max-w-6xl rounded-2xl bg-[#7F9DD5]/30 px-6 py-14 text-center sm:px-10 sm:py-16">
         <h2
           id="how-to-ship-questions-heading"
           className="font-headline text-3xl font-bold tracking-tight text-[#355185] sm:text-4xl"
         >
           Questions?
         </h2>
-        <p className="mx-auto mt-3 max-w-xl text-base leading-relaxed text-[#243044]">
+        <p className="mx-auto mt-3 max-w-xl text-base leading-relaxed text-[#163060]">
           Shipping help covers the label and drop-off. Contact us if you want to talk to someone.
         </p>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
@@ -102,7 +102,7 @@ export function HowToShipClose() {
       <h2 className="font-headline text-3xl font-bold tracking-tight text-[#001A4A] sm:text-4xl">
         Ready to list a board?
       </h2>
-      <p className="mt-2 text-base text-[#243044]">
+      <p className="mt-2 text-base text-[#163060]">
         It is free to post. Fees apply only when you make a sale.
       </p>
       <Button

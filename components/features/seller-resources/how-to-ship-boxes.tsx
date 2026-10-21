@@ -51,7 +51,7 @@ export function HowToShipBoxes() {
           >
             Where to find a box
           </h2>
-          <p className="mt-3 text-base leading-relaxed text-[#243044]">
+          <p className="mt-3 text-base leading-relaxed text-[#163060]">
             A surfboard needs its own carton. For the best rates, pack into {box.lengthIn}×
             {box.widthIn}×{box.heightIn} or stay under {HOW_TO_SELL_BEST_RATE_MAX_LENGTH_IN}″. See
             the{" "}
@@ -63,9 +63,9 @@ export function HowToShipBoxes() {
         </header>
         <ul className="mx-auto mt-10 grid max-w-4xl gap-4 sm:grid-cols-2">
           {SOURCES.map((source) => (
-            <li key={source.title} className="rounded-2xl bg-[#f7f5f1] px-5 py-6 sm:px-6">
+            <li key={source.title} className="rounded-2xl bg-[#F9F9F2] px-5 py-6 sm:px-6">
               <h3 className="text-xl font-semibold tracking-tight text-[#001A4A]">{source.title}</h3>
-              <p className="mt-2 text-base leading-relaxed text-[#243044]">{source.body}</p>
+              <p className="mt-2 text-base leading-relaxed text-[#163060]">{source.body}</p>
             </li>
           ))}
         </ul>
