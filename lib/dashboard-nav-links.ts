@@ -124,7 +124,7 @@ function buildSellingLinks(input: DashboardNavLinksInput): DashboardNavLink[] {
 const BUYING_LINKS: DashboardNavLink[] = [
   { name: "Purchases", href: "/dashboard/purchases", icon: ShoppingBag },
   BUYING_OFFERS_NAV,
-  { name: "Favorites", href: "/dashboard/favorites", icon: Heart },
+  { name: "Favorites", href: "/favorites", icon: Heart },
   { name: "Following", href: "/dashboard/following", icon: Users },
 ]
 
@@ -163,7 +163,7 @@ export const DASHBOARD_NAV_LINKS: DashboardNavLink[] = [
   },
   { name: "Purchases", href: "/dashboard/purchases", icon: ShoppingBag },
   BUYING_OFFERS_NAV,
-  { name: "Favorites", href: "/dashboard/favorites", icon: Heart },
+  { name: "Favorites", href: "/favorites", icon: Heart },
   { name: "Following", href: "/dashboard/following", icon: Users },
   { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { name: "Profile", href: "/dashboard/profile", icon: UserCircle },

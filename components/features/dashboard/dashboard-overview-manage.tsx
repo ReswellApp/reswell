@@ -90,7 +90,7 @@ export function DashboardOverviewManage({ model }: DashboardOverviewManageProps)
     },
     {
       name: "Favorites",
-      href: "/dashboard/favorites",
+      href: "/favorites",
       icon: Heart,
       detail: <Detail>{model.favoriteCount.toLocaleString()}</Detail>,
     },

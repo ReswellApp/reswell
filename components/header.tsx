@@ -1531,8 +1531,8 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
             <Link
               href={
                 user
-                  ? "/dashboard/favorites"
-                  : `/auth/login?redirect=${encodeURIComponent("/dashboard/favorites")}`
+                  ? "/favorites"
+                  : `/auth/login?redirect=${encodeURIComponent("/favorites")}`
               }
               className="hidden lg:inline-flex"
               onClick={
@@ -1541,7 +1541,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                   : (e) => {
                       if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
                       e.preventDefault()
-                      openLogin("/dashboard/favorites")
+                      openLogin("/favorites")
                     }
               }
             >

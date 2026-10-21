@@ -1,14 +1,35 @@
-import { redirect } from "next/navigation"
-import { pageSeoMetadata } from "@/lib/site-metadata"
+import { SavedListContent } from "@/components/saved-list-content"
+import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
+import { getSavedFavoritesForUser } from "@/lib/db/favorites"
+import { privatePageMetadata } from "@/lib/site-metadata"
+import {
+  dashboardPageSubtitleClass,
+  dashboardPageTitleClass,
+} from "@/lib/utils/dashboard-display-styles"
 
-export const metadata = pageSeoMetadata({
-  title: "Saved listings — Reswell",
+export const metadata = privatePageMetadata({
+  title: "Favorites — Reswell",
   description: "Your saved surfboard listings on Reswell.",
   path: "/favorites",
-  robots: { index: false, follow: false },
 })
 
-/** Bookmarks and emails still use `/favorites`; the list now lives in the dashboard. */
-export default function FavoritesRedirectPage() {
-  redirect("/dashboard/favorites")
+export default async function FavoritesPage() {
+  const { supabase, user } = await getCachedRequestSession()
+  // Guests are covered by the sign-in gate in the layout. Skip the query so
+  // the gate can render without a saved-list fetch.
+  if (!user) return null
+
+  const { favorites } = await getSavedFavoritesForUser(supabase, user.id)
+
+  return (
+    <main className="flex-1">
+      <section className="container mx-auto space-y-6 py-8">
+        <header>
+          <h1 className={dashboardPageTitleClass}>Favorites</h1>
+          <p className={dashboardPageSubtitleClass}>Your collection of favorite gear and boards.</p>
+        </header>
+        <SavedListContent viewerId={user.id} initialFavorites={favorites} />
+      </section>
+    </main>
+  )
 }
