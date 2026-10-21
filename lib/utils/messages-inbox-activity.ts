@@ -20,6 +20,7 @@ export function activityKindLabel(type: string | undefined): string {
   if (t.includes("favorite") || t.includes("save") || t === "listing_saved") return "Favorite"
   if (t.includes("follow")) return "Follow"
   if (t.startsWith("offer_")) return "Offer"
+  if (t === "order_delivered" || t === "order_delivered_payout") return "Order"
   if (t === "payout_info_required") return "Payout"
   return "Activity"
 }

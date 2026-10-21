@@ -1,3 +1,5 @@
+import { CARRIER_DELIVERY_PAYOUT_HOLD_DAYS } from "@/lib/shipping/carrier-delivery-payout-timing"
+
 /** In-app notification types, caps, and copy. Email stays on the existing Klaviyo callers. */
 
 export const LISTING_SAVED_DAILY_CAP = 10
@@ -21,6 +23,8 @@ export const NOTIFICATION_TYPES = [
   "new_listing_from_followed_digest",
   "price_drop_from_followed",
   "payout_info_required",
+  "order_delivered",
+  "order_delivered_payout",
 ] as const
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number]
@@ -104,6 +108,16 @@ export const NOTIFICATION_POLICIES: Record<NotificationType, NotificationPolicy>
     mode: "once",
     windowHours: NOTIFICATION_WINDOW_HOURS,
   },
+  order_delivered: {
+    type: "order_delivered",
+    mode: "once",
+    windowHours: NOTIFICATION_WINDOW_HOURS,
+  },
+  order_delivered_payout: {
+    type: "order_delivered_payout",
+    mode: "once",
+    windowHours: NOTIFICATION_WINDOW_HOURS,
+  },
 }
 
 export function isNotificationType(value: string): value is NotificationType {
@@ -148,6 +162,14 @@ export function offerDedupeKey(
 
 export function payoutInfoDedupeKey(fingerprint: string): string {
   return `payout_info_required:${fingerprint}`
+}
+
+export function orderDeliveredDedupeKey(orderId: string): string {
+  return `order_delivered:${orderId}`
+}
+
+export function orderDeliveredPayoutDedupeKey(orderId: string): string {
+  return `order_delivered_payout:${orderId}`
 }
 
 export function priceDropMeetsThreshold(oldPrice: number, newPrice: number): boolean {
@@ -199,6 +221,42 @@ export function offerNotificationTitle(type: OfferNotificationType): string {
     case "offer_expiring_soon":
       return "Offer expiring"
   }
+}
+
+export function orderDeliveredBuyerTitle(): string {
+  return "Your order was delivered"
+}
+
+export function orderDeliveredBuyerBody(orderNum: string): string {
+  return `Your order #${orderNum} was delivered.`
+}
+
+export function orderDeliveredSellerTitle(): string {
+  return "Order delivered"
+}
+
+export function orderDeliveredSellerPayoutSoonBody(orderNum: string): string {
+  return `Order #${orderNum} was delivered. Your payout will be available in ${CARRIER_DELIVERY_PAYOUT_HOLD_DAYS} days.`
+}
+
+export function orderDeliveredSellerPayoutAvailableBody(orderNum: string): string {
+  return `Order #${orderNum} was delivered. Your payout is available.`
+}
+
+export function orderPickedUpBuyerTitle(): string {
+  return "Your order was picked up"
+}
+
+export function orderPickedUpBuyerBody(orderNum: string): string {
+  return `Your order #${orderNum} was picked up.`
+}
+
+export function orderPickedUpSellerTitle(): string {
+  return "Order picked up"
+}
+
+export function orderPickedUpSellerBody(orderNum: string): string {
+  return `Order #${orderNum} was picked up. Your payout is available.`
 }
 
 export const LISTING_SAVED_DIGEST_HREF = "/dashboard/listings"

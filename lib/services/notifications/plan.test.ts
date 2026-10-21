@@ -1,11 +1,21 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
+import { CARRIER_DELIVERY_PAYOUT_HOLD_DAYS } from "@/lib/shipping/carrier-delivery-payout-timing"
 import {
   listingSavedDedupeKey,
   listingSavedDigestDedupeKey,
   newListingDedupeKey,
   newListingDigestDedupeKey,
   notificationDayKey,
+  orderDeliveredBuyerBody,
+  orderDeliveredBuyerTitle,
+  orderDeliveredDedupeKey,
+  orderDeliveredPayoutDedupeKey,
+  orderDeliveredSellerPayoutAvailableBody,
+  orderDeliveredSellerPayoutSoonBody,
+  orderDeliveredSellerTitle,
+  orderPickedUpBuyerBody,
+  orderPickedUpSellerBody,
   priceDropDedupeKey,
   priceDropMeetsThreshold,
 } from "@/lib/services/notifications/catalog"
@@ -274,5 +284,78 @@ describe("planInAppNotifications", () => {
     assert.equal(first[0]?.action, "deliver")
     assert.equal(second[0]?.action, "skip")
     if (second[0]?.action === "skip") assert.equal(second[0].reason, "duplicate")
+  })
+})
+
+describe("order delivered copy", () => {
+  it("tells the buyer the order arrived and the seller when payout starts", () => {
+    assert.equal(orderDeliveredBuyerTitle(), "Your order was delivered")
+    assert.equal(orderDeliveredBuyerBody("1042"), "Your order #1042 was delivered.")
+    assert.equal(orderDeliveredSellerTitle(), "Order delivered")
+    assert.equal(
+      orderDeliveredSellerPayoutSoonBody("1042"),
+      `Order #1042 was delivered. Your payout will be available in ${CARRIER_DELIVERY_PAYOUT_HOLD_DAYS} days.`,
+    )
+    assert.equal(CARRIER_DELIVERY_PAYOUT_HOLD_DAYS, 4)
+    assert.equal(
+      orderDeliveredSellerPayoutAvailableBody("1042"),
+      "Order #1042 was delivered. Your payout is available.",
+    )
+    assert.equal(orderPickedUpBuyerBody("1042"), "Your order #1042 was picked up.")
+    assert.equal(
+      orderPickedUpSellerBody("1042"),
+      "Order #1042 was picked up. Your payout is available.",
+    )
+  })
+
+  it("sends delivery once per order even when follow notices are off", () => {
+    const buyer: InAppNotificationInput = {
+      userId: BUYER,
+      type: "order_delivered",
+      listingId: "listing-1",
+      title: orderDeliveredBuyerTitle(),
+      body: orderDeliveredBuyerBody("1042"),
+      href: "/dashboard/purchases/order-1",
+      dedupeKey: orderDeliveredDedupeKey("order-1"),
+    }
+    const seller: InAppNotificationInput = {
+      userId: SELLER,
+      type: "order_delivered_payout",
+      listingId: "listing-1",
+      title: orderDeliveredSellerTitle(),
+      body: orderDeliveredSellerPayoutSoonBody("1042"),
+      href: "/dashboard/sales/order-1",
+      dedupeKey: orderDeliveredPayoutDedupeKey("order-1"),
+    }
+    const first = planInAppNotifications(
+      [buyer, seller],
+      snapshot({ followInAppOptOut: new Set([BUYER, SELLER]) }),
+    )
+    const second = planInAppNotifications(
+      [
+        { ...buyer, body: orderDeliveredBuyerBody("1042") },
+        { ...seller, body: orderDeliveredSellerPayoutAvailableBody("1042") },
+      ],
+      snapshot({
+        seenLogKeys: new Set([
+          planPairKey(BUYER, buyer.dedupeKey),
+          planPairKey(SELLER, seller.dedupeKey),
+        ]),
+      }),
+    )
+
+    assert.equal(first.length, 2)
+    assert.equal(first[0]?.action, "deliver")
+    assert.equal(first[1]?.action, "deliver")
+    if (first[1]?.action === "deliver") {
+      assert.equal(
+        first[1].row.body,
+        `Order #1042 was delivered. Your payout will be available in ${CARRIER_DELIVERY_PAYOUT_HOLD_DAYS} days.`,
+      )
+    }
+    assert.equal(second[0]?.action, "skip")
+    assert.equal(second[1]?.action, "skip")
+    if (second[0]?.action === "skip") assert.equal(second[0].reason, "duplicate")
+    if (second[1]?.action === "skip") assert.equal(second[1].reason, "duplicate")
   })
 })
