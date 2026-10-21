@@ -13,7 +13,7 @@ export const MCP_SCOPE_META: Record<
 > = {
   search: {
     title: "Search listings",
-    description: "Find titles, live listings, and sold-price comps.",
+    description: "Find boards, live listings, and sold-price comps.",
   },
   "cart:read": {
     title: "See your cart",

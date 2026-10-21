@@ -156,11 +156,15 @@ export function PublicApiReference() {
           Claude, ChatGPT, and other MCP clients can sign in with a Reswell account. This is
           separate from the public research API. The assistant can search, edit the cart, and
           start checkout only after the buyer agrees. It cannot charge a card. Accounts that
-          are not enabled are refused. Manage connections at{" "}
-          <Link href="/oauth/connections" className="text-primary underline">
-            /oauth/connections
+          are not enabled are refused. Setup is at{" "}
+          <Link href="/connect" className="text-primary underline">
+            /connect
           </Link>
-          .           The MCP URL is <code className="text-foreground">{`${origin}/api/mcp`}</code>.
+          . Disconnect anytime at{" "}
+          <Link href="/oauth/connections" className="text-primary underline">
+            Connected apps
+          </Link>
+          . The MCP URL is <code className="text-foreground">{`${origin}/api/mcp`}</code>.
         </p>
       </section>
     </div>

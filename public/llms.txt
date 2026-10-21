@@ -91,6 +91,13 @@ Authorization: Bearer <auth_token>
 - Bypass rate limits or ignore `Retry-After`
 - Request unbounded result sets (use `limit` ≤ 10)
 
+## Connected assistants
+
+Shopping with a signed-in Reswell account is a separate MCP server. Research stays on the public API above.
+
+- Setup: https://www.reswell.app/connect
+- Server: https://www.reswell.app/api/mcp
+
 ## Contact
 
 https://www.reswell.app/help
