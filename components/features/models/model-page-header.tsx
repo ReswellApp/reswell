@@ -11,7 +11,7 @@ import { brandProductCategoryLabel } from "@/lib/brand-product-categories"
 import { listingHeroSlideSrc } from "@/lib/listing-image-display"
 import { listingDetailHref, peerListingCheckoutHref } from "@/lib/listing-href"
 import { formatBoardType, formatCondition } from "@/lib/listing-labels"
-import { pickModelPageListingWithImage } from "@/lib/models/listing-image"
+import { modelPageHeroImage, pickModelPageListingWithImage } from "@/lib/models/listing-image"
 import {
   lowestListingPrice,
   modelPageHeroOffer,
@@ -49,19 +49,16 @@ export function ModelPageHeader({
     .filter(Boolean)
     .join(" · ")
 
-  const catalogImage = listings.length === 1 ? null : model.image_url?.trim() || null
   const livePhoto = pickModelPageListingWithImage(listings, page.topPick)
-  const livePhotoUrl = livePhoto ? listingHeroSlideSrc(livePhoto.listing_images) : null
   const soldPhoto = pickModelPageListingWithImage(page.soldListings)
-  const imageUrl = catalogImage || livePhotoUrl || page.listingImageUrl
-  const showingLivePhoto = !catalogImage && Boolean(livePhotoUrl)
-  const showingSoldPhoto = !catalogImage && !showingLivePhoto && Boolean(imageUrl && soldPhoto)
-  const photoListing = showingLivePhoto ? livePhoto : showingSoldPhoto ? soldPhoto : null
-  const caption = showingSoldPhoto
-    ? "Photo from a past sale"
-    : showingLivePhoto && listings.length > 1
-      ? "Photo from a listing"
-      : null
+  const heroImage = modelPageHeroImage({
+    livePhotoUrl: livePhoto ? listingHeroSlideSrc(livePhoto.listing_images) : null,
+    soldPhotoUrl: soldPhoto ? listingHeroSlideSrc(soldPhoto.listing_images) : null,
+    fallbackSoldUrl: page.listingImageUrl,
+  })
+  const showingLivePhoto = heroImage.source === "live"
+  const photoListing = showingLivePhoto ? livePhoto : heroImage.source === "sold" ? soldPhoto : null
+  const caption = heroImage.source === "sold" ? "Photo from a past sale" : null
   const singlePrice = single ? Number(single.price) : Number.NaN
 
   return (
@@ -73,7 +70,7 @@ export function ModelPageHeader({
       )}
     >
       <ModelPageHeroPhoto
-        imageUrl={imageUrl}
+        imageUrl={heroImage.url}
         alt={`${brand.name} ${model.name}`}
         href={photoListing ? listingDetailHref(photoListing) : null}
         listingId={showingLivePhoto && livePhoto ? livePhoto.id : null}
