@@ -44,6 +44,11 @@ export const mcpSearchListingsArgsSchema = z.object({
   limit: z.coerce.number().int().min(1).max(10).default(5),
 })
 
+export const mcpBrowseListingsArgsSchema = z.object({
+  query: z.string().trim().min(1).max(200),
+  limit: z.coerce.number().int().min(1).max(10).default(8),
+})
+
 export const mcpGetListingArgsSchema = z.object({
   listing_id: z.string().trim().min(1).max(160),
 })

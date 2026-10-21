@@ -26,6 +26,7 @@ test("tools/list is filtered by approved scopes", () => {
   }
   const tools = listMcpToolsForPrincipal(principal)
   const names = tools.map((t) => t.name)
+  assert.ok(names.includes("browse_listings"))
   assert.ok(names.includes("search_listings"))
   assert.ok(names.includes("get_listing"))
   assert.ok(names.includes("get_pricing"))
