@@ -15,6 +15,8 @@ test("shop widget HTML is self-contained and branded", () => {
   assert.match(html, /<title>Reswell<\/title>/)
   assert.match(html, /ui\/initialize/)
   assert.match(html, /add_to_cart/)
+  assert.match(html, /state\.shopping/)
+  assert.match(html, /data-open/)
   assert.match(html, /prepare_purchase/)
   assert.match(html, /reswell\/shop/)
   assert.ok(!html.includes("http://fonts.googleapis.com"))

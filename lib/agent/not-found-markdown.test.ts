@@ -15,5 +15,6 @@ describe("buildAgentNotFoundMarkdown", () => {
     assert.match(markdown, /https:\/\/www\.reswell\.app\/llms\.txt/)
     assert.match(markdown, /https:\/\/www\.reswell\.app\/openapi\.json/)
     assert.match(markdown, /https:\/\/www\.reswell\.app\/public-api/)
+    assert.match(markdown, /https:\/\/www\.reswell\.app\/api\/public\/mcp/)
   })
 })

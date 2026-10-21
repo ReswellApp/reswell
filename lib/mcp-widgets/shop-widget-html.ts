@@ -259,7 +259,7 @@ export function buildReswellShopWidgetHtml(): string {
     <h1>Reswell<span>Shop surfboards in chat</span></h1>
     <div class="pill" id="cartPill">Cart · 0</div>
   </header>
-  <div class="tabs" role="tablist">
+  <div class="tabs" id="tabs" role="tablist">
     <button class="tab" id="tabBrowse" aria-selected="true" type="button">Boards</button>
     <button class="tab" id="tabCart" aria-selected="false" type="button">Cart</button>
   </div>
@@ -278,6 +278,7 @@ export function buildReswellShopWidgetHtml(): string {
     listings: [],
     cart: { items: [], item_count: 0 },
     checkoutUrls: [],
+    shopping: true,
     busy: false,
     hostReady: false,
   };
@@ -287,6 +288,8 @@ export function buildReswellShopWidgetHtml(): string {
     browse: document.getElementById("browsePane"),
     cart: document.getElementById("cartPane"),
     cartPill: document.getElementById("cartPill"),
+    tabs: document.getElementById("tabs"),
+    dock: document.getElementById("dock"),
     tabBrowse: document.getElementById("tabBrowse"),
     tabCart: document.getElementById("tabCart"),
     dockCount: document.getElementById("dockCount"),
@@ -383,6 +386,7 @@ export function buildReswellShopWidgetHtml(): string {
           : [],
       note: src.note || "",
       message: src.message || "",
+      shopping: typeof src.shopping === "boolean" ? src.shopping : undefined,
     };
   }
 
@@ -392,6 +396,7 @@ export function buildReswellShopWidgetHtml(): string {
     if (payload.listings.length) state.listings = payload.listings;
     if (payload.cart) state.cart = payload.cart;
     if (payload.query) state.query = payload.query;
+    if (typeof payload.shopping === "boolean") state.shopping = payload.shopping;
     if (payload.checkout_urls.length) {
       state.checkoutUrls = payload.checkout_urls;
       state.view = "cart";
@@ -434,6 +439,15 @@ export function buildReswellShopWidgetHtml(): string {
             .replace(/</g, "&lt;");
           const img = listing.image_url || "";
           const price = money(listing.price_usd);
+          const htmlUrl = listing.urls && listing.urls.html ? String(listing.urls.html) : "";
+          const action =
+            state.shopping === false
+              ? htmlUrl
+                ? '<button class="action" data-open="' +
+                  htmlUrl.replace(/&/g, "&amp;").replace(/"/g, "&quot;") +
+                  '" type="button">View</button>'
+                : ""
+              : '<button class="action" data-add="' + id + '" type="button">Add</button>';
           return (
             '<article class="card">' +
             (img
@@ -450,9 +464,9 @@ export function buildReswellShopWidgetHtml(): string {
             "</p>" +
             '<div class="row"><span class="price">' +
             price +
-            '</span><button class="action" data-add="' +
-            id +
-            '" type="button">Add</button></div>' +
+            "</span>" +
+            action +
+            "</div>" +
             "</div></article>"
           );
         })
@@ -511,6 +525,11 @@ export function buildReswellShopWidgetHtml(): string {
   }
 
   function render() {
+    const shop = state.shopping !== false;
+    if (!shop) state.view = "browse";
+    el.cartPill.hidden = !shop;
+    el.tabs.hidden = !shop;
+    el.dock.hidden = !shop;
     const count = cartCount();
     el.cartPill.textContent = "Cart · " + count;
     el.dockCount.textContent = count + (count === 1 ? " board" : " boards");
@@ -542,6 +561,11 @@ export function buildReswellShopWidgetHtml(): string {
   document.body.addEventListener("click", (event) => {
     const t = event.target;
     if (!(t instanceof HTMLElement)) return;
+    const open = t.getAttribute("data-open");
+    if (open) {
+      openLink(open);
+      return;
+    }
     const add = t.getAttribute("data-add");
     if (add) {
       withBusy(async () => {

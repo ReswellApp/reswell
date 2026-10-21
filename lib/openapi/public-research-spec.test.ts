@@ -17,11 +17,19 @@ describe("public research OpenAPI spec", () => {
     assert.deepEqual(paths.sort(), [
       "/api/public",
       "/api/public/listings/{id}",
+      "/api/public/mcp",
       "/api/public/pricing",
       "/api/public/search",
     ])
     for (const path of paths) {
-      const item = spec.paths[path] as { get?: { operationId?: string } }
+      const item = spec.paths[path] as {
+        get?: { operationId?: string }
+        post?: { operationId?: string }
+      }
+      if (path === "/api/public/mcp") {
+        assert.equal(item.post?.operationId, "postPublicMcp")
+        continue
+      }
       assert.ok(item.get?.operationId, `${path} is missing GET operationId`)
     }
   })
