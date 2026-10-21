@@ -12,6 +12,7 @@ export function ModelListingsSection({
   brandName,
   modelName,
   listings,
+  soldListings,
   topPick,
   criteria,
   initialSavedSearchId,
@@ -22,6 +23,7 @@ export function ModelListingsSection({
   brandName: string
   modelName: string
   listings: ModelMarketplaceListing[]
+  soldListings: ModelMarketplaceListing[]
   topPick: ModelMarketplaceListing | null
   criteria: BoardSavedSearchCriteria
   initialSavedSearchId: string | null
@@ -35,7 +37,7 @@ export function ModelListingsSection({
   const userId = viewer.ready ? viewer.userId : viewerUserId
   const savedSearchId = viewer.ready ? viewer.savedSearchId : initialSavedSearchId
 
-  if (listings.length === 0) {
+  if (listings.length === 0 && soldListings.length === 0) {
     return (
       <ModelEmptyState
         brandName={brandName}
@@ -59,20 +61,40 @@ export function ModelListingsSection({
         />
       ) : null}
 
-      <div>
-        <ModelPageSectionHeading>For sale</ModelPageSectionHeading>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {listings.length} listing{listings.length === 1 ? "" : "s"}
-        </p>
-        <div className="mt-6">
-          <RecentFeedClient
-            listings={listings}
-            favoritedListingIds={favoritedIds}
-            isLoggedIn={loggedIn}
-            viewerUserId={userId}
-          />
+      {listings.length > 0 ? (
+        <div>
+          <ModelPageSectionHeading>For sale</ModelPageSectionHeading>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {listings.length} listing{listings.length === 1 ? "" : "s"}
+          </p>
+          <div className="mt-6">
+            <RecentFeedClient
+              listings={listings}
+              favoritedListingIds={favoritedIds}
+              isLoggedIn={loggedIn}
+              viewerUserId={userId}
+            />
+          </div>
         </div>
-      </div>
+      ) : null}
+
+      {soldListings.length > 0 ? (
+        <div>
+          <ModelPageSectionHeading>Sold</ModelPageSectionHeading>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {soldListings.length} past sale{soldListings.length === 1 ? "" : "s"}
+          </p>
+          <div className="mt-6">
+            <RecentFeedClient
+              listings={soldListings}
+              favoritedListingIds={favoritedIds}
+              isLoggedIn={loggedIn}
+              viewerUserId={userId}
+              soldPresentation
+            />
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }
