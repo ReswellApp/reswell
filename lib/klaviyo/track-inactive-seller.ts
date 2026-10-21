@@ -1,6 +1,7 @@
 /**
  * Klaviyo Events API — **Inactive Seller** when a seller has not replied to buyer
  * listing messages for 7+ days. Cron applies vacation mode before emitting this event.
+ * Day 3 and day 6 use **Seller Still Here** and **Seller Listing Hide Warning**.
  *
  * **Metric (Flows → Metric → …):** **Inactive Seller**
  *
