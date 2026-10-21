@@ -89,7 +89,10 @@
   border-radius: 0.5rem;
 }
 
-/* ─── Listing tile shimmer (PangoBooks-style wave on images + skeleton bars) ─ */
+/* ─── Listing tile shimmer (PangoBooks-style wave on images + skeleton bars) ─
+   Do not fade this veil with opacity. A transition replays the near-white
+   flat over listing photos that are already decoded when a tile remounts
+   (back from /l, or any other soft navigation). Hide it by not rendering it. */
 @keyframes listing-tile-shimmer {
   0% {
     background-position: 200% 0;
@@ -117,10 +120,6 @@
     rgb(75 85 99) 50%,
     rgb(55 65 81) 100%
   );
-}
-
-.listing-tile-shimmer-overlay {
-  transition: opacity 0.25s ease-in-out;
 }
 
 @media (prefers-reduced-motion: reduce) {

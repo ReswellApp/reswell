@@ -9,6 +9,8 @@ import {
   type DragEvent,
 } from "react"
 import { ListingMediaFillImage } from "@/components/listing-media-fill-image"
+import { useListingPhotoReady } from "@/components/features/listings/hooks/use-listing-photo-ready"
+import { listingImageIsDecoded } from "@/lib/listing-photo-paint"
 import { listingPhotoFrameFillStyle } from "@/lib/listing-photo-fill"
 import { ListingTileShimmer } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
@@ -65,28 +67,12 @@ export function listingPhotoBackdropStyle(
   }
 }
 
-/** Sync cache probe — `img.complete` is true on the first tick when the URL is already in memory. */
-export function listingPhotoIsCached(src: string | undefined): boolean {
-  if (!src || src === "/placeholder.svg" || typeof window === "undefined") return false
-  const probe = new window.Image()
-  probe.src = src
-  return probe.complete && probe.naturalWidth > 0
-}
-
-function markPaintedAfterDecode(img: HTMLImageElement | null, mark: () => void): void {
-  if (!img || !img.complete || img.naturalWidth === 0) return
-  const finish = () => mark()
-  if (typeof img.decode === "function") {
-    void img.decode().then(finish).catch(finish)
-    return
-  }
-  finish()
-}
+export { listingPhotoIsCached } from "@/lib/listing-photo-paint"
 
 /**
- * Listing gallery photo. A cached tile/PDP URL is the canvas. Bitmaps stay
- * invisible until decoded, the preview stays under the sharp image, and the
- * wave only covers a well that has no photo URL yet.
+ * Listing gallery photo. Before paint we ask the mounted image if it already
+ * has pixels. A cached tile or PDP photo skips the wave. An uncached bitmap
+ * stays under it until decode. The preview stays under the sharp image.
  */
 export function ListingGalleryPhoto({
   src,
@@ -101,27 +87,18 @@ export function ListingGalleryPhoto({
   onLoaded,
   crop = null,
 }: ListingGalleryPhotoProps) {
-  const [trackedSrc, setTrackedSrc] = useState(src)
-  const [trackedPreview, setTrackedPreview] = useState(previewSrc ?? "")
-  const [previewReady, setPreviewReady] = useState(false)
-  const [srcReady, setSrcReady] = useState(false)
   const [natural, setNatural] = useState<{ w: number; h: number } | null>(null)
   const [frame, setFrame] = useState<{ width: number; height: number } | null>(null)
   const [frameEl, setFrameEl] = useState<HTMLElement | null>(null)
   const onLoadedRef = useRef(onLoaded)
   onLoadedRef.current = onLoaded
 
-  if (src !== trackedSrc) {
-    setTrackedSrc(src)
-    setSrcReady(false)
-  }
-  if ((previewSrc ?? "") !== trackedPreview) {
-    setTrackedPreview(previewSrc ?? "")
-    setPreviewReady(false)
-  }
-
   const preview =
     previewSrc && previewSrc !== src && previewSrc !== "/placeholder.svg" ? previewSrc : ""
+  const sourcePaint = useListingPhotoReady(src)
+  const previewPaint = useListingPhotoReady(preview)
+  const srcReady = sourcePaint.ready
+  const previewReady = previewPaint.ready
   const painted = srcReady || previewReady
   const cssFit = listingPdpCropCssFit(crop)
   const objectPosition = crop ? listingPdpCropObjectPosition(crop) : undefined
@@ -194,9 +171,12 @@ export function ListingGalleryPhoto({
     setFrameEl((prev) => (prev === parent ? prev : parent))
   }, [])
 
-  const attachPreview = useCallback((img: HTMLImageElement | null) => {
-    markPaintedAfterDecode(img, () => setPreviewReady(true))
-  }, [])
+  const attachPreview = useCallback(
+    (img: HTMLImageElement | null) => {
+      previewPaint.ref(img)
+    },
+    [previewPaint.ref],
+  )
 
   const rememberNaturalSize = useCallback((img: HTMLImageElement) => {
     const naturalWidth = img.naturalWidth
@@ -210,13 +190,11 @@ export function ListingGalleryPhoto({
   const attachSource = useCallback(
     (img: HTMLImageElement | null) => {
       attachFrame(img)
-      markPaintedAfterDecode(img, () => {
-        setSrcReady(true)
-        // iOS Chrome / Google app often skip onLoad for cached images.
-        if (img) rememberNaturalSize(img)
-      })
+      sourcePaint.ref(img)
+      // iOS Chrome / Google app often skip onLoad for cached images.
+      if (img && listingImageIsDecoded(img)) rememberNaturalSize(img)
     },
-    [attachFrame, rememberNaturalSize],
+    [attachFrame, rememberNaturalSize, sourcePaint.ref],
   )
 
   return (
@@ -241,7 +219,7 @@ export function ListingGalleryPhoto({
           ref={attachPreview}
           onLoad={(event) => {
             // Preview is paint-only — never size the hero from the tile derivative.
-            markPaintedAfterDecode(event.currentTarget, () => setPreviewReady(true))
+            previewPaint.onLoad(event.currentTarget)
           }}
         />
       ) : null}
@@ -266,19 +244,16 @@ export function ListingGalleryPhoto({
         ref={attachSource}
         onLoad={(event) => {
           const img = event.currentTarget
-          markPaintedAfterDecode(img, () => {
-            setSrcReady(true)
-            rememberNaturalSize(img)
-          })
+          sourcePaint.onLoad(img)
+          if (listingImageIsDecoded(img)) rememberNaturalSize(img)
         }}
       />
-      <ListingTileShimmer
-        aria-hidden
-        className={cn(
-          "listing-tile-shimmer-overlay absolute inset-0 z-[3] rounded-none",
-          painted && "pointer-events-none opacity-0",
-        )}
-      />
+      {painted ? null : (
+        <ListingTileShimmer
+          aria-hidden
+          className="absolute inset-0 z-[3] rounded-none"
+        />
+      )}
     </>
   )
 }

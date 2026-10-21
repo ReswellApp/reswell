@@ -1,7 +1,7 @@
 "use client"
 
 import { usePathname } from "next/navigation"
-import { useLayoutEffect, useRef, useState, type ReactNode } from "react"
+import { useLayoutEffect, useRef, type ReactNode } from "react"
 import { forceReleaseBodyScrollLock } from "@/hooks/use-body-scroll-lock"
 import { scrollPageToTop } from "@/lib/utils/scroll-page-to-top"
 import {
@@ -12,22 +12,20 @@ import {
   scrollPageToMessageThreadBottom,
 } from "@/lib/utils/message-thread-routes"
 import { useMobileLg } from "@/hooks/use-mobile-lg"
-import { shouldSkipPageEnterAnimation } from "@/lib/site-category-browse-paths"
 import { cn } from "@/lib/utils"
 
 /**
- * Scrolls to top and applies a CSS slide entrance on client-side navigations.
- * `navCount` increments only on actual navigations (not initial load), so the
- * `page-enter` animation is skipped on first render to prevent FOIC.
- * Listing PDPs and category browse pages skip the animation entirely — a
- * fade-from-transparent flashes listing photos when returning from `/l`.
+ * Scrolls to the top on client-side navigations.
+ *
+ * Do not remount this subtree and do not fade or slide it in. Doing either
+ * paints a white frame over listing photos that are already in memory —
+ * back from a listing onto a category, and the same tiles on every other route.
  */
 export function NavigationPageGate({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const isMobileLg = useMobileLg()
   const flatMobileMessagesInbox = isMobileLg && isMessagesInboxIndexRoute(pathname)
   const prevPathRef = useRef<string | null>(null)
-  const [navCount, setNavCount] = useState(0)
 
   useLayoutEffect(() => {
     const isFirstLoad = prevPathRef.current === null
@@ -50,10 +48,6 @@ export function NavigationPageGate({ children }: { children: ReactNode }) {
       scrollPageToTop()
     }
 
-    if (!isFirstLoad) {
-      setNavCount((c) => c + 1)
-    }
-
     return () => {
       cancelScrollBottom?.()
       cancelMessageThreadScrollBottom()
@@ -68,18 +62,11 @@ export function NavigationPageGate({ children }: { children: ReactNode }) {
       )}
     >
       <div
-        key={navCount}
-        className={cn(
-          flatMobileMessagesInbox ? "flex w-full flex-col" : "flex w-full min-h-0 min-w-0 flex-1 flex-col",
-          // Photo-heavy marketplace surfaces: opacity-0 page-enter is a white
-          // flash on /l and when returning from a listing to category browse.
-          navCount > 0 && !shouldSkipPageEnterAnimation(pathname) && "page-enter",
-        )}
-        onAnimationEnd={(event) => {
-          // Drop the class so no animated transform can linger on this wrapper.
-          if (event.target !== event.currentTarget) return
-          event.currentTarget.classList.remove("page-enter")
-        }}
+        className={
+          flatMobileMessagesInbox
+            ? "flex w-full flex-col"
+            : "flex w-full min-h-0 min-w-0 flex-1 flex-col"
+        }
       >
         {children}
       </div>
