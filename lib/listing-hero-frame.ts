@@ -3,7 +3,7 @@
  *
  * Locked at 3:4 (portrait). Photos cover that box from the center so a
  * landscape upload does not letterbox and swiping photos does not resize
- * the hero. Enlarge still shows the full bitmap. Custom-property
+ * the hero. Enlarge uses the same 3:4 cover. Custom-property
  * aspect-ratio must be slash-form (`750 / 1000`); unitless values are
  * ignored in iOS Chrome and the Google app.
  */

@@ -1,7 +1,10 @@
 "use client"
 
 import { ListingMediaFillImage } from "@/components/listing-media-fill-image"
-import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
+import {
+  listingPhotoFillClassName,
+  listingPhotoFrameFillStyle,
+} from "@/lib/listing-photo-fill"
 import {
   Fragment,
   useCallback,
@@ -108,6 +111,11 @@ function ListingTileCarouselSlide({
         imageFit === "contain" && "object-contain",
         imageClassName,
       )}
+      style={
+        imageFit === "contain"
+          ? { ...listingPhotoFrameFillStyle, objectFit: "contain" }
+          : listingPhotoFrameFillStyle
+      }
       ref={(img) => {
         if (img?.complete && img.naturalWidth > 0) {
           setLoaded(true)
@@ -245,7 +253,7 @@ export function ListingTileImageMedia({
     <div
       className={cn(
         aspectClass,
-        "relative w-full overflow-hidden bg-muted",
+        "listing-tile-frame relative w-full overflow-hidden bg-muted",
         imageAspect === "portrait" && linkLayoutUnified && "shrink-0 rounded-t-xl",
         imageAspect === "square" && linkLayoutUnified && "rounded-t-xl",
       )}
