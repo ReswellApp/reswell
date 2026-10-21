@@ -5,6 +5,9 @@ import { trackKlaviyoOrderShipped } from "@/lib/klaviyo/track-order-shipped"
 import { trackKlaviyoSellerOrderShipped } from "@/lib/klaviyo/track-seller-order-shipped"
 import { findSentKlaviyoUniqueIds } from "@/lib/db/klaviyoEventLog"
 import { resolveProfilePhoneE164 } from "@/lib/db/profilePersonalInfo"
+import { ensureOrderBrandedTrackingUrl } from "@/lib/services/ensureOrderBrandedTrackingUrl"
+import { preferredTrackingUrl } from "@/lib/utils/carrier-tracking-url"
+import { createServiceRoleClient } from "@/lib/supabase/server"
 
 type OrderShippedNotifyRow = {
   id: string
@@ -47,7 +50,6 @@ export async function notifyOrderShippedKlaviyoIfMissing(
   orderId: string,
 ): Promise<void> {
   const already = await shippedKlaviyoEventsAlreadySent(orderId)
-  if (already.buyer && already.seller) return
 
   const { data: row, error } = await supabase
     .from("orders")
@@ -73,6 +75,14 @@ export async function notifyOrderShippedKlaviyoIfMissing(
 
   const listingTitle = listingTitleFromEmbed(order.listings)
   const trackingCarrier = order.tracking_carrier?.trim() || null
+  const brandedUrl = await ensureOrderBrandedTrackingUrl(order.id)
+  const trackingUrl = preferredTrackingUrl({
+    brandedUrl,
+    trackingNumber,
+    trackingCarrier,
+  })
+
+  if (already.buyer && already.seller) return
 
   let buyerEmail: string | null = null
   let buyerPhoneE164: string | null = null
@@ -102,6 +112,7 @@ export async function notifyOrderShippedKlaviyoIfMissing(
       listingTitle,
       trackingNumber,
       trackingCarrier,
+      trackingUrl,
     })
   }
 
@@ -114,6 +125,7 @@ export async function notifyOrderShippedKlaviyoIfMissing(
       listingTitle,
       trackingNumber,
       trackingCarrier,
+      trackingUrl,
     })
   }
 }

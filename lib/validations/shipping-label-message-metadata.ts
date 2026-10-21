@@ -6,6 +6,7 @@ const shippingLabelFields = {
   listingTitle: z.string().optional(),
   trackingNumber: z.string().nullable().optional(),
   trackingCarrier: z.string().nullable().optional(),
+  trackingUrl: z.string().max(500).optional(),
   labelPdfUrl: z.string().nullable().optional(),
   hasPaperlessQr: z.boolean().optional(),
 }

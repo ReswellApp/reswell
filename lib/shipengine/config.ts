@@ -28,6 +28,12 @@ export function getShipEngineLabelImageId(): string | null {
   return id && id.length > 0 ? id : null
 }
 
+/** Tracking portal theme (Branding → Tracking). Server-only. */
+export function getShipEngineBrandedTrackingThemeGuid(): string | null {
+  const id = process.env.SHIPENGINE_BRANDED_TRACKING_THEME_GUID?.trim()
+  return id && id.length > 0 ? id : null
+}
+
 import {
   RESWELL_UPS_CARRIER_ID_DEFAULT,
   isReswellUpsCarrierId,

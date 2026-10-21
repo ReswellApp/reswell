@@ -41,6 +41,7 @@ import {
   fetchOptionalOrderTrackingDetailJson,
   parseOrderTrackingDetail,
 } from "@/lib/shipping/order-tracking-detail"
+import { ensureOrderBrandedTrackingUrl } from "@/lib/services/ensureOrderBrandedTrackingUrl"
 
 export async function generateMetadata(props: {
   params: Promise<{ id: string }>
@@ -292,6 +293,10 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
       .neq("sender_id", user.id)
   }
 
+  const brandedTrackingUrl = order.tracking_number?.trim()
+    ? await ensureOrderBrandedTrackingUrl(order.id)
+    : null
+
   return (
     <div className="space-y-6">
       <OrderDetailRealtimeRefresh orderId={id} />
@@ -339,6 +344,7 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
         deliveryStatus={order.delivery_status}
         trackingNumber={order.tracking_number}
         trackingCarrier={order.tracking_carrier}
+        brandedTrackingUrl={brandedTrackingUrl}
         paidWithCard={paidWithCard}
         paymentMethod={order.payment_method}
         refundedAt={order.refunded_at}

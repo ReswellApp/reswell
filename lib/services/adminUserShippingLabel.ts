@@ -10,7 +10,9 @@ import {
 } from "@/lib/shipengine/surfboard-label"
 import { profileRowToRateQuoteAddress, type RateQuoteAddressFields } from "@/lib/shipping/rate-address"
 import { validateLabelParcelEntry } from "@/lib/shipping/surfboard-label-limits"
-import { carrierTrackingUrl } from "@/lib/utils/carrier-tracking-url"
+import { createBrandedTrackingPage, serviceCodeFromTrackingCarrier } from "@/lib/shipengine/branded-tracking-page"
+import { preferredTrackingUrl } from "@/lib/utils/carrier-tracking-url"
+import { resolveShipEngineCarrierCode } from "@/lib/shipping/resolve-carrier-code"
 import type { AdminUserShippingLabelShipTo } from "@/lib/validations/adminUserShippingLabel"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import {
@@ -73,9 +75,14 @@ function resolveReswellShipFrom(): RateQuoteAddressFields {
 function buildPackageOnTheWayMessage(params: {
   trackingNumber: string
   trackingCarrier: string | null
+  trackingUrl: string | null
 }): string {
   const carrier = params.trackingCarrier?.trim() || null
-  const trackUrl = carrierTrackingUrl(params.trackingNumber, carrier)
+  const trackUrl = preferredTrackingUrl({
+    brandedUrl: params.trackingUrl,
+    trackingNumber: params.trackingNumber,
+    trackingCarrier: carrier,
+  })
   return [
     "Your package is on the way from Reswell.",
     "",
@@ -251,6 +258,29 @@ export async function purchaseAdminUserShippingLabel(params: {
 
   const trackingNumber = purchased.result.trackingNumber.trim()
   const trackingCarrier = purchased.result.trackingCarrier?.trim() || null
+  const shipFrom = resolveReswellShipFrom()
+  const shipTo = shipToToRateQuoteAddress(params.shipTo)
+  const carrierCode = resolveShipEngineCarrierCode(trackingNumber, trackingCarrier)
+  const brandedUrl =
+    carrierCode == null
+      ? null
+      : await createBrandedTrackingPage({
+          trackingNumber,
+          carrierCode,
+          serviceCode: serviceCodeFromTrackingCarrier(trackingCarrier),
+          shipFrom: {
+            cityLocality: shipFrom.city_locality,
+            stateProvince: shipFrom.state_province,
+            postalCode: shipFrom.postal_code,
+            countryCode: shipFrom.country_code,
+          },
+          shipTo: {
+            cityLocality: shipTo.city_locality,
+            stateProvince: shipTo.state_province,
+            postalCode: shipTo.postal_code,
+            countryCode: shipTo.country_code,
+          },
+        })
 
   const notified = await startStaffOutboundMarketplaceConversation({
     supabase: params.supabase,
@@ -259,6 +289,7 @@ export async function purchaseAdminUserShippingLabel(params: {
     initialMessage: buildPackageOnTheWayMessage({
       trackingNumber,
       trackingCarrier,
+      trackingUrl: brandedUrl,
     }),
   })
 

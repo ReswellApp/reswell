@@ -3,6 +3,8 @@ import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
 import { trackKlaviyoOrderShippingUpdate } from "@/lib/klaviyo/track-order-shipping-update"
 import { resolveProfilePhoneE164 } from "@/lib/db/profilePersonalInfo"
 import { createServiceRoleClient } from "@/lib/supabase/server"
+import { ensureOrderBrandedTrackingUrl } from "@/lib/services/ensureOrderBrandedTrackingUrl"
+import { preferredTrackingUrl } from "@/lib/utils/carrier-tracking-url"
 import {
   parseOrderTrackingDetail,
   type OrderTrackingDetail,
@@ -76,6 +78,12 @@ export async function notifyBuyerOrderShippingUpdateKlaviyo(
   }
 
   const smsMilestone = resolveShippingSmsMilestoneTransition(previousDetail, newDetail)
+  const brandedUrl = await ensureOrderBrandedTrackingUrl(orderId)
+  const trackingUrl = preferredTrackingUrl({
+    brandedUrl,
+    trackingNumber,
+    trackingCarrier: order.tracking_carrier,
+  })
 
   await trackKlaviyoOrderShippingUpdate({
     buyerUserId: order.buyer_id,
@@ -86,6 +94,7 @@ export async function notifyBuyerOrderShippingUpdateKlaviyo(
     listingTitle: listingTitle || "Your order",
     trackingNumber,
     trackingCarrier: order.tracking_carrier,
+    trackingUrl,
     detail: newDetail,
     smsMilestone,
   })
