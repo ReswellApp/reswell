@@ -5,6 +5,10 @@ import {
   trackKlaviyoOrderShippingUpdate,
 } from "@/lib/klaviyo/track-order-shipping-update"
 import { findSentKlaviyoUniqueIds } from "@/lib/db/klaviyoEventLog"
+import {
+  claimBuyerNotifiedDelivered,
+  releaseBuyerNotifiedDelivered,
+} from "@/lib/db/orderBuyerNotifiedDelivered"
 import { resolveProfilePhoneE164 } from "@/lib/db/profilePersonalInfo"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { ensureOrderBrandedTrackingUrl } from "@/lib/services/ensureOrderBrandedTrackingUrl"
@@ -27,10 +31,11 @@ type OrderShippingUpdateRow = {
 /**
  * Emits **Order Shipping Update** from a carrier snapshot.
  *
- * Delivered is already on the order. The same out-for-delivery or exception
- * milestone is already on the previous snapshot. Neither sends again.
- * A repeat of a send we already logged is skipped, and Klaviyo dedupes the
- * stable event id the same way Order Shipped does.
+ * Delivered is already on the order. `buyer_notified_delivered_at` is set
+ * once, before the text, and that stamp is the check the next refresh sees.
+ * The same out-for-delivery or exception milestone is already on the previous
+ * snapshot. A repeat of a send we already logged is skipped, and Klaviyo
+ * dedupes the stable event id the same way Order Shipped does.
  * Opening a purchase does not email ordinary in-transit scans; the webhook
  * and cron pass `notifyScanUpdates`.
  *
@@ -83,6 +88,13 @@ export async function notifyBuyerOrderShippingUpdateKlaviyo(
   const trackingNumber = order.tracking_number?.trim() ?? ""
   if (!trackingNumber) return
 
+  let stampedDelivered = false
+  if (smsMilestone === "delivered") {
+    const claim = await claimBuyerNotifiedDelivered(supabase, orderId)
+    if (claim === "already") return
+    stampedDelivered = claim === "claimed"
+  }
+
   const listingEmbed = order.listings
   const listingTitle = Array.isArray(listingEmbed)
     ? (listingEmbed[0]?.title ?? "")
@@ -104,24 +116,36 @@ export async function notifyBuyerOrderShippingUpdateKlaviyo(
     /* non-critical */
   }
 
-  const brandedUrl = await ensureOrderBrandedTrackingUrl(orderId)
-  const trackingUrl = preferredTrackingUrl({
-    brandedUrl,
-    trackingNumber,
-    trackingCarrier: order.tracking_carrier,
-  })
+  try {
+    const brandedUrl = await ensureOrderBrandedTrackingUrl(orderId)
+    const trackingUrl = preferredTrackingUrl({
+      brandedUrl,
+      trackingNumber,
+      trackingCarrier: order.tracking_carrier,
+    })
 
-  await trackKlaviyoOrderShippingUpdate({
-    buyerUserId: order.buyer_id,
-    buyerEmail,
-    buyerPhoneE164,
-    orderId,
-    orderNum: order.order_num,
-    listingTitle: listingTitle || "Your order",
-    trackingNumber,
-    trackingCarrier: order.tracking_carrier,
-    trackingUrl,
-    detail: newDetail,
-    smsMilestone,
-  })
+    const sent = await trackKlaviyoOrderShippingUpdate({
+      buyerUserId: order.buyer_id,
+      buyerEmail,
+      buyerPhoneE164,
+      orderId,
+      orderNum: order.order_num,
+      listingTitle: listingTitle || "Your order",
+      trackingNumber,
+      trackingCarrier: order.tracking_carrier,
+      trackingUrl,
+      detail: newDetail,
+      smsMilestone,
+    })
+
+    const accepted = sent.ok || sent.status === 409
+    if (stampedDelivered && !accepted) {
+      await releaseBuyerNotifiedDelivered(supabase, orderId)
+    }
+  } catch (error) {
+    if (stampedDelivered) {
+      await releaseBuyerNotifiedDelivered(supabase, orderId)
+    }
+    throw error
+  }
 }

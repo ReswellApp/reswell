@@ -12,6 +12,7 @@ export type OrderShippingNotifyPlan =
  * What a tracking writer may tell the buyer.
  *
  * Delivered is already stored on the order (`delivery_status`, `carrier_delivered_at`).
+ * The delivered text is stamped on `orders.buyer_notified_delivered_at` when it sends.
  * Out for delivery and exception are already stored on the previous tracking snapshot.
  * A refresh that does not change that milestone is not a new message.
  * Ordinary in-transit scans email only from a carrier writer (webhook or cron).
