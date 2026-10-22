@@ -1,7 +1,6 @@
 import type { ReactNode } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { SurfboardDingIcon } from "@/components/features/sell/sell-photo-example-icons"
 import { HowToShipPackingVideos } from "@/components/features/seller-resources/how-to-ship-packing-videos"
 import { wideShimmer } from "@/lib/image-shimmer"
 import { HOW_TO_SELL_HREF } from "@/lib/seller-resources"
@@ -11,12 +10,13 @@ import {
 } from "@/lib/seller-resources-box-guide"
 
 const linkClass = "font-medium text-[#355185] underline underline-offset-2"
+const cardClass = "rounded-2xl border border-border bg-white p-5 sm:p-6"
 
 const STEPS: readonly {
   title: string
   body: ReactNode
-  src?: string
-  alt?: string
+  src: string
+  alt: string
 }[] = [
   {
     title: "Repair or show dings",
@@ -30,6 +30,8 @@ const STEPS: readonly {
         .
       </>
     ),
+    src: "/images/seller-resources/how-to-ship/ding-repair.jpg",
+    alt: "Gloved hands wet-sanding a repair along the rail of a surfboard",
   },
   {
     title: "Add a sleeve",
@@ -78,7 +80,7 @@ export function HowToShipPackGuide() {
 
         <ol className="mt-10 grid gap-5 lg:grid-cols-2">
           {STEPS.map((step, index) => (
-            <li key={step.title} className="rounded-2xl bg-[#F9F9F2] p-5 sm:p-6">
+            <li key={step.title} className={cardClass}>
               <div className="grid items-center gap-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]">
                 <div>
                   <p className="font-headline text-4xl font-bold leading-none text-[#355185]">
@@ -89,24 +91,18 @@ export function HowToShipPackGuide() {
                   </h3>
                   <p className="mt-2 text-base leading-relaxed text-[#163060]">{step.body}</p>
                 </div>
-                {step.src && step.alt ? (
-                  <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-[#F9F9F2]">
-                    <Image
-                      src={step.src}
-                      alt={step.alt}
-                      fill
-                      sizes="(max-width: 640px) 100vw, 360px"
-                      quality={75}
-                      className="object-cover"
-                      placeholder="blur"
-                      blurDataURL={wideShimmer}
-                    />
-                  </div>
-                ) : (
-                  <div className="flex aspect-[4/3] items-center justify-center rounded-xl bg-white">
-                    <SurfboardDingIcon className="h-36 w-36 text-[#001A4A]" />
-                  </div>
-                )}
+                <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-muted">
+                  <Image
+                    src={step.src}
+                    alt={step.alt}
+                    fill
+                    sizes="(max-width: 640px) 100vw, 360px"
+                    quality={75}
+                    className="object-cover"
+                    placeholder="blur"
+                    blurDataURL={wideShimmer}
+                  />
+                </div>
               </div>
             </li>
           ))}

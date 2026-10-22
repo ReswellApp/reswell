@@ -6,6 +6,7 @@ import { helpArticlePath } from "@/lib/help-center/paths"
 import { SURFBOARD_SELL_BOARDS_CREATE_HREF } from "@/lib/sell-flow/surfboard-sell-paths"
 
 const linkClass = "font-medium text-[#355185] underline underline-offset-2"
+const cardClass = "rounded-2xl border border-border bg-white px-5 py-6 sm:px-6"
 
 const OPTIONS: readonly { id: string; title: string; body: ReactNode }[] = [
   {
@@ -50,7 +51,7 @@ export function HowToShipOptions() {
         </h2>
         <ul className="mx-auto mt-8 grid max-w-4xl gap-4 sm:grid-cols-2">
           {OPTIONS.map((option) => (
-            <li key={option.id} id={option.id} className="rounded-2xl bg-[#F9F9F2] px-5 py-6 sm:px-6">
+            <li key={option.id} id={option.id} className={cardClass}>
               <h3 className="text-xl font-semibold tracking-tight text-[#001A4A]">{option.title}</h3>
               <p className="mt-2 text-base leading-relaxed text-[#163060]">{option.body}</p>
             </li>
@@ -64,10 +65,10 @@ export function HowToShipOptions() {
 export function HowToShipQuestions() {
   return (
     <section className="bg-white px-4 sm:px-6" aria-labelledby="how-to-ship-questions-heading">
-      <div className="mx-auto max-w-6xl rounded-2xl bg-[#7F9DD5]/30 px-6 py-14 text-center sm:px-10 sm:py-16">
+      <div className="mx-auto max-w-6xl rounded-2xl border border-border bg-white px-6 py-14 text-center sm:px-10 sm:py-16">
         <h2
           id="how-to-ship-questions-heading"
-          className="font-headline text-3xl font-bold tracking-tight text-[#355185] sm:text-4xl"
+          className="font-headline text-3xl font-bold tracking-tight text-[#001A4A] sm:text-4xl"
         >
           Questions?
         </h2>
@@ -86,7 +87,7 @@ export function HowToShipQuestions() {
             asChild
             size="lg"
             variant="outline"
-            className="rounded-full border-[#001A4A]/20 bg-white/80 px-7 font-semibold text-[#001A4A] hover:bg-white"
+            className="rounded-full border-[#001A4A]/20 bg-white px-7 font-semibold text-[#001A4A] hover:bg-[#F9F9F2]"
           >
             <Link href="/contact">Contact us</Link>
           </Button>
