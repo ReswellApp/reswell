@@ -25,6 +25,7 @@ function unavailableListingMetadata(listingParam: string): Metadata {
     title: "This listing is no longer available — Reswell",
     description: "Check out related listings on Reswell.",
     path: `/l/${listingParam}`,
+    robots: { index: false, follow: true },
   })
 }
 
