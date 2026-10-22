@@ -60,8 +60,8 @@ export const createCrmContactFromProfileSchema = z.object({
 })
 
 export const createCrmFacebookLeadSchema = z.object({
-  profileLink: z.string().trim().min(1, "Paste a Facebook profile link").max(500),
-  threadId: z.string().trim().min(1, "Paste the Marketplace thread").max(500),
+  profileLink: z.string().trim().min(1, "Paste a Facebook profile link").max(2000),
+  threadId: z.string().trim().min(1, "Paste the Marketplace thread or listing link").max(2000),
 })
 
 export const crmReswellActivitySchema = z.object({

@@ -5,6 +5,7 @@ import {
   addDaysIso,
   CRM_FACEBOOK_FOLLOW_UP_DAYS,
   facebookNameIsAutomatic,
+  facebookThreadStorageId,
   leadNameFromFacebook,
   parseFacebookProfileInput,
   parseFacebookThreadInput,
@@ -168,7 +169,8 @@ export async function createCrmFacebookLeadService(
   const profile = parseFacebookProfileInput(parsed.data.profileLink)
   if (!profile) return { error: "That doesn't look like a Facebook profile link" }
   const thread = parseFacebookThreadInput(parsed.data.threadId)
-  if (!thread) return { error: "Paste the Marketplace thread link or its id" }
+  if (!thread) return { error: "Paste the Marketplace thread, the listing link, or the thread id" }
+  const storedThreadId = facebookThreadStorageId(thread, profile)
 
   const publicName = await lookupFacebookPublicName(profile)
   const name = leadNameFromFacebook({ parsed: profile, publicName })
@@ -177,7 +179,7 @@ export async function createCrmFacebookLeadService(
   const existing = await findCrmContactsByFacebook(supabase, {
     profileId: profile.profileId,
     username: profile.username,
-    threadId: thread.threadId,
+    threadId: storedThreadId,
   })
   if (existing.error) return { error: "Could not check for an existing lead" }
 
@@ -195,7 +197,7 @@ export async function createCrmFacebookLeadService(
       facebook_profile_url: profile.profileUrl,
       facebook_profile_id: profile.profileId,
       facebook_username: profile.username,
-      facebook_thread_id: thread.threadId,
+      facebook_thread_id: storedThreadId,
       facebook_thread_url: thread.threadUrl,
       facebook_display_name: name.displayName,
     }
@@ -232,7 +234,7 @@ export async function createCrmFacebookLeadService(
     facebook_profile_url: profile.profileUrl,
     facebook_profile_id: profile.profileId,
     facebook_username: profile.username,
-    facebook_thread_id: thread.threadId,
+    facebook_thread_id: storedThreadId,
     facebook_thread_url: thread.threadUrl,
     facebook_display_name: name.displayName,
   })
@@ -245,7 +247,9 @@ export async function createCrmFacebookLeadService(
     contact_id: inserted.data.id,
     interaction_type: "other",
     subject: "Facebook Marketplace",
-    notes: `Saved from Marketplace. Profile ${profile.profileUrl}. Thread ${thread.threadId}.`,
+    notes: thread.listingId
+      ? `Saved from Marketplace. Profile ${profile.profileUrl}. Listing ${thread.threadUrl}.`
+      : `Saved from Marketplace. Profile ${profile.profileUrl}. Thread ${thread.threadId}.`,
     created_by: auth.userId,
   })
   if (logged.error) console.error("createCrmFacebookLeadService interaction:", logged.error)

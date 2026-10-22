@@ -3,6 +3,8 @@ import { describe, it } from "node:test"
 import {
   extractPublicFacebookName,
   facebookNameIsAutomatic,
+  facebookThreadCaption,
+  facebookThreadStorageId,
   leadNameFromFacebook,
   parseFacebookProfileInput,
   parseFacebookThreadInput,
@@ -56,7 +58,39 @@ describe("parseFacebookThreadInput", () => {
       "555666777888999",
     )
     assert.equal(parseFacebookThreadInput("555666777888999")?.threadId, "555666777888999")
+    assert.equal(parseFacebookThreadInput("555666777888999")?.listingId, null)
     assert.equal(parseFacebookThreadInput("123"), null)
+  })
+
+  it("accepts a Marketplace listing link as the conversation anchor", () => {
+    const parsed = parseFacebookThreadInput(
+      "https://www.facebook.com/marketplace/item/27652488394347640/?ref=search&referral_code=null&referral_story_type=search",
+    )
+    assert.equal(parsed?.listingId, "27652488394347640")
+    assert.equal(parsed?.threadUrl, "https://www.facebook.com/marketplace/item/27652488394347640/")
+    assert.equal(
+      parseFacebookThreadInput("https://m.facebook.com/marketplace/item/27652488394347640")?.listingId,
+      "27652488394347640",
+    )
+    assert.equal(parseFacebookThreadInput("https://www.facebook.com/marketplace/item/123")?.listingId, null)
+  })
+
+  it("keeps two buyers of the same listing from sharing one thread id", () => {
+    const thread = parseFacebookThreadInput("https://www.facebook.com/marketplace/item/27652488394347640/")
+    const seller = parseFacebookProfileInput("https://www.facebook.com/marketplace/profile/100092264581231/")
+    const other = parseFacebookProfileInput("https://www.facebook.com/marketplace/profile/100011111111111/")
+    assert.ok(thread && seller && other)
+    assert.equal(
+      facebookThreadStorageId(thread, seller),
+      "listing:27652488394347640:100092264581231",
+    )
+    assert.notEqual(facebookThreadStorageId(thread, seller), facebookThreadStorageId(thread, other))
+    assert.equal(facebookThreadCaption(facebookThreadStorageId(thread, seller)), "Listing 27652488394347640")
+
+    const messenger = parseFacebookThreadInput("https://www.facebook.com/messages/t/555666777888999")
+    assert.ok(messenger)
+    assert.equal(facebookThreadStorageId(messenger, seller), "555666777888999")
+    assert.equal(facebookThreadCaption("555666777888999"), "Thread 555666777888999")
   })
 })
 
