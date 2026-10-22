@@ -10,6 +10,7 @@ export const PUBLIC_RESEARCH_LISTING_SELECT = `
   status,
   price,
   condition,
+  is_good_deal,
   section,
   brand,
   model,
@@ -47,6 +48,7 @@ export type PublicResearchListingRow = {
   status: string
   price: number | string | null
   condition: string | null
+  is_good_deal?: boolean | null
   section: string
   brand: string | null
   model: string | null

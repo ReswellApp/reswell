@@ -159,6 +159,10 @@ export function buildReswellShopWidgetHtml(): string {
   @media (prefers-reduced-motion: reduce) {
     .card { animation: none; }
   }
+  .photo-frame {
+    position: relative;
+    background: var(--wash);
+  }
   .photo {
     display: block;
     width: 100%;
@@ -175,8 +179,53 @@ export function buildReswellShopWidgetHtml(): string {
   .photo img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
+    padding: 12px;
+    box-sizing: border-box;
     display: block;
+    background: var(--wash);
+  }
+  .photo-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: rgba(255,255,255,0.94);
+    color: var(--ink);
+    font: inherit;
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .photo-nav.prev { left: 8px; }
+  .photo-nav.next { right: 8px; }
+  .photo-count {
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.94);
+    color: var(--muted);
+    border: 1px solid var(--line);
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 2px 6px;
+    font-variant-numeric: tabular-nums;
+  }
+  .deal {
+    position: absolute;
+    left: 8px;
+    top: 8px;
+    border-radius: 999px;
+    background: #355185;
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 650;
+    line-height: 1.4;
+    padding: 2px 8px;
   }
   .photo-empty {
     display: grid;
@@ -203,6 +252,28 @@ export function buildReswellShopWidgetHtml(): string {
     overflow: hidden;
   }
   .card .title { min-height: 2.7em; }
+  .lead {
+    color: var(--ink);
+    font-weight: 600;
+  }
+  button.lead {
+    appearance: none;
+    width: 100%;
+    margin: 4px 0 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  button.lead:hover { text-decoration: underline; }
+  .detail {
+    margin: 2px 0 0;
+    font-size: 0.75rem;
+    line-height: 1.35;
+    color: var(--muted);
+  }
   button.title:hover { text-decoration: underline; }
   .meta {
     margin: 4px 0 0;
@@ -214,7 +285,7 @@ export function buildReswellShopWidgetHtml(): string {
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
-  .card .meta { min-height: 2.7em; }
+  .card .meta { min-height: 1.35em; }
   .row {
     display: flex;
     align-items: center;
@@ -273,6 +344,13 @@ export function buildReswellShopWidgetHtml(): string {
   button.action:hover { background: #1c2433; }
   button.action:active { transform: scale(0.98); }
   button.action:disabled { opacity: 0.55; cursor: wait; }
+  button.action.added {
+    background: var(--wash);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    cursor: default;
+    opacity: 1;
+  }
   button.ghost {
     background: var(--canvas);
     color: var(--ink);
@@ -373,6 +451,9 @@ export function buildReswellShopWidgetHtml(): string {
     shopping: true,
     busy: false,
     hostReady: false,
+    photoAt: {},
+    openDims: {},
+    added: {},
   };
 
   const el = {
@@ -469,6 +550,70 @@ export function buildReswellShopWidgetHtml(): string {
       }
     }
     return t;
+  }
+
+  function lengthLabel(raw) {
+    const t = String(raw || "").trim();
+    if (!t) return "";
+    if (/['′]\\s*\\d/.test(t) && !/["″]/.test(t)) return t + "″";
+    return t;
+  }
+
+  function dimSummary(listing) {
+    const serverLength = typeof listing.length_label === "string" ? listing.length_label.trim() : "";
+    const serverVolume = typeof listing.volume_label === "string" ? listing.volume_label.trim() : "";
+    const line = formatDimensions(listing.dimensions);
+    const pieces = line ? line.split(" · ") : [];
+    const tail = pieces.length > 1 ? pieces[pieces.length - 1] : "";
+    const hasVolume = pieces.length > 1 && /L\\s*$/.test(tail);
+    const geometry = hasVolume ? pieces[0] : line;
+    const segs = geometry ? geometry.split(" × ").map(function (part) { return part.trim(); }).filter(Boolean) : [];
+    const length = serverLength || lengthLabel(segs[0] || "");
+    const volume = serverVolume || (hasVolume ? tail.trim() : "");
+    const lead = [length, volume].filter(Boolean).join(" · ");
+    const detail = segs.slice(1).join(" × ");
+    return { lead: lead, detail: detail };
+  }
+
+  function photoUrls(listing) {
+    const urls = [];
+    const push = function (value) {
+      if (typeof value !== "string") return;
+      const url = value.trim();
+      if (!url || urls.indexOf(url) >= 0) return;
+      urls.push(url);
+    };
+    if (Array.isArray(listing.image_urls)) {
+      listing.image_urls.forEach(push);
+    }
+    push(listing.image_url);
+    if (listing.image_url && urls[0] !== listing.image_url) {
+      const primary = String(listing.image_url);
+      const rest = urls.filter(function (url) { return url !== primary; });
+      return [primary].concat(rest).slice(0, 8);
+    }
+    return urls.slice(0, 8);
+  }
+
+  function fulfillmentLine(listing) {
+    const place = placeName(listing.city, listing.state);
+    const ship = listing.shipping_available === true;
+    const pickup = listing.local_pickup === true;
+    const mode = ship ? "Ships" : pickup ? "Pickup only" : "";
+    return [mode, place].filter(Boolean).join(" · ");
+  }
+
+  function cartIncludes(id) {
+    if (!id) return false;
+    const items = state.cart && state.cart.items ? state.cart.items : [];
+    for (let i = 0; i < items.length; i++) {
+      if ((items[i].listing_id || items[i].id) === id) return true;
+    }
+    return false;
+  }
+
+  function cartHas(id) {
+    return !!(id && (state.added[id] || cartIncludes(id)));
   }
 
   function conditionLabel(listing) {
@@ -685,31 +830,51 @@ export function buildReswellShopWidgetHtml(): string {
         .map(function (listing) {
           const id = listing.id || listing.listing_id || "";
           const title = esc(listing.title || "Surfboard");
-          const dims = esc(formatDimensions(listing.dimensions));
+          const summary = dimSummary(listing);
           const condition = esc(conditionLabel(listing));
-          const place = esc(placeName(listing.city, listing.state));
-          const img = listing.image_url ? String(listing.image_url) : "";
+          const how = esc(fulfillmentLine(listing));
+          const photos = photoUrls(listing);
+          const photoIndex = photos.length ? (state.photoAt[id] || 0) % photos.length : 0;
+          const img = photos[photoIndex] || "";
           const price = money(listing.price_usd);
           const htmlUrl = listing.urls && listing.urls.html ? String(listing.urls.html) : "";
           const openAttr = htmlUrl ? ' data-open="' + esc(htmlUrl) + '"' : "";
+          const deal = listing.good_deal === true ? '<span class="deal">Good deal</span>' : "";
+          const nav = photos.length > 1
+            ? '<button class="photo-nav prev" type="button" data-photo="' + esc(id) + '" data-dir="-1" aria-label="Previous photo">‹</button>' +
+              '<button class="photo-nav next" type="button" data-photo="' + esc(id) + '" data-dir="1" aria-label="Next photo">›</button>' +
+              '<span class="photo-count">' + (photoIndex + 1) + "/" + photos.length + "</span>"
+            : "";
           const photo = img
-            ? '<button class="photo" type="button"' + openAttr + '><img alt="" src="' + esc(img) + '"></button>'
+            ? '<div class="photo-frame">' + deal +
+              '<button class="photo" type="button"' + openAttr + '><img alt="" src="' + esc(img) + '"></button>' +
+              nav + "</div>"
             : '<div class="photo photo-empty">No photo</div>';
           const titleEl = htmlUrl
             ? '<button class="title" type="button"' + openAttr + ">" + title + "</button>"
             : '<p class="title">' + title + "</p>";
+          const open = !!state.openDims[id];
+          const lead = summary.lead
+            ? summary.detail
+              ? '<button class="meta lead" type="button" data-dims="' + esc(id) + '" aria-expanded="' + (open ? "true" : "false") + '">' + esc(summary.lead) + "</button>" +
+                (open ? '<p class="detail">' + esc(summary.detail) + "</p>" : '<p class="detail" hidden>' + esc(summary.detail) + "</p>")
+              : '<p class="meta">' + esc(summary.lead) + "</p>"
+            : "";
+          const added = cartHas(id);
           const action =
             state.shopping === false
               ? htmlUrl
                 ? '<button class="action" data-open="' + esc(htmlUrl) + '" type="button">View</button>'
                 : ""
-              : '<button class="action" data-add="' + esc(id) + '" type="button"' +
-                (state.busy ? " disabled" : "") +
-                ">Add</button>";
+              : added
+                ? '<button class="action added" type="button" disabled>Added</button>'
+                : '<button class="action" data-add="' + esc(id) + '" type="button"' +
+                  (state.busy ? " disabled" : "") +
+                  ">Add</button>";
           const foot =
-            place || condition
+            how || condition
               ? '<div class="foot">' +
-                (place ? '<p class="place">' + place + "</p>" : "") +
+                (how ? '<p class="place">' + how + "</p>" : "") +
                 (condition ? '<span class="chip">' + condition + "</span>" : "") +
                 "</div>"
               : "";
@@ -718,7 +883,7 @@ export function buildReswellShopWidgetHtml(): string {
             photo +
             '<div class="body">' +
             titleEl +
-            '<p class="meta">' + dims + "</p>" +
+            lead +
             '<div class="row"><span class="price">' +
             price +
             "</span>" +
@@ -830,8 +995,26 @@ export function buildReswellShopWidgetHtml(): string {
   document.body.addEventListener("click", function (event) {
     const t = event.target;
     if (!(t instanceof Element)) return;
-    const host = t.closest("[data-open], [data-add], [data-remove], [data-checkout]");
+    const host = t.closest("[data-photo], [data-dims], [data-open], [data-add], [data-remove], [data-checkout]");
     if (!host) return;
+    const photoId = host.getAttribute("data-photo");
+    if (photoId) {
+      const listing = listingById(photoId);
+      const photos = listing ? photoUrls(listing) : [];
+      if (photos.length > 1) {
+        const dir = Number(host.getAttribute("data-dir")) || 1;
+        const current = state.photoAt[photoId] || 0;
+        state.photoAt[photoId] = (current + dir + photos.length) % photos.length;
+        render();
+      }
+      return;
+    }
+    const dimsId = host.getAttribute("data-dims");
+    if (dimsId) {
+      state.openDims[dimsId] = !state.openDims[dimsId];
+      render();
+      return;
+    }
     const open = host.getAttribute("data-open");
     if (open && !host.hasAttribute("data-add")) {
       openLink(open);
@@ -839,12 +1022,18 @@ export function buildReswellShopWidgetHtml(): string {
     }
     const add = host.getAttribute("data-add");
     if (add) {
+      state.added[add] = true;
       withBusy(async function () {
-        setStatus("Adding to cart…");
-        await callTool("add_to_cart", { listing_ids: [add] });
-        setStatus("Added. Want another board, or checkout?");
-        state.view = "browse";
-        render();
+        try {
+          setStatus("Adding to cart…");
+          await callTool("add_to_cart", { listing_ids: [add] });
+          if (!cartIncludes(add)) delete state.added[add];
+          state.view = "browse";
+          setStatus(browseHeadline(), false);
+        } catch (err) {
+          delete state.added[add];
+          throw err;
+        }
       });
       return;
     }

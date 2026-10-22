@@ -15,6 +15,7 @@ import { isShopifyManagedListing } from "@/lib/shopify/listing"
 import { shopifyManagedCheckoutBilling } from "@/lib/services/shopifyBilling"
 import { assertBuyerMayPurchaseListingExclusiveWindow } from "@/lib/services/listingBuyerExclusiveWindow"
 import { cartFromCartCheckoutHref } from "@/lib/utils/added-to-cart"
+import { listingTitleThumbnailCandidates } from "@/lib/listing-image-display"
 import { absoluteUrl } from "@/lib/site-metadata"
 
 type CartEligibleListing = {
@@ -112,7 +113,16 @@ export type McpCartLine = {
   quantity: number
   seller_id: string
   seller_name: string | null
+  image_url: string | null
   checkout_path: string
+}
+
+function cartLineImageUrl(
+  images: Array<{ url?: string | null; thumbnail_url?: string | null; is_primary?: boolean | null }> | null | undefined,
+): string | null {
+  const src = listingTitleThumbnailCandidates(images)[0]
+  if (!src) return null
+  return /^https?:\/\//i.test(src) ? src : absoluteUrl(src)
 }
 
 export async function getMcpCartService(buyerId: string): Promise<
@@ -138,6 +148,7 @@ export async function getMcpCartService(buyerId: string): Promise<
         stock_quantity,
         hidden_from_site,
         archived_at,
+        listing_images ( url, thumbnail_url, is_primary, sort_order ),
         profiles!listings_user_id_fkey ( display_name, shop_name, is_shop )
       )
     `,
@@ -163,6 +174,11 @@ export async function getMcpCartService(buyerId: string): Promise<
             slug?: string | null
             title?: string | null
             price?: number | string | null
+            listing_images?: Array<{
+              url?: string | null
+              thumbnail_url?: string | null
+              is_primary?: boolean | null
+            }> | null
             profiles?:
               | { display_name?: string | null; shop_name?: string | null; is_shop?: boolean | null }
               | { display_name?: string | null; shop_name?: string | null; is_shop?: boolean | null }[]
@@ -173,9 +189,14 @@ export async function getMcpCartService(buyerId: string): Promise<
             CartEligibleListing & {
               slug?: string | null
               title?: string | null
-              price?: number | string | null
-              profiles?:
-                | {
+            price?: number | string | null
+            listing_images?: Array<{
+              url?: string | null
+              thumbnail_url?: string | null
+              is_primary?: boolean | null
+            }> | null
+            profiles?:
+              | {
                     display_name?: string | null
                     shop_name?: string | null
                     is_shop?: boolean | null
@@ -211,6 +232,7 @@ export async function getMcpCartService(buyerId: string): Promise<
         (profile?.is_shop && profile.shop_name?.trim()) ||
         profile?.display_name?.trim() ||
         null,
+      image_url: cartLineImageUrl(listingRaw.listing_images),
       checkout_path: cartFromCartCheckoutHref(listingRaw.user_id),
     })
   }

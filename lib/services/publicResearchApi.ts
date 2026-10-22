@@ -17,7 +17,12 @@ import {
 import { marketplaceSearchSuggestSections } from "@/lib/header-nav-marketplace-search"
 import { isElasticsearchConfigured } from "@/lib/elasticsearch/config"
 import { searchListingIdsFromElasticsearch } from "@/lib/elasticsearch/listings-index"
-import { formatStoredListingDimensions } from "@/lib/listing-dimensions-display"
+import {
+  formatListingBoardLengthSubtitle,
+  formatListingVolumePart,
+  formatStoredListingDimensions,
+} from "@/lib/listing-dimensions-display"
+import { shouldShowListingGoodDeal } from "@/lib/utils/listing-good-deal"
 import { listingDetailHref } from "@/lib/listing-href"
 import {
   listingTitleThumbnailCandidates,
@@ -149,13 +154,23 @@ function toListingCard(row: PublicResearchListingRow): PublicApiListingCard {
     section: row.section,
     board_type: row.board_type,
     dimensions: formatStoredListingDimensions(row.dimensions),
+    length_label: formatListingBoardLengthSubtitle({ dimensions: row.dimensions }),
+    volume_label: formatListingVolumePart({ dimensions: row.dimensions }),
     price_usd: priceUsd,
     price_cents: Math.round(priceUsd * 100),
     city: row.city?.trim() || null,
     state: row.state?.trim() || null,
     shipping_available: Boolean(row.shipping_available),
     local_pickup: Boolean(row.local_pickup),
+    good_deal: shouldShowListingGoodDeal({
+      section: row.section,
+      status: row.status,
+      is_good_deal: row.is_good_deal,
+      hidden_from_site: row.hidden_from_site,
+      archived_at: row.archived_at,
+    }),
     image_url: listingImageUrl(row.listing_images),
+    image_urls: listingGalleryUrls(row.listing_images),
     urls: {
       html: absoluteUrl(href),
       api: absoluteUrl(`/api/public/listings/${row.slug?.trim() || row.id}`),
