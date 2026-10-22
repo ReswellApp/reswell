@@ -12,7 +12,7 @@ export function HowToShipHero() {
           <h1 className="font-headline text-4xl font-bold tracking-tight text-[#001A4A] sm:text-5xl sm:leading-[1.05]">
             Ship it so it arrives in one piece
           </h1>
-          <p className="mt-4 text-base leading-relaxed text-[#243044] sm:text-lg">
+          <p className="mt-4 text-base leading-relaxed text-[#163060] sm:text-lg">
             Offer shipping on a listing, pack the board, and print a label after the sale.
             Pickup still works if you would rather meet locally.
           </p>

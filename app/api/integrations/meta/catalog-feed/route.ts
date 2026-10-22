@@ -17,11 +17,12 @@ import {
  * When `META_CATALOG_FEED_SECRET` is set, pass it as `?token=` or `Authorization: Bearer`.
  *
  * Product `id` matches listing UUID — align Meta Pixel `content_ids` with this value for dynamic ads.
- * Includes active peer listings (`section` surfboards | fins | wetsuits | magazines | apparel | traction).
+ * Includes active peer listings (`section` surfboards | fins | wetsuits | magazines | apparel | traction | boardbags | surfpacks | leashes).
  * Shop listings get `custom_label_0` for Meta product-set ads:
  * HaydenGarfield (Hayden Garfield), OutSurfing, and Brownstone.
  * City listings get `custom_label_1`: SantaBarbara | Ventura
  * (same locality as `/reswell/santa-barbara` and `/reswell/ventura`).
+ * Apparel, traction, board bags, surfpacks, leashes, and fins share `custom_label_2`: Gear.
  * Surfboards that offer shipping get `custom_label_2`: Shipping.
  */
 export async function GET(request: Request) {

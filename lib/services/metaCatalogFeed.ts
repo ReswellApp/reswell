@@ -3,6 +3,7 @@ import { z } from "zod"
 import {
   fetchMetaCatalogFeedPage,
   fetchMetaCatalogFeedPageForLocation,
+  type MetaCatalogFeedPageResult,
 } from "@/lib/db/metaCatalogFeed"
 import { isListingDiscoveryEligible } from "@/lib/listing-public-visibility"
 import {
@@ -123,16 +124,16 @@ function escapeCsvField(value: string): string {
   return value
 }
 
-export async function buildMetaCatalogFeed(
-  supabase: SupabaseClient,
+async function collectMetaCatalogFeedItems(
+  feedContext: MetaCatalogFeedContext,
+  fetchPage: (offset: number) => Promise<MetaCatalogFeedPageResult>,
 ): Promise<MetaCatalogFeedItem[]> {
   const maxItems = catalogFeedMaxItems()
-  const feedContext = await resolveMetaCatalogShopContext(supabase)
   const items: MetaCatalogFeedItem[] = []
   let offset = 0
 
   while (items.length < maxItems) {
-    const page = await fetchMetaCatalogFeedPage(supabase, offset)
+    const page = await fetchPage(offset)
     if (page.rows.length === 0) break
 
     for (const row of page.rows) {
@@ -146,6 +147,15 @@ export async function buildMetaCatalogFeed(
   }
 
   return items
+}
+
+export async function buildMetaCatalogFeed(
+  supabase: SupabaseClient,
+): Promise<MetaCatalogFeedItem[]> {
+  const feedContext = await resolveMetaCatalogShopContext(supabase)
+  return collectMetaCatalogFeedItems(feedContext, (offset) =>
+    fetchMetaCatalogFeedPage(supabase, offset),
+  )
 }
 
 async function resolveMetaCatalogShopContext(

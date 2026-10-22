@@ -27,7 +27,7 @@ export function HowToShipValueStrip() {
           <li key={title} className="flex flex-col items-center text-center">
             <Icon className="h-11 w-11 text-[#355185]" strokeWidth={1.5} aria-hidden />
             <h2 className="mt-5 text-xl font-semibold tracking-tight text-[#001A4A]">{title}</h2>
-            <p className="mt-2 max-w-xs text-base leading-relaxed text-[#243044]">{body}</p>
+            <p className="mt-2 max-w-xs text-base leading-relaxed text-[#163060]">{body}</p>
           </li>
         ))}
       </ul>

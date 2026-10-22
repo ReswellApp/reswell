@@ -52,7 +52,9 @@ import {
   parseOfferNegotiationMessage,
   resolveActionableCounteredOffer,
   resolveAcceptedOfferForCheckout,
+  resolveNegotiationOffer,
 } from '@/lib/utils/parse-offer-negotiation-message'
+import { dashboardOffersPath } from '@/lib/utils/offers-dashboard-display'
 import { parseOfferLineItems } from '@/lib/types/offer-line-item'
 import { parseOrderCompletedMessageMetadata } from '@/lib/validations/order-completed-message-metadata'
 import { parseOrderPlacedMessageMetadata } from '@/lib/validations/order-placed-message-metadata'
@@ -1236,6 +1238,21 @@ export function ConversationThreadClient({
                       const checkoutLineItems = checkoutOffer
                         ? parseOfferLineItems(checkoutOffer.line_items)
                         : null
+                      const linkedOffer =
+                        (message.offer_id ? offersById[message.offer_id] : undefined) ??
+                        actionable ??
+                        checkoutOffer ??
+                        resolveNegotiationOffer(
+                          offersList,
+                          message.content,
+                          listingIdForOffer,
+                        )
+                      const negotiationOfferHref = linkedOffer
+                        ? dashboardOffersPath({
+                            role: isSeller ? 'seller' : 'buyer',
+                            offerId: linkedOffer.id,
+                          })
+                        : null
                       return (
                         <div className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start', cardMargin)}>
                           <OfferNegotiationEventCard
@@ -1243,7 +1260,7 @@ export function ConversationThreadClient({
                             content={message.content}
                             createdAt={message.created_at}
                             isOwn={isOwn}
-                            showSellerDashboardLink={isSeller && isOwn}
+                            offerHref={negotiationOfferHref}
                             actionableOfferId={actionable?.id ?? null}
                             actionableExpiresAt={actionable?.expires_at ?? null}
                             checkoutOfferId={checkoutOffer?.id ?? null}

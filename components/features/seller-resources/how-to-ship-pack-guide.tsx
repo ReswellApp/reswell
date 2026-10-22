@@ -67,7 +67,7 @@ export function HowToShipPackGuide() {
           >
             Pack the board
           </h2>
-          <p className="mt-3 text-base leading-relaxed text-[#243044]">
+          <p className="mt-3 text-base leading-relaxed text-[#163060]">
             Need a carton first?{" "}
             <Link href="#find-a-box" className={linkClass}>
               Where to find a box
@@ -89,7 +89,7 @@ export function HowToShipPackGuide() {
                   <h3 className="mt-3 text-xl font-semibold tracking-tight text-[#001A4A]">
                     {step.title}
                   </h3>
-                  <p className="mt-2 text-base leading-relaxed text-[#243044]">{step.body}</p>
+                  <p className="mt-2 text-base leading-relaxed text-[#163060]">{step.body}</p>
                 </div>
                 <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-muted">
                   <Image

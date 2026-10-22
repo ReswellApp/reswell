@@ -220,14 +220,21 @@ async function refreshSupabaseSession(
     }
   }
 
-  /** Legacy / bookmarked URLs — same hub as /dashboard/offers (see app/offers/page.tsx). */
+  /** Legacy hubs — one offers page at /dashboard/offers. */
   const isOffersShortcut = pathname === '/offers' || pathname.startsWith('/offers/')
+  const isLegacyOffersHub = isOffersShortcut || pathname === '/messages/offers'
 
   if (user && isUserAuthBanned(user)) {
     clearSupabaseAuthCookies(request, supabaseResponse)
     const url = request.nextUrl.clone()
     url.pathname = '/auth/login'
     url.searchParams.set('error', ACCOUNT_BANNED_ERROR)
+    return NextResponse.redirect(url)
+  }
+
+  if (user && isLegacyOffersHub) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/dashboard/offers'
     return NextResponse.redirect(url)
   }
 
@@ -243,7 +250,7 @@ async function refreshSupabaseSession(
 
     const url = request.nextUrl.clone()
     url.pathname = '/auth/login'
-    const redirectTarget = isOffersShortcut
+    const redirectTarget = isLegacyOffersHub
       ? `/dashboard/offers${request.nextUrl.search}`
       : `${request.nextUrl.pathname}${request.nextUrl.search}`
     url.searchParams.set('redirect', redirectTarget)

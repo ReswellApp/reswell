@@ -53,7 +53,7 @@ export function HowToShipOptions() {
           {OPTIONS.map((option) => (
             <li key={option.id} id={option.id} className={cardClass}>
               <h3 className="text-xl font-semibold tracking-tight text-[#001A4A]">{option.title}</h3>
-              <p className="mt-2 text-base leading-relaxed text-[#243044]">{option.body}</p>
+              <p className="mt-2 text-base leading-relaxed text-[#163060]">{option.body}</p>
             </li>
           ))}
         </ul>
@@ -72,7 +72,7 @@ export function HowToShipQuestions() {
         >
           Questions?
         </h2>
-        <p className="mx-auto mt-3 max-w-xl text-base leading-relaxed text-[#243044]">
+        <p className="mx-auto mt-3 max-w-xl text-base leading-relaxed text-[#163060]">
           Shipping help covers the label and drop-off. Contact us if you want to talk to someone.
         </p>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
@@ -103,7 +103,7 @@ export function HowToShipClose() {
       <h2 className="font-headline text-3xl font-bold tracking-tight text-[#001A4A] sm:text-4xl">
         Ready to list a board?
       </h2>
-      <p className="mt-2 text-base text-[#243044]">
+      <p className="mt-2 text-base text-[#163060]">
         It is free to post. Fees apply only when you make a sale.
       </p>
       <Button

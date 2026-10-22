@@ -17,6 +17,7 @@ import {
 } from "@/lib/listing-stock-quantity"
 import { resolveMixedCheckoutSellerId } from "@/lib/mixed-checkout"
 import { listingDetailHref } from "@/lib/listing-href"
+import { dashboardOffersPath } from "@/lib/utils/offers-dashboard-display"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { resolvePayableAmount } from "@/lib/purchase-amount"
 import { resolveCheckoutShippingPriceDisplay } from "@/lib/checkout-shipping-price"
@@ -127,6 +128,7 @@ export default async function CheckoutPage(props: {
 
   if (offerParam) {
     const checkoutReturnPath = `/checkout?offer=${encodeURIComponent(offerParam)}`
+    const offersHome = dashboardOffersPath({ role: "buyer", offerId: offerParam })
 
     if (!user || isAnonymousSupabaseUser(user)) {
       redirect(`/auth/login?redirect=${encodeURIComponent(checkoutReturnPath)}`)
@@ -134,18 +136,18 @@ export default async function CheckoutPage(props: {
 
     const offer = await fetchAcceptedOfferById(supabase, offerParam)
     if (!offer || offer.buyer_id !== user.id) {
-      redirect("/messages/offers")
+      redirect(offersHome)
     }
 
     const loaded = await loadAcceptedOfferCheckoutListings(supabase, offer)
     if (!loaded.ok) {
-      redirect("/messages/offers")
+      redirect(offersHome)
     }
 
     const checkoutListings = loaded.listings.map(rowToCheckoutListing)
 
     if (checkoutListings.some((l) => l.user_id === user.id)) {
-      redirect("/messages/offers")
+      redirect(offersHome)
     }
 
     const exclusiveCheck = await assertBuyerMayPurchaseListingsExclusiveWindow(
@@ -154,7 +156,7 @@ export default async function CheckoutPage(props: {
       user.id,
     )
     if (!exclusiveCheck.ok) {
-      redirect("/messages/offers")
+      redirect(offersHome)
     }
 
     const sellerId = offer.seller_id
@@ -186,7 +188,7 @@ export default async function CheckoutPage(props: {
                   <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
                   <BreadcrumbItem>
                     <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
-                      <Link href="/messages/offers">Offers</Link>
+                      <Link href={offersHome}>Offers</Link>
                     </BreadcrumbLink>
                   </BreadcrumbItem>
                   <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />

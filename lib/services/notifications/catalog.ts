@@ -25,6 +25,9 @@ export const NOTIFICATION_TYPES = [
   "payout_info_required",
   "order_delivered",
   "order_delivered_payout",
+  "seller_message_waiting",
+  "seller_listing_hide_warning",
+  "seller_listing_auto_hidden",
 ] as const
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number]
@@ -118,6 +121,21 @@ export const NOTIFICATION_POLICIES: Record<NotificationType, NotificationPolicy>
     mode: "once",
     windowHours: NOTIFICATION_WINDOW_HOURS,
   },
+  seller_message_waiting: {
+    type: "seller_message_waiting",
+    mode: "once",
+    windowHours: NOTIFICATION_WINDOW_HOURS,
+  },
+  seller_listing_hide_warning: {
+    type: "seller_listing_hide_warning",
+    mode: "once",
+    windowHours: NOTIFICATION_WINDOW_HOURS,
+  },
+  seller_listing_auto_hidden: {
+    type: "seller_listing_auto_hidden",
+    mode: "once",
+    windowHours: NOTIFICATION_WINDOW_HOURS,
+  },
 }
 
 export function isNotificationType(value: string): value is NotificationType {
@@ -170,6 +188,18 @@ export function orderDeliveredDedupeKey(orderId: string): string {
 
 export function orderDeliveredPayoutDedupeKey(orderId: string): string {
   return `order_delivered_payout:${orderId}`
+}
+
+export function sellerMessageWaitingDedupeKey(listingId: string, messageKey: string): string {
+  return `seller_message_waiting:${listingId}:${messageKey}`
+}
+
+export function sellerListingHideWarningDedupeKey(listingId: string, messageKey: string): string {
+  return `seller_listing_hide_warning:${listingId}:${messageKey}`
+}
+
+export function sellerListingAutoHiddenDedupeKey(listingId: string, messageKey: string): string {
+  return `seller_listing_auto_hidden:${listingId}:${messageKey}`
 }
 
 export function priceDropMeetsThreshold(oldPrice: number, newPrice: number): boolean {
@@ -257,6 +287,40 @@ export function orderPickedUpSellerTitle(): string {
 
 export function orderPickedUpSellerBody(orderNum: string): string {
   return `Order #${orderNum} was picked up. Your payout is available.`
+}
+
+function listingName(title: string): string {
+  return title.trim() || "your listing"
+}
+
+export function sellerMessageWaitingTitle(): string {
+  return "Are you still here?"
+}
+
+export function sellerMessageWaitingBody(title: string): string {
+  return `Are you still here? Someone messaged you about ${listingName(title)} and you never responded.`
+}
+
+export const VACATION_MODE_HIDDEN_LABEL = "Vacation mode (hidden)"
+
+export function sellerListingHideWarningTitle(): string {
+  return "Vacation mode"
+}
+
+export function sellerListingHideWarningBody(title: string): string {
+  return `If you don't reply, ${listingName(title)} goes into vacation mode (hidden). Do you still have this listing? You can turn it back on whenever you like.`
+}
+
+export function sellerListingAutoHiddenTitle(): string {
+  return VACATION_MODE_HIDDEN_LABEL
+}
+
+export function sellerListingAutoHiddenBody(title: string): string {
+  return `${listingName(title)} is in vacation mode (hidden). You can turn it back on whenever you like.`
+}
+
+export function sellerListingAutoHiddenEmailBody(): string {
+  return "Your listing is in vacation mode (hidden). You can turn it back on whenever you like."
 }
 
 export const LISTING_SAVED_DIGEST_HREF = "/dashboard/listings"

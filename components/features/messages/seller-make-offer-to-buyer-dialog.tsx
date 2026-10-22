@@ -241,7 +241,7 @@ export type SellerMakeOfferToBuyerDialogProps = {
   listingId: string
   buyerUserId: string
   sellerUserId: string
-  /** When set, stay on thread after send instead of navigating away. */
+  /** Kept for callers that already have a thread open. Sending never leaves the current page. */
   conversationId?: string | null
   listingTitle?: string
   listPrice?: number
@@ -263,7 +263,6 @@ export function SellerMakeOfferToBuyerDialog({
   onOpenChange,
   listingId,
   buyerUserId,
-  conversationId,
   listingTitle,
   listPrice,
   primaryImageUrl,
@@ -577,14 +576,6 @@ export function SellerMakeOfferToBuyerDialog({
 
       onOpenChange(false)
       toast.success(data?.updated ? "Offer updated." : "Offer sent.")
-
-      if (conversationId) {
-        router.refresh()
-      } else if (returnedConversationId) {
-        router.push(`/messages/${returnedConversationId}`)
-      } else {
-        router.push("/messages/offers")
-      }
       router.refresh()
     } finally {
       setSubmitting(false)

@@ -52,7 +52,7 @@ export function HowToShipAfterSale() {
             <li key={step.title} className={cardClass}>
               <p className="font-headline text-4xl font-bold leading-none text-[#355185]">{index + 1}</p>
               <h3 className="mt-3 text-xl font-semibold tracking-tight text-[#001A4A]">{step.title}</h3>
-              <p className="mt-2 text-base leading-relaxed text-[#243044]">{step.body}</p>
+              <p className="mt-2 text-base leading-relaxed text-[#163060]">{step.body}</p>
             </li>
           ))}
         </ol>

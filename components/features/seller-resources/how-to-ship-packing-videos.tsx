@@ -26,7 +26,7 @@ export function HowToShipPackingVideos() {
               loading="lazy"
             />
           </div>
-          <figcaption className="mt-2 text-sm leading-snug text-[#5c6b89]">{video.caption}</figcaption>
+          <figcaption className="mt-2 text-sm leading-snug text-[#355185]">{video.caption}</figcaption>
         </figure>
       ))}
     </div>

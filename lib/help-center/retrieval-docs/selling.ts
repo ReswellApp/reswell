@@ -389,11 +389,11 @@ export const sellingRetrievalDocs = [
     keywords: ["offers", "messages", "counter", "accept", "decline"],
     relatedIds: ["buying/how-do-offers-work", "selling/how-to-list-a-board", "accounts/where-are-messages"],
     quickAnswer:
-      "Buyer messages land in Messages. Offers also show on Offers under On my listings. Tap Respond to offer to accept, counter (up to three counters), or decline. Offers expire in 48 hours.",
+      "Buyer messages land in Messages. Offers also show on Offers under Selling. Tap Respond to offer to accept, counter (up to three counters), or decline. Offers expire in 48 hours.",
     sections: [
       {
         heading: "Where offers appear",
-        text: "Messages and /dashboard/offers under On my listings. Each tile shows amount, status, and expiry. General questions (not offers) are Messages only.",
+        text: "Messages and /dashboard/offers under Selling. Each tile shows amount, status, and expiry. Offers that need you are grouped under Needs a response. General questions (not offers) are Messages only.",
       },
       {
         heading: "Responding",

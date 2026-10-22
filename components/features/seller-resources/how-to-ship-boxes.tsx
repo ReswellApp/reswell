@@ -52,7 +52,7 @@ export function HowToShipBoxes() {
           >
             Where to find a box
           </h2>
-          <p className="mt-3 text-base leading-relaxed text-[#243044]">
+          <p className="mt-3 text-base leading-relaxed text-[#163060]">
             A surfboard needs its own carton. For the best rates, pack into {box.lengthIn}×
             {box.widthIn}×{box.heightIn} or stay under {HOW_TO_SELL_BEST_RATE_MAX_LENGTH_IN}″. See
             the{" "}
@@ -66,7 +66,7 @@ export function HowToShipBoxes() {
           {SOURCES.map((source) => (
             <li key={source.title} className={cardClass}>
               <h3 className="text-xl font-semibold tracking-tight text-[#001A4A]">{source.title}</h3>
-              <p className="mt-2 text-base leading-relaxed text-[#243044]">{source.body}</p>
+              <p className="mt-2 text-base leading-relaxed text-[#163060]">{source.body}</p>
             </li>
           ))}
         </ul>

@@ -3,6 +3,7 @@ import {
   listingIdsBlockedFromPermanentDelete,
   listingIdsWithOpenMarketplaceCheckout,
 } from "@/lib/db/listingDeleteEligibility"
+import { listingCardImageSrc } from "@/lib/listing-image-display"
 import { listingCanShowSellerRelist } from "@/lib/listing-sold-state"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import type { ListingCartOfferProspect } from "@/lib/types/listing-cart-holders"
@@ -248,7 +249,9 @@ export async function fetchMyListingCartOfferProspects(
 
   const { data, error } = await supabase
     .from("listings")
-    .select("id, title, price, status, section, hidden_from_site")
+    .select(
+      "id, title, price, status, section, hidden_from_site, listing_images(url, is_primary, thumbnail_url)",
+    )
     .eq("user_id", userId)
     .in("id", ids)
     .in("status", ["active", "pending_sale"])
@@ -265,11 +268,13 @@ export async function fetchMyListingCartOfferProspects(
     const cartCount = engagementCounts.get(row.id)?.cartCount ?? 0
     if (cartCount <= 0) continue
     const price = Number.parseFloat(String(row.price ?? 0))
+    const imageUrl = listingCardImageSrc(row.listing_images) || null
     prospects.push({
       id: row.id,
       title: (row.title ?? "").trim() || "Listing",
       cartCount,
       price: Number.isFinite(price) ? price : 0,
+      imageUrl,
     })
   }
 
