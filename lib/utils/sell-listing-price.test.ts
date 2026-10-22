@@ -1,6 +1,10 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 import {
+  coerceSubmittedListingPrice,
+  draftListingPriceBlockReason,
+  LISTING_NEEDS_PRICE_BEFORE_LIVE,
+  listingPriceForDraftPublish,
   parseSellListingPrice,
   readLiveSellListingPrice,
   sellListingPriceIsPublishable,
@@ -38,6 +42,59 @@ describe("sellListingPriceValidationMessage", () => {
   it("rejects an out-of-range amount", () => {
     assert.match(sellListingPriceValidationMessage("0") ?? "", /valid price/i)
     assert.equal(sellListingPriceIsPublishable("0"), false)
+  })
+})
+
+describe("draftListingPriceBlockReason", () => {
+  it("lets a price the form is already showing go live", () => {
+    assert.equal(draftListingPriceBlockReason("49.95"), null)
+    assert.equal(draftListingPriceBlockReason("$49.95"), null)
+    assert.equal(draftListingPriceBlockReason(49.95), null)
+  })
+
+  it("blocks a missing or zero price", () => {
+    assert.equal(draftListingPriceBlockReason(0), LISTING_NEEDS_PRICE_BEFORE_LIVE)
+    assert.equal(draftListingPriceBlockReason(null), LISTING_NEEDS_PRICE_BEFORE_LIVE)
+    assert.equal(draftListingPriceBlockReason(""), LISTING_NEEDS_PRICE_BEFORE_LIVE)
+  })
+})
+
+describe("coerceSubmittedListingPrice", () => {
+  it("stores the form text as the numeric column", () => {
+    const fields: Record<string, unknown> = { price: "49.95", title: "Fins" }
+    const submitted = coerceSubmittedListingPrice(fields)
+    assert.deepEqual(submitted, { sent: true, amount: 49.95 })
+    assert.equal(fields.price, 49.95)
+    assert.equal(listingPriceForDraftPublish(submitted, 0), 49.95)
+  })
+
+  it("accepts a dollar sign and thousands separators", () => {
+    const fields: Record<string, unknown> = { price: "$1,200.50" }
+    assert.equal(coerceSubmittedListingPrice(fields).amount, 1200.5)
+    assert.equal(fields.price, 1200.5)
+  })
+
+  it("does not replace an explicit zero with the stored price", () => {
+    const fields: Record<string, unknown> = { price: 0 }
+    const submitted = coerceSubmittedListingPrice(fields)
+    assert.equal(listingPriceForDraftPublish(submitted, 80), 0)
+    assert.equal(fields.price, 0)
+  })
+
+  it("does not treat an unparseable price as omitted", () => {
+    const fields: Record<string, unknown> = { price: "abc" }
+    const submitted = coerceSubmittedListingPrice(fields)
+    assert.equal(submitted.sent, true)
+    assert.equal(submitted.amount, null)
+    assert.equal("price" in fields, false)
+    assert.equal(listingPriceForDraftPublish(submitted, 49.95), null)
+  })
+
+  it("keeps the stored price when the client did not send one", () => {
+    const fields: Record<string, unknown> = { title: "Fins" }
+    const submitted = coerceSubmittedListingPrice(fields)
+    assert.deepEqual(submitted, { sent: false, amount: null })
+    assert.equal(listingPriceForDraftPublish(submitted, "49.95"), "49.95")
   })
 })
 

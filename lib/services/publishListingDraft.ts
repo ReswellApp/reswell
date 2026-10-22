@@ -13,8 +13,7 @@ import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import { recordListingVisibilityEvent } from "@/lib/services/listingVisibilityAudit"
 import { evaluateSellerCanSell } from "@/lib/services/sellerBan"
 import { qualifyPublishedListingForGiveaways } from "@/lib/services/giveawayEntry"
-
-const PRICE_MIN = 0.01
+import { draftListingPriceBlockReason } from "@/lib/utils/sell-listing-price"
 
 type DraftListingRow = {
   id: string
@@ -44,7 +43,8 @@ function normalizedDescription(raw: string | null | undefined): string {
 
 export function validateListingDraftPublishable(row: {
   status?: string | null
-  price?: number | null
+  /** Number or sell-form text (`"49.95"`, `"$49.95"`). */
+  price?: unknown
   description?: string | null
   city?: string | null
   state?: string | null
@@ -55,10 +55,8 @@ export function validateListingDraftPublishable(row: {
   if (row.status !== "draft") {
     return "Only draft listings can be published."
   }
-  const price = row.price
-  if (price == null || !Number.isFinite(Number(price)) || Number(price) < PRICE_MIN) {
-    return "Listing needs a price before it can go live."
-  }
+  const priceBlock = draftListingPriceBlockReason(row.price)
+  if (priceBlock) return priceBlock
   const description = normalizedDescription(row.description)
   if (!description) {
     return "Listing needs a description before it can go live."

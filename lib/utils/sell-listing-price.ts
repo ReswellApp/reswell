@@ -31,6 +31,18 @@ export function sellListingPriceIsPublishable(raw: unknown): boolean {
   return amount != null && amount >= SELL_LISTING_PRICE_MIN && amount <= SELL_LISTING_PRICE_MAX
 }
 
+export const LISTING_NEEDS_PRICE_BEFORE_LIVE =
+  "Listing needs a price before it can go live."
+
+/** Server publish gate. Accepts `49.95`, `"49.95"`, and `"$49.95"`. */
+export function draftListingPriceBlockReason(raw: unknown): string | null {
+  const price = parseSellListingPrice(raw)
+  if (price == null || price < SELL_LISTING_PRICE_MIN) {
+    return LISTING_NEEDS_PRICE_BEFORE_LIVE
+  }
+  return null
+}
+
 export function sellListingPriceValidationMessage(raw: unknown): string | null {
   const text = typeof raw === "string" ? raw.trim().replace(/[$,\s]/g, "") : raw
   const empty =
@@ -51,6 +63,37 @@ export function sellListingPriceValidationMessage(raw: unknown): string | null {
 export function coerceSellListingPriceInput(value: unknown): unknown {
   if (typeof value === "number" || typeof value !== "string") return value
   return value.trim().replace(/[$,\s]/g, "")
+}
+
+/**
+ * The sell form keeps price as text. The `listings.price` column is a number.
+ * When a write includes `price`, store the parsed amount. An unparseable value
+ * is dropped so it cannot be confused with "the client omitted price" and
+ * replaced by a draft row that is still `0`.
+ * Returns whether the client sent `price`, and the amount to validate.
+ */
+export function coerceSubmittedListingPrice(fields: Record<string, unknown>): {
+  sent: boolean
+  amount: number | null
+} {
+  if (!Object.prototype.hasOwnProperty.call(fields, "price")) {
+    return { sent: false, amount: null }
+  }
+  const amount = parseSellListingPrice(fields.price)
+  if (amount == null) {
+    delete fields.price
+    return { sent: true, amount: null }
+  }
+  fields.price = amount
+  return { sent: true, amount }
+}
+
+/** Price the publish check should use. A submitted price is never replaced by the stored row. */
+export function listingPriceForDraftPublish(
+  submitted: { sent: boolean; amount: number | null },
+  existingPrice: unknown,
+): unknown {
+  return submitted.sent ? submitted.amount : existingPrice
 }
 
 /**

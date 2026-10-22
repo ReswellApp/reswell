@@ -54,6 +54,7 @@ import { createClient } from "@/lib/supabase/client"
 import type { OwnedListingForEditRow } from "@/lib/db/listingEdit"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import {
+  createFinListingSchema,
   FIN_LISTING_MAX_PHOTOS,
   FIN_LISTING_TITLE_MAX_LENGTH,
 } from "@/lib/validations/fin-listing"
@@ -954,6 +955,20 @@ export default function SellFinsFlow({
       videos: readyVideo ? [readyVideo] : [],
     }
 
+    const parsedListing = createFinListingSchema.safeParse(payload)
+    if (!parsedListing.success) {
+      const message = parsedListing.error.issues[0]?.message ?? "Please check the form and try again."
+      logSellFunnelEvent({
+        listingType: "fins",
+        event: "validation_failed",
+        message,
+      })
+      setPublishValidationBanner(message)
+      scrollPublishValidationBannerIntoView()
+      return
+    }
+    const listingInput = parsedListing.data
+
     setSubmitting(true)
     try {
       clearImpersonationStorageIfCookieMissing()
@@ -1006,11 +1021,11 @@ export default function SellFinsFlow({
           }
           const updated = await updateOwnedListingViaApi({
             listingId: editId,
-            listing: buildFinListingPersistFields(payload, { allowPrivilegedShippingModes: true }),
+            listing: buildFinListingPersistFields(listingInput, { allowPrivilegedShippingModes: true }),
             removedImageIds,
-            images: peerImagesToOwnedUpdateOps(payload.images),
+            images: peerImagesToOwnedUpdateOps(listingInput.images),
             removedVideoIds,
-            videos: payload.videos,
+            videos: listingInput.videos,
             publishFromDraft: listingIsDraft,
           })
           if (!updated.ok) {
@@ -1053,11 +1068,11 @@ export default function SellFinsFlow({
 
         const updated = await updateOwnedListingViaApi({
           listingId: effectiveEditId,
-          listing: buildFinListingPersistFields(payload),
+          listing: buildFinListingPersistFields(listingInput),
           removedImageIds,
-          images: peerImagesToOwnedUpdateOps(payload.images),
+          images: peerImagesToOwnedUpdateOps(listingInput.images),
           removedVideoIds,
-          videos: payload.videos,
+          videos: listingInput.videos,
           publishFromDraft: listingIsDraft || isLocalOnlyServerDraftSubmit,
         })
         if (!updated.ok) {
@@ -1093,14 +1108,14 @@ export default function SellFinsFlow({
       await finalizePeerListingCreate({
         listingImpersonation,
         listingFields: buildFinListingPersistFields(
-          payload,
+          listingInput,
           listingImpersonation ? { allowPrivilegedShippingModes: true } : undefined,
         ),
-        images: payload.images.map((img) => ({
+        images: listingInput.images.map((img) => ({
           url: img.url,
           thumbnailUrl: img.thumbnailUrl,
         })),
-        videos: payload.videos,
+        videos: listingInput.videos,
         title: payload.title,
         section: "fins",
         bulkSlotId,
@@ -1109,7 +1124,7 @@ export default function SellFinsFlow({
         setSubmitting,
         publishStartedAt,
         directCreate: async () => {
-          const result = await createFinListingAction(payload)
+          const result = await createFinListingAction(listingInput)
           if (!("error" in result)) {
             clearPendingPublish("fins")
             clearSellServerDraftListingId("fins")
