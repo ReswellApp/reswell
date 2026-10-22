@@ -1,10 +1,14 @@
 import { CARRIER_DELIVERY_PAYOUT_HOLD_DAYS } from "@/lib/shipping/carrier-delivery-payout-timing"
 
-/** In-app notification types, caps, and copy. Email stays on the existing Klaviyo callers. */
+/**
+ * In-app notification types, caps, and copy.
+ * Followed-seller new listings share a database cap with the Klaviyo email
+ * (`followed_seller_listing_alert_grants`). Other email stays on its own callers.
+ */
 
 export const LISTING_SAVED_DAILY_CAP = 10
-export const NEW_LISTING_DAILY_CAP = 8
-export const NEW_LISTING_PER_SELLER_DAILY_CAP = 2
+/** Per follower, across every shop they follow, per America/Los_Angeles day. Email and in-app share it. */
+export const FOLLOWED_SELLER_NEW_LISTING_DAILY_CAP = 2
 export const PRICE_DROP_DAILY_CAP = 5
 export const PRICE_DROP_MIN_FRACTION = 0.1
 export const NOTIFICATION_WINDOW_HOURS = 24
@@ -86,11 +90,8 @@ export const NOTIFICATION_POLICIES: Record<NotificationType, NotificationPolicy>
   },
   new_listing_from_followed: {
     type: "new_listing_from_followed",
-    mode: "capped_then_digest",
+    mode: "once",
     windowHours: NOTIFICATION_WINDOW_HOURS,
-    maxPerWindow: NEW_LISTING_DAILY_CAP,
-    maxPerSubjectWindow: NEW_LISTING_PER_SELLER_DAILY_CAP,
-    digestType: "new_listing_from_followed_digest",
     preference: "follow_in_app",
   },
   new_listing_from_followed_digest: {
@@ -218,9 +219,22 @@ export function listingSavedDigestBody(count: number): string {
   return `${count} more ${noun} saved your listings today.`
 }
 
-export function newListingBody(title: string): string {
-  const name = title.trim() || "a listing"
-  return `New listing: ${name}`
+export function newListingTitle(shopName: string | null | undefined): string {
+  const name = shopName?.trim() || "A shop you follow"
+  return `${name} just posted`
+}
+
+export function newListingBody(
+  shopName: string | null | undefined,
+  title: string | null | undefined,
+  price?: number | null,
+): string {
+  const name = shopName?.trim() || "A shop you follow"
+  const listing = title?.trim() || "a new listing"
+  if (typeof price === "number" && Number.isFinite(price)) {
+    return `${name} just posted ${listing} for $${price.toFixed(2)}.`
+  }
+  return `${name} just posted ${listing}.`
 }
 
 export function newListingDigestBody(shopName: string, count: number): string {

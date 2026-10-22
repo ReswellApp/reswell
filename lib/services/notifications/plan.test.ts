@@ -5,7 +5,6 @@ import {
   listingSavedDedupeKey,
   listingSavedDigestDedupeKey,
   newListingDedupeKey,
-  newListingDigestDedupeKey,
   notificationDayKey,
   orderDeliveredBuyerBody,
   orderDeliveredBuyerTitle,
@@ -139,7 +138,7 @@ describe("planInAppNotifications", () => {
     if (planned[0]?.action === "skip") assert.equal(planned[0].reason, "self")
   })
 
-  it("caps new listings at two per seller and eight overall", () => {
+  it("sends each followed listing on its own without a digest", () => {
     const inputs = [
       ...Array.from({ length: 4 }, (_, index) => followedListing(BUYER, `a-${index}`, "shop-a")),
       ...Array.from({ length: 7 }, (_, index) => followedListing(BUYER, `b-${index}`, "shop-b")),
@@ -152,74 +151,49 @@ describe("planInAppNotifications", () => {
       (item) => item.action === "deliver" && item.row.type === "new_listing_from_followed_digest",
     )
 
-    assert.equal(individuals.length, 4)
+    assert.equal(individuals.length, 11)
+    assert.equal(digests.length, 0)
     assert.equal(
       individuals.filter((item) => item.action === "deliver" && item.subjectKey === "shop-a").length,
-      2,
-    )
-    assert.equal(
-      individuals.filter((item) => item.action === "deliver" && item.subjectKey === "shop-b").length,
-      2,
-    )
-    assert.equal(digests.length, 7)
-    assert.equal(
-      digests[0]?.action === "deliver" ? digests[0].row.body : "",
-      "North Shore posted 1 more listing.",
-    )
-    assert.equal(
-      digests[6]?.action === "deliver" ? digests[6].row.dedupeKey : "",
-      newListingDigestDedupeKey("shop-b", DAY),
-    )
-    assert.equal(
-      digests[6]?.action === "deliver" ? digests[6].row.body : "",
-      "North Shore posted 5 more listings.",
+      4,
     )
   })
 
-  it("stops individual new listings once eight have been sent today", () => {
-    const inputs = Array.from({ length: 5 }, (_, seller) =>
+  it("does not fold a new listing into a digest when older rows already filled a window", () => {
+    const inputs = Array.from({ length: 3 }, (_, seller) =>
       followedListing(BUYER, `shop-${seller}`, `shop-${seller}`),
     )
-    const windowKeys = ["already-1", "already-2", "already-3", "already-4", "already-5", "already-6", "already-7", "already-8"]
     const planned = planInAppNotifications(inputs, snapshot({
       deliveredInWindow: new Map([
         [
           planPairKey(BUYER, "new_listing_from_followed"),
           {
             count: 8,
-            keys: new Set(windowKeys),
-            subjectCounts: new Map(),
+            keys: new Set(["already-1", "already-2"]),
+            subjectCounts: new Map([["shop-0", 2]]),
           },
         ],
       ]),
     }))
 
-    assert.equal(planned.every((item) => item.action === "deliver" && item.row.type === "new_listing_from_followed_digest"), true)
+    assert.equal(
+      planned.every((item) => item.action === "deliver" && item.row.type === "new_listing_from_followed"),
+      true,
+    )
   })
 
-  it("does not raise a digest count when the same listing is planned again", () => {
+  it("does not send the same followed listing twice", () => {
     const input = followedListing(BUYER, "listing-9", "shop-a")
-    const digestKey = newListingDigestDedupeKey("shop-a", DAY)
     const planned = planInAppNotifications(
       [input, input],
       snapshot({
-        deliveredInWindow: new Map([
-          [
-            planPairKey(BUYER, "new_listing_from_followed"),
-            {
-              count: 2,
-              keys: new Set(["already-1", "already-2"]),
-              subjectCounts: new Map([["shop-a", 2]]),
-            },
-          ],
-        ]),
-        digestedCounts: new Map([[planPairKey(BUYER, digestKey), 3]]),
         seenLogKeys: new Set([planPairKey(BUYER, input.dedupeKey)]),
       }),
     )
 
     assert.equal(planned[0]?.action, "skip")
     assert.equal(planned[1]?.action, "skip")
+    if (planned[0]?.action === "skip") assert.equal(planned[0].reason, "duplicate")
   })
 
   it("respects the in-app follow preference for follow events only", () => {
