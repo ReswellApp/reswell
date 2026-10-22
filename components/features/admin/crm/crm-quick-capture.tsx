@@ -11,7 +11,6 @@ import {
 } from "@/lib/utils/facebookLead"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 
 interface CrmQuickCaptureProps {
   onSaved: () => void
@@ -43,11 +42,10 @@ export function CrmQuickCapture({ onSaved }: CrmQuickCaptureProps) {
         toast.error(result.error)
         return
       }
-      const pulled = result.enriched ? "Name pulled from the profile." : "Saved the link. Add a name whenever you have it."
       toast.success(
         result.created
-          ? `${result.displayName} saved. Follow up in ${CRM_FACEBOOK_FOLLOW_UP_DAYS} days. ${pulled}`
-          : `${result.displayName} is already here — chat link updated.`,
+          ? `${result.displayName} saved. Back in ${CRM_FACEBOOK_FOLLOW_UP_DAYS} days.`
+          : `${result.displayName} updated.`,
       )
       setProfileLink("")
       setThreadInput("")
@@ -72,60 +70,50 @@ export function CrmQuickCapture({ onSaved }: CrmQuickCaptureProps) {
         .join(" · ")
     : null
 
+  const hint = profileInvalid
+    ? "Paste a facebook.com profile link or a numeric profile id."
+    : threadInvalid
+      ? "Paste the messages thread link or the numeric thread id."
+      : preview
+
   return (
-    <form onSubmit={(event) => void handleSubmit(event)} className="rounded-xl border bg-card p-4 shadow-sm sm:p-5">
-      <div className="mb-4 space-y-1">
-        <h2 className="text-base font-semibold tracking-tight">Add a Marketplace lead</h2>
-        <p className="text-sm text-muted-foreground">
-          Paste the Facebook profile and the message thread. Hit enter, then the next one.
-        </p>
-      </div>
-      <div className="grid gap-3 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_auto] lg:items-end">
-        <div className="space-y-1.5">
-          <Label htmlFor="crm-fb-profile">Facebook profile link</Label>
-          <Input
-            ref={profileRef}
-            id="crm-fb-profile"
-            value={profileLink}
-            onChange={(event) => setProfileLink(event.target.value)}
-            placeholder="https://facebook.com/…"
-            autoComplete="off"
-            spellCheck={false}
-            autoFocus
-            onKeyDown={(event) => {
-              if (event.key === "Enter" && profile && !thread) {
-                event.preventDefault()
-                threadRef.current?.focus()
-              }
-            }}
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="crm-fb-thread">Marketplace thread</Label>
-          <Input
-            ref={threadRef}
-            id="crm-fb-thread"
-            value={threadInput}
-            onChange={(event) => setThreadInput(event.target.value)}
-            placeholder="Thread link or id"
-            autoComplete="off"
-            spellCheck={false}
-          />
-        </div>
-        <Button type="submit" className="w-full lg:w-auto" disabled={saving || !profile || !thread}>
+    <form onSubmit={(event) => void handleSubmit(event)} className="space-y-1.5">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <Input
+          ref={profileRef}
+          id="crm-fb-profile"
+          value={profileLink}
+          onChange={(event) => setProfileLink(event.target.value)}
+          placeholder="Paste Facebook profile link"
+          aria-label="Facebook profile link"
+          autoComplete="off"
+          spellCheck={false}
+          autoFocus
+          className="h-11 bg-card"
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && profile && !thread) {
+              event.preventDefault()
+              threadRef.current?.focus()
+            }
+          }}
+        />
+        <Input
+          ref={threadRef}
+          id="crm-fb-thread"
+          value={threadInput}
+          onChange={(event) => setThreadInput(event.target.value)}
+          placeholder="Thread link or id"
+          aria-label="Marketplace thread"
+          autoComplete="off"
+          spellCheck={false}
+          className="h-11 bg-card sm:max-w-xs"
+        />
+        <Button type="submit" className="h-11 shrink-0" disabled={saving || !profile || !thread}>
           {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-          {saving ? "Saving…" : "Save lead"}
+          {saving ? "Saving…" : "Save"}
         </Button>
       </div>
-      <p className="mt-3 min-h-5 text-xs text-muted-foreground">
-        {profileInvalid
-          ? "Use a facebook.com profile link, or the numeric profile id."
-          : threadInvalid
-            ? "Use the messages thread link, or the numeric thread id."
-            : preview
-              ? preview
-              : "A public name is filled in when Facebook includes one. First name and notes can wait."}
-      </p>
+      {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
     </form>
   )
 }
