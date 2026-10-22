@@ -13,6 +13,36 @@ import {
 import { tryReleaseShippingPayoutAfterCarrierHold } from "@/lib/services/autoReleaseShippingPayoutsAfterCarrierDelivery"
 import { updateOrderShipmentCarrierFields } from "@/lib/db/orderShipments"
 import { rollupOrderDeliveryFromShipments } from "@/lib/services/rollupOrderDeliveryFromShipments"
+import { orderDeliveryAlreadyRecorded } from "@/lib/shipping/order-tracking-update-key"
+
+type RecordedDeliveryRow = {
+  delivery_status?: string | null
+  carrier_delivered_at?: string | null
+}
+
+async function readOrderDeliveryAlreadyRecorded(
+  supabase: SupabaseClient,
+  orderId: string,
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("orders")
+    .select("delivery_status, carrier_delivered_at")
+    .eq("id", orderId)
+    .maybeSingle()
+
+  if (error || !data) {
+    if (error) {
+      console.error("[persistOrderCarrierTracking] delivery read:", error.message)
+    }
+    return false
+  }
+
+  const row = data as RecordedDeliveryRow
+  return orderDeliveryAlreadyRecorded({
+    deliveryStatus: row.delivery_status,
+    carrierDeliveredAt: row.carrier_delivered_at,
+  })
+}
 
 /**
  * Persists a ShipEngine tracking snapshot onto a shipment (preferred) or order,
@@ -30,11 +60,19 @@ export async function persistShipmentCarrierTrackingSnapshot(
 
   const { data: existing } = await supabase
     .from("order_shipments")
-    .select("tracking_detail")
+    .select("tracking_detail, delivery_status, carrier_delivered_at")
     .eq("id", shipmentId)
     .maybeSingle()
 
-  const previousDetailRaw = (existing as { tracking_detail?: unknown } | null)?.tracking_detail
+  const shipmentRow = existing as
+    | (RecordedDeliveryRow & { tracking_detail?: unknown })
+    | null
+  const previousDetailRaw = shipmentRow?.tracking_detail
+  const deliveryAlreadyRecorded =
+    orderDeliveryAlreadyRecorded({
+      deliveryStatus: shipmentRow?.delivery_status,
+      carrierDeliveredAt: shipmentRow?.carrier_delivered_at,
+    }) || (await readOrderDeliveryAlreadyRecorded(supabase, orderId))
 
   const patch: Record<string, unknown> = {
     tracking_detail: detail,
@@ -67,7 +105,9 @@ export async function persistShipmentCarrierTrackingSnapshot(
   await rollupOrderDeliveryFromShipments(supabase, orderId)
   await tryReleaseShippingPayoutAfterCarrierHold(orderId)
   await notifyOrderShippedKlaviyoIfMissing(supabase, orderId)
-  await notifyBuyerOrderShippingUpdateKlaviyo(supabase, orderId, previousDetailRaw, detail)
+  await notifyBuyerOrderShippingUpdateKlaviyo(supabase, orderId, previousDetailRaw, detail, {
+    deliveryAlreadyRecorded,
+  })
 }
 
 /**
@@ -81,7 +121,7 @@ export async function persistOrderCarrierTrackingSnapshot(
 ): Promise<void> {
   const { data: existing, error: readErr } = await supabase
     .from("orders")
-    .select("tracking_detail")
+    .select("tracking_detail, delivery_status, carrier_delivered_at")
     .eq("id", orderId)
     .maybeSingle()
 
@@ -90,7 +130,12 @@ export async function persistOrderCarrierTrackingSnapshot(
     return
   }
 
-  const previousDetailRaw = (existing as { tracking_detail?: unknown } | null)?.tracking_detail
+  const orderRow = existing as (RecordedDeliveryRow & { tracking_detail?: unknown }) | null
+  const previousDetailRaw = orderRow?.tracking_detail
+  const deliveryAlreadyRecorded = orderDeliveryAlreadyRecorded({
+    deliveryStatus: orderRow?.delivery_status,
+    carrierDeliveredAt: orderRow?.carrier_delivered_at,
+  })
 
   const { error: updErr } = await supabase
     .from("orders")
@@ -124,5 +169,7 @@ export async function persistOrderCarrierTrackingSnapshot(
   await syncCarrierDeliveryFromTracking(supabase, orderId, detail)
   await tryReleaseShippingPayoutAfterCarrierHold(orderId)
   await notifyOrderShippedKlaviyoIfMissing(supabase, orderId)
-  await notifyBuyerOrderShippingUpdateKlaviyo(supabase, orderId, previousDetailRaw, detail)
+  await notifyBuyerOrderShippingUpdateKlaviyo(supabase, orderId, previousDetailRaw, detail, {
+    deliveryAlreadyRecorded,
+  })
 }

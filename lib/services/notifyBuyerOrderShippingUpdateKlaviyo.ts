@@ -10,7 +10,7 @@ import {
   type OrderTrackingDetail,
 } from "@/lib/shipping/order-tracking-detail"
 import { resolveShippingSmsMilestoneTransition } from "@/lib/shipping/order-shipping-sms-milestone"
-import { orderTrackingUpdateChanged } from "@/lib/shipping/order-tracking-update-key"
+import { shouldEmitOrderShippingUpdate } from "@/lib/shipping/order-tracking-update-key"
 
 type OrderShippingUpdateRow = {
   buyer_id: string
@@ -24,6 +24,8 @@ type OrderShippingUpdateRow = {
 /**
  * Emits **Order Shipping Update** when carrier tracking advances beyond the previous snapshot.
  * Skips the first persisted snapshot (buyers already get **Order Shipped** with tracking info).
+ * Skips a refresh that is still "delivered" when that delivery was already recorded — opening
+ * the purchase page must not text a months-old delivery again.
  * Attaches buyer phone when on file; sets `sms_milestone` only on OFD / delivered / exception transitions.
  */
 export async function notifyBuyerOrderShippingUpdateKlaviyo(
@@ -31,9 +33,18 @@ export async function notifyBuyerOrderShippingUpdateKlaviyo(
   orderId: string,
   previousDetailRaw: unknown,
   newDetail: OrderTrackingDetail,
+  options?: { deliveryAlreadyRecorded?: boolean },
 ): Promise<void> {
   const previousDetail = parseOrderTrackingDetail(previousDetailRaw)
-  if (!orderTrackingUpdateChanged(previousDetail, newDetail)) return
+  if (
+    !shouldEmitOrderShippingUpdate({
+      previous: previousDetail,
+      next: newDetail,
+      deliveryAlreadyRecorded: options?.deliveryAlreadyRecorded === true,
+    })
+  ) {
+    return
+  }
 
   const { data: row, error } = await supabase
     .from("orders")
