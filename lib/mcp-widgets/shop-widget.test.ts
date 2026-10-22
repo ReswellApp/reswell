@@ -23,6 +23,7 @@ test("shop widget HTML is self-contained and branded", () => {
   assert.match(html, /reswell\/shop/)
   assert.match(html, /readableStatus/)
   assert.match(html, /formatDimensions/)
+  assert.match(html, /object-fit:\s*contain/)
   assert.match(html, /#04070E/)
   assert.match(html, /reswell-logo\.png/)
   assert.ok(!html.includes("#0b1c24"))
@@ -103,7 +104,10 @@ test("widget renders cards and hides a JSON tool payload", async () => {
             view: "browse",
             query: "channel islands",
             message: dump,
-            cart: { items: [], item_count: 9 },
+            cart: {
+              items: [{ listing_id: "1", title: "5'5 Channel Islands Pod", price_usd: 485, quantity: 1 }],
+              item_count: 9,
+            },
             listings: [
               {
                 id: "1",
@@ -114,6 +118,13 @@ test("widget renders cards and hides a JSON tool payload", async () => {
                 city: "SANTA BARBARA",
                 state: "CA",
                 image_url: "https://www.reswell.app/media/example.webp",
+                image_urls: [
+                  "https://www.reswell.app/media/example.webp",
+                  "https://www.reswell.app/media/example-rail.webp",
+                ],
+                shipping_available: true,
+                local_pickup: true,
+                good_deal: true,
                 urls: { html: "https://www.reswell.app/l/pod" },
               },
             ],
@@ -127,8 +138,12 @@ test("widget renders cards and hides a JSON tool payload", async () => {
     assert.equal(status, "1 board for “channel islands”.")
     assert.equal(count, "9")
     assert.match(browse, /Channel Islands Pod/)
-    assert.match(browse, /5'5 × 19 1\/4″ × 2 3\/8″/)
-    assert.match(browse, /Santa Barbara, CA/)
+    assert.match(browse, /5'5″/)
+    assert.match(browse, /19 1\/4″ × 2 3\/8″/)
+    assert.match(browse, /Ships · Santa Barbara, CA/)
+    assert.match(browse, /Good deal/)
+    assert.match(browse, /data-photo="1"/)
+    assert.match(browse, />Added</)
     assert.match(browse, /\$485/)
     assert.ok(!browse.includes("SECRET JSON TITLE"))
     assert.ok(!browse.includes('{"v"'))
@@ -162,7 +177,8 @@ test("widget renders cards and hides a JSON tool payload", async () => {
     const rawBrowse = byId.get("browsePane")?.innerHTML ?? ""
     assert.equal(rawStatus, "1 board.")
     assert.match(rawBrowse, /Album Ledge/)
-    assert.match(rawBrowse, /6'4 × 19 1\/2″ × 2 5\/8″/)
+    assert.match(rawBrowse, /6'4″/)
+    assert.match(rawBrowse, /19 1\/2″ × 2 5\/8″/)
     assert.ok(!rawBrowse.includes('"type"'))
     assert.ok(!rawStatus.includes("{"))
     await Promise.resolve()

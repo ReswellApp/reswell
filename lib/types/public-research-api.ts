@@ -14,13 +14,21 @@ export type PublicApiListingCard = {
   section: string
   board_type: string | null
   dimensions: string | null
+  /** Short card line, e.g. `5'9″`. */
+  length_label: string | null
+  /** Volume only, e.g. `29.5 L`. */
+  volume_label: string | null
   price_usd: number
   price_cents: number
   city: string | null
   state: string | null
   shipping_available: boolean
   local_pickup: boolean
+  /** Editorial marketplace flag. The widget shows it as “Good deal”. */
+  good_deal: boolean
   image_url: string | null
+  /** Primary photo first, then the rest of the gallery. */
+  image_urls: string[]
   urls: PublicApiUrls
 }
 
