@@ -106,4 +106,20 @@ describe("listingFieldsForPeerUpdate", () => {
     assert.equal("hidden_from_site" in next, false)
     assert.equal("search_tags" in next, false)
   })
+
+  it("turns the sell form's price text into the numeric column", () => {
+    const next = listingFieldsForPeerUpdate({
+      title: "Twin fin",
+      price: "49.95",
+    })
+    assert.equal(next.price, 49.95)
+  })
+
+  it("drops a price that is not an amount instead of leaving the text", () => {
+    const next = listingFieldsForPeerUpdate({
+      title: "Twin fin",
+      price: "abc",
+    })
+    assert.equal("price" in next, false)
+  })
 })

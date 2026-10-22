@@ -1,3 +1,5 @@
+import { coerceSubmittedListingPrice } from "@/lib/utils/sell-listing-price"
+
 /** Owner and admin updates must never change identity / visibility columns from the client. */
 export const LISTING_UPDATE_FORBIDDEN_FIELDS = new Set([
   "id",
@@ -17,6 +19,7 @@ export function listingFieldsForPeerUpdate(raw: Record<string, unknown>): Record
     if (LISTING_UPDATE_FORBIDDEN_FIELDS.has(key)) continue
     next[key] = value
   }
+  coerceSubmittedListingPrice(next)
   return next
 }
 

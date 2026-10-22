@@ -66,21 +66,34 @@ export function coerceSellListingPriceInput(value: unknown): unknown {
 }
 
 /**
- * Price to check before a draft goes live, and the number to store when the
- * submit included one. Form text (`"49.95"`, `"$49.95"`) wins over a draft
- * row still at 0. An explicit 0 stays 0 so publish still requires a real price.
- * When the submit does not parse, returns the stored price and leaves `fields` alone.
+ * The sell form keeps price as text. The `listings.price` column is a number.
+ * When a write includes `price`, store the parsed amount. An unparseable value
+ * is dropped so it cannot be confused with "the client omitted price" and
+ * replaced by a draft row that is still `0`.
+ * Returns whether the client sent `price`, and the amount to validate.
  */
-export function applyDraftPublishPrice(
-  fields: Record<string, unknown>,
-  existingPrice: unknown,
-): number | null {
-  const submitted = parseSellListingPrice(fields.price)
-  if (submitted != null) {
-    fields.price = submitted
-    return submitted
+export function coerceSubmittedListingPrice(fields: Record<string, unknown>): {
+  sent: boolean
+  amount: number | null
+} {
+  if (!Object.prototype.hasOwnProperty.call(fields, "price")) {
+    return { sent: false, amount: null }
   }
-  return parseSellListingPrice(existingPrice)
+  const amount = parseSellListingPrice(fields.price)
+  if (amount == null) {
+    delete fields.price
+    return { sent: true, amount: null }
+  }
+  fields.price = amount
+  return { sent: true, amount }
+}
+
+/** Price the publish check should use. A submitted price is never replaced by the stored row. */
+export function listingPriceForDraftPublish(
+  submitted: { sent: boolean; amount: number | null },
+  existingPrice: unknown,
+): unknown {
+  return submitted.sent ? submitted.amount : existingPrice
 }
 
 /**

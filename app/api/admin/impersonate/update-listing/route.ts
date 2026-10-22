@@ -25,7 +25,10 @@ import { trackKlaviyoListingCreated } from "@/lib/klaviyo/track-listing-created"
 import { trackFirstTimeSellerForListingIfNeeded } from "@/lib/services/klaviyoFirstTimeSeller"
 import { recordListingVisibilityEvent } from "@/lib/services/listingVisibilityAudit"
 import { omitClientAutoPriceDropSchedule } from "@/lib/listing-auto-price-drop"
-import { applyDraftPublishPrice } from "@/lib/utils/sell-listing-price"
+import {
+  coerceSubmittedListingPrice,
+  listingPriceForDraftPublish,
+} from "@/lib/utils/sell-listing-price"
 import { overlayListingRowWithDropoffParcel } from "@/lib/services/listingDropoffParcel"
 
 /** Admin impersonation saves include photos + shipping columns; give the write time to finish. */
@@ -172,7 +175,10 @@ async function putImpersonatedListing(request: NextRequest) {
 
   const publishingFromDraft =
     existingListing.status === "draft" && publishFromDraft === true
-  const priceForPublish = applyDraftPublishPrice(listingFields, existingListing.price)
+  const priceForPublish = listingPriceForDraftPublish(
+    coerceSubmittedListingPrice(listingFields),
+    existingListing.price,
+  )
 
   if (publishingFromDraft) {
     const mergedForValidation = {
