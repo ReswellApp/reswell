@@ -46,44 +46,58 @@ export function PurchaseOrderRow({
         </div>
 
         <div className="flex min-w-0 flex-1 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="min-w-0">
-            <Link
-              href={item.href}
-              className="line-clamp-2 text-[17px] font-bold leading-snug text-foreground hover:underline"
-            >
-              {item.title}
-            </Link>
-            <p className="mt-0.5 text-sm text-muted-foreground">by {item.sellerName}</p>
-            {item.detailLine ? (
-              <p className="text-sm text-muted-foreground">{item.detailLine}</p>
-            ) : null}
-            <p
-              className={cn(
-                "mt-1.5 text-[15px] leading-snug",
-                item.amountStruck && "line-through decoration-slate-400",
-              )}
-            >
-              <span className="font-bold text-blue-600 dark:text-blue-400">
-                {formatUsd(item.itemAmount)}
-              </span>
-              {item.showShipping ? (
-                <span className="font-normal text-muted-foreground">
-                  {" "}
-                  + {formatUsd(item.shippingAmount)} shipping
-                </span>
+          {/* contents: review follows order status on small screens, and sits under the title from sm up */}
+          <div className="contents sm:block sm:min-w-0 sm:flex-1">
+            <div className="min-w-0">
+              <Link
+                href={item.href}
+                className="line-clamp-2 text-[17px] font-bold leading-snug text-foreground hover:underline"
+              >
+                {item.title}
+              </Link>
+              <p className="mt-0.5 text-sm text-muted-foreground">by {item.sellerName}</p>
+              {item.detailLine ? (
+                <p className="text-sm text-muted-foreground">{item.detailLine}</p>
               ) : null}
-            </p>
-            {item.refundNote ? (
               <p
                 className={cn(
-                  "mt-1.5 text-xs font-medium",
-                  item.amountStruck
-                    ? "text-rose-700 dark:text-rose-300"
-                    : "text-amber-800 dark:text-amber-200",
+                  "mt-1.5 text-[15px] leading-snug",
+                  item.amountStruck && "line-through decoration-slate-400",
                 )}
               >
-                {item.refundNote}
+                <span className="font-bold text-blue-600 dark:text-blue-400">
+                  {formatUsd(item.itemAmount)}
+                </span>
+                {item.showShipping ? (
+                  <span className="font-normal text-muted-foreground">
+                    {" "}
+                    + {formatUsd(item.shippingAmount)} shipping
+                  </span>
+                ) : null}
               </p>
+              {item.refundNote ? (
+                <p
+                  className={cn(
+                    "mt-1.5 text-xs font-medium",
+                    item.amountStruck
+                      ? "text-rose-700 dark:text-rose-300"
+                      : "text-amber-800 dark:text-amber-200",
+                  )}
+                >
+                  {item.refundNote}
+                </p>
+              ) : null}
+            </div>
+            {item.sellerReview ? (
+              <div className="order-last sm:order-none sm:mt-2.5">
+                <ReviewSellerControls
+                  orderId={item.id}
+                  sellerName={item.sellerName}
+                  canReview={item.sellerReview.canReview}
+                  existingReview={item.sellerReview.existing}
+                  compact
+                />
+              </div>
             ) : null}
           </div>
 
@@ -111,18 +125,6 @@ export function PurchaseOrderRow({
           </div>
         </div>
       </div>
-
-      {item.sellerReview ? (
-        <div className="mt-4 sm:ml-[5.75rem] sm:max-w-xl">
-          <ReviewSellerControls
-            orderId={item.id}
-            sellerName={item.sellerName}
-            canReview={item.sellerReview.canReview}
-            existingReview={item.sellerReview.existing}
-            compact
-          />
-        </div>
-      ) : null}
     </li>
   )
 }
