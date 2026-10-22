@@ -6,6 +6,8 @@ import { getCachedDashboardSession } from "@/lib/dashboard-session"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { Button } from "@/components/ui/button"
 import { DashboardSidebarNav } from "@/components/features/dashboard/dashboard-sidebar-nav"
+import { dashboardSidebarStickyScrollClass } from "@/lib/utils/dashboard-display-styles"
+import { cn } from "@/lib/utils"
 import { MessagesAccountShellClient } from "@/components/features/messages/messages-account-shell-client"
 import { coastalShipperMembership } from "@/lib/services/coastalShipperAccess"
 import { dropoffLocationMembership } from "@/lib/services/dropoffLocationAccess"
@@ -44,8 +46,13 @@ export async function MessagesAccountShell({ children }: { children: React.React
       isDropoffLocation={isDropoffLocation}
       hasShopifyAccess={hasShopifyAccess}
       sidebar={
-        <aside className="hidden shrink-0 lg:block lg:w-64 xl:w-72">
-          <div className="sticky top-24 space-y-5">
+        <aside
+          className={cn(
+            "hidden shrink-0 lg:block lg:w-64 xl:w-72",
+            dashboardSidebarStickyScrollClass,
+          )}
+        >
+          <div className="space-y-5">
             <Button asChild className="h-10 w-full lg:h-11 lg:text-[15px]">
               <Link href="/sell?new=1">
                 <Plus className="mr-2 h-4 w-4" />
