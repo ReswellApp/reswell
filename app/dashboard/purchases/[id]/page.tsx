@@ -37,7 +37,7 @@ import {
 } from "@/lib/purchase-detail-timeline"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
-import { preferredTrackingUrl } from "@/lib/utils/carrier-tracking-url"
+import { packageTrackHref } from "@/lib/utils/carrier-tracking-url"
 import { formatCarrierDisplayName } from "@/lib/shipping/resolve-carrier-code"
 import { helpHubHref } from "@/lib/help/help-hub-intents"
 import {
@@ -333,7 +333,8 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
   const brandedTrackingUrl = order.tracking_number?.trim()
     ? await ensureOrderBrandedTrackingUrl(order.id)
     : null
-  const trackUrl = preferredTrackingUrl({
+  const trackUrl = packageTrackHref({
+    orderId: order.id,
     brandedUrl: brandedTrackingUrl,
     trackingNumber: order.tracking_number,
     trackingCarrier: order.tracking_carrier,

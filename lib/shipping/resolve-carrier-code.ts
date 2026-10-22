@@ -7,9 +7,12 @@ export function resolveShipEngineCarrierCode(
 ): string | null {
   const hint = (carrierHint ?? "").trim().toLowerCase()
   const tn = trackingNumber.trim().replace(/\s/g, "")
+  const firstSegment = hint.split("·")[0]?.trim() ?? ""
 
-  if (hint && /^[a-z0-9_]+$/.test(hint)) {
-    return hint
+  // Stored labels look like `stamps_com · usps_priority_mail`. The service
+  // segment often contains "usps", so the carrier code has to come first.
+  if (firstSegment && /^[a-z0-9_]+$/.test(firstSegment)) {
+    return firstSegment
   }
 
   if (hint.includes("usps") || hint.includes("postal") || hint.includes("post office")) {

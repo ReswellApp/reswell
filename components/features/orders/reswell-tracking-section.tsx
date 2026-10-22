@@ -102,6 +102,8 @@ export function ReswellTrackingSection(props: {
   pollOnly?: boolean
   /** Defaults to `/api/orders/:id/carrier-tracking` (buyer/seller). Pass admin path for staff views. */
   carrierTrackingFetchPath?: string
+  /** External tracker. Branded ShipEngine page when one exists. */
+  trackUrl?: string | null
   sectionTitle?: string
   sectionDescription?: string
 }) {
@@ -115,6 +117,7 @@ export function ReswellTrackingSection(props: {
     className,
     pollOnly = false,
     carrierTrackingFetchPath,
+    trackUrl,
     sectionTitle = "Reswell tracking",
     sectionDescription = "Live carrier scans for your shipment.",
   } = props
@@ -291,6 +294,13 @@ export function ReswellTrackingSection(props: {
               <Copy className="h-3.5 w-3.5" aria-hidden />
               <span className="sr-only">Copy tracking number</span>
             </Button>
+            {trackUrl ? (
+              <Button variant="outline" size="sm" className="h-8" asChild>
+                <a href={trackUrl} target="_blank" rel="noopener noreferrer">
+                  Track package
+                </a>
+              </Button>
+            ) : null}
           </div>
         </div>
 

@@ -6,6 +6,7 @@ import {
   type BrandedTrackingLocality,
 } from "@/lib/shipengine/branded-tracking-page"
 import { normalizeBrandedTrackingUrl } from "@/lib/utils/branded-tracking-url"
+import { preferredTrackingUrl } from "@/lib/utils/carrier-tracking-url"
 import { getReswellWarehouseAddress } from "@/lib/reswell-warehouse-address"
 import { fetchSantaBarbaraDropoffOrderIds } from "@/lib/services/santaBarbaraDropoffOrderAccess"
 import { resolveSellerShipFromAddress } from "@/lib/services/sellerShipFromAddress"
@@ -82,28 +83,41 @@ export async function ensureOrderBrandedTrackingUrl(orderId: string): Promise<st
     .eq("id", id)
     .maybeSingle()
 
+  let canPersist = true
   if (stored.error) {
-    if (!isMissingBrandedTrackingColumn(stored.error.message)) {
-      console.error("[branded-tracking] stored url load:", stored.error.message)
-    }
+    canPersist = !isMissingBrandedTrackingColumn(stored.error.message)
+    console.error("[branded-tracking] stored url load", {
+      orderId: id,
+      missingColumns: !canPersist,
+      message: stored.error.message.slice(0, 200),
+    })
+  } else {
+    const storedRow = stored.data as {
+      branded_tracking_url?: string | null
+      branded_tracking_number?: string | null
+    } | null
+    const storedNumber = normalizeTrackingNumberForCarrier(storedRow?.branded_tracking_number ?? "")
+    const storedUrl = normalizeBrandedTrackingUrl(storedRow?.branded_tracking_url)
+    if (storedUrl && storedNumber === trackingNumber) return storedUrl
+  }
+
+  if (!getShipEngineBrandedTrackingThemeGuid()) {
+    console.error("[branded-tracking] theme guid unset", { orderId: id })
     return null
   }
 
-  const storedRow = stored.data as {
-    branded_tracking_url?: string | null
-    branded_tracking_number?: string | null
-  } | null
-  const storedNumber = normalizeTrackingNumberForCarrier(storedRow?.branded_tracking_number ?? "")
-  const storedUrl = normalizeBrandedTrackingUrl(storedRow?.branded_tracking_url)
-  if (storedUrl && storedNumber === trackingNumber) return storedUrl
-  if (!getShipEngineBrandedTrackingThemeGuid()) return null
-
   const carrierCode = resolveShipEngineCarrierCode(trackingNumber, order.tracking_carrier)
-  if (!carrierCode) return null
+  if (!carrierCode) {
+    console.error("[branded-tracking] carrier unresolved", { orderId: id })
+    return null
+  }
 
   const shipTo = orderShippingJsonToRateQuoteAddress(order.shipping_address)
   const to = shipTo ? localityFromRateAddress(shipTo) : null
-  if (!to) return null
+  if (!to) {
+    console.error("[branded-tracking] ship-to incomplete", { orderId: id })
+    return null
+  }
 
   const dropoffIds = await fetchSantaBarbaraDropoffOrderIds(supabase, [id])
   let fromAddress: RateQuoteAddressFields | null = null
@@ -114,7 +128,10 @@ export async function ensureOrderBrandedTrackingUrl(orderId: string): Promise<st
     fromAddress = sellerFrom.ok ? profileRowToRateQuoteAddress(sellerFrom.address) : null
   }
   const from = fromAddress ? localityFromRateAddress(fromAddress) : null
-  if (!from) return null
+  if (!from) {
+    console.error("[branded-tracking] ship-from incomplete", { orderId: id })
+    return null
+  }
 
   const url = await createBrandedTrackingPage({
     trackingNumber,
@@ -124,6 +141,7 @@ export async function ensureOrderBrandedTrackingUrl(orderId: string): Promise<st
     shipFrom: from,
   })
   if (!url) return null
+  if (!canPersist) return url
 
   const { error: writeErr } = await supabase
     .from("orders")
@@ -134,11 +152,44 @@ export async function ensureOrderBrandedTrackingUrl(orderId: string): Promise<st
     .eq("id", id)
 
   if (writeErr) {
-    if (!isMissingBrandedTrackingColumn(writeErr.message)) {
-      console.error("[branded-tracking] save url:", writeErr.message)
-    }
-    return url
+    console.error("[branded-tracking] save url", {
+      orderId: id,
+      missingColumns: isMissingBrandedTrackingColumn(writeErr.message),
+      message: writeErr.message.slice(0, 200),
+    })
   }
 
   return url
+}
+
+/**
+ * Branded portal when ShipEngine can build one, otherwise the carrier tracker.
+ * Used by the track redirect so older messages are not stuck on a saved carrier URL.
+ */
+export async function resolveOrderPackageTrackingUrl(orderId: string): Promise<string | null> {
+  const brandedUrl = await ensureOrderBrandedTrackingUrl(orderId)
+  if (brandedUrl) return brandedUrl
+
+  const id = orderId.trim()
+  if (!id) return null
+
+  try {
+    const supabase = createServiceRoleClient()
+    const { data, error } = await supabase
+      .from("orders")
+      .select("tracking_number, tracking_carrier")
+      .eq("id", id)
+      .maybeSingle()
+    if (error || !data) return null
+    const row = data as { tracking_number?: string | null; tracking_carrier?: string | null }
+    return preferredTrackingUrl({
+      trackingNumber: row.tracking_number,
+      trackingCarrier: row.tracking_carrier,
+    })
+  } catch (error) {
+    console.error("[branded-tracking] carrier fallback unavailable", {
+      message: error instanceof Error ? error.message : "missing service role",
+    })
+    return null
+  }
 }
