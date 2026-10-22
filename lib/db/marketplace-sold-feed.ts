@@ -6,18 +6,41 @@ export const MARKETPLACE_SOLD_FEED_PAGE_SIZE = 40
 export interface MarketplaceSoldFeedCursor {
   soldAt: string
   listingId: string
+  /** Order line (or tip) that this tile represents. Null only for cursors saved before quantity tiles. */
+  saleLineId: string | null
 }
 
 interface SoldFeedOrderRow {
   listing_id: string
   sale_confirmed_at: string
+  quantity?: number | string | null
+  sale_line_id?: string | null
+  line_total?: number | string | null
+}
+
+export interface MarketplaceSoldFeedSale {
+  listingId: string
+  soldAt: string
+  quantity: number
+  saleLineId: string
+  lineTotal: number | null
 }
 
 export interface MarketplaceSoldFeedOrderPage {
-  orderedListingIds: string[]
-  confirmedAtIsoByListingId: Map<string, string>
+  sales: MarketplaceSoldFeedSale[]
   hasMore: boolean
   nextCursor: MarketplaceSoldFeedCursor | null
+}
+
+function parseQuantity(value: number | string | null | undefined): number {
+  const parsed = Math.floor(Number(value))
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 1
+}
+
+function parseLineTotal(value: number | string | null | undefined): number | null {
+  if (value == null || value === "") return null
+  const parsed = typeof value === "number" ? value : Number(value)
+  return Number.isFinite(parsed) ? parsed : null
 }
 
 export async function fetchMarketplaceSoldFeedOrderPage(
@@ -37,6 +60,7 @@ export async function fetchMarketplaceSoldFeedOrderPage(
     p_sections: sections,
     p_before_sale_at: options.cursor?.soldAt ?? null,
     p_before_listing_id: options.cursor?.listingId ?? null,
+    p_before_sale_line_id: options.cursor?.saleLineId ?? null,
     p_brand_id: options.brand?.id ?? null,
     p_brand_name: options.brand?.name ?? null,
   })
@@ -47,19 +71,24 @@ export async function fetchMarketplaceSoldFeedOrderPage(
   }
 
   const rows = ((data ?? []) as SoldFeedOrderRow[]).slice(0, pageSize)
-  const confirmedAtIsoByListingId = new Map(
-    rows.map((row) => [row.listing_id, row.sale_confirmed_at]),
-  )
+  const sales = rows.map((row) => ({
+    listingId: row.listing_id,
+    soldAt: row.sale_confirmed_at,
+    quantity: parseQuantity(row.quantity),
+    saleLineId: row.sale_line_id || row.listing_id,
+    lineTotal: parseLineTotal(row.line_total),
+  }))
   const lastRow = rows.at(-1)
+  const lastSale = sales.at(-1)
 
   return {
-    orderedListingIds: rows.map((row) => row.listing_id),
-    confirmedAtIsoByListingId,
+    sales,
     hasMore: (data?.length ?? 0) > pageSize,
-    nextCursor: lastRow
+    nextCursor: lastRow && lastSale
       ? {
           soldAt: lastRow.sale_confirmed_at,
           listingId: lastRow.listing_id,
+          saleLineId: lastSale.saleLineId,
         }
       : null,
   }

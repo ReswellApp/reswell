@@ -15,12 +15,17 @@ import {
   isListingVisibleInPublicSoldFeed,
 } from "@/lib/listing-public-visibility"
 import {
+  soldFeedShowsSaleQuantity,
+  soldFeedTilePrice,
+} from "@/lib/sold-feed-sale-label"
+import {
   listingCoverImageForCard,
   listingImagesFromPrimaryFields,
 } from "@/lib/listing-image-display"
 import {
   fetchMarketplaceSoldFeedOrderPage,
   type MarketplaceSoldFeedCursor,
+  type MarketplaceSoldFeedSale,
 } from "@/lib/db/marketplace-sold-feed"
 
 export const MARKETPLACE_SOLD_FEED_LIMIT = 40
@@ -69,21 +74,37 @@ export type MarketplaceShippedFeedPayload = {
 
 function mapSoldRow(
   row: Record<string, unknown>,
-  saleConfirmedAtIso: string | null,
+  sale: MarketplaceSoldFeedSale,
 ): SoldFeedListing {
   const dimStr = row.dimensions != null ? String(row.dimensions) : ""
   const boardLength = boardLengthLabelFromDimensionsColumn(dimStr) ?? null
-  const soldAtRaw = saleConfirmedAtIso ?? row.sold_at ?? row.updated_at
+  const soldAtRaw = sale.soldAt || row.sold_at || row.updated_at
   const soldAt = soldAtRaw ? String(soldAtRaw) : new Date().toISOString()
   const listPrice = publicListingListPriceUsd(row.price as string | number | null | undefined)
+  const stockQuantity =
+    typeof row.stock_quantity === "number" ? row.stock_quantity : Number(row.stock_quantity ?? 0)
+  const listingStillInStock = isInStockBrandNewUnitSale({
+    title: String(row.title ?? ""),
+    status: String(row.status ?? "sold"),
+    hidden_from_site: row.hidden_from_site as boolean | null | undefined,
+    archived_at: row.archived_at as string | null | undefined,
+    condition: row.condition != null ? String(row.condition) : null,
+    stock_quantity: stockQuantity,
+  })
 
   return {
     id: String(row.id),
+    saleLineId: sale.saleLineId,
     slug: row.slug != null ? String(row.slug) : null,
     user_id: String(row.user_id),
     title: String(row.title ?? ""),
     price: listPrice,
-    soldPrice: listPrice,
+    soldPrice: soldFeedTilePrice(listPrice, sale.quantity, sale.lineTotal),
+    quantitySold: sale.quantity,
+    showSaleQuantity: soldFeedShowsSaleQuantity({
+      quantity: sale.quantity,
+      listingStillInStock,
+    }),
     condition: String(row.condition ?? ""),
     section: String(row.section ?? "surfboards"),
     city: row.city != null ? String(row.city) : null,
@@ -104,15 +125,15 @@ function mapSoldRow(
 
 async function hydrateSoldFeedListings(
   supabase: SupabaseClient,
-  orderedListingIds: readonly string[],
-  confirmedAtIsoByListingId: Map<string, string>,
+  sales: readonly MarketplaceSoldFeedSale[],
 ): Promise<SoldFeedListing[]> {
-  if (orderedListingIds.length === 0) return []
+  if (sales.length === 0) return []
 
+  const orderedListingIds = [...new Set(sales.map((sale) => sale.listingId))]
   const { data, error } = await supabase
     .from("listings")
-    .select(`${SOLD_LISTING_SELECT}, hidden_from_site, archived_at, stock_quantity`)
-    .in("id", [...orderedListingIds])
+    .select(`${SOLD_LISTING_SELECT}, hidden_from_site, archived_at, stock_quantity, status`)
+    .in("id", orderedListingIds)
     .in("status", ["sold", "active"])
 
   if (error) {
@@ -124,19 +145,19 @@ async function hydrateSoldFeedListings(
   const rowsById = new Map(rows.map((row) => [String(row.id), row]))
   const adminTerminalSoldIds = await fetchAdminTerminalSoldListingIds(
     supabase,
-    [...orderedListingIds],
+    orderedListingIds,
   )
 
-  return orderedListingIds
-    .map((id) => {
-      const row = rowsById.get(id)
+  return sales
+    .map((sale) => {
+      const row = rowsById.get(sale.listingId)
       if (!row) return null
       const visibility = {
         title: String(row.title ?? ""),
         status: String(row.status ?? "sold"),
         hidden_from_site: row.hidden_from_site as boolean | null | undefined,
         archived_at: row.archived_at as string | null | undefined,
-        soldViaAdminTerminal: adminTerminalSoldIds.has(id),
+        soldViaAdminTerminal: adminTerminalSoldIds.has(sale.listingId),
         condition: row.condition != null ? String(row.condition) : null,
         stock_quantity:
           typeof row.stock_quantity === "number" ? row.stock_quantity : Number(row.stock_quantity ?? 0),
@@ -144,7 +165,7 @@ async function hydrateSoldFeedListings(
       if (!isListingVisibleInPublicSoldFeed(visibility) && !isInStockBrandNewUnitSale(visibility)) {
         return null
       }
-      return mapSoldRow(row, confirmedAtIsoByListingId.get(id) ?? null)
+      return mapSoldRow(row, sale)
     })
     .filter((listing): listing is SoldFeedListing => listing != null)
 }
@@ -170,11 +191,7 @@ export async function loadMarketplaceSoldFeedPage(
     brand: brand ? { id: brand.id, name: brand.name } : null,
   })
 
-  const soldListings = await hydrateSoldFeedListings(
-    supabase,
-    orderPage.orderedListingIds,
-    orderPage.confirmedAtIsoByListingId,
-  )
+  const soldListings = await hydrateSoldFeedListings(supabase, orderPage.sales)
 
   return {
     soldListings,
@@ -217,8 +234,13 @@ export async function loadMarketplaceShippedFeedPage(
   )
   const soldListings = await hydrateSoldFeedListings(
     supabase,
-    sliced.pageItems,
-    ordering.confirmedAtIsoByListingId,
+    sliced.pageItems.map((listingId) => ({
+      listingId,
+      soldAt: ordering.confirmedAtIsoByListingId.get(listingId) ?? "",
+      quantity: 1,
+      saleLineId: listingId,
+      lineTotal: null,
+    })),
   )
 
   return {
@@ -231,7 +253,7 @@ export async function loadMarketplaceShippedFeedPage(
   }
 }
 
-/** Public sold / shipped marketplace feed (no session). Tipped mark-as-sold listings and in-stock brand-new unit sales are included via the sold-page RPC. */
+/** Public sold / shipped marketplace feed (no session). Each checkout of a brand-new quantity listing is its own tile. The listing stays active while stock remains. */
 export async function loadMarketplaceSoldFeed(
   supabase: SupabaseClient,
   brandSlug: string | null,
