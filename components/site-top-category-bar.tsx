@@ -6,18 +6,16 @@ import { useClientSearchParams } from "@/hooks/use-client-search-params"
 import { cn } from "@/lib/utils"
 import { isMessageThreadDetailRoute } from "@/lib/utils/message-thread-routes"
 import { isSupportCaseThreadRoute } from "@/lib/utils/support-case-paths"
-import { HeaderSellerResourcesNav } from "@/components/header-seller-resources-nav"
+import { HeaderShopperChipItem } from "@/components/header-shopper-category-nav"
 import {
-  boardBrowseNavItemIsActive,
-  siteHeaderMobileCategoryNavLinks,
   siteHeaderMobileSecondaryNavLinks,
   siteHeaderSecondaryNavItemIsActive,
+  siteHeaderShopperNavItems,
 } from "@/lib/site-category-directory"
-import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
 import { isShopifyClaimPath } from "@/lib/shopify/claim-path"
 
-const chipBase =
-  "inline-flex min-h-9 items-center justify-center whitespace-nowrap rounded-full border px-3.5 py-1.5 text-center text-[13px] font-semibold leading-tight text-foreground shadow-sm transition-colors focus-visible:outline-none focus-visible:border-cerulean/40 focus-visible:ring-2 focus-visible:ring-cerulean/15 focus-visible:ring-offset-0"
+const quietChipBase =
+  "inline-flex min-h-9 items-center justify-center whitespace-nowrap rounded-full px-2.5 py-1.5 text-center text-[13px] font-medium leading-tight text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cerulean/15"
 
 /**
  * Marketplace category strip — lives below the site header, separate from account nav.
@@ -41,35 +39,19 @@ export function SiteTopCategoryBar() {
               : "py-3 sm:py-3.5",
         )}
       >
-        <nav aria-label="Browse surfboards, sellers, and community">
+        <nav aria-label="Browse surfboards, sellers, and sold">
           <ul className="flex items-center gap-2.5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {siteHeaderMobileCategoryNavLinks.map((link) => {
-              const active = boardBrowseNavItemIsActive(pathname, searchParams, link.href)
-              return (
-                <li key={link.href} className="flex shrink-0 items-center">
-                  <Link
-                    href={link.href}
-                    prefetch={boardsBrowseLinkPrefetch(link.href)}
-                    className={cn(
-                      chipBase,
-                      compact && "min-h-8 px-3 py-1 text-xs",
-                      active
-                        ? "border-foreground bg-muted font-semibold"
-                        : "border-border bg-background hover:border-midgray/35",
-                    )}
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              )
-            })}
-            <li className="flex shrink-0 items-center">
-              <HeaderSellerResourcesNav
-                pathname={pathname}
-                variant="chip"
-                compact={compact}
-              />
-            </li>
+            {siteHeaderShopperNavItems.map((item) => (
+              <li key={item.href} className="flex shrink-0 items-center">
+                <HeaderShopperChipItem
+                  item={item}
+                  pathname={pathname}
+                  searchParams={searchParams}
+                  compact={compact}
+                />
+              </li>
+            ))}
+            <li className="mx-0.5 h-5 w-px shrink-0 bg-border" aria-hidden />
             {siteHeaderMobileSecondaryNavLinks.map((link) => {
               const active = siteHeaderSecondaryNavItemIsActive(pathname, link.href)
               return (
@@ -77,11 +59,9 @@ export function SiteTopCategoryBar() {
                   <Link
                     href={link.href}
                     className={cn(
-                      chipBase,
-                      compact && "min-h-8 px-3 py-1 text-xs",
-                      active
-                        ? "border-foreground bg-muted font-semibold"
-                        : "border-border bg-background hover:border-midgray/35",
+                      quietChipBase,
+                      compact && "min-h-8 px-2 py-1 text-xs",
+                      active && "text-foreground underline decoration-[1.5px] underline-offset-[6px]",
                     )}
                   >
                     {link.label}

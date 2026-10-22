@@ -12,6 +12,7 @@ import {
   useCallback,
   Suspense,
   type MouseEvent,
+  type ReactNode,
 } from "react"
 import { createClient } from "@/lib/supabase/client"
 import {
@@ -48,15 +49,17 @@ import { useClientSearchParams } from "@/hooks/use-client-search-params"
 import { clearNavSearchQuery, writeNavSearchQuery } from "@/lib/nav-search-storage"
 import { isSupportCaseThreadRoute } from "@/lib/utils/support-case-paths"
 import { HeaderSellerResourcesNav } from "@/components/header-seller-resources-nav"
+import { HeaderShopperRailItem } from "@/components/header-shopper-category-nav"
 import {
   boardBrowseNavItemIsActive,
+  headerShopperNavItemIsActive,
   sellerResourcesNavItemIsActive,
   sellerResourcesNavLinks,
-  siteHeaderDesktopCategoryNavLinks,
   siteHeaderDesktopSecondaryNavLinks,
-  siteHeaderMobileCategoryNavLinks,
   siteHeaderMobileSecondaryNavLinks,
   siteHeaderSecondaryNavItemIsActive,
+  siteHeaderShopperNavItems,
+  type HeaderShopperNavItem,
 } from "@/lib/site-category-directory"
 import { siteFooterNavLinks } from "@/lib/site-footer-nav"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
@@ -139,10 +142,18 @@ const recentlySoldNavButtonClassName =
 const recentlySoldNavIconClassName = "h-8 w-8 sm:h-9 sm:w-9"
 
 function HeaderSellButton({ className }: { className?: string }) {
+  const pathname = usePathname()
   return (
-    <Button asChild variant="outline" className={cn(mobileSellButtonClassName, className)}>
-      <Link href={SELL_HUB_HREF}>Sell</Link>
-    </Button>
+    <div className={cn("inline-flex shrink-0 items-stretch", className)}>
+      <Button
+        asChild
+        variant="outline"
+        className={cn(mobileSellButtonClassName, "rounded-l-full rounded-r-none px-3 md:px-3.5")}
+      >
+        <Link href={SELL_HUB_HREF}>Sell</Link>
+      </Button>
+      <HeaderSellerResourcesNav pathname={pathname} variant="caret" className="-ml-px" />
+    </div>
   )
 }
 
@@ -281,15 +292,57 @@ function resolveHeaderAvatarUrl(
   return null
 }
 
-const desktopCategoryNav = siteHeaderDesktopCategoryNavLinks.map((link) => ({
-  name: link.label,
-  href: link.href,
-}))
+const desktopCategoryNav = siteHeaderShopperNavItems
 
-const mobileCategoryNav = siteHeaderMobileCategoryNavLinks.map((link) => ({
-  name: link.label,
-  href: link.href,
-}))
+function overflowCategoryMenuItems(
+  item: HeaderShopperNavItem,
+  pathname: string | null,
+  searchParams: URLSearchParams,
+) {
+  const childLinks = (item.menu ?? []).filter((child) => item.menuOnly || child.href !== item.href)
+  const rows: ReactNode[] = []
+
+  if (!item.menuOnly) {
+    const active = headerShopperNavItemIsActive(pathname, searchParams, item)
+    rows.push(
+      <DropdownMenuItem key={item.href} asChild>
+        <Link
+          href={item.href}
+          prefetch={boardsBrowseLinkPrefetch(item.href)}
+          className={cn("w-full", active && "font-medium")}
+        >
+          {item.label}
+        </Link>
+      </DropdownMenuItem>,
+    )
+  } else {
+    rows.push(
+      <div
+        key={`${item.href}-label`}
+        className="px-2.5 pb-1 pt-2 text-xs font-semibold text-muted-foreground"
+      >
+        {item.label}
+      </div>,
+    )
+  }
+
+  for (const child of childLinks) {
+    const childActive = boardBrowseNavItemIsActive(pathname, searchParams, child.href)
+    rows.push(
+      <DropdownMenuItem key={`${item.href}-${child.href}-${child.label}`} asChild>
+        <Link
+          href={child.href}
+          prefetch={boardsBrowseLinkPrefetch(child.href)}
+          className={cn("w-full", item.menuOnly ? "" : "pl-6", childActive && "font-medium")}
+        >
+          {child.label}
+        </Link>
+      </DropdownMenuItem>,
+    )
+  }
+
+  return rows
+}
 
 const WALLET_TOTAL_EPS = 0.02
 
@@ -415,15 +468,20 @@ function HeaderDesktopCategoryBar({
   const showMore = layoutReady && overflowNav.length > 0
 
   return (
-    <div className="relative hidden border-t border-border md:block">
+    <div className="relative hidden border-t border-border lg:block">
       <div
         ref={measureRef}
         className="pointer-events-none fixed left-[-10000px] top-0 z-[-1] flex items-center gap-8 whitespace-nowrap opacity-0"
         aria-hidden
       >
         {desktopCategoryNav.map((item) => (
-          <span key={item.href} data-nav-measure="link" className="shrink-0 py-4 text-[15px]">
-            {item.name}
+          <span
+            key={item.href}
+            data-nav-measure="link"
+            className="inline-flex shrink-0 items-center gap-0.5 py-4 text-[15px]"
+          >
+            {item.label}
+            {item.menu ? <ChevronDown className="h-3.5 w-3.5 shrink-0" aria-hidden /> : null}
           </span>
         ))}
         <span data-nav-measure="more" className="flex shrink-0 items-center gap-1 py-4 text-[15px]">
@@ -439,7 +497,7 @@ function HeaderDesktopCategoryBar({
           aria-busy={!layoutReady}
         >
           {!layoutReady
-            ? desktopCategoryNav.slice(0, 8).map((item, i) => (
+            ? desktopCategoryNav.slice(0, 6).map((item, i) => (
                 <Skeleton
                   key={item.href}
                   className="h-4 shrink-0 self-center"
@@ -447,18 +505,12 @@ function HeaderDesktopCategoryBar({
                 />
               ))
             : visibleNav.map((item) => (
-                <Link
+                <HeaderShopperRailItem
                   key={item.href}
-                  href={item.href}
-                  prefetch={boardsBrowseLinkPrefetch(item.href)}
-                  className={`cat-link shrink-0 py-4 text-[15px] transition-colors duration-smooth ${
-                    boardBrowseNavItemIsActive(pathname, headerSearchParams, item.href)
-                      ? "cat-link--active font-medium"
-                      : ""
-                  }`}
-                >
-                  {item.name}
-                </Link>
+                  item={item}
+                  pathname={pathname}
+                  searchParams={headerSearchParams}
+                />
               ))}
 
           {showMore ? (
@@ -469,25 +521,17 @@ function HeaderDesktopCategoryBar({
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="start"
-                className="w-56 [&_a]:!text-muted-foreground [&_a:hover]:!text-foreground [&_a[data-highlighted]]:!text-foreground [&_a:focus]:!text-foreground"
+                className="w-56 [&_a]:!text-foreground [&_a:hover]:!text-foreground [&_a[data-highlighted]]:!text-foreground [&_a:focus]:!text-foreground"
               >
-                {overflowNav.map((item) => (
-                  <DropdownMenuItem key={item.href} asChild>
-                    <Link href={item.href} prefetch={boardsBrowseLinkPrefetch(item.href)} className="w-full">
-                      {item.name}
-                    </Link>
-                  </DropdownMenuItem>
-                ))}
+                {overflowNav.flatMap((item) => overflowCategoryMenuItems(item, pathname, headerSearchParams))}
               </DropdownMenuContent>
             </DropdownMenu>
           ) : null}
         </div>
 
-        <HeaderSellerResourcesNav pathname={pathname} className="ml-6 self-center" />
-
         <nav
-          className="ml-6 flex shrink-0 items-center gap-8 border-l border-border pl-8"
-          aria-label="Editorial and community"
+          className="ml-10 flex shrink-0 items-center gap-6 border-l border-border pl-8"
+          aria-label="Sellers and sold"
         >
           {siteHeaderDesktopSecondaryNavLinks.map((item) => {
             const active = siteHeaderSecondaryNavItemIsActive(pathname, item.href)
@@ -495,8 +539,8 @@ function HeaderDesktopCategoryBar({
               <Link
                 key={item.href}
                 href={item.href}
-                className={`cat-link py-4 text-[15px] transition-colors duration-smooth ${
-                  active ? "cat-link--active font-medium" : ""
+                className={`cat-link py-4 text-[13px] transition-colors duration-smooth ${
+                  active ? "cat-link--active" : ""
                 }`}
               >
                 {item.label}
@@ -1798,20 +1842,48 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
               </>
             )}
             <nav className="flex flex-col gap-1 mb-6">
-              {mobileCategoryNav.map((item) => {
-                const active = boardBrowseNavItemIsActive(pathname, headerSearchParams, item.href)
+              {siteHeaderShopperNavItems.map((item) => {
+                const active = headerShopperNavItemIsActive(pathname, headerSearchParams, item)
+                const childLinks = (item.menu ?? []).filter(
+                  (child) => item.menuOnly || child.href !== item.href,
+                )
                 return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    prefetch={boardsBrowseLinkPrefetch(item.href)}
-                    onClick={onMobileDrawerLinkClick}
-                    className={`cat-link py-3 px-2 text-lg font-medium hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center ${
-                      active ? "cat-link--active" : ""
-                    }`}
-                  >
-                    {item.name}
-                  </Link>
+                  <div key={item.href} className="flex flex-col">
+                    {item.menuOnly ? (
+                      <p className="px-2 pb-1 pt-3 text-sm font-semibold text-foreground">{item.label}</p>
+                    ) : (
+                      <Link
+                        href={item.href}
+                        prefetch={boardsBrowseLinkPrefetch(item.href)}
+                        onClick={onMobileDrawerLinkClick}
+                        className={`cat-link py-3 px-2 text-lg font-medium hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center ${
+                          item.href === "/boards" ? "cat-link--anchor" : ""
+                        } ${active ? "cat-link--active" : ""}`}
+                      >
+                        {item.label}
+                      </Link>
+                    )}
+                    {childLinks.map((child) => {
+                      const childActive = boardBrowseNavItemIsActive(
+                        pathname,
+                        headerSearchParams,
+                        child.href,
+                      )
+                      return (
+                        <Link
+                          key={`${child.href}-${child.label}`}
+                          href={child.href}
+                          prefetch={boardsBrowseLinkPrefetch(child.href)}
+                          onClick={onMobileDrawerLinkClick}
+                          className={`cat-link py-2.5 pl-6 pr-2 text-base hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center ${
+                            childActive ? "cat-link--active" : ""
+                          }`}
+                        >
+                          {child.label}
+                        </Link>
+                      )
+                    })}
+                  </div>
                 )
               })}
               <hr className="my-2 border-border" />
@@ -1822,7 +1894,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                     key={item.href}
                     href={item.href}
                     onClick={onMobileDrawerLinkClick}
-                    className={`cat-link py-3 px-2 text-lg font-medium hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center ${
+                    className={`cat-link py-3 px-2 text-base hover:bg-muted/50 rounded-lg transition-colors min-h-touch flex items-center ${
                       active ? "cat-link--active" : ""
                     }`}
                   >

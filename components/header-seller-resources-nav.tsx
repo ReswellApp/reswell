@@ -26,18 +26,25 @@ export function HeaderSellerResourcesNav({
 }: {
   pathname: string | null
   className?: string
-  variant?: "header" | "chip"
+  variant?: "header" | "chip" | "caret"
   compact?: boolean
 }) {
   const active = sellerResourcesNavIsActive(pathname)
   const isChip = variant === "chip"
+  const isCaret = variant === "caret"
 
   return (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger
         className={cn(
           "group shrink-0 cursor-pointer",
-          isChip
+          isCaret
+            ? cn(
+                "inline-flex h-8 w-8 items-center justify-center rounded-l-none rounded-r-full border border-foreground bg-background text-foreground shadow-none hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 md:h-9 md:w-9",
+                active && "bg-muted",
+                "data-[state=open]:bg-muted",
+              )
+            : isChip
             ? cn(
                 chipTriggerClassName,
                 compact && "min-h-8 px-3 py-1 text-xs",
@@ -55,18 +62,19 @@ export function HeaderSellerResourcesNav({
               ),
           className,
         )}
+        aria-label={isCaret ? "Seller resources" : undefined}
       >
-        Seller Resources
+        {isCaret ? null : "Seller Resources"}
         <ChevronDown
           className={cn(
             "shrink-0 transition-transform group-data-[state=open]:rotate-180",
-            isChip ? "h-3.5 w-3.5" : "h-4 w-4",
+            isCaret || isChip ? "h-3.5 w-3.5" : "h-4 w-4",
           )}
           aria-hidden
         />
       </DropdownMenuTrigger>
       <DropdownMenuContent
-        align="start"
+        align={isCaret ? "end" : "start"}
         collisionPadding={8}
         className="w-56 rounded-lg border-border p-1.5 shadow-lg [&_a]:!text-foreground [&_a:hover]:!text-foreground [&_a[data-highlighted]]:!text-foreground"
       >
