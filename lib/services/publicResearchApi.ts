@@ -148,7 +148,7 @@ function toListingCard(row: PublicResearchListingRow): PublicApiListingCard {
     condition_label: row.condition ? formatCondition(row.condition) : null,
     section: row.section,
     board_type: row.board_type,
-    dimensions: row.dimensions?.trim() || null,
+    dimensions: formatStoredListingDimensions(row.dimensions),
     price_usd: priceUsd,
     price_cents: Math.round(priceUsd * 100),
     city: row.city?.trim() || null,

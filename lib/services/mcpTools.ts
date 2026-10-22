@@ -1,4 +1,5 @@
 import { MCP_SHOP_META_KEY } from "@/lib/mcp-widgets/constants"
+import { shopBrowseStatus, shopListingLines } from "@/lib/mcp-widgets/shop-copy"
 import {
   getPublicListingService,
   getPublicPricingService,
@@ -30,7 +31,10 @@ function textResult(text: string, isError = false): McpToolCallResult {
 }
 
 function shopResult(input: {
+  /** Short line the widget may show. Never a JSON payload. */
   message: string
+  /** Assistant-facing text. Defaults to `message` so the widget stays quiet. */
+  modelText?: string
   view: "browse" | "cart" | "checkout"
   query?: string
   listings?: unknown[]
@@ -53,7 +57,7 @@ function shopResult(input: {
     ...input.extra,
   }
   return {
-    content: [{ type: "text", text: input.message }],
+    content: [{ type: "text", text: input.modelText ?? input.message }],
     structuredContent,
     _meta: { [MCP_SHOP_META_KEY]: structuredContent },
     isError: input.isError,
@@ -96,12 +100,17 @@ export async function callMcpToolService(
         const cart = principalHasScope(principal, "cart:read")
           ? await loadCartSnapshot(principal.userId)
           : null
+        const lines = shopListingLines(listings)
+        const intro =
+          `Opened the Reswell board picker with ${listings.length} listing(s) for “${parsed.data.query}”. ` +
+          "The buyer can Add in the widget, or ask you to adjust the cart. prepare_purchase does not charge a card."
         return shopResult({
           view: "browse",
           query: parsed.data.query,
           listings,
           cart: cart ?? undefined,
-          message: `Opened the Reswell board picker with ${listings.length} listing(s) for “${parsed.data.query}”. The buyer can Add in the widget, or ask you to adjust the cart. prepare_purchase does not charge a card.`,
+          message: shopBrowseStatus(listings.length, parsed.data.query),
+          modelText: lines ? `${intro}\n${lines}` : intro,
         })
       }
       case "search_listings": {
@@ -120,13 +129,15 @@ export async function callMcpToolService(
           const cart = principalHasScope(principal, "cart:read")
             ? await loadCartSnapshot(principal.userId)
             : null
+          const message = shopBrowseStatus(listings.length, parsed.data.query)
+          const lines = shopListingLines(listings)
           return shopResult({
             view: "browse",
             query: parsed.data.query,
             listings,
             cart: cart ?? undefined,
-            message: JSON.stringify(result.data, null, 2),
-            extra: { type: "listings", results: listings },
+            message,
+            modelText: lines ? `${message}\n${lines}` : message,
           })
         }
         return {
