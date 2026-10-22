@@ -6,7 +6,7 @@ export const contentType = "image/png"
 export default function Image() {
   return brandShareImageResponse({
     headline: "Recently sold",
-    subhead: "Surfboards that recently sold on Reswell — see what the community is moving.",
+    subhead: "Surfboards, fins, leashes, and the rest of the gear that recently sold on Reswell.",
     footer: "reswell.app · Sold",
     tone: "light",
   })

@@ -10,7 +10,10 @@ import { getSoldFeedStats } from "@/lib/feed-sold-stats"
 import { formatGmv } from "@/lib/format-gmv"
 import { boardLengthLabelFromDimensionsColumn } from "@/lib/listing-dimensions-storage"
 import { publicListingListPriceUsd } from "@/lib/utils/public-listing-price"
-import { isListingVisibleInPublicSoldFeed } from "@/lib/listing-public-visibility"
+import {
+  isInStockBrandNewUnitSale,
+  isListingVisibleInPublicSoldFeed,
+} from "@/lib/listing-public-visibility"
 import {
   listingCoverImageForCard,
   listingImagesFromPrimaryFields,
@@ -108,9 +111,9 @@ async function hydrateSoldFeedListings(
 
   const { data, error } = await supabase
     .from("listings")
-    .select(`${SOLD_LISTING_SELECT}, hidden_from_site, archived_at`)
+    .select(`${SOLD_LISTING_SELECT}, hidden_from_site, archived_at, stock_quantity`)
     .in("id", [...orderedListingIds])
-    .eq("status", "sold")
+    .in("status", ["sold", "active"])
 
   if (error) {
     console.error("[marketplaceSoldFeed] listings fetch:", error.message)
@@ -128,15 +131,17 @@ async function hydrateSoldFeedListings(
     .map((id) => {
       const row = rowsById.get(id)
       if (!row) return null
-      if (
-        !isListingVisibleInPublicSoldFeed({
-          title: String(row.title ?? ""),
-          status: String(row.status ?? "sold"),
-          hidden_from_site: row.hidden_from_site as boolean | null | undefined,
-          archived_at: row.archived_at as string | null | undefined,
-          soldViaAdminTerminal: adminTerminalSoldIds.has(id),
-        })
-      ) {
+      const visibility = {
+        title: String(row.title ?? ""),
+        status: String(row.status ?? "sold"),
+        hidden_from_site: row.hidden_from_site as boolean | null | undefined,
+        archived_at: row.archived_at as string | null | undefined,
+        soldViaAdminTerminal: adminTerminalSoldIds.has(id),
+        condition: row.condition != null ? String(row.condition) : null,
+        stock_quantity:
+          typeof row.stock_quantity === "number" ? row.stock_quantity : Number(row.stock_quantity ?? 0),
+      }
+      if (!isListingVisibleInPublicSoldFeed(visibility) && !isInStockBrandNewUnitSale(visibility)) {
         return null
       }
       return mapSoldRow(row, confirmedAtIsoByListingId.get(id) ?? null)
@@ -226,7 +231,7 @@ export async function loadMarketplaceShippedFeedPage(
   }
 }
 
-/** Public sold / shipped marketplace feed (no session). Tipped mark-as-sold listings are included via the sold-page RPC. */
+/** Public sold / shipped marketplace feed (no session). Tipped mark-as-sold listings and in-stock brand-new unit sales are included via the sold-page RPC. */
 export async function loadMarketplaceSoldFeed(
   supabase: SupabaseClient,
   brandSlug: string | null,
