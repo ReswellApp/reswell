@@ -78,12 +78,13 @@ import { isAbortError } from "@/lib/utils/is-abort-error"
 import { signOutAndRedirect } from "@/lib/auth/sign-out-and-redirect"
 import { waitForClientSession } from "@/lib/auth/wait-for-client-session"
 import {
-  acknowledgeHeaderChromeSignedOut,
-  clearHeaderChromeSignOutLatch,
+  allowHeaderChromeSignIn,
+  beginHeaderChromeSignOut,
   clearHeaderChromeSnapshot,
+  HEADER_CHROME_SIGN_OUT_EVENT,
+  HEADER_CHROME_SNAPSHOT_STORAGE_KEY,
   headerChromeAvatarCssValue,
-  headerChromeSignOutLatched,
-  headerChromeSignOutStartedHere,
+  headerChromeSignOutActive,
   headerChromeSnapshotUser,
   markHeaderChromeHydrated,
   readHeaderChromeSnapshot,
@@ -667,45 +668,37 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     // Soft `router.refresh()` after OAuth can return a guest snapshot before cookies are
     // visible to RSC — do not paint logged-out over a verified client session.
     // Sign-out is the exception: the remembered account must not stay on screen.
-    if (!d.user && user && !headerChromeSignOutLatched()) return
+    if (!d.user && user && !headerChromeSignOutActive()) return
 
     // Cached HTML is anonymous. Paint the last confirmed account before GoTrue
-    // responds so a returning visitor does not sit on Log in for a few seconds.
+    // responds, but only while the auth cookie is still present. A snapshot
+    // without that cookie is a signed-out browser.
     if (!d.user) {
-      // Sign-out already dropped the session. Do not paint localStorage over that.
-      // The signing-out page keeps its in-memory latch until it unloads. The next
-      // document acknowledges the flag after the guest header is committed.
-      if (headerChromeSignOutLatched()) {
-        clearSupabaseAuthCookiesClient()
+      if (headerChromeSignOutActive()) {
         applyGuestHeader()
-        // The signing-out page must keep the storage latch until it unloads.
-        // The next document drops it after the guest header is committed.
-        if (!headerChromeSignOutStartedHere()) {
-          acknowledgeHeaderChromeSignedOut()
-        }
-        return
-      }
-      const remembered = readHeaderChromeSnapshot()
-      if (remembered) {
-        setUser(headerChromeSnapshotUser(remembered))
-        setProfileAvatarUrl(remembered.avatarUrl)
-        setProfileDisplayName(remembered.displayName)
-        setIsAdmin(remembered.isAdmin)
-        setIsShipper(remembered.isShipper)
-        setIsDropoffLocation(remembered.isDropoffLocation)
-        setUnreadMessages(remembered.unreadMessages)
-        setUnreadSupport(remembered.unreadSupport)
-        setWalletBalance(remembered.walletBalance)
-        const rememberedShop =
-          remembered.shopAccess && remembered.shopAccess.actorUserId === remembered.userId
-            ? remembered.shopAccess
-            : null
-        shopAccessRef.current = rememberedShop
-        setShopAccess(rememberedShop)
-        setAuthLoaded(true)
         return
       }
       if (hasSupabaseAuthCookiesClient()) {
+        const remembered = readHeaderChromeSnapshot()
+        if (remembered) {
+          setUser(headerChromeSnapshotUser(remembered))
+          setProfileAvatarUrl(remembered.avatarUrl)
+          setProfileDisplayName(remembered.displayName)
+          setIsAdmin(remembered.isAdmin)
+          setIsShipper(remembered.isShipper)
+          setIsDropoffLocation(remembered.isDropoffLocation)
+          setUnreadMessages(remembered.unreadMessages)
+          setUnreadSupport(remembered.unreadSupport)
+          setWalletBalance(remembered.walletBalance)
+          const rememberedShop =
+            remembered.shopAccess && remembered.shopAccess.actorUserId === remembered.userId
+              ? remembered.shopAccess
+              : null
+          shopAccessRef.current = rememberedShop
+          setShopAccess(rememberedShop)
+          setAuthLoaded(true)
+          return
+        }
         setAuthLoaded(false)
         return
       }
@@ -795,16 +788,24 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
 
   useLayoutEffect(() => {
     // Hold the pre-paint avatar until the remembered account is in React state.
-    if (readHeaderChromeSnapshot() && !user) return
+    // A snapshot with no auth cookie is not a session — show guest chrome.
+    if (
+      !headerChromeSignOutActive() &&
+      hasSupabaseAuthCookiesClient() &&
+      readHeaderChromeSnapshot() &&
+      !user
+    ) {
+      return
+    }
     markHeaderChromeHydrated()
   }, [user, authLoaded])
 
   const refetchFromClient = useCallback(async () => {
-    if (headerChromeSignOutLatched()) return
+    if (headerChromeSignOutActive()) return
     if (user) setAuthLoaded(true)
     try {
       const userResult = await getAuthUserWithRetry(supabase)
-      if (headerChromeSignOutLatched()) return
+      if (headerChromeSignOutActive()) return
       if (!userResult.ok) {
         if (!isAbortError(userResult.error)) {
           console.warn(
@@ -815,7 +816,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         return
       }
       const resolvedUser = userResult.user
-      if (headerChromeSignOutLatched()) return
+      if (headerChromeSignOutActive()) return
       setUser(resolvedUser)
       if (!resolvedUser) {
         applyGuestHeader()
@@ -836,7 +837,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         supabase.from("dropoff_location_grants").select("id").eq("user_id", resolvedUser.id).maybeSingle(),
         loadHeaderShopAccess(supabase, resolvedUser.id, resolvedUser.email ?? null),
       ])
-      if (headerChromeSignOutLatched()) return
+      if (headerChromeSignOutActive()) return
       if (shopGeneration === shopAccessRequestRef.current && shopLoad.ok) {
         shopAccessRef.current = shopLoad.access
         setShopAccess(shopLoad.access)
@@ -873,7 +874,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         .select("balance, pending_balance, lifetime_earned, lifetime_spent, lifetime_cashed_out")
         .eq("user_id", resolvedUser.id)
         .single()
-      if (headerChromeSignOutLatched()) return
+      if (headerChromeSignOutActive()) return
       const total = wallet ? walletTotalBalanceUsd(wallet) : 0
       setWalletBalance(total)
       if (
@@ -882,7 +883,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       ) {
         clientWalletTotalRef.current = null
       }
-      if (profile && !headerChromeSignOutLatched()) {
+      if (profile && !headerChromeSignOutActive()) {
         const persistedAvatar = headerChromeAvatarCssValue(nextAvatarUrl) ? nextAvatarUrl : null
         const persistedName = nextDisplayName?.trim().slice(0, 80) || null
         const shopForSnapshot =
@@ -915,11 +916,11 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     void refetchFromClient()
   }, [authLoaded, user, refetchFromClient])
 
-  /** Cached HTML is anonymous. Confirm the session when this browser already knows the account. */
+  /** Cached HTML is anonymous. Confirm the session when this browser still has an auth cookie. */
   useEffect(() => {
-    if (headerChromeSignOutLatched()) return
+    if (headerChromeSignOutActive()) return
     if (serverHeaderAuth.user) return
-    if (!hasSupabaseAuthCookiesClient() && !readHeaderChromeSnapshot()) return
+    if (!hasSupabaseAuthCookiesClient()) return
     void refetchFromClient()
   }, [serverHeaderAuth.user, refetchFromClient])
 
@@ -945,6 +946,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
 
   useEffect(() => {
     function onHeaderAuthRefresh(event: Event) {
+      if (headerChromeSignOutActive()) return
       const detail = (event as CustomEvent<HeaderAuthRefreshDetail>).detail
       if (detail?.displayName?.trim()) {
         setProfileDisplayName(detail.displayName.trim())
@@ -967,10 +969,24 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     window.addEventListener(HEADER_AUTH_REFRESH_EVENT, onHeaderAuthRefresh)
 
     async function refreshUnreadCount() {
+      if (headerChromeSignOutActive()) return
+      // Another tab can revoke the session without a storage event landing
+      // after the cookies are gone. A snapshot with no auth cookie is guest.
+      if (!hasSupabaseAuthCookiesClient()) {
+        if (readHeaderChromeSnapshot()) {
+          beginHeaderChromeSignOut()
+          applyGuestHeader()
+          void supabase.auth.signOut({ scope: "local" }).then(
+            () => undefined,
+            () => undefined,
+          )
+        }
+        return
+      }
       const {
         data: { user: u },
       } = await supabase.auth.getUser()
-      if (!u) return
+      if (headerChromeSignOutActive() || !u) return
       const { data: profile } = await supabase
         .from("profiles")
         .select("unread_message_count, unread_support_count")
@@ -987,6 +1003,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     }
 
     function onUnreadCountAdjust(event: Event) {
+      if (headerChromeSignOutActive()) return
       const delta = (event as CustomEvent<UnreadMessageCountAdjustDetail>).detail?.delta
       if (typeof delta !== "number" || !Number.isFinite(delta) || delta === 0) return
       if (delta < 0) preferClientUnreadRef.current = true
@@ -997,10 +1014,28 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       if (document.visibilityState === "visible") void refreshUnreadCount()
     }
 
+    function onSnapshotStorage(event: StorageEvent) {
+      if (event.key !== HEADER_CHROME_SNAPSHOT_STORAGE_KEY) return
+      if (event.newValue) return
+      if (hasSupabaseAuthCookiesClient()) return
+      beginHeaderChromeSignOut()
+      applyGuestHeader()
+      void supabase.auth.signOut({ scope: "local" }).then(
+        () => undefined,
+        () => undefined,
+      )
+    }
+
+    function onHeaderSignedOut() {
+      applyGuestHeader()
+    }
+
     window.addEventListener(UNREAD_COUNT_REFRESH_EVENT, refreshUnreadCount)
     window.addEventListener(UNREAD_MESSAGE_COUNT_ADJUST_EVENT, onUnreadCountAdjust)
     document.addEventListener("visibilitychange", onVisibilityUnreadRefresh)
     window.addEventListener("focus", refreshUnreadCount)
+    window.addEventListener("storage", onSnapshotStorage)
+    window.addEventListener(HEADER_CHROME_SIGN_OUT_EVENT, onHeaderSignedOut)
 
     const {
       data: { subscription },
@@ -1009,15 +1044,13 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         applyGuestHeader()
         // A full navigation is already in flight. Refreshing here races the
         // sign-out redirect and can paint the remembered account again.
-        if (!headerChromeSignOutLatched()) router.refresh()
+        if (!headerChromeSignOutActive()) router.refresh()
         return
       }
 
-      // This document is signing out. Ignore session recovery. A sign-in on a
-      // later page clears the latch; a sign-in event on the page that started
-      // sign-out must not put the account back before navigation.
-      if (headerChromeSignOutStartedHere()) return
-      if (headerChromeSignOutLatched() && event !== "SIGNED_IN") return
+      // Ignore token recovery while this document is signing out. A later
+      // SIGNED_IN (this tab signed in again) is allowed through.
+      if (headerChromeSignOutActive() && event !== "SIGNED_IN") return
 
       if (event === "INITIAL_SESSION") {
         if (session?.user) {
@@ -1032,7 +1065,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         (event === "SIGNED_IN" || event === "USER_UPDATED") &&
         session?.user
       ) {
-        if (event === "SIGNED_IN") clearHeaderChromeSignOutLatch()
+        if (event === "SIGNED_IN") allowHeaderChromeSignIn()
         setAuthSessionReady(true)
         setUser(session.user)
         setAuthLoaded(true)
@@ -1046,23 +1079,26 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       window.removeEventListener(UNREAD_MESSAGE_COUNT_ADJUST_EVENT, onUnreadCountAdjust)
       document.removeEventListener("visibilitychange", onVisibilityUnreadRefresh)
       window.removeEventListener("focus", refreshUnreadCount)
+      window.removeEventListener("storage", onSnapshotStorage)
+      window.removeEventListener(HEADER_CHROME_SIGN_OUT_EVENT, onHeaderSignedOut)
       subscription.unsubscribe()
     }
   }, [applyGuestHeader, supabase, router, refetchFromClient])
 
   /**
-   * Back/forward can restore the signed-in page from bfcache after `/auth/sign-out`
-   * already dropped the session. The boot script does not run again, so the
-   * React tree still has the previous photo and account menu until we reset it.
+   * Back/forward can restore a signed-in page from bfcache after sign-out
+   * already dropped the session. The boot script does not run again, so reset
+   * when this document was signing out or the snapshot is still here with no
+   * auth cookie.
    */
   useEffect(() => {
     const onPageShow = (event: PageTransitionEvent) => {
-      if (!event.persisted || !headerChromeSignOutLatched()) return
-      // Cookies can still be in the jar when bfcache restores the signed-in
-      // document. That is not a new sign-in — drop them and stay logged out.
+      if (!event.persisted) return
+      if (hasSupabaseAuthCookiesClient() && !headerChromeSignOutActive()) return
+      if (!headerChromeSignOutActive() && !readHeaderChromeSnapshot()) return
       clearSupabaseAuthCookiesClient()
+      beginHeaderChromeSignOut()
       applyGuestHeader()
-      acknowledgeHeaderChromeSignedOut()
       void supabase.auth.signOut({ scope: "local" }).then(
         () => undefined,
         () => undefined,
