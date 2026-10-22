@@ -11,6 +11,21 @@ function isNextCacheContextMissing(error: unknown): boolean {
 }
 
 /**
+ * Drop `/sold` even when this runs outside a Next request (recovery scripts) or
+ * when a later seller-profile lookup throws. A completed sale that skips this
+ * leaves the previous grid in place for an hour.
+ */
+export function revalidateSoldFeedAfterSale(): void {
+  try {
+    revalidateMarketplaceSoldFeedCatalog()
+  } catch (error) {
+    if (!isNextCacheContextMissing(error)) {
+      console.error("[revalidateSoldFeedAfterSale]", error)
+    }
+  }
+}
+
+/**
  * Order settlement must finish Klaviyo + wallet side effects even when invoked outside
  * a Next.js request (recovery scripts, one-off tooling).
  */
@@ -23,9 +38,9 @@ export async function safeRevalidateAfterMarketplaceOrderCommit(
   },
 ): Promise<void> {
   try {
+    revalidateSoldFeedAfterSale()
     revalidateBoardsBrowseCatalog()
     await revalidateSellersAfterListingChange(supabase, params.sellerUserId)
-    revalidateMarketplaceSoldFeedCatalog()
     revalidateMarketplaceSalesMapCatalog()
     for (let i = 0; i < params.listingIds.length; i++) {
       revalidateListingDetailPage(params.listingIds[i]!, params.listingSlugs[i] ?? null)
