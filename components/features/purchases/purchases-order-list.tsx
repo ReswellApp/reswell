@@ -6,6 +6,8 @@ import { Receipt } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { PurchaseOrderRow } from "@/components/features/purchases/purchase-order-row"
+import { purchaseSearchFieldClassName } from "@/components/features/purchases/purchase-brand-styles"
+import { cn } from "@/lib/utils"
 import {
   purchaseCountLabel,
   purchaseMatchesQuery,
@@ -42,7 +44,10 @@ export function PurchasesOrderList({ items }: PurchasesOrderListProps) {
           aria-controls="purchases-list"
           spellCheck={false}
           autoComplete="off"
-          className="h-12 rounded-full border-2 border-blue-500 bg-background px-5 text-base shadow-none placeholder:text-slate-400 focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500/25 focus-visible:ring-offset-0 dark:border-blue-400 dark:focus-visible:border-blue-400 md:text-[15px]"
+          className={cn(
+            "h-12 rounded-full border-2 bg-background px-5 text-base shadow-none placeholder:text-slate-400 focus-visible:ring-2 focus-visible:ring-offset-0 md:text-[15px]",
+            purchaseSearchFieldClassName,
+          )}
         />
       ) : null}
 

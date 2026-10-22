@@ -14,6 +14,11 @@ import {
   Truck,
   UserRound,
 } from "lucide-react"
+import {
+  purchaseAccentTextClassName,
+  purchaseAvatarFallbackClassName,
+  purchaseTrackRowClassName,
+} from "@/components/features/purchases/purchase-brand-styles"
 import { CopyOrderNumber } from "@/components/features/purchases/copy-order-number"
 import { ReviewSellerControls } from "@/components/review-seller-controls"
 import { SellerRatingStarRow } from "@/components/seller-rating-stars"
@@ -123,7 +128,10 @@ export function PurchaseDetailView(props: PurchaseDetailViewProps) {
     <div className="mx-auto w-full max-w-xl space-y-5">
       <Link
         href="/dashboard/purchases"
-        className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1.5 text-sm font-medium text-blue-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-blue-400 dark:hover:bg-slate-700"
+        className={cn(
+          "inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1.5 text-sm font-medium hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700",
+          purchaseAccentTextClassName,
+        )}
       >
         <ChevronLeft className="h-4 w-4" aria-hidden />
         Back to List
@@ -188,7 +196,10 @@ export function PurchaseDetailView(props: PurchaseDetailViewProps) {
           <Star className="h-4 w-4 shrink-0" aria-hidden />
           <span className="min-w-0 flex-1">Leave a review for the seller</span>
           <span title="You can review the seller after this order is delivered or picked up.">
-            <Info className="h-4 w-4 text-blue-500" aria-label="You can review the seller after this order is delivered or picked up." />
+            <Info
+              className={cn("h-4 w-4", purchaseAccentTextClassName)}
+              aria-label="You can review the seller after this order is delivered or picked up."
+            />
           </span>
         </div>
       )}
@@ -216,7 +227,8 @@ export function PurchaseDetailView(props: PurchaseDetailViewProps) {
             <dt className="font-bold text-foreground">Total</dt>
             <dd
               className={cn(
-                "font-bold tabular-nums text-blue-600 dark:text-blue-400",
+                "font-bold tabular-nums",
+                purchaseAccentTextClassName,
                 props.amountStruck && "line-through decoration-slate-400",
               )}
             >
@@ -283,7 +295,7 @@ export function PurchaseDetailView(props: PurchaseDetailViewProps) {
                   <p
                     className={cn(
                       "text-sm font-semibold",
-                      step.state === "upcoming" ? "text-muted-foreground" : "text-blue-600 dark:text-blue-400",
+                      step.state === "upcoming" ? "text-muted-foreground" : purchaseAccentTextClassName,
                     )}
                   >
                     {step.title}
@@ -324,7 +336,10 @@ export function PurchaseDetailView(props: PurchaseDetailViewProps) {
           href={props.trackUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-3 rounded-xl bg-indigo-50 px-4 py-3 text-sm font-semibold text-foreground dark:bg-indigo-950/40"
+          className={cn(
+            "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-foreground",
+            purchaseTrackRowClassName,
+          )}
         >
           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900">
             <Truck className="h-4 w-4" aria-hidden />
@@ -346,7 +361,12 @@ export function PurchaseDetailView(props: PurchaseDetailViewProps) {
               className="h-10 w-10 rounded-full object-cover"
             />
           ) : (
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-500 dark:bg-blue-950 dark:text-blue-300">
+            <span
+              className={cn(
+                "flex h-10 w-10 items-center justify-center rounded-full",
+                purchaseAvatarFallbackClassName,
+              )}
+            >
               <UserRound className="h-5 w-5" aria-hidden />
             </span>
           )}

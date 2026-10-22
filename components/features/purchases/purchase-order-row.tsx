@@ -1,6 +1,10 @@
 import Image from "next/image"
 import Link from "next/link"
 import { ChevronRight, Package } from "lucide-react"
+import {
+  purchaseAccentLinkClassName,
+  purchaseAccentTextClassName,
+} from "@/components/features/purchases/purchase-brand-styles"
 import { ReviewSellerControls } from "@/components/review-seller-controls"
 import { LocalDateOnly } from "@/components/ui/local-datetime"
 import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
@@ -65,7 +69,7 @@ export function PurchaseOrderRow({
                   item.amountStruck && "line-through decoration-slate-400",
                 )}
               >
-                <span className="font-bold text-blue-600 dark:text-blue-400">
+                <span className={cn("font-bold", purchaseAccentTextClassName)}>
                   {formatUsd(item.itemAmount)}
                 </span>
                 {item.showShipping ? (
@@ -117,7 +121,10 @@ export function PurchaseOrderRow({
             <Link
               href={item.href}
               aria-label={detailsLabel}
-              className="mt-0.5 inline-flex items-center gap-0.5 text-sm font-medium text-blue-600 hover:underline dark:text-blue-400"
+              className={cn(
+                "mt-0.5 inline-flex items-center gap-0.5 text-sm font-medium",
+                purchaseAccentLinkClassName,
+              )}
             >
               More details
               <ChevronRight className="h-4 w-4" aria-hidden />
