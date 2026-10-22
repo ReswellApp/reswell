@@ -33,7 +33,7 @@ export function CrmQuickCapture({ onSaved }: CrmQuickCaptureProps) {
     event.preventDefault()
     if (saving) return
     if (!profile || !thread) {
-      toast.error(!profile ? "Paste a Facebook profile link" : "Paste the Marketplace thread")
+      toast.error(!profile ? "Paste a Facebook profile link" : "Paste the Marketplace thread or listing link")
       return
     }
     setSaving(true)
@@ -66,7 +66,7 @@ export function CrmQuickCapture({ onSaved }: CrmQuickCaptureProps) {
         profile.displayName,
         profile.username ? `@${profile.username}` : null,
         profile.profileId ? `ID ${profile.profileId}` : null,
-        thread ? `Thread ${thread.threadId}` : null,
+        thread?.listingId ? `Listing ${thread.listingId}` : thread ? `Thread ${thread.threadId}` : null,
       ]
         .filter(Boolean)
         .join(" · ")
@@ -77,11 +77,11 @@ export function CrmQuickCapture({ onSaved }: CrmQuickCaptureProps) {
       <div className="mb-4 space-y-1">
         <h2 className="text-base font-semibold tracking-tight">Add a Marketplace lead</h2>
         <p className="text-sm text-muted-foreground">
-          Paste the Facebook profile and the message thread. Hit enter, then the next one.
+          Paste the Facebook profile and the message thread or listing. Hit enter, then the next one.
         </p>
       </div>
       <div className="grid gap-3 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_auto] lg:items-end">
-        <div className="space-y-1.5">
+        <div className="min-w-0 space-y-1.5">
           <Label htmlFor="crm-fb-profile">Facebook profile link</Label>
           <Input
             ref={profileRef}
@@ -89,6 +89,7 @@ export function CrmQuickCapture({ onSaved }: CrmQuickCaptureProps) {
             value={profileLink}
             onChange={(event) => setProfileLink(event.target.value)}
             placeholder="https://facebook.com/…"
+            className="min-w-0"
             autoComplete="off"
             spellCheck={false}
             autoFocus
@@ -100,19 +101,20 @@ export function CrmQuickCapture({ onSaved }: CrmQuickCaptureProps) {
             }}
           />
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="crm-fb-thread">Marketplace thread</Label>
+        <div className="min-w-0 space-y-1.5">
+          <Label htmlFor="crm-fb-thread">Marketplace thread or listing</Label>
           <Input
             ref={threadRef}
             id="crm-fb-thread"
             value={threadInput}
             onChange={(event) => setThreadInput(event.target.value)}
-            placeholder="Thread link or id"
+            placeholder="Listing link, thread, or id"
+            className="min-w-0"
             autoComplete="off"
             spellCheck={false}
           />
         </div>
-        <Button type="submit" className="w-full lg:w-auto" disabled={saving || !profile || !thread}>
+        <Button type="submit" className="w-full shrink-0 lg:w-auto" disabled={saving || !profile || !thread}>
           {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
           {saving ? "Saving…" : "Save lead"}
         </Button>
@@ -121,7 +123,7 @@ export function CrmQuickCapture({ onSaved }: CrmQuickCaptureProps) {
         {profileInvalid
           ? "Use a facebook.com profile link, or the numeric profile id."
           : threadInvalid
-            ? "Use the messages thread link, or the numeric thread id."
+            ? "Use the messages thread link, the listing link, or the numeric thread id."
             : preview
               ? preview
               : "A public name is filled in when Facebook includes one. First name and notes can wait."}

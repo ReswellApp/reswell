@@ -11,6 +11,14 @@ interface CrmFacebookLinksProps {
   size?: "sm" | "default"
 }
 
+function isMarketplaceListing(url: string): boolean {
+  try {
+    return new URL(url).pathname.toLowerCase().includes("/marketplace/item/")
+  } catch {
+    return false
+  }
+}
+
 function safeFacebookHref(url: string | null): string | null {
   if (!url) return null
   try {
@@ -40,8 +48,12 @@ export function CrmFacebookLinks({ profileUrl, threadUrl, className, size = "sm"
       {thread ? (
         <Button asChild size={size} variant="default">
           <a href={thread} target="_blank" rel="noopener noreferrer">
-            <MessageCircle className="mr-1.5 h-3.5 w-3.5" />
-            Open chat
+            {isMarketplaceListing(thread) ? (
+              <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
+            ) : (
+              <MessageCircle className="mr-1.5 h-3.5 w-3.5" />
+            )}
+            {isMarketplaceListing(thread) ? "Open listing" : "Open chat"}
           </a>
         </Button>
       ) : null}

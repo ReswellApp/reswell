@@ -75,6 +75,8 @@ export type ParsedFacebookProfile = {
 export type ParsedFacebookThread = {
   threadId: string
   threadUrl: string
+  /** Set when the paste was a Marketplace listing, not a Messenger thread. */
+  listingId: string | null
 }
 
 function stripHost(host: string): string {
@@ -232,17 +234,53 @@ export function facebookThreadUrl(threadId: string): string {
   return `https://www.facebook.com/messages/t/${threadId}`
 }
 
+export function facebookListingUrl(listingId: string): string {
+  return `https://www.facebook.com/marketplace/item/${listingId}/`
+}
+
+function listingIdFromUrl(url: URL): string | null {
+  const segments = url.pathname.split("/").filter(Boolean)
+  for (let i = 0; i < segments.length - 2; i += 1) {
+    const section = segments[i]?.toLowerCase()
+    const kind = segments[i + 1]?.toLowerCase()
+    const id = segments[i + 2] ?? ""
+    if (section === "marketplace" && kind === "item" && /^\d{6,}$/.test(id)) return id
+  }
+  return null
+}
+
+/**
+ * Listing ids are shared by every buyer on one item, so the stored key includes
+ * the profile. Messenger thread ids are already one conversation.
+ */
+export function facebookThreadStorageId(
+  thread: ParsedFacebookThread,
+  profile: ParsedFacebookProfile,
+): string {
+  if (!thread.listingId) return thread.threadId
+  const owner = profile.profileId ?? profile.username
+  return owner ? `listing:${thread.listingId}:${owner}` : `listing:${thread.listingId}`
+}
+
+export function facebookThreadCaption(threadId: string): string {
+  const listing = /^listing:(\d+)(?::|$)/.exec(threadId)
+  if (listing?.[1]) return `Listing ${listing[1]}`
+  return `Thread ${threadId}`
+}
+
 export function parseFacebookThreadInput(raw: string): ParsedFacebookThread | null {
   const trimmed = raw.trim()
   if (/^\d{6,}$/.test(trimmed)) {
-    return { threadId: trimmed, threadUrl: facebookThreadUrl(trimmed) }
+    return { threadId: trimmed, threadUrl: facebookThreadUrl(trimmed), listingId: null }
   }
   const url = parseUrl(trimmed)
   if (!url) return null
   if (!isFacebookHost(url.hostname) && !isMessengerHost(url.hostname)) return null
   const threadId = threadIdFromUrl(url)
-  if (!threadId) return null
-  return { threadId, threadUrl: facebookThreadUrl(threadId) }
+  if (threadId) return { threadId, threadUrl: facebookThreadUrl(threadId), listingId: null }
+  const listingId = listingIdFromUrl(url)
+  if (!listingId) return null
+  return { threadId: listingId, threadUrl: facebookListingUrl(listingId), listingId }
 }
 
 function metaContent(html: string, attr: "property" | "name", key: string): string | null {

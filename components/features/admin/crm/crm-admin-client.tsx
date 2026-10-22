@@ -55,6 +55,7 @@ import { CrmBoardView } from "@/components/features/admin/crm/crm-board-view"
 import { CrmFacebookLinks } from "@/components/features/admin/crm/crm-facebook-links"
 import { CrmFollowUpQueue } from "@/components/features/admin/crm/crm-follow-up-queue"
 import { CrmQuickCapture } from "@/components/features/admin/crm/crm-quick-capture"
+import { facebookThreadCaption } from "@/lib/utils/facebookLead"
 import { CrmBulkBar } from "@/components/features/admin/crm/crm-bulk-bar"
 import { CrmContactMobileList } from "@/components/features/admin/crm/crm-contact-mobile-list"
 import {
@@ -1435,7 +1436,7 @@ function ContactDetailSheet({
                   className="pt-2"
                 />
                 {contact.facebook_thread_id ? (
-                  <p className="text-xs text-muted-foreground">Thread {contact.facebook_thread_id}</p>
+                  <p className="text-xs text-muted-foreground">{facebookThreadCaption(contact.facebook_thread_id)}</p>
                 ) : null}
                 <div className="flex flex-wrap gap-3 text-sm text-muted-foreground pt-1">
                   {contact.email ? (
