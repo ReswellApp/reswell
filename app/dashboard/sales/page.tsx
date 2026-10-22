@@ -1,19 +1,10 @@
-import { Fragment, Suspense } from "react"
-import Link from "next/link"
-import Image from "next/image"
 import { privatePageMetadata } from "@/lib/site-metadata"
 import { createClient } from "@/lib/supabase/server"
 import { getShopAccountContext } from "@/lib/services/accountAccess"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { PackageCheck, Package, Truck, MapPin, RotateCcw } from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
-import { listingDetailHref } from "@/lib/listing-href"
 import {
   ORDER_STATUS_LIST,
   orderStatusIsRefunded,
-  orderStatusIsRefundInProgress,
 } from "@/lib/order-status"
 import { parseOrderTrackingDetail } from "@/lib/shipping/order-tracking-detail"
 import {
@@ -23,12 +14,10 @@ import {
 import { resolveSaleCardStatusDisplay } from "@/lib/sale-card-status"
 import { getOrderReturnSummariesByOrderIds } from "@/lib/db/orderReturnStatusSummary"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
-import { LocalDateTime } from "@/components/ui/local-datetime"
 import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { OrdersListRealtimeRefresh } from "@/components/order-realtime-refresh"
-import { DashboardPageHeader } from "@/components/features/dashboard/dashboard-page-header"
-import { SalesFulfillmentFilters } from "@/components/features/sales/sales-fulfillment-filters"
+import { SalesOrderList } from "@/components/features/sales/sales-order-list"
 import {
   PrintShippingLabelsModule,
   type PrintableShippingLabelSale,
@@ -51,13 +40,22 @@ import {
 import { REAL_MARKETPLACE_SALES_FILTER } from "@/lib/order-admin-test"
 import { resolveMarketplaceOrderBuyerLabel } from "@/lib/order-buyer-display"
 import { resolveSellerOrderDisplayAmounts } from "@/lib/seller-order-display-amounts"
-import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
-import { listingPortraitThumbClass, listingPortraitThumbSizes } from "@/lib/utils/dashboard-display-styles"
 import { listingsUseSantaBarbaraDropoff } from "@/lib/dropoff-santa-barbara"
+import { canSubmitSellerReview } from "@/lib/services/orderSellerReview"
+import {
+  existingMarketplaceReviewFromRow,
+  isReviewsMetadataColumnMissing,
+} from "@/lib/marketplace-review-photos"
+import { purchaseStatusTone } from "@/lib/purchases-list-display"
+import {
+  saleDetailLine,
+  saleRefundNote,
+  type SaleListItem,
+} from "@/lib/sales-list-display"
 
 export const metadata = privatePageMetadata({
   title: "Sales — Reswell",
-  description: "Sales you're fulfilling on Reswell: ship, add tracking, and confirm pickup.",
+  description: "Track and fulfill your orders.",
   path: "/dashboard/sales",
 })
 
@@ -100,6 +98,7 @@ type SaleRow = {
         section: string
         dropoff_location_id?: string | null
         dropoff_locations?: { slug?: string | null } | { slug?: string | null }[] | null
+        condition?: string | null
         listing_images: Array<{
           url: string
           thumbnail_url?: string | null
@@ -111,6 +110,7 @@ type SaleRow = {
         title: string
         slug?: string | null
         section: string
+        condition?: string | null
         dropoff_location_id?: string | null
         dropoff_locations?: { slug?: string | null } | { slug?: string | null }[] | null
         listing_images: Array<{
@@ -216,6 +216,7 @@ export default async function SalesPage({
         slug,
         section,
         dropoff_location_id,
+        condition,
         dropoff_locations ( slug ),
         listing_images ( url, thumbnail_url, is_primary )
       ),
@@ -351,34 +352,129 @@ export default async function SalesPage({
       }
     })
 
+  type OwnReviewRow = {
+    order_id: string
+    id: string
+    rating: number
+    comment: string | null
+    created_at: string
+    metadata?: unknown
+  }
+  let reviewRows: OwnReviewRow[] = []
+  if (orderIds.length > 0) {
+    const first = await supabase
+      .from("reviews")
+      .select("order_id, id, rating, comment, created_at, metadata")
+      .in("order_id", orderIds)
+      .eq("reviewer_id", sellerId)
+    if (first.error && isReviewsMetadataColumnMissing(first.error)) {
+      const fallback = await supabase
+        .from("reviews")
+        .select("order_id, id, rating, comment, created_at")
+        .in("order_id", orderIds)
+        .eq("reviewer_id", sellerId)
+      reviewRows = (fallback.data ?? []) as OwnReviewRow[]
+    } else {
+      reviewRows = (first.data ?? []) as OwnReviewRow[]
+    }
+  }
+  const reviewsByOrderId = new Map(reviewRows.map((review) => [review.order_id, review]))
+
+  const saleItems: SaleListItem[] = error
+    ? []
+    : visibleList.map((sale) => {
+        const listing = Array.isArray(sale.listings) ? sale.listings[0] : sale.listings
+        const title = listing?.title ? capitalizeWords(listing.title) : "Item (listing removed)"
+        const imageUrl = primaryImage(listing?.listing_images ?? null)
+        const ship = sale.shipping_address
+        const addrBlock = ship?.address ? formatAddress(ship.address) : null
+        const buyerDisplay = sale.buyer_id ? buyerNameById.get(sale.buyer_id)?.trim() : ""
+        const buyerName = resolveMarketplaceOrderBuyerLabel({
+          buyerId: sale.buyer_id,
+          profileDisplayName: buyerDisplay,
+          shippingAddress: ship,
+        })
+        const fulfill = fulfillmentLabel(sale.fulfillment_method, !!addrBlock)
+        const filterInput = saleFilterInput(sale)
+        const statusDisplay = resolveSaleCardStatusDisplay({
+          orderStatus: sale.status,
+          deliveryStatus: sale.delivery_status ?? "pending",
+          trackingNumber: sale.tracking_number,
+          trackingDetail: trackingDetailByOrderId.get(sale.id) ?? null,
+          hasPreparedShippingLabel: preparedLabelOrderIds.has(sale.id),
+          returnSummary: returnSummaries.get(sale.id) ?? null,
+          fulfillmentMethod: sale.fulfillment_method,
+          hasShippingAddress: !!addrBlock,
+        })
+        const amounts = resolveSellerOrderDisplayAmounts(sale)
+        const review = reviewsByOrderId.get(sale.id)
+        const existingBuyerReview = review ? existingMarketplaceReviewFromRow(review) : null
+        const canReviewBuyer =
+          !existingBuyerReview &&
+          canSubmitSellerReview(
+            { status: sale.status, delivery_status: sale.delivery_status ?? "pending" },
+            trackingDetailByOrderId.get(sale.id) ?? null,
+          )
+
+        return {
+          id: sale.id,
+          title,
+          imageUrl,
+          imageUnoptimized: listingImageShouldBypassOptimization(imageUrl),
+          buyerName,
+          detailLine: saleDetailLine(
+            listing?.condition,
+            fulfill,
+            santaBarbaraDropoffOrderIds.has(sale.id),
+          ),
+          primaryAmount: showPayouts ? amounts.sellerEarningsAmount : amounts.sellerSaleTotal,
+          primarySuffix: showPayouts ? "earnings" : null,
+          shippingAmount: amounts.shippingAmount,
+          showShipping: amounts.shippingAmount > 0,
+          amountStruck: orderStatusIsRefunded(sale.status),
+          orderNumber: formatOrderNumForCustomer(sale.order_num, sale.id),
+          soldAt: sale.created_at,
+          statusLabel: statusDisplay.label,
+          statusTone: purchaseStatusTone(statusDisplay),
+          refundNote: saleRefundNote(sale.status, amounts.buyerPaidTotal),
+          href: `/dashboard/sales/${sale.id}`,
+          needsFulfillment: saleNeedsFulfillment(filterInput),
+          buyerReview:
+            canReviewBuyer || existingBuyerReview
+              ? { canReview: canReviewBuyer, existing: existingBuyerReview }
+              : null,
+        }
+      })
+
+  const filterEmptyMessage =
+    activeFilter === "pending-shipment"
+      ? "No open orders are waiting to ship."
+      : activeFilter === "pending-pickup"
+        ? "No open orders are waiting for pickup."
+        : "No sales match this filter."
+
   return (
-    <div className="space-y-6">
+    <div>
       <OrdersListRealtimeRefresh role="seller" />
-      <DashboardPageHeader
-        title="Sales"
-        description="Card and wallet purchases of your listings. Shipping addresses appear here when the buyer paid with a card and chose delivery."
-      />
+      <header className="hidden border-b border-border/80 pb-5 lg:block">
+        <h1 className="font-headline text-2xl font-bold tracking-tight text-foreground sm:text-[28px]">
+          Your Sales
+        </h1>
+        <p className="mt-1 text-[15px] leading-snug text-muted-foreground">
+          Track and fulfill your orders.
+        </p>
+      </header>
 
       {!error && printableLabelSales.length > 0 ? (
         <PrintShippingLabelsModule sales={printableLabelSales} />
-      ) : null}
-
-      {!error && list.length > 0 ? (
-        <Suspense fallback={<div className="h-10 w-full max-w-md animate-pulse rounded-md bg-muted" />}>
-          <SalesFulfillmentFilters
-            activeFilter={activeFilter}
-            pendingShipmentCount={pendingShipmentCount}
-            pendingPickupCount={pendingPickupCount}
-          />
-        </Suspense>
       ) : null}
 
       {!error && awaitingDropoffSales.length > 0 ? (
         <AwaitingDropoffTiles sales={awaitingDropoffSales} />
       ) : null}
 
-      {error && (
-        <div className="space-y-1 text-sm text-destructive">
+      {error ? (
+        <div className="mt-6 space-y-1 text-sm text-destructive lg:mt-8">
           <p>Could not load sales. Please try again, or contact support if this persists.</p>
           <p className="text-xs text-muted-foreground">
             Error {error.code ? `${error.code}: ` : ""}
@@ -386,236 +482,19 @@ export default async function SalesPage({
             {error.hint ? ` — ${error.hint}` : ""}
           </p>
         </div>
+      ) : (
+        <div className="mt-6 lg:mt-8">
+          <SalesOrderList
+            items={saleItems}
+            hasAnySales={list.length > 0}
+            filterEmptyMessage={filterEmptyMessage}
+            activeFilter={activeFilter}
+            pendingShipmentCount={pendingShipmentCount}
+            pendingPickupCount={pendingPickupCount}
+            showFulfillmentGroups={activeFilter === "all"}
+          />
+        </div>
       )}
-
-      {!error && list.length === 0 && (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-            <PackageCheck className="h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground mb-4 max-w-sm">
-              When someone buys your gear, the sale shows up here with fulfillment details.
-            </p>
-            <Button asChild>
-              <Link href="/sell?new=1">Create a listing</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
-      {!error && list.length > 0 && visibleList.length === 0 && (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-            <PackageCheck className="h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground max-w-sm">
-              {activeFilter === "pending-shipment"
-                ? "No open orders are waiting to ship."
-                : activeFilter === "pending-pickup"
-                  ? "No open orders are waiting for pickup."
-                  : "No sales match this filter."}
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      <div className="space-y-4">
-        {visibleList.map((sale, index) => {
-          const listing = Array.isArray(sale.listings) ? sale.listings[0] : sale.listings
-          const title = listing?.title
-            ? capitalizeWords(listing.title)
-            : "Item (listing removed)"
-          const img = primaryImage(listing?.listing_images ?? null)
-          const ship = sale.shipping_address
-          const addrBlock = ship?.address ? formatAddress(ship.address) : null
-          const buyerDisplay = sale.buyer_id ? buyerNameById.get(sale.buyer_id)?.trim() : ""
-          const buyerName = resolveMarketplaceOrderBuyerLabel({
-            buyerId: sale.buyer_id,
-            profileDisplayName: buyerDisplay,
-            shippingAddress: ship,
-          })
-          const fulfill = fulfillmentLabel(sale.fulfillment_method, !!addrBlock)
-          const santaBarbaraDropoff = santaBarbaraDropoffOrderIds.has(sale.id)
-          const filterInput = saleFilterInput(sale)
-          const needsFulfillment = saleNeedsFulfillment(filterInput)
-          const prevSale = index > 0 ? visibleList[index - 1] : undefined
-          const prevNeedsFulfillment = prevSale
-            ? saleNeedsFulfillment(saleFilterInput(prevSale))
-            : false
-          const showOpenHeading = activeFilter === "all" && needsFulfillment && index === 0
-          const showEarlierHeading =
-            activeFilter === "all" && !needsFulfillment && (index === 0 || prevNeedsFulfillment)
-          const statusDisplay = resolveSaleCardStatusDisplay({
-            orderStatus: sale.status,
-            deliveryStatus: sale.delivery_status ?? "pending",
-            trackingNumber: sale.tracking_number,
-            trackingDetail: trackingDetailByOrderId.get(sale.id) ?? null,
-            hasPreparedShippingLabel: preparedLabelOrderIds.has(sale.id),
-            returnSummary: returnSummaries.get(sale.id) ?? null,
-            fulfillmentMethod: sale.fulfillment_method,
-            hasShippingAddress: !!addrBlock,
-          })
-          const amounts = resolveSellerOrderDisplayAmounts(sale)
-
-          return (
-            <Fragment key={sale.id}>
-              {showOpenHeading ? (
-                <p className="pt-1 text-sm font-semibold text-foreground">Needs fulfillment</p>
-              ) : null}
-              {showEarlierHeading ? (
-                <p className="pt-2 text-sm font-semibold text-muted-foreground">Earlier sales</p>
-              ) : null}
-            <Link
-              href={`/dashboard/sales/${sale.id}`}
-              className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            >
-              <Card
-                className={`h-full transition-colors ${
-                  orderStatusIsRefunded(sale.status)
-                    ? "border-destructive/20 bg-destructive/[0.02]"
-                    : orderStatusIsRefundInProgress(sale.status)
-                      ? "border-amber-500/25 bg-amber-500/[0.03]"
-                      : needsFulfillment
-                        ? "border-amber-500/35 bg-amber-500/[0.04] hover:border-amber-500/50"
-                        : "hover:bg-muted/40 hover:border-primary/25"
-                }`}
-              >
-                <CardHeader className="pb-3">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="space-y-1">
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <PackageCheck className="h-5 w-5 text-muted-foreground" />
-                        Sale #{formatOrderNumForCustomer(sale.order_num, sale.id)}
-                      </CardTitle>
-                      <CardDescription>
-                        <LocalDateTime iso={sale.created_at} dateStyle="medium" timeStyle="short" />
-                      </CardDescription>
-                    </div>
-                    <Badge variant={statusDisplay.variant} className={statusDisplay.className}>
-                      {statusDisplay.label}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex flex-wrap gap-2">
-                    <Badge variant="outline" className="gap-1 font-normal">
-                      {fulfill.includes("Ship") ? (
-                        <Truck className="h-3.5 w-3.5" />
-                      ) : (
-                        <MapPin className="h-3.5 w-3.5" />
-                      )}
-                      {fulfill}
-                    </Badge>
-                    {santaBarbaraDropoff ? (
-                      <Badge variant="outline" className="gap-1 font-normal">
-                        <MapPin className="h-3.5 w-3.5" />
-                        Santa Barbara drop-off
-                      </Badge>
-                    ) : null}
-                  </div>
-
-                  <div className="flex gap-3">
-                    <div className={listingPortraitThumbClass}>
-                      {img ? (
-                        <Image src={img} alt="" fill className={listingPhotoFillClassName} sizes={listingPortraitThumbSizes} unoptimized={listingImageShouldBypassOptimization(img)} />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center">
-                          <Package className="h-6 w-6 text-muted-foreground" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="line-clamp-2 text-[15px] font-semibold text-foreground">{title}</p>
-                      <p className="mt-0.5 text-[13px] text-muted-foreground">Buyer: {buyerName}</p>
-                      <p className="mt-2 text-[11px] text-muted-foreground">
-                        {santaBarbaraDropoff
-                          ? "Tap for the drop-off address and call or text instructions"
-                          : "Tap for sale details, shipping address, and messages"}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="border-t pt-3 space-y-1 text-sm">
-                    <div className="flex justify-between text-muted-foreground">
-                      <span>Sale total</span>
-                      <span
-                        className={`tabular-nums ${orderStatusIsRefunded(sale.status) ? "line-through" : ""}`}
-                      >
-                        ${amounts.sellerSaleTotal.toFixed(2)}
-                      </span>
-                    </div>
-                    {showPayouts ? (
-                    <div className="flex justify-between font-semibold text-foreground pt-1">
-                      <span>
-                        {orderStatusIsRefunded(sale.status)
-                          ? "Earnings (reversed)"
-                          : orderStatusIsRefundInProgress(sale.status)
-                            ? "Your earnings (pending reversal)"
-                            : "Your earnings"}
-                      </span>
-                      <span
-                        className={`tabular-nums ${
-                          orderStatusIsRefunded(sale.status)
-                            ? "line-through text-muted-foreground"
-                            : orderStatusIsRefundInProgress(sale.status)
-                              ? "text-muted-foreground"
-                              : ""
-                        }`}
-                      >
-                        ${amounts.sellerEarningsAmount.toFixed(2)}
-                      </span>
-                    </div>
-                    ) : null}
-                  </div>
-
-                  {orderStatusIsRefundInProgress(sale.status) && (
-                    <div className="rounded-lg bg-amber-500/[0.08] border border-amber-500/25 p-2.5 flex items-center gap-2 text-sm">
-                      <RotateCcw className="h-3.5 w-3.5 text-amber-800 dark:text-amber-200 shrink-0" />
-                      <span className="text-amber-950 dark:text-amber-100 font-medium">
-                        Refund in progress — ${amounts.buyerPaidTotal.toFixed(2)} returning to buyer via Stripe
-                      </span>
-                    </div>
-                  )}
-
-                  {orderStatusIsRefunded(sale.status) && (
-                    <div className="rounded-lg bg-destructive/5 border border-destructive/15 p-2.5 flex items-center gap-2 text-sm">
-                      <RotateCcw className="h-3.5 w-3.5 text-destructive shrink-0" />
-                      <span className="text-destructive font-medium">
-                        Refund complete — ${amounts.buyerPaidTotal.toFixed(2)} returned to buyer
-                      </span>
-                    </div>
-                  )}
-
-                  {addrBlock && (
-                    <div className="rounded-lg bg-muted/50 p-3 text-sm">
-                      <p className="font-medium text-foreground mb-1">Ship to</p>
-                      {ship?.name && <p className="text-foreground">{ship.name}</p>}
-                      <p className="text-muted-foreground whitespace-pre-line line-clamp-3">
-                        {addrBlock}
-                      </p>
-                    </div>
-                  )}
-
-                  {santaBarbaraDropoff ? (
-                    <div className="rounded-lg border border-primary/20 bg-primary/[0.04] p-3 text-sm">
-                      <p className="font-medium text-foreground">Drop off with Reswell</p>
-                      <p className="mt-1 text-muted-foreground">
-                        No seller label is needed. Open this sale for the Santa Barbara address and
-                        contact buttons.
-                      </p>
-                    </div>
-                  ) : null}
-
-                  {!addrBlock && sale.fulfillment_method === "pickup" && (
-                    <p className="text-sm text-muted-foreground">
-                      Local pickup — open this sale to message the buyer and confirm details.
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            </Link>
-            </Fragment>
-          )
-        })}
-      </div>
     </div>
   )
 }
