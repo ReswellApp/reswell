@@ -10,8 +10,11 @@ import {
   HEADER_CHROME_KNOWN_CLASS,
   HEADER_CHROME_SIGNED_OUT_STORAGE_KEY,
   HEADER_CHROME_SNAPSHOT_STORAGE_KEY,
+  acknowledgeHeaderChromeSignedOut,
   clearHeaderChromeSignOutLatch,
   headerChromeAvatarCssValue,
+  headerChromeSignOutLatched,
+  headerChromeSignOutStartedHere,
   markHeaderChromeSignedOut,
   parseHeaderChromeSnapshot,
   writeHeaderChromeSnapshot,
@@ -117,13 +120,22 @@ describe("header chrome snapshot", () => {
     assert.equal(signedOut.classes.has(HEADER_CHROME_AVATAR_CLASS), false)
     assert.equal(signedOut.storage.get(HEADER_CHROME_SNAPSHOT_STORAGE_KEY), undefined)
     assert.equal(signedOut.session.get(HEADER_CHROME_SIGNED_OUT_STORAGE_KEY), undefined)
+    assert.equal(signedOut.windowFlag, 1)
+    assert.equal(signedOut.cookies.has("sb-abc-auth-token"), false)
 
     const signedOutCookie = runBoot({
       raw: JSON.stringify(sampleSnapshot({ displayName: "Kai" })),
       cookie: `${HEADER_CHROME_SIGNED_OUT_STORAGE_KEY}=1; sb-abc-auth-token=1`,
     })
     assert.equal(signedOutCookie.classes.has(HEADER_CHROME_AVATAR_CLASS), false)
+    assert.equal(signedOutCookie.classes.has(HEADER_CHROME_KNOWN_CLASS), false)
     assert.equal(signedOutCookie.storage.get(HEADER_CHROME_SNAPSHOT_STORAGE_KEY), undefined)
+    assert.equal(signedOutCookie.cookies.has("sb-abc-auth-token"), false)
+    assert.equal(signedOutCookie.cookies.has(HEADER_CHROME_SIGNED_OUT_STORAGE_KEY), false)
+    assert.equal(signedOutCookie.windowFlag, 1)
+
+    const emptyAuthCookie = runBoot({ raw: null, cookie: "sb-abc-auth-token=" })
+    assert.equal(emptyAuthCookie.classes.has(HEADER_CHROME_KNOWN_CLASS), false)
 
     const injected = runBoot({
       raw: JSON.stringify(sampleSnapshot({ avatarUrl: 'https://cdn.example.com/a.png");color:red' })),
@@ -142,6 +154,7 @@ describe("header chrome snapshot", () => {
     assert.match(css, new RegExp(HEADER_CHROME_HYDRATED_CLASS))
     assert.match(HEADER_CHROME_BOOT_SCRIPT, new RegExp(HEADER_CHROME_SNAPSHOT_STORAGE_KEY))
     assert.match(HEADER_CHROME_BOOT_SCRIPT, new RegExp(HEADER_CHROME_SIGNED_OUT_STORAGE_KEY))
+    assert.match(HEADER_CHROME_BOOT_SCRIPT, /__rwHeaderSignedOut/)
   })
 
   it("does not write the remembered account after sign-out starts", () => {
@@ -157,6 +170,30 @@ describe("header chrome snapshot", () => {
       restoreStorage(previous)
     }
   })
+
+  it("stays signed out in this document after the next page acknowledges the latch", () => {
+    const store = new Map<string, string>()
+    const session = new Map<string, string>()
+    const previous = installStorage(store, session)
+    try {
+      markHeaderChromeSignedOut()
+      assert.equal(session.get(HEADER_CHROME_SIGNED_OUT_STORAGE_KEY), "1")
+      assert.equal(headerChromeSignOutStartedHere(), true)
+      acknowledgeHeaderChromeSignedOut()
+      assert.equal(session.get(HEADER_CHROME_SIGNED_OUT_STORAGE_KEY), undefined)
+      assert.equal(headerChromeSignOutStartedHere(), false)
+      assert.equal(headerChromeSignOutLatched(), true)
+      writeHeaderChromeSnapshot(sampleSnapshot())
+      assert.equal(store.get(HEADER_CHROME_SNAPSHOT_STORAGE_KEY), undefined)
+      clearHeaderChromeSignOutLatch()
+      assert.equal(headerChromeSignOutLatched(), false)
+      writeHeaderChromeSnapshot(sampleSnapshot())
+      assert.match(store.get(HEADER_CHROME_SNAPSHOT_STORAGE_KEY) ?? "", /user-1/)
+    } finally {
+      clearHeaderChromeSignOutLatch()
+      restoreStorage(previous)
+    }
+  })
 })
 
 function runBoot(input: { raw: string | null; cookie: string; signedOut?: boolean }): {
@@ -164,29 +201,57 @@ function runBoot(input: { raw: string | null; cookie: string; signedOut?: boolea
   props: Map<string, string>
   storage: Map<string, string>
   session: Map<string, string>
+  cookies: Map<string, string>
+  windowFlag: number | undefined
 } {
   const classes = new Set<string>()
   const props = new Map<string, string>()
   const storage = new Map<string, string>()
   const session = new Map<string, string>()
+  const cookies = new Map<string, string>()
+  for (const part of input.cookie.split(";")) {
+    const trimmed = part.trim()
+    if (!trimmed) continue
+    const eq = trimmed.indexOf("=")
+    if (eq <= 0) continue
+    cookies.set(trimmed.slice(0, eq), trimmed.slice(eq + 1))
+  }
   if (input.raw) storage.set(HEADER_CHROME_SNAPSHOT_STORAGE_KEY, input.raw)
   if (input.signedOut) session.set(HEADER_CHROME_SIGNED_OUT_STORAGE_KEY, "1")
-  const context = {
-    document: {
-      cookie: input.cookie,
-      documentElement: {
-        classList: {
-          add(name: string) {
-            classes.add(name)
-          },
+  const document = {
+    documentElement: {
+      classList: {
+        add(name: string) {
+          classes.add(name)
         },
-        style: {
-          setProperty(name: string, value: string) {
-            props.set(name, value)
-          },
+      },
+      style: {
+        setProperty(name: string, value: string) {
+          props.set(name, value)
         },
       },
     },
+  }
+  Object.defineProperty(document, "cookie", {
+    get() {
+      return [...cookies.entries()].map(([name, value]) => `${name}=${value}`).join("; ")
+    },
+    set(raw: string) {
+      const [pair, ...attrs] = raw.split(";")
+      const eq = pair?.indexOf("=") ?? -1
+      if (!pair || eq <= 0) return
+      const name = pair.slice(0, eq).trim()
+      const value = pair.slice(eq + 1)
+      const expired = attrs.some((attr) => /max-age\s*=\s*0/i.test(attr))
+      if (expired) cookies.delete(name)
+      else cookies.set(name, value)
+    },
+  })
+  const windowStub: { __rwHeaderSignedOut?: number } = {}
+  const context = {
+    document,
+    window: windowStub,
+    location: { protocol: "http:" },
     localStorage: {
       getItem(key: string) {
         return storage.get(key) ?? null
@@ -206,7 +271,7 @@ function runBoot(input: { raw: string | null; cookie: string; signedOut?: boolea
     JSON,
   }
   runInNewContext(HEADER_CHROME_BOOT_SCRIPT, context)
-  return { classes, props, storage, session }
+  return { classes, props, storage, session, cookies, windowFlag: windowStub.__rwHeaderSignedOut }
 }
 
 function installStorage(store: Map<string, string>, session: Map<string, string>) {
@@ -222,15 +287,31 @@ function installStorage(store: Map<string, string>, session: Map<string, string>
     sessionStorage: target.sessionStorage,
     document: target.document,
   }
-  target.window = {}
-  target.localStorage = mapStorage(store)
-  target.sessionStorage = mapStorage(session)
-  target.document = {
+  const cookies = new Map<string, string>()
+  const document = {
     documentElement: {
       classList: { remove() {} },
       style: { removeProperty() {} },
     },
   }
+  Object.defineProperty(document, "cookie", {
+    get() {
+      return [...cookies.entries()].map(([name, value]) => `${name}=${value}`).join("; ")
+    },
+    set(raw: string) {
+      const [pair, ...attrs] = raw.split(";")
+      const eq = pair?.indexOf("=") ?? -1
+      if (!pair || eq <= 0) return
+      const name = pair.slice(0, eq).trim()
+      const expired = attrs.some((attr) => /max-age\s*=\s*0/i.test(attr))
+      if (expired) cookies.delete(name)
+      else cookies.set(name, pair.slice(eq + 1))
+    },
+  })
+  target.window = {}
+  target.localStorage = mapStorage(store)
+  target.sessionStorage = mapStorage(session)
+  target.document = document
   return previous
 }
 
