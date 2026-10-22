@@ -1,5 +1,4 @@
 import { clearSupabaseAuthCookies } from "@/lib/auth/clear-supabase-auth-cookies"
-import { HEADER_CHROME_SIGNED_OUT_STORAGE_KEY } from "@/lib/auth/header-chrome-snapshot"
 import { safeRedirectPathWithQuery } from "@/lib/auth/safe-redirect"
 import { IMPERSONATION_COOKIE } from "@/lib/impersonation"
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler-client"
@@ -24,14 +23,6 @@ export async function GET(request: NextRequest) {
   }
 
   clearSupabaseAuthCookies(request, redirectResponse)
-  // The next document reads this and drops the remembered header account.
-  // httpOnly must stay false — the boot script clears it from document.cookie.
-  redirectResponse.cookies.set(HEADER_CHROME_SIGNED_OUT_STORAGE_KEY, "1", {
-    path: "/",
-    maxAge: 120,
-    sameSite: "lax",
-    httpOnly: false,
-  })
   redirectResponse.cookies.set(IMPERSONATION_COOKIE, "", {
     path: "/",
     maxAge: 0,

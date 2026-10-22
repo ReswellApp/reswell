@@ -818,8 +818,8 @@ html[data-reswell-scroll-lock] body {
 
 /*
  * Returning account chrome. Cached HTML is anonymous. A blocking boot script
- * adds `rw-known-auth` before first paint when this browser already has a
- * confirmed account snapshot (or a visible auth cookie), and React adds
+ * adds `rw-known-auth` before first paint only when a visible auth cookie is
+ * still present. The snapshot fills the photo in that case. React adds
  * `rw-auth-hydrated` once the real header state is committed.
  */
 [data-rw-auth-preview] {

@@ -1,25 +1,31 @@
 "use client"
 
 import posthog from "posthog-js"
-import { markHeaderChromeSignedOut } from "@/lib/auth/header-chrome-snapshot"
+import {
+  beginHeaderChromeSignOut,
+  publishHeaderChromeSignedOut,
+} from "@/lib/auth/header-chrome-snapshot"
 import { clearSupabaseAuthCookiesClient } from "@/lib/auth/has-supabase-auth-cookies"
+import { safeRedirectPathWithQuery } from "@/lib/auth/safe-redirect"
 import { clearImpersonation } from "@/lib/impersonation"
 import { clearLiveChatBrowserState } from "@/lib/live-chat/visitor-storage"
 import { createClient } from "@/lib/supabase/client"
+import type { SupabaseClient } from "@supabase/supabase-js"
 
-const LOCAL_SIGN_OUT_BUDGET_MS = 1500
+const GLOBAL_SIGN_OUT_BUDGET_MS = 4000
 
 /**
- * End the browser session immediately, then revoke it on the server.
- * Client-only `signOut()` can leave cookies that middleware refreshes on the
- * next request, so `/auth/sign-out` still clears them and revokes the refresh
- * token. Local sign-out runs first so the nav can paint logged-out and an
- * in-flight token refresh cannot write the session back.
+ * Paint guest immediately, revoke this user's refresh tokens, then leave.
+ *
+ * The header snapshot is display-only and is painted only while an auth cookie
+ * exists. Cookies stay in place until revoke finishes: `signOut({ scope:
+ * "global" })` needs the in-memory access token, and if that call does not
+ * finish, `/auth/sign-out` still needs the cookies. Clearing them first makes
+ * the server revoke a no-op and another tab can refresh the session back.
  */
 export function signOutAndRedirect(next = "/"): void {
   if (typeof window === "undefined") return
-  markHeaderChromeSignedOut()
-  clearSupabaseAuthCookiesClient()
+  beginHeaderChromeSignOut()
   clearImpersonation()
   clearLiveChatBrowserState()
   try {
@@ -29,29 +35,55 @@ export function signOutAndRedirect(next = "/"): void {
   } catch {
     // Analytics must not block sign-out.
   }
-  void endBrowserSessionThenRedirect(next)
+  const destination = safeRedirectPathWithQuery(next)
+  void endBrowserSessionThenRedirect(destination)
 }
 
-async function endBrowserSessionThenRedirect(next: string): Promise<void> {
+async function endBrowserSessionThenRedirect(destination: string): Promise<void> {
+  const signOutUrl = `/auth/sign-out?next=${encodeURIComponent(destination)}`
+  let revoked = false
   try {
     const supabase = createClient()
-    await Promise.race([
-      supabase.auth.signOut({ scope: "local" }).then(
-        () => undefined,
-        () => undefined,
-      ),
-      new Promise<void>((resolve) => {
-        setTimeout(resolve, LOCAL_SIGN_OUT_BUDGET_MS)
+    const outcome = await Promise.race([
+      revokeGlobalSession(supabase),
+      new Promise<"timeout">((resolve) => {
+        setTimeout(() => resolve("timeout"), GLOBAL_SIGN_OUT_BUDGET_MS)
       }),
     ])
+    revoked = outcome === "revoked"
   } catch {
-    // The server route still revokes the refresh token and expires cookies.
+    revoked = false
   }
+
+  if (!revoked) {
+    await paintGuestFrame()
+    window.location.assign(signOutUrl)
+    return
+  }
+
   clearSupabaseAuthCookiesClient()
-  // `assign` freezes the current document. Yield a task so React can paint the
-  // guest header (no profile, no messages) before that frame is locked in.
-  await new Promise<void>((resolve) => {
+  publishHeaderChromeSignedOut()
+  await paintGuestFrame()
+  window.location.assign(destination)
+}
+
+/**
+ * Revoke every refresh token for this user, then drop the local session.
+ * Returns "missing" when this tab has no access token — the route handler
+ * must see the cookies and revoke them.
+ */
+async function revokeGlobalSession(
+  supabase: SupabaseClient,
+): Promise<"revoked" | "missing" | "failed"> {
+  const { data } = await supabase.auth.getSession()
+  if (!data.session?.access_token) return "missing"
+  const { error } = await supabase.auth.signOut({ scope: "global" })
+  return error ? "failed" : "revoked"
+}
+
+/** `assign` freezes the document. Yield so React can commit the guest header first. */
+function paintGuestFrame(): Promise<void> {
+  return new Promise((resolve) => {
     setTimeout(resolve, 0)
   })
-  window.location.assign(`/auth/sign-out?next=${encodeURIComponent(next)}`)
 }
