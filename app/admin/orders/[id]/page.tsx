@@ -14,6 +14,7 @@ import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { format } from "date-fns"
 import { AdminIssueRefundButton } from "@/components/features/admin/admin-issue-refund-button"
 import { AdminIssueItemReturnPanel } from "@/components/features/admin/admin-issue-item-return-panel"
+import { AdminOrderShipEngineDisputeLink } from "@/components/features/admin/admin-order-shipengine-dispute-link"
 import { AdminReplaceOrderShippingLabelPanel } from "@/components/features/admin/admin-replace-order-shipping-label-panel"
 import { AdminReswellShopFulfillForm } from "@/components/features/admin/admin-reswell-shop-fulfill-form"
 import { ReswellTrackingSection } from "@/components/features/orders/reswell-tracking-section"
@@ -469,6 +470,13 @@ export default function AdminOrderDetailPage() {
               )}
             </div>
           )}
+
+          {o.fulfillment_method === "shipping" ? (
+            <AdminOrderShipEngineDisputeLink
+              trackingCarrier={o.tracking_carrier}
+              trackingNumber={o.tracking_number}
+            />
+          ) : null}
 
           {o.fulfillment_method === "shipping" && o.status === "confirmed" && (
             <div className="rounded-lg border border-border/60 bg-muted/20 p-4 space-y-3">
