@@ -77,7 +77,10 @@ import { insertOrderAdAttribution } from "@/lib/db/orderAdAttribution"
 import { markUserListingBoardModelDataSold } from "@/lib/db/user-listing-board-model-data"
 import { purchaseReswellShippingLabelAfterCheckout } from "@/lib/services/autoPurchaseReswellShippingLabelForOrder"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
-import { safeRevalidateAfterMarketplaceOrderCommit } from "@/lib/cache/safe-revalidate-after-order"
+import {
+  revalidateSoldFeedAfterSale,
+  safeRevalidateAfterMarketplaceOrderCommit,
+} from "@/lib/cache/safe-revalidate-after-order"
 import { completeAcceptedOfferOnPurchase } from "@/lib/services/completeOfferOnPurchase"
 import {
   fetchCheckoutPromoCodeById,
@@ -540,6 +543,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
         await purchaseReswellShippingLabelAfterCheckout(serviceSupabase, existing.id)
       }
       void maybeSyncAdminTerminalGuestToCrm(serviceSupabase, pi, existing.id)
+      revalidateSoldFeedAfterSale()
       return { ok: true, orderId: existing.id, alreadyProcessed: true }
     }
 
@@ -557,6 +561,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       await purchaseReswellShippingLabelAfterCheckout(serviceSupabase, existing.id)
     }
     void maybeSyncAdminTerminalGuestToCrm(serviceSupabase, pi, existing.id)
+    revalidateSoldFeedAfterSale()
     return { ok: true, orderId: existing.id, alreadyProcessed: true }
   }
 

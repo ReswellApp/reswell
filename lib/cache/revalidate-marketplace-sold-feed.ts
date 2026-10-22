@@ -7,6 +7,10 @@ import {
 const EXPIRE_NOW = { expire: 0 } as const
 
 function revalidateSoldPage(): void {
+  // Expire the concrete URL. Typed `"page"` / `"layout"` calls only match
+  // `/sold/page` and `/sold/layout`. The cached document is also tagged `/sold`,
+  // and missing that tag left the previous grid up for the route TTL.
+  revalidatePath("/sold")
   revalidatePath("/sold", "page")
   revalidatePath("/sold", "layout")
 }

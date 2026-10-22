@@ -242,7 +242,26 @@ export function SoldFeedPanel({
   const [isLoading, setIsLoading] = useState(false)
   const isLoadingRef = useRef(false)
   const sentinelRef = useRef<HTMLDivElement>(null)
+  const didRequestFreshFeed = useRef(false)
+  const serverFeedGeneration = useRef(0)
   const shippedCount = totalCount ?? listings.length
+
+  // The client router keeps `/sold` for `staleTimes` (5 minutes). A sale
+  // revalidates from a webhook, which does not clear that cache. Refresh once
+  // so this visit reads the server after that bust. Applying the server payload
+  // replaces a cached grid; an in-flight "load more" from the old cursor is dropped.
+  useEffect(() => {
+    if (didRequestFreshFeed.current) return
+    didRequestFreshFeed.current = true
+    router.refresh()
+  }, [router])
+
+  useEffect(() => {
+    serverFeedGeneration.current += 1
+    setListings(soldListings)
+    setCursor(initialCursor)
+    setHasMore(initialHasMore)
+  }, [soldListings, initialCursor, initialHasMore])
 
   const goToShippedPage = (pageNum: number) => {
     startPageTransition(() => {
@@ -258,6 +277,7 @@ export function SoldFeedPanel({
   const loadMore = useCallback(async () => {
     if (variant !== "sold" || !hasMore || !cursor || isLoadingRef.current) return
 
+    const generation = serverFeedGeneration.current
     isLoadingRef.current = true
     setIsLoading(true)
     setLoadError(null)
@@ -275,6 +295,7 @@ export function SoldFeedPanel({
         throw new Error(payload.error || "Unable to load more sold items")
       }
       const page = payload.data
+      if (generation !== serverFeedGeneration.current) return
 
       setListings((current) => {
         const existingIds = new Set(current.map((listing) => listing.id))

@@ -15,9 +15,13 @@ describe("sold feed invalidation", () => {
   it("expires the sold feed data cache and the /sold route together", () => {
     const src = readRepo("lib/cache/revalidate-marketplace-sold-feed.ts")
     assert.match(src, /expire:\s*0/)
+    assert.match(src, /revalidatePath\("\/sold"\)/)
     assert.match(src, /revalidatePath\("\/sold", "page"\)/)
     assert.match(src, /revalidatePath\("\/sold", "layout"\)/)
     assert.doesNotMatch(src, /["']max["']/)
+    assert.match(readRepo("app/sold/page.tsx"), /export const dynamic = "force-dynamic"/)
+    assert.doesNotMatch(readRepo("app/sold/page.tsx"), /export const revalidate = 3600/)
+    assert.match(readRepo("app/sold/sold-page-client.tsx"), /router\.refresh\(\)/)
   })
 
   it("refills /sold from the primary and leaves the long edge window to other pages", () => {
@@ -68,9 +72,12 @@ describe("sold feed invalidation", () => {
       readRepo("lib/services/reswellBucksCheckoutSideEffects.ts"),
       /safeRevalidateAfterMarketplaceOrderCommit\(/,
     )
+    const orderRevalidate = readRepo("lib/cache/safe-revalidate-after-order.ts")
+    assert.match(orderRevalidate, /revalidateSoldFeedAfterSale\(\)/)
+    assert.match(orderRevalidate, /revalidateMarketplaceSoldFeedCatalog\(\)/)
     assert.match(
-      readRepo("lib/cache/safe-revalidate-after-order.ts"),
-      /revalidateMarketplaceSoldFeedCatalog\(\)/,
+      readRepo("lib/stripe-complete-order.ts"),
+      /revalidateSoldFeedAfterSale\(\)/,
     )
     assert.match(readRepo("lib/services/listingRelist.ts"), /revalidateRecentlySoldSurfaces\(\)/)
     assert.match(
