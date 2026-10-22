@@ -60,6 +60,19 @@ function latestEventLocation(detail: OrderTrackingDetail): string {
   return parts.join(", ")
 }
 
+/** Stable id for a milestone. Scan emails stay tied to the scan key. */
+export function orderShippingUpdateEventId(input: {
+  orderId: string
+  detail: OrderTrackingDetail
+  smsMilestone: OrderShippingSmsMilestone | null
+}): string {
+  if (input.smsMilestone) {
+    return `order-shipping-milestone-${input.orderId}-${input.smsMilestone}`
+  }
+  const updateKey = orderTrackingUpdateKey(input.detail)
+  return `order-shipping-update-${input.orderId}-${updateKey.replace(/\|/g, "-").slice(0, 180)}`
+}
+
 export async function trackKlaviyoOrderShippingUpdate(
   payload: KlaviyoOrderShippingUpdatePayload,
 ): Promise<SendKlaviyoServerEventResult> {
@@ -67,14 +80,13 @@ export async function trackKlaviyoOrderShippingUpdate(
   const orderUrl = `${origin}/dashboard/purchases/${payload.orderId}`
   const detail = payload.detail
   const latestEvent = detail.events?.[0]
-  const updateKey = orderTrackingUpdateKey(detail)
   const phone = payload.buyerPhoneE164?.trim() || null
   const smsMilestone = payload.smsMilestone ?? null
-  // Milestones are one event per order. Scan emails stay keyed to the scan so
-  // a repeated webhook does not send the same in-transit email twice.
-  const uniqueId = smsMilestone
-    ? `order-shipping-milestone-${payload.orderId}-${smsMilestone}`
-    : `order-shipping-update-${payload.orderId}-${updateKey.replace(/\|/g, "-").slice(0, 180)}`
+  const uniqueId = orderShippingUpdateEventId({
+    orderId: payload.orderId,
+    detail,
+    smsMilestone,
+  })
 
   return sendKlaviyoServerEvent({
     metricName: "Order Shipping Update",

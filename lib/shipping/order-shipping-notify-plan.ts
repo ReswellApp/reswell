@@ -11,31 +11,29 @@ export type OrderShippingNotifyPlan =
 /**
  * What a tracking writer may tell the buyer.
  *
- * Milestones (out for delivery, delivered, exception) send once per order.
- * Delivery ends the thread: a later "out for delivery" wording does not text.
- * Ordinary in-transit scans email only from a carrier writer (webhook or cron),
- * and only when the scan itself changed. Opening a purchase is not a carrier writer.
+ * Delivered is already stored on the order (`delivery_status`, `carrier_delivered_at`).
+ * Out for delivery and exception are already stored on the previous tracking snapshot.
+ * A refresh that does not change that milestone is not a new message.
+ * Ordinary in-transit scans email only from a carrier writer (webhook or cron).
  */
 export function planOrderShippingNotification(input: {
   previous: OrderTrackingDetail | null | undefined
   next: OrderTrackingDetail
-  claimedMilestones: ReadonlySet<OrderShippingSmsMilestone>
+  /** True when the order was already marked delivered before this refresh. */
+  deliveryAlreadyRecorded: boolean
   notifyScanUpdates: boolean
 }): OrderShippingNotifyPlan {
-  const milestone = resolveShippingSmsMilestone(input.next)
-  const deliveredClaimed = input.claimedMilestones.has("delivered")
+  if (input.deliveryAlreadyRecorded) return { kind: "skip" }
 
-  if (deliveredClaimed && milestone !== "delivered") {
-    return { kind: "skip" }
-  }
+  const nextMilestone = resolveShippingSmsMilestone(input.next)
+  const previousMilestone = resolveShippingSmsMilestone(input.previous)
 
-  if (milestone) {
-    if (input.claimedMilestones.has(milestone)) return { kind: "skip" }
-    return { kind: "milestone", milestone }
+  if (nextMilestone) {
+    if (previousMilestone === nextMilestone) return { kind: "skip" }
+    return { kind: "milestone", milestone: nextMilestone }
   }
 
   if (!input.notifyScanUpdates) return { kind: "skip" }
-  if (deliveredClaimed) return { kind: "skip" }
   if (!orderTrackingUpdateChanged(input.previous, input.next)) return { kind: "skip" }
   return { kind: "scan" }
 }
