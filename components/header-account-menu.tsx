@@ -1,11 +1,12 @@
 "use client"
 
 import Link from "next/link"
-import { memo, useCallback } from "react"
+import { memo, useCallback, useRef, useState } from "react"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
-import { LogOut, User } from "lucide-react"
-import { AccountMenuSwitcher } from "@/components/features/dashboard/account-switcher"
+import { ChevronRight, LogOut, User } from "lucide-react"
+import { AccountSwitchDialog } from "@/components/features/dashboard/account-switcher"
 import type { HeaderShopAccess } from "@/lib/auth/header-site-bootstrap"
+import { headerInitialFromDisplayName } from "@/lib/header-user-display"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -37,6 +38,35 @@ export type HeaderAccountMenuProps = {
   onSignOut: () => void
 }
 
+function ProfileAvatar({
+  profileAvatarUrl,
+  avatarImageFailed,
+  onAvatarImageFailed,
+  initial,
+  imageAlt,
+}: {
+  profileAvatarUrl: string | null
+  avatarImageFailed: boolean
+  onAvatarImageFailed: () => void
+  initial: string
+  imageAlt: string
+}) {
+  return (
+    <Avatar className="h-10 w-10 shrink-0 border border-border">
+      {profileAvatarUrl && !avatarImageFailed ? (
+        <AvatarImage
+          src={profileAvatarUrl}
+          alt={imageAlt}
+          onLoadingStatusChange={(status) => {
+            if (status === "error") onAvatarImageFailed()
+          }}
+        />
+      ) : null}
+      <AvatarFallback className="text-sm text-foreground">{initial}</AvatarFallback>
+    </Avatar>
+  )
+}
+
 function HeaderAccountMenuInner({
   user,
   profileAvatarUrl,
@@ -53,12 +83,35 @@ function HeaderAccountMenuInner({
   onActiveAccountChange,
   onSignOut,
 }: HeaderAccountMenuProps) {
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [switchOpen, setSwitchOpen] = useState(false)
+  const openingSwitchRef = useRef(false)
+  /** Ignore the click that opened the menu so it does not also open the switcher. */
+  const openedAtRef = useRef(0)
+  const canSwitchAccount = (shopAccess?.options.length ?? 0) > 1
+  const workingShop = canSwitchAccount && shopAccess?.actingAsShop === true ? shopAccess : null
+  const menuName = workingShop ? workingShop.shopLabel : resolvedDisplayName
+  const menuInitial = workingShop
+    ? headerInitialFromDisplayName(workingShop.shopLabel)
+    : resolvedInitial
+
   const onOpenChange = useCallback((open: boolean) => {
+    if (open) openedAtRef.current = Date.now()
+    setMenuOpen(open)
     if (!open) forceReleaseBodyScrollLock()
   }, [])
 
+  const openAccountSwitcher = useCallback((event: Event) => {
+    if (Date.now() - openedAtRef.current < 300) {
+      event.preventDefault()
+      return
+    }
+    openingSwitchRef.current = true
+  }, [])
+
   return (
-    <DropdownMenu modal={false} onOpenChange={onOpenChange}>
+    <>
+    <DropdownMenu modal={false} open={menuOpen} onOpenChange={onOpenChange}>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="h-9 w-9 text-foreground md:h-10 md:w-10">
           <Avatar className="h-8 w-8 md:h-9 md:w-9">
@@ -78,34 +131,48 @@ function HeaderAccountMenuInner({
       <DropdownMenuContent
         align="end"
         className="z-[120] max-h-[min(32rem,calc(100dvh-5rem))] w-72 overflow-y-auto"
+        onCloseAutoFocus={(event) => {
+          if (!openingSwitchRef.current) return
+          event.preventDefault()
+          openingSwitchRef.current = false
+          setSwitchOpen(true)
+        }}
       >
-        <div className="flex items-center gap-3 px-2 py-2">
-          <Avatar className="h-10 w-10 shrink-0 border border-border">
-            {profileAvatarUrl && !avatarImageFailed ? (
-              <AvatarImage
-                src={profileAvatarUrl}
-                alt=""
-                onLoadingStatusChange={(status) => {
-                  if (status === "error") onAvatarImageFailed()
-                }}
-              />
-            ) : null}
-            <AvatarFallback className="text-sm text-foreground">{resolvedInitial}</AvatarFallback>
-          </Avatar>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium">{resolvedDisplayName}</p>
-            <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+        {canSwitchAccount && shopAccess ? (
+          <DropdownMenuItem
+            className="cursor-pointer items-center gap-3 px-2 py-2 hover:bg-neutral-100 hover:text-foreground focus:bg-neutral-100 focus:text-foreground data-[highlighted]:bg-neutral-100 data-[highlighted]:text-foreground dark:hover:bg-neutral-800 dark:hover:text-foreground dark:focus:bg-neutral-800 dark:focus:text-foreground dark:data-[highlighted]:bg-neutral-800 dark:data-[highlighted]:text-foreground"
+            aria-haspopup="dialog"
+            onSelect={openAccountSwitcher}
+          >
+            <ProfileAvatar
+              profileAvatarUrl={profileAvatarUrl}
+              avatarImageFailed={avatarImageFailed}
+              onAvatarImageFailed={onAvatarImageFailed}
+              initial={menuInitial}
+              imageAlt=""
+            />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-foreground">{menuName}</p>
+              <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+              <p className="truncate text-xs font-medium text-muted-foreground">Switch account</p>
+            </div>
+            <ChevronRight className="text-muted-foreground" aria-hidden />
+          </DropdownMenuItem>
+        ) : (
+          <div className="flex items-center gap-3 px-2 py-2">
+            <ProfileAvatar
+              profileAvatarUrl={profileAvatarUrl}
+              avatarImageFailed={avatarImageFailed}
+              onAvatarImageFailed={onAvatarImageFailed}
+              initial={resolvedInitial}
+              imageAlt=""
+            />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium">{resolvedDisplayName}</p>
+              <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+            </div>
           </div>
-        </div>
-        {shopAccess ? (
-          <AccountMenuSwitcher
-            options={shopAccess.options}
-            activeAccountId={shopAccess.activeAccountId}
-            actorUserId={shopAccess.actorUserId}
-            actorEmail={shopAccess.actorEmail}
-            onActivated={onActiveAccountChange}
-          />
-        ) : null}
+        )}
         {dashboardNavSections({
           isAdmin,
           isShipper,
@@ -186,6 +253,18 @@ function HeaderAccountMenuInner({
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+    {canSwitchAccount && shopAccess ? (
+      <AccountSwitchDialog
+        open={switchOpen}
+        onOpenChange={setSwitchOpen}
+        options={shopAccess.options}
+        activeAccountId={shopAccess.activeAccountId}
+        actorUserId={shopAccess.actorUserId}
+        actorEmail={shopAccess.actorEmail}
+        onActivated={onActiveAccountChange}
+      />
+    ) : null}
+    </>
   )
 }
 
