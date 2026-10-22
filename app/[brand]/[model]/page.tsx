@@ -2,6 +2,11 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { ModelPageView } from "@/components/features/models/model-page-view"
 import { getDb } from "@/lib/supabase/db"
+import {
+  hasIndexableModelPriceGuide,
+  isModelPageIndexable,
+  modelHasIndexableProductDetail,
+} from "@/lib/models/model-page-indexable"
 import { isReservedModelPageBrandSegment } from "@/lib/models/routes"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { getModelPage } from "@/lib/services/modelPage"
@@ -29,12 +34,12 @@ export function generateStaticParams(): Array<{ brand: string; model: string }> 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { brand: brandSlug, model: modelSlug } = await params
   if (isReservedModelPageBrandSegment(brandSlug)) {
-    return { title: "Model — Reswell" }
+    return { title: "Model — Reswell", robots: { index: false, follow: false } }
   }
 
   const supabase = getDb({ consistency: "eventual" })
   const page = await getModelPage(supabase, brandSlug, modelSlug)
-  if (!page) return { title: "Model — Reswell" }
+  if (!page) return { title: "Model — Reswell", robots: { index: false, follow: false } }
 
   const titleName = `${page.brand.name} ${page.model.name}`
   const fallbackTitle = `${titleName} — Reswell`
@@ -48,10 +53,25 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   )
   const path = `/${page.brand.slug}/${page.modelSlug}`
   const shareImage = absolutePublicMediaUrl(page.listingImageUrl)
+  const indexable = isModelPageIndexable({
+    listingCount: page.listings.length,
+    soldListingCount: page.soldListings.length,
+    reviewCount: page.reviewStats.reviewCount,
+    hasProductDetail: modelHasIndexableProductDetail({
+      description: page.model.description,
+      variants: page.variants,
+    }),
+    hasPriceGuide: hasIndexableModelPriceGuide(page.priceGuide),
+  })
   return {
     title: seo.title,
     description: seo.description,
     alternates: { canonical: path },
+    robots: {
+      index: indexable,
+      follow: true,
+      googleBot: { index: indexable, follow: true },
+    },
     openGraph: {
       title: titleName,
       description: seo.description,

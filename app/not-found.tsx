@@ -8,6 +8,7 @@ import { publicSiteOrigin } from "@/lib/public-site-origin"
 export const metadata: Metadata = {
   title: "Page not found — Reswell",
   description: "We could not find that page.",
+  robots: { index: false, follow: true },
 }
 
 export default function NotFound() {
