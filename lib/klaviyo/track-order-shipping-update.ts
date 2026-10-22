@@ -31,7 +31,7 @@
 
 import { carrierTrackingIndicatesDelivered, resolveCarrierStatusHeadline } from "@/lib/shipping/carrier-status-display"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
-import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
+import { sendKlaviyoServerEvent, type SendKlaviyoServerEventResult } from "@/lib/klaviyo/send-event"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import type { OrderTrackingDetail } from "@/lib/shipping/order-tracking-detail"
 import type { OrderShippingSmsMilestone } from "@/lib/shipping/order-shipping-sms-milestone"
@@ -60,25 +60,42 @@ function latestEventLocation(detail: OrderTrackingDetail): string {
   return parts.join(", ")
 }
 
+/** Stable id for a milestone. Scan emails stay tied to the scan key. */
+export function orderShippingUpdateEventId(input: {
+  orderId: string
+  detail: OrderTrackingDetail
+  smsMilestone: OrderShippingSmsMilestone | null
+}): string {
+  if (input.smsMilestone) {
+    return `order-shipping-milestone-${input.orderId}-${input.smsMilestone}`
+  }
+  const updateKey = orderTrackingUpdateKey(input.detail)
+  return `order-shipping-update-${input.orderId}-${updateKey.replace(/\|/g, "-").slice(0, 180)}`
+}
+
 export async function trackKlaviyoOrderShippingUpdate(
   payload: KlaviyoOrderShippingUpdatePayload,
-): Promise<void> {
+): Promise<SendKlaviyoServerEventResult> {
   const origin = publicSiteOrigin()
   const orderUrl = `${origin}/dashboard/purchases/${payload.orderId}`
   const detail = payload.detail
   const latestEvent = detail.events?.[0]
-  const updateKey = orderTrackingUpdateKey(detail)
   const phone = payload.buyerPhoneE164?.trim() || null
   const smsMilestone = payload.smsMilestone ?? null
+  const uniqueId = orderShippingUpdateEventId({
+    orderId: payload.orderId,
+    detail,
+    smsMilestone,
+  })
 
-  await sendKlaviyoServerEvent({
+  return sendKlaviyoServerEvent({
     metricName: "Order Shipping Update",
     profile: {
       external_id: payload.buyerUserId,
       email: payload.buyerEmail,
       phone_number: phone,
     },
-    uniqueId: `order-shipping-update-${payload.orderId}-${updateKey.replace(/\|/g, "-").slice(0, 180)}`,
+    uniqueId,
     properties: {
       order_id: payload.orderId,
       order_num: formatOrderNumForCustomer(payload.orderNum, payload.orderId),

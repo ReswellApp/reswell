@@ -216,9 +216,16 @@ export function ReswellTrackingSection(props: {
     [carrierTrackingFetchPath, orderId, router],
   )
 
+  const marketplaceTerminal =
+    marketplaceDeliveryStatus === "delivered" || marketplaceDeliveryStatus === "picked_up"
+  const skipLiveFetchOnMount = marketplaceTerminal && (pollOnly || Boolean(initialDetail))
+
   useEffect(() => {
+    // A finished shipment already has its scans. Skip the carrier call on open;
+    // in-transit orders still load live scans.
+    if (skipLiveFetchOnMount) return
     void loadTracking()
-  }, [loadTracking])
+  }, [loadTracking, skipLiveFetchOnMount])
 
   useEffect(() => {
     if (marketplaceDeliveryStatus === "delivered" || marketplaceDeliveryStatus === "picked_up") return
