@@ -279,9 +279,9 @@ export const MANAGED_PAGES: ManagedPage[] = [
     path: "/boards?type=other",
   }, { variationOf: "boards", note: "/boards?type=other" }),
   page("sold", "marketplace", "Recently sold", {
-    title: "Recently sold surfboards | Reswell",
+    title: "Recently sold surf gear | Reswell",
     description:
-      "See surfboards that recently sold on Reswell — live marketplace activity and completed sales.",
+      "See surfboards, fins, leashes, and the rest of the gear that recently sold on Reswell.",
     path: "/sold",
   }),
   page("map", "marketplace", "Sales map", {
