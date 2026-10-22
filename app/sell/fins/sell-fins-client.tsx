@@ -85,7 +85,7 @@ import { shippingPriceToFormValue } from "@/lib/sell-flow/shipping-price-to-form
 import type { ListingPhotoSlot } from "@/lib/sell-flow/listing-photo-slot"
 import { scrollPublishValidationBannerIntoView } from "@/lib/sell-flow/scroll-section-into-view"
 import { validateFinListingForm } from "@/lib/sell-flow/validate-fin-listing-form"
-import { readLiveSellListingPrice } from "@/lib/utils/sell-listing-price"
+import { parseSellListingPrice, readLiveSellListingPrice } from "@/lib/utils/sell-listing-price"
 import {
   applyFinReswellPackageDefaults,
   FIN_RESWELL_DEFAULT_PACKAGE_HEIGHT_IN,
@@ -914,7 +914,7 @@ export default function SellFinsFlow({
     const payload = {
       title: form.title,
       description: form.description,
-      price: pricedForm.price,
+      price: parseSellListingPrice(pricedForm.price) ?? 0,
       condition: form.condition,
       stockQuantity: parseBrandNewListingQuantity(form.stockQuantity) ?? 1,
       size: form.size || null,

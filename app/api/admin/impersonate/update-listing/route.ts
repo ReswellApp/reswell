@@ -25,6 +25,7 @@ import { trackKlaviyoListingCreated } from "@/lib/klaviyo/track-listing-created"
 import { trackFirstTimeSellerForListingIfNeeded } from "@/lib/services/klaviyoFirstTimeSeller"
 import { recordListingVisibilityEvent } from "@/lib/services/listingVisibilityAudit"
 import { omitClientAutoPriceDropSchedule } from "@/lib/listing-auto-price-drop"
+import { applyDraftPublishPrice } from "@/lib/utils/sell-listing-price"
 import { overlayListingRowWithDropoffParcel } from "@/lib/services/listingDropoffParcel"
 
 /** Admin impersonation saves include photos + shipping columns; give the write time to finish. */
@@ -171,14 +172,12 @@ async function putImpersonatedListing(request: NextRequest) {
 
   const publishingFromDraft =
     existingListing.status === "draft" && publishFromDraft === true
+  const priceForPublish = applyDraftPublishPrice(listingFields, existingListing.price)
 
   if (publishingFromDraft) {
     const mergedForValidation = {
       status: "draft" as const,
-      price:
-        typeof listingFields.price === "number"
-          ? listingFields.price
-          : existingListing.price,
+      price: priceForPublish,
       description:
         typeof listingFields.description === "string"
           ? listingFields.description
@@ -370,11 +369,7 @@ async function putImpersonatedListing(request: NextRequest) {
         typeof listingFields.title === "string" && listingFields.title.trim()
           ? listingFields.title.trim()
           : String(existingListing.title ?? "Listing"),
-      price: Number(
-        typeof listingFields.price === "number"
-          ? listingFields.price
-          : existingListing.price ?? 0,
-      ),
+      price: priceForPublish ?? 0,
       photoUrl: primary?.url?.trim() ?? null,
       localPickup:
         typeof listingFields.local_pickup === "boolean"

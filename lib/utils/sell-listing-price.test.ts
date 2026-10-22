@@ -1,6 +1,9 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 import {
+  applyDraftPublishPrice,
+  draftListingPriceBlockReason,
+  LISTING_NEEDS_PRICE_BEFORE_LIVE,
   parseSellListingPrice,
   readLiveSellListingPrice,
   sellListingPriceIsPublishable,
@@ -38,6 +41,46 @@ describe("sellListingPriceValidationMessage", () => {
   it("rejects an out-of-range amount", () => {
     assert.match(sellListingPriceValidationMessage("0") ?? "", /valid price/i)
     assert.equal(sellListingPriceIsPublishable("0"), false)
+  })
+})
+
+describe("draftListingPriceBlockReason", () => {
+  it("lets a price the form is already showing go live", () => {
+    assert.equal(draftListingPriceBlockReason("49.95"), null)
+    assert.equal(draftListingPriceBlockReason("$49.95"), null)
+    assert.equal(draftListingPriceBlockReason(49.95), null)
+  })
+
+  it("blocks a missing or zero price", () => {
+    assert.equal(draftListingPriceBlockReason(0), LISTING_NEEDS_PRICE_BEFORE_LIVE)
+    assert.equal(draftListingPriceBlockReason(null), LISTING_NEEDS_PRICE_BEFORE_LIVE)
+    assert.equal(draftListingPriceBlockReason(""), LISTING_NEEDS_PRICE_BEFORE_LIVE)
+  })
+})
+
+describe("applyDraftPublishPrice", () => {
+  it("uses a typed price when the saved draft is still $0", () => {
+    const fields: Record<string, unknown> = { price: "49.95" }
+    assert.equal(applyDraftPublishPrice(fields, 0), 49.95)
+    assert.equal(fields.price, 49.95)
+  })
+
+  it("accepts a dollar sign and thousands separators", () => {
+    const fields: Record<string, unknown> = { price: "$1,200.50" }
+    assert.equal(applyDraftPublishPrice(fields, null), 1200.5)
+    assert.equal(fields.price, 1200.5)
+  })
+
+  it("keeps an explicit zero instead of an older price", () => {
+    const fields: Record<string, unknown> = { price: 0 }
+    assert.equal(applyDraftPublishPrice(fields, 80), 0)
+    assert.equal(fields.price, 0)
+  })
+
+  it("falls back to the stored price when the submit omits one", () => {
+    const fields: Record<string, unknown> = {}
+    assert.equal(applyDraftPublishPrice(fields, "49.95"), 49.95)
+    assert.equal("price" in fields, false)
   })
 })
 

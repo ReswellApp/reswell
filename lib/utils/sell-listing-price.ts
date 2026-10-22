@@ -31,6 +31,18 @@ export function sellListingPriceIsPublishable(raw: unknown): boolean {
   return amount != null && amount >= SELL_LISTING_PRICE_MIN && amount <= SELL_LISTING_PRICE_MAX
 }
 
+export const LISTING_NEEDS_PRICE_BEFORE_LIVE =
+  "Listing needs a price before it can go live."
+
+/** Server publish gate. Accepts `49.95`, `"49.95"`, and `"$49.95"`. */
+export function draftListingPriceBlockReason(raw: unknown): string | null {
+  const price = parseSellListingPrice(raw)
+  if (price == null || price < SELL_LISTING_PRICE_MIN) {
+    return LISTING_NEEDS_PRICE_BEFORE_LIVE
+  }
+  return null
+}
+
 export function sellListingPriceValidationMessage(raw: unknown): string | null {
   const text = typeof raw === "string" ? raw.trim().replace(/[$,\s]/g, "") : raw
   const empty =
@@ -51,6 +63,24 @@ export function sellListingPriceValidationMessage(raw: unknown): string | null {
 export function coerceSellListingPriceInput(value: unknown): unknown {
   if (typeof value === "number" || typeof value !== "string") return value
   return value.trim().replace(/[$,\s]/g, "")
+}
+
+/**
+ * Price to check before a draft goes live, and the number to store when the
+ * submit included one. Form text (`"49.95"`, `"$49.95"`) wins over a draft
+ * row still at 0. An explicit 0 stays 0 so publish still requires a real price.
+ * When the submit does not parse, returns the stored price and leaves `fields` alone.
+ */
+export function applyDraftPublishPrice(
+  fields: Record<string, unknown>,
+  existingPrice: unknown,
+): number | null {
+  const submitted = parseSellListingPrice(fields.price)
+  if (submitted != null) {
+    fields.price = submitted
+    return submitted
+  }
+  return parseSellListingPrice(existingPrice)
 }
 
 /**
