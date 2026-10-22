@@ -127,7 +127,7 @@ export function ReviewSellerControls({
           <span className="min-w-0 flex-1 text-sm font-medium text-foreground">
             Leave a review for the seller
           </span>
-          <Info className="h-4 w-4 shrink-0 text-blue-500" aria-hidden />
+          <Info className="h-4 w-4 shrink-0 text-[#5574AD] dark:text-[#7F9DD5]" aria-hidden />
           <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
         </button>
       ) : (
