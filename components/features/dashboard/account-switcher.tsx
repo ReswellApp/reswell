@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useState, useTransition } from "react"
+import { useRef, useState, useTransition } from "react"
 import { Check } from "lucide-react"
 import { setActiveShopAccountAction } from "@/lib/actions/accountMembers"
 import { dispatchHeaderAuthRefresh } from "@/lib/auth/header-auth-refresh"
@@ -105,6 +105,16 @@ export function AccountSwitchDialog({
   const [pending, startTransition] = useTransition()
   const [pendingId, setPendingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const openedAtRef = useRef(0)
+  const wasOpenRef = useRef(false)
+  if (open !== wasOpenRef.current) {
+    wasOpenRef.current = open
+    if (open) openedAtRef.current = Date.now()
+  }
+
+  function retainThroughOpeningClick(event: { preventDefault: () => void }) {
+    if (Date.now() - openedAtRef.current < 500) event.preventDefault()
+  }
 
   const activeOption = options.find((option) => option.accountId === activeAccountId) ?? options[0]
   const activeTitle = activeOption ? accountTitle(activeOption, actorUserId) : "Personal"
@@ -150,8 +160,11 @@ export function AccountSwitchDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
-        className="z-[140] max-w-sm gap-0 overflow-hidden p-0 sm:rounded-2xl"
-        overlayClassName="z-[140]"
+        className="z-[220] max-w-sm gap-0 overflow-hidden p-0 sm:rounded-2xl"
+        overlayClassName="z-[220]"
+        onFocusOutside={retainThroughOpeningClick}
+        onPointerDownOutside={retainThroughOpeningClick}
+        onInteractOutside={retainThroughOpeningClick}
       >
         <DialogHeader className="space-y-1 px-5 pb-4 pr-12 pt-5 text-left">
           <DialogTitle className="text-base">Switch account</DialogTitle>
