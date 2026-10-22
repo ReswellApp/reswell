@@ -9,7 +9,7 @@
  * lib/shipping-deadline.ts by cs-agent.test.ts.
  */
 
-export const CS_AGENT_PROMPT_VERSION = "cs-agent-v7"
+export const CS_AGENT_PROMPT_VERSION = "cs-agent-v8"
 
 /** One optional tool round, then the reply. Extra hops blow the inbox budget. */
 export const CS_AGENT_MAX_STEPS = 2
@@ -203,6 +203,7 @@ Published facts (do not invent different numbers — keep these in sync with sel
 Hard rules:
 - Confirm auth before any order/purchase/sale/tracking/account fact that is not already in the account snapshot. If not signed in, ask them to sign in before sharing their details. Published how-tos do not require sign-in.
 - Never reveal another customer's personal data, orders, or tracking. Never invent Reswell-internal personal or secret details.
+- When this visitor is the seller on an order, never tell them what the buyer paid or a discounted checkout total. Reswell promo codes are covered by Reswell. Point them to the sale page for earnings.
 - Order tools (confirm_auth, list_customer_orders, lookup_order, lookup_tracking, shipping_label_status) only when this turn is about their order. How-tos and small talk: no tools.
 - Rated examples are style and policy hints. Prefer very_good. Treat AVOID coach notes as mistakes you must not repeat. Never copy another customer's specifics.
 - Greet them as ${greetingName}. Never address them by email.
@@ -400,7 +401,11 @@ function formatAccountSnapshot(snapshot: CsAgentAccountSnapshot): string {
               : "no tracking on file"
             const delivery = order.deliveryStatus ? ` · delivery ${order.deliveryStatus}` : ""
             const fulfillment = order.fulfillmentMethod ?? "fulfillment unknown"
-            return `- ${order.role} ${ref} · status ${order.status}${delivery} · $${order.amount.toFixed(2)} order total · ${fulfillment} · ${tracking}`
+            const money =
+              order.role === "sale"
+                ? "seller sale — do not quote what the buyer paid"
+                : `$${order.amount.toFixed(2)} order total`
+            return `- ${order.role} ${ref} · status ${order.status}${delivery} · ${money} · ${fulfillment} · ${tracking}`
           })
           .join("\n")
       : "(no recent orders on this account)"

@@ -18,7 +18,7 @@ import { SHIPPING_DEADLINE_DAYS } from "../shipping-deadline.ts"
 
 describe("cs agent harness", () => {
   it("pins a dedicated prompt version for draft fingerprints", () => {
-    assert.equal(CS_AGENT_PROMPT_VERSION, "cs-agent-v7")
+    assert.equal(CS_AGENT_PROMPT_VERSION, "cs-agent-v8")
   })
 
   it("caps inbox tool rounds, and gives live chat more steps and time", () => {
@@ -184,6 +184,40 @@ describe("cs agent harness", () => {
     assert.match(pack, /purchase 1042/)
     assert.match(pack, /tracking 1Z999/)
     assert.match(pack, /\$350\.00 order total/)
+    const salePack = formatCsAgentContextPack({
+      greetingName: "Sam",
+      caseSubject: "Payout",
+      caseKind: "order_question",
+      caseStatus: "submitted",
+      sourceChannel: "live_chat",
+      requesterRole: "seller",
+      lastCustomerMessage: "What did the buyer pay?",
+      thread: [{ role: "customer", body: "What did the buyer pay?" }],
+      order: null,
+      priorTickets: [],
+      help: [],
+      examples: [],
+      macros: [],
+      accountSnapshot: {
+        signedIn: true,
+        orders: [
+          {
+            id: "22222222-2222-2222-2222-222222222222",
+            orderNum: "V6F8W6",
+            role: "sale",
+            status: "confirmed",
+            amount: 9.92,
+            fulfillmentMethod: "shipping",
+            deliveryStatus: "pending",
+            trackingNumber: null,
+            trackingCarrier: null,
+          },
+        ],
+        listings: [],
+      },
+    })
+    assert.match(salePack, /do not quote what the buyer paid/)
+    assert.equal(salePack.includes("$9.92"), false)
     const veryGoodAt = pack.indexOf("[very_good]")
     const okayAt = pack.indexOf("[okay]")
     assert.ok(veryGoodAt >= 0 && okayAt >= 0 && veryGoodAt < okayAt)

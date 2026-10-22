@@ -13,7 +13,7 @@
  *
  * **Event variables** (from `track-earnings-available.ts`):
  * - `order_num`, `Title`, `sale_url`, `listing_url`, `earnings_url`, `photo_url`
- * - `seller_earnings`, `order_amount`, `platform_fee` (numbers, prefixed with `$` in the template)
+ * - `seller_earnings`, `order_amount` (seller-facing sale total: item + shipping, never the discounted buyer charge), `platform_fee` (numbers, prefixed with `$` in the template)
  * - `fulfillment_method`, `payment_method`
  *
  * **Klaviyo notes**
@@ -115,7 +115,7 @@ export const KLAVIYO_EARNINGS_AVAILABLE_EMAIL_HTML = `<table role="presentation"
       <td style="padding:0 20px;">
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">
           <tr>
-            <td style="${summaryRowStyle}">Order total</td>
+            <td style="${summaryRowStyle}">Sale total</td>
             <td align="right" style="${summaryRowStyle}white-space:nowrap;font-weight:600;">\${{ event|lookup:'order_amount' }}</td>
           </tr>
         </table>

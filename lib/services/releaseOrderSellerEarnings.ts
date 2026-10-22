@@ -6,6 +6,7 @@ import {
   trackKlaviyoSellerOrderConfirmed,
   type KlaviyoSellerOrderConfirmedPayload,
 } from "@/lib/klaviyo/track-seller-order-confirmed"
+import { resolveSellerOrderDisplayAmounts } from "@/lib/seller-order-display-amounts"
 
 /**
  * After buyer confirms delivery or seller verifies pickup: credit seller wallet balance
@@ -39,7 +40,7 @@ export async function releaseOrderSellerEarningsAfterFulfillment(
     const { data: order } = await supabase
       .from("orders")
       .select(
-        "id, order_num, buyer_id, seller_id, listing_id, amount, platform_fee, seller_earnings, fulfillment_method, payment_method",
+        "id, order_num, buyer_id, seller_id, listing_id, amount, shipping_amount, platform_fee, seller_earnings, promo_discount_usd, fulfillment_method, payment_method",
       )
       .eq("id", orderId)
       .maybeSingle()
@@ -58,9 +59,9 @@ export async function releaseOrderSellerEarningsAfterFulfillment(
 
     if (order?.seller_id && listing && order.buyer_id !== order.seller_id) {
       const sellerEmail = await getAuthEmailForUserId(order.seller_id)
-      const amount = Number(order.amount)
-      const platformFee = Number(order.platform_fee)
-      const sellerEarnings = Number(order.seller_earnings)
+      const display = resolveSellerOrderDisplayAmounts(order)
+      const platformFee = display.platformFee
+      const sellerEarnings = display.sellerEarningsAmount
       const klaviyoPayload: KlaviyoSellerOrderConfirmedPayload = {
         sellerUserId: String(order.seller_id),
         sellerEmail,
@@ -71,7 +72,7 @@ export async function releaseOrderSellerEarningsAfterFulfillment(
         listingSection: typeof listing.section === "string" ? listing.section : "",
         listingSlug: typeof listing.slug === "string" ? listing.slug : null,
         listingImageUrl: imageUrls.get(String(listing.id)) ?? null,
-        orderAmount: Number.isFinite(amount) ? amount : 0,
+        orderAmount: display.sellerSaleTotal,
         sellerEarnings: Number.isFinite(sellerEarnings) ? sellerEarnings : 0,
         platformFee: Number.isFinite(platformFee) ? platformFee : 0,
         fulfillmentMethod: order.fulfillment_method === "pickup" ? "pickup" : "shipping",

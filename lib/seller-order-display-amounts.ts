@@ -2,6 +2,10 @@
  * Seller-facing order amounts — promo discounts are Reswell-funded and must not
  * reduce `seller_earnings`, `platform_fee`, or `order_items.item_price` (see checkout finalize).
  * Use these helpers anywhere sellers see sale totals so UI matches ledger math.
+ *
+ * When `hadReswellPromo` is true, `buyerPaidTotal` is the discounted checkout charge.
+ * Do not show that number to the seller. Show `sellerSaleTotal` (item + shipping at
+ * listing rates) or omit the figure.
  */
 
 export type SellerOrderAmountFields = {

@@ -38,6 +38,7 @@ import {
   type OtherPartyProfileSummary,
 } from "@/lib/messages/profile-reviews-loader"
 import { resolveSupportRecipientUserId } from "@/lib/services/resolveSupportRecipientUser"
+import { redactPromoBuyerPaidTotalsForSeller } from "@/lib/messages/redact-seller-buyer-paid-total"
 import { redactSantaBarbaraDropoffShippingLabels } from "@/lib/services/santaBarbaraDropoffOrderAccess"
 import {
   filterConversationsWithMessages,
@@ -1174,6 +1175,16 @@ export async function loadCounterpartyThreads(
         cursor += thread.messages.length
       }
     }
+    const promoRedacted = await redactPromoBuyerPaidTotalsForSeller(
+      service,
+      sellerThreads.flatMap((thread) => thread.messages),
+    )
+    let promoCursor = 0
+    for (const thread of sellerThreads) {
+      const count = thread.messages.length
+      thread.messages = promoRedacted.slice(promoCursor, promoCursor + count)
+      promoCursor += count
+    }
   }
 
   return {
@@ -1360,7 +1371,7 @@ export async function loadConversationThread(
   let hiddenShippingLabelOrderIds: string[] = []
   if (viewer.viewerId === sellerId) {
     const redacted = await redactSantaBarbaraDropoffShippingLabels(service, messages)
-    messages = redacted.messages
+    messages = await redactPromoBuyerPaidTotalsForSeller(service, redacted.messages)
     hiddenShippingLabelOrderIds = redacted.hiddenOrderIds
   }
 

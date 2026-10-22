@@ -605,7 +605,9 @@ export function ConversationThreadClient({
       )
       const hideSellerLabelPayload =
         viewerIsSeller && parseShippingLabelThreadMessage(msg.content, msg.metadata)
-      if (hideSellerLabelPayload) {
+      const hideBuyerPaidTotal =
+        viewerIsSeller && parseOrderPlacedMessageMetadata(msg.metadata) != null
+      if (hideSellerLabelPayload || hideBuyerPaidTotal) {
         void loadThread(isCurrentThread)
       } else {
         stickToBottomRef.current = true

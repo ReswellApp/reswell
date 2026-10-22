@@ -73,7 +73,11 @@ export type KlaviyoOrderRefundedPayload = {
   listingCity?: string | null
   listingState?: string | null
   listingDimensions?: string | null
-  /** Buyer-paid order total (USD). */
+  /**
+   * Summary total shown in the email (USD).
+   * Buyer events: the amount refunded to the buyer.
+   * Seller events: the seller-facing sale total (item + shipping), never the discounted buyer charge.
+   */
   amount: number
   /** Seller net earnings reversed (USD), when known. */
   sellerEarnings?: number | null
