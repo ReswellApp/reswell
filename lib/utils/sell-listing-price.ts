@@ -2,7 +2,7 @@
 export const SELL_LISTING_PRICE_MIN = 0.01
 export const SELL_LISTING_PRICE_MAX = 999_999.99
 
-const PRICE_INPUT_IDS = ["sell-listing-price", "quick-listing-price"] as const
+const PRICE_INPUT_IDS = ["sell-listing-price", "quick-listing-price", "magazine-price"] as const
 
 function roundUsd(amount: number): number {
   return Math.round(amount * 100) / 100

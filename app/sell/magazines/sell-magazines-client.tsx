@@ -28,6 +28,7 @@ import { resolveClientSessionForMutation } from "@/lib/auth/resolve-client-sessi
 import { LocationPicker } from "@/components/location-picker"
 import { AdminBulkListingBanner } from "@/components/features/sell/admin-bulk-listing-banner"
 import { SellEarningsBreakdown } from "@/components/features/sell/sell-earnings-breakdown"
+import { useAdoptAutofilledSellPrice } from "@/components/features/sell/use-adopt-autofilled-sell-price"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
 import { SellListingPhotoGrid } from "@/components/features/sell/sell-listing-photo-grid"
 import { ReswellPackageDimensionsCard } from "@/components/features/sell/reswell-package-dimensions-card"
@@ -52,6 +53,7 @@ import { SellEditLoadError } from "@/components/features/sell/sell-edit-load-err
 import { SellFlowRouteSkeleton } from "@/components/features/sell/sell-flow-route-skeleton"
 import { createClient } from "@/lib/supabase/client"
 import { MAGAZINES_SECTION } from "@/lib/magazine-listing-config"
+import { readLiveSellListingPrice } from "@/lib/utils/sell-listing-price"
 import { createMagazineListingAction } from "@/lib/actions/magazineListingActions"
 import { buildMagazineListingPersistFields } from "@/lib/magazine-listing-persist-fields"
 import {
@@ -61,6 +63,7 @@ import {
 import {
   MAGAZINE_LISTING_MAX_PHOTOS,
   MAGAZINE_LISTING_TITLE_MAX_LENGTH,
+  createMagazineListingSchema,
   updateMagazineListingSchema,
 } from "@/lib/validations/magazine-listing"
 import {
@@ -233,6 +236,8 @@ export default function SellMagazinesFlow({
     setForm((prev) => ({ ...prev, [key]: value }))
   }, [])
 
+  useAdoptAutofilledSellPrice("magazine-price", form.price, (value) => setField("price", value))
+
   const hydrateMagazineEdit = useCallback(
     (listing: OwnedListingForEditRow) => {
       if ((listing as { status?: string }).status === "sold") {
@@ -369,7 +374,7 @@ export default function SellMagazinesFlow({
   const buildPayload = () => ({
     title: form.title,
     description: form.description,
-    price: form.price,
+    price: readLiveSellListingPrice(form.price),
     condition: form.condition,
     stockQuantity: parseBrandNewListingQuantity(form.stockQuantity) ?? 1,
     brand: form.brand,
@@ -517,7 +522,21 @@ export default function SellMagazinesFlow({
         return
       }
 
-      const result = await createMagazineListingAction(payload)
+      const parsedCreate = createMagazineListingSchema.safeParse(payload)
+      if (!parsedCreate.success) {
+        const message =
+          parsedCreate.error.issues[0]?.message ?? "Please check the form and try again."
+        logSellFunnelEvent({
+          listingType: "magazines",
+          event: "validation_failed",
+          message,
+          durationMs: Date.now() - publishStartedAt,
+        })
+        toast.error(message)
+        return
+      }
+
+      const result = await createMagazineListingAction(parsedCreate.data)
       if ("error" in result) {
         const message = sellActionErrorMessage(result.error)
         logSellFunnelEvent({
