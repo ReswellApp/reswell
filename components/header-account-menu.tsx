@@ -86,8 +86,6 @@ function HeaderAccountMenuInner({
   const [menuOpen, setMenuOpen] = useState(false)
   const [switchOpen, setSwitchOpen] = useState(false)
   const openingSwitchRef = useRef(false)
-  /** Ignore the click that opened the menu so it does not also open the switcher. */
-  const openedAtRef = useRef(0)
   const canSwitchAccount = (shopAccess?.options.length ?? 0) > 1
   const workingShop = canSwitchAccount && shopAccess?.actingAsShop === true ? shopAccess : null
   const menuName = workingShop ? workingShop.shopLabel : resolvedDisplayName
@@ -96,17 +94,15 @@ function HeaderAccountMenuInner({
     : resolvedInitial
 
   const onOpenChange = useCallback((open: boolean) => {
-    if (open) openedAtRef.current = Date.now()
     setMenuOpen(open)
     if (!open) forceReleaseBodyScrollLock()
   }, [])
 
-  const openAccountSwitcher = useCallback((event: Event) => {
-    if (Date.now() - openedAtRef.current < 300) {
-      event.preventDefault()
-      return
-    }
+  const openAccountSwitcher = useCallback(() => {
     openingSwitchRef.current = true
+    setMenuOpen(false)
+    // Open after the menu click finishes so a mouse press does not dismiss the popup.
+    window.setTimeout(() => setSwitchOpen(true), 0)
   }, [])
 
   return (
@@ -135,14 +131,19 @@ function HeaderAccountMenuInner({
           if (!openingSwitchRef.current) return
           event.preventDefault()
           openingSwitchRef.current = false
-          setSwitchOpen(true)
         }}
       >
         {canSwitchAccount && shopAccess ? (
-          <DropdownMenuItem
-            className="cursor-pointer items-center gap-3 px-2 py-2 hover:bg-neutral-100 hover:text-foreground focus:bg-neutral-100 focus:text-foreground data-[highlighted]:bg-neutral-100 data-[highlighted]:text-foreground dark:hover:bg-neutral-800 dark:hover:text-foreground dark:focus:bg-neutral-800 dark:focus:text-foreground dark:data-[highlighted]:bg-neutral-800 dark:data-[highlighted]:text-foreground"
+          <button
+            type="button"
+            className="flex w-full cursor-pointer items-center gap-3 rounded-sm px-2 py-2 text-left outline-none transition-colors hover:bg-neutral-100 focus-visible:bg-neutral-100 dark:hover:bg-neutral-800 dark:focus-visible:bg-neutral-800"
             aria-haspopup="dialog"
-            onSelect={openAccountSwitcher}
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={(event) => {
+              event.preventDefault()
+              event.stopPropagation()
+              openAccountSwitcher()
+            }}
           >
             <ProfileAvatar
               profileAvatarUrl={profileAvatarUrl}
@@ -154,10 +155,10 @@ function HeaderAccountMenuInner({
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-foreground">{menuName}</p>
               <p className="truncate text-xs text-muted-foreground">{user.email}</p>
-              <p className="truncate text-xs font-medium text-muted-foreground">Switch account</p>
+              <p className="truncate text-xs font-medium text-foreground">Switch account</p>
             </div>
-            <ChevronRight className="text-muted-foreground" aria-hidden />
-          </DropdownMenuItem>
+            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+          </button>
         ) : (
           <div className="flex items-center gap-3 px-2 py-2">
             <ProfileAvatar
