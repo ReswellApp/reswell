@@ -11,6 +11,7 @@ import { DashboardSidebarNav } from "@/components/features/dashboard/dashboard-s
 import { Button } from "@/components/ui/button"
 import {
   dashboardSidebarCreateButtonClass,
+  dashboardSidebarStickyScrollClass,
   dashboardSidebarWidthClass,
 } from "@/lib/utils/dashboard-display-styles"
 import { isDashboardSupportDeskPath } from "@/lib/utils/dashboard-support-path"
@@ -129,8 +130,14 @@ export function DashboardAppFrame({
           shopifyAdmin ? "gap-6 lg:gap-8" : "gap-6 lg:gap-12 xl:gap-14",
         )}
       >
-        <aside className={cn("hidden shrink-0 lg:block", dashboardSidebarWidthClass)}>
-          <div className="sticky top-24 space-y-6">
+        <aside
+          className={cn(
+            "hidden shrink-0 lg:block",
+            dashboardSidebarWidthClass,
+            dashboardSidebarStickyScrollClass,
+          )}
+        >
+          <div className="space-y-6">
             {actingAsShop ? (
               <WorkingInCard
                 shopLabel={shopLabel ?? "Shop"}
