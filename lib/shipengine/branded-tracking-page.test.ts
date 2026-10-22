@@ -7,7 +7,8 @@ import {
   serviceCodeFromTrackingCarrier,
 } from "./branded-tracking-page"
 import { normalizeBrandedTrackingUrl } from "@/lib/utils/branded-tracking-url"
-import { preferredTrackingUrl } from "@/lib/utils/carrier-tracking-url"
+import { packageTrackHref, preferredTrackingUrl } from "@/lib/utils/carrier-tracking-url"
+import { resolveShipEngineCarrierCode } from "@/lib/shipping/resolve-carrier-code"
 
 const locality = {
   cityLocality: "Santa Barbara",
@@ -69,6 +70,39 @@ describe("branded tracking page", () => {
     assert.match(
       preferredTrackingUrl({ trackingNumber: "1Z999", trackingCarrier: "ups" }) ?? "",
       /^https:\/\/www\.ups\.com\/track/,
+    )
+  })
+
+  it("keeps the carrier code in front of a usps service name", () => {
+    assert.equal(
+      resolveShipEngineCarrierCode("9400111899223197428490", "stamps_com · usps_priority_mail"),
+      "stamps_com",
+    )
+    assert.equal(
+      resolveShipEngineCarrierCode("9400111899223197428490", "usps · usps_media_mail"),
+      "usps",
+    )
+  })
+
+  it("retries the branded page on click when the saved link is a carrier site", () => {
+    const orderId = "11111111-1111-4111-8111-111111111111"
+    assert.equal(
+      packageTrackHref({
+        orderId,
+        brandedUrl: "https://tools.usps.com/go/TrackConfirmAction?tLabels=1",
+        trackingNumber: "9400111899223197428490",
+        trackingCarrier: "usps",
+      }),
+      `/api/orders/${orderId}/track`,
+    )
+    assert.equal(
+      packageTrackHref({
+        orderId,
+        brandedUrl: "https://track.shipengine.com/se/v1/abc",
+        trackingNumber: "9400111899223197428490",
+        trackingCarrier: "usps",
+      }),
+      "https://track.shipengine.com/se/v1/abc",
     )
   })
 })

@@ -6,7 +6,7 @@ import { Download, Printer } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ThreadTrackingDetails } from "@/components/features/messages/thread-tracking-details"
 import { adminShippingLabelMessageLinks } from "@/lib/admin/admin-order-label-visibility"
-import { preferredTrackingUrl } from "@/lib/utils/carrier-tracking-url"
+import { packageTrackHref } from "@/lib/utils/carrier-tracking-url"
 import { cn } from "@/lib/utils"
 import type { ShippingLabelThreadPayload } from "@/lib/messages/shipping-label-thread"
 
@@ -65,7 +65,8 @@ export function ShippingLabelMessageCard({
               : "/admin/orders"
   const dashboardLabel =
     viewerRole === "seller" ? "View sale" : viewerRole === "buyer" ? "View purchase" : "View order"
-  const trackHref = preferredTrackingUrl({
+  const trackHref = packageTrackHref({
+    orderId: payload.orderId,
     brandedUrl: payload.trackingUrl,
     trackingNumber: payload.trackingNumber,
     trackingCarrier: payload.trackingCarrier,
@@ -136,7 +137,7 @@ export function ShippingLabelMessageCard({
             </a>
           </Button>
         ) : null}
-        {trackHref && viewerRole !== "seller" ? (
+        {trackHref ? (
           <Button
             className="h-10 w-full rounded-xl text-[15px] font-semibold"
             variant={canDownload ? "outline" : "default"}
@@ -149,7 +150,7 @@ export function ShippingLabelMessageCard({
         ) : null}
         <Button
           className="h-10 w-full rounded-xl text-[15px] font-semibold"
-          variant={canDownload || (trackHref && viewerRole !== "seller") ? "outline" : "default"}
+          variant={canDownload || trackHref ? "outline" : "default"}
           asChild
         >
           <Link href={dashboardHref}>{dashboardLabel}</Link>

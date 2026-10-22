@@ -5,7 +5,7 @@ import { format, isToday, isYesterday } from "date-fns"
 import { Truck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ThreadTrackingDetails } from "@/components/features/messages/thread-tracking-details"
-import { preferredTrackingUrl } from "@/lib/utils/carrier-tracking-url"
+import { packageTrackHref } from "@/lib/utils/carrier-tracking-url"
 import { cn } from "@/lib/utils"
 import type { OrderShippedThreadPayload } from "@/lib/messages/order-shipped-thread"
 
@@ -50,7 +50,8 @@ export function OrderShippedMessageCard({
               : "/admin/orders"
   const dashboardLabel =
     viewerRole === "seller" ? "View sale" : viewerRole === "buyer" ? "View purchase" : "View order"
-  const trackHref = preferredTrackingUrl({
+  const trackHref = packageTrackHref({
+    orderId: payload.orderId,
     brandedUrl: payload.trackingUrl,
     trackingNumber: payload.trackingNumber,
     trackingCarrier: payload.trackingCarrier,

@@ -91,6 +91,21 @@ function shipEngineOrigin(): string {
   }
 }
 
+function shipEngineErrorHint(data: unknown): string | null {
+  const root = asRecord(data)
+  if (!root) return null
+  if (typeof root.message === "string" && root.message.trim()) {
+    return root.message.trim().slice(0, 180)
+  }
+  const errors = root.errors
+  if (!Array.isArray(errors)) return null
+  const first = asRecord(errors[0])
+  if (typeof first?.message === "string" && first.message.trim()) {
+    return first.message.trim().slice(0, 180)
+  }
+  return null
+}
+
 /**
  * POST https://api.shipengine.com/v-beta/tracking_page.
  * This route is not under the /v1 base used for labels.
@@ -101,32 +116,52 @@ export async function createBrandedTrackingPage(
 ): Promise<string | null> {
   const themeGuid = getShipEngineBrandedTrackingThemeGuid()
   const apiKey = process.env.SHIPENGINE_API_KEY?.trim()
-  if (!themeGuid || !apiKey) return null
+  if (!themeGuid || !apiKey) {
+    console.error("[branded-tracking] create skipped", {
+      theme: Boolean(themeGuid),
+      apiKey: Boolean(apiKey),
+    })
+    return null
+  }
   if (!brandedTrackingCountrySupported(input.shipTo.countryCode)) return null
   if (!brandedTrackingCountrySupported(input.shipFrom.countryCode)) return null
 
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), TRACKING_PAGE_TIMEOUT_MS)
   try {
-    const res = await fetch(`${shipEngineOrigin()}/v-beta/tracking_page`, {
-      method: "POST",
-      signal: controller.signal,
-      headers: {
-        "API-Key": apiKey,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(buildBrandedTrackingPageBody(themeGuid, input)),
+    const withService = buildBrandedTrackingPageBody(themeGuid, input)
+    const withoutService = buildBrandedTrackingPageBody(themeGuid, {
+      ...input,
+      serviceCode: null,
     })
-    const data: unknown = await res.json().catch(() => null)
-    const url = parseBrandedTrackingPageUrl(data)
-    if (!res.ok || !url) {
-      console.error("[branded-tracking] create failed", {
-        status: res.status,
-        carrier: input.carrierCode,
+    const bodies = input.serviceCode?.trim() ? [withService, withoutService] : [withService]
+
+    let lastStatus = 0
+    let lastHint: string | null = null
+    for (const body of bodies) {
+      const res = await fetch(`${shipEngineOrigin()}/v-beta/tracking_page`, {
+        method: "POST",
+        signal: controller.signal,
+        headers: {
+          "API-Key": apiKey,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
       })
-      return null
+      const data: unknown = await res.json().catch(() => null)
+      const url = parseBrandedTrackingPageUrl(data)
+      if (res.ok && url) return url
+      lastStatus = res.status
+      lastHint = shipEngineErrorHint(data)
+      if (res.ok || res.status < 400 || res.status >= 500) break
     }
-    return url
+
+    console.error("[branded-tracking] create failed", {
+      status: lastStatus,
+      carrier: input.carrierCode,
+      hint: lastHint,
+    })
+    return null
   } catch (error) {
     console.error("[branded-tracking] create failed", {
       carrier: input.carrierCode,

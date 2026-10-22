@@ -78,6 +78,8 @@ import { ReviewBuyerControls } from "@/components/review-buyer-controls"
 import { effectiveBoardShippingMode } from "@/lib/services/peerListingShippingQuote"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { resolveMarketplaceOrderBuyerLabel } from "@/lib/order-buyer-display"
+import { ensureOrderBrandedTrackingUrl } from "@/lib/services/ensureOrderBrandedTrackingUrl"
+import { packageTrackHref } from "@/lib/utils/carrier-tracking-url"
 import {
   listingUsesSantaBarbaraDropoff,
   SANTA_BARBARA_DROPOFF_PHONE_DISPLAY,
@@ -367,6 +369,15 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
     trackingNumber: sale.tracking_number,
   })
   const hasShippingTracking = !!sale.tracking_number?.trim()
+  const brandedTrackingUrl = hasShippingTracking
+    ? await ensureOrderBrandedTrackingUrl(sale.id)
+    : null
+  const packageTrackUrl = packageTrackHref({
+    orderId: sale.id,
+    brandedUrl: brandedTrackingUrl,
+    trackingNumber: sale.tracking_number,
+    trackingCarrier: sale.tracking_carrier,
+  })
   const shipsSeparately =
     (sale.shipping_packaging_mode === "separate" || shipments.some((s) => s.packaging_kind === "separate_item")) &&
     (shipments.length > 1 || marketplaceLabels.length > 1)
@@ -867,6 +878,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
               initialDetail={carrierTracking}
               marketplaceDeliveryStatus={sale.delivery_status}
               variant="seller"
+              trackUrl={packageTrackUrl}
             />
           )}
 
