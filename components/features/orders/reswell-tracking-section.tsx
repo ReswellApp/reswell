@@ -218,8 +218,8 @@ export function ReswellTrackingSection(props: {
   const skipLiveFetchOnMount = marketplaceTerminal && (pollOnly || Boolean(initialDetail))
 
   useEffect(() => {
-    // Opening a delivered purchase used to refetch the carrier and could text
-    // "delivered" again. In-transit orders still load live scans on mount.
+    // A finished shipment already has its scans. Skip the carrier call on open;
+    // in-transit orders still load live scans.
     if (skipLiveFetchOnMount) return
     void loadTracking()
   }, [loadTracking, skipLiveFetchOnMount])

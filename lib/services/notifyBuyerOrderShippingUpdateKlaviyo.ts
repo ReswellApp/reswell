@@ -9,8 +9,12 @@ import {
   parseOrderTrackingDetail,
   type OrderTrackingDetail,
 } from "@/lib/shipping/order-tracking-detail"
-import { resolveShippingSmsMilestoneTransition } from "@/lib/shipping/order-shipping-sms-milestone"
-import { shouldEmitOrderShippingUpdate } from "@/lib/shipping/order-tracking-update-key"
+import {
+  claimOrderShippingMilestone,
+  listOrderShippingMilestoneClaims,
+  releaseOrderShippingMilestoneClaim,
+} from "@/lib/db/orderShippingMilestoneClaims"
+import { planOrderShippingNotification } from "@/lib/shipping/order-shipping-notify-plan"
 
 type OrderShippingUpdateRow = {
   buyer_id: string
@@ -22,29 +26,33 @@ type OrderShippingUpdateRow = {
 }
 
 /**
- * Emits **Order Shipping Update** when carrier tracking advances beyond the previous snapshot.
- * Skips the first persisted snapshot (buyers already get **Order Shipped** with tracking info).
- * Skips a refresh that is still "delivered" when that delivery was already recorded — opening
- * the purchase page must not text a months-old delivery again.
- * Attaches buyer phone when on file; sets `sms_milestone` only on OFD / delivered / exception transitions.
+ * Emits **Order Shipping Update** from a carrier snapshot.
+ *
+ * Out for delivery, delivered, and exception each send once per order. The
+ * claim row is the lock, so a webhook, the cron, and a purchase-page refresh
+ * can all observe the same scan and only one of them texts. Opening a purchase
+ * does not email ordinary in-transit scans; pass `notifyScanUpdates` from the
+ * webhook and cron for those.
+ *
+ * Attaches buyer phone when on file. `sms_milestone` is set only on a claimed
+ * milestone. Scan emails leave it empty.
  */
 export async function notifyBuyerOrderShippingUpdateKlaviyo(
   supabase: SupabaseClient,
   orderId: string,
   previousDetailRaw: unknown,
   newDetail: OrderTrackingDetail,
-  options?: { deliveryAlreadyRecorded?: boolean },
+  options?: { notifyScanUpdates?: boolean },
 ): Promise<void> {
   const previousDetail = parseOrderTrackingDetail(previousDetailRaw)
-  if (
-    !shouldEmitOrderShippingUpdate({
-      previous: previousDetail,
-      next: newDetail,
-      deliveryAlreadyRecorded: options?.deliveryAlreadyRecorded === true,
-    })
-  ) {
-    return
-  }
+  const claimedMilestones = await listOrderShippingMilestoneClaims(supabase, orderId)
+  const plan = planOrderShippingNotification({
+    previous: previousDetail,
+    next: newDetail,
+    claimedMilestones,
+    notifyScanUpdates: options?.notifyScanUpdates === true,
+  })
+  if (plan.kind === "skip") return
 
   const { data: row, error } = await supabase
     .from("orders")
@@ -67,6 +75,13 @@ export async function notifyBuyerOrderShippingUpdateKlaviyo(
   const trackingNumber = order.tracking_number?.trim() ?? ""
   if (!trackingNumber) return
 
+  let milestoneClaim: "out_for_delivery" | "delivered" | "exception" | null = null
+  if (plan.kind === "milestone") {
+    const claim = await claimOrderShippingMilestone(supabase, orderId, plan.milestone)
+    if (claim !== "claimed") return
+    milestoneClaim = plan.milestone
+  }
+
   const listingEmbed = order.listings
   const listingTitle = Array.isArray(listingEmbed)
     ? (listingEmbed[0]?.title ?? "")
@@ -88,25 +103,36 @@ export async function notifyBuyerOrderShippingUpdateKlaviyo(
     /* non-critical */
   }
 
-  const smsMilestone = resolveShippingSmsMilestoneTransition(previousDetail, newDetail)
-  const brandedUrl = await ensureOrderBrandedTrackingUrl(orderId)
-  const trackingUrl = preferredTrackingUrl({
-    brandedUrl,
-    trackingNumber,
-    trackingCarrier: order.tracking_carrier,
-  })
+  try {
+    const brandedUrl = await ensureOrderBrandedTrackingUrl(orderId)
+    const trackingUrl = preferredTrackingUrl({
+      brandedUrl,
+      trackingNumber,
+      trackingCarrier: order.tracking_carrier,
+    })
 
-  await trackKlaviyoOrderShippingUpdate({
-    buyerUserId: order.buyer_id,
-    buyerEmail,
-    buyerPhoneE164,
-    orderId,
-    orderNum: order.order_num,
-    listingTitle: listingTitle || "Your order",
-    trackingNumber,
-    trackingCarrier: order.tracking_carrier,
-    trackingUrl,
-    detail: newDetail,
-    smsMilestone,
-  })
+    const sent = await trackKlaviyoOrderShippingUpdate({
+      buyerUserId: order.buyer_id,
+      buyerEmail,
+      buyerPhoneE164,
+      orderId,
+      orderNum: order.order_num,
+      listingTitle: listingTitle || "Your order",
+      trackingNumber,
+      trackingCarrier: order.tracking_carrier,
+      trackingUrl,
+      detail: newDetail,
+      smsMilestone: milestoneClaim,
+    })
+
+    const accepted = sent.ok || sent.status === 409
+    if (milestoneClaim && !accepted) {
+      await releaseOrderShippingMilestoneClaim(supabase, orderId, milestoneClaim)
+    }
+  } catch (error) {
+    if (milestoneClaim) {
+      await releaseOrderShippingMilestoneClaim(supabase, orderId, milestoneClaim)
+    }
+    throw error
+  }
 }

@@ -31,7 +31,7 @@
 
 import { carrierTrackingIndicatesDelivered, resolveCarrierStatusHeadline } from "@/lib/shipping/carrier-status-display"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
-import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
+import { sendKlaviyoServerEvent, type SendKlaviyoServerEventResult } from "@/lib/klaviyo/send-event"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import type { OrderTrackingDetail } from "@/lib/shipping/order-tracking-detail"
 import type { OrderShippingSmsMilestone } from "@/lib/shipping/order-shipping-sms-milestone"
@@ -62,7 +62,7 @@ function latestEventLocation(detail: OrderTrackingDetail): string {
 
 export async function trackKlaviyoOrderShippingUpdate(
   payload: KlaviyoOrderShippingUpdatePayload,
-): Promise<void> {
+): Promise<SendKlaviyoServerEventResult> {
   const origin = publicSiteOrigin()
   const orderUrl = `${origin}/dashboard/purchases/${payload.orderId}`
   const detail = payload.detail
@@ -70,15 +70,20 @@ export async function trackKlaviyoOrderShippingUpdate(
   const updateKey = orderTrackingUpdateKey(detail)
   const phone = payload.buyerPhoneE164?.trim() || null
   const smsMilestone = payload.smsMilestone ?? null
+  // Milestones are one event per order. Scan emails stay keyed to the scan so
+  // a repeated webhook does not send the same in-transit email twice.
+  const uniqueId = smsMilestone
+    ? `order-shipping-milestone-${payload.orderId}-${smsMilestone}`
+    : `order-shipping-update-${payload.orderId}-${updateKey.replace(/\|/g, "-").slice(0, 180)}`
 
-  await sendKlaviyoServerEvent({
+  return sendKlaviyoServerEvent({
     metricName: "Order Shipping Update",
     profile: {
       external_id: payload.buyerUserId,
       email: payload.buyerEmail,
       phone_number: phone,
     },
-    uniqueId: `order-shipping-update-${payload.orderId}-${updateKey.replace(/\|/g, "-").slice(0, 180)}`,
+    uniqueId,
     properties: {
       order_id: payload.orderId,
       order_num: formatOrderNumForCustomer(payload.orderNum, payload.orderId),
