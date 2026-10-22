@@ -72,7 +72,7 @@ describe("parseFacebookThreadInput", () => {
       parseFacebookThreadInput("https://m.facebook.com/marketplace/item/27652488394347640")?.listingId,
       "27652488394347640",
     )
-    assert.equal(parseFacebookThreadInput("https://www.facebook.com/marketplace/item/123")?.listingId, null)
+    assert.equal(parseFacebookThreadInput("https://www.facebook.com/marketplace/item/123"), null)
   })
 
   it("keeps two buyers of the same listing from sharing one thread id", () => {
