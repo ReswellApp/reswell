@@ -91,8 +91,7 @@ const SECTION_META_BY_PREFIX: { prefix: string; meta: DashboardSectionMeta }[] =
     prefix: "/dashboard/sales",
     meta: {
       sectionName: "Sales",
-      description:
-        "Card and wallet purchases of your listings. Shipping addresses appear here when the buyer paid with a card and chose delivery.",
+      description: "Track and fulfill your orders.",
     },
   },
   {
