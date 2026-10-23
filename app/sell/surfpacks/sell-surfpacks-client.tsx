@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { toast } from "sonner"
 import {
-  parseSellListingPrice,
   readLiveSellListingPrice,
   sellListingPriceIsPublishable,
 } from "@/lib/utils/sell-listing-price"
@@ -80,6 +79,7 @@ import { uploadListingImagePairToSupabase } from "@/lib/listing-image-storage"
 import {
   SURFPACK_LISTING_MAX_PHOTOS,
   SURFPACK_LISTING_TITLE_MAX_LENGTH,
+  createSurfpackListingSchema,
   type CreateSurfpackListingInput,
 } from "@/lib/validations/surfpack-listing"
 import { createSurfpackListingAction } from "@/lib/actions/surfpackListingActions"
@@ -818,7 +818,7 @@ export default function SellSurfpacksFlow({ editListingId = null }: { editListin
     const payload = {
       title: form.title,
       description: form.description,
-      price: parseSellListingPrice(livePrice) ?? 0,
+      price: livePrice,
       condition: form.condition as CreateSurfpackListingInput["condition"],
       stockQuantity: parseBrandNewListingQuantity(form.stockQuantity) ?? 1,
       size: form.size || null,
@@ -856,6 +856,13 @@ export default function SellSurfpacksFlow({ editListingId = null }: { editListin
       })),
       videos: readyVideo ? [readyVideo] : [],
     }
+
+    const parsedListing = createSurfpackListingSchema.safeParse(payload)
+    if (!parsedListing.success) {
+      failValidation(parsedListing.error.issues[0]?.message ?? "Please check the form and try again.")
+      return
+    }
+    const listingInput = parsedListing.data as CreateSurfpackListingInput
 
     setSubmitting(true)
     try {
@@ -896,11 +903,11 @@ export default function SellSurfpacksFlow({ editListingId = null }: { editListin
         if (adminImpersonatesListingOwner) {
           const updated = await updateOwnedListingViaApi({
             listingId: editId,
-            listing: buildSurfpackListingPersistFields(payload, { allowPrivilegedShippingModes: true }),
+            listing: buildSurfpackListingPersistFields(listingInput, { allowPrivilegedShippingModes: true }),
             removedImageIds,
-            images: peerImagesToOwnedUpdateOps(payload.images),
+            images: peerImagesToOwnedUpdateOps(listingInput.images),
             removedVideoIds,
-            videos: payload.videos,
+            videos: listingInput.videos,
           })
           if (!updated.ok) {
             const message = sellActionErrorMessage(updated.error)
@@ -935,11 +942,11 @@ export default function SellSurfpacksFlow({ editListingId = null }: { editListin
 
         const updated = await updateOwnedListingViaApi({
           listingId: editId,
-          listing: buildSurfpackListingPersistFields(payload),
+          listing: buildSurfpackListingPersistFields(listingInput),
           removedImageIds,
-          images: peerImagesToOwnedUpdateOps(payload.images),
+          images: peerImagesToOwnedUpdateOps(listingInput.images),
           removedVideoIds,
-          videos: payload.videos,
+          videos: listingInput.videos,
         })
         if (!updated.ok) {
           const message = sellActionErrorMessage(updated.error)
@@ -967,22 +974,22 @@ export default function SellSurfpacksFlow({ editListingId = null }: { editListin
       await finalizePeerListingCreate({
         listingImpersonation,
         listingFields: buildSurfpackListingPersistFields(
-          payload,
+          listingInput,
           listingImpersonation ? { allowPrivilegedShippingModes: true } : undefined,
         ),
-        images: payload.images.map((img) => ({
+        images: listingInput.images.map((img) => ({
           url: img.url,
           thumbnailUrl: img.thumbnailUrl,
         })),
-        videos: payload.videos,
-        title: payload.title,
+        videos: listingInput.videos,
+        title: listingInput.title,
         section: "surfpacks",
         bulkSlotId,
         router,
         publishStartedAt,
         successToast: "Your surfpack is live!",
         setSubmitting,
-        directCreate: () => createSurfpackListingAction(payload),
+        directCreate: () => createSurfpackListingAction(listingInput),
         onCreateSuccess: () => clearRecoveredDraft(),
       })
     } catch (err) {

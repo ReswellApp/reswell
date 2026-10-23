@@ -1111,9 +1111,9 @@ export default function SellFinsFlow({
           listingInput,
           listingImpersonation ? { allowPrivilegedShippingModes: true } : undefined,
         ),
-        images: listingInput.images.map((img) => ({
+        images: listingInput.images.map((img: { url: string; thumbnailUrl?: string | null }) => ({
           url: img.url,
-          thumbnailUrl: img.thumbnailUrl,
+          thumbnailUrl: img.thumbnailUrl ?? null,
         })),
         videos: listingInput.videos,
         title: payload.title,
