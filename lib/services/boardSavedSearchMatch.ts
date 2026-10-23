@@ -28,11 +28,10 @@ import {
   boardDimensionBrowseIlikeTokens,
 } from "@/lib/utils/board-dimension-browse-filter"
 import { resolveSavedSearchSection } from "@/lib/utils/peer-saved-search-criteria"
-import { listingMatchesBrandOnlyQuery } from "@/lib/utils/directory-brand-listing-match"
 import {
-  parseMarketplaceQuery,
-  type MarketplaceParsedQuery,
-} from "@/lib/services/marketplaceQueryParse"
+  listingAppearsInMarketplaceSearch,
+  type SavedSearchMatchCache,
+} from "@/lib/services/marketplaceSearchMembership"
 
 export type ListingRowForBoardAlert = {
   id: string
@@ -378,36 +377,12 @@ export function listingMatchesBoardSavedCriteria(
   return true
 }
 
-/** Reuses marketplace query parses across the saved searches checked for one listing. */
-export type SavedSearchMatchCache = {
-  marketplaceParses: Map<string, MarketplaceParsedQuery | "error">
-}
-
-async function marketplaceParseForAlert(
-  q: string,
-  cache: SavedSearchMatchCache | undefined,
-): Promise<MarketplaceParsedQuery | null> {
-  const key = q.trim().toLowerCase()
-  const cached = cache?.marketplaceParses.get(key)
-  if (cached === "error") return null
-  if (cached) return cached
-
-  try {
-    const parsed = await parseMarketplaceQuery(createServiceRoleClient(), q)
-    cache?.marketplaceParses.set(key, parsed)
-    return parsed
-  } catch (err) {
-    console.error("[board_saved_search] marketplace query parse failed:", err)
-    cache?.marketplaceParses.set(key, "error")
-    return null
-  }
-}
+export type { SavedSearchMatchCache }
 
 /**
  * True when the listing would appear in the saved search.
- * Surfboards prefer Elasticsearch browse replay; other sections use field matching.
- * Brand-only keyword searches ("lost surfboards") match directory brand inventory,
- * the same boards `/search` shows — not a fuzzy token in the description.
+ * A `/search?q=` save uses the same result pass as that page. Surfboard browse
+ * saves replay `/boards`. Other sections use field matching.
  */
 export async function listingMatchesSavedSearch(
   listingId: string,
@@ -421,22 +396,21 @@ export async function listingMatchesSavedSearch(
   if (!sectionAllowsListing(parsed.data, listing.section)) return false
 
   const q = parsed.data.q?.trim() ?? ""
-  if (q && !parsed.data.brandId?.trim() && !parsed.data.brandModelId?.trim()) {
-    const parsedQuery = await marketplaceParseForAlert(q, cache)
-    if (parsedQuery) {
-      const brandOnly = listingMatchesBrandOnlyQuery(listing, {
-        isBrandOnly: parsedQuery.isBrandOnly,
-        brand: parsedQuery.brand,
-        sectionIntent: parsedQuery.sectionIntent,
-      })
-      if (brandOnly !== null) {
-        if (!brandOnly) return false
-        return listingMatchesBoardSavedCriteria(listing, { ...parsed.data, q: undefined })
-      }
+  const target = resolveSavedSearchSection(parsed.data)
+  if (
+    target === "any" &&
+    q &&
+    !parsed.data.brandId?.trim() &&
+    !parsed.data.brandModelId?.trim()
+  ) {
+    const appears = await listingAppearsInMarketplaceSearch(listingId, q, cache)
+    if (appears === null) {
+      return listingMatchesBoardSavedCriteria(listing, rawCriteria)
     }
+    if (!appears) return false
+    return listingMatchesBoardSavedCriteria(listing, { ...parsed.data, q: undefined })
   }
 
-  const target = resolveSavedSearchSection(parsed.data)
   const useBoardsEs =
     (target === "surfboards" || (target === "any" && listing.section === "surfboards")) &&
     isBoardsBrowseEsEnabled()

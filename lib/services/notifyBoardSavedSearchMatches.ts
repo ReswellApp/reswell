@@ -125,7 +125,10 @@ export async function notifyBoardSavedSearchMatchesForListing(
 
   const candidates = searches.filter((s) => s.user_id !== row.user_id)
   const eligible: typeof candidates = []
-  const matchCache: SavedSearchMatchCache = { marketplaceParses: new Map() }
+  const matchCache: SavedSearchMatchCache = {
+    marketplaceParses: new Map(),
+    searchWinners: new Map(),
+  }
   for (const s of candidates) {
     if (!listingListedAfterSavedSearch(listedAt, s.created_at)) continue
     const matches = await listingMatchesSavedSearch(listingId, row, s.criteria, matchCache)

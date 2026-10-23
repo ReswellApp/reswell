@@ -767,6 +767,8 @@ export async function searchListingIdsFromElasticsearch(
     boardTypes?: string[] | null
     /** `newest` ignores relevance and returns the latest matching listing first. */
     order?: "relevance" | "newest"
+    /** When set, the query asks whether these listing ids satisfy the filters. */
+    restrictToIds?: string[]
   },
 ): Promise<string[]> {
   const es = getElasticsearchClient()
@@ -814,6 +816,9 @@ export async function searchListingIdsFromElasticsearch(
 
     const boardTypeFilter = listingBoardTypesFilterClause(options?.boardTypes)
     if (boardTypeFilter) filter.push(boardTypeFilter)
+
+    const restrict = (options?.restrictToIds ?? []).map((id) => id.trim()).filter(Boolean)
+    if (restrict.length > 0) filter.push({ ids: { values: restrict } })
 
     const q = rawQuery.trim()
     const queryBody = options?.typoFallback
