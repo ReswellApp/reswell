@@ -149,6 +149,14 @@ function CheckoutForm() {
     }
   }, [token, fulfillment, addressId, listingIds.join(","), serviceCode])
 
+  const places = [
+    ...new Set(
+      items
+        .map((item) => listedPlace(item.listing.city, item.listing.state))
+        .filter((place): place is string => Boolean(place)),
+    ),
+  ]
+  const placeLine = places.length === 1 ? places[0] : null
   const totalLabel = fulfillment === "pickup" ? money(itemUsd) : quote?.total_label ?? (quoting ? "…" : money(itemUsd))
   const includes =
     fulfillment === "pickup"
@@ -199,7 +207,9 @@ function CheckoutForm() {
         </Text>
       ) : (
         <VerticalScroll contentContainerStyle={styles.list}>
-          {items.map((item) => (
+          {items.map((item) => {
+            const place = listedPlace(item.listing.city, item.listing.state)
+            return (
             <Pressable
               key={item.listing.id}
               onPress={() => router.push({ pathname: "/listing/[id]", params: { id: item.listing.slug || item.listing.id } })}
@@ -218,9 +228,15 @@ function CheckoutForm() {
                   {item.quantity > 1 ? `${item.quantity} × ` : ""}
                   {item.listing.price_label}
                 </Text>
+                {place ? (
+                  <Text style={[styles.meta, { color: colors.muted, fontFamily: fontFamily.text }]}>
+                    {fulfillment === "pickup" ? `Pickup in ${place}` : `Ships from ${place}`}
+                  </Text>
+                ) : null}
               </View>
             </Pressable>
-          ))}
+            )
+          })}
 
           {canShip && canPickup ? (
             <View style={styles.choices}>
@@ -273,6 +289,9 @@ function CheckoutForm() {
             <Pressable onPress={() => setAddressOpen(true)} style={[styles.row, { borderColor: colors.border }]}>
               <View style={styles.rowCopy}>
                 <Text style={[styles.rowTitle, { color: colors.foreground, fontFamily: fontFamily.text }]}>Ship to</Text>
+                <Text style={[styles.meta, { color: colors.muted, fontFamily: fontFamily.text }]}>
+                  {placeLine ? `Ships from ${placeLine}` : "Ships from the seller’s listing location"}
+                </Text>
                 {selected ? (
                   <>
                     <Text style={[styles.addressName, { color: colors.foreground, fontFamily: fontFamily.text }]}>{selected.full_name}</Text>
@@ -288,6 +307,9 @@ function CheckoutForm() {
             <View style={[styles.row, { borderColor: colors.border }]}>
               <View style={styles.rowCopy}>
                 <Text style={[styles.rowTitle, { color: colors.foreground, fontFamily: fontFamily.text }]}>Pickup</Text>
+                <Text style={[styles.meta, { color: colors.foreground, fontFamily: fontFamily.text }]}>
+                  {placeLine ? `Pickup in ${placeLine}` : places.length > 1 ? places.map((place) => `Pickup in ${place}`).join(" · ") : "Pickup location comes from the listing"}
+                </Text>
                 <Text style={[styles.meta, { color: colors.muted, fontFamily: fontFamily.text }]}>
                   You’ll arrange a time with the seller after payment.
                 </Text>
@@ -467,6 +489,13 @@ function Choice({ label, active, onPress }: { label: string; active: boolean; on
       <Text style={[styles.choiceLabel, { color: active ? colors.primaryForeground : colors.foreground, fontFamily: fontFamily.text }]}>{label}</Text>
     </Pressable>
   )
+}
+
+function listedPlace(city: string | null, state: string | null): string | null {
+  const placeCity = city?.trim() ?? ""
+  const placeState = state?.trim() ?? ""
+  if (placeCity && placeState) return `${placeCity}, ${placeState}`
+  return placeCity || placeState || null
 }
 
 function formatAddress(address: MobileCheckoutAddress): string {

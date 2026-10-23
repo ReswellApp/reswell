@@ -1,6 +1,7 @@
 import { Stack, useRouter } from "expo-router"
 import { useEffect, useState } from "react"
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native"
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
+import { TextInput } from "react-native-gesture-handler"
 import { SymbolView } from "expo-symbols"
 import { AccountRow } from "@/components/account-row"
 import { fetchSellCatalog } from "@/lib/api"
@@ -69,21 +70,19 @@ export default function SellHubScreen() {
   }
 
   return (
-    <ScrollView
-      style={{ backgroundColor: colors.background }}
-      keyboardShouldPersistTaps="handled"
-      contentContainerStyle={styles.list}
-    >
+    <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <Stack.Screen options={{ title: "Sell" }} />
       <Text style={[styles.title, { color: colors.foreground, fontFamily: fontFamily.headline }]}>
         Tell us what you're selling
       </Text>
       <View style={[styles.search, { borderColor: colors.border, backgroundColor: colors.image }]}>
-        <SymbolView
-          name={{ ios: "magnifyingglass", android: "search", web: "search" }}
-          size={18}
-          tintColor={colors.muted}
-        />
+        <View pointerEvents="none">
+          <SymbolView
+            name={{ ios: "magnifyingglass", android: "search", web: "search" }}
+            size={18}
+            tintColor={colors.muted}
+          />
+        </View>
         <TextInput
           value={query}
           onChangeText={setQuery}
@@ -91,7 +90,8 @@ export default function SellHubScreen() {
           placeholderTextColor={colors.muted}
           autoCapitalize="words"
           autoCorrect={false}
-          style={[styles.input, { color: colors.foreground, fontFamily: fontFamily.text }]}
+          showSoftInputOnFocus
+          style={[styles.input, { color: colors.foreground }]}
         />
       </View>
       <Text style={[styles.helper, { color: colors.muted, fontFamily: fontFamily.text }]}>
@@ -102,6 +102,12 @@ export default function SellHubScreen() {
           Start your listing from scratch.
         </Text>
       </Pressable>
+    <ScrollView
+      style={styles.results}
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="none"
+      contentContainerStyle={styles.list}
+    >
       {searching ? (
         <Text style={[styles.status, { color: colors.muted, fontFamily: fontFamily.text }]}>Searching…</Text>
       ) : null}
@@ -125,10 +131,13 @@ export default function SellHubScreen() {
         </Pressable>
       ) : null}
     </ScrollView>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
+  screen: { flex: 1 },
+  results: { flex: 1 },
   list: { paddingBottom: 120 },
   title: { fontSize: 28, fontWeight: "600", paddingHorizontal: 16, paddingTop: 8 },
   search: {
@@ -142,7 +151,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
   },
-  input: { flex: 1, fontSize: 16, paddingVertical: 12 },
+  input: { flex: 1, height: 48, fontSize: 16 },
   helper: { fontSize: 15, lineHeight: 22, paddingHorizontal: 16, paddingTop: 14 },
   scratch: { alignSelf: "flex-start", paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4 },
   link: { fontSize: 15, fontWeight: "600", textDecorationLine: "underline" },

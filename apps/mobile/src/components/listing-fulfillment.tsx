@@ -88,20 +88,16 @@ function NoteRow({
   onTitlePress?: () => void
 }) {
   const colors = useReswellColors()
-  const titleNode = (
-    <Text style={[styles.noteTitle, { color: colors.foreground, fontFamily: fontFamily.text }]}>{title}</Text>
-  )
   return (
     <View style={styles.note}>
       <SymbolView name={{ ios: icon, android, web: android }} size={18} tintColor={colors.shipping} />
       <Text style={[styles.noteCopy, { color: colors.muted, fontFamily: fontFamily.text }]}>
-        {onTitlePress ? (
-          <Text style={styles.dashed} onPress={onTitlePress}>
-            {titleNode}
-          </Text>
-        ) : (
-          titleNode
-        )}
+        <Text
+          style={[styles.noteTitle, onTitlePress ? styles.link : null, { color: colors.foreground, fontFamily: fontFamily.text }]}
+          onPress={onTitlePress}
+        >
+          {title}
+        </Text>
         {detail ? ` ${detail}` : null}
       </Text>
     </View>
@@ -133,7 +129,7 @@ const styles = StyleSheet.create({
   note: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
   noteCopy: { flex: 1, fontSize: 15, lineHeight: 21 },
   noteTitle: { fontWeight: "700" },
-  dashed: { textDecorationLine: "underline", textDecorationStyle: "dashed" },
+  link: { textDecorationLine: "underline" },
   place: { marginTop: 8, fontSize: 13, fontWeight: "700", letterSpacing: 0.4 },
   copy: { fontSize: 15, lineHeight: 22 },
   listed: { marginTop: 4, fontSize: 14 },

@@ -44,9 +44,7 @@ export function SellReviewStep({
       <ReviewLine label="Location" value={draft.locationLabel.trim() || `${draft.city.trim()}, ${draft.state.trim()}`} />
       <ReviewLine label="Fulfillment" value={fulfillment} />
       <Text style={[styles.note, { color: colors.muted, fontFamily: fontFamily.text }]}>
-        {signedIn
-          ? "Publishing from the app isn’t connected yet. This draft stays on this screen."
-          : "Sign in to publish. This draft stays on this screen until then."}
+        {signedIn ? "Post listing publishes this to the marketplace." : "Sign in to publish."}
       </Text>
     </View>
   )

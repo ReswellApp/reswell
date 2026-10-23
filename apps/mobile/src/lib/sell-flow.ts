@@ -33,6 +33,9 @@ export type SellShippingMode = (typeof SELL_SHIPPING_MODES)[number]
 export type SellPhoto = {
   id: string
   uri: string
+  /** Public listing-photo URLs after a successful upload. */
+  url?: string
+  thumbnailUrl?: string
 }
 
 export type SellDraft = {
@@ -64,6 +67,8 @@ export type SellDraft = {
   packageWeightLb: string
   packageWeightOz: string
   dropoffLocationId: string
+  /** Website draft id. Empty until Draft saves to the account. */
+  serverDraftId: string
   /** Values for API-defined board spec fields. Keys are field ids from board specs. */
   specs: Record<string, string>
 }
@@ -94,6 +99,7 @@ export function emptySellDraft(): SellDraft {
     packageWeightLb: "",
     packageWeightOz: "",
     dropoffLocationId: "",
+    serverDraftId: "",
     specs: {},
   }
 }

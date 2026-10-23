@@ -22,6 +22,8 @@ export const mobileProfileSettingsSchema = z.object({
   shop_banner_url: z.string().nullable(),
   shop_tile_banner_url: z.string().nullable(),
   signed_in_with: z.enum(["google", "email"]),
+  /** True when this account has an email-and-password login, same check as the website. */
+  has_email_password: z.boolean(),
   message_sms_opt_in: z.boolean(),
   sms_phone: z.string().nullable(),
   addresses: z.array(mobileProfileAddressSchema),
@@ -37,6 +39,23 @@ export const mobileProfileSettingsPatchSchema = z.object({
 
 export const mobileProfileAvatarResultSchema = z.object({
   avatar_url: z.string().nullable(),
+})
+
+export const mobileProfileBannerResultSchema = z.object({
+  banner_url: z.string().nullable(),
+})
+
+export const mobileProfilePasswordSchema = z.object({
+  current_password: z.string().min(1, "Current password is incorrect.").max(72),
+  new_password: z.string().min(6, "Password must be at least 6 characters.").max(72),
+})
+
+export const mobileProfileEmailSchema = z.object({
+  email: z.string().trim().email().max(320),
+})
+
+export const mobileProfileSignInActionSchema = z.object({
+  ok: z.literal(true),
 })
 
 export const mobileMeSchema = z.object({
@@ -706,6 +725,103 @@ export const mobileSellDropoffLocationsSchema = z.object({
 
 export type MobileSellDropoffLocations = z.infer<typeof mobileSellDropoffLocationsSchema>
 
+export const mobileSellPhotoSchema = z.object({
+  url: z.string().url(),
+  thumbnail_url: z.string().url(),
+})
+
+export const mobileSellPublishSchema = z
+  .object({
+    title: z.string().trim().min(1).max(160),
+    description: z.string().trim().min(1).max(8000),
+    brand: z.string().trim().min(1).max(80),
+    model: z.string().trim().min(1).max(80),
+    category: z.enum(MOBILE_LISTING_CATEGORIES),
+    subcategory: z.string().trim().max(40),
+    condition: z.enum(["brand_new", "excellent", "very_good", "good", "fair", "poor"]),
+    price: z.number().positive().max(999_999.99),
+    city: z.string().trim().min(1).max(80),
+    state: z.string().trim().min(1).max(40),
+    location_lat: z.number().gte(-90).lte(90),
+    location_lng: z.number().gte(-180).lte(180),
+    local_pickup: z.boolean(),
+    shipping: z.boolean(),
+    shipping_mode: z.enum(["reswell", "free", "flat"]),
+    shipping_price: z.number().min(0).max(9999).nullable(),
+    package_length: z.string().max(12),
+    package_width: z.string().max(12),
+    package_height: z.string().max(12),
+    package_weight_lb: z.string().max(12),
+    package_weight_oz: z.string().max(12),
+    dropoff_location_id: z.string().uuid().nullable(),
+    specs: z.object({
+      length: z.string().max(20).optional(),
+      width: z.string().max(20).optional(),
+      thickness: z.string().max(20).optional(),
+      volume: z.string().max(20).optional(),
+      fin_setup: z.string().max(40).optional(),
+      fin_system: z.string().max(40).optional(),
+      fins_included: z.string().max(40).optional(),
+      construction: z.string().max(40).optional(),
+    }),
+    images: z.array(mobileSellPhotoSchema).min(1).max(8),
+    draft_id: z.string().uuid().nullable(),
+  })
+  .refine((value) => value.shipping || value.local_pickup, {
+    message: "Choose shipping or local pickup",
+  })
+  .refine((value) => value.category !== "surfboards" || value.subcategory.length > 0, {
+    message: "Choose a board style",
+  })
+
+/** Incomplete sell form. Saved as a hidden website draft, not a live listing. */
+export const mobileSellDraftSchema = z.object({
+  id: z.string().uuid().nullable(),
+  title: z.string().trim().max(160),
+  description: z.string().trim().max(8000),
+  brand: z.string().trim().max(80),
+  model: z.string().trim().max(80),
+  category: z.enum(MOBILE_LISTING_CATEGORIES),
+  subcategory: z.string().trim().max(40),
+  condition: z.enum(["brand_new", "excellent", "very_good", "good", "fair", "poor", ""]),
+  price: z.number().min(0).max(999_999.99).nullable(),
+  city: z.string().trim().max(80),
+  state: z.string().trim().max(40),
+  location_lat: z.number().gte(-90).lte(90).nullable(),
+  location_lng: z.number().gte(-180).lte(180).nullable(),
+  local_pickup: z.boolean(),
+  shipping: z.boolean(),
+  shipping_mode: z.enum(["reswell", "free", "flat"]),
+  package_length: z.string().max(12),
+  package_width: z.string().max(12),
+  package_height: z.string().max(12),
+  package_weight_lb: z.string().max(12),
+  package_weight_oz: z.string().max(12),
+  shipping_price: z.number().min(0).max(9999).nullable(),
+  dropoff_location_id: z.string().uuid().nullable(),
+  specs: z.object({
+    length: z.string().max(20).optional(),
+    width: z.string().max(20).optional(),
+    thickness: z.string().max(20).optional(),
+    volume: z.string().max(20).optional(),
+    fin_setup: z.string().max(40).optional(),
+    fin_system: z.string().max(40).optional(),
+    fins_included: z.string().max(40).optional(),
+    construction: z.string().max(40).optional(),
+  }),
+  images: z.array(mobileSellPhotoSchema).max(8),
+})
+
+export const mobileSellPublishResultSchema = z.object({
+  id: z.string().uuid(),
+  slug: z.string().min(1),
+})
+
+export type MobileSellPublish = z.infer<typeof mobileSellPublishSchema>
+export type MobileSellPublishResult = z.infer<typeof mobileSellPublishResultSchema>
+export type MobileSellDraft = z.infer<typeof mobileSellDraftSchema>
+export type MobileSellPhoto = z.infer<typeof mobileSellPhotoSchema>
+
 /** Google place dropdown for the sell location field. `place_id` is set when Google returned the row. */
 export const mobilePlaceSuggestionSchema = z.object({
   label: z.string().min(1),
@@ -905,6 +1021,10 @@ export const mobileApiErrorSchema = z.object({
 export type MobileProfileSettings = z.infer<typeof mobileProfileSettingsSchema>
 export type MobileProfileSettingsPatch = z.infer<typeof mobileProfileSettingsPatchSchema>
 export type MobileProfileAvatarResult = z.infer<typeof mobileProfileAvatarResultSchema>
+export type MobileProfileBannerResult = z.infer<typeof mobileProfileBannerResultSchema>
+export type MobileProfilePassword = z.infer<typeof mobileProfilePasswordSchema>
+export type MobileProfileEmail = z.infer<typeof mobileProfileEmailSchema>
+export type MobileProfileSignInAction = z.infer<typeof mobileProfileSignInActionSchema>
 export type MobileMe = z.infer<typeof mobileMeSchema>
 export type MobileListingCard = z.infer<typeof mobileListingCardSchema>
 export type MobileListingVideo = z.infer<typeof mobileListingVideoSchema>

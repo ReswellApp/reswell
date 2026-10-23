@@ -19,5 +19,12 @@ export async function loadSellDraft(): Promise<SellDraft | null> {
   if (!parsed || typeof parsed !== "object") return null
   const draft = { ...emptySellDraft(), ...(parsed as Partial<SellDraft>) }
   if (!Array.isArray(draft.photos)) draft.photos = []
+  if (typeof draft.serverDraftId !== "string") draft.serverDraftId = ""
   return draft
+}
+
+export async function clearSellDraft(): Promise<void> {
+  const file = draftFile()
+  const info = await FileSystem.getInfoAsync(file)
+  if (info.exists) await FileSystem.deleteAsync(file)
 }

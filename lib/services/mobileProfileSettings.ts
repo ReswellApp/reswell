@@ -1,8 +1,10 @@
 import {
   mobileProfileAvatarResultSchema,
+  mobileProfileBannerResultSchema,
   mobileProfileSettingsPatchSchema,
   mobileProfileSettingsSchema,
   type MobileProfileAvatarResult,
+  type MobileProfileBannerResult,
   type MobileProfileSettings,
   type MobileProfileSettingsPatch,
 } from "@reswell/api-contract"
@@ -13,6 +15,8 @@ import { validateDisplayName } from "@/lib/display-name-validation"
 import { absoluteProxiedProfileMediaUrl } from "@/lib/public-media-display-src"
 import { loadMessageSmsNotificationsStateForUser } from "@/lib/services/messageSmsNotifications"
 import { removeProfileAvatar, uploadProcessedProfileAvatar } from "@/lib/services/profileAvatar"
+import { removeProfileBanner, uploadProcessedProfileBanner } from "@/lib/services/profileBanner"
+import { removeProfileTileBanner, uploadProcessedProfileTileBanner } from "@/lib/services/profileTileBanner"
 import type { MobileApiResult } from "@/lib/services/mobileApi"
 import type { SupabaseClient, User } from "@supabase/supabase-js"
 
@@ -50,6 +54,7 @@ export async function getMobileProfileSettingsService(
 
   const providers = user.app_metadata?.providers
   const signedInWith = Array.isArray(providers) && providers.includes("google") ? "google" : "email"
+  const hasEmailPassword = user.identities?.some((identity) => identity.provider === "email") === true
   const photo = profile.shop_logo_url || profile.avatar_url
   const parsed = mobileProfileSettingsSchema.safeParse({
     display_name: profile.display_name,
@@ -62,6 +67,7 @@ export async function getMobileProfileSettingsService(
     shop_banner_url: media(profile.shop_banner_url),
     shop_tile_banner_url: media(profile.shop_tile_banner_url),
     signed_in_with: signedInWith,
+    has_email_password: hasEmailPassword,
     message_sms_opt_in: sms.message_sms_opt_in,
     sms_phone: sms.phone,
     addresses: addresses.addresses.map((address) => ({
@@ -132,6 +138,71 @@ export async function uploadMobileProfileAvatarService(
       message: cause instanceof Error ? cause.message : String(cause),
     })
     return { ok: false, status: 500, error: "Unable to update your photo right now" }
+  }
+}
+
+async function uploadMobileBanner(
+  supabase: SupabaseClient,
+  userId: string,
+  file: File,
+  upload: (params: { supabase: SupabaseClient; userId: string; file: File }) => Promise<{ bannerUrl: string }>,
+  label: string,
+): Promise<MobileApiResult<MobileProfileBannerResult>> {
+  try {
+    const uploaded = await upload({ supabase, userId, file })
+    const parsed = mobileProfileBannerResultSchema.safeParse({ banner_url: media(uploaded.bannerUrl) })
+    if (!parsed.success) return { ok: false, status: 500, error: `Unable to update your ${label} right now` }
+    return { ok: true, data: parsed.data }
+  } catch (cause) {
+    console.error("[mobile-api] banner upload failed", {
+      userId,
+      label,
+      timestamp: new Date().toISOString(),
+      message: cause instanceof Error ? cause.message : String(cause),
+    })
+    return { ok: false, status: 500, error: `Unable to update your ${label} right now` }
+  }
+}
+
+export function uploadMobileProfileBannerService(supabase: SupabaseClient, userId: string, file: File) {
+  return uploadMobileBanner(supabase, userId, file, uploadProcessedProfileBanner, "seller banner")
+}
+
+export function uploadMobileProfileTileBannerService(supabase: SupabaseClient, userId: string, file: File) {
+  return uploadMobileBanner(supabase, userId, file, uploadProcessedProfileTileBanner, "tile banner")
+}
+
+export async function removeMobileProfileBannerService(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<MobileApiResult<MobileProfileBannerResult>> {
+  try {
+    await removeProfileBanner({ supabase, userId })
+    return { ok: true, data: { banner_url: null } }
+  } catch (cause) {
+    console.error("[mobile-api] banner remove failed", {
+      userId,
+      timestamp: new Date().toISOString(),
+      message: cause instanceof Error ? cause.message : String(cause),
+    })
+    return { ok: false, status: 500, error: "Unable to remove your seller banner right now" }
+  }
+}
+
+export async function removeMobileProfileTileBannerService(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<MobileApiResult<MobileProfileBannerResult>> {
+  try {
+    await removeProfileTileBanner({ supabase, userId })
+    return { ok: true, data: { banner_url: null } }
+  } catch (cause) {
+    console.error("[mobile-api] tile banner remove failed", {
+      userId,
+      timestamp: new Date().toISOString(),
+      message: cause instanceof Error ? cause.message : String(cause),
+    })
+    return { ok: false, status: 500, error: "Unable to remove your tile banner right now" }
   }
 }
 

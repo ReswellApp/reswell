@@ -3,6 +3,7 @@ import { isDevice } from "expo-device"
 import { Platform } from "react-native"
 import { notifyCartChanged } from "@/lib/cart-count-events"
 import { publicApiUrl } from "@/lib/public-env"
+import type { SellDraft, SellPhoto } from "@/lib/sell-flow"
 import {
   mobileCartResultSchema,
   mobileCashOutResultSchema,
@@ -41,7 +42,9 @@ import {
   mobileOffersSchema,
   mobileOrdersSchema,
   mobileProfileAvatarResultSchema,
+  mobileProfileBannerResultSchema,
   mobileProfileSchema,
+  mobileProfileSignInActionSchema,
   mobileProfileSettingsSchema,
   mobileSellerPageSchema,
   mobileSellersPageSchema,
@@ -65,6 +68,8 @@ import {
   mobileSellBoardSpecsSchema,
   mobileSellCatalogSearchSchema,
   mobileSellDropoffLocationsSchema,
+  mobileSellPhotoSchema,
+  mobileSellPublishResultSchema,
   mobileSellTaxonomySchema,
   mobilePlaceDetailsSchema,
   mobilePlaceSuggestionsSchema,
@@ -109,7 +114,11 @@ import {
   type MobileOrder,
   type MobileProfile,
   type MobileProfileAvatarResult,
+  type MobileProfileBannerResult,
+  type MobileProfileEmail,
+  type MobileProfilePassword,
   type MobileProfileSettings,
+  type MobileProfileSignInAction,
   type MobileProfileSettingsPatch,
   type MobileRecentlyViewed,
   type MobileReviewsPage,
@@ -131,6 +140,8 @@ import {
   type MobileSellBoardSpecs,
   type MobileSellCatalogSearch,
   type MobileSellDropoffLocations,
+  type MobileSellPhoto,
+  type MobileSellPublishResult,
   type MobileSellTaxonomy,
   type MobilePlaceDetails,
   type MobilePlaceSuggestions,
@@ -518,6 +529,28 @@ export function saveProfileSettings(accessToken: string, body: MobileProfileSett
   return read("/api/mobile/v1/me/profile", (data) => mobileProfileSettingsSchema.parse(data), accessToken, body)
 }
 
+export function changeProfileEmail(accessToken: string, body: MobileProfileEmail): Promise<MobileProfileSignInAction> {
+  return read("/api/mobile/v1/me/profile/email", (data) => mobileProfileSignInActionSchema.parse(data), accessToken, body)
+}
+
+export function changeProfilePassword(accessToken: string, body: MobileProfilePassword): Promise<MobileProfileSignInAction> {
+  return read(
+    "/api/mobile/v1/me/profile/password",
+    (data) => mobileProfileSignInActionSchema.parse(data),
+    accessToken,
+    body,
+  )
+}
+
+export function sendProfilePasswordReset(accessToken: string): Promise<MobileProfileSignInAction> {
+  return read(
+    "/api/mobile/v1/me/profile/password-reset",
+    (data) => mobileProfileSignInActionSchema.parse(data),
+    accessToken,
+    {},
+  )
+}
+
 export async function uploadProfileAvatar(accessToken: string, uri: string): Promise<MobileProfileAvatarResult> {
   const form = new FormData()
   form.append("file", { uri, name: "avatar.jpg", type: "image/jpeg" } as unknown as Blob)
@@ -533,6 +566,61 @@ export async function uploadProfileAvatar(accessToken: string, uri: string): Pro
   }
   if (!body || typeof body !== "object" || !("data" in body)) throw new Error("Unexpected response")
   return mobileProfileAvatarResultSchema.parse(body.data)
+}
+
+async function postProfilePhoto(accessToken: string, path: string, uri: string, name: string): Promise<unknown> {
+  const form = new FormData()
+  form.append("file", { uri, name, type: "image/jpeg" } as unknown as Blob)
+  const response = await fetch(`${apiOrigin()}${path}`, {
+    method: "POST",
+    headers: { Accept: "application/json", Authorization: `Bearer ${accessToken}` },
+    body: form,
+  })
+  const body: unknown = await response.json()
+  if (!response.ok) {
+    const message = body && typeof body === "object" && "error" in body && typeof body.error === "string" ? body.error : "Upload failed"
+    throw new Error(message)
+  }
+  if (!body || typeof body !== "object" || !("data" in body)) throw new Error("Unexpected response")
+  return body.data
+}
+
+async function deleteProfilePhoto(accessToken: string, path: string): Promise<unknown> {
+  const response = await fetch(`${apiOrigin()}${path}`, {
+    method: "DELETE",
+    headers: { Accept: "application/json", Authorization: `Bearer ${accessToken}` },
+  })
+  const body: unknown = await response.json()
+  if (!response.ok) {
+    const message = body && typeof body === "object" && "error" in body && typeof body.error === "string" ? body.error : "Unable to remove photo"
+    throw new Error(message)
+  }
+  if (!body || typeof body !== "object" || !("data" in body)) throw new Error("Unexpected response")
+  return body.data
+}
+
+export function uploadProfileBanner(accessToken: string, uri: string): Promise<MobileProfileBannerResult> {
+  return postProfilePhoto(accessToken, "/api/mobile/v1/me/profile/banner", uri, "banner.jpg").then((data) =>
+    mobileProfileBannerResultSchema.parse(data),
+  )
+}
+
+export function removeProfileBanner(accessToken: string): Promise<MobileProfileBannerResult> {
+  return deleteProfilePhoto(accessToken, "/api/mobile/v1/me/profile/banner").then((data) =>
+    mobileProfileBannerResultSchema.parse(data),
+  )
+}
+
+export function uploadProfileTileBanner(accessToken: string, uri: string): Promise<MobileProfileBannerResult> {
+  return postProfilePhoto(accessToken, "/api/mobile/v1/me/profile/tile-banner", uri, "tile.jpg").then((data) =>
+    mobileProfileBannerResultSchema.parse(data),
+  )
+}
+
+export function removeProfileTileBanner(accessToken: string): Promise<MobileProfileBannerResult> {
+  return deleteProfilePhoto(accessToken, "/api/mobile/v1/me/profile/tile-banner").then((data) =>
+    mobileProfileBannerResultSchema.parse(data),
+  )
 }
 
 export async function removeProfileAvatar(accessToken: string): Promise<MobileProfileAvatarResult> {
@@ -791,6 +879,104 @@ export function fetchSellCatalog(query: string): Promise<MobileSellCatalogSearch
   const params = new URLSearchParams({ q: query.trim() })
   return read(`/api/mobile/v1/sell/catalog-search?${params.toString()}`, (data) =>
     mobileSellCatalogSearchSchema.parse(data),
+  )
+}
+
+const DRAFT_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+function sellListingBody(draft: SellDraft, images: MobileSellPhoto[], includeDraftId: boolean) {
+  const price = Number(draft.price)
+  const shippingPrice = Number(draft.shippingPrice)
+  return {
+    title: draft.title.trim(),
+    description: draft.description.trim(),
+    brand: draft.brand.trim(),
+    model: draft.model.trim(),
+    category: draft.category,
+    subcategory: draft.subcategory.trim(),
+    condition: draft.condition,
+    price: Number.isFinite(price) ? price : null,
+    city: draft.city.trim(),
+    state: draft.state.trim(),
+    location_lat: draft.locationLat,
+    location_lng: draft.locationLng,
+    local_pickup: draft.localPickup,
+    shipping: draft.shipping,
+    shipping_mode: draft.shippingMode,
+    shipping_price: draft.shippingPrice.trim() && Number.isFinite(shippingPrice) ? shippingPrice : null,
+    package_length: draft.packageLength,
+    package_width: draft.packageWidth,
+    package_height: draft.packageHeight,
+    package_weight_lb: draft.packageWeightLb,
+    package_weight_oz: draft.packageWeightOz,
+    dropoff_location_id: DRAFT_ID.test(draft.dropoffLocationId) ? draft.dropoffLocationId : null,
+    specs: {
+      length: draft.specs.length,
+      width: draft.specs.width,
+      thickness: draft.specs.thickness,
+      volume: draft.specs.volume,
+      fin_setup: draft.specs.fin_setup,
+      fin_system: draft.specs.fin_system,
+      fins_included: draft.specs.fins_included,
+      construction: draft.specs.construction,
+    },
+    images,
+    ...(includeDraftId ? { draft_id: DRAFT_ID.test(draft.serverDraftId) ? draft.serverDraftId : null } : { id: DRAFT_ID.test(draft.serverDraftId) ? draft.serverDraftId : null }),
+  }
+}
+
+export async function uploadSellPhoto(accessToken: string, uri: string): Promise<MobileSellPhoto> {
+  const form = new FormData()
+  form.append("file", { uri, name: "photo.jpg", type: "image/jpeg" } as unknown as Blob)
+  const response = await fetch(`${apiOrigin()}/api/mobile/v1/sell/photos`, {
+    method: "POST",
+    headers: { Accept: "application/json", Authorization: `Bearer ${accessToken}` },
+    body: form,
+  })
+  const body: unknown = await response.json()
+  if (!response.ok) {
+    const message = body && typeof body === "object" && "error" in body && typeof body.error === "string" ? body.error : "Couldn't upload that photo"
+    throw new Error(message)
+  }
+  if (!body || typeof body !== "object" || !("data" in body)) throw new Error("Couldn't upload that photo")
+  return mobileSellPhotoSchema.parse(body.data)
+}
+
+/** Uploads photos that are still only on the phone. Photos already stored are reused. */
+export async function uploadSellPhotos(accessToken: string, photos: SellPhoto[]): Promise<SellPhoto[]> {
+  const uploaded: SellPhoto[] = []
+  for (const photo of photos) {
+    if (photo.url && photo.thumbnailUrl) {
+      uploaded.push(photo)
+      continue
+    }
+    const stored = await uploadSellPhoto(accessToken, photo.uri)
+    uploaded.push({ ...photo, url: stored.url, thumbnailUrl: stored.thumbnail_url })
+  }
+  return uploaded
+}
+
+export function saveSellListingDraft(accessToken: string, draft: SellDraft): Promise<MobileSellPublishResult> {
+  const images = draft.photos.flatMap((photo) =>
+    photo.url && photo.thumbnailUrl ? [{ url: photo.url, thumbnail_url: photo.thumbnailUrl }] : [],
+  )
+  return read(
+    "/api/mobile/v1/sell/drafts",
+    (data) => mobileSellPublishResultSchema.parse(data),
+    accessToken,
+    sellListingBody(draft, images, false),
+  )
+}
+
+export function publishSellListing(accessToken: string, draft: SellDraft): Promise<MobileSellPublishResult> {
+  const images = draft.photos.flatMap((photo) =>
+    photo.url && photo.thumbnailUrl ? [{ url: photo.url, thumbnail_url: photo.thumbnailUrl }] : [],
+  )
+  return read(
+    "/api/mobile/v1/sell/listings",
+    (data) => mobileSellPublishResultSchema.parse(data),
+    accessToken,
+    sellListingBody(draft, images, true),
   )
 }
 

@@ -10,9 +10,15 @@ import { SellPhotosStep } from "@/components/sell/sell-photos-step"
 import { SellPlaceStep } from "@/components/sell/sell-place-step"
 import { SellPriceStep } from "@/components/sell/sell-price-step"
 import { SellProductStep } from "@/components/sell/sell-product-step"
-import { fetchSellBoardSpecs, fetchSellTaxonomy } from "@/lib/api"
+import {
+  fetchSellBoardSpecs,
+  fetchSellTaxonomy,
+  publishSellListing,
+  saveSellListingDraft,
+  uploadSellPhotos,
+} from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
-import { loadSellDraft, saveSellDraft } from "@/lib/sell-draft"
+import { clearSellDraft, loadSellDraft, saveSellDraft } from "@/lib/sell-draft"
 import {
   emptySellDraft,
   SELL_CONDITIONS,
@@ -37,6 +43,7 @@ export function SellListingFlow({ initial }: { initial?: Partial<SellDraft> }) {
   const [conditionOpen, setConditionOpen] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
   const [draftSaved, setDraftSaved] = useState(false)
+  const [busy, setBusy] = useState<"draft" | "post" | null>(null)
   const category = taxonomy?.categories.find((item) => item.slug === draft.category) ?? null
   const fulfillment = category?.fulfillment ?? null
   const needsBoardSpecs = category?.board_specs === true
@@ -105,22 +112,56 @@ export function SellListingFlow({ initial }: { initial?: Partial<SellDraft> }) {
   }
 
   async function saveDraft() {
-    try {
-      await saveSellDraft(draft)
-      setDraftSaved(true)
-      setNotice("Draft saved on this phone.")
-    } catch {
-      setNotice("Couldn't save this draft.")
-    }
-  }
-
-  function postListing() {
-    if (!ready) return
-    if (!signedIn) {
+    if (busy) return
+    const token = session?.access_token
+    if (!token) {
+      try {
+        await saveSellDraft(draft)
+      } catch {
+        // The account draft is what matters once they sign in.
+      }
       router.push("/sign-in")
       return
     }
-    setNotice("Publishing from the app isn’t connected yet. This listing stays on this screen.")
+    if (!draft.category) {
+      setNotice("Choose a category before saving a draft.")
+      return
+    }
+    setBusy("draft")
+    setNotice(null)
+    try {
+      const photos = await uploadSellPhotos(token, draft.photos)
+      const saved = await saveSellListingDraft(token, { ...draft, photos })
+      const next = { ...draft, photos, serverDraftId: saved.id }
+      setDraft(next)
+      await saveSellDraft(next)
+      setDraftSaved(true)
+      setNotice("Draft saved to your account.")
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Couldn't save this draft.")
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  async function postListing() {
+    if (!ready || busy) return
+    const token = session?.access_token
+    if (!token) {
+      router.push("/sign-in")
+      return
+    }
+    setBusy("post")
+    setNotice(null)
+    try {
+      const photos = await uploadSellPhotos(token, draft.photos)
+      const published = await publishSellListing(token, { ...draft, photos })
+      await clearSellDraft()
+      router.replace(`/listing/${published.slug || published.id}`)
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Couldn't publish this listing.")
+      setBusy(null)
+    }
   }
 
   return (
@@ -136,9 +177,9 @@ export function SellListingFlow({ initial }: { initial?: Partial<SellDraft> }) {
         <Text style={[styles.headerTitle, { color: colors.foreground, fontFamily: fontFamily.headline }]}>
           Sell an item
         </Text>
-        <Pressable accessibilityRole="button" onPress={() => void saveDraft()} hitSlop={8} style={[styles.headerSide, styles.headerSideEnd]}>
+        <Pressable accessibilityRole="button" disabled={busy !== null} onPress={() => void saveDraft()} hitSlop={8} style={[styles.headerSide, styles.headerSideEnd]}>
           <Text style={[styles.draft, { color: draftSaved ? colors.muted : colors.foreground, fontFamily: fontFamily.text }]}>
-            Draft
+            {busy === "draft" ? "Saving" : "Draft"}
           </Text>
         </Pressable>
       </View>
@@ -213,12 +254,12 @@ export function SellListingFlow({ initial }: { initial?: Partial<SellDraft> }) {
       <View style={[styles.footer, { borderTopColor: colors.border, paddingBottom: Math.max(insets.bottom, 12) }]}>
         <Pressable
           accessibilityRole="button"
-          disabled={!ready}
-          onPress={postListing}
-          style={[styles.post, { backgroundColor: colors.foreground, opacity: ready ? 1 : 0.35 }]}
+          disabled={!ready || busy !== null}
+          onPress={() => void postListing()}
+          style={[styles.post, { backgroundColor: colors.foreground, opacity: ready && busy === null ? 1 : 0.35 }]}
         >
           <Text style={[styles.postLabel, { color: colors.background, fontFamily: fontFamily.text }]}>
-            {signedIn ? "Post listing" : "Sign in to publish"}
+            {busy === "post" ? "Posting…" : signedIn ? "Post listing" : "Sign in to publish"}
           </Text>
         </Pressable>
       </View>

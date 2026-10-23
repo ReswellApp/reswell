@@ -28,54 +28,72 @@ export default function CartScreen() {
       isEmpty={items.length === 0}
     >
       <VerticalScroll contentContainerStyle={styles.list}>
-        {items.map((item) => (
-          <View key={item.listing.id} style={[styles.row, { borderColor: colors.border }]}>
-            <Pressable
-              onPress={() =>
-                router.push({ pathname: "/listing/[id]", params: { id: item.listing.slug || item.listing.id } })
-              }
-              style={styles.item}
-            >
-              {item.listing.image_url ? (
-                <Image source={{ uri: item.listing.image_url }} style={[styles.image, { backgroundColor: colors.image }]} contentFit="cover" />
-              ) : (
-                <View style={[styles.image, { backgroundColor: colors.image }]} />
-              )}
-              <View style={styles.copy}>
-                <Text numberOfLines={2} style={[styles.title, { color: colors.foreground, fontFamily: fontFamily.text }]}>
-                  {item.listing.title}
-                </Text>
-                <Text style={[styles.price, { color: colors.foreground, fontFamily: fontFamily.text }]}>
-                  {item.listing.price_label}
-                  {item.quantity > 1 ? ` · Qty ${item.quantity}` : ""}
-                </Text>
-                <Text style={[styles.meta, { color: colors.muted, fontFamily: fontFamily.text }]}>
-                  {[item.listing.shipping_available ? "Shipping" : null, item.listing.local_pickup ? "Local pickup" : null]
-                    .filter(Boolean)
-                    .join(" · ") || "Checkout"}
-                </Text>
-              </View>
-            </Pressable>
-            <View style={styles.actions}>
+        {items.length > 1 ? (
+          <Text style={[styles.note, { color: colors.muted, fontFamily: fontFamily.text }]}>
+            Checkout is one item at a time.
+          </Text>
+        ) : null}
+        {items.map((item) => {
+          const fulfillment = [
+            item.listing.shipping_available ? "Shipping" : null,
+            item.listing.local_pickup ? "Local pickup" : null,
+          ]
+            .filter(Boolean)
+            .join(" · ")
+          return (
+            <View key={item.listing.id} style={[styles.card, { borderColor: colors.border, backgroundColor: colors.background }]}>
               <Pressable
                 onPress={() =>
-                  router.push({ pathname: "/account/checkout", params: { listing: item.listing.id } })
+                  router.push({ pathname: "/listing/[id]", params: { id: item.listing.slug || item.listing.id } })
                 }
+                style={styles.item}
               >
-                <Text style={[styles.checkoutItem, { color: colors.foreground, fontFamily: fontFamily.text }]}>Checkout</Text>
+                {item.listing.image_url ? (
+                  <Image source={{ uri: item.listing.image_url }} style={[styles.image, { backgroundColor: colors.image }]} contentFit="cover" />
+                ) : (
+                  <View style={[styles.image, { backgroundColor: colors.image }]} />
+                )}
+                <View style={styles.copy}>
+                  <Text numberOfLines={2} style={[styles.title, { color: colors.foreground, fontFamily: fontFamily.text }]}>
+                    {item.listing.title}
+                  </Text>
+                  <Text style={[styles.price, { color: colors.foreground, fontFamily: fontFamily.text }]}>
+                    {item.listing.price_label}
+                    {item.quantity > 1 ? ` · Qty ${item.quantity}` : ""}
+                  </Text>
+                  {fulfillment ? (
+                    <Text style={[styles.meta, { color: colors.muted, fontFamily: fontFamily.text }]}>{fulfillment}</Text>
+                  ) : null}
+                </View>
               </Pressable>
-              <Pressable
-                onPress={() => {
-                  const token = session?.access_token
-                  if (!token) return
-                  void setCartItem(token, item.listing.id, 0).then(() => reload())
-                }}
-              >
-                <Text style={[styles.remove, { color: colors.destructive, fontFamily: fontFamily.text }]}>Remove</Text>
-              </Pressable>
+              <View style={styles.actions}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() =>
+                    router.push({ pathname: "/account/checkout", params: { listing: item.listing.id } })
+                  }
+                  style={[styles.checkout, { backgroundColor: colors.foreground }]}
+                >
+                  <Text style={[styles.checkoutLabel, { color: colors.primaryForeground, fontFamily: fontFamily.text }]}>
+                    Checkout
+                  </Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  hitSlop={8}
+                  onPress={() => {
+                    const token = session?.access_token
+                    if (!token) return
+                    void setCartItem(token, item.listing.id, 0).then(() => reload())
+                  }}
+                  style={styles.removeButton}
+                >
+                  <Text style={[styles.remove, { color: colors.destructive, fontFamily: fontFamily.text }]}>Remove</Text>
+                </Pressable>
+              </View>
             </View>
-          </View>
-        ))}
+          )
+        })}
       </VerticalScroll>
       <View
         style={[
@@ -89,48 +107,35 @@ export default function CartScreen() {
             ${subtotal.toFixed(2)}
           </Text>
         </View>
-        {items.length === 1 ? (
-          <Pressable
-            onPress={() =>
-              router.push({ pathname: "/account/checkout", params: { listing: items[0]?.listing.id ?? "" } })
-            }
-            style={[styles.checkout, { backgroundColor: colors.foreground }]}
-          >
-            <Text style={[styles.checkoutLabel, { color: colors.primaryForeground, fontFamily: fontFamily.text }]}>Checkout</Text>
-          </Pressable>
-        ) : null}
       </View>
     </AccountState>
   )
 }
 
 const styles = StyleSheet.create({
-  list: { paddingHorizontal: 16, paddingBottom: 120 },
-  row: { borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 14, gap: 8 },
+  list: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 140, gap: 14 },
+  note: { fontSize: 14, lineHeight: 20, paddingHorizontal: 2 },
+  card: { borderWidth: 1, borderRadius: 16, padding: 14, gap: 14 },
   item: { flexDirection: "row", gap: 12 },
-  image: { width: 84, height: 84, borderRadius: 12 },
-  copy: { flex: 1, gap: 4 },
+  image: { width: 88, height: 88, borderRadius: 12 },
+  copy: { flex: 1, gap: 4, paddingTop: 2 },
   title: { fontSize: 16, fontWeight: "600", lineHeight: 21 },
-  price: { fontSize: 15, fontWeight: "700" },
+  price: { fontSize: 16, fontWeight: "700" },
   meta: { fontSize: 13 },
-  actions: { flexDirection: "row", alignItems: "center", gap: 16 },
-  checkoutItem: { fontSize: 14, fontWeight: "700" },
-  remove: { fontSize: 14, fontWeight: "600" },
+  actions: { flexDirection: "row", alignItems: "center", gap: 10 },
+  checkout: { flex: 1, borderRadius: 12, alignItems: "center", justifyContent: "center", minHeight: 44 },
+  checkoutLabel: { fontSize: 15, fontWeight: "700" },
+  removeButton: { minHeight: 44, paddingHorizontal: 8, alignItems: "center", justifyContent: "center" },
+  remove: { fontSize: 15, fontWeight: "600" },
   footer: {
     position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
     borderTopWidth: StyleSheet.hairlineWidth,
-    gap: 12,
     paddingHorizontal: 16,
-    paddingTop: 12,
+    paddingTop: 14,
   },
   footerCopy: { gap: 2 },
   total: { fontSize: 22, fontWeight: "700" },
-  checkout: { flex: 1, borderRadius: 14, alignItems: "center", paddingVertical: 14 },
-  checkoutLabel: { fontSize: 16, fontWeight: "700" },
 })
