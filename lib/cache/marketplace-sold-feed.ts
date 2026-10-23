@@ -56,8 +56,8 @@ const getCachedSoldFeedPayload = unstable_cache(
 
     return payload
   },
-  // v13 stored the compact "$0.1M" label. v14 stores the raw total and formats on read.
-  ["marketplace-sold-feed-v14"],
+  // v15 (#825 quantity tiles). v16 stores raw gmvTotal and formats the banner on read (#826).
+  ["marketplace-sold-feed-v16"],
   {
     revalidate: MARKETPLACE_SOLD_FEED_REVALIDATE_SECONDS,
     tags: [MARKETPLACE_SOLD_FEED_CACHE_TAG],

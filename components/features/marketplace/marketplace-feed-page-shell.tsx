@@ -21,7 +21,7 @@ const TAB_COPY: Record<
   },
   sold: {
     title: "Sold",
-    subtitle: "Surfboards and fins that found new homes on Reswell.",
+    subtitle: "Surfboards, fins, leashes, and every other category that found a new home on Reswell.",
   },
   shipped: {
     title: "Shipped boards",
@@ -66,7 +66,7 @@ function brandScopedSubtitle(
     return "That brand slug is not in our directory."
   }
   if (brandFilterName && activeTab === "sold") {
-    return `Sold surfboards and fins linked to ${brandFilterName} on Reswell.`
+    return `Sold listings linked to ${brandFilterName} on Reswell.`
   }
   if (brandFilterName && activeTab === "shipped") {
     return `Shipped surfboards linked to ${brandFilterName} on Reswell.`

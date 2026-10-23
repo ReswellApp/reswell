@@ -1,3 +1,4 @@
+import { isBrandNewListingCondition } from "@/lib/listing-stock-quantity"
 import { isAdminSeedListingTitle } from "@/lib/utils/admin-seed-listing"
 
 /** Fields needed to decide whether a listing is visible or purchasable on the public site. */
@@ -70,6 +71,26 @@ export function isListingVisibleInPublicSoldFeed(listing: ListingPublicVisibilit
   if (listing.status !== "sold") return false
   if (listing.hidden_from_site && !listing.archived_at && !listing.soldViaAdminTerminal) return false
   return true
+}
+
+/**
+ * A confirmed unit sale of brand-new stock that is still for sale.
+ * The listing stays `active` until the last unit sells, so `/sold` has to
+ * accept it separately from fully sold rows. Used listings that were refunded
+ * and relisted stay out: they are not brand-new with remaining stock.
+ */
+export function isInStockBrandNewUnitSale(
+  listing: ListingPublicVisibilityFields & {
+    condition?: string | null
+    stock_quantity?: number | null
+  },
+): boolean {
+  if (isAdminSeedListingTitle(listing.title)) return false
+  if (listing.status !== "active") return false
+  if (listing.hidden_from_site) return false
+  if (listing.archived_at) return false
+  if (!isBrandNewListingCondition(listing.condition)) return false
+  return Math.floor(Number(listing.stock_quantity) || 0) > 0
 }
 
 /** Saved favorites: keep sold boards with overlay; drop archived, removed, hidden, and drafts. */

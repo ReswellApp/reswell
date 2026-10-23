@@ -26,7 +26,7 @@ describe("sold feed invalidation", () => {
 
   it("refills /sold from the primary and leaves the long edge window to other pages", () => {
     const cache = readRepo("lib/cache/marketplace-sold-feed.ts")
-    assert.match(cache, /marketplace-sold-feed-v14/)
+    assert.match(cache, /marketplace-sold-feed-v16/)
     assert.match(cache, /formatGmv\(/)
     assert.match(cache, /consistency:\s*"strong"/)
     assert.doesNotMatch(cache, /consistency:\s*"eventual"/)

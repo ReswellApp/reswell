@@ -24,14 +24,23 @@ import {
 const DEFAULT_IMAGE_SIZES =
   "(max-width: 639px) 50vw, (max-width: 1023px) 33vw, (max-width: 1279px) 25vw, 20vw"
 
-/** Top-left “SOLD” stamp on listing tile imagery. */
-export function ListingTileSoldStamp() {
+/** Top-left “SOLD” stamp on listing tile imagery. Pass quantity to note a multi-unit sale. */
+export function ListingTileSoldStamp({ quantity }: { quantity?: number }) {
+  const count =
+    quantity != null && Number.isFinite(quantity) && quantity >= 1 ? Math.floor(quantity) : null
   return (
-    <div
-      className="absolute left-2 top-2 z-10 rounded-full px-2 py-0.5 text-[11px] font-medium text-white"
-      style={{ backgroundColor: "#111" }}
-    >
-      SOLD
+    <div className="absolute left-2 top-2 z-10 flex flex-col items-start gap-1">
+      <div
+        className="rounded-full px-2 py-0.5 text-[11px] font-medium text-white"
+        style={{ backgroundColor: "#111" }}
+      >
+        SOLD
+      </div>
+      {count != null ? (
+        <div className="rounded-full bg-white px-2 py-0.5 text-[11px] font-semibold text-[#111] shadow-sm">
+          {count} sold
+        </div>
+      ) : null}
     </div>
   )
 }

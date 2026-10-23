@@ -23,6 +23,7 @@ import {
 import { cn } from "@/lib/utils"
 import { Package, Truck } from "lucide-react"
 import { listingDetailHref } from "@/lib/listing-href"
+import { soldFeedSalePriceLabel } from "@/lib/sold-feed-sale-label"
 import {
   MarketplaceFeedSoldStatsBanner,
   MarketplaceFeedStatsBanner,
@@ -32,11 +33,16 @@ import { Button } from "@/components/ui/button"
 
 export type SoldFeedListing = {
   id: string
+  /** One checkout of this listing. Repeated sales of the same listing each get a tile. */
+  saleLineId: string
   slug: string | null
   user_id: string
   title: string
   price: number
   soldPrice: number
+  quantitySold: number
+  /** True when the tile should say how many units sold in this checkout. */
+  showSaleQuantity: boolean
   condition: string
   section: string
   city?: string | null
@@ -66,6 +72,7 @@ export interface RecentlySoldPageClientProps {
 interface SoldFeedCursor {
   soldAt: string
   listingId: string
+  saleLineId?: string | null
 }
 
 interface SoldFeedPageResponse {
@@ -110,7 +117,9 @@ function SoldListingCard({
       imageAlt={capitalizeWords(listing.title)}
       imageUrl={listingCardImageSrc(listing.listing_images)}
       price={listing.price}
-      imageTopLeftOverlay={<ListingTileSoldStamp />}
+      imageTopLeftOverlay={
+        <ListingTileSoldStamp quantity={listing.showSaleQuantity ? listing.quantitySold : undefined} />
+      }
       linkLayout="unified"
       linkClassName={homeUniformScrollLinkClass}
       cardClassName={homePeerListingGridCardClass}
@@ -133,7 +142,7 @@ function SoldListingCard({
               "text-[#163060]",
             )}
           >
-            Sold for ${listing.soldPrice.toFixed(2)}
+            {soldFeedSalePriceLabel(listing.quantitySold, listing.soldPrice, listing.showSaleQuantity)}
           </p>
           <div className="mt-1.5 space-y-0.5 text-xs font-normal leading-snug text-muted-foreground">
             <p>
@@ -199,7 +208,7 @@ function SoldFeedGrid({
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
       {listings.map((listing) => (
         <SoldListingCard
-          key={listing.id}
+          key={listing.saleLineId || `${listing.id}:${listing.sold_at}`}
           listing={listing}
           showShippedLabel={variant === "shipped"}
         />
@@ -287,6 +296,7 @@ export function SoldFeedPanel({
         soldAt: cursor.soldAt,
         listingId: cursor.listingId,
       })
+      if (cursor.saleLineId) query.set("saleLineId", cursor.saleLineId)
       if (brandSlug) query.set("brandSlug", brandSlug)
 
       const response = await fetch(`/api/feed/sold?${query.toString()}`, { cache: "no-store" })
@@ -298,10 +308,10 @@ export function SoldFeedPanel({
       if (generation !== serverFeedGeneration.current) return
 
       setListings((current) => {
-        const existingIds = new Set(current.map((listing) => listing.id))
+        const existingKeys = new Set(current.map((listing) => listing.saleLineId || listing.id))
         return [
           ...current,
-          ...page.soldListings.filter((listing) => !existingIds.has(listing.id)),
+          ...page.soldListings.filter((listing) => !existingKeys.has(listing.saleLineId || listing.id)),
         ]
       })
       setCursor(page.nextCursor)
