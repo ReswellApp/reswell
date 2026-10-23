@@ -281,8 +281,8 @@ export async function inviteAccountMember(
 ): Promise<{ success: true } | { error: string }> {
   const shop = await getShopAccountContext()
   if (!shop) return { error: "Sign in to add someone to this account." }
-  if (!canGrantAccountRole(shop.role, input.role)) {
-    return { error: "You can't grant that access on this account." }
+  if (!shop.permissions.has("team.manage") || !canGrantAccountRole(shop.role, input.role)) {
+    return { error: "Only the account owner can add team members." }
   }
 
   const email = normalizeAccountEmail(input.email)
@@ -409,8 +409,8 @@ export async function revokeAccountMember(
   if (member.role !== "manager" && member.role !== "staff") {
     return { error: "That access can't be removed from here." }
   }
-  if (!canGrantAccountRole(shop.role, member.role)) {
-    return { error: "You can't remove that access." }
+  if (!shop.permissions.has("team.manage") || !canGrantAccountRole(shop.role, member.role)) {
+    return { error: "Only the account owner can remove team members." }
   }
 
   const { error: updateError } = await admin

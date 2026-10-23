@@ -274,6 +274,11 @@ export function AccountTeamPanel({
                 ? `These people can work in ${shopLabel}. You stay signed in as ${actorDisplayName || actorEmail || "your account"}.`
                 : "People you add sign in with their own email, then work inside this account. Payouts stay with you."}
             </p>
+            {!canManage && actingAsShop ? (
+              <p className={profileSectionHintClass}>
+                Only the account owner can add or remove people.
+              </p>
+            ) : null}
             {showShopAdminWarning ? (
               <p className={profileSectionHintClass}>
                 Shop access does not open the Reswell admin panel.

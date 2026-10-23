@@ -16,20 +16,21 @@ describe("account role permissions", () => {
     assert.equal(accountRoleHasPermission("owner", "team.manage"), true)
   })
 
-  it("lets a manager run the shop and the team, without payouts", () => {
+  it("lets a manager run the shop without payouts or team changes", () => {
     const permissions = permissionsForAccountRole("manager")
     assert.equal(permissions.has("listings.write"), true)
     assert.equal(permissions.has("orders.write"), true)
-    assert.equal(permissions.has("team.manage"), true)
+    assert.equal(permissions.has("team.read"), true)
+    assert.equal(permissions.has("team.manage"), false)
     assert.equal(permissions.has("payouts.read"), false)
   })
 
-  it("lets staff run the shop without earnings or payouts", () => {
+  it("lets staff run the shop without earnings, payouts, or team changes", () => {
     const permissions = permissionsForAccountRole("staff")
     assert.equal(permissions.has("listings.write"), true)
     assert.equal(permissions.has("messages.write"), true)
     assert.equal(permissions.has("orders.write"), true)
-    assert.equal(permissions.has("team.manage"), true)
+    assert.equal(permissions.has("team.manage"), false)
     assert.equal(permissions.has("team.read"), true)
     assert.equal(permissions.has("profile.manage"), true)
     assert.equal(permissions.has("payouts.read"), false)
@@ -39,12 +40,12 @@ describe("account role permissions", () => {
     )
   })
 
-  it("lets staff and managers invite staff and reserves managers for the owner", () => {
+  it("reserves adding and removing team members for the account owner", () => {
     assert.equal(canGrantAccountRole("owner", "manager"), true)
     assert.equal(canGrantAccountRole("owner", "staff"), true)
-    assert.equal(canGrantAccountRole("manager", "staff"), true)
+    assert.equal(canGrantAccountRole("manager", "staff"), false)
     assert.equal(canGrantAccountRole("manager", "manager"), false)
-    assert.equal(canGrantAccountRole("staff", "staff"), true)
+    assert.equal(canGrantAccountRole("staff", "staff"), false)
     assert.equal(canGrantAccountRole("staff", "manager"), false)
   })
 
