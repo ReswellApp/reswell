@@ -9,7 +9,7 @@ import {
   type ReswellRateableListing,
 } from "@/lib/services/reswellListingShippingRate"
 import {
-  peerCheckoutSharedSection,
+  peerCheckoutRateFamilyForSections,
   type PeerCheckoutShippingRateOption,
 } from "@/lib/shipping/peer-checkout-usps-services"
 
@@ -119,6 +119,7 @@ export async function quoteReswellPeerShippingUsd(input: {
   sellerShipFromAddress?: ProfileAddressRow | null
   selectedRateId?: string | null
   selectedServiceCode?: string | null
+  quantity?: number
 }): Promise<{ ok: true; quote: PeerReswellShippingQuote } | { ok: false; error: string }> {
   const shipTo = buyerProfileAddressToShipTo(input.buyerAddress)
   if (!shipTo.ok) {
@@ -134,6 +135,7 @@ export async function quoteReswellPeerShippingUsd(input: {
     section: input.listing.section ?? null,
     selectedRateId: input.selectedRateId,
     selectedServiceCode: input.selectedServiceCode,
+    quantity: input.quantity,
   })
   if (!result.ok) {
     return result
@@ -169,6 +171,8 @@ export async function computePeerBundleShippingUsd(input: {
   sellerShipFromAddress?: ProfileAddressRow | null
   selectedRateId?: string | null
   selectedServiceCode?: string | null
+  /** Units per listing id. Small-parcel weight is multiplied by this. */
+  quantities?: Record<string, number> | null
 }): Promise<
   | { ok: true; shippingUsd: number; usedReswellQuote: boolean; quote?: PeerReswellShippingQuote }
   | { ok: false; error: string }
@@ -208,7 +212,9 @@ export async function computePeerBundleShippingUsd(input: {
     diagnosticTag: input.diagnosticTag ?? "checkout-bundle",
     sellerShipFromName: input.sellerShipFromName,
     sellerShipFromAddress: input.sellerShipFromAddress,
-    section: peerCheckoutSharedSection(input.listings.map((l) => l.section)),
+    section: null,
+    rateFamily: peerCheckoutRateFamilyForSections(input.listings.map((l) => l.section)),
+    quantities: input.quantities,
     selectedRateId: input.selectedRateId,
     selectedServiceCode: input.selectedServiceCode,
   })
@@ -252,6 +258,8 @@ export async function computePeerCheckoutTotalsUsd(input: {
   selectedServiceCode?: string | null
   /** Flat checkout line that replaces the carrier or seller shipping price. */
   fixedShippingUsd?: number
+  /** Units of this listing. Item price is scaled by the caller; this scales the parcel. */
+  quantity?: number
 }): Promise<
   | {
       ok: true
@@ -340,6 +348,7 @@ export async function computePeerCheckoutTotalsUsd(input: {
     sellerShipFromAddress: input.sellerShipFromAddress,
     selectedRateId: input.selectedRateId,
     selectedServiceCode: input.selectedServiceCode,
+    quantity: input.quantity,
   })
   if (!q.ok) {
     return q

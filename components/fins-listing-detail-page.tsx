@@ -1,4 +1,5 @@
 import { peerBrandNewStockQuantity } from "@/lib/listing-stock-quantity"
+import { listingShippingPriceCaption } from "@/lib/listing-fulfillment"
 import type { ComponentProps } from "react"
 import { notFound } from "next/navigation"
 import Link from "next/link"
@@ -327,23 +328,13 @@ async function renderFinsListingDetailPage({
   const boardShippingCostMode =
     (fin.board_shipping_cost_mode as "reswell" | "flat" | "free" | null) ?? null
 
-  let shippingPriceCaption: string | null = null
-  if (!isSold) {
-    if (!shippingOffered && pickupOffered) {
-      shippingPriceCaption = "Local pickup · shipping not offered"
-    } else if (shippingOffered && boardShippingCostMode === "free") {
-      shippingPriceCaption = "Free shipping included"
-    } else if (shippingOffered && shippingFlatRate > 0) {
-      shippingPriceCaption = `+ $${shippingFlatRate.toFixed(2)} shipping`
-    } else if (shippingOffered && boardShippingCostMode === "reswell") {
-      shippingPriceCaption = "Shipping rate calculated at checkout"
-    } else if (shippingOffered && boardShippingCostMode === "flat") {
-      shippingPriceCaption =
-        shippingFlatRate > 0
-          ? `+ $${shippingFlatRate.toFixed(2)} shipping`
-          : "Flat shipping at checkout"
-    }
-  }
+  const shippingPriceCaption = listingShippingPriceCaption({
+    isSold,
+    shippingOffered,
+    pickupOffered,
+    mode: boardShippingCostMode,
+    flatRate: shippingFlatRate,
+  })
 
   const listingViews = Number((fin.views as number | null) ?? 0)
   let listedRelative: string | null = null

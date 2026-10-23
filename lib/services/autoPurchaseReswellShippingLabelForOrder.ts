@@ -7,6 +7,7 @@ import {
 import { getLatestAdminLabelUrlsForOrder } from "@/lib/db/adminOrderShippingLabels"
 import { getLatestOrderShippingLabelUrlsForOrder } from "@/lib/db/orderShippingLabels"
 import { fetchSellerShipFromLabelName } from "@/lib/db/sellerShipFromLabel"
+import { peerCheckoutRateFamilyForSections } from "@/lib/shipping/peer-checkout-usps-services"
 import {
   listOrderShipmentsWithItems,
   type OrderShipmentWithItems,
@@ -343,9 +344,10 @@ export async function autoPurchaseReswellShippingLabelForOrder(
     if (!listing || !isPeerListingSection(listingSection)) return
 
     const listingById = new Map<string, PeerListingForShippingQuote>()
+    const quantityByListingId: Record<string, number> = {}
     const { data: itemListingRows, error: itemListingErr } = await supabase
       .from("order_items")
-      .select(`listing_id, listings ( ${PEER_SURFBOARD_CHECKOUT_LISTING_SELECT} )`)
+      .select(`listing_id, quantity, listings ( ${PEER_SURFBOARD_CHECKOUT_LISTING_SELECT} )`)
       .eq("order_id", o.id)
 
     if (itemListingErr) {
@@ -354,10 +356,12 @@ export async function autoPurchaseReswellShippingLabelForOrder(
     }
 
     for (const raw of itemListingRows ?? []) {
-      const row = raw as { listing_id?: string; listings?: unknown }
+      const row = raw as { listing_id?: string; quantity?: number | null; listings?: unknown }
       const l = Array.isArray(row.listings) ? row.listings[0] : row.listings
       if (row.listing_id && l) {
         listingById.set(row.listing_id, l as PeerListingForShippingQuote)
+        const qty = Math.floor(Number(row.quantity) || 1)
+        quantityByListingId[row.listing_id] = qty >= 1 ? qty : 1
       }
     }
     if (!listingById.has(o.listing_id)) {
@@ -478,6 +482,10 @@ export async function autoPurchaseReswellShippingLabelForOrder(
             : rateByListing.get(shipment.listing_ids[0] ?? "") ?? null)
 
       if (!rateId) {
+        const shipmentQuantities: Record<string, number> = {}
+        for (const id of shipment.listing_ids) {
+          shipmentQuantities[id] = quantityByListingId[id] ?? 1
+        }
         const quoted = await getCheapestReswellRateForListings({
           listings: listingsForQuote,
           shipTo,
@@ -485,7 +493,11 @@ export async function autoPurchaseReswellShippingLabelForOrder(
           sellerShipFromName,
           sellerShipFromAddress,
           selectedServiceCode: checkoutServiceCode,
-          section: listingsForQuote[0]?.section ?? listingSection ?? null,
+          section: null,
+          rateFamily: peerCheckoutRateFamilyForSections(
+            listingsForQuote.map((listing) => listing.section),
+          ),
+          quantities: shipmentQuantities,
         })
         if (!quoted.ok) {
           anyFailure = true
