@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
+import type { SupabaseClient, User } from "@supabase/supabase-js"
 import { NextRequest, NextResponse } from "next/server"
+import type Stripe from "stripe"
 import { evaluateUserPurchase } from "@/lib/services/accountRestrictions"
 import {
   completeMarketplaceOrderFromPaymentIntent,
@@ -38,6 +40,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  return finalizeMarketplaceOrderForUser(supabase, user, pi)
+}
+
+export async function finalizeMarketplaceOrderForUser(
+  supabase: SupabaseClient,
+  user: User,
+  pi: Stripe.PaymentIntent,
+): Promise<NextResponse> {
   const purchaseGuard = await evaluateUserPurchase(supabase, user.id)
   if (!purchaseGuard.ok) {
     return NextResponse.json(

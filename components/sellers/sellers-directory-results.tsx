@@ -10,6 +10,7 @@ import {
 } from "@/components/sellers/sellers-directory-grid"
 import { useSellersDirectoryQuery } from "@/components/sellers/sellers-directory-query"
 import { filterSellersDirectoryCatalog } from "@/lib/sellers/directory-catalog-filter"
+import { sellersDirectoryPageCopy, sellersDirectorySummary } from "@/lib/sellers/directory-page-copy"
 
 type SellersDirectoryFilteredResultsProps = {
   items: SellerDirectoryGridItem[]
@@ -34,13 +35,7 @@ export function SellersDirectoryFilteredResults({
           <p className="mx-auto mb-8 inline-flex w-full items-center justify-center gap-1.5 text-center">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-background/80 px-3 py-1 text-xs font-medium text-muted-foreground shadow-sm">
               <Users className="h-3.5 w-3.5" aria-hidden />
-              {visible.length} seller{visible.length !== 1 ? "s" : ""}
-              {filtered.totalInventory > 0 ? (
-                <>
-                  <span aria-hidden>·</span>
-                  {filtered.totalInventory} active listing{filtered.totalInventory !== 1 ? "s" : ""}
-                </>
-              ) : null}
+              {sellersDirectorySummary(visible.length, filtered.totalInventory)}
             </span>
           </p>
         ) : null}
@@ -61,9 +56,9 @@ export function SellersDirectoryFilteredResults({
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
               <Store className="h-7 w-7 text-muted-foreground" aria-hidden />
             </div>
-            <h2 className="text-lg font-semibold text-foreground">No sellers found</h2>
+            <h2 className="text-lg font-semibold text-foreground">{sellersDirectoryPageCopy.emptyTitle}</h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              {query ? "Try different search terms." : "Check back soon as more sellers join Reswell."}
+              {query ? sellersDirectoryPageCopy.emptySearchBody : sellersDirectoryPageCopy.emptyBody}
             </p>
             {!query ? (
               <Button className="mt-6 rounded-full" asChild>

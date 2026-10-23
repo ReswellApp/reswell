@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import type { SupabaseClient, User } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/server"
 import { isBlockedOwnListingPurchase } from "@/lib/cart-eligibility"
 import { PEER_LISTING_SECTIONS_FILTER } from "@/lib/peer-listing-sections"
@@ -120,6 +121,15 @@ export async function POST(request: Request) {
     )
   }
 
+  return quoteCheckoutShippingForUser(supabase, user, body)
+}
+
+/** Same ShipEngine quote the website checkout uses. */
+export async function quoteCheckoutShippingForUser(
+  supabase: SupabaseClient,
+  user: User,
+  body: unknown,
+): Promise<NextResponse> {
   const bodyObj = body && typeof body === "object" ? (body as Record<string, unknown>) : {}
   const fromArray = Array.isArray(bodyObj.listing_ids)
     ? bodyObj.listing_ids

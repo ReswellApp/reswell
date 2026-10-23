@@ -134,10 +134,6 @@ export function DashboardOverviewHero({ model }: DashboardOverviewHeroProps) {
             <p className="font-headline mt-6 text-[clamp(2.25rem,6vw,3.25rem)] font-semibold leading-none tracking-[-0.04em] tabular-nums">
               {formatUsd(model.walletBalance)}
             </p>
-            <div className="mt-6 flex items-baseline justify-between gap-3 border-t border-white/15 pt-4 dark:border-black/10">
-              <p className="text-sm text-white/65 dark:text-[#04070E]/60">Lifetime earned</p>
-              <p className="text-sm font-medium tabular-nums">{formatUsd(model.lifetimeEarned)}</p>
-            </div>
           </div>
         </Link>
         ) : null}

@@ -60,9 +60,11 @@ type Mutation = { ok: true } | { ok: false; error: string }
 
 export async function getCoastalShipperDashboard(input: {
   shipperId: string | null
+  /** Mobile sends the bearer-token client. The website uses the cookie session. */
+  session?: SupabaseClient
 }): Promise<Ok<CoastalShipperDashboardData> | NotFound | Failed> {
   try {
-    const gate = await openShipperGate(input.shipperId)
+    const gate = await openShipperGate(input.shipperId, input.session)
     if (!gate.ok) return gate
     const data = await loadDashboard(gate.db, gate.schedule, gate.previewing)
     return { ok: true, data }
@@ -74,9 +76,11 @@ export async function getCoastalShipperDashboard(input: {
 export async function setCoastalShipperDashboardSchedule(input: {
   shipperId: string
   enabled: boolean
+  /** Mobile sends the bearer-token client. The website uses the cookie session. */
+  session?: SupabaseClient
 }): Promise<Mutation> {
   try {
-    const gate = await openShipperGate(input.shipperId)
+    const gate = await openShipperGate(input.shipperId, input.session)
     if (!gate.ok) return { ok: false, error: UNAVAILABLE }
     await setCoastalShipperScheduleEnabled(gate.db, gate.schedule.id, input.enabled)
     return { ok: true }
@@ -107,9 +111,11 @@ export async function setCoastalShipperDashboardJobStatus(input: {
   shipperId: string
   requestId: string
   status: CoastalDeliveryStatus
+  /** Mobile sends the bearer-token client. The website uses the cookie session. */
+  session?: SupabaseClient
 }): Promise<Mutation> {
   try {
-    const gate = await openShipperGate(input.shipperId)
+    const gate = await openShipperGate(input.shipperId, input.session)
     if (!gate.ok) return { ok: false, error: UNAVAILABLE }
     const runIds = gate.schedule.runs.map((run) => run.id)
     const jobs = await listCoastalShipperJobs(gate.db, gate.schedule.id, runIds)
@@ -290,11 +296,14 @@ async function ownShipper(shipperId: string): Promise<
   return { ok: true, db: gate.db, schedule: gate.schedule }
 }
 
-async function openShipperGate(shipperId: string | null): Promise<
+async function openShipperGate(
+  shipperId: string | null,
+  sessionClient?: SupabaseClient,
+): Promise<
   | { ok: true; db: SupabaseClient; schedule: CoastalShipperScheduleRecord; previewing: boolean }
   | NotFound
 > {
-  const session = await createClient()
+  const session = sessionClient ?? (await createClient())
   const {
     data: { user },
   } = await session.auth.getUser()

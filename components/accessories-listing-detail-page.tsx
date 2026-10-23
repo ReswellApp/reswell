@@ -67,10 +67,8 @@ import {
   HomePeerListingScrollTile,
   HomeListingScrollRow,
 } from "@/components/features/home"
-import {
-  HOME_PEER_LISTING_WITH_PROFILE_SELECT,
-  hydrateHomePeerListingRows,
-} from "@/lib/db/home-peer-listing-feed"
+import { fetchMoreFromSellerListings } from "@/lib/db/listing-pdp-seller-listings"
+import { sellerListingRailTitle } from "@/lib/listing-pdp-rail-titles"
 import {
   getCachedReswellPlatformReviewSummary,
   getCachedSellerReviewSummary,
@@ -157,16 +155,12 @@ async function renderAccessoriesListingDetailPage({
     getCachedSellerReviewSummary(sellerId),
     listSellerReviewPreviews(supabase, sellerId),
     getCachedReswellPlatformReviewSummary(),
-    supabase
-      .from("listings")
-      .select(HOME_PEER_LISTING_WITH_PROFILE_SELECT)
-      .eq("user_id", sellerId)
-      .eq("status", "active")
-      .eq("section", ACCESSORIES_SECTION)
-      .eq("hidden_from_site", false)
-      .neq("id", accessory.id)
-      .order("created_at", { ascending: false })
-      .limit(SELLER_ACCESSORIES_PDP_LIMIT),
+    fetchMoreFromSellerListings(supabase, {
+      sellerId,
+      section: ACCESSORIES_SECTION,
+      excludeListingId: accessory.id as string,
+      limit: SELLER_ACCESSORIES_PDP_LIMIT,
+    }),
     brandId ? getBrandById(supabase, brandId) : Promise.resolve(null),
     Promise.all([
       !isSold ? getListingCartHolderCount(supabase, accessory.id) : Promise.resolve(0),
@@ -178,7 +172,7 @@ async function renderAccessoriesListingDetailPage({
     sellerReviewSummaryRes
   const sellerReviewPreviews = sellerReviewPreviewRes.data ?? []
   const reswellPlatformReviewSummary = reswellPlatformReviewSummaryRes
-  const sellerAccessories = hydrateHomePeerListingRows((sellerAccessoriesRes.data ?? []) as Record<string, unknown>[])
+  const sellerAccessories = sellerAccessoriesRes
 
   const sellerAccessoryIds = (sellerAccessories ?? []).map((f) => f.id)
 
@@ -741,7 +735,7 @@ async function renderAccessoriesListingDetailPage({
 
         {sellerAccessories && sellerAccessories.length > 0 && (
           <section className="mt-16 min-w-0 w-full border-t border-neutral-200/90 pt-12 dark:border-neutral-700/70">
-            <h2 className="mb-8 text-2xl font-bold text-foreground">More accessories from this seller</h2>
+            <h2 className="mb-8 text-2xl font-bold text-foreground">{sellerListingRailTitle(ACCESSORIES_SECTION)}</h2>
             <HomeListingScrollRow uniformCardHeights>
               {sellerAccessories.map((item) => (
                 <HomePeerListingScrollTile

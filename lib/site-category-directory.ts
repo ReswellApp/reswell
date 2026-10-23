@@ -32,7 +32,11 @@ export const siteHeaderPeerProductNavLinks: CategoryLink[] = [
   { label: "Traction", href: "/traction" },
 ]
 
-/** Peer gear shown in the desktop + mobile main category bar. Accessories stay off the rail. */
+/**
+ * Peer gear on the desktop header and the mobile category strip.
+ * Order is the live category rail. The mobile browse-rail API reads this same list.
+ * Accessories stay off the rail.
+ */
 export const siteHeaderMainPeerProductNavLinks: CategoryLink[] = [
   { label: "Fins", href: "/fins" },
   { label: "Traction", href: "/traction" },
@@ -45,7 +49,8 @@ export const siteHeaderMainPeerProductNavLinks: CategoryLink[] = [
 ]
 
 /**
- * Full category rail — desktop header (Surfboards root, then peer gear).
+ * Full category rail — desktop header and mobile pill strip.
+ * Surfboards root, then peer gear.
  * Shape browse links (`/boards?type=…`) stay in filters — not in the top rail.
  */
 export const siteHeaderDesktopCategoryNavLinks: CategoryLink[] = [

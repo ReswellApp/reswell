@@ -22,6 +22,7 @@ import {
 } from "@/lib/validations/boardSavedSearch"
 import type { PeerListingSection } from "@/lib/peer-listing-sections"
 import { peerSectionBrowsePath } from "@/lib/utils/peer-saved-search-criteria"
+import { savedSearchCardCopy } from "@reswell/api-contract"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 
@@ -255,6 +256,7 @@ export function BoardsNoResultsSaveSearch({
 
   const compact = variant === "compact"
   const headingId = compact ? "boards-results-save-heading" : "boards-no-results-save-heading"
+  const copy = savedSearchCardCopy({ saved, compact, noun })
 
   return (
     <div className={cn(compact ? "mt-6 sm:mt-8" : "py-8 sm:py-12", className)}>
@@ -275,7 +277,7 @@ export function BoardsNoResultsSaveSearch({
               compact ? "text-sm" : "text-xl sm:text-2xl",
             )}
           >
-            Let the Gear Come to You
+            {copy.title}
           </h2>
           <p
             className={cn(
@@ -285,13 +287,7 @@ export function BoardsNoResultsSaveSearch({
                 : "mx-auto mt-3 max-w-lg text-sm sm:text-base",
             )}
           >
-            {saved
-              ? compact
-                ? `This search is saved. We'll email you when a new matching ${noun} is listed on Reswell.`
-                : `This search is saved. We'll email you when a matching ${noun} is listed on Reswell.`
-              : compact
-                ? `Save this search and we'll email you when a new matching ${noun} is listed on Reswell.`
-                : `Save this search and we'll email you when a matching ${noun} is listed on Reswell.`}
+            {copy.body}
           </p>
         </div>
         <Button
@@ -332,12 +328,12 @@ export function BoardsNoResultsSaveSearch({
           ) : saved ? (
             <>
               <Heart className={cn("fill-black text-black", compact ? "mr-1.5 h-3.5 w-3.5" : "mr-2 h-4 w-4")} aria-hidden />
-              Saved
+              {copy.button}
             </>
           ) : (
             <>
               <Heart className={cn(compact ? "mr-1.5 h-3.5 w-3.5" : "mr-2 h-4 w-4")} aria-hidden />
-              Save Search
+              {copy.button}
             </>
           )}
         </Button>

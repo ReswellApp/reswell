@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Suspense } from "react"
+import { Fragment, Suspense } from "react"
 import { ArrowRight, MapPin } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -22,14 +22,9 @@ import {
   marketingCtaBannerTitleClassName,
 } from "@/components/marketing-cta-banners"
 import { VerifiedBadge } from "@/components/verified-badge"
-import {
-  getCachedHomeRecentlyAddedFinsCatalog,
-  getCachedHomeRecentlyAddedSurfboardsCatalog,
-  getCachedHomeRecentlySoldCatalog,
-  getCachedHomeStableCatalog,
-  getCachedHomeTrendingBrandsCatalog,
-  type HomeFeaturedShop,
-} from "@/lib/cache/home-public-catalog"
+import type { HomeFeaturedShop } from "@/lib/cache/home-public-catalog"
+import { loadHomeFeedSection, visibleHomeFeedSlots } from "@/lib/services/homeFeed"
+import type { HomeFeedListingsSection, HomeFeedSectionId } from "@/lib/services/homeFeedPlan"
 import { listingProductCardSolidClassName } from "@/lib/listing-card-styles"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
 import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
@@ -122,7 +117,19 @@ function ComeFindABoardCta() {
   )
 }
 
-function FeaturedShops({ shops }: { shops: HomeFeaturedShop[] }) {
+function FeaturedShops({
+  shops,
+  title,
+  subtitle,
+  moreHref,
+  moreLabel,
+}: {
+  shops: HomeFeaturedShop[]
+  title: string
+  subtitle: string | null
+  moreHref: string | null
+  moreLabel: string | null
+}) {
   if (shops.length === 0) return null
 
   return (
@@ -131,15 +138,17 @@ function FeaturedShops({ shops }: { shops: HomeFeaturedShop[] }) {
         <div className="container mx-auto">
           <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
-              <h2 className="text-2xl font-bold">Featured Sellers</h2>
-              <p className="text-muted-foreground">Browse gear from local retail stores</p>
+              <h2 className="text-2xl font-bold">{title}</h2>
+              {subtitle ? <p className="text-muted-foreground">{subtitle}</p> : null}
             </div>
-            <Button variant="outline" asChild>
-              <Link href="/sellers">
-                All Sellers
-                <ArrowRight className="ml-1 h-4 w-4" />
-              </Link>
-            </Button>
+            {moreHref && moreLabel ? (
+              <Button variant="outline" asChild>
+                <Link href={moreHref}>
+                  {moreLabel}
+                  <ArrowRight className="ml-1 h-4 w-4" />
+                </Link>
+              </Button>
+            ) : null}
           </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {shops.map((shop) => (
@@ -191,177 +200,111 @@ function FeaturedShops({ shops }: { shops: HomeFeaturedShop[] }) {
   )
 }
 
-/** Homepage retail rail. Set to true to show "Shop From Reswell" again. */
-const SHOW_HOME_RESWELL_SHOP = false
+function PeerListingsRail({ section }: { section: HomeFeedListingsSection }) {
+  return (
+    <FadeInSection>
+      <section className="py-16">
+        <div className="container mx-auto">
+          <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <h2 className="text-2xl font-bold">{section.title}</h2>
+            {section.moreHref && section.moreLabel ? (
+              <Button variant="outline" asChild>
+                <Link
+                  href={section.moreHref}
+                  prefetch={section.moreHref === "/boards" ? boardsBrowseLinkPrefetch("/boards") : undefined}
+                >
+                  {section.moreLabel}
+                  <ArrowRight className="ml-1 h-4 w-4" />
+                </Link>
+              </Button>
+            ) : null}
+          </div>
+          <HomeListingScrollRow uniformCardHeights>
+            {section.listings.map((listing) => (
+              <HomeHydratedPeerListingTile key={listing.id} listing={listing} />
+            ))}
+          </HomeListingScrollRow>
+        </div>
+      </section>
+    </FadeInSection>
+  )
+}
 
-async function HomeStableTail() {
-  const { featuredShops, featuredNew, featuredListingIds } = await getCachedHomeStableCatalog()
+function chromeAfter(id: HomeFeedSectionId) {
+  if (id === "recently_added_fins") return <SellGearCta />
+  if (id === "recently_added_surfboards") return <ContactCta />
+  if (id === "recently_sold") return <ComeFindABoardCta />
+  return null
+}
 
+async function HomeFeedRail({ id }: { id: HomeFeedSectionId }) {
+  const section = await loadHomeFeedSection(id)
+  if (!section) return null
+  if (section.kind === "listings") {
+    return (
+      <>
+        <HomeViewerListingScope ids={section.listingIds} />
+        <PeerListingsRail section={section} />
+      </>
+    )
+  }
+  if (section.kind === "brands") {
+    return <HomeHydratedTrendingBrandsSection title={section.title} rows={section.brands} />
+  }
+  if (section.kind === "shops") {
+    return (
+      <FeaturedShops
+        shops={section.shops}
+        title={section.title}
+        subtitle={section.subtitle}
+        moreHref={section.moreHref}
+        moreLabel={section.moreLabel}
+      />
+    )
+  }
   return (
     <>
-      <HomeViewerListingScope ids={SHOW_HOME_RESWELL_SHOP ? featuredListingIds : []} />
-      <FeaturedShops shops={featuredShops ?? []} />
-      {SHOW_HOME_RESWELL_SHOP && featuredNew.length > 0 ? (
-        <FadeInSection>
-          <section className="bg-offwhite py-16">
-            <div className="container mx-auto">
-              <div className="mb-8">
-                <h2 className="text-2xl font-bold">
-                  <Link href="/reswell/shop" className="hover:opacity-80">
-                    Shop From Reswell
-                  </Link>
-                </h2>
-              </div>
-              <HomeListingScrollRow uniformCardHeights>
-                {featuredNew.map(({ listing, stockQuantity, categoryName }) => (
-                  <HomeHydratedShopNewTile
-                    key={listing.id}
-                    listing={listing}
-                    stockQuantity={stockQuantity}
-                    categoryName={categoryName}
-                  />
-                ))}
-              </HomeListingScrollRow>
+      <HomeViewerListingScope ids={section.listingIds} />
+      <FadeInSection>
+        <section className="bg-offwhite py-16">
+          <div className="container mx-auto">
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold">
+                <Link href={section.href} className="hover:opacity-80">
+                  {section.title}
+                </Link>
+              </h2>
             </div>
-          </section>
-        </FadeInSection>
-      ) : null}
+            <HomeListingScrollRow uniformCardHeights>
+              {section.products.map(({ listing, stockQuantity, categoryName }) => (
+                <HomeHydratedShopNewTile
+                  key={listing.id}
+                  listing={listing}
+                  stockQuantity={stockQuantity}
+                  categoryName={categoryName}
+                />
+              ))}
+            </HomeListingScrollRow>
+          </div>
+        </section>
+      </FadeInSection>
     </>
   )
 }
 
-async function HomeSoldAndRest() {
-  const { featuredRecentlySold, featuredListingIds } = await getCachedHomeRecentlySoldCatalog()
-
-  return (
-    <>
-      <HomeViewerListingScope ids={featuredListingIds} />
-      {featuredRecentlySold && featuredRecentlySold.length > 0 ? (
-        <FadeInSection>
-          <section className="py-16">
-            <div className="container mx-auto">
-              <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="min-w-0">
-                  <h2 className="text-2xl font-bold">Recently sold surfboards</h2>
-                </div>
-                <Button variant="outline" asChild>
-                  <Link href="/sold">
-                    Find More
-                    <ArrowRight className="ml-1 h-4 w-4" />
-                  </Link>
-                </Button>
-              </div>
-              <HomeListingScrollRow uniformCardHeights>
-                {featuredRecentlySold.map((board) => (
-                  <HomeHydratedPeerListingTile key={board.id} listing={board} />
-                ))}
-              </HomeListingScrollRow>
-            </div>
-          </section>
-        </FadeInSection>
-      ) : null}
-      <ComeFindABoardCta />
-      <Suspense fallback={<HomeRailSkeleton label="featured sellers" />}>
-        <HomeStableTail />
-      </Suspense>
-    </>
-  )
-}
-
-async function HomeBoardsAndRest() {
-  const { featuredBoards, featuredListingIds } = await getCachedHomeRecentlyAddedSurfboardsCatalog()
-
-  return (
-    <>
-      <HomeViewerListingScope ids={featuredListingIds} />
-      {featuredBoards && featuredBoards.length > 0 ? (
-        <FadeInSection>
-          <section className="py-16">
-            <div className="container mx-auto">
-              <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex min-w-0 items-center gap-2">
-                  <h2 className="text-2xl font-bold">Recently added surfboards</h2>
-                </div>
-                <Button variant="outline" asChild>
-                  <Link href="/boards" prefetch={boardsBrowseLinkPrefetch("/boards")}>
-                    Find More
-                    <ArrowRight className="ml-1 h-4 w-4" />
-                  </Link>
-                </Button>
-              </div>
-              <HomeListingScrollRow uniformCardHeights>
-                {featuredBoards.map((board) => (
-                  <HomeHydratedPeerListingTile key={board.id} listing={board} />
-                ))}
-              </HomeListingScrollRow>
-            </div>
-          </section>
-        </FadeInSection>
-      ) : null}
-      <ContactCta />
-      <Suspense fallback={<HomeRailSkeleton label="recently sold surfboards" />}>
-        <HomeSoldAndRest />
-      </Suspense>
-    </>
-  )
-}
-
-async function HomeBrandsAndRest() {
-  const { homeTrendingBrandRows } = await getCachedHomeTrendingBrandsCatalog()
-
-  return (
-    <>
-      <HomeHydratedTrendingBrandsSection rows={homeTrendingBrandRows} />
-      <Suspense fallback={<HomeRailSkeleton label="recently added surfboards" />}>
-        <HomeBoardsAndRest />
-      </Suspense>
-    </>
-  )
-}
-
-async function HomeFinsAndRest() {
-  const { featuredFins, featuredListingIds } = await getCachedHomeRecentlyAddedFinsCatalog()
-
-  return (
-    <>
-      <HomeViewerListingScope ids={featuredListingIds} />
-      {featuredFins && featuredFins.length > 0 ? (
-        <FadeInSection>
-          <section className="py-16">
-            <div className="container mx-auto">
-              <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex min-w-0 items-center gap-2">
-                  <h2 className="text-2xl font-bold">Recently added fins</h2>
-                </div>
-                <Button variant="outline" asChild>
-                  <Link href="/fins">
-                    Find More
-                    <ArrowRight className="ml-1 h-4 w-4" />
-                  </Link>
-                </Button>
-              </div>
-              <HomeListingScrollRow uniformCardHeights>
-                {featuredFins.map((fin) => (
-                  <HomeHydratedPeerListingTile key={fin.id} listing={fin} />
-                ))}
-              </HomeListingScrollRow>
-            </div>
-          </section>
-        </FadeInSection>
-      ) : null}
-      <SellGearCta />
-      <Suspense fallback={<HomeRailSkeleton label="trending brands" />}>
-        <HomeBrandsAndRest />
-      </Suspense>
-    </>
-  )
-}
-
-/** Rails under the hero and the recently listed grid. Each catalog streams in page order. */
+/** Rails under the hero. Each visible feed slot streams on its own. */
 export function HomeBelowFold() {
+  const slots = visibleHomeFeedSlots().filter((slot) => slot.id !== "recently_listed")
   return (
-    <Suspense fallback={<HomeRailSkeleton label="recently added fins" />}>
-      <HomeFinsAndRest />
-    </Suspense>
+    <>
+      {slots.map((slot) => (
+        <Fragment key={slot.id}>
+          <Suspense fallback={<HomeRailSkeleton label={slot.title} />}>
+            <HomeFeedRail id={slot.id} />
+          </Suspense>
+          {chromeAfter(slot.id)}
+        </Fragment>
+      ))}
+    </>
   )
 }

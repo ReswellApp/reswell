@@ -1,5 +1,6 @@
 import { HowToSellListingPhoto } from "@/components/features/seller-resources/how-to-sell-listing-photo"
 import { SellerResourcesHero } from "@/components/features/seller-resources/seller-resources-hero"
+import { HOW_TO_SELL_HERO } from "@/lib/seller-resource-copy"
 import { SURFBOARD_SELL_BOARDS_CREATE_HREF } from "@/lib/sell-flow/surfboard-sell-paths"
 import type { HowToSellPhotoExample } from "@/lib/types/seller-resources-how-to-sell"
 
@@ -8,8 +9,8 @@ export function HowToSellHero({ examples }: { examples: HowToSellPhotoExample[] 
 
   return (
     <SellerResourcesHero
-      title="Create your own surf shop"
-      description="Reach buyers nationwide who are looking for boards. List in minutes — free to post, you only pay a fee when it sells."
+      title={HOW_TO_SELL_HERO.title}
+      description={HOW_TO_SELL_HERO.description}
       primaryCta={{ href: SURFBOARD_SELL_BOARDS_CREATE_HREF, label: "Start a listing" }}
       secondaryCta={{ href: "/sell", label: "Go to Sell" }}
       aside={
