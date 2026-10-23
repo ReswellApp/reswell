@@ -74,10 +74,9 @@ export function isListingVisibleInPublicSoldFeed(listing: ListingPublicVisibilit
 }
 
 /**
- * A confirmed unit sale of brand-new stock that is still for sale.
- * The listing stays `active` until the last unit sells, so `/sold` has to
- * accept it separately from fully sold rows. Used listings that were refunded
- * and relisted stay out: they are not brand-new with remaining stock.
+ * Brand-new inventory still for sale after a checkout (`active`, stock > 0).
+ * Sold-feed eligibility is decided in `marketplace_sold_listing_page`; this
+ * helper remains for tests and other call sites outside `/sold`.
  */
 export function isInStockBrandNewUnitSale(
   listing: ListingPublicVisibilityFields & {
