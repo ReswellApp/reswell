@@ -8,7 +8,7 @@
     "scheme": "reswell",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "bundleIdentifier": "app.reswell.mobile",
+      "bundleIdentifier": "app.reswell.reswell",
       "usesAppleSignIn": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
