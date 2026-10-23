@@ -335,6 +335,7 @@ export function listingDeskSpecFromRow(row: ListingDeskSource): ListingDeskSpec 
   const state = text(row.state)
   const box = packageFormFromSource(row)
   const dropoff = text(row.dropoff_location_id)
+  const shipOnly = sellSectionIsShipOnly(row.section)
   return {
     brand: text(row.brand),
     model: text(row.model),
@@ -343,8 +344,8 @@ export function listingDeskSpecFromRow(row: ListingDeskSource): ListingDeskSpec 
     latitude: coordinate(row.latitude),
     longitude: coordinate(row.longitude),
     locationDisplay: [city, state].filter(Boolean).join(", "),
-    localPickup: row.local_pickup !== false,
-    shippingAvailable: row.shipping_available === true,
+    localPickup: shipOnly ? false : row.local_pickup !== false,
+    shippingAvailable: shipOnly || row.shipping_available === true,
     shippingCostMode: normalizeSellShippingCostMode(
       row.board_shipping_cost_mode === "flat" ||
         row.board_shipping_cost_mode === "free" ||

@@ -136,7 +136,7 @@ export function ListingDeskShipping({
               </div>
             </div>
           )}
-          {spec.shippingAvailable && reswellOnly ? (
+          {(shipOnly || spec.shippingAvailable) && reswellOnly ? (
             <div className="space-y-3 rounded-xl border border-border bg-card p-5 shadow-sm sm:p-6">
               <h3 className="text-sm font-semibold text-foreground">Reswell shipping</h3>
               <p className="text-sm leading-relaxed text-muted-foreground">
