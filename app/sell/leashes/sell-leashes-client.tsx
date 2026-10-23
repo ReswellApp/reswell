@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/breadcrumb"
 import { LocationPicker } from "@/components/location-picker"
 import { SellFormSection } from "@/components/features/sell/sell-form-section"
+import { SellShipOnlyDeliverySection } from "@/components/features/sell/sell-ship-only-delivery-section"
 import {
   takeSellCatalogHandoff,
   sellCatalogHandoffToSelectionCard,
@@ -213,8 +214,8 @@ const INITIAL_STATE: LeashFormState = {
   locationLat: null,
   locationLng: null,
   locationDisplay: "",
-  shippingAvailable: false,
-  localPickup: true,
+  shippingAvailable: true,
+  localPickup: false,
   shippingMode: "reswell",
   shippingPrice: "",
   reswellPackageLengthIn: "",
@@ -423,8 +424,8 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
         locationLat: listing.latitude != null ? Number(listing.latitude) : null,
         locationLng: listing.longitude != null ? Number(listing.longitude) : null,
         locationDisplay: [listing.city, listing.state].filter(Boolean).join(", "),
-        shippingAvailable: Boolean(listing.shipping_available),
-        localPickup: listing.local_pickup !== false,
+        shippingAvailable: true,
+        localPickup: false,
         shippingMode,
         shippingPrice: shippingPriceToFormValue(listing.shipping_price),
         ...loadedReswellPackage,
@@ -790,18 +791,13 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
       scrollLeashSellSectionIntoView("sell-leashes-section-delivery")
       return
     }
-    if (!form.shippingAvailable && !form.localPickup) {
-      failValidation("Choose shipping, local pickup, or both.")
-      scrollLeashSellSectionIntoView("sell-leashes-section-delivery")
-      return
-    }
     if (form.shippingAvailable && normalizeSellShippingCostMode(form.shippingMode, submitActorIsAdmin) === "reswell") {
       const L = parseReswellParcelLengthRawToCarrierInches(form.reswellPackageLengthIn)
       const W = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageWidthIn)
       const H = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageHeightIn)
       if (L == null || L <= 0 || W == null || W <= 0 || H == null || H <= 0) {
         failValidation("Enter packed box dimensions for Reswell shipping.")
-        scrollLeashSellSectionIntoView("sell-leashes-section-reswell-package")
+        scrollLeashSellSectionIntoView("sell-leashes-section-delivery")
         return
       }
     }
@@ -828,13 +824,10 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
       locationState: form.locationState,
       locationLat: form.locationLat ?? undefined,
       locationLng: form.locationLng ?? undefined,
-      shippingAvailable: form.shippingAvailable,
-      localPickup: form.localPickup,
-      shippingCostMode: form.shippingAvailable
-        ? normalizeSellShippingCostMode(form.shippingMode, submitActorIsAdmin)
-        : null,
+      shippingAvailable: true,
+      localPickup: false,
+      shippingCostMode: normalizeSellShippingCostMode(form.shippingMode, submitActorIsAdmin),
       shippingPrice:
-        form.shippingAvailable &&
         normalizeSellShippingCostMode(form.shippingMode, submitActorIsAdmin) === "flat"
           ? Number(form.shippingPrice || 0)
           : null,
@@ -1256,189 +1249,14 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
                 </div>
               </SellFormSection>
 
-              <SellFormSection
+              <SellShipOnlyDeliverySection
                 sectionId="sell-leashes-section-delivery"
-                title="Pickup & shipping"
-                description="Pin where the leash is and choose delivery options."
-              >
-                <div className="space-y-8">
-                  <LocationPicker
-                    initialLat={form.locationLat ?? undefined}
-                    initialLng={form.locationLng ?? undefined}
-                    initialCity={form.locationCity}
-                    initialState={form.locationState}
-                    initialDisplay={form.locationDisplay}
-                    onLocationSelect={(loc) => {
-                      setForm((prev) => ({
-                        ...prev,
-                        locationLat: loc.lat,
-                        locationLng: loc.lng,
-                        locationCity: loc.city,
-                        locationState: loc.state,
-                        locationDisplay: loc.displayName,
-                      }))
-                    }}
-                    onLocationClear={() => {
-                      setForm((prev) => ({
-                        ...prev,
-                        locationLat: null,
-                        locationLng: null,
-                        locationCity: "",
-                        locationState: "",
-                        locationDisplay: "",
-                      }))
-                    }}
-                  />
-
-                  <div className="space-y-4 rounded-xl border border-border bg-card p-5 shadow-sm sm:p-6">
-                    <div>
-                      <h3 className="text-sm font-semibold text-foreground">
-                        Delivery options{" "}
-                        <span className="text-destructive" aria-hidden>
-                          *
-                        </span>
-                      </h3>
-                      <p className="mt-1 text-sm text-muted-foreground">You can select both options.</p>
-                    </div>
-                    <div className="space-y-4">
-                      <div className="flex items-start gap-3">
-                        <Checkbox
-                          id="sell-leashes-delivery-shipping"
-                          checked={form.shippingAvailable}
-                          onCheckedChange={(v) => {
-                            const want = v === true
-                            setForm((prev) => ({
-                              ...prev,
-                              shippingAvailable: want,
-                              localPickup: want || prev.localPickup ? prev.localPickup : true,
-                              ...(want
-                                ? {}
-                                : {
-                                    shippingMode: "reswell" as const,
-                                    shippingPrice: "",
-                                    reswellPackageLengthIn: "",
-                                    reswellPackageWidthIn: "",
-                                    reswellPackageHeightIn: "",
-                                    reswellPackageWeightLb: "",
-                                    reswellPackageWeightOz: "",
-                                  }),
-                            }))
-                          }}
-                          className="mt-0.5"
-                        />
-                        <div className="min-w-0 space-y-0.5">
-                          <Label
-                            htmlFor="sell-leashes-delivery-shipping"
-                            className="flex cursor-pointer flex-wrap items-center gap-2 text-sm font-medium leading-snug"
-                          >
-                            Shipping
-                            <Badge
-                              variant="default"
-                              className="h-auto border-0 bg-listingHeart px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white hover:bg-[#2a4170]"
-                            >
-                              Items sell faster
-                            </Badge>
-                          </Label>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-3">
-                        <Checkbox
-                          id="sell-leashes-delivery-pickup"
-                          checked={form.localPickup}
-                          onCheckedChange={(v) => {
-                            const want = v === true
-                            setForm((prev) => ({
-                              ...prev,
-                              localPickup: want,
-                              shippingAvailable:
-                                want || prev.shippingAvailable ? prev.shippingAvailable : true,
-                            }))
-                          }}
-                          className="mt-0.5"
-                        />
-                        <Label
-                          htmlFor="sell-leashes-delivery-pickup"
-                          className="cursor-pointer pt-0.5 text-sm font-medium leading-snug"
-                        >
-                          Local pickup
-                        </Label>
-                      </div>
-                    </div>
-                  </div>
-
-                  {form.shippingAvailable ? (
-                    <div className="space-y-4 rounded-xl border border-border bg-card p-5 shadow-sm sm:p-6">
-                      <h3 className="text-sm font-semibold text-foreground">
-                        Shipping cost in the Continental U.S.{" "}
-                        <span className="text-destructive" aria-hidden>
-                          *
-                        </span>
-                      </h3>
-                      <SellShippingCostModeRadios
-                        idPrefix="sell-leashes"
-                        value={form.shippingMode}
-                        onChange={(mode) => setField("shippingMode", mode)}
-                        flatRateSlot={
-                        <div className="space-y-2 rounded-lg border border-border bg-background p-4 sm:p-5">
-                          <Label htmlFor="leash-shipping-price" className="text-sm font-semibold text-foreground">
-                            Shipping rate{" "}
-                            <span className="text-destructive" aria-hidden>
-                              *
-                            </span>
-                          </Label>
-                          <div className="relative max-w-md">
-                            <span
-                              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm tabular-nums text-muted-foreground"
-                              aria-hidden
-                            >
-                              $
-                            </span>
-                            <Input
-                              id="leash-shipping-price"
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              placeholder="0.00"
-                              value={form.shippingPrice}
-                              onChange={(e) => setField("shippingPrice", e.target.value)}
-                              className="h-11 border-foreground/20 bg-card pl-8 tabular-nums shadow-sm placeholder:text-muted-foreground"
-                            />
-                          </div>
-                        </div>
-                        }
-                      />
-                    </div>
-                  ) : null}
-                </div>
-              </SellFormSection>
-
-              {form.shippingAvailable && form.shippingMode === "reswell" ? (
-                <SellFormSection
-                  sectionId="sell-leashes-section-reswell-package"
-                  title="Reswell shipping: packed size & weight"
-                >
-                  <ReswellPackageDimensionsCard
-                    showHeading={false}
-                    className="rounded-none border-0 bg-transparent p-0 shadow-none"
-                    lengthIn={form.reswellPackageLengthIn}
-                    widthIn={form.reswellPackageWidthIn}
-                    heightIn={form.reswellPackageHeightIn}
-                    weightLb={form.reswellPackageWeightLb}
-                    weightOz={form.reswellPackageWeightOz}
-                    onLengthInChange={(v) =>
-                      setField("reswellPackageLengthIn", normalizeBoardLengthInput(v))
-                    }
-                    onWidthInChange={(v) =>
-                      setField("reswellPackageWidthIn", normalizeTapeStyleInchesInput(v))
-                    }
-                    onHeightInChange={(v) =>
-                      setField("reswellPackageHeightIn", normalizeTapeStyleInchesInput(v))
-                    }
-                    onWeightLbChange={(v) => setField("reswellPackageWeightLb", v)}
-                    onWeightOzChange={(v) => setField("reswellPackageWeightOz", v)}
-                  />
-                </SellFormSection>
-              ) : null}
+                productNoun="Leash"
+                idPrefix="sell-leashes"
+                complete={sellSectionCompletion["sell-leashes-section-delivery"] === true}
+                form={form}
+                onPatch={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
+              />
 
               <SellFormSection
                 sectionId="sell-leashes-section-publish"

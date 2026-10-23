@@ -54,29 +54,6 @@ function shipOnly(
   })
 }
 
-function pickupAndShipping(
-  noun: string,
-  extras: Pick<MobileSellFulfillment, "shipping_options" | "shipping_detail">,
-): MobileSellFulfillment {
-  return mobileSellFulfillmentSchema.parse({
-    title: "Pickup & shipping",
-    description: `Pin where the ${noun} is and choose delivery options.`,
-    hint: "You can select both options.",
-    shipping_default: true,
-    shipping_toggle: true,
-    shipping_label: "Shipping",
-    shipping_badge: "Items sell faster",
-    shipping_detail: extras.shipping_detail,
-    delivery_title: "Delivery options",
-    cost_title: extras.shipping_options.length > 0 ? "Shipping cost in the Continental U.S." : null,
-    local_pickup: true,
-    local_pickup_default: false,
-    shipping_options: extras.shipping_options,
-    package_dimensions: true,
-    dropoff: false,
-  })
-}
-
 const FULFILLMENT_BY_CATEGORY: Record<MobileListingCategory, MobileSellFulfillment> = {
   surfboards: mobileSellFulfillmentSchema.parse({
     title: "Shipping",
@@ -98,9 +75,23 @@ const FULFILLMENT_BY_CATEGORY: Record<MobileListingCategory, MobileSellFulfillme
   }),
   fins: shipOnly("Fin", SHIPPING_COST_OPTIONS),
   wetsuits: shipOnly("Wetsuit", SHIPPING_COST_OPTIONS),
-  apparel: pickupAndShipping("apparel", {
-    shipping_options: [],
+  apparel: mobileSellFulfillmentSchema.parse({
+    title: "Shipping",
+    description:
+      "Pin where you're shipping from and choose how shipping works. Apparel listings ship only — local pickup isn't available.",
+    hint: null,
+    shipping_default: true,
+    shipping_toggle: false,
+    shipping_label: "Shipping",
+    shipping_badge: null,
     shipping_detail: APPAREL_SHIPPING_DETAIL,
+    delivery_title: null,
+    cost_title: null,
+    local_pickup: false,
+    local_pickup_default: false,
+    shipping_options: [],
+    package_dimensions: true,
+    dropoff: false,
   }),
   magazines: mobileSellFulfillmentSchema.parse({
     title: "Shipping",
@@ -120,26 +111,11 @@ const FULFILLMENT_BY_CATEGORY: Record<MobileListingCategory, MobileSellFulfillme
     package_dimensions: true,
     dropoff: false,
   }),
-  traction: pickupAndShipping("traction", {
-    shipping_options: SHIPPING_COST_OPTIONS,
-    shipping_detail: null,
-  }),
-  boardbags: pickupAndShipping("boardbag", {
-    shipping_options: SHIPPING_COST_OPTIONS,
-    shipping_detail: null,
-  }),
-  surfpacks: pickupAndShipping("surfpack", {
-    shipping_options: SHIPPING_COST_OPTIONS,
-    shipping_detail: null,
-  }),
-  leashes: pickupAndShipping("leash", {
-    shipping_options: SHIPPING_COST_OPTIONS,
-    shipping_detail: null,
-  }),
-  accessories: pickupAndShipping("accessory", {
-    shipping_options: SHIPPING_COST_OPTIONS,
-    shipping_detail: null,
-  }),
+  traction: shipOnly("Traction", SHIPPING_COST_OPTIONS),
+  boardbags: shipOnly("Boardbag", SHIPPING_COST_OPTIONS),
+  surfpacks: shipOnly("Surfpack", SHIPPING_COST_OPTIONS),
+  leashes: shipOnly("Leash", SHIPPING_COST_OPTIONS),
+  accessories: shipOnly("Accessory", SHIPPING_COST_OPTIONS),
 }
 
 /** Shipping section for a sell category. Same rules as that category's website flow. */
