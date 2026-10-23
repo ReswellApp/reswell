@@ -199,10 +199,10 @@ function NavSearchPersonalizationSkeleton() {
       </div>
       <div className="border-t border-border/60">
         <NavSearchIdleSectionTitle title="Recently viewed brands" />
-        <div className="flex flex-wrap gap-2 overflow-hidden px-4 pb-3">
-          <Skeleton className="h-9 w-24 rounded-lg" />
-          <Skeleton className="h-9 w-32 rounded-lg" />
-          <Skeleton className="h-9 w-20 rounded-lg" />
+        <div className="flex gap-2 overflow-hidden px-4 pb-3">
+          <Skeleton className="h-9 w-24 shrink-0 rounded-lg" />
+          <Skeleton className="h-9 w-32 shrink-0 rounded-lg" />
+          <Skeleton className="h-9 w-20 shrink-0 rounded-lg" />
         </div>
       </div>
     </div>
@@ -691,7 +691,7 @@ export function HeaderNavSearch({
                 )}
               >
                 <NavSearchIdleSectionTitle title="Recently viewed brands" />
-                <div className="flex flex-wrap gap-2 px-4 pb-3 pt-0.5">
+                <div className="flex min-w-0 gap-2 overflow-x-auto overscroll-x-contain px-4 pb-3 pt-0.5 snap-x snap-mandatory touch-pan-x [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   {recentBrands.map((brand) => (
                     <NavSearchIdleRecentlyViewedBrandTile
                       key={brand.id}

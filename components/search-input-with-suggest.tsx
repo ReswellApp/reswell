@@ -313,10 +313,10 @@ function MarketplaceSuggestPanelSkeleton({
       {showBrandStrip && !boardsTitleStyle ? (
         <div className="shrink-0 border-t border-border/60 px-3 pb-3 pt-2.5 sm:px-4 sm:pb-3.5 sm:pt-3">
           <Skeleton className="mb-2 h-3 w-14" />
-          <div className="flex flex-wrap gap-2">
-            <Skeleton className="h-9 w-24 rounded-lg" />
-            <Skeleton className="h-9 w-36 rounded-lg" />
-            <Skeleton className="h-9 w-20 rounded-lg" />
+          <div className="flex gap-2 overflow-hidden">
+            <Skeleton className="h-9 w-24 shrink-0 rounded-lg" />
+            <Skeleton className="h-9 w-36 shrink-0 rounded-lg" />
+            <Skeleton className="h-9 w-20 shrink-0 rounded-lg" />
           </div>
         </div>
       ) : null}
@@ -1339,7 +1339,7 @@ export function SearchInputWithSuggest({
         {(suggestions?.brands?.length ?? 0) > 0 && (
           <div
             className={cn(
-              "border-t border-border/60 bg-background shrink-0",
+              "min-w-0 shrink-0 border-t border-border/60 bg-background",
               boardsTitleStyle ? "px-0 py-0" : "px-3 pb-3 pt-2.5 sm:px-4 sm:pb-3.5 sm:pt-3",
               listings.length === 0 && panelTopRounded,
             )}
@@ -1383,7 +1383,7 @@ export function SearchInputWithSuggest({
                 ))}
               </ul>
             ) : (
-              <div className="flex flex-wrap gap-2">
+              <div className="flex min-w-0 gap-2 overflow-x-auto overscroll-x-contain snap-x snap-mandatory touch-pan-x [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                 {suggestions!.brands!.map((brand) => (
                   <button
                     key={brand.listingLabel}
