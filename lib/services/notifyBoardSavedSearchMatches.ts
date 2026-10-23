@@ -5,7 +5,6 @@ import {
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { trackKlaviyoBoardAlertMatch } from "@/lib/klaviyo/track-board-alert-match"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
-import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import {
   ensureListingIndexedForSavedSearchAlerts,
   listingMatchesSavedSearch,
@@ -15,6 +14,7 @@ import { savedSearchAbsoluteUrl } from "@/lib/klaviyo/saved-search-url"
 import { resolveBoardAlertPhotoUrl } from "@/lib/services/resolveBoardAlertPhoto"
 import {
   boardAlertListingContent,
+  listingIsEligibleForBoardSavedSearchAlert,
   listingListedAfterSavedSearch,
   parseAlertTimestamp,
 } from "@/lib/services/savedSearchAlertEligibility"
@@ -37,13 +37,12 @@ function timestampString(value: unknown): string | null {
 }
 
 /**
- * When the listing first went live. Falls back to `listings.created_at` when the
- * creation-event row is missing. Unknown times are not alertable.
+ * When the listing first went live (`listing_creation_events` from the publish trigger).
+ * Draft rows never get an event; we do not fall back to `created_at` (draft creation time).
  */
 async function resolveListingListedAt(
   service: ReturnType<typeof createServiceRoleClient>,
   listingId: string,
-  createdAt: unknown,
 ): Promise<string | null> {
   const { data, error } = await service
     .from("listing_creation_events")
@@ -55,7 +54,7 @@ async function resolveListingListedAt(
     console.error("[saved_search] listing listed_at lookup failed:", error.message)
   }
 
-  return timestampString(data?.listed_at) ?? timestampString(createdAt)
+  return timestampString(data?.listed_at)
 }
 
 /**
@@ -75,7 +74,7 @@ export async function notifyBoardSavedSearchMatchesForListing(
   const { data: listing, error: listingErr } = await service
     .from("listings")
     .select(
-      "id, user_id, section, status, hidden_from_site, title, description, price, brand, model, dimensions, board_type, condition, brand_id, brand_model_id, slug, fins_setup, fin_system, fin_size, wetsuit_size, boardbag_size, surfpack_size, leash_size, apparel_kind, magazine_year, traction_size, created_at",
+      "id, user_id, section, status, hidden_from_site, archived_at, title, description, price, brand, model, dimensions, board_type, condition, brand_id, brand_model_id, slug, fins_setup, fin_system, fin_size, wetsuit_size, boardbag_size, surfpack_size, leash_size, apparel_kind, magazine_year, traction_size",
     )
     .eq("id", listingId)
     .maybeSingle()
@@ -86,15 +85,11 @@ export async function notifyBoardSavedSearchMatchesForListing(
 
   const row = listing as ListingRowForBoardAlert
 
-  if (!isPeerListingSection(row.section) || row.status !== "active" || row.hidden_from_site) {
+  if (!listingIsEligibleForBoardSavedSearchAlert(row)) {
     return { attempted: 0, sent: 0, skippedReason: "listing_not_alertable" }
   }
 
-  const listedAt = await resolveListingListedAt(
-    service,
-    listingId,
-    (listing as { created_at?: string | null }).created_at,
-  )
+  const listedAt = await resolveListingListedAt(service, listingId)
   const origin = publicSiteOrigin()
   const content = boardAlertListingContent({
     title: row.title,

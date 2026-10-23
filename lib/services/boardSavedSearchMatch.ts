@@ -17,6 +17,7 @@ import {
   boardTypeForDbFromBrowseParam,
   BOARDS_BROWSE_DEFAULT_SORT,
 } from "@/lib/marketplace-slug-metadata"
+import { isListingDiscoveryEligible } from "@/lib/listing-public-visibility"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import {
@@ -35,6 +36,7 @@ export type ListingRowForBoardAlert = {
   section: string | null
   status: string | null
   hidden_from_site?: boolean | null
+  archived_at?: string | null
   title: string | null
   description?: string | null
   price: number | string | null
@@ -281,8 +283,16 @@ export function listingMatchesBoardSavedCriteria(
   const c = parsed.data
 
   if (!sectionAllowsListing(c, listing.section)) return false
-  if (listing.status !== "active") return false
-  if (listing.hidden_from_site) return false
+  if (
+    !isListingDiscoveryEligible({
+      status: String(listing.status ?? ""),
+      title: listing.title,
+      hidden_from_site: listing.hidden_from_site,
+      archived_at: listing.archived_at,
+    })
+  ) {
+    return false
+  }
 
   if (!keywordMatchesListing(listing, c.q)) return false
 
