@@ -1,4 +1,4 @@
-import type { PeerListingSection } from "@/lib/peer-listing-sections"
+import { PEER_LISTING_SECTIONS, type PeerListingSection } from "@/lib/peer-listing-sections"
 import type { ReswellListingRateRow } from "@/lib/services/reswellListingShippingRate"
 import { normalizeUsStateProvinceForShipping } from "../us-state-name-to-code.ts"
 
@@ -8,14 +8,50 @@ const USPS_GROUND_PRIORITY_CODES = [
   "usps_priority_mail",
 ] as const
 
+/**
+ * Small parcels share one USPS Ground / Priority checkout.
+ * Surfboards stay on UPS/FedEx. Magazines stay on Media Mail when they ship alone.
+ */
+const USPS_SMALL_PARCEL_SECTIONS = PEER_LISTING_SECTIONS.filter(
+  (section) => section !== "surfboards" && section !== "magazines",
+)
+
+const USPS_SMALL_PARCEL_SECTION_SET = new Set<string>(USPS_SMALL_PARCEL_SECTIONS)
+
 /** ShipEngine service codes allowed for peer checkout by product section. */
 export const PEER_CHECKOUT_USPS_SERVICE_CODES: Partial<
   Record<PeerListingSection, readonly string[]>
 > = {
-  fins: USPS_GROUND_PRIORITY_CODES,
-  apparel: USPS_GROUND_PRIORITY_CODES,
-  traction: USPS_GROUND_PRIORITY_CODES,
+  ...Object.fromEntries(USPS_SMALL_PARCEL_SECTIONS.map((section) => [section, USPS_GROUND_PRIORITY_CODES])),
   magazines: ["usps_media_mail"],
+}
+
+/**
+ * How a checkout picks carrier services. Mixed small-parcel categories
+ * (a leash plus fins) stay on one USPS choice. Any surfboard keeps the board menu.
+ */
+export type PeerCheckoutRateFamily = "usps_ground_priority" | "usps_media_mail" | "ups_fedex_surfboard"
+
+export function peerCheckoutRateFamilyForSections(
+  sections: Array<string | null | undefined>,
+): PeerCheckoutRateFamily | null {
+  const present = sections.map((section) => section?.trim() || "").filter((section) => section.length > 0)
+  if (present.length === 0) return null
+  if (present.some((section) => section === "surfboards")) return "ups_fedex_surfboard"
+  if (present.every((section) => section === "magazines")) return "usps_media_mail"
+  if (present.every((section) => USPS_SMALL_PARCEL_SECTION_SET.has(section) || section === "magazines")) {
+    return "usps_ground_priority"
+  }
+  return null
+}
+
+function effectivePeerCheckoutRateFamily(
+  section: string | null | undefined,
+  rateFamily?: PeerCheckoutRateFamily | null,
+): PeerCheckoutRateFamily | null {
+  if (rateFamily) return rateFamily
+  if (!section?.trim()) return null
+  return peerCheckoutRateFamilyForSections([section])
 }
 
 const FIN_GROUND_CODES = new Set(["usps_ground_advantage", "usps_parcel_select"])
@@ -277,15 +313,6 @@ export function normalizeCarrierEstimatedDeliveryIso(iso: string | null | undefi
   return parsed.toISOString()
 }
 
-function serviceCodeAllowedForSection(
-  section: PeerListingSection,
-  serviceCode: string,
-): boolean {
-  const allowlist = PEER_CHECKOUT_USPS_SERVICE_CODES[section]
-  if (!allowlist) return true
-  return allowlist.includes(serviceCode)
-}
-
 function finServiceSortKey(serviceCode: string): number {
   if (FIN_GROUND_CODES.has(serviceCode)) return 0
   if (FIN_PRIORITY_CODES.has(serviceCode)) return 1
@@ -295,7 +322,8 @@ function finServiceSortKey(serviceCode: string): number {
 export function peerCheckoutUsesUspsGroundPriorityChoice(
   section: string | null | undefined,
 ): boolean {
-  return section === "fins" || section === "apparel" || section === "traction"
+  const normalized = section?.trim() || ""
+  return USPS_SMALL_PARCEL_SECTION_SET.has(normalized)
 }
 
 export function peerCheckoutUsesUpsSurfboardChoice(
@@ -306,28 +334,25 @@ export function peerCheckoutUsesUpsSurfboardChoice(
 
 export function peerCheckoutSectionRestrictsUspsServices(
   section: string | null | undefined,
-): section is PeerListingSection {
-  return (
-    peerCheckoutUsesUspsGroundPriorityChoice(section) ||
-    section === "magazines" ||
-    peerCheckoutUsesUpsSurfboardChoice(section)
-  )
+  rateFamily?: PeerCheckoutRateFamily | null,
+): boolean {
+  return effectivePeerCheckoutRateFamily(section, rateFamily) != null
 }
 
 export function peerCheckoutOffersShippingRateChoice(
   section: string | null | undefined,
+  rateFamily?: PeerCheckoutRateFamily | null,
 ): boolean {
-  return peerCheckoutUsesUspsGroundPriorityChoice(section) || peerCheckoutUsesUpsSurfboardChoice(section)
+  const family = effectivePeerCheckoutRateFamily(section, rateFamily)
+  return family === "usps_ground_priority" || family === "ups_fedex_surfboard"
 }
 
 /** USPS can deliver to PO Boxes. UPS/FedEx (surfboards and unknown mix) cannot. */
 export function peerCheckoutAllowsPoBoxDestination(
   sections: Array<string | null | undefined>,
 ): boolean {
-  if (sections.length === 0) return false
-  return sections.every(
-    (section) => peerCheckoutUsesUspsGroundPriorityChoice(section) || section === "magazines",
-  )
+  const family = peerCheckoutRateFamilyForSections(sections)
+  return family === "usps_ground_priority" || family === "usps_media_mail"
 }
 
 export const UPS_FEDEX_PO_BOX_ERROR =
@@ -342,23 +367,49 @@ export function peerCheckoutSharedSection(
   return null
 }
 
-export function peerCheckoutRateChoiceIntro(section: string | null | undefined): string {
-  if (peerCheckoutUsesUpsSurfboardChoice(section)) {
+export function peerCheckoutRateChoiceIntro(
+  section: string | null | undefined,
+  rateFamily?: PeerCheckoutRateFamily | null,
+): string {
+  const family = effectivePeerCheckoutRateFamily(section, rateFamily)
+  if (family === "ups_fedex_surfboard" || peerCheckoutUsesUpsSurfboardChoice(section)) {
     return "Choose UPS or FedEx shipping. The amount you select is included in your total."
   }
-  return "Choose USPS shipping. The amount you select is included in your total."
+  return "Choose USPS Ground or Priority. Everything in this order ships in one box, and the price includes the combined weight."
+}
+
+/** Cart summary when a seller group is entirely calculated small-parcel shipping. */
+export function peerCheckoutSmallParcelBundleCopy(input: {
+  sections: Array<string | null | undefined>
+  allReswell: boolean
+  unitCount: number
+}): { label: string; note: string } | null {
+  if (!input.allReswell || input.unitCount < 1) return null
+  if (peerCheckoutRateFamilyForSections(input.sections) !== "usps_ground_priority") return null
+  if (input.unitCount === 1) {
+    return {
+      label: "USPS at checkout",
+      note: "Choose USPS Ground or Priority at checkout. The rate uses this item's weight.",
+    }
+  }
+  return {
+    label: "One box at checkout",
+    note: "These ship together in one box. Checkout adds the weights, including quantity, then lets you choose USPS Ground or Priority.",
+  }
 }
 
 export function filterReswellRatesForPeerSection(
   rates: ReswellListingRateRow[],
   section: string | null | undefined,
   shipTo?: PeerCheckoutShipTo | null,
+  rateFamily?: PeerCheckoutRateFamily | null,
 ): ReswellListingRateRow[] {
-  if (!peerCheckoutSectionRestrictsUspsServices(section)) {
+  const family = effectivePeerCheckoutRateFamily(section, rateFamily)
+  if (!family) {
     return rates
   }
 
-  if (peerCheckoutUsesUpsSurfboardChoice(section)) {
+  if (family === "ups_fedex_surfboard") {
     const allowed = isNonContiguousUsShipTo(shipTo)
       ? HAWAII_ALASKA_SURFBOARD_BUCKETS
       : CONTINENTAL_SURFBOARD_BUCKETS
@@ -374,7 +425,8 @@ export function filterReswellRatesForPeerSection(
     if (!isUspsCarrierRow(row)) return false
     const serviceCode = normalizeServiceCode(row.serviceCode)
     if (!serviceCode) return false
-    return serviceCodeAllowedForSection(section, serviceCode)
+    if (family === "usps_media_mail") return serviceCode === "usps_media_mail"
+    return (USPS_GROUND_PRIORITY_CODES as readonly string[]).includes(serviceCode)
   })
 }
 
@@ -382,15 +434,16 @@ export function toPeerCheckoutShippingRateOptions(
   rates: ReswellListingRateRow[],
   section: string | null | undefined,
   shipTo?: PeerCheckoutShipTo | null,
+  rateFamily?: PeerCheckoutRateFamily | null,
 ): PeerCheckoutShippingRateOption[] {
-  const filtered = filterReswellRatesForPeerSection(rates, section, shipTo)
+  const family = effectivePeerCheckoutRateFamily(section, rateFamily)
+  const filtered = filterReswellRatesForPeerSection(rates, section, shipTo, rateFamily)
   const options = filtered
     .filter((row): row is ReswellListingRateRow & { rate_id: string } => Boolean(row.rate_id))
     .map((row) => {
       const serviceCode = normalizeServiceCode(row.serviceCode)
-      const surfboardBucket = peerCheckoutUsesUpsSurfboardChoice(section)
-        ? rowSurfboardCheckoutBucket(row, shipTo)
-        : null
+      const surfboardBucket =
+        family === "ups_fedex_surfboard" ? rowSurfboardCheckoutBucket(row, shipTo) : null
       return {
         rateId: row.rate_id,
         serviceCode,
@@ -405,7 +458,7 @@ export function toPeerCheckoutShippingRateOptions(
       }
     })
 
-  if (peerCheckoutUsesUpsSurfboardChoice(section)) {
+  if (family === "ups_fedex_surfboard") {
     const byBucket = new Map<SurfboardCheckoutBucket, PeerCheckoutShippingRateOption>()
     for (const option of options) {
       const source = filtered.find((row) => row.rate_id === option.rateId)
@@ -426,7 +479,7 @@ export function toPeerCheckoutShippingRateOptions(
     })
   }
 
-  if (peerCheckoutUsesUspsGroundPriorityChoice(section)) {
+  if (family === "usps_ground_priority") {
     options.sort((a, b) => {
       const order = finServiceSortKey(a.serviceCode) - finServiceSortKey(b.serviceCode)
       if (order !== 0) return order
@@ -482,14 +535,16 @@ export function findPeerCheckoutRateOptionByServiceCode(
   serviceCode: string | null | undefined,
   section?: string | null,
   shipTo?: PeerCheckoutShipTo | null,
+  rateFamily?: PeerCheckoutRateFamily | null,
 ): PeerCheckoutShippingRateOption | null {
+  const family = effectivePeerCheckoutRateFamily(section, rateFamily)
   const normalized = normalizeServiceCode(serviceCode)
   if (!normalized) return null
 
   const exact = options.find((option) => normalizeServiceCode(option.serviceCode) === normalized)
   if (exact) return exact
 
-  if (peerCheckoutUsesUspsGroundPriorityChoice(section)) {
+  if (family === "usps_ground_priority") {
     if (FIN_GROUND_CODES.has(normalized)) {
       return options.find((option) => FIN_GROUND_CODES.has(option.serviceCode)) ?? null
     }
@@ -498,7 +553,7 @@ export function findPeerCheckoutRateOptionByServiceCode(
     }
   }
 
-  if (peerCheckoutUsesUpsSurfboardChoice(section)) {
+  if (family === "ups_fedex_surfboard") {
     const wanted =
       surfboardCheckoutBucket(normalized, normalized, "ups", shipTo) ??
       surfboardCheckoutBucket(normalized, normalized, "fedex", shipTo)
@@ -519,16 +574,18 @@ export function findPeerCheckoutRateOptionByServiceCode(
 export function peerCheckoutShippingServiceError(
   section: string | null | undefined,
   shipTo?: PeerCheckoutShipTo | null,
+  rateFamily?: PeerCheckoutRateFamily | null,
 ): string {
-  if (peerCheckoutUsesUspsGroundPriorityChoice(section)) {
+  const family = effectivePeerCheckoutRateFamily(section, rateFamily)
+  if (family === "usps_ground_priority") {
     return "USPS Ground and USPS Priority are not available for this shipment. Try a different address or contact support."
   }
-  if (peerCheckoutUsesUpsSurfboardChoice(section)) {
+  if (family === "ups_fedex_surfboard") {
     return isNonContiguousUsShipTo(shipTo)
       ? "UPS and FedEx air rates are not available for this Hawaii or Alaska address. Try a different address or contact support."
       : "UPS Ground, 3 Day Select, and UPS Second Day Air are not available for this shipment. Try a different address or contact support."
   }
-  if (section === "magazines") {
+  if (family === "usps_media_mail") {
     return "USPS Media Mail is not available for this shipment. Try a different address or contact support."
   }
   return "No carrier rates returned for this shipment."

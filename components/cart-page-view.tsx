@@ -36,6 +36,8 @@ import type { CartSellerAddonCarouselItem } from "@/lib/services/cartSellerAddon
 import { cn } from "@/lib/utils"
 import { FavoriteButton } from "@/components/favorite-button"
 import { MAX_SURFBOARDS_PER_SELLER_CHECKOUT } from "@/lib/surfboard-multi-board-parcel"
+import { effectiveBoardShippingMode } from "@/lib/services/peerListingShippingQuote"
+import { peerCheckoutSmallParcelBundleCopy } from "@/lib/shipping/peer-checkout-usps-services"
 
 function listingAvailable(listing: CartPageItem["listing"]) {
   return listing.status === "active" || listing.status === "pending_sale"
@@ -126,9 +128,18 @@ export function CartPageView({
       const withShip = availRows.filter(({ listing }) => listing.shipping_available)
       if (withShip.length > 0) {
         const rates = withShip.map(({ listing }) => Math.max(0, parseFloat(String(listing.shipping_price ?? 0)) || 0))
-        const hasReswell = withShip.some(({ listing }) => listing.board_shipping_cost_mode === "reswell")
+        const hasReswell = withShip.some(
+          ({ listing }) => effectiveBoardShippingMode(listing) === "reswell",
+        )
+        const bundleCopy = peerCheckoutSmallParcelBundleCopy({
+          sections: withShip.map(({ listing }) => listing.section),
+          allReswell: withShip.every(({ listing }) => effectiveBoardShippingMode(listing) === "reswell"),
+          unitCount: withShip.reduce((sum, row) => sum + Math.max(1, row.quantity || 1), 0),
+        })
         shipLabel =
-          rates.every((r) => r === 0) && !hasReswell ? "FREE" : "Calculated at checkout"
+          rates.every((r) => r === 0) && !hasReswell
+            ? "FREE"
+            : bundleCopy?.label ?? "Calculated at checkout"
       } else if (availRows.some(({ listing }) => listing.local_pickup !== false)) {
         shipLabel = "Pickup only"
       }
@@ -189,8 +200,21 @@ export function CartPageView({
             : shopRows.length > 0 && peerRows.length > 0
               ? "Peer listings and Reswell shop items check out together in one payment."
               : availRows.length > 0 && availRows.some(({ listing }) => listing.shipping_available)
-                ? "Shipping cost and delivery timing are finalized at checkout."
-                : "Pickup or shipping details are confirmed when you check out."
+              ? (() => {
+                  const shippingRows = availRows.filter(({ listing }) => listing.shipping_available)
+                  const bundleNote = peerCheckoutSmallParcelBundleCopy({
+                    sections: shippingRows.map(({ listing }) => listing.section),
+                    allReswell: shippingRows.every(
+                      ({ listing }) => effectiveBoardShippingMode(listing) === "reswell",
+                    ),
+                    unitCount: shippingRows.reduce((sum, row) => sum + Math.max(1, row.quantity || 1), 0),
+                  })
+                  return (
+                    bundleNote?.note ??
+                    "Shipping cost and delivery timing are finalized at checkout."
+                  )
+                })()
+              : "Pickup or shipping details are confirmed when you check out."
 
     return {
       availableTotal: total,

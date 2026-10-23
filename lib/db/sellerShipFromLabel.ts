@@ -10,15 +10,20 @@ function truncateShipFromName(s: string): string {
 }
 
 /**
- * Line printed as ship-from contact on carrier labels (listing-locality / checkout lane).
- * Prefers shop name when `is_shop`, otherwise profile display name.
+ * Line printed as ship-from contact on carrier labels.
+ * The seller-chosen label name wins. Otherwise a shop prints its shop name,
+ * and everyone else prints the public display name. Legal first/last name
+ * is never used here.
  */
 export function formatSellerProfileForShipEngineShipFrom(profile: {
   display_name: string | null
   shop_name: string | null
   is_shop: boolean | null
+  shipping_label_name?: string | null
 } | null): string {
   if (!profile) return "Seller"
+  const chosen = profile.shipping_label_name?.trim()
+  if (chosen) return truncateShipFromName(chosen)
   if (profile.is_shop === true) {
     const shop = profile.shop_name?.trim()
     if (shop) return truncateShipFromName(shop)
@@ -34,7 +39,7 @@ export async function fetchSellerShipFromLabelName(
 ): Promise<string> {
   const { data, error } = await supabase
     .from("profiles")
-    .select("display_name, shop_name, is_shop")
+    .select("display_name, shop_name, is_shop, shipping_label_name")
     .eq("id", sellerUserId)
     .maybeSingle()
 
@@ -47,6 +52,7 @@ export async function fetchSellerShipFromLabelName(
       display_name: string | null
       shop_name: string | null
       is_shop: boolean | null
+      shipping_label_name: string | null
     } | null,
   )
 }

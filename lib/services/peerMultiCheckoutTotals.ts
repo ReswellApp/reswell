@@ -231,6 +231,7 @@ export async function computePeerMultiCheckoutUsd(params: {
       sellerShipFromAddress,
       shippingOverride: lineOverride,
       fixedShippingUsd: params.fixedShippingUsd,
+      quantity,
     })
     if (!totals.ok) {
       return { ok: false, error: totals.error }
@@ -342,6 +343,7 @@ export async function computePeerMultiCheckoutUsd(params: {
           diagnosticTag: `${diagnosticTagPrefix}:bundle`,
           sellerShipFromName,
           sellerShipFromAddress,
+          quantities: quantityByListingId,
         })
     if (!bundleShipping.ok) {
       return { ok: false, error: bundleShipping.error }

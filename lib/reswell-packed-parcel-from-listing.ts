@@ -56,6 +56,7 @@ import {
 } from "@/lib/surfboard-multi-board-parcel"
 
 export type ListingPackedParcelSource = {
+  id?: string | null
   section?: string | null
   shipping_packed_length_in?: number | string | null
   shipping_packed_width_in?: number | string | null
@@ -359,16 +360,66 @@ export type ResolvedPackedParcel = {
   heightIn: number
 }
 
+/** Units of a listing in this box. Surfboard cartons stay one row = one board. */
+export function checkoutParcelLineQuantity(
+  row: ListingPackedParcelSource,
+  quantities?: Record<string, number> | null,
+): number {
+  if (isSurfboardListingSection(row.section)) return 1
+  const id = row.id?.trim()
+  if (!id || !quantities) return 1
+  const qty = Math.floor(quantities[id] ?? 1)
+  return Number.isFinite(qty) && qty >= 1 ? qty : 1
+}
+
+/**
+ * One mailer for soft goods. Footprint is the largest item. Height grows only
+ * when the combined volume no longer fits that footprint, so three flat leashes
+ * do not rate as a tower and still weigh three times as much.
+ */
+function packSmallParcelBundle(
+  items: Array<{ lengthIn: number; widthIn: number; heightIn: number; quantity: number }>,
+): { lengthIn: number; widthIn: number; heightIn: number } {
+  let maxLength = 0
+  let maxWidth = 0
+  let maxHeight = 0
+  let volume = 0
+  for (const item of items) {
+    const sides = [item.lengthIn, item.widthIn, item.heightIn].sort((a, b) => b - a)
+    const lengthIn = sides[0] ?? 0
+    const widthIn = sides[1] ?? 0
+    const heightIn = sides[2] ?? 0
+    const quantity = item.quantity
+    maxLength = Math.max(maxLength, lengthIn)
+    maxWidth = Math.max(maxWidth, widthIn)
+    maxHeight = Math.max(maxHeight, heightIn)
+    volume += lengthIn * widthIn * heightIn * quantity
+  }
+  const footprint = maxLength * maxWidth
+  const filledHeight = footprint > 0 ? volume / footprint : maxHeight
+  const round2 = (value: number) => Math.round(value * 100) / 100
+  return {
+    lengthIn: round2(maxLength),
+    widthIn: round2(maxWidth),
+    heightIn: round2(Math.max(maxHeight, filledHeight)),
+  }
+}
+
 /**
  * Combined one-box parcel for multiple listings shipped together (same seller).
  *
  * **2–3 surfboards:** length = longest bare board + 4″, 2 boards 22″ × 5″,
  * 3 boards 27″ × 7″, weight = 22 lb. Single-board tier cartons are not used.
  *
- * **Otherwise:** largest-DIM item's carton + summed weights (fins/shop add-ons with one board).
+ * **One surfboard plus small goods:** the board carton, plus each item's weight
+ * times its quantity.
+ *
+ * **Small parcels only:** one mailer. Weight is summed times quantity. The box
+ * uses the largest footprint and grows in height to fit the combined volume.
  */
 export function resolveCombinedPackedParcelFromListings(
   rows: ListingPackedParcelSource[],
+  quantities?: Record<string, number> | null,
 ): { ok: true } & ResolvedPackedParcel | { ok: false; error: string } {
   if (rows.length === 0) {
     return { ok: false, error: "No listings to build a shipping parcel from." }
@@ -389,7 +440,13 @@ export function resolveCombinedPackedParcelFromListings(
     parcels.push(resolved)
   }
 
-  const totalWeightOz = Math.round(parcels.reduce((sum, p) => sum + p.weightOz, 0) * 100) / 100
+  const totalWeightOz =
+    Math.round(
+      parcels.reduce((sum, parcel, index) => {
+        const qty = checkoutParcelLineQuantity(rows[index]!, quantities)
+        return sum + parcel.weightOz * qty
+      }, 0) * 100,
+    ) / 100
 
   if (surfboardCount >= 2) {
     let longestBoardIn = 0
@@ -418,6 +475,18 @@ export function resolveCombinedPackedParcelFromListings(
       widthIn: cross.widthIn,
       heightIn: cross.heightIn,
     }
+  }
+
+  if (surfboardCount === 0) {
+    const packed = packSmallParcelBundle(
+      parcels.map((parcel, index) => ({
+        lengthIn: parcel.lengthIn,
+        widthIn: parcel.widthIn,
+        heightIn: parcel.heightIn,
+        quantity: checkoutParcelLineQuantity(rows[index]!, quantities),
+      })),
+    )
+    return finishResolvedParcel("heuristic", packed, totalWeightOz, null)
   }
 
   let biggest = parcels[0]!

@@ -20,7 +20,6 @@ import {
 import {
   findPeerCheckoutRateOption,
   findPeerCheckoutRateOptionByServiceCode,
-  peerCheckoutSharedSection,
 } from "@/lib/shipping/peer-checkout-usps-services"
 import {
   DEFAULT_SHIPPING_PACKAGING_MODE,
@@ -228,6 +227,16 @@ export async function POST(request: Request) {
 
   const qtyById = new Map<string, number>()
   for (const id of listingIds) qtyById.set(id, 1)
+  const bodyQuantities =
+    bodyObj.quantities != null && typeof bodyObj.quantities === "object" && !Array.isArray(bodyObj.quantities)
+      ? (bodyObj.quantities as Record<string, unknown>)
+      : null
+  if (bodyQuantities) {
+    for (const id of listingIds) {
+      const qty = Math.floor(Number(bodyQuantities[id]) || 0)
+      if (qty >= 1) qtyById.set(id, qty)
+    }
+  }
   const { data: cartQtyRows } = await supabase
     .from("cart_items")
     .select("listing_id, quantity")
@@ -235,8 +244,9 @@ export async function POST(request: Request) {
     .in("listing_id", listingIds)
   for (const row of cartQtyRows ?? []) {
     const id = String((row as { listing_id?: string }).listing_id ?? "").trim()
+    if (!id || qtyById.get(id) !== 1 || (bodyQuantities && bodyQuantities[id] != null)) continue
     const qty = Math.max(1, Math.floor(Number((row as { quantity?: number }).quantity) || 1))
-    if (id) qtyById.set(id, qty)
+    qtyById.set(id, qty)
   }
 
   if (listingRows.length === 1) {
@@ -250,6 +260,7 @@ export async function POST(request: Request) {
       sellerShipFromAddress,
       selectedRateId,
       selectedServiceCode,
+      quantity: qtyById.get(listingRow.id) ?? 1,
     })
 
     if (!totals.ok) {
@@ -363,6 +374,7 @@ export async function POST(request: Request) {
     sellerShipFromAddress,
     selectedRateId,
     selectedServiceCode,
+    quantities: Object.fromEntries(qtyById),
   })
 
   if (!bundleShipping.ok) {

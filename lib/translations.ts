@@ -86,6 +86,17 @@ type Translations = {
       saving: string
       saved: string
     }
+    shippingLabelName: {
+      title: string
+      description: string
+      privateBadge: string
+      field: string
+      hint: string
+      save: string
+      update: string
+      saving: string
+      saved: string
+    }
     language: {
       title: string
       description: string
@@ -225,15 +236,27 @@ const en: Translations = {
     personalInfo: {
       title: 'Personal information',
       description:
-        'Private account details used for shipping labels, checkout, and text alerts. Never shown on your public profile.',
+        'Private legal name and mobile number for checkout and text alerts. Never shown on your public profile or on shipping labels.',
       privateBadge: 'Private',
       firstName: 'First name',
       lastName: 'Last name',
       phone: 'Mobile number',
       phoneDisclosure:
-        'Used on prepaid shipping labels. Phone is required for carrier delivery issues. By providing your phone number, you agree that Reswell and its shipping partners may send automated text messages related to your orders, shipments, labels, delivery issues, and account support. Message and data rates may apply. Reply STOP to opt out.',
+        'Your mobile number is printed on prepaid shipping labels so the carrier can reach you about a delivery. By providing your phone number, you agree that Reswell and its shipping partners may send automated text messages related to your orders, shipments, labels, delivery issues, and account support. Message and data rates may apply. Reply STOP to opt out.',
       save: 'Save personal information',
       update: 'Update personal information',
+      saving: 'Saving...',
+      saved: 'Saved',
+    },
+    shippingLabelName: {
+      title: 'Name on shipping label',
+      description:
+        'This is the only name printed on prepaid labels. Use your shop name to keep your legal name off the package.',
+      privateBadge: 'On the label',
+      field: 'Display name on shipping label',
+      hint: 'Leave this blank to use your shop name, or your public display name if you are not a shop. Labels already bought keep the name they were printed with.',
+      save: 'Save label name',
+      update: 'Update label name',
       saving: 'Saving...',
       saved: 'Saved',
     },
@@ -383,15 +406,27 @@ const es: Translations = {
     personalInfo: {
       title: 'Información personal',
       description:
-        'Datos privados de la cuenta para etiquetas de envío, checkout y alertas por SMS. No se muestran en tu perfil público.',
+        'Nombre legal y teléfono móvil privados para el checkout y las alertas por SMS. No se muestran en tu perfil público ni en las etiquetas de envío.',
       privateBadge: 'Privado',
       firstName: 'Nombre',
       lastName: 'Apellido',
       phone: 'Teléfono móvil',
       phoneDisclosure:
-        'Se usa en etiquetas de envío prepagadas. El teléfono es necesario para incidencias de entrega. Al proporcionar tu número, aceptas que Reswell y sus socios de envío puedan enviarte mensajes automatizados sobre pedidos, envíos, etiquetas, incidencias de entrega y soporte de cuenta. Pueden aplicarse tarifas de mensajes y datos. Responde STOP para cancelar.',
+        'Tu teléfono móvil se imprime en las etiquetas prepagadas para que el transportista pueda contactarte. Al proporcionar tu número, aceptas que Reswell y sus socios de envío puedan enviarte mensajes automatizados sobre pedidos, envíos, etiquetas, incidencias de entrega y soporte de cuenta. Pueden aplicarse tarifas de mensajes y datos. Responde STOP para cancelar.',
       save: 'Guardar información personal',
       update: 'Actualizar información personal',
+      saving: 'Guardando...',
+      saved: 'Guardado',
+    },
+    shippingLabelName: {
+      title: 'Nombre en la etiqueta de envío',
+      description:
+        'Este es el único nombre que se imprime en las etiquetas prepagadas. Usa el nombre de tu tienda para que tu nombre legal no aparezca en el paquete.',
+      privateBadge: 'En la etiqueta',
+      field: 'Nombre en la etiqueta de envío',
+      hint: 'Déjalo en blanco para usar el nombre de tu tienda, o tu nombre público si no eres una tienda. Las etiquetas ya compradas conservan el nombre con el que se imprimieron.',
+      save: 'Guardar nombre',
+      update: 'Actualizar nombre',
       saving: 'Guardando...',
       saved: 'Guardado',
     },

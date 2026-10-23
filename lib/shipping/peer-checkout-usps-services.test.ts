@@ -6,6 +6,8 @@ import {
   findPeerCheckoutRateOptionByServiceCode,
   isNonContiguousUsShipTo,
   peerCheckoutAllowsPoBoxDestination,
+  peerCheckoutOffersShippingRateChoice,
+  peerCheckoutRateFamilyForSections,
   peerCheckoutShippingServiceError,
   surfboardCheckoutBucket,
   toPeerCheckoutShippingRateOptions,
@@ -188,6 +190,62 @@ describe("peerCheckoutShippingServiceError", () => {
   it("names UPS and FedEx air when Hawaii has no rates", () => {
     assert.match(peerCheckoutShippingServiceError("surfboards", HI), /UPS and FedEx air/)
     assert.match(peerCheckoutShippingServiceError("surfboards", CA), /UPS Ground/)
+  })
+})
+
+const USPS_GROUND = rate({
+  rate_id: "usps-ground",
+  carrierCode: "usps",
+  carrierName: "USPS",
+  serviceCode: "usps_ground_advantage",
+  serviceName: "USPS Ground Advantage",
+  totalAmount: 4.39,
+})
+const USPS_PRIORITY = rate({
+  rate_id: "usps-priority",
+  carrierCode: "usps",
+  carrierName: "USPS",
+  serviceCode: "usps_priority_mail",
+  serviceName: "USPS Priority Mail",
+  totalAmount: 9.4,
+})
+const USPS_AND_UPS = [USPS_GROUND, USPS_PRIORITY, UPS_GROUND]
+
+describe("peerCheckoutRateFamilyForSections", () => {
+  it("gives every small-parcel category Ground and Priority, including a mixed cart", () => {
+    for (const section of ["fins", "leashes", "traction", "wetsuits", "boardbags", "surfpacks", "apparel", "accessories"]) {
+      assert.equal(peerCheckoutRateFamilyForSections([section]), "usps_ground_priority")
+      assert.equal(peerCheckoutOffersShippingRateChoice(section), true)
+    }
+    assert.equal(peerCheckoutRateFamilyForSections(["leashes", "fins", "traction"]), "usps_ground_priority")
+    assert.equal(peerCheckoutOffersShippingRateChoice(null, "usps_ground_priority"), true)
+  })
+
+  it("leaves surfboards on UPS and FedEx, and magazines on Media Mail when they ship alone", () => {
+    assert.equal(peerCheckoutRateFamilyForSections(["surfboards"]), "ups_fedex_surfboard")
+    assert.equal(peerCheckoutRateFamilyForSections(["surfboards", "leashes"]), "ups_fedex_surfboard")
+    assert.equal(peerCheckoutOffersShippingRateChoice("surfboards"), true)
+    assert.equal(peerCheckoutRateFamilyForSections(["magazines"]), "usps_media_mail")
+    assert.equal(peerCheckoutOffersShippingRateChoice("magazines"), false)
+    assert.equal(peerCheckoutRateFamilyForSections(["magazines", "leashes"]), "usps_ground_priority")
+  })
+})
+
+describe("small parcel USPS choice", () => {
+  it("shows Ground and Priority for leashes and hides other carriers", () => {
+    const options = toPeerCheckoutShippingRateOptions(USPS_AND_UPS, "leashes", CA)
+    assert.deepEqual(
+      options.map((option) => option.displayName),
+      ["USPS Ground", "USPS Priority"],
+    )
+  })
+
+  it("keeps Ground and Priority when the cart mixes small-parcel categories", () => {
+    const options = toPeerCheckoutShippingRateOptions(USPS_AND_UPS, null, CA, "usps_ground_priority")
+    assert.deepEqual(
+      options.map((option) => option.serviceCode),
+      ["usps_ground_advantage", "usps_priority_mail"],
+    )
   })
 })
 

@@ -6,6 +6,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { ProfilePersonalInfoSection } from "@/components/features/dashboard/profile-personal-info-section"
+import { ShippingLabelNameSection } from "@/components/features/dashboard/shipping-label-name-section"
 import { ProfileAddressesManager } from "@/components/profile-addresses-manager"
 import { toast } from "sonner"
 import { validateDisplayName } from "@/lib/display-name-validation"
@@ -670,6 +671,15 @@ export function DashboardProfileSettings({
             initialFirstName={profile.first_name}
             initialLastName={profile.last_name}
             initialPhone={profile.phone}
+          />
+          <ShippingLabelNameSection
+            copy={s.shippingLabelName}
+            initialName={profile.shipping_label_name}
+            fallbackName={
+              profile.is_shop && profile.shop_name?.trim()
+                ? profile.shop_name
+                : profile.display_name
+            }
           />
           <ProfileAddressesManager
             copy={addr}

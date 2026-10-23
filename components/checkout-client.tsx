@@ -33,7 +33,7 @@ import { effectiveBoardShippingMode } from "@/lib/services/peerListingShippingQu
 import {
   peerCheckoutOffersShippingRateChoice,
   peerCheckoutRateChoiceIntro,
-  peerCheckoutSharedSection,
+  peerCheckoutRateFamilyForSections,
   type PeerCheckoutShippingRateOption,
 } from "@/lib/shipping/peer-checkout-usps-services"
 import { LocalDateOnly } from "@/components/ui/local-datetime"
@@ -253,8 +253,8 @@ export function CheckoutClient({
   const [quoteLoading, setQuoteLoading] = useState(false)
   const [quoteError, setQuoteError] = useState<string | null>(null)
 
-  const rateChoiceSection = useMemo(
-    () => peerCheckoutSharedSection(listings.map((l) => l.section)),
+  const rateFamily = useMemo(
+    () => peerCheckoutRateFamilyForSections(listings.map((l) => l.section)),
     [listings],
   )
 
@@ -262,19 +262,20 @@ export function CheckoutClient({
     if (!needsShipping) return false
     if (offersPackagingChoice && effectivePackagingMode === "separate") return false
     if (!listings.every((l) => effectiveBoardShippingMode(l) === "reswell")) return false
-    return peerCheckoutOffersShippingRateChoice(rateChoiceSection)
+    return peerCheckoutOffersShippingRateChoice(null, rateFamily)
   }, [
     effectivePackagingMode,
     listings,
     needsShipping,
     offersPackagingChoice,
-    rateChoiceSection,
+    rateFamily,
   ])
 
   const isMagazineReswellCheckout = useMemo(() => {
-    if (isBundle || !needsShipping) return false
-    return primaryListing.section === "magazines" && effectiveBoardShippingMode(primaryListing) === "reswell"
-  }, [isBundle, needsShipping, primaryListing])
+    if (!needsShipping) return false
+    if (!listings.every((l) => effectiveBoardShippingMode(l) === "reswell")) return false
+    return rateFamily === "usps_media_mail"
+  }, [listings, needsShipping, rateFamily])
 
   const needsLiveShippingQuote = useMemo(
     () => needsShipping && peerCheckoutNeedsLiveShippingQuote(listings.map(listingHasShippingModeFields)),
@@ -432,6 +433,9 @@ export function CheckoutClient({
           credentials: "include",
           body: JSON.stringify({
             listing_ids: listingIdsKey.split(","),
+            quantities: Object.fromEntries(
+              listings.map((listing) => [listing.id, Math.max(1, Math.floor(listing.quantity ?? 1))]),
+            ),
             address_id: purchaseDetails.shippingAddressId,
             packaging_mode: effectivePackagingMode,
             ...(offerId ? { offer_id: offerId } : {}),
@@ -940,7 +944,7 @@ export function CheckoutClient({
                 ) : offersShippingRateChoice && shipQuote?.availableShippingRates?.length ? (
                   <div className="space-y-3 rounded-[8px] border border-neutral-200 bg-white px-4 py-4">
                     <p className="text-[13px] leading-relaxed text-neutral-600">
-                      {peerCheckoutRateChoiceIntro(rateChoiceSection)}
+                      {peerCheckoutRateChoiceIntro(null, rateFamily)}
                     </p>
                     <RadioGroup
                       value={
