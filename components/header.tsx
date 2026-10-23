@@ -100,6 +100,7 @@ import type { SiteChromeAuthPayload } from "@/lib/auth/get-site-chrome-auth"
 import { CartHeaderLink } from "@/components/cart-header-link"
 import { authLandingHref } from "@/lib/auth/auth-landing-href"
 import { HeaderAccountMenu } from "@/components/header-account-menu"
+import { WorkingOnAccountBanner } from "@/components/working-on-account-banner"
 import { coastalShipperMembership } from "@/lib/services/coastalShipperAccess"
 import { dropoffLocationMembership } from "@/lib/services/dropoffLocationAccess"
 import { SiteWordmarkLink } from "@/components/site-wordmark-link"
@@ -1319,8 +1320,18 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
   const isAdminChrome =
     pathname !== null && (pathname === "/admin" || pathname.startsWith("/admin/"))
 
+  const workingOnAccountBanner =
+    shopAccess?.actingAsShop === true ? (
+      <WorkingOnAccountBanner
+        shopLabel={shopAccess.shopLabel}
+        onExited={() => onActiveShopAccount(null)}
+      />
+    ) : null
+
   if (isAdminChrome) {
     return (
+      <>
+      {workingOnAccountBanner}
       <header
         ref={headerShellRef}
         onClick={onHeaderShellClick}
@@ -1350,11 +1361,14 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
           </div>
         </div>
       </header>
+      </>
     )
   }
 
   if (isMinimalNavChrome) {
     return (
+      <>
+      {workingOnAccountBanner}
       <header
         ref={headerShellRef}
         onClick={onHeaderShellClick}
@@ -1408,11 +1422,13 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
           </div>
         </div>
       </header>
+      </>
     )
   }
 
   return (
     <>
+      {workingOnAccountBanner}
       {/* CLS-FIX: explicit min-h locks the header row height before fonts and
           auth state resolve, so content below never shifts vertically. */}
       <header
