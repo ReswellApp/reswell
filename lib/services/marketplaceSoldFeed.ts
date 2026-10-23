@@ -7,7 +7,6 @@ import { filterListingIdsMatchingBrand } from "@/lib/db/brand-listings"
 import { getBrandBySlug } from "@/lib/brands/server"
 import { sliceMarketplaceFeedPage } from "@/lib/marketplace-feed-tab"
 import { getSoldFeedStats } from "@/lib/feed-sold-stats"
-import { formatGmv } from "@/lib/format-gmv"
 import { boardLengthLabelFromDimensionsColumn } from "@/lib/listing-dimensions-storage"
 import { publicListingListPriceUsd } from "@/lib/utils/public-listing-price"
 import {
@@ -51,7 +50,8 @@ const SOLD_LISTING_SELECT = `
 
 export type MarketplaceSoldFeedPayload = {
   soldListings: SoldFeedListing[]
-  soldStats: { count: number; gmvFormatted: string }
+  /** Raw total. The page formats this on read so a label change is not stuck in the data cache. */
+  soldStats: { count: number; gmvTotal: number }
   brandFilterName: string | null
   brandUnknown: boolean
   hasMore: boolean
@@ -263,7 +263,7 @@ export async function loadMarketplaceSoldFeed(
     const shipped = await loadMarketplaceShippedFeedPage(supabase, brandSlug, 1)
     return {
       soldListings: shipped.soldListings,
-      soldStats: { count: shipped.totalCount, gmvFormatted: "" },
+      soldStats: { count: shipped.totalCount, gmvTotal: 0 },
       brandFilterName: shipped.brandFilterName,
       brandUnknown: shipped.brandUnknown,
       hasMore: shipped.totalPages > 1,
@@ -277,6 +277,6 @@ export async function loadMarketplaceSoldFeed(
   ])
   return {
     ...page,
-    soldStats: { count: stats.soldCount, gmvFormatted: formatGmv(stats.gmvTotal) },
+    soldStats: { count: stats.soldCount, gmvTotal: stats.gmvTotal },
   }
 }
