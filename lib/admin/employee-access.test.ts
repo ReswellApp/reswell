@@ -4,6 +4,7 @@ import { getAdminNavGroupsForUser } from "../admin-nav.ts"
 import {
   EMPLOYEE_ADMIN_HOME,
   EMPLOYEE_NAV_HREFS,
+  EMPLOYEE_TOOLS,
   employeeAdminPathDecision,
 } from "./employee-access.ts"
 
@@ -14,8 +15,9 @@ function navHrefs(isAdmin: boolean): string[] {
 }
 
 describe("employeeAdminPathDecision", () => {
-  it("allows the six employee tools", () => {
+  it("allows home and the employee tools", () => {
     for (const pathname of [
+      "/admin/home",
       "/admin/search-analytics",
       "/admin/saved-searches",
       "/admin/crm",
@@ -46,8 +48,8 @@ describe("employeeAdminPathDecision", () => {
     }
   })
 
-  it("sends every other admin path to search analytics", () => {
-    for (const pathname of ["/admin", "/admin/home", "/admin/orders", "/admin/users", "/admin/listings"]) {
+  it("sends every other admin path to employee home", () => {
+    for (const pathname of ["/admin", "/admin/orders", "/admin/users", "/admin/listings"]) {
       const decision = employeeAdminPathDecision(pathname, new URLSearchParams())
       assert.equal(decision.allow, false)
       if (!decision.allow) {
@@ -69,10 +71,19 @@ describe("employeeAdminPathDecision", () => {
 })
 
 describe("getAdminNavGroupsForUser employee nav", () => {
-  it("shows admins every item and employees only the allowlist", () => {
+  it("shows admins every item and employees one Employee bar", () => {
     const adminHrefs = navHrefs(true)
+    const groups = getAdminNavGroupsForUser(false)
     const employeeHrefs = navHrefs(false)
     assert.ok(adminHrefs.length > employeeHrefs.length)
+    assert.deepEqual(
+      groups.map((group) => group.label),
+      ["Employee"],
+    )
+    assert.deepEqual(
+      employeeHrefs,
+      EMPLOYEE_TOOLS.map((tool) => tool.href),
+    )
     assert.deepEqual(new Set(employeeHrefs), EMPLOYEE_NAV_HREFS)
     for (const href of employeeHrefs) {
       assert.ok(adminHrefs.includes(href))

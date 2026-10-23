@@ -11,6 +11,7 @@ import {
 
 export type HeaderProfileBootstrap = {
   is_admin: boolean | null
+  is_employee?: boolean | null
   avatar_url: string | null
   display_name: string | null
   shop_logo_url: string | null
@@ -64,7 +65,7 @@ export async function fetchHeaderSiteBootstrap(
     supabase
       .from("profiles")
       .select(
-        "is_admin, avatar_url, display_name, shop_logo_url, is_shop, unread_message_count, unread_support_count",
+        "is_admin, is_employee, avatar_url, display_name, shop_logo_url, is_shop, unread_message_count, unread_support_count",
       )
       .eq("id", user.id)
       .single(),

@@ -2,7 +2,7 @@
  * Admin sidebar: grouped nav + role-based href filtering.
  * Icon keys are resolved in the client sidebar (Lucide components are not serializable).
  */
-import { EMPLOYEE_NAV_HREFS } from '@/lib/admin/employee-access'
+import { EMPLOYEE_NAV_HREFS, EMPLOYEE_TOOLS } from '@/lib/admin/employee-access'
 
 export type AdminNavIconKey =
   | 'layoutDashboard'
@@ -180,15 +180,17 @@ export function flattenAdminNavItems(groups: AdminNavGroupConfig[]): AdminNavIte
 }
 
 export function getAdminNavGroupsForUser(isAdmin: boolean): AdminNavGroupConfig[] {
-  const allow = (href: string) => isAdmin || EMPLOYEE_NAV_HREFS.has(href)
+  if (isAdmin) return ADMIN_NAV_GROUPS
 
-  return ADMIN_NAV_GROUPS.map((group) => ({
-    ...group,
-    items: group.items
-      .filter((item) => allow(item.href))
-      .map((item) => ({
-        ...item,
-        children: item.children?.filter((child) => allow(child.href)),
-      })),
-  })).filter((group) => group.items.length > 0)
+  const byHref = new Map(
+    flattenAdminNavItems(ADMIN_NAV_GROUPS).map((item) => [item.href, item]),
+  )
+  const items = EMPLOYEE_TOOLS.flatMap((tool) => {
+    if (!EMPLOYEE_NAV_HREFS.has(tool.href)) return []
+    const found = byHref.get(tool.href)
+    if (!found) return []
+    return [{ ...found, label: tool.label, children: undefined }]
+  })
+
+  return [{ id: 'employee', label: 'Employee', items }]
 }

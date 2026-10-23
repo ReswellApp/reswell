@@ -69,6 +69,8 @@ const headerChromeSnapshotSchema = z.object({
     })
     .refine((value) => value === null || headerChromeAvatarCssValue(value) !== null),
   isAdmin: z.boolean(),
+  /** Missing on snapshots written before the employee menu existed. */
+  isEmployee: z.boolean().optional(),
   isShipper: z.boolean(),
   isDropoffLocation: z.boolean(),
   unreadMessages: z.number().int().nonnegative().max(1_000_000),

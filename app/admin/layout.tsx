@@ -51,7 +51,7 @@ export default async function AdminLayout({
     displayName: profile?.display_name?.trim() || profile?.email?.trim() || 'Admin',
     email: profile?.email ?? user.email ?? null,
     avatarUrl: profile?.avatar_url ?? null,
-    roleLabel: isAdmin ? 'Super Admin' : 'Staff',
+    roleLabel: isAdmin ? 'Super Admin' : 'Employee',
   }
 
   return (

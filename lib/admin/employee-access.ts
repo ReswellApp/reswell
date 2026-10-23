@@ -4,19 +4,24 @@
  * proxy, the sidebar, and the client guard so a typed URL cannot slip through.
  */
 
-export const EMPLOYEE_ADMIN_HOME = "/admin/search-analytics"
+export const EMPLOYEE_ADMIN_HOME = "/admin/home"
+
+/** Tools an employee can open, in sidebar and home-tile order. */
+export const EMPLOYEE_TOOLS = [
+  { href: "/admin/home", label: "Home" },
+  { href: "/admin/search-analytics", label: "Search analytics" },
+  { href: "/admin/saved-searches", label: "Saved searches" },
+  { href: "/admin/used-board-market-dashboard?tab=catalog", label: "Brand catalog" },
+  { href: "/admin/crm", label: "CRM" },
+  { href: "/admin/shipping", label: "Shipping" },
+  { href: "/admin/orders/terminal", label: "In-person checkout" },
+] as const
 
 /** Sidebar hrefs an employee may see. Query strings are part of the match. */
-export const EMPLOYEE_NAV_HREFS = new Set<string>([
-  "/admin/search-analytics",
-  "/admin/saved-searches",
-  "/admin/used-board-market-dashboard?tab=catalog",
-  "/admin/crm",
-  "/admin/shipping",
-  "/admin/orders/terminal",
-])
+export const EMPLOYEE_NAV_HREFS = new Set<string>(EMPLOYEE_TOOLS.map((tool) => tool.href))
 
 const EMPLOYEE_PATH_PREFIXES = [
+  "/admin/home",
   "/admin/search-analytics",
   "/admin/saved-searches",
   "/admin/crm",
