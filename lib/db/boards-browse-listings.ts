@@ -15,11 +15,13 @@ import {
 import { sortRecordsByIdOrder } from "@/lib/utils/sort-by-id-order"
 import { listBoardsBrowseTopPickListingIdsOrdered } from "@/lib/db/boards-browse-top-picks"
 import {
+  BOARDS_BROWSE_ROTATE_ID_SCAN_SORT,
   boardsBrowseDailyRotateSeed,
   compareRotateIdRowsForDailyRotate,
   listingCreatedAtMs,
   orderListingIdsForDailyRotate,
   prependPinnedListingIds,
+  shouldFallbackBoardsBrowseRotate,
 } from "@/lib/utils/boards-browse-daily-rotate"
 import { isBoardsBrowseSuppressionSortAvailable } from "@/lib/db/boards-browse-suppressed-admin"
 import {
@@ -232,9 +234,11 @@ async function listSurfboardBrowseRotateIdRows(
       condition: params.condition,
       query: "",
       selectColumns,
-      pagedSort: "id",
+      // Indexed newest-first — JS re-sorts by the daily seed after the scan.
+      pagedSort: BOARDS_BROWSE_ROTATE_ID_SCAN_SORT,
       pagedRange: { from, to },
       withCount: false,
+      useSuppressionSort: false,
     })) as unknown as SurfboardBrowseListingsQuery
 
     const { data, error } = await chain
@@ -314,6 +318,23 @@ export async function fetchBoardsBrowseDailyRotatePage(
     orderedIds.length === 0 ? 0 : Math.max(1, Math.ceil(orderedIds.length / limit))
   const pageIds = orderedIds.slice(offset, offset + limit)
   const boards = await hydrateSurfboardBrowseRowsByIds(supabase, pageIds)
+  if (
+    shouldFallbackBoardsBrowseRotate({
+      idRowCount: idRows.length,
+      pageIdCount: pageIds.length,
+      hydratedCount: boards.length,
+    })
+  ) {
+    console.error(
+      "fetchBoardsBrowseDailyRotatePage: rotate scan empty or hydrate missed — falling back to indexed browse",
+    )
+    return fetchBoardsBrowseIndexedPage(supabase, {
+      boardType: params.boardType,
+      condition: params.condition,
+      sort: BOARDS_BROWSE_ROTATE_ID_SCAN_SORT,
+      page,
+    })
+  }
   return { boards, totalPages }
 }
 
@@ -919,6 +940,58 @@ export type BoardsBrowseCategoryTypePage = {
   totalPages: number
 }
 
+/** Indexed `created_at` / price page — used by non-rotate sorts and as a rotate fallback. */
+async function fetchBoardsBrowseIndexedPage(
+  supabase: SupabaseClient,
+  params: {
+    boardType: string
+    condition: string
+    sort: string
+    page: number
+  },
+): Promise<BoardsBrowseCategoryTypePage> {
+  const limit = BOARDS_BROWSE_PAGE_SIZE
+  const offset = (params.page - 1) * limit
+  let useSuppressionSort = await isBoardsBrowseSuppressionSortAvailable(supabase)
+
+  let listingsChain = (await buildSurfboardBrowseBaseQuery(supabase, {
+    boardType: params.boardType,
+    condition: params.condition,
+    query: "",
+    useSuppressionSort,
+    pagedSort: params.sort,
+    pagedRange: { from: offset, to: offset + limit - 1 },
+  })) as unknown as SurfboardBrowseListingsQuery
+
+  let { data: rawBoards, count, error } = await listingsChain
+
+  if (error && useSuppressionSort) {
+    console.error(
+      "fetchBoardsBrowseIndexedPage (suppression sort):",
+      describeBrowseQueryError(error),
+    )
+    useSuppressionSort = false
+    listingsChain = (await buildSurfboardBrowseBaseQuery(supabase, {
+      boardType: params.boardType,
+      condition: params.condition,
+      query: "",
+      useSuppressionSort: false,
+      pagedSort: params.sort,
+      pagedRange: { from: offset, to: offset + limit - 1 },
+    })) as unknown as SurfboardBrowseListingsQuery
+    ;({ data: rawBoards, count, error } = await listingsChain)
+  }
+
+  if (error) {
+    console.error("fetchBoardsBrowseIndexedPage:", describeBrowseQueryError(error))
+  }
+
+  return {
+    boards: hydrateCardListingImages((rawBoards ?? []) as BoardBrowseListingRow[]),
+    totalPages: Math.ceil((count || 0) / limit),
+  }
+}
+
 /** Default sort, no text/geo/brand filters — used by nav category pills and hourly cache. */
 export async function fetchBoardsBrowseCategoryTypePage(
   supabase: SupabaseClient,
@@ -939,44 +1012,10 @@ export async function fetchBoardsBrowseCategoryTypePage(
     })
   }
 
-  const limit = BOARDS_BROWSE_PAGE_SIZE
-  const offset = (params.page - 1) * limit
-  let useSuppressionSort = await isBoardsBrowseSuppressionSortAvailable(supabase)
-
-  let listingsChain = (await buildSurfboardBrowseBaseQuery(supabase, {
+  return fetchBoardsBrowseIndexedPage(supabase, {
     boardType: params.boardType,
     condition: params.condition,
-    query: "",
-    useSuppressionSort,
-    pagedSort: params.sort,
-    pagedRange: { from: offset, to: offset + limit - 1 },
-  })) as unknown as SurfboardBrowseListingsQuery
-
-  let { data: rawBoards, count, error } = await listingsChain
-
-  if (error && useSuppressionSort) {
-    console.error(
-      "fetchBoardsBrowseCategoryTypePage (suppression sort):",
-      describeBrowseQueryError(error),
-    )
-    useSuppressionSort = false
-    listingsChain = (await buildSurfboardBrowseBaseQuery(supabase, {
-      boardType: params.boardType,
-      condition: params.condition,
-      query: "",
-      useSuppressionSort: false,
-      pagedSort: params.sort,
-      pagedRange: { from: offset, to: offset + limit - 1 },
-    })) as unknown as SurfboardBrowseListingsQuery
-    ;({ data: rawBoards, count, error } = await listingsChain)
-  }
-
-  if (error) {
-    console.error("fetchBoardsBrowseCategoryTypePage:", describeBrowseQueryError(error))
-  }
-
-  return {
-    boards: hydrateCardListingImages((rawBoards ?? []) as BoardBrowseListingRow[]),
-    totalPages: Math.ceil((count || 0) / limit),
-  }
+    sort: params.sort,
+    page: params.page,
+  })
 }
