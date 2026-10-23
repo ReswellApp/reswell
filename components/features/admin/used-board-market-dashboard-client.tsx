@@ -401,7 +401,12 @@ function Legend({ swatch, label }: { swatch: string; label: string }) {
 // Root component
 // ---------------------------------------------------------------------------
 
-export function UsedBoardMarketDashboardClient() {
+export function UsedBoardMarketDashboardClient({
+  catalogOnly = false,
+}: {
+  /** Employees see the catalog tab only — no market analytics. */
+  catalogOnly?: boolean
+}) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -491,8 +496,17 @@ export function UsedBoardMarketDashboardClient() {
   )
 
   useEffect(() => {
+    if (catalogOnly) {
+      setLoading(false)
+      return
+    }
     void load()
-  }, [load])
+  }, [catalogOnly, load])
+
+  useEffect(() => {
+    if (!catalogOnly || filters.tab === "catalog") return
+    updateFilters({ tab: "catalog" })
+  }, [catalogOnly, filters.tab, updateFilters])
 
   const series = data?.series ?? []
   const seriesNewListings = useMemo(() => buildKpiSpark(series, "newListings"), [series])
@@ -505,7 +519,7 @@ export function UsedBoardMarketDashboardClient() {
   )
 
   const filterCount = activeFilterCount(filters)
-  const showMarketFilters = filters.tab !== "catalog"
+  const showMarketFilters = !catalogOnly && filters.tab !== "catalog"
   const waitingOnMarket = showMarketFilters && loading && !data
 
   return (
@@ -527,6 +541,7 @@ export function UsedBoardMarketDashboardClient() {
         refreshing={refreshing}
         onRefresh={() => void load({ silent: false })}
         showMarketFilters={showMarketFilters && Boolean(data)}
+        catalogOnly={catalogOnly}
         onCatalogSaved={() => setCatalogRefreshKey((n) => n + 1)}
       />
 
@@ -560,26 +575,30 @@ export function UsedBoardMarketDashboardClient() {
       {!waitingOnMarket ? (
         <>
           <Tabs
-            value={filters.tab}
+            value={catalogOnly ? "catalog" : filters.tab}
             onValueChange={(value) => updateFilters({ tab: value as DashboardTab })}
             className="w-full"
           >
             <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
-              <TabsTrigger value="overview" className="data-[state=active]:bg-slate-100">
-                Overview
-              </TabsTrigger>
-              <TabsTrigger value="supply" className="data-[state=active]:bg-slate-100">
-                Supply
-              </TabsTrigger>
-              <TabsTrigger value="pricing" className="data-[state=active]:bg-slate-100">
-                Pricing
-              </TabsTrigger>
-              <TabsTrigger value="sales" className="data-[state=active]:bg-slate-100">
-                Sales
-              </TabsTrigger>
-              <TabsTrigger value="geo" className="data-[state=active]:bg-slate-100">
-                Geo &amp; coverage
-              </TabsTrigger>
+              {catalogOnly ? null : (
+                <>
+                  <TabsTrigger value="overview" className="data-[state=active]:bg-slate-100">
+                    Overview
+                  </TabsTrigger>
+                  <TabsTrigger value="supply" className="data-[state=active]:bg-slate-100">
+                    Supply
+                  </TabsTrigger>
+                  <TabsTrigger value="pricing" className="data-[state=active]:bg-slate-100">
+                    Pricing
+                  </TabsTrigger>
+                  <TabsTrigger value="sales" className="data-[state=active]:bg-slate-100">
+                    Sales
+                  </TabsTrigger>
+                  <TabsTrigger value="geo" className="data-[state=active]:bg-slate-100">
+                    Geo &amp; coverage
+                  </TabsTrigger>
+                </>
+              )}
               <TabsTrigger value="catalog" className="data-[state=active]:bg-slate-100">
                 Catalog
               </TabsTrigger>
@@ -699,6 +718,7 @@ function DashboardHeader(props: {
   refreshing: boolean
   onRefresh: () => void
   showMarketFilters: boolean
+  catalogOnly?: boolean
   onCatalogSaved: () => void
 }) {
   const { data, filters, refreshing } = props
@@ -713,14 +733,12 @@ function DashboardHeader(props: {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h2 className="text-2xl font-semibold text-slate-900">
-              Used surfboard market dashboard
+              {props.catalogOnly ? "Brand catalog" : "Used surfboard market dashboard"}
             </h2>
             <p className="mt-1 max-w-3xl text-sm text-slate-500">
-              Market analytics, catalog explorer, and brand / model / variant CMS in one place.
-              Filters re-scope
-              <span className="font-medium text-slate-700"> and re-group </span>
-              every market section: with no filter the page ranks brands; pick a brand, it ranks models;
-              pick a model, it ranks variants.
+              {props.catalogOnly
+                ? "Browse brands, models, and variants, and add new ones to the catalog."
+                : "Market analytics, catalog explorer, and brand / model / variant CMS in one place. Filters re-scope and re-group every market section: with no filter the page ranks brands; pick a brand, it ranks models; pick a model, it ranks variants."}
             </p>
           </div>
           <div className="flex flex-wrap items-center justify-end gap-3">

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
+import { requireAdmin } from "@/lib/brands/admin-server"
 import { pacificYearMonth, previousPacificYearMonth } from "@/lib/services/searchDailyReport"
 import {
   getSearchPeriodReportService,
@@ -22,7 +22,7 @@ export const dynamic = "force-dynamic"
  * GET /api/admin/search-period-report?kind=all_time
  */
 export async function GET(request: NextRequest) {
-  const gate = await requireAdminOrEmployee()
+  const gate = await requireAdmin()
   if (!gate.ok) return gate.response
 
   const parsed = searchPeriodReportQuerySchema.safeParse(
@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
  * Body: { kind: "month" | "all_time", key?: string, force?: boolean }
  */
 export async function POST(request: NextRequest) {
-  const gate = await requireAdminOrEmployee()
+  const gate = await requireAdmin()
   if (!gate.ok) return gate.response
 
   let body: unknown = {}

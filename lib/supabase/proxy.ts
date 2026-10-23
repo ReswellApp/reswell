@@ -14,6 +14,7 @@ import {
 } from "@/lib/auth/password-reset-landing-flag"
 import { hasSupabaseAuthCookies } from '@/lib/auth/has-supabase-auth-cookies'
 import { platformAccessForSignedInUser } from '@/lib/account-access/platform-access'
+import { employeeAdminPathDecision } from '@/lib/admin/employee-access'
 import { pathnameRequiresAuthSession } from '@/lib/auth/pathname-requires-auth-session'
 import { supabaseAuthForwardPathname } from '@/lib/auth/supabase-auth-forward-path'
 import { createServerClient } from '@supabase/ssr'
@@ -273,6 +274,19 @@ async function refreshSupabaseSession(
         const url = request.nextUrl.clone()
         url.pathname = '/'
         return NextResponse.redirect(url)
+      }
+
+      if (!platformAccess.isAdmin && platformAccess.isEmployee) {
+        const decision = employeeAdminPathDecision(
+          request.nextUrl.pathname,
+          request.nextUrl.searchParams,
+        )
+        if (!decision.allow) {
+          const url = request.nextUrl.clone()
+          url.pathname = decision.redirectPath
+          url.search = decision.redirectSearch
+          return NextResponse.redirect(url)
+        }
       }
     } catch {
       // Profiles lookup can fail during upstream outages — admin layout re-checks.

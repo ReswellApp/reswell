@@ -462,7 +462,7 @@ export async function listEmailStudioAssistantMessagesService(
     .select("is_admin, is_employee")
     .eq("id", user.id)
     .maybeSingle()
-  if (!profile || (profile.is_admin !== true && profile.is_employee !== true)) {
+  if (profile?.is_admin !== true) {
     return { error: "Forbidden" as const }
   }
   try {
@@ -516,7 +516,7 @@ export async function askEmailStudioAssistantService(input: {
     .select("is_admin, is_employee")
     .eq("id", user.id)
     .maybeSingle()
-  if (!profile || (profile.is_admin !== true && profile.is_employee !== true)) {
+  if (profile?.is_admin !== true) {
     return { error: "Forbidden" }
   }
   const client = (() => {
@@ -733,7 +733,7 @@ export async function generateEmailStudioFromBriefService(input: GenerateEmailSt
     .select("is_admin, is_employee")
     .eq("id", user.id)
     .maybeSingle()
-  if (!profile || (profile.is_admin !== true && profile.is_employee !== true)) {
+  if (profile?.is_admin !== true) {
     return { error: "Forbidden" }
   }
   const client = (() => {

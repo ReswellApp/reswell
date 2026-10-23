@@ -2,6 +2,8 @@
  * Admin sidebar: grouped nav + role-based href filtering.
  * Icon keys are resolved in the client sidebar (Lucide components are not serializable).
  */
+import { EMPLOYEE_NAV_HREFS } from '@/lib/admin/employee-access'
+
 export type AdminNavIconKey =
   | 'layoutDashboard'
   | 'waves'
@@ -52,42 +54,6 @@ export interface AdminNavGroupConfig {
   label: string
   items: AdminNavItemConfig[]
 }
-
-/** Hrefs hidden for is_employee-only users (not full admin). */
-const EMPLOYEE_EXCLUDED_HREFS = new Set<string>([
-  '/admin/users',
-  '/admin/wallets',
-  '/admin/sale-tips',
-  '/admin/settings',
-  '/admin/seo',
-  '/admin/google-merchant',
-  '/admin/google-analytics',
-  '/admin/ad-sales',
-  '/admin/ads',
-  '/admin/search-curation',
-  '/admin/partner-embeds',
-  '/admin/shipping',
-  '/admin/dropoff-locations',
-  '/admin/shipper',
-  '/admin/tools',
-  '/admin/site-assets',
-  '/admin/llm-usage',
-  '/admin/intelligence',
-  '/admin/cohorts',
-  '/admin/listings/brand-requests',
-  '/admin/listings/board-catalog-data',
-  '/admin/boards-archive',
-  '/admin/fbcatalog',
-  '/admin/facebook-marketplace-bulk',
-  '/admin/listings/brand-model-autofills',
-  '/admin/orders/terminal',
-  '/admin/promo-codes',
-  '/admin/listings/bulk',
-  '/admin/shop',
-  '/admin/shop/orders',
-  '/admin/hayden-shop',
-  '/admin/saved-searches',
-])
 
 export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
   {
@@ -214,7 +180,7 @@ export function flattenAdminNavItems(groups: AdminNavGroupConfig[]): AdminNavIte
 }
 
 export function getAdminNavGroupsForUser(isAdmin: boolean): AdminNavGroupConfig[] {
-  const allow = (href: string) => isAdmin || !EMPLOYEE_EXCLUDED_HREFS.has(href)
+  const allow = (href: string) => isAdmin || EMPLOYEE_NAV_HREFS.has(href)
 
   return ADMIN_NAV_GROUPS.map((group) => ({
     ...group,

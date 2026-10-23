@@ -32,7 +32,7 @@ function canAccessAdminListings(
 ): boolean {
   if (!email) return false
   if (email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()) return true
-  return profile?.is_admin === true || profile?.is_employee === true
+  return profile?.is_admin === true
 }
 
 /** One page of listing rows for /admin/listings — never selects the whole table. */
@@ -297,7 +297,7 @@ export async function DELETE(request: NextRequest) {
     .single()
 
   const isSuperAdmin = user.email?.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()
-  const canDelete = isSuperAdmin || profile?.is_admin || profile?.is_employee
+  const canDelete = isSuperAdmin || profile?.is_admin === true
   if (!canDelete) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }

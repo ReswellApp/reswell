@@ -66,12 +66,12 @@ export function AdminAppShell({
   }, [])
 
   useEffect(() => {
-    if (workspace) return
+    if (workspace || !isAdmin) return
     const timer = window.setTimeout(() => {
       router.prefetch('/admin/contact-messages')
     }, 400)
     return () => window.clearTimeout(timer)
-  }, [router, workspace])
+  }, [isAdmin, router, workspace])
 
   return (
     <div className={cn('admin-app flex flex-col', workspace ? 'h-dvh overflow-hidden' : 'min-h-dvh')}>

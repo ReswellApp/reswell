@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
+import { requireAdmin } from "@/lib/brands/admin-server"
 import {
   getSearchDailyReportService,
   listSearchDailyReportsService,
@@ -21,7 +21,7 @@ export const dynamic = "force-dynamic"
  * GET /api/admin/search-daily-report  → recent reports + default date
  */
 export async function GET(request: NextRequest) {
-  const gate = await requireAdminOrEmployee()
+  const gate = await requireAdmin()
   if (!gate.ok) return gate.response
 
   const parsed = searchDailyReportQuerySchema.safeParse(
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
  * Runs Gemini against that Pacific day's search events and upserts the report.
  */
 export async function POST(request: NextRequest) {
-  const gate = await requireAdminOrEmployee()
+  const gate = await requireAdmin()
   if (!gate.ok) return gate.response
 
   let body: unknown = {}

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
+import { requireAdmin } from "@/lib/brands/admin-server"
 import { getAdminOrdersStats } from "@/lib/services/adminOrdersStats"
 
 /**
@@ -9,7 +9,7 @@ import { getAdminOrdersStats } from "@/lib/services/adminOrdersStats"
  * and attention queues for the orders dashboard.
  */
 export async function GET() {
-  const gate = await requireAdminOrEmployee()
+  const gate = await requireAdmin()
   if (!gate.ok) {
     return gate.response
   }

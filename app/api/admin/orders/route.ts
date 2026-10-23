@@ -52,6 +52,17 @@ export async function GET(request: NextRequest) {
     return gate.response
   }
 
+  // Employees use this search from the shipping desk only. The orders admin
+  // page stays admin-only, and an unfiltered list is not part of shipping.
+  if (!gate.ctx.isAdmin) {
+    const q = (request.nextUrl.searchParams.get("q") ?? "").trim()
+    const limitRaw = request.nextUrl.searchParams.get("limit")
+    const limit = limitRaw == null || limitRaw === "" ? 15 : Number(limitRaw)
+    if (q.length < 2 || !Number.isInteger(limit) || limit < 1 || limit > 15) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+  }
+
   const params = Object.fromEntries(request.nextUrl.searchParams)
   const parsed = querySchema.safeParse(params)
   if (!parsed.success) {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { requireAdmin } from "@/lib/brands/admin-server"
+import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
 import { searchListingsForAdminTerminal } from "@/lib/db/adminTerminalListings"
 import { adminTerminalListingSearchQuerySchema } from "@/lib/validations/adminTerminalSale"
 
@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic"
 
 /** GET /api/admin/terminal/listings/search?q=… */
 export async function GET(request: NextRequest) {
-  const gate = await requireAdmin()
+  const gate = await requireAdminOrEmployee()
   if (!gate.ok) {
     return gate.response
   }
