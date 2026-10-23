@@ -142,6 +142,7 @@ export async function newestListingForSavedSearch(
         sort: "created-at",
         from: 0,
         size: 1,
+        typoFallback: false,
       })
       if (res) {
         const id = res.ids[0]
