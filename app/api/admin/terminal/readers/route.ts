@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { requireAdmin } from "@/lib/brands/admin-server"
+import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
 import {
   getStripeTerminalLocationId,
   listTerminalReadersForLocation,
@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic"
 
 /** GET /api/admin/terminal/readers — list Stripe Terminal readers for the configured location. */
 export async function GET() {
-  const gate = await requireAdmin()
+  const gate = await requireAdminOrEmployee()
   if (!gate.ok) {
     return gate.response
   }

@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/brands/admin-server"
+import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
 import { shipEngineRequest } from "@/lib/shipengine/client"
 import { isShipEngineConfigured } from "@/lib/shipengine/config"
 import { NextResponse } from "next/server"
@@ -25,7 +25,7 @@ async function apiSlice(res: Response) {
  * POST: proxy to ShipEngine for validate_address | rates | create_label | purchase_rate.
  */
 export async function GET() {
-  const gate = await requireAdmin()
+  const gate = await requireAdminOrEmployee()
   if (!gate.ok) return gate.response
 
   if (!isShipEngineConfigured()) {
@@ -54,7 +54,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const gate = await requireAdmin()
+  const gate = await requireAdminOrEmployee()
   if (!gate.ok) return gate.response
 
   if (!isShipEngineConfigured()) {

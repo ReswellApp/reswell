@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
+import { requireAdmin } from "@/lib/brands/admin-server"
 import { getPickupOnlySurfboardsDashboard } from "@/lib/services/pickupOnlySurfboards"
 
 export const dynamic = "force-dynamic"
@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic"
  * GET /api/admin/pickup-only-surfboards
  */
 export async function GET() {
-  const gate = await requireAdminOrEmployee()
+  const gate = await requireAdmin()
   if (!gate.ok) return gate.response
 
   try {

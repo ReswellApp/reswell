@@ -15,6 +15,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { AdminSidebarNav } from '@/components/features/admin/admin-sidebar-nav'
 import { signOutAndRedirect } from '@/lib/auth/sign-out-and-redirect'
+import { EMPLOYEE_ADMIN_HOME } from '@/lib/admin/employee-access'
 import type { AdminNavGroupConfig } from '@/lib/admin-nav'
 import type { AdminNavBadgeCounts } from '@/lib/admin-nav-badge-counts'
 import type { AdminShellUser } from '@/lib/admin/admin-shell-user'
@@ -85,7 +86,11 @@ export function AdminSidebarPanel({
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="px-4 pb-3 pt-[max(3rem,calc(env(safe-area-inset-top)+2.5rem))] lg:pt-5">
-        <Link href="/admin/home" onClick={onNavigate} className="flex items-center gap-2.5">
+        <Link
+          href={isAdmin ? '/admin/home' : EMPLOYEE_ADMIN_HOME}
+          onClick={onNavigate}
+          className="flex items-center gap-2.5"
+        >
           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[hsl(var(--admin-teal))] text-white">
             <Store className="h-4 w-4" aria-hidden />
           </span>

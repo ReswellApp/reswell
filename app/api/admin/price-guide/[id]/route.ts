@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
+import { requireAdmin } from "@/lib/brands/admin-server"
 import { priceGuideEntryUpdateSchema } from "@/lib/validations/price-guide"
 import {
   deletePriceGuideEntryService,
@@ -10,7 +10,7 @@ import {
 type RouteCtx = { params: Promise<{ id: string }> }
 
 export async function GET(_req: NextRequest, ctx: RouteCtx) {
-  const gate = await requireAdminOrEmployee()
+  const gate = await requireAdmin()
   if (!gate.ok) return gate.response
 
   const { id } = await ctx.params
@@ -20,7 +20,7 @@ export async function GET(_req: NextRequest, ctx: RouteCtx) {
 }
 
 export async function PATCH(request: Request, ctx: RouteCtx) {
-  const gate = await requireAdminOrEmployee()
+  const gate = await requireAdmin()
   if (!gate.ok) return gate.response
 
   const { id } = await ctx.params
@@ -48,7 +48,7 @@ export async function PATCH(request: Request, ctx: RouteCtx) {
 }
 
 export async function DELETE(_req: NextRequest, ctx: RouteCtx) {
-  const gate = await requireAdminOrEmployee()
+  const gate = await requireAdmin()
   if (!gate.ok) return gate.response
 
   const { id } = await ctx.params

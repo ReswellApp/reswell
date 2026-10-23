@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
-import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
+import { requireAdmin } from "@/lib/brands/admin-server"
 import { isPriceGuideCategorySlug } from "@/lib/price-guide/categories"
 import { getPriceGuideCoverage } from "@/lib/services/priceGuideAdmin"
 
 export async function GET(req: NextRequest) {
-  const gate = await requireAdminOrEmployee()
+  const gate = await requireAdmin()
   if (!gate.ok) return gate.response
 
   const raw = req.nextUrl.searchParams.get("category_slug") ?? "surfboards"

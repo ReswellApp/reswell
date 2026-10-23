@@ -15,8 +15,8 @@ export type AdminStaffContext = {
 }
 
 /**
- * Admins and support employees may read shared admin resources (e.g. order lookup).
- * Destructive actions should still use {@link requireAdmin}.
+ * Admins, and employees on the few admin tools they are allowed to use.
+ * Everything else should use {@link requireAdmin}.
  */
 export async function requireAdminOrEmployee(): Promise<
   { ok: true; ctx: AdminStaffContext } | { ok: false; response: NextResponse }

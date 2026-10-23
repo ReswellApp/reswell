@@ -1,4 +1,4 @@
-import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
+import { requireAdmin } from "@/lib/brands/admin-server"
 import {
   dbCountAdminUserDetailOrders,
   dbGetAdminUserDetailProfile,
@@ -40,7 +40,7 @@ type StaffServiceContext =
   | { ok: false; error: string }
 
 async function requireStaffService(): Promise<StaffServiceContext> {
-  const gate = await requireAdminOrEmployee()
+  const gate = await requireAdmin()
   if (!gate.ok) return { ok: false, error: "Unauthorized" }
   try {
     return {

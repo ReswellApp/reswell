@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server'
-import { requireAdminOrEmployee } from '@/lib/brands/admin-server'
+import { requireAdmin } from '@/lib/brands/admin-server'
 import {
   createReswellTicketService,
   getReswellTicketsSnapshot,
 } from '@/lib/services/reswellTickets'
 
 export async function GET() {
-  const gate = await requireAdminOrEmployee()
+  const gate = await requireAdmin()
   if (!gate.ok) return gate.response
 
   try {
@@ -20,7 +20,7 @@ export async function GET() {
 }
 
 export async function POST() {
-  const gate = await requireAdminOrEmployee()
+  const gate = await requireAdmin()
   if (!gate.ok) return gate.response
 
   try {

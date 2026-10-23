@@ -2,6 +2,8 @@
  * Admin sidebar: grouped nav + role-based href filtering.
  * Icon keys are resolved in the client sidebar (Lucide components are not serializable).
  */
+import { EMPLOYEE_NAV_HREFS, EMPLOYEE_TOOLS } from '@/lib/admin/employee-access'
+
 export type AdminNavIconKey =
   | 'layoutDashboard'
   | 'waves'
@@ -52,42 +54,6 @@ export interface AdminNavGroupConfig {
   label: string
   items: AdminNavItemConfig[]
 }
-
-/** Hrefs hidden for is_employee-only users (not full admin). */
-const EMPLOYEE_EXCLUDED_HREFS = new Set<string>([
-  '/admin/users',
-  '/admin/wallets',
-  '/admin/sale-tips',
-  '/admin/settings',
-  '/admin/seo',
-  '/admin/google-merchant',
-  '/admin/google-analytics',
-  '/admin/ad-sales',
-  '/admin/ads',
-  '/admin/search-curation',
-  '/admin/partner-embeds',
-  '/admin/shipping',
-  '/admin/dropoff-locations',
-  '/admin/shipper',
-  '/admin/tools',
-  '/admin/site-assets',
-  '/admin/llm-usage',
-  '/admin/intelligence',
-  '/admin/cohorts',
-  '/admin/listings/brand-requests',
-  '/admin/listings/board-catalog-data',
-  '/admin/boards-archive',
-  '/admin/fbcatalog',
-  '/admin/facebook-marketplace-bulk',
-  '/admin/listings/brand-model-autofills',
-  '/admin/orders/terminal',
-  '/admin/promo-codes',
-  '/admin/listings/bulk',
-  '/admin/shop',
-  '/admin/shop/orders',
-  '/admin/hayden-shop',
-  '/admin/saved-searches',
-])
 
 export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
   {
@@ -214,15 +180,17 @@ export function flattenAdminNavItems(groups: AdminNavGroupConfig[]): AdminNavIte
 }
 
 export function getAdminNavGroupsForUser(isAdmin: boolean): AdminNavGroupConfig[] {
-  const allow = (href: string) => isAdmin || !EMPLOYEE_EXCLUDED_HREFS.has(href)
+  if (isAdmin) return ADMIN_NAV_GROUPS
 
-  return ADMIN_NAV_GROUPS.map((group) => ({
-    ...group,
-    items: group.items
-      .filter((item) => allow(item.href))
-      .map((item) => ({
-        ...item,
-        children: item.children?.filter((child) => allow(child.href)),
-      })),
-  })).filter((group) => group.items.length > 0)
+  const byHref = new Map(
+    flattenAdminNavItems(ADMIN_NAV_GROUPS).map((item) => [item.href, item]),
+  )
+  const items = EMPLOYEE_TOOLS.flatMap((tool) => {
+    if (!EMPLOYEE_NAV_HREFS.has(tool.href)) return []
+    const found = byHref.get(tool.href)
+    if (!found) return []
+    return [{ ...found, label: tool.label, children: undefined }]
+  })
+
+  return [{ id: 'employee', label: 'Employee', items }]
 }

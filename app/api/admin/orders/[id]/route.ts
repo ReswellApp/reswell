@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { z } from "zod"
 import { createServiceRoleClient } from "@/lib/supabase/server"
-import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
+import { requireAdmin } from "@/lib/brands/admin-server"
 import type { AdminOrderCapabilities } from "@/lib/admin/admin-order-capabilities"
 import { getOrderDetailForAdmin, isPostgrestSchemaStaleError } from "@/lib/db/adminOrders"
 import { dbGetIncreasedAdjustmentTotalsByOrderIds } from "@/lib/db/shipengineLabelAdjustments"
@@ -27,7 +27,7 @@ export async function GET(
   _request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
-  const gate = await requireAdminOrEmployee()
+  const gate = await requireAdmin()
   if (!gate.ok) {
     return gate.response
   }

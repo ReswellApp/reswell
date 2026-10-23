@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
 
-import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
+import { requireAdmin } from "@/lib/brands/admin-server"
 import { getSellFunnelAnalyticsForAdmin } from "@/lib/services/sellFunnelAnalytics"
 import { sellFunnelAnalyticsQuerySchema } from "@/lib/validations/sell-funnel-analytics"
 
 export async function GET(request: NextRequest) {
-  const gate = await requireAdminOrEmployee()
+  const gate = await requireAdmin()
   if (!gate.ok) return gate.response
 
   const parsed = sellFunnelAnalyticsQuerySchema.safeParse(

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { requireAdmin } from "@/lib/brands/admin-server"
+import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import {
   previewAdminTerminalListing,
@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic"
 
 /** GET /api/admin/terminal/listing-preview?listing_ref=… or ?listing_id=… */
 export async function GET(request: NextRequest) {
-  const gate = await requireAdmin()
+  const gate = await requireAdminOrEmployee()
   if (!gate.ok) {
     return gate.response
   }

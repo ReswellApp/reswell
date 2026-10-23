@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
-import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
+import { requireAdmin } from "@/lib/brands/admin-server"
 import { adminSendMarketplaceThreadMessage } from "@/lib/services/adminSendMarketplaceThreadMessage"
 import { adminMarketplaceThreadReplyBodySchema } from "@/lib/validations/adminMarketplaceThreadReply"
 
@@ -13,7 +13,7 @@ export async function POST(
   request: NextRequest,
   context: { params: Promise<{ id: string }> },
 ) {
-  const gate = await requireAdminOrEmployee()
+  const gate = await requireAdmin()
   if (!gate.ok) {
     return gate.response
   }

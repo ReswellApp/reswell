@@ -5,17 +5,17 @@ import { createClient } from "@/lib/supabase/server"
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-async function viewerIsStaff(
+async function viewerIsAdmin(
   supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
 ): Promise<boolean> {
   const { data } = await supabase
     .from("profiles")
-    .select("is_admin, is_employee")
+    .select("is_admin")
     .eq("id", userId)
     .maybeSingle()
-  const row = data as { is_admin?: boolean | null; is_employee?: boolean | null } | null
-  return row?.is_admin === true || row?.is_employee === true
+  const row = data as { is_admin?: boolean | null } | null
+  return row?.is_admin === true
 }
 
 export async function GET(_request: Request, props: { params: Promise<{ id: string }> }) {
@@ -34,7 +34,7 @@ export async function GET(_request: Request, props: { params: Promise<{ id: stri
   }
 
   const access = await loadMarketplaceOrderAccess(supabase, orderId)
-  if (!access.ok && !(await viewerIsStaff(supabase, user.id))) {
+  if (!access.ok && !(await viewerIsAdmin(supabase, user.id))) {
     return NextResponse.json(
       { error: access.status === 401 ? "Unauthorized" : "Not found" },
       { status: access.status === 401 ? 401 : 404 },

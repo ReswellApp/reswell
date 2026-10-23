@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     .select("is_admin, is_employee")
     .eq("id", user.id)
     .single()
-  if (!profile?.is_admin && !profile?.is_employee) {
+  if (profile?.is_admin !== true) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 

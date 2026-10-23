@@ -205,6 +205,7 @@ type HeaderDerivedNavState = {
   profileAvatarUrl: string | null
   profileDisplayName: string | null
   isAdmin: boolean
+  isEmployee: boolean
   isShipper: boolean
   isDropoffLocation: boolean
   unreadMessages: number
@@ -220,6 +221,7 @@ function deriveHeaderNavState(payload: SiteChromeAuthPayload): HeaderDerivedNavS
       profileAvatarUrl: null,
       profileDisplayName: null,
       isAdmin: false,
+      isEmployee: false,
       isShipper: false,
       isDropoffLocation: false,
       unreadMessages: 0,
@@ -235,6 +237,7 @@ function deriveHeaderNavState(payload: SiteChromeAuthPayload): HeaderDerivedNavS
       profileAvatarUrl: resolveHeaderAvatarUrl(payload.user, null),
       profileDisplayName: null,
       isAdmin: false,
+      isEmployee: false,
       isShipper: b?.isShipper === true,
       isDropoffLocation: b?.isDropoffLocation === true,
       unreadMessages: 0,
@@ -249,6 +252,7 @@ function deriveHeaderNavState(payload: SiteChromeAuthPayload): HeaderDerivedNavS
     profileAvatarUrl: resolveHeaderAvatarUrl(payload.user, prof),
     profileDisplayName: prof.display_name,
     isAdmin: prof.is_admin === true,
+    isEmployee: prof.is_employee === true,
     isShipper: b.isShipper === true,
     isDropoffLocation: b.isDropoffLocation === true,
     unreadMessages: b.unreadMessages,
@@ -516,6 +520,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
   const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(initNav.profileAvatarUrl)
   const [profileDisplayName, setProfileDisplayName] = useState<string | null>(initNav.profileDisplayName)
   const [isAdmin, setIsAdmin] = useState(initNav.isAdmin)
+  const [isEmployee, setIsEmployee] = useState(initNav.isEmployee)
   const [isShipper, setIsShipper] = useState(initNav.isShipper)
   const [isDropoffLocation, setIsDropoffLocation] = useState(initNav.isDropoffLocation)
   const [unreadMessages, setUnreadMessages] = useState(initNav.unreadMessages)
@@ -622,6 +627,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       b?.profile?.avatar_url ?? "",
       b?.profile?.shop_logo_url ?? "",
       String(b?.profile?.is_admin ?? ""),
+      String(b?.profile?.is_employee ?? ""),
       String(b?.isShipper ?? ""),
       String(b?.isDropoffLocation ?? ""),
       b?.shopAccess?.activeAccountId ?? "",
@@ -637,6 +643,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     serverHeaderAuth.bootstrap?.profile?.avatar_url,
     serverHeaderAuth.bootstrap?.profile?.shop_logo_url,
     serverHeaderAuth.bootstrap?.profile?.is_admin,
+    serverHeaderAuth.bootstrap?.profile?.is_employee,
     serverHeaderAuth.bootstrap?.isShipper,
     serverHeaderAuth.bootstrap?.isDropoffLocation,
     serverHeaderAuth.bootstrap?.shopAccess?.activeAccountId,
@@ -652,6 +659,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     setProfileAvatarUrl(guest.profileAvatarUrl)
     setProfileDisplayName(guest.profileDisplayName)
     setIsAdmin(guest.isAdmin)
+    setIsEmployee(guest.isEmployee)
     setIsShipper(guest.isShipper)
     setIsDropoffLocation(guest.isDropoffLocation)
     setUnreadMessages(guest.unreadMessages)
@@ -686,6 +694,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
           setProfileAvatarUrl(remembered.avatarUrl)
           setProfileDisplayName(remembered.displayName)
           setIsAdmin(remembered.isAdmin)
+          setIsEmployee(remembered.isEmployee === true)
           setIsShipper(remembered.isShipper)
           setIsDropoffLocation(remembered.isDropoffLocation)
           setUnreadMessages(remembered.unreadMessages)
@@ -734,6 +743,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       setProfileAvatarUrl((prev) => prev ?? d.profileAvatarUrl)
       setProfileDisplayName((prev) => prev ?? d.profileDisplayName)
       setIsAdmin((prev) => (d.isAdmin ? d.isAdmin : prev))
+      setIsEmployee((prev) => (d.isEmployee ? d.isEmployee : prev))
       setIsShipper((prev) => (d.isShipper ? d.isShipper : prev))
       setIsDropoffLocation((prev) => (d.isDropoffLocation ? d.isDropoffLocation : prev))
       applyServerUnread(d.unreadMessages, "partial")
@@ -748,6 +758,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       setProfileAvatarUrl(d.profileAvatarUrl)
       setProfileDisplayName(d.profileDisplayName)
       setIsAdmin(d.isAdmin)
+      setIsEmployee(d.isEmployee)
       setIsShipper(d.isShipper)
       setIsDropoffLocation(d.isDropoffLocation)
       applyServerUnread(d.unreadMessages, "full")
@@ -830,7 +841,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         supabase
           .from("profiles")
           .select(
-            "is_admin, avatar_url, display_name, shop_logo_url, is_shop, unread_message_count, unread_support_count",
+            "is_admin, is_employee, avatar_url, display_name, shop_logo_url, is_shop, unread_message_count, unread_support_count",
           )
           .eq("id", resolvedUser.id)
           .single(),
@@ -855,6 +866,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       const nextDisplayName =
         typeof profile?.display_name === "string" ? profile.display_name : null
       setIsAdmin(profile?.is_admin || false)
+      setIsEmployee(profile?.is_employee === true)
       setIsShipper(isShipperMember)
       setIsDropoffLocation(isDropoffMember)
       setProfileAvatarUrl(nextAvatarUrl)
@@ -898,6 +910,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
           displayName: persistedName,
           avatarUrl: persistedAvatar,
           isAdmin: profile.is_admin === true,
+          isEmployee: profile.is_employee === true,
           isShipper: isShipperMember,
           isDropoffLocation: isDropoffMember,
           unreadMessages: Math.max(0, Number(profile.unread_message_count ?? 0) || 0),
@@ -1302,6 +1315,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         walletBalance={walletBalance}
         unreadSupport={unreadSupport}
         isAdmin={isAdmin}
+        isEmployee={isEmployee}
         isShipper={isShipper}
         isDropoffLocation={isDropoffLocation}
         shopAccess={shopAccess}

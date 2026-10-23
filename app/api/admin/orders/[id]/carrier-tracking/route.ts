@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
-import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
+import { requireAdmin } from "@/lib/brands/admin-server"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { getOrderCarrierTrackingForAdmin } from "@/lib/services/orderCarrierTracking"
 import { persistOrderCarrierTrackingSnapshot } from "@/lib/services/persistOrderCarrierTracking"
@@ -11,7 +11,7 @@ export async function GET(
   _request: NextRequest,
   context: { params: Promise<{ id: string }> },
 ) {
-  const gate = await requireAdminOrEmployee()
+  const gate = await requireAdmin()
   if (!gate.ok) {
     return gate.response
   }

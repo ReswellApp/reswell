@@ -3,7 +3,20 @@
 import Link from "next/link"
 import { memo, useCallback, useRef, useState } from "react"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
-import { ChevronRight, LogOut, User } from "lucide-react"
+import {
+  BellRing,
+  ChevronRight,
+  ContactRound,
+  FolderTree,
+  LayoutDashboard,
+  LineChart,
+  LogOut,
+  ShoppingBag,
+  Truck,
+  User,
+} from "lucide-react"
+import type { LucideIcon } from "lucide-react"
+import { EMPLOYEE_TOOLS } from "@/lib/admin/employee-access"
 import { AccountSwitchDialog } from "@/components/features/dashboard/account-switcher"
 import type { HeaderShopAccess } from "@/lib/auth/header-site-bootstrap"
 import { headerInitialFromDisplayName } from "@/lib/header-user-display"
@@ -31,6 +44,7 @@ export type HeaderAccountMenuProps = {
   walletBalance: number | null
   unreadSupport: number
   isAdmin: boolean
+  isEmployee: boolean
   isShipper: boolean
   isDropoffLocation: boolean
   shopAccess: HeaderShopAccess | null
@@ -67,6 +81,36 @@ function ProfileAvatar({
   )
 }
 
+const EMPLOYEE_MENU_ICONS: Record<string, LucideIcon> = {
+  "/admin/home": LayoutDashboard,
+  "/admin/search-analytics": LineChart,
+  "/admin/saved-searches": BellRing,
+  "/admin/used-board-market-dashboard?tab=catalog": FolderTree,
+  "/admin/crm": ContactRound,
+  "/admin/shipping": Truck,
+  "/admin/orders/terminal": ShoppingBag,
+}
+
+function EmployeeMenuSection() {
+  return (
+    <>
+      <DropdownMenuSeparator />
+      <DropdownMenuLabel className="text-xs font-semibold text-foreground">Employee</DropdownMenuLabel>
+      {EMPLOYEE_TOOLS.map((tool) => {
+        const Icon = EMPLOYEE_MENU_ICONS[tool.href] ?? LayoutDashboard
+        return (
+          <DropdownMenuItem key={tool.href} asChild>
+            <Link href={tool.href} className="flex items-center text-foreground">
+              <Icon className="mr-2 h-4 w-4" />
+              {tool.label}
+            </Link>
+          </DropdownMenuItem>
+        )
+      })}
+    </>
+  )
+}
+
 function HeaderAccountMenuInner({
   user,
   profileAvatarUrl,
@@ -77,6 +121,7 @@ function HeaderAccountMenuInner({
   walletBalance,
   unreadSupport,
   isAdmin,
+  isEmployee,
   isShipper,
   isDropoffLocation,
   shopAccess,
@@ -240,6 +285,8 @@ function HeaderAccountMenuInner({
               </Link>
             </DropdownMenuItem>
           </>
+        ) : isEmployee ? (
+          <EmployeeMenuSection />
         ) : null}
         <DropdownMenuSeparator />
         <DropdownMenuItem

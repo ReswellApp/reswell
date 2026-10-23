@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import { SavedSearchesAdminTable } from "@/components/features/admin/saved-searches-admin-table"
 import { PEER_LISTING_SECTIONS, PEER_LISTING_SECTION_LABELS } from "@/lib/peer-listing-sections"
 import { getAdminSavedSearchesPage } from "@/lib/services/adminSavedSearches"
+import { platformAccessForSignedInUser } from "@/lib/account-access/platform-access"
 import { privatePageMetadata } from "@/lib/site-metadata"
 import { createClient } from "@/lib/supabase/server"
 import type { AdminSavedSearchPage } from "@/lib/types/admin-saved-searches"
@@ -40,10 +41,11 @@ export default async function AdminSavedSearchesPage({
   }
   const { data: profile } = await supabase
     .from("profiles")
-    .select("is_admin")
+    .select("is_admin, is_employee")
     .eq("id", user.id)
     .maybeSingle()
-  if (!profile?.is_admin) {
+  const access = platformAccessForSignedInUser({ profile })
+  if (!access.isAdmin && !access.isEmployee) {
     redirect("/admin")
   }
 

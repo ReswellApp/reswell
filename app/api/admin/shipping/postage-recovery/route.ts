@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { requireAdmin } from "@/lib/brands/admin-server"
+import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
 import { recoverUnusedShipEnginePostage } from "@/lib/services/recoverUnusedShipEnginePostage"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 
@@ -12,7 +12,7 @@ export const maxDuration = 300
  * Postage is credited to the ShipEngine balance. Buyers are not refunded.
  */
 export async function GET() {
-  const gate = await requireAdmin()
+  const gate = await requireAdminOrEmployee()
   if (!gate.ok) return gate.response
 
   let supabase: ReturnType<typeof createServiceRoleClient>
@@ -30,7 +30,7 @@ export async function GET() {
 }
 
 export async function POST() {
-  const gate = await requireAdmin()
+  const gate = await requireAdminOrEmployee()
   if (!gate.ok) return gate.response
 
   let supabase: ReturnType<typeof createServiceRoleClient>
