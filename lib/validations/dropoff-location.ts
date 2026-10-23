@@ -36,5 +36,16 @@ export const dropoffListingParcelUpdateSchema = z.object({
   weightLb: z.number().finite().positive(),
 })
 
+export const dropoffLocationGrantSchema = z.object({
+  email: z.string().trim().email().max(320),
+  dropoffLocationId: z.string().uuid(),
+})
+
+export const dropoffLocationRevokeSchema = z.object({
+  grantId: z.string().uuid(),
+})
+
 export type DropoffLocationUpdateInput = z.infer<typeof dropoffLocationUpdateSchema>
 export type DropoffListingParcelUpdateInput = z.infer<typeof dropoffListingParcelUpdateSchema>
+export type DropoffLocationGrantInput = z.infer<typeof dropoffLocationGrantSchema>
+export type DropoffLocationRevokeInput = z.infer<typeof dropoffLocationRevokeSchema>

@@ -2,25 +2,12 @@ import type { Metadata } from "next"
 import { privatePageMetadata } from "@/lib/site-metadata"
 import { notFound } from "next/navigation"
 import Link from "next/link"
-import Image from "next/image"
 import { createClient } from "@/lib/supabase/server"
+import { getShopAccountContext } from "@/lib/services/accountAccess"
 import { getConversationForBuyerSellerListing } from "@/lib/db/conversations"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
-import {
-  ArrowLeft,
-  Package,
-  Truck,
-  MapPin,
-  CreditCard,
-  DollarSign,
-  User,
-  Clock,
-  Hash,
-  ExternalLink,
-} from "lucide-react"
+import { Truck } from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
 import {
@@ -33,7 +20,6 @@ import { resolveSaleCardStatusDisplay } from "@/lib/sale-card-status"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
-import { LocalDateOnly, LocalDateTime } from "@/components/ui/local-datetime"
 import { OrderMessageThread, type OrderThreadMessage } from "@/components/order-message-thread"
 import {
   SellerTrackingForm,
@@ -60,7 +46,6 @@ import {
   parseOrderTrackingDetail,
 } from "@/lib/shipping/order-tracking-detail"
 import { OrderDetailRealtimeRefresh } from "@/components/order-realtime-refresh"
-import { listingPortraitThumbClass, listingPortraitThumbSizes } from "@/lib/utils/dashboard-display-styles"
 import { getMarketplaceReviewByOrderAndReviewer } from "@/lib/db/order-reviews"
 import { existingMarketplaceReviewFromRow } from "@/lib/marketplace-review-photos"
 import { validateSellerReviewForOrder } from "@/lib/services/orderSellerReview"
@@ -76,6 +61,8 @@ import { ReviewBuyerControls } from "@/components/review-buyer-controls"
 import { effectiveBoardShippingMode } from "@/lib/services/peerListingShippingQuote"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { resolveMarketplaceOrderBuyerLabel } from "@/lib/order-buyer-display"
+import { ensureOrderBrandedTrackingUrl } from "@/lib/services/ensureOrderBrandedTrackingUrl"
+import { packageTrackHref } from "@/lib/utils/carrier-tracking-url"
 import {
   listingUsesSantaBarbaraDropoff,
   SANTA_BARBARA_DROPOFF_PHONE_DISPLAY,
@@ -84,8 +71,12 @@ import {
 import { SantaBarbaraDropoffInstructionsCard } from "@/components/features/sales/santa-barbara-dropoff-instructions-card"
 import { RESWELL_WAREHOUSE_ADDRESS } from "@/lib/reswell-warehouse-address"
 import { CarrierAdjustmentNotice } from "@/components/features/shipping/carrier-adjustment-notice"
+import { SaleDetailSummary } from "@/components/features/sales/sale-detail-summary"
 import { SellerAdjustmentFeeCard } from "@/components/features/sales/seller-adjustment-fee-card"
 import { listSellerChargedAdjustmentFees } from "@/lib/services/shippingAdjustmentDispute"
+import { purchaseDetailStatusDate } from "@/lib/purchase-detail-timeline"
+import { purchaseStatusTone } from "@/lib/purchases-list-display"
+import { saleDetailLine, saleRefundNote } from "@/lib/sales-list-display"
 
 export async function generateMetadata(props: {
   params: Promise<{ id: string }>
@@ -123,6 +114,7 @@ type OrderListingRow = {
   board_shipping_cost_mode?: string | null
   shipping_price?: string | number | null
   dropoff_location_id?: string | null
+  condition?: string | null
   dropoff_locations?: { slug?: string | null } | { slug?: string | null }[] | null
   listing_images: Array<{
     url: string
@@ -211,6 +203,9 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
   } = await supabase.auth.getUser()
 
   if (!user) return null
+  const shop = await getShopAccountContext()
+  const sellerId = shop?.accountId ?? user.id
+  const showPayouts = shop?.permissions.has("payouts.read") ?? true
 
   const { data: row, error } = await supabase
     .from("orders")
@@ -244,6 +239,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
         board_shipping_cost_mode,
         shipping_price,
         dropoff_location_id,
+        condition,
         dropoff_locations ( slug ),
         listing_images ( url, thumbnail_url, is_primary )
       ),
@@ -259,6 +255,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
           board_shipping_cost_mode,
           shipping_price,
           dropoff_location_id,
+          condition,
           dropoff_locations ( slug ),
           listing_images ( url, thumbnail_url, is_primary )
         )
@@ -266,7 +263,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
     `,
     )
     .eq("id", id)
-    .eq("seller_id", user.id)
+    .eq("seller_id", sellerId)
     .match(REAL_MARKETPLACE_SALES_FILTER)
     .in("status", [...ORDER_STATUS_LIST])
     .maybeSingle()
@@ -279,7 +276,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
   const trackingDetailRaw = await fetchOptionalOrderTrackingDetailJson(supabase, {
     orderId: id,
     role: "seller",
-    sellerId: user.id,
+    sellerId,
   })
 
   const { data: payoutFromDb } = await supabase
@@ -309,13 +306,6 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
     isPeerListingSection(primaryListing?.section) &&
     effectiveBoardShippingMode(primaryListing) === "reswell"
 
-  const title =
-    displayListings.length > 1
-      ? displayListings.map((l) => capitalizeWords(l.title ?? "")).join(" · ")
-      : displayListings[0]?.title
-        ? capitalizeWords(displayListings[0].title)
-        : "Item (listing removed)"
-
   const ship = sale.shipping_address
 
   const { data: buyerProfile } = sale.buyer_id
@@ -330,7 +320,6 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
   const addrBlock = ship?.address ? formatAddress(ship.address) : null
   const fulfill = fulfillmentLabel(sale.fulfillment_method, !!addrBlock)
   const paidWithCard = !!sale.stripe_checkout_session_id
-  const isShipping = sale.fulfillment_method === "shipping" || !!addrBlock
   const isPickup = sale.fulfillment_method === "pickup"
   const isRefunded = orderStatusIsRefunded(sale.status)
   const isRefunding = orderStatusIsRefundInProgress(sale.status)
@@ -349,7 +338,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
   const serviceSupabase = createServiceRoleClient()
   const chargedAdjustmentFees = await listSellerChargedAdjustmentFees({
     orderId: id,
-    sellerId: user.id,
+    sellerId,
     trackingCarrier: sale.tracking_carrier,
   })
   const preparedShippingLabel = await getLatestPreparedShippingLabelForOrder(serviceSupabase, id)
@@ -362,6 +351,15 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
     trackingNumber: sale.tracking_number,
   })
   const hasShippingTracking = !!sale.tracking_number?.trim()
+  const brandedTrackingUrl = hasShippingTracking
+    ? await ensureOrderBrandedTrackingUrl(sale.id)
+    : null
+  const packageTrackUrl = packageTrackHref({
+    orderId: sale.id,
+    brandedUrl: brandedTrackingUrl,
+    trackingNumber: sale.tracking_number,
+    trackingCarrier: sale.tracking_carrier,
+  })
   const shipsSeparately =
     (sale.shipping_packaging_mode === "separate" || shipments.some((s) => s.packaging_kind === "separate_item")) &&
     (shipments.length > 1 || marketplaceLabels.length > 1)
@@ -406,7 +404,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
   const { data: buyerReviewForOrder } = sale.buyer_id
     ? await getMarketplaceReviewByOrderAndReviewer(supabase, id, sale.buyer_id)
     : { data: null }
-  const { data: sellerReviewOfBuyer } = await getMarketplaceReviewByOrderAndReviewer(supabase, id, user.id)
+  const { data: sellerReviewOfBuyer } = await getMarketplaceReviewByOrderAndReviewer(supabase, id, sellerId)
   const buyerReviewGate = validateSellerReviewForOrder(
     {
       status: sale.status,
@@ -429,7 +427,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
       ? await sellerReviewRequestAlreadySentForOrder(
           supabase,
           sale.buyer_id,
-          user.id,
+          sellerId,
           id,
           sale.listing_id,
         )
@@ -446,7 +444,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
     ? await getConversationForBuyerSellerListing(
         supabase,
         sale.buyer_id,
-        user.id,
+        sellerId,
         sale.listing_id,
       )
     : null
@@ -467,72 +465,77 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
       .from("messages")
       .update({ is_read: true })
       .eq("conversation_id", conversationId)
-      .neq("sender_id", user.id)
+      .neq("sender_id", sellerId)
   }
 
+  const summaryItems = displayListings.map((lineListing) => {
+    const rowTitle = lineListing.title ? capitalizeWords(lineListing.title) : "Item (listing removed)"
+    const rowImg = primaryImage(lineListing.listing_images ?? null)
+    return {
+      id: lineListing.id,
+      title: rowTitle,
+      buyerName,
+      detailLine: saleDetailLine(lineListing.condition, fulfill, listingUsesSantaBarbaraDropoff(lineListing)),
+      imageUrl: rowImg,
+      imageUnoptimized: listingImageShouldBypassOptimization(rowImg),
+      href: listingDetailHref(lineListing),
+      price: displayListings.length === 1 ? itemPriceAmount : null,
+    }
+  })
+  const addressLines = addrBlock ? addrBlock.split("\n").filter((line) => line.trim().length > 0) : []
+  const refundNote = saleRefundNote(sale.status, buyerPaidTotal)
+  const earningsRefundNote =
+    isRefunded && showPayouts && refundNote
+      ? `${refundNote} Your earnings were reversed after the platform fee.`
+      : refundNote
+
   return (
-    <div className="space-y-6 pb-12">
+    <div className="mx-auto w-full max-w-xl space-y-5 pb-12">
       <OrderDetailRealtimeRefresh orderId={id} />
-      {/* ── Back link ── */}
-      <Button variant="ghost" size="sm" asChild className="-ml-2 text-muted-foreground">
-        <Link href="/dashboard/sales" className="gap-1.5">
-          <ArrowLeft className="h-4 w-4" />
-          All sales
-        </Link>
-      </Button>
+      <SaleDetailSummary
+        items={summaryItems}
+        orderNumber={orderNumber}
+        itemAmount={itemPriceAmount}
+        shippingAmount={shippingAmount}
+        showShipping={shippingAmount > 0}
+        platformFee={platformFee}
+        showPayouts={showPayouts}
+        earningsAmount={sellerEarningsAmount}
+        saleTotal={orderTotal}
+        amountStruck={isRefunded}
+        refundNote={earningsRefundNote}
+        promoNote={
+          showPayouts && hadReswellPromo && !isRefunded && !isRefunding
+            ? "The buyer used a Reswell promo code. Your earnings use the full listing price. Reswell covers the discount."
+            : null
+        }
+        shippingNote={
+          showPayouts && shippingAmount > 0 && !isRefunded && !isRefunding
+            ? "Shipping is paid by the buyer for the carrier label and is not part of your earnings."
+            : null
+        }
+        paymentLabel={paidWithCard ? "Card" : "Wallet"}
+        statusLabel={statusDisplay.label}
+        statusTone={purchaseStatusTone(statusDisplay)}
+        statusDateIso={purchaseDetailStatusDate({
+          deliveryStatus: sale.delivery_status,
+          orderStatus: sale.status,
+          createdAt: sale.created_at,
+          actualDeliveryAt: null,
+          refundedAt: sale.refunded_at,
+        })}
+        addressName={ship?.name ?? null}
+        addressLines={addressLines}
+        trackUrl={null}
+      />
 
-      {/* ── Page header ── */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-1">
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold font-mono tracking-tight">
-              #{orderNumber}
-            </h1>
-            <Badge
-              variant={statusDisplay.variant}
-              className={statusDisplay.className ? `text-xs ${statusDisplay.className}` : "text-xs"}
-            >
-              {statusDisplay.label}
-            </Badge>
-          </div>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-            <span className="flex items-center gap-1.5">
-              <Clock className="h-3.5 w-3.5" />
-              <LocalDateTime iso={sale.created_at} dateStyle="medium" timeStyle="short" />
-            </span>
-            <span className="flex items-center gap-1.5">
-              {paidWithCard ? (
-                <>
-                  <CreditCard className="h-3.5 w-3.5" />
-                  Card (Stripe)
-                </>
-              ) : (
-                <>
-                  <DollarSign className="h-3.5 w-3.5" />
-                  Wallet
-                </>
-              )}
-            </span>
-            <span className="flex items-center gap-1.5">
-              {isShipping ? (
-                <Truck className="h-3.5 w-3.5" />
-              ) : (
-                <MapPin className="h-3.5 w-3.5" />
-              )}
-              {fulfill}
-            </span>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          {(!hasShippingTracking || isPickup) && (
-            <DeliveryStatusBadge status={sale.delivery_status} />
-          )}
-          <PayoutStatusBadge payout={payoutRow} />
-        </div>
+      <div className="flex flex-wrap items-center gap-2">
+        {(!hasShippingTracking || isPickup) ? (
+          <DeliveryStatusBadge status={sale.delivery_status} />
+        ) : null}
+        <PayoutStatusBadge payout={payoutRow} />
       </div>
 
-      {/* ── Refund banners (full width, before columns) ── */}
       {isRefunding && (
         <SellerRefundInProgressBanner amount={buyerPaidTotal} paidWithCard={paidWithCard} />
       )}
@@ -542,148 +545,6 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
           refundedAt={sale.refunded_at}
         />
       )}
-
-      {/* ── Two-column layout ── */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* ── Main column ── */}
-        <div className="space-y-6 lg:col-span-2">
-          {/* Order summary card */}
-          <Card>
-            <CardContent className="p-0">
-              {/* Item row(s) */}
-              <div className="divide-y divide-border">
-                {displayListings.map((lineListing) => {
-                  const rowTitle = lineListing.title ? capitalizeWords(lineListing.title) : "Item (listing removed)"
-                  const rowImg = primaryImage(lineListing.listing_images ?? null)
-                  const rowHref = listingDetailHref(lineListing)
-                  return (
-                    <div key={lineListing.id} className="flex gap-4 p-6">
-                      <div className={listingPortraitThumbClass}>
-                        {rowImg ? (
-                          <Image src={rowImg} alt={rowTitle} fill className="object-cover" sizes={listingPortraitThumbSizes} unoptimized={listingImageShouldBypassOptimization(rowImg)} />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center">
-                            <Package className="h-6 w-6 text-muted-foreground" />
-                          </div>
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <Link
-                              href={rowHref}
-                              className="font-semibold text-foreground hover:text-primary transition-colors inline-flex items-center gap-1.5"
-                            >
-                              {rowTitle}
-                              <ExternalLink className="h-3.5 w-3.5 opacity-50" />
-                            </Link>
-                            {lineListing.section ? (
-                              <p className="text-sm text-muted-foreground mt-0.5">
-                                {capitalizeWords(lineListing.section)}
-                              </p>
-                            ) : null}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-
-              <Separator />
-
-              {/* Financial breakdown */}
-              <div className="p-6 space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Sale total</span>
-                  <span
-                    className={`tabular-nums font-medium ${isRefunded ? "line-through text-muted-foreground" : ""}`}
-                  >
-                    ${orderTotal.toFixed(2)}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Item price</span>
-                  <span
-                    className={`tabular-nums ${isRefunded ? "line-through text-muted-foreground" : ""}`}
-                  >
-                    ${itemPriceAmount.toFixed(2)}
-                  </span>
-                </div>
-                {shippingAmount > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      Shipping (paid to carrier, not seller)
-                    </span>
-                    <span
-                      className={`tabular-nums text-muted-foreground ${isRefunded ? "line-through" : ""}`}
-                    >
-                      ${shippingAmount.toFixed(2)}
-                    </span>
-                  </div>
-                )}
-                {platformFee > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Platform fee (7% of item)</span>
-                    <span
-                      className={`tabular-nums text-muted-foreground ${isRefunded ? "line-through" : ""}`}
-                    >
-                      -${platformFee.toFixed(2)}
-                    </span>
-                  </div>
-                )}
-                {hadReswellPromo && !isRefunded && !isRefunding ? (
-                  <p className="text-xs text-muted-foreground leading-relaxed rounded-md border border-border/80 bg-muted/30 px-2.5 py-2">
-                    The buyer used a Reswell promo code. Your earnings are based on the full listing
-                    price — the discount is covered by Reswell, not deducted from you.
-                  </p>
-                ) : null}
-                {isRefunding && (
-                  <p className="text-xs text-muted-foreground rounded-md border border-amber-500/20 bg-amber-500/[0.04] px-2.5 py-2">
-                    Totals stay as recorded until Stripe finishes the refund; your earnings line will mark
-                    reversed once the sale is fully refunded.
-                  </p>
-                )}
-                {isRefunded && (
-                  <>
-                    <Separator />
-                    <div className="flex justify-between items-baseline gap-3 rounded-lg border border-destructive/15 bg-destructive/[0.04] px-3 py-2.5">
-                      <span className="text-sm font-semibold text-destructive">
-                        Refund to buyer (full sale)
-                      </span>
-                      <span className="text-lg font-bold tabular-nums text-destructive">
-                        ${buyerPaidTotal.toFixed(2)}
-                      </span>
-                    </div>
-                  </>
-                )}
-                <Separator />
-                <div className="flex justify-between items-baseline">
-                  <span className="font-semibold">
-                    {isRefunded ? "Your earnings (reversed)" : isRefunding ? "Your earnings (pending reversal)" : "Your earnings"}
-                  </span>
-                  <span
-                    className={`text-xl font-bold tabular-nums ${isRefunded ? "line-through text-muted-foreground" : isRefunding ? "text-muted-foreground" : ""}`}
-                  >
-                    ${sellerEarningsAmount.toFixed(2)}
-                  </span>
-                </div>
-                {shippingAmount > 0 && !isRefunded && !isRefunding && (
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    Shipping is paid by the buyer to cover the carrier label and is handled by
-                    Reswell — it is not part of your earnings, and the platform fee only applies
-                    to the listing price.
-                  </p>
-                )}
-                {isRefunded && (
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    The buyer is refunded the full sale total. The earnings line is your net share
-                    that was reversed (after the platform fee).
-                  </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
 
           <SellerAdjustmentFeeCard
             orderId={sale.id}
@@ -858,6 +719,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
               initialDetail={carrierTracking}
               marketplaceDeliveryStatus={sale.delivery_status}
               variant="seller"
+              trackUrl={packageTrackUrl}
             />
           )}
 
@@ -876,144 +738,50 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
               orderStatus={sale.status}
             />
           )}
-        </div>
 
-        {/* ── Sidebar ── */}
-        <div className="space-y-6">
-          {/* Buyer card */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <User className="h-4 w-4" />
-                Buyer
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0 space-y-3">
-              <p className="font-semibold text-foreground">{buyerName}</p>
-              <p className="text-xs text-muted-foreground">
-                Completed checkout for this sale.
-              </p>
-
-              {showSellerOwnBuyerReviewUi ? (
-                <div className="space-y-2 border-t border-border/60 pt-3">
-                  <p className="text-xs font-medium text-foreground">Your review of them</p>
-                  <ReviewBuyerControls
-                    orderId={sale.id}
-                    buyerName={buyerName}
-                    canReview={canSubmitBuyerReview}
-                    existingReview={existingSellerReviewOfBuyer}
-                  />
-                </div>
-              ) : null}
-
-              {canAskBuyerForReview ? (
-                <div className="space-y-2 border-t border-border/60 pt-3">
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    {reviewRequestAlreadySent
-                      ? "We sent a review request in Messages and emailed the buyer. They can tap it anytime to leave stars."
-                      : "Delivery is complete. If the automatic request did not send, you can send it here."}
-                  </p>
-                  <AskBuyerReviewButton
-                    orderId={sale.id}
-                    conversationId={conversationId}
-                    initialAlreadySent={reviewRequestAlreadySent}
-                  />
-                </div>
-              ) : null}
-            </CardContent>
-          </Card>
-
-          {/* Fulfillment card */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                {isShipping ? (
-                  <Truck className="h-4 w-4" />
-                ) : (
-                  <MapPin className="h-4 w-4" />
-                )}
-                {isShipping ? "Shipping" : "Fulfillment"}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              {addrBlock ? (
-                <div className="space-y-1 text-sm">
-                  {ship?.name && (
-                    <p className="font-medium text-foreground">{ship.name}</p>
-                  )}
-                  <p className="text-muted-foreground whitespace-pre-line leading-relaxed">
-                    {addrBlock}
-                  </p>
-                </div>
-              ) : isPickup ? (
-                <p className="text-sm text-muted-foreground">
-                  Local pickup. Coordinate a time and place with the buyer via messages.
-                </p>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  No shipping address provided.
-                </p>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Sale details card */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <Hash className="h-4 w-4" />
-                Sale details
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <dl className="space-y-2.5 text-sm">
-                <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Order ID</dt>
-                  <dd className="font-mono text-xs text-foreground">
-                    #{orderNumber}
-                  </dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Status</dt>
-                  <dd>
-                    <Badge
-                      variant={statusDisplay.variant}
-                      className={statusDisplay.className ? `text-xs ${statusDisplay.className}` : "text-xs"}
-                    >
-                      {statusDisplay.label}
-                    </Badge>
-                  </dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Payment</dt>
-                  <dd className="text-foreground">
-                    {paidWithCard ? "Card (Stripe)" : "Wallet"}
-                  </dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Fulfillment</dt>
-                  <dd className="text-foreground">{fulfill}</dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Date</dt>
-                  <dd className="text-foreground">
-                    <LocalDateOnly iso={sale.created_at} dateStyle="medium" />
-                  </dd>
-                </div>
-              </dl>
-            </CardContent>
-          </Card>
-
-          {/* Messages */}
-          <OrderMessageThread
-            conversationId={conversationId}
-            initialMessages={initialMessages}
-            counterpartyName={buyerName}
-            currentUserId={user.id}
-            variant="seller"
+      <section className="space-y-3 pt-2">
+        <h2 className="text-base font-bold text-foreground">Buyer</h2>
+        <p className="font-semibold text-foreground">{buyerName}</p>
+        {showSellerOwnBuyerReviewUi ? (
+          <ReviewBuyerControls
+            orderId={sale.id}
+            buyerName={buyerName}
+            canReview={canSubmitBuyerReview}
+            existingReview={existingSellerReviewOfBuyer}
           />
-        </div>
-      </div>
+        ) : null}
+        {canAskBuyerForReview ? (
+          <div className="space-y-2">
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              {reviewRequestAlreadySent
+                ? "We sent a review request in Messages and emailed the buyer. They can tap it anytime to leave stars."
+                : "Delivery is complete. If the automatic request did not send, you can send it here."}
+            </p>
+            <AskBuyerReviewButton
+              orderId={sale.id}
+              conversationId={conversationId}
+              initialAlreadySent={reviewRequestAlreadySent}
+            />
+          </div>
+        ) : null}
+      </section>
+
+      {!addrBlock && isPickup ? (
+        <p className="text-sm leading-relaxed text-muted-foreground">
+          Local pickup. Coordinate a time and place with the buyer in messages.
+        </p>
+      ) : null}
+
+      <section className="space-y-3">
+        <h2 className="text-base font-bold text-foreground">Messages</h2>
+        <OrderMessageThread
+          conversationId={conversationId}
+          initialMessages={initialMessages}
+          counterpartyName={buyerName}
+          currentUserId={sellerId}
+          variant="seller"
+        />
+      </section>
     </div>
   )
 }

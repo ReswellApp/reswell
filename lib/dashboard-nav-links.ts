@@ -4,6 +4,7 @@ import {
   Banknote,
   Handshake,
   Heart,
+  MapPin,
   Package,
   ShoppingBag,
   PackageCheck,
@@ -27,6 +28,16 @@ export interface DashboardNavLink {
   icon: LucideIcon
   adminOnly?: boolean
   children?: DashboardNavChildLink[]
+  /** Stable id when href alone is not unique (e.g. Offers in Selling and Buying). */
+  id?: string
+}
+
+export type DashboardNavSectionId = "selling" | "buying" | "account"
+
+export interface DashboardNavSection {
+  id: DashboardNavSectionId
+  label: string
+  links: DashboardNavLink[]
 }
 
 export const DASHBOARD_MESSAGES_NAV: DashboardNavLink = {
@@ -41,33 +52,108 @@ export const DASHBOARD_SHIPPER_NAV: DashboardNavLink = {
   icon: Truck,
 }
 
+export const DASHBOARD_DROPOFF_LOCATION_NAV: DashboardNavLink = {
+  name: "Drop-off",
+  href: "/dashboard/dropoff-location",
+  icon: MapPin,
+}
+
 export const DASHBOARD_SHOPIFY_NAV: DashboardNavLink = {
   name: "Shopify",
   href: "/dashboard/shopify",
   icon: Store,
 }
 
-export function dashboardNavLinks(input: {
-  isAdmin: boolean
-  isShipper: boolean
-  hasShopifyAccess?: boolean
-}): DashboardNavLink[] {
-  const links = DASHBOARD_NAV_LINKS.filter((link) => !link.adminOnly || input.isAdmin)
-  const expanded = input.hasShopifyAccess
-    ? links.flatMap((link) =>
-        link.href === "/dashboard/listings"
-          ? [link, DASHBOARD_SHOPIFY_NAV]
-          : [link],
-      )
-    : links
-  if (!input.isShipper) return expanded
-  const [overview, ...rest] = expanded
-  return overview ? [overview, DASHBOARD_SHIPPER_NAV, ...rest] : [DASHBOARD_SHIPPER_NAV]
+const SELLING_OFFERS_NAV: DashboardNavLink = {
+  id: "offers-selling",
+  name: "Offers",
+  href: "/dashboard/offers",
+  icon: Handshake,
 }
 
-export const DASHBOARD_NAV_LINKS: DashboardNavLink[] = [
+const BUYING_OFFERS_NAV: DashboardNavLink = {
+  id: "offers-buying",
+  name: "Offers",
+  href: "/dashboard/offers?tab=buyer",
+  icon: Handshake,
+}
+
+export interface DashboardNavLinksInput {
+  isAdmin: boolean
+  isShipper: boolean
+  isDropoffLocation?: boolean
+  hasShopifyAccess?: boolean
+  showEarnings?: boolean
+}
+
+function buildSellingLinks(input: DashboardNavLinksInput): DashboardNavLink[] {
+  const links: DashboardNavLink[] = [
+    { name: "Listings", href: "/dashboard/listings", icon: Package },
+    SELLING_OFFERS_NAV,
+    { name: "Sales", href: "/dashboard/sales", icon: PackageCheck },
+  ]
+
+  if (input.showEarnings !== false) {
+    links.push({ name: "Earnings", href: "/dashboard/earnings", icon: Banknote })
+  }
+
+  if (input.hasShopifyAccess) {
+    links.push(DASHBOARD_SHOPIFY_NAV)
+  }
+
+  if (input.isAdmin) {
+    links.push({
+      name: "Balance Sheet",
+      href: "/dashboard/balance-sheet",
+      icon: Scale,
+      adminOnly: true,
+    })
+  }
+
+  if (input.isShipper) {
+    links.push(DASHBOARD_SHIPPER_NAV)
+  }
+
+  if (input.isDropoffLocation) {
+    links.push(DASHBOARD_DROPOFF_LOCATION_NAV)
+  }
+
+  return links
+}
+
+const BUYING_LINKS: DashboardNavLink[] = [
+  { name: "Purchases", href: "/dashboard/purchases", icon: ShoppingBag },
+  BUYING_OFFERS_NAV,
+  { name: "Favorites", href: "/favorites", icon: Heart },
+  { name: "Following", href: "/dashboard/following", icon: Users },
+]
+
+const ACCOUNT_LINKS: DashboardNavLink[] = [
   { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { name: "Profile", href: "/dashboard/profile", icon: UserCircle },
+  DASHBOARD_MESSAGES_NAV,
+  { name: "Support", href: "/dashboard/support", icon: LifeBuoy },
+]
+
+/** Grouped nav for sidebar / mobile / account menu (Pango-style Selling / Buying / Account). */
+export function dashboardNavSections(input: DashboardNavLinksInput): DashboardNavSection[] {
+  return [
+    { id: "selling", label: "Selling", links: buildSellingLinks(input) },
+    { id: "buying", label: "Buying", links: BUYING_LINKS },
+    { id: "account", label: "Account", links: ACCOUNT_LINKS },
+  ]
+}
+
+/** Flat list for callers that do not need section headers. */
+export function dashboardNavLinks(input: DashboardNavLinksInput): DashboardNavLink[] {
+  return dashboardNavSections(input).flatMap((section) => section.links)
+}
+
+/** @deprecated Prefer `dashboardNavSections` / `dashboardNavLinks`. Kept for tests that assert base items. */
+export const DASHBOARD_NAV_LINKS: DashboardNavLink[] = [
+  { name: "Listings", href: "/dashboard/listings", icon: Package },
+  SELLING_OFFERS_NAV,
+  { name: "Sales", href: "/dashboard/sales", icon: PackageCheck },
   { name: "Earnings", href: "/dashboard/earnings", icon: Banknote },
   {
     name: "Balance Sheet",
@@ -75,12 +161,12 @@ export const DASHBOARD_NAV_LINKS: DashboardNavLink[] = [
     icon: Scale,
     adminOnly: true,
   },
-  { name: "My Listings", href: "/dashboard/listings", icon: Package },
-  { name: "Offers", href: "/dashboard/offers", icon: Handshake },
+  { name: "Purchases", href: "/dashboard/purchases", icon: ShoppingBag },
+  BUYING_OFFERS_NAV,
+  { name: "Favorites", href: "/favorites", icon: Heart },
+  { name: "Following", href: "/dashboard/following", icon: Users },
+  { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Profile", href: "/dashboard/profile", icon: UserCircle },
   DASHBOARD_MESSAGES_NAV,
   { name: "Support", href: "/dashboard/support", icon: LifeBuoy },
-  { name: "Purchases", href: "/dashboard/purchases", icon: ShoppingBag },
-  { name: "Sales", href: "/dashboard/sales", icon: PackageCheck },
-  { name: "Favorites", href: "/dashboard/favorites", icon: Heart },
-  { name: "Following", href: "/dashboard/following", icon: Users },
 ]

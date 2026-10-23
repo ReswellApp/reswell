@@ -1,9 +1,13 @@
 /**
- * Same-seller multi-surfboard checkout (2–3 boards in one carton).
+ * Same-seller multi-surfboard carton (2–3 boards in one box).
  *
  * Quote and label use the longest bare board length + a fixed packing buffer,
  * with a count-based shortboard-style profile (2 boards: 22 × 5; 3 boards: 27 × 7;
  * 22 lb). Single-board box-length ceilings do not apply to the combined carton.
+ *
+ * Buyers can add any number of surfboards to the cart. More than three from one
+ * seller ship as separate packages (or local pickup). This module only rejects
+ * packing four or more boards into one carton.
  */
 
 import { totalBoardLengthInchesFromCombinedInput } from "@/lib/board-measurements"
@@ -37,9 +41,14 @@ export function countSurfboardListings(
   return rows.filter((row) => isSurfboardListingSection(row.section)).length
 }
 
+/** Four or more surfboards cannot share one carton. Cart and checkout still allow them. */
+export function surfboardsRequireSeparatePackages(count: number): boolean {
+  return count > MAX_SURFBOARDS_PER_SELLER_CHECKOUT
+}
+
 export function peerCheckoutSurfboardCountError(count: number): string | null {
-  if (count <= MAX_SURFBOARDS_PER_SELLER_CHECKOUT) return null
-  return `You can buy up to ${MAX_SURFBOARDS_PER_SELLER_CHECKOUT} surfboards from the same seller in one checkout.`
+  if (!surfboardsRequireSeparatePackages(count)) return null
+  return `Up to ${MAX_SURFBOARDS_PER_SELLER_CHECKOUT} surfboards can ship together in one box. Ship them separately or choose local pickup.`
 }
 
 export function boardLengthInchesFromListing(row: { dimensions?: string | null }): number | null {

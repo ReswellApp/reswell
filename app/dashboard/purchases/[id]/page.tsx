@@ -1,36 +1,19 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
-import Link from "next/link"
-import Image from "next/image"
 import { createClient } from "@/lib/supabase/server"
-import { getConversationForBuyerSellerListing, ensureConversationForBuyerSellerListing } from "@/lib/db/conversations"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft, Package, Truck, MapPin } from "lucide-react"
+import { getConversationForBuyerSellerListing } from "@/lib/db/conversations"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
 import { REAL_MARKETPLACE_PURCHASES_FILTER } from "@/lib/order-admin-test"
-import {
-  orderStatusBadgeVariant,
-  orderStatusIsRefunded,
-  orderStatusLocksDuringRefund,
-  orderStatusLabel,
-} from "@/lib/order-status"
+import { orderStatusIsRefunded, orderStatusLocksDuringRefund } from "@/lib/order-status"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
-import { LocalDateTime } from "@/components/ui/local-datetime"
-import {
-  BuyerConfirmDelivery,
-  BuyerPickupCode,
-  DeliveryStatusBadge,
-} from "@/components/order-actions"
+import { BuyerConfirmDelivery, BuyerPickupCode } from "@/components/order-actions"
 import { ReswellTrackingSection } from "@/components/features/orders/reswell-tracking-section"
 import { OrderReturnsSection } from "@/components/features/orders/order-returns-section"
 import { OrderDetailRealtimeRefresh } from "@/components/order-realtime-refresh"
-import { listingPortraitThumbClass, listingPortraitThumbSizes } from "@/lib/utils/dashboard-display-styles"
-import { BuyerOrderExperience } from "@/components/features/buyer-order/buyer-order-experience"
+import { PurchaseDetailView } from "@/components/features/purchases/purchase-detail-view"
 import { OrderMessageThread, type OrderThreadMessage } from "@/components/order-message-thread"
 import { canSubmitSellerReview } from "@/lib/services/orderSellerReview"
 import { getMarketplaceReviewByOrderAndReviewer } from "@/lib/db/order-reviews"
@@ -40,6 +23,29 @@ import {
   fetchOptionalOrderTrackingDetailJson,
   parseOrderTrackingDetail,
 } from "@/lib/shipping/order-tracking-detail"
+import { resolveSaleCardStatusDisplay } from "@/lib/sale-card-status"
+import {
+  purchaseDetailLine,
+  purchaseRefundNote,
+  purchaseShowsShipping,
+  purchaseStatusTone,
+  splitPurchaseAmount,
+} from "@/lib/purchases-list-display"
+import {
+  buildPurchaseDetailTimeline,
+  purchaseDetailStatusDate,
+} from "@/lib/purchase-detail-timeline"
+import { sellerProfileHref } from "@/lib/seller-slug"
+import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
+import { packageTrackHref } from "@/lib/utils/carrier-tracking-url"
+import { formatCarrierDisplayName } from "@/lib/shipping/resolve-carrier-code"
+import { helpHubHref } from "@/lib/help/help-hub-intents"
+import {
+  daysUntilShippingDeadline,
+  getShippingDeadlineDate,
+  isEligibleForShippingDeadlineAutoCancel,
+} from "@/lib/shipping-deadline"
+import { ensureOrderBrandedTrackingUrl } from "@/lib/services/ensureOrderBrandedTrackingUrl"
 
 export async function generateMetadata(props: {
   params: Promise<{ id: string }>
@@ -72,6 +78,7 @@ type OrderListingRow = {
   title: string
   slug?: string | null
   section: string
+  condition?: string | null
   listing_images: Array<{
     url: string
     thumbnail_url?: string | null
@@ -83,9 +90,11 @@ type OrderDetail = {
   id: string
   order_num: string | null
   amount: number | string
+  shipping_amount?: number | string | null
   status: string
   created_at: string
   refunded_at: string | null
+  carrier_delivered_at?: string | null
   payment_method: string | null
   fulfillment_method: string | null
   delivery_status: string
@@ -97,7 +106,11 @@ type OrderDetail = {
   seller_id: string
   listing_id: string
   listings: OrderListingRow | OrderListingRow[] | null
-  order_items?: Array<{ sort_order: number | null; listings: OrderListingRow | OrderListingRow[] | null }> | null
+  order_items?: Array<{
+    sort_order: number | null
+    item_price?: number | string | null
+    listings: OrderListingRow | OrderListingRow[] | null
+  }> | null
 }
 
 function unwrapListing<R>(raw: R | R[] | null | undefined): R | null {
@@ -121,15 +134,14 @@ export const dynamic = "force-dynamic"
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-function formatAddress(addr: NonNullable<ShippingAddressJson>["address"]) {
-  if (!addr) return null
-  const parts = [
-    addr.line1,
-    addr.line2,
-    [addr.city, addr.state, addr.postal_code].filter(Boolean).join(", "),
-    addr.country,
-  ].filter((p) => p && String(p).trim())
-  return parts.length ? parts.join("\n") : null
+function formatAddressLines(addr: NonNullable<ShippingAddressJson>["address"]) {
+  if (!addr) return []
+  const cityLine = [addr.city, addr.state, addr.postal_code].filter(Boolean).join(", ")
+  const country = addr.country?.trim() ?? ""
+  const showCountry = country.length > 0 && !/^(us|usa|united states)$/i.test(country)
+  return [addr.line1, addr.line2, cityLine, showCountry ? country : null].filter(
+    (part): part is string => typeof part === "string" && part.trim().length > 0,
+  )
 }
 
 export default async function OrderDetailPage(props: { params: Promise<{ id: string }> }) {
@@ -153,9 +165,11 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
       id,
       order_num,
       amount,
+      shipping_amount,
       status,
       created_at,
       refunded_at,
+      carrier_delivered_at,
       payment_method,
       fulfillment_method,
       delivery_status,
@@ -171,15 +185,18 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
         title,
         slug,
         section,
+        condition,
         listing_images ( url, thumbnail_url, is_primary )
       ),
       order_items (
         sort_order,
+        item_price,
         listings (
           id,
           title,
           slug,
           section,
+          condition,
           listing_images ( url, thumbnail_url, is_primary )
         )
       )
@@ -203,48 +220,70 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
   const sortedPack = [...(order.order_items ?? [])].sort(
     (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
   )
-  const linesFromPack: OrderListingRow[] = []
+  const packedLines: Array<{ listing: OrderListingRow; itemPrice: number | null }> = []
   for (const it of sortedPack) {
-    const L = unwrapListing(it.listings as OrderListingRow | OrderListingRow[] | null)
-    if (L) linesFromPack.push(L)
+    const listing = unwrapListing(it.listings as OrderListingRow | OrderListingRow[] | null)
+    if (!listing) continue
+    const price = Number(it.item_price)
+    packedLines.push({ listing, itemPrice: Number.isFinite(price) ? price : null })
   }
 
   const fallbackListing = unwrapListing(order.listings)
-  const displayListings =
-    linesFromPack.length > 0 ? linesFromPack : fallbackListing ? [fallbackListing] : []
-
-  const title =
-    displayListings.length > 1
-      ? displayListings.map((l) => capitalizeWords(l.title ?? "")).join(" · ")
-      : displayListings[0]?.title
-        ? capitalizeWords(displayListings[0].title)
-        : "Item (listing removed)"
+  const displayLines =
+    packedLines.length > 0
+      ? packedLines
+      : fallbackListing
+        ? [{ listing: fallbackListing, itemPrice: null }]
+        : []
 
   const { data: sellerProfile } = await supabase
     .from("profiles")
-    .select("display_name")
+    .select("display_name, seller_slug, avatar_url")
     .eq("id", order.seller_id)
     .maybeSingle()
 
   const sellerName =
     sellerProfile?.display_name?.trim() ||
     `Seller ${order.seller_id.slice(0, 8)}…`
+  const sellerHandle = sellerProfile?.seller_slug?.trim() || null
+  const sellerAvatarUrl = profileMediaDisplaySrc(sellerProfile?.avatar_url) || null
 
   const ship = order.shipping_address
-  const addrBlock = ship?.address ? formatAddress(ship.address) : null
-  const paidWithCard = !!order.stripe_checkout_session_id
-  const fulfill =
-    order.fulfillment_method === "shipping"
-      ? "Shipping"
-      : order.fulfillment_method === "pickup"
-        ? "Local pickup"
-        : addrBlock
-          ? "Shipping"
-          : "Local pickup"
+  const addressLines = formatAddressLines(ship?.address)
+  if (ship?.phone?.trim()) addressLines.push(ship.phone.trim())
+  const hasAddress = addressLines.length > 0
+  const isPickup =
+    order.fulfillment_method === "pickup" ||
+    (order.fulfillment_method !== "shipping" && !hasAddress)
+  const amounts = splitPurchaseAmount(Number(order.amount), Number(order.shipping_amount ?? 0))
+  const showShipping = purchaseShowsShipping(isPickup ? "Local pickup" : "Ship to you", amounts.shippingAmount)
 
   const isRefunded = orderStatusIsRefunded(order.status)
   const fulfillmentLocked = orderStatusLocksDuringRefund(order.status)
   const carrierTracking = parseOrderTrackingDetail(trackingDetailRaw)
+  const carrierName = order.tracking_carrier?.trim()
+    ? formatCarrierDisplayName(order.tracking_carrier, null)
+    : null
+  const actualDeliveryAt =
+    carrierTracking?.actual_delivery_date ?? order.carrier_delivered_at ?? null
+  const statusDisplay = resolveSaleCardStatusDisplay({
+    orderStatus: order.status,
+    deliveryStatus: order.delivery_status ?? "pending",
+    trackingNumber: order.tracking_number,
+    trackingDetail: carrierTracking,
+    fulfillmentMethod: order.fulfillment_method,
+    hasShippingAddress: hasAddress,
+  })
+  const showShippingDeadline =
+    !fulfillmentLocked &&
+    isEligibleForShippingDeadlineAutoCancel({
+      status: order.status,
+      fulfillment_method: order.fulfillment_method,
+      delivery_status: order.delivery_status,
+    })
+  const shopListing = displayLines[0]?.listing
+  const sellerHref = sellerProfileHref({ seller_slug: sellerHandle })
+  const shopHref = shopListing ? listingDetailHref(shopListing) : sellerHref
 
   const { data: buyerOwnReviewRow } = await getMarketplaceReviewByOrderAndReviewer(supabase, id, user.id)
   const { data: sellerRatedBuyerRow } = await getMarketplaceReviewByOrderAndReviewer(
@@ -291,78 +330,121 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
       .neq("sender_id", user.id)
   }
 
+  const brandedTrackingUrl = order.tracking_number?.trim()
+    ? await ensureOrderBrandedTrackingUrl(order.id)
+    : null
+  const trackUrl = packageTrackHref({
+    orderId: order.id,
+    brandedUrl: brandedTrackingUrl,
+    trackingNumber: order.tracking_number,
+    trackingCarrier: order.tracking_carrier,
+  })
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <OrderDetailRealtimeRefresh orderId={id} />
-      <div className="flex flex-wrap items-center gap-3">
-        <Button variant="ghost" size="sm" asChild className="-ml-2">
-          <Link href="/dashboard/purchases" className="gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            All purchases
-          </Link>
-        </Button>
-      </div>
-
-      <div>
-        <h1 className="text-2xl font-bold font-mono tracking-tight">
-          Order #{formatOrderNumForCustomer(order.order_num, order.id)}
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          <LocalDateTime iso={order.created_at} dateStyle="long" timeStyle="short" />
-        </p>
-      </div>
-
-      <div className="flex flex-wrap gap-2">
-        <Badge variant={orderStatusBadgeVariant(order.status)}>{orderStatusLabel(order.status)}</Badge>
-        <Badge variant="outline" className="gap-1">
-          {paidWithCard ? "Card (Stripe)" : "Wallet"}
-        </Badge>
-        <Badge variant="outline" className="gap-1">
-          {fulfill.includes("Ship") ? (
-            <Truck className="h-3.5 w-3.5" />
-          ) : (
-            <MapPin className="h-3.5 w-3.5" />
-          )}
-          {fulfill}
-        </Badge>
-        <DeliveryStatusBadge status={order.delivery_status} />
-      </div>
-
-      <BuyerOrderExperience
+      <PurchaseDetailView
         orderId={order.id}
-        displayOrderNum={formatOrderNumForCustomer(order.order_num, order.id)}
-        createdAtIso={order.created_at}
-        amount={Number(order.amount)}
-        status={order.status}
-        fulfillmentMethod={order.fulfillment_method}
-        deliveryStatus={order.delivery_status}
-        trackingNumber={order.tracking_number}
-        trackingCarrier={order.tracking_carrier}
-        paidWithCard={paidWithCard}
-        paymentMethod={order.payment_method}
-        refundedAt={order.refunded_at}
-        listingTitle={title}
+        orderNumber={formatOrderNumForCustomer(order.order_num, order.id)}
+        items={
+          displayLines.length > 0
+            ? displayLines.map((line) => {
+                const imageUrl = primaryImage(line.listing.listing_images ?? null)
+                const single = displayLines.length === 1
+                return {
+                  id: line.listing.id,
+                  title: line.listing.title ? capitalizeWords(line.listing.title) : "Item (listing removed)",
+                  sellerName,
+                  detailLine: purchaseDetailLine(
+                    line.listing.condition,
+                    isPickup ? "Local pickup" : "Ship to you",
+                  ),
+                  imageUrl,
+                  imageUnoptimized: listingImageShouldBypassOptimization(imageUrl),
+                  href: listingDetailHref(line.listing),
+                  price: single ? amounts.itemAmount : line.itemPrice,
+                }
+              })
+            : [
+                {
+                  id: order.id,
+                  title: "Item (listing removed)",
+                  sellerName,
+                  detailLine: isPickup ? "Local pickup" : "Ship to you",
+                  imageUrl: null,
+                  imageUnoptimized: false,
+                  href: sellerHref,
+                  price: amounts.itemAmount,
+                },
+              ]
+        }
+        itemAmount={amounts.itemAmount}
+        shippingAmount={amounts.shippingAmount}
+        showShipping={showShipping}
+        totalAmount={Number(order.amount) || 0}
+        amountStruck={isRefunded}
+        refundNote={purchaseRefundNote(order.status, Number(order.amount) || 0)}
+        statusLabel={statusDisplay.label}
+        statusTone={purchaseStatusTone(statusDisplay)}
+        statusDateIso={purchaseDetailStatusDate({
+          deliveryStatus: order.delivery_status,
+          orderStatus: order.status,
+          createdAt: order.created_at,
+          actualDeliveryAt,
+          refundedAt: order.refunded_at,
+        })}
+        shippingDeadlineIso={
+          showShippingDeadline ? getShippingDeadlineDate(order.created_at).toISOString() : null
+        }
+        shippingDaysLeft={showShippingDeadline ? daysUntilShippingDeadline(order.created_at) : null}
+        timeline={buildPurchaseDetailTimeline({
+          createdAt: order.created_at,
+          fulfillmentMethod: isPickup ? "pickup" : "shipping",
+          deliveryStatus: order.delivery_status,
+          orderStatus: order.status,
+          hasTrackingNumber: Boolean(order.tracking_number?.trim()),
+          carrierName: carrierName === "Carrier" ? null : carrierName,
+          events: carrierTracking?.events ?? [],
+          actualDeliveryAt,
+          refundedAt: order.refunded_at,
+        })}
+        timelineHeading={isPickup ? "Pickup details" : "Shipping Details"}
+        addressName={ship?.name?.trim() || null}
+        addressLines={addressLines}
+        trackUrl={trackUrl}
         sellerName={sellerName}
+        sellerHandle={sellerHandle}
+        sellerAvatarUrl={sellerAvatarUrl}
+        sellerHref={sellerHref}
         messagesHref={`/messages/new?user=${encodeURIComponent(order.seller_id)}&listing=${encodeURIComponent(order.listing_id)}`}
-        sellerReview={{
-          canSubmit: canSubmitSellerReviewForOrder,
-          existing: existingSellerReview,
-        }}
+        shopHref={shopHref}
+        shopLabel="Shop here again"
+        canReview={canSubmitSellerReviewForOrder}
+        hideReviewPrompt={fulfillmentLocked}
+        existingReview={existingSellerReview}
         reviewFromSeller={reviewFromSeller}
+        helpCenterHref="/help"
+        messageReswellHref={helpHubHref({
+          intent: "order",
+          orderId: order.id,
+          role: "buyer",
+          direct: true,
+        })}
       />
 
-      {/* Buyer action: confirm delivery for shipped purchases (hidden when refunded) */}
-      {!fulfillmentLocked && !order.tracking_number?.trim() && (
-        <BuyerConfirmDelivery orderId={order.id} deliveryStatus={order.delivery_status} />
-      )}
+      {!fulfillmentLocked && !order.tracking_number?.trim() ? (
+        <div className="mx-auto w-full max-w-xl">
+          <BuyerConfirmDelivery orderId={order.id} deliveryStatus={order.delivery_status} />
+        </div>
+      ) : null}
 
-      {/* Buyer: show pickup code for local pickup (hidden when refunded) */}
-      {!fulfillmentLocked && order.fulfillment_method === "pickup" && order.pickup_code && (
-        <BuyerPickupCode pickupCode={order.pickup_code} deliveryStatus={order.delivery_status} />
-      )}
+      {!fulfillmentLocked && order.fulfillment_method === "pickup" && order.pickup_code ? (
+        <div className="mx-auto w-full max-w-xl">
+          <BuyerPickupCode pickupCode={order.pickup_code} deliveryStatus={order.delivery_status} />
+        </div>
+      ) : null}
 
-      {/* Live carrier tracking */}
-      {!fulfillmentLocked && order.tracking_number && (
+      {!fulfillmentLocked && order.tracking_number ? (
         <ReswellTrackingSection
           orderId={order.id}
           trackingNumber={order.tracking_number}
@@ -370,120 +452,35 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
           initialDetail={carrierTracking}
           marketplaceDeliveryStatus={order.delivery_status}
           variant="buyer"
+          pollOnly
         />
-      )}
+      ) : null}
 
-      <OrderReturnsSection
-        orderId={order.id}
-        audience="buyer"
-        listingTitlesById={Object.fromEntries(
-          displayListings.map((l) => [l.id, l.title ? capitalizeWords(l.title) : "Item"]),
-        )}
-      />
+      <div className="mx-auto w-full max-w-xl">
+        <OrderReturnsSection
+          orderId={order.id}
+          audience="buyer"
+          listingTitlesById={Object.fromEntries(
+            displayLines.map((line) => [
+              line.listing.id,
+              line.listing.title ? capitalizeWords(line.listing.title) : "Item",
+            ]),
+          )}
+        />
+      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">{displayListings.length > 1 ? "Items" : "Item"}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-6">
-            {displayListings.map((lineListing) => {
-              const rowTitle = lineListing.title ? capitalizeWords(lineListing.title) : "Item (listing removed)"
-              const rowImg = primaryImage(lineListing.listing_images ?? null)
-              const rowHref = listingDetailHref(lineListing)
-              return (
-                <div key={lineListing.id} className="flex gap-4">
-                  <div className={listingPortraitThumbClass}>
-                    {rowImg ? (
-                      <Image src={rowImg} alt="" fill className="object-cover" sizes={listingPortraitThumbSizes} unoptimized={listingImageShouldBypassOptimization(rowImg)} />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center">
-                        <Package className="h-8 w-8 text-muted-foreground" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <Link href={rowHref} className="font-semibold text-foreground hover:text-primary">
-                      {rowTitle}
-                    </Link>
-                    <p className="text-sm text-muted-foreground mt-1">Sold by {sellerName}</p>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-          <div className="border-t pt-4 space-y-3">
-            <div className="flex justify-between text-lg font-semibold">
-              <span>Total paid</span>
-              <span
-                className={`tabular-nums ${isRefunded ? "line-through text-muted-foreground font-normal" : ""}`}
-              >
-                ${Number(order.amount).toFixed(2)}
-              </span>
-            </div>
-            {order.status === "refunding" && (
-              <div className="rounded-lg border border-amber-500/25 bg-amber-500/[0.06] px-3 py-2.5 text-sm text-amber-950 dark:text-amber-100">
-                Refund in progress — your payment is being returned
-                {paidWithCard ? " through Stripe" : ""}. This purchase will show as fully refunded when it
-                finishes (card statements can take several business days).
-              </div>
-            )}
-            {isRefunded && (
-              <div className="flex justify-between items-baseline gap-3 rounded-lg border border-emerald-500/20 bg-emerald-500/[0.06] px-3 py-2.5 text-base font-semibold">
-                <span className="text-emerald-900 dark:text-emerald-100">Refunded to you (full amount)</span>
-                <span className="tabular-nums text-emerald-700 dark:text-emerald-300">
-                  ${Number(order.amount).toFixed(2)}
-                </span>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {addrBlock && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Shipping address</CardTitle>
-            <CardDescription>What you provided at checkout for delivery.</CardDescription>
-          </CardHeader>
-          <CardContent className="text-sm space-y-1">
-            {ship?.name && <p className="font-medium text-foreground">{ship.name}</p>}
-            <p className="text-muted-foreground whitespace-pre-line">{addrBlock}</p>
-            {ship?.phone && <p className="text-muted-foreground">Phone: {ship.phone}</p>}
-            {ship?.email && <p className="text-muted-foreground">Email: {ship.email}</p>}
-          </CardContent>
-        </Card>
-      )}
-
-      {!addrBlock && order.fulfillment_method === "pickup" && (
-        <Card>
-          <CardContent className="pt-6 text-sm text-muted-foreground">
-            <p>
-              This purchase is <span className="font-medium text-foreground">local pickup</span>. Use
-              messages below to agree on a time and place with the seller.
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      <OrderMessageThread
-        key={conversationId ?? `new-${order.id}`}
-        conversationId={conversationId}
-        initialMessages={initialMessages}
-        counterpartyName={sellerName}
-        currentUserId={user.id}
-        variant="buyer"
-        startConversation={
-          conversationId
-            ? null
-            : { listingId: order.listing_id, sellerId: order.seller_id }
-        }
-      />
-
-      <div className="flex flex-wrap gap-3">
-        <Button variant="outline" asChild>
-          <Link href="/dashboard/purchases">Back to purchases</Link>
-        </Button>
+      <div className="mx-auto w-full max-w-xl">
+        <OrderMessageThread
+          key={conversationId ?? `new-${order.id}`}
+          conversationId={conversationId}
+          initialMessages={initialMessages}
+          counterpartyName={sellerName}
+          currentUserId={user.id}
+          variant="buyer"
+          startConversation={
+            conversationId ? null : { listingId: order.listing_id, sellerId: order.seller_id }
+          }
+        />
       </div>
     </div>
   )

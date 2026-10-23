@@ -46,8 +46,13 @@ export async function POST(request: NextRequest) {
   const sellerSlug =
     typeof sellerProfile?.seller_slug === "string" ? sellerProfile.seller_slug.trim() : ""
 
-  after(() => {
+  try {
     expirePublicListingSurfacesAfterEdit(listingId, slug ?? null)
+  } catch (error) {
+    console.error("[revalidate-mutation] listing revalidate:", error)
+  }
+
+  after(() => {
     if (sellerSlug) {
       revalidatePath(`/sellers/${sellerSlug}`, "page")
     }

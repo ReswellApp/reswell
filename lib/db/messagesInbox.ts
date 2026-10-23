@@ -20,6 +20,7 @@ export type MessagesInboxNotification = {
   listing_id: string | null
   actor_id: string | null
   message: string | null
+  href?: string | null
   is_read: boolean
   created_at: string
   listings: MessagesInboxActivityListing | null
@@ -54,6 +55,7 @@ const NOTIFICATIONS_SELECT = `
   listing_id,
   actor_id,
   message,
+  href,
   is_read,
   created_at,
   listings(id, slug, title, section, price, listing_images(url, thumbnail_url, is_primary))

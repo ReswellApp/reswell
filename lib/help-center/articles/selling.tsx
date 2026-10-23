@@ -640,7 +640,7 @@ export const sellingHelpArticles: HelpArticle[] = [
     quickAnswer: (
       <>
         Buyer messages and offers show up in {helpLink("/messages", "Messages")} and on{" "}
-        {helpLink("/dashboard/offers", "Offers")} under <strong>On my listings</strong>. Tap{" "}
+        {helpLink("/dashboard/offers", "Offers")} under <strong>Selling</strong>. Tap{" "}
         <strong>Respond to offer</strong> to accept, counter, or decline.
       </>
     ),
@@ -651,8 +651,9 @@ export const sellingHelpArticles: HelpArticle[] = [
           <>
             <p>
               When a buyer makes an offer on your listing, you will see it in {helpLink("/messages", "Messages")}{" "}
-              and on {helpLink("/dashboard/offers", "Offers")} under the <strong>On my listings</strong>{" "}
-              tab. Each tile shows the offer amount, status, and expiry time.
+              and on {helpLink("/dashboard/offers", "Offers")} under the <strong>Selling</strong>{" "}
+              tab. Each tile shows the offer amount, status, and expiry time. Offers that still need
+              you are grouped under Needs a response.
             </p>
             <p>
               General buyer questions (not tied to an offer) also land in Messages. Reply there to

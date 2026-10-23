@@ -90,7 +90,7 @@ export function DashboardOverviewManage({ model }: DashboardOverviewManageProps)
     },
     {
       name: "Favorites",
-      href: "/dashboard/favorites",
+      href: "/favorites",
       icon: Heart,
       detail: <Detail>{model.favoriteCount.toLocaleString()}</Detail>,
     },
@@ -139,7 +139,8 @@ export function DashboardOverviewManage({ model }: DashboardOverviewManageProps)
     })
   }
 
-  const lastSpansRow = items.length % 2 === 1
+  const visibleItems = model.showPayouts ? items : items.filter((item) => item.name !== "Earnings")
+  const lastSpansRow = visibleItems.length % 2 === 1
 
   return (
     <section className="space-y-4" aria-label="Manage">
@@ -147,9 +148,9 @@ export function DashboardOverviewManage({ model }: DashboardOverviewManageProps)
         Manage
       </h2>
       <ul className="grid grid-cols-1 gap-px overflow-hidden rounded-2xl border border-border bg-border md:grid-cols-2">
-        {items.map((item, index) => {
+        {visibleItems.map((item, index) => {
           const Icon = item.icon
-          const isLast = index === items.length - 1
+          const isLast = index === visibleItems.length - 1
           return (
             <li key={item.href} className={cn(isLast && lastSpansRow && "md:col-span-2")}>
               <Link

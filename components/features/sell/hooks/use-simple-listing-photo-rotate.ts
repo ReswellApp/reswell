@@ -4,9 +4,10 @@ import { useCallback, type Dispatch, type MutableRefObject, type SetStateAction 
 import { toast } from "sonner"
 import {
   canRotateSimpleSellPhoto,
-  simpleSellPhotoSlotForRotate180,
+  simpleSellPhotoSlotForQuarterTurn,
   type SimpleSellPhotoSlot,
 } from "@/lib/sell-flow/simple-listing-photo-rotate"
+import type { ListingPhotoQuarterTurnDelta } from "@/lib/sell-flow/listing-photo-orientation"
 import { friendlyListingPhotoErrorMessage } from "@/lib/utils/friendly-listing-photo-error"
 
 export function useSimpleListingPhotoRotate<T extends SimpleSellPhotoSlot>({
@@ -17,9 +18,9 @@ export function useSimpleListingPhotoRotate<T extends SimpleSellPhotoSlot>({
   photosRef: MutableRefObject<T[]>
   setPhotos: Dispatch<SetStateAction<T[]>>
   uploadSlot: (slot: T) => void | Promise<void>
-}): (clientId: string) => void {
+}): (clientId: string, quarterTurns: ListingPhotoQuarterTurnDelta) => void {
   return useCallback(
-    (clientId: string) => {
+    (clientId: string, quarterTurns: ListingPhotoQuarterTurnDelta) => {
       const live = photosRef.current.find((p) => p.clientId === clientId)
       if (!live || !canRotateSimpleSellPhoto(live)) return
 
@@ -32,7 +33,7 @@ export function useSimpleListingPhotoRotate<T extends SimpleSellPhotoSlot>({
 
       void (async () => {
         try {
-          const next = await simpleSellPhotoSlotForRotate180(live)
+          const next = await simpleSellPhotoSlotForQuarterTurn(live, quarterTurns)
           if (!photosRef.current.some((p) => p.clientId === clientId)) return
           setPhotos((prev) => prev.map((p) => (p.clientId === clientId ? next : p)))
           await uploadSlot(next)

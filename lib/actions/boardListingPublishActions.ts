@@ -1,6 +1,7 @@
 "use server"
 
 import { z } from "zod"
+import { resolveManagedSeller } from "@/lib/account-access/managed-seller"
 import { createClient } from "@/lib/supabase/server"
 import { applyPublishedListingSideEffects } from "@/lib/services/publishListingDraft"
 
@@ -47,14 +48,16 @@ export async function applyBoardListingPublishedSideEffectsAction(
     if (error || !listing) {
       return { error: "Listing not found." }
     }
-    if (listing.user_id !== user.id) {
-      return { error: "You can only sync your own listings." }
+    const managed = await resolveManagedSeller("listings.write")
+    if (!managed.ok) return { error: managed.error }
+    if (listing.user_id !== managed.seller.sellerId) {
+      return { error: "You can only sync listings for this account." }
     }
     if (listing.status !== "active") {
       return { error: "Only live listings can be synced." }
     }
 
-    await applyPublishedListingSideEffects(supabase, listingId, user.id)
+    await applyPublishedListingSideEffects(supabase, listingId, managed.seller.sellerId)
     return { success: true }
   } catch (error) {
     console.error(

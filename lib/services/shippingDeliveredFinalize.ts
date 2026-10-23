@@ -1,3 +1,4 @@
+import { publishOrderDeliveredNotifications } from "@/lib/services/notifications/publishOrderDelivered"
 import { releaseOrderSellerEarningsAfterFulfillment } from "@/lib/services/releaseOrderSellerEarnings"
 import { sendFulfillmentReviewPrompts } from "@/lib/services/fulfillmentReviewPrompts"
 import { createServiceRoleClient } from "@/lib/supabase/server"
@@ -150,6 +151,17 @@ export async function markShippingDeliveredAndReleaseSellerEarnings(
 
   if (transitionedToDelivered || order.delivery_status === "delivered") {
     void sendFulfillmentReviewPrompts(orderId)
+  }
+
+  // Carrier delivery already wrote the "payout in 4 days" row. Notify here only
+  // when this call is the first time the order becomes delivered, because the
+  // payout is released in the same function.
+  if (transitionedToDelivered) {
+    void publishOrderDeliveredNotifications({
+      orderId,
+      buyerEvent: "delivered",
+      sellerPayout: "available",
+    })
   }
 
   return { ok: true, transitionedToDelivered, walletReleasedNew: release.released }

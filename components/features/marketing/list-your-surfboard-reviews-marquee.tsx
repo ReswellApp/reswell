@@ -9,6 +9,7 @@ import type {
   MarketplaceShowcaseReviewRole,
   MarketplaceShowcaseReviewRow,
 } from "@/lib/db/marketplace-reviews-showcase"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { truncateReviewText } from "@/lib/reswell-platform-review-stats"
 import { cn } from "@/lib/utils"
@@ -46,7 +47,7 @@ function ReviewListingThumb({
           src={imageSrc}
           alt={alt}
           fill
-          className="object-cover"
+          className={listingPhotoFillClassName}
           sizes={mobileOneScreen ? "36px" : "44px"}
           unoptimized={listingImageShouldBypassOptimization(imageSrc)}
         />

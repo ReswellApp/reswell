@@ -6,7 +6,8 @@ import type { ListingDetailPageSharedProps } from "@/lib/listing-detail-page-loa
 
 /**
  * Visible catalog PDP. Always the anonymous shell so `/l/[listing]` can be
- * cached. Favorites, owner tools, and the admin bar hydrate after paint.
+ * cached for every visitor. Owner protection copy and listing controls render
+ * in the browser only after the session matches the seller.
  */
 export function ListingDetailPublicOrAuthenticated({
   listingParam,

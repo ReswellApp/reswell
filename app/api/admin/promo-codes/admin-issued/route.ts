@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/brands/admin-server"
 import { createAdminIssuedPromoCode } from "@/lib/services/adminIssuedPromo"
 import { listAdminIssuedPromoCodes } from "@/lib/services/adminIssuedPromoCodesList"
 import { adminIssuedPromoGenerateBodySchema } from "@/lib/validations/adminIssuedPromo"
+import { adminPromoProductTypeLabel } from "@/lib/utils/promo-product-type"
 
 const querySchema = z.object({
   status: z.enum(["all", "active", "reserved", "redeemed", "expired"]).optional().default("all"),
@@ -64,6 +65,7 @@ export async function POST(request: NextRequest) {
     const first =
       parsed.error.flatten().fieldErrors.discount_percent?.[0] ??
       parsed.error.flatten().fieldErrors.note?.[0] ??
+      parsed.error.flatten().fieldErrors.eligible_sections?.[0] ??
       "Invalid request."
     return NextResponse.json({ error: first }, { status: 400 })
   }
@@ -72,6 +74,7 @@ export async function POST(request: NextRequest) {
     discountPercent: parsed.data.discount_percent,
     createdByProfileId: gate.ctx.user.id,
     note: parsed.data.note,
+    eligibleSections: parsed.data.eligible_sections,
   })
 
   if (!result.ok) {
@@ -85,6 +88,8 @@ export async function POST(request: NextRequest) {
         code: result.promo.code,
         discountPercent: result.promo.discount_percent,
         note: result.promo.note,
+        eligibleSections: result.promo.eligible_sections,
+        appliesToLabel: adminPromoProductTypeLabel(result.promo.eligible_sections),
         expiresAt: result.promo.expires_at,
         createdAt: result.promo.created_at,
       },

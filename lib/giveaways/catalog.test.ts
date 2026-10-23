@@ -6,14 +6,15 @@ import {
   formatGiveawayEndDate,
   getGiveawayBySlug,
   isGiveawayOpen,
-  WIN_A_SURFBOARD_ENTRY_DEADLINE_COPY,
+  listCurrentGiveaways,
+  SURFBOARD_GIVEAWAY_CAMPAIGN_ENABLED,
   WIN_A_SURFBOARD_GIVEAWAY_SLUG,
 } from "./catalog.ts"
 
-describe("custom surfboard entry deadline", () => {
+describe("custom surfboard giveaway is shut off", () => {
   const giveaway = getGiveawayBySlug(WIN_A_SURFBOARD_GIVEAWAY_SLUG)
 
-  it("closes at 11:59pm Pacific on October 7, 2026", () => {
+  it("keeps the recorded close at 11:59pm Pacific on October 7, 2026", () => {
     assert.ok(giveaway)
     const formatted = new Intl.DateTimeFormat("en-US", {
       timeZone: BUSINESS_TIMEZONE,
@@ -28,17 +29,12 @@ describe("custom surfboard entry deadline", () => {
     assert.equal(formatGiveawayEndDate(giveaway.endsAt), "October 7, 2026")
   })
 
-  it("stays open through 11:59pm Pacific and closes at midnight", () => {
+  it("does not accept entries or show the raffle, including before the old deadline", () => {
+    assert.equal(SURFBOARD_GIVEAWAY_CAMPAIGN_ENABLED, false)
     assert.ok(giveaway)
-    assert.equal(isGiveawayOpen(giveaway, Date.parse("2026-10-08T06:59:59.000Z")), true)
-    assert.equal(isGiveawayOpen(giveaway, Date.parse("2026-10-08T07:00:00.000Z")), false)
-  })
-
-  it("shows tonight at 11:59pm PT on the giveaway page copy", () => {
-    assert.ok(giveaway)
-    assert.equal(giveaway.deadlineLabel, WIN_A_SURFBOARD_ENTRY_DEADLINE_COPY)
-    assert.match(giveaway.scheduleLabel, /tonight at 11:59pm PT/)
-    assert.match(giveaway.howItWorks[1]?.body ?? "", /tonight at 11:59pm PT/)
-    assert.ok(giveaway.rules.some((rule) => rule.includes("tonight at 11:59pm PT")))
+    assert.equal(giveaway.status, "ended")
+    assert.equal(isGiveawayOpen(giveaway, Date.parse("2026-10-07T20:00:00.000Z")), false)
+    assert.equal(isGiveawayOpen(giveaway, Date.parse("2026-10-08T06:59:59.000Z")), false)
+    assert.deepEqual(listCurrentGiveaways(Date.parse("2026-10-07T20:00:00.000Z")), [])
   })
 })

@@ -1,9 +1,6 @@
 import { randomUUID } from "node:crypto"
 import type { SupabaseClient } from "@supabase/supabase-js"
-import {
-  dbListSelectedShopifyProductIds,
-  dbUnpublishAllShopifyListingsForConnection,
-} from "@/lib/db/shopifyCatalog"
+import { dbUnpublishAllShopifyListingsForConnection } from "@/lib/db/shopifyCatalog"
 import {
   dbGetShopifyConnectionByDomain,
   dbGetShopifyConnectionById,
@@ -12,7 +9,10 @@ import {
   dbRedactShopifyConnection,
   dbTouchShopifyReconciled,
   dbTouchShopifyWebhook,
+  dbUpdateShopifyBilling,
+  dbUpdateShopifySourceOfTruth,
 } from "@/lib/db/shopifyConnections"
+import { dbDeleteShopifyPendingInstallationsForShop } from "@/lib/db/shopifyPendingInstallations"
 import {
   dbCancelShopifyJobsForConnection,
   dbCancelShopifyInventoryJobsForConnection,
@@ -35,6 +35,7 @@ import {
   shopifyInventoryDecrementPayloadSchema,
   shopifyInventoryJobPayloadSchema,
   shopifyProductJobPayloadSchema,
+  shopifySaleOrderPayloadSchema,
 } from "@/lib/validations/shopify"
 import {
   applyShopifyListingSideEffects,
@@ -46,7 +47,21 @@ import {
   decrementShopifyInventoryForReswellSale,
   ShopifyInventoryWritesDisabledError,
 } from "@/lib/services/shopifyInventory"
+import { sweepDeletedShopifyListings } from "@/lib/services/shopifyDeletionSweep"
 import { compensateShopifyInventoryConflict } from "@/lib/services/shopifyInventoryCompensation"
+import { ShopifyBillingRequiredError } from "@/lib/services/shopifyBilling"
+import {
+  applyShopifyOriginatedSale,
+  pushReswellSaleToShopify,
+} from "@/lib/services/shopifySale"
+import {
+  parseShopifySourceOfTruth,
+  shopifyCatalogSyncAllowed,
+} from "@/lib/shopify/billing"
+import {
+  pullShopifySourceOfTruth,
+  shopifyMetafieldMatchesSource,
+} from "@/lib/services/shopifySource"
 
 function shopifyGid(
   kind: "Product" | "InventoryItem",
@@ -105,6 +120,10 @@ async function handleWebhookEvent(
         )
 
   if (event.topic === "shop/redact") {
+    await dbDeleteShopifyPendingInstallationsForShop(
+      serviceSupabase,
+      event.shop_domain,
+    )
     if (!connection) return
     await compensateUnresolvedShopifySales(serviceSupabase, connection.id)
     const listingIds = await dbRedactShopifyConnection(
@@ -124,6 +143,14 @@ async function handleWebhookEvent(
       syncEnabled: false,
       error: "Shopify app was uninstalled",
     })
+    await dbUpdateShopifyBilling(serviceSupabase, connection.id, {
+      billingStatus: "pending",
+      subscriptionGid: null,
+      lineItemGid: null,
+      cappedAmount: null,
+      approvedAt: null,
+      syncEnabled: false,
+    })
     const listingIds = await dbUnpublishAllShopifyListingsForConnection(
       serviceSupabase,
       connection.id,
@@ -139,10 +166,63 @@ async function handleWebhookEvent(
   ) {
     return
   }
+
+  // Deletion only writes Reswell rows, so it runs even while sync is paused or
+  // the store needs reauthorization: a deleted product must never stay live.
+  if (event.topic === "orders/create") {
+    if (
+      !connection ||
+      connection.status !== "active" ||
+      !connection.orders_sync_enabled
+    ) {
+      return
+    }
+    await applyShopifyOriginatedSale({
+      serviceSupabase,
+      connection,
+      payload: event.payload,
+    })
+    return
+  }
+
+  if (event.topic === "metafields/update") {
+    if (!connection || connection.status === "disconnected") return
+    const namespace =
+      typeof event.payload.namespace === "string" ? event.payload.namespace : null
+    const key = typeof event.payload.key === "string" ? event.payload.key : null
+    const value = typeof event.payload.value === "string" ? event.payload.value : null
+    if (!shopifyMetafieldMatchesSource({ namespace, key })) return
+    const source = parseShopifySourceOfTruth(value)
+    if (!source || source === connection.source_of_truth) return
+    await dbUpdateShopifySourceOfTruth(serviceSupabase, connection.id, source)
+    return
+  }
+
+  if (event.topic === "products/delete") {
+    if (!connection) return
+    if (connection.source_of_truth === "reswell") return
+    const productId = shopifyGid(
+      "Product",
+      event.payload.admin_graphql_api_id ?? event.payload.id,
+    )
+    if (!productId) throw new Error("Shopify delete webhook has no product id")
+    if (connection.status === "active" && connection.sync_enabled) {
+      await dbTouchShopifyWebhook(serviceSupabase, connection.id)
+    }
+    await unpublishDeletedShopifyProduct({
+      serviceSupabase,
+      connectionId: connection.id,
+      productId,
+    })
+    return
+  }
+
   if (!connection || connection.status !== "active" || !connection.sync_enabled) {
     return
   }
   await dbTouchShopifyWebhook(serviceSupabase, connection.id)
+
+  if (connection.source_of_truth === "reswell") return
 
   if (event.topic === "products/update") {
     const productId = shopifyGid(
@@ -155,21 +235,6 @@ async function handleWebhookEvent(
       jobType: "product_sync",
       payload: { productId },
       dedupeKey: `product:${connection.id}:${productId}`,
-    })
-    return
-  }
-
-  if (event.topic === "products/delete") {
-    const productId = shopifyGid(
-      "Product",
-      event.payload.admin_graphql_api_id ?? event.payload.id,
-    )
-    if (!productId) throw new Error("Shopify delete webhook has no product id")
-    await dbEnqueueShopifyJob(serviceSupabase, {
-      connectionId: connection.id,
-      jobType: "product_delete",
-      payload: { productId },
-      dedupeKey: `product-delete:${connection.id}:${productId}`,
     })
     return
   }
@@ -195,11 +260,25 @@ async function enqueueConnectionProducts(
   serviceSupabase: SupabaseClient,
   connection: ShopifyConnectionRow,
 ): Promise<void> {
-  const productIds = await dbListSelectedShopifyProductIds(
+  if (connection.source_of_truth === "reswell") {
+    try {
+      await pullShopifySourceOfTruth({ serviceSupabase, connection })
+    } catch (error) {
+      console.error("[shopify] source pull", { connectionId: connection.id, error })
+    }
+    await dbTouchShopifyReconciled(serviceSupabase, connection.id)
+    return
+  }
+  const { liveProductIds } = await sweepDeletedShopifyListings({
     serviceSupabase,
-    connection.id,
-  )
-  for (const productId of productIds) {
+    connection,
+  })
+  try {
+    await pullShopifySourceOfTruth({ serviceSupabase, connection })
+  } catch (error) {
+    console.error("[shopify] source pull", { connectionId: connection.id, error })
+  }
+  for (const productId of liveProductIds) {
     await dbEnqueueShopifyJob(serviceSupabase, {
       connectionId: connection.id,
       jobType: "product_sync",
@@ -218,9 +297,34 @@ async function runSyncJob(
     serviceSupabase,
     job.connection_id,
   )
-  if (!connection || connection.status !== "active" || !connection.sync_enabled) {
+  if (connection && job.job_type === "product_delete") {
+    if (connection.source_of_truth === "reswell") return
+    const payload = shopifyProductJobPayloadSchema.parse(job.payload)
+    await unpublishDeletedShopifyProduct({
+      serviceSupabase,
+      connectionId: connection.id,
+      productId: payload.productId,
+    })
+    return
+  }
+  if (connection && job.job_type === "sale_order") {
+    if (connection.status !== "active") return
+    const payload = shopifySaleOrderPayloadSchema.parse(job.payload)
+    await pushReswellSaleToShopify({
+      serviceSupabase,
+      connection,
+      orderId: payload.orderId,
+      collectVia: payload.collectVia,
+      sourceOfTruth: payload.sourceOfTruth,
+    })
+    return
+  }
+  if (!connection || !shopifyCatalogSyncAllowed(connection)) {
     if (job.job_type === "inventory_decrement") {
       throw new ShopifyInventoryWritesDisabledError()
+    }
+    if (connection?.status === "active" && connection.billing_status !== "active") {
+      throw new ShopifyBillingRequiredError()
     }
     return
   }
@@ -234,15 +338,6 @@ async function runSyncJob(
     await syncSelectedShopifyProduct({
       serviceSupabase,
       connection,
-      productId: payload.productId,
-    })
-    return
-  }
-  if (job.job_type === "product_delete") {
-    const payload = shopifyProductJobPayloadSchema.parse(job.payload)
-    await unpublishDeletedShopifyProduct({
-      serviceSupabase,
-      connectionId: connection.id,
       productId: payload.productId,
     })
     return
@@ -338,7 +433,10 @@ export async function runShopifyWorkers(
       await dbCompleteShopifyJob(serviceSupabase, job)
       result.jobsProcessed += 1
     } catch (error) {
-      if (error instanceof ShopifyInventoryWritesDisabledError) {
+      if (
+        error instanceof ShopifyInventoryWritesDisabledError ||
+        error instanceof ShopifyBillingRequiredError
+      ) {
         await dbDeferShopifyJob(serviceSupabase, job, error.message)
         result.jobsDeferred += 1
         continue

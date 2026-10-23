@@ -1,35 +1,30 @@
-import Link from "next/link"
-import Image from "next/image"
 import { privatePageMetadata } from "@/lib/site-metadata"
 import { createClient } from "@/lib/supabase/server"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Receipt, Package, Truck, MapPin, RotateCcw } from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
-import {
-  ORDER_STATUS_LIST,
-  orderStatusIsRefunded,
-  orderStatusIsRefundInProgress,
-} from "@/lib/order-status"
+import { ORDER_STATUS_LIST, orderStatusIsRefunded } from "@/lib/order-status"
 import { resolveSaleCardStatusDisplay } from "@/lib/sale-card-status"
 import { getOrderReturnSummariesByOrderIds } from "@/lib/db/orderReturnStatusSummary"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
-import { LocalDateTime } from "@/components/ui/local-datetime"
 import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { canSubmitSellerReview } from "@/lib/services/orderSellerReview"
 import { parseOrderTrackingDetail } from "@/lib/shipping/order-tracking-detail"
-import { ReviewSellerControls } from "@/components/review-seller-controls"
 import { existingMarketplaceReviewFromRow, isReviewsMetadataColumnMissing } from "@/lib/marketplace-review-photos"
 import { OrdersListRealtimeRefresh } from "@/components/order-realtime-refresh"
-import { DashboardPageHeader } from "@/components/features/dashboard/dashboard-page-header"
-import { listingPortraitThumbClass, listingPortraitThumbSizes } from "@/lib/utils/dashboard-display-styles"
+import { PurchasesOrderList } from "@/components/features/purchases/purchases-order-list"
+import {
+  purchaseDetailLine,
+  purchaseRefundNote,
+  purchaseShowsShipping,
+  purchaseStatusTone,
+  splitPurchaseAmount,
+  type PurchaseListItem,
+} from "@/lib/purchases-list-display"
 import { REAL_MARKETPLACE_PURCHASES_FILTER } from "@/lib/order-admin-test"
 
 export const metadata = privatePageMetadata({
   title: "Purchases — Reswell",
-  description: "Your purchases on Reswell: shipping status, pickup codes, and order history.",
+  description: "Track and manage your orders on Reswell.",
   path: "/dashboard/purchases",
 })
 
@@ -47,10 +42,17 @@ type ShippingAddressJson = {
   } | null
 } | null
 
+type ListingImage = {
+  url: string
+  thumbnail_url?: string | null
+  is_primary: boolean | null
+}
+
 type MarketplaceOrderRow = {
   id: string
   order_num: string | null
   amount: number | string
+  shipping_amount?: number | string | null
   status: string
   delivery_status: string
   tracking_number: string | null
@@ -58,65 +60,41 @@ type MarketplaceOrderRow = {
   created_at: string
   shipping_address: ShippingAddressJson
   fulfillment_method: string | null
-  stripe_checkout_session_id: string | null
   seller_id: string
   listings:
     | {
         id: string
         title: string
-        slug?: string | null
-        section: string
-        listing_images: Array<{
-          url: string
-          thumbnail_url?: string | null
-          is_primary: boolean | null
-        }> | null
+        condition?: string | null
+        listing_images: ListingImage[] | null
       }
     | {
         id: string
         title: string
-        slug?: string | null
-        section: string
-        listing_images: Array<{
-          url: string
-          thumbnail_url?: string | null
-          is_primary: boolean | null
-        }> | null
+        condition?: string | null
+        listing_images: ListingImage[] | null
       }[]
     | null
 }
 
-function primaryImage(
-  images: Array<{
-    url: string
-    thumbnail_url?: string | null
-    is_primary: boolean | null
-  }> | null | undefined,
-) {
-  const s = listingTitleThumbnailSrc(images ?? null)
-  return s || null
+function primaryImage(images: ListingImage[] | null | undefined) {
+  const src = listingTitleThumbnailSrc(images ?? null)
+  return src || null
 }
 
-function formatAddress(addr: NonNullable<ShippingAddressJson>["address"]) {
-  if (!addr) return null
-  const parts = [
-    addr.line1,
-    addr.line2,
-    [addr.city, addr.state, addr.postal_code].filter(Boolean).join(", "),
-    addr.country,
-  ].filter((p) => p && String(p).trim())
-  return parts.length ? parts.join("\n") : null
+function hasShippingAddress(ship: ShippingAddressJson): boolean {
+  const addr = ship?.address
+  if (!addr) return false
+  return [addr.line1, addr.line2, addr.city, addr.state, addr.postal_code, addr.country].some(
+    (part) => typeof part === "string" && part.trim().length > 0,
+  )
 }
 
 /** Buyer-facing labels aligned with the sales list tile pattern. */
 function fulfillmentLabel(method: string | null, hasShipAddr: boolean): string {
   if (method === "shipping" || hasShipAddr) return "Ship to you"
   if (method === "pickup") return "Local pickup"
-  return hasShipAddr ? "Ship to you" : "Local pickup"
-}
-
-function paymentLabel(stripeSessionId: string | null): string {
-  return stripeSessionId ? "Card" : "Wallet"
+  return "Local pickup"
 }
 
 export default async function PurchasesPage() {
@@ -134,6 +112,7 @@ export default async function PurchasesPage() {
       id,
       order_num,
       amount,
+      shipping_amount,
       status,
       delivery_status,
       tracking_number,
@@ -141,16 +120,14 @@ export default async function PurchasesPage() {
       created_at,
       shipping_address,
       fulfillment_method,
-      stripe_checkout_session_id,
       seller_id,
       listings (
         id,
         title,
-        slug,
-        section,
+        condition,
         listing_images ( url, thumbnail_url, is_primary )
       )
-    `
+    `,
     )
     .eq("buyer_id", user.id)
     .match(REAL_MARKETPLACE_PURCHASES_FILTER)
@@ -200,210 +177,78 @@ export default async function PurchasesPage() {
 
   const reviewsByOrderId = new Map((reviewRows ?? []).map((r) => [r.order_id, r]))
 
-  return (
-    <div className="space-y-6">
-      <OrdersListRealtimeRefresh role="buyer" />
-      <DashboardPageHeader
-        title="Purchases"
-        description={
-          <>
-            Used gear and peer-to-peer buys. Sales you make are under{" "}
-            <Link href="/dashboard/sales" className="text-primary underline underline-offset-2">
-              Sales
-            </Link>
-            ; wallet activity is in{" "}
-            <Link href="/dashboard/wallet" className="text-primary underline underline-offset-2">
-              Wallet
-            </Link>
-            .
-          </>
+  const items: PurchaseListItem[] = error
+    ? []
+    : list.map((row) => {
+        const listing = Array.isArray(row.listings) ? row.listings[0] : row.listings
+        const title = listing?.title ? capitalizeWords(listing.title) : "Item (listing removed)"
+        const imageUrl = primaryImage(listing?.listing_images ?? null)
+        const sellerRaw = sellerNameById.get(row.seller_id)?.trim()
+        const sellerName =
+          sellerRaw && sellerRaw.length > 0 ? sellerRaw : `Seller ${row.seller_id.slice(0, 8)}…`
+        const shipped = hasShippingAddress(row.shipping_address)
+        const fulfill = fulfillmentLabel(row.fulfillment_method, shipped)
+        const amounts = splitPurchaseAmount(Number(row.amount), Number(row.shipping_amount ?? 0))
+        const trackingDetail = parseOrderTrackingDetail(row.tracking_detail)
+        const statusDisplay = resolveSaleCardStatusDisplay({
+          orderStatus: row.status,
+          deliveryStatus: row.delivery_status ?? "pending",
+          trackingNumber: row.tracking_number,
+          trackingDetail,
+          returnSummary: returnSummaries.get(row.id) ?? null,
+          fulfillmentMethod: row.fulfillment_method,
+          hasShippingAddress: shipped,
+        })
+        const review = reviewsByOrderId.get(row.id)
+        const existingSellerReview = review ? existingMarketplaceReviewFromRow(review) : null
+        const canReviewSeller = !existingSellerReview && canSubmitSellerReview(row, trackingDetail)
+
+        return {
+          id: row.id,
+          title,
+          imageUrl,
+          imageUnoptimized: listingImageShouldBypassOptimization(imageUrl),
+          sellerName,
+          detailLine: purchaseDetailLine(listing?.condition, fulfill),
+          itemAmount: amounts.itemAmount,
+          shippingAmount: amounts.shippingAmount,
+          showShipping: purchaseShowsShipping(fulfill, amounts.shippingAmount),
+          amountStruck: orderStatusIsRefunded(row.status),
+          orderNumber: formatOrderNumForCustomer(row.order_num, row.id),
+          purchasedAt: row.created_at,
+          statusLabel: statusDisplay.label,
+          statusTone: purchaseStatusTone(statusDisplay),
+          refundNote: purchaseRefundNote(row.status, Number(row.amount)),
+          href: `/dashboard/purchases/${row.id}`,
+          sellerReview:
+            canReviewSeller || existingSellerReview
+              ? { canReview: canReviewSeller, existing: existingSellerReview }
+              : null,
         }
-      />
+      })
 
-      {error && (
-        <p className="text-sm text-destructive">
-          Could not load purchases. If this persists, check that marketplace RLS policies for{" "}
-          <code className="rounded bg-muted px-1 py-0.5 text-xs">orders</code> are applied in Supabase.
+  return (
+    <div>
+      <OrdersListRealtimeRefresh role="buyer" />
+      <header className="hidden border-b border-border/80 pb-5 lg:block">
+        <h1 className="font-headline text-2xl font-bold tracking-tight text-foreground sm:text-[28px]">
+          Your Purchases
+        </h1>
+        <p className="mt-1 text-[15px] leading-snug text-muted-foreground">
+          Track and manage your orders.
         </p>
-      )}
+      </header>
 
-      {!error && list.length === 0 && (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-            <Receipt className="h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground mb-4 max-w-sm">
-              When you buy from other members, your receipts show up here.
-            </p>
-            <Button asChild>
-              <Link href="/gear">Browse gear</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
-      <div className="space-y-4">
-        {list.map((row) => {
-          const listing = Array.isArray(row.listings) ? row.listings[0] : row.listings
-          const title = listing?.title
-            ? capitalizeWords(listing.title)
-            : "Item (listing removed)"
-          const img = primaryImage(listing?.listing_images ?? null)
-          const sellerRaw = sellerNameById.get(row.seller_id)?.trim()
-          const sellerName =
-            sellerRaw && sellerRaw.length > 0 ? sellerRaw : `Seller ${row.seller_id.slice(0, 8)}…`
-          const ship = row.shipping_address
-          const addrBlock = ship?.address ? formatAddress(ship.address) : null
-          const fulfill = fulfillmentLabel(row.fulfillment_method, !!addrBlock)
-          const paidWith = paymentLabel(row.stripe_checkout_session_id)
-
-          const review = reviewsByOrderId.get(row.id)
-          const existingSellerReview = review
-            ? existingMarketplaceReviewFromRow(review)
-            : null
-          const canReviewSeller =
-            !existingSellerReview &&
-            canSubmitSellerReview(row, parseOrderTrackingDetail(row.tracking_detail))
-          const showSellerReview = canReviewSeller || !!existingSellerReview
-          const statusDisplay = resolveSaleCardStatusDisplay({
-            orderStatus: row.status,
-            deliveryStatus: row.delivery_status ?? "pending",
-            trackingNumber: row.tracking_number,
-            trackingDetail: parseOrderTrackingDetail(row.tracking_detail),
-            returnSummary: returnSummaries.get(row.id) ?? null,
-            fulfillmentMethod: row.fulfillment_method,
-            hasShippingAddress: !!addrBlock,
-          })
-
-          return (
-            <Card
-              key={row.id}
-              className={`h-full overflow-hidden rounded-xl transition-colors ${
-                orderStatusIsRefunded(row.status)
-                  ? "border-destructive/20 bg-destructive/[0.02]"
-                  : orderStatusIsRefundInProgress(row.status)
-                    ? "border-amber-500/25 bg-amber-500/[0.03]"
-                    : "hover:bg-muted/40 hover:border-primary/25"
-              }`}
-            >
-              <Link
-                href={`/dashboard/purchases/${row.id}`}
-                className="block rounded-t-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              >
-                <CardHeader className="pb-3">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="space-y-1">
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <Receipt className="h-5 w-5 text-muted-foreground" />
-                        Order #{formatOrderNumForCustomer(row.order_num, row.id)}
-                      </CardTitle>
-                      <CardDescription>
-                        <LocalDateTime iso={row.created_at} dateStyle="medium" timeStyle="short" />
-                      </CardDescription>
-                    </div>
-                    <Badge variant={statusDisplay.variant} className={statusDisplay.className}>
-                      {statusDisplay.label}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex flex-wrap gap-2">
-                    <Badge variant="outline" className="gap-1 font-normal">
-                      {fulfill.includes("Ship") ? (
-                        <Truck className="h-3.5 w-3.5" />
-                      ) : (
-                        <MapPin className="h-3.5 w-3.5" />
-                      )}
-                      {fulfill}
-                    </Badge>
-                  </div>
-
-                  <div className="flex gap-3">
-                    <div className={listingPortraitThumbClass}>
-                      {img ? (
-                        <Image src={img} alt="" fill className="object-cover" sizes={listingPortraitThumbSizes} unoptimized={listingImageShouldBypassOptimization(img)} />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center">
-                          <Package className="h-6 w-6 text-muted-foreground" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="line-clamp-2 text-[15px] font-semibold text-foreground">{title}</p>
-                      <p className="mt-0.5 text-[13px] text-muted-foreground">Seller: {sellerName}</p>
-                      <p className="mt-2 text-[11px] text-muted-foreground">
-                        Tap for purchase details, tracking, and messages
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="border-t pt-3 space-y-1 text-sm">
-                    <div className="flex justify-between text-muted-foreground">
-                      <span>Purchase total</span>
-                      <span
-                        className={`tabular-nums ${orderStatusIsRefunded(row.status) ? "line-through" : ""}`}
-                      >
-                        ${Number(row.amount).toFixed(2)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between font-semibold text-foreground pt-1">
-                      <span>Payment</span>
-                      <span>{paidWith}</span>
-                    </div>
-                  </div>
-
-                  {orderStatusIsRefundInProgress(row.status) && (
-                    <div className="rounded-lg bg-amber-500/[0.08] border border-amber-500/25 p-2.5 flex items-center gap-2 text-sm">
-                      <RotateCcw className="h-3.5 w-3.5 text-amber-800 dark:text-amber-200 shrink-0" />
-                      <span className="text-amber-950 dark:text-amber-100 font-medium">
-                        Refund in progress — ${Number(row.amount).toFixed(2)} via Stripe (bank timing varies)
-                      </span>
-                    </div>
-                  )}
-
-                  {orderStatusIsRefunded(row.status) && (
-                    <div className="rounded-lg bg-destructive/5 border border-destructive/15 p-2.5 flex items-center gap-2 text-sm">
-                      <RotateCcw className="h-3.5 w-3.5 text-destructive shrink-0" />
-                      <span className="text-destructive font-medium">
-                        Refund complete — ${Number(row.amount).toFixed(2)} returned to you
-                      </span>
-                    </div>
-                  )}
-
-                  {addrBlock && (
-                    <div className="rounded-lg bg-muted/50 p-3 text-sm">
-                      <p className="font-medium text-foreground mb-1">Deliver to</p>
-                      {ship?.name && <p className="text-foreground">{ship.name}</p>}
-                      <p className="text-muted-foreground whitespace-pre-line line-clamp-3">
-                        {addrBlock}
-                      </p>
-                      {(ship?.phone || ship?.email) && (
-                        <p className="text-xs text-muted-foreground mt-1">Open order for full details</p>
-                      )}
-                    </div>
-                  )}
-
-                  {!addrBlock && row.fulfillment_method === "pickup" && (
-                    <p className="text-sm text-muted-foreground">
-                      Local pickup — open this order to message the seller and confirm details.
-                    </p>
-                  )}
-                </CardContent>
-              </Link>
-
-              {showSellerReview && (
-                <CardContent className="border-t bg-muted/20 pt-4 pb-4">
-                  <ReviewSellerControls
-                    orderId={row.id}
-                    sellerName={sellerName}
-                    canReview={canReviewSeller}
-                    existingReview={existingSellerReview}
-                    compact
-                  />
-                </CardContent>
-              )}
-            </Card>
-          )
-        })}
+      <div className="mt-6 lg:mt-8">
+        {error ? (
+          <p className="text-sm text-destructive">
+            Could not load purchases. If this persists, check that marketplace RLS policies for{" "}
+            <code className="rounded bg-muted px-1 py-0.5 text-xs">orders</code> are applied in
+            Supabase.
+          </p>
+        ) : (
+          <PurchasesOrderList items={items} />
+        )}
       </div>
     </div>
   )

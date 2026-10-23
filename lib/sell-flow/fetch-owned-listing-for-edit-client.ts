@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 
 import type { OwnedListingForEditRow } from "@/lib/db/listingEdit"
+import { fetchActingShopAccountId } from "@/lib/account-access/fetch-acting-shop-account"
 import { getActiveImpersonationClient } from "@/lib/impersonation"
 
 export type OwnedListingForEditClientResult = {
@@ -81,11 +82,16 @@ async function fetchOwnedListingViaWarmClient(
     const user = session?.user
     if (!user?.id || !session?.access_token) return null
 
+    const actingShopAccountId = await fetchActingShopAccountId()
+    const ownerIds = [user.id]
+    if (actingShopAccountId && actingShopAccountId !== user.id) {
+      ownerIds.push(actingShopAccountId)
+    }
     const { data: listing, error } = await supabase
       .from("listings")
       .select(OWNED_EDIT_LISTING_SELECT)
       .eq("id", listingId)
-      .eq("user_id", user.id)
+      .in("user_id", ownerIds)
       .maybeSingle()
 
     if (error || !listing?.id) return null

@@ -26,6 +26,7 @@ import {
 } from "@/lib/offer-listing-shipping"
 import { effectiveBoardShippingMode } from "@/lib/services/peerListingShippingQuote"
 import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import type { SellerOfferListing } from "@/lib/types/seller-offer-listing"
 
 function roundMoney(n: number): number {
@@ -95,7 +96,7 @@ function ListingThumb({
           src={proxiedListingImageSrc(src) || src}
           alt=""
           fill
-          className="object-cover"
+          className={listingPhotoFillClassName}
           sizes={size === "sm" ? "44px" : "56px"}
           unoptimized
         />
@@ -240,7 +241,7 @@ export type SellerMakeOfferToBuyerDialogProps = {
   listingId: string
   buyerUserId: string
   sellerUserId: string
-  /** When set, stay on thread after send instead of navigating away. */
+  /** Kept for callers that already have a thread open. Sending never leaves the current page. */
   conversationId?: string | null
   listingTitle?: string
   listPrice?: number
@@ -262,7 +263,6 @@ export function SellerMakeOfferToBuyerDialog({
   onOpenChange,
   listingId,
   buyerUserId,
-  conversationId,
   listingTitle,
   listPrice,
   primaryImageUrl,
@@ -576,14 +576,6 @@ export function SellerMakeOfferToBuyerDialog({
 
       onOpenChange(false)
       toast.success(data?.updated ? "Offer updated." : "Offer sent.")
-
-      if (conversationId) {
-        router.refresh()
-      } else if (returnedConversationId) {
-        router.push(`/messages/${returnedConversationId}`)
-      } else {
-        router.push("/messages/offers")
-      }
       router.refresh()
     } finally {
       setSubmitting(false)

@@ -2,6 +2,7 @@
 
 import { useEffect } from "react"
 import Image from "next/image"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import Link from "next/link"
 import confetti from "canvas-confetti"
 import { motion } from "motion/react"
@@ -156,7 +157,7 @@ export function CheckoutOrderSuccessPickup({ data }: { data: CheckoutOrderSucces
                       src={head.imageUrl}
                       alt=""
                       fill
-                      className="object-cover"
+                      className={listingPhotoFillClassName}
                       sizes="(max-width: 768px) 100vw, 50vw"
                       priority
                     />
@@ -181,7 +182,7 @@ export function CheckoutOrderSuccessPickup({ data }: { data: CheckoutOrderSucces
                               src={line.imageUrl}
                               alt=""
                               fill
-                              className="object-cover"
+                              className={listingPhotoFillClassName}
                               sizes="(max-width: 768px) 45vw, 25vw"
                             />
                           ) : (

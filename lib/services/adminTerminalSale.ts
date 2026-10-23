@@ -6,13 +6,17 @@ import { getStripe, getStripeCheckoutKeyConfigError } from "@/lib/stripe-server"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
 import { deleteBuyerCartRowsForListings } from "@/lib/db/cart-items-server"
+import { attachListingInventorySources } from "@/lib/db/listingInventorySource"
 import {
   PEER_SURFBOARD_CHECKOUT_LISTING_SELECT,
   type PeerSurfboardCheckoutListingRow,
 } from "@/lib/services/peerListingShippingQuote"
 import { listingSoldViaCheckoutUpdate } from "@/lib/listing-sold-state"
+import { peerBrandNewStockQuantity } from "@/lib/listing-stock-quantity"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { fetchSellerFeeWaived } from "@/lib/db/profileSellerFee"
+import { connectedSalePayout } from "@/lib/shopify/billing"
+import { shopifyManagedCheckoutBilling } from "@/lib/services/shopifyBilling"
 import { getSellerEarnings } from "@/lib/seller-fees"
 import { completeMarketplaceOrderFromPaymentIntent } from "@/lib/stripe-complete-order"
 import { safeRevalidateAfterMarketplaceOrderCommit } from "@/lib/cache/safe-revalidate-after-order"
@@ -58,7 +62,7 @@ export type AdminTerminalInPersonTotals = {
  * Admin in-person checkout ignores listing pickup/shipping flags — charge list price only.
  */
 export async function computeAdminTerminalInPersonCheckoutUsd(
-  supabase: SupabaseClient,
+  _supabase: SupabaseClient,
   listing: PeerSurfboardCheckoutListingRow,
 ): Promise<{ ok: true; totals: AdminTerminalInPersonTotals } | { ok: false; error: string }> {
   const itemPrice = Math.round(parseFloat(String(listing.price)) * 100) / 100
@@ -66,8 +70,17 @@ export async function computeAdminTerminalInPersonCheckoutUsd(
     return { ok: false, error: "Invalid listing price" }
   }
 
+  const shopifyBilling = await shopifyManagedCheckoutBilling([listing])
+  if (!shopifyBilling.ok) return { ok: false, error: shopifyBilling.error }
+
   const feeWaived = await fetchSellerFeeWaived(listing.user_id)
-  const { marketplaceFee: platformFee, sellerEarnings } = getSellerEarnings(itemPrice, { feeWaived })
+  const shopifyBilled = shopifyBilling.billedListingIds.has(listing.id)
+  const payout = shopifyBilled
+    ? connectedSalePayout(itemPrice, { feeWaived, shopifyBilled: true })
+    : null
+  const { marketplaceFee: platformFee, sellerEarnings } = payout
+    ? { marketplaceFee: payout.platformFee, sellerEarnings: payout.sellerEarnings }
+    : getSellerEarnings(itemPrice, { feeWaived })
 
   return {
     ok: true,
@@ -178,7 +191,7 @@ async function loadListingForAdminTerminal(
 
   let query = serviceSupabase
     .from("listings")
-    .select(`${PEER_SURFBOARD_CHECKOUT_LISTING_SELECT}, hidden_from_site, archived_at`)
+    .select(`${PEER_SURFBOARD_CHECKOUT_LISTING_SELECT}, hidden_from_site, archived_at, stock_quantity`)
     .limit(1)
 
   query = ref.kind === "id" ? query.eq("id", ref.value) : query.eq("slug", ref.value)
@@ -247,7 +260,7 @@ export async function previewAdminTerminalListingById(
 > {
   const { data, error } = await serviceSupabase
     .from("listings")
-    .select(`${PEER_SURFBOARD_CHECKOUT_LISTING_SELECT}, hidden_from_site, archived_at`)
+    .select(`${PEER_SURFBOARD_CHECKOUT_LISTING_SELECT}, hidden_from_site, archived_at, stock_quantity`)
     .eq("id", listingId)
     .maybeSingle()
 
@@ -439,7 +452,7 @@ async function loadListingForAdminTerminalSale(
 > {
   const { data: listingRaw, error: listingErr } = await service
     .from("listings")
-    .select(`${PEER_SURFBOARD_CHECKOUT_LISTING_SELECT}, hidden_from_site, archived_at`)
+    .select(`${PEER_SURFBOARD_CHECKOUT_LISTING_SELECT}, hidden_from_site, archived_at, stock_quantity`)
     .eq("id", listingId)
     .maybeSingle()
 
@@ -469,7 +482,16 @@ async function loadListingForAdminTerminalSale(
     return { ok: false, error: "Amount is below the minimum charge", status: 400 }
   }
 
-  return { ok: true, listing, totalUsd, amountCents }
+  const sourcedListing = await attachListingInventorySources(service, [listing])
+  if (!sourcedListing.ok) {
+    return { ok: false, error: sourcedListing.error, status: 500 }
+  }
+  const ready = sourcedListing.listings[0]
+  if (!ready) {
+    return { ok: false, error: "Listing not found", status: 404 }
+  }
+
+  return { ok: true, listing: ready, totalUsd, amountCents }
 }
 
 async function createAdminTerminalPaymentIntent(
@@ -784,14 +806,25 @@ export async function completeAdminTerminalCashSale(
 
   const listingTitle = String(listing.title ?? "")
 
-  const { error: listingErr } = await service
-    .from("listings")
-    .update(listingSoldViaCheckoutUpdate())
-    .eq("id", listing.id)
+  if (peerBrandNewStockQuantity(listing) >= 1) {
+    const { error: stockErr } = await service.rpc("decrement_listing_stock", {
+      p_listing_id: listing.id,
+      p_qty: 1,
+    })
+    if (stockErr) {
+      console.error("[adminTerminalSale] stock decrement:", stockErr)
+      return { ok: false, error: "Could not update listing inventory", status: 409 }
+    }
+  } else {
+    const { error: listingErr } = await service
+      .from("listings")
+      .update(listingSoldViaCheckoutUpdate())
+      .eq("id", listing.id)
 
-  if (listingErr) {
-    console.error("[adminTerminalSale] cash listing update:", listingErr)
-    return { ok: false, error: "Could not mark listing sold", status: 500 }
+    if (listingErr) {
+      console.error("[adminTerminalSale] cash listing update:", listingErr)
+      return { ok: false, error: "Could not mark listing sold", status: 500 }
+    }
   }
 
   await safeRevalidateAfterMarketplaceOrderCommit(service, {

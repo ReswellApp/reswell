@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils"
 import type { FollowNotification } from "@/lib/follows/types"
 import { getFollowNotifications, markFollowNotificationsRead } from "@/app/actions/follows"
 import { listingDetailHref } from "@/lib/listing-href"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
 
@@ -131,8 +132,9 @@ export function NotificationDrawer() {
                 const primaryImg =
                   listing?.listing_images?.find((i) => i.is_primary) ||
                   listing?.listing_images?.[0]
-                const href = getListingHref(listing)
+                const href = n.href || getListingHref(listing)
                 const isPriceDrop = n.type === "price_drop_from_followed"
+                const isDigest = n.type.endsWith("_digest")
 
                 return (
                   <li
@@ -154,28 +156,43 @@ export function NotificationDrawer() {
                     </Avatar>
 
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm leading-snug">
-                        <span className="font-semibold">{actorName}</span>
-                        {n.actor?.city && (
-                          <span className="text-muted-foreground"> · {n.actor.city}</span>
-                        )}
-                        {isPriceDrop ? " dropped the price on" : " listed"}
-                        {listing && (
-                          <>
-                            {" "}
-                            <Link
-                              href={href}
-                              className="font-medium text-foreground hover:underline"
-                              onClick={() => {
-                                handleNotificationClick(n.id)
-                                setOpen(false)
-                              }}
-                            >
-                              {listing.title}
-                            </Link>
-                          </>
-                        )}
-                      </p>
+                      {isDigest ? (
+                        <p className="text-sm leading-snug">
+                          <Link
+                            href={href}
+                            className="font-medium text-foreground hover:underline"
+                            onClick={() => {
+                              handleNotificationClick(n.id)
+                              setOpen(false)
+                            }}
+                          >
+                            {n.message}
+                          </Link>
+                        </p>
+                      ) : (
+                        <p className="text-sm leading-snug">
+                          <span className="font-semibold">{actorName}</span>
+                          {n.actor?.city && (
+                            <span className="text-muted-foreground"> · {n.actor.city}</span>
+                          )}
+                          {isPriceDrop ? " dropped the price on" : " listed"}
+                          {listing && (
+                            <>
+                              {" "}
+                              <Link
+                                href={href}
+                                className="font-medium text-foreground hover:underline"
+                                onClick={() => {
+                                  handleNotificationClick(n.id)
+                                  setOpen(false)
+                                }}
+                              >
+                                {listing.title}
+                              </Link>
+                            </>
+                          )}
+                        </p>
+                      )}
                       {listing && (
                         <p className="text-sm font-semibold text-foreground mt-0.5">
                           ${Number(listing.price).toFixed(2)}
@@ -200,7 +217,7 @@ export function NotificationDrawer() {
                           src={proxiedListingImageSrc(primaryImg.url)}
                           alt={listing?.title || ""}
                           fill
-                          className="object-cover"
+                          className={listingPhotoFillClassName}
                           sizes="56px"
                           unoptimized
                         />

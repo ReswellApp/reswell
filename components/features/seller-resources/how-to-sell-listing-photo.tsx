@@ -1,4 +1,5 @@
 import Image from "next/image"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { cn } from "@/lib/utils"
 
@@ -22,7 +23,7 @@ export function HowToSellListingPhoto({
       fill
       sizes={sizes}
       priority={priority}
-      className={cn("object-cover object-center", className)}
+      className={cn(listingPhotoFillClassName, className)}
       unoptimized={listingImageShouldBypassOptimization(src)}
     />
   )

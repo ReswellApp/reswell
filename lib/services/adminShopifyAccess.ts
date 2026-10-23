@@ -1,5 +1,6 @@
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { dbSetShopifyAccessForUser } from "@/lib/db/adminShopifyAccess"
+import { dbMarkPendingShopifyAccessRequestsGranted } from "@/lib/db/shopifyAccessRequests"
 import { disconnectMerchantShopify } from "@/lib/services/shopifyConnection"
 
 export async function setShopifyAccessForUser(
@@ -25,6 +26,9 @@ export async function setShopifyAccessForUser(
     )
     if (result === "not_found") {
       return { ok: false, status: 404, error: "User not found" }
+    }
+    if (grant) {
+      await dbMarkPendingShopifyAccessRequestsGranted(serviceSupabase, userId)
     }
     return { ok: true }
   } catch (error) {

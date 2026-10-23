@@ -3,12 +3,18 @@
 import { revalidatePath } from "next/cache"
 
 import {
+  grantDropoffLocationAccount,
+  revokeDropoffLocationGrant,
+} from "@/lib/services/dropoffLocationGrants"
+import {
   getDropoffLocationsAdminDashboard,
   updateDropoffListingParcelService,
   updateDropoffLocationService,
 } from "@/lib/services/dropoffLocations"
 import {
   dropoffListingParcelUpdateSchema,
+  dropoffLocationGrantSchema,
+  dropoffLocationRevokeSchema,
   dropoffLocationUpdateSchema,
 } from "@/lib/validations/dropoff-location"
 
@@ -31,6 +37,26 @@ export async function updateDropoffLocationAction(raw: unknown) {
   if (!result.ok) return { error: result.error }
   revalidatePath("/admin/dropoff-locations")
   return { success: true as const, location: result.location }
+}
+
+const GRANT_PATHS = ["/admin/dropoff-locations", "/dashboard", "/dashboard/dropoff-location", "/messages"]
+
+export async function grantDropoffLocationAccountAction(raw: unknown) {
+  const parsed = dropoffLocationGrantSchema.safeParse(raw)
+  if (!parsed.success) return { error: flattenZod(parsed.error) }
+  const result = await grantDropoffLocationAccount(parsed.data)
+  if (!result.ok) return { error: result.error }
+  for (const path of GRANT_PATHS) revalidatePath(path)
+  return { success: true as const }
+}
+
+export async function revokeDropoffLocationGrantAction(raw: unknown) {
+  const parsed = dropoffLocationRevokeSchema.safeParse(raw)
+  if (!parsed.success) return { error: flattenZod(parsed.error) }
+  const result = await revokeDropoffLocationGrant(parsed.data)
+  if (!result.ok) return { error: result.error }
+  for (const path of GRANT_PATHS) revalidatePath(path)
+  return { success: true as const }
 }
 
 export async function updateDropoffListingParcelAction(raw: unknown) {

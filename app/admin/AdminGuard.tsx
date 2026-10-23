@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { employeeAdminPathDecision } from '@/lib/admin/employee-access'
 
 export function AdminGuard({
   isAdmin,
@@ -17,39 +18,12 @@ export function AdminGuard({
   const router = useRouter()
 
   useEffect(() => {
-    if (!isAdmin && isEmployee && pathname) {
-      if (
-        pathname === '/admin/listings/bulk' ||
-        pathname === '/admin/users' ||
-        pathname === '/admin/wallets' ||
-        pathname === '/admin/settings' ||
-        pathname === '/admin/seo' ||
-        pathname === '/admin/google-merchant' ||
-        pathname === '/admin/google-analytics' ||
-        pathname === '/admin/ad-sales' ||
-        pathname === '/admin/ads' ||
-        pathname.startsWith('/admin/ads/') ||
-        pathname === '/admin/search-curation' ||
-        pathname === '/admin/shipping' ||
-        pathname === '/admin/dropoff-locations' ||
-        pathname === '/admin/shipper' ||
-        pathname.startsWith('/admin/shipper/') ||
-        pathname === '/admin/tools' ||
-        pathname === '/admin/site-assets' ||
-        pathname === '/admin/llm-usage' ||
-        pathname === '/admin/intelligence' ||
-        pathname === '/admin/listings/brand-model-autofills' ||
-        pathname === '/admin/orders/terminal' ||
-        pathname === '/admin/promo-codes' ||
-        pathname === '/admin/fbcatalog' ||
-        pathname === '/admin/facebook-marketplace-bulk' ||
-        pathname === '/admin/shop' ||
-        pathname === '/admin/hayden-shop' ||
-        pathname.startsWith('/admin/hayden-shop/')
-      ) {
-        router.replace('/admin')
-      }
-    }
+    if (isAdmin || !isEmployee || !pathname) return
+    const decision = employeeAdminPathDecision(pathname, new URLSearchParams(window.location.search))
+    if (decision.allow) return
+    const target = `${decision.redirectPath}${decision.redirectSearch}`
+    const current = `${pathname}${window.location.search}`
+    if (target !== current) router.replace(target)
   }, [isAdmin, isEmployee, pathname, router])
 
   return <>{children}</>

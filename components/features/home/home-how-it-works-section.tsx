@@ -5,6 +5,7 @@ import { HomeHowItWorksBuyerCurator } from "@/components/home-how-it-works-buyer
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
 import { portraitShimmer } from "@/lib/image-shimmer"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 
 const SELLER_STEPS = [
   {
@@ -72,7 +73,7 @@ function BuyerHowItWorksGrid({ images }: { images: HomeHowItWorksBuyerHighlightI
               src={srcs[i]}
               alt={copy.imageAlt}
               fill
-              className="object-cover"
+              className={listingPhotoFillClassName}
               sizes="(max-width: 1024px) 50vw, 33vw"
               placeholder="blur"
               blurDataURL={portraitShimmer}

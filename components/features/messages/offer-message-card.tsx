@@ -14,6 +14,7 @@ import { offerIsBinding } from "@/lib/listing-offer-authorization"
 import { resolveOfferThreadNote } from "@/lib/utils/parse-offer-negotiation-message"
 import { latestSellerCounterNoteFromTimeline } from "@/lib/utils/offer-timeline"
 import { buildOfferMessageDisplay } from "@/lib/utils/offer-message-display"
+import { dashboardOffersPath } from "@/lib/utils/offers-dashboard-display"
 import { SellerOfferResponseDialog, type OfferRowLite } from "./seller-offer-response-dialog"
 import { format, isToday, isYesterday, formatDistanceToNow } from "date-fns"
 
@@ -93,6 +94,10 @@ export function OfferMessageCard({
   const offerLineItems = parseOfferLineItems(offer.line_items) ?? []
   const isBundleOffer = offerLineItems.length > 1
   const display = buildOfferMessageDisplay(offer, messageContent, isSeller)
+  const offerHref = dashboardOffersPath({
+    role: isSeller ? "seller" : "buyer",
+    offerId: offer.id,
+  })
   // Prefer timeline note for countered cards (message content may be the opening offer line).
   const shownNote = showBuyerCounterActions
     ? latestSellerCounterNoteFromTimeline(offer.offer_timeline) ??
@@ -166,16 +171,14 @@ export function OfferMessageCard({
             <p className="text-[14px] leading-snug text-foreground/90">&ldquo;{shownNote}&rdquo;</p>
           ) : null}
 
-          {isSeller && (
-            <p className={cn("text-[12px] leading-snug text-muted-foreground", shownNote && "mt-2")}>
-              <Link
-                href="/messages/offers"
-                className="font-medium text-foreground underline decoration-foreground/25 underline-offset-2 transition-colors hover:decoration-foreground/60"
-              >
-                View all offers
-              </Link>
-            </p>
-          )}
+          <p className={cn("text-[12px] leading-snug text-muted-foreground", shownNote && "mt-2")}>
+            <Link
+              href={offerHref}
+              className="font-medium text-foreground underline decoration-foreground/25 underline-offset-2 transition-colors hover:decoration-foreground/60"
+            >
+              View offer
+            </Link>
+          </p>
 
           {showSellerActions && (
             <div className="mt-3">
@@ -270,19 +273,6 @@ export function OfferMessageCard({
               onCompleted={onThreadRefresh}
               className="mt-3"
             />
-          ) : null}
-
-          {!isSeller && sellerInitiated && !showBuyerCounterActions ? (
-            <div className="mt-3">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-10 w-full shrink-0 rounded-xl text-[14px] font-semibold"
-                asChild
-              >
-                <Link href="/messages/offers">View in Offers</Link>
-              </Button>
-            </div>
           ) : null}
 
           <p className="mt-2.5 text-[11px] tabular-nums leading-none text-muted-foreground">

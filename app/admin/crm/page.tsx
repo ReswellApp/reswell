@@ -5,7 +5,7 @@ import { CrmAdminClient } from "@/components/features/admin/crm/crm-admin-client
 
 export const metadata = privatePageMetadata({
   title: "CRM — Admin — Reswell",
-  description: "Track surfboard shoppers, board interests, and customer touchpoints.",
+  description: "Save Facebook Marketplace leads, reopen their chats, and follow up when they have not listed or bought.",
   path: "/admin/crm",
 })
 

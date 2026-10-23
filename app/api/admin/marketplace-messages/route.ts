@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
-import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
+import { requireAdmin } from "@/lib/brands/admin-server"
 import { getAdminMarketplaceMessages } from "@/lib/services/adminMarketplaceMessages"
 
 const querySchema = z.object({
@@ -17,7 +17,7 @@ const querySchema = z.object({
  * Paginated buyer↔seller thread messages for support. Uses service role after staff gate.
  */
 export async function GET(request: NextRequest) {
-  const gate = await requireAdminOrEmployee()
+  const gate = await requireAdmin()
   if (!gate.ok) {
     return gate.response
   }

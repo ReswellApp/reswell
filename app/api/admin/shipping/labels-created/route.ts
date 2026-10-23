@@ -1,6 +1,6 @@
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
-import { requireAdmin } from "@/lib/brands/admin-server"
+import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { listOrderAdminShippingLabels } from "@/lib/db/adminOrderShippingLabels"
 import { dbGetIncreasedAdjustmentTotalsByTrackingNumbers } from "@/lib/db/shipengineLabelAdjustments"
@@ -25,7 +25,7 @@ export const dynamic = "force-dynamic"
  * GET /api/admin/shipping/labels-created
  */
 export async function GET(request: NextRequest) {
-  const gate = await requireAdmin()
+  const gate = await requireAdminOrEmployee()
   if (!gate.ok) {
     return gate.response
   }

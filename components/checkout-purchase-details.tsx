@@ -21,22 +21,31 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import type { ShippingAddressFormInput } from "@/lib/address-input"
+import {
+  checkoutAddressDraftFingerprint,
+  isCheckoutAddressDraftReadyToSave,
+} from "@/lib/checkout-address-draft"
+import {
+  resolveCheckoutPurchaseDetailsState,
+  type CheckoutPurchaseDetailsState,
+} from "@/lib/checkout-purchase-details-state"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import { normalizeCountryCodeForShipping } from "@/lib/shipping/normalize-country-code"
 import { toE164UsPhone } from "@/lib/utils/phone-e164-us"
+
+const ADDRESS_AUTOSAVE_MS = 700
+
+export type PurchaseDetailsState = CheckoutPurchaseDetailsState
 
 function formatAddressLine(a: ProfileAddressRow) {
   const parts = [a.line1, a.city, a.state, a.postal_code].filter(Boolean)
   return parts.join(", ")
 }
 
-export type PurchaseDetailsState = {
-  readyToPay: boolean
-  /** Required for Stripe when shipping; null for pickup-only checkout. */
-  shippingAddressId: string | null
-  /** Selected saved-address state, when one is chosen. */
-  shippingState?: string | null
-  shippingCity?: string | null
+type SavedCheckoutDraft = {
+  id: string
+  fingerprint: string
+  version: number
 }
 
 export function CheckoutPurchaseDetails({
@@ -78,7 +87,27 @@ export function CheckoutPurchaseDetails({
     country: "US",
   })
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [googlePin, setGooglePin] = useState<GoogleFullPlaceResolved | null>(null)
+  const [savedDraft, setSavedDraft] = useState<SavedCheckoutDraft | null>(null)
+  const [addressVersion, setAddressVersion] = useState(0)
+  const draftRef = useRef(draft)
+  const googlePinRef = useRef(googlePin)
+  const addressesRef = useRef(addresses)
+  const phoneRef = useRef(phone)
+  const savedDraftRef = useRef(savedDraft)
+  const addressVersionRef = useRef(addressVersion)
+  const sessionAddressIdRef = useRef<string | null>(null)
+  const formSessionRef = useRef(0)
+  const failedFingerprintRef = useRef<string | null>(null)
+  const saveTailRef = useRef<Promise<void>>(Promise.resolve())
+  const performAddressSaveRef = useRef<(closeForm: boolean) => Promise<boolean>>(async () => false)
+  draftRef.current = draft
+  googlePinRef.current = googlePin
+  addressesRef.current = addresses
+  phoneRef.current = phone
+  savedDraftRef.current = savedDraft
+  addressVersionRef.current = addressVersion
 
   const phoneValid = useMemo(() => toE164UsPhone(phone) != null, [phone])
 
@@ -180,59 +209,60 @@ export function CheckoutPurchaseDetails({
     return () => window.clearTimeout(timer)
   }, [phone, phoneValid, persistedPhone, persistPhone])
 
+  const lastNotifiedRef = useRef("")
+
   const computeAndNotify = useCallback(() => {
-    const pickupNameOk = pickupName.trim().length > 0
-
-    if (!needsShipping) {
-      onStateChange({
-        readyToPay: pickupNameOk && phoneReady,
-        shippingAddressId: null,
-        shippingState: null,
-        shippingCity: null,
-      })
-      return
-    }
-
-    if (showNewForm) {
-      onStateChange({
-        readyToPay: false,
-        shippingAddressId: null,
-        shippingState: null,
-        shippingCity: null,
-      })
-      return
-    }
-
-    if (selectedId) {
-      const selected = addresses.find((a) => a.id === selectedId)
-      onStateChange({
-        readyToPay: !!selected && phoneReady,
-        shippingAddressId: selectedId,
-        shippingState: selected?.state ?? null,
-        shippingCity: selected?.city ?? null,
-      })
-      return
-    }
-
-    onStateChange({
-      readyToPay: false,
-      shippingAddressId: null,
-      shippingState: null,
-      shippingCity: null,
+    const selected = selectedId ? addresses.find((a) => a.id === selectedId) ?? null : null
+    const next = resolveCheckoutPurchaseDetailsState({
+      needsShipping,
+      showNewForm,
+      phoneReady,
+      pickupNameOk: pickupName.trim().length > 0,
+      selectedAddress: selected
+        ? { id: selected.id, state: selected.state, city: selected.city }
+        : null,
+      draft,
+      savedDraft,
+      addressVersion,
     })
-  }, [needsShipping, pickupName, phoneReady, showNewForm, selectedId, addresses, onStateChange])
+    const key = JSON.stringify(next)
+    if (lastNotifiedRef.current === key) return
+    lastNotifiedRef.current = key
+    onStateChange(next)
+  }, [
+    addresses,
+    addressVersion,
+    draft,
+    needsShipping,
+    onStateChange,
+    phoneReady,
+    pickupName,
+    savedDraft,
+    selectedId,
+    showNewForm,
+  ])
 
   useEffect(() => {
     computeAndNotify()
   }, [computeAndNotify])
 
+  const resetAddressFormSession = () => {
+    formSessionRef.current += 1
+    sessionAddressIdRef.current = null
+    failedFingerprintRef.current = null
+    setSavedDraft(null)
+    setSaveError(null)
+  }
+
   const openNewAddressForm = () => {
     prevSelectedRef.current = selectedId
+    resetAddressFormSession()
     setSelectedId(null)
     setShowNewForm(true)
   }
 
   const cancelNewAddressForm = () => {
+    resetAddressFormSession()
     setShowNewForm(false)
     setSelectedId(prevSelectedRef.current)
     setGooglePin(null)
@@ -246,61 +276,168 @@ export function CheckoutPurchaseDetails({
     })
   }
 
-  const saveNewAddress = async () => {
-    if (!draftValid) {
-      toast.error("Fill in street, city, state, ZIP, and country.")
-      return
-    }
-    if (!phoneValid) {
-      setPhoneError("Enter a valid US phone number.")
-      toast.error("Phone number is required.")
-      return
-    }
-    setSaving(true)
-    try {
-      const phoneOk = await persistPhone()
-      if (!phoneOk) return
+  const persistPhoneRef = useRef(persistPhone)
+  persistPhoneRef.current = persistPhone
 
-      const { address, error } = await createProfileAddress({
-        line1: draft.line1,
-        line2: draft.line2 || null,
-        city: draft.city,
-        state: draft.state || null,
-        postal_code: draft.postal_code,
-        country: draft.country,
-        phone: phone.trim(),
-        label: null,
-        is_default: addresses.length === 0,
-        ...(googlePin
-          ? {
-              google_place_id: googlePin.placeId,
-              latitude: googlePin.latitude,
-              longitude: googlePin.longitude,
-              formatted_address: googlePin.formattedAddress,
-            }
-          : {}),
-      })
-      if (error || !address) {
-        toast.error(error ?? "Could not save address")
-        return
+  performAddressSaveRef.current = async (closeForm: boolean) => {
+    const current = draftRef.current
+    const loose =
+      current.line1.trim().length > 0 &&
+      current.city.trim().length > 0 &&
+      (current.state ?? "").trim().length > 0 &&
+      current.postal_code.trim().length > 0 &&
+      current.country.trim().length >= 2
+    if (!loose) {
+      if (closeForm) toast.error("Fill in street, city, state, ZIP, and country.")
+      return false
+    }
+    if (toE164UsPhone(phoneRef.current) == null) {
+      setPhoneError("Enter a valid US phone number.")
+      if (closeForm) toast.error("Phone number is required.")
+      return false
+    }
+
+    const fingerprint = checkoutAddressDraftFingerprint(current)
+    const alreadySaved = savedDraftRef.current
+    if (
+      alreadySaved?.fingerprint === fingerprint &&
+      sessionAddressIdRef.current === alreadySaved.id
+    ) {
+      if (closeForm) {
+        setShowNewForm(false)
+        setGooglePin(null)
+        setSavedDraft(null)
+        sessionAddressIdRef.current = null
+        setDraft({
+          line1: "",
+          line2: "",
+          city: "",
+          state: "",
+          postal_code: "",
+          country: "US",
+        })
       }
+      return true
+    }
+
+    const session = formSessionRef.current
+    setSaving(true)
+    setSaveError(null)
+    try {
+      const phoneOk = await persistPhoneRef.current()
+      if (!phoneOk || session !== formSessionRef.current) return false
+
+      const pin = googlePinRef.current
+      const existingId = sessionAddressIdRef.current
+      const location = {
+        line1: current.line1,
+        line2: current.line2 || null,
+        city: current.city,
+        state: current.state || null,
+        postal_code: current.postal_code,
+        country: current.country,
+        phone: phoneRef.current.trim(),
+        ...(pin
+          ? {
+              google_place_id: pin.placeId,
+              latitude: pin.latitude,
+              longitude: pin.longitude,
+              formatted_address: pin.formattedAddress,
+            }
+          : existingId
+            ? {
+                google_place_id: null,
+                latitude: null,
+                longitude: null,
+                formatted_address: null,
+              }
+            : {}),
+      }
+
+      const result = existingId
+        ? await updateProfileAddress(existingId, location)
+        : await createProfileAddress({
+            ...location,
+            label: null,
+            is_default: addressesRef.current.length === 0,
+          })
+
+      if (session !== formSessionRef.current) {
+        if (result.address) {
+          const kept = result.address
+          setAddresses((prev) => [kept, ...prev.filter((a) => a.id !== kept.id)])
+        }
+        return false
+      }
+
+      if (result.error || !result.address) {
+        const message = result.error ?? "Could not save address"
+        failedFingerprintRef.current = fingerprint
+        setSaveError(message)
+        toast.error(message)
+        return false
+      }
+
+      const address = result.address
+      sessionAddressIdRef.current = address.id
+      failedFingerprintRef.current = null
       setAddresses((prev) => [address, ...prev.filter((a) => a.id !== address.id)])
+
+      const stillCurrent = checkoutAddressDraftFingerprint(draftRef.current) === fingerprint
+      if (!stillCurrent) return true
+
+      const nextVersion = addressVersionRef.current + 1
+      addressVersionRef.current = nextVersion
+      setAddressVersion(nextVersion)
+      setSavedDraft({ id: address.id, fingerprint, version: nextVersion })
       setSelectedId(address.id)
       prevSelectedRef.current = address.id
-      setShowNewForm(false)
-      setGooglePin(null)
-      setDraft({
-        line1: "",
-        line2: "",
-        city: "",
-        state: "",
-        postal_code: "",
-        country: "US",
-      })
+      setSaveError(null)
+
+      if (closeForm) {
+        setShowNewForm(false)
+        setGooglePin(null)
+        setSavedDraft(null)
+        sessionAddressIdRef.current = null
+        setDraft({
+          line1: "",
+          line2: "",
+          city: "",
+          state: "",
+          postal_code: "",
+          country: "US",
+        })
+      }
+      return true
     } finally {
       setSaving(false)
     }
   }
+
+  const enqueueAddressSave = useCallback((closeForm: boolean) => {
+    const job = saveTailRef.current.then(() => performAddressSaveRef.current(closeForm))
+    saveTailRef.current = job.then(
+      () => undefined,
+      () => undefined,
+    )
+    return job
+  }, [])
+
+  useEffect(() => {
+    if (!needsShipping || !showNewForm || !phoneValid) return
+    if (!isCheckoutAddressDraftReadyToSave(draft)) return
+    const fingerprint = checkoutAddressDraftFingerprint(draft)
+    if (failedFingerprintRef.current && failedFingerprintRef.current !== fingerprint) {
+      failedFingerprintRef.current = null
+    }
+    if (failedFingerprintRef.current === fingerprint) return
+    if (savedDraft?.fingerprint === fingerprint) return
+
+    const timer = window.setTimeout(() => {
+      void enqueueAddressSave(false)
+    }, ADDRESS_AUTOSAVE_MS)
+    return () => window.clearTimeout(timer)
+  }, [draft, enqueueAddressSave, needsShipping, phone, phoneValid, savedDraft, showNewForm])
 
   const fieldClass =
     "h-11 rounded-[6px] border-neutral-300 bg-white shadow-none transition-colors focus-visible:border-[#5574AD] focus-visible:ring-[#5574AD]/25"
@@ -528,7 +665,9 @@ export function CheckoutPurchaseDetails({
               <div className="flex flex-col gap-2 pt-1 sm:flex-row">
                 <Button
                   type="button"
-                  onClick={saveNewAddress}
+                  onClick={() => {
+                    void enqueueAddressSave(true)
+                  }}
                   disabled={saving || !draftValid}
                   className="h-11 rounded-[6px] bg-[#5574AD] text-[15px] font-semibold text-white shadow-none hover:bg-[#466091]"
                 >
@@ -547,6 +686,20 @@ export function CheckoutPurchaseDetails({
                   </Button>
                 )}
               </div>
+              {saveError ? (
+                <p className="text-xs text-destructive" role="alert">
+                  {saveError}
+                </p>
+              ) : (
+                <p className="text-xs text-neutral-500">
+                  {saving
+                    ? "Saving address…"
+                    : savedDraft &&
+                        savedDraft.fingerprint === checkoutAddressDraftFingerprint(draft)
+                      ? "Address saved. Shipping is calculated from this address."
+                      : "Saved automatically once your phone and this address are complete."}
+                </p>
+              )}
             </div>
           )}
         </section>

@@ -3,6 +3,7 @@
 import { revalidateSellerProfileAndDirectoryCatalog } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { PEER_LISTING_SECTIONS_FILTER } from "@/lib/peer-listing-sections"
 import { notifyShopFollowKlaviyo } from "@/lib/services/notifyShopFollowKlaviyo"
+import { FOLLOW_BELL_NOTIFICATION_TYPES } from "@/lib/services/notifications/catalog"
 import { createClient } from "@/lib/supabase/server"
 
 export async function followSeller(
@@ -250,6 +251,7 @@ export async function getFollowNotifications(opts: { limit?: number; unreadOnly?
       listing_id,
       actor_id,
       message,
+      href,
       is_read,
       created_at,
       actor:profiles!notifications_actor_id_fkey (
@@ -270,7 +272,7 @@ export async function getFollowNotifications(opts: { limit?: number; unreadOnly?
     `,
     )
     .eq("user_id", user.id)
-    .in("type", ["new_listing_from_followed", "price_drop_from_followed"])
+    .in("type", [...FOLLOW_BELL_NOTIFICATION_TYPES])
     .order("created_at", { ascending: false })
     .limit(limit)
 
@@ -289,7 +291,7 @@ export async function getFollowNotifications(opts: { limit?: number; unreadOnly?
     .from("notifications")
     .select("id", { count: "exact", head: true })
     .eq("user_id", user.id)
-    .in("type", ["new_listing_from_followed", "price_drop_from_followed"])
+    .in("type", [...FOLLOW_BELL_NOTIFICATION_TYPES])
     .eq("is_read", false)
 
   return { notifications: notifications ?? [], unreadCount: unreadCount ?? 0 }
@@ -311,7 +313,7 @@ export async function markFollowNotificationsRead(opts: { ids?: string[] }) {
     .from("notifications")
     .update({ is_read: true })
     .eq("user_id", user.id)
-    .in("type", ["new_listing_from_followed", "price_drop_from_followed"])
+    .in("type", [...FOLLOW_BELL_NOTIFICATION_TYPES])
 
   if (ids && ids.length > 0) {
     query = query.in("id", ids)

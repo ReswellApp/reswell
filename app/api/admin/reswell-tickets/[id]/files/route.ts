@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAdminOrEmployee } from '@/lib/brands/admin-server'
+import { requireAdmin } from '@/lib/brands/admin-server'
 import {
   addReswellTicketFileService,
   deleteReswellTicketFileService,
@@ -14,7 +14,7 @@ interface RouteContext {
 }
 
 export async function POST(req: NextRequest, context: RouteContext) {
-  const gate = await requireAdminOrEmployee()
+  const gate = await requireAdmin()
   if (!gate.ok) return gate.response
 
   const { id } = await context.params
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest, context: RouteContext) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const gate = await requireAdminOrEmployee()
+  const gate = await requireAdmin()
   if (!gate.ok) return gate.response
 
   const body: unknown = await req.json().catch(() => null)

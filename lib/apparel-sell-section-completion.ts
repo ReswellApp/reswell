@@ -4,6 +4,7 @@ import {
   parseReswellParcelWidthHeightRawToCarrierInches,
   isReswellPackedWeightComplete,
 } from "@/lib/reswell-parcel-fields"
+import { sellListingPriceIsPublishable } from "@/lib/utils/sell-listing-price"
 
 export type ApparelSellSectionCompletionInput = {
   title: string
@@ -52,8 +53,7 @@ export function computeApparelSellSectionCompletion(
     hasDelivery &&
     shippingRateOk
 
-  const priceNum = Number.parseFloat(form.price)
-  const publish = Number.isFinite(priceNum) && priceNum > 0
+  const publish = sellListingPriceIsPublishable(form.price)
 
   return {
     "sell-apparel-section-photos-title": photosTitle,

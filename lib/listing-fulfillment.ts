@@ -83,6 +83,8 @@ export function boardFulfillmentDetailLabels(
 
     if (mode === "free") {
       labels.push("Free shipping")
+    } else if (mode === "reswell") {
+      labels.push("Shipping calculated at checkout")
     } else if (mode === "flat" && n > 0) {
       labels.push(`Shipping (+$${n.toFixed(2)})`)
     } else if (n > 0) {
@@ -100,6 +102,26 @@ export function isShippingFulfillmentLabel(label: string): boolean {
 }
 
 /** Location-aware pickup line for listing PDPs. */
+/** Price-row caption. Calculated shipping wins over a leftover flat dollar amount. */
+export function listingShippingPriceCaption(input: {
+  isSold: boolean
+  shippingOffered: boolean
+  pickupOffered: boolean
+  mode: "reswell" | "flat" | "free" | null
+  flatRate: number
+}): string | null {
+  if (input.isSold) return null
+  if (!input.shippingOffered && input.pickupOffered) {
+    return "Local pickup · shipping not offered"
+  }
+  if (!input.shippingOffered) return null
+  if (input.mode === "free") return "Free shipping included"
+  if (input.mode === "reswell") return "Shipping rate calculated at checkout"
+  if (input.flatRate > 0) return `+ $${input.flatRate.toFixed(2)} shipping`
+  if (input.mode === "flat") return "Flat shipping at checkout"
+  return null
+}
+
 export function listingPickupCaption(
   pickupOffered: boolean,
   locationLine: string | null | undefined,

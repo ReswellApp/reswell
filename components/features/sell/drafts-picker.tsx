@@ -14,6 +14,7 @@ import {
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import {
   Popover,
   PopoverContent,
@@ -269,7 +270,7 @@ export function DraftsPicker({
                               alt=""
                               fill
                               sizes="48px"
-                              className="object-cover"
+                              className={listingPhotoFillClassName}
                             />
                           ) : (
                             <div className="flex h-full w-full items-center justify-center text-muted-foreground">

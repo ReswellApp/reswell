@@ -1,18 +1,29 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import {
-  listingStorageObjectPathFromUrl,
-  persistableListingThumbnailUrl,
-} from "@/lib/listing-media-proxy-url"
+  assignListingImageIdsFromExistingUrls,
+  isListingImageUniqueViolation,
+  listingImageUrlsEquivalent,
+} from "@/lib/listing-image-identity"
+import { persistableListingThumbnailUrl } from "@/lib/listing-media-proxy-url"
 import {
   orderListingImageWritesForPrimaryTrigger,
   type ListingImageWriteOrder,
 } from "@/lib/services/listing-image-write-order"
-import { removeListingImageFilesFromStorage } from "@/lib/services/listingStorageCleanup"
+import { deleteListingMediaRowsThenStorage } from "@/lib/services/listingStorageCleanup"
 
 export type ListingImageUpdateOp = {
   id?: string
   url: string
   thumbnailUrl?: string | null
+  isPrimary: boolean
+  sortOrder: number
+}
+
+/** Row the reconcile persisted. Callers stamp `id` back onto the photo slot. */
+export type SyncedListingImage = {
+  id: string
+  url: string
+  thumbnailUrl: string | null
   isPrimary: boolean
   sortOrder: number
 }
@@ -30,19 +41,6 @@ function normalizedThumbnailUrl(
   fullUrl?: string | null,
 ): string | null {
   return persistableListingThumbnailUrl(thumbnailUrl, fullUrl)
-}
-
-function listingImageUrlsEquivalent(a: string, b: string): boolean {
-  const left = a.trim()
-  const right = b.trim()
-  if (!left || !right) return left === right
-  if (left === right) return true
-
-  const leftPath = listingStorageObjectPathFromUrl(left)
-  const rightPath = listingStorageObjectPathFromUrl(right)
-  if (leftPath && rightPath) return leftPath === rightPath
-
-  return false
 }
 
 function listingImageThumbnailsEquivalent(
@@ -113,40 +111,115 @@ export async function listingImagesAlreadySynced(
   return true
 }
 
+async function adoptExistingListingImage(
+  supabase: SupabaseClient,
+  listingId: string,
+  img: ListingImageUpdateOp,
+): Promise<boolean> {
+  const url = img.url.trim()
+  if (!url) return false
+
+  const { data, error } = await supabase
+    .from("listing_images")
+    .select("id, url")
+    .eq("listing_id", listingId)
+  if (error || !data) return false
+
+  const match = data.find((row) =>
+    listingImageUrlsEquivalent(typeof row.url === "string" ? row.url : "", url),
+  )
+  if (!match?.id) return false
+
+  const { error: updateError } = await supabase
+    .from("listing_images")
+    .update({
+      sort_order: img.sortOrder,
+      is_primary: img.isPrimary,
+      url,
+      thumbnail_url: normalizedThumbnailUrl(img.thumbnailUrl, img.url),
+    })
+    .eq("id", match.id)
+    .eq("listing_id", listingId)
+  if (updateError) throw new Error(updateError.message)
+  return true
+}
+
+async function readSyncedListingImages(
+  supabase: SupabaseClient,
+  listingId: string,
+): Promise<SyncedListingImage[]> {
+  const { data, error } = await supabase
+    .from("listing_images")
+    .select("id, url, thumbnail_url, is_primary, sort_order")
+    .eq("listing_id", listingId)
+    .order("sort_order", { ascending: true })
+  if (error) throw new Error(error.message)
+  return (data ?? []).map((row) => ({
+    id: String(row.id),
+    url: typeof row.url === "string" ? row.url : "",
+    thumbnailUrl: typeof row.thumbnail_url === "string" ? row.thumbnail_url : null,
+    isPrimary: row.is_primary === true,
+    sortOrder: typeof row.sort_order === "number" ? row.sort_order : 0,
+  }))
+}
+
 /**
- * Syncs `listing_images` for a listing update. Removes deleted rows, inserts new
- * photos, and updates order/metadata. Skips unchanged rows. Remaining writes run
- * one at a time, new primary last, so the cover trigger stamps photo 1.
+ * One reconcile for a listing gallery. Draft save and publish both call this.
+ *
+ * The file is uploaded before a row exists, so the storage object is the
+ * identity. A photo with no id claims the row that already points at that
+ * file. Writes run one at a time, new primary last, so the cover trigger
+ * stamps photo 1. A unique violation means a concurrent reconcile won the
+ * insert; this one adopts that row instead of adding a second.
  */
 export async function syncListingImages(
   supabase: SupabaseClient,
   listingId: string,
   removedImageIds: string[],
   images: ListingImageUpdateOp[],
-): Promise<void> {
-  if (removedImageIds.length > 0) {
-    const { data: removedRows } = await supabase
-      .from("listing_images")
-      .select("url, thumbnail_url")
-      .eq("listing_id", listingId)
-      .in("id", removedImageIds)
-    const removedUrls: string[] = []
-    for (const r of removedRows ?? []) {
-      if (r.url?.trim()) removedUrls.push(r.url)
-      if (r.thumbnail_url?.trim()) removedUrls.push(r.thumbnail_url)
-    }
-    if (removedUrls.length > 0) {
-      await removeListingImageFilesFromStorage(supabase, removedUrls)
-    }
-    await supabase.from("listing_images").delete().in("id", removedImageIds).eq("listing_id", listingId)
+): Promise<SyncedListingImage[]> {
+  const keptImageIds = new Set(images.flatMap((img) => (img.id ? [img.id] : [])))
+  await deleteListingMediaRowsThenStorage(
+    supabase,
+    "listing_images",
+    listingId,
+    removedImageIds.filter((id) => !keptImageIds.has(id)),
+    images.flatMap((img) => [img.url, img.thumbnailUrl]),
+  )
+
+  const { data: existingRows, error: existingLoadError } = await supabase
+    .from("listing_images")
+    .select("id, url")
+    .eq("listing_id", listingId)
+  if (existingLoadError) throw new Error(existingLoadError.message)
+
+  const reconciled = assignListingImageIdsFromExistingUrls(
+    (existingRows ?? []).map((row) => ({
+      id: String(row.id),
+      url: typeof row.url === "string" ? row.url : "",
+    })),
+    images,
+  )
+  const imagesToWrite = reconciled.images
+
+  if (reconciled.duplicateRowIds.length > 0) {
+    await deleteListingMediaRowsThenStorage(
+      supabase,
+      "listing_images",
+      listingId,
+      reconciled.duplicateRowIds,
+      imagesToWrite.flatMap((img) => [img.url, img.thumbnailUrl]),
+    )
   }
 
-  if (await listingImagesAlreadySynced(supabase, listingId, [], images)) {
-    return
+  if (await listingImagesAlreadySynced(supabase, listingId, [], imagesToWrite)) {
+    return readSyncedListingImages(supabase, listingId)
   }
 
-  const inserts = images.filter((img) => !img.id && img.url.trim())
-  const updates = images.filter((img): img is ListingImageUpdateOp & { id: string } => Boolean(img.id))
+  const inserts = imagesToWrite.filter((img) => !img.id && img.url.trim())
+  const updates = imagesToWrite.filter((img): img is ListingImageUpdateOp & { id: string } =>
+    Boolean(img.id),
+  )
 
   let existingById = new Map<string, ExistingListingImageRow>()
   if (updates.length > 0) {
@@ -204,7 +277,15 @@ export async function syncListingImages(
         is_primary: img.isPrimary,
         sort_order: img.sortOrder,
       })
-      if (error) throw new Error(error.message)
+      if (error) {
+        if (
+          isListingImageUniqueViolation(error) &&
+          (await adoptExistingListingImage(supabase, listingId, img))
+        ) {
+          continue
+        }
+        throw new Error(error.message)
+      }
       continue
     }
 
@@ -229,4 +310,6 @@ export async function syncListingImages(
       .eq("listing_id", listingId)
     if (error) throw new Error(error.message)
   }
+
+  return readSyncedListingImages(supabase, listingId)
 }

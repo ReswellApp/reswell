@@ -6,6 +6,7 @@ import { capitalizeWords } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
 import { listingShipFromDisplayLine } from "@/lib/listing-ship-from-display"
 import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { resolvePayableAmount } from "@/lib/purchase-amount"
 import { sellerProfileHref } from "@/lib/seller-slug"
@@ -19,6 +20,8 @@ export type AppliedNewsletterPromo = {
   code: string
   discountUsd: number
   discountPercent: number
+  /** "fins" when the code is limited to a product type. Null discounts every item. */
+  appliesToLabel?: string | null
 }
 
 function sellerDisplayName(s: CheckoutSeller) {
@@ -99,7 +102,7 @@ export function CheckoutOrderSummaryAside({
                       src={imageUrl}
                       alt={capitalizeWords(listing.title)}
                       fill
-                      className="object-cover"
+                      className={listingPhotoFillClassName}
                       sizes="72px"
                       unoptimized={listingImageShouldBypassOptimization(imageUrl)}
                       priority={idx === 0}
@@ -195,7 +198,8 @@ export function CheckoutOrderSummaryAside({
             </p>
           ) : appliedPromo ? (
             <p className="mt-2 text-[12px] font-medium text-[#5574AD]">
-              {appliedPromo.code} applied — {appliedPromo.discountPercent}% off items
+              {appliedPromo.code} applied — {appliedPromo.discountPercent}% off{" "}
+              {appliedPromo.appliesToLabel ?? "items"}
             </p>
           ) : promoError ? (
             <p className="mt-2 text-[12px] text-destructive" role="alert">

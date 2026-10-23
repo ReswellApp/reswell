@@ -52,6 +52,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { listingPhotoCoverClassName } from "@/lib/listing-photo-fill"
 import { cn } from "@/lib/utils"
 import type {
   GoogleMerchantChannelStatus,
@@ -1191,7 +1192,7 @@ export function GoogleMerchantDashboardClient({
                                 src={r.imageLink}
                                 alt=""
                                 loading="lazy"
-                                className="h-9 w-9 shrink-0 rounded-md border border-slate-200 object-cover"
+                                className={cn(listingPhotoCoverClassName, "h-9 w-9 shrink-0 rounded-md border border-slate-200")}
                               />
                             ) : (
                               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-300">
@@ -1342,7 +1343,7 @@ function DecisionPanel({
                         src={r.imageLink}
                         alt=""
                         loading="lazy"
-                        className="h-8 w-8 rounded-md border border-slate-200 object-cover"
+                        className={cn(listingPhotoCoverClassName, "h-8 w-8 rounded-md border border-slate-200")}
                       />
                     ) : (
                       <span className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-300">
@@ -1400,7 +1401,7 @@ function OptimizationCard({ opt }: { opt: GoogleMerchantProductOptimization }) {
             src={opt.imageLink}
             alt=""
             loading="lazy"
-            className="h-10 w-10 shrink-0 rounded-md border border-slate-200 object-cover"
+            className={cn(listingPhotoCoverClassName, "h-10 w-10 shrink-0 rounded-md border border-slate-200")}
           />
         ) : (
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-300">

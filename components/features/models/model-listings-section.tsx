@@ -5,7 +5,6 @@ import { useModelPageViewer } from "@/components/features/models/model-page-view
 import { ModelEmptyState } from "@/components/features/models/model-empty-state"
 import { ModelPageSectionHeading } from "@/components/features/models/model-page-section"
 import { ModelTopPick } from "@/components/features/models/model-top-pick"
-import { SaveEntitySearchCta } from "@/components/features/saved-search/save-entity-search-cta"
 import type { ModelMarketplaceListing } from "@/lib/db/brand-listings"
 import type { BoardSavedSearchCriteria } from "@/lib/validations/boardSavedSearch"
 
@@ -60,19 +59,6 @@ export function ModelListingsSection({
           isFavorited={favoritedIds.includes(topPick.id)}
           isLoggedIn={loggedIn}
         />
-      ) : listings.length === 0 ? (
-        <SaveEntitySearchCta
-          heading={`No ${brandName} ${modelName} for sale right now`}
-          description={`Save this model and we'll email you when one is listed on Reswell.`}
-          criteria={criteria}
-          label="Save this model"
-          savedLabel="Model saved"
-          savedSearchLabel={`${brandName} ${modelName}`}
-          successTitle="Model saved"
-          successDescription={`We'll email you when a ${brandName} ${modelName} is listed on Reswell.`}
-          isLoggedIn={loggedIn}
-          initialSavedSearchId={savedSearchId}
-        />
       ) : null}
 
       {listings.length > 0 ? (
@@ -94,9 +80,9 @@ export function ModelListingsSection({
 
       {soldListings.length > 0 ? (
         <div>
-          <ModelPageSectionHeading>Recently sold</ModelPageSectionHeading>
+          <ModelPageSectionHeading>Sold</ModelPageSectionHeading>
           <p className="mt-1 text-sm text-muted-foreground">
-            {soldListings.length} sale{soldListings.length === 1 ? "" : "s"}
+            {soldListings.length} past sale{soldListings.length === 1 ? "" : "s"}
           </p>
           <div className="mt-6">
             <RecentFeedClient

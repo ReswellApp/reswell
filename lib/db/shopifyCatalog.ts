@@ -1,5 +1,18 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { PeerListingSection } from "@/lib/peer-listing-sections"
+import {
+  parseShopCategoryPackageSizeMap,
+  type ShopCategoryPackageSizeMap,
+} from "@/lib/shop-category-package-sizes"
+import {
+  EMPTY_SHOP_SHIPPING_DEFAULTS,
+  readShopShippingDefaults,
+  type ShopShippingDefaults,
+} from "@/lib/shop-shipping-defaults"
+import {
+  resolveShopifyListingLocality,
+  type ShopifyMerchantProfileLocality,
+} from "@/lib/shopify/listing-locality"
 import type { ShopifyProductMappingRow } from "@/lib/shopify/types"
 
 const MAPPING_SELECT = [
@@ -129,13 +142,59 @@ export async function dbLoadShopifyMerchantLocation(
 ): Promise<{ city: string; state: string }> {
   const { data, error } = await supabase
     .from("profiles")
-    .select("city, state, location")
+    .select("default_listing_city, default_listing_state, city, location")
     .eq("id", userId)
     .maybeSingle()
   if (error) throw new Error(error.message)
+  return resolveShopifyListingLocality(
+    data as ShopifyMerchantProfileLocality | null,
+  )
+}
+
+export async function dbLoadShopifyImportShippingProfile(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<{
+  hasShipFromAddress: boolean
+  packageSizes: ShopCategoryPackageSizeMap
+  shippingDefaults: ShopShippingDefaults
+}> {
+  const [profileResult, addressResult] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("shop_category_package_sizes, shop_shipping_defaults")
+      .eq("id", userId)
+      .maybeSingle(),
+    supabase
+      .from("addresses")
+      .select("id")
+      .eq("profile_id", userId)
+      .limit(1),
+  ])
+  if (addressResult.error) throw new Error(addressResult.error.message)
+  const hasShipFromAddress = (addressResult.data ?? []).length > 0
+
+  if (profileResult.error?.message.includes("shop_shipping_defaults")) {
+    const packageOnly = await supabase
+      .from("profiles")
+      .select("shop_category_package_sizes")
+      .eq("id", userId)
+      .maybeSingle()
+    if (packageOnly.error) throw new Error(packageOnly.error.message)
+    if (!packageOnly.data) throw new Error("Shopify merchant profile not found")
+    return {
+      hasShipFromAddress,
+      packageSizes: parseShopCategoryPackageSizeMap(packageOnly.data.shop_category_package_sizes),
+      shippingDefaults: { ...EMPTY_SHOP_SHIPPING_DEFAULTS, savedPackages: [], boardSizes: {} },
+    }
+  }
+
+  if (profileResult.error) throw new Error(profileResult.error.message)
+  if (!profileResult.data) throw new Error("Shopify merchant profile not found")
   return {
-    city: data?.city?.trim() || data?.location?.trim() || "United States",
-    state: data?.state?.trim() || "US",
+    hasShipFromAddress,
+    packageSizes: parseShopCategoryPackageSizeMap(profileResult.data.shop_category_package_sizes),
+    shippingDefaults: readShopShippingDefaults(profileResult.data.shop_shipping_defaults),
   }
 }
 
@@ -287,6 +346,65 @@ export async function dbUnpublishShopifyMappings(
     .eq("inventory_source", "shopify")
   if (listingError) throw new Error(listingError.message)
   return listingIds
+}
+
+/** Removes Shopify listings that are still active although their mapping is no longer selected. */
+export async function dbRemoveStaleShopifyListings(
+  supabase: SupabaseClient,
+  listingIds: string[],
+): Promise<string[]> {
+  const removed: string[] = []
+  for (let index = 0; index < listingIds.length; index += 200) {
+    const { data, error } = await supabase
+      .from("listings")
+      .update({
+        status: "removed",
+        stock_quantity: 0,
+        updated_at: new Date().toISOString(),
+      })
+      .in("id", listingIds.slice(index, index + 200))
+      .eq("inventory_source", "shopify")
+      .eq("status", "active")
+      .select("id")
+    if (error) throw new Error(error.message)
+    removed.push(...(data ?? []).map((row) => String(row.id)))
+  }
+  return removed
+}
+
+/**
+ * Take Shopify-managed listings off the marketplace without unselecting them.
+ * The next inventory projection puts them back when sales are enabled again.
+ */
+export async function dbHoldShopifyListingsForBilling(
+  supabase: SupabaseClient,
+  connectionId: string,
+): Promise<string[]> {
+  const { data: mappings, error: mappingError } = await supabase
+    .from("shopify_product_mappings")
+    .select("listing_id")
+    .eq("connection_id", connectionId)
+  if (mappingError) throw new Error(mappingError.message)
+  const listingIds = [
+    ...new Set((mappings ?? []).map((row) => String(row.listing_id))),
+  ]
+  if (listingIds.length === 0) return []
+  const held: string[] = []
+  for (let index = 0; index < listingIds.length; index += 200) {
+    const { data, error } = await supabase
+      .from("listings")
+      .update({
+        status: "removed",
+        updated_at: new Date().toISOString(),
+      })
+      .in("id", listingIds.slice(index, index + 200))
+      .eq("inventory_source", "shopify")
+      .in("status", ["active", "pending_sale"])
+      .select("id")
+    if (error) throw new Error(error.message)
+    held.push(...(data ?? []).map((row) => String(row.id)))
+  }
+  return held
 }
 
 export async function dbUnpublishAllShopifyListingsForConnection(

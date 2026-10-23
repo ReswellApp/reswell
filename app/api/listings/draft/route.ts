@@ -122,7 +122,8 @@ export async function POST(request: NextRequest) {
     }
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Failed to save draft"
-    const status = msg === "Forbidden" ? 403 : msg === "Draft not found" ? 404 : 500
+    const status =
+      msg === "Forbidden" ? 403 : msg === "Draft not found" ? 404 : msg === "Listing is not a draft" ? 409 : 500
     return NextResponse.json({ error: msg }, { status })
   }
 }

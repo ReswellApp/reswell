@@ -11,10 +11,6 @@ import {
 } from "@/lib/services/peerListingShippingQuote"
 import { computePeerMultiCheckoutUsd } from "@/lib/services/peerMultiCheckoutTotals"
 import {
-  countSurfboardListings,
-  peerCheckoutSurfboardCountError,
-} from "@/lib/surfboard-multi-board-parcel"
-import {
   applyAcceptedOfferToPeerCheckoutListings,
   priceListingsFromAcceptedOffer,
 } from "@/lib/services/applyAcceptedOfferToPeerCheckoutListings"
@@ -25,7 +21,14 @@ import { isBlockedOwnListingPurchase } from "@/lib/cart-eligibility"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { formatPeerItemCountPhrase } from "@/lib/peer-listing-item-nouns"
 import { isReswellShopListing } from "@/lib/reswell-shop"
+import { attachListingInventorySources } from "@/lib/db/listingInventorySource"
 import { isShopifyManagedListing } from "@/lib/shopify/listing"
+import { shopifyManagedCheckoutBilling } from "@/lib/services/shopifyBilling"
+import {
+  clampListingBuyerQuantity,
+  listingBuyerQuantityCap,
+  peerBrandNewStockQuantity,
+} from "@/lib/listing-stock-quantity"
 import {
   encodeListingQuantitiesMeta,
   resolveMixedCheckoutSellerId,
@@ -33,12 +36,12 @@ import {
 import { evaluateUserPurchase } from "@/lib/services/accountRestrictions"
 import { assertBuyerMayPurchaseListingExclusiveWindow } from "@/lib/services/listingBuyerExclusiveWindow"
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
-import { computeCheckoutTotalWithNewsletterPromo } from "@/lib/services/newsletterPromo"
 import {
   releaseAndReserveCheckoutPromoForPaymentIntent,
   validateCheckoutPromoForCheckout,
   type CheckoutPromoRef,
 } from "@/lib/services/checkoutPromo"
+import { promoCheckoutLinesFromPricedListings } from "@/lib/utils/promo-product-type"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { normalizeNewsletterPromoCodeInput } from "@/lib/utils/newsletter-promo-code"
 import { verifyCheckoutShippingQuoteToken } from "@/lib/services/checkoutShippingQuoteToken"
@@ -48,8 +51,8 @@ import { ensureCheckoutBuyerPhone } from "@/lib/services/checkoutBuyerPhone"
 import { readAdAttributionFromCookies } from "@/lib/ads/read-request-attribution"
 import { stripeAdAttributionMetadata } from "@/lib/ads/attribution"
 import {
-  checkoutOffersShippingPackagingChoice,
   DEFAULT_SHIPPING_PACKAGING_MODE,
+  resolveMultiItemPackagingMode,
   resolveShippingPackagingMode,
   type ShippingPackagingMode,
 } from "@/lib/shipping/packaging-mode"
@@ -142,6 +145,7 @@ export async function createPaymentIntentForUser(
     promo_code?: string | null
     quote_token?: string | null
     packaging_mode?: string | null
+    quantities?: unknown
   }
 
   const fromArray = Array.isArray(body.listing_ids)
@@ -188,13 +192,22 @@ export async function createPaymentIntentForUser(
     return NextResponse.json({ error: "Listing not found or not available" }, { status: 404 })
   }
 
+  const sourcedListings = await attachListingInventorySources(supabase, listingsOrdered)
+  if (!sourcedListings.ok) {
+    return NextResponse.json({ error: sourcedListings.error }, { status: 500 })
+  }
+  for (let index = 0; index < listingsOrdered.length; index += 1) {
+    const sourced = sourcedListings.listings[index]
+    if (sourced) listingsOrdered[index] = sourced
+  }
+
   if (listingsOrdered.some((l) => isBlockedOwnListingPurchase(l, user.id))) {
     return NextResponse.json({ error: "Cannot purchase your own listing" }, { status: 400 })
   }
 
-  const surfboardCapError = peerCheckoutSurfboardCountError(countSurfboardListings(listingsOrdered))
-  if (surfboardCapError) {
-    return NextResponse.json({ error: surfboardCapError }, { status: 422 })
+  const shopifyBilling = await shopifyManagedCheckoutBilling(listingsOrdered)
+  if (!shopifyBilling.ok) {
+    return NextResponse.json({ error: shopifyBilling.error }, { status: 409 })
   }
 
   for (const listing of listingsOrdered) {
@@ -203,7 +216,8 @@ export async function createPaymentIntentForUser(
     }
     if (
       isReswellShopListing(listing.section) ||
-      isShopifyManagedListing(listing)
+      isShopifyManagedListing(listing) ||
+      peerBrandNewStockQuantity(listing) >= 1
     ) {
       const stock = Math.max(
         0,
@@ -229,8 +243,15 @@ export async function createPaymentIntentForUser(
    * unless paying via an accepted offer bundle (`offer_id`). */
   const offerIdParam = body.offer_id?.trim() || null
   let validatedOfferId: string | null = null
+  const requestedQuantities = new Map<string, number>()
+  if (body.quantities && typeof body.quantities === "object") {
+    for (const [id, raw] of Object.entries(body.quantities as Record<string, unknown>)) {
+      const qty = Math.floor(Number(raw) || 0)
+      if (UUID_RE.test(id) && qty >= 1) requestedQuantities.set(id, qty)
+    }
+  }
   const quantityByListingId: Record<string, number> = {}
-  for (const id of listingIdsOrdered) quantityByListingId[id] = 1
+  for (const id of listingIdsOrdered) quantityByListingId[id] = requestedQuantities.get(id) ?? 1
 
   /** Price from the explicit offer id when present so promo math matches the UI. */
   let listingsForTotals = listingsOrdered
@@ -287,9 +308,12 @@ export async function createPaymentIntentForUser(
       listingsOrdered,
     )
   } else {
-    // Single shop line may still carry quantity from cart.
+    // Single stock-backed line uses the checkout quantity, then the cart.
     const onlyId = listingIdsOrdered[0]!
-    if (isReswellShopListing(listingsOrdered[0]!.section)) {
+    const onlyListing = listingsOrdered[0]!
+    const stockBacked =
+      isReswellShopListing(onlyListing.section) || peerBrandNewStockQuantity(onlyListing) >= 1
+    if (stockBacked && !requestedQuantities.has(onlyId)) {
       const { data: cartRow } = await supabase
         .from("cart_items")
         .select("quantity")
@@ -312,26 +336,28 @@ export async function createPaymentIntentForUser(
   }
 
   for (const listing of listingsOrdered) {
-    if (
-      !isReswellShopListing(listing.section) &&
-      !isShopifyManagedListing(listing)
-    ) {
+    const qty = quantityByListingId[listing.id] ?? 1
+    if (isShopifyManagedListing(listing)) {
+      if (qty !== 1) {
+        return NextResponse.json(
+          { error: "Shopify-synced listings are limited to one unit per checkout" },
+          { status: 400 },
+        )
+      }
+      quantityByListingId[listing.id] = 1
       continue
     }
-    const stock = Math.max(
-      0,
-      Math.floor(Number((listing as { stock_quantity?: number }).stock_quantity) || 0),
-    )
-    const qty = quantityByListingId[listing.id] ?? 1
-    if (isShopifyManagedListing(listing) && qty !== 1) {
-      return NextResponse.json(
-        { error: "Shopify-synced listings are limited to one unit per checkout" },
-        { status: 400 },
-      )
+    const stockBacked =
+      isReswellShopListing(listing.section) || peerBrandNewStockQuantity(listing) >= 1
+    if (!stockBacked) {
+      quantityByListingId[listing.id] = 1
+      continue
     }
-    if (qty > stock) {
+    const cap = listingBuyerQuantityCap(listing)
+    if (qty > cap) {
       return NextResponse.json({ error: "Not enough stock available" }, { status: 409 })
     }
+    quantityByListingId[listing.id] = clampListingBuyerQuantity(listing, qty)
   }
 
   const mixedSeller = resolveMixedCheckoutSellerId(
@@ -464,19 +490,11 @@ export async function createPaymentIntentForUser(
         packageRates?: CheckoutShippingPackageRate[] | null
       }
     | undefined
-  let packagingMode: ShippingPackagingMode = DEFAULT_SHIPPING_PACKAGING_MODE
-  const packagingFromBody = resolveShippingPackagingMode(
-    body.packaging_mode,
-    DEFAULT_SHIPPING_PACKAGING_MODE,
-  )
-  if (
-    impliedFulfillment === "shipping" &&
-    listingIdsOrdered.length > 1 &&
-    checkoutOffersShippingPackagingChoice(listingsOrdered) &&
-    packagingFromBody === "separate"
-  ) {
-    packagingMode = "separate"
-  }
+  const packagingMode: ShippingPackagingMode = resolveMultiItemPackagingMode({
+    listings: listingsOrdered,
+    requested: body.packaging_mode,
+    fulfillment: impliedFulfillment,
+  })
 
   const quoteTokenRaw = body.quote_token?.trim()
   if (!surfboardCharge && impliedFulfillment === "shipping" && quoteTokenRaw && addressId) {
@@ -534,6 +552,7 @@ export async function createPaymentIntentForUser(
   let promoKind: CheckoutPromoRef["kind"] | null = null
   let promoDiscountPercent = 0
   let promoRef: CheckoutPromoRef | null = null
+  let promoCheckTotalUsd = bundle.totalUsd
 
   if (promoCodeNormalized) {
     const buyerEmail = (await getAuthEmailForUserId(user.id)) ?? user.email?.trim() ?? ""
@@ -549,6 +568,10 @@ export async function createPaymentIntentForUser(
       buyerEmail,
       itemSubtotalUsd: bundle.totalItemPriceUsd,
       shippingUsd: bundle.totalShippingUsd,
+      lines: promoCheckoutLinesFromPricedListings({
+        listings: listingsForTotals,
+        pricedLines: bundle.lines,
+      }),
     })
 
     if (!promoCheck.ok) {
@@ -556,6 +579,7 @@ export async function createPaymentIntentForUser(
     }
 
     promoDiscountUsd = promoCheck.discountUsd
+    promoCheckTotalUsd = promoCheck.totalUsd
     promoCodeId = promoCheck.promo.id
     promoKind = promoCheck.kind
     promoDiscountPercent = promoCheck.discountPercent
@@ -565,14 +589,7 @@ export async function createPaymentIntentForUser(
         : { kind: "admin_issued", promo: promoCheck.promo }
   }
 
-  const chargedTotalUsd =
-    promoDiscountUsd > 0
-      ? computeCheckoutTotalWithNewsletterPromo({
-          itemSubtotalUsd: bundle.totalItemPriceUsd,
-          shippingUsd: bundle.totalShippingUsd,
-          discountPercent: promoDiscountPercent,
-        }).totalUsd
-      : bundle.totalUsd
+  const chargedTotalUsd = promoRef ? promoCheckTotalUsd : bundle.totalUsd
 
   const amountCents = Math.round(chargedTotalUsd * 100)
   if (amountCents < 50) {

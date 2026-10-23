@@ -13,6 +13,7 @@ import {
 } from "@/lib/sell-flow/sell-submit-error"
 import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { SellBrandNewQuantityField } from "@/components/features/sell/sell-brand-new-quantity-field"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -62,6 +63,11 @@ import {
   MAGAZINE_LISTING_TITLE_MAX_LENGTH,
   updateMagazineListingSchema,
 } from "@/lib/validations/magazine-listing"
+import {
+  brandNewQuantityValidationMessage,
+  parseBrandNewListingQuantity,
+  sellFormStockQuantityValue,
+} from "@/lib/listing-stock-quantity"
 import { LISTING_CONDITION_SELL_OPTIONS, sellFormConditionValue } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
 import { navigateAfterListingSave } from "@/lib/sell-flow/navigate-after-listing-save"
@@ -75,6 +81,7 @@ type MagazineFormState = {
   description: string
   price: string
   condition: string
+  stockQuantity: string
   brand: string
   year: string
   locationCity: string
@@ -94,6 +101,7 @@ const INITIAL_STATE: MagazineFormState = {
   description: "",
   price: "",
   condition: "",
+  stockQuantity: "1",
   brand: "",
   year: "",
   locationCity: "",
@@ -258,6 +266,7 @@ export default function SellMagazinesFlow({
         description: listing.description?.trim() ?? "",
         price: listing.price != null ? String(listing.price) : "",
         condition: sellFormConditionValue(listing.condition),
+        stockQuantity: sellFormStockQuantityValue((listing as { stock_quantity?: number | null }).stock_quantity),
         brand: (listing as { brand?: string | null }).brand?.trim() ?? "",
         year:
           (listing as { magazine_year?: number | string | null }).magazine_year != null &&
@@ -362,6 +371,7 @@ export default function SellMagazinesFlow({
     description: form.description,
     price: form.price,
     condition: form.condition,
+    stockQuantity: parseBrandNewListingQuantity(form.stockQuantity) ?? 1,
     brand: form.brand,
     year: form.year,
     locationCity: form.locationCity,
@@ -446,6 +456,11 @@ export default function SellMagazinesFlow({
     )
     if (packedWeightError) {
       failValidation(packedWeightError)
+      return
+    }
+    const quantityMessage = brandNewQuantityValidationMessage(form.condition, form.stockQuantity)
+    if (quantityMessage) {
+      failValidation(quantityMessage)
       return
     }
 
@@ -617,9 +632,9 @@ export default function SellMagazinesFlow({
           onDragEnd={handlePhotosDragEnd}
           onRemove={handlePhotoTileRemove}
           onRetry={handlePhotoTileRetry}
-          onRotate180={handlePhotoTileRotate}
+          onRotateQuarterTurns={handlePhotoTileRotate}
           photoDragSensors={photoDragSensors}
-          photoDescription="Add cover and interior shots. Drag to reorder — the first photo is the main image on browse tiles. Optional: add one short video."
+          photoDescription="Add cover and interior shots. Drag to reorder — the first photo is the main image on browse tiles. Turn a photo 90° if it lands sideways. Optional: add one short video."
           video={video}
           videoFileInputId={videoFileInputId}
           onVideoInputChange={handleVideoInputChange}
@@ -680,6 +695,13 @@ export default function SellMagazinesFlow({
             />
           </div>
         </div>
+
+        <SellBrandNewQuantityField
+          id="magazine-quantity"
+          condition={form.condition}
+          value={form.stockQuantity}
+          onChange={(value) => setField("stockQuantity", value)}
+        />
 
         <div className="space-y-2">
           <Label htmlFor="magazine-brand">Brand / publisher *</Label>

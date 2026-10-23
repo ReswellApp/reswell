@@ -6,11 +6,13 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { ProfilePersonalInfoSection } from "@/components/features/dashboard/profile-personal-info-section"
+import { ShippingLabelNameSection } from "@/components/features/dashboard/shipping-label-name-section"
 import { ProfileAddressesManager } from "@/components/profile-addresses-manager"
 import { toast } from "sonner"
 import { validateDisplayName } from "@/lib/display-name-validation"
 import { useLocale } from "@/components/locale-provider"
 import { revalidateListingDetailAfterProfileUpdate } from "@/app/actions/listing-detail-cache"
+import { updateOperatingProfileAction } from "@/lib/actions/shopProfile"
 import { dispatchHeaderAuthRefresh } from "@/lib/auth/header-auth-refresh"
 import { PROFILE_AVATAR_MAX_INPUT_BYTES } from "@/lib/validations/profileAvatar"
 import { PROFILE_BANNER_MAX_INPUT_BYTES } from "@/lib/validations/profileBanner"
@@ -27,6 +29,8 @@ import {
 import { ProfileShopTab } from "@/components/features/dashboard/profile-settings/profile-shop-tab"
 import { ProfileSignInTab } from "@/components/features/dashboard/profile-settings/profile-sign-in-tab"
 import { ProfileNotificationsTab } from "@/components/features/dashboard/profile-settings/profile-notifications-tab"
+import { AccountTeamPanel } from "@/components/features/dashboard/account-team-panel"
+import type { AccountTeamPanelData } from "@/lib/services/accountAccess"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import type { DashboardProfileRow } from "@/lib/db/dashboard-profile"
 import type { ProfileAddressRow } from "@/lib/profile-address"
@@ -40,6 +44,9 @@ interface DashboardProfileSettingsProps {
   initialHasSmsPhone?: boolean
   initialSmsPhone?: string | null
   variant?: "dashboard" | "threads"
+  team?: AccountTeamPanelData | null
+  /** Login email for password reset. Stays the signed-in person when the shop profile is loaded. */
+  signInEmail?: string
 }
 
 export function DashboardProfileSettings({
@@ -51,6 +58,8 @@ export function DashboardProfileSettings({
   initialHasSmsPhone = false,
   initialSmsPhone = null,
   variant = "dashboard",
+  team = null,
+  signInEmail,
 }: DashboardProfileSettingsProps) {
   const isThreads = variant === "threads"
   const { t } = useLocale()
@@ -131,25 +140,21 @@ export function DashboardProfileSettings({
     }
 
     setSaving(true)
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        display_name: profile.display_name,
-        location: profile.location,
-        city: profile.city,
-        bio: profile.bio,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", profile.id)
+    const result = await updateOperatingProfileAction({
+      displayName: profile.display_name,
+      location: profile.location,
+      city: profile.city,
+      bio: profile.bio,
+    })
 
-    if (!error) {
+    if (!("error" in result)) {
       setProfileSavedFlash(true)
       window.setTimeout(() => setProfileSavedFlash(false), 2000)
       void revalidateListingDetailAfterProfileUpdate()
       dispatchHeaderAuthRefresh()
       router.refresh()
     } else {
-      toast.error("Failed to update profile")
+      toast.error(result.error)
     }
     setSaving(false)
   }
@@ -494,7 +499,8 @@ export function DashboardProfileSettings({
 
   async function handleSendPasswordReset() {
     const acctStrings = t("settings").account
-    if (!profile?.email) {
+    const resetEmail = (signInEmail || profile?.email || "").trim()
+    if (!resetEmail) {
       toast.error(acctStrings.resetPasswordToastNoEmail)
       return
     }
@@ -513,7 +519,7 @@ export function DashboardProfileSettings({
         }
       }
       const redirectTo = buildPasswordRecoveryCallbackUrl(siteOrigin)
-      const { error } = await supabase.auth.resetPasswordForEmail(profile.email, { redirectTo })
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, { redirectTo })
       if (error) throw error
       toast.success(acctStrings.resetPasswordToastSuccess)
     } catch (err: unknown) {
@@ -636,23 +642,26 @@ export function DashboardProfileSettings({
       ) : null}
 
       {activeTab === "sign-in" ? (
-        <ProfileSignInTab
-          email={profile.email || ""}
-          copy={{
-            ...a,
-            loginMethods: a.loginMethods,
-            signedInWithGoogle: a.signedInWithGoogle,
-            signedInWithEmail: a.signedInWithEmail,
-            emailVerification: a.emailVerification,
-            verified: a.verified,
-            changeEmailTitle: a.changeEmailTitle,
-            newEmail: a.newEmail,
-            updateEmail: a.updateEmail,
-          }}
-          resetPasswordSending={resetPasswordSending}
-          onSendPasswordReset={() => void handleSendPasswordReset()}
-          onSignOut={() => void handleSignOut()}
-        />
+        <div className="mx-auto max-w-xl space-y-10 pt-2">
+          {team ? <AccountTeamPanel {...team} /> : null}
+          <ProfileSignInTab
+            email={signInEmail || profile.email || ""}
+            copy={{
+              ...a,
+              loginMethods: a.loginMethods,
+              signedInWithGoogle: a.signedInWithGoogle,
+              signedInWithEmail: a.signedInWithEmail,
+              emailVerification: a.emailVerification,
+              verified: a.verified,
+              changeEmailTitle: a.changeEmailTitle,
+              newEmail: a.newEmail,
+              updateEmail: a.updateEmail,
+            }}
+            resetPasswordSending={resetPasswordSending}
+            onSendPasswordReset={() => void handleSendPasswordReset()}
+            onSignOut={() => void handleSignOut()}
+          />
+        </div>
       ) : null}
 
       {activeTab === "addresses" ? (
@@ -662,6 +671,15 @@ export function DashboardProfileSettings({
             initialFirstName={profile.first_name}
             initialLastName={profile.last_name}
             initialPhone={profile.phone}
+          />
+          <ShippingLabelNameSection
+            copy={s.shippingLabelName}
+            initialName={profile.shipping_label_name}
+            fallbackName={
+              profile.is_shop && profile.shop_name?.trim()
+                ? profile.shop_name
+                : profile.display_name
+            }
           />
           <ProfileAddressesManager
             copy={addr}

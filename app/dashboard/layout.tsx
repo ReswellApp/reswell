@@ -3,6 +3,8 @@ import { getCachedDashboardSession } from "@/lib/dashboard-session"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { DashboardAppFrame } from "@/components/features/dashboard/dashboard-app-frame"
 import { coastalShipperMembership } from "@/lib/services/coastalShipperAccess"
+import { dropoffLocationMembership } from "@/lib/services/dropoffLocationAccess"
+import { getShopAccountContext } from "@/lib/services/accountAccess"
 
 export default async function DashboardLayout({
   children,
@@ -15,28 +17,43 @@ export default async function DashboardLayout({
     redirect("/auth/login?redirect=/dashboard")
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("is_shop, is_admin, seller_slug, shopify_connect_enabled")
-    .eq("id", user.id)
-    .single()
+  const shop = await getShopAccountContext()
+  if (!shop) {
+    redirect("/auth/login?redirect=/dashboard")
+  }
 
-  const isShop = profile?.is_shop || false
-  const shopHref = isShop ? sellerProfileHref(profile) : null
-  const hasShopifyAccess = profile?.shopify_connect_enabled === true
-  const { data: shipperRow, error: shipperError } = await supabase
-    .from("coastal_shippers")
-    .select("id")
-    .eq("user_id", user.id)
-    .maybeSingle()
+  const [{ data: shipperRow, error: shipperError }, { data: dropoffRow, error: dropoffError }] =
+    await Promise.all([
+      supabase.from("coastal_shippers").select("id").eq("user_id", user.id).maybeSingle(),
+      supabase.from("dropoff_location_grants").select("id").eq("user_id", user.id).maybeSingle(),
+    ])
   const isShipper = coastalShipperMembership({ rowId: shipperRow?.id, queryFailed: Boolean(shipperError) })
+  const isDropoffLocation = dropoffLocationMembership({
+    rowId: dropoffRow?.id,
+    queryFailed: Boolean(dropoffError),
+  })
+  const shopHref =
+    shop.isShop && shop.sellerSlug ? sellerProfileHref({ seller_slug: shop.sellerSlug }) : null
 
   return (
     <DashboardAppFrame
       sellerProfileHref={shopHref}
-      isAdmin={profile?.is_admin === true}
+      isAdmin={shop.platformAdmin}
       isShipper={isShipper}
-      hasShopifyAccess={hasShopifyAccess}
+      isDropoffLocation={isDropoffLocation}
+      hasShopifyAccess={shop.shopifyConnectEnabled}
+      showEarnings={shop.permissions.has("payouts.read")}
+      actingAsShop={shop.actingAsShop}
+      shopLabel={shop.shopLabel}
+      accountRole={shop.role}
+      actorDisplayName={shop.actorDisplayName}
+      actorEmail={shop.actorEmail}
+      showShopAdminWarning={
+        shop.actingAsShop &&
+        shop.accountIsPlatformAdmin &&
+        !shop.platformAdmin &&
+        !shop.platformEmployee
+      }
     >
       {children}
     </DashboardAppFrame>

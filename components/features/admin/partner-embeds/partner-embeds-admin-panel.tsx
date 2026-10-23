@@ -21,6 +21,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { cn } from "@/lib/utils"
 import { listingDetailHref } from "@/lib/listing-href"
 
@@ -545,7 +546,7 @@ export function PartnerEmbedsAdminPanel() {
                             alt=""
                             fill
                             sizes="80px"
-                            className="object-cover"
+                            className={listingPhotoFillClassName}
                             unoptimized={row.listing.primary_image_url.startsWith("/")}
                           />
                         ) : null}
@@ -663,7 +664,7 @@ export function PartnerEmbedsAdminPanel() {
                               alt=""
                               fill
                               sizes="64px"
-                              className="object-cover"
+                              className={listingPhotoFillClassName}
                               unoptimized={hit.primary_image_url.startsWith("/")}
                             />
                           ) : null}

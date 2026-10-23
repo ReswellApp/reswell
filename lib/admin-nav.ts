@@ -2,6 +2,8 @@
  * Admin sidebar: grouped nav + role-based href filtering.
  * Icon keys are resolved in the client sidebar (Lucide components are not serializable).
  */
+import { EMPLOYEE_NAV_HREFS, EMPLOYEE_TOOLS } from '@/lib/admin/employee-access'
+
 export type AdminNavIconKey =
   | 'layoutDashboard'
   | 'waves'
@@ -53,39 +55,6 @@ export interface AdminNavGroupConfig {
   items: AdminNavItemConfig[]
 }
 
-/** Hrefs hidden for is_employee-only users (not full admin). */
-const EMPLOYEE_EXCLUDED_HREFS = new Set<string>([
-  '/admin/users',
-  '/admin/wallets',
-  '/admin/settings',
-  '/admin/seo',
-  '/admin/google-merchant',
-  '/admin/google-analytics',
-  '/admin/ad-sales',
-  '/admin/ads',
-  '/admin/search-curation',
-  '/admin/partner-embeds',
-  '/admin/shipping',
-  '/admin/dropoff-locations',
-  '/admin/shipper',
-  '/admin/tools',
-  '/admin/site-assets',
-  '/admin/llm-usage',
-  '/admin/intelligence',
-  '/admin/listings/brand-requests',
-  '/admin/listings/board-catalog-data',
-  '/admin/boards-archive',
-  '/admin/fbcatalog',
-  '/admin/facebook-marketplace-bulk',
-  '/admin/listings/brand-model-autofills',
-  '/admin/orders/terminal',
-  '/admin/promo-codes',
-  '/admin/listings/bulk',
-  '/admin/shop',
-  '/admin/shop/orders',
-  '/admin/hayden-shop',
-])
-
 export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
   {
     id: 'overview',
@@ -135,6 +104,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
     label: 'Analytics',
     items: [
       { href: '/admin/intelligence', label: 'Intelligence', icon: 'brain' },
+      { href: '/admin/cohorts', label: 'Cohorts', icon: 'users' },
       { href: '/admin/google-merchant', label: 'Google Merchant', icon: 'shoppingCart' },
       { href: '/admin/google-analytics', label: 'Google Analytics', icon: 'lineChart' },
       { href: '/admin/ad-sales', label: 'Ad sales', icon: 'megaphone' },
@@ -142,6 +112,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
       { href: '/admin/pickup-only-boards', label: 'Pickup-only boards', icon: 'mapPin' },
       { href: '/admin/used-board-market-dashboard?tab=catalog', label: 'Brand catalog explorer', icon: 'folderTree' },
       { href: '/admin/search-analytics', label: 'Search analytics', icon: 'lineChart' },
+      { href: '/admin/saved-searches', label: 'Saved searches', icon: 'bellRing' },
       { href: '/admin/search-daily-report', label: 'Search reports', icon: 'fileText' },
       { href: '/admin/listing-views', label: 'Listing views', icon: 'activity' },
       { href: '/admin/sell-funnel', label: 'Sell funnel', icon: 'lineChart' },
@@ -189,6 +160,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
       { href: '/admin/listings/bulk', label: 'Bulk list', icon: 'layers' },
       { href: '/admin/seo', label: 'SEO', icon: 'search' },
       { href: '/admin/wallets', label: 'Wallet balances', icon: 'wallet' },
+      { href: '/admin/sale-tips', label: 'Seller tips', icon: 'dollarSign' },
       { href: '/admin/fraud-messages', label: 'Fraud messages', icon: 'shield' },
       { href: '/admin/partner-embeds', label: 'Partner embeds', icon: 'code' },
       { href: '/admin/reswelltickets', label: 'Reswell tickets', icon: 'ticket' },
@@ -208,15 +180,17 @@ export function flattenAdminNavItems(groups: AdminNavGroupConfig[]): AdminNavIte
 }
 
 export function getAdminNavGroupsForUser(isAdmin: boolean): AdminNavGroupConfig[] {
-  const allow = (href: string) => isAdmin || !EMPLOYEE_EXCLUDED_HREFS.has(href)
+  if (isAdmin) return ADMIN_NAV_GROUPS
 
-  return ADMIN_NAV_GROUPS.map((group) => ({
-    ...group,
-    items: group.items
-      .filter((item) => allow(item.href))
-      .map((item) => ({
-        ...item,
-        children: item.children?.filter((child) => allow(child.href)),
-      })),
-  })).filter((group) => group.items.length > 0)
+  const byHref = new Map(
+    flattenAdminNavItems(ADMIN_NAV_GROUPS).map((item) => [item.href, item]),
+  )
+  const items = EMPLOYEE_TOOLS.flatMap((tool) => {
+    if (!EMPLOYEE_NAV_HREFS.has(tool.href)) return []
+    const found = byHref.get(tool.href)
+    if (!found) return []
+    return [{ ...found, label: tool.label, children: undefined }]
+  })
+
+  return [{ id: 'employee', label: 'Employee', items }]
 }

@@ -1,7 +1,37 @@
-import { revalidateTag } from "next/cache"
-import { MARKETPLACE_SOLD_FEED_CACHE_TAG } from "@/lib/cache/marketplace-sold-feed"
+import { revalidatePath, revalidateTag } from "next/cache"
+import {
+  MARKETPLACE_NEW_LISTINGS_FEED_CACHE_TAG,
+  MARKETPLACE_SOLD_FEED_CACHE_TAG,
+} from "@/lib/cache/marketplace-sold-feed"
 
-/** Bust hourly `/sold` sold, shipped, and new-listings feed caches. */
+const EXPIRE_NOW = { expire: 0 } as const
+
+function revalidateSoldPage(): void {
+  // Expire the concrete URL. Typed `"page"` / `"layout"` calls only match
+  // `/sold/page` and `/sold/layout`. The cached document is also tagged `/sold`,
+  // and missing that tag left the previous grid up for the route TTL.
+  revalidatePath("/sold")
+  revalidatePath("/sold", "page")
+  revalidatePath("/sold", "layout")
+}
+
+/**
+ * Drop the `/sold?tab=new` grid as soon as a board is published, hidden,
+ * restored, or deleted. A path-only bust leaves the previous grid in the
+ * data cache, and the next render stores it for another hour.
+ */
+export function revalidateMarketplaceNewListingsFeed(): void {
+  revalidateTag(MARKETPLACE_NEW_LISTINGS_FEED_CACHE_TAG, EXPIRE_NOW)
+  revalidateSoldPage()
+}
+
+/**
+ * Drop `/sold` feed caches immediately after a sale, purchase, or return.
+ * A stale-while-revalidate bust leaves the previous grid in place, so the next
+ * render can store that grid for another hour.
+ */
 export function revalidateMarketplaceSoldFeedCatalog(): void {
-  revalidateTag(MARKETPLACE_SOLD_FEED_CACHE_TAG, 'max')
+  revalidateTag(MARKETPLACE_SOLD_FEED_CACHE_TAG, EXPIRE_NOW)
+  revalidateTag(MARKETPLACE_NEW_LISTINGS_FEED_CACHE_TAG, EXPIRE_NOW)
+  revalidateSoldPage()
 }

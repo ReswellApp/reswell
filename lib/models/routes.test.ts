@@ -62,5 +62,7 @@ describe("reserved brand segments", () => {
     assert.equal(isModelPagePathname("/christenson-surfboards/lane-splitter"), true)
     assert.equal(isModelPagePathname("/boards/shortboard"), false)
     assert.equal(isModelPagePathname("/brands/christenson-surfboards"), false)
+    assert.equal(isModelPagePathname("/shopify/connect"), false)
+    assert.equal(isModelPagePathname("/shopify/claim"), false)
   })
 })

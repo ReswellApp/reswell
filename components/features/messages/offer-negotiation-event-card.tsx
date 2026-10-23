@@ -137,7 +137,7 @@ export function OfferNegotiationEventCard({
   content,
   createdAt,
   isOwn,
-  showSellerDashboardLink,
+  offerHref,
   actionableOfferId,
   actionableExpiresAt,
   checkoutOfferId,
@@ -148,8 +148,8 @@ export function OfferNegotiationEventCard({
   content: string
   createdAt: string
   isOwn: boolean
-  /** Seller-authored outcome lines — link to offers hub */
-  showSellerDashboardLink?: boolean
+  /** Dashboard URL for the offer this line describes. */
+  offerHref?: string | null
   /** When set, buyer can accept/decline this open counter (or seller-initiated offer) here. */
   actionableOfferId?: string | null
   actionableExpiresAt?: string | null
@@ -205,21 +205,21 @@ export function OfferNegotiationEventCard({
         {note ? (
           <p className="text-[14px] leading-snug text-foreground/90">&ldquo;{note}&rdquo;</p>
         ) : null}
-        {showSellerDashboardLink && (
+        {offerHref ? (
           <p className={cn("text-[12px] leading-snug text-muted-foreground", note && "mt-2")}>
             <Link
-              href="/messages/offers"
+              href={offerHref}
               className="font-medium text-foreground underline decoration-foreground/25 underline-offset-2 transition-colors hover:decoration-foreground/60"
             >
-              View all offers
+              View offer
             </Link>
           </p>
-        )}
+        ) : null}
         {hint && (
           <p
             className={cn(
               "text-[12px] leading-snug text-muted-foreground",
-              (showSellerDashboardLink || note) && "mt-2",
+              (offerHref || note) && "mt-2",
             )}
           >
             {hint}

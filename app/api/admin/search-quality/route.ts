@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
+import { requireAdmin } from "@/lib/brands/admin-server"
 import {
   aggregateSearchQualityStats,
   listSearchQualityEvents,
@@ -15,7 +15,7 @@ function searchQualityLoadError(message: string): string {
 }
 
 export async function GET(request: NextRequest) {
-  const gate = await requireAdminOrEmployee()
+  const gate = await requireAdmin()
   if (!gate.ok) return gate.response
 
   const parsed = searchQualityListQuerySchema.safeParse(

@@ -1,6 +1,6 @@
 /**
  * Snapshot of the newest listing in a saved search.
- * Sent on the Klaviyo `Saved Search` event. Not shown in the save-search bar.
+ * Not sent when a search is saved, and not shown in the save-search bar.
  */
 
 import { klaviyoMediaListingPhotoUrl } from "@/lib/klaviyo/catalog-product"
@@ -41,7 +41,7 @@ export function formatSavedSearchHeroPrice(price: number): string {
   return `$${price.toFixed(2)}`
 }
 
-/** Map a listing row to the hero shown in the bar and sent on `Saved Search`. */
+/** Map a listing row to a saved-search listing snapshot. */
 export function savedSearchHeroFromListing(
   row: SavedSearchHeroSource,
 ): SavedSearchHeroListing | null {

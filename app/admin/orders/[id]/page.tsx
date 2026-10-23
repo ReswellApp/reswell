@@ -14,6 +14,7 @@ import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { format } from "date-fns"
 import { AdminIssueRefundButton } from "@/components/features/admin/admin-issue-refund-button"
 import { AdminIssueItemReturnPanel } from "@/components/features/admin/admin-issue-item-return-panel"
+import { AdminOrderShipEngineDisputeLink } from "@/components/features/admin/admin-order-shipengine-dispute-link"
 import { AdminReplaceOrderShippingLabelPanel } from "@/components/features/admin/admin-replace-order-shipping-label-panel"
 import { AdminReswellShopFulfillForm } from "@/components/features/admin/admin-reswell-shop-fulfill-form"
 import { ReswellTrackingSection } from "@/components/features/orders/reswell-tracking-section"
@@ -22,6 +23,7 @@ import {
   pickupCodeBannerLabelClassName,
   pickupCodeBannerSurfaceClassName,
 } from "@/components/order-actions"
+import { adminOrderShowsShippingLabel } from "@/lib/admin/admin-order-label-visibility"
 import { orderStatusBadgeVariant, orderStatusLabel, deliveryStatusLabel, payoutStatusLabel } from "@/lib/order-status"
 import { carrierDeliveryPayoutEligibleAt } from "@/lib/shipping/carrier-delivery-payout-hold"
 import { createClient } from "@/lib/supabase/client"
@@ -220,8 +222,11 @@ export default function AdminOrderDetailPage() {
   const hasPaperlessQr = payload.capabilities.hasPaperlessQr
   const canFulfillReswellShop = payload.capabilities.canFulfillReswellShop
   const canReplaceShippingLabel = payload.capabilities.canReplaceShippingLabel
-  const showShippingLabel =
-    o.fulfillment_method === "shipping" && hasShippingLabel
+  const showShippingLabel = adminOrderShowsShippingLabel({
+    fulfillmentMethod: o.fulfillment_method,
+    hasPdf: hasShippingLabel,
+    hasPaperlessQr,
+  })
   const showCarrierTracking =
     o.fulfillment_method === "shipping" && Boolean(o.tracking_number?.trim())
   const showLegacyManualPayoutRelease =
@@ -466,6 +471,13 @@ export default function AdminOrderDetailPage() {
             </div>
           )}
 
+          {o.fulfillment_method === "shipping" ? (
+            <AdminOrderShipEngineDisputeLink
+              trackingCarrier={o.tracking_carrier}
+              trackingNumber={o.tracking_number}
+            />
+          ) : null}
+
           {o.fulfillment_method === "shipping" && o.status === "confirmed" && (
             <div className="rounded-lg border border-border/60 bg-muted/20 p-4 space-y-3">
               <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
@@ -644,9 +656,12 @@ export default function AdminOrderDetailPage() {
         <SellerPreparedShippingLabelCard
           orderId={o.id}
           downloadApiPrefix="/api/admin/orders"
+          hasPdf={hasShippingLabel}
           hasPaperlessQr={hasPaperlessQr}
           paperlessInstructions={payload.capabilities.paperlessInstructions}
           paperlessHandoffCode={payload.capabilities.paperlessHandoffCode}
+          title="Shipping label"
+          description="Carrier label purchased for this order. View or download it here to pack and ship."
         />
       ) : null}
 

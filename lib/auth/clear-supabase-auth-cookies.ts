@@ -6,16 +6,44 @@ function isSupabaseAuthCookie(name: string): boolean {
   return name.startsWith('sb-') && name.includes('auth-token')
 }
 
+type AuthCookieClearOptions = {
+  path: "/"
+  maxAge: 0
+  expires: Date
+  sameSite: "lax"
+  httpOnly: false
+}
+
 type WritableCookieStore = {
   getAll(): { name: string }[]
-  set(name: string, value: string, options?: { maxAge?: number; path?: string }): void
+  set(name: string, value: string, options?: AuthCookieClearOptions): void
+}
+
+/**
+ * Expire a Supabase auth cookie.
+ *
+ * `@edge-runtime/cookies` only copies `maxAge` onto `Expires` when `maxAge` is
+ * truthy, and its Set-Cookie parser drops `Max-Age=0` when the header is
+ * parsed again (`0` is falsy). A deletion can then be rewritten as an empty
+ * session cookie, so the browser keeps sending `sb-…-auth-token` and the
+ * header still looks signed in. Set `Expires` to the epoch as well, and match
+ * the Path / SameSite `@supabase/ssr` used when it stored the session.
+ */
+function expiredSupabaseAuthCookieOptions(): AuthCookieClearOptions {
+  return {
+    path: "/",
+    maxAge: 0,
+    expires: new Date(0),
+    sameSite: "lax",
+    httpOnly: false,
+  }
 }
 
 /** Clears stale Supabase auth cookies from a Next.js `cookies()` store (Route Handlers / Actions). */
 export function clearSupabaseAuthCookiesFromStore(store: WritableCookieStore): void {
   for (const { name } of store.getAll()) {
     if (!isSupabaseAuthCookie(name)) continue
-    store.set(name, '', { maxAge: 0, path: '/' })
+    store.set(name, "", expiredSupabaseAuthCookieOptions())
   }
 }
 
@@ -32,7 +60,7 @@ export function clearSupabaseAuthCookies(
   for (const { name } of request.cookies.getAll()) {
     if (!isSupabaseAuthCookie(name)) continue
     request.cookies.delete(name)
-    response.cookies.set(name, '', { maxAge: 0, path: '/' })
+    response.cookies.set(name, "", expiredSupabaseAuthCookieOptions())
   }
 }
 

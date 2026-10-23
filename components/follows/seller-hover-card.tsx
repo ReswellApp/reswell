@@ -13,6 +13,7 @@ import { createClient } from "@/lib/supabase/client"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { getFollowStatusForSeller } from "@/app/actions/follows"
 import { listingDetailHref } from "@/lib/listing-href"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { ratingStarFilledClassName } from "@/lib/rating-star-styles"
 import { resolveSellerProfileDisplayImageUrl } from "@/lib/sellers/profile-display-image"
@@ -270,7 +271,10 @@ export function SellerHoverCard({
                         src={proxiedListingImageSrc(img.url)}
                         alt={listing.title}
                         fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-200"
+                        className={cn(
+                          listingPhotoFillClassName,
+                          "transition-transform duration-200 group-hover:scale-105",
+                        )}
                         sizes="72px"
                         unoptimized
                       />

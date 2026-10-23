@@ -1,4 +1,8 @@
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
+import {
+  listingPhotoQuarterTurnsAfterAdjust,
+  type ListingPhotoQuarterTurns,
+} from "@/lib/sell-flow/listing-photo-orientation"
 
 export type SimpleSellPhotoSlot = {
   clientId: string
@@ -10,8 +14,12 @@ export type SimpleSellPhotoSlot = {
   phase: "optimizing" | "uploading" | "done" | "error"
   progress: number
   errorMessage?: string
-  /** True = apply 180° after automatic landscape→portrait (toggle). */
+  /** @deprecated Session leftover. Quarter turns replace this. */
   userRotate180?: boolean
+  /** Extra clockwise 90° turns on top of automatic camera orientation. */
+  userQuarterTurns?: ListingPhotoQuarterTurns
+  /** Downloaded listing file. Skip the landscape→portrait pass. */
+  sourceIsDerivative?: boolean
   /** True once `previewUrl` is a small derivative safe to show during upload. */
   localPreviewReady?: boolean
 }
@@ -29,10 +37,12 @@ export function listingPhotoPreviewFromPrepared(
   return URL.createObjectURL(preparedThumb)
 }
 
-export async function simpleSellPhotoSlotForRotate180<T extends SimpleSellPhotoSlot>(
+export async function simpleSellPhotoSlotForQuarterTurn<T extends SimpleSellPhotoSlot>(
   slot: T,
+  delta: number,
 ): Promise<T> {
   let file = slot.file
+  let base: T = slot
   if (!file) {
     const fullUrl = (slot.url ?? "").trim()
     if (!fullUrl) {
@@ -47,12 +57,20 @@ export async function simpleSellPhotoSlotForRotate180<T extends SimpleSellPhotoS
     file = new File([blob], "listing-photo.jpg", {
       type: blob.type && blob.type.startsWith("image/") ? blob.type : "image/jpeg",
     })
+    base = { ...slot, sourceIsDerivative: true }
   }
 
+  const orientation = listingPhotoQuarterTurnsAfterAdjust(
+    { ...base, sourceFile: file },
+    delta,
+  )
+
   return {
-    ...slot,
+    ...base,
     file,
-    userRotate180: !slot.userRotate180,
+    userQuarterTurns: orientation.userQuarterTurns,
+    sourceIsDerivative: orientation.sourceIsDerivative,
+    userRotate180: undefined,
     phase: "optimizing",
     progress: 0,
     url: undefined,

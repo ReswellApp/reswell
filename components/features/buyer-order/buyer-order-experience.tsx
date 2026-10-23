@@ -15,7 +15,7 @@ import {
   Shield,
   Truck,
 } from "lucide-react"
-import { carrierTrackingUrl } from "@/lib/utils/carrier-tracking-url"
+import { preferredTrackingUrl } from "@/lib/utils/carrier-tracking-url"
 import { deliveryStatusLabel } from "@/lib/order-status"
 import {
   daysUntilShippingDeadline,
@@ -53,6 +53,8 @@ export type BuyerOrderExperienceProps = {
   deliveryStatus: string
   trackingNumber: string | null
   trackingCarrier: string | null
+  /** ShipEngine branded page when one has been created for this tracking number. */
+  brandedTrackingUrl?: string | null
   paidWithCard: boolean
   paymentMethod: string | null
   refundedAt: string | null
@@ -251,10 +253,15 @@ function buildJourney(props: BuyerOrderExperienceProps): JourneyStep[] {
 export function BuyerOrderExperience(props: BuyerOrderExperienceProps) {
   const [detailsOpen, setDetailsOpen] = useState(false)
 
-  const trackUrl = useMemo(() => {
-    if (!props.trackingNumber?.trim()) return null
-    return carrierTrackingUrl(props.trackingNumber.trim(), props.trackingCarrier)
-  }, [props.trackingNumber, props.trackingCarrier])
+  const trackUrl = useMemo(
+    () =>
+      preferredTrackingUrl({
+        brandedUrl: props.brandedTrackingUrl,
+        trackingNumber: props.trackingNumber,
+        trackingCarrier: props.trackingCarrier,
+      }),
+    [props.brandedTrackingUrl, props.trackingNumber, props.trackingCarrier],
+  )
 
   const journey = useMemo(() => buildJourney(props), [props])
 

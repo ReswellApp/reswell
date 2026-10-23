@@ -56,7 +56,7 @@ async function requireStaff(): Promise<Authed> {
     .select("is_admin, is_employee")
     .eq("id", auth.user.id)
     .maybeSingle()
-  if (profile?.is_admin !== true && profile?.is_employee !== true) {
+  if (profile?.is_admin !== true) {
     return { ok: false, error: "Forbidden" }
   }
   return auth

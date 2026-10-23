@@ -14,7 +14,10 @@ import {
   type MouseEvent,
 } from "react"
 import { createClient } from "@/lib/supabase/client"
-import { hasSupabaseAuthCookiesClient } from "@/lib/auth/has-supabase-auth-cookies"
+import {
+  clearSupabaseAuthCookiesClient,
+  hasSupabaseAuthCookiesClient,
+} from "@/lib/auth/has-supabase-auth-cookies"
 import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
 import { Button } from "@/components/ui/button"
 import {
@@ -74,11 +77,32 @@ import { getAuthUserWithRetry } from "@/lib/auth/get-user-with-retry"
 import { isAbortError } from "@/lib/utils/is-abort-error"
 import { signOutAndRedirect } from "@/lib/auth/sign-out-and-redirect"
 import { waitForClientSession } from "@/lib/auth/wait-for-client-session"
+import {
+  allowHeaderChromeSignIn,
+  beginHeaderChromeSignOut,
+  clearHeaderChromeSnapshot,
+  HEADER_CHROME_SIGN_OUT_EVENT,
+  HEADER_CHROME_SNAPSHOT_STORAGE_KEY,
+  headerChromeAvatarCssValue,
+  headerChromeSignOutActive,
+  headerChromeSnapshotUser,
+  markHeaderChromeHydrated,
+  readHeaderChromeSnapshot,
+  writeHeaderChromeSnapshot,
+} from "@/lib/auth/header-chrome-snapshot"
+import type { HeaderShopAccess } from "@/lib/auth/header-site-bootstrap"
+import {
+  headerShopAccessWithActiveAccount,
+  loadHeaderShopAccess,
+} from "@/lib/auth/header-shop-access"
+import { HeaderKnownAuthPreview } from "@/components/header-known-auth-preview"
 import type { SiteChromeAuthPayload } from "@/lib/auth/get-site-chrome-auth"
 import { CartHeaderLink } from "@/components/cart-header-link"
 import { authLandingHref } from "@/lib/auth/auth-landing-href"
 import { HeaderAccountMenu } from "@/components/header-account-menu"
+import { WorkingOnAccountBanner } from "@/components/working-on-account-banner"
 import { coastalShipperMembership } from "@/lib/services/coastalShipperAccess"
+import { dropoffLocationMembership } from "@/lib/services/dropoffLocationAccess"
 import { SiteWordmarkLink } from "@/components/site-wordmark-link"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
@@ -181,7 +205,9 @@ type HeaderDerivedNavState = {
   profileAvatarUrl: string | null
   profileDisplayName: string | null
   isAdmin: boolean
+  isEmployee: boolean
   isShipper: boolean
+  isDropoffLocation: boolean
   unreadMessages: number
   unreadSupport: number
   walletBalance: number | null
@@ -195,7 +221,9 @@ function deriveHeaderNavState(payload: SiteChromeAuthPayload): HeaderDerivedNavS
       profileAvatarUrl: null,
       profileDisplayName: null,
       isAdmin: false,
+      isEmployee: false,
       isShipper: false,
+      isDropoffLocation: false,
       unreadMessages: 0,
       unreadSupport: 0,
       walletBalance: null,
@@ -209,7 +237,9 @@ function deriveHeaderNavState(payload: SiteChromeAuthPayload): HeaderDerivedNavS
       profileAvatarUrl: resolveHeaderAvatarUrl(payload.user, null),
       profileDisplayName: null,
       isAdmin: false,
+      isEmployee: false,
       isShipper: b?.isShipper === true,
+      isDropoffLocation: b?.isDropoffLocation === true,
       unreadMessages: 0,
       unreadSupport: 0,
       walletBalance: null,
@@ -222,7 +252,9 @@ function deriveHeaderNavState(payload: SiteChromeAuthPayload): HeaderDerivedNavS
     profileAvatarUrl: resolveHeaderAvatarUrl(payload.user, prof),
     profileDisplayName: prof.display_name,
     isAdmin: prof.is_admin === true,
+    isEmployee: prof.is_employee === true,
     isShipper: b.isShipper === true,
+    isDropoffLocation: b.isDropoffLocation === true,
     unreadMessages: b.unreadMessages,
     unreadSupport: Number(b.unreadSupport ?? 0) || 0,
     walletBalance: b.walletBalance,
@@ -488,10 +520,22 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
   const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(initNav.profileAvatarUrl)
   const [profileDisplayName, setProfileDisplayName] = useState<string | null>(initNav.profileDisplayName)
   const [isAdmin, setIsAdmin] = useState(initNav.isAdmin)
+  const [isEmployee, setIsEmployee] = useState(initNav.isEmployee)
   const [isShipper, setIsShipper] = useState(initNav.isShipper)
+  const [isDropoffLocation, setIsDropoffLocation] = useState(initNav.isDropoffLocation)
   const [unreadMessages, setUnreadMessages] = useState(initNav.unreadMessages)
   const [unreadSupport, setUnreadSupport] = useState(initNav.unreadSupport)
   const [walletBalance, setWalletBalance] = useState<number | null>(initNav.walletBalance)
+  /**
+   * Public HTML has no session, so memberships are not on `serverHeaderAuth`.
+   * The menu loads them with the browser session.
+   */
+  const [shopAccess, setShopAccess] = useState<HeaderShopAccess | null>(
+    serverHeaderAuth.bootstrap?.shopAccess ?? null,
+  )
+  const shopAccessRef = useRef<HeaderShopAccess | null>(serverHeaderAuth.bootstrap?.shopAccess ?? null)
+  /** Bumps when a newer shop list should win over an in-flight header refetch. */
+  const shopAccessRequestRef = useRef(0)
   /** Client-synced total from earnings (or other wallet UI); wins over stale server bootstrap. */
   const clientWalletTotalRef = useRef<number | null>(null)
   /**
@@ -507,6 +551,12 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
   // correct amount of space for auth-dependent action buttons before they
   // appear, preventing the search bar from shifting horizontally.
   const [authLoaded, setAuthLoaded] = useState(initNav.authLoaded)
+  /**
+   * Snapshot paint is display-only. Realtime and wallet reads wait until GoTrue
+   * has actually resolved a session, so a remembered account does not subscribe
+   * as the anon key.
+   */
+  const [authSessionReady, setAuthSessionReady] = useState(Boolean(serverHeaderAuth.user))
   /** When the image URL is set but fails to load (403, blocked, bad URL), hide img so fallback letter shows. */
   const [avatarImageFailed, setAvatarImageFailed] = useState(false)
   const headerMainRowRef = useRef<HTMLDivElement>(null)
@@ -577,7 +627,11 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       b?.profile?.avatar_url ?? "",
       b?.profile?.shop_logo_url ?? "",
       String(b?.profile?.is_admin ?? ""),
+      String(b?.profile?.is_employee ?? ""),
       String(b?.isShipper ?? ""),
+      String(b?.isDropoffLocation ?? ""),
+      b?.shopAccess?.activeAccountId ?? "",
+      String(b?.shopAccess?.actingAsShop ?? ""),
     ].join("|")
   }, [
     serverHeaderAuth.user?.id,
@@ -589,14 +643,76 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     serverHeaderAuth.bootstrap?.profile?.avatar_url,
     serverHeaderAuth.bootstrap?.profile?.shop_logo_url,
     serverHeaderAuth.bootstrap?.profile?.is_admin,
+    serverHeaderAuth.bootstrap?.profile?.is_employee,
     serverHeaderAuth.bootstrap?.isShipper,
+    serverHeaderAuth.bootstrap?.isDropoffLocation,
+    serverHeaderAuth.bootstrap?.shopAccess?.activeAccountId,
+    serverHeaderAuth.bootstrap?.shopAccess?.actingAsShop,
   ])
+
+  const applyGuestHeader = useCallback(() => {
+    clearHeaderChromeSnapshot()
+    markHeaderChromeHydrated()
+    setAuthSessionReady(false)
+    const guest = deriveHeaderNavState({ user: null, bootstrap: null })
+    setUser(guest.user)
+    setProfileAvatarUrl(guest.profileAvatarUrl)
+    setProfileDisplayName(guest.profileDisplayName)
+    setIsAdmin(guest.isAdmin)
+    setIsEmployee(guest.isEmployee)
+    setIsShipper(guest.isShipper)
+    setIsDropoffLocation(guest.isDropoffLocation)
+    setUnreadMessages(guest.unreadMessages)
+    setUnreadSupport(guest.unreadSupport)
+    clientWalletTotalRef.current = null
+    setWalletBalance(guest.walletBalance)
+    shopAccessRequestRef.current += 1
+    shopAccessRef.current = null
+    setShopAccess(null)
+    setAuthLoaded(true)
+  }, [])
 
   useLayoutEffect(() => {
     const d = deriveHeaderNavState(serverHeaderAuth)
     // Soft `router.refresh()` after OAuth can return a guest snapshot before cookies are
     // visible to RSC — do not paint logged-out over a verified client session.
-    if (!d.user && user) return
+    // Sign-out is the exception: the remembered account must not stay on screen.
+    if (!d.user && user && !headerChromeSignOutActive()) return
+
+    // Cached HTML is anonymous. Paint the last confirmed account before GoTrue
+    // responds, but only while the auth cookie is still present. A snapshot
+    // without that cookie is a signed-out browser.
+    if (!d.user) {
+      if (headerChromeSignOutActive()) {
+        applyGuestHeader()
+        return
+      }
+      if (hasSupabaseAuthCookiesClient()) {
+        const remembered = readHeaderChromeSnapshot()
+        if (remembered) {
+          setUser(headerChromeSnapshotUser(remembered))
+          setProfileAvatarUrl(remembered.avatarUrl)
+          setProfileDisplayName(remembered.displayName)
+          setIsAdmin(remembered.isAdmin)
+          setIsEmployee(remembered.isEmployee === true)
+          setIsShipper(remembered.isShipper)
+          setIsDropoffLocation(remembered.isDropoffLocation)
+          setUnreadMessages(remembered.unreadMessages)
+          setUnreadSupport(remembered.unreadSupport)
+          setWalletBalance(remembered.walletBalance)
+          const rememberedShop =
+            remembered.shopAccess && remembered.shopAccess.actorUserId === remembered.userId
+              ? remembered.shopAccess
+              : null
+          shopAccessRef.current = rememberedShop
+          setShopAccess(rememberedShop)
+          setAuthLoaded(true)
+          return
+        }
+        setAuthLoaded(false)
+        return
+      }
+    }
 
     const isPartialBootstrap = Boolean(d.user && !d.authLoaded)
 
@@ -627,7 +743,9 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       setProfileAvatarUrl((prev) => prev ?? d.profileAvatarUrl)
       setProfileDisplayName((prev) => prev ?? d.profileDisplayName)
       setIsAdmin((prev) => (d.isAdmin ? d.isAdmin : prev))
+      setIsEmployee((prev) => (d.isEmployee ? d.isEmployee : prev))
       setIsShipper((prev) => (d.isShipper ? d.isShipper : prev))
+      setIsDropoffLocation((prev) => (d.isDropoffLocation ? d.isDropoffLocation : prev))
       applyServerUnread(d.unreadMessages, "partial")
       applyServerUnreadSupport(d.unreadSupport, "partial")
       setWalletBalance((prev) => {
@@ -640,7 +758,9 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       setProfileAvatarUrl(d.profileAvatarUrl)
       setProfileDisplayName(d.profileDisplayName)
       setIsAdmin(d.isAdmin)
+      setIsEmployee(d.isEmployee)
       setIsShipper(d.isShipper)
+      setIsDropoffLocation(d.isDropoffLocation)
       applyServerUnread(d.unreadMessages, "full")
       applyServerUnreadSupport(d.unreadSupport, "full")
       if (d.walletBalance !== null) {
@@ -667,6 +787,9 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
 
     // Never drop back to skeleton / logged-out chrome while the client session is still valid.
     setAuthLoaded(d.user ? d.authLoaded || Boolean(user) : d.authLoaded)
+    const serverShop = d.user ? (serverHeaderAuth.bootstrap?.shopAccess ?? null) : null
+    shopAccessRef.current = serverShop
+    setShopAccess(serverShop)
 
     if (isPartialBootstrap && user) {
       void refetchFromClient()
@@ -675,10 +798,26 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [headerAuthDigest])
 
+  useLayoutEffect(() => {
+    // Hold the pre-paint avatar until the remembered account is in React state.
+    // A snapshot with no auth cookie is not a session — show guest chrome.
+    if (
+      !headerChromeSignOutActive() &&
+      hasSupabaseAuthCookiesClient() &&
+      readHeaderChromeSnapshot() &&
+      !user
+    ) {
+      return
+    }
+    markHeaderChromeHydrated()
+  }, [user, authLoaded])
+
   const refetchFromClient = useCallback(async () => {
+    if (headerChromeSignOutActive()) return
     if (user) setAuthLoaded(true)
     try {
       const userResult = await getAuthUserWithRetry(supabase)
+      if (headerChromeSignOutActive()) return
       if (!userResult.ok) {
         if (!isAbortError(userResult.error)) {
           console.warn(
@@ -689,39 +828,49 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         return
       }
       const resolvedUser = userResult.user
+      if (headerChromeSignOutActive()) return
       setUser(resolvedUser)
       if (!resolvedUser) {
-        const guest = deriveHeaderNavState({ user: null, bootstrap: null })
-        setProfileAvatarUrl(guest.profileAvatarUrl)
-        setProfileDisplayName(guest.profileDisplayName)
-        setIsAdmin(guest.isAdmin)
-        setIsShipper(guest.isShipper)
-        setUnreadMessages(guest.unreadMessages)
-        setUnreadSupport(guest.unreadSupport)
-        clientWalletTotalRef.current = null
-        setWalletBalance(guest.walletBalance)
+        applyGuestHeader()
         return
       }
+      setAuthSessionReady(true)
 
-      const [{ data: profile }, shipperRes] = await Promise.all([
+      const shopGeneration = ++shopAccessRequestRef.current
+      const [{ data: profile }, shipperRes, dropoffRes, shopLoad] = await Promise.all([
         supabase
           .from("profiles")
           .select(
-            "is_admin, avatar_url, display_name, shop_logo_url, is_shop, unread_message_count, unread_support_count",
+            "is_admin, is_employee, avatar_url, display_name, shop_logo_url, is_shop, unread_message_count, unread_support_count",
           )
           .eq("id", resolvedUser.id)
           .single(),
         supabase.from("coastal_shippers").select("id").eq("user_id", resolvedUser.id).maybeSingle(),
+        supabase.from("dropoff_location_grants").select("id").eq("user_id", resolvedUser.id).maybeSingle(),
+        loadHeaderShopAccess(supabase, resolvedUser.id, resolvedUser.email ?? null),
       ])
+      if (headerChromeSignOutActive()) return
+      if (shopGeneration === shopAccessRequestRef.current && shopLoad.ok) {
+        shopAccessRef.current = shopLoad.access
+        setShopAccess(shopLoad.access)
+      }
+      const isShipperMember = coastalShipperMembership({
+        rowId: shipperRes.data?.id,
+        queryFailed: Boolean(shipperRes.error),
+      })
+      const isDropoffMember = dropoffLocationMembership({
+        rowId: dropoffRes.data?.id,
+        queryFailed: Boolean(dropoffRes.error),
+      })
+      const nextAvatarUrl = resolveHeaderAvatarUrl(resolvedUser, profile)
+      const nextDisplayName =
+        typeof profile?.display_name === "string" ? profile.display_name : null
       setIsAdmin(profile?.is_admin || false)
-      setIsShipper(
-        coastalShipperMembership({
-          rowId: shipperRes.data?.id,
-          queryFailed: Boolean(shipperRes.error),
-        }),
-      )
-      setProfileAvatarUrl(resolveHeaderAvatarUrl(resolvedUser, profile))
-      setProfileDisplayName(profile?.display_name || null)
+      setIsEmployee(profile?.is_employee === true)
+      setIsShipper(isShipperMember)
+      setIsDropoffLocation(isDropoffMember)
+      setProfileAvatarUrl(nextAvatarUrl)
+      setProfileDisplayName(nextDisplayName)
       {
         const nextUnread = Number(profile?.unread_message_count ?? 0)
         setUnreadMessages((prev) => {
@@ -738,6 +887,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         .select("balance, pending_balance, lifetime_earned, lifetime_spent, lifetime_cashed_out")
         .eq("user_id", resolvedUser.id)
         .single()
+      if (headerChromeSignOutActive()) return
       const total = wallet ? walletTotalBalanceUsd(wallet) : 0
       setWalletBalance(total)
       if (
@@ -746,10 +896,33 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       ) {
         clientWalletTotalRef.current = null
       }
+      if (profile && !headerChromeSignOutActive()) {
+        const persistedAvatar = headerChromeAvatarCssValue(nextAvatarUrl) ? nextAvatarUrl : null
+        const persistedName = nextDisplayName?.trim().slice(0, 80) || null
+        const shopForSnapshot =
+          shopGeneration === shopAccessRequestRef.current && shopLoad.ok
+            ? shopLoad.access
+            : shopAccessRef.current
+        writeHeaderChromeSnapshot({
+          v: 1,
+          userId: resolvedUser.id,
+          email: resolvedUser.email ?? null,
+          displayName: persistedName,
+          avatarUrl: persistedAvatar,
+          isAdmin: profile.is_admin === true,
+          isEmployee: profile.is_employee === true,
+          isShipper: isShipperMember,
+          isDropoffLocation: isDropoffMember,
+          unreadMessages: Math.max(0, Number(profile.unread_message_count ?? 0) || 0),
+          unreadSupport: Math.max(0, Number(profile.unread_support_count ?? 0) || 0),
+          walletBalance: total,
+          ...(shopForSnapshot ? { shopAccess: shopForSnapshot } : {}),
+        })
+      }
     } finally {
       setAuthLoaded(true)
     }
-  }, [supabase, user])
+  }, [applyGuestHeader, supabase, user])
 
   useEffect(() => {
     if (authLoaded) return
@@ -757,8 +930,9 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     void refetchFromClient()
   }, [authLoaded, user, refetchFromClient])
 
-  /** Cached HTML is anonymous. Fill the account menu when the browser has a session. */
+  /** Cached HTML is anonymous. Confirm the session when this browser still has an auth cookie. */
   useEffect(() => {
+    if (headerChromeSignOutActive()) return
     if (serverHeaderAuth.user) return
     if (!hasSupabaseAuthCookiesClient()) return
     void refetchFromClient()
@@ -786,6 +960,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
 
   useEffect(() => {
     function onHeaderAuthRefresh(event: Event) {
+      if (headerChromeSignOutActive()) return
       const detail = (event as CustomEvent<HeaderAuthRefreshDetail>).detail
       if (detail?.displayName?.trim()) {
         setProfileDisplayName(detail.displayName.trim())
@@ -808,10 +983,24 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     window.addEventListener(HEADER_AUTH_REFRESH_EVENT, onHeaderAuthRefresh)
 
     async function refreshUnreadCount() {
+      if (headerChromeSignOutActive()) return
+      // Another tab can revoke the session without a storage event landing
+      // after the cookies are gone. A snapshot with no auth cookie is guest.
+      if (!hasSupabaseAuthCookiesClient()) {
+        if (readHeaderChromeSnapshot()) {
+          beginHeaderChromeSignOut()
+          applyGuestHeader()
+          void supabase.auth.signOut({ scope: "local" }).then(
+            () => undefined,
+            () => undefined,
+          )
+        }
+        return
+      }
       const {
         data: { user: u },
       } = await supabase.auth.getUser()
-      if (!u) return
+      if (headerChromeSignOutActive() || !u) return
       const { data: profile } = await supabase
         .from("profiles")
         .select("unread_message_count, unread_support_count")
@@ -828,6 +1017,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     }
 
     function onUnreadCountAdjust(event: Event) {
+      if (headerChromeSignOutActive()) return
       const delta = (event as CustomEvent<UnreadMessageCountAdjustDetail>).detail?.delta
       if (typeof delta !== "number" || !Number.isFinite(delta) || delta === 0) return
       if (delta < 0) preferClientUnreadRef.current = true
@@ -838,35 +1028,50 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       if (document.visibilityState === "visible") void refreshUnreadCount()
     }
 
+    function onSnapshotStorage(event: StorageEvent) {
+      if (event.key !== HEADER_CHROME_SNAPSHOT_STORAGE_KEY) return
+      if (event.newValue) return
+      if (hasSupabaseAuthCookiesClient()) return
+      beginHeaderChromeSignOut()
+      applyGuestHeader()
+      void supabase.auth.signOut({ scope: "local" }).then(
+        () => undefined,
+        () => undefined,
+      )
+    }
+
+    function onHeaderSignedOut() {
+      applyGuestHeader()
+    }
+
     window.addEventListener(UNREAD_COUNT_REFRESH_EVENT, refreshUnreadCount)
     window.addEventListener(UNREAD_MESSAGE_COUNT_ADJUST_EVENT, onUnreadCountAdjust)
     document.addEventListener("visibilitychange", onVisibilityUnreadRefresh)
     window.addEventListener("focus", refreshUnreadCount)
+    window.addEventListener("storage", onSnapshotStorage)
+    window.addEventListener(HEADER_CHROME_SIGN_OUT_EVENT, onHeaderSignedOut)
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "INITIAL_SESSION") {
-        if (session?.user) {
-          setUser(session.user)
-          void refetchFromClient()
-        }
+      if (event === "SIGNED_OUT") {
+        applyGuestHeader()
+        // A full navigation is already in flight. Refreshing here races the
+        // sign-out redirect and can paint the remembered account again.
+        if (!headerChromeSignOutActive()) router.refresh()
         return
       }
 
-      if (event === "SIGNED_OUT") {
-        const guest = deriveHeaderNavState({ user: null, bootstrap: null })
-        setUser(guest.user)
-        setProfileAvatarUrl(guest.profileAvatarUrl)
-        setProfileDisplayName(guest.profileDisplayName)
-        setIsAdmin(guest.isAdmin)
-        setIsShipper(guest.isShipper)
-        setUnreadMessages(guest.unreadMessages)
-        setUnreadSupport(guest.unreadSupport)
-        clientWalletTotalRef.current = null
-        setWalletBalance(guest.walletBalance)
-        setAuthLoaded(true)
-        router.refresh()
+      // Ignore token recovery while this document is signing out. A later
+      // SIGNED_IN (this tab signed in again) is allowed through.
+      if (headerChromeSignOutActive() && event !== "SIGNED_IN") return
+
+      if (event === "INITIAL_SESSION") {
+        if (session?.user) {
+          setAuthSessionReady(true)
+          setUser(session.user)
+          void refetchFromClient()
+        }
         return
       }
 
@@ -874,6 +1079,8 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         (event === "SIGNED_IN" || event === "USER_UPDATED") &&
         session?.user
       ) {
+        if (event === "SIGNED_IN") allowHeaderChromeSignIn()
+        setAuthSessionReady(true)
         setUser(session.user)
         setAuthLoaded(true)
         void refetchFromClient()
@@ -886,13 +1093,38 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       window.removeEventListener(UNREAD_MESSAGE_COUNT_ADJUST_EVENT, onUnreadCountAdjust)
       document.removeEventListener("visibilitychange", onVisibilityUnreadRefresh)
       window.removeEventListener("focus", refreshUnreadCount)
+      window.removeEventListener("storage", onSnapshotStorage)
+      window.removeEventListener(HEADER_CHROME_SIGN_OUT_EVENT, onHeaderSignedOut)
       subscription.unsubscribe()
     }
-  }, [supabase, router, refetchFromClient])
+  }, [applyGuestHeader, supabase, router, refetchFromClient])
+
+  /**
+   * Back/forward can restore a signed-in page from bfcache after sign-out
+   * already dropped the session. The boot script does not run again, so reset
+   * when this document was signing out or the snapshot is still here with no
+   * auth cookie.
+   */
+  useEffect(() => {
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (!event.persisted) return
+      if (hasSupabaseAuthCookiesClient() && !headerChromeSignOutActive()) return
+      if (!headerChromeSignOutActive() && !readHeaderChromeSnapshot()) return
+      clearSupabaseAuthCookiesClient()
+      beginHeaderChromeSignOut()
+      applyGuestHeader()
+      void supabase.auth.signOut({ scope: "local" }).then(
+        () => undefined,
+        () => undefined,
+      )
+    }
+    window.addEventListener("pageshow", onPageShow)
+    return () => window.removeEventListener("pageshow", onPageShow)
+  }, [applyGuestHeader, supabase])
 
   /** Messaging profile and conversations — one Realtime channel per signed-in tab. */
   useEffect(() => {
-    if (!user?.id) return
+    if (!user?.id || !authSessionReady) return
     const applyUnreadFromProfileRow = (row: unknown) => {
       if (!row || typeof row !== "object") return false
       const raw = (row as { unread_message_count?: unknown }).unread_message_count
@@ -966,11 +1198,11 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       if (unreadRefreshTimer) clearTimeout(unreadRefreshTimer)
       void supabase.removeChannel(channel)
     }
-  }, [supabase, user?.id])
+  }, [supabase, user?.id, authSessionReady])
 
   /** Lightweight wallet + unread resync on route changes — catches Realtime misses. */
   useEffect(() => {
-    if (!user?.id) return
+    if (!user?.id || !authSessionReady) return
     let cancelled = false
     supabase
       .from("wallets")
@@ -1008,7 +1240,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         if (Number.isFinite(nextSupport)) setUnreadSupport(Math.max(0, nextSupport))
       })
     return () => { cancelled = true }
-  }, [supabase, user?.id, pathname])
+  }, [supabase, user?.id, pathname, authSessionReady])
 
   useBodyScrollLock(mobileMenuOpen)
 
@@ -1052,13 +1284,24 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     setMobileMenuOpen(false)
   }, [])
 
-  const handleSignOut = useCallback(async () => {
-    setUser(null)
-    setAuthLoaded(true)
+  const onActiveShopAccount = useCallback((accountId: string | null) => {
+    shopAccessRequestRef.current += 1
+    setShopAccess((current) => {
+      const next = current ? headerShopAccessWithActiveAccount(current, accountId) : current
+      shopAccessRef.current = next
+      return next
+    })
+  }, [])
+
+  const handleSignOut = useCallback(() => {
     setMobileMenuOpen(false)
     forceReleaseBodyScrollLock()
+    // Paint Log in / hide messages before the sign-out navigation. A full
+    // page load freezes the current frame, so this state has to be committed
+    // first — `signOutAndRedirect` yields while the local session ends.
+    applyGuestHeader()
     signOutAndRedirect()
-  }, [])
+  }, [applyGuestHeader])
 
   const accountMenu =
     user ? (
@@ -1072,7 +1315,11 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         walletBalance={walletBalance}
         unreadSupport={unreadSupport}
         isAdmin={isAdmin}
+        isEmployee={isEmployee}
         isShipper={isShipper}
+        isDropoffLocation={isDropoffLocation}
+        shopAccess={shopAccess}
+        onActiveAccountChange={onActiveShopAccount}
         onSignOut={handleSignOut}
       />
     ) : null
@@ -1087,8 +1334,18 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
   const isAdminChrome =
     pathname !== null && (pathname === "/admin" || pathname.startsWith("/admin/"))
 
+  const workingOnAccountBanner =
+    shopAccess?.actingAsShop === true ? (
+      <WorkingOnAccountBanner
+        shopLabel={shopAccess.shopLabel}
+        onExited={() => onActiveShopAccount(null)}
+      />
+    ) : null
+
   if (isAdminChrome) {
     return (
+      <>
+      {workingOnAccountBanner}
       <header
         ref={headerShellRef}
         onClick={onHeaderShellClick}
@@ -1097,29 +1354,35 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         <div className="container mx-auto flex min-h-[56px] min-w-0 items-center justify-between gap-4 px-4 py-2 sm:min-h-[64px] md:min-h-[80px] sm:px-6">
           <SiteWordmarkLink href="/admin/home" />
           <div className="flex shrink-0 items-center justify-end">
-            {!authLoaded ? (
-              <Skeleton className="h-9 w-9 shrink-0 rounded-full" aria-hidden />
-            ) : user && accountMenu ? (
-              accountMenu
-            ) : authLoaded ? (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-10 w-10 shrink-0 text-foreground"
-                onClick={() => openLogin()}
-                aria-label="Log in or sign up"
-              >
-                <User className="h-6 w-6" />
-              </Button>
-            ) : null}
+            <div data-rw-guest-auth className="flex shrink-0 items-center justify-end">
+              {!authLoaded ? (
+                <Skeleton className="h-9 w-9 shrink-0 rounded-full" aria-hidden />
+              ) : user && accountMenu ? (
+                accountMenu
+              ) : authLoaded ? (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 shrink-0 text-foreground"
+                  onClick={() => openLogin()}
+                  aria-label="Log in or sign up"
+                >
+                  <User className="h-6 w-6" />
+                </Button>
+              ) : null}
+            </div>
+            <HeaderKnownAuthPreview />
           </div>
         </div>
       </header>
+      </>
     )
   }
 
   if (isMinimalNavChrome) {
     return (
+      <>
+      {workingOnAccountBanner}
       <header
         ref={headerShellRef}
         onClick={onHeaderShellClick}
@@ -1128,6 +1391,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         <div className="container mx-auto flex min-h-[56px] min-w-0 items-center justify-between gap-4 px-4 py-2 sm:min-h-[64px] md:min-h-[80px] sm:px-6">
           <SiteWordmarkLink />
           <div className="flex shrink-0 items-center justify-end gap-0.5 sm:gap-1">
+            <div data-rw-guest-auth className="flex shrink-0 items-center justify-end gap-0.5 sm:gap-1">
             {!authLoaded ? (
               <Skeleton className="h-9 w-9 shrink-0 rounded-full" aria-hidden />
             ) : user && accountMenu ? (
@@ -1167,14 +1431,18 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                 </Button>
               )
             ) : null}
+            </div>
+            <HeaderKnownAuthPreview />
           </div>
         </div>
       </header>
+      </>
     )
   }
 
   return (
     <>
+      {workingOnAccountBanner}
       {/* CLS-FIX: explicit min-h locks the header row height before fonts and
           auth state resolve, so content below never shifts vertically. */}
       <header
@@ -1200,6 +1468,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                   <SiteWordmarkLink compact className="px-1 py-1 sm:px-2 sm:py-1.5" />
                 </div>
                 <div
+                  data-rw-guest-auth
                   className={mobileActionRowClassName}
                   aria-busy={!authLoaded}
                   aria-label={!authLoaded ? "Loading navigation" : undefined}
@@ -1242,6 +1511,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                     </>
                   )}
                 </div>
+                <HeaderKnownAuthPreview />
               </div>
               {hideMobileBrowseChrome ? null : (
               <div className="flex min-w-0 items-center gap-2">
@@ -1319,6 +1589,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
               </PopoverContent>
             </Popover>
 
+            <div data-rw-guest-auth className="flex min-w-0 items-center gap-1 sm:gap-1.5 md:gap-0.5">
             {!authLoaded ? (
               <HeaderDesktopNavActionsSkeleton />
             ) : (
@@ -1350,8 +1621,8 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
             <Link
               href={
                 user
-                  ? "/dashboard/favorites"
-                  : `/auth/login?redirect=${encodeURIComponent("/dashboard/favorites")}`
+                  ? "/favorites"
+                  : `/auth/login?redirect=${encodeURIComponent("/favorites")}`
               }
               className="hidden lg:inline-flex"
               onClick={
@@ -1360,7 +1631,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                   : (e) => {
                       if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
                       e.preventDefault()
-                      openLogin("/dashboard/favorites")
+                      openLogin("/favorites")
                     }
               }
             >
@@ -1430,6 +1701,8 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
             )}
               </>
             )}
+            </div>
+            <HeaderKnownAuthPreview />
 
             {/* Menu toggle: phone & tablet only (below lg). Desktop/Mac use category bar + primary nav. */}
             {hideMobileBrowseChrome ? null : (

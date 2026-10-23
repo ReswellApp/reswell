@@ -20,6 +20,11 @@ import {
   type RateQuoteAddressFields,
 } from "@/lib/shipping/rate-address"
 import { validateLabelParcelEntry } from "@/lib/shipping/surfboard-label-limits"
+import {
+  suggestedDropoffParcelFromListing,
+  type DropoffQuoteListing,
+} from "@/lib/dropoff-quote-parcel"
+import { fetchSellerShipFromLabelName } from "@/lib/db/sellerShipFromLabel"
 import { resolveSellerShipFromAddress } from "@/lib/services/sellerShipFromAddress"
 
 export type AdminExactParcel = {
@@ -231,6 +236,14 @@ export async function getAdminReplaceOrderShippingLabelOverview(params: {
           isDefault: boolean
           fields: AdminReplaceLabelAddress
         }>
+        /** Drop-off location box, ready to paste into the exact-box form. */
+        suggestedParcel: {
+          lengthIn: string
+          widthIn: string
+          heightIn: string
+          weightLb: string
+          weightOz: string
+        } | null
       }
     }
   | { ok: false; error: string; status: number }
@@ -256,9 +269,29 @@ export async function getAdminReplaceOrderShippingLabelOverview(params: {
   const adminRows = await loadProfileAddresses(params.supabase, params.adminUserId)
   const shipFromSource: AdminReplaceShipFromSource =
     effectiveSellerRows.length > 0 ? "seller" : "admin"
+  const sellerLabelName =
+    shipFromSource === "seller"
+      ? await fetchSellerShipFromLabelName(params.supabase, order.seller_id)
+      : null
   const shipFromAddresses = (shipFromSource === "seller" ? effectiveSellerRows : adminRows).map(
-    toShipFromOption,
+    (row) => {
+      const option = toShipFromOption(row)
+      if (!sellerLabelName || sellerLabelName === "Seller") return option
+      return {
+        ...option,
+        fields: { ...option.fields, name: sellerLabelName, company_name: "" },
+      }
+    },
   )
+
+  const suggestedParcel = suggestedDropoffParcelFromListing(listing as DropoffQuoteListing)
+  const dropoffLocationId =
+    typeof listing.dropoff_location_id === "string" ? listing.dropoff_location_id.trim() : ""
+  if (dropoffLocationId && !suggestedParcel) {
+    warnings.push(
+      "This order uses a drop-off location. Enter the packed carton before you get rates.",
+    )
+  }
 
   if (shipFromAddresses.length === 0) {
     warnings.push("No saved ship-from address. Enter the origin below before getting rates.")
@@ -299,6 +332,7 @@ export async function getAdminReplaceOrderShippingLabelOverview(params: {
       warnings,
       shipFromSource,
       shipFromAddresses,
+      suggestedParcel,
     },
   }
 }

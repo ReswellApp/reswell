@@ -226,6 +226,25 @@ export async function dbCountUnresolvedShopifyInventoryJobs(
   return count ?? 0
 }
 
+export async function dbCountShopifySyncJobsByStatus(
+  supabase: SupabaseClient,
+  connectionId: string,
+): Promise<{ queued: number; retry: number; dead: number }> {
+  const statuses = ["queued", "retry", "dead"] as const
+  const counts = await Promise.all(
+    statuses.map(async (status) => {
+      const { count, error } = await supabase
+        .from("shopify_sync_jobs")
+        .select("id", { count: "exact", head: true })
+        .eq("connection_id", connectionId)
+        .eq("status", status)
+      if (error) throw new Error(error.message)
+      return count ?? 0
+    }),
+  )
+  return { queued: counts[0] ?? 0, retry: counts[1] ?? 0, dead: counts[2] ?? 0 }
+}
+
 export async function dbReviveDeadShopifyInventoryJobs(
   supabase: SupabaseClient,
   connectionId: string,
@@ -318,6 +337,7 @@ export async function dbListUnresolvedShopifyInventoryOrderIds(
 export async function dbCancelShopifyInventoryJobsForConnection(
   supabase: SupabaseClient,
   connectionId: string,
+  reason = "Reswell order compensated after Shopify disconnect",
 ): Promise<void> {
   const { error } = await supabase
     .from("shopify_sync_jobs")
@@ -326,7 +346,7 @@ export async function dbCancelShopifyInventoryJobsForConnection(
       locked_until: null,
       worker_id: null,
       completed_at: new Date().toISOString(),
-      last_error: "Reswell order compensated after Shopify disconnect",
+      last_error: reason,
       updated_at: new Date().toISOString(),
     })
     .eq("connection_id", connectionId)

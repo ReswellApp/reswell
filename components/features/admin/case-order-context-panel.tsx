@@ -328,6 +328,8 @@ export function CaseOrderContextPanel({
         {shipToLine ? <p>Ship to: {shipToLine}</p> : null}
         {extras?.hasShippingLabel ? (
           <AdminShippingLabelPreviewButton orderId={detail.id} className="pt-1" />
+        ) : extras?.hasPaperlessQr ? (
+          <p>USPS QR code for the purchased label is on the order page.</p>
         ) : detail.fulfillment_method === "shipping" ? (
           <p>No shipping label on file for this order.</p>
         ) : null}

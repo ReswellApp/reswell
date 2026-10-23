@@ -126,6 +126,7 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
   const staticPages: SitemapUrlEntry[] = [
     { url: `${BASE}/`, lastModified: now, changeFrequency: "daily", priority: 1.0 },
     { url: `${BASE}/boards`, lastModified: now, changeFrequency: "daily", priority: 1.0 },
+    { url: `${BASE}/explore`, lastModified: now, changeFrequency: "daily", priority: 0.7 },
     { url: `${BASE}/fins`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
     { url: `${BASE}/wetsuits`, lastModified: now, changeFrequency: "daily", priority: 0.75 },
     { url: `${BASE}/boardbags`, lastModified: now, changeFrequency: "daily", priority: 0.75 },
@@ -155,7 +156,6 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
     { url: `${BASE}/for-surf-shops`, lastModified: now, changeFrequency: "weekly", priority: 0.6 },
     { url: `${BASE}/priceguide`, lastModified: now, changeFrequency: "daily", priority: 0.7 },
     { url: `${BASE}/board-finder`, lastModified: now, changeFrequency: "weekly", priority: 0.6 },
-    { url: `${BASE}/giveaways`, lastModified: now, changeFrequency: "weekly", priority: 0.55 },
     { url: `${BASE}/we-buy`, lastModified: now, changeFrequency: "weekly", priority: 0.65 },
     { url: `${BASE}/blog`, lastModified: now, changeFrequency: "weekly", priority: 0.45 },
     { url: `${BASE}/faq`, lastModified: now, changeFrequency: "weekly", priority: 0.5 },
@@ -175,6 +175,7 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
       priority: 0.45,
     })),
     { url: `${BASE}/public-api`, lastModified: now, changeFrequency: "monthly", priority: 0.4 },
+    { url: `${BASE}/connect`, lastModified: now, changeFrequency: "monthly", priority: 0.4 },
     { url: `${BASE}/llms.txt`, lastModified: now, changeFrequency: "monthly", priority: 0.35 },
     { url: `${BASE}/openapi.json`, lastModified: now, changeFrequency: "monthly", priority: 0.4 },
     { url: `${BASE}/contact`, lastModified: now, changeFrequency: "monthly", priority: 0.35 },

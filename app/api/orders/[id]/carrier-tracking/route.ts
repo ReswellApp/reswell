@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
 import { getOrderCarrierTrackingForParticipant } from "@/lib/services/orderCarrierTracking"
+import { loadOrderOperator } from "@/lib/account-access/order-operator-session"
 import { persistOrderCarrierTrackingSnapshot } from "@/lib/services/persistOrderCarrierTracking"
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -21,7 +22,17 @@ export async function GET(_request: NextRequest, props: { params: Promise<{ id: 
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const result = await getOrderCarrierTrackingForParticipant(supabase, orderId.trim(), user.id)
+  const operating = await loadOrderOperator()
+  if (!operating.ok) {
+    return NextResponse.json({ error: operating.error }, { status: operating.status })
+  }
+
+  const result = await getOrderCarrierTrackingForParticipant(
+    supabase,
+    orderId.trim(),
+    user.id,
+    operating.operator.sellerIds,
+  )
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: result.status })
   }

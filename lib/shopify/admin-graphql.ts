@@ -40,13 +40,18 @@ export async function shopifyGraphqlRequest<T>(input: {
   query: string
   variables?: Record<string, unknown>
   signal?: AbortSignal
+  idempotencyKey?: string
 }): Promise<T> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "X-Shopify-Access-Token": input.accessToken,
+  }
+  if (input.idempotencyKey?.trim()) {
+    headers["Idempotency-Key"] = input.idempotencyKey.trim()
+  }
   const response = await fetch(shopifyGraphqlEndpoint(input.shopDomain), {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Shopify-Access-Token": input.accessToken,
-    },
+    headers,
     body: JSON.stringify({
       query: input.query,
       variables: input.variables ?? {},

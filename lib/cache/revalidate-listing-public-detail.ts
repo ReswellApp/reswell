@@ -23,6 +23,20 @@ function expireListingPublicDetailParams(params: Array<string | null | undefined
 }
 
 /**
+ * Expire one concrete `/l/...` URL.
+ *
+ * A second `"page"` argument writes a `/l/slug/page` tag. That tag is never
+ * attached to `app/l/[listing]`. The hourly ISR shell is tagged with the
+ * concrete URL, so the type argument left the previous listing on screen
+ * until the hour elapsed.
+ */
+function revalidateConcreteListingPath(path: string): void {
+  const trimmed = path.trim()
+  if (!trimmed.startsWith("/l/")) return
+  revalidatePath(trimmed)
+}
+
+/**
  * Invalidate `/l/[listing]` after publish, sold, hide, or vacation.
  * Hard-expires this listing's Data Cache so a hide cannot re-bake a public PDP
  * from a stale `hidden_from_site: false` row. Does not bust the global catalog tag.
@@ -34,10 +48,10 @@ export function revalidateListingDetailPage(listingId: string, slug?: string | n
     id: trimmedId,
     slug: trimmedSlug || undefined,
   })
-  revalidatePath(primary, "page")
+  revalidateConcreteListingPath(primary)
 
-  if (trimmedSlug !== "") {
-    revalidatePath(`/l/${trimmedId}`, "page")
+  if (trimmedSlug !== "" && trimmedId !== "") {
+    revalidateConcreteListingPath(`/l/${trimmedId}`)
   }
 
   expireListingPublicDetailParams([trimmedId, trimmedSlug])

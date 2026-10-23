@@ -8,14 +8,15 @@ import {
   getSellerEarnings,
 } from "@/lib/seller-fees"
 import { cn } from "@/lib/utils"
+import {
+  parseSellListingPrice,
+  sellListingPriceIsPublishable,
+} from "@/lib/utils/sell-listing-price"
 
 /** Parses the raw price input the same way `SellPriceFields` treats it. */
 function parseListingPrice(raw: string): number | null {
-  const t = raw.trim().replace(/,/g, "")
-  if (!t) return null
-  const n = Number.parseFloat(t)
-  if (!Number.isFinite(n) || n < 0.01 || n > 999_999.99) return null
-  return n
+  if (!sellListingPriceIsPublishable(raw)) return null
+  return parseSellListingPrice(raw)
 }
 
 function formatUsd(value: number): string {

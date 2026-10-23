@@ -1,7 +1,10 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import { WIN_A_SURFBOARD_GIVEAWAY_SLUG } from "@/lib/giveaways/catalog"
+import {
+  SURFBOARD_GIVEAWAY_CAMPAIGN_ENABLED,
+  WIN_A_SURFBOARD_GIVEAWAY_SLUG,
+} from "@/lib/giveaways/catalog"
 import {
   clearGiveawayEntryIntent,
   parseGiveawayBrandParam,
@@ -23,6 +26,12 @@ export function GiveawayEntryBootstrap({ isLoggedIn }: { isLoggedIn: boolean }) 
     const urlBrand = parseGiveawayBrandParam(params.get("brand"))
     const stored = readGiveawayEntryIntent()
     if (!fromGiveaway && !stored) return
+
+    if (!SURFBOARD_GIVEAWAY_CAMPAIGN_ENABLED) {
+      clearGiveawayEntryIntent()
+      dismissGiveawaySignupPopup()
+      return
+    }
 
     if (fromGiveaway) dismissGiveawaySignupPopup()
 

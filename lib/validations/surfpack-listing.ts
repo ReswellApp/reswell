@@ -1,4 +1,6 @@
 import { z } from "zod"
+import { sellListingPriceField } from "@/lib/validations/sell-listing-price"
+import { listingStockQuantityField } from "@/lib/validations/listing-stock-quantity"
 import { addReswellPackedWeightZodIssues } from "@/lib/validations/reswell-packed-weight"
 import {
   listingRemovedVideoIdsSchema,
@@ -42,8 +44,9 @@ const surfpackListingImageSchema = z.object({
 const surfpackListingBaseSchema = z.object({
   title: z.string().trim().min(3, "Add a title").max(SURFPACK_LISTING_TITLE_MAX_LENGTH),
   description: z.string().trim().min(1, "Add a description"),
-  price: z.coerce.number().positive("Enter a price greater than $0"),
+  price: sellListingPriceField,
   condition: z.enum(sellableConditions),
+  stockQuantity: listingStockQuantityField,
 
   size: optionalSlug(surfpackSizeValues),
 

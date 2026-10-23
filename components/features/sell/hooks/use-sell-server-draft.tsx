@@ -32,6 +32,7 @@ import {
 import { sellDraftFormLooksFilled, type SellListingDraftFormSnapshot } from "@/lib/sell-listing-draft-idb"
 import { resolveClientSessionForMutation } from "@/lib/auth/resolve-client-session-for-mutation"
 import { claimGuestListingDraftsClient } from "@/lib/sell-flow/claim-guest-listing-drafts"
+import { draftSaveTargetsStaleListing } from "@/lib/sell-flow/draft-save-retry"
 
 export type UseSellServerDraftOptions = {
   section: SellDraftSection
@@ -167,48 +168,77 @@ export function useSellServerDraft(options: UseSellServerDraftOptions): UseSellS
     return null
   }, [listingIsDraft, localServerDraftId, options.editId])
 
-  type PersistDraftResult = { ok: false } | { ok: true; listingId: string }
+  type PersistDraftResult =
+    | { ok: false; reason: "busy" | "published" | "error" }
+    | { ok: true; listingId: string }
+
+  async function readDraftErrorMessage(res: Response): Promise<string> {
+    try {
+      const json = (await res.json()) as { error?: unknown }
+      return typeof json.error === "string" ? json.error : ""
+    } catch {
+      return ""
+    }
+  }
 
   const allowUnsigned = options.allowUnsigned === true
   const syncEditUrl = options.syncEditUrl !== false
 
   const persistServerDraft = useCallback(
     async (opts?: { keepalive?: boolean }): Promise<PersistDraftResult> => {
-      if (!options.draftHydrated) return { ok: false }
-      if (options.editLoading) return { ok: false }
-      if (getImpersonation()) return { ok: false }
+      if (!options.draftHydrated || options.editLoading) return { ok: false, reason: "busy" }
+      if (getImpersonation()) return { ok: false, reason: "error" }
       const session = await resolveClientSessionForMutation(options.supabase)
       const signedIn = Boolean(session?.user && session.access_token)
       // Guests either save via guest-token drafts (`allowUnsigned`) or keep a
       // local IDB snapshot — never interrupt the form with an auth toast here.
       // Explicit "Save draft" uses {@link handleSaveDraft} for messaging.
       if (!signedIn && !allowUnsigned) {
-        return { ok: false }
+        return { ok: false, reason: "error" }
       }
-      if (options.editId && !listingIsDraft) return { ok: false }
+      if (options.editId && !listingIsDraft) return { ok: false, reason: "published" }
 
       const hasDraftableContent =
         options.imagesRef.current.length > 0 || options.formLooksFilled()
-      if (!hasDraftableContent) return { ok: false }
+      if (!hasDraftableContent) return { ok: false, reason: "error" }
 
-      const body = options.buildDraftPayload(options.editId ?? localServerDraftIdRef.current)
-      const init: RequestInit = {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+      const postDraft = (payload: Record<string, unknown>) => {
+        const init: RequestInit = {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+        if (opts?.keepalive) init.keepalive = true
+        return fetch("/api/listings/draft", init)
       }
-      if (opts?.keepalive) init.keepalive = true
 
       setDraftSaveStatus("saving")
-      const res = await fetch("/api/listings/draft", init)
+      const listingIdForSave = options.editId ?? localServerDraftIdRef.current
+      let body = options.buildDraftPayload(listingIdForSave)
+      let res = await postDraft(body)
       if (!res.ok) {
-        if (res.status === 404 || res.status === 403) {
+        const message = await readDraftErrorMessage(res)
+        const stale = draftSaveTargetsStaleListing(
+          res.status,
+          message,
+          Boolean(listingIdForSave),
+        )
+        if (stale && !options.editId) {
           clearSellServerDraftListingId(options.section)
+          localServerDraftIdRef.current = null
+          setLocalServerDraftId(null)
+          body = options.buildDraftPayload(null)
+          res = await postDraft(body)
+        } else if (res.status === 403) {
+          clearSellServerDraftListingId(options.section)
+          localServerDraftIdRef.current = null
           setLocalServerDraftId(null)
         }
+      }
+      if (!res.ok) {
         setDraftSaveStatus("error")
-        return { ok: false }
+        return { ok: false, reason: "error" }
       }
       const json = (await res.json()) as { data?: { id?: string } }
       const id = json?.data?.id
@@ -218,10 +248,11 @@ export function useSellServerDraft(options: UseSellServerDraftOptions): UseSellS
           : options.editId ?? localServerDraftIdRef.current ?? ""
       if (!resolvedId) {
         setDraftSaveStatus("error")
-        return { ok: false }
+        return { ok: false, reason: "error" }
       }
       setSellServerDraftListingId(options.section, resolvedId)
       const wasNewDraft = !options.editId && !localServerDraftIdRef.current
+      localServerDraftIdRef.current = resolvedId
       setLocalServerDraftId(resolvedId)
       if (!options.editId && syncEditUrl) {
         replaceSellDraftEditUrl(options.section, resolvedId)
@@ -258,7 +289,6 @@ export function useSellServerDraft(options: UseSellServerDraftOptions): UseSellS
       const slots = options.imagesRef.current
       if (!listingPhotosReadyForDraftSync(slots)) return
       const { nextSlots, didInsert } = await syncListingDraftImagesClient(
-        options.supabase,
         listingId,
         slots,
         options.removedImageIdsRef.current,
@@ -319,6 +349,11 @@ export function useSellServerDraft(options: UseSellServerDraftOptions): UseSellS
     }
     const result = await persistServerDraft()
     if (!result.ok) {
+      if (result.reason === "busy") return
+      if (result.reason === "published") {
+        toast.message("This listing is already live — publish to save these changes.")
+        return
+      }
       toast.error("Failed to save draft — please try again")
       return
     }
@@ -391,7 +426,7 @@ export function useSellServerDraft(options: UseSellServerDraftOptions): UseSellS
         const savedId =
           typeof json?.data?.id === "string" && json.data.id ? json.data.id : outgoingId
         if (signedIn && savedId && listingPhotosReadyForDraftSync(slots)) {
-          await syncListingDraftImagesClient(options.supabase, savedId, slots, removedIds)
+          await syncListingDraftImagesClient(savedId, slots, removedIds)
         }
         void reloadDrafts()
       } catch {
@@ -521,6 +556,7 @@ export function useSellServerDraft(options: UseSellServerDraftOptions): UseSellS
         }
         disabled={
           options.loading ||
+          options.editLoading ||
           options.startNewListingBusy === true ||
           options.optimizingAny === true ||
           !options.draftHydrated ||

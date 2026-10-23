@@ -1,16 +1,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { SoldFeedListing } from "@/app/sold/sold-page-client"
 import { MARKETPLACE_SOLD_FEED_SECTIONS } from "@/lib/db/home-recently-sold-strip"
-import { fetchAdminTerminalSoldListingIds } from "@/lib/db/admin-terminal-sold-feed"
 import { fetchShippedSurfboardSaleOrdering } from "@/lib/db/soldSurfboardShippingFulfillment"
 import { filterListingIdsMatchingBrand } from "@/lib/db/brand-listings"
 import { getBrandBySlug } from "@/lib/brands/server"
 import { sliceMarketplaceFeedPage } from "@/lib/marketplace-feed-tab"
 import { getSoldFeedStats } from "@/lib/feed-sold-stats"
-import { formatGmv } from "@/lib/format-gmv"
 import { boardLengthLabelFromDimensionsColumn } from "@/lib/listing-dimensions-storage"
 import { publicListingListPriceUsd } from "@/lib/utils/public-listing-price"
-import { isListingVisibleInPublicSoldFeed } from "@/lib/listing-public-visibility"
+import { soldFeedShowsSaleQuantity, soldFeedTilePrice } from "@/lib/sold-feed-sale-label"
 import {
   listingCoverImageForCard,
   listingImagesFromPrimaryFields,
@@ -18,6 +16,7 @@ import {
 import {
   fetchMarketplaceSoldFeedOrderPage,
   type MarketplaceSoldFeedCursor,
+  type MarketplaceSoldFeedSale,
 } from "@/lib/db/marketplace-sold-feed"
 
 export const MARKETPLACE_SOLD_FEED_LIMIT = 40
@@ -43,7 +42,8 @@ const SOLD_LISTING_SELECT = `
 
 export type MarketplaceSoldFeedPayload = {
   soldListings: SoldFeedListing[]
-  soldStats: { count: number; gmvFormatted: string }
+  /** Raw GMS total; format on read for the banner. */
+  soldStats: { count: number; gmvTotal: number }
   brandFilterName: string | null
   brandUnknown: boolean
   hasMore: boolean
@@ -66,21 +66,25 @@ export type MarketplaceShippedFeedPayload = {
 
 function mapSoldRow(
   row: Record<string, unknown>,
-  saleConfirmedAtIso: string | null,
+  sale: MarketplaceSoldFeedSale,
 ): SoldFeedListing {
   const dimStr = row.dimensions != null ? String(row.dimensions) : ""
   const boardLength = boardLengthLabelFromDimensionsColumn(dimStr) ?? null
-  const soldAtRaw = saleConfirmedAtIso ?? row.sold_at ?? row.updated_at
+  const soldAtRaw = sale.soldAt || row.sold_at || row.updated_at
   const soldAt = soldAtRaw ? String(soldAtRaw) : new Date().toISOString()
   const listPrice = publicListingListPriceUsd(row.price as string | number | null | undefined)
+  const showSaleQuantity = soldFeedShowsSaleQuantity(sale.quantity)
 
   return {
     id: String(row.id),
+    saleLineId: sale.saleLineId,
     slug: row.slug != null ? String(row.slug) : null,
     user_id: String(row.user_id),
     title: String(row.title ?? ""),
     price: listPrice,
-    soldPrice: listPrice,
+    soldPrice: soldFeedTilePrice(listPrice, sale.quantity, sale.lineTotal),
+    quantitySold: sale.quantity,
+    showSaleQuantity,
     condition: String(row.condition ?? ""),
     section: String(row.section ?? "surfboards"),
     city: row.city != null ? String(row.city) : null,
@@ -99,47 +103,34 @@ function mapSoldRow(
   }
 }
 
+/** Attach listing display fields to confirmed sale lines returned by the sold-feed RPC. */
 async function hydrateSoldFeedListings(
   supabase: SupabaseClient,
-  orderedListingIds: readonly string[],
-  confirmedAtIsoByListingId: Map<string, string>,
+  sales: readonly MarketplaceSoldFeedSale[],
 ): Promise<SoldFeedListing[]> {
-  if (orderedListingIds.length === 0) return []
+  if (sales.length === 0) return []
 
+  const orderedListingIds = [...new Set(sales.map((sale) => sale.listingId))]
   const { data, error } = await supabase
     .from("listings")
-    .select(`${SOLD_LISTING_SELECT}, hidden_from_site, archived_at`)
-    .in("id", [...orderedListingIds])
-    .eq("status", "sold")
+    .select(SOLD_LISTING_SELECT)
+    .in("id", orderedListingIds)
+    .in("status", ["sold", "active"])
 
   if (error) {
     console.error("[marketplaceSoldFeed] listings fetch:", error.message)
     throw new Error("Unable to load sold listings")
   }
 
-  const rows = (data ?? []) as Record<string, unknown>[]
-  const rowsById = new Map(rows.map((row) => [String(row.id), row]))
-  const adminTerminalSoldIds = await fetchAdminTerminalSoldListingIds(
-    supabase,
-    [...orderedListingIds],
+  const rowsById = new Map(
+    ((data ?? []) as Record<string, unknown>[]).map((row) => [String(row.id), row]),
   )
 
-  return orderedListingIds
-    .map((id) => {
-      const row = rowsById.get(id)
+  return sales
+    .map((sale) => {
+      const row = rowsById.get(sale.listingId)
       if (!row) return null
-      if (
-        !isListingVisibleInPublicSoldFeed({
-          title: String(row.title ?? ""),
-          status: String(row.status ?? "sold"),
-          hidden_from_site: row.hidden_from_site as boolean | null | undefined,
-          archived_at: row.archived_at as string | null | undefined,
-          soldViaAdminTerminal: adminTerminalSoldIds.has(id),
-        })
-      ) {
-        return null
-      }
-      return mapSoldRow(row, confirmedAtIsoByListingId.get(id) ?? null)
+      return mapSoldRow(row, sale)
     })
     .filter((listing): listing is SoldFeedListing => listing != null)
 }
@@ -165,11 +156,7 @@ export async function loadMarketplaceSoldFeedPage(
     brand: brand ? { id: brand.id, name: brand.name } : null,
   })
 
-  const soldListings = await hydrateSoldFeedListings(
-    supabase,
-    orderPage.orderedListingIds,
-    orderPage.confirmedAtIsoByListingId,
-  )
+  const soldListings = await hydrateSoldFeedListings(supabase, orderPage.sales)
 
   return {
     soldListings,
@@ -212,8 +199,13 @@ export async function loadMarketplaceShippedFeedPage(
   )
   const soldListings = await hydrateSoldFeedListings(
     supabase,
-    sliced.pageItems,
-    ordering.confirmedAtIsoByListingId,
+    sliced.pageItems.map((listingId) => ({
+      listingId,
+      soldAt: ordering.confirmedAtIsoByListingId.get(listingId) ?? "",
+      quantity: 1,
+      saleLineId: listingId,
+      lineTotal: null,
+    })),
   )
 
   return {
@@ -226,7 +218,7 @@ export async function loadMarketplaceShippedFeedPage(
   }
 }
 
-/** Public sold / shipped marketplace feed (no session). Tipped mark-as-sold listings are included via the sold-page RPC. */
+/** Public sold / shipped marketplace feed (no session). One tile per confirmed sale line. */
 export async function loadMarketplaceSoldFeed(
   supabase: SupabaseClient,
   brandSlug: string | null,
@@ -236,7 +228,7 @@ export async function loadMarketplaceSoldFeed(
     const shipped = await loadMarketplaceShippedFeedPage(supabase, brandSlug, 1)
     return {
       soldListings: shipped.soldListings,
-      soldStats: { count: shipped.totalCount, gmvFormatted: "" },
+      soldStats: { count: shipped.totalCount, gmvTotal: 0 },
       brandFilterName: shipped.brandFilterName,
       brandUnknown: shipped.brandUnknown,
       hasMore: shipped.totalPages > 1,
@@ -250,6 +242,6 @@ export async function loadMarketplaceSoldFeed(
   ])
   return {
     ...page,
-    soldStats: { count: stats.soldCount, gmvFormatted: formatGmv(stats.gmvTotal) },
+    soldStats: { count: stats.soldCount, gmvTotal: stats.gmvTotal },
   }
 }

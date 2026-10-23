@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
+import { revalidateMarketplaceNewListingsFeed } from "@/lib/cache/revalidate-marketplace-sold-feed"
 import { revalidateNavSearchSuggest } from "@/lib/cache/revalidate-nav-search-suggest"
 import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { syncListingToIndex } from "@/lib/elasticsearch/listings-index"
@@ -169,6 +170,7 @@ export async function publishImportListing(opts: {
   void notifyFollowersNewListingKlaviyo(listing.id)
 
   revalidateBoardsBrowseCatalog()
+  revalidateMarketplaceNewListingsFeed()
   await revalidateSellersAfterListingChange(supabase, userId)
   revalidateNavSearchSuggest()
 

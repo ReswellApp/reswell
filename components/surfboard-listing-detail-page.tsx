@@ -1,3 +1,5 @@
+import { peerBrandNewStockQuantity } from "@/lib/listing-stock-quantity"
+import { listingShippingPriceCaption } from "@/lib/listing-fulfillment"
 import { Suspense, type ComponentProps } from "react"
 import { notFound } from "next/navigation"
 import Link from "next/link"
@@ -16,7 +18,9 @@ import {
 import { renderListingDetailWithGuestFallback } from "@/lib/listing-detail-page-safe-render"
 import { getDb } from "@/lib/supabase/db"
 import { ShareButton } from "@/components/share-button"
-import { ListingOwnerManageActions } from "@/components/features/listings/listing-owner-manage-actions"
+import { ListingBuyerOnly } from "@/components/features/listings/listing-buyer-only"
+import { ListingOwnerHydratedManageActions } from "@/components/features/listings/listing-owner-hydrated-manage-actions"
+import { ListingProtectionRibbonSlot } from "@/components/features/listings/listing-protection-ribbon-slot"
 import { computeListingEnrichmentGaps } from "@/lib/sell-flow/listing-enrichment"
 import { Hourglass, Flag, Truck } from "lucide-react"
 import { ListingPhotosPendingBanner } from "@/components/listing-photos-pending-banner"
@@ -27,10 +31,7 @@ import { orderedListingGalleryImages } from "@/lib/listing-image-display"
 import { resolveListingModelPageHref } from "@/lib/services/modelPage"
 import { ContactSellerForm } from "@/components/contact-seller-form"
 import { FavoriteButton } from "@/components/favorite-button"
-import {
-  ListingSoldDetailNotice,
-  ListingSoldOwnerNotice,
-} from "@/components/listing-sold-detail-notice"
+import { ListingSoldDetailNotice } from "@/components/listing-sold-detail-notice"
 
 import { TranslateableDescription } from "@/components/translateable-description"
 import { ListingPdpDeliveryCaption } from "@/components/features/listings/listing-pdp-delivery-caption"
@@ -38,7 +39,6 @@ import { getCachedSoldSurfboardUsedShippingFulfillment } from "@/lib/cache/marke
 import {
   ListingAboutSellerSection,
   ListingBuyerProtectionTrustRibbon,
-  ListingProtectionTrustRibbon,
 } from "@/components/features/listings/listing-about-seller-section"
 import { ListingFulfillmentAccordionItem } from "@/components/features/listings/listing-fulfillment-accordion-item"
 import { BRANDS_BASE } from "@/lib/brands/routes"
@@ -91,7 +91,7 @@ async function renderSurfboardListingDetailPage({
   prefetchedListing,
   viewerUser,
 }: ListingDetailPageSharedProps) {
-  const { supabase, user, listing: boardRaw, canSellerRelist } = await loadListingDetailPageContext({
+  const { supabase, user, listing: boardRaw } = await loadListingDetailPageContext({
     listingParam,
     prefetchedListing,
     viewerUser,
@@ -247,7 +247,10 @@ async function renderSurfboardListingDetailPage({
     dimensions: (board as { dimensions?: string | null }).dimensions,
   })
   const boardSpecRows = listingBoardSpecRows({
+    section: board.section,
     condition: board.condition,
+    stock_quantity: (board as { stock_quantity?: number | null }).stock_quantity,
+    inventory_source: (board as { inventory_source?: string | null }).inventory_source,
     dimensions: (board as { dimensions?: string | null }).dimensions,
     construction: (board as { construction?: string | null }).construction,
     fin_system: (board as { fin_system?: string | null }).fin_system,
@@ -313,23 +316,13 @@ async function renderSurfboardListingDetailPage({
       .board_shipping_cost_mode ?? null
   const shippingFlatRate = Math.max(0, Number.parseFloat(String(board.shipping_price ?? 0)) || 0)
 
-  let shippingPriceCaption: string | null = null
-  if (!isSold) {
-    if (!shippingOffered && pickupOffered) {
-      shippingPriceCaption = "Local pickup · shipping not offered"
-    } else if (shippingOffered && boardShippingCostMode === "free") {
-      shippingPriceCaption = "Free shipping included"
-    } else if (shippingOffered && shippingFlatRate > 0) {
-      shippingPriceCaption = `+ $${shippingFlatRate.toFixed(2)} shipping`
-    } else if (shippingOffered && boardShippingCostMode === "reswell") {
-      shippingPriceCaption = "Shipping rate calculated at checkout"
-    } else if (shippingOffered && boardShippingCostMode === "flat") {
-      shippingPriceCaption =
-        shippingFlatRate > 0
-          ? `+ $${shippingFlatRate.toFixed(2)} shipping`
-          : "Flat shipping at checkout"
-    }
-  }
+  const shippingPriceCaption = listingShippingPriceCaption({
+    isSold,
+    shippingOffered,
+    pickupOffered,
+    mode: boardShippingCostMode,
+    flatRate: shippingFlatRate,
+  })
 
   const listingViews = Number((board as { views?: number | null }).views ?? 0)
   let listedRelative: string | null = null
@@ -478,6 +471,12 @@ async function renderSurfboardListingDetailPage({
                     listingId={board.id}
                     checkoutListingParam={board.slug ?? board.id}
                     section="surfboards"
+                    availableQuantity={peerBrandNewStockQuantity({
+                      section: "surfboards",
+                      condition: board.condition as string | null,
+                      stock_quantity: (board as { stock_quantity?: number | null }).stock_quantity,
+                      inventory_source: (board as { inventory_source?: string | null }).inventory_source,
+                    })}
                     isLoggedIn={!!user}
                     makeOffer={makeOfferConfig}
                     agreedCheckoutItemUsd={buyerAgreedPriceUsd}
@@ -576,6 +575,12 @@ async function renderSurfboardListingDetailPage({
                       listingId={board.id}
                       checkoutListingParam={board.slug ?? board.id}
                       section="surfboards"
+                      availableQuantity={peerBrandNewStockQuantity({
+                        section: "surfboards",
+                        condition: board.condition as string | null,
+                        stock_quantity: (board as { stock_quantity?: number | null }).stock_quantity,
+                        inventory_source: (board as { inventory_source?: string | null }).inventory_source,
+                      })}
                       isLoggedIn={!!user}
                       makeOffer={makeOfferConfig}
                       agreedCheckoutItemUsd={buyerAgreedPriceUsd}
@@ -621,18 +626,13 @@ async function renderSurfboardListingDetailPage({
                 {aboutSellerSection}
               </div>
 
-              {!isOwnListing ? (
+            {!isOwnListing ? (
+              <ListingBuyerOnly>
                 <ListingBuyerProtectionTrustRibbon className="mt-5 border-b border-neutral-200/90 pb-5 dark:border-neutral-700/70 lg:hidden" />
-              ) : null}
+              </ListingBuyerOnly>
+            ) : null}
 
-              <ListingProtectionTrustRibbon
-                viewerRole={isOwnListing ? "seller" : "buyer"}
-                className={
-                  isOwnListing
-                    ? "mt-5 border-b border-neutral-200/90 pb-5 dark:border-neutral-700/70"
-                    : "mt-5 hidden border-b border-neutral-200/90 pb-5 dark:border-neutral-700/70 lg:block"
-                }
-              />
+            <ListingProtectionRibbonSlot />
 
               <ReswellPlatformRatingWidget
                 summary={reswellPlatformReviewSummary}
@@ -640,7 +640,8 @@ async function renderSurfboardListingDetailPage({
               />
 
               {!isOwnListing ? (
-                <div className="border-b border-neutral-200/90 pb-4 dark:border-neutral-700/70">
+                <ListingBuyerOnly>
+                  <div className="border-b border-neutral-200/90 pb-4 dark:border-neutral-700/70">
                   <Link
                     href={`/contact?topic=listing-report&listing=${encodeURIComponent(board.id)}`}
                     className="inline-flex items-center gap-2 text-[14px] font-medium text-muted-foreground transition-colors hover:text-foreground"
@@ -649,20 +650,10 @@ async function renderSurfboardListingDetailPage({
                     Report listing to Reswell
                   </Link>
                 </div>
+                </ListingBuyerOnly>
               ) : null}
 
-              {isOwnListing && isSold && (
-                <ListingSoldOwnerNotice
-                  dashboardListingsHref="/dashboard/listings"
-                  sectionLabel="board"
-                  listingId={board.id}
-                  canRelist={canSellerRelist}
-                  className="mt-5"
-                />
-              )}
-
-              {isOwnListing ? (
-                <ListingOwnerManageActions
+              <ListingOwnerHydratedManageActions
                   listingId={board.id}
                   section="surfboards"
                   currentPriceUsd={listPriceNum}
@@ -677,7 +668,6 @@ async function renderSurfboardListingDetailPage({
                     photoCount: images.length,
                   })}
                 />
-              ) : null}
             </div>
 
             <div className="col-span-full min-w-0 max-w-full max-lg:order-3 lg:col-span-1 lg:[grid-area:about] lg:order-none lg:border-t lg:border-neutral-200/90 lg:pt-5 dark:lg:border-neutral-700/70 xl:pt-6">
@@ -708,7 +698,8 @@ async function renderSurfboardListingDetailPage({
                 />
 
                 {!isOwnListing && !isSold ? (
-                  <AccordionItem value="contact" className="border-border/55">
+                  <ListingBuyerOnly>
+                    <AccordionItem value="contact" className="border-border/55">
                     <AccordionTrigger className="py-4 text-[16px] font-medium text-foreground hover:no-underline">
                       Contact seller
                     </AccordionTrigger>
@@ -725,12 +716,15 @@ async function renderSurfboardListingDetailPage({
                       />
                     </AccordionContent>
                   </AccordionItem>
+                  </ListingBuyerOnly>
                 ) : null}
               </Accordion>
               {!isOwnListing ? (
-                <div className="mt-10 hidden w-full min-w-0 border-t border-neutral-200/90 pt-8 dark:border-neutral-700/70 lg:block">
+                <ListingBuyerOnly>
+                  <div className="mt-10 hidden w-full min-w-0 border-t border-neutral-200/90 pt-8 dark:border-neutral-700/70 lg:block">
                   <ListingBuyerProtectionTrustRibbon />
                 </div>
+                </ListingBuyerOnly>
               ) : null}
             </div>
 

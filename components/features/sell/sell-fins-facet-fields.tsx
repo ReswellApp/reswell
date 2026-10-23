@@ -1,6 +1,7 @@
 "use client"
 
 import { Input } from "@/components/ui/input"
+import { SellBrandNewQuantityField } from "@/components/features/sell/sell-brand-new-quantity-field"
 import { Label } from "@/components/ui/label"
 import {
   Select,
@@ -79,6 +80,8 @@ export type SellFinsFacetFieldsProps = {
   brandId: string | null
   model: string
   onConditionChange: (value: string) => void
+  stockQuantity: string
+  onStockQuantityChange: (value: string) => void
   onFinSetupChange: (value: string) => void
   onFinSystemChange: (value: string) => void
   onSizeChange: (value: string) => void
@@ -96,6 +99,8 @@ export function SellFinsFacetFields({
   brandId,
   model,
   onConditionChange,
+  stockQuantity,
+  onStockQuantityChange,
   onFinSetupChange,
   onFinSystemChange,
   onSizeChange,
@@ -138,6 +143,13 @@ export function SellFinsFacetFields({
           onValueChange={onSizeChange}
         />
       </div>
+
+      <SellBrandNewQuantityField
+        id="sell-fin-quantity"
+        condition={condition}
+        value={stockQuantity}
+        onChange={onStockQuantityChange}
+      />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">

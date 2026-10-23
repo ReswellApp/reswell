@@ -1,11 +1,16 @@
 import { z } from "zod"
 import { PEER_LISTING_SECTIONS } from "@/lib/peer-listing-sections"
+import { SHOPIFY_LINKED_LISTING_FILTERS } from "@/lib/shopify/types"
 
 const shopifyProductGid = z
   .string()
   .regex(/^gid:\/\/shopify\/Product\/\d+$/, "Invalid Shopify product")
 
 export const shopifyConnectQuerySchema = z.object({
+  shop: z.string().trim().min(3).max(255),
+})
+
+export const shopifyInstallQuerySchema = z.object({
   shop: z.string().trim().min(3).max(255),
 })
 
@@ -21,6 +26,17 @@ export const shopifyProductSelectionSchema = z.object({
 
 export const shopifyProductUnpublishSchema = z.object({
   productId: shopifyProductGid,
+})
+
+export const shopifyProductResyncSchema = z.object({
+  productId: shopifyProductGid,
+})
+
+export const shopifyLinkedListingsQuerySchema = z.object({
+  filter: z.enum(SHOPIFY_LINKED_LISTING_FILTERS).optional().default("all"),
+  section: z.enum(PEER_LISTING_SECTIONS).nullable().optional().default(null),
+  query: z.string().trim().max(200).optional().default(""),
+  page: z.coerce.number().int().min(1).max(1000).optional().default(1),
 })
 
 export const shopifyWebhookHeadersSchema = z.object({
@@ -58,4 +74,21 @@ export const shopifyInventoryJobPayloadSchema = z.object({
 
 export const shopifyReconcileJobPayloadSchema = z.object({
   connectionId: z.string().uuid(),
+})
+
+export const shopifySaleOrderPayloadSchema = z.object({
+  mappingId: z.string().uuid(),
+  listingId: z.string().uuid(),
+  orderId: z.string().uuid(),
+  quantity: z.number().int().min(1).max(100),
+  collectVia: z.enum(["shopify", "stripe"]),
+  sourceOfTruth: z.enum(["shopify", "reswell"]),
+})
+
+export const shopifySourceOfTruthSchema = z.object({
+  sourceOfTruth: z.enum(["shopify", "reswell"]),
+})
+
+export const shopifyReswellPublishSchema = z.object({
+  listingId: z.string().uuid(),
 })

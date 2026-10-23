@@ -48,10 +48,13 @@ import {
   useSellServerDraft,
 } from "@/components/features/sell/hooks/use-sell-server-draft"
 import { usePendingPublishResume } from "@/components/features/sell/hooks/use-pending-publish-resume"
+import { fetchActingShopAccountId } from "@/lib/account-access/fetch-acting-shop-account"
+import { listingOwnerIsOperableAccount } from "@/lib/account-access/operates-listing"
 import { createClient } from "@/lib/supabase/client"
 import type { OwnedListingForEditRow } from "@/lib/db/listingEdit"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import {
+  createFinListingSchema,
   FIN_LISTING_MAX_PHOTOS,
   FIN_LISTING_TITLE_MAX_LENGTH,
 } from "@/lib/validations/fin-listing"
@@ -62,6 +65,10 @@ import {
 } from "@/lib/sell-flow/update-owned-listing-client"
 import { buildFinListingPersistFields } from "@/lib/fin-listing-persist-fields"
 import { computeFinSellSectionCompletion } from "@/lib/fin-sell-section-completion"
+import {
+  parseBrandNewListingQuantity,
+  sellFormStockQuantityValue,
+} from "@/lib/listing-stock-quantity"
 import { sellFormConditionValue } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
 import { navigateAfterListingSave } from "@/lib/sell-flow/navigate-after-listing-save"
@@ -79,6 +86,7 @@ import { shippingPriceToFormValue } from "@/lib/sell-flow/shipping-price-to-form
 import type { ListingPhotoSlot } from "@/lib/sell-flow/listing-photo-slot"
 import { scrollPublishValidationBannerIntoView } from "@/lib/sell-flow/scroll-section-into-view"
 import { validateFinListingForm } from "@/lib/sell-flow/validate-fin-listing-form"
+import { readLiveSellListingPrice } from "@/lib/utils/sell-listing-price"
 import {
   applyFinReswellPackageDefaults,
   FIN_RESWELL_DEFAULT_PACKAGE_HEIGHT_IN,
@@ -150,6 +158,7 @@ type FinFormState = {
   sellerPurchasedFrom: string
   sellerPurchasedOn: string
   condition: string
+  stockQuantity: string
   size: string
   finSetup: string
   finSystem: string
@@ -182,6 +191,7 @@ const INITIAL_STATE: FinFormState = {
   sellerPurchasedFrom: "",
   sellerPurchasedOn: "",
   condition: "",
+  stockQuantity: "1",
   size: "",
   finSetup: "",
   finSystem: "",
@@ -425,11 +435,12 @@ export default function SellFinsFlow({
       listingId,
       title: form.title,
       description: form.description,
-      price: form.price,
+      price: readLiveSellListingPrice(form.price),
       sellerPurchasePrice: form.sellerPurchasePrice,
       sellerPurchasedFrom: form.sellerPurchasedFrom,
       sellerPurchasedOn: form.sellerPurchasedOn,
       condition: form.condition,
+      stockQuantity: form.stockQuantity,
       size: form.size || null,
       finSetup: form.finSetup || null,
       finSystem: form.finSystem || null,
@@ -522,6 +533,7 @@ export default function SellFinsFlow({
         sellerPurchasedOn:
           (listing as { seller_purchased_on?: string | null }).seller_purchased_on ?? "",
         condition: sellFormConditionValue(listing.condition),
+        stockQuantity: sellFormStockQuantityValue((listing as { stock_quantity?: number | null }).stock_quantity),
         size: (listing as { fin_size?: string | null }).fin_size ?? "",
         finSetup: singleFinSetupSlugForForm((listing as { fins_setup?: string | null }).fins_setup),
         finSystem: (listing as { fin_system?: string | null }).fin_system ?? "",
@@ -869,7 +881,11 @@ export default function SellFinsFlow({
     const submitActorIsAdmin = actorProfile?.is_admin === true
     setActorIsAdmin(submitActorIsAdmin)
 
-    const validationMessage = validateFinListingForm(form, {
+    const livePrice = readLiveSellListingPrice(form.price)
+    const pricedForm = livePrice === form.price ? form : { ...form, price: livePrice }
+    if (livePrice !== form.price) setField("price", livePrice)
+
+    const validationMessage = validateFinListingForm(pricedForm, {
       imageCount: images.length,
       imagesUploadReady,
       videoUploadReady,
@@ -899,8 +915,9 @@ export default function SellFinsFlow({
     const payload = {
       title: form.title,
       description: form.description,
-      price: form.price,
+      price: pricedForm.price,
       condition: form.condition,
+      stockQuantity: parseBrandNewListingQuantity(form.stockQuantity) ?? 1,
       size: form.size || null,
       finSetup: form.finSetup || null,
       finSystem: form.finSystem || null,
@@ -938,6 +955,20 @@ export default function SellFinsFlow({
       videos: readyVideo ? [readyVideo] : [],
     }
 
+    const parsedListing = createFinListingSchema.safeParse(payload)
+    if (!parsedListing.success) {
+      const message = parsedListing.error.issues[0]?.message ?? "Please check the form and try again."
+      logSellFunnelEvent({
+        listingType: "fins",
+        event: "validation_failed",
+        message,
+      })
+      setPublishValidationBanner(message)
+      scrollPublishValidationBannerIntoView()
+      return
+    }
+    const listingInput = parsedListing.data
+
     setSubmitting(true)
     try {
       clearImpersonationStorageIfCookieMissing()
@@ -948,10 +979,11 @@ export default function SellFinsFlow({
         storedImpersonation = null
       }
 
+      const actingShopAccountId = await fetchActingShopAccountId()
       const editingOwnListing =
         Boolean(editId) &&
         Boolean(editListingOwnerId) &&
-        user.id === editListingOwnerId
+        listingOwnerIsOperableAccount(user.id, editListingOwnerId, actingShopAccountId)
       if (editingOwnListing && storedImpersonation) {
         clearImpersonation()
         storedImpersonation = null
@@ -978,7 +1010,8 @@ export default function SellFinsFlow({
         }
 
         const ownerEditsOwnListing =
-          isLocalOnlyServerDraftSubmit || user.id === editListingOwnerId
+          isLocalOnlyServerDraftSubmit ||
+          listingOwnerIsOperableAccount(user.id, editListingOwnerId, actingShopAccountId)
 
         if (adminImpersonatesListingOwner) {
           if (!editId) {
@@ -988,11 +1021,11 @@ export default function SellFinsFlow({
           }
           const updated = await updateOwnedListingViaApi({
             listingId: editId,
-            listing: buildFinListingPersistFields(payload, { allowPrivilegedShippingModes: true }),
+            listing: buildFinListingPersistFields(listingInput, { allowPrivilegedShippingModes: true }),
             removedImageIds,
-            images: peerImagesToOwnedUpdateOps(payload.images),
+            images: peerImagesToOwnedUpdateOps(listingInput.images),
             removedVideoIds,
-            videos: payload.videos,
+            videos: listingInput.videos,
             publishFromDraft: listingIsDraft,
           })
           if (!updated.ok) {
@@ -1035,11 +1068,11 @@ export default function SellFinsFlow({
 
         const updated = await updateOwnedListingViaApi({
           listingId: effectiveEditId,
-          listing: buildFinListingPersistFields(payload),
+          listing: buildFinListingPersistFields(listingInput),
           removedImageIds,
-          images: peerImagesToOwnedUpdateOps(payload.images),
+          images: peerImagesToOwnedUpdateOps(listingInput.images),
           removedVideoIds,
-          videos: payload.videos,
+          videos: listingInput.videos,
           publishFromDraft: listingIsDraft || isLocalOnlyServerDraftSubmit,
         })
         if (!updated.ok) {
@@ -1075,14 +1108,14 @@ export default function SellFinsFlow({
       await finalizePeerListingCreate({
         listingImpersonation,
         listingFields: buildFinListingPersistFields(
-          payload,
+          listingInput,
           listingImpersonation ? { allowPrivilegedShippingModes: true } : undefined,
         ),
-        images: payload.images.map((img) => ({
+        images: listingInput.images.map((img) => ({
           url: img.url,
           thumbnailUrl: img.thumbnailUrl,
         })),
-        videos: payload.videos,
+        videos: listingInput.videos,
         title: payload.title,
         section: "fins",
         bulkSlotId,
@@ -1091,7 +1124,7 @@ export default function SellFinsFlow({
         setSubmitting,
         publishStartedAt,
         directCreate: async () => {
-          const result = await createFinListingAction(payload)
+          const result = await createFinListingAction(listingInput)
           if (!("error" in result)) {
             clearPendingPublish("fins")
             clearSellServerDraftListingId("fins")
@@ -1263,7 +1296,7 @@ export default function SellFinsFlow({
                     onDragEnd={handlePhotosDragEnd}
                     onRemove={handlePhotoTileRemove}
                     onRetry={handlePhotoTileRetry}
-                    onRotate180={handlePhotoTileRotate}
+                    onRotateQuarterTurns={handlePhotoTileRotate}
                     photoDragSensors={photoDragSensors}
                     video={video}
                     videoFileInputId={videoFileInputId}
@@ -1323,6 +1356,8 @@ export default function SellFinsFlow({
                     brandId={form.brandId}
                     model={form.model}
                     onConditionChange={(v) => setField("condition", v)}
+                    stockQuantity={form.stockQuantity}
+                    onStockQuantityChange={(v) => setField("stockQuantity", v)}
                     onFinSetupChange={(v) => setField("finSetup", v)}
                     onFinSystemChange={(v) => setField("finSystem", v)}
                     onSizeChange={(v) => setField("size", v)}

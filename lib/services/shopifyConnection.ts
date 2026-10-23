@@ -2,6 +2,7 @@ import { createServiceRoleClient } from "@/lib/supabase/server"
 import {
   dbGetShopifyConnectionForUser,
   dbMarkShopifyConnectionStatus,
+  dbSetShopifyOrdersSyncEnabled,
   toPublicShopifyConnection,
 } from "@/lib/db/shopifyConnections"
 import {
@@ -25,10 +26,47 @@ import {
   syncSelectedShopifyProduct,
   unpublishSelectedShopifyProduct,
 } from "@/lib/services/shopifyCatalog"
+import { sweepDeletedShopifyListings } from "@/lib/services/shopifyDeletionSweep"
+import { shopifyCatalogSyncAllowed } from "@/lib/shopify/billing"
+import { isShopifyOrdersWebhookRejection } from "@/lib/shopify/orders-webhook"
 
-type ServiceResult<T> =
+export type ServiceResult<T> =
   | { ok: true; data: T }
   | { ok: false; status: number; error: string }
+
+async function releaseOrdersWebhookLinkError(
+  supabase: ReturnType<typeof createServiceRoleClient>,
+  connection: ShopifyConnectionRow,
+): Promise<ShopifyConnectionRow> {
+  if (
+    connection.status !== "error" ||
+    !isShopifyOrdersWebhookRejection(connection.last_error ?? "")
+  ) {
+    return connection
+  }
+  const syncEnabled = connection.billing_status === "active"
+  await dbMarkShopifyConnectionStatus(supabase, connection.id, {
+    status: "active",
+    syncEnabled,
+    error: null,
+  })
+  try {
+    await dbSetShopifyOrdersSyncEnabled(supabase, connection.id, false)
+  } catch (error) {
+    console.error("[shopify] order sync flag", {
+      connectionId: connection.id,
+      error,
+    })
+  }
+  return {
+    ...connection,
+    status: "active",
+    sync_enabled: syncEnabled,
+    last_error: null,
+    orders_sync_enabled: false,
+    disconnected_at: null,
+  }
+}
 
 function serviceClient(): ReturnType<typeof createServiceRoleClient> | null {
   try {
@@ -48,8 +86,14 @@ async function activeConnection(
   if (!service) return { error: "Server configuration error", status: 503 }
   const connection = await dbGetShopifyConnectionForUser(service, userId)
   if (!connection) return { error: "Connect a Shopify store first", status: 404 }
-  if (connection.status !== "active" || !connection.sync_enabled) {
+  if (connection.status !== "active") {
     return { error: "Reconnect Shopify to continue", status: 409 }
+  }
+  if (!shopifyCatalogSyncAllowed(connection)) {
+    return {
+      error: "Approve the Shopify usage charge before syncing",
+      status: 409,
+    }
   }
   return { service, connection }
 }
@@ -63,9 +107,12 @@ export async function getShopifyConnectionStatus(
   }
   try {
     const connection = await dbGetShopifyConnectionForUser(service, userId)
+    const linked = connection
+      ? await releaseOrdersWebhookLinkError(service, connection)
+      : null
     return {
       ok: true,
-      data: connection ? toPublicShopifyConnection(connection) : null,
+      data: linked ? toPublicShopifyConnection(linked) : null,
     }
   } catch (error) {
     console.error("[shopify] status", error)
@@ -126,7 +173,12 @@ export async function selectMerchantShopifyProduct(input: {
     }
     return { ok: true, data: { listingIds: synced.listingIds } }
   } catch (error) {
-    console.error("[shopify] select product", error)
+    console.error("[shopify] select product", {
+      userId: input.userId,
+      productId: input.productId,
+      section: input.section,
+      error,
+    })
     return {
       ok: false,
       status: 502,
@@ -159,13 +211,67 @@ export async function unpublishMerchantShopifyProduct(input: {
   }
 }
 
+export async function resyncMerchantShopifyProduct(input: {
+  userId: string
+  productId: string
+}): Promise<ServiceResult<{ listingIds: string[]; productMissing: boolean }>> {
+  try {
+    const loaded = await activeConnection(input.userId)
+    if ("error" in loaded) {
+      return { ok: false, status: loaded.status, error: loaded.error }
+    }
+    const synced = await syncSelectedShopifyProduct({
+      serviceSupabase: loaded.service,
+      connection: loaded.connection,
+      productId: input.productId,
+    })
+    if (!synced.productMissing && synced.listingIds.length === 0) {
+      return {
+        ok: false,
+        status: 409,
+        error: "Publish this product on Reswell before syncing it",
+      }
+    }
+    return { ok: true, data: synced }
+  } catch (error) {
+    console.error("[shopify] resync product", {
+      userId: input.userId,
+      productId: input.productId,
+      error,
+    })
+    return { ok: false, status: 502, error: "Could not sync this product" }
+  }
+}
+
 export async function requestShopifyReconciliation(
   userId: string,
-): Promise<ServiceResult<{ enqueued: boolean }>> {
+): Promise<
+  ServiceResult<{
+    enqueued: boolean
+    removedListingIds: string[]
+    sweepFailed: boolean
+  }>
+> {
   try {
     const loaded = await activeConnection(userId)
     if ("error" in loaded) {
       return { ok: false, status: loaded.status, error: loaded.error }
+    }
+    let removedListingIds: string[] = []
+    let sweepFailed = false
+    try {
+      const swept = await sweepDeletedShopifyListings({
+        serviceSupabase: loaded.service,
+        connection: loaded.connection,
+      })
+      removedListingIds = swept.removedListingIds
+    } catch (error) {
+      sweepFailed = true
+      console.error("[shopify] deletion sweep", {
+        userId,
+        connectionId: loaded.connection.id,
+        error,
+      })
     }
     await dbReviveDeadShopifyInventoryJobs(
       loaded.service,
@@ -177,7 +283,7 @@ export async function requestShopifyReconciliation(
       payload: { connectionId: loaded.connection.id },
       dedupeKey: `reconcile:${loaded.connection.id}`,
     })
-    return { ok: true, data: { enqueued } }
+    return { ok: true, data: { enqueued, removedListingIds, sweepFailed } }
   } catch (error) {
     console.error("[shopify] reconcile", error)
     return { ok: false, status: 500, error: "Could not queue Shopify sync" }

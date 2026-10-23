@@ -25,7 +25,8 @@ const SURFBOARD_PHOTO_EXAMPLES: readonly PhotoExample[] = [
   { label: "Rails", Icon: SurfboardRailsIcon },
   { label: "Tail & fins", Icon: SurfboardTailIcon },
   { label: "Size and scale", Icon: SurfboardScaleIcon },
-  { label: "Imperfections", Icon: SurfboardDingIcon },
+  // Zero-width space lets this wrap on a phone tile without a visible hyphen.
+  { label: "Imper\u200Bfections", Icon: SurfboardDingIcon },
 ]
 
 function initiallyHidden(): boolean {
@@ -38,8 +39,8 @@ function initiallyHidden(): boolean {
 }
 
 /**
- * Photo shot examples under the uploader — one compact row on mobile,
- * wider tiles from `sm` up. Hideable; stays hidden per device.
+ * Shot checklist under the uploader. Each tile is a square so the row
+ * stays short on the wide sell form. Hideable; stays hidden per device.
  */
 export function SellPhotoExamplesBanner({ className }: { className?: string }) {
   const [hidden, setHidden] = useState(initiallyHidden)
@@ -71,16 +72,14 @@ export function SellPhotoExamplesBanner({ className }: { className?: string }) {
         </button>
       </div>
       {!hidden ? (
-        <ul className="grid grid-cols-6 gap-1.5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-6">
+        <ul className="grid w-full max-w-[34rem] grid-cols-6 gap-1.5 sm:gap-2">
           {SURFBOARD_PHOTO_EXAMPLES.map(({ label, Icon }) => (
             <li
               key={label}
-              className="flex min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-white sm:rounded-xl"
+              className="flex aspect-square min-w-0 flex-col items-center justify-center gap-1 overflow-hidden rounded-lg border border-border bg-white px-0.5 sm:gap-1.5 sm:px-1"
             >
-              <div className="flex aspect-square items-center justify-center bg-muted/40 p-1 sm:p-4">
-                <Icon className="h-7 w-7 text-midgray/65 sm:h-14 sm:w-14" />
-              </div>
-              <span className="px-0.5 py-1 text-center text-[9px] font-medium leading-tight text-foreground sm:px-2 sm:py-2.5 sm:text-sm sm:font-normal">
+              <Icon className="h-5 w-5 shrink-0 text-midgray/65 sm:h-6 sm:w-6" />
+              <span className="w-full text-center text-[9px] font-medium leading-tight text-foreground sm:text-[11px]">
                 {label}
               </span>
             </li>

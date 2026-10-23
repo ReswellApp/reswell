@@ -1,6 +1,7 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
+import { resolveManagedSeller } from "@/lib/account-access/managed-seller"
 import { createClient } from "@/lib/supabase/server"
 import { setShopCategoryPackageSizeForSeller } from "@/lib/services/shopCategoryPackageSize"
 import type { ListingPackageColumns, ShopCategoryPackageSizeMap } from "@/lib/shop-category-package-sizes"
@@ -30,10 +31,13 @@ export async function setShopCategoryPackageSizeAction(
   } = await supabase.auth.getUser()
   if (!user) return { error: "Please sign in to update your shop." }
 
+  const managed = await resolveManagedSeller("listings.write")
+  if (!managed.ok) return { error: managed.error }
+
   try {
     const result = await setShopCategoryPackageSizeForSeller({
       supabase,
-      userId: user.id,
+      userId: managed.seller.sellerId,
       section: parsed.data.section,
       packageSizeId: parsed.data.packageSizeId,
     })

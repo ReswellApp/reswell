@@ -50,6 +50,9 @@ export type ListingRowForBoardAlert = {
   fin_system?: string | null
   fin_size?: string | null
   wetsuit_size?: string | null
+  boardbag_size?: string | null
+  surfpack_size?: string | null
+  leash_size?: string | null
   apparel_kind?: string | null
   magazine_year?: number | string | null
   traction_size?: string | null
@@ -184,6 +187,9 @@ function keywordMatchesListing(listing: ListingRowForBoardAlert, q: string | und
     listing.fin_system,
     listing.fin_size,
     listing.wetsuit_size,
+    listing.boardbag_size,
+    listing.surfpack_size,
+    listing.leash_size,
     listing.traction_size,
   ]
     .map((x) => norm(x))
@@ -338,6 +344,18 @@ export function listingMatchesBoardSavedCriteria(
 
   if (listing.section === "wetsuits" || (section === "wetsuits" && !c.anySection)) {
     if (!slugListOverlapsStored(c.sizes, listing.wetsuit_size)) return false
+  }
+
+  if (listing.section === "boardbags" || (section === "boardbags" && !c.anySection)) {
+    if (!slugListOverlapsStored(c.sizes, listing.boardbag_size)) return false
+  }
+
+  if (listing.section === "surfpacks" || (section === "surfpacks" && !c.anySection)) {
+    if (!slugListOverlapsStored(c.sizes, listing.surfpack_size)) return false
+  }
+
+  if (listing.section === "leashes" || (section === "leashes" && !c.anySection)) {
+    if (!slugListOverlapsStored(c.sizes, listing.leash_size)) return false
   }
 
   if (listing.section === "apparel" || (section === "apparel" && !c.anySection)) {

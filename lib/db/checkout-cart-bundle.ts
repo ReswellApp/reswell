@@ -6,6 +6,11 @@ import {
 } from "@/lib/peer-listing-sections"
 import { isReswellShopListing, RESWELL_SHOP_SECTION } from "@/lib/reswell-shop"
 import { isListingPurchasable } from "@/lib/listing-public-visibility"
+import {
+  clampListingBuyerQuantity,
+  peerBrandNewStockQuantity,
+} from "@/lib/listing-stock-quantity"
+import { attachListingInventorySources } from "@/lib/db/listingInventorySource"
 import { hydrateCardListingImages } from "@/lib/listing-image-display"
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -92,6 +97,14 @@ export async function fetchCheckoutCartListingsForSeller(
     byId.set(row.id, row)
   }
 
+  const sourced = await attachListingInventorySources(supabase, [...byId.values()])
+  if (!sourced.ok) return { error: sourced.error }
+  for (const row of sourced.listings) {
+    const current = byId.get(row.id)
+    if (!current) continue
+    byId.set(row.id, { ...current, inventory_source: row.inventory_source })
+  }
+
   const seller = sellerId.trim()
 
   const lines: CheckoutCartLine[] = []
@@ -101,7 +114,12 @@ export async function fetchCheckoutCartListingsForSeller(
     const section = String(row.section ?? "")
     if (isPeerListingSection(section)) {
       if (row.user_id !== seller) continue
-      lines.push({ listing: row, quantity: 1 })
+      const requested = qtyById.get(id) ?? 1
+      const quantity =
+        peerBrandNewStockQuantity(row) >= 1
+          ? clampListingBuyerQuantity(row, requested)
+          : 1
+      lines.push({ listing: row, quantity })
       continue
     }
     if (isReswellShopListing(section)) {

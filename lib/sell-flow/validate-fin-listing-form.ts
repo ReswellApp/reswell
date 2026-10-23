@@ -4,6 +4,7 @@ import {
 } from "@/lib/fin-reswell-shipping-defaults"
 import { RESWELL_MAX_REASONABLE_SMALL_PARCEL_LENGTH_IN } from "@/lib/surfboard-shipping-estimates"
 import { isListingSellableCondition } from "@/lib/listing-labels"
+import { brandNewQuantityValidationMessage } from "@/lib/listing-stock-quantity"
 import {
   parseReswellParcelLengthRawToCarrierInches,
   parseReswellParcelWidthHeightRawToCarrierInches,
@@ -16,12 +17,14 @@ import {
 } from "@/lib/validations/fin-listing"
 import type { ListingPhotoSlot } from "@/lib/sell-flow/listing-photo-slot"
 import { listingPhotosUploadReady } from "@/lib/sell-flow/listing-photo-slot"
+import { sellListingPriceValidationMessage } from "@/lib/utils/sell-listing-price"
 
 export type FinSellFormValidationInput = {
   title: string
   description: string
   price: string
   condition: string
+  stockQuantity?: string
   locationCity: string
   locationState: string
   shippingAvailable: boolean
@@ -35,8 +38,6 @@ export type FinSellFormValidationInput = {
   reswellPackageWeightOz: string
 }
 
-const PRICE_MIN = 0.01
-const PRICE_MAX = 999_999.99
 
 export function validateFinListingForm(
   form: FinSellFormValidationInput,
@@ -69,18 +70,15 @@ export function validateFinListingForm(
   if (!isListingSellableCondition(form.condition)) {
     return "Please select a condition."
   }
+  const quantityMessage = brandNewQuantityValidationMessage(form.condition, form.stockQuantity ?? "1")
+  if (quantityMessage) return quantityMessage
 
   if (!form.description.trim()) {
     return "Add a description."
   }
 
-  if (!form.price.trim()) {
-    return "Enter a listing price."
-  }
-  const price = Number.parseFloat(form.price.trim())
-  if (!Number.isFinite(price) || price < PRICE_MIN || price > PRICE_MAX) {
-    return `Enter a valid price between $${PRICE_MIN} and $${PRICE_MAX.toLocaleString()}.`
-  }
+  const priceMessage = sellListingPriceValidationMessage(form.price)
+  if (priceMessage) return priceMessage
 
   if (!form.locationCity.trim() || !form.locationState.trim()) {
     return "Confirm where you're shipping from."

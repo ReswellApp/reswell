@@ -5,7 +5,7 @@ import { getShopifyConnectionStatus } from "@/lib/services/shopifyConnection"
 export async function GET() {
   const auth = await requireShopifyMerchant()
   if (!auth.ok) return auth.response
-  const result = await getShopifyConnectionStatus(auth.user.id)
+  const result = await getShopifyConnectionStatus(auth.accountId)
   if (!result.ok) {
     return NextResponse.json(
       { error: result.error },

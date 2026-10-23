@@ -5,6 +5,7 @@ import Link from "next/link"
 import { ChoiceChip } from "@/components/features/dashboard/listings/choice-chip"
 import { ListingDeskShipping } from "@/components/features/dashboard/listings/listing-desk-shipping"
 import { Input } from "@/components/ui/input"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import {
   listingDeskFacets,
@@ -52,7 +53,7 @@ export function ListingEditorSpecs({
                   src={image.thumbnail_url || image.url}
                   alt=""
                   fill
-                  className="object-cover"
+                  className={listingPhotoFillClassName}
                   sizes="72px"
                   unoptimized={listingImageShouldBypassOptimization(image.thumbnail_url || image.url)}
                 />

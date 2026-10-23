@@ -5,6 +5,7 @@ import type { AdminNavBadgeCounts } from '@/lib/admin-nav-badge-counts'
 import { AdminHomeCountChart } from '@/components/features/admin/admin-home-count-chart'
 import { AdminHomeGreeting } from '@/components/features/admin/admin-home-greeting'
 import { AdminHomeHeroTiles } from '@/components/features/admin/admin-home-hero-tiles'
+import { EmployeeHomeTiles } from '@/components/features/admin/employee-home-tiles'
 import { AdminHomeInsightsKpis } from '@/components/features/admin/admin-home-insights-kpis'
 import { AdminMonthlyRevenueTable } from '@/components/features/admin/admin-monthly-revenue-table'
 import { AdminHomeRevenueFilter } from '@/components/features/admin/admin-home-revenue-filter'
@@ -78,6 +79,25 @@ export function AdminHomeDashboard({
   growthTrendError = null,
   isAdmin = false,
 }: AdminHomeDashboardProps) {
+  if (!isAdmin) {
+    return (
+      <div className="space-y-6">
+        <header>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            Employee
+          </p>
+          <div className="mt-1 text-foreground">
+            <AdminHomeGreeting displayName={displayName} />
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            The tools you use, in one place.
+          </p>
+        </header>
+        <EmployeeHomeTiles />
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">

@@ -1,6 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 
 import { normalizeShipperPriceCents } from "@/lib/utils/shipperPrice"
+import {
+  orderRunStopIds,
+  shipperStopIdentity,
+  sortOrderForLatitude,
+  type ShipperTripCityInput,
+} from "@/lib/utils/shipperTripStops"
 
 import type {
   CoastalAddressSnapshot,
@@ -31,6 +37,17 @@ const SHIPPER_SELECT = "id, user_id, display_name, phone, notes, schedule_enable
 const SHIPPER_SELECT_BASE = "id, user_id, display_name, phone, notes, schedule_enabled"
 const RUN_SELECT = "id, shipper_id, day_of_week, direction, enabled, service_date"
 const RUN_SELECT_WEEKLY = "id, shipper_id, day_of_week, direction, enabled"
+const RUN_SELECT_WINDOWS =
+  "id, shipper_id, day_of_week, direction, enabled, service_date, pickup_start_dow, pickup_end_dow, delivery_start_dow, delivery_end_dow, pickup_description, delivery_description"
+
+type RunWindowInput = {
+  pickupStartDow?: number
+  pickupEndDow?: number
+  deliveryStartDow?: number
+  deliveryEndDow?: number
+  pickupDescription?: string
+  deliveryDescription?: string
+}
 const LISTING_SELECT = "id, title, city, state, status, section"
 
 export async function listCoastalStops(supabase: SupabaseClient): Promise<CoastalStopView[]> {
@@ -44,13 +61,111 @@ export async function listCoastalStops(supabase: SupabaseClient): Promise<Coasta
   return asRecords(data).map(mapStop)
 }
 
+async function listAllCoastalStops(supabase: SupabaseClient): Promise<CoastalStopView[]> {
+  const { data, error } = await supabase.from("coastal_stops").select(STOP_SELECT).order("sort_order", { ascending: true })
+  if (error) throw error
+  return asRecords(data).map(mapStop)
+}
+
+/** Resolve each Google city to a coastal stop, creating one when it is new. Order is the drive order. */
+export async function ensureOrderedCoastalStops(
+  supabase: SupabaseClient,
+  cities: readonly ShipperTripCityInput[],
+): Promise<string[]> {
+  const known = await listAllCoastalStops(supabase)
+  const ids: string[] = []
+  for (const city of cities) {
+    ids.push(await ensureOneCoastalStop(supabase, known, city))
+  }
+  return ids
+}
+
+async function ensureOneCoastalStop(
+  supabase: SupabaseClient,
+  known: CoastalStopView[],
+  city: ShipperTripCityInput,
+): Promise<string> {
+  const plan = shipperStopIdentity({ city: city.city, state: city.state }, known)
+  if (!plan) throw new Error("Choose a city.")
+  if (plan.mode === "reuse") {
+    const found = known.find((stop) => stop.slug === plan.slug)
+    if (!found) throw new Error("Could not save that city.")
+    await fillStopCoordinates(supabase, found, city)
+    return found.id
+  }
+
+  const slot = sortOrderForLatitude(city.latitude, known)
+  if (slot.shiftFrom != null) await shiftCoastalStopSortOrders(supabase, known, slot.shiftFrom, 1000)
+
+  const inserted = await supabase
+    .from("coastal_stops")
+    .insert({
+      slug: plan.slug,
+      name: plan.name,
+      sort_order: slot.sortOrder,
+      active: true,
+      latitude: city.latitude,
+      longitude: city.longitude,
+    })
+    .select(STOP_SELECT)
+    .single()
+
+  if (inserted.error?.code === "23505") {
+    const refreshed = await listAllCoastalStops(supabase)
+    known.splice(0, known.length, ...refreshed)
+    const again = shipperStopIdentity({ city: city.city, state: city.state }, known)
+    if (again?.mode === "reuse") {
+      const found = known.find((stop) => stop.slug === again.slug)
+      if (found) {
+        await fillStopCoordinates(supabase, found, city)
+        return found.id
+      }
+    }
+  }
+  if (inserted.error) throw inserted.error
+  const mapped = mapStop(asRecord(inserted.data))
+  if (!mapped.id) throw new Error("Could not save that city.")
+  known.push(mapped)
+  return mapped.id
+}
+
+async function fillStopCoordinates(
+  supabase: SupabaseClient,
+  stop: CoastalStopView,
+  city: ShipperTripCityInput,
+): Promise<void> {
+  if (stop.latitude != null && stop.longitude != null) return
+  const { error } = await supabase
+    .from("coastal_stops")
+    .update({ latitude: city.latitude, longitude: city.longitude, active: true })
+    .eq("id", stop.id)
+  if (error) throw error
+  stop.latitude = city.latitude
+  stop.longitude = city.longitude
+}
+
+async function shiftCoastalStopSortOrders(
+  supabase: SupabaseClient,
+  known: CoastalStopView[],
+  fromSortOrder: number,
+  delta: number,
+): Promise<void> {
+  const moving = known.filter((stop) => stop.sortOrder >= fromSortOrder).sort((a, b) => b.sortOrder - a.sortOrder)
+  for (const stop of moving) {
+    const next = stop.sortOrder + delta
+    const { error } = await supabase.from("coastal_stops").update({ sort_order: next }).eq("id", stop.id)
+    if (error) throw error
+    stop.sortOrder = next
+  }
+}
+
 export async function listCoastalShipperSchedules(
   supabase: SupabaseClient,
 ): Promise<CoastalShipperScheduleRecord[]> {
   const [shippers, runs, runStops] = await Promise.all([
     selectShipperRows(supabase),
     selectShipperRuns(supabase),
-    supabase.from("coastal_shipper_run_stops").select("run_id, stop_id"),
+    selectRunStopRows(supabase),
   ])
 
   if (shippers.error) throw shippers.error
@@ -118,15 +233,31 @@ export async function upsertCoastalShipperRun(
     enabled: boolean
     stopIds: string[]
     serviceDate?: string | null
-  },
+  } & RunWindowInput,
 ): Promise<void> {
+  if (runWindowColumns(input)) {
+    const probe = await supabase.from("coastal_shipper_runs").select("pickup_start_dow").limit(1)
+    if (probe.error && isMissingTripWindowColumn(probe.error.message)) {
+      throw new Error("Run the latest Shipper SQL, then try again.")
+    }
+    if (probe.error) throw probe.error
+  }
   const runId = await resolveRunId(supabase, input)
+  const probe = await supabase.from("coastal_shipper_run_stops").select("position").limit(1)
+  if (probe.error && isMissingPositionColumn(probe.error.message)) {
+    throw new Error("Run the latest Shipper SQL, then try again.")
+  }
+  if (probe.error) throw probe.error
+
   const { error: stopDeleteError } = await supabase.from("coastal_shipper_run_stops").delete().eq("run_id", runId)
   if (stopDeleteError) throw stopDeleteError
 
   const { error: stopInsertError } = await supabase.from("coastal_shipper_run_stops").insert(
-    input.stopIds.map((stopId) => ({ run_id: runId, stop_id: stopId })),
+    input.stopIds.map((stopId, position) => ({ run_id: runId, stop_id: stopId, position })),
   )
+  if (stopInsertError && isMissingPositionColumn(stopInsertError.message)) {
+    throw new Error("Run the latest Shipper SQL, then try again.")
+  }
   if (stopInsertError) throw stopInsertError
 }
 
@@ -421,12 +552,9 @@ export async function getCoastalShipperSchedule(
 
   let stopRows: Record<string, unknown>[] = []
   if (runIds.length > 0) {
-    const { data: runStops, error: runStopsError } = await supabase
-      .from("coastal_shipper_run_stops")
-      .select("run_id, stop_id")
-      .in("run_id", runIds)
-    if (runStopsError) throw runStopsError
-    stopRows = asRecords(runStops)
+    const runStops = await selectRunStopRows(supabase, runIds)
+    if (runStops.error) throw runStops.error
+    stopRows = asRecords(runStops.data)
   }
 
   return assembleSchedules([shipper], runRows, stopRows)[0] ?? null
@@ -618,6 +746,27 @@ export async function updateCoastalDeliverySnapshots(
   if (error) throw error
 }
 
+function runWindowColumns(input: RunWindowInput): Record<string, number | string> | null {
+  if (
+    input.pickupStartDow == null ||
+    input.pickupEndDow == null ||
+    input.deliveryStartDow == null ||
+    input.deliveryEndDow == null ||
+    input.pickupDescription == null ||
+    input.deliveryDescription == null
+  ) {
+    return null
+  }
+  return {
+    pickup_start_dow: input.pickupStartDow,
+    pickup_end_dow: input.pickupEndDow,
+    delivery_start_dow: input.deliveryStartDow,
+    delivery_end_dow: input.deliveryEndDow,
+    pickup_description: input.pickupDescription.trim(),
+    delivery_description: input.deliveryDescription.trim(),
+  }
+}
+
 async function resolveRunId(
   supabase: SupabaseClient,
   input: {
@@ -627,7 +776,7 @@ async function resolveRunId(
     direction: CoastalDirection
     enabled: boolean
     serviceDate?: string | null
-  },
+  } & RunWindowInput,
 ): Promise<string> {
   const serviceDate = input.serviceDate ?? null
   const patch = {
@@ -635,6 +784,7 @@ async function resolveRunId(
     direction: input.direction,
     enabled: input.enabled,
     service_date: serviceDate,
+    ...runWindowColumns(input),
   }
 
   if (input.runId) {
@@ -678,6 +828,9 @@ async function resolveRunId(
     .insert({ shipper_id: input.shipperId, ...patch })
     .select("id")
     .single()
+  if (error && isMissingTripWindowColumn(error.message)) {
+    throw new Error("Run the latest Shipper SQL, then try again.")
+  }
   if (error && isMissingServiceDateColumn(error.message)) {
     if (serviceDate) throw new Error("Run the latest Shipper SQL before saving a one-week trip.")
     const weekly = await supabase
@@ -706,20 +859,21 @@ function assembleSchedules(
   runRows: Record<string, unknown>[],
   stopRows: Record<string, unknown>[],
 ): CoastalShipperScheduleRecord[] {
-  const stopsByRun = new Map<string, string[]>()
+  const stopsByRun = new Map<string, { stopId: string; position: number | null }[]>()
   for (const row of stopRows) {
     const runId = stringField(row, "run_id")
     const stopId = stringField(row, "stop_id")
     if (!runId || !stopId) continue
     const current = stopsByRun.get(runId) ?? []
-    current.push(stopId)
+    current.push({ stopId, position: positionField(row.position) })
     stopsByRun.set(runId, current)
   }
 
   const runsByShipper = new Map<string, CoastalRunView[]>()
   for (const row of runRows) {
     const shipperId = stringField(row, "shipper_id")
-    const run = mapRun(row, stopsByRun.get(stringField(row, "id") ?? "") ?? [])
+    const orderedStops = orderRunStopIds(stopsByRun.get(stringField(row, "id") ?? "") ?? [])
+    const run = mapRun(row, orderedStops.stopIds, orderedStops.stopsInDriveOrder)
     if (!shipperId || !run) continue
     const current = runsByShipper.get(shipperId) ?? []
     current.push(run)
@@ -758,14 +912,64 @@ function mapStop(row: Record<string, unknown>): CoastalStopView {
   }
 }
 
-function mapRun(row: Record<string, unknown>, stopIds: string[]): CoastalRunView | null {
+function mapRun(
+  row: Record<string, unknown>,
+  stopIds: string[],
+  stopsInDriveOrder: boolean,
+): CoastalRunView | null {
   const id = stringField(row, "id")
   const direction = row.direction === "northbound" || row.direction === "southbound" ? row.direction : null
   const dayOfWeek = typeof row.day_of_week === "number" ? row.day_of_week : Number(row.day_of_week)
   if (!id || !direction || !Number.isInteger(dayOfWeek)) return null
   const rawDate = stringField(row, "service_date")
   const serviceDate = rawDate && /^\d{4}-\d{2}-\d{2}/.test(rawDate) ? rawDate.slice(0, 10) : null
-  return { id, dayOfWeek, direction, enabled: row.enabled === true, stopIds, serviceDate }
+  return {
+    id,
+    dayOfWeek,
+    direction,
+    enabled: row.enabled === true,
+    stopIds,
+    stopsInDriveOrder,
+    serviceDate,
+    pickupStartDow: dowField(row.pickup_start_dow) ?? dayOfWeek,
+    pickupEndDow: dowField(row.pickup_end_dow) ?? dowField(row.pickup_start_dow) ?? dayOfWeek,
+    deliveryStartDow: dowField(row.delivery_start_dow) ?? dowField(row.pickup_start_dow) ?? dayOfWeek,
+    deliveryEndDow:
+      dowField(row.delivery_end_dow) ??
+      dowField(row.delivery_start_dow) ??
+      dowField(row.pickup_start_dow) ??
+      dayOfWeek,
+    pickupDescription: stringField(row, "pickup_description")?.trim() || null,
+    deliveryDescription: stringField(row, "delivery_description")?.trim() || null,
+  }
+}
+
+function dowField(value: unknown): number | null {
+  const parsed = typeof value === "number" ? value : typeof value === "string" ? Number(value) : Number.NaN
+  if (!Number.isInteger(parsed) || parsed < 0 || parsed > 6) return null
+  return parsed
+}
+
+function positionField(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value
+  if (typeof value === "string" && value.trim() && Number.isFinite(Number(value))) return Number(value)
+  return null
+}
+
+async function selectRunStopRows(supabase: SupabaseClient, runIds?: string[]) {
+  if (runIds && runIds.length === 0) return { data: [], error: null }
+  const filtered = (columns: string) => {
+    let query = supabase.from("coastal_shipper_run_stops").select(columns)
+    if (runIds) query = query.in("run_id", runIds)
+    return query
+  }
+  const withPosition = await filtered("run_id, stop_id, position")
+  if (!withPosition.error || !isMissingPositionColumn(withPosition.error.message)) return withPosition
+  return filtered("run_id, stop_id")
+}
+
+function isMissingPositionColumn(message: string | undefined): boolean {
+  return /position/i.test(message ?? "") && /does not exist|schema cache/i.test(message ?? "")
 }
 
 async function selectShipperRows(supabase: SupabaseClient) {
@@ -782,16 +986,38 @@ function isMissingPriceColumn(message: string | undefined): boolean {
 }
 
 async function selectShipperRuns(supabase: SupabaseClient) {
+  const withWindows = await supabase.from("coastal_shipper_runs").select(RUN_SELECT_WINDOWS)
+  if (
+    !withWindows.error ||
+    (!isMissingTripWindowColumn(withWindows.error.message) && !isMissingServiceDateColumn(withWindows.error.message))
+  ) {
+    return withWindows
+  }
   const withDate = await supabase.from("coastal_shipper_runs").select(RUN_SELECT)
   if (!withDate.error || !isMissingServiceDateColumn(withDate.error.message)) return withDate
   return supabase.from("coastal_shipper_runs").select(RUN_SELECT_WEEKLY)
+}
+
+function isMissingTripWindowColumn(message: string | undefined): boolean {
+  return /pickup_start_dow/i.test(message ?? "") && /does not exist|schema cache/i.test(message ?? "")
 }
 
 async function writeRunPatch(
   supabase: SupabaseClient,
   runId: string,
   shipperId: string,
-  patch: { day_of_week: number; direction: CoastalDirection; enabled: boolean; service_date: string | null },
+  patch: {
+    day_of_week: number
+    direction: CoastalDirection
+    enabled: boolean
+    service_date: string | null
+    pickup_start_dow?: number
+    pickup_end_dow?: number
+    delivery_start_dow?: number
+    delivery_end_dow?: number
+    pickup_description?: string
+    delivery_description?: string
+  },
   serviceDate: string | null,
 ): Promise<string | null> {
   const updated = await supabase
@@ -801,6 +1027,9 @@ async function writeRunPatch(
     .eq("shipper_id", shipperId)
     .select("id")
     .maybeSingle()
+  if (updated.error && isMissingTripWindowColumn(updated.error.message)) {
+    throw new Error("Run the latest Shipper SQL, then try again.")
+  }
   if (updated.error && isMissingServiceDateColumn(updated.error.message)) {
     if (serviceDate) throw new Error("Run the latest Shipper SQL before saving a one-week trip.")
     const weekly = await supabase

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { requireAdmin } from "@/lib/brands/admin-server"
+import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
 import {
   fetchLabelById,
   fetchLabelDownloadsForShipment,
@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic"
  * Resolves label PDF/PNG/ZPL download URLs via ShipEngine (same API key as checkout).
  */
 export async function GET(request: NextRequest) {
-  const gate = await requireAdmin()
+  const gate = await requireAdminOrEmployee()
   if (!gate.ok) return gate.response
 
   const parsed = shipengineLabelLookupQuerySchema.safeParse(

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { loadMarketplaceOrderAccess } from "@/lib/account-access/order-operator-session"
 import { z } from "zod"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { getOrderReturnCarrierTracking } from "@/lib/services/orderReturnCarrierTracking"
@@ -28,19 +29,9 @@ export async function GET(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const { data: order } = await supabase
-    .from("orders")
-    .select("id, buyer_id, seller_id")
-    .eq("id", id)
-    .maybeSingle()
-
-  if (!order) {
-    return NextResponse.json({ error: "Order not found" }, { status: 404 })
-  }
-
-  const orderRow = order as { id: string; buyer_id: string; seller_id: string }
-  if (orderRow.buyer_id !== user.id && orderRow.seller_id !== user.id) {
-    return NextResponse.json({ error: "Order not found" }, { status: 404 })
+  const access = await loadMarketplaceOrderAccess(supabase, id)
+  if (!access.ok) {
+    return NextResponse.json({ error: access.error }, { status: access.status })
   }
 
   const service = createServiceRoleClient()

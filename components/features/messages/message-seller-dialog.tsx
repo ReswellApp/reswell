@@ -27,6 +27,7 @@ import { getPolicyBlockFromSendResult } from '@/lib/messages/policy-block-client
 import type { MessagePolicyReasonCode } from '@/lib/messages/fraud-reason-codes'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { listingTitleThumbnailSrc, type ListingImageForCard } from '@/lib/listing-image-display'
+import { listingPhotoFillClassName } from '@/lib/listing-photo-fill'
 import { listingImageShouldBypassOptimization } from '@/lib/listing-media-proxy-url'
 import { cn } from '@/lib/utils'
 import { isAbortError } from '@/lib/utils/is-abort-error'
@@ -257,7 +258,7 @@ export function MessageSellerDialog({
                     alt={capitalizeWords(listing.title)}
                     fill
                     sizes="48px"
-                    className="object-cover object-center"
+                    className={listingPhotoFillClassName}
                     unoptimized={listingImageShouldBypassOptimization(listingThumbSrc)}
                   />
                 ) : null}

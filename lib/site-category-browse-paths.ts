@@ -21,13 +21,3 @@ export function isCategoryBrowsePathname(pathname: string | null | undefined): b
   return CATEGORY_BROWSE_PATHNAME_SET.has(normalized)
 }
 
-/**
- * Soft-nav destinations that must not start at `opacity: 0`.
- * `/l/*` listing photos and category browse tiles/atmosphere images flash white
- * when `NavigationPageGate` applies `page-enter` after leaving a listing.
- */
-export function shouldSkipPageEnterAnimation(pathname: string | null | undefined): boolean {
-  if (!pathname) return false
-  if (pathname === "/l" || pathname.startsWith("/l/")) return true
-  return isCategoryBrowsePathname(pathname)
-}

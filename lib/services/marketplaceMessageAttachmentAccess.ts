@@ -1,5 +1,5 @@
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
-import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
+import { requireAdmin } from "@/lib/brands/admin-server"
 import {
   marketplaceMessageAttachmentMetadataSchema,
   type MarketplaceMessageAttachment,
@@ -56,7 +56,7 @@ export async function authorizeMarketplaceAttachmentDownload(
     .maybeSingle()
 
   if (!conv) {
-    const gate = await requireAdminOrEmployee()
+    const gate = await requireAdmin()
     if (!gate.ok) {
       return { ok: false, error: "Forbidden", status: 403 }
     }

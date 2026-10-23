@@ -2,6 +2,7 @@ import { revalidatePath } from "next/cache"
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
+import { revalidateListingDetailPage } from "@/lib/cache/revalidate-listing-public-detail"
 import { syncListingToIndex } from "@/lib/elasticsearch/listings-index"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { setListingBoardsBrowseSuppression } from "@/lib/services/listingBoardsBrowseSuppression"
@@ -15,7 +16,7 @@ function canModerate(
 ): boolean {
   if (!email) return false
   if (email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()) return true
-  return profile?.is_admin === true || profile?.is_employee === true
+  return profile?.is_admin === true
 }
 
 export async function PATCH(
@@ -81,9 +82,7 @@ export async function PATCH(
     listingRow && typeof (listingRow as { slug?: unknown }).slug === "string"
       ? String((listingRow as { slug: string }).slug).trim()
       : ""
-  if (slug) {
-    revalidatePath(`/l/${slug}`, "page")
-  }
+  revalidateListingDetailPage(listingId.trim(), slug || null)
 
   revalidatePath("/boards")
   revalidateBoardsBrowseCatalog()

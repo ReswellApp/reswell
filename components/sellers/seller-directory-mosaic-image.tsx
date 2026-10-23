@@ -1,7 +1,8 @@
 "use client"
 
-import { useCallback, useLayoutEffect, useRef, useState, type SyntheticEvent } from "react"
+import { useCallback, useEffect, useRef, useState, type SyntheticEvent } from "react"
 import { ListingMediaFillImage } from "@/components/listing-media-fill-image"
+import { useListingPhotoReady } from "@/components/features/listings/hooks/use-listing-photo-ready"
 import type { SellerDirectoryMosaicSlot } from "@/lib/sellers/directory-mosaic-images"
 import { cn } from "@/lib/utils"
 
@@ -10,6 +11,8 @@ type SellerDirectoryMosaicImageProps = {
   className?: string
   sizes: string
   priority?: boolean
+  /** Fired when every candidate URL for this cover has failed. */
+  onExhausted?: () => void
 }
 
 /** Mosaic cell imagery — wave shimmer overlay while photos load (matches {@link ListingTileImageMedia}). */
@@ -18,61 +21,72 @@ export function SellerDirectoryMosaicImage({
   className,
   sizes,
   priority,
+  onExhausted,
 }: SellerDirectoryMosaicImageProps) {
-  const [loaded, setLoaded] = useState(false)
-  const [failed, setFailed] = useState(false)
-  const frameRef = useRef<HTMLDivElement>(null)
+  const [candidateIndex, setCandidateIndex] = useState(0)
+  const exhaustedRef = useRef(false)
 
-  const handleLoad = useCallback((_event: SyntheticEvent<HTMLImageElement>) => {
-    setLoaded(true)
-  }, [])
+  const candidatesKey = slot.candidates.join("|")
+  const candidatesKeyRef = useRef(candidatesKey)
+  let resolvedIndex = candidateIndex
+  if (candidatesKeyRef.current !== candidatesKey) {
+    candidatesKeyRef.current = candidatesKey
+    resolvedIndex = 0
+    exhaustedRef.current = false
+    if (candidateIndex !== 0) setCandidateIndex(0)
+  }
 
-  const handleError = useCallback((_event: SyntheticEvent<HTMLImageElement>) => {
-    setLoaded(false)
-    setFailed(true)
-  }, [])
+  const src = slot.candidates[resolvedIndex] ?? ""
+  const photo = useListingPhotoReady(src)
 
-  const src = failed ? "" : slot.src
+  useEffect(() => {
+    if (src || slot.candidates.length > 0 || exhaustedRef.current) return
+    exhaustedRef.current = true
+    onExhausted?.()
+  }, [src, slot.candidates.length, onExhausted])
 
-  useLayoutEffect(() => {
-    const img = frameRef.current?.querySelector("img")
-    if (img?.complete && img.naturalWidth > 0) {
-      setLoaded(true)
-    }
-  }, [src])
+  const handleLoad = useCallback(
+    (event: SyntheticEvent<HTMLImageElement>) => {
+      photo.onLoad(event.currentTarget)
+    },
+    [photo.onLoad],
+  )
+
+  const handleError = useCallback(
+    (_event: SyntheticEvent<HTMLImageElement>) => {
+      if (candidateIndex + 1 < slot.candidates.length) {
+        setCandidateIndex((index) => index + 1)
+        return
+      }
+      if (exhaustedRef.current) return
+      exhaustedRef.current = true
+      onExhausted?.()
+    },
+    [candidateIndex, slot.candidates.length, onExhausted],
+  )
 
   if (!src) {
     return <div className={cn("bg-muted", className)} aria-hidden />
   }
 
-  const showShimmer = !loaded
-
   return (
-    <div ref={frameRef} className={cn("relative min-h-0 overflow-hidden bg-muted", className)}>
+    <div className={cn("relative min-h-0 overflow-hidden bg-muted", className)}>
       <ListingMediaFillImage
         key={src}
         src={src}
         alt={slot.alt}
         sizes={sizes}
-        className="object-cover"
+        className={cn("object-cover", photo.ready ? "opacity-100" : "opacity-0")}
         style={slot.objectPosition ? { objectPosition: slot.objectPosition } : undefined}
-        ref={(img) => {
-          if (img?.complete && img.naturalWidth > 0) {
-            setLoaded(true)
-          }
-        }}
+        ref={photo.ref}
         onLoad={handleLoad}
         onError={handleError}
         priority={priority}
       />
 
-      <div
-        className={cn(
-          "listing-tile-shimmer listing-tile-shimmer-overlay absolute inset-0 z-[3]",
-          !showShimmer && "pointer-events-none opacity-0",
-        )}
-        aria-hidden
-      />
+      {photo.ready ? null : (
+        <div className="listing-tile-shimmer absolute inset-0 z-[3]" aria-hidden />
+      )}
     </div>
   )
 }

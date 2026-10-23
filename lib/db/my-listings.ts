@@ -3,6 +3,7 @@ import {
   listingIdsBlockedFromPermanentDelete,
   listingIdsWithOpenMarketplaceCheckout,
 } from "@/lib/db/listingDeleteEligibility"
+import { listingCardImageSrc } from "@/lib/listing-image-display"
 import { listingCanShowSellerRelist } from "@/lib/listing-sold-state"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import type { ListingCartOfferProspect } from "@/lib/types/listing-cart-holders"
@@ -21,6 +22,7 @@ export type MyListingRow = {
   compare_at_price: number | null
   status: string
   section: string
+  inventory_source: string
   condition: string | null
   brand: string | null
   model: string | null
@@ -79,7 +81,7 @@ export type FetchMyListingsResult = {
 }
 
 const MY_LISTINGS_SELECT =
-  "id, slug, title, description, price, compare_at_price, status, section, condition, brand, model, city, state, latitude, longitude, local_pickup, shipping_available, board_shipping_cost_mode, shipping_price, dropoff_location_id, dimensions, length_total_inches, volume_liters, fins_setup, fin_system, construction, fins_included, tail_shape, fin_size, wetsuit_size, apparel_kind, traction_size, views, created_at, archived_at, hidden_from_site, site_visibility_reason, sold_off_platform, shipping_package_tier, shipping_package_band, shipping_packed_length_in, shipping_packed_width_in, shipping_packed_height_in, shipping_packed_weight_oz, listing_images(url, thumbnail_url, is_primary)"
+  "id, slug, title, description, price, compare_at_price, status, section, inventory_source, condition, brand, model, city, state, latitude, longitude, local_pickup, shipping_available, board_shipping_cost_mode, shipping_price, dropoff_location_id, dimensions, length_total_inches, volume_liters, fins_setup, fin_system, construction, fins_included, tail_shape, fin_size, wetsuit_size, apparel_kind, traction_size, views, created_at, archived_at, hidden_from_site, site_visibility_reason, sold_off_platform, shipping_package_tier, shipping_package_band, shipping_packed_length_in, shipping_packed_width_in, shipping_packed_height_in, shipping_packed_weight_oz, listing_images(url, thumbnail_url, is_primary)"
 
 const EMPTY_STATS: MyListingsDashboardStats = {
   totalListings: 0,
@@ -247,7 +249,9 @@ export async function fetchMyListingCartOfferProspects(
 
   const { data, error } = await supabase
     .from("listings")
-    .select("id, title, price, status, section, hidden_from_site")
+    .select(
+      "id, title, price, status, section, hidden_from_site, listing_images(url, is_primary, thumbnail_url)",
+    )
     .eq("user_id", userId)
     .in("id", ids)
     .in("status", ["active", "pending_sale"])
@@ -264,11 +268,13 @@ export async function fetchMyListingCartOfferProspects(
     const cartCount = engagementCounts.get(row.id)?.cartCount ?? 0
     if (cartCount <= 0) continue
     const price = Number.parseFloat(String(row.price ?? 0))
+    const imageUrl = listingCardImageSrc(row.listing_images) || null
     prospects.push({
       id: row.id,
       title: (row.title ?? "").trim() || "Listing",
       cartCount,
       price: Number.isFinite(price) ? price : 0,
+      imageUrl,
     })
   }
 

@@ -18,7 +18,7 @@ async function currentUserIsStaff(): Promise<boolean> {
     .eq("id", user.id)
     .maybeSingle()
 
-  return Boolean(profile && (profile.is_admin === true || profile.is_employee === true))
+  return profile?.is_admin === true
 }
 
 /**

@@ -4,6 +4,11 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { toast } from "sonner"
+import {
+  parseSellListingPrice,
+  readLiveSellListingPrice,
+  sellListingPriceIsPublishable,
+} from "@/lib/utils/sell-listing-price"
 import { Loader2, X, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -47,6 +52,8 @@ import {
   SellSectionNavHorizontal,
   SELL_WETSUITS_FORM_SECTION_NAV_ITEMS,
 } from "@/components/features/sell/sell-section-nav"
+import { fetchActingShopAccountId } from "@/lib/account-access/fetch-acting-shop-account"
+import { listingOwnerIsOperableAccount } from "@/lib/account-access/operates-listing"
 import { createClient } from "@/lib/supabase/client"
 import { useOwnedListingEditLoad } from "@/components/features/sell/hooks/use-owned-listing-edit-load"
 import { SellEditLoadError } from "@/components/features/sell/sell-edit-load-error"
@@ -66,6 +73,11 @@ import {
 } from "@/lib/sell-flow/update-owned-listing-client"
 import { buildWetsuitListingPersistFields } from "@/lib/wetsuit-listing-persist-fields"
 import { computeWetsuitSellSectionCompletion } from "@/lib/wetsuit-sell-section-completion"
+import {
+  brandNewQuantityValidationMessage,
+  parseBrandNewListingQuantity,
+  sellFormStockQuantityValue,
+} from "@/lib/listing-stock-quantity"
 import { sellFormConditionValue } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
 import { navigateAfterListingSave } from "@/lib/sell-flow/navigate-after-listing-save"
@@ -127,6 +139,7 @@ type WetsuitFormState = {
   sellerPurchasedFrom: string
   sellerPurchasedOn: string
   condition: string
+  stockQuantity: string
   size: string
   brand: string
   model: string
@@ -155,6 +168,7 @@ const INITIAL_STATE: WetsuitFormState = {
   sellerPurchasedFrom: "",
   sellerPurchasedOn: "",
   condition: "",
+  stockQuantity: "1",
   size: "",
   brand: "",
   model: "",
@@ -375,6 +389,7 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
         sellerPurchasedOn:
           (listing as { seller_purchased_on?: string | null }).seller_purchased_on ?? "",
         condition: sellFormConditionValue(listing.condition),
+        stockQuantity: sellFormStockQuantityValue((listing as { stock_quantity?: number | null }).stock_quantity),
         size: (listing as { wetsuit_size?: string | null }).wetsuit_size ?? "",
         brand: (listing as { brand?: string | null }).brand?.trim() ?? "",
         model: (listing as { model?: string | null }).model?.trim() ?? "",
@@ -593,12 +608,19 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
       scrollWetsuitSellSectionIntoView("sell-wetsuits-section-details")
       return
     }
+    const quantityMessage = brandNewQuantityValidationMessage(form.condition, form.stockQuantity)
+    if (quantityMessage) {
+      failValidation(quantityMessage)
+      scrollWetsuitSellSectionIntoView("sell-wetsuits-section-details")
+      return
+    }
     if (!form.description.trim()) {
       failValidation("Add a description.")
       scrollWetsuitSellSectionIntoView("sell-wetsuits-section-details")
       return
     }
-    if (!form.price.trim() || Number(form.price) <= 0) {
+    const livePrice = readLiveSellListingPrice(form.price)
+    if (!sellListingPriceIsPublishable(livePrice)) {
       failValidation("Enter a price.")
       scrollWetsuitSellSectionIntoView("sell-wetsuits-section-publish")
       return
@@ -630,8 +652,9 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
     const payload = {
       title: form.title,
       description: form.description,
-      price: Number(form.price),
+      price: parseSellListingPrice(livePrice) ?? 0,
       condition: form.condition as CreateWetsuitListingInput["condition"],
+      stockQuantity: parseBrandNewListingQuantity(form.stockQuantity) ?? 1,
       size: form.size || null,
       brand: form.brand,
       model: form.model,
@@ -675,10 +698,11 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
         storedImpersonation = null
       }
 
+      const actingShopAccountId = await fetchActingShopAccountId()
       const editingOwnListing =
         Boolean(editId) &&
         Boolean(editListingOwnerId) &&
-        user.id === editListingOwnerId
+        listingOwnerIsOperableAccount(user.id, editListingOwnerId, actingShopAccountId)
       if (editingOwnListing && storedImpersonation) {
         clearImpersonation()
         storedImpersonation = null
@@ -695,7 +719,11 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
       )
 
       if (editId) {
-        const ownerEditsOwnListing = user.id === editListingOwnerId
+        const ownerEditsOwnListing = listingOwnerIsOperableAccount(
+          user.id,
+          editListingOwnerId,
+          actingShopAccountId,
+        )
         if (adminImpersonatesListingOwner) {
           const updated = await updateOwnedListingViaApi({
             listingId: editId,
@@ -924,9 +952,9 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
                     onDragEnd={handlePhotosDragEnd}
                     onRemove={handlePhotoTileRemove}
                     onRetry={handlePhotoTileRetry}
-                    onRotate180={handlePhotoTileRotate}
+                    onRotateQuarterTurns={handlePhotoTileRotate}
                     photoDragSensors={photoDragSensors}
-                    photoDescription="Add clear photos. Drag to reorder — the first image is your main photo on browse tiles. Optional: add one short video."
+                    photoDescription="Add clear photos. Drag to reorder — the first image is your main photo on browse tiles. Turn a photo 90° if it lands sideways. Optional: add one short video."
                     video={video}
                     videoFileInputId={videoFileInputId}
                     onVideoInputChange={handleVideoInputChange}
@@ -977,6 +1005,8 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
                     brand={form.brand}
                     model={form.model}
                     onConditionChange={(v) => setField("condition", v)}
+                    stockQuantity={form.stockQuantity}
+                    onStockQuantityChange={(v) => setField("stockQuantity", v)}
                     onSizeChange={(v) => setField("size", v)}
                     onBrandChange={(v) => setField("brand", v)}
                     onModelChange={(v) => setField("model", v)}

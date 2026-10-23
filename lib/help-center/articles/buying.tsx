@@ -184,7 +184,7 @@ export const buyingHelpArticles: HelpArticle[] = [
           <>
             <p>
               Your offer shows up in {helpLink("/messages", "Messages")} and on{" "}
-              {helpLink("/dashboard/offers", "Offers")} under <strong>I made</strong>. From there the
+              {helpLink("/dashboard/offers?tab=buyer", "Offers")} under <strong>Buying</strong>. From there the
               seller can:
             </p>
             <BulletList
@@ -327,9 +327,9 @@ export const buyingHelpArticles: HelpArticle[] = [
         body: (
           <>
             <p>
-              Open {helpLink("/dashboard/favorites", "Favorites")} from your profile menu or dashboard
-              to see everything you have saved. Tap a listing to go back to it, or tap the heart again
-              to remove it.
+              Open {helpLink("/favorites", "Favorites")} from the heart in the header or from your
+              dashboard to see everything you have saved. Tap a listing to go back to it, or tap the
+              heart again to remove it.
             </p>
             <BulletList
               items={[

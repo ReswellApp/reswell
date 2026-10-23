@@ -12,6 +12,10 @@ const sitemapBuilderSource = readFileSync(
   new URL("./build-sitemap-entries.ts", import.meta.url),
   "utf8",
 )
+const sitemapModelsSource = readFileSync(
+  new URL("../db/sitemap-models.ts", import.meta.url),
+  "utf8",
+)
 
 describe("model page build policy", () => {
   it("prebuilds no catalog models and allows unknown paths to use hourly ISR", () => {
@@ -31,7 +35,12 @@ describe("model page build policy", () => {
     assert.match(modelPageSource, /getDb\(\{ consistency: "eventual" \}\)/)
   })
 
-  it("keeps every catalog model in the pages sitemap", () => {
+  it("noindexes a model page that has nothing to rank for", () => {
+    assert.match(modelPageSource, /isModelPageIndexable\(/)
+    assert.match(modelPageSource, /index: indexable/)
+  })
+
+  it("emits every model row the sitemap builder is given", () => {
     const rows = Array.from({ length: 4000 }, (_, index) => ({
       brandSlug: `brand-${Math.floor(index / 20)}`,
       modelSlug: `model-${index}`,
@@ -54,5 +63,6 @@ describe("model page build policy", () => {
       sitemapBuilderSource,
       /buildModelPageSitemapEntries\(modelRows, BASE, now\)/,
     )
+    assert.match(sitemapModelsSource, /selectIndexableModelSitemapEntries/)
   })
 })

@@ -149,7 +149,7 @@ export const buyingRetrievalDocs = [
       "buying/how-board-finder-works",
     ],
     quickAnswer:
-      "Tap the heart on any listing to save it. Open Favorites from the profile menu or /dashboard/favorites. Sold listings stay on the list with a sold badge.",
+      "Tap the heart on any listing to save it. Open Favorites from the header heart or /favorites. Sold listings stay on the list with a sold badge.",
     sections: [
       {
         heading: "Saving a listing",
@@ -211,7 +211,7 @@ export const buyingRetrievalDocs = [
       },
       {
         heading: "What happens after you submit",
-        text: "The offer appears in Messages and on Offers under I made. The seller can accept, counter (up to three counters per thread), or decline. You are not charged until you pay at checkout.",
+        text: "The offer appears in Messages and on Offers under Buying. The seller can accept, counter (up to three counters per thread), or decline. You are not charged until you pay at checkout.",
       },
       {
         heading: "Paying after an offer is accepted",

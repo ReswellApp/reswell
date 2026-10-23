@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
+import { activeSellerId } from "@/lib/account-access/order-operator"
+import { loadOrderOperator } from "@/lib/account-access/order-operator-session"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { buildSellerPrintableShippingLabelsPdf } from "@/lib/services/sellerPrintShippingLabels"
 import { sellerPrintShippingLabelsQuerySchema } from "@/lib/validations/seller-print-shipping-labels"
@@ -24,11 +26,16 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Invalid shipping labels" }, { status: 400 })
   }
 
+  const operating = await loadOrderOperator()
+  if (!operating.ok) {
+    return NextResponse.json({ error: operating.error }, { status: operating.status })
+  }
+
   const serviceSupabase = createServiceRoleClient()
   const result = await buildSellerPrintableShippingLabelsPdf({
     supabase,
     serviceSupabase,
-    sellerId: user.id,
+    sellerId: activeSellerId(operating.operator),
     orderIds: parsed.data.ids,
   })
 

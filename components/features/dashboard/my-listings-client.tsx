@@ -7,6 +7,7 @@ import Image from "next/image"
 import { format } from "date-fns"
 import { listingDetailHref } from "@/lib/listing-href"
 import { listingCardImageSrc } from "@/lib/listing-image-display"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -58,10 +59,10 @@ import {
   type ListingsDeskView,
 } from "@/components/features/dashboard/listings/listings-view-tabs"
 import { ShopVacationButton } from "@/components/features/dashboard/listings/shop-vacation-button"
-import type { ListingQuickEditSaved } from "@/lib/actions/listingQuickEdit"
+import type { ListingQuickEditSaved } from "@/lib/services/listingQuickEdit"
 import type { MyListingRow, MyListingsDashboardStats } from "@/lib/db/my-listings"
-import type { ListingPackageColumns, ShopCategoryPackageSizeMap } from "@/lib/shop-category-package-sizes"
-import { canQuickEditListing } from "@/lib/listing-quick-edit-access"
+import type { ListingPackageColumns } from "@/lib/shop-category-package-sizes"
+import { EMPTY_SHOP_SHIPPING_DEFAULTS, type ShopShippingDefaults } from "@/lib/shop-shipping-defaults"
 import { shopVacationTargetIds } from "@/lib/shop-vacation"
 import { cn } from "@/lib/utils"
 import {
@@ -112,7 +113,7 @@ interface MyListingsClientProps {
   initialStatusFilter?: StatusFilter
   initialView?: ListingsDeskView
   sellerStoreHref?: string | null
-  shopCategoryPackageSizes?: ShopCategoryPackageSizeMap
+  shopShippingDefaults?: ShopShippingDefaults
 }
 
 function listingRowImageSrc(listing: MyListingRow): string | null {
@@ -327,7 +328,7 @@ export function MyListingsClient({
   initialStatusFilter = "all",
   initialView = "basic",
   sellerStoreHref = null,
-  shopCategoryPackageSizes = {},
+  shopShippingDefaults = EMPTY_SHOP_SHIPPING_DEFAULTS,
 }: MyListingsClientProps) {
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState("")
@@ -462,12 +463,13 @@ export function MyListingsClient({
     }))
   }
 
-  function handlePackageApplied(section: string, columns: ListingPackageColumns) {
+  function handleShippingApplied(groups: { ids: string[]; columns: ListingPackageColumns }[]) {
     setListingPatches((current) => {
       const next = { ...current }
-      for (const listing of listings) {
-        if (listing.section !== section || !canQuickEditListing(listing.status)) continue
-        next[listing.id] = { ...next[listing.id], ...columns }
+      for (const group of groups) {
+        for (const id of group.ids) {
+          next[id] = { ...next[id], ...group.columns }
+        }
       }
       return next
     })
@@ -579,7 +581,9 @@ export function MyListingsClient({
             type="search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search your listings"
+            placeholder={
+              view === "advanced" ? "title, brand or model" : "Search your listings"
+            }
             className={dashboardSearchInputClass}
             aria-label="Search your listings"
           />
@@ -642,9 +646,13 @@ export function MyListingsClient({
           }
           sellerStoreHref={sellerStoreHref}
           sellerBanned={sellerBanned}
-          shopCategoryPackageSizes={shopCategoryPackageSizes}
+          shopShippingDefaults={shopShippingDefaults}
+          listedSort={sort === "oldest" ? "oldest" : "recent"}
+          onListedSortChange={(next) => setSort(next)}
           onListingSaved={handleListingSaved}
-          onPackageApplied={handlePackageApplied}
+          onShippingApplied={handleShippingApplied}
+          onEndListing={setEndListingId}
+          onDiscardDraft={handleDiscardDraft}
         />
       ) : null}
 
@@ -820,7 +828,7 @@ function ListingRow({
             src={imageSrc}
             alt={capitalizeWords(listing.title)}
             fill
-            className="object-cover object-center"
+            className={listingPhotoFillClassName}
             sizes={listingPortraitThumbSizes}
             unoptimized={listingImageShouldBypassOptimization(imageSrc)}
           />

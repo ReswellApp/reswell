@@ -14,6 +14,10 @@ export async function GET(request: NextRequest) {
   const supabase = createRouteHandlerSupabaseClient(request, redirectResponse)
   try {
     await supabase.auth.signOut({ scope: "global" })
+    // The SSR client writes cookie clears from the SIGNED_OUT callback. Let that
+    // finish, then overwrite them — a Max-Age=0 write without Expires is parsed
+    // back into an empty session cookie and the next page still looks signed in.
+    await new Promise((resolve) => setTimeout(resolve, 0))
   } catch {
     // Still purge cookies so the browser stops replaying a dead session.
   }

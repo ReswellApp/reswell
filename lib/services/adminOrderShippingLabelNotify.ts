@@ -6,7 +6,10 @@ import {
 } from "@/lib/db/adminOrderShippingLabels"
 import { resolveOpenOrderShippingLabelFailures } from "@/lib/db/orderShippingLabelFailures"
 import { buildShippingLabelThreadPlainText } from "@/lib/messages/shipping-label-thread"
+import { broadcastInsertedMarketplaceMessage } from "@/lib/services/broadcastMarketplaceThreadMessage"
 import { fetchSantaBarbaraDropoffOrderIds } from "@/lib/services/santaBarbaraDropoffOrderAccess"
+import { ensureOrderBrandedTrackingUrl } from "@/lib/services/ensureOrderBrandedTrackingUrl"
+import { downloadAndStoreLabelPdf } from "@/lib/services/storeOrderShippingLabelAssets"
 import type { AdminShippingLabelMessagePayload } from "@/lib/validations/shipping-label-message-metadata"
 
 /**
@@ -40,13 +43,26 @@ export async function attachAdminShippingLabelToOrder(params: {
   const u = params.order
   const track = params.trackingNumber?.trim() || null
   const car = params.trackingCarrier?.trim() || null
+  let labelPdfUrl = params.labelPdfUrl?.trim() || null
+  let labelStoragePath = params.labelStoragePath?.trim() || null
+
+  // Carrier download URLs expire. Keep a copy in storage so admin can open the
+  // label later, including Santa Barbara drop-off orders whose chat link is stripped.
+  if (labelPdfUrl && !labelStoragePath) {
+    const stored = await downloadAndStoreLabelPdf({
+      supabase: params.supabase,
+      orderId: u.id,
+      pdfUrl: labelPdfUrl,
+    })
+    if (stored.ok) labelStoragePath = stored.storagePath
+  }
 
   const ins = await insertOrderAdminShippingLabel(params.supabase, {
     order_id: u.id,
     created_by: params.adminUserId,
     source: params.source,
-    label_pdf_url: params.labelPdfUrl,
-    label_storage_path: params.labelStoragePath,
+    label_pdf_url: labelPdfUrl,
+    label_storage_path: labelStoragePath,
     tracking_number: track,
     tracking_carrier: car,
     shipengine_rate_id: params.shipengineRateId ?? null,
@@ -89,13 +105,14 @@ export async function attachAdminShippingLabelToOrder(params: {
   const hideLabelFromSeller = (
     await fetchSantaBarbaraDropoffOrderIds(params.supabase, [u.id])
   ).has(u.id)
-  const labelPdfUrl = hideLabelFromSeller ? null : params.labelPdfUrl?.trim() || null
+  const messageLabelPdfUrl = hideLabelFromSeller ? null : params.labelPdfUrl?.trim() || null
   const content = buildShippingLabelThreadPlainText({
     orderNum: params.displayOrderNum,
     listingTitle: params.listingTitle,
     trackingNumber: track,
     trackingCarrier: car,
   })
+  const brandedUrl = track ? await ensureOrderBrandedTrackingUrl(u.id) : null
   const metadata: AdminShippingLabelMessagePayload = {
     kind: "admin_shipping_label",
     orderId: u.id,
@@ -103,7 +120,8 @@ export async function attachAdminShippingLabelToOrder(params: {
     listingTitle: params.listingTitle,
     trackingNumber: track,
     trackingCarrier: car,
-    labelPdfUrl,
+    ...(brandedUrl ? { trackingUrl: brandedUrl } : {}),
+    labelPdfUrl: messageLabelPdfUrl,
     hasPaperlessQr: hideLabelFromSeller
       ? false
       : Boolean(params.paperlessQrUrl || params.paperlessQrStoragePath),
@@ -129,14 +147,23 @@ export async function attachAdminShippingLabelToOrder(params: {
   }
 
   if (conv) {
-    const { error: msgErr } = await params.supabase.from("messages").insert({
-      conversation_id: conv.id,
-      sender_id: params.adminUserId,
-      content,
-      metadata,
-    })
-    if (msgErr) {
+    const { data: inserted, error: msgErr } = await params.supabase
+      .from("messages")
+      .insert({
+        conversation_id: conv.id,
+        sender_id: params.adminUserId,
+        content,
+        metadata,
+      })
+      .select("id, created_at")
+      .single()
+    if (msgErr || !inserted) {
       console.error("[attachAdminShippingLabelToOrder] message insert:", msgErr)
+    } else {
+      await broadcastInsertedMarketplaceMessage(
+        { ...inserted, sender_id: params.adminUserId, content, metadata },
+        conv.id,
+      )
     }
     await params.supabase
       .from("conversations")

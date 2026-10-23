@@ -446,17 +446,34 @@ async function resolveSellerAddress(
   sellerAddressId: string | null,
 ): Promise<{ ok: true; address: ProfileAddressRow } | { ok: false; error: string; status: number }> {
   const resolved = await resolveSellerShipFromAddress(supabase, sellerId, sellerAddressId)
-  if (!resolved.ok) {
-    return {
-      ok: false,
-      error:
-        resolved.error === "Seller has no ship-from address on file."
-          ? "Save a ship-from address on your profile first."
-          : resolved.error,
-      status: 400,
-    }
+  if (resolved.ok) return { ok: true, address: resolved.address }
+
+  // A team member's session can read the shop's orders, but ship-from rows belong
+  // to the shop profile. Retry with the service role after the route has already
+  // confirmed this seller id is one they operate.
+  try {
+    const privileged = await resolveSellerShipFromAddress(
+      createServiceRoleClient(),
+      sellerId,
+      sellerAddressId,
+    )
+    if (privileged.ok) return { ok: true, address: privileged.address }
+  } catch (error) {
+    console.error("[sellerShippingLabelCheckout] shop ship-from read failed", {
+      sellerId,
+      message: error instanceof Error ? error.message : "unknown",
+      timestamp: new Date().toISOString(),
+    })
   }
-  return { ok: true, address: resolved.address }
+
+  return {
+    ok: false,
+    error:
+      resolved.error === "Seller has no ship-from address on file."
+        ? "Save a ship-from address on your profile first."
+        : resolved.error,
+    status: 400,
+  }
 }
 
 export async function resolveSellerShippingLabelRate(params: {

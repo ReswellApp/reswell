@@ -17,7 +17,7 @@ export type SellCatalogEsKind = "brand" | "model"
 
 /**
  * Brand + model documents across every `/sell` catalog category
- * (surfboards, fins, wetsuits, apparel). Used strictly by the `/sell`
+ * (surfboards, fins, wetsuits, boardbags, surfpacks, leashes, apparel). Used strictly by the `/sell`
  * "Find a match" wall to resolve brand/model text into catalog rows —
  * fins additionally keep their richer variant-level index.
  */

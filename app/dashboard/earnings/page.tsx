@@ -8,6 +8,8 @@ import { getEarningsWalletData, loadMoreEarningsActivity } from "@/app/actions/w
 import { EARNINGS_ACTIVITY_PAGE_SIZE } from "@/lib/earnings-activity-page-size"
 import { EarningsLifetimeStats } from "@/components/features/earnings/earnings-lifetime-stats"
 import { EarningsActivity } from "@/components/features/earnings/earnings-activity"
+import { EarningsBalanceListings } from "@/components/features/earnings/earnings-balance-listings"
+import type { EarningsBalanceListingRow } from "@/lib/earnings-balance-listings"
 import { EarningsStripePayoutCard } from "@/components/features/earnings/earnings-stripe-payout-card"
 import { EarningsPaymentsOverview } from "@/components/features/earnings/earnings-payments-overview"
 import { DashboardPageHeader } from "@/components/features/dashboard/dashboard-page-header"
@@ -35,6 +37,8 @@ export default function EarningsPage() {
   const [walletError, setWalletError] = useState<string | null>(null)
 
   const [transactions, setTransactions] = useState<EarningsTransaction[]>([])
+  const [pendingBalanceListings, setPendingBalanceListings] = useState<EarningsBalanceListingRow[]>([])
+  const [readyBalanceListings, setReadyBalanceListings] = useState<EarningsBalanceListingRow[]>([])
   const [activityLoading, setActivityLoading] = useState(true)
   const [activityHasMore, setActivityHasMore] = useState(false)
   const [activityLoadMoreError, setActivityLoadMoreError] = useState<string | null>(null)
@@ -100,6 +104,8 @@ export default function EarningsPage() {
         setWallet(nextWallet)
         dispatchHeaderWalletSync(nextWallet)
         setTransactions(earningsData.transactions as EarningsTransaction[])
+        setPendingBalanceListings(earningsData.pendingBalanceListings ?? [])
+        setReadyBalanceListings(earningsData.readyBalanceListings ?? [])
         setReversedOrderIds(new Set(earningsData.reversedOrderIds ?? []))
         setActivityHasMore(Boolean(earningsData.activityHasMore))
         setSellerEarningsTotals(earningsData.sellerEarningsTotals ?? null)
@@ -111,6 +117,8 @@ export default function EarningsPage() {
             : "Could not load your wallet.",
         )
         setTransactions([])
+        setPendingBalanceListings([])
+        setReadyBalanceListings([])
         setReversedOrderIds(new Set())
         setActivityHasMore(false)
         setSellerEarningsTotals(null)
@@ -120,6 +128,8 @@ export default function EarningsPage() {
       setWalletError("Could not load your wallet.")
       setWallet(null)
       setTransactions([])
+      setPendingBalanceListings([])
+      setReadyBalanceListings([])
       setActivityHasMore(false)
       setSellerEarningsTotals(null)
     } finally {
@@ -357,6 +367,16 @@ export default function EarningsPage() {
             activityHasMore={activityHasMore}
           />
         </section>
+
+        <EarningsBalanceListings
+          pending={pendingBalanceListings}
+          ready={readyBalanceListings}
+          pendingTotalUsd={Number.isFinite(parseFloat(wallet?.pending_balance ?? "0"))
+            ? parseFloat(wallet?.pending_balance ?? "0")
+            : 0}
+          readyTotalUsd={Number.isFinite(displayAvailable) ? displayAvailable : 0}
+          isLoading={activityLoading}
+        />
 
         <EarningsLifetimeStats
           wallet={wallet}

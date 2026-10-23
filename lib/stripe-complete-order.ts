@@ -8,6 +8,7 @@ import {
 } from "@/lib/listing-offer-authorization"
 import type Stripe from "stripe"
 import { deleteBuyerCartRowsForListings } from "@/lib/db/cart-items-server"
+import { attachListingInventorySources } from "@/lib/db/listingInventorySource"
 import {
   PEER_SURFBOARD_CHECKOUT_LISTING_SELECT,
   type PeerSurfboardCheckoutListingRow,
@@ -30,6 +31,7 @@ import { listingSoldViaCheckoutUpdate } from "@/lib/listing-sold-state"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { formatPeerItemCountPhrase } from "@/lib/peer-listing-item-nouns"
 import { isReswellShopListing } from "@/lib/reswell-shop"
+import { peerBrandNewStockQuantity } from "@/lib/listing-stock-quantity"
 import {
   dbListShopifyMappedListingIds,
   dbOrderContainsListingItems,
@@ -75,7 +77,10 @@ import { insertOrderAdAttribution } from "@/lib/db/orderAdAttribution"
 import { markUserListingBoardModelDataSold } from "@/lib/db/user-listing-board-model-data"
 import { purchaseReswellShippingLabelAfterCheckout } from "@/lib/services/autoPurchaseReswellShippingLabelForOrder"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
-import { safeRevalidateAfterMarketplaceOrderCommit } from "@/lib/cache/safe-revalidate-after-order"
+import {
+  revalidateSoldFeedAfterSale,
+  safeRevalidateAfterMarketplaceOrderCommit,
+} from "@/lib/cache/safe-revalidate-after-order"
 import { completeAcceptedOfferOnPurchase } from "@/lib/services/completeOfferOnPurchase"
 import {
   fetchCheckoutPromoCodeById,
@@ -83,7 +88,8 @@ import {
   parseCheckoutPromoKind,
   redeemCheckoutPromoForOrder,
 } from "@/lib/services/checkoutPromo"
-import { computeCheckoutTotalWithNewsletterPromo } from "@/lib/services/newsletterPromo"
+import { eligibleItemSubtotalForAdminPromo } from "@/lib/services/promoProductType"
+import { computeRestrictedPromoCheckoutAmounts, promoCheckoutLinesFromPricedListings } from "@/lib/utils/promo-product-type"
 import { sendPostPurchaseReviewInvite } from "@/lib/services/orderReviewInvite"
 import { notifySellerOrderCheckoutKlaviyo } from "@/lib/services/notifySellerOrderCheckoutKlaviyo"
 import { releaseOrderSellerEarningsAfterFulfillment } from "@/lib/services/releaseOrderSellerEarnings"
@@ -278,10 +284,14 @@ async function maybeSyncAdminTerminalGuestToCrm(
 }
 
 /** Keep wallet_transactions.description within typical DB limits (long listing titles). */
-function walletPendingSaleDescription(listingTitle: string, platformFeeUsd: number): string {
+function walletPendingSaleDescription(
+  listingTitle: string,
+  platformFeeUsd: number,
+  shopifyUsageFeeUsd = 0,
+): string {
   const safeTitle =
     listingTitle.length > 400 ? `${listingTitle.slice(0, 399)}…` : listingTitle
-  const raw = `Pending — Sold "${safeTitle}" (${pendingSaleFeeClause(platformFeeUsd)}, card — available after fulfillment hold)`
+  const raw = `Pending — Sold "${safeTitle}" (${pendingSaleFeeClause(platformFeeUsd, shopifyUsageFeeUsd)}, card — available after fulfillment hold)`
   return raw.length > 2000 ? `${raw.slice(0, 1999)}…` : raw
 }
 
@@ -370,7 +380,8 @@ async function recoverMissingOrderPendingLedger(
 
 /**
  * Re-send Purchase Successful for an order already stored (idempotent finalize / webhook).
- * Seller Sale Successful Klaviyo fires when earnings are released after fulfillment.
+ * Seller Sale Successful and Earnings Available Klaviyo events fire when earnings
+ * are released after fulfillment.
  */
 async function emitPurchaseSuccessfulKlaviyoForOrderId(
   serviceSupabase: ReturnType<typeof createServiceRoleClient>,
@@ -532,6 +543,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
         await purchaseReswellShippingLabelAfterCheckout(serviceSupabase, existing.id)
       }
       void maybeSyncAdminTerminalGuestToCrm(serviceSupabase, pi, existing.id)
+      revalidateSoldFeedAfterSale()
       return { ok: true, orderId: existing.id, alreadyProcessed: true }
     }
 
@@ -549,6 +561,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       await purchaseReswellShippingLabelAfterCheckout(serviceSupabase, existing.id)
     }
     void maybeSyncAdminTerminalGuestToCrm(serviceSupabase, pi, existing.id)
+    revalidateSoldFeedAfterSale()
     return { ok: true, orderId: existing.id, alreadyProcessed: true }
   }
 
@@ -620,6 +633,15 @@ export async function completeMarketplaceOrderFromPaymentIntent(
 
   if (listingsOrdered.length !== listingIdsOrdered.length) {
     return { ok: false, error: "Listing not found", status: 404 }
+  }
+
+  const sourcedListings = await attachListingInventorySources(serviceSupabase, listingsOrdered)
+  if (!sourcedListings.ok) {
+    return { ok: false, error: sourcedListings.error, status: 500 }
+  }
+  for (let index = 0; index < listingsOrdered.length; index += 1) {
+    const sourced = sourcedListings.listings[index]
+    if (sourced) listingsOrdered[index] = sourced
   }
 
   if (buyerId && listingsOrdered.some((l) => l.user_id === buyerId)) {
@@ -827,6 +849,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
           totalItemPriceUsd: itemPrice,
           totalPlatformFee: platformFee,
           totalSellerEarnings: sellerEarnings,
+          totalShopifyUsageFee: 0,
           anyUsedReswellQuote: false,
         }
       })()
@@ -876,6 +899,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     (promoCodeId ? await inferCheckoutPromoKind(promoCodeId) : null)
   let promoDiscountUsd = 0
   let promoDiscountPercent = 0
+  let expectedPromoTotal = 0
 
   if (promoCodeId) {
     if (!promoDiscountCentsRaw || !/^\d+$/.test(promoDiscountCentsRaw)) {
@@ -898,12 +922,31 @@ export async function completeMarketplaceOrderFromPaymentIntent(
         : // Legacy PIs without promo_discount_percent metadata.
           Math.round((promoDiscountUsd / bundle.totalItemPriceUsd) * 100)
 
-    const { discountUsd: expectedDiscountUsd, totalUsd: expectedPromoTotal } =
-      computeCheckoutTotalWithNewsletterPromo({
+    let eligibleItemSubtotalUsd = bundle.totalItemPriceUsd
+    if (promoKind === "admin_issued") {
+      const eligible = await eligibleItemSubtotalForAdminPromo({
+        supabase: serviceSupabase,
+        promoId: promoCodeId,
+        lines: promoCheckoutLinesFromPricedListings({
+          listings: listingsForTotals,
+          pricedLines: bundle.lines,
+        }),
         itemSubtotalUsd: bundle.totalItemPriceUsd,
+      })
+      if (!eligible.ok) {
+        return { ok: false, error: eligible.error, status: 400 }
+      }
+      eligibleItemSubtotalUsd = eligible.eligibleItemSubtotalUsd
+    }
+
+    const amounts = computeRestrictedPromoCheckoutAmounts({
+        itemSubtotalUsd: bundle.totalItemPriceUsd,
+        eligibleItemSubtotalUsd,
         shippingUsd,
         discountPercent: promoDiscountPercent,
       })
+    const expectedDiscountUsd = amounts.discountUsd
+    expectedPromoTotal = amounts.totalUsd
 
     const expectedPromoCents = Math.round(expectedPromoTotal * 100)
     const metaCents = hasMetaAmountCents ? parseInt(metaAmountCentsRaw!, 10) : expectedPromoCents
@@ -918,13 +961,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
   const expectedCents = hasMetaAmountCents
     ? parseInt(metaAmountCentsRaw!, 10)
     : promoCodeId
-      ? Math.round(
-          computeCheckoutTotalWithNewsletterPromo({
-            itemSubtotalUsd: bundle.totalItemPriceUsd,
-            shippingUsd,
-            discountPercent: promoDiscountPercent,
-          }).totalUsd * 100,
-        )
+      ? Math.round(expectedPromoTotal * 100)
       : Math.round((bundle.totalItemPriceUsd + shippingUsd) * 100)
 
   if (pi.amount !== expectedCents) {
@@ -934,6 +971,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
   const chargedUsd = pi.amount / 100
   const platformFee = bundle.totalPlatformFee
   const sellerEarnings = bundle.totalSellerEarnings
+  const shopifyUsageFee = bundle.totalShopifyUsageFee
 
   if (!Number.isFinite(sellerEarnings) || sellerEarnings < 0) {
     console.error("[stripe-complete-order] invalid seller_earnings", {
@@ -1221,18 +1259,23 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       userId: bundleSellerId,
       amountUsd: sellerEarnings,
       orderId: purchase.id,
-      description: walletPendingSaleDescription(walletTitleSummary, platformFee),
+      description: walletPendingSaleDescription(
+        walletTitleSummary,
+        platformFee,
+        shopifyUsageFee,
+      ),
       referenceType: "order_pending_earnings",
     })
     if (!sellerCredit.ok) return sellerCredit
   }
 
-  // Peer listings: mark sold. Shop inventory: atomically decrement stock (sold when 0).
+  // Unique peer listings: mark sold. Brand-new and shop inventory: decrement stock.
   const peerListingIds = listingsOrdered
     .filter(
       (listing) =>
         isPeerListingSection(listing.section) &&
-        !isShopifyManagedListing(listing),
+        !isShopifyManagedListing(listing) &&
+        peerBrandNewStockQuantity(listing) < 1,
     )
     .map((l) => l.id)
   if (peerListingIds.length > 0) {
@@ -1249,7 +1292,10 @@ export async function completeMarketplaceOrderFromPaymentIntent(
 
   for (const line of bundle.lines) {
     const listing = listingsOrdered.find((l) => l.id === line.listingId)
-    if (!listing || !isReswellShopListing(listing.section)) continue
+    if (!listing) continue
+    const decrementStock =
+      isReswellShopListing(listing.section) || peerBrandNewStockQuantity(listing) >= 1
+    if (!decrementStock) continue
     const { error: stockErr } = await serviceSupabase.rpc("decrement_listing_stock", {
       p_listing_id: line.listingId,
       p_qty: line.quantity,
@@ -1258,7 +1304,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       console.error("[stripe-complete-order] stock decrement:", stockErr)
       return {
         ok: false,
-        error: "Could not update shop inventory. Contact support if you were charged.",
+        error: "Could not update listing inventory. Contact support if you were charged.",
         status: 409,
       }
     }
@@ -1356,7 +1402,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     listingSlug: listing.slug ?? null,
     listingImageUrl: listingImageUrls.get(listing.id) ?? null,
     price: bundle.lines[idx]?.itemPrice ?? parseFloat(String(listing.price)),
-    quantity: 1,
+    quantity: bundle.lines[idx]?.quantity ?? 1,
   }))
 
   const promoCode =

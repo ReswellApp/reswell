@@ -7,6 +7,7 @@ import { ListingPriceWithMarkdown } from "@/components/features/listings/listing
 import { VerifiedBadge } from "@/components/verified-badge"
 import { Button } from "@/components/ui/button"
 import { listingHeroSlideSrc } from "@/lib/listing-image-display"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { listingDetailHref, peerListingCheckoutHref } from "@/lib/listing-href"
 import { getPublicSellerDisplayName } from "@/lib/listing-labels"
 import { sellerProfileHref } from "@/lib/seller-slug"
@@ -60,7 +61,7 @@ export function ModelTopPick({
                 fill
                 priority
                 sizes="(max-width: 1024px) 100vw, 22rem"
-                className="object-cover"
+                className={listingPhotoFillClassName}
               />
             ) : null}
           </div>

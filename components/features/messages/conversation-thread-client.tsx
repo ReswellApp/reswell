@@ -17,6 +17,7 @@ import { toast } from 'sonner'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { listingDetailPath } from '@/lib/listing-query'
 import { listingTitleThumbnailSrc, type ListingImageForCard } from "@/lib/listing-image-display"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import {
   sendConversationReply,
@@ -35,7 +36,12 @@ import {
   createLocalPolicyBlockMessage,
   mergeServerMessagesPreservingLocalPolicyBlocks,
   parseLocalPolicyBlockMetadata,
+  PENDING_THREAD_MESSAGE_ID_PREFIX,
 } from '@/lib/messages/local-phone-policy-block-message'
+import {
+  useConversationThreadLive,
+  type RealtimeThreadMessage,
+} from '@/components/features/messages/hooks/use-conversation-thread-live'
 import { OfferMessageCard } from '@/components/features/messages/offer-message-card'
 import {
   OfferLegacyMirrorCard,
@@ -46,7 +52,9 @@ import {
   parseOfferNegotiationMessage,
   resolveActionableCounteredOffer,
   resolveAcceptedOfferForCheckout,
+  resolveNegotiationOffer,
 } from '@/lib/utils/parse-offer-negotiation-message'
+import { dashboardOffersPath } from '@/lib/utils/offers-dashboard-display'
 import { parseOfferLineItems } from '@/lib/types/offer-line-item'
 import { parseOrderCompletedMessageMetadata } from '@/lib/validations/order-completed-message-metadata'
 import { parseOrderPlacedMessageMetadata } from '@/lib/validations/order-placed-message-metadata'
@@ -219,10 +227,11 @@ export function ConversationThreadClient({
     () => initialData.currentUserId ?? null,
   )
   const unreadAdjustRef = useRef(0)
+  const knownMessageIdsRef = useRef(new Set<string>())
   const [listingBannerImageReady, setListingBannerImageReady] = useState(false)
   const messagesScrollRef = useRef<HTMLDivElement>(null)
   const stickToBottomRef = useRef(true)
-  const initialScrollDoneRef = useRef(false)
+  const programmaticScrollRef = useRef(false)
   const supabase = createClient()
 
   const orderedMessages = useMemo(
@@ -309,7 +318,16 @@ export function ConversationThreadClient({
   const scrollThreadToBottom = useCallback((behavior: ScrollBehavior = 'auto') => {
     const el = messagesScrollRef.current
     if (!el) return
+    programmaticScrollRef.current = true
+    if (behavior === 'auto') {
+      el.scrollTop = el.scrollHeight
+      programmaticScrollRef.current = false
+      return
+    }
     el.scrollTo({ top: el.scrollHeight, behavior })
+    requestAnimationFrame(() => {
+      programmaticScrollRef.current = false
+    })
   }, [])
 
   const [offerHashId, setOfferHashId] = useState<string | null>(null)
@@ -333,6 +351,7 @@ export function ConversationThreadClient({
     const el = messagesScrollRef.current
     if (!el) return
     const onScroll = () => {
+      if (programmaticScrollRef.current) return
       const thresholdPx = 72
       const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
       stickToBottomRef.current = distanceFromBottom < thresholdPx
@@ -341,20 +360,15 @@ export function ConversationThreadClient({
     return () => el.removeEventListener('scroll', onScroll)
   }, [conversation])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (offerHashId) {
       stickToBottomRef.current = false
       return
     }
     if (!stickToBottomRef.current) return
-    const idFrame = requestAnimationFrame(() => {
-      // Snap to bottom instantly on first paint; glide for live updates.
-      scrollThreadToBottom(initialScrollDoneRef.current ? 'smooth' : 'auto')
-      initialScrollDoneRef.current = true
-    })
-    return () => {
-      cancelAnimationFrame(idFrame)
-    }
+    // Snap before paint. A smooth scroll fires mid-flight scroll events that
+    // clear stick-to-bottom, so the new bubble stays below the fold until refresh.
+    scrollThreadToBottom('auto')
   }, [offerHashId, orderedMessages, scrollThreadToBottom])
 
   useEffect(() => {
@@ -457,11 +471,11 @@ export function ConversationThreadClient({
     }
   }, [id, threadPrimaryListingId, supabase])
 
-  const loadThread = useCallback(async (isActive: () => boolean = () => true) => {
+  const loadThread = useCallback(async (isActive: () => boolean = () => true): Promise<Message[] | null> => {
     try {
       const result = await loadConversationThread(id)
-      if (!isActive()) return
-      if ('error' in result) return
+      if (!isActive()) return null
+      if ('error' in result) return null
 
       const nextConv = (result.conversation as Conversation | null) ?? null
       const nextThreadListingsPatch: Record<string, ListingRow> = {}
@@ -492,12 +506,18 @@ export function ConversationThreadClient({
       if (Object.keys(nextOffersById).length > 0) {
         setOffersById((prev) => ({ ...prev, ...nextOffersById }))
       }
+      return rows
     } catch (err) {
       if (!isAbortError(err)) {
         console.error("[messages] loadThread failed:", err)
       }
+      return null
     }
   }, [id])
+
+  const refreshThread = useCallback(() => {
+    void loadThread()
+  }, [loadThread])
 
   const fetchOfferForMessage = useCallback(
     (offerId: string, isActive: () => boolean) => {
@@ -534,66 +554,100 @@ export function ConversationThreadClient({
     [supabase],
   )
 
-  // Realtime: append the inserted message straight from the payload (no full
-  // re-fetch) so new messages land instantly. Offers still need their row
-  // hydrated, so we fetch just that offer — never the whole thread.
+  const threadGenerationRef = useRef(0)
   useEffect(() => {
-    let active = true
-
-    const channel = supabase
-      .channel(`messages:${id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages',
-          filter: `conversation_id=eq.${id}`,
-        },
-        (payload) => {
-          const msg = payload.new as Message
-          const viewerIsSeller = Boolean(
-            currentUserId && conversation?.seller_id === currentUserId,
-          )
-          const hideSellerLabelPayload =
-            viewerIsSeller && parseShippingLabelThreadMessage(msg.content, msg.metadata)
-          if (hideSellerLabelPayload) {
-            void loadThread()
-          } else {
-            setMessages((prev) => {
-              if (prev.some((m) => m.id === msg.id)) return prev
-              const withoutPending = prev.filter(
-                (m) => !(String(m.id).startsWith('pending-') && m.content === msg.content && m.sender_id === msg.sender_id),
-              )
-              return [...withoutPending, msg]
-            })
-            if (msg.offer_id) {
-              fetchOfferForMessage(msg.offer_id, () => active)
-            }
-          }
-          if (currentUserId && msg.sender_id !== currentUserId) {
-            // Viewing this thread — clear badge/inbox for the inbound message
-            // immediately so the ticker never flashes while mark-read runs.
-            dispatchConversationThreadOpened(id, 1)
-            dispatchUnreadMessageCountAdjust(-1)
-            void markConversationThreadRead(id)
-              .then(() => {
-                dispatchUnreadCountRefresh()
-                dispatchMessagesInboxRefresh()
-              })
-              .catch(() => {
-                dispatchUnreadMessageCountAdjust(1)
-              })
-          }
-        },
-      )
-      .subscribe()
-
     return () => {
-      active = false
-      supabase.removeChannel(channel)
+      threadGenerationRef.current += 1
     }
-  }, [id, supabase, fetchOfferForMessage, currentUserId, conversation?.seller_id, loadThread])
+  }, [id])
+
+  const syncOpenThread = useCallback(() => {
+    const generation = threadGenerationRef.current
+    void loadThread(() => threadGenerationRef.current === generation).then((rows) => {
+      if (threadGenerationRef.current !== generation || !rows || !currentUserId) return
+      const unreadInbound = rows.reduce(
+        (count, message) =>
+          count + (!message.is_read && message.sender_id !== currentUserId ? 1 : 0),
+        0,
+      )
+      if (unreadInbound <= 0) return
+      dispatchConversationThreadOpened(id, unreadInbound)
+      void markConversationThreadRead(id)
+        .then(() => {
+          dispatchUnreadCountRefresh()
+          dispatchMessagesInboxRefresh()
+        })
+        .catch(() => {})
+    })
+  }, [currentUserId, id, loadThread])
+
+  for (const message of messages) {
+    knownMessageIdsRef.current.add(message.id)
+  }
+
+  const applyInsertedMessage = useCallback(
+    (incoming: RealtimeThreadMessage) => {
+      if (knownMessageIdsRef.current.has(incoming.id)) return
+      knownMessageIdsRef.current.add(incoming.id)
+      const msg: Message = {
+        id: incoming.id,
+        content: incoming.content,
+        sender_id: incoming.sender_id,
+        created_at: incoming.created_at,
+        is_read: incoming.is_read ?? false,
+        offer_id: incoming.offer_id ?? null,
+        metadata: incoming.metadata ?? null,
+      }
+      const generation = threadGenerationRef.current
+      const isCurrentThread = () => threadGenerationRef.current === generation
+      const viewerIsSeller = Boolean(
+        currentUserId && conversation?.seller_id === currentUserId,
+      )
+      const hideSellerLabelPayload =
+        viewerIsSeller && parseShippingLabelThreadMessage(msg.content, msg.metadata)
+      if (hideSellerLabelPayload) {
+        void loadThread(isCurrentThread)
+      } else {
+        stickToBottomRef.current = true
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === msg.id)) return prev
+          const withoutPending = prev.filter(
+            (m) =>
+              !(
+                m.id.startsWith(PENDING_THREAD_MESSAGE_ID_PREFIX) &&
+                m.content === msg.content &&
+                m.sender_id === msg.sender_id
+              ),
+          )
+          return [...withoutPending, msg]
+        })
+        if (msg.offer_id) {
+          fetchOfferForMessage(msg.offer_id, isCurrentThread)
+        }
+      }
+      if (currentUserId && msg.sender_id !== currentUserId) {
+        // Viewing this thread — clear badge/inbox for the inbound message
+        // immediately so the ticker never flashes while mark-read runs.
+        dispatchConversationThreadOpened(id, 1)
+        dispatchUnreadMessageCountAdjust(-1)
+        void markConversationThreadRead(id)
+          .then(() => {
+            dispatchUnreadCountRefresh()
+            dispatchMessagesInboxRefresh()
+          })
+          .catch(() => {
+            dispatchUnreadMessageCountAdjust(1)
+          })
+      }
+    },
+    [conversation?.seller_id, currentUserId, fetchOfferForMessage, id, loadThread],
+  )
+
+  useConversationThreadLive({
+    conversationId: id,
+    onMessageInsert: applyInsertedMessage,
+    onThreadChanged: syncOpenThread,
+  })
 
   const handleSend = async () => {
     const trimmed = newMessage.trim()
@@ -614,7 +668,7 @@ export function ConversationThreadClient({
     setSending(true)
     stickToBottomRef.current = true
 
-    const tempId = `pending-${Date.now()}`
+    const tempId = `${PENDING_THREAD_MESSAGE_ID_PREFIX}${Date.now()}`
     const optimisticMessage: Message = {
       id: tempId,
       content,
@@ -847,7 +901,7 @@ export function ConversationThreadClient({
                           alt=""
                           fill
                           sizes="36px"
-                          className="object-cover object-center"
+                          className={listingPhotoFillClassName}
                           unoptimized={listingImageShouldBypassOptimization(threadListingThumbSrc)}
                           onLoad={() => setListingBannerImageReady(true)}
                         />
@@ -903,7 +957,7 @@ export function ConversationThreadClient({
                       alt={capitalizeWords(displayListing.title)}
                       fill
                       sizes="(max-width: 640px) 56px, 72px"
-                      className="object-cover object-center"
+                      className={listingPhotoFillClassName}
                       unoptimized={listingImageShouldBypassOptimization(threadListingThumbSrc)}
                       onLoad={() => setListingBannerImageReady(true)}
                     />
@@ -998,7 +1052,7 @@ export function ConversationThreadClient({
                             minOfferAmount={minOfferAmount}
                             minOfferPct={listingOfferMinPct}
                             createdAt={message.created_at}
-                            onThreadRefresh={loadThread}
+                            onThreadRefresh={refreshThread}
                           />
                         </div>
                       )
@@ -1116,7 +1170,7 @@ export function ConversationThreadClient({
                             createdAt={message.created_at}
                             viewerIsBuyer={viewerIsBuyer}
                             sellerDisplayName={sellerDisplayName}
-                            onAfterReviewSubmitted={loadThread}
+                            onAfterReviewSubmitted={refreshThread}
                           />
                         </div>
                       )
@@ -1184,6 +1238,21 @@ export function ConversationThreadClient({
                       const checkoutLineItems = checkoutOffer
                         ? parseOfferLineItems(checkoutOffer.line_items)
                         : null
+                      const linkedOffer =
+                        (message.offer_id ? offersById[message.offer_id] : undefined) ??
+                        actionable ??
+                        checkoutOffer ??
+                        resolveNegotiationOffer(
+                          offersList,
+                          message.content,
+                          listingIdForOffer,
+                        )
+                      const negotiationOfferHref = linkedOffer
+                        ? dashboardOffersPath({
+                            role: isSeller ? 'seller' : 'buyer',
+                            offerId: linkedOffer.id,
+                          })
+                        : null
                       return (
                         <div className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start', cardMargin)}>
                           <OfferNegotiationEventCard
@@ -1191,12 +1260,12 @@ export function ConversationThreadClient({
                             content={message.content}
                             createdAt={message.created_at}
                             isOwn={isOwn}
-                            showSellerDashboardLink={isSeller && isOwn}
+                            offerHref={negotiationOfferHref}
                             actionableOfferId={actionable?.id ?? null}
                             actionableExpiresAt={actionable?.expires_at ?? null}
                             checkoutOfferId={checkoutOffer?.id ?? null}
                             checkoutLineItemCount={checkoutLineItems?.length ?? 0}
-                            onThreadRefresh={loadThread}
+                            onThreadRefresh={refreshThread}
                           />
                         </div>
                       )
@@ -1325,7 +1394,7 @@ export function ConversationThreadClient({
                   listPrice={listPriceNum}
                   primaryImageUrl={threadListingThumbSrc || null}
                   disabled={sending}
-                  onOfferSent={loadThread}
+                  onOfferSent={refreshThread}
                 />
               ) : null
             }

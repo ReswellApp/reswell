@@ -11,13 +11,26 @@ import {
   type MarketplaceShippedFeedPayload,
   type MarketplaceSoldFeedPayload,
 } from "@/lib/services/marketplaceSoldFeed"
+import { formatGmv } from "@/lib/format-gmv"
 import { getDb } from "@/lib/supabase/db"
 
-/** Hourly cache for anonymous `/sold` sold + shipped feeds. */
+/**
+ * `/sold` sold, shipped, and new-listings feeds.
+ * Sold and shipped stay cached until the next sale, purchase, or return.
+ * New listings share that backstop and are also dropped as soon as a board
+ * is published, hidden, restored, or deleted.
+ */
 export const MARKETPLACE_SOLD_FEED_CACHE_TAG = "marketplace-sold-feed"
+/** New-listings tab only, so a publish does not throw away the sold grid. */
+export const MARKETPLACE_NEW_LISTINGS_FEED_CACHE_TAG = "marketplace-new-listings-feed"
 export const MARKETPLACE_SOLD_FEED_REVALIDATE_SECONDS = 60 * 60
 
 const BRAND_NONE = "__none__"
+
+/** Primary read so a refill after invalidation cannot cache a lagging replica. */
+function soldFeedReadClient() {
+  return getDb({ consistency: "strong" })
+}
 
 /** Stats can load while the listing grid fetch fails; never serve or retain that split state. */
 function isPoisonedSoldFeedPayload(
@@ -30,7 +43,7 @@ function isPoisonedSoldFeedPayload(
 
 const getCachedSoldFeedPayload = unstable_cache(
   async (brandKey: string, shippedOnly: boolean): Promise<MarketplaceSoldFeedPayload> => {
-    const supabase = getDb({ consistency: "eventual" })
+    const supabase = soldFeedReadClient()
     const brandSlug = brandKey === BRAND_NONE ? null : brandKey
     const payload = await loadMarketplaceSoldFeed(supabase, brandSlug, { shippedOnly })
 
@@ -43,17 +56,31 @@ const getCachedSoldFeedPayload = unstable_cache(
 
     return payload
   },
-  ["marketplace-sold-feed-v12"],
+  ["marketplace-sold-feed-v16"],
   {
     revalidate: MARKETPLACE_SOLD_FEED_REVALIDATE_SECONDS,
     tags: [MARKETPLACE_SOLD_FEED_CACHE_TAG],
   },
 )
 
+export type MarketplaceSoldFeedView = Omit<MarketplaceSoldFeedPayload, "soldStats"> & {
+  soldStats: { count: number; gmvFormatted: string }
+}
+
+function withFormattedSalesTotal(payload: MarketplaceSoldFeedPayload): MarketplaceSoldFeedView {
+  return {
+    ...payload,
+    soldStats: {
+      count: payload.soldStats.count,
+      gmvFormatted: formatGmv(payload.soldStats.gmvTotal),
+    },
+  }
+}
+
 export async function getCachedMarketplaceSoldFeed(
   brandSlug: string | null,
   shippedOnly: boolean,
-): Promise<MarketplaceSoldFeedPayload> {
+): Promise<MarketplaceSoldFeedView> {
   const normalizedBrandSlug = brandSlug?.trim() || null
 
   if (shippedOnly) {
@@ -71,8 +98,11 @@ export async function getCachedMarketplaceSoldFeed(
   // Dev: skip `unstable_cache` so RPC/migration fixes show up without waiting out the 1h TTL
   // or restarting after an earlier failed fetch cached an empty listing grid.
   if (process.env.NODE_ENV === "development") {
-    const supabase = getDb({ consistency: "eventual" })
-    return loadMarketplaceSoldFeed(supabase, normalizedBrandSlug, { shippedOnly: false })
+    const supabase = soldFeedReadClient()
+    const fresh = await loadMarketplaceSoldFeed(supabase, normalizedBrandSlug, {
+      shippedOnly: false,
+    })
+    return withFormattedSalesTotal(fresh)
   }
 
   const cached = await getCachedSoldFeedPayload(normalizedBrandSlug || BRAND_NONE, false)
@@ -80,20 +110,23 @@ export async function getCachedMarketplaceSoldFeed(
     console.warn(
       "[marketplace-sold-feed] cached sold feed is inconsistent — refetching without cache",
     )
-    const supabase = getDb({ consistency: "eventual" })
-    return loadMarketplaceSoldFeed(supabase, normalizedBrandSlug, { shippedOnly: false })
+    const supabase = soldFeedReadClient()
+    const fresh = await loadMarketplaceSoldFeed(supabase, normalizedBrandSlug, {
+      shippedOnly: false,
+    })
+    return withFormattedSalesTotal(fresh)
   }
 
-  return cached
+  return withFormattedSalesTotal(cached)
 }
 
 const getCachedShippedFeedPagePayload = unstable_cache(
   async (brandKey: string, page: number): Promise<MarketplaceShippedFeedPayload> => {
-    const supabase = getDb({ consistency: "eventual" })
+    const supabase = soldFeedReadClient()
     const brandSlug = brandKey === BRAND_NONE ? null : brandKey
     return loadMarketplaceShippedFeedPage(supabase, brandSlug, page)
   },
-  ["marketplace-shipped-feed-v2"],
+  ["marketplace-shipped-feed-v3"],
   {
     revalidate: MARKETPLACE_SOLD_FEED_REVALIDATE_SECONDS,
     tags: [MARKETPLACE_SOLD_FEED_CACHE_TAG],
@@ -108,32 +141,39 @@ export async function getCachedMarketplaceShippedFeedPage(
   const safePage = Math.max(1, Math.floor(page) || 1)
 
   if (process.env.NODE_ENV === "development") {
-    const supabase = getDb({ consistency: "eventual" })
+    const supabase = soldFeedReadClient()
     return loadMarketplaceShippedFeedPage(supabase, normalizedBrandSlug, safePage)
   }
 
   return getCachedShippedFeedPagePayload(normalizedBrandSlug || BRAND_NONE, safePage)
 }
 
+async function loadNewListingsFeedPage(page: number) {
+  const supabase = soldFeedReadClient()
+  const { listings, totalCount } = await fetchNewestActiveListingsPage(supabase, {
+    categoryId: null,
+    page,
+  })
+  const totalPages = Math.max(1, Math.ceil(totalCount / NEW_LISTINGS_FEED_PAGE_SIZE))
+  return { listings, totalCount, totalPages }
+}
+
 const getCachedNewListingsFeedPagePayload = unstable_cache(
-  async (page: number) => {
-    const supabase = getDb({ consistency: "eventual" })
-    const { listings, totalCount } = await fetchNewestActiveListingsPage(supabase, {
-      categoryId: null,
-      page,
-    })
-    const totalPages = Math.max(1, Math.ceil(totalCount / NEW_LISTINGS_FEED_PAGE_SIZE))
-    return { listings, totalCount, totalPages }
-  },
-  ["marketplace-new-listings-feed-v2"],
+  loadNewListingsFeedPage,
+  ["marketplace-new-listings-feed-v4"],
   {
     revalidate: MARKETPLACE_SOLD_FEED_REVALIDATE_SECONDS,
-    tags: [MARKETPLACE_SOLD_FEED_CACHE_TAG],
+    tags: [MARKETPLACE_SOLD_FEED_CACHE_TAG, MARKETPLACE_NEW_LISTINGS_FEED_CACHE_TAG],
   },
 )
 
 export function getCachedMarketplaceNewListingsFeedPage(page: number) {
-  return getCachedNewListingsFeedPagePayload(page)
+  const safePage = Math.max(1, Math.floor(page) || 1)
+  // Dev: skip `unstable_cache` so a just-published board shows up without the 1h TTL.
+  if (process.env.NODE_ENV === "development") {
+    return loadNewListingsFeedPage(safePage)
+  }
+  return getCachedNewListingsFeedPagePayload(safePage)
 }
 
 export const getCachedSoldSurfboardUsedShippingFulfillment = unstable_cache(

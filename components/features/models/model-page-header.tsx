@@ -1,69 +1,83 @@
-import Image from "next/image"
 import Link from "next/link"
-import { BrandLogoMark } from "@/components/brands/brand-logo-mark"
+import { Truck } from "lucide-react"
+import { ModelPageHeroPhoto } from "@/components/features/models/model-page-hero-photo"
 import { ModelPageStars } from "@/components/features/models/model-page-stars"
+import { ModelSaveModelButton } from "@/components/features/models/model-page-viewer"
+import { ListingPriceWithMarkdown } from "@/components/features/listings/listing-price-with-markdown"
+import { LIST_YOUR_SURFBOARD_SELL_HREF } from "@/components/features/marketing/list-your-surfboard-sell-cta"
 import { Button } from "@/components/ui/button"
 import { BRANDS_BASE } from "@/lib/brands/routes"
 import { brandProductCategoryLabel } from "@/lib/brand-product-categories"
-import { formatBoardType } from "@/lib/listing-labels"
-import { LIST_YOUR_SURFBOARD_SELL_HREF } from "@/components/features/marketing/list-your-surfboard-sell-cta"
-import { ModelSaveModelButton } from "@/components/features/models/model-page-viewer"
-import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
-import { formatGuideUsd, formatGuideUsdRange } from "@/lib/price-guide/format"
+import { listingHeroSlideSrc } from "@/lib/listing-image-display"
+import { listingDetailHref, peerListingCheckoutHref } from "@/lib/listing-href"
+import { formatBoardType, formatCondition } from "@/lib/listing-labels"
+import { modelPageHeroImage, pickModelPageListingWithImage } from "@/lib/models/listing-image"
+import {
+  lowestListingPrice,
+  modelPageHeroOffer,
+  modelUsedRangeLabel,
+} from "@/lib/models/model-page-hero"
 import type { ModelPageData } from "@/lib/services/modelPage"
 import type { BoardSavedSearchCriteria } from "@/lib/validations/boardSavedSearch"
+import { cn } from "@/lib/utils"
+
+const DETAILS_ANCHOR_CLASS = "scroll-mt-[calc(var(--site-header-height,4rem)+3.25rem)]"
 
 export function ModelPageHeader({
   page,
   criteria,
+  anchorDetails,
 }: {
   page: ModelPageData
   criteria: BoardSavedSearchCriteria
+  /** Land `#details` here when the page has no separate details section. */
+  anchorDetails: boolean
 }) {
-  const { brand, model, priceGuide, reviewStats } = page
-  const imageUrl = page.listingImageUrl
-  const typical = priceGuide?.typical
-  const usedRange = typical
-    ? formatGuideUsdRange(typical.low_usd, typical.high_usd)
-    : null
-  const newRetail = typical?.new_retail_usd != null ? formatGuideUsd(typical.new_retail_usd) : null
+  const { brand, model, priceGuide, reviewStats, listings } = page
+  const single = listings.length === 1 ? listings[0] : null
+  const usedRange = modelUsedRangeLabel(priceGuide?.typical.low_usd, priceGuide?.typical.high_usd)
+  const offer = modelPageHeroOffer({
+    listingCount: listings.length,
+    lowestPriceUsd: lowestListingPrice(listings.map((listing) => Number(listing.price))),
+    lengthLabel: single?.board_length?.trim() || null,
+    conditionLabel: single ? formatCondition(single.condition) || null : null,
+    usedRange,
+  })
   const boardType = formatBoardType(model.board_category_slug)
-  const hasPrice = Boolean(usedRange && usedRange !== "Gathering comps")
-  const meta = [brandProductCategoryLabel(model.product_category_slug), boardType]
+  const madeIn = brand.location_label?.trim() || null
+  const meta = [brandProductCategoryLabel(model.product_category_slug), boardType, madeIn]
     .filter(Boolean)
     .join(" · ")
-  const madeIn = brand.location_label?.trim() || null
-  const construction = uniqueJoined(page.variants.map((row) => row.material?.replace(/_/g, " ")))
-  const heroSpecs = [
-    boardType ? { label: "Type", value: boardType } : null,
-    madeIn ? { label: "Made in", value: madeIn } : null,
-    construction ? { label: "Construction", value: construction } : null,
-  ].filter((row): row is { label: string; value: string } => row !== null)
+
+  const livePhoto = pickModelPageListingWithImage(listings, page.topPick)
+  const soldPhoto = pickModelPageListingWithImage(page.soldListings)
+  const heroImage = modelPageHeroImage({
+    livePhotoUrl: livePhoto ? listingHeroSlideSrc(livePhoto.listing_images) : null,
+    soldPhotoUrl: soldPhoto ? listingHeroSlideSrc(soldPhoto.listing_images) : null,
+    fallbackSoldUrl: page.listingImageUrl,
+  })
+  const showingLivePhoto = heroImage.source === "live"
+  const photoListing = showingLivePhoto ? livePhoto : heroImage.source === "sold" ? soldPhoto : null
+  const caption = heroImage.source === "sold" ? "Photo from a past sale" : null
+  const singlePrice = single ? Number(single.price) : Number.NaN
 
   return (
-    <header className="grid items-start gap-6 lg:grid-cols-[minmax(0,26rem)_1fr] lg:gap-12 xl:gap-16">
-      <div className="relative mx-auto aspect-[4/5] w-full max-w-sm overflow-hidden rounded-xl bg-muted/50 lg:mx-0 lg:max-w-[26rem]">
-        {imageUrl ? (
-          <Image
-            src={imageUrl}
-            alt={`${brand.name} ${model.name}`}
-            fill
-            priority
-            sizes="(max-width: 1024px) 24rem, 26rem"
-            unoptimized={listingImageShouldBypassOptimization(imageUrl)}
-            className="object-contain p-4"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center">
-            <BrandLogoMark
-              name={brand.name}
-              logoUrl={brand.logo_url}
-              className="h-28 w-28 rounded-2xl text-2xl"
-              imageSizes="112px"
-            />
-          </div>
-        )}
-      </div>
+    <header
+      id={anchorDetails ? "details" : undefined}
+      className={cn(
+        "grid items-start gap-6 lg:grid-cols-[minmax(0,26rem)_1fr] lg:gap-12 xl:gap-16",
+        anchorDetails && DETAILS_ANCHOR_CLASS,
+      )}
+    >
+      <ModelPageHeroPhoto
+        imageUrl={heroImage.url}
+        alt={`${brand.name} ${model.name}`}
+        href={photoListing ? listingDetailHref(photoListing) : null}
+        listingId={showingLivePhoto && livePhoto ? livePhoto.id : null}
+        caption={caption}
+        brandName={brand.name}
+        brandLogoUrl={brand.logo_url}
+      />
 
       <div className="min-w-0 lg:pt-1">
         <Link
@@ -87,21 +101,37 @@ export function ModelPageHeader({
           ) : null}
         </p>
 
-        {hasPrice ? (
-          <div className="mt-5">
+        <div className="mt-5">
+          {offer.kind === "listing" && single && Number.isFinite(singlePrice) ? (
+            <ListingPriceWithMarkdown
+              priceUsd={singlePrice}
+              compareAtPriceUsd={single.compare_at_price}
+              priceClassName="text-4xl font-bold tracking-tight text-foreground xl:text-[2.625rem] xl:leading-none"
+            />
+          ) : offer.kind === "from" || offer.kind === "range" ? (
             <p className="text-4xl font-bold tabular-nums tracking-tight text-foreground xl:text-[2.625rem] xl:leading-none">
-              {usedRange}
+              {offer.headline}
             </p>
-            <p className="mt-1.5 text-sm text-muted-foreground">
-              Estimated used value
-              {newRetail ? ` · Typical new ${newRetail}` : ""}
+          ) : null}
+          <p className={cn("text-sm text-muted-foreground", offer.kind === "unavailable" ? "mt-0" : "mt-1.5")}>
+            {offer.supporting}
+          </p>
+          {single?.shipping_available ? (
+            <p className="mt-3 inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+              <Truck className="h-4 w-4" aria-hidden />
+              Shipping available
             </p>
-          </div>
-        ) : (
-          <p className="mt-5 text-sm text-muted-foreground">Price guide is still gathering comps.</p>
-        )}
+          ) : single?.local_pickup ? (
+            <p className="mt-3 text-sm text-muted-foreground">Local pickup</p>
+          ) : null}
+        </div>
 
-        <div className="mt-6 flex flex-wrap gap-2">
+        <div className="mt-6 flex flex-wrap items-center gap-2">
+          {single ? (
+            <Button asChild className="rounded-full">
+              <Link href={peerListingCheckoutHref(single.section, single.slug ?? single.id)}>Buy now</Link>
+            </Button>
+          ) : null}
           <ModelSaveModelButton
             criteria={criteria}
             label="Save this model"
@@ -114,33 +144,15 @@ export function ModelPageHeader({
             <Link href={LIST_YOUR_SURFBOARD_SELL_HREF}>Sell yours</Link>
           </Button>
         </div>
-
-        {heroSpecs.length > 0 ? (
-          <dl className="mt-8 divide-y divide-neutral-200/90 border-y border-neutral-200/90 dark:divide-neutral-700/70 dark:border-neutral-700/70">
-            {heroSpecs.map((spec) => (
-              <div
-                key={spec.label}
-                className="grid grid-cols-[minmax(7.25rem,38%)_minmax(0,1fr)] items-baseline gap-x-4 py-2"
-              >
-                <dt className="text-[13px] font-medium text-muted-foreground">{spec.label}</dt>
-                <dd className="min-w-0 text-[13px] leading-snug text-foreground">{spec.value}</dd>
-              </div>
-            ))}
-          </dl>
+        {single ? (
+          <Link
+            href={listingDetailHref(single)}
+            className="mt-3 inline-flex text-sm font-medium text-foreground underline-offset-4 hover:underline"
+          >
+            View listing
+          </Link>
         ) : null}
       </div>
     </header>
   )
-}
-
-function uniqueJoined(values: Array<string | null | undefined>): string | null {
-  const seen = new Set<string>()
-  const out: string[] = []
-  for (const value of values) {
-    const label = value?.trim()
-    if (!label || seen.has(label)) continue
-    seen.add(label)
-    out.push(label)
-  }
-  return out.length > 0 ? out.join(", ") : null
 }

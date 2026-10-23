@@ -42,6 +42,15 @@ export const listingOfferTileCompactClass = "sm:w-36 lg:w-44"
 /** Dashboard sidebar shell width (reference: ~20–25% of content area on desktop). */
 export const dashboardSidebarWidthClass = "lg:w-72 xl:w-80 2xl:w-[22rem]"
 
+/**
+ * Sticky dashboard rail. `self-start` keeps it from stretching with a long
+ * main column, `top-24` sits under the site header, and the max height lets
+ * the rail scroll on its own. Without that cap, links below the fold stay
+ * pinned until the page itself reaches the bottom.
+ */
+export const dashboardSidebarStickyScrollClass =
+  "sticky top-24 self-start max-h-[calc(100dvh-7.5rem)] overflow-y-auto overscroll-y-contain pb-4 [scrollbar-width:thin]"
+
 export const dashboardSidebarNavItemClass =
   "flex items-center gap-4 rounded-xl px-4 py-3 text-base font-semibold transition-colors"
 

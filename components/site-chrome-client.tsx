@@ -16,6 +16,7 @@ import { AuthModalProvider } from "@/components/auth/auth-modal-context"
 import { AddedToCartProvider } from "@/components/features/cart/added-to-cart-context"
 import { ImpersonationBanner } from "@/components/impersonation-banner"
 import { NewsletterPromoPopup } from "@/components/features/marketing/newsletter-promo-popup"
+import { SignInShipFromPrompt } from "@/components/features/sell/sign-in-ship-from-prompt"
 import { GiveawayEntryBootstrap } from "@/components/features/giveaways/giveaway-entry-bootstrap"
 import {
   GiveawayMarquee,
@@ -35,16 +36,23 @@ import { useFlatMobileMessagesInbox } from "@/hooks/use-flat-mobile-messages-inb
 import { useMobileLg } from "@/hooks/use-mobile-lg"
 import { cn } from "@/lib/utils"
 import { isThreadsRoute } from "@/lib/utils/threads-routes"
+import { isShopifyClaimPath } from "@/lib/shopify/claim-path"
 
 function hideSiteChrome(pathname: string | null): boolean {
   if (!pathname) return false
   if (pathname.startsWith("/auth") || pathname === "/help" || pathname.startsWith("/help/")) {
     return true
   }
+  if (isShopifyClaimPath(pathname)) {
+    return true
+  }
   if (pathname.startsWith("/embed")) {
     return true
   }
   if (pathname === "/admin" || pathname.startsWith("/admin/")) {
+    return true
+  }
+  if (pathname === "/dev/shopify-dashboard-preview") {
     return true
   }
   if (pathname === "/coastal-delivery" || pathname.startsWith("/coastal-delivery/")) {
@@ -68,8 +76,10 @@ function hideFooter(pathname: string | null): boolean {
     pathname.startsWith("/import/") ||
     pathname === "/admin" ||
     pathname.startsWith("/admin/") ||
+    pathname === "/dev/shopify-dashboard-preview" ||
     pathname === "/coastal-delivery" ||
     pathname.startsWith("/coastal-delivery/") ||
+    isShopifyClaimPath(pathname) ||
     isSupportCaseThreadRoute(pathname)
   )
 }
@@ -148,6 +158,7 @@ export function SiteChromeClient({
             <GiveawayEntryBootstrap isLoggedIn={hasUser} />
             <GiveawaySignupPopup serverUser={headerAuth.user} />
             <NewsletterPromoPopup serverUser={headerAuth.user} />
+            <SignInShipFromPrompt />
             <RouteProgressBar />
             <NavigationPageGate>{children}</NavigationPageGate>
           </div>
@@ -161,6 +172,7 @@ export function SiteChromeClient({
         <GiveawayEntryBootstrap isLoggedIn={hasUser} />
         <GiveawaySignupPopup serverUser={headerAuth.user} />
         <NewsletterPromoPopup serverUser={headerAuth.user} />
+        <SignInShipFromPrompt />
         <div
           className={cn(
             "flex flex-col",

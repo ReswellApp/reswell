@@ -3,7 +3,9 @@
 import Image from "next/image"
 import Link from "next/link"
 import { ArrowUpRight, Clock, Eye } from "lucide-react"
+import { listingPhotoCoverClassName } from "@/lib/listing-photo-fill"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
+import { cn } from "@/lib/utils"
 import type { PickupOnlySurfboardListing } from "@/lib/types/pickupOnlySurfboards"
 
 function formatUsd(value: number): string {
@@ -59,7 +61,7 @@ export function PickupOnlySurfboardsListingTable({
                         alt=""
                         width={48}
                         height={48}
-                        className="h-12 w-12 rounded-md object-cover"
+                        className={cn(listingPhotoCoverClassName, "h-12 w-12 rounded-md")}
                         unoptimized={listingImageShouldBypassOptimization(listing.thumbnailUrl)}
                       />
                     ) : (

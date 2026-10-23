@@ -6,6 +6,10 @@ import type { PeerListingSection } from "@/lib/peer-listing-sections"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import {
+  broadcastInsertedMarketplaceMessage,
+  broadcastMarketplaceThreadRefresh,
+} from "@/lib/services/broadcastMarketplaceThreadMessage"
+import {
   isListingExclusiveBuyerWindowActive,
   LISTING_BUYER_EXCLUSIVE_WINDOW_DAYS,
 } from "@/lib/services/listingBuyerExclusiveWindow"
@@ -252,6 +256,11 @@ export async function postOrderExclusiveRepurchaseThreadNotification(
     return
   }
 
+  await broadcastInsertedMarketplaceMessage(
+    { ...inserted, sender_id: params.sellerId, content, metadata },
+    conv.id,
+  )
+
   await supabase
     .from("conversations")
     .update({ last_message_at: new Date().toISOString() })
@@ -373,6 +382,8 @@ export async function deleteOrderExclusiveRepurchaseThreadNotifications(
     .from("conversations")
     .update({ last_message_at: nextLastAt })
     .eq("id", conv.id)
+
+  await broadcastMarketplaceThreadRefresh(conv.id)
 
   return toDelete.length
 }

@@ -4,6 +4,11 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { toast } from "sonner"
+import {
+  parseSellListingPrice,
+  readLiveSellListingPrice,
+  sellListingPriceIsPublishable,
+} from "@/lib/utils/sell-listing-price"
 import { Loader2, Upload, X, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -40,6 +45,8 @@ import {
   SellSectionNavHorizontal,
   buildSellSectionNavItems,
 } from "@/components/features/sell/sell-section-nav"
+import { fetchActingShopAccountId } from "@/lib/account-access/fetch-acting-shop-account"
+import { listingOwnerIsOperableAccount } from "@/lib/account-access/operates-listing"
 import { createClient } from "@/lib/supabase/client"
 import { useOwnedListingEditLoad } from "@/components/features/sell/hooks/use-owned-listing-edit-load"
 import { SellEditLoadError } from "@/components/features/sell/sell-edit-load-error"
@@ -58,6 +65,7 @@ import {
   type ListingPhotoSlot,
 } from "@/lib/sell-flow/listing-photo-slot"
 import { listingPhotoPreviewFromPrepared } from "@/lib/sell-flow/simple-listing-photo-rotate"
+import { listingPhotoOrientationPrepareOptions } from "@/lib/sell-flow/listing-photo-orientation"
 import { stageListingPhotoInstantPreview } from "@/lib/sell-flow/reveal-listing-photo-preview"
 import {
   APPAREL_LISTING_MAX_PHOTOS,
@@ -71,6 +79,11 @@ import {
 } from "@/lib/sell-flow/update-owned-listing-client"
 import { buildApparelListingPersistFields } from "@/lib/apparel-listing-persist-fields"
 import { computeApparelSellSectionCompletion } from "@/lib/apparel-sell-section-completion"
+import {
+  brandNewQuantityValidationMessage,
+  parseBrandNewListingQuantity,
+  sellFormStockQuantityValue,
+} from "@/lib/listing-stock-quantity"
 import { sellFormConditionValue } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
 import { navigateAfterListingSave } from "@/lib/sell-flow/navigate-after-listing-save"
@@ -126,6 +139,8 @@ type PhotoSlot = {
   progress: number
   errorMessage?: string
   userRotate180?: boolean
+  userQuarterTurns?: 0 | 1 | 2 | 3
+  sourceIsDerivative?: boolean
   localPreviewReady?: boolean
 }
 
@@ -144,6 +159,7 @@ type ApparelFormState = {
   sellerPurchasedOn: string
   kind: string
   condition: string
+  stockQuantity: string
   size: string
   brand: string
   model: string
@@ -173,6 +189,7 @@ const INITIAL_STATE: ApparelFormState = {
   sellerPurchasedOn: "",
   kind: "",
   condition: "",
+  stockQuantity: "1",
   size: "",
   brand: "",
   model: "",
@@ -376,6 +393,7 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
           (listing as { seller_purchased_on?: string | null }).seller_purchased_on ?? "",
         kind: (listing as { apparel_kind?: string | null }).apparel_kind ?? "",
         condition: sellFormConditionValue(listing.condition),
+        stockQuantity: sellFormStockQuantityValue((listing as { stock_quantity?: number | null }).stock_quantity),
         size: (listing as { apparel_size?: string | null }).apparel_size ?? "",
         brand: (listing as { brand?: string | null }).brand?.trim() ?? "",
         model: (listing as { model?: string | null }).model?.trim() ?? "",
@@ -483,15 +501,14 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
       if (!slot.file) return
       let failureContext: "add" | "upload" = "add"
       try {
+        const orientation = listingPhotoOrientationPrepareOptions(slot)
         const showedInstant = await stageListingPhotoInstantPreview(
           slot.file,
           slot.previewUrl,
-          { rotate180: Boolean(slot.userRotate180) },
+          orientation,
           (previewUrl) => updateSlot(slot.clientId, { previewUrl, localPreviewReady: true }),
         )
-        const prepared = await prepareDecodableListingPhoto(slot.file, {
-          rotate180: Boolean(slot.userRotate180),
-        })
+        const prepared = await prepareDecodableListingPhoto(slot.file, orientation)
         const nextPreviewUrl = showedInstant
           ? null
           : listingPhotoPreviewFromPrepared(slot.previewUrl, prepared.thumb)
@@ -711,12 +728,19 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
       scrollApparelSellSectionIntoView("sell-apparel-section-details")
       return
     }
+    const quantityMessage = brandNewQuantityValidationMessage(form.condition, form.stockQuantity)
+    if (quantityMessage) {
+      failValidation(quantityMessage)
+      scrollApparelSellSectionIntoView("sell-apparel-section-details")
+      return
+    }
     if (!form.description.trim()) {
       failValidation("Add a description.")
       scrollApparelSellSectionIntoView("sell-apparel-section-details")
       return
     }
-    if (!form.price.trim() || Number(form.price) <= 0) {
+    const livePrice = readLiveSellListingPrice(form.price)
+    if (!sellListingPriceIsPublishable(livePrice)) {
       failValidation("Enter a price.")
       scrollApparelSellSectionIntoView("sell-apparel-section-publish")
       return
@@ -745,8 +769,9 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
     const payload = {
       title: form.title,
       description: form.description,
-      price: Number(form.price),
+      price: parseSellListingPrice(livePrice) ?? 0,
       condition: form.condition as CreateApparelListingInput["condition"],
+      stockQuantity: parseBrandNewListingQuantity(form.stockQuantity) ?? 1,
       kind: form.kind as CreateApparelListingInput["kind"],
       size: form.size || null,
       brand: form.brand,
@@ -788,10 +813,11 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
         storedImpersonation = null
       }
 
+      const actingShopAccountId = await fetchActingShopAccountId()
       const editingOwnListing =
         Boolean(editId) &&
         Boolean(editListingOwnerId) &&
-        user.id === editListingOwnerId
+        listingOwnerIsOperableAccount(user.id, editListingOwnerId, actingShopAccountId)
       if (editingOwnListing && storedImpersonation) {
         clearImpersonation()
         storedImpersonation = null
@@ -808,7 +834,11 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
       )
 
       if (editId) {
-        const ownerEditsOwnListing = user.id === editListingOwnerId
+        const ownerEditsOwnListing = listingOwnerIsOperableAccount(
+          user.id,
+          editListingOwnerId,
+          actingShopAccountId,
+        )
         if (adminImpersonatesListingOwner) {
           const updated = await updateOwnedListingViaApi({
             listingId: editId,
@@ -1056,7 +1086,7 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
                           key={photo.clientId}
                           photo={photo}
                           index={index}
-                          onRotate180={rotatePhoto180}
+                          onRotateQuarterTurns={rotatePhoto180}
                           onMakePrimary={makePrimary}
                           onRemove={removePhoto}
                         />
@@ -1156,6 +1186,8 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
                     model={form.model}
                     onKindChange={(v) => setField("kind", v)}
                     onConditionChange={(v) => setField("condition", v)}
+                    stockQuantity={form.stockQuantity}
+                    onStockQuantityChange={(v) => setField("stockQuantity", v)}
                     onSizeChange={(v) => setField("size", v)}
                     onBrandChange={(v) => setField("brand", v)}
                     onModelChange={(v) => setField("model", v)}

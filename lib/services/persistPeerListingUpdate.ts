@@ -19,6 +19,7 @@ import {
 } from "@/lib/services/sync-listing-videos"
 import type { SellFormBoardCatalogSlice } from "@/lib/utils/listing-board-catalog-snapshot"
 import { listingFieldsForPeerUpdate } from "@/lib/utils/listing-update-actor"
+import { listingPriceForDraftPublish } from "@/lib/utils/sell-listing-price"
 
 export { listingFieldsForPeerUpdate } from "@/lib/utils/listing-update-actor"
 
@@ -97,14 +98,19 @@ export async function persistPeerListingUpdate(input: {
   )
   const publishingFromDraft =
     input.existingListing.status === "draft" && input.publishFromDraft
+  const clientSentPrice = Object.prototype.hasOwnProperty.call(input.listingData, "price")
+  const priceForPublish = listingPriceForDraftPublish(
+    {
+      sent: clientSentPrice,
+      amount: clientSentPrice && typeof listingFields.price === "number" ? listingFields.price : null,
+    },
+    input.existingListing.price,
+  )
 
   if (publishingFromDraft) {
     const validationError = validateListingDraftPublishable({
       status: "draft",
-      price:
-        typeof listingFields.price === "number"
-          ? listingFields.price
-          : input.existingListing.price,
+      price: priceForPublish,
       description:
         typeof listingFields.description === "string"
           ? listingFields.description

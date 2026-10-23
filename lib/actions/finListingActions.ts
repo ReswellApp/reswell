@@ -1,6 +1,7 @@
 "use server"
 
 import { z } from "zod"
+import { resolveManagedSeller } from "@/lib/account-access/managed-seller"
 import { createClient } from "@/lib/supabase/server"
 import { revalidateListingMutationPaths } from "@/lib/cache/revalidate-listing-mutation-paths"
 import { evaluateSellerCanSell } from "@/lib/services/sellerBan"
@@ -79,18 +80,22 @@ export async function createFinListingAction(
   }
 
 
-  const sellGuard = await evaluateSellerCanSell(supabase, user.id)
+  const managed = await resolveManagedSeller("listings.write")
+  if (!managed.ok) return { error: managed.error }
+  const sellerId = managed.seller.sellerId
+
+  const sellGuard = await evaluateSellerCanSell(supabase, sellerId)
   if (!sellGuard.ok) {
     return { error: sellGuard.userMessage }
   }
 
   try {
-    const result = await createFinListing(supabase, user.id, parsed.data)
+    const result = await createFinListing(supabase, sellerId, parsed.data)
     void syncListingToGoogleMerchantBestEffort(supabase, result.listingId)
     void trackFirstTimeSellerForListingIfNeeded(supabase, {
       listingId: result.listingId,
-      sellerUserId: user.id,
-      sellerEmail: user.email ?? null,
+      sellerUserId: sellerId,
+      sellerEmail: managed.seller.actingAsShop ? null : user.email ?? null,
     })
     revalidateListingMutationPaths("/fins", result.slug)
     return { success: true, listingId: result.listingId, slug: result.slug }
@@ -121,8 +126,16 @@ export async function updateFinListingAction(
     return { error: "Please sign in to edit this listing." }
   }
 
+  const managed = await resolveManagedSeller("listings.write")
+  if (!managed.ok) return { error: managed.error }
+
   try {
-    const result = await updateFinListing(supabase, parsed.data.listingId, user.id, parsed.data)
+    const result = await updateFinListing(
+      supabase,
+      parsed.data.listingId,
+      managed.seller.sellerId,
+      parsed.data,
+    )
     void syncListingToGoogleMerchantBestEffort(supabase, parsed.data.listingId)
     revalidateListingMutationPaths("/fins", result.slug)
     return { success: true, slug: result.slug }

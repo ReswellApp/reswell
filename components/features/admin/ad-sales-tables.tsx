@@ -2,6 +2,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { ArrowUpRight } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { listingPhotoCoverClassName } from "@/lib/listing-photo-fill"
 import { cn } from "@/lib/utils"
 import type {
   AdSalesChannel,
@@ -71,7 +72,7 @@ export function AdSalesListingsTable({ rows }: { rows: AdSalesListingRow[] }) {
                       alt=""
                       width={40}
                       height={40}
-                      className="h-10 w-10 rounded-md object-cover"
+                      className={cn(listingPhotoCoverClassName, "h-10 w-10 rounded-md")}
                     />
                   ) : (
                     <div className="h-10 w-10 rounded-md bg-muted" />

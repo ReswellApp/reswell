@@ -18,6 +18,7 @@ import {
 import { capitalizeWords } from '@/lib/listing-labels'
 import { listingDetailPath } from '@/lib/listing-query'
 import { listingTitleThumbnailSrc, type ListingImageForCard } from '@/lib/listing-image-display'
+import { listingPhotoFillClassName } from '@/lib/listing-photo-fill'
 import { listingImageShouldBypassOptimization } from '@/lib/listing-media-proxy-url'
 import {
   ensureMarketplaceListingConversation,
@@ -288,7 +289,7 @@ function NewMessageComposeContent() {
                     alt={capitalizeWords(listing.title)}
                     fill
                     sizes="72px"
-                    className="object-cover object-center"
+                    className={listingPhotoFillClassName}
                     unoptimized={listingImageShouldBypassOptimization(threadListingThumbSrc)}
                     onLoad={() => setListingBannerImageReady(true)}
                   />

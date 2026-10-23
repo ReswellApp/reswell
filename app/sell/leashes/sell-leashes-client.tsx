@@ -4,6 +4,11 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { toast } from "sonner"
+import {
+  parseSellListingPrice,
+  readLiveSellListingPrice,
+  sellListingPriceIsPublishable,
+} from "@/lib/utils/sell-listing-price"
 import { Loader2, Upload, X, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -22,6 +27,14 @@ import {
 } from "@/components/ui/breadcrumb"
 import { LocationPicker } from "@/components/location-picker"
 import { SellFormSection } from "@/components/features/sell/sell-form-section"
+import {
+  takeSellCatalogHandoff,
+  sellCatalogHandoffToSelectionCard,
+} from "@/lib/sell-flow/catalog-handoff"
+import {
+  SellCatalogSelectionCard,
+  type SellCatalogSelectionCardData,
+} from "@/components/features/sell/sell-catalog-selection-card"
 import { SellListingPhotoEmptyDropzone } from "@/components/features/sell/sell-listing-photo-empty-dropzone"
 import { SellSimplePhotoTile } from "@/components/features/sell/sell-simple-photo-tile"
 import { useSimpleListingPhotoRotate } from "@/components/features/sell/hooks/use-simple-listing-photo-rotate"
@@ -42,6 +55,8 @@ import {
   SellSectionNavHorizontal,
   buildSellSectionNavItems,
 } from "@/components/features/sell/sell-section-nav"
+import { fetchActingShopAccountId } from "@/lib/account-access/fetch-acting-shop-account"
+import { listingOwnerIsOperableAccount } from "@/lib/account-access/operates-listing"
 import { createClient } from "@/lib/supabase/client"
 import { useOwnedListingEditLoad } from "@/components/features/sell/hooks/use-owned-listing-edit-load"
 import { SellEditLoadError } from "@/components/features/sell/sell-edit-load-error"
@@ -55,6 +70,7 @@ import {
   type ListingPhotoSlot,
 } from "@/lib/sell-flow/listing-photo-slot"
 import { listingPhotoPreviewFromPrepared } from "@/lib/sell-flow/simple-listing-photo-rotate"
+import { listingPhotoOrientationPrepareOptions } from "@/lib/sell-flow/listing-photo-orientation"
 import { stageListingPhotoInstantPreview } from "@/lib/sell-flow/reveal-listing-photo-preview"
 import type { OwnedListingForEditRow } from "@/lib/db/listingEdit"
 import { assertListingOriginalSize } from "@/lib/listing-image-pipeline"
@@ -73,6 +89,11 @@ import {
 } from "@/lib/sell-flow/update-owned-listing-client"
 import { buildLeashListingPersistFields } from "@/lib/leash-listing-persist-fields"
 import { computeLeashSellSectionCompletion } from "@/lib/leash-sell-section-completion"
+import {
+  brandNewQuantityValidationMessage,
+  parseBrandNewListingQuantity,
+  sellFormStockQuantityValue,
+} from "@/lib/listing-stock-quantity"
 import { sellFormConditionValue } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
 import { navigateAfterListingSave } from "@/lib/sell-flow/navigate-after-listing-save"
@@ -120,6 +141,8 @@ type PhotoSlot = {
   progress: number
   errorMessage?: string
   userRotate180?: boolean
+  userQuarterTurns?: 0 | 1 | 2 | 3
+  sourceIsDerivative?: boolean
   localPreviewReady?: boolean
 }
 
@@ -152,6 +175,7 @@ type LeashFormState = {
   sellerPurchasedFrom: string
   sellerPurchasedOn: string
   condition: string
+  stockQuantity: string
   size: string
   brand: string
   model: string
@@ -180,6 +204,7 @@ const INITIAL_STATE: LeashFormState = {
   sellerPurchasedFrom: "",
   sellerPurchasedOn: "",
   condition: "",
+  stockQuantity: "1",
   size: "",
   brand: "",
   model: "",
@@ -255,6 +280,10 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
   const [editListingOwnerId, setEditListingOwnerId] = useState<string | null>(null)
   const [actorIsAdmin, setActorIsAdmin] = useState<boolean | null>(null)
   const [removedImageIds, setRemovedImageIds] = useState<string[]>([])
+  const catalogHandoffTakenRef = useRef(false)
+  const catalogHandoffAppliedRef = useRef(false)
+  const [catalogSelectionCard, setCatalogSelectionCard] =
+    useState<SellCatalogSelectionCardData | null>(null)
 
   const sellVideoReturnPath = useCallback(
     () =>
@@ -309,7 +338,27 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
     onRestoreForm: restoreLeashDraftForm,
     setImages: noopSetDraftImages,
     retryPhotoSlot: noopRetryDraftPhotoSlot,
+    skipRestore: () => catalogHandoffAppliedRef.current,
   })
+
+  useEffect(() => {
+    if (catalogHandoffTakenRef.current || editId) return
+    catalogHandoffTakenRef.current = true
+    const handoff = takeSellCatalogHandoff("leashes")
+    if (!handoff) return
+    catalogHandoffAppliedRef.current = true
+    setCatalogSelectionCard(sellCatalogHandoffToSelectionCard(handoff))
+    setForm((prev) => ({
+      ...prev,
+      title: prev.title.trim() ? prev.title : handoff.suggestedTitle,
+      description:
+        prev.description.trim() || !handoff.suggestedDescription
+          ? prev.description
+          : handoff.suggestedDescription,
+      brand: handoff.brandName,
+      model: handoff.selectionKind === "model" ? handoff.modelName : "",
+    }))
+  }, [editId])
 
   const hydrateLeashEdit = useCallback(
     async (listing: OwnedListingForEditRow) => {
@@ -365,6 +414,7 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
         sellerPurchasedOn:
           (listing as { seller_purchased_on?: string | null }).seller_purchased_on ?? "",
         condition: sellFormConditionValue(listing.condition),
+        stockQuantity: sellFormStockQuantityValue((listing as { stock_quantity?: number | null }).stock_quantity),
         size: (listing as { leash_size?: string | null }).leash_size ?? "",
         brand: (listing as { brand?: string | null }).brand?.trim() ?? "",
         model: (listing as { model?: string | null }).model?.trim() ?? "",
@@ -497,15 +547,14 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
       if (!slot.file) return
       let failureContext: "add" | "upload" = "add"
       try {
+        const orientation = listingPhotoOrientationPrepareOptions(slot)
         const showedInstant = await stageListingPhotoInstantPreview(
           slot.file,
           slot.previewUrl,
-          { rotate180: Boolean(slot.userRotate180) },
+          orientation,
           (previewUrl) => updateSlot(slot.clientId, { previewUrl, localPreviewReady: true }),
         )
-        const prepared = await prepareDecodableListingPhoto(slot.file, {
-          rotate180: Boolean(slot.userRotate180),
-        })
+        const prepared = await prepareDecodableListingPhoto(slot.file, orientation)
         const nextPreviewUrl = showedInstant
           ? null
           : listingPhotoPreviewFromPrepared(slot.previewUrl, prepared.thumb)
@@ -719,12 +768,19 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
       scrollLeashSellSectionIntoView("sell-leashes-section-details")
       return
     }
+    const quantityMessage = brandNewQuantityValidationMessage(form.condition, form.stockQuantity)
+    if (quantityMessage) {
+      failValidation(quantityMessage)
+      scrollLeashSellSectionIntoView("sell-leashes-section-details")
+      return
+    }
     if (!form.description.trim()) {
       failValidation("Add a description.")
       scrollLeashSellSectionIntoView("sell-leashes-section-details")
       return
     }
-    if (!form.price.trim() || Number(form.price) <= 0) {
+    const livePrice = readLiveSellListingPrice(form.price)
+    if (!sellListingPriceIsPublishable(livePrice)) {
       failValidation("Enter a price.")
       scrollLeashSellSectionIntoView("sell-leashes-section-publish")
       return
@@ -762,8 +818,9 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
     const payload = {
       title: form.title,
       description: form.description,
-      price: Number(form.price),
+      price: parseSellListingPrice(livePrice) ?? 0,
       condition: form.condition as CreateLeashListingInput["condition"],
+      stockQuantity: parseBrandNewListingQuantity(form.stockQuantity) ?? 1,
       size: form.size || null,
       brand: form.brand,
       model: form.model,
@@ -810,10 +867,11 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
         storedImpersonation = null
       }
 
+      const actingShopAccountId = await fetchActingShopAccountId()
       const editingOwnListing =
         Boolean(editId) &&
         Boolean(editListingOwnerId) &&
-        user.id === editListingOwnerId
+        listingOwnerIsOperableAccount(user.id, editListingOwnerId, actingShopAccountId)
       if (editingOwnListing && storedImpersonation) {
         clearImpersonation()
         storedImpersonation = null
@@ -830,7 +888,11 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
       )
 
       if (editId) {
-        const ownerEditsOwnListing = user.id === editListingOwnerId
+        const ownerEditsOwnListing = listingOwnerIsOperableAccount(
+          user.id,
+          editListingOwnerId,
+          actingShopAccountId,
+        )
         if (adminImpersonatesListingOwner) {
           const updated = await updateOwnedListingViaApi({
             listingId: editId,
@@ -1024,6 +1086,12 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
                 complete={sellSectionCompletion["sell-leashes-section-photos-title"] === true}
               >
                 <div className="space-y-8">
+                  {catalogSelectionCard && form.brand === catalogSelectionCard.brandName ? (
+                    <SellCatalogSelectionCard
+                      selection={catalogSelectionCard}
+                      onRemove={() => setCatalogSelectionCard(null)}
+                    />
+                  ) : null}
                   <div className="space-y-3">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 space-y-1">
@@ -1072,7 +1140,7 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
                           key={photo.clientId}
                           photo={photo}
                           index={index}
-                          onRotate180={rotatePhoto180}
+                          onRotateQuarterTurns={rotatePhoto180}
                           onMakePrimary={makePrimary}
                           onRemove={removePhoto}
                         />
@@ -1170,6 +1238,8 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
                     brand={form.brand}
                     model={form.model}
                     onConditionChange={(v) => setField("condition", v)}
+                    stockQuantity={form.stockQuantity}
+                    onStockQuantityChange={(v) => setField("stockQuantity", v)}
                     onSizeChange={(v) => setField("size", v)}
                     onBrandChange={(v) => setField("brand", v)}
                     onModelChange={(v) => setField("model", v)}

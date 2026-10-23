@@ -11,6 +11,7 @@ export const siteFooterNavLinks: {
   legal: readonly SiteFooterNavLink[]
 } = {
   marketplace: [
+    { name: "Explore", href: "/explore" },
     { name: "Shop from Reswell", href: "/reswell/shop" },
     { name: "Board Finder", href: "/board-finder" },
     { name: "Recently sold", href: "/sold" },
@@ -20,7 +21,6 @@ export const siteFooterNavLinks: {
     { name: "Cities", href: "/cities/top" },
     { name: "Surf shops", href: "/surf-shops" },
     { name: "For surf shops", href: "/for-surf-shops" },
-    { name: "Giveaways", href: "/giveaways" },
     { name: "Blog", href: "/blog" },
   ],
   help: [

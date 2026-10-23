@@ -73,6 +73,7 @@ export async function setShopCategoryPackageSizeForSeller(params: {
     })
     .eq("user_id", params.userId)
     .eq("section", params.section)
+    .neq("inventory_source", "shopify")
     .is("archived_at", null)
     .in("status", [...LISTING_QUICK_EDIT_STATUSES])
     .select("id, slug")

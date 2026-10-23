@@ -7,11 +7,26 @@ import type {
   PublicShopifyConnection,
   ShopifyCatalogProduct,
   ShopifyDashboardData,
+  ShopifySourceOfTruth,
 } from "@/lib/shopify/types"
 
 type ProductPage = {
   products: ShopifyCatalogProduct[]
   pageInfo: { hasNextPage: boolean; endCursor: string | null }
+}
+
+type ReconcileResult = {
+  removedListingIds: string[]
+  sweepFailed: boolean
+}
+
+function reconcileMessage(result: ReconcileResult): string {
+  if (result.sweepFailed) {
+    return "Sync queued. Shopify could not be checked for deleted products yet."
+  }
+  const removed = result.removedListingIds.length
+  if (removed === 0) return "Sync queued. No deleted Shopify products found."
+  return `Removed ${removed} listing${removed === 1 ? "" : "s"} deleted in Shopify. Full sync queued.`
 }
 
 export function useShopifyIntegration(initialData: ShopifyDashboardData) {
@@ -56,7 +71,7 @@ export function useShopifyIntegration(initialData: ShopifyDashboardData) {
   async function publishProduct(
     productId: string,
     section: PeerListingSection,
-  ) {
+  ): Promise<boolean> {
     setBusyProductId(productId)
     try {
       const response = await fetch("/api/integrations/shopify/products", {
@@ -67,7 +82,7 @@ export function useShopifyIntegration(initialData: ShopifyDashboardData) {
       const body = (await response.json()) as { error?: string }
       if (!response.ok) {
         toast.error(body.error || "Could not publish this product")
-        return
+        return false
       }
       setProducts((current) =>
         current.map((product) =>
@@ -77,14 +92,16 @@ export function useShopifyIntegration(initialData: ShopifyDashboardData) {
         ),
       )
       toast.success("Shopify product published on Reswell")
+      return true
     } catch {
       toast.error("Could not publish this product")
+      return false
     } finally {
       setBusyProductId(null)
     }
   }
 
-  async function unpublishProduct(productId: string) {
+  async function unpublishProduct(productId: string): Promise<boolean> {
     setBusyProductId(productId)
     try {
       const response = await fetch("/api/integrations/shopify/products", {
@@ -95,7 +112,7 @@ export function useShopifyIntegration(initialData: ShopifyDashboardData) {
       const body = (await response.json()) as { error?: string }
       if (!response.ok) {
         toast.error(body.error || "Could not unpublish this product")
-        return
+        return false
       }
       setProducts((current) =>
         current.map((product) =>
@@ -105,27 +122,34 @@ export function useShopifyIntegration(initialData: ShopifyDashboardData) {
         ),
       )
       toast.success("Product unpublished from Reswell")
+      return true
     } catch {
       toast.error("Could not unpublish this product")
+      return false
     } finally {
       setBusyProductId(null)
     }
   }
 
-  async function requestSync() {
+  async function requestSync(): Promise<boolean> {
     setConnectionBusy(true)
     try {
       const response = await fetch("/api/integrations/shopify/reconcile", {
         method: "POST",
       })
-      const body = (await response.json()) as { error?: string }
-      if (!response.ok) {
-        toast.error(body.error || "Could not queue Shopify sync")
-        return
+      const body = (await response.json()) as {
+        data?: ReconcileResult
+        error?: string
       }
-      toast.success("Shopify reconciliation queued")
+      if (!response.ok || !body.data) {
+        toast.error(body.error || "Could not queue Shopify sync")
+        return false
+      }
+      toast.success(reconcileMessage(body.data))
+      return true
     } catch {
       toast.error("Could not queue Shopify sync")
+      return false
     } finally {
       setConnectionBusy(false)
     }
@@ -155,8 +179,15 @@ export function useShopifyIntegration(initialData: ShopifyDashboardData) {
     }
   }
 
+  function setSourceOfTruth(source: ShopifySourceOfTruth) {
+    setConnection((current) =>
+      current ? { ...current, source_of_truth: source } : current,
+    )
+  }
+
   return {
     connection,
+    setSourceOfTruth,
     products,
     pageInfo,
     query,

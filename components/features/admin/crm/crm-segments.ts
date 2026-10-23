@@ -1,4 +1,4 @@
-import { CalendarClock, Flame, LayoutGrid, Sparkles, Trophy, type LucideIcon } from "lucide-react"
+import { CalendarClock, Flame, LayoutGrid, MessageCircle, Sparkles, Trophy, type LucideIcon } from "lucide-react"
 import type { CrmContactPriority, CrmContactSource, CrmContactStatus } from "@/lib/db/crm"
 
 export type CrmFilterState = {
@@ -9,6 +9,7 @@ export type CrmFilterState = {
   tagId: string | null
   followUpOnly: boolean
   createdWithinDays: number | null
+  facebookOnly: boolean
 }
 
 export const CRM_DEFAULT_FILTERS: CrmFilterState = {
@@ -19,6 +20,7 @@ export const CRM_DEFAULT_FILTERS: CrmFilterState = {
   tagId: null,
   followUpOnly: false,
   createdWithinDays: null,
+  facebookOnly: false,
 }
 
 export type CrmSegment = {
@@ -59,6 +61,12 @@ export const CRM_SEGMENTS: CrmSegment[] = [
     icon: Trophy,
     filters: { ...CRM_DEFAULT_FILTERS, status: "customer" },
   },
+  {
+    id: "marketplace",
+    label: "Marketplace",
+    icon: MessageCircle,
+    filters: { ...CRM_DEFAULT_FILTERS, facebookOnly: true },
+  },
 ]
 
 export function filtersMatchSegment(filters: CrmFilterState, segment: CrmSegment): boolean {
@@ -69,7 +77,8 @@ export function filtersMatchSegment(filters: CrmFilterState, segment: CrmSegment
     filters.assignedTo === segment.filters.assignedTo &&
     filters.tagId === segment.filters.tagId &&
     filters.followUpOnly === segment.filters.followUpOnly &&
-    filters.createdWithinDays === segment.filters.createdWithinDays
+    filters.createdWithinDays === segment.filters.createdWithinDays &&
+    filters.facebookOnly === segment.filters.facebookOnly
   )
 }
 

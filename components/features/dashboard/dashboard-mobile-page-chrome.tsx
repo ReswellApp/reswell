@@ -1,5 +1,6 @@
 "use client"
 
+import { Suspense } from "react"
 import { usePathname } from "next/navigation"
 import { DashboardMobileNav } from "@/components/features/dashboard/dashboard-mobile-nav"
 import { resolveDashboardSectionMeta } from "@/lib/dashboard-section-meta"
@@ -14,14 +15,18 @@ export interface DashboardMobilePageChromeProps {
   sellerProfileHref: string | null
   isAdmin?: boolean
   isShipper?: boolean
+  isDropoffLocation?: boolean
   hasShopifyAccess?: boolean
+  showEarnings?: boolean
 }
 
 export function DashboardMobilePageChrome({
   sellerProfileHref,
   isAdmin = false,
   isShipper = false,
+  isDropoffLocation = false,
   hasShopifyAccess = false,
+  showEarnings = true,
 }: DashboardMobilePageChromeProps) {
   const pathname = usePathname() ?? ""
   const { sectionName, description } = resolveDashboardSectionMeta(pathname)
@@ -30,13 +35,17 @@ export function DashboardMobilePageChrome({
     <div className="space-y-5 pt-4 lg:hidden">
       <h1 className={dashboardPageTitleClass}>Dashboard - {sectionName}</h1>
 
-      <DashboardMobileNav
-        sellerProfileHref={sellerProfileHref}
-        isAdmin={isAdmin}
-        isShipper={isShipper}
-        hasShopifyAccess={hasShopifyAccess}
-        variant="account"
-      />
+      <Suspense fallback={null}>
+        <DashboardMobileNav
+          sellerProfileHref={sellerProfileHref}
+          isAdmin={isAdmin}
+          isShipper={isShipper}
+          isDropoffLocation={isDropoffLocation}
+          hasShopifyAccess={hasShopifyAccess}
+          showEarnings={showEarnings}
+          variant="account"
+        />
+      </Suspense>
 
       <header className="space-y-2 border-b border-border/60 pb-5">
         <h2 className={dashboardMobileSectionTitleClass}>{sectionName}</h2>

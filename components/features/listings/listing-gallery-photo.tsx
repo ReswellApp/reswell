@@ -9,6 +9,9 @@ import {
   type DragEvent,
 } from "react"
 import { ListingMediaFillImage } from "@/components/listing-media-fill-image"
+import { useListingPhotoReady } from "@/components/features/listings/hooks/use-listing-photo-ready"
+import { listingImageIsDecoded } from "@/lib/listing-photo-paint"
+import { listingPhotoFrameFillStyle } from "@/lib/listing-photo-fill"
 import { ListingTileShimmer } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import {
@@ -27,7 +30,7 @@ export interface ListingGalleryPhotoProps {
   alt: string
   sizes: string
   className?: string
-  /** Listing PDP hero uses contain so the full photo is on the page. Thumbs stay cover. */
+  /** Listing PDP hero and tiles cover the locked 3:4 frame. Thumbs stay cover. */
   objectFit?: "cover" | "contain"
   priority?: boolean
   fetchPriority?: "high" | "low" | "auto"
@@ -64,28 +67,12 @@ export function listingPhotoBackdropStyle(
   }
 }
 
-/** Sync cache probe — `img.complete` is true on the first tick when the URL is already in memory. */
-export function listingPhotoIsCached(src: string | undefined): boolean {
-  if (!src || src === "/placeholder.svg" || typeof window === "undefined") return false
-  const probe = new window.Image()
-  probe.src = src
-  return probe.complete && probe.naturalWidth > 0
-}
-
-function markPaintedAfterDecode(img: HTMLImageElement | null, mark: () => void): void {
-  if (!img || !img.complete || img.naturalWidth === 0) return
-  const finish = () => mark()
-  if (typeof img.decode === "function") {
-    void img.decode().then(finish).catch(finish)
-    return
-  }
-  finish()
-}
+export { listingPhotoIsCached } from "@/lib/listing-photo-paint"
 
 /**
- * Listing gallery photo. A cached tile/PDP URL is the canvas. Bitmaps stay
- * invisible until decoded, the preview stays under the sharp image, and the
- * wave only covers a well that has no photo URL yet.
+ * Listing gallery photo. Before paint we ask the mounted image if it already
+ * has pixels. A cached tile or PDP photo skips the wave. An uncached bitmap
+ * stays under it until decode. The preview stays under the sharp image.
  */
 export function ListingGalleryPhoto({
   src,
@@ -100,31 +87,24 @@ export function ListingGalleryPhoto({
   onLoaded,
   crop = null,
 }: ListingGalleryPhotoProps) {
-  const [trackedSrc, setTrackedSrc] = useState(src)
-  const [trackedPreview, setTrackedPreview] = useState(previewSrc ?? "")
-  const [previewReady, setPreviewReady] = useState(false)
-  const [srcReady, setSrcReady] = useState(false)
   const [natural, setNatural] = useState<{ w: number; h: number } | null>(null)
   const [frame, setFrame] = useState<{ width: number; height: number } | null>(null)
   const [frameEl, setFrameEl] = useState<HTMLElement | null>(null)
   const onLoadedRef = useRef(onLoaded)
   onLoadedRef.current = onLoaded
 
-  if (src !== trackedSrc) {
-    setTrackedSrc(src)
-    setSrcReady(false)
-  }
-  if ((previewSrc ?? "") !== trackedPreview) {
-    setTrackedPreview(previewSrc ?? "")
-    setPreviewReady(false)
-  }
-
   const preview =
     previewSrc && previewSrc !== src && previewSrc !== "/placeholder.svg" ? previewSrc : ""
+  const sourcePaint = useListingPhotoReady(src)
+  const previewPaint = useListingPhotoReady(preview)
+  const srcReady = sourcePaint.ready
+  const previewReady = previewPaint.ready
   const painted = srcReady || previewReady
   const cssFit = listingPdpCropCssFit(crop)
   const objectPosition = crop ? listingPdpCropObjectPosition(crop) : undefined
   const precise = listingPdpCropNeedsPreciseLayout(crop)
+  // Fit is object-fit: contain. Anything between fit and a plain cover, and
+  // any zoom past cover, needs the measured box so the hero matches the editor.
   const box =
     precise && crop && natural && frame
       ? listingPdpCropToLayout(frame.width, frame.height, natural.w, natural.h, crop)
@@ -152,25 +132,39 @@ export function ListingGalleryPhoto({
     : resolvedFit === "contain"
       ? "object-contain"
       : "object-cover"
-  // Seller crops opt out of the listing-hero contain !important rule.
+  /**
+   * One bitmap, pinned to the frame. Center it, then scale until both edges
+   * are covered. A second background-image of the same photo reads as a
+   * doubled tail under the board.
+   */
+  const frameFillStyle: CSSProperties = {
+    ...listingPhotoFrameFillStyle,
+    objectFit: resolvedFit === "contain" ? "contain" : "cover",
+    objectPosition: objectPosition ?? "center center",
+  }
+  // Seller crops opt out of the listing-hero cover rule via their class.
   const cropStyle: CSSProperties | undefined = box
     ? {
+        position: "absolute",
         width: box.width,
         height: box.height,
         left: box.left,
         top: box.top,
-        objectFit: "fill",
-        ["--listing-pdp-object-fit" as string]: "fill",
-        ["--listing-pdp-object-position" as string]: objectPosition ?? "center",
+        maxWidth: "none",
+        objectFit: "contain",
+        objectPosition: "center center",
+        ["--listing-pdp-object-fit" as string]: "contain",
+        ["--listing-pdp-object-position" as string]: "center center",
       }
     : crop
       ? {
-          objectFit: cssFit,
-          ...(objectPosition ? { objectPosition } : {}),
-          ["--listing-pdp-object-fit" as string]: cssFit,
-          ["--listing-pdp-object-position" as string]: objectPosition ?? "center",
+          ...frameFillStyle,
+          objectFit: resolvedFit === "contain" ? "contain" : "cover",
+          objectPosition: objectPosition ?? "center center",
+          ["--listing-pdp-object-fit" as string]: resolvedFit === "contain" ? "contain" : "cover",
+          ["--listing-pdp-object-position" as string]: objectPosition ?? "center center",
         }
-      : undefined
+      : frameFillStyle
   const layerClass = cn(PHOTO_LAYER, fitClass, crop && "listing-pdp-seller-crop")
 
   const attachFrame = useCallback((img: HTMLImageElement | null) => {
@@ -178,9 +172,12 @@ export function ListingGalleryPhoto({
     setFrameEl((prev) => (prev === parent ? prev : parent))
   }, [])
 
-  const attachPreview = useCallback((img: HTMLImageElement | null) => {
-    markPaintedAfterDecode(img, () => setPreviewReady(true))
-  }, [])
+  const attachPreview = useCallback(
+    (img: HTMLImageElement | null) => {
+      previewPaint.ref(img)
+    },
+    [previewPaint.ref],
+  )
 
   const rememberNaturalSize = useCallback((img: HTMLImageElement) => {
     const naturalWidth = img.naturalWidth
@@ -194,13 +191,11 @@ export function ListingGalleryPhoto({
   const attachSource = useCallback(
     (img: HTMLImageElement | null) => {
       attachFrame(img)
-      markPaintedAfterDecode(img, () => {
-        setSrcReady(true)
-        // iOS Chrome / Google app often skip onLoad for cached images.
-        if (img) rememberNaturalSize(img)
-      })
+      sourcePaint.ref(img)
+      // iOS Chrome / Google app often skip onLoad for cached images.
+      if (img && listingImageIsDecoded(img)) rememberNaturalSize(img)
     },
-    [attachFrame, rememberNaturalSize],
+    [attachFrame, rememberNaturalSize, sourcePaint.ref],
   )
 
   return (
@@ -217,7 +212,7 @@ export function ListingGalleryPhoto({
             layerClass,
             "pointer-events-none z-[1]",
             className,
-            previewReady ? "opacity-100" : "opacity-0",
+            previewReady && !srcReady ? "opacity-100" : "opacity-0",
           )}
           style={cropStyle}
           sizes={sizes}
@@ -225,7 +220,7 @@ export function ListingGalleryPhoto({
           ref={attachPreview}
           onLoad={(event) => {
             // Preview is paint-only — never size the hero from the tile derivative.
-            markPaintedAfterDecode(event.currentTarget, () => setPreviewReady(true))
+            previewPaint.onLoad(event.currentTarget)
           }}
         />
       ) : null}
@@ -250,19 +245,16 @@ export function ListingGalleryPhoto({
         ref={attachSource}
         onLoad={(event) => {
           const img = event.currentTarget
-          markPaintedAfterDecode(img, () => {
-            setSrcReady(true)
-            rememberNaturalSize(img)
-          })
+          sourcePaint.onLoad(img)
+          if (listingImageIsDecoded(img)) rememberNaturalSize(img)
         }}
       />
-      <ListingTileShimmer
-        aria-hidden
-        className={cn(
-          "listing-tile-shimmer-overlay absolute inset-0 z-[3] rounded-none",
-          painted && "pointer-events-none opacity-0",
-        )}
-      />
+      {painted ? null : (
+        <ListingTileShimmer
+          aria-hidden
+          className="absolute inset-0 z-[3] rounded-none"
+        />
+      )}
     </>
   )
 }

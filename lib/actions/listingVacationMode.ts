@@ -1,6 +1,7 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
+import { resolveManagedSeller } from "@/lib/account-access/managed-seller"
 import { createClient } from "@/lib/supabase/server"
 import { setListingVacationModeForSeller } from "@/lib/services/listingVacationMode"
 import { listingVacationModeBodySchema } from "@/lib/validations/listing-vacation-mode"
@@ -26,9 +27,12 @@ export async function setListingVacationModeAction(
     return { error: "Please sign in to update this listing." }
   }
 
+  const managed = await resolveManagedSeller("listings.write")
+  if (!managed.ok) return { error: managed.error }
+
   const result = await setListingVacationModeForSeller({
     supabase,
-    userId: user.id,
+    userId: managed.seller.sellerId,
     listingId: parsed.data.listingId,
     vacationMode: parsed.data.vacationMode,
   })

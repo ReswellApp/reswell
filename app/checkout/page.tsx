@@ -6,14 +6,21 @@ import { createClient } from "@/lib/supabase/server"
 import { CheckoutAccountRequired } from "@/components/checkout-account-required"
 import { CheckoutClient } from "@/components/checkout-client"
 import type { CheckoutListing } from "@/components/checkout-types"
+import { attachListingInventorySources } from "@/lib/db/listingInventorySource"
 import { findListingByParam } from "@/lib/listing-query"
 import { isBlockedOwnListingPurchase } from "@/lib/cart-eligibility"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { isReswellShopListing } from "@/lib/reswell-shop"
+import {
+  clampListingBuyerQuantity,
+  peerBrandNewStockQuantity,
+} from "@/lib/listing-stock-quantity"
 import { resolveMixedCheckoutSellerId } from "@/lib/mixed-checkout"
 import { listingDetailHref } from "@/lib/listing-href"
+import { dashboardOffersPath } from "@/lib/utils/offers-dashboard-display"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { resolvePayableAmount } from "@/lib/purchase-amount"
+import { resolveCheckoutShippingPriceDisplay } from "@/lib/checkout-shipping-price"
 import {
   fetchCheckoutBuyerContext,
   fetchCheckoutSellerAndBuyerContext,
@@ -42,17 +49,15 @@ import {
 } from "@/lib/services/acceptedOfferCheckout"
 import { applyAcceptedOfferToPeerCheckoutListings } from "@/lib/services/applyAcceptedOfferToPeerCheckoutListings"
 import {
+  effectiveBoardShippingMode,
   PEER_SURFBOARD_CHECKOUT_LISTING_SELECT,
   type PeerSurfboardCheckoutListingRow,
 } from "@/lib/services/peerListingShippingQuote"
 import { KlaviyoCheckoutStartedTracker } from "@/components/features/checkout/klaviyo-checkout-started-tracker"
 import { assertBuyerMayPurchaseListingsExclusiveWindow } from "@/lib/services/listingBuyerExclusiveWindow"
 import { peerCheckoutCopyFromSections } from "@/lib/peer-listing-item-nouns"
-import {
-  countSurfboardListings,
-  peerCheckoutSurfboardCountError,
-} from "@/lib/surfboard-multi-board-parcel"
 import { getSurfboardShippedCheckoutSeed } from "@/lib/services/surfboardShippedOffer"
+import { getAdminReswellBucksCheckoutOffer } from "@/lib/services/reswellBucksCheckout"
 import type { SurfboardShippedCheckoutSeed } from "@/lib/services/surfboardShippedOffer"
 
 async function surfboardShippedSeedForCheckout(
@@ -98,7 +103,13 @@ function rowToCheckoutListing(
 }
 
 export default async function CheckoutPage(props: {
-  searchParams: Promise<{ listing?: string; from_cart?: string; seller_id?: string; offer?: string }>
+  searchParams: Promise<{
+    listing?: string
+    from_cart?: string
+    seller_id?: string
+    offer?: string
+    qty?: string
+  }>
 }) {
   const searchParams = await props.searchParams
   const fromCart = searchParams.from_cart === "1"
@@ -110,8 +121,14 @@ export default async function CheckoutPage(props: {
     data: { user },
   } = await supabase.auth.getUser()
 
+  const reswellBucksCheckout =
+    user && !isAnonymousSupabaseUser(user)
+      ? await getAdminReswellBucksCheckoutOffer(supabase, user.id)
+      : null
+
   if (offerParam) {
     const checkoutReturnPath = `/checkout?offer=${encodeURIComponent(offerParam)}`
+    const offersHome = dashboardOffersPath({ role: "buyer", offerId: offerParam })
 
     if (!user || isAnonymousSupabaseUser(user)) {
       redirect(`/auth/login?redirect=${encodeURIComponent(checkoutReturnPath)}`)
@@ -119,22 +136,18 @@ export default async function CheckoutPage(props: {
 
     const offer = await fetchAcceptedOfferById(supabase, offerParam)
     if (!offer || offer.buyer_id !== user.id) {
-      redirect("/messages/offers")
+      redirect(offersHome)
     }
 
     const loaded = await loadAcceptedOfferCheckoutListings(supabase, offer)
     if (!loaded.ok) {
-      redirect("/messages/offers")
+      redirect(offersHome)
     }
 
     const checkoutListings = loaded.listings.map(rowToCheckoutListing)
 
-    if (peerCheckoutSurfboardCountError(countSurfboardListings(checkoutListings))) {
-      redirect("/messages/offers")
-    }
-
     if (checkoutListings.some((l) => l.user_id === user.id)) {
-      redirect("/messages/offers")
+      redirect(offersHome)
     }
 
     const exclusiveCheck = await assertBuyerMayPurchaseListingsExclusiveWindow(
@@ -143,7 +156,7 @@ export default async function CheckoutPage(props: {
       user.id,
     )
     if (!exclusiveCheck.ok) {
-      redirect("/messages/offers")
+      redirect(offersHome)
     }
 
     const sellerId = offer.seller_id
@@ -175,7 +188,7 @@ export default async function CheckoutPage(props: {
                   <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
                   <BreadcrumbItem>
                     <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
-                      <Link href="/messages/offers">Offers</Link>
+                      <Link href={offersHome}>Offers</Link>
                     </BreadcrumbLink>
                   </BreadcrumbItem>
                   <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
@@ -198,6 +211,7 @@ export default async function CheckoutPage(props: {
             offerId={offer.id}
             suggestedFulfillment={loaded.fulfillment}
             surfboardShippedSeed={await surfboardShippedSeedForCheckout(user.id, checkoutListings)}
+            reswellBucksCheckout={reswellBucksCheckout}
           />
         </div>
       </main>
@@ -236,10 +250,6 @@ export default async function CheckoutPage(props: {
       bundle.lines.map((l) => [l.listing.id, Number(l.listing.price)] as const),
     )
     let checkoutListings = bundle.lines.map((l) => rowToCheckoutListing(l.listing, l.quantity))
-
-    if (peerCheckoutSurfboardCountError(countSurfboardListings(checkoutListings))) {
-      redirect("/cart")
-    }
 
     const pricedRows = await applyAcceptedOfferToPeerCheckoutListings(
       supabase,
@@ -348,6 +358,7 @@ export default async function CheckoutPage(props: {
                 : null
             }
             acceptedOfferListingIds={acceptedOfferListingIds}
+            reswellBucksCheckout={reswellBucksCheckout}
             suggestedFulfillment={
               matchedOffer && acceptedOfferMatchesListingIds(matchedOffer, checkoutListings.map((l) => l.id))
                 ? suggestedFulfillmentFromOfferAndListings(
@@ -386,6 +397,8 @@ export default async function CheckoutPage(props: {
   if (redirectSlug) {
     const params = new URLSearchParams()
     params.set("listing", redirectSlug)
+    const qty = searchParams.qty?.trim()
+    if (qty) params.set("qty", qty)
     redirect(`/checkout?${params.toString()}`)
   }
 
@@ -437,7 +450,42 @@ export default async function CheckoutPage(props: {
 
   const listingTitle = capitalizeWords(listing.title)
 
-  let checkoutListing = rowToCheckoutListing(listing as unknown as Record<string, unknown>)
+  const listingQuantityBase = {
+    id: listing.id,
+    section: listing.section,
+    condition: (listing as { condition?: string | null }).condition ?? null,
+    stock_quantity: (listing as { stock_quantity?: number | null }).stock_quantity ?? null,
+  }
+  const sourcedQuantity = await attachListingInventorySources(supabase, [listingQuantityBase])
+  const listingForQuantity = sourcedQuantity.ok
+    ? sourcedQuantity.listings[0] ?? listingQuantityBase
+    : listingQuantityBase
+  const stockBacked =
+    isReswellShopListing(listing.section) || peerBrandNewStockQuantity(listingForQuantity) >= 1
+  let checkoutQuantity = 1
+  if (stockBacked) {
+    const requestedQty = Math.floor(Number(searchParams.qty) || 0)
+    let cartQty: number | null = null
+    if (user && !isAnonymousSupabaseUser(user)) {
+      const { data: cartRow } = await supabase
+        .from("cart_items")
+        .select("quantity")
+        .eq("profile_id", user.id)
+        .eq("listing_id", listing.id)
+        .maybeSingle()
+      if (cartRow) {
+        cartQty = Math.max(1, Math.floor(Number((cartRow as { quantity?: number }).quantity) || 1))
+      }
+    }
+    checkoutQuantity = clampListingBuyerQuantity(
+      listingForQuantity,
+      requestedQty >= 1 ? requestedQty : cartQty ?? 1,
+    )
+  }
+  let checkoutListing = rowToCheckoutListing(
+    listing as unknown as Record<string, unknown>,
+    checkoutQuantity,
+  )
   let matchedOfferId: string | null = null
   let matchedOfferFulfillment: "pickup" | "shipping" | null = null
 
@@ -454,7 +502,10 @@ export default async function CheckoutPage(props: {
       findAcceptedOfferMatchingListings(supabase, user.id, [checkoutListing.id], listing.user_id),
     ])
     if (priced[0]) {
-      checkoutListing = rowToCheckoutListing(priced[0] as unknown as Record<string, unknown>)
+      checkoutListing = rowToCheckoutListing(
+        priced[0] as unknown as Record<string, unknown>,
+        checkoutListing.quantity ?? 1,
+      )
     }
     matchedOfferId = matchedOffer?.id ?? null
     matchedOfferFulfillment = matchedOffer
@@ -467,28 +518,40 @@ export default async function CheckoutPage(props: {
   const previewImpliedFulfillment: "pickup" | "shipping" = lp && sa ? "pickup" : !lp && sa ? "shipping" : "pickup"
   const previewNeedsShipping = previewImpliedFulfillment === "shipping"
   const previewResolved = resolvePayableAmount(checkoutListing, previewImpliedFulfillment)
+  const previewPriceDependsOnAddress =
+    previewNeedsShipping && effectiveBoardShippingMode(checkoutListing) === "reswell"
+  const previewShippingPrice = resolveCheckoutShippingPriceDisplay({
+    needsShipping: previewNeedsShipping,
+    priceDependsOnAddress: previewPriceDependsOnAddress,
+    hasShippingAddress: false,
+    quoteLoading: false,
+    quoteError: null,
+    shippingUsd: previewPriceDependsOnAddress || !previewResolved.ok ? null : previewResolved.shipping,
+  })
 
-  const previewTotals =
-    previewResolved.ok
-      ? {
-          itemPrice: previewResolved.itemPrice,
-          shipping: previewResolved.shipping,
-          total: previewResolved.total,
-        }
-      : { itemPrice: 0, shipping: 0, total: 0 }
+  const previewTotals = previewResolved.ok
+    ? {
+        itemPrice: previewResolved.itemPrice,
+        shipping: previewShippingPrice.amountUsd ?? 0,
+        total: Math.round((previewResolved.itemPrice + (previewShippingPrice.amountUsd ?? 0)) * 100) / 100,
+      }
+    : { itemPrice: 0, shipping: 0, total: 0 }
 
-  const previewShippingSummaryRight = (() => {
-    if (!previewNeedsShipping) {
-      return <span className="text-neutral-500">Local pickup</span>
-    }
-    if (previewResolved.ok && previewResolved.shipping === 0) {
-      return <span className="text-neutral-700">Free</span>
-    }
-    if (previewResolved.ok) {
-      return <span className="tabular-nums text-neutral-900">${previewResolved.shipping.toFixed(2)}</span>
-    }
-    return <span className="text-neutral-400">—</span>
-  })()
+  const previewShippingSummaryRight = (
+    <span
+      className={
+        previewShippingPrice.status === "priced"
+          ? "tabular-nums text-neutral-900"
+          : previewShippingPrice.status === "free"
+            ? "text-neutral-700"
+            : previewShippingPrice.status === "pending"
+              ? "text-neutral-400"
+              : "text-neutral-500"
+      }
+    >
+      {previewShippingPrice.label}
+    </span>
+  )
 
   const accountGate = !user || (user && isAnonymousSupabaseUser(user))
 
@@ -592,6 +655,7 @@ export default async function CheckoutPage(props: {
           offerId={matchedOfferId}
           suggestedFulfillment={matchedOfferFulfillment}
           surfboardShippedSeed={surfboardShippedSeed}
+          reswellBucksCheckout={reswellBucksCheckout}
         />
       </div>
     </main>

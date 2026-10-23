@@ -65,14 +65,14 @@ export function listStaticSiteAssets(): SiteAssetEntry[] {
       status: "orphan",
       notes: "Present in /public but not referenced in application code.",
     }),
+    publicImage("reswell-wave-avatar.jpg", "Reswell wave mark", "brand", ["/shopify/connect"], {
+      notes: "Shopify connect consent avatar.",
+    }),
     publicImage("og-image.jpg", "Listing / brand OG fallback", "brand", [], {
       notes: "Used in listing share cards and brand metadata — not visible in page body.",
     }),
 
-    publicImage("home/hero-backdrop-tahiti.jpg", "Homepage and giveaway hero backdrop", "home", [
-      "/",
-      "/giveaways",
-    ]),
+    publicImage("home/hero-backdrop-tahiti.jpg", "Homepage hero backdrop", "home", ["/"]),
     publicImage("home/hero-backdrop-mesa-v2.jpg", "Legacy homepage hero backdrop", "orphan", [], {
       status: "orphan",
     }),

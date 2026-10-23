@@ -1,3 +1,53 @@
+import { normalizeBrandedTrackingUrl } from "@/lib/utils/branded-tracking-url"
+
+const ORDER_ID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/**
+ * Live track redirect. Resolves the branded page at click time so older
+ * purchase and sale messages are not stuck on a carrier URL saved in the thread.
+ */
+export function orderPackageTrackPath(orderId: string | null | undefined): string | null {
+  const id = orderId?.trim() ?? ""
+  if (!ORDER_ID_RE.test(id)) return null
+  return `/api/orders/${id}/track`
+}
+
+/**
+ * Branded page when we already have one. Otherwise the live redirect, which
+ * creates the page on click. Carrier sites are only used when there is no order id.
+ */
+export function packageTrackHref(params: {
+  orderId?: string | null
+  brandedUrl?: string | null
+  trackingNumber?: string | null
+  trackingCarrier?: string | null
+}): string | null {
+  const branded = normalizeBrandedTrackingUrl(params.brandedUrl)
+  if (branded) return branded
+  const live = orderPackageTrackPath(params.orderId)
+  if (live && params.trackingNumber?.trim()) return live
+  return preferredTrackingUrl({
+    trackingNumber: params.trackingNumber,
+    trackingCarrier: params.trackingCarrier,
+  })
+}
+
+/**
+ * Prefer the stored ShipEngine branded page. Otherwise the carrier's public tracker.
+ */
+export function preferredTrackingUrl(params: {
+  brandedUrl?: string | null
+  trackingNumber?: string | null
+  trackingCarrier?: string | null
+}): string | null {
+  const branded = normalizeBrandedTrackingUrl(params.brandedUrl)
+  if (branded) return branded
+  const trackingNumber = params.trackingNumber?.trim()
+  if (!trackingNumber) return null
+  return carrierTrackingUrl(trackingNumber, params.trackingCarrier)
+}
+
 /**
  * Best-effort public tracking URLs from free-text carrier + tracking number.
  * Does not guarantee the carrier matches; sellers should enter carrier names consistently.

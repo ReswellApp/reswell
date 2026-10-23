@@ -7,6 +7,7 @@ const soldFeedPageQuerySchema = z
   .object({
     soldAt: z.string().datetime({ offset: true }).optional(),
     listingId: z.string().uuid().optional(),
+    saleLineId: z.string().uuid().optional(),
     brandSlug: z.string().trim().min(1).max(120).optional(),
   })
   .refine((value) => Boolean(value.soldAt) === Boolean(value.listingId), {
@@ -17,6 +18,7 @@ export async function GET(request: NextRequest) {
   const parsed = soldFeedPageQuerySchema.safeParse({
     soldAt: request.nextUrl.searchParams.get("soldAt") ?? undefined,
     listingId: request.nextUrl.searchParams.get("listingId") ?? undefined,
+    saleLineId: request.nextUrl.searchParams.get("saleLineId") ?? undefined,
     brandSlug: request.nextUrl.searchParams.get("brandSlug") ?? undefined,
   })
   if (!parsed.success) {
@@ -24,7 +26,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const supabase = getDb({ consistency: "eventual" })
+    const supabase = getDb({ consistency: "strong" })
     const data = await loadMarketplaceSoldFeedPage(
       supabase,
       parsed.data.brandSlug ?? null,
@@ -32,6 +34,7 @@ export async function GET(request: NextRequest) {
         ? {
             soldAt: parsed.data.soldAt,
             listingId: parsed.data.listingId,
+            saleLineId: parsed.data.saleLineId ?? null,
           }
         : null,
     )
@@ -40,7 +43,7 @@ export async function GET(request: NextRequest) {
       { data },
       {
         headers: {
-          "Cache-Control": "public, s-maxage=300, stale-while-revalidate=3600",
+          "Cache-Control": "private, no-store",
         },
       },
     )

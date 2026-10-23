@@ -2,12 +2,21 @@ import { NextRequest, NextResponse } from "next/server"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
 import { requireShopifyMerchant } from "@/lib/shopify/authorize"
 import { normalizeShopifyDomain } from "@/lib/shopify/config"
-import { verifyShopifyOAuthHmac } from "@/lib/shopify/crypto"
+import {
+  shopifyOAuthCallbackOutcome,
+  type ShopifyConnectErrorDetail,
+} from "@/lib/shopify/connect-errors"
+import { verifyShopifyOAuthHmac, hashShopifyOAuthState } from "@/lib/shopify/crypto"
+import { shopifyClaimCookieOptions } from "@/lib/shopify/claim-cookie"
+import { createServiceRoleClient } from "@/lib/supabase/server"
+import { dbPeekShopifyOAuthState } from "@/lib/db/shopifyConnections"
+import { settleShopifyBilling } from "@/lib/services/shopifyBilling"
 import { finishShopifyOAuth } from "@/lib/services/shopifyOAuth"
+import { finishPublicShopifyInstall } from "@/lib/services/shopifyPublicInstall"
 
 function dashboardRedirect(
   result: "connected" | "error",
-  detail?: string,
+  detail?: ShopifyConnectErrorDetail,
 ) {
   const url = new URL("/dashboard/shopify", publicSiteOrigin())
   url.searchParams.set(result, "1")
@@ -20,9 +29,6 @@ export async function GET(request: NextRequest) {
     return dashboardRedirect("error", "invalid_callback")
   }
 
-  const auth = await requireShopifyMerchant()
-  if (!auth.ok) return auth.response
-
   const code = request.nextUrl.searchParams.get("code")?.trim()
   const state = request.nextUrl.searchParams.get("state")?.trim()
   const shopDomain = normalizeShopifyDomain(
@@ -32,16 +38,72 @@ export async function GET(request: NextRequest) {
     return dashboardRedirect("error", "missing_callback_fields")
   }
 
+  const serviceSupabase = createServiceRoleClient()
+  const peek = await dbPeekShopifyOAuthState(
+    serviceSupabase,
+    hashShopifyOAuthState(state),
+  )
+
+  if (!peek) {
+    return dashboardRedirect("error", "invalid_state")
+  }
+
+  if (peek.shopDomain !== shopDomain) {
+    return dashboardRedirect("error", "shop_mismatch")
+  }
+
+  if (peek.flowType === "public_install") {
+    try {
+      const pending = await finishPublicShopifyInstall({
+        shopDomain,
+        code,
+        state,
+      })
+      const url = new URL("/shopify/claim", publicSiteOrigin())
+      const response = NextResponse.redirect(url)
+      const cookie = shopifyClaimCookieOptions(pending.claimSecret)
+      response.cookies.set(cookie.name, cookie.value, {
+        httpOnly: cookie.httpOnly,
+        secure: cookie.secure,
+        sameSite: cookie.sameSite,
+        path: cookie.path,
+        maxAge: cookie.maxAge,
+      })
+      return response
+    } catch (error) {
+      console.error("[shopify] public callback", error)
+      const url = new URL("/shopify/claim", publicSiteOrigin())
+      url.searchParams.set("error", "connection_failed")
+      return NextResponse.redirect(url)
+    }
+  }
+
+  const auth = await requireShopifyMerchant()
+  if (!auth.ok) {
+    const signInUrl = new URL("/auth/login", publicSiteOrigin())
+    signInUrl.searchParams.set(
+      "redirect",
+      request.nextUrl.pathname + request.nextUrl.search,
+    )
+    return NextResponse.redirect(signInUrl)
+  }
+
+  if (!auth.canManageConnection) return dashboardRedirect("error", "not_approved")
+
   try {
-    await finishShopifyOAuth({
-      userId: auth.user.id,
+    const connection = await finishShopifyOAuth({
+      userId: auth.accountId,
       shopDomain,
       code,
       state,
     })
+    await settleShopifyBilling(serviceSupabase, connection)
     return dashboardRedirect("connected")
   } catch (error) {
     console.error("[shopify] callback", error)
-    return dashboardRedirect("error", "connection_failed")
+    const message = error instanceof Error ? error.message : ""
+    const outcome = shopifyOAuthCallbackOutcome(message)
+    if (outcome.connected) return dashboardRedirect("connected")
+    return dashboardRedirect("error", outcome.detail)
   }
 }

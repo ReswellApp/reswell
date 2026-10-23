@@ -4,11 +4,14 @@ import { Suspense, type ReactNode } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Plus } from "lucide-react"
+import { OpenPersonalAccountButton } from "@/components/features/dashboard/account-switcher"
+import type { AccountRole } from "@/lib/account-access/permissions"
 import { DashboardMobilePageChrome } from "@/components/features/dashboard/dashboard-mobile-page-chrome"
 import { DashboardSidebarNav } from "@/components/features/dashboard/dashboard-sidebar-nav"
 import { Button } from "@/components/ui/button"
 import {
   dashboardSidebarCreateButtonClass,
+  dashboardSidebarStickyScrollClass,
   dashboardSidebarWidthClass,
 } from "@/lib/utils/dashboard-display-styles"
 import { isDashboardSupportDeskPath } from "@/lib/utils/dashboard-support-path"
@@ -18,18 +21,70 @@ interface DashboardAppFrameProps {
   sellerProfileHref: string | null
   isAdmin?: boolean
   isShipper?: boolean
+  isDropoffLocation?: boolean
   hasShopifyAccess?: boolean
+  showEarnings?: boolean
+  actingAsShop?: boolean
+  shopLabel?: string
+  accountRole?: AccountRole
+  actorDisplayName?: string | null
+  actorEmail?: string | null
+  showShopAdminWarning?: boolean
   children: ReactNode
+}
+
+const WORKING_ROLE_LABEL: Record<AccountRole, string> = {
+  owner: "Your account",
+  manager: "Manager",
+  staff: "Staff",
+}
+
+function WorkingInCard({
+  shopLabel,
+  accountRole,
+  actorDisplayName,
+  actorEmail,
+  showShopAdminWarning,
+}: {
+  shopLabel: string
+  accountRole: AccountRole
+  actorDisplayName: string | null
+  actorEmail: string | null
+  showShopAdminWarning: boolean
+}) {
+  return (
+    <div className="rounded-2xl border border-neutral-200/80 bg-white px-4 py-3">
+      <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Working in</p>
+      <p className="mt-1 truncate text-sm font-semibold text-foreground">{shopLabel}</p>
+      <p className="text-xs text-muted-foreground">{WORKING_ROLE_LABEL[accountRole]}</p>
+      <p className="mt-3 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Signed in</p>
+      <p className="mt-1 truncate text-sm font-medium text-foreground">{actorDisplayName || "Your account"}</p>
+      {actorEmail ? <p className="truncate text-xs text-muted-foreground">{actorEmail}</p> : null}
+      {showShopAdminWarning ? (
+        <p className="mt-2 text-xs text-muted-foreground">Shop access does not open the Reswell admin panel.</p>
+      ) : null}
+      <OpenPersonalAccountButton />
+    </div>
+  )
 }
 
 export function DashboardAppFrame({
   sellerProfileHref,
   isAdmin = false,
   isShipper = false,
+  isDropoffLocation = false,
   hasShopifyAccess = false,
+  showEarnings = true,
+  actingAsShop = false,
+  shopLabel,
+  accountRole = "staff",
+  actorDisplayName = null,
+  actorEmail,
+  showShopAdminWarning = false,
   children,
 }: DashboardAppFrameProps) {
   const pathname = usePathname() ?? ""
+  const shopifyAdmin = pathname === "/dashboard/shopify"
 
   if (isDashboardSupportDeskPath(pathname)) {
     return (
@@ -42,17 +97,56 @@ export function DashboardAppFrame({
   }
 
   return (
-    <div className="container mx-auto flex-1 pb-3 pt-5 sm:pb-6 sm:pt-6 lg:py-8">
+    <div
+      className={cn(
+        shopifyAdmin
+          ? "w-full flex-1 bg-[#f1f1f1] px-4 pb-8 pt-4 text-[#303030] sm:px-6 lg:px-8 lg:pb-10 lg:pt-6 dark:bg-zinc-950 dark:text-foreground"
+          : "container mx-auto flex-1 pb-3 pt-5 sm:pb-6 sm:pt-6 lg:py-8",
+      )}
+    >
       <DashboardMobilePageChrome
         sellerProfileHref={sellerProfileHref}
         isAdmin={isAdmin}
         isShipper={isShipper}
+        isDropoffLocation={isDropoffLocation}
         hasShopifyAccess={hasShopifyAccess}
+        showEarnings={showEarnings}
       />
+      {actingAsShop ? (
+        <div className="mt-4 lg:hidden">
+          <WorkingInCard
+            shopLabel={shopLabel ?? "Shop"}
+            accountRole={accountRole}
+            actorDisplayName={actorDisplayName}
+            actorEmail={actorEmail ?? null}
+            showShopAdminWarning={showShopAdminWarning}
+          />
+        </div>
+      ) : null}
 
-      <div className="mt-5 flex flex-col gap-6 lg:mt-0 lg:flex-row lg:gap-12 xl:gap-14">
-        <aside className={cn("hidden shrink-0 lg:block", dashboardSidebarWidthClass)}>
-          <div className="sticky top-24 space-y-6">
+      <div
+        className={cn(
+          "mt-5 flex flex-col lg:mt-0 lg:flex-row",
+          shopifyAdmin ? "gap-6 lg:gap-8" : "gap-6 lg:gap-12 xl:gap-14",
+        )}
+      >
+        <aside
+          className={cn(
+            "hidden shrink-0 lg:block",
+            dashboardSidebarWidthClass,
+            dashboardSidebarStickyScrollClass,
+          )}
+        >
+          <div className="space-y-6">
+            {actingAsShop ? (
+              <WorkingInCard
+                shopLabel={shopLabel ?? "Shop"}
+                accountRole={accountRole}
+                actorDisplayName={actorDisplayName}
+                actorEmail={actorEmail ?? null}
+                showShopAdminWarning={showShopAdminWarning}
+              />
+            ) : null}
             <Button asChild className={dashboardSidebarCreateButtonClass}>
               <Link href="/sell?new=1">
                 <Plus className="mr-2 h-5 w-5" />
@@ -65,7 +159,9 @@ export function DashboardAppFrame({
                 sellerProfileHref={sellerProfileHref}
                 isAdmin={isAdmin}
                 isShipper={isShipper}
+                isDropoffLocation={isDropoffLocation}
                 hasShopifyAccess={hasShopifyAccess}
+                showEarnings={showEarnings}
                 size="large"
               />
             </Suspense>

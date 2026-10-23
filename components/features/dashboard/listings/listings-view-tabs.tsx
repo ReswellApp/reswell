@@ -18,7 +18,7 @@ const TABS: { id: ListingsDeskView; label: string; hint: string }[] = [
   {
     id: "advanced",
     label: "Advanced",
-    hint: "Analytics, shop tools, package sizes, and edits that save on their own.",
+    hint: "Analytics, shop tools, the shipping default, and edits that save on their own.",
   },
 ]
 

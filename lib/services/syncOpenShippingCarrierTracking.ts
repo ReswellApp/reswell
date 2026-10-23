@@ -85,7 +85,9 @@ export async function syncOpenShippingCarrierTracking(): Promise<SyncOpenCarrier
     const cached = parseOrderTrackingDetail(order.tracking_detail)
     if (cached && trackingDetailReportsDelivered(cached)) {
       try {
-        await persistOrderCarrierTrackingSnapshot(supabase, order.id, cached)
+        await persistOrderCarrierTrackingSnapshot(supabase, order.id, cached, {
+          notifyScanUpdates: true,
+        })
         summary.synced += 1
         if (!order.carrier_delivered_at) {
           summary.deliveredNewlyRecorded += 1
@@ -122,7 +124,9 @@ export async function syncOpenShippingCarrierTracking(): Promise<SyncOpenCarrier
 
     const detail = buildOrderTrackingDetailFromShipEngineData(live.payload)
     try {
-      await persistOrderCarrierTrackingSnapshot(supabase, order.id, detail)
+      await persistOrderCarrierTrackingSnapshot(supabase, order.id, detail, {
+        notifyScanUpdates: true,
+      })
       summary.synced += 1
       if (trackingDetailReportsDelivered(detail) && !order.carrier_delivered_at) {
         summary.deliveredNewlyRecorded += 1

@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server"
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { getSellerBalance } from "@/lib/getSellerBalance"
@@ -25,10 +25,24 @@ import {
   SANTA_BARBARA_DROPOFF_PHONE_E164,
 } from "@/lib/dropoff-santa-barbara"
 import { RESWELL_WAREHOUSE_ADDRESS } from "@/lib/reswell-warehouse-address"
+import { loadOrderOperator } from "@/lib/account-access/order-operator-session"
 
 export const dynamic = "force-dynamic"
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+function shopRecordsClient(
+  session: Awaited<ReturnType<typeof createClient>>,
+  sellerId: string,
+  actorId: string,
+) {
+  if (sellerId === actorId) return session
+  try {
+    return createServiceRoleClient()
+  } catch {
+    return session
+  }
+}
 
 export async function GET(
   _request: NextRequest,
@@ -40,6 +54,11 @@ export async function GET(
   } = await supabase.auth.getUser()
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  const operating = await loadOrderOperator()
+  if (!operating.ok) {
+    return NextResponse.json({ error: operating.error }, { status: operating.status })
   }
 
   const raw = (await params).id
@@ -54,6 +73,7 @@ export async function GET(
       `
       id,
       order_num,
+      seller_id,
       listing_id,
       fulfillment_method,
       delivery_status,
@@ -64,7 +84,7 @@ export async function GET(
     `,
     )
     .eq("id", orderId)
-    .eq("seller_id", user.id)
+    .in("seller_id", operating.operator.sellerIds)
     .maybeSingle()
 
   if (orderErr || !order) {
@@ -74,6 +94,7 @@ export async function GET(
   const row = order as {
     id: string
     order_num: string | null
+    seller_id: string
     listing_id: string
     fulfillment_method: string | null
     delivery_status: string
@@ -136,7 +157,7 @@ export async function GET(
   if (row.delivery_status !== "pending") reasons.push("Tracking is already set for this order.")
 
   if (user) {
-    const sellerCtx = await loadSellerShippingLabelOrderContext(supabase, orderId, user.id)
+    const sellerCtx = await loadSellerShippingLabelOrderContext(supabase, orderId, row.seller_id)
     if (!sellerCtx.ok && sellerCtx.status !== 404) {
       reasons.push(sellerCtx.error)
     }
@@ -144,15 +165,16 @@ export async function GET(
 
   const eligible = reasons.length === 0
 
-  const { data: addrRows } = await supabase
+  const addressClient = shopRecordsClient(supabase, row.seller_id, user.id)
+  const { data: addrRows } = await addressClient
     .from("addresses")
     .select("*")
-    .eq("profile_id", user.id)
+    .eq("profile_id", row.seller_id)
     .order("is_default", { ascending: false })
 
   let sellerAddressRows = (addrRows ?? []) as ProfileAddressRow[]
   if (sellerAddressRows.length === 0) {
-    const recovered = await resolveSellerShipFromAddress(supabase, user.id)
+    const recovered = await resolveSellerShipFromAddress(addressClient, row.seller_id)
     if (recovered.ok) {
       sellerAddressRows = [recovered.address]
     }
@@ -171,7 +193,7 @@ export async function GET(
   })
 
   const displayOrderNum = formatOrderNumForCustomer(row.order_num, row.id)
-  const walletSummary = await getSellerBalance(supabase, user.id)
+  const walletSummary = await getSellerBalance(addressClient, row.seller_id)
   const buyerPrepaidShippingUsd = listingForParcel
     ? resolveBuyerPrepaidShippingUsdForOrder({
         shippingAmount: row.shipping_amount,
@@ -226,6 +248,11 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  const operating = await loadOrderOperator()
+  if (!operating.ok) {
+    return NextResponse.json({ error: operating.error }, { status: operating.status })
+  }
+
   const raw = (await params).id
   const orderId = decodeURIComponent(typeof raw === "string" ? raw.trim() : "").trim()
   if (!orderId || !UUID_RE.test(orderId)) {
@@ -247,10 +274,10 @@ export async function POST(
   const { data: order, error: orderErr } = await supabase
     .from("orders")
     .select(
-      "id, order_num, buyer_id, listing_id, fulfillment_method, delivery_status, shipping_address, amount, shipping_amount, listings ( section )",
+      "id, order_num, seller_id, buyer_id, listing_id, fulfillment_method, delivery_status, shipping_address, amount, shipping_amount, listings ( section )",
     )
     .eq("id", orderId)
-    .eq("seller_id", user.id)
+    .in("seller_id", operating.operator.sellerIds)
     .maybeSingle()
 
   if (orderErr || !order) {
@@ -260,6 +287,7 @@ export async function POST(
   const o = order as {
     id: string
     order_num: string | null
+    seller_id: string
     buyer_id: string
     listing_id: string
     fulfillment_method: string | null
@@ -286,7 +314,7 @@ export async function POST(
 
   const body = parsed.data
 
-  const sellerCtx = await loadSellerShippingLabelOrderContext(supabase, orderId, user.id)
+  const sellerCtx = await loadSellerShippingLabelOrderContext(supabase, orderId, o.seller_id)
   if (!sellerCtx.ok) {
     return NextResponse.json({ error: sellerCtx.error }, { status: sellerCtx.status })
   }
@@ -298,8 +326,8 @@ export async function POST(
       .eq("id", o.listing_id)
       .maybeSingle()
     const shipFrom = await resolveSellerOrDropoffShipFrom(
-      supabase,
-      user.id,
+      shopRecordsClient(supabase, o.seller_id, user.id),
+      o.seller_id,
       [listingForShipFrom as PeerListingForShippingQuote | null],
       body.seller_address_id?.trim() || null,
     )

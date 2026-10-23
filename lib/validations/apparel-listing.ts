@@ -1,4 +1,6 @@
 import { z } from "zod"
+import { sellListingPriceField } from "@/lib/validations/sell-listing-price"
+import { listingStockQuantityField } from "@/lib/validations/listing-stock-quantity"
 import { addReswellPackedWeightZodIssues } from "@/lib/validations/reswell-packed-weight"
 import {
   listingRemovedVideoIdsSchema,
@@ -43,8 +45,9 @@ const apparelListingImageSchema = z.object({
 const apparelListingBaseSchema = z.object({
   title: z.string().trim().min(3, "Add a title").max(APPAREL_LISTING_TITLE_MAX_LENGTH),
   description: z.string().trim().min(1, "Add a description"),
-  price: z.coerce.number().positive("Enter a price greater than $0"),
+  price: sellListingPriceField,
   condition: z.enum(sellableConditions),
+  stockQuantity: listingStockQuantityField,
 
   /** Apparel category — boardshorts | hat | t_shirt. Required. */
   kind: z.enum(apparelKindValues, { required_error: "Choose a category" }),

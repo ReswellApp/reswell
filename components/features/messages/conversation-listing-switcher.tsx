@@ -4,6 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { listingTitleThumbnailSrc, type ListingImageForCard } from "@/lib/listing-image-display"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { cn } from "@/lib/utils"
 
@@ -73,7 +74,7 @@ export function ConversationListingSwitcher({
                     alt={title}
                     fill
                     sizes="(max-width: 640px) 72px, 120px"
-                    className="object-cover"
+                    className={listingPhotoFillClassName}
                     unoptimized={listingImageShouldBypassOptimization(thumb)}
                   />
                 ) : (

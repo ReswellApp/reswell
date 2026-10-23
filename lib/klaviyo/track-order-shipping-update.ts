@@ -8,7 +8,8 @@
  *
  * Template variables: `{{ event.order_num }}`, `{{ event.Title }}`, `{{ event.status_label }}`,
  * `{{ event.latest_event_description }}`, `{{ event.latest_event_location }}`,
- * `{{ event.tracking_number }}`, `{{ event.tracking_carrier }}`, `{{ event.estimated_delivery_date }}`,
+ * `{{ event.tracking_number }}`, `{{ event.tracking_carrier }}`, `{{ event.tracking_url }}`,
+ * `{{ event.estimated_delivery_date }}`,
  * `{{ event.is_delivered }}`, `{{ event.order_url }}`, `{{ event.sms_milestone }}`,
  * `{{ event.has_sms_phone }}`.
  * Buyer email HTML: `KLAVIYO_ORDER_SHIPPING_UPDATE_EMAIL_HTML` in
@@ -30,7 +31,7 @@
 
 import { carrierTrackingIndicatesDelivered, resolveCarrierStatusHeadline } from "@/lib/shipping/carrier-status-display"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
-import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
+import { sendKlaviyoServerEvent, type SendKlaviyoServerEventResult } from "@/lib/klaviyo/send-event"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import type { OrderTrackingDetail } from "@/lib/shipping/order-tracking-detail"
 import type { OrderShippingSmsMilestone } from "@/lib/shipping/order-shipping-sms-milestone"
@@ -46,6 +47,7 @@ export type KlaviyoOrderShippingUpdatePayload = {
   listingTitle: string
   trackingNumber: string
   trackingCarrier: string | null
+  trackingUrl?: string | null
   detail: OrderTrackingDetail
   /** Set only on first transition into OFD / delivered / exception */
   smsMilestone?: OrderShippingSmsMilestone | null
@@ -58,31 +60,49 @@ function latestEventLocation(detail: OrderTrackingDetail): string {
   return parts.join(", ")
 }
 
+/** Stable id for a milestone. Scan emails stay tied to the scan key. */
+export function orderShippingUpdateEventId(input: {
+  orderId: string
+  detail: OrderTrackingDetail
+  smsMilestone: OrderShippingSmsMilestone | null
+}): string {
+  if (input.smsMilestone) {
+    return `order-shipping-milestone-${input.orderId}-${input.smsMilestone}`
+  }
+  const updateKey = orderTrackingUpdateKey(input.detail)
+  return `order-shipping-update-${input.orderId}-${updateKey.replace(/\|/g, "-").slice(0, 180)}`
+}
+
 export async function trackKlaviyoOrderShippingUpdate(
   payload: KlaviyoOrderShippingUpdatePayload,
-): Promise<void> {
+): Promise<SendKlaviyoServerEventResult> {
   const origin = publicSiteOrigin()
   const orderUrl = `${origin}/dashboard/purchases/${payload.orderId}`
   const detail = payload.detail
   const latestEvent = detail.events?.[0]
-  const updateKey = orderTrackingUpdateKey(detail)
   const phone = payload.buyerPhoneE164?.trim() || null
   const smsMilestone = payload.smsMilestone ?? null
+  const uniqueId = orderShippingUpdateEventId({
+    orderId: payload.orderId,
+    detail,
+    smsMilestone,
+  })
 
-  await sendKlaviyoServerEvent({
+  return sendKlaviyoServerEvent({
     metricName: "Order Shipping Update",
     profile: {
       external_id: payload.buyerUserId,
       email: payload.buyerEmail,
       phone_number: phone,
     },
-    uniqueId: `order-shipping-update-${payload.orderId}-${updateKey.replace(/\|/g, "-").slice(0, 180)}`,
+    uniqueId,
     properties: {
       order_id: payload.orderId,
       order_num: formatOrderNumForCustomer(payload.orderNum, payload.orderId),
       Title: payload.listingTitle,
       tracking_number: payload.trackingNumber,
       tracking_carrier: payload.trackingCarrier ?? "",
+      tracking_url: payload.trackingUrl?.trim() || orderUrl,
       status_code: detail.status_code ?? "",
       status_label: resolveCarrierStatusHeadline(detail),
       latest_event_description: latestEvent?.description?.trim() ?? "",

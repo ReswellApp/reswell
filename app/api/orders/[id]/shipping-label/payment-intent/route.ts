@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
+import { resolveOperableOrderSellerId } from "@/lib/account-access/order-operator-session"
 import { NextRequest, NextResponse } from "next/server"
 import { createSellerShippingLabelPaymentIntent } from "@/lib/services/sellerShippingLabelCheckout"
 import { sellerShippingLabelPaymentIntentBodySchema } from "@/lib/validations/seller-shipping-label-checkout"
@@ -41,10 +42,15 @@ export async function POST(
     return NextResponse.json({ error: "Invalid request", details: parsed.error.flatten() }, { status: 400 })
   }
 
+  const seller = await resolveOperableOrderSellerId(supabase, orderId)
+  if (!seller.ok) {
+    return NextResponse.json({ error: seller.error }, { status: seller.status })
+  }
+
   const result = await createSellerShippingLabelPaymentIntent({
     supabase,
     orderId,
-    sellerId: user.id,
+    sellerId: seller.sellerId,
     rateId: parsed.data.rate_id,
     sellerAddressId: parsed.data.seller_address_id,
     parcel: parsed.data.parcel,

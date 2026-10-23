@@ -3,7 +3,10 @@ import { dbShopifyUserIsEligible } from "@/lib/db/shopifyConnections"
 import {
   isShopifyConfigured,
   isShopifyIntegrationEnabled,
+  isShopifyPublicOAuthEnabled,
+  parseShopifyAppInstallUrl,
 } from "@/lib/shopify/config"
+import type { ShopifyConnectOptions } from "@/lib/shopify/types"
 
 export type ShopifyMerchantAccess =
   | { allowed: true }
@@ -40,4 +43,19 @@ export async function checkShopifyMerchantAccess(
     }
   }
   return { allowed: true }
+}
+
+export const SHOPIFY_CONNECT_OPTIONS_UNAVAILABLE: ShopifyConnectOptions = {
+  pluginAvailable: false,
+  installUrl: null,
+}
+
+export function getShopifyDashboardConnectOptions(): ShopifyConnectOptions {
+  const installUrl = isShopifyPublicOAuthEnabled()
+    ? parseShopifyAppInstallUrl()
+    : null
+  return {
+    pluginAvailable: Boolean(installUrl),
+    installUrl,
+  }
 }

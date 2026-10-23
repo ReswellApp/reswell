@@ -25,8 +25,8 @@ import { trackKlaviyoListingSaved } from "@/lib/klaviyo/track-listing-saved"
 import { trackKlaviyoMessageSent } from "@/lib/klaviyo/track-message-sent"
 import { messagePolicyBlocksDelivery } from "@/lib/messages/fraud-reason-codes"
 import { evaluateMessagePolicyForSend } from "@/lib/messages/message-policy-enforcement"
+import { listingBuyerQuantityCap, listingSupportsBuyerQuantity } from "@/lib/listing-stock-quantity"
 import { captureServerEvent } from "@/lib/posthog-server"
-import { isReswellShopListing } from "@/lib/reswell-shop"
 import { evaluateUserMessageSend } from "@/lib/services/accountRestrictions"
 import { captureBlockedFraudMessage } from "@/lib/services/captureBlockedFraudMessage"
 import { assertListingEligibleForCart, peerSurfboardAddCapError } from "@/lib/services/cartEligibility"
@@ -179,11 +179,13 @@ export async function setMobileCartItem(
   const capError = await peerSurfboardAddCapError(supabase, check.listing, user.id)
   if (capError) return failure(400, capError)
 
-  const isShop = isReswellShopListing(check.listing.section)
-  const stock = Math.max(0, Math.floor(Number(check.listing.stock_quantity) || 0))
-  const maxQty = isShop ? stock : 1
-  if (quantity > maxQty) {
-    return failure(400, isShop ? "Not enough stock available" : "This listing is already limited to one")
+  const cap = listingBuyerQuantityCap(check.listing)
+  if (cap < 1) return failure(400, "This item is out of stock")
+  if (quantity > cap) {
+    return failure(
+      400,
+      listingSupportsBuyerQuantity(check.listing) ? "Not enough stock available" : "This listing is already limited to one",
+    )
   }
 
   const { data: existing } = await supabase

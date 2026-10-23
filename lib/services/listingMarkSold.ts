@@ -103,8 +103,10 @@ export async function markSellerListingSoldOffPlatform(
     sold_off_platform_at: string
     updated_at: string
     sold_reswell_helped_find_buyer?: boolean
+    stock_quantity: number
   } = {
     status: "sold",
+    stock_quantity: 0,
     sold_off_platform: true,
     sold_off_platform_channel: channel ?? null,
     sold_off_platform_detail: channelDetail,

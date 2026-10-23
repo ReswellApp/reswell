@@ -6,8 +6,9 @@
  * carrier scan updates, use **Order Shipping Update** instead. Seller fulfillment flows should
  * exit on **Seller Order Shipped**, not this buyer metric.
  * Template variables: `{{ event.Title }}`, `{{ event.tracking_number }}`,
- * `{{ event.tracking_carrier }}`, `{{ event.order_url }}`, `{{ event.sms_milestone }}`,
- * `{{ event.has_sms_phone }}`.
+ * `{{ event.tracking_carrier }}`, `{{ event.tracking_url }}`, `{{ event.order_url }}`,
+ * `{{ event.sms_milestone }}`, `{{ event.has_sms_phone }}`.
+ * `tracking_url` is the ShipEngine branded page when one exists, otherwise the carrier tracker.
  *
  * Profile on the event is the **buyer**. When a phone is on file it is attached as `phone_number`
  * so Klaviyo SMS actions can send.
@@ -30,6 +31,8 @@ export type KlaviyoOrderShippedPayload = {
   listingTitle: string
   trackingNumber: string
   trackingCarrier: string | null
+  /** Branded tracker when ShipEngine issued one; otherwise the carrier tracker. */
+  trackingUrl?: string | null
 }
 
 export async function trackKlaviyoOrderShipped(
@@ -52,6 +55,7 @@ export async function trackKlaviyoOrderShipped(
       Title: payload.listingTitle,
       tracking_number: payload.trackingNumber,
       tracking_carrier: payload.trackingCarrier ?? "",
+      tracking_url: payload.trackingUrl?.trim() || orderUrl,
       order_url: orderUrl,
       sms_milestone: "shipped",
       has_sms_phone: Boolean(phone),

@@ -12,6 +12,9 @@ export const SELL_CATALOG_SEARCH_CATEGORIES = [
   "surfboards",
   "fins",
   "wetsuits",
+  "boardbags",
+  "surfpacks",
+  "leashes",
   "apparel",
 ] as const satisfies readonly BrandProductCategorySlug[]
 
@@ -39,6 +42,12 @@ export function sellCatalogSearchCategorySellPath(
       return "/sell/fins?new=1&from=catalog"
     case "wetsuits":
       return "/sell/wetsuits?new=1"
+    case "boardbags":
+      return "/sell/boardbags?new=1"
+    case "surfpacks":
+      return "/sell/surfpacks?new=1"
+    case "leashes":
+      return "/sell/leashes?new=1"
     case "apparel":
       return "/sell/apparel?new=1"
   }

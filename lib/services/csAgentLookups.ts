@@ -23,7 +23,8 @@ import {
 import type { LiveChatActionActor } from "@/lib/services/liveChatActionPolicy"
 import { assessCsAgentRefundEligibility } from "@/lib/utils/cs-agent-refund"
 import { csAgentEmailsMatch, csAgentOrderIsInScope } from "@/lib/utils/cs-agent-scope"
-import { carrierTrackingUrl } from "@/lib/utils/carrier-tracking-url"
+import { ensureOrderBrandedTrackingUrl } from "@/lib/services/ensureOrderBrandedTrackingUrl"
+import { preferredTrackingUrl } from "@/lib/utils/carrier-tracking-url"
 import { normalizeTrackingNumberForCarrier } from "@/lib/shipping/normalize-tracking-number"
 import type { CsAgentAccountSnapshot, CsAgentPriorTicket } from "@/lib/llm/cs-agent"
 import type { CsAgentToolLookups } from "@/lib/llm/cs-agent-generate"
@@ -283,8 +284,11 @@ export function createCsAgentLookups(
           trackingNumber,
           trackingCarrier: order.trackingCarrier,
           carrierDeliveredAt: order.carrierDeliveredAt,
-          trackingUrl:
-            trackingNumber ? carrierTrackingUrl(trackingNumber, order.trackingCarrier) : null,
+          trackingUrl: preferredTrackingUrl({
+            brandedUrl: trackingNumber ? await ensureOrderBrandedTrackingUrl(order.id) : null,
+            trackingNumber,
+            trackingCarrier: order.trackingCarrier,
+          }),
           note: trackingNumber
             ? "Use only this tracking number. Do not invent another."
             : "No tracking number is on file. Do not invent one.",

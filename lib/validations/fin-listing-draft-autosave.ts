@@ -1,26 +1,34 @@
 import { z } from "zod"
+import {
+  draftOptionalCoord,
+  draftOptionalDate,
+  draftOptionalListingId,
+  draftOptionalMoney,
+  draftOptionalUuid,
+} from "@/lib/validations/listing-draft-fields"
 
 const shippingCostMode = z.enum(["reswell", "free", "flat"])
 
 /** Relaxed payload from the fin sell form for server-side draft persistence. */
 export const finListingDraftAutosaveSchema = z.object({
-  listingId: z.string().uuid().optional().nullable(),
+  listingId: draftOptionalListingId.optional(),
   title: z.string().optional(),
   description: z.string().optional(),
-  price: z.string().optional(),
-  sellerPurchasePrice: z.string().optional(),
+  price: draftOptionalMoney,
+  sellerPurchasePrice: draftOptionalMoney,
   sellerPurchasedFrom: z.string().max(200).optional(),
-  sellerPurchasedOn: z.string().regex(/^$|^\d{4}-\d{2}-\d{2}$/).optional(),
+  sellerPurchasedOn: draftOptionalDate.optional(),
   condition: z.string().optional(),
+  stockQuantity: z.union([z.string(), z.number()]).optional(),
   size: z.string().optional().nullable(),
   finSetup: z.string().optional().nullable(),
   finSystem: z.string().optional().nullable(),
   brand: z.string().optional(),
-  brandId: z.string().uuid().optional().nullable(),
+  brandId: draftOptionalUuid.optional(),
   model: z.string().optional(),
-  brandModelId: z.string().uuid().optional().nullable(),
-  locationLat: z.number().optional().nullable(),
-  locationLng: z.number().optional().nullable(),
+  brandModelId: draftOptionalUuid.optional(),
+  locationLat: draftOptionalCoord,
+  locationLng: draftOptionalCoord,
   locationCity: z.string().optional(),
   locationState: z.string().optional(),
   shippingCostMode: shippingCostMode.optional(),

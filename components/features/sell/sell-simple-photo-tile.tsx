@@ -1,8 +1,12 @@
 "use client"
 
-import { memo } from "react"
+import { memo, useState } from "react"
 import Image from "next/image"
 import { Loader2, RotateCw, X } from "lucide-react"
+import { ListingPhotoOrientationDialog } from "@/components/features/sell/listing-photo-orientation-dialog"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
+import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
+import type { ListingPhotoQuarterTurnDelta } from "@/lib/sell-flow/listing-photo-orientation"
 import {
   canRotateSimpleSellPhoto,
   type SimpleSellPhotoSlot,
@@ -11,7 +15,7 @@ import {
 interface SellSimplePhotoTileProps {
   photo: SimpleSellPhotoSlot
   index: number
-  onRotate180: (clientId: string) => void
+  onRotateQuarterTurns: (clientId: string, quarterTurns: ListingPhotoQuarterTurnDelta) => void
   onMakePrimary: (clientId: string) => void
   onRemove: (clientId: string) => void
 }
@@ -19,11 +23,15 @@ interface SellSimplePhotoTileProps {
 export const SellSimplePhotoTile = memo(function SellSimplePhotoTile({
   photo,
   index,
-  onRotate180,
+  onRotateQuarterTurns,
   onMakePrimary,
   onRemove,
 }: SellSimplePhotoTileProps) {
+  const [straightenOpen, setStraightenOpen] = useState(false)
   const showRotate = canRotateSimpleSellPhoto(photo)
+  const straightenSrc = photo.previewUrl.startsWith("blob:")
+    ? photo.previewUrl
+    : proxiedListingImageSrc(photo.previewUrl) || photo.previewUrl
   // Don't point <img> at the original camera file — iOS will decode the full HEIC
   // under the spinner and fight the small preview decode.
   const showImage =
@@ -32,14 +40,14 @@ export const SellSimplePhotoTile = memo(function SellSimplePhotoTile({
     !photo.previewUrl.startsWith("blob:")
 
   return (
-    <div className="relative aspect-square overflow-hidden rounded-lg border border-transparent bg-muted">
+    <div className="relative aspect-[3/4] overflow-hidden rounded-lg border border-transparent bg-muted">
       {showImage ? (
         <Image
           src={photo.previewUrl}
           alt={`Photo ${index + 1}`}
           fill
           sizes="120px"
-          className="object-cover object-center"
+          className={listingPhotoFillClassName}
           unoptimized
           loading={photo.localPreviewReady ? "eager" : undefined}
         />
@@ -65,10 +73,10 @@ export const SellSimplePhotoTile = memo(function SellSimplePhotoTile({
         {showRotate ? (
           <button
             type="button"
-            onClick={() => onRotate180(photo.clientId)}
+            onClick={() => setStraightenOpen(true)}
             className="rounded-full bg-background/90 p-1 text-foreground shadow-sm hover:bg-background"
-            title="Rotate 180°"
-            aria-label={`Rotate photo ${index + 1} 180 degrees`}
+            title="Turn 90°"
+            aria-label={`Straighten photo ${index + 1}`}
           >
             <RotateCw className="h-3.5 w-3.5" aria-hidden />
           </button>
@@ -94,6 +102,15 @@ export const SellSimplePhotoTile = memo(function SellSimplePhotoTile({
           <X className="h-3.5 w-3.5" />
         </button>
       </div>
+      <ListingPhotoOrientationDialog
+        open={straightenOpen}
+        src={straightenSrc}
+        onOpenChange={setStraightenOpen}
+        onApply={(quarterTurns) => {
+          setStraightenOpen(false)
+          onRotateQuarterTurns(photo.clientId, quarterTurns)
+        }}
+      />
     </div>
   )
 })

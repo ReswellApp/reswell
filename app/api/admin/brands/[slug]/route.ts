@@ -6,7 +6,7 @@ import { revalidateSellCatalogSearch } from "@/lib/cache/revalidate-sell-catalog
 import { syncBrandToIndex } from "@/lib/elasticsearch/brands-index"
 import { syncFinCatalogBrandToIndex } from "@/lib/elasticsearch/fin-catalog-index"
 import { syncSellCatalogBrandToIndex } from "@/lib/elasticsearch/sell-catalog-index"
-import { requireAdmin } from "@/lib/brands/admin-server"
+import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
 import { isValidBrandSlug } from "@/lib/brands/slug"
 import { BRANDS_BASE } from "@/lib/brands/routes"
 import { parseBrandProductCategorySlugsFromBody } from "@/lib/brand-product-categories"
@@ -31,7 +31,7 @@ type PatchBody = {
 }
 
 export async function PATCH(request: Request, ctx: { params: Promise<{ slug: string }> }) {
-  const gate = await requireAdmin()
+  const gate = await requireAdminOrEmployee()
   if (!gate.ok) return gate.response
 
   const { slug: paramSlug } = await ctx.params

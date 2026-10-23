@@ -1,5 +1,8 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js"
+import type { AccountRole } from "@/lib/account-access/permissions"
 import { coastalShipperMembership } from "@/lib/services/coastalShipperAccess"
+import { getShopAccountContext } from "@/lib/services/accountAccess"
+import { dropoffLocationMembership } from "@/lib/services/dropoffLocationAccess"
 import { reconcileWalletAggregates, walletAggregateStrings } from "@/lib/wallet-reconcile"
 import {
   persistWalletAggregatesIfNeeded,
@@ -8,12 +11,34 @@ import {
 
 export type HeaderProfileBootstrap = {
   is_admin: boolean | null
+  is_employee?: boolean | null
   avatar_url: string | null
   display_name: string | null
   shop_logo_url: string | null
   is_shop: boolean | null
   unread_message_count: number | null
   unread_support_count: number | null
+}
+
+export interface HeaderShopAccessOption {
+  accountId: string
+  label: string
+  role: AccountRole
+  /** Set when the header loaded this row in the browser. Drives the Shopify link after a switch. */
+  shopifyConnectEnabled?: boolean
+}
+
+/** Accounts this login can work in. Personal stays their own user; shops are memberships. */
+export interface HeaderShopAccess {
+  actorUserId: string
+  activeAccountId: string
+  actingAsShop: boolean
+  shopLabel: string
+  role: AccountRole
+  actorEmail: string | null
+  showEarnings: boolean
+  hasShopifyAccess: boolean
+  options: HeaderShopAccessOption[]
 }
 
 export type HeaderSiteBootstrap = {
@@ -23,6 +48,9 @@ export type HeaderSiteBootstrap = {
   walletBalance: number | null
   /** True when this user has a coastal_shippers row. Schedule and runs do not count. */
   isShipper: boolean
+  /** True when this user has a dropoff_location_grants row. Admin does not count. */
+  isDropoffLocation: boolean
+  shopAccess: HeaderShopAccess | null
 }
 
 /**
@@ -33,11 +61,11 @@ export async function fetchHeaderSiteBootstrap(
   supabase: SupabaseClient,
   user: User,
 ): Promise<HeaderSiteBootstrap> {
-  const [profileRes, walletRes, shipperRes] = await Promise.all([
+  const [profileRes, walletRes, shipperRes, dropoffRes, shop] = await Promise.all([
     supabase
       .from("profiles")
       .select(
-        "is_admin, avatar_url, display_name, shop_logo_url, is_shop, unread_message_count, unread_support_count",
+        "is_admin, is_employee, avatar_url, display_name, shop_logo_url, is_shop, unread_message_count, unread_support_count",
       )
       .eq("id", user.id)
       .single(),
@@ -47,6 +75,11 @@ export async function fetchHeaderSiteBootstrap(
       .eq("user_id", user.id)
       .single(),
     supabase.from("coastal_shippers").select("id").eq("user_id", user.id).maybeSingle(),
+    supabase.from("dropoff_location_grants").select("id").eq("user_id", user.id).maybeSingle(),
+    getShopAccountContext().catch((error: unknown) => {
+      console.error("[header] shop access failed", error)
+      return null
+    }),
   ])
 
   const profile = profileRes.data ?? null
@@ -73,5 +106,26 @@ export async function fetchHeaderSiteBootstrap(
       rowId: shipperRes.data?.id,
       queryFailed: Boolean(shipperRes.error),
     }),
+    isDropoffLocation: dropoffLocationMembership({
+      rowId: dropoffRes.data?.id,
+      queryFailed: Boolean(dropoffRes.error),
+    }),
+    shopAccess: shop
+      ? {
+          actorUserId: shop.actorUserId,
+          activeAccountId: shop.accountId,
+          actingAsShop: shop.actingAsShop,
+          shopLabel: shop.shopLabel,
+          role: shop.role,
+          actorEmail: shop.actorEmail,
+          showEarnings: shop.permissions.has("payouts.read"),
+          hasShopifyAccess: shop.shopifyConnectEnabled,
+          options: shop.options.map((option) => ({
+            accountId: option.accountId,
+            label: option.label,
+            role: option.role,
+          })),
+        }
+      : null,
   }
 }

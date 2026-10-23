@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
+import { resolveManagedSeller } from "@/lib/account-access/managed-seller"
 import { resolveServerAuth } from "@/lib/auth/get-safe-server-user"
 import { relistSellerMarkedSoldListing } from "@/lib/services/listingRelist"
 
@@ -21,9 +22,14 @@ export async function POST(
       return NextResponse.json({ error: "Invalid listing id" }, { status: 400 })
     }
 
+    const managed = await resolveManagedSeller("listings.write")
+    if (!managed.ok) {
+      return NextResponse.json({ error: managed.error }, { status: managed.status })
+    }
+
     const result = await relistSellerMarkedSoldListing(supabase, {
       listingId: idParsed.data,
-      sellerUserId: user.id,
+      sellerUserId: managed.seller.sellerId,
     })
 
     if (!result.ok) {

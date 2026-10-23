@@ -138,6 +138,28 @@ describe("surfboard shipped match and window", () => {
     assert.equal(attached?.availableShippers.every((row) => row.live), true)
   })
 
+  it("shows the matched trip's delivery window", () => {
+    const spanned = shipper("window", "Blair", 4)
+    const run = spanned.runs[0]
+    if (!run) return
+    spanned.runs[0] = {
+      ...run,
+      pickupStartDow: 4,
+      pickupEndDow: 6,
+      deliveryStartDow: 4,
+      deliveryEndDow: 6,
+      pickupDescription: "Side gate",
+      deliveryDescription: "After 4pm",
+    }
+    const attached = attachSurfboardShippedShipper({ shippers: [spanned], now })
+    assert.equal(attached?.deliveryWindow.label, "Thursday–Saturday")
+    assert.equal(attached?.deliveryWindow.startDate, "2026-06-18")
+    assert.equal(attached?.deliveryWindow.endDate, "2026-06-20")
+    assert.equal(attached?.deliveryWindow.description, "After 4pm")
+    assert.deepEqual(attached?.availableShippers[0]?.pickupNotes, ["Side gate"])
+    assert.deepEqual(attached?.availableShippers[0]?.deliveryLabels, ["Thursday–Saturday"])
+  })
+
   it("charges the matched shipper's price", () => {
     const priced = shipper("priced", "Blair", 1)
     priced.priceCents = 15_000

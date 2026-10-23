@@ -13,11 +13,12 @@ import React, {
 import { createPortal } from "react-dom"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
+import { fetchActingShopAccountId } from "@/lib/account-access/fetch-acting-shop-account"
+import { listingOwnerIsOperableAccount } from "@/lib/account-access/operates-listing"
 import { createClient } from "@/lib/supabase/client"
 import { saveDefaultListingLocationClient } from "@/lib/sell-flow/save-default-listing-location-client"
 import {
   applyPublishedListingSideEffectsClient,
-  purgeListingImagesClient,
   revalidateListingMutationClient,
   updateOwnedListingViaApi,
 } from "@/lib/sell-flow/update-owned-listing-client"
@@ -127,6 +128,11 @@ import {
 } from "@/lib/sell-flow/sell-submit-error"
 import { minimumOfferAmountFromDb, minimumOfferAmountToDb } from "@/lib/utils/offers-minimum-amount"
 import { sellerPurchasePriceToDb } from "@/lib/utils/seller-purchase-price"
+import {
+  parseSellListingPrice,
+  readLiveSellListingPrice,
+  sellListingPriceIsPublishable,
+} from "@/lib/utils/sell-listing-price"
 import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import {
   logSellForkToFull,
@@ -174,12 +180,19 @@ import {
   type SellSavedListingLocation,
 } from "@/lib/utils/sell-saved-listing-locations"
 import { resolveClientSessionForMutation } from "@/lib/auth/resolve-client-session-for-mutation"
+import { orderListingPhotosByCaptureTime } from "@/lib/sell-flow/listing-photo-capture-time"
 import {
   filesFromDataTransfer,
   isListingPhotoFile,
   isOsFileDragEvent,
   listingPhotoSlotsForDraftPersist,
 } from "@/lib/sell-flow/listing-photo-slot"
+import { syncListingDraftImagesClient } from "@/lib/sell-flow/sync-listing-draft-images-client"
+import {
+  listingPhotoOrientationPrepareOptions,
+  listingPhotoQuarterTurnsAfterAdjust,
+  type ListingPhotoQuarterTurnDelta,
+} from "@/lib/sell-flow/listing-photo-orientation"
 import type { OwnedListingForEditRow } from "@/lib/db/listingEdit"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import {
@@ -195,6 +208,10 @@ import {
   isListingSellableCondition,
   sellFormConditionValue,
 } from "@/lib/listing-labels"
+import {
+  sellFormStockQuantityValue,
+  stockQuantityForSellCondition,
+} from "@/lib/listing-stock-quantity"
 import {
   formatBoardLengthForTitle,
   isBoardLengthEntryComplete,
@@ -260,6 +277,7 @@ import {
 import { SellSectionNavMobileProgress } from "@/components/features/sell/sell-section-nav-mobile-progress"
 import { BoardSellViewToolbar } from "@/components/features/sell/board-sell-view-toolbar"
 import { BoardSellQuickListForm } from "@/components/features/sell/board-sell-quick-list-form"
+import { SellBrandNewQuantityField } from "@/components/features/sell/sell-brand-new-quantity-field"
 import { QuickPhotoHero } from "@/components/features/sell/quick/quick-photo-hero"
 import {
   computeSellSectionCompletion,
@@ -476,14 +494,20 @@ type ListingPhotoSlot = {
   url?: string
   thumbnailUrl?: string
   optimizePhase: "idle" | "running" | "done" | "error"
-  uploadPhase: "idle" | "uploading" | "done" | "error"
+  uploadPhase: "idle" | "uploading" | "done" | "error" | "pending_auth"
   progressFull: number
   progressThumb: number
   errorMessage?: string
   sourceFile?: File
+  /** True once `previewUrl` is a small derivative safe to paint during upload. */
+  localPreviewReady?: boolean
   prepared?: PreparedListingImagePair
-  /** True = apply 180° after automatic landscape→portrait step (toggle). */
+  /** @deprecated Session leftover. Quarter turns replace this. */
   userRotate180?: boolean
+  /** Extra clockwise 90° turns on top of automatic camera orientation. */
+  userQuarterTurns?: 0 | 1 | 2 | 3
+  /** Downloaded listing file. Skip the landscape→portrait pass. */
+  sourceIsDerivative?: boolean
   /**
    * After upload, drop `sourceFile` so the next rotation re-downloads from `url`.
    * Server-hydrated rows and temporary fetches for editing use this; user-picked files do not.
@@ -616,6 +640,7 @@ function createInitialSellFormData() {
     sellerPurchasedOn: "",
     category: "",
     condition: "",
+    stockQuantity: "1",
     brand: "",
     boardFulfillment: "pickup_and_shipping" as BoardFulfillmentChoice,
     boardShippingCostMode: "reswell" as BoardShippingCostMode,
@@ -914,6 +939,11 @@ function SellPageContentInner({
   const [photosFileDragActive, setPhotosFileDragActive] = useState(false)
   const photosFileDragDepthRef = useRef(0)
   const imagesRef = useRef<ListingPhotoSlot[]>([])
+  /**
+   * How many photo slots are already on the board or accepted from a drop that is
+   * still reading capture times. `imagesRef` lags a beat behind `setImages`.
+   */
+  const listingPhotoReservedCountRef = useRef(0)
   /** Authoritative prepare generation per slot — `imagesRef` can lag behind `setState` during re-runs. */
   const latestListingPhotoPrepareSeqRef = useRef<Map<string, number>>(new Map())
   /** Same prepare generation already running — auth refresh must not start a second copy. */
@@ -921,6 +951,9 @@ function SellPageContentInner({
   useEffect(() => {
     imagesRef.current = images
   }, [images])
+  useLayoutEffect(() => {
+    listingPhotoReservedCountRef.current = images.length
+  }, [images.length])
   const [removedImageIds, setRemovedImageIds] = useState<string[]>([])
   const removedImageIdsRef = useRef<string[]>([])
   useEffect(() => {
@@ -1238,6 +1271,10 @@ function SellPageContentInner({
     "idle" | "saving" | "saved"
   >("idle")
   const draftImageSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  /** Serializes draft photo saves so a second pass cannot insert the same URLs. */
+  const draftImageSyncChainRef = useRef<Promise<void>>(Promise.resolve())
+  /** Row ids learned from an in-flight save before React state catches up. */
+  const listingImageRowIdByClientIdRef = useRef<Map<string, string>>(new Map())
   const draftPhotosPendingRef = useRef<ListingPhotoSlot[] | null>(null)
   /** Slots from IndexedDB restore — optimized in useLayoutEffect after `optimizeAndUploadSlot` exists. */
   const idbRestoreOptimizeQueueRef = useRef<ListingPhotoSlot[] | null>(null)
@@ -1326,11 +1363,12 @@ function SellPageContentInner({
       listingId,
       title: formData.title,
       description: formData.description,
-      price: formData.price,
+      price: readLiveSellListingPrice(formData.price),
       sellerPurchasePrice: formData.sellerPurchasePrice,
       sellerPurchasedFrom: formData.sellerPurchasedFrom,
       sellerPurchasedOn: formData.sellerPurchasedOn,
       condition: formData.condition,
+      stockQuantity: formData.stockQuantity,
       category: formData.category,
       brand: formData.brand,
       boardFulfillment: formData.boardFulfillment,
@@ -1529,6 +1567,9 @@ function SellPageContentInner({
           (listing as { seller_purchased_on?: string | null }).seller_purchased_on ?? "",
         category: listing.category_id ?? "",
         condition: sellFormConditionValue(listing.condition),
+        stockQuantity: sellFormStockQuantityValue(
+          (listing as { stock_quantity?: number | null }).stock_quantity,
+        ),
         brand: (listing as { brand?: string | null }).brand?.trim() ?? "",
         boardFulfillment: loadedFulfillment,
         boardShippingCostMode,
@@ -1827,8 +1868,7 @@ function SellPageContentInner({
 
   const boardShippingSelected =
     flagsFromBoardFulfillment(formData.boardFulfillment).shipping_available &&
-    viewMode !== "quick" &&
-    !formData.dropoffLocationId
+    viewMode !== "quick"
 
   const shipFrom = useSellShipFromAddress({
     shippingSelected: boardShippingSelected,
@@ -1977,6 +2017,7 @@ function SellPageContentInner({
       price: formData.price,
       description: formData.description,
       condition: formData.condition,
+      stockQuantity: formData.stockQuantity,
       category: formData.category,
       brand: formData.brand,
       boardModelName: formData.boardModelName,
@@ -2058,10 +2099,10 @@ function SellPageContentInner({
     [sellStepChecklistBySection],
   )
 
-  const quickListPriceValid = useMemo(() => {
-    const n = Number.parseFloat(formData.price.trim().replace(/,/g, ""))
-    return Number.isFinite(n) && n > 0
-  }, [formData.price])
+  const quickListPriceValid = useMemo(
+    () => sellListingPriceIsPublishable(formData.price),
+    [formData.price],
+  )
 
   const quickListLocationSet = Boolean(
     formData.locationCity.trim() && formData.locationState.trim(),
@@ -2568,7 +2609,8 @@ function SellPageContentInner({
     if (draftImageSyncTimerRef.current) clearTimeout(draftImageSyncTimerRef.current)
     draftImageSyncTimerRef.current = setTimeout(() => {
       draftImageSyncTimerRef.current = null
-      void syncListingImages(draftRowForImages).catch((e) => {
+      if (publishInFlightRef.current) return
+      void enqueueDraftListingImageSync(draftRowForImages).catch((e) => {
         if (process.env.NODE_ENV === "development") {
           console.warn("[sell] draft listing_images sync", e)
         }
@@ -2634,9 +2676,10 @@ function SellPageContentInner({
         if (!src) return
         let paintedInstant = Boolean(slot.localPreviewReady)
         if (!paintedInstant) {
-          const instantUrl = await revealListingPhotoPreviewUrl(src, {
-            rotate180: Boolean(slot.userRotate180),
-          })
+            const instantUrl = await revealListingPhotoPreviewUrl(
+              src,
+              listingPhotoOrientationPrepareOptions(slot),
+            )
           if (!listingPhotoPrepareSeqInSync(clientId, prepareSeq)) {
             if (instantUrl) URL.revokeObjectURL(instantUrl)
             return
@@ -2659,9 +2702,10 @@ function SellPageContentInner({
           }
         }
 
-        prepared = await prepareDecodableListingPhoto(src, {
-          rotate180: Boolean(slot.userRotate180),
-        })
+          prepared = await prepareDecodableListingPhoto(
+            src,
+            listingPhotoOrientationPrepareOptions(slot),
+          )
         if (!listingPhotoPrepareSeqInSync(clientId, prepareSeq)) return
         const swapped = swapListingPhotoPreviewToPreparedThumb(
           paintedInstant,
@@ -2843,7 +2887,7 @@ function SellPageContentInner({
     void optimizeAndUploadSlot(next)
   }
 
-  function rotateListingPhoto180(clientId: string) {
+  function rotateListingPhoto(clientId: string, quarterTurns: ListingPhotoQuarterTurnDelta) {
     const live = imagesRef.current.find((s) => s.clientId === clientId)
     if (!live) return
     if (live.optimizePhase === "error" || live.uploadPhase === "error") return
@@ -2860,9 +2904,13 @@ function SellPageContentInner({
           sellListingThumbLoadedSrcByClientId.delete(s.clientId)
           const nextSeq = (s.prepareSeq ?? 0) + 1
           latestListingPhotoPrepareSeqRef.current.set(clientId, nextSeq)
+          const orientation = listingPhotoQuarterTurnsAfterAdjust(s, quarterTurns)
           nextSlot = {
             ...s,
-            userRotate180: !s.userRotate180,
+            userQuarterTurns: orientation.userQuarterTurns,
+            sourceIsDerivative: orientation.sourceIsDerivative,
+            userRotate180: undefined,
+            dropSourceFileAfterUpload: false,
             prepareSeq: nextSeq,
             prepared: undefined,
             optimizePhase: "running",
@@ -2916,9 +2964,12 @@ function SellPageContentInner({
             sellListingThumbLoadedSrcByClientId.delete(s.clientId)
             const nextSeq = (s.prepareSeq ?? 0) + 1
             latestListingPhotoPrepareSeqRef.current.set(clientId, nextSeq)
+            const orientation = listingPhotoQuarterTurnsAfterAdjust(s, quarterTurns)
             nextSlot = {
               ...s,
-              userRotate180: !s.userRotate180,
+              userQuarterTurns: orientation.userQuarterTurns,
+              sourceIsDerivative: orientation.sourceIsDerivative,
+              userRotate180: undefined,
               prepareSeq: nextSeq,
               prepared: undefined,
               optimizePhase: "running",
@@ -2930,7 +2981,7 @@ function SellPageContentInner({
               previewUrl: URL.createObjectURL(file),
               localPreviewReady: false,
               sourceFile: file,
-              dropSourceFileAfterUpload: true,
+              dropSourceFileAfterUpload: false,
               errorMessage: undefined,
             }
             return nextSlot
@@ -2951,7 +3002,7 @@ function SellPageContentInner({
       return
     }
 
-    const currentCount = imagesRef.current.length
+    const currentCount = Math.max(imagesRef.current.length, listingPhotoReservedCountRef.current)
     if (currentCount >= 12) {
       toast.error("Maximum 12 photos allowed.")
       return
@@ -2986,6 +3037,7 @@ function SellPageContentInner({
 
     if (!newSlots.length) return
 
+    listingPhotoReservedCountRef.current = currentCount + newSlots.length
     setImages((prev) => [...prev, ...newSlots])
     for (const slot of newSlots) {
       void optimizeAndUploadSlot(slot)
@@ -3027,7 +3079,10 @@ function SellPageContentInner({
     e.stopPropagation()
     photosFileDragDepthRef.current = 0
     setPhotosFileDragActive(false)
-    addListingPhotoFiles(filesFromDataTransfer(e.dataTransfer))
+    const dropped = filesFromDataTransfer(e.dataTransfer)
+    void orderListingPhotosByCaptureTime(dropped)
+      .catch(() => dropped)
+      .then((ordered) => addListingPhotoFiles(ordered))
   }
 
   function removeImage(index: number) {
@@ -3040,8 +3095,14 @@ function SellPageContentInner({
         sellListingThumbLoadedSrcByClientId.delete(toRemove.clientId)
         latestListingPhotoPrepareSeqRef.current.delete(toRemove.clientId)
       }
-      if (toRemove?.id) {
-        setRemovedImageIds((ids) => [...ids, toRemove.id!])
+      const dbId =
+        toRemove?.id ??
+        (toRemove?.clientId
+          ? listingImageRowIdByClientIdRef.current.get(toRemove.clientId)
+          : undefined)
+      if (dbId) {
+        setRemovedImageIds((ids) => (ids.includes(dbId) ? ids : [...ids, dbId]))
+        if (toRemove?.clientId) listingImageRowIdByClientIdRef.current.delete(toRemove.clientId)
       }
       return prev.filter((_, i) => i !== index)
     })
@@ -3055,14 +3116,14 @@ function SellPageContentInner({
   const photoTileActionsRef = useRef({
     remove: (_clientId: string) => {},
     retry: (_clientId: string) => {},
-    rotate: (_clientId: string) => {},
+    rotate: (_clientId: string, _quarterTurns: ListingPhotoQuarterTurnDelta) => {},
   })
   photoTileActionsRef.current.remove = (clientId: string) => {
     const idx = imagesRef.current.findIndex((s) => s.clientId === clientId)
     if (idx >= 0) removeImage(idx)
   }
   photoTileActionsRef.current.retry = retryListingPhotoUpload
-  photoTileActionsRef.current.rotate = rotateListingPhoto180
+  photoTileActionsRef.current.rotate = rotateListingPhoto
 
   const handlePhotoTileRemove = useCallback(
     (clientId: string) => photoTileActionsRef.current.remove(clientId),
@@ -3073,7 +3134,8 @@ function SellPageContentInner({
     [],
   )
   const handlePhotoTileRotate = useCallback(
-    (clientId: string) => photoTileActionsRef.current.rotate(clientId),
+    (clientId: string, quarterTurns: ListingPhotoQuarterTurnDelta) =>
+      photoTileActionsRef.current.rotate(clientId, quarterTurns),
     [],
   )
 
@@ -3108,98 +3170,72 @@ function SellPageContentInner({
     }))
   }
 
+  function rememberListingImageRowIds(slots: ListingPhotoSlot[]) {
+    for (const slot of slots) {
+      if (slot.clientId && slot.id) {
+        listingImageRowIdByClientIdRef.current.set(slot.clientId, slot.id)
+      }
+    }
+  }
+
+  function slotsWithKnownListingImageIds(slots: ListingPhotoSlot[]): ListingPhotoSlot[] {
+    return slots.map((slot) => {
+      if (slot.id) return slot
+      const known = listingImageRowIdByClientIdRef.current.get(slot.clientId)
+      return known ? { ...slot, id: known } : slot
+    })
+  }
+
   /**
-   * Writes current photo URLs to `listing_images` for a draft (or live) listing.
-   * Uses explicit slots + removed ids so callers can pass `imagesRef` / refs (e.g. Save draft, pagehide).
+   * One gallery save at a time, through the server reconcile. Publish waits
+   * for an in-flight save, then writes the gallery once itself.
    */
-  async function syncListingImagesFromSnapshot(
-    listingId: string,
-    slots: ListingPhotoSlot[],
-    removedIds: string[],
-  ): Promise<{ nextSlots: ListingPhotoSlot[]; didInsert: boolean }> {
-    if (removedIds.length) {
-      const purge = await purgeListingImagesClient(listingId, removedIds)
-      if (!purge.ok) {
-        throw new Error(purge.error)
-      }
-      await supabase
-        .from("listing_images")
-        .delete()
-        .in("id", removedIds)
-        .eq("listing_id", listingId)
-    }
-
-    const newRows = slots
-      .map((img, index) => ({ img, index }))
-      .filter(({ img }) => !img.id && img.url)
-
-    const insertResults = await Promise.all(
-      newRows.map(async ({ img, index }) => {
-        const { data: inserted, error: insertError } = await supabase
-          .from("listing_images")
-          .insert({
-            listing_id: listingId,
-            url: img.url!,
-            thumbnail_url: img.thumbnailUrl ?? null,
-            is_primary: index === 0,
-            sort_order: index,
+  function enqueueDraftListingImageSync(listingId: string): Promise<void> {
+    const run = async () => {
+      const slots = slotsWithKnownListingImageIds(imagesRef.current)
+      const { nextSlots, didInsert } = await syncListingDraftImagesClient(
+        listingId,
+        slots,
+        removedImageIdsRef.current,
+      )
+      rememberListingImageRowIds(nextSlots)
+      const idByClient = new Map(
+        nextSlots.flatMap((slot) => (slot.id ? [[slot.clientId, slot.id] as const] : [])),
+      )
+      imagesRef.current = imagesRef.current.map((slot) => {
+        const id = idByClient.get(slot.clientId)
+        return id && slot.id !== id ? { ...slot, id } : slot
+      })
+      if (didInsert) {
+        setImages((prev) => {
+          let changed = false
+          const next = prev.map((slot) => {
+            const id = idByClient.get(slot.clientId)
+            if (!id || slot.id === id) return slot
+            changed = true
+            return { ...slot, id }
           })
-          .select("id")
-          .single()
-
-        if (insertError || !inserted?.id) {
-          throw new Error(
-            insertError?.message || `Photo ${index + 1} could not be saved to your listing.`,
-          )
-        }
-        return { index, id: inserted.id as string }
-      }),
-    )
-
-    let working = [...slots]
-    if (insertResults.length) {
-      for (const { index, id } of insertResults) {
-        working[index] = { ...working[index], id }
+          return changed ? next : prev
+        })
       }
     }
 
-    await Promise.all(
-      working.map(async (img, index) => {
-        if (!img.id) return
-        const url = (img.url ?? "").trim()
-        const thumb = (img.thumbnailUrl ?? "").trim()
-        const { error } = await supabase
-          .from("listing_images")
-          .update({
-            sort_order: index,
-            is_primary: index === 0,
-            ...(url
-              ? { url, thumbnail_url: thumb || null }
-              : {}),
-          })
-          .eq("id", img.id)
-          .eq("listing_id", listingId)
-        if (error) {
-          console.error("listing_images update:", error)
-          throw new Error(`Could not update photo order (image ${index + 1}).`)
-        }
-      }),
-    )
-
-    return { nextSlots: working, didInsert: insertResults.length > 0 }
+    const job = draftImageSyncChainRef.current.then(run, run)
+    draftImageSyncChainRef.current = job
+    return job
   }
 
-  async function syncListingImages(listingId: string) {
-    const { nextSlots, didInsert } = await syncListingImagesFromSnapshot(
-      listingId,
-      images,
-      removedImageIds,
-    )
-    if (didInsert) setImages(nextSlots)
+  function syncListingImages(listingId: string): Promise<void> {
+    return enqueueDraftListingImageSync(listingId)
   }
 
-  const syncListingImagesFromSnapshotRef = useRef(syncListingImagesFromSnapshot)
-  syncListingImagesFromSnapshotRef.current = syncListingImagesFromSnapshot
+  /** Wait for a draft photo save already running. Does not start another one. */
+  function settleDraftListingImageSync(): Promise<void> {
+    return draftImageSyncChainRef.current.then(
+      () => undefined,
+      () => undefined,
+    )
+  }
 
   function dismissUploadProgressToast() {
     const tid = uploadToastIdRef.current
@@ -3296,10 +3332,11 @@ function SellPageContentInner({
        * Editing your own listing never uses impersonation — drop a stale cookie so Save
        * stays on the normal owner update path (admin flat/free included).
        */
+      const actingShopAccountId = await fetchActingShopAccountId()
       const editingOwnListing =
         Boolean(editId) &&
         Boolean(editListingOwnerId) &&
-        user.id === editListingOwnerId
+        listingOwnerIsOperableAccount(user.id, editListingOwnerId, actingShopAccountId)
       if (editingOwnListing && storedImpersonation) {
         clearImpersonation()
         setImpersonation(null)
@@ -3315,7 +3352,12 @@ function SellPageContentInner({
         listingOwnerId: editListingOwnerId,
       })
 
-      const submitForm = formData
+      const livePrice = readLiveSellListingPrice(formData.price)
+      const submitForm =
+        livePrice === formData.price ? formData : { ...formData, price: livePrice }
+      if (livePrice !== formData.price) {
+        setFormData((fd) => (fd.price === livePrice ? fd : { ...fd, price: livePrice }))
+      }
 
       const imagesUploadReady = !images.some(
         (im) =>
@@ -3491,8 +3533,7 @@ function SellPageContentInner({
       if (
         fulfillmentFlags.shipping_available &&
         !listingImpersonation &&
-        !adminImpersonationEditListing &&
-        !(fd.dropoffLocationId ?? "").trim()
+        !adminImpersonationEditListing
       ) {
         const shipFromReady = await shipFrom.ensureShipFrom()
         if (!shipFromReady) {
@@ -3596,7 +3637,8 @@ function SellPageContentInner({
           return
         }
         const ownerEditsOwnListing =
-          isLocalOnlyServerDraftSubmit || user.id === editListingOwnerId
+          isLocalOnlyServerDraftSubmit ||
+          listingOwnerIsOperableAccount(user.id, editListingOwnerId, actingShopAccountId)
         const adminEditsOtherListing = adminIsEditingAnotherUsersListing({
           actorIsAdmin: submitActorIsAdmin,
           actorUserId: user.id,
@@ -3609,8 +3651,9 @@ function SellPageContentInner({
         const editListingFields = {
           title: resolvedListingTitle,
           description: fd.description,
-          price: parseFloat(fd.price),
+          price: parseSellListingPrice(fd.price) ?? 0,
           condition: fd.condition,
+          stock_quantity: stockQuantityForSellCondition(fd.condition, fd.stockQuantity),
           section: "surfboards" as const,
           category_id: fd.category,
           board_type: resolveListingBoardTypeFromCategory(fd.category, fd.boardType),
@@ -3643,8 +3686,8 @@ function SellPageContentInner({
           seller_purchased_from: fd.sellerPurchasedFrom.trim() || null,
           seller_purchased_on: fd.sellerPurchasedOn || null,
           compare_at_price: resolveCompareAtPriceOnUpdate({
-            currentPriceUsd: fd.loadedPublishedPriceUsd ?? parseFloat(fd.price),
-            nextPriceUsd: parseFloat(fd.price),
+            currentPriceUsd: fd.loadedPublishedPriceUsd ?? parseSellListingPrice(fd.price) ?? 0,
+            nextPriceUsd: parseSellListingPrice(fd.price) ?? 0,
             existingCompareAtUsd: fd.loadedCompareAtPriceUsd,
             showPriceMarkdown: fd.showPriceMarkdown === true,
           }),
@@ -3652,6 +3695,17 @@ function SellPageContentInner({
 
         if (ownerEditsOwnListing || adminEditsOtherListing) {
           const publishingFromDraftRow = listingIsDraft || isLocalOnlyServerDraftSubmit
+          if (publishingFromDraftRow) {
+            if (draftImageSyncTimerRef.current) {
+              clearTimeout(draftImageSyncTimerRef.current)
+              draftImageSyncTimerRef.current = null
+            }
+            await settleDraftListingImageSync()
+          }
+          const photoSlots = imagesRef.current.map((slot) => ({
+            ...slot,
+            id: slot.id ?? listingImageRowIdByClientIdRef.current.get(slot.clientId),
+          }))
           const imageOps: {
             id?: string
             url?: string
@@ -3659,9 +3713,9 @@ function SellPageContentInner({
             is_primary: boolean
             sort_order: number
           }[] = []
-          for (let i = 0; i < images.length; i++) {
-            const img = images[i]
-            if (!img.url?.trim() || !img.thumbnailUrl?.trim()) {
+          for (let i = 0; i < photoSlots.length; i++) {
+            const img = photoSlots[i]
+            if (!img?.url?.trim() || !img.thumbnailUrl?.trim()) {
               throw new Error(`Photo ${i + 1} is still uploading. Wait or retry before saving.`)
             }
             imageOps.push({
@@ -3717,8 +3771,9 @@ function SellPageContentInner({
         const listingFields = {
           title: resolvedListingTitle,
           description: fd.description,
-          price: parseFloat(fd.price),
+          price: parseSellListingPrice(fd.price) ?? 0,
           condition: fd.condition,
+          stock_quantity: stockQuantityForSellCondition(fd.condition, fd.stockQuantity),
           section: "surfboards" as const,
           category_id: fd.category,
           board_type: resolveListingBoardTypeFromCategory(fd.category, fd.boardType),
@@ -3852,7 +3907,7 @@ function SellPageContentInner({
               .from("listings")
               .delete()
               .eq("id", listing.id)
-              .eq("user_id", user.id)
+              .eq("user_id", listing.user_id)
             listingId = null
             throw new Error(sellSubmitErrorMessage(imagesInsertError, "Failed to save listing photos"))
           }
@@ -3871,7 +3926,7 @@ function SellPageContentInner({
                 .from("listings")
                 .delete()
                 .eq("id", listing.id)
-                .eq("user_id", user.id)
+                .eq("user_id", listing.user_id)
               listingId = null
               throw new Error(
                 sellSubmitErrorMessage(videoInsertError, "Failed to save listing video"),
@@ -4419,7 +4474,7 @@ function SellPageContentInner({
                         onDragEnd={handlePhotosDragEnd}
                         onRemove={handlePhotoTileRemove}
                         onRetry={handlePhotoTileRetry}
-                        onRotate180={handlePhotoTileRotate}
+                        onRotateQuarterTurns={handlePhotoTileRotate}
                         photoDragSensors={photoDragSensors}
                         minPhotos={LISTING_MIN_PHOTOS}
                         video={video}
@@ -4443,6 +4498,10 @@ function SellPageContentInner({
                       setFormData((f) => ({ ...f, condition }))
                     }
                     conditionComplete={isListingSellableCondition(formData.condition)}
+                    stockQuantity={formData.stockQuantity}
+                    onStockQuantityChange={(stockQuantity) =>
+                      setFormData((f) => ({ ...f, stockQuantity }))
+                    }
                     locationPicker={
                       <LocationPicker
                         key={
@@ -4704,6 +4763,14 @@ function SellPageContentInner({
                           </SelectContent>
                         </Select>
                       </div>
+                      <SellBrandNewQuantityField
+                        id="sell-board-quantity"
+                        condition={formData.condition}
+                        value={formData.stockQuantity}
+                        onChange={(stockQuantity) =>
+                          setFormData((current) => ({ ...current, stockQuantity }))
+                        }
+                      />
                       </div>
 
                       <Separator className="bg-border" />
@@ -4780,8 +4847,10 @@ function SellPageContentInner({
                         </span>
                       </p>
                       <p className="text-[15px] leading-relaxed text-muted-foreground">
-                        Clear, well-lit shots sell faster. Square photos work best — the first
-                        becomes your cover. Optional: add one short video beside your photos.
+                        Clear, well-lit shots sell faster. Square photos work best. Photos you
+                        drop together are ordered from the first shot to the last, and the first
+                        photo is your cover. Turn a photo 90° if it lands sideways. Optional: add
+                        one short video beside your photos.
                       </p>
                     </div>
                     <SellListingPhotoGrid
@@ -4797,7 +4866,7 @@ function SellPageContentInner({
                       onDragEnd={handlePhotosDragEnd}
                       onRemove={handlePhotoTileRemove}
                       onRetry={handlePhotoTileRetry}
-                      onRotate180={handlePhotoTileRotate}
+                      onRotateQuarterTurns={handlePhotoTileRotate}
                       photoDragSensors={photoDragSensors}
                       hideHeader
                       belowGrid={<SellPhotoExamplesBanner />}
@@ -4888,25 +4957,25 @@ function SellPageContentInner({
                   <SellPriceFields
                     listingPrice={formData.price}
                     onListingPriceChange={(value) =>
-                      setFormData({ ...formData, price: value })
+                      setFormData((fd) => ({ ...fd, price: value }))
                     }
                     sellerPurchasePrice={formData.sellerPurchasePrice}
                     onSellerPurchasePriceChange={(value) =>
-                      setFormData({ ...formData, sellerPurchasePrice: value })
+                      setFormData((fd) => ({ ...fd, sellerPurchasePrice: value }))
                     }
                     sellerPurchasedFrom={formData.sellerPurchasedFrom}
                     onSellerPurchasedFromChange={(value) =>
-                      setFormData({ ...formData, sellerPurchasedFrom: value })
+                      setFormData((fd) => ({ ...fd, sellerPurchasedFrom: value }))
                     }
                     sellerPurchasedOn={formData.sellerPurchasedOn}
                     onSellerPurchasedOnChange={(value) =>
-                      setFormData({ ...formData, sellerPurchasedOn: value })
+                      setFormData((fd) => ({ ...fd, sellerPurchasedOn: value }))
                     }
                     publishedPriceUsd={formData.loadedPublishedPriceUsd}
                     existingCompareAtPriceUsd={formData.loadedCompareAtPriceUsd}
                     showPriceMarkdown={formData.showPriceMarkdown === true}
                     onShowPriceMarkdownChange={(value) =>
-                      setFormData({ ...formData, showPriceMarkdown: value })
+                      setFormData((fd) => ({ ...fd, showPriceMarkdown: value }))
                     }
                     afterListingPrice={
                       <div className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-sm">

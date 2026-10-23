@@ -1,10 +1,12 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
+import { resolveManagedSeller } from "@/lib/account-access/managed-seller"
 import { createClient } from "@/lib/supabase/server"
-import { updateSellerListingQuickEdit, type ListingQuickEditSaved } from "@/lib/services/listingQuickEdit"
-
-export type { ListingQuickEditSaved }
+import {
+  updateSellerListingQuickEdit,
+  type ListingQuickEditSaved,
+} from "@/lib/services/listingQuickEdit"
 import { listingQuickEditBodySchema } from "@/lib/validations/listing-quick-edit"
 
 export type ListingQuickEditActionResult =
@@ -25,9 +27,12 @@ export async function updateListingQuickEditAction(
   } = await supabase.auth.getUser()
   if (!user) return { error: "Please sign in to update this listing." }
 
+  const managed = await resolveManagedSeller("listings.write")
+  if (!managed.ok) return { error: managed.error }
+
   try {
     const result = await updateSellerListingQuickEdit(supabase, {
-      sellerUserId: user.id,
+      sellerUserId: managed.seller.sellerId,
       ...parsed.data,
     })
     if (!result.ok) return { error: result.error }

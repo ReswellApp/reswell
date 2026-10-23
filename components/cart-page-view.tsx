@@ -14,9 +14,11 @@ import {
   type CartPageItem,
 } from "@/app/actions/cart"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
+import { listingBuyerQuantityCap, listingSupportsBuyerQuantity } from "@/lib/listing-stock-quantity"
 import { isReswellShopListing } from "@/lib/reswell-shop"
 import { listingDetailHref } from "@/lib/listing-href"
 import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { formatBoardType, formatCondition, getPublicSellerDisplayName } from "@/lib/listing-labels"
 import { formatListingBoardLengthSubtitle } from "@/lib/listing-dimensions-display"
@@ -33,6 +35,9 @@ import { CartOrderSummary } from "@/components/features/cart/cart-order-summary"
 import type { CartSellerAddonCarouselItem } from "@/lib/services/cartSellerAddons"
 import { cn } from "@/lib/utils"
 import { FavoriteButton } from "@/components/favorite-button"
+import { MAX_SURFBOARDS_PER_SELLER_CHECKOUT } from "@/lib/surfboard-multi-board-parcel"
+import { effectiveBoardShippingMode } from "@/lib/services/peerListingShippingQuote"
+import { peerCheckoutSmallParcelBundleCopy } from "@/lib/shipping/peer-checkout-usps-services"
 
 function listingAvailable(listing: CartPageItem["listing"]) {
   return listing.status === "active" || listing.status === "pending_sale"
@@ -123,9 +128,18 @@ export function CartPageView({
       const withShip = availRows.filter(({ listing }) => listing.shipping_available)
       if (withShip.length > 0) {
         const rates = withShip.map(({ listing }) => Math.max(0, parseFloat(String(listing.shipping_price ?? 0)) || 0))
-        const hasReswell = withShip.some(({ listing }) => listing.board_shipping_cost_mode === "reswell")
+        const hasReswell = withShip.some(
+          ({ listing }) => effectiveBoardShippingMode(listing) === "reswell",
+        )
+        const bundleCopy = peerCheckoutSmallParcelBundleCopy({
+          sections: withShip.map(({ listing }) => listing.section),
+          allReswell: withShip.every(({ listing }) => effectiveBoardShippingMode(listing) === "reswell"),
+          unitCount: withShip.reduce((sum, row) => sum + Math.max(1, row.quantity || 1), 0),
+        })
         shipLabel =
-          rates.every((r) => r === 0) && !hasReswell ? "FREE" : "Calculated at checkout"
+          rates.every((r) => r === 0) && !hasReswell
+            ? "FREE"
+            : bundleCopy?.label ?? "Calculated at checkout"
       } else if (availRows.some(({ listing }) => listing.local_pickup !== false)) {
         shipLabel = "Pickup only"
       }
@@ -179,12 +193,27 @@ export function CartPageView({
     const note =
       sellerGroupCount > 1
         ? "Multiple sellers — checkout each group separately. Reswell shop items are included with whichever seller group you check out first."
-        : maxSurfboardsInSellerGroup >= 2
-          ? "These surfboards can ship together in one box or separately — choose at checkout. Live shipping is quoted from your address."
-          : shopRows.length > 0 && peerRows.length > 0
-            ? "Peer listings and Reswell shop items check out together in one payment."
-            : availRows.length > 0 && availRows.some(({ listing }) => listing.shipping_available)
-              ? "Shipping cost and delivery timing are finalized at checkout."
+        : maxSurfboardsInSellerGroup > MAX_SURFBOARDS_PER_SELLER_CHECKOUT
+          ? `More than ${MAX_SURFBOARDS_PER_SELLER_CHECKOUT} surfboards from one seller ship in separate boxes, or you can choose local pickup. Live shipping is quoted from your address.`
+          : maxSurfboardsInSellerGroup >= 2
+            ? "These surfboards can ship together in one box or separately — choose at checkout. Live shipping is quoted from your address."
+            : shopRows.length > 0 && peerRows.length > 0
+              ? "Peer listings and Reswell shop items check out together in one payment."
+              : availRows.length > 0 && availRows.some(({ listing }) => listing.shipping_available)
+              ? (() => {
+                  const shippingRows = availRows.filter(({ listing }) => listing.shipping_available)
+                  const bundleNote = peerCheckoutSmallParcelBundleCopy({
+                    sections: shippingRows.map(({ listing }) => listing.section),
+                    allReswell: shippingRows.every(
+                      ({ listing }) => effectiveBoardShippingMode(listing) === "reswell",
+                    ),
+                    unitCount: shippingRows.reduce((sum, row) => sum + Math.max(1, row.quantity || 1), 0),
+                  })
+                  return (
+                    bundleNote?.note ??
+                    "Shipping cost and delivery timing are finalized at checkout."
+                  )
+                })()
               : "Pickup or shipping details are confirmed when you check out."
 
     return {
@@ -287,6 +316,7 @@ export function CartPageView({
                 const img = listingTitleThumbnailSrc(listing.listing_images ?? null)
                 const seller = listing.profiles
                 const isShop = isReswellShopListing(listing.section)
+                const canAdjustQuantity = listingSupportsBuyerQuantity(listing)
                 const sellerName = isShop ? "Reswell" : getPublicSellerDisplayName(seller)
                 const sellerHref = isShop ? "/reswell/shop" : sellerProfileHref(seller)
                 const available = listingAvailable(listing)
@@ -297,7 +327,9 @@ export function CartPageView({
                 const unitPrice = hasAcceptedOffer ? agreedPriceUsd : listPrice
                 const qty = Math.max(1, quantity || 1)
                 const lineTotal = unitPrice * qty
-                const stockMax = Math.max(1, Math.floor(Number(listing.stock_quantity) || qty))
+                const stockMax = canAdjustQuantity
+                  ? Math.max(1, listingBuyerQuantityCap(listing))
+                  : 1
                 const condition = formatCondition(listing.condition)
                 const boardType = formatBoardType(listing.board_type)
                 const lengthLine = formatListingBoardLengthSubtitle({
@@ -322,7 +354,7 @@ export function CartPageView({
                             src={img}
                             alt={title}
                             fill
-                            className="object-cover"
+                            className={listingPhotoFillClassName}
                             sizes="120px"
                             unoptimized={listingImageShouldBypassOptimization(img)}
                           />
@@ -379,7 +411,7 @@ export function CartPageView({
                         )}
 
                         <div className="mt-4 flex flex-wrap items-center gap-2 sm:justify-end">
-                          {isShop ? (
+                          {canAdjustQuantity ? (
                             <div className="flex h-9 items-center gap-1 rounded-lg border border-neutral-200 bg-white px-1 dark:border-white/15 dark:bg-transparent">
                               <button
                                 type="button"

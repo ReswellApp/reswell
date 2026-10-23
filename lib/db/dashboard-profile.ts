@@ -22,6 +22,8 @@ export type DashboardProfileRow = {
   first_name: string | null
   last_name: string | null
   phone: string | null
+  shipping_label_name: string | null
+  shop_name: string | null
 }
 
 export type FetchDashboardProfileResult = {
@@ -30,7 +32,7 @@ export type FetchDashboardProfileResult = {
 }
 
 const DASHBOARD_PROFILE_SELECT =
-  "id, email, display_name, seller_slug, avatar_url, avatar_focal_x_pct, avatar_focal_y_pct, shop_logo_url, shop_banner_url, shop_banner_focal_x_pct, shop_banner_focal_y_pct, shop_tile_banner_url, shop_tile_banner_focal_x_pct, shop_tile_banner_focal_y_pct, is_shop, location, city, bio, first_name, last_name, phone"
+  "id, email, display_name, shop_name, seller_slug, avatar_url, avatar_focal_x_pct, avatar_focal_y_pct, shop_logo_url, shop_banner_url, shop_banner_focal_x_pct, shop_banner_focal_y_pct, shop_tile_banner_url, shop_tile_banner_focal_x_pct, shop_tile_banner_focal_y_pct, is_shop, location, city, bio, first_name, last_name, phone, shipping_label_name"
 
 export async function fetchDashboardProfile(
   supabase: SupabaseClient,

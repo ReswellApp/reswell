@@ -22,6 +22,7 @@ export function SellerPreparedShippingLabelCard({
   title = null,
   description = null,
   downloadApiPrefix = "/api/orders",
+  hasPdf = true,
   hasPaperlessQr = false,
   paperlessInstructions = null,
   paperlessHandoffCode = null,
@@ -33,6 +34,8 @@ export function SellerPreparedShippingLabelCard({
   description?: string | null
   /** API prefix before `/:orderId/shipping-label/download` — use `/api/admin/orders` on admin pages. */
   downloadApiPrefix?: string
+  /** Printable PDF is on file. Paperless-only labels omit the PDF buttons. */
+  hasPdf?: boolean
   /** USPS Label Broker QR available for phone drop-off. */
   hasPaperlessQr?: boolean
   paperlessInstructions?: string | null
@@ -123,22 +126,26 @@ export function SellerPreparedShippingLabelCard({
                 Show USPS QR code
               </Button>
             ) : null}
-            <Button
-              size="sm"
-              variant="outline"
-              className="gap-2"
-              type="button"
-              onClick={() => setPdfOpen(true)}
-            >
-              <ExternalLink className="h-4 w-4" />
-              View label PDF
-            </Button>
-            <Button size="sm" variant="outline" className="gap-2" asChild>
-              <a href={downloadHref} download>
-                <Download className="h-4 w-4" />
-                Download PDF
-              </a>
-            </Button>
+            {hasPdf ? (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-2"
+                  type="button"
+                  onClick={() => setPdfOpen(true)}
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  View label PDF
+                </Button>
+                <Button size="sm" variant="outline" className="gap-2" asChild>
+                  <a href={downloadHref} download>
+                    <Download className="h-4 w-4" />
+                    Download PDF
+                  </a>
+                </Button>
+              </>
+            ) : null}
           </div>
         </CardContent>
       </Card>

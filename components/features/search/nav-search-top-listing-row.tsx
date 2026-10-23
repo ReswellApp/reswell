@@ -3,11 +3,16 @@
 import Image from "next/image"
 import { useCallback, useEffect, useMemo, useState, type SyntheticEvent } from "react"
 import type { ReactNode } from "react"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { cn } from "@/lib/utils"
 
 /** Shared geometry for header nav typeahead “Top listings” and idle personalization rows. */
 export const navSearchTopListingThumbClassName =
   "relative h-12 w-12 shrink-0 overflow-hidden rounded-md bg-muted sm:h-14 sm:w-14 sm:rounded-lg"
+
+/** Name-only brand chip in nav search. Brand logos are not shown on this surface. */
+export const navSearchBrandNameTileClassName =
+  "inline-flex w-max max-w-none shrink-0 snap-start items-center whitespace-nowrap rounded-lg border border-border bg-muted/40 px-3 py-2 text-left text-sm font-semibold leading-snug text-foreground transition-colors hover:border-cerulean/30 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cerulean/25"
 
 export const navSearchTopListingRowClassName =
   "mx-1 flex gap-2 rounded-lg px-2 py-2 outline-none transition-colors hover:bg-muted/80 focus-visible:bg-muted/80 sm:gap-3 sm:rounded-xl sm:py-2.5"
@@ -93,7 +98,7 @@ export function NavSearchTopListingThumb({
           src={src}
           alt=""
           fill
-          className="object-cover"
+          className={listingPhotoFillClassName}
           sizes={imageSizes}
           unoptimized
           onError={handleError}

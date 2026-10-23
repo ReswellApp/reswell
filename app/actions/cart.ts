@@ -4,17 +4,19 @@ import { randomUUID } from "node:crypto"
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
 import { isCartEligibleSection } from "@/lib/cart-eligibility"
+import { attachListingInventorySources } from "@/lib/db/listingInventorySource"
 import { fetchAcceptedOffersForBuyerListings } from "@/lib/db/offers"
 import { trackKlaviyoAddedToCart } from "@/lib/klaviyo/track-added-to-cart"
 import { listingTileImageSrcFromRow } from "@/lib/listing-image-display"
-import { isListingPurchasable } from "@/lib/listing-public-visibility"
+import {
+  clampListingBuyerQuantity,
+  listingBuyerQuantityCap,
+  listingSupportsBuyerQuantity,
+} from "@/lib/listing-stock-quantity"
 import { trackMetaAddToCartServerEvent } from "@/lib/meta/track-add-to-cart-server-event"
-import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { captureServerEvent } from "@/lib/posthog-server"
-import { isReswellShopListing } from "@/lib/reswell-shop"
 import { acceptedUnitPriceForSingleItemOffer } from "@/lib/services/acceptedOfferCheckout"
 import { assertListingEligibleForCart, peerSurfboardAddCapError } from "@/lib/services/cartEligibility"
-import { isSurfboardListingSection } from "@/lib/surfboard-multi-board-parcel"
 import {
   cartFromCartCheckoutHref,
   cartItemCountFromQuantities,
@@ -174,17 +176,20 @@ export async function addCartItem(
     return { ok: false, error: check.message }
   }
 
-  const isShop = isReswellShopListing(check.listing.section)
-  const stock = Math.max(0, Math.floor(Number(check.listing.stock_quantity) || 0))
-  const maxQty = isShop ? stock : 1
-  if (addQty > maxQty) {
-    return { ok: false, error: isShop ? "Not enough stock available" : "This listing is already limited to one" }
+  const cap = listingBuyerQuantityCap(check.listing)
+  const canChooseQuantity = listingSupportsBuyerQuantity(check.listing)
+  if (cap < 1) {
+    return { ok: false, error: "This item is out of stock" }
   }
 
-  if (isSurfboardListingSection(check.listing.section)) {
-    const capError = await peerSurfboardAddCapError(supabase, check.listing, user.id)
-    if (capError) {
-      return { ok: false, error: capError }
+  const surfboardCapError = await peerSurfboardAddCapError(supabase, check.listing, user.id)
+  if (surfboardCapError) {
+    return { ok: false, error: surfboardCapError }
+  }
+  if (addQty > cap) {
+    return {
+      ok: false,
+      error: canChooseQuantity ? "Not enough stock available" : "This listing is already limited to one",
     }
   }
 
@@ -197,11 +202,11 @@ export async function addCartItem(
     .eq("listing_id", listingId)
     .maybeSingle()
 
-  let lineQuantity = isShop ? addQty : 1
+  let lineQuantity = canChooseQuantity ? addQty : 1
 
   if (existing) {
     const prevQty = Math.max(1, Math.floor(Number((existing as { quantity?: number }).quantity) || 1))
-    if (!isShop) {
+    if (!canChooseQuantity) {
       revalidatePath("/cart")
       void trackMetaAddToCartServerEvent({
         eventId: metaEventId,
@@ -234,7 +239,7 @@ export async function addCartItem(
       }
     }
     const nextQty = prevQty + addQty
-    if (nextQty > maxQty) {
+    if (nextQty > cap) {
       return { ok: false, error: "Not enough stock available" }
     }
     const { error: updateErr } = await supabase
@@ -250,7 +255,7 @@ export async function addCartItem(
     const { error } = await supabase.from("cart_items").insert({
       profile_id: user.id,
       listing_id: listingId,
-      quantity: isShop ? addQty : 1,
+      quantity: canChooseQuantity ? addQty : 1,
     })
 
     if (error) {
@@ -362,10 +367,10 @@ export async function updateCartItemQuantity(
   if (!check.ok) {
     return { ok: false, error: check.message }
   }
-  if (!isReswellShopListing(check.listing.section)) {
+  if (!listingSupportsBuyerQuantity(check.listing)) {
     return { ok: false, error: "Quantity cannot be changed for this listing" }
   }
-  const stock = Math.max(0, Math.floor(Number(check.listing.stock_quantity) || 0))
+  const stock = listingBuyerQuantityCap(check.listing)
   if (nextQty > stock) {
     return { ok: false, error: "Not enough stock available" }
   }
@@ -469,7 +474,6 @@ export async function getCartPageItems(): Promise<{
         board_type,
         dimensions,
         stock_quantity,
-        inventory_source,
         hidden_from_site,
         archived_at,
         listing_images ( url, thumbnail_url, is_primary ),
@@ -481,10 +485,11 @@ export async function getCartPageItems(): Promise<{
     .order("created_at", { ascending: false })
 
   if (error) {
-    return { items: [], error: error.message }
+    console.error("[cart] getCartPageItems:", error.message)
+    return { items: [], error: "We couldn't load your cart. Refresh and try again." }
   }
 
-  const items: CartPageItem[] = []
+  const pending: CartPageItem[] = []
   for (const row of data ?? []) {
     const raw = row as unknown as {
       created_at: string
@@ -512,13 +517,35 @@ export async function getCartPageItems(): Promise<{
     const profiles = Array.isArray(p) ? (p[0] ?? null) : (p ?? null)
     const listing: CartListingRow = { ...L, profiles }
     const qty = Math.max(1, Math.floor(Number(raw.quantity) || 1))
-    items.push({
+    pending.push({
       cartCreatedAt: raw.created_at,
-      quantity: isReswellShopListing(listing.section) ? qty : 1,
+      quantity: qty,
       listing,
       agreedPriceUsd: null,
     })
   }
+
+  const sourcedCart = await attachListingInventorySources(
+    supabase,
+    pending.map((row) => row.listing),
+  )
+  if (!sourcedCart.ok) {
+    return { items: [], error: "We couldn't load your cart. Refresh and try again." }
+  }
+
+  const items: CartPageItem[] = pending.map((row, index) => {
+    const listing: CartListingRow = {
+      ...row.listing,
+      inventory_source: sourcedCart.listings[index]?.inventory_source ?? null,
+    }
+    return {
+      ...row,
+      listing,
+      quantity: listingSupportsBuyerQuantity(listing)
+        ? clampListingBuyerQuantity(listing, row.quantity)
+        : 1,
+    }
+  })
 
   const peerIds = items
     .filter((row) => isPeerListingSection(row.listing.section))

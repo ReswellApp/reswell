@@ -39,17 +39,31 @@ const SECTION_META_BY_PREFIX: { prefix: string; meta: DashboardSectionMeta }[] =
     },
   },
   {
+    prefix: "/dashboard/dropoff-location",
+    meta: {
+      sectionName: "Drop-off",
+      description: "Boards dropped at your location, and the shipping labels for those orders.",
+    },
+  },
+  {
     prefix: "/dashboard/listings",
     meta: {
-      sectionName: "My Listings",
+      sectionName: "Listings",
       description: "Summary of your surfboard inventory and performance.",
+    },
+  },
+  {
+    prefix: "/dashboard/profile/team",
+    meta: {
+      sectionName: "Team",
+      description: "Emails that can sign in and help run this account.",
     },
   },
   {
     prefix: "/dashboard/profile",
     meta: {
       sectionName: "Profile",
-      description: "Update your profile, addresses, and account settings.",
+      description: "Update your profile, sign-in access, addresses, and account settings.",
     },
   },
   {
@@ -70,19 +84,18 @@ const SECTION_META_BY_PREFIX: { prefix: string; meta: DashboardSectionMeta }[] =
     prefix: "/dashboard/purchases",
     meta: {
       sectionName: "Purchases",
-      description: "Used gear and peer-to-peer buys.",
+      description: "Track and manage your orders.",
     },
   },
   {
     prefix: "/dashboard/sales",
     meta: {
       sectionName: "Sales",
-      description:
-        "Card and wallet purchases of your listings. Shipping addresses appear here when the buyer paid with a card and chose delivery.",
+      description: "Track and fulfill your orders.",
     },
   },
   {
-    prefix: "/dashboard/favorites",
+    prefix: "/favorites",
     meta: {
       sectionName: "Favorites",
       description: "Listings you have saved to revisit later.",

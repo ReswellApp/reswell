@@ -1,5 +1,6 @@
 "use server"
 
+import { resolveManagedSeller } from "@/lib/account-access/managed-seller"
 import { createClient } from "@/lib/supabase/server"
 import { revalidateListingMutationPaths } from "@/lib/cache/revalidate-listing-mutation-paths"
 import { evaluateSellerCanSell } from "@/lib/services/sellerBan"
@@ -40,13 +41,17 @@ export async function createBoardbagListingAction(
   }
 
 
-  const sellGuard = await evaluateSellerCanSell(supabase, user.id)
+  const managed = await resolveManagedSeller("listings.write")
+  if (!managed.ok) return { error: managed.error }
+  const sellerId = managed.seller.sellerId
+
+  const sellGuard = await evaluateSellerCanSell(supabase, sellerId)
   if (!sellGuard.ok) {
     return { error: sellGuard.userMessage }
   }
 
   try {
-    const result = await createBoardbagListing(supabase, user.id, parsed.data)
+    const result = await createBoardbagListing(supabase, sellerId, parsed.data)
     revalidateListingMutationPaths("/boardbags", result.slug)
     return { success: true, listingId: result.listingId, slug: result.slug }
   } catch (error) {
@@ -77,7 +82,14 @@ export async function updateBoardbagListingAction(
   }
 
   try {
-    const result = await updateBoardbagListing(supabase, parsed.data.listingId, user.id, parsed.data)
+    const managed = await resolveManagedSeller("listings.write")
+    if (!managed.ok) return { error: managed.error }
+    const result = await updateBoardbagListing(
+      supabase,
+      parsed.data.listingId,
+      managed.seller.sellerId,
+      parsed.data,
+    )
     revalidateListingMutationPaths("/boardbags", result.slug)
     return { success: true, slug: result.slug }
   } catch (error) {

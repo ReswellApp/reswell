@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useSearchParams } from "next/navigation"
 import { ChevronDown, Store } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -10,9 +10,10 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import {
-  dashboardNavLinks,
+  dashboardNavSections,
   type DashboardNavLink,
 } from "@/lib/dashboard-nav-links"
+import { isMostSpecificDashboardNavMatch } from "@/lib/dashboard-nav-match"
 import {
   dashboardSidebarNavIconClass,
   dashboardSidebarNavItemClass,
@@ -20,29 +21,23 @@ import {
 import { SupportUnreadTicker } from "@/components/features/support/support-unread-ticker"
 import { cn } from "@/lib/utils"
 
-function isLinkActive(pathname: string, href: string): boolean {
-  const normalized = pathname.replace(/\/$/, "") || "/"
-  const target = href.replace(/\/$/, "") || "/"
-
-  if (target === "/dashboard") {
-    return normalized === "/dashboard"
-  }
-
-  if (target === "/messages") {
-    return normalized === "/messages" || normalized.startsWith("/messages/")
-  }
-
-  return normalized === target || normalized.startsWith(`${target}/`)
+function navLinkKey(link: DashboardNavLink): string {
+  return link.id ?? link.href
 }
 
 function DashboardNavItem({
   link,
   size,
+  navHrefs,
 }: {
   link: DashboardNavLink
   size: "default" | "large"
+  navHrefs: readonly string[]
 }) {
   const pathname = usePathname() ?? ""
+  const searchParams = useSearchParams()
+  const isActive = (href: string) =>
+    isMostSpecificDashboardNavMatch(pathname, href, navHrefs, searchParams)
   const Icon = link.icon
   const isLarge = size === "large"
   const itemClass = isLarge
@@ -53,7 +48,7 @@ function DashboardNavItem({
     : "h-4 w-4 lg:h-[18px] lg:w-[18px]"
 
   if (!link.children?.length) {
-    const active = isLinkActive(pathname, link.href)
+    const active = isActive(link.href)
     return (
       <Link
         href={link.href}
@@ -73,7 +68,7 @@ function DashboardNavItem({
     )
   }
 
-  const sectionActive = link.children.some((child) => isLinkActive(pathname, child.href))
+  const sectionActive = link.children.some((child) => isActive(child.href))
 
   return (
     <Collapsible defaultOpen={sectionActive}>
@@ -106,7 +101,7 @@ function DashboardNavItem({
         )}
       >
         {link.children.map((child) => {
-          const childActive = isLinkActive(pathname, child.href)
+          const childActive = isActive(child.href)
           return (
             <Link
               key={child.href}
@@ -133,7 +128,9 @@ export interface DashboardSidebarNavProps {
   sellerProfileHref: string | null
   isAdmin?: boolean
   isShipper?: boolean
+  isDropoffLocation?: boolean
   hasShopifyAccess?: boolean
+  showEarnings?: boolean
   /** Larger nav for `/dashboard` shell; messages keeps the default compact size. */
   size?: "default" | "large"
 }
@@ -142,7 +139,9 @@ export function DashboardSidebarNav({
   sellerProfileHref,
   isAdmin = false,
   isShipper = false,
+  isDropoffLocation = false,
   hasShopifyAccess = false,
+  showEarnings = true,
   size = "default",
 }: DashboardSidebarNavProps) {
   const pathname = usePathname() ?? ""
@@ -153,29 +152,61 @@ export function DashboardSidebarNav({
   const iconClass = isLarge
     ? dashboardSidebarNavIconClass
     : "h-4 w-4 lg:h-[18px] lg:w-[18px]"
+  const sections = dashboardNavSections({
+    isAdmin,
+    isShipper,
+    isDropoffLocation,
+    hasShopifyAccess,
+    showEarnings,
+  })
+  const navHrefs = sections.flatMap((section) =>
+    section.links.flatMap((item) => [
+      item.href,
+      ...(item.children?.map((child) => child.href) ?? []),
+    ]),
+  )
 
   return (
     <nav
-      className={cn("hidden lg:block", isLarge ? "space-y-2" : "space-y-1.5")}
+      className={cn("hidden lg:block", isLarge ? "space-y-6" : "space-y-5")}
       aria-label="Dashboard"
     >
-      {dashboardNavLinks({ isAdmin, isShipper, hasShopifyAccess }).map((link) => (
-        <DashboardNavItem key={link.href} link={link} size={size} />
+      {sections.map((section) => (
+        <div key={section.id} className={cn(isLarge ? "space-y-1.5" : "space-y-1")}>
+          <p
+            className={cn(
+              "px-3 font-semibold tracking-tight text-foreground",
+              isLarge ? "px-4 text-[15px]" : "text-sm lg:px-4 lg:text-[15px]",
+            )}
+          >
+            {section.label}
+          </p>
+          <div className={cn(isLarge ? "space-y-1" : "space-y-0.5")}>
+            {section.links.map((link) => (
+              <DashboardNavItem
+                key={navLinkKey(link)}
+                link={link}
+                size={size}
+                navHrefs={navHrefs}
+              />
+            ))}
+            {section.id === "selling" && sellerProfileHref ? (
+              <Link
+                href={sellerProfileHref}
+                className={cn(
+                  itemClass,
+                  pathname.replace(/\/$/, "") === sellerProfileHref.replace(/\/$/, "")
+                    ? "bg-primary/5 text-primary"
+                    : "text-primary hover:bg-primary/5 hover:text-primary",
+                )}
+              >
+                <Store className={iconClass} />
+                My Seller Profile
+              </Link>
+            ) : null}
+          </div>
+        </div>
       ))}
-      {sellerProfileHref ? (
-        <Link
-          href={sellerProfileHref}
-          className={cn(
-            itemClass,
-            pathname.replace(/\/$/, "") === sellerProfileHref.replace(/\/$/, "")
-              ? "bg-primary/5 text-primary"
-              : "text-primary hover:bg-primary/5 hover:text-primary",
-          )}
-        >
-          <Store className={iconClass} />
-          My Seller Profile
-        </Link>
-      ) : null}
     </nav>
   )
 }

@@ -5,6 +5,8 @@ export type AdminIssuedPromoCodeRow = {
   code: string
   discount_percent: number
   note: string | null
+  /** Null discounts every product. Otherwise only these marketplace product types. */
+  eligible_sections: string[] | null
   expires_at: string
   created_by_profile_id: string | null
   redeemed_at: string | null
@@ -15,7 +17,7 @@ export type AdminIssuedPromoCodeRow = {
 }
 
 const SELECT_COLS =
-  "id, code, discount_percent, note, expires_at, created_by_profile_id, redeemed_at, redeemed_by_profile_id, redeemed_order_id, reserved_payment_intent_id, created_at"
+  "id, code, discount_percent, note, eligible_sections, expires_at, created_by_profile_id, redeemed_at, redeemed_by_profile_id, redeemed_order_id, reserved_payment_intent_id, created_at"
 
 export async function fetchAdminIssuedPromoByCode(
   supabase: SupabaseClient,
@@ -31,6 +33,23 @@ export async function fetchAdminIssuedPromoByCode(
   return { row: (data as AdminIssuedPromoCodeRow | null) ?? null, error: null }
 }
 
+export async function fetchAdminIssuedPromoById(
+  supabase: SupabaseClient,
+  promoId: string,
+): Promise<{ row: AdminIssuedPromoCodeRow | null; error: string | null }> {
+  const id = promoId.trim()
+  if (!id) return { row: null, error: null }
+
+  const { data, error } = await supabase
+    .from("admin_issued_promo_codes")
+    .select(SELECT_COLS)
+    .eq("id", id)
+    .maybeSingle()
+
+  if (error) return { row: null, error: error.message }
+  return { row: (data as AdminIssuedPromoCodeRow | null) ?? null, error: null }
+}
+
 export async function insertAdminIssuedPromoCode(
   supabase: SupabaseClient,
   input: {
@@ -39,6 +58,7 @@ export async function insertAdminIssuedPromoCode(
     expiresAt: string
     createdByProfileId: string
     note?: string | null
+    eligibleSections?: string[] | null
   },
 ): Promise<{ row: AdminIssuedPromoCodeRow | null; error: string | null }> {
   const { data, error } = await supabase
@@ -49,6 +69,10 @@ export async function insertAdminIssuedPromoCode(
       expires_at: input.expiresAt,
       created_by_profile_id: input.createdByProfileId,
       note: input.note?.trim() || null,
+      eligible_sections:
+        input.eligibleSections && input.eligibleSections.length > 0
+          ? input.eligibleSections
+          : null,
     })
     .select(SELECT_COLS)
     .single()
