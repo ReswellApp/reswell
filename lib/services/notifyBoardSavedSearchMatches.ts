@@ -110,9 +110,7 @@ export async function notifyBoardSavedSearchMatchesForListing(
     }
   }
 
-  if (row.section === "surfboards") {
-    await ensureListingIndexedForSavedSearchAlerts(listingId)
-  }
+  await ensureListingIndexedForSavedSearchAlerts(listingId)
 
   const { data: searches, error: searchErr } = await fetchBoardSavedSearchesWithEmailEnabled(
     service,

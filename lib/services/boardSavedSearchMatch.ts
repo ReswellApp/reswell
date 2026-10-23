@@ -11,6 +11,7 @@ import {
   type BoardsBrowseFacetSelections,
 } from "@/lib/boards-browse-facets"
 import { isBoardsBrowseEsEnabled } from "@/lib/db/boards-browse-listings-es"
+import { isElasticsearchConfigured } from "@/lib/elasticsearch/config"
 import { searchBoardsBrowse } from "@/lib/elasticsearch/boards-browse-search"
 import { syncListingToIndex } from "@/lib/elasticsearch/listings-index"
 import {
@@ -150,12 +151,14 @@ export function boardSavedCriteriaToBrowseEsParams(c: BoardSavedSearchCriteria) 
 
 /**
  * Ensure the listing is searchable in ES before replaying saved searches.
- * Uses `refresh: wait_for` so the subsequent match query can see the doc.
+ * Uses `refresh: wait_for` so `/boards` browse and `/search?q=` membership
+ * can see the doc in the same request. Marketplace search is gated on ES
+ * being configured, not boards-browse specifically.
  */
 export async function ensureListingIndexedForSavedSearchAlerts(
   listingId: string,
 ): Promise<void> {
-  if (!isBoardsBrowseEsEnabled()) return
+  if (!isElasticsearchConfigured()) return
   try {
     const service = createServiceRoleClient()
     await syncListingToIndex(service, listingId, { refresh: "wait_for" })
