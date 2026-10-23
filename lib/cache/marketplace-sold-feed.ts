@@ -11,6 +11,7 @@ import {
   type MarketplaceShippedFeedPayload,
   type MarketplaceSoldFeedPayload,
 } from "@/lib/services/marketplaceSoldFeed"
+import { formatGmv } from "@/lib/format-gmv"
 import { getDb } from "@/lib/supabase/db"
 
 /**
@@ -55,17 +56,31 @@ const getCachedSoldFeedPayload = unstable_cache(
 
     return payload
   },
-  ["marketplace-sold-feed-v15"],
+  ["marketplace-sold-feed-v16"],
   {
     revalidate: MARKETPLACE_SOLD_FEED_REVALIDATE_SECONDS,
     tags: [MARKETPLACE_SOLD_FEED_CACHE_TAG],
   },
 )
 
+export type MarketplaceSoldFeedView = Omit<MarketplaceSoldFeedPayload, "soldStats"> & {
+  soldStats: { count: number; gmvFormatted: string }
+}
+
+function withFormattedSalesTotal(payload: MarketplaceSoldFeedPayload): MarketplaceSoldFeedView {
+  return {
+    ...payload,
+    soldStats: {
+      count: payload.soldStats.count,
+      gmvFormatted: formatGmv(payload.soldStats.gmvTotal),
+    },
+  }
+}
+
 export async function getCachedMarketplaceSoldFeed(
   brandSlug: string | null,
   shippedOnly: boolean,
-): Promise<MarketplaceSoldFeedPayload> {
+): Promise<MarketplaceSoldFeedView> {
   const normalizedBrandSlug = brandSlug?.trim() || null
 
   if (shippedOnly) {
@@ -84,7 +99,10 @@ export async function getCachedMarketplaceSoldFeed(
   // or restarting after an earlier failed fetch cached an empty listing grid.
   if (process.env.NODE_ENV === "development") {
     const supabase = soldFeedReadClient()
-    return loadMarketplaceSoldFeed(supabase, normalizedBrandSlug, { shippedOnly: false })
+    const fresh = await loadMarketplaceSoldFeed(supabase, normalizedBrandSlug, {
+      shippedOnly: false,
+    })
+    return withFormattedSalesTotal(fresh)
   }
 
   const cached = await getCachedSoldFeedPayload(normalizedBrandSlug || BRAND_NONE, false)
@@ -93,10 +111,13 @@ export async function getCachedMarketplaceSoldFeed(
       "[marketplace-sold-feed] cached sold feed is inconsistent — refetching without cache",
     )
     const supabase = soldFeedReadClient()
-    return loadMarketplaceSoldFeed(supabase, normalizedBrandSlug, { shippedOnly: false })
+    const fresh = await loadMarketplaceSoldFeed(supabase, normalizedBrandSlug, {
+      shippedOnly: false,
+    })
+    return withFormattedSalesTotal(fresh)
   }
 
-  return cached
+  return withFormattedSalesTotal(cached)
 }
 
 const getCachedShippedFeedPagePayload = unstable_cache(

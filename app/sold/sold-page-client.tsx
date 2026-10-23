@@ -33,7 +33,7 @@ import { Button } from "@/components/ui/button"
 
 export type SoldFeedListing = {
   id: string
-  /** One checkout of this listing. Repeated sales of the same listing each get a tile. */
+  /** Confirmed checkout line (`order_items.id` or legacy order / tip id). */
   saleLineId: string
   slug: string | null
   user_id: string
@@ -41,7 +41,7 @@ export type SoldFeedListing = {
   price: number
   soldPrice: number
   quantitySold: number
-  /** True when the tile should say how many units sold in this checkout. */
+  /** True when this checkout sold more than one unit. */
   showSaleQuantity: boolean
   condition: string
   section: string

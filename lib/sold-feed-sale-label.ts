@@ -1,12 +1,7 @@
-/** Whether a sold tile should say how many units sold in that checkout. */
-export function soldFeedShowsSaleQuantity(input: {
-  quantity: number
-  listingStillInStock: boolean
-}): boolean {
-  const count = Math.floor(input.quantity)
-  if (!Number.isFinite(count) || count < 1) return false
-  if (count > 1) return true
-  return input.listingStillInStock
+/** Whether a sold tile should show how many units sold in this checkout. */
+export function soldFeedShowsSaleQuantity(quantity: number): boolean {
+  const count = Math.floor(quantity)
+  return Number.isFinite(count) && count > 1
 }
 
 /**
