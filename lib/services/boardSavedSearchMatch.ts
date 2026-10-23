@@ -420,6 +420,8 @@ export async function listingMatchesSavedSearch(
 
   if (!sectionAllowsListing(parsed.data, listing.section)) return false
 
+  let criteria = parsed.data
+
   const q = parsed.data.q?.trim() ?? ""
   if (q && !parsed.data.brandId?.trim() && !parsed.data.brandModelId?.trim()) {
     const parsedQuery = await marketplaceParseForAlert(q, cache)
@@ -431,19 +433,22 @@ export async function listingMatchesSavedSearch(
       })
       if (brandOnly !== null) {
         if (!brandOnly) return false
-        return listingMatchesBoardSavedCriteria(listing, { ...parsed.data, q: undefined })
+        // Brand inventory matched. Drop `q` so the keyword is not re-scored as
+        // a fuzzy token, then continue so shipping / length / volume /
+        // construction / fin facets still replay through Elasticsearch.
+        criteria = { ...parsed.data, q: undefined }
       }
     }
   }
 
-  const target = resolveSavedSearchSection(parsed.data)
+  const target = resolveSavedSearchSection(criteria)
   const useBoardsEs =
     (target === "surfboards" || (target === "any" && listing.section === "surfboards")) &&
     isBoardsBrowseEsEnabled()
 
   if (useBoardsEs) {
     try {
-      const esParams = boardSavedCriteriaToBrowseEsParams(parsed.data)
+      const esParams = boardSavedCriteriaToBrowseEsParams(criteria)
       const res = await searchBoardsBrowse({
         ...esParams,
         restrictToIds: [listingId],
@@ -460,5 +465,5 @@ export async function listingMatchesSavedSearch(
     }
   }
 
-  return listingMatchesBoardSavedCriteria(listing, rawCriteria)
+  return listingMatchesBoardSavedCriteria(listing, criteria)
 }
