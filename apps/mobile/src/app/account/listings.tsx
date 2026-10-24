@@ -97,7 +97,7 @@ function ListingsDesk({
         })}
       </View>
       <View style={styles.actions}>
-        <Pressable onPress={() => router.push("/sell")} style={[styles.primary, { backgroundColor: colors.primary }]}>
+        <Pressable onPress={() => router.push("/sell/new")} style={[styles.primary, { backgroundColor: colors.primary }]}>
           <Text style={[styles.primaryLabel, { color: colors.primaryForeground, fontFamily: fontFamily.text }]}>New listing</Text>
         </Pressable>
         {vacationTargets.length > 0 ? (

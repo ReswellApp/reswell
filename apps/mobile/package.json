@@ -48,10 +48,10 @@
     "ios": "expo start --ios --dev-client",
     "web": "expo start --web",
     "lint": "expo lint",
-    "build:simulator": "eas build --platform ios --profile simulator",
-    "build:development": "eas build --profile development",
-    "build:preview": "eas build --profile preview",
-    "build:production": "eas build --profile production"
+    "build:simulator": "npx eas-cli build --platform ios --profile simulator",
+    "build:development": "npx eas-cli build --profile development",
+    "build:preview": "npx eas-cli build --profile preview",
+    "build:production": "npx eas-cli build --profile production"
   },
   "private": true
 }

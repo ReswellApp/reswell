@@ -127,7 +127,7 @@ export default function AccountScreen() {
       showEarnings={hasShop}
       tab={tab}
       onTab={showTab}
-      onSell={() => router.push("/sell")}
+      onSell={() => router.push("/sell/new")}
       onMenu={() => router.push("/account/menu")}
       onFollowers={() => router.push("/account/followers")}
       onReviews={() => router.push("/account/reviews")}
@@ -141,7 +141,7 @@ export default function AccountScreen() {
       tab={tab}
       error={inventoryError}
       loading={tab === "shop" ? !shopLoaded : tab === "sold" ? sold === null : tab === "purchases" ? purchases === null : likes === null}
-      onSell={() => router.push("/sell")}
+      onSell={() => router.push("/sell/new")}
     />
   )
 

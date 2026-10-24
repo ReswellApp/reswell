@@ -15,7 +15,7 @@ type TabItem = {
   label: string
   icon: TabIcon
   activeIcon?: TabIcon
-  href?: "/" | "/feed" | "/sell" | "/inbox" | "/account"
+  href?: "/" | "/feed" | "/sell/new" | "/inbox" | "/account"
 }
 
 const TABS: TabItem[] = [
@@ -35,7 +35,7 @@ const TABS: TabItem[] = [
     label: "Sell",
     icon: { ios: "camera", android: "photo_camera" },
     activeIcon: { ios: "camera.fill", android: "photo_camera" },
-    href: "/sell",
+    href: "/sell/new",
   },
   {
     label: "Inbox",
@@ -54,7 +54,7 @@ const TABS: TabItem[] = [
 function tabIsActive(pathname: string, href: TabItem["href"]): boolean {
   if (href === "/") return pathname === "/" || pathname === ""
   if (href === "/feed") return pathname === "/feed"
-  if (href === "/sell") return pathname === "/sell" || pathname.startsWith("/sell/")
+  if (href === "/sell/new") return pathname === "/sell" || pathname.startsWith("/sell/")
   if (href === "/inbox") return pathname === "/inbox" || pathname.startsWith("/account/messages")
   if (href === "/account") return pathname === "/account" || pathname.startsWith("/account/")
   return false
@@ -66,6 +66,7 @@ function tabBarHidden(pathname: string): boolean {
     pathname.startsWith("/profile") ||
     pathname.startsWith("/seller-resources") ||
     pathname.startsWith("/sellers") ||
+    pathname === "/sell" ||
     pathname.startsWith("/sell/") ||
     pathname.startsWith("/account/messages/") ||
     pathname.startsWith("/account/cart") ||
@@ -115,7 +116,7 @@ export function FloatingTabBar() {
               onPress={() => {
                 if (href === "/" && (pathname === "/" || pathname === "")) return
                 if (href === "/feed" && pathname === "/feed") return
-                if (href === "/sell" && pathname === "/sell") return
+                if (href === "/sell/new" && (pathname === "/sell" || pathname.startsWith("/sell/"))) return
                 if (href === "/inbox" && pathname === "/inbox") return
                 if (href === "/account" && pathname === "/account") return
                 router.navigate(href)

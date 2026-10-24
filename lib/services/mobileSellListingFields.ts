@@ -47,21 +47,29 @@ export function mobileSellListingFields(
     input.category === "surfboards" ? categoryIdForBrowseBoardType(input.subcategory) : CATEGORY_IDS[input.category]
   if (!categoryId) return { ok: false, error: "Choose a board style" }
   const surfboard = input.category === "surfboards"
+  const pickupAllowed = surfboard
+  const localPickup = pickupAllowed ? input.local_pickup : false
 
   const shippingOn = input.shipping
   const mode = input.shipping_mode
+  if (!shippingOn && !pickupAllowed) {
+    return { ok: false, error: "Shipping is required for this category" }
+  }
+  if (!shippingOn && !localPickup) {
+    return { ok: false, error: "Choose local pickup or shipping" }
+  }
   const shipping = !shippingOn
     ? { shipping_available: false, local_pickup: true, shipping_price: null, board_shipping_cost_mode: null }
     : mode === "free"
-      ? { shipping_available: true, local_pickup: input.local_pickup, shipping_price: 0, board_shipping_cost_mode: "free" }
+      ? { shipping_available: true, local_pickup: localPickup, shipping_price: 0, board_shipping_cost_mode: "free" }
       : mode === "flat"
         ? {
             shipping_available: true,
-            local_pickup: input.local_pickup,
+            local_pickup: localPickup,
             shipping_price: input.shipping_price ?? 0,
             board_shipping_cost_mode: "flat",
           }
-        : { shipping_available: true, local_pickup: input.local_pickup, shipping_price: 0, board_shipping_cost_mode: "reswell" }
+        : { shipping_available: true, local_pickup: localPickup, shipping_price: 0, board_shipping_cost_mode: "reswell" }
 
   const packed =
     shippingOn && mode === "reswell" && input.package_length.trim()

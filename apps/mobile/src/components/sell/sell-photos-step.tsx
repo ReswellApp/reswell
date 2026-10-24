@@ -69,9 +69,14 @@ export function SellPhotosStep({
 
   return (
     <View style={styles.stack}>
-      <Pressable accessibilityRole="button" onPress={() => setGuideOpen(true)} style={styles.tipsLink}>
-        <Text style={[styles.tipsLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}>View photo guide</Text>
-      </Pressable>
+      <View style={styles.photosHeader}>
+        <Text style={[styles.photosTitle, { color: colors.foreground, fontFamily: fontFamily.headline }]}>
+          Add photos (up to 8)
+        </Text>
+        <Pressable accessibilityRole="button" onPress={() => setGuideOpen(true)} hitSlop={8}>
+          <Text style={[styles.tipsLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}>View photo guide</Text>
+        </Pressable>
+      </View>
       <HorizontalRail contentStyle={styles.rail}>
         {photos.map((photo) => (
           <View key={photo.id} style={styles.tile}>
@@ -84,7 +89,7 @@ export function SellPhotosStep({
             >
               <SymbolView
                 name={{ ios: "xmark.circle.fill", android: "cancel", web: "cancel" }}
-                size={22}
+                size={20}
                 tintColor="#FFFFFF"
               />
             </Pressable>
@@ -96,12 +101,20 @@ export function SellPhotosStep({
             accessibilityRole="button"
             accessibilityLabel="Add photo"
             onPress={() => setMenuOpen(true)}
-            style={[styles.tile, styles.empty, { borderColor: colors.border, backgroundColor: colors.image }]}
+            style={[styles.tile, styles.empty, { borderColor: colors.foreground, backgroundColor: colors.image }]}
           >
             <Text style={[styles.plus, { color: colors.muted }]}>+</Text>
           </Pressable>
         ))}
       </HorizontalRail>
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => setMenuOpen(true)}
+        hitSlop={8}
+        style={styles.editPhotos}
+      >
+        <Text style={[styles.editPhotosLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}>Edit photos</Text>
+      </Pressable>
       {error ? <Text style={[styles.error, { color: colors.destructive, fontFamily: fontFamily.text }]}>{error}</Text> : null}
       {boardSpecs !== undefined ? (
         <SellBoardSpecs
@@ -128,20 +141,27 @@ function toPhotos(assets: ImagePicker.ImagePickerAsset[]): SellPhoto[] {
 }
 
 const styles = StyleSheet.create({
-  stack: { gap: 14 },
-  tipsLink: { flexDirection: "row", alignItems: "center", gap: 6 },
-  tipsLabel: { fontSize: 15, fontWeight: "600", textDecorationLine: "underline" },
-  rail: { gap: 12, paddingRight: 4 },
-  /** Same width and crop as a homepage listing tile. */
-  tile: { width: 168, aspectRatio: 3 / 4, borderRadius: 12, overflow: "hidden" },
+  stack: { gap: 12 },
+  photosHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  photosTitle: { flex: 1, fontSize: 16, fontWeight: "700" },
+  tipsLabel: { fontSize: 13, fontWeight: "600", textDecorationLine: "underline" },
+  rail: { gap: 10, paddingRight: 4 },
+  tile: { width: 112, aspectRatio: 3 / 4, borderRadius: 10, overflow: "hidden" },
   empty: {
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderStyle: "dashed",
     alignItems: "center",
     justifyContent: "center",
   },
-  plus: { fontSize: 32, fontWeight: "500" },
+  plus: { fontSize: 24, fontWeight: "500" },
   image: { width: "100%", height: "100%" },
-  remove: { position: "absolute", top: 8, right: 8 },
+  remove: { position: "absolute", top: 6, right: 6 },
+  editPhotos: { alignSelf: "flex-start", minHeight: 36, justifyContent: "center" },
+  editPhotosLabel: { fontSize: 13, fontWeight: "600", textDecorationLine: "underline" },
   error: { fontSize: 15 },
 })

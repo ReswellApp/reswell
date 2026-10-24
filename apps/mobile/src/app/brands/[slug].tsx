@@ -2,6 +2,7 @@ import { Stack, useLocalSearchParams, useRouter } from "expo-router"
 import { useEffect, useState } from "react"
 import { ActivityIndicator, FlatList, Linking, Pressable, StyleSheet, Text, View } from "react-native"
 import type { MobileBrandPage, MobileListingCard } from "@reswell/api-contract"
+import { ScreenSearchHeader } from "@/components/screen-search-header"
 import { HorizontalRail } from "@/components/horizontal-rail"
 import { ListingCard } from "@/components/listing-card"
 import { fetchBrand } from "@/lib/api"
@@ -47,7 +48,8 @@ export default function BrandScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
-      <Stack.Screen options={{ title: brand?.name ?? "Brand" }} />
+      <Stack.Screen options={{ headerShown: false }} />
+      <ScreenSearchHeader showBack />
       {loading ? (
         <ActivityIndicator style={styles.centered} color={colors.foreground} />
       ) : error || !brand ? (

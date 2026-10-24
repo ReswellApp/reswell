@@ -1,11 +1,14 @@
 import { SymbolView } from "expo-symbols"
 import { useEffect, useState } from "react"
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native"
+import { Pressable, StyleSheet, Text, View } from "react-native"
 import { SellField } from "@/components/sell/sell-field"
 import { SellLocationField } from "@/components/sell/sell-location-field"
+import { SellPackageDimensionsCard } from "@/components/sell/sell-package-dimensions-card"
 import { fetchSellDropoffLocations } from "@/lib/api"
-import { sanitizePriceInput, type SellDraft } from "@/lib/sell-flow"
+import { sanitizePriceInput, SURFBOARDS_CATEGORY_SLUG, type SellDraft } from "@/lib/sell-flow"
 import type { MobileSellDropoffLocations, MobileSellFulfillment } from "@reswell/api-contract"
+
+type SellShippingOption = MobileSellFulfillment["shipping_options"][number]
 import { fontFamily, useReswellColors } from "@/theme"
 
 export function SellPlaceStep({
@@ -55,6 +58,24 @@ export function SellPlaceStep({
     : (fulfillment.shipping_options[0]?.id ?? "reswell")
   const showPackage = fulfillment.package_dimensions && shippingOn && mode === "reswell"
   const showDropoff = fulfillment.dropoff && shippingOn && mode === "reswell"
+  const surfboard = draft.category === SURFBOARDS_CATEGORY_SLUG
+
+  const shippingChoice = fulfillment.shipping_toggle ? (
+    <CheckChoice
+      label={fulfillment.shipping_label}
+      badge={fulfillment.shipping_badge}
+      checked={draft.shipping}
+      onPress={() => setShipping(!draft.shipping)}
+    />
+  ) : null
+  const pickupChoice = fulfillment.local_pickup ? (
+    <CheckChoice
+      label="Local pickup"
+      badge={null}
+      checked={draft.localPickup}
+      onPress={() => setPickup(!draft.localPickup)}
+    />
+  ) : null
 
   function setShipping(next: boolean) {
     if (!next && fulfillment?.local_pickup && !draft.localPickup) {
@@ -86,78 +107,29 @@ export function SellPlaceStep({
           {fulfillment.hint ? (
             <Text style={[styles.note, { color: colors.muted, fontFamily: fontFamily.text }]}>{fulfillment.hint}</Text>
           ) : null}
-          {fulfillment.shipping_toggle ? (
-            <CheckChoice
-              label={fulfillment.shipping_label}
-              badge={fulfillment.shipping_badge}
-              checked={draft.shipping}
-              onPress={() => setShipping(!draft.shipping)}
-            />
-          ) : null}
-          {fulfillment.local_pickup ? (
-            <CheckChoice
-              label="Local pickup"
-              badge={null}
-              checked={draft.localPickup}
-              onPress={() => setPickup(!draft.localPickup)}
-            />
-          ) : null}
+          {surfboard ? (
+            <>
+              {pickupChoice}
+              {shippingChoice}
+            </>
+          ) : (
+            <>
+              {shippingChoice}
+              {pickupChoice}
+            </>
+          )}
         </View>
       ) : null}
 
       {shippingOn && fulfillment.shipping_options.length > 0 ? (
-        <View style={styles.options}>
-          {fulfillment.cost_title ? (
-            <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: fontFamily.text }]}>
-              {fulfillment.cost_title}
-              <Text style={{ color: colors.destructive }}> *</Text>
-            </Text>
-          ) : null}
-          {fulfillment.shipping_options.map((option) => {
-            const selected = option.id === mode
-            return (
-              <Pressable
-                key={option.id}
-                accessibilityRole="radio"
-                accessibilityState={{ selected }}
-                onPress={() => onChange({ shippingMode: option.id, shipping: true })}
-                style={[
-                  styles.option,
-                  { borderColor: selected ? colors.foreground : colors.border, backgroundColor: colors.background },
-                ]}
-              >
-                <View style={[styles.radio, { borderColor: colors.foreground }]}>
-                  {selected ? <View style={[styles.radioDot, { backgroundColor: colors.listingHeart }]} /> : null}
-                </View>
-                <View style={styles.optionCopy}>
-                  <Text style={[styles.optionLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}>
-                    {option.label}
-                  </Text>
-                  {option.badge ? (
-                    <View style={styles.badgeWrap}>
-                      <Badge label={option.badge} />
-                    </View>
-                  ) : null}
-                  {selected ? (
-                    <Text style={[styles.optionDetail, { color: colors.muted, fontFamily: fontFamily.text }]}>
-                      {option.detail}
-                    </Text>
-                  ) : null}
-                  {selected && option.id === "flat" ? (
-                    <SellField
-                      label="Shipping price"
-                      value={draft.shippingPrice}
-                      onChangeText={(shippingPrice) => onChange({ shippingPrice: sanitizePriceInput(shippingPrice) })}
-                      placeholder="0.00"
-                      keyboardType="decimal-pad"
-                      required
-                    />
-                  ) : null}
-                </View>
-              </Pressable>
-            )
-          })}
-        </View>
+        <ShippingCostOptions
+          costTitle={fulfillment.cost_title}
+          options={fulfillment.shipping_options}
+          mode={mode}
+          draft={draft}
+          collapseAltOptions={!surfboard}
+          onChange={onChange}
+        />
       ) : null}
 
       {shippingOn && fulfillment.shipping_options.length === 0 && fulfillment.shipping_detail ? (
@@ -184,8 +156,141 @@ export function SellPlaceStep({
           onClear={() => onChange({ dropoffLocationId: "" })}
         />
       ) : null}
-      {showPackage && !draft.dropoffLocationId ? <PackageFields draft={draft} onChange={onChange} /> : null}
+      {showPackage && !draft.dropoffLocationId ? (
+        <SellPackageDimensionsCard draft={draft} onChange={onChange} />
+      ) : null}
 
+    </View>
+  )
+}
+
+function ShippingCostOptions({
+  costTitle,
+  options,
+  mode,
+  draft,
+  collapseAltOptions,
+  onChange,
+}: {
+  costTitle: string | null
+  options: SellShippingOption[]
+  mode: SellDraft["shippingMode"]
+  draft: SellDraft
+  collapseAltOptions: boolean
+  onChange: (patch: Partial<SellDraft>) => void
+}) {
+  const colors = useReswellColors()
+  const reswell = options.find((option) => option.id === "reswell")
+  const more = options.filter((option) => option.id !== "reswell")
+  const selectedMore = more.find((option) => option.id === mode)
+  const [moreOpen, setMoreOpen] = useState(mode === "free" || mode === "flat")
+
+  useEffect(() => {
+    if (mode === "free" || mode === "flat") setMoreOpen(true)
+  }, [mode])
+
+  function renderOption(option: SellShippingOption, inSection = false) {
+    const selected = option.id === mode
+    return (
+      <Pressable
+        key={option.id}
+        accessibilityRole="radio"
+        accessibilityState={{ selected }}
+        onPress={() => onChange({ shippingMode: option.id, shipping: true })}
+        style={[
+          styles.option,
+          inSection ? styles.optionInSection : null,
+          { borderColor: colors.foreground, backgroundColor: colors.background },
+        ]}
+      >
+        <View style={[styles.radio, { borderColor: colors.foreground }]}>
+          {selected ? <View style={[styles.radioDot, { backgroundColor: colors.listingHeart }]} /> : null}
+        </View>
+        <View style={styles.optionCopy}>
+          <Text style={[styles.optionLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}>
+            {option.label}
+          </Text>
+          {option.badge ? (
+            <View style={styles.badgeWrap}>
+              <Badge label={option.badge} />
+            </View>
+          ) : null}
+          {selected ? (
+            <Text style={[styles.optionDetail, { color: colors.muted, fontFamily: fontFamily.text }]}>
+              {option.detail}
+            </Text>
+          ) : null}
+          {selected && option.id === "flat" ? (
+            <SellField
+              label="Shipping price"
+              value={draft.shippingPrice}
+              onChangeText={(shippingPrice) => onChange({ shippingPrice: sanitizePriceInput(shippingPrice) })}
+              placeholder="0.00"
+              keyboardType="decimal-pad"
+              required
+            />
+          ) : null}
+        </View>
+      </Pressable>
+    )
+  }
+
+  return (
+    <View style={styles.options}>
+      {costTitle ? (
+        <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: fontFamily.text }]}>
+          {costTitle}
+          <Text style={{ color: colors.destructive }}> *</Text>
+        </Text>
+      ) : null}
+      {collapseAltOptions && reswell ? (
+        <View style={[styles.shippingSection, { borderColor: colors.foreground, backgroundColor: colors.background }]}>
+          {renderOption(reswell, true)}
+          {more.length > 0 ? (
+            <>
+              <View style={[styles.sectionDivider, { backgroundColor: colors.border }]} />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ expanded: moreOpen }}
+                onPress={() => setMoreOpen((open) => !open)}
+                style={styles.moreHeader}
+              >
+                <View style={styles.moreHeaderCopy}>
+                  <Text style={[styles.moreHeaderTitle, { color: colors.foreground, fontFamily: fontFamily.text }]}>
+                    More options
+                  </Text>
+                  {selectedMore && !moreOpen ? (
+                    <Text
+                      style={[styles.moreHeaderSubtitle, { color: colors.muted, fontFamily: fontFamily.text }]}
+                      numberOfLines={2}
+                    >
+                      {selectedMore.label}
+                    </Text>
+                  ) : null}
+                </View>
+                <SymbolView
+                  name={{
+                    ios: moreOpen ? "chevron.up" : "chevron.down",
+                    android: moreOpen ? "expand_less" : "expand_more",
+                    web: "expand_more",
+                  }}
+                  size={18}
+                  tintColor={colors.muted}
+                  weight="semibold"
+                />
+              </Pressable>
+              {moreOpen ? (
+                <>
+                  <View style={[styles.sectionDivider, { backgroundColor: colors.border }]} />
+                  <View style={styles.moreOptionsInset}>{more.map((option) => renderOption(option, true))}</View>
+                </>
+              ) : null}
+            </>
+          ) : null}
+        </View>
+      ) : (
+        options.map((option) => renderOption(option))
+      )}
     </View>
   )
 }
@@ -232,65 +337,6 @@ function Badge({ label }: { label: string }) {
   )
 }
 
-function PackageFields({
-  draft,
-  onChange,
-}: {
-  draft: SellDraft
-  onChange: (patch: Partial<SellDraft>) => void
-}) {
-  const colors = useReswellColors()
-  return (
-    <View style={styles.package}>
-      <Text style={[styles.packageTitle, { color: colors.foreground, fontFamily: fontFamily.text }]}>
-        Packed size & weight
-      </Text>
-      <View style={styles.packageRow}>
-        <PackageInput label="Length" value={draft.packageLength} onChangeText={(packageLength) => onChange({ packageLength })} />
-        <PackageInput label="Width" value={draft.packageWidth} onChangeText={(packageWidth) => onChange({ packageWidth })} />
-        <PackageInput label="Height" value={draft.packageHeight} onChangeText={(packageHeight) => onChange({ packageHeight })} />
-      </View>
-      <View style={styles.packageRow}>
-        <PackageInput
-          label="Pounds"
-          value={draft.packageWeightLb}
-          onChangeText={(packageWeightLb) => onChange({ packageWeightLb })}
-        />
-        <PackageInput
-          label="Ounces"
-          value={draft.packageWeightOz}
-          onChangeText={(packageWeightOz) => onChange({ packageWeightOz })}
-        />
-      </View>
-    </View>
-  )
-}
-
-function PackageInput({
-  label,
-  value,
-  onChangeText,
-}: {
-  label: string
-  value: string
-  onChangeText: (value: string) => void
-}) {
-  const colors = useReswellColors()
-  return (
-    <View style={styles.packageField}>
-      <Text style={[styles.packageLabel, { color: colors.muted, fontFamily: fontFamily.text }]}>{label}</Text>
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        keyboardType="decimal-pad"
-        placeholder="0"
-        placeholderTextColor={colors.muted}
-        style={[styles.packageInput, { color: colors.foreground, borderColor: colors.border, fontFamily: fontFamily.text }]}
-      />
-    </View>
-  )
-}
-
 function DropoffChoices({
   selectedId,
   boardLength,
@@ -333,7 +379,7 @@ function DropoffChoices({
         accessibilityRole="radio"
         accessibilityState={{ selected: selectedId === "" }}
         onPress={onClear}
-        style={[styles.option, { borderColor: selectedId === "" ? colors.foreground : colors.border }]}
+        style={[styles.option, { borderColor: colors.foreground }]}
       >
         <View style={styles.optionCopy}>
           <Text style={[styles.optionLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}>
@@ -344,7 +390,7 @@ function DropoffChoices({
           </Text>
         </View>
       </Pressable>
-      <View style={[styles.option, { borderColor: selectedId ? colors.foreground : colors.border }]}>
+      <View style={[styles.option, { borderColor: colors.foreground }]}>
         <View style={styles.optionCopy}>
           <Text style={[styles.optionLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}>
             Drop off nearby — we pack and ship it
@@ -376,7 +422,7 @@ function DropoffChoices({
                   style={[
                     styles.city,
                     {
-                      borderColor: selected ? colors.foreground : colors.border,
+                      borderColor: colors.foreground,
                       opacity: location.available ? 1 : 0.7,
                     },
                   ]}
@@ -408,6 +454,21 @@ const styles = StyleSheet.create({
   box: { width: 18, height: 18, borderRadius: 4, borderWidth: 1.5, alignItems: "center", justifyContent: "center" },
   checkLabel: { fontSize: 15, fontWeight: "600" },
   options: { gap: 10 },
+  shippingSection: { borderWidth: 1, borderRadius: 12, overflow: "hidden" },
+  sectionDivider: { height: StyleSheet.hairlineWidth },
+  moreHeader: {
+    minHeight: 52,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  moreHeaderCopy: { flex: 1, gap: 4 },
+  moreHeaderTitle: { fontSize: 16, fontWeight: "700", lineHeight: 22 },
+  moreHeaderSubtitle: { fontSize: 13, lineHeight: 18 },
+  moreOptionsInset: { gap: 0, paddingBottom: 4 },
   option: {
     flexDirection: "row",
     gap: 12,
@@ -415,6 +476,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 14,
   },
+  optionInSection: { borderWidth: 0, borderRadius: 0 },
   optionCopy: { flex: 1, minWidth: 0, gap: 6 },
   optionLabel: { fontSize: 15, fontWeight: "700", lineHeight: 20 },
   badgeWrap: { alignSelf: "flex-start" },
@@ -432,16 +494,5 @@ const styles = StyleSheet.create({
   radioDot: { width: 10, height: 10, borderRadius: 5 },
   badge: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
   badgeLabel: { color: "#FFFFFF", fontSize: 10, fontWeight: "700", textTransform: "uppercase" },
-  package: { gap: 8 },
   packageTitle: { fontSize: 15, fontWeight: "700" },
-  packageRow: { flexDirection: "row", gap: 8 },
-  packageField: { flex: 1, gap: 4 },
-  packageLabel: { fontSize: 12, fontWeight: "600" },
-  packageInput: {
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 10,
-    fontSize: 16,
-  },
 })

@@ -14,17 +14,15 @@ import { CategoryFilters } from "@/components/category-filters"
 import { CategoryHero } from "@/components/category-hero"
 import { type CategoryPlace, type CategoryRadius } from "@/components/category-location-filter"
 import { CategoryToolbar } from "@/components/category-toolbar"
-import { SearchCartHeader } from "@/components/search-cart-header"
+import { ScreenSearchHeader } from "@/components/screen-search-header"
 import { ListingCard } from "@/components/listing-card"
 import { fetchCategory, fetchCategoryListings } from "@/lib/api"
 import { categoryListingQuery, type SelectedFacets } from "@/lib/category-listing-query"
-import { useAuth } from "@/lib/auth-context"
 import { fontFamily, useReswellColors } from "@/theme"
 
 export default function CategoryScreen() {
   const colors = useReswellColors()
   const router = useRouter()
-  const { session } = useAuth()
   const params = useLocalSearchParams<{ slug: string; type?: string }>()
   const slug = params.slug
   const boardType = params.type
@@ -96,11 +94,7 @@ export default function CategoryScreen() {
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <Stack.Screen options={{ headerShown: false }} />
-      <SearchCartHeader
-        mode="open"
-        onBack={() => router.back()}
-        onCart={() => router.push(session ? "/account/cart" : "/sign-in")}
-      />
+      <ScreenSearchHeader showBack />
       {loading && !category ? (
         <ActivityIndicator style={styles.centered} color={colors.foreground} />
       ) : error && !category ? (
