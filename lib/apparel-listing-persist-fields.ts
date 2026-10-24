@@ -18,17 +18,9 @@ export function apparelListingShippingFieldsFor(
   shipping_price: number | null
   board_shipping_cost_mode: string | null
 } {
-  if (!input.shippingAvailable) {
-    return {
-      shipping_available: false,
-      local_pickup: true,
-      shipping_price: null,
-      board_shipping_cost_mode: null,
-    }
-  }
   return {
     shipping_available: true,
-    local_pickup: input.localPickup,
+    local_pickup: false,
     shipping_price: 0,
     board_shipping_cost_mode: "reswell",
   }

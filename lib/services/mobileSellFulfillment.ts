@@ -28,6 +28,9 @@ const SHIPPING_COST_OPTIONS = [
   },
 ]
 
+const APPAREL_SHIPPING_DETAIL =
+  "Buyers pay a live USPS rate at checkout. Reswell buys the label and adds tracking to your sale automatically."
+
 function shipOnly(
   noun: string,
   options: MobileSellFulfillment["shipping_options"],
@@ -73,8 +76,25 @@ const FULFILLMENT_BY_CATEGORY: Record<MobileListingCategory, MobileSellFulfillme
   }),
   fins: shipOnly("Fin", SHIPPING_COST_OPTIONS),
   wetsuits: shipOnly("Wetsuit", SHIPPING_COST_OPTIONS),
-  apparel: shipOnly("Apparel", SHIPPING_COST_OPTIONS),
-  magazines: shipOnly("Magazine", SHIPPING_COST_OPTIONS),
+  apparel: shipOnly("Apparel", [], { shipping_detail: APPAREL_SHIPPING_DETAIL }),
+  magazines: mobileSellFulfillmentSchema.parse({
+    title: "Shipping",
+    description:
+      "Pin where you're listing from, then enter the outer box you'll ship the magazine or book in. Checkout rates use your location and package size.",
+    hint: null,
+    shipping_default: true,
+    shipping_toggle: false,
+    shipping_label: "Shipping",
+    shipping_badge: null,
+    shipping_detail: null,
+    delivery_title: null,
+    cost_title: null,
+    local_pickup: false,
+    local_pickup_default: false,
+    shipping_options: [],
+    package_dimensions: true,
+    dropoff: false,
+  }),
   traction: shipOnly("Traction", SHIPPING_COST_OPTIONS),
   boardbags: shipOnly("Boardbag", SHIPPING_COST_OPTIONS),
   surfpacks: shipOnly("Surfpack", SHIPPING_COST_OPTIONS),
