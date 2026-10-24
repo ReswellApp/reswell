@@ -1,0 +1,67 @@
+{
+  "generated_for": "Liddle Designs official named standup catalog",
+  "source": "https://gregliddledesigns.com/shapes (official Squarespace model pages — excludes Burrito with no first-party copy, gallery-only ID, fins, and merch)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "liddle-designs",
+      "name": "Liddle Designs",
+      "website_url": "https://gregliddledesigns.com",
+      "location_label": "California, United States",
+      "founder_name": "Greg Liddle",
+      "lead_shaper_name": "Greg Liddle",
+      "short_description": "The most popular and representative original hand shapes have been scanned and will be reproduced using my standard glassing schedule, fins unlimited boxes, and flex fins of my design.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/liddle-designs.png",
+      "models": [
+        {
+          "name": "Death Machine",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5847aaf72994ca88da6f6847/1484291947033-IQVXJT5TFK6H8LOPYCNV/FullSizeRender-3.jpg",
+          "description": "This is a copy of Steve Krajewski's, aka \"Dirt\" aka Juan Esteban Bojorquez II. The wide point is above center and has a bit straighter tail than the GL/PB. This board was the Red Liddle that Steve gave Jimmy Gamboa to ride. Best between 6'6'' and 8'0''.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "GL/PB",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5847aaf72994ca88da6f6847/1483126827839-Q0C46U9L14NZKTHHN5PO/6%278+Liddle+Designs+GLPB.jpg",
+          "description": "Greg Liddle, Point Breaker, Greg's personal template he used and refined for many years, good all around hull neutral handling board from 6'8'' to 8'0''.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "L-Spoon",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5847aaf72994ca88da6f6847/1485062380199-GOMONYBNMZ5IEV4JW4WV/9-liddle-l-spoon_2048x2048.jpg",
+          "description": "Heavy Yater Spoon influence, slimmed down and more foiled Yater, Sam type, slight step deck with a sweet spot magic rocker, turn from the hip and step forward and you are flying in trim.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Super Smoothie",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5847aaf72994ca88da6f6847/1485066803003-3A6WD7OP93X44VZEHML5/86LiddleSuperSmoothie_2048x2048.jpg",
+          "description": "Longer Hull, the template is from a board that Tony Masial, Steve Krajewski and myself started to ride on the 80's when we started to ride 8'0'' + Hulls as we were getting older and wanted to paddle better, but retain the trim and speed. Works like a longboard when it's smaller and can still bury the rail when it's bigger.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "SH/RW",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5847aaf72994ca88da6f6847/1485150561001-DMCIZ2CHINUABTWJOG90/IMG_0928.jpg",
+          "description": "A wider tail Stubbie Hull, with heavy Greenough influence, kinda a standup version of Greenough's Velo kneeboard. Best from around 6'0'' to 7'0'' range.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "M3P",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5847aaf72994ca88da6f6847/1485151015060-NOYS8150H61LR4HWQ6H3/6-8-liddle-m3p_2048x2048.jpg",
+          "description": "A good all around Hull with the wide point back toward center and pulled in nose template. Makes it easier to turn in beach breaks and reef breaks. Heavy MP influence. Best from 6'0'' to 8'0''.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Baby V",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5847aaf72994ca88da6f6847/1485151875809-7P8AVKZJFFBEZBA6S6IV/710LiddleBabyV_2048x2048.jpg",
+          "description": "The Baby \"V\" is a board I had Greg make me around 1978. I wanted to revisit the transition boards of 1968, but with better rocker and foil. The boards were really good all around in all kinds of surf and we have refined this board over many years. Wide point is back towards center with a wider arc tail and a slight soft V in front of the fin box. Best size around 6'2'' to 8'2'' this template really works well as it gets shorter it gets more parallel and stubbie.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "H/P",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5847aaf72994ca88da6f6847/1486321240078-Z8B14TX2W1QI5GW5094I/image-asset.jpeg",
+          "description": "A wide pintail, wide point back towards center. Transition era 1968 influence, updated rocker and foil. This template was some of the first boards Greg shaped in 1968 when Liddle surfboards started. Good midlength all around board.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
