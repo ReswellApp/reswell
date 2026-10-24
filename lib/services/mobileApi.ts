@@ -16,6 +16,7 @@ import {
   fetchMobileProfileBySlug,
   type MobileProfileRow,
 } from "@/lib/db/mobile-profiles"
+import { resolveProfileBannerFocal } from "@/lib/utils/profile-banner-focal"
 import {
   listMobileListingRows,
   MOBILE_LISTING_DETAIL_SELECT,
@@ -144,7 +145,58 @@ function shippingCostMode(
   return null
 }
 
-export function toMobileListingCard(row: MobileListingRow): MobileListingCard | null {
+export type MobileListingCardOptions = {
+  /** When the viewer is signed in, whether they follow this listing's seller. */
+  following?: boolean
+}
+
+function toMobileListingCardSeller(
+  row: MobileListingRow,
+  following?: boolean,
+): MobileListingCard["seller"] {
+  const sellerId = nullableText(row.user_id)
+  if (!sellerId) return null
+  const seller = pickSeller(row.profiles)
+  const avatar = seller?.is_shop
+    ? profileMedia(seller.shop_logo_url) ?? profileMedia(seller.avatar_url)
+    : profileMedia(seller?.avatar_url)
+  const summary = {
+    id: sellerId,
+    name: sellerDisplayName(seller),
+    seller_slug: nullableText(seller?.seller_slug),
+    avatar_url: avatar,
+    verified: Boolean(seller?.is_shop && seller.shop_verified),
+    ...(following === undefined ? {} : { following }),
+  }
+  return summary
+}
+
+export async function followingSellerIdsForViewer(
+  supabase: SupabaseClient,
+  viewerId: string,
+  sellerIds: readonly string[],
+): Promise<Set<string>> {
+  const unique = [...new Set(sellerIds.filter(Boolean))]
+  if (unique.length === 0) return new Set()
+  const { data, error } = await supabase
+    .from("seller_follows")
+    .select("seller_id")
+    .eq("follower_id", viewerId)
+    .in("seller_id", unique)
+  if (error) {
+    console.error("[mobile-api] following lookup failed", {
+      timestamp: new Date().toISOString(),
+      message: error.message,
+    })
+    return new Set()
+  }
+  return new Set((data ?? []).map((row) => row.seller_id).filter(Boolean))
+}
+
+export function toMobileListingCard(
+  row: MobileListingRow,
+  options?: MobileListingCardOptions,
+): MobileListingCard | null {
   const priceUsd = moneyUsd(row.price)
   const condition = nullableText(row.condition)
   const conditionLabel = condition ? formatCondition(condition) : ""
@@ -176,6 +228,8 @@ export function toMobileListingCard(row: MobileListingRow): MobileListingCard | 
       shippingCostMode(row.board_shipping_cost_mode),
     ),
     pickup_label: listingPickupCaption(row.local_pickup !== false, place || null),
+    listed_label: listedLabel(row.created_at),
+    seller: toMobileListingCardSeller(row, options?.following),
   }
   const parsed = mobileListingCardSchema.safeParse(card)
   if (!parsed.success) return null
@@ -234,13 +288,15 @@ function locationLine(city: string | null | undefined, state: string | null | un
 
 export function toMobileListingDetail(
   row: MobileListingRow,
-  viewer?: { favorited: boolean; in_cart: boolean },
+  viewer?: { favorited: boolean; in_cart: boolean; following?: boolean },
   stats?: MobileListingDetailStats,
   catalog?: { brandSlug: string | null; modelSlug: string | null },
 ): MobileListingDetail | null {
-  const card = toMobileListingCard(row)
+  const card = toMobileListingCard(row, viewer?.following === undefined ? undefined : { following: viewer.following })
   if (!card) return null
   const seller = pickSeller(row.profiles)
+  const sellerId = nullableText(row.user_id)
+  if (!sellerId) return null
   const imageUrls: string[] = []
   const seen = new Set<string>()
   for (const image of orderedListingGalleryImages(row.listing_images)) {
@@ -265,6 +321,7 @@ export function toMobileListingDetail(
     listed_label: listedLabel(row.created_at),
     location_line: locationLine(row.city, row.state),
     seller: {
+      id: sellerId,
       name: sellerDisplayName(seller),
       seller_slug: nullableText(seller?.seller_slug),
       avatar_url: avatar,
@@ -273,6 +330,7 @@ export function toMobileListingDetail(
       joined_year: joinedYear(seller?.created_at),
       rating_average: Math.min(5, Math.max(0, stats?.ratingAverage ?? 0)),
       review_count: countField(stats?.reviewCount),
+      ...(viewer?.following === undefined ? {} : { following: viewer.following }),
     },
     ...(viewer ? { favorited: viewer.favorited, in_cart: viewer.in_cart } : {}),
     brand_slug: catalog?.brandSlug ?? null,
@@ -385,7 +443,13 @@ function countOrZero(value: number | null | undefined): number {
 
 export function toMobileProfile(
   row: MobileProfileRow,
-  stats: { listingCount: number; ratingAverage: number; reviewCount: number; following?: boolean },
+  stats: {
+    listingCount: number
+    ratingAverage: number
+    reviewCount: number
+    following?: boolean
+    followingCount?: number
+  },
 ): MobileProfile | null {
   const slug = nullableText(row.seller_slug)
   if (!slug) return null
@@ -398,6 +462,7 @@ export function toMobileProfile(
   if (Number.isNaN(joined.getTime())) return null
 
   const city = nullableText(row.city)
+  const bannerFocal = resolveProfileBannerFocal(row.shop_banner_focal_x_pct, row.shop_banner_focal_y_pct)
   const profile = {
     id: row.id,
     seller_slug: slug,
@@ -410,6 +475,8 @@ export function toMobileProfile(
       ? profileMedia(row.shop_logo_url) ?? profileMedia(row.avatar_url)
       : profileMedia(row.avatar_url),
     banner_url: profileMedia(row.shop_banner_url),
+    banner_focal_x: bannerFocal.x,
+    banner_focal_y: bannerFocal.y,
     verified: isShop && Boolean(row.shop_verified),
     website_url: publicHttpUrl(row.shop_website),
     phone: nullableText(row.shop_phone),
@@ -425,6 +492,7 @@ export function toMobileProfile(
       timeZone: "UTC",
     }).format(joined),
     ...(stats.following == null ? {} : { following: stats.following }),
+    ...(stats.followingCount == null ? {} : { following_count: stats.followingCount }),
   }
 
   const parsed = mobileProfileSchema.safeParse(profile)
@@ -476,14 +544,25 @@ export async function getMobileProfileService(
   }
 
   let following: boolean | undefined
+  let followingCount: number | undefined
   if (viewer) {
-    const { data: follow } = await viewer.supabase
-      .from("seller_follows")
-      .select("id")
-      .eq("follower_id", viewer.userId)
-      .eq("seller_id", row.id)
-      .maybeSingle()
-    following = Boolean(follow)
+    const ownProfile = viewer.userId === row.id
+    const [followRow, followingListed] = await Promise.all([
+      viewer.supabase
+        .from("seller_follows")
+        .select("id")
+        .eq("follower_id", viewer.userId)
+        .eq("seller_id", row.id)
+        .maybeSingle(),
+      ownProfile
+        ? viewer.supabase
+            .from("seller_follows")
+            .select("id", { count: "exact", head: true })
+            .eq("follower_id", viewer.userId)
+        : Promise.resolve({ count: null }),
+    ])
+    following = Boolean(followRow.data)
+    if (ownProfile) followingCount = followingListed.count ?? 0
   }
 
   const profile = toMobileProfile(row, {
@@ -491,6 +570,7 @@ export async function getMobileProfileService(
     ratingAverage: reviews.data.avgRating,
     reviewCount: reviews.data.reviewCount,
     following,
+    followingCount,
   })
   if (!profile) {
     return { ok: false, status: 500, error: "Unable to load profile right now" }
@@ -537,7 +617,19 @@ export async function getMobileListingService(
             .eq("profile_id", viewer.userId)
             .eq("listing_id", row.id)
             .maybeSingle(),
-        ]).then(([favorite, cart]) => ({ favorited: Boolean(favorite.data), in_cart: Boolean(cart.data) }))
+          sellerId
+            ? viewer.supabase
+                .from("seller_follows")
+                .select("id")
+                .eq("follower_id", viewer.userId)
+                .eq("seller_id", sellerId)
+                .maybeSingle()
+            : Promise.resolve({ data: null }),
+        ]).then(([favorite, cart, follow]) => ({
+          favorited: Boolean(favorite.data),
+          in_cart: Boolean(cart.data),
+          following: sellerId ? Boolean(follow.data) : undefined,
+        }))
       : Promise.resolve(undefined),
     sold ? Promise.resolve(0) : getListingFavoriteCount(supabase, row.id),
     sold ? Promise.resolve(0) : getListingCartHolderCount(supabase, row.id),

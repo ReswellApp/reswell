@@ -3,8 +3,6 @@ import { StyleSheet, Text, View } from "react-native"
 import type { MobileProfile, MobileReview } from "@reswell/api-contract"
 import { fontFamily, useReswellColors } from "@/theme"
 
-const STAR = "#EBB847"
-
 export function ProfileFeedback({
   profile,
   reviews,
@@ -88,6 +86,7 @@ function ReviewGroup({ title, reviews, empty }: { title: string; reviews: Mobile
 }
 
 function Stars({ value }: { value: number }) {
+  const colors = useReswellColors()
   const filled = Math.round(value)
   return (
     <View style={styles.stars}>
@@ -96,7 +95,7 @@ function Stars({ value }: { value: number }) {
           key={star}
           name={{ ios: star <= filled ? "star.fill" : "star", android: star <= filled ? "star" : "star_border", web: "star" }}
           size={14}
-          tintColor={STAR}
+          tintColor={colors.reviewStar}
         />
       ))}
     </View>

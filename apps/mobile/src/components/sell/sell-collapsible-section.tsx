@@ -17,25 +17,31 @@ export function SellCollapsibleSection({
   /** Defaults to foreground; use `listingHeart` for accent collapsibles. */
   titleColor?: string
   badge?: string
-  /** Tinted nudge surface — reads as a tip, not another required field. */
-  variant?: "default" | "promo"
+  /** Closed = brand blue nudge; open = white like the rest of the sell flow. */
+  variant?: "default" | "promo" | "recommended"
   defaultExpanded?: boolean
   children: ReactNode
 }) {
   const colors = useReswellColors()
   const [open, setOpen] = useState(defaultExpanded)
-  const accent = titleColor ?? colors.foreground
+  const recommended = variant === "recommended"
   const promo = variant === "promo"
 
+  const closedRecommended = recommended && !open
+  const accent = closedRecommended
+    ? "#FFFFFF"
+    : titleColor ?? (promo && !open ? colors.listingHeart : colors.foreground)
+
+  const cardStyle = closedRecommended
+    ? { borderColor: colors.listingHeart, backgroundColor: colors.listingHeart }
+    : promo && !open
+      ? { borderColor: colors.listingHeart, backgroundColor: colors.protection }
+      : { borderColor: colors.border, backgroundColor: colors.background }
+
+  const subtitleColor = closedRecommended ? "rgba(255, 255, 255, 0.88)" : colors.muted
+
   return (
-    <View
-      style={[
-        styles.card,
-        promo
-          ? { borderColor: colors.listingHeart, backgroundColor: colors.protection }
-          : { borderColor: colors.foreground, backgroundColor: colors.background },
-      ]}
-    >
+    <View style={[styles.card, cardStyle]}>
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
@@ -46,13 +52,30 @@ export function SellCollapsibleSection({
           <View style={styles.titleRow}>
             <Text style={[styles.title, { color: accent, fontFamily: fontFamily.text }]}>{title}</Text>
             {badge && !open ? (
-              <View style={[styles.badge, { backgroundColor: colors.listingHeart }]}>
-                <Text style={[styles.badgeLabel, { fontFamily: fontFamily.text }]}>{badge}</Text>
+              <View
+                style={[
+                  styles.badge,
+                  closedRecommended
+                    ? { backgroundColor: "rgba(255, 255, 255, 0.22)" }
+                    : { backgroundColor: colors.listingHeart },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.badgeLabel,
+                    {
+                      fontFamily: fontFamily.text,
+                      color: closedRecommended ? "#FFFFFF" : colors.primaryForeground,
+                    },
+                  ]}
+                >
+                  {badge}
+                </Text>
               </View>
             ) : null}
           </View>
           {subtitle && !open ? (
-            <Text style={[styles.subtitle, { color: colors.muted, fontFamily: fontFamily.text }]} numberOfLines={2}>
+            <Text style={[styles.subtitle, { color: subtitleColor, fontFamily: fontFamily.text }]} numberOfLines={2}>
               {subtitle}
             </Text>
           ) : null}
@@ -70,8 +93,8 @@ export function SellCollapsibleSection({
       </Pressable>
       {open ? (
         <>
-          <View style={[styles.divider, { backgroundColor: promo ? colors.listingHeart : colors.border, opacity: promo ? 0.2 : 1 }]} />
-          <View style={[styles.body, promo ? { backgroundColor: colors.protection } : null]}>{children}</View>
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
+          <View style={styles.body}>{children}</View>
         </>
       ) : null}
     </View>
@@ -94,7 +117,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 16, fontWeight: "700", lineHeight: 22, flexShrink: 1 },
   subtitle: { fontSize: 13, lineHeight: 18 },
   badge: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
-  badgeLabel: { color: "#FFFFFF", fontSize: 10, fontWeight: "700", textTransform: "uppercase" },
+  badgeLabel: { fontSize: 10, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.3 },
   divider: { height: StyleSheet.hairlineWidth },
   body: { paddingHorizontal: 14, paddingTop: 14, paddingBottom: 16, gap: 16 },
 })

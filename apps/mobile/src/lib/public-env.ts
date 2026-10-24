@@ -17,3 +17,22 @@ export function publicSupabaseAnonKey(): string {
 export function publicApiUrl(): string {
   return process.env.NEXT_PUBLIC_URL?.trim() || "http://localhost:3000"
 }
+
+/** Public storefront links (share, deep links). */
+export function publicSiteUrl(): string {
+  return process.env.NEXT_PUBLIC_SITE_URL?.trim() || "https://www.reswell.app"
+}
+
+/** Google OAuth Web client ID — must match Supabase Auth → Google provider. */
+export function publicGoogleWebClientId(): string {
+  return (
+    process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID?.trim() ??
+    process.env.NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID?.trim() ??
+    ""
+  )
+}
+
+/** Google OAuth iOS client ID (`*.apps.googleusercontent.com`). */
+export function publicGoogleIosClientId(): string {
+  return process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID?.trim() ?? ""
+}

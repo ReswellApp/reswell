@@ -5,6 +5,7 @@ import { isSearchHeaderHidden } from "@/lib/search-header-visibility"
 
 type ScreenSearchHeaderProps = {
   showBack?: boolean
+  showInbox?: boolean
   insetTop?: boolean
   bordered?: boolean
 } & (
@@ -25,8 +26,15 @@ export function ScreenSearchHeader(props: ScreenSearchHeaderProps) {
 
   if (isSearchHeaderHidden(pathname)) return null
 
+  const onHome = pathname === "/" || pathname === ""
+  const showBack = props.showBack ?? !onHome
+
   const onCart = () => router.push(session ? "/account/cart" : "/sign-in")
-  const onBack = props.showBack ? () => router.back() : undefined
+  const onBack = showBack ? () => router.back() : undefined
+  const onInbox =
+    props.showInbox === true
+      ? () => router.push(session ? "/inbox" : "/sign-in")
+      : undefined
   const insetTop = props.insetTop
   const bordered = props.bordered
 
@@ -38,6 +46,7 @@ export function ScreenSearchHeader(props: ScreenSearchHeaderProps) {
         onChangeText={props.onChangeText}
         onSubmit={props.onSubmit}
         onBack={onBack}
+        onInbox={onInbox}
         onCart={onCart}
         insetTop={insetTop}
         bordered={bordered}
@@ -46,6 +55,13 @@ export function ScreenSearchHeader(props: ScreenSearchHeaderProps) {
   }
 
   return (
-    <SearchCartHeader mode="open" onBack={onBack} onCart={onCart} insetTop={insetTop} bordered={bordered} />
+    <SearchCartHeader
+      mode="open"
+      onBack={onBack}
+      onInbox={onInbox}
+      onCart={onCart}
+      insetTop={insetTop}
+      bordered={bordered}
+    />
   )
 }

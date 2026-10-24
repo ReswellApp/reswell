@@ -14,6 +14,8 @@ config.cacheVersion = [
   process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
   process.env.NEXT_PUBLIC_URL ?? "",
+  process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? "",
+  process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? "",
 ].join("\0")
 
 config.resolver.assetExts = [...config.resolver.assetExts, "woff", "woff2"]

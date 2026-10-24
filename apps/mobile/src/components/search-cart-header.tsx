@@ -11,6 +11,7 @@ const PLACEHOLDER = "Search surfboards, fins, wetsuits or apparel…"
 type SearchCartHeaderProps = {
   onBack?: () => void
   onCart: () => void
+  onInbox?: () => void
   /** Homepage sits this row under the wordmark, which already handles the status bar and border. */
   insetTop?: boolean
   bordered?: boolean
@@ -116,12 +117,23 @@ export function SearchCartHeader(props: SearchCartHeaderProps) {
           <SearchMark onPress={openSearch} />
         </Pressable>
       )}
+      {props.onInbox ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Inbox"
+          hitSlop={6}
+          onPress={props.onInbox}
+          style={styles.iconButton}
+        >
+          <SymbolView name={{ ios: "bell", android: "notifications", web: "notifications" }} size={22} tintColor={colors.foreground} />
+        </Pressable>
+      ) : null}
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={cartCount > 0 ? `Cart, ${cartCount} items` : "Cart"}
         hitSlop={6}
         onPress={props.onCart}
-        style={styles.cart}
+        style={styles.iconButton}
       >
         <SymbolView name={{ ios: "cart", android: "shopping_cart", web: "shopping_cart" }} size={22} tintColor={colors.foreground} />
         {cartCount > 0 ? (
@@ -196,7 +208,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  cart: { width: 28, height: 28, alignItems: "center", justifyContent: "center" },
+  iconButton: { width: 28, height: 28, alignItems: "center", justifyContent: "center" },
   ticker: {
     position: "absolute",
     top: -4,

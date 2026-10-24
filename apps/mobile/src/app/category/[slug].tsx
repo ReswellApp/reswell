@@ -141,7 +141,7 @@ export default function CategoryScreen() {
           }
           renderItem={({ item }) =>
             item ? (
-              <ListingCard item={item} onPress={() => openListing(item)} />
+              <ListingCard item={item} layout={layout} onPress={() => openListing(item)} />
             ) : (
               <View style={styles.spacer} />
             )

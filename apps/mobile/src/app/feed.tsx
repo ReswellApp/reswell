@@ -1,26 +1,26 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router"
-import { SymbolView } from "expo-symbols"
 import { useCallback, useEffect, useRef, useState } from "react"
-import {
-  ActivityIndicator,
-  FlatList,
-  Modal,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native"
-import type { MobileListingCard, MobileMarketplaceFeed, MobileMarketplaceFeedTab } from "@reswell/api-contract"
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native"
+import type {
+  MobileListingCard,
+  MobileListingCardSeller,
+  MobileMarketplaceFeed,
+  MobileMarketplaceFeedTab,
+} from "@reswell/api-contract"
 import { ScreenSearchHeader } from "@/components/screen-search-header"
 import { ListingCard } from "@/components/listing-card"
+import { FeedListingCard } from "@/components/feed-listing-card"
 import { ListingLayoutSwitch, type ListingLayout } from "@/components/listing-layout-switch"
-import { fetchMarketplaceFeed } from "@/lib/api"
+import { fetchMarketplaceFeed, setFollow } from "@/lib/api"
+import { useAuth } from "@/lib/auth-context"
 import { fontFamily, useReswellColors } from "@/theme"
+
+const FEED_SCREEN_TITLE = "New Listings Feed"
 
 const FEEDS: { tab: MobileMarketplaceFeedTab; label: string; subtitle: string }[] = [
   {
     tab: "new",
-    label: "New listings",
+    label: "New Listings",
     subtitle: "Every active surfboard listing on Reswell, ordered newest to oldest.",
   },
   {
@@ -30,7 +30,7 @@ const FEEDS: { tab: MobileMarketplaceFeedTab; label: string; subtitle: string }[
   },
   {
     tab: "shipped",
-    label: "Shipped boards",
+    label: "Shipped Boards",
     subtitle: "Sold surfboards where the buyer chose shipping at checkout.",
   },
 ]
@@ -62,9 +62,22 @@ function requestedFeedTab(value: string | string[] | undefined): MobileMarketpla
   return null
 }
 
+function patchListingSeller(
+  listings: MobileListingCard[],
+  sellerId: string,
+  patch: Partial<MobileListingCardSeller>,
+): MobileListingCard[] {
+  return listings.map((listing) =>
+    listing.seller?.id === sellerId ? { ...listing, seller: { ...listing.seller, ...patch } } : listing,
+  )
+}
+
 export default function FeedScreen() {
   const colors = useReswellColors()
   const router = useRouter()
+  const { session } = useAuth()
+  const token = session?.access_token
+  const viewerId = session?.user?.id
   const params = useLocalSearchParams<{ tab?: string }>()
   const [tab, setTab] = useState<MobileMarketplaceFeedTab>(requestedFeedTab(params.tab) ?? "new")
   const [feed, setFeed] = useState<MobileMarketplaceFeed | null>(null)
@@ -72,17 +85,18 @@ export default function FeedScreen() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
-  const [filterOpen, setFilterOpen] = useState(false)
   const [layout, setLayout] = useState<ListingLayout>("grid")
+  const [followBusyId, setFollowBusyId] = useState<string | null>(null)
   const requestId = useRef(0)
   const loadingMoreRef = useRef(false)
   const tabRef = useRef(tab)
   tabRef.current = tab
 
-  const load = useCallback((nextTab: MobileMarketplaceFeedTab) => {
+  const load = useCallback(
+    (nextTab: MobileMarketplaceFeedTab) => {
     const id = ++requestId.current
     setLoading(true)
-    fetchMarketplaceFeed({ tab: nextTab })
+    fetchMarketplaceFeed({ tab: nextTab }, token)
       .then((next) => {
         if (requestId.current !== id) return
         setFeed(next)
@@ -98,7 +112,9 @@ export default function FeedScreen() {
       .finally(() => {
         if (requestId.current === id) setLoading(false)
       })
-  }, [])
+  },
+    [token],
+  )
 
   useEffect(() => {
     const requested = requestedFeedTab(params.tab)
@@ -110,7 +126,6 @@ export default function FeedScreen() {
   }, [load, tab])
 
   function chooseFeed(next: MobileMarketplaceFeedTab) {
-    setFilterOpen(false)
     if (next === tab) return
     setFeed(null)
     setListings([])
@@ -126,8 +141,8 @@ export default function FeedScreen() {
     loadingMoreRef.current = true
     setLoadingMore(true)
     const request = cursor
-      ? fetchMarketplaceFeed({ tab: "sold", sold_at: cursor.sold_at, listing_id: cursor.listing_id })
-      : fetchMarketplaceFeed({ tab: currentTab, page: feed.page + 1 })
+      ? fetchMarketplaceFeed({ tab: "sold", sold_at: cursor.sold_at, listing_id: cursor.listing_id }, token)
+      : fetchMarketplaceFeed({ tab: currentTab, page: feed.page + 1 }, token)
     request
       .then((next) => {
         if (requestId.current !== id || tabRef.current !== currentTab) return
@@ -152,11 +167,29 @@ export default function FeedScreen() {
     router.push({ pathname: "/listing/[id]", params: { id: listing.slug || listing.id } })
   }
 
+  function openSeller(seller: MobileListingCardSeller) {
+    if (seller.seller_slug) {
+      router.push({ pathname: "/profile/[slug]", params: { slug: seller.seller_slug } })
+    }
+  }
+
+  function toggleFollow(seller: MobileListingCardSeller) {
+    if (!token) {
+      router.push("/sign-in")
+      return
+    }
+    const next = !seller.following
+    setFollowBusyId(seller.id)
+    setFollow(token, seller.id, next)
+      .then(() => {
+        setListings((current) => patchListingSeller(current, seller.id, { following: next }))
+      })
+      .catch(() => undefined)
+      .finally(() => setFollowBusyId(null))
+  }
+
   const grid = layout === "grid" && listings.length % 2 === 1 ? [...listings, null] : listings
   const empty = EMPTY_COPY[tab]
-  const selected = FEEDS.find((item) => item.tab === tab)
-  const title = feed?.title ?? selected?.label ?? "Feed"
-  const subtitle = feed?.subtitle ?? selected?.subtitle
   const badge = badgeFor(tab)
 
   return (
@@ -165,28 +198,12 @@ export default function FeedScreen() {
       <ScreenSearchHeader insetTop bordered={false} />
       <View style={[styles.header, { paddingTop: 8 }]}>
         <View style={styles.titleRow}>
-          <Text style={[styles.title, { color: colors.foreground, fontFamily: fontFamily.headline }]}>{title}</Text>
-          <View style={styles.headerActions}>
-            <ListingLayoutSwitch layout={layout} onLayout={setLayout} />
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Choose a feed"
-              onPress={() => setFilterOpen(true)}
-              hitSlop={8}
-              style={[styles.filter, { backgroundColor: colors.image }]}
-            >
-              <SymbolView
-                name={{ ios: "slider.horizontal.3", android: "tune", web: "tune" }}
-                size={20}
-                tintColor={colors.foreground}
-              />
-              {tab !== "new" ? <View style={[styles.dot, { backgroundColor: colors.foreground }]} /> : null}
-            </Pressable>
-          </View>
+          <Text style={[styles.title, { color: colors.foreground, fontFamily: fontFamily.headline }]}>
+            {FEED_SCREEN_TITLE}
+          </Text>
+          <ListingLayoutSwitch layout={layout} onLayout={setLayout} />
         </View>
-        {subtitle ? (
-          <Text style={[styles.subtitle, { color: colors.muted, fontFamily: fontFamily.text }]}>{subtitle}</Text>
-        ) : null}
+        <FeedTabBar tab={tab} onTab={chooseFeed} />
       </View>
       {loading && listings.length === 0 ? (
         <ActivityIndicator style={styles.centered} color={colors.foreground} />
@@ -209,15 +226,6 @@ export default function FeedScreen() {
           onRefresh={() => load(tab)}
           onEndReached={loadMore}
           onEndReachedThreshold={0.4}
-          ListHeaderComponent={
-            feed?.stats ? (
-              <View style={[styles.stats, { backgroundColor: colors.image }]}>
-                <Text style={[styles.statsText, { color: colors.foreground, fontFamily: fontFamily.text }]}>
-                  {feed.stats.caption}
-                </Text>
-              </View>
-            ) : null
-          }
           ListEmptyComponent={
             loading ? null : (
               <View style={styles.empty}>
@@ -233,77 +241,94 @@ export default function FeedScreen() {
           }
           renderItem={({ item }) =>
             item ? (
-              <ListingCard item={item} badge={badge} onPress={() => openListing(item)} />
+              layout === "list" ? (
+                <FeedListingCard
+                  item={item}
+                  badge={badge}
+                  viewerId={viewerId}
+                  followBusy={followBusyId === item.seller?.id}
+                  onPress={() => openListing(item)}
+                  onPressSeller={openSeller}
+                  onFollowSeller={toggleFollow}
+                />
+              ) : (
+                <ListingCard item={item} badge={badge} onPress={() => openListing(item)} />
+              )
             ) : (
               <View style={styles.spacer} />
             )
           }
         />
       )}
-      <Modal visible={filterOpen} transparent animationType="fade" onRequestClose={() => setFilterOpen(false)}>
-        <Pressable style={styles.scrim} onPress={() => setFilterOpen(false)}>
-          <View style={[styles.sheet, { backgroundColor: colors.background }]}>
-            <Text style={[styles.sheetTitle, { color: colors.foreground, fontFamily: fontFamily.headline }]}>Feed</Text>
-            {FEEDS.map((item) => {
-              const selected = item.tab === tab
-              return (
-                <Pressable key={item.tab} onPress={() => chooseFeed(item.tab)} style={styles.sheetRow}>
-                  <Text
-                    style={{
-                      color: selected ? colors.foreground : colors.muted,
-                      fontFamily: fontFamily.text,
-                      fontWeight: "600",
-                      fontSize: 16,
-                    }}
-                  >
-                    {item.label}
-                  </Text>
-                  {selected ? (
-                    <SymbolView
-                      name={{ ios: "checkmark", android: "check", web: "check" }}
-                      size={18}
-                      tintColor={colors.foreground}
-                    />
-                  ) : null}
-                </Pressable>
-              )
-            })}
-          </View>
-        </Pressable>
-      </Modal>
+    </View>
+  )
+}
+
+function FeedTabBar({
+  tab,
+  onTab,
+}: {
+  tab: MobileMarketplaceFeedTab
+  onTab: (next: MobileMarketplaceFeedTab) => void
+}) {
+  const colors = useReswellColors()
+  return (
+    <View style={[styles.tabBar, { backgroundColor: colors.image }]}>
+      {FEEDS.map((item) => {
+        const active = item.tab === tab
+        return (
+          <Pressable
+            key={item.tab}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: active }}
+            onPress={() => onTab(item.tab)}
+            style={[styles.tabItem, active ? { backgroundColor: colors.background } : null]}
+          >
+            <Text
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.85}
+              style={[
+                styles.tabLabel,
+                {
+                  color: active ? colors.foreground : colors.muted,
+                  fontFamily: fontFamily.text,
+                  fontWeight: active ? "700" : "600",
+                },
+              ]}
+            >
+              {item.label}
+            </Text>
+          </Pressable>
+        )
+      })}
     </View>
   )
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  header: { paddingHorizontal: 16, paddingBottom: 8, gap: 6 },
+  header: { paddingHorizontal: 16, paddingBottom: 10, gap: 12 },
   titleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
-  headerActions: { flexDirection: "row", alignItems: "center", gap: 8 },
-  title: { flex: 1, fontSize: 28, fontWeight: "700" },
-  subtitle: { fontSize: 15, lineHeight: 21 },
-  filter: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
-  dot: { position: "absolute", top: 8, right: 8, width: 7, height: 7, borderRadius: 4 },
+  title: { flex: 1, fontSize: 22, fontWeight: "700", letterSpacing: -0.3 },
+  tabBar: { flexDirection: "row", borderRadius: 12, padding: 4, gap: 4 },
+  tabItem: {
+    flex: 1,
+    minHeight: 36,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 6,
+  },
+  tabLabel: { fontSize: 13, textAlign: "center" },
   centered: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, padding: 24 },
   retry: { fontSize: 16, fontWeight: "600" },
   list: { paddingTop: 8, paddingBottom: 120 },
   listSingle: { paddingHorizontal: 12 },
   columns: { gap: 12, paddingHorizontal: 12 },
-  stats: { marginHorizontal: 16, marginBottom: 14, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12 },
-  statsText: { textAlign: "center", fontSize: 14, fontWeight: "600" },
   empty: { alignItems: "center", paddingHorizontal: 28, paddingTop: 48, gap: 8 },
   emptyTitle: { fontSize: 18, fontWeight: "700" },
   emptyBody: { textAlign: "center", fontSize: 15, lineHeight: 21 },
   footer: { marginVertical: 16 },
   spacer: { flex: 1 },
-  scrim: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.35)" },
-  sheet: { borderTopLeftRadius: 18, borderTopRightRadius: 18, paddingTop: 16, paddingBottom: 28, paddingHorizontal: 8 },
-  sheetTitle: { fontSize: 18, fontWeight: "700", paddingHorizontal: 16, paddingBottom: 8 },
-  sheetRow: {
-    minHeight: 52,
-    paddingHorizontal: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
 })

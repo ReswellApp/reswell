@@ -18,6 +18,7 @@ import type { MobileListingRow } from "@/lib/db/mobile-listings"
 
 const ROW: MobileListingRow = {
   id: "6d8b6c3e-1f4a-4c2d-9a7b-0e5f1a2b3c4d",
+  user_id: "11111111-1111-1111-1111-111111111111",
   slug: "album-twin",
   title: "  Album Twin  ",
   description: " Light use. ",
@@ -92,6 +93,9 @@ describe("mobile listings contract", () => {
     assert.equal(card.condition_label, "Good")
     assert.equal(card.dimensions, `6'6″ × 21" × 2 5/8″`)
     assert.equal(card.volume_label, null)
+    assert.equal(card.seller?.name, "North Shop")
+    assert.equal(card.seller?.seller_slug, "north-shop")
+    assert.equal(card.seller?.id, "11111111-1111-1111-1111-111111111111")
   })
 
   it("opens a public sold listing and keeps a hidden sold listing closed", () => {
@@ -107,6 +111,7 @@ describe("mobile listings contract", () => {
     const detail = toMobileListingDetail(ROW)
     if (!detail) throw new Error("expected a listing detail")
     assert.equal(detail.seller.name, "North Shop")
+    assert.equal(detail.seller.id, "11111111-1111-1111-1111-111111111111")
     assert.equal(detail.seller.seller_slug, "north-shop")
     assert.equal(detail.seller.avatar_url, null)
     assert.equal(detail.seller.review_count, 0)
@@ -202,6 +207,8 @@ const PROFILE: MobileProfileRow = {
   shop_name: "North Shop",
   shop_description: " Boards and fins. ",
   shop_banner_url: "https://cdn.example.com/banner.jpg",
+  shop_banner_focal_x_pct: 40,
+  shop_banner_focal_y_pct: 55,
   shop_logo_url: "https://cdn.example.com/logo.jpg",
   shop_verified: true,
   shop_website: "https://north.example/shop",
@@ -239,6 +246,8 @@ describe("mobile profile contract", () => {
     assert.equal(profile.location_label, "123 Pacific Ave")
     assert.equal(profile.avatar_url, "https://cdn.example.com/logo.jpg")
     assert.equal(profile.banner_url, "https://cdn.example.com/banner.jpg")
+    assert.equal(profile.banner_focal_x, 40)
+    assert.equal(profile.banner_focal_y, 55)
     assert.equal(profile.verified, true)
     assert.equal(profile.website_url, "https://north.example/shop")
     assert.equal(profile.phone, "831-555-0100")

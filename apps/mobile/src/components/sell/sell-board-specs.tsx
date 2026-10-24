@@ -51,24 +51,19 @@ export function SellBoardSpecs({
 
   const specFields = [...dimensionFields, ...facetFields]
   const specsFilled = specFields.some((field) => fieldHasValue(field, values[field.id] ?? ""))
-  const lengthField = dimensionFields.find((field) => field.id === "length")
-  const lengthFilled = lengthField ? fieldHasValue(lengthField, values.length ?? "") : false
-
   return (
     <View style={styles.stack}>
-      <Text style={[styles.lead, { color: colors.muted, fontFamily: fontFamily.text }]}>
-        Add length (required for search), size, and volume. Fins and construction are optional.
-      </Text>
-
       {specFields.length > 0 ? (
         <SellCollapsibleSection
           title="Dimensions & fins"
+          variant="recommended"
+          badge="Recommended"
           subtitle={
             specsFilled
               ? specsSummary(dimensionFields, facetFields, values, decimals)
-              : "Length, width, thickness, volume, fins & construction"
+              : "Helps buyers make better decisions"
           }
-          defaultExpanded={!lengthFilled}
+          defaultExpanded={false}
         >
           <View style={styles.fields}>
             {dimensionFields.map((field) => (
@@ -202,7 +197,6 @@ function fieldHasValue(field: MobileSellSpecField, raw: string): boolean {
 
 const styles = StyleSheet.create({
   stack: { gap: 12 },
-  lead: { fontSize: 14, lineHeight: 20 },
   fields: { gap: 12 },
   note: { fontSize: 14, lineHeight: 20 },
 })

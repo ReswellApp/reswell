@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "dependencies": {
     "@expo/ui": "~57.0.25",
+    "@react-native-google-signin/google-signin": "^16.1.5",
     "@reswell/api-contract": "file:../../packages/api-contract",
     "@stripe/stripe-react-native": "0.64.0",
     "@supabase/supabase-js": "^2.117.3",

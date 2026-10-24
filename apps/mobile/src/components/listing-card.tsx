@@ -1,7 +1,8 @@
 import { Image } from "expo-image"
 import { SymbolView } from "expo-symbols"
-import { Pressable, StyleSheet, Text, View } from "react-native"
+import { Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native"
 import type { MobileListingCard } from "@reswell/api-contract"
+import { listingListImageHeight } from "@/components/listing-list-layout"
 import { ListingCartButton, ListingFavoriteButton } from "@/components/listing-tile-actions"
 import { fontFamily, useReswellColors } from "@/theme"
 
@@ -32,6 +33,7 @@ export function ListingCard({
   badge,
   initialFavorited,
   onFavoritedChange,
+  layout = "grid",
 }: {
   item: MobileListingCard
   onPress: () => void
@@ -39,18 +41,37 @@ export function ListingCard({
   badge?: string
   initialFavorited?: boolean
   onFavoritedChange?: (favorited: boolean) => void
+  /** Single-column browse (category, etc.). Uses a narrower, shorter tile. */
+  layout?: "grid" | "list"
 }) {
   const colors = useReswellColors()
+  const { width: windowWidth } = useWindowDimensions()
+  const listImageHeight = listingListImageHeight(windowWidth)
   const showCart = canAddToCart(item, badge)
+  const list = layout === "list"
 
   return (
-    <View style={styles.card}>
+    <View style={list ? styles.cardList : styles.card}>
       <View>
         <Pressable onPress={onPress} accessibilityRole="button">
           {item.image_url ? (
-            <Image source={{ uri: item.image_url }} style={[styles.image, { backgroundColor: colors.image }]} contentFit="cover" />
+            <Image
+              source={{ uri: item.image_url }}
+              style={[
+                list ? styles.imageList : styles.image,
+                list ? { height: listImageHeight } : null,
+                { backgroundColor: colors.image },
+              ]}
+              contentFit="cover"
+            />
           ) : (
-            <View style={[styles.image, { backgroundColor: colors.image }]} />
+            <View
+              style={[
+                list ? styles.imageList : styles.image,
+                list ? { height: listImageHeight } : null,
+                { backgroundColor: colors.image },
+              ]}
+            />
           )}
         </Pressable>
         {badge ? (
@@ -91,7 +112,9 @@ export function ListingCard({
 
 const styles = StyleSheet.create({
   card: { flex: 1, gap: 4, marginBottom: 18 },
+  cardList: { gap: 4, marginBottom: 18 },
   image: { width: "100%", aspectRatio: 3 / 4, borderRadius: 12 },
+  imageList: { width: "100%", borderRadius: 10 },
   badge: {
     position: "absolute",
     top: 8,

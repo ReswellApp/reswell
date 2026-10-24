@@ -66,6 +66,17 @@ export const mobileMeSchema = z.object({
   avatar_url: z.string().nullable(),
 })
 
+/** Seller row on feed cards and other listing tiles. Detail adds review fields on the same base. */
+export const mobileListingCardSellerSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  seller_slug: z.string().nullable(),
+  avatar_url: z.string().nullable(),
+  verified: z.boolean(),
+  /** Present when the request includes a signed-in session. */
+  following: z.boolean().optional(),
+})
+
 export const mobileListingCardSchema = z.object({
   id: z.string().uuid(),
   slug: z.string().nullable(),
@@ -91,6 +102,9 @@ export const mobileListingCardSchema = z.object({
   condition_line: z.string().nullable(),
   shipping_label: z.string().nullable(),
   pickup_label: z.string().nullable(),
+  /** Same relative line as listing detail, e.g. `7 days ago`. */
+  listed_label: z.string().nullable(),
+  seller: mobileListingCardSellerSchema.nullable(),
 })
 
 /** Playable listing clip. `url` is the `/media/listing-videos` stream, not the storage object. */
@@ -115,12 +129,8 @@ export const mobileListingDetailSchema = mobileListingCardSchema.extend({
   listed_label: z.string().nullable(),
   /** City and state, same uppercase line as `/l`. */
   location_line: z.string().nullable(),
-  seller: z.object({
-    name: z.string(),
-    seller_slug: z.string().nullable(),
-    avatar_url: z.string().nullable(),
+  seller: mobileListingCardSellerSchema.extend({
     location_label: z.string().nullable(),
-    verified: z.boolean(),
     joined_year: z.string().nullable(),
     rating_average: z.number().min(0).max(5),
     review_count: z.number().int().nonnegative(),
@@ -960,6 +970,9 @@ export const mobileProfileSchema = z.object({
   location_label: z.string().nullable(),
   avatar_url: z.string().nullable(),
   banner_url: z.string().nullable(),
+  /** Crop focal when `banner_url` is set. Matches website `shop_banner_focal_*`. */
+  banner_focal_x: z.number().min(0).max(100),
+  banner_focal_y: z.number().min(0).max(100),
   verified: z.boolean(),
   website_url: z.string().nullable(),
   phone: z.string().nullable(),
@@ -972,6 +985,8 @@ export const mobileProfileSchema = z.object({
   member_since_label: z.string(),
   /** Present when the request includes a signed-in session. */
   following: z.boolean().optional(),
+  /** Present when the signed-in viewer is this seller (their following list is private). */
+  following_count: z.number().int().nonnegative().optional(),
 })
 
 /** `/sellers` directory. Order, copy, and lines come from the same catalog as the website. */
@@ -1026,6 +1041,7 @@ export type MobileProfilePassword = z.infer<typeof mobileProfilePasswordSchema>
 export type MobileProfileEmail = z.infer<typeof mobileProfileEmailSchema>
 export type MobileProfileSignInAction = z.infer<typeof mobileProfileSignInActionSchema>
 export type MobileMe = z.infer<typeof mobileMeSchema>
+export type MobileListingCardSeller = z.infer<typeof mobileListingCardSellerSchema>
 export type MobileListingCard = z.infer<typeof mobileListingCardSchema>
 export type MobileListingVideo = z.infer<typeof mobileListingVideoSchema>
 export type MobileListingDetail = z.infer<typeof mobileListingDetailSchema>

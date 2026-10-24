@@ -14,6 +14,8 @@ export type MobileProfileRow = {
   shop_name: string | null
   shop_description: string | null
   shop_banner_url: string | null
+  shop_banner_focal_x_pct: number | null
+  shop_banner_focal_y_pct: number | null
   shop_logo_url: string | null
   shop_verified: boolean | null
   shop_website: string | null
@@ -37,6 +39,8 @@ const MOBILE_PROFILE_SELECT = `
   shop_name,
   shop_description,
   shop_banner_url,
+  shop_banner_focal_x_pct,
+  shop_banner_focal_y_pct,
   shop_logo_url,
   shop_verified,
   shop_website,

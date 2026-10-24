@@ -6,8 +6,6 @@ import { fetchMyReviews } from "@/lib/api"
 import { useAccountResource } from "@/lib/use-account-resource"
 import { fontFamily, useReswellColors } from "@/theme"
 
-const STAR = "#EBB847"
-
 export default function ReviewsScreen() {
   const { data, error, loading, reload } = useAccountResource(fetchMyReviews)
   const reviews = data?.reviews ?? []
@@ -46,7 +44,7 @@ function ReviewRow({ review }: { review: MobileReview }) {
               key={star}
               name={{ ios: star <= filled ? "star.fill" : "star", android: star <= filled ? "star" : "star_border", web: "star" }}
               size={14}
-              tintColor={STAR}
+              tintColor={colors.reviewStar}
             />
           ))}
         </View>

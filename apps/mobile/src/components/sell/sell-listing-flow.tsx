@@ -227,7 +227,7 @@ export function SellListingFlow({ initial }: { initial?: Partial<SellDraft> }) {
           />
         </Section>
         {needsBoardSpecs ? (
-          <Section title="Board specs">
+          <Section>
             <SellBoardSpecs
               specs={boardSpecs}
               values={draft.specs}

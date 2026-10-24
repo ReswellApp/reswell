@@ -1,10 +1,11 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from "react-native"
 import type { MobileListingCard, MobileProfile, MobileReview } from "@reswell/api-contract"
 import { ListingCard } from "@/components/listing-card"
 import { ProfileFeedback, ProfileInfo } from "@/components/profile-panels"
 import { ProfileHeader, type SellerTab } from "@/components/profile-header"
+import { ScreenSearchHeader } from "@/components/screen-search-header"
 import { fetchProfileListings, fetchProfileReviews, fetchSeller, setFollow } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
 import { fontFamily, useReswellColors } from "@/theme"
@@ -24,6 +25,7 @@ export default function SellerScreen() {
   const [reviews, setReviews] = useState<MobileReview[]>([])
   const [error, setError] = useState<string | null>(null)
   const [loadingListings, setLoadingListings] = useState(true)
+  const [shopQuery, setShopQuery] = useState("")
 
   useEffect(() => {
     if (!slug) return
@@ -85,13 +87,24 @@ export default function SellerScreen() {
   }
 
   const inventory = tab === "sold" ? (sold ?? []) : listings
+  const filteredInventory = useMemo(() => {
+    const q = shopQuery.trim().toLowerCase()
+    if (!q) return inventory
+    return inventory.filter((item) => item.title.toLowerCase().includes(q))
+  }, [inventory, shopQuery])
   const showingGrid = tab === "listings" || tab === "sold"
-  const grid = showingGrid && inventory.length % 2 === 1 ? [...inventory, null] : showingGrid ? inventory : []
+  const grid =
+    showingGrid && filteredInventory.length % 2 === 1
+      ? [...filteredInventory, null]
+      : showingGrid
+        ? filteredInventory
+        : []
   const ownProfile = Boolean(session?.user.id && profile && session.user.id === profile.id)
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
-      <Stack.Screen options={{ title: "" }} />
+      <Stack.Screen options={{ headerShown: false }} />
+      <ScreenSearchHeader showBack showInbox bordered={false} />
       {!profile && !error ? (
         <ActivityIndicator style={styles.centered} color={colors.foreground} />
       ) : error && !profile ? (
@@ -113,6 +126,11 @@ export default function SellerScreen() {
                 ownProfile={ownProfile}
                 followBusy={followBusy}
                 onFollow={toggleFollow}
+                onFollowers={ownProfile ? () => router.push("/account/followers") : undefined}
+                onFollowing={ownProfile ? () => router.push("/account/following") : undefined}
+                onEdit={ownProfile ? () => router.push("/account/profile") : undefined}
+                shopQuery={shopQuery}
+                onShopQueryChange={setShopQuery}
               />
               {followError ? (
                 <Text style={[styles.empty, { color: colors.foreground, fontFamily: fontFamily.text }]}>{followError}</Text>
@@ -124,14 +142,19 @@ export default function SellerScreen() {
             showingGrid ? (
               loadingListings ? null : (
                 <Text style={[styles.empty, { color: colors.muted, fontFamily: fontFamily.text }]}>
-                  {tab === "sold" ? "No sold listings yet." : "No listings yet."}
+                  {tab === "sold"
+                    ? "No sold listings yet."
+                    : shopQuery.trim()
+                      ? "No listings match your search."
+                      : "No listings yet."}
                 </Text>
               )
-            ) : tab === "feedback" ? (
-              <ProfileFeedback profile={profile} reviews={reviews} />
-            ) : (
-              <ProfileInfo profile={profile} />
-            )
+            ) : tab === "info" ? (
+              <View>
+                <ProfileInfo profile={profile} />
+                <ProfileFeedback profile={profile} reviews={reviews} />
+              </View>
+            ) : null
           }
           renderItem={({ item }) =>
             item ? (
@@ -155,7 +178,7 @@ const styles = StyleSheet.create({
   centered: { marginTop: 48 },
   centeredText: { textAlign: "center", marginTop: 48, paddingHorizontal: 24 },
   list: { paddingBottom: 40 },
-  row: { gap: 12, paddingHorizontal: 12, paddingTop: 16 },
+  row: { gap: 12, paddingHorizontal: 12, paddingTop: 8 },
   spacer: { flex: 1 },
   listingsSpinner: { marginVertical: 16 },
   empty: { textAlign: "center", marginTop: 12, marginBottom: 24, fontSize: 16 },

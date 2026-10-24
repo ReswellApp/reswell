@@ -1,18 +1,17 @@
-import { Image } from "expo-image"
+import { Image, type ImageContentPosition } from "expo-image"
 import { SymbolView } from "expo-symbols"
-import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
+import { ActivityIndicator, Linking, Pressable, Share, StyleSheet, Text, View } from "react-native"
 import type { MobileProfile } from "@reswell/api-contract"
+import { ProfileSegmentTabs } from "@/components/profile-segment-tabs"
+import { ProfileShopToolbar } from "@/components/profile-shop-toolbar"
+import { ProfileStatsRow } from "@/components/profile-stats-row"
+import { publicSiteUrl } from "@/lib/public-env"
 import { fontFamily, useReswellColors } from "@/theme"
 
 export type SellerTab = "listings" | "feedback" | "info" | "sold"
 
-const BANNER = "#04070E"
-const BANNER_SKIP = new Set(["the", "official", "shop", "store", "a", "an", "and"])
-
-function bannerMonogram(name: string): string {
-  const words = name.split(/\s+/).filter(Boolean)
-  const pick = words.find((word) => word.length >= 3 && !BANNER_SKIP.has(word.toLowerCase())) ?? words[0] ?? "S"
-  return pick.slice(0, 6).toUpperCase()
+function bannerContentPosition(focalX: number, focalY: number): ImageContentPosition {
+  return { left: `${focalX}%`, top: `${focalY}%` }
 }
 
 export function ProfileHeader({
@@ -22,6 +21,11 @@ export function ProfileHeader({
   ownProfile,
   followBusy,
   onFollow,
+  onFollowers,
+  onFollowing,
+  onEdit,
+  shopQuery,
+  onShopQueryChange,
 }: {
   profile: MobileProfile
   tab: SellerTab
@@ -29,100 +33,124 @@ export function ProfileHeader({
   ownProfile: boolean
   followBusy?: boolean
   onFollow?: () => void
+  onFollowers?: () => void
+  onFollowing?: () => void
+  onEdit?: () => void
+  shopQuery?: string
+  onShopQueryChange?: (value: string) => void
 }) {
   const colors = useReswellColors()
-  const tabs: { id: SellerTab; label: string }[] = [
-    { id: "listings", label: `Listings (${profile.listing_count})` },
-    { id: "feedback", label: `Feedback (${profile.review_count})` },
-    { id: "info", label: "Info" },
+  const handle = `@${profile.seller_slug}`
+  const segmentTabs: { id: SellerTab; label: string }[] = [
+    { id: "listings", label: "Shop" },
+    { id: "info", label: "About" },
   ]
-  if (profile.sales_count > 0) tabs.push({ id: "sold", label: `Sold (${profile.sales_count})` })
+  if (profile.sales_count > 0) segmentTabs.push({ id: "sold", label: "Sold" })
+
+  const activeSegment: SellerTab =
+    tab === "feedback" ? "info" : segmentTabs.some((item) => item.id === tab) ? tab : "listings"
+
+  function shareProfile() {
+    const url = `${publicSiteUrl().replace(/\/$/, "")}/sellers/${profile.seller_slug}`
+    void Share.share({ message: `${profile.name} on Reswell\n${url}`, url })
+  }
+
+  const showShopToolbar = (tab === "listings" || tab === "sold") && onShopQueryChange
 
   return (
-    <View>
-      <View style={styles.banner}>
+    <View style={styles.wrap}>
+      <View style={[styles.hero, { backgroundColor: colors.sellerProfileBannerDefault }]}>
         {profile.banner_url ? (
-          <Image source={{ uri: profile.banner_url }} style={styles.bannerImage} contentFit="cover" />
-        ) : (
-          <Text style={[styles.monogram, { fontFamily: fontFamily.headline }]}>{bannerMonogram(profile.name)}</Text>
-        )}
-      </View>
-      <View style={styles.identity}>
-        {profile.avatar_url ? (
-          <Image source={{ uri: profile.avatar_url }} style={[styles.avatar, { backgroundColor: colors.image, borderColor: colors.border }]} />
-        ) : (
-          <View style={[styles.avatar, styles.avatarFallback, { backgroundColor: colors.image, borderColor: colors.border }]}>
-            <Text style={[styles.avatarLabel, { color: colors.foreground, fontFamily: fontFamily.headline }]}>
-              {profile.name.slice(0, 1).toUpperCase()}
+          <>
+            <Image
+              source={{ uri: profile.banner_url }}
+              style={StyleSheet.absoluteFillObject}
+              contentFit="cover"
+              contentPosition={bannerContentPosition(profile.banner_focal_x, profile.banner_focal_y)}
+            />
+            <View style={[StyleSheet.absoluteFillObject, styles.heroOverlay]} />
+          </>
+        ) : null}
+        <View style={styles.heroActions}>
+          {ownProfile && onEdit ? (
+            <Pressable accessibilityLabel="Edit profile" onPress={onEdit} style={styles.iconCircle} hitSlop={8}>
+              <SymbolView name={{ ios: "pencil", android: "edit", web: "edit" }} size={16} tintColor="#FFFFFF" />
+            </Pressable>
+          ) : null}
+          <Pressable accessibilityLabel="Share profile" onPress={shareProfile} style={styles.iconCircle} hitSlop={8}>
+            <SymbolView name={{ ios: "square.and.arrow.up", android: "share", web: "share" }} size={16} tintColor="#FFFFFF" />
+          </Pressable>
+        </View>
+        <View style={styles.heroIdentity}>
+          {profile.avatar_url ? (
+            <Image source={{ uri: profile.avatar_url }} style={styles.heroAvatar} contentFit="cover" />
+          ) : (
+            <View style={[styles.heroAvatar, styles.heroAvatarFallback]}>
+              <SymbolView name={{ ios: "person.fill", android: "person", web: "person" }} size={32} tintColor={colors.listingHeart} />
+            </View>
+          )}
+          <View style={styles.heroCopy}>
+            <Text style={[styles.heroName, { fontFamily: fontFamily.headline }]} numberOfLines={2}>
+              {profile.name}
             </Text>
-          </View>
-        )}
-        <View style={styles.copy}>
-          <View style={styles.nameRow}>
-            <Text style={[styles.name, { color: colors.foreground, fontFamily: fontFamily.headline }]}>{profile.name}</Text>
-            {ownProfile ? (
-              <Text style={[styles.followers, { color: colors.muted, fontFamily: fontFamily.text }]}>
-                {profile.follower_count} {profile.follower_count === 1 ? "follower" : "followers"}
-              </Text>
-            ) : (
+            <Text style={[styles.heroHandle, { fontFamily: fontFamily.text }]} numberOfLines={1}>
+              {handle}
+            </Text>
+            {profile.verified ? (
+              <View style={styles.verifiedRow}>
+                <SymbolView name={{ ios: "checkmark.seal.fill", android: "verified", web: "verified" }} size={12} tintColor="#FFFFFF" />
+                <Text style={[styles.verifiedLabel, { fontFamily: fontFamily.text }]}>Verified shop</Text>
+              </View>
+            ) : null}
+            {!ownProfile ? (
               <Pressable
                 onPress={onFollow}
                 disabled={followBusy}
-                style={[
-                  styles.follow,
-                  profile.following
-                    ? { backgroundColor: colors.background, borderColor: colors.border }
-                    : { backgroundColor: colors.primary, borderColor: colors.primary },
-                ]}
+                style={[styles.follow, profile.following ? styles.followActive : null]}
               >
                 {followBusy ? (
-                  <ActivityIndicator color={profile.following ? colors.foreground : colors.primaryForeground} />
+                  <ActivityIndicator color="#FFFFFF" />
                 ) : (
-                  <Text
-                    style={[
-                      styles.followLabel,
-                      {
-                        color: profile.following ? colors.foreground : colors.primaryForeground,
-                        fontFamily: fontFamily.text,
-                      },
-                    ]}
-                  >
+                  <Text style={[styles.followLabel, { fontFamily: fontFamily.text }]}>
                     {profile.following ? "Following" : "Follow"}
                   </Text>
                 )}
               </Pressable>
-            )}
+            ) : null}
           </View>
-          {profile.location_label ? (
-            <View style={styles.location}>
-              <SymbolView name={{ ios: "mappin", android: "location_on", web: "location_on" }} size={14} tintColor={colors.muted} />
-              <Text style={[styles.locationText, { color: colors.muted, fontFamily: fontFamily.text }]}>{profile.location_label}</Text>
-            </View>
-          ) : null}
-          {profile.verified ? (
-            <View style={styles.verified}>
-              <SymbolView name={{ ios: "checkmark.seal.fill", android: "verified", web: "verified" }} size={14} tintColor={colors.shipping} />
-              <Text style={[styles.verifiedLabel, { color: colors.muted, fontFamily: fontFamily.text }]}>Verified</Text>
-            </View>
-          ) : null}
-          <ContactRow website={profile.website_url} phone={profile.phone} />
         </View>
       </View>
-      {profile.about ? (
+
+      <View style={styles.section}>
+        <ProfileSegmentTabs tabs={segmentTabs} active={activeSegment} onChange={onTab} />
+      </View>
+
+      <View style={styles.section}>
+        <ProfileStatsRow
+          listingCount={profile.listing_count}
+          followerCount={profile.follower_count}
+          followingCount={ownProfile ? profile.following_count : undefined}
+          onListings={() => onTab("listings")}
+          onFollowers={onFollowers}
+          onFollowing={onFollowing}
+        />
+      </View>
+
+      {showShopToolbar ? (
+        <View style={styles.section}>
+          <ProfileShopToolbar
+            sellerName={profile.name}
+            query={shopQuery ?? ""}
+            onQueryChange={onShopQueryChange}
+          />
+        </View>
+      ) : null}
+
+      {tab === "info" && profile.about ? (
         <Text style={[styles.about, { color: colors.muted, fontFamily: fontFamily.text }]}>{profile.about}</Text>
       ) : null}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabs}>
-        {tabs.map((item) => {
-          const active = item.id === tab
-          return (
-            <Pressable key={item.id} onPress={() => onTab(item.id)} style={[styles.tab, { borderBottomColor: active ? colors.foreground : "transparent" }]}>
-              <Text style={[styles.tabLabel, { color: active ? colors.foreground : colors.muted, fontFamily: fontFamily.text }]}>
-                {item.label}
-              </Text>
-            </Pressable>
-          )
-        })}
-      </ScrollView>
+
+      {tab === "info" ? <ContactRow website={profile.website_url} phone={profile.phone} /> : null}
     </View>
   )
 }
@@ -155,27 +183,55 @@ function ContactRow({ website, phone }: { website: string | null; phone: string 
 }
 
 const styles = StyleSheet.create({
-  banner: { height: 120, backgroundColor: BANNER, alignItems: "center", justifyContent: "center" },
-  bannerImage: { width: "100%", height: "100%" },
-  monogram: { color: "#FFFFFF", fontSize: 28, fontWeight: "700", letterSpacing: 1 },
-  identity: { flexDirection: "row", gap: 14, paddingHorizontal: 16, paddingTop: 16 },
-  avatar: { width: 72, height: 72, borderRadius: 36, borderWidth: StyleSheet.hairlineWidth },
-  avatarFallback: { alignItems: "center", justifyContent: "center" },
-  avatarLabel: { fontSize: 28, fontWeight: "700" },
-  copy: { flex: 1, gap: 6, paddingTop: 2 },
-  nameRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 10 },
-  name: { fontSize: 22, fontWeight: "700", letterSpacing: -0.4 },
-  followers: { fontSize: 14 },
-  follow: { minHeight: 32, borderRadius: 999, borderWidth: 1, paddingHorizontal: 12, alignItems: "center", justifyContent: "center" },
-  followLabel: { fontSize: 13, fontWeight: "600" },
-  location: { flexDirection: "row", alignItems: "center", gap: 4 },
-  locationText: { flex: 1, fontSize: 14 },
-  verified: { flexDirection: "row", alignItems: "center", gap: 4 },
-  verifiedLabel: { fontSize: 11, fontWeight: "600", letterSpacing: 0.6, textTransform: "uppercase" },
-  contacts: { flexDirection: "row", gap: 8, marginTop: 2 },
-  contact: { width: 32, height: 32, borderRadius: 16, borderWidth: 1, alignItems: "center", justifyContent: "center" },
-  about: { paddingHorizontal: 16, paddingTop: 16, fontSize: 15, lineHeight: 22 },
-  tabs: { paddingHorizontal: 16, gap: 20, marginTop: 20 },
-  tab: { borderBottomWidth: 2, paddingBottom: 12 },
-  tabLabel: { fontSize: 15, fontWeight: "600" },
+  wrap: { paddingBottom: 4 },
+  hero: {
+    marginHorizontal: 16,
+    marginTop: 8,
+    borderRadius: 16,
+    overflow: "hidden",
+    padding: 16,
+    minHeight: 148,
+  },
+  heroOverlay: { backgroundColor: "rgba(4, 7, 14, 0.45)" },
+  heroActions: { flexDirection: "row", justifyContent: "flex-end", gap: 8, marginBottom: 12 },
+  iconCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.22)",
+  },
+  heroIdentity: { flexDirection: "row", alignItems: "flex-start", gap: 14 },
+  heroAvatar: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    borderWidth: 3,
+    borderColor: "#FFFFFF",
+    backgroundColor: "#FFFFFF",
+  },
+  heroAvatarFallback: { alignItems: "center", justifyContent: "center" },
+  heroCopy: { flex: 1, gap: 4, paddingTop: 4 },
+  heroName: { color: "#FFFFFF", fontSize: 22, fontWeight: "700", letterSpacing: -0.3 },
+  heroHandle: { color: "rgba(255, 255, 255, 0.88)", fontSize: 15, fontWeight: "600" },
+  verifiedRow: { flexDirection: "row", alignItems: "center", gap: 4 },
+  verifiedLabel: { color: "rgba(255, 255, 255, 0.92)", fontSize: 12, fontWeight: "600" },
+  follow: {
+    alignSelf: "flex-start",
+    marginTop: 6,
+    minHeight: 32,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "#FFFFFF",
+    paddingHorizontal: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  followActive: { backgroundColor: "rgba(255, 255, 255, 0.2)" },
+  followLabel: { color: "#FFFFFF", fontSize: 13, fontWeight: "700" },
+  section: { paddingHorizontal: 16, paddingTop: 14 },
+  about: { paddingHorizontal: 16, paddingTop: 12, fontSize: 15, lineHeight: 22 },
+  contacts: { flexDirection: "row", gap: 8, paddingHorizontal: 16, paddingTop: 10, paddingBottom: 4 },
+  contact: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: "center", justifyContent: "center" },
 })

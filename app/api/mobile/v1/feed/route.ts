@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { mobileMarketplaceFeedQuerySchema } from "@reswell/api-contract"
+import { readOptionalMobileSession } from "@/lib/auth/mobile-session"
 import { getMobileMarketplaceFeedService } from "@/lib/services/mobileMarketplaceFeed"
 import { mobileDataResponse, mobileFailure } from "@/lib/utils/mobile-api-response"
 
@@ -17,8 +18,15 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const result = await getMobileMarketplaceFeedService(parsed.data)
-    return mobileDataResponse(result, "public, s-maxage=60, stale-while-revalidate=300")
+    const session = await readOptionalMobileSession(request)
+    if (session && !session.ok) return mobileDataResponse(session, "private, no-store")
+
+    const result = await getMobileMarketplaceFeedService(
+      parsed.data,
+      session?.ok ? { supabase: session.supabase, userId: session.user.id } : undefined,
+    )
+    const cache = session?.ok ? "private, no-store" : "public, s-maxage=60, stale-while-revalidate=300"
+    return mobileDataResponse(result, cache)
   } catch (error) {
     return mobileFailure("/api/mobile/v1/feed", error, "Unable to load the feed right now")
   }

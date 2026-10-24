@@ -255,12 +255,15 @@ export function fetchSellerResource(slug: string): Promise<MobileSellerResource>
   )
 }
 
-export function fetchMarketplaceFeed(query?: {
-  tab?: MobileMarketplaceFeedTab
-  page?: number
-  sold_at?: string
-  listing_id?: string
-}): Promise<MobileMarketplaceFeed> {
+export function fetchMarketplaceFeed(
+  query?: {
+    tab?: MobileMarketplaceFeedTab
+    page?: number
+    sold_at?: string
+    listing_id?: string
+  },
+  accessToken?: string | null,
+): Promise<MobileMarketplaceFeed> {
   const params = new URLSearchParams()
   if (query?.tab) params.set("tab", query.tab)
   if (query?.page && query.page > 1) params.set("page", String(query.page))
@@ -269,8 +272,10 @@ export function fetchMarketplaceFeed(query?: {
     params.set("listing_id", query.listing_id)
   }
   const search = params.toString()
-  return read(`/api/mobile/v1/feed${search ? `?${search}` : ""}`, (data) =>
-    mobileMarketplaceFeedSchema.parse(data),
+  return read(
+    `/api/mobile/v1/feed${search ? `?${search}` : ""}`,
+    (data) => mobileMarketplaceFeedSchema.parse(data),
+    accessToken,
   )
 }
 

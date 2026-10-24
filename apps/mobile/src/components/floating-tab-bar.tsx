@@ -15,7 +15,7 @@ type TabItem = {
   label: string
   icon: TabIcon
   activeIcon?: TabIcon
-  href?: "/" | "/feed" | "/sell/new" | "/inbox" | "/account"
+  href?: "/" | "/feed" | "/sell/new" | "/favorites" | "/account"
 }
 
 const TABS: TabItem[] = [
@@ -38,10 +38,10 @@ const TABS: TabItem[] = [
     href: "/sell/new",
   },
   {
-    label: "Inbox",
-    icon: { ios: "envelope", android: "mail" },
-    activeIcon: { ios: "envelope.fill", android: "mail" },
-    href: "/inbox",
+    label: "Favorites",
+    icon: { ios: "heart", android: "favorite_border" },
+    activeIcon: { ios: "heart.fill", android: "favorite" },
+    href: "/favorites",
   },
   {
     label: "Me",
@@ -55,7 +55,7 @@ function tabIsActive(pathname: string, href: TabItem["href"]): boolean {
   if (href === "/") return pathname === "/" || pathname === ""
   if (href === "/feed") return pathname === "/feed"
   if (href === "/sell/new") return pathname === "/sell" || pathname.startsWith("/sell/")
-  if (href === "/inbox") return pathname === "/inbox" || pathname.startsWith("/account/messages")
+  if (href === "/favorites") return pathname === "/favorites"
   if (href === "/account") return pathname === "/account" || pathname.startsWith("/account/")
   return false
 }
@@ -85,9 +85,13 @@ export function FloatingTabBar() {
   if (tabBarHidden(pathname)) return null
 
   const glass = isLiquidGlassAvailable() && isGlassEffectAPIAvailable()
+  const tabInk = colors.foreground
+  const tabInkInactive =
+    scheme === "dark" ? "rgba(250, 250, 250, 0.82)" : "rgba(4, 7, 14, 0.88)"
+
   const tabs = TABS.map((tab) => {
           const active = tabIsActive(pathname, tab.href)
-          const color = active ? colors.foreground : colors.muted
+          const color = active ? tabInk : tabInkInactive
           const icon = active && tab.activeIcon ? tab.activeIcon : tab.icon
           const body = (
             <View style={styles.item}>
@@ -95,9 +99,18 @@ export function FloatingTabBar() {
                 name={{ ios: icon.ios, android: icon.android, web: icon.android }}
                 size={24}
                 tintColor={color}
-                weight={active ? "semibold" : "regular"}
+                weight={active ? "bold" : "semibold"}
               />
-              <Text numberOfLines={1} style={[styles.label, { color, fontFamily: fontFamily.text }]}>{tab.label}</Text>
+              <Text
+                numberOfLines={1}
+                style={[
+                  styles.label,
+                  active ? styles.labelActive : null,
+                  { color, fontFamily: fontFamily.text },
+                ]}
+              >
+                {tab.label}
+              </Text>
             </View>
           )
           const href = tab.href
@@ -117,7 +130,7 @@ export function FloatingTabBar() {
                 if (href === "/" && (pathname === "/" || pathname === "")) return
                 if (href === "/feed" && pathname === "/feed") return
                 if (href === "/sell/new" && (pathname === "/sell" || pathname.startsWith("/sell/"))) return
-                if (href === "/inbox" && pathname === "/inbox") return
+                if (href === "/favorites" && pathname === "/favorites") return
                 if (href === "/account" && pathname === "/account") return
                 router.navigate(href)
               }}
@@ -135,7 +148,7 @@ export function FloatingTabBar() {
           <GlassView
             glassEffectStyle="regular"
             style={styles.bar}
-            tintColor={scheme === "dark" ? "rgba(26,26,26,0.9)" : "rgba(242,243,247,0.92)"}
+            tintColor={scheme === "dark" ? "rgba(26,26,26,0.88)" : "rgba(255,255,255,0.92)"}
           >
             {tabs}
           </GlassView>
@@ -143,7 +156,7 @@ export function FloatingTabBar() {
           <View
             style={[
               styles.bar,
-              { backgroundColor: scheme === "dark" ? "rgba(26,26,26,0.92)" : "rgba(242,243,247,0.94)" },
+              { backgroundColor: scheme === "dark" ? "rgba(26,26,26,0.88)" : "rgba(255,255,255,0.92)" },
             ]}
           >
             {tabs}
@@ -157,8 +170,8 @@ export function FloatingTabBar() {
 const styles = StyleSheet.create({
   wrap: {
     position: "absolute",
-    left: 28,
-    right: 28,
+    left: 14,
+    right: 14,
   },
   shadow: {
     borderRadius: 32,
@@ -174,10 +187,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 6,
-    paddingVertical: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
   },
-  press: { flex: 1 },
-  item: { alignItems: "center", gap: 2, paddingVertical: 2 },
-  label: { fontSize: 11, fontWeight: "600" },
+  press: { flex: 1, minHeight: 44 },
+  item: { alignItems: "center", justifyContent: "center", gap: 2, paddingVertical: 2 },
+  label: { fontSize: 12, fontWeight: "600" },
+  labelActive: { fontWeight: "800" },
 })

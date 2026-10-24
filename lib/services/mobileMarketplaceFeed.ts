@@ -14,10 +14,18 @@ import {
 } from "@/lib/cache/marketplace-sold-feed"
 import { MARKETPLACE_SOLD_FEED_LIMIT, loadMarketplaceSoldFeedPage } from "@/lib/services/marketplaceSoldFeed"
 import { MOBILE_MARKETPLACE_FEED_COPY, marketplaceFeedStats } from "@/lib/services/mobileMarketplaceFeedCopy"
-import { toMobileListingCard, type MobileApiResult } from "@/lib/services/mobileApi"
+import {
+  followingSellerIdsForViewer,
+  toMobileListingCard,
+  type MobileApiResult,
+} from "@/lib/services/mobileApi"
 import { getDb } from "@/lib/supabase/db"
+import type { SupabaseClient } from "@supabase/supabase-js"
 
-async function cardsForOrderedIds(ids: readonly string[]): Promise<MobileListingCard[] | null> {
+async function cardsForOrderedIds(
+  ids: readonly string[],
+  viewer?: { supabase: SupabaseClient; userId: string },
+): Promise<MobileListingCard[] | null> {
   const listed = await listMobileListingRowsByIds(ids)
   if (!listed.ok) {
     console.error("[mobile-api] feed cards failed", {
@@ -26,8 +34,22 @@ async function cardsForOrderedIds(ids: readonly string[]): Promise<MobileListing
     })
     return null
   }
-  return listed.rows.flatMap((row) => {
-    const card = toMobileListingCard(row)
+  const rows = listed.rows
+  const followingIds = viewer
+    ? await followingSellerIdsForViewer(
+        viewer.supabase,
+        viewer.userId,
+        rows.map((row) => row.user_id).filter((id): id is string => Boolean(id)),
+      )
+    : null
+  return rows.flatMap((row) => {
+    const sellerId = row.user_id?.trim()
+    const following =
+      viewer && sellerId ? followingIds?.has(sellerId) ?? false : undefined
+    const card = toMobileListingCard(
+      row,
+      following === undefined ? undefined : { following },
+    )
     return card ? [card] : []
   })
 }
@@ -52,12 +74,16 @@ function feedResult(
  */
 export async function getMobileMarketplaceFeedService(
   query: MobileMarketplaceFeedQuery,
+  viewer?: { supabase: SupabaseClient; userId: string },
 ): Promise<MobileApiResult<MobileMarketplaceFeed>> {
   const copy = MOBILE_MARKETPLACE_FEED_COPY[query.tab]
 
   if (query.tab === "new") {
     const page = await getCachedMarketplaceNewListingsFeedPage(query.page)
-    const listings = await cardsForOrderedIds(page.listings.map((listing) => listing.id))
+    const listings = await cardsForOrderedIds(
+      page.listings.map((listing) => listing.id),
+      viewer,
+    )
     if (!listings) return { ok: false, status: 500, error: "Unable to load the feed right now" }
     return feedResult({
       tab: "new",
@@ -74,7 +100,10 @@ export async function getMobileMarketplaceFeedService(
 
   if (query.tab === "shipped") {
     const page = await getCachedMarketplaceShippedFeedPage(null, query.page)
-    const listings = await cardsForOrderedIds(page.soldListings.map((listing) => listing.id))
+    const listings = await cardsForOrderedIds(
+      page.soldListings.map((listing) => listing.id),
+      viewer,
+    )
     if (!listings) return { ok: false, status: 500, error: "Unable to load the feed right now" }
     return feedResult({
       tab: "shipped",
@@ -94,7 +123,10 @@ export async function getMobileMarketplaceFeedService(
       soldAt: query.sold_at,
       listingId: query.listing_id,
     })
-    const listings = await cardsForOrderedIds(page.soldListings.map((listing) => listing.id))
+    const listings = await cardsForOrderedIds(
+      page.soldListings.map((listing) => listing.id),
+      viewer,
+    )
     if (!listings) return { ok: false, status: 500, error: "Unable to load the feed right now" }
     return feedResult({
       tab: "sold",
@@ -113,7 +145,10 @@ export async function getMobileMarketplaceFeedService(
   }
 
   const page = await getCachedMarketplaceSoldFeed(null, false)
-  const listings = await cardsForOrderedIds(page.soldListings.map((listing) => listing.id))
+  const listings = await cardsForOrderedIds(
+    page.soldListings.map((listing) => listing.id),
+    viewer,
+  )
   if (!listings) return { ok: false, status: 500, error: "Unable to load the feed right now" }
   return feedResult({
     tab: "sold",
