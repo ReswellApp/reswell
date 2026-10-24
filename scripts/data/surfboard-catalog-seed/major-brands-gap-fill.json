@@ -13,26 +13,6 @@
       "short_description": "Al Merrick performance shortboards and everyday drivers.",
       "models": [
         {
-          "name": "1/2 2.Pro PU FCS2 - Used Team Board",
-          "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/files/Top---954924-765184--CI-PU-CI-2.-PRO-4_3_1-2-15-1-2_-2_-0-FCS-3--Used---Good-250-13--Own.jpg",
-          "description": "4'3 1/2 x 15 1/2 x 2 FCS2 TL/SO 4s/4 glass job PU 2.Pro Grom Great condition, some dents"
-        },
-        {
-          "name": "1/2 Better Everyday Epoxy FCS2 - Used Team Board",
-          "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/files/1039305-964092--CI-EPOXY-BETTER-EVERYDAY-5_2_1-2-19_-2-3-8_-0-FCS-4--Used---Good-450-----Deck.jpg",
-          "description": "5'2 1/2 x 19 x 2 3/8 Better Everyday FCS2 TL/SO 4s/4 glass job EPS/Epoxy Designed for Bobby Martinez Some pressure dents. Good condition."
-        },
-        {
-          "name": "1/2 ROOK 15 PU FCS2 - Used Team Board",
-          "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/files/Top-954927-794083--CI-PU-ROOK-15-4_3_1-2-15-1-2_-2_-0-FCS.jpg",
-          "description": "4'3 1/2 x 15 1/2 x 2 FCS2 TL/SO 4s/4 glass job PU Rook15 Brand New"
-        },
-        {
-          "name": "2.Pro",
-          "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/files/CI_Pro2-Black_Deck.png",
-          "description": "Meet the winning surfboard for the 2023 Stab in the Dark with Italo Ferreira, the CI 2.Pro! The 2.Pro boasts the same outline and bottom contours that won the 2022 SITD, with Jack Robinson, but utilizes a reduced overall rocker to better match the surfing style and waves we believed would be on offer for 2023. When launching the CI Pro, both rockers had been tested and proven to work well in a wide array of conditions. Since that time we have discovered that much of our team likes the CI Pro cur"
-        },
-        {
           "name": "Better Everyday",
           "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/files/Better-Everyday-Deck-Shopify_3603f9fb-11ec-46f5-baf4-04e5346fcdec.jpg",
           "description": "5'10 x 19 3/4 x 2 1/2 Volume: 30.8L FCSII five fin set-up, fins not included UL/SO 4+4/4 glass job For 2025, we introduce the Better Everyday! The Happy Everyday quickly became one of our favorite boards and we found ourselves wondering…“how can we ride this even more”? Thankfully, Britt and team went to work. Keeping all the characteristics that make the HE a great stepdown performance board…in the Better Everyday, the trademark hip is relaxed, allowing the board to be smoother off the bottom a"
@@ -41,11 +21,6 @@
           "name": "Better Everyday Grom",
           "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/files/Better-Everyday-Grom_Top-_-Bottom-FCS2.jpg",
           "description": "All the best of the Better Everyday specialized for the groms. We know grom froth is real so the swallow tail is swapped for a more ding friendly squash. 4'10 x 17 1/2 x 2 1/16 Volume: 18.9L Futures thruster set-up, fins not included UL/SO 4+4/4 glass job"
-        },
-        {
-          "name": "Better Everyday Spinetek",
-          "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/files/Better-Everyday_Spine-Tek_Top.jpg",
-          "description": "5'4 x 18 1/4 x 2 1/8 Volume: 22.3L FCSII five fin set-up, fins not included Spine-Tek EPS/Epoxy UL/SO 4+4/4 glass job The Happy Everyday quickly became one of our favorite boards and we found ourselves wondering…“how can we ride this even more”? Thankfully, Britt and team went to work. Keeping all the characteristics that make the HE a great stepdown performance board…in the Better Everyday, the trademark hip is relaxed, allowing the board to be smoother off the bottom and opens the range in sli"
         },
         {
           "name": "Big Happy",
@@ -58,9 +33,9 @@
           "description": "A high performance surfboard geared for big guys that rip. (Think Willy Morris). A generously proportioned shorty, we packed volume into an 80′s inspired squashtail to get maximum paddling and performance results. Break out the VHS for 80′s classic surf flicks Wave Warriors and Performers. CUSTOM order ONLY Standard Dims No stock dims available for this model"
         },
         {
-          "name": "Black Beauty",
-          "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/products/black_beauty_deck.png",
-          "description": "The Black Beauty has become one of our most popular step up boards. A replica of Tom Curren’s famous 1985 Bell’s Beach, Occy beating, and world title winning board. Vee bottom makes this a great board for good waves. Power, speed and flow are timeless cornerstones of good style. The trend to shorter and wider boards has come at the expense of drive, and with top surfers around the globe revisiting power surfing, the timeless design of Curren’s 1985 Black Beauty has not gone unnoticed. As evident"
+          "name": "Black and White",
+          "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/products/BW_deck1.png",
+          "description": "An all around, high performance shortboard designed for down the line speed and easy rail-to-rail transitions, the Black &amp; White is based on a favorite hand shape Britt Merrick made Dane Reynolds for Santa Barbara area point breaks. Dane related its feel to a good MBM. The Black &amp; White has a fairly low entry rocker, a staged flat-ish section between the feet, and an accelerated kick out the tail. A single concave runs the length of the board, is deepest near the front fins and shallows "
         },
         {
           "name": "Black Flag Whip",
@@ -68,19 +43,9 @@
           "description": "Kelly’s 2010 small wave design was the as the Black Flag Whip. The same shorter, wider Whip outline with Al’s single to double Tri Plane Hull bottom. Kelly finds the board is fast and has an even more responsive feel than the previous single concave version of the Whip. A double concave deck gets your feet closer to the water line. We have also added carbon fiber strips on the bottom stretching from the nose to the leading fins. Stopping the carbon fiber near the leading fins concentrates the fl"
         },
         {
-          "name": "Black/White",
-          "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/products/BW_deck1.png",
-          "description": "An all around, high performance shortboard designed for down the line speed and easy rail-to-rail transitions, the Black &amp; White is based on a favorite hand shape Britt Merrick made Dane Reynolds for Santa Barbara area point breaks. Dane related its feel to a good MBM. The Black &amp; White has a fairly low entry rocker, a staged flat-ish section between the feet, and an accelerated kick out the tail. A single concave runs the length of the board, is deepest near the front fins and shallows "
-        },
-        {
           "name": "CI 2.Pro",
-          "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/files/CI-2.Pro_Deck_Store_d58f1b87-3d4c-4227-9d13-90e795bdce89.png",
-          "description": "5'8 x 18 1/4 x 2 3/16 Volume: 24.3L FCSII thruster set-up, fins not included UL/SO 4+4/4 glass job More Details: Meet our 2023 entry into Stab in the Dark, the CI 2.Pro. The 2.Pro boasts the same outline and bottom contours that won the 2022 SITD, with Jack Robinson, but utilizes a reduced overall rocker to better match the surfing style and waves we believed would be on offer for 2023. When launching the CI Pro, both rockers had been tested and proven to work well in a wide array of conditions."
-        },
-        {
-          "name": "CI 2.Pro ECT",
-          "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/files/ECT-2.Pro-Deck-Shopify_e23fb9f8-4507-490b-8a82-6f9adca77080.jpg",
-          "description": "6'2 x 19 1/2 x 2 9/16 Volume: 32.9L FCSII thruster set-up, fins not included Pro Light 6/4 glass job ECT: Channel Islands Surfboards’ Eco Carbon Tech ( ECT ): a new carbon hand lamination that will level-up your performance. ECT built boards are livelier, stronger, familiar-feeling underfoot, and environmentally responsible. ECT boards are hand-built by the same crew of surfers that have been crafting your boards for years. Available in PU/PE and EPS/Epoxy constructions, ECT can be custom ordere"
+          "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/files/CI_Pro2-Black_Deck.png",
+          "description": "Meet the winning surfboard for the 2023 Stab in the Dark with Italo Ferreira, the CI 2.Pro! The 2.Pro boasts the same outline and bottom contours that won the 2022 SITD, with Jack Robinson, but utilizes a reduced overall rocker to better match the surfing style and waves we believed would be on offer for 2023. When launching the CI Pro, both rockers had been tested and proven to work well in a wide array of conditions. Since that time we have discovered that much of our team likes the CI Pro cur"
         },
         {
           "name": "CI Log",
@@ -118,19 +83,9 @@
           "description": "5'5 x 19 x 2 1/4 Volume: 25.3L FCSII thruster set-up UL/SO 4+4/4 glass job The idea came when riding the original Dumpster Diver while filming \"Out of the Rafters\" and tripping out how tiny and short the Dumpster Diver felt and wanting to build a longer - modernized version. - Dane Reynolds The DD2 has a wider nose and tail, more nose and tail rocker, and a more subtle single concave. These updates, among other tweaks, allow the board to excel in a wider range of conditions and let you rip as ha"
         },
         {
-          "name": "Dumpster Diver 2 SpineTek",
-          "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/files/DD2_SpineTek_Deck_ea78ad94-dc15-40f1-84ee-d7dd7b29a9a2.jpg",
-          "description": "5'4 x 18 7/8 x 2 3/16 Volume: 24.0L Spine-Tek EPS/Epoxy Futures thruster set-up UL/SO 4+4/4 glass job The idea came when riding the original Dumpster Diver while filming \"Out of the Rafters\" and tripping out how tiny and short the Dumpster Diver felt and wanting to build a longer - modernized version. - Dane Reynolds The DD2 has a wider nose and tail, more nose and tail rocker, and a more subtle single concave. These updates, among other tweaks, allow the board to excel in a wider range of condi"
-        },
-        {
           "name": "Feb's Fish",
           "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/files/Febs-Fish-Red-Deck-Shopify.jpg",
           "description": "5'11 x 21 1/8 x 2 5/8 Volume: 39.1L FCSII Twin Fin UL/SO 4+4/4 glass job"
-        },
-        {
-          "name": "Fever EPS/EPOXY FCS2 - Used Team Board",
-          "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/files/907824_Fever_Leilani_Top.jpg",
-          "description": "5'6 x 18 3/8 x 2 1/4 FCS 2 TL/SO 4S/4 glass job EPS/EPOXY Designed for Leilani McGonagle Good condition, some pressure dents. The Fever has its roots in Al Merrick’s trusted and proven high-performance shortboard designs. The goal in designing this board with Mike Andrews and Patrick Gudauskas was to create a more accessible tour level performance board that anyone who jumped onto it would “instantly feel the speed and zest for creativity.” Borrowing Pat’s favorite elements of the Proton, Rookie"
         },
         {
           "name": "Free Scrubber",
@@ -143,11 +98,6 @@
           "description": "5'10 x 20 x 2 5/8 Volume: 34.5L Futures thruster set-up, fins not included UL/SO 4+4/4 glass job *Each board is handmade, color may vary slightly"
         },
         {
-          "name": "G Skate SpineTek",
-          "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/files/G-SKate-Spine-Tek_Red_Top_Bottom_FCS2_296934.jpg",
-          "description": "5'10 x 20 x 2 5/8 Volume: 34.5L EPS/Epoxy - SpineTek FCSII thruster set-up, fins not included UL/SO 4+4/4 glass job *Each board is handmade, color may vary slightly"
-        },
-        {
           "name": "Goldie",
           "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/files/Goldie_Top-_-Bottom_FCS2.jpg",
           "description": "5'10 x 18 1/4 x 2 3/16 FCSII thruster set-up, fins not included UL/SO 4+4/4 glass job Volume: 24.3L Round pin tail The Goldie is designed for maximizing time in the barrel in steep, heavy waves. First ridden by Barron Mamiya to victory at the 2024 Pipe Pro and then on his rode to victory at the 2025 Pipe Pro, the board has been tested and proven by the team globally to be our best heavy wave and barrel board. Thickness forward and under the chest enhances paddling power while a refined foil out "
@@ -158,17 +108,12 @@
           "description": "5'6 x 18 3/4 x 2 1/4 Volume: 25.1L Futures thruster set-up, fins not included UL/SO 4+4/4 glass job *hex color may vary"
         },
         {
-          "name": "Happy Everyday ECT EPOXY FCS2 - Used Team Board",
-          "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/files/Top---948699-821824--CI-ECT---Epoxy-HAPPY-EVERYDAY---ECT-EPS-4_3_-15-3-4_-2_-0-FCS-5--Used---Good-450-34--Own.jpg",
-          "description": "4'3 x 15 3/4 x 2 FCS2 TL/SO 4s/4 glass job ECT/EPOXY ECT Happy Everyday Grom Great condition, some dents"
-        },
-        {
           "name": "Happy Traveler",
           "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/files/Happy-Traveler_Deck.jpg",
           "description": "5'10 x 18 3/4 x 2 3/8 FCSII thruster set-up, fins not included UL/SO 4+4/4 glass job Volume: 27.2L Round Pin Step Up If you are looking for a good wave board, bigger wave board, or a do it all exploration and adventure board the Happy Traveler is it! Proven in conditions around the world and in some of the most dreamy and serious surf, the Traveler is the one board travel quiver you’ll need for all your most memorable experiences ahead. The Happy Traveler takes the proven rocker curve of the Hap"
         },
         {
-          "name": "High-5",
+          "name": "High 5",
           "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/products/high_5_deck.png",
           "description": "The High 5 was cooked up by CI staff to be fun and forgiving but with performance sprinkled in. Designed to be a quicker and nimbler offspring of the Average Joe, the High 5 will pad your wave count and still allow for rail work and section making. The bottom is single concave entry to deep double through the fins and terminating with deep concave vee out the tail. Comes stock with 5 fin boxes and can be ridden as a quad or thruster. You can ride the High 5 however you want, but CI staff general"
         },
@@ -188,11 +133,6 @@
           "description": "This was the board most commonly ridden on tour from 2009 to 2012 as a 6’3″ or 6’6″ at places like the Mentawais and Teahupoo. When the waves get a little bigger or powerful, but you don’t quite need a gun, this is the board. CUSTOM ORDER ONLY"
         },
         {
-          "name": "M13",
-          "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/products/M13-transparent280x800.png",
-          "description": "This is a performance hybrid that caters to the widest possible type and size of surfer and the widest range of wave conditions. Not to be confused with a funshape type board. Paddles like a funshape, but surfs like a shortboard. Available in either a squash or round pin, most common sizes are from 6’10″ to 8’0″."
-        },
-        {
           "name": "MBM",
           "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/products/MBM-280x800.jpg",
           "description": "Originally developed with Bobby Martinez in 2004, the M-BM became a popular board for advanced surfers over the next five years. The M-BM has a full rail and plenty of volume in the nose and tail to make it user friendly Likes to be surfed vertical and in the pocket. Relatively flat under the front foot to a double concave/vee combo out the back. Custom order only."
@@ -208,14 +148,9 @@
           "description": "5'10 x 18 5/8 x 2 5/16 Futures thruster set-up, fins not included UL/SO 4+4/4 glass job Volume: 26.2L Mikey February’s Shorty marks a return to his high-performance shortboarding roots. From his early amateur days in South Africa to his time on the WSL Championship Tour, Mikey’s foundation has always been precision surfing. Developed with Britt Merrick, this model carries his signature Swirl Hex and has become a go-to for many of our WSL tour surfers. In feel, The Shorty sits between the Two Hap"
         },
         {
-          "name": "MINI",
+          "name": "Mini Eco-hybrid",
           "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/products/Mini-Eco-Hybrid-Deck.png",
           "description": "Introducing an eco-minded production surfboard. In partnership with (the auto maker) MINI’s new Countryman Plug-In Hybrid, the MINI Eco-Hybrid surfboard utilizes ECOBOARD Project qualified EPS blanks and epoxy resins, and is hand-built at CI’s factory in Santa Barbara that has been audited by Sustainable Surf to build Gold Level ECOBOARDS. And lastly the California stock boards are hand-delivered without any need for packaging. The MINI surfboard was a 2017 Channel Islands collaboration with Kal"
-        },
-        {
-          "name": "MSF",
-          "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/products/MSFG2-350x1000.jpg",
-          "description": "2nd generation single fin: Al Merrick created this retro beautyin 2003. Spiral vee single fin to be ridden narrower than the original first generation. Designed for good waves. Comes with a polished gloss finish, and a retro style resin tint. CUSTOM order ONLY"
         },
         {
           "name": "MTF Altered",
@@ -228,9 +163,9 @@
           "description": null
         },
         {
-          "name": "New Flyer",
-          "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/products/new_flyer_deck.png",
-          "description": "In 1999, Al Merrick designed the Flyer, revolutionizing high performance surfing in small waves. For 2013 Channel Islands has modernized the Flyer into a shorter and wider package. This new plan-shape allows for the same volume in a shorter rail line. We kept the forgiving 2-stage rocker and added spiral vee starting in front of the fins to allow for rail-to-rail quickness. The signature Merrick hip provides a pivot point for tight arcs. The New Flyer is now available with a unidirectional carbo"
+          "name": "Pod Mod",
+          "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/products/TQ20_XLITE_PODMOD_BLACK_Deck.png",
+          "description": "X-Lite Construction 5'10 x 20 7/8 x 2 5/8 Futures 5 fin set-up, fins not included Volume: 35.7L X-Lite is a torq Epoxy technology developed specifically for performance boards. This is lighter, stronger and more Eco than a traditional PU/Polyester board, now with a 50% thinner Shield Skin for weight reduction. This innovative technology is used exclusively on the X-Lite Channel Islands models"
         },
         {
           "name": "Proton Step-Up",
@@ -243,7 +178,7 @@
           "description": "The Rocket Wide has been one of our most versatile and popular boards and this new version brings a whole new flair to its qualities. \"Adding the squash tail to the Rocket Wide has given me a whole new perspective on the design. Ultimately what I love most about the Rocket Wide is how much speed it carries through a ride, and the squash really allows you to round out your turns and create smooth lines on the wave with all that speed. It has been a blast feeling that freshness under my feet and s"
         },
         {
-          "name": "Single Fin",
+          "name": "Semi Pro 12",
           "image_url": null,
           "description": null
         },
@@ -253,19 +188,14 @@
           "description": "This 2007 rework was the original CI Fish template thinned out for maximum performance. Al tuned the rails to make the Skinny Fish versatile in all kinds of waves. Comes standard clear with sanded finish, we recommend riding with four 4.5 Merrick fins."
         },
         {
-          "name": "SP12",
-          "image_url": null,
-          "description": null
-        },
-        {
           "name": "Sperm Whale",
           "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/products/sperm-whale-by-dane-reynolds.jpg",
           "description": "In 2012 we put Dane in a blue room with a block of foam, threw out the measuring tools, freehanded the outline, eyeballed the fin placement, ad had the ingredients for something completely differet. While the “Sperm Whale” is not for everyone, those with some wave knowledge and a penchant for challenge found an entirely different groove. Best as a small wave board. No set length to ride this board, but generally ride this board shorter than you are tall"
         },
         {
-          "name": "The",
-          "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/products/PVW_5_3_STOKE.jpg",
-          "description": "The ultimate twin fin soft board in our 2021 summer collection. This board was designed to help you catch waves easily, and bring to life your inner performance surfer. Great for kids and adults alike, it's your all around shred sled. - 5'3'' x 20'' x 3'' and V olume is 43 L - The thrill includes the premium Futures Fin boxes and Future fins (f6). This allows you to interchange different fin set ups, giving you multiple feelings from one board. - Durability - Our boards are constructed completel"
+          "name": "T-Low",
+          "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/products/t-low_deck1.png",
+          "description": "R&amp;D on the T-Low began with Tanner Gudauskas seeking a lower rockered shortboard and has resulted in an ultra-forgiving all-around performance board. The plan shape of the T-Low takes a different path than the extreme curves in the DFR and Proton by utilizing medium entry and low exit rockers. T-Low bottom contours combine single concave at the 12” mark to flat exit through the back fin. The rails are tapered so consider riding this board 1/16” thicker than your DFR, Rubble, Proton, Rookie, "
         },
         {
           "name": "The Biscuit",
@@ -276,6 +206,11 @@
           "name": "The Bisquit",
           "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/products/PVW_5_3_STOKE.jpg",
           "description": "The ultimate twin fin soft board in our 2021 summer collection. This board was designed to help you catch waves easily, and bring to life your inner performance surfer. Great for kids and adults alike, it's your all around shred sled. - 5'3'' x 20'' x 3'' and V olume is 43 L - The thrill includes the premium Futures Fin boxes and Future fins (f6). This allows you to interchange different fin set ups, giving you multiple feelings from one board. - Durability - Our boards are constructed completel"
+        },
+        {
+          "name": "The Black Beauty",
+          "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/products/black_beauty_deck.png",
+          "description": "The Black Beauty has become one of our most popular step up boards. A replica of Tom Curren’s famous 1985 Bell’s Beach, Occy beating, and world title winning board. Vee bottom makes this a great board for good waves. Power, speed and flow are timeless cornerstones of good style. The trend to shorter and wider boards has come at the expense of drive, and with top surfers around the globe revisiting power surfing, the timeless design of Curren’s 1985 Black Beauty has not gone unnoticed. As evident"
         },
         {
           "name": "The Caddi",
@@ -358,6 +293,11 @@
           "description": "During the early 2000s the MX was the yardstick of the shortboard line and CI’s longest standing shorty: low entry rocker with accelerated rocker out the tail. Offering a forgiving and responsive feel, the M-X works well with all types of surfers, but best for those who like to trim off the front foot and turn off the back foot. CUSTOM ORDER ONLY"
         },
         {
+          "name": "The New Flyer",
+          "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/products/new_flyer_deck.png",
+          "description": "In 1999, Al Merrick designed the Flyer, revolutionizing high performance surfing in small waves. For 2013 Channel Islands has modernized the Flyer into a shorter and wider package. This new plan-shape allows for the same volume in a shorter rail line. We kept the forgiving 2-stage rocker and added spiral vee starting in front of the fins to allow for rail-to-rail quickness. The signature Merrick hip provides a pivot point for tight arcs. The New Flyer is now available with a unidirectional carbo"
+        },
+        {
           "name": "The Performer",
           "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/products/performer-350x1000.jpg",
           "description": "In 1998 Al built his shortboard experience into a performance longboard: This board had accelerated rocker throughout and vee out the last third. Designed specifically with the modern longboarder in mind. Recommended as a single box fin with side biters. CUSTOM order ONLY"
@@ -408,16 +348,6 @@
           "description": "5'10 x 20 1/2 x 2 11/16 FCSII 5 Fin Volume: 34.3LL UL/SO 4+4/4 Glass Job The struggle of lackluster surf is real. So, Channel Islands created The Solution. Blending glide, paddle power, and versatility, The Solution is Britt Merrick’s most adaptable small-wave template yet. A fuller outline with a rounded tail increases planing area and drive through flat sections, while a single-to-generous double concave keeps the board quick, lively, and free underfoot. The Solution’s new rocker and outline a"
         },
         {
-          "name": "The Solution ECT EPOXY",
-          "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/files/ECT_SOLUTION_TOP-_-BOTTOM-FUTURES.jpg",
-          "description": "5'11 x 20 3/4 x 2 3/4 Futures 5 Fin Volume: 36L ECT EPS/EPOXY construction Pro Light 6/4 glass job ECT: Channel Islands Surfboards’ Eco Carbon Tech ( ECT ): a new carbon hand lamination that will level-up your performance. ECT built boards are livelier, stronger, familiar-feeling underfoot, and environmentally responsible. ECT boards are hand-built by the same crew of surfers that have been crafting your boards for years. Available in PU/PE and EPS/Epoxy constructions, ECT can be custom ordered "
-        },
-        {
-          "name": "The Solution Spinetek",
-          "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/files/SPINETEK_SOLUTION_TOP-_-BOTTOM_FCS2.jpg",
-          "description": "5'10 x 20 1/2 x 2 11/16 FCSII 5 Fin Volume: 34.3L Spine-Tek EPS/Epoxy UL/SO 4+4/4 Glass Job The struggle of lackluster surf is real. So, Channel Islands created The Solution. Blending glide, paddle power, and versatility, The Solution is Britt Merrick’s most adaptable small-wave template yet. A fuller outline with a rounded tail increases planing area and drive through flat sections, while a single-to-generous double concave keeps the board quick, lively, and free underfoot. The Solution’s new r"
-        },
-        {
           "name": "The Strange",
           "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/products/strange-350x1000.jpg",
           "description": "The Strange, developed by Al Merrick, provides for quick acceleration when walking the nose and trimming. It features a deep concave in the nose which runs to a rolled vee out the tail and pinched 50/50 rails. It gives you that nostalgic feel that you’ve been searching for and is a favorite of our team inbetween competitions. An all around fun board. Ideal Wave Size Ankle High to Head and a Half Fins For best results ride this board with the Merrick template—look for the hexagons. NOTICE as of 9"
@@ -433,14 +363,14 @@
           "description": "In late 2010 Channel Islands team rider and 1977 World Champ Shaun Tomson came to us wanting to design a board for the young at heart guy who wants a performance board but still wants to get the most out of the average waves they often find themselves riding. He also wanted a board that would get into waves quickly with immediate get up and go acceleration. The result was the Warp. This board features more volume, allowing for easy paddling and wave-catching. A single concave under the front foo"
         },
         {
+          "name": "The Water Hog",
+          "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/products/8_0-Waterjpg--f1-444530-Deck.jpg",
+          "description": "8'0 x 22 x 2 7/8 FCSII thruster fin setup, fins not included Gun Glassing, 6+4/6 glassing layup Volume: 58.9L *logo colors may vary"
+        },
+        {
           "name": "The Whip",
           "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/products/whip-bottom-225x800.jpg",
           "description": "In landlocked neighborhoods a man’s “whip” is his customized ride, his prized mode of transportation. During the Europe leg in 2009, Kelly’s “Whip” for less than perfect surf was his 5’9″ x 18 5/8″ x 2’5/16″ – one inch shorter than what he won Snapper and Bells on in 2008. This was Kelly and Al’s re-worked version of the Flyer, with a few secret changes. This board is faster and more forgiving. If you’re looking for a board that excels when your shortboard seems to bog, this is the board for you"
-        },
-        {
-          "name": "Tlow",
-          "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/products/t-low_deck1.png",
-          "description": "R&amp;D on the T-Low began with Tanner Gudauskas seeking a lower rockered shortboard and has resulted in an ultra-forgiving all-around performance board. The plan shape of the T-Low takes a different path than the extreme curves in the DFR and Proton by utilizing medium entry and low exit rockers. T-Low bottom contours combine single concave at the 12” mark to flat exit through the back fin. The rails are tapered so consider riding this board 1/16” thicker than your DFR, Rubble, Proton, Rookie, "
         },
         {
           "name": "Two Happy",
@@ -453,19 +383,9 @@
           "description": "The Happy is a new performance shortboard model built to give surfers the freedom to easily go wherever their mind takes them. Low entry rocker and strategically placed forward volume allow the board to paddle well, get up to speed quickly, and perform extremely well in the tube. To harness all that speed, Happy’s refined rails and thinned out tail make for a highly responsive board that is also extremely forgiving through critical maneuvers and it holds like a mutha – no matter how hard you tur"
         },
         {
-          "name": "Waterhog",
-          "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/products/8_0-Waterjpg--f1-444530-Deck.jpg",
-          "description": "8'0 x 22 x 2 7/8 FCSII thruster fin setup, fins not included Gun Glassing, 6+4/6 glassing layup Volume: 58.9L *logo colors may vary"
-        },
-        {
           "name": "Wizard Sleeve",
           "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/products/wizard-sleeve-bottom.jpg",
           "description": "Imagine riding a wave without a surfboard under your feet, exploring parts of the wave that the length of a normal surfboard usually prohibits… For this, Kelly created the wizard sleeve, possibly the closest thing to surfing without a board. If you are ready for the volume of your standard short board hidden in a board that is 6-8 inches shorter, then maybe you are ready for this board. The vee bottom on the Wizard Sleeve allows for smooth rail to rail transitions while the wider nose area in th"
-        },
-        {
-          "name": "X-Lite Pod Mod Black",
-          "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/products/TQ20_XLITE_PODMOD_BLACK_Deck.png",
-          "description": "X-Lite Construction 5'10 x 20 7/8 x 2 5/8 Futures 5 fin set-up, fins not included Volume: 35.7L X-Lite is a torq Epoxy technology developed specifically for performance boards. This is lighter, stronger and more Eco than a traditional PU/Polyester board, now with a 50% thinner Shield Skin for weight reduction. This innovative technology is used exclusively on the X-Lite Channel Islands models"
         }
       ]
     },
@@ -6715,7 +6635,7 @@
   ],
   "summary": {
     "brand_count": 19,
-    "model_count": 1300,
-    "image_count": 1176
+    "model_count": 1284,
+    "image_count": 1161
   }
 }
