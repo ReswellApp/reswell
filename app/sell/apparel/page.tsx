@@ -1,8 +1,8 @@
 import type { Metadata } from "next"
 import { redirect } from "next/navigation"
+import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
 import { APPAREL_SELL_ADMIN_ONLY } from "@/lib/apparel-listing-config"
 import { fetchProfileIsAdmin } from "@/lib/db/profileAdmin"
-import { createClient } from "@/lib/supabase/server"
 import SellApparelFlow from "./sell-apparel-client"
 
 const title = "Sell your apparel — Reswell"
@@ -42,10 +42,7 @@ export default async function SellApparelPage({
   searchParams: Promise<{ edit?: string | string[] }>
 }) {
   if (APPAREL_SELL_ADMIN_ONLY) {
-    const supabase = await createClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    const { supabase, user } = await getCachedRequestSession()
     if (!user) {
       redirect("/sell")
     }

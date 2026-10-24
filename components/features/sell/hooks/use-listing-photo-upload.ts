@@ -357,12 +357,18 @@ export function useListingPhotoUpload({
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session?.user) return
       photoUploadSignInPromptedRef.current = false
-      for (const slot of imagesRef.current) {
-        if (!slot.sourceFile) continue
-        if (slot.uploadPhase === "done") continue
-        // pending_auth / error / idle all retry once the session is live.
-        void optimizeAndUploadSlot(slot)
-      }
+      const pending = imagesRef.current.filter(
+        (slot) => slot.sourceFile && slot.uploadPhase !== "done",
+      )
+      if (!pending.length) return
+      // Defer until the auth lock is released. Uploading from inside
+      // TOKEN_REFRESHED nests getSession and can sign the seller out.
+      window.setTimeout(() => {
+        for (const slot of pending) {
+          // pending_auth / error / idle all retry once the session is live.
+          void optimizeAndUploadSlot(slot)
+        }
+      }, 0)
     })
     return () => subscription.unsubscribe()
   }, [optimizeAndUploadSlot])

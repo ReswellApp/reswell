@@ -73,6 +73,20 @@ export function isInvalidRefreshTokenError(error: unknown): boolean {
   )
 }
 
+/**
+ * GoTrue rejected a refresh because this token was already rotated.
+ * A parallel request (middleware vs the browser client, or two tabs) usually
+ * won and stored the new session. Clearing cookies here wipes that winner and
+ * signs the user out. Do not treat this like `invalid_refresh_token`.
+ */
+export function isRefreshTokenAlreadyUsedError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false
+  const code = (error as { code?: unknown }).code
+  if (code === 'refresh_token_already_used') return true
+  const message = (error as { message?: unknown }).message
+  return typeof message === 'string' && /already used/i.test(message)
+}
+
 /** True when there is no session yet (e.g. OAuth callback before code exchange). */
 export function isAuthSessionMissingError(error: unknown): boolean {
   if (!error || typeof error !== 'object') return false
@@ -132,6 +146,7 @@ export function isTransientAuthNetworkError(error: unknown): boolean {
 export function isNonFatalGetUserError(error: unknown): boolean {
   return (
     isBenignAuthSessionError(error) ||
+    isRefreshTokenAlreadyUsedError(error) ||
     isTransientAuthNetworkError(error) ||
     isAuthServiceDegradedError(error) ||
     isAuthLockTimeoutError(error) ||

@@ -1,11 +1,9 @@
 /**
- * In-tab auth lock for the browser Supabase client.
+ * In-tab auth lock. The browser Supabase client must not pass this as `auth.lock`.
  *
- * `@supabase/auth-js` (2.95) uses `navigator.locks` and acquires it during
- * init with no timeout (`-1`). Chrome on macOS does not release that lock
- * when a tab is frozen or discarded, so `getSession()` / `signInWithPassword()`
- * never resolve. `/auth/login` then stays on the spinner. This queue serializes
- * auth work in the current tab only. GoTrue resolves cross-tab refresh races.
+ * auth-js 2.118 coordinates refreshes without a lock and does not use
+ * `navigator.locks`. Supplying a custom lock opts into the legacy path, where a
+ * 5s acquire timeout during a sell photo batch deletes the session.
  */
 
 const pendingByName = new Map<string, Promise<unknown>>()

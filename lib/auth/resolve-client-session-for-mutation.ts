@@ -21,6 +21,29 @@ async function probeServerSessionReadyOnce(): Promise<boolean | null> {
 }
 
 /**
+ * A batch of sell photos used to call this once per file. Each call can refresh
+ * the access token. Parallel refreshes make GoTrue return
+ * "Invalid Refresh Token: Already Used", which revokes the session — the sell
+ * page then logs the user out and leaves every photo on "sign in to upload".
+ * Share one in-flight lookup, and reuse a fresh success for a few seconds.
+ */
+const SESSION_CACHE_MS = 4_000
+let inFlightResolution: Promise<Session | null> | null = null
+let cachedResolution: { session: Session; cachedAt: number } | null = null
+
+export function clearResolvedClientSessionCache(): void {
+  inFlightResolution = null
+  cachedResolution = null
+}
+
+function cachedSessionStillFresh(session: Session, now: number): boolean {
+  if (now - (cachedResolution?.cachedAt ?? 0) >= SESSION_CACHE_MS) return false
+  const expiresAt = session.expires_at
+  if (typeof expiresAt !== "number") return true
+  return expiresAt * 1000 - now > 60_000
+}
+
+/**
  * Resolve a Supabase session for client-side mutations (photo upload, publish, etc.).
  * Tolerates cookie lag and brief token-refresh windows so gated actions do not
  * spuriously open the login modal for users who are already signed in.
@@ -29,6 +52,35 @@ async function probeServerSessionReadyOnce(): Promise<boolean | null> {
  * for seconds before opening sign-up.
  */
 export async function resolveClientSessionForMutation(
+  supabase: SupabaseClient,
+): Promise<Session | null> {
+  const now = Date.now()
+  if (
+    cachedResolution &&
+    cachedSessionStillFresh(cachedResolution.session, now)
+  ) {
+    return cachedResolution.session
+  }
+
+  if (inFlightResolution) return inFlightResolution
+
+  inFlightResolution = resolveClientSessionForMutationUncached(supabase)
+    .then((session) => {
+      if (session?.access_token && session.user) {
+        cachedResolution = { session, cachedAt: Date.now() }
+      } else {
+        cachedResolution = null
+      }
+      return session
+    })
+    .finally(() => {
+      inFlightResolution = null
+    })
+
+  return inFlightResolution
+}
+
+async function resolveClientSessionForMutationUncached(
   supabase: SupabaseClient,
 ): Promise<Session | null> {
   const { data: immediate } = await supabase.auth.getSession()

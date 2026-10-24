@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { resolveClientSessionForMutation } from "@/lib/auth/resolve-client-session-for-mutation"
 import type { PreparedListingImagePair } from "@/lib/listing-image-pipeline"
 import { listingObjectPublicUrl } from "@/lib/supabase/storage-upload-xhr"
 
@@ -63,21 +64,12 @@ function enqueueListingImageUpload<T>(task: () => Promise<T>): Promise<T> {
   return listingUploadQueue.run(task)
 }
 
-async function assertListingUploadAuth(supabase: SupabaseClient): Promise<void> {
-  const { data: { user }, error } = await supabase.auth.getUser()
-  if (error || !user) {
-    throw new Error("Sign in again to upload this photo.")
-  }
-}
-
 async function uploadListingBlob(opts: {
   supabase: SupabaseClient
   pathInBucket: string
   body: Blob
   contentType: string
 }): Promise<void> {
-  await assertListingUploadAuth(opts.supabase)
-
   const { error } = await opts.supabase.storage.from("listings").upload(
     opts.pathInBucket,
     opts.body,
@@ -106,6 +98,14 @@ export async function uploadListingImagePairToSupabase(opts: {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""
     if (!supabaseUrl) {
       throw new Error("Upload is not configured.")
+    }
+
+    // One shared session lookup per batch — not getUser() on every blob.
+    // Four network auth checks per photo was enough to rotate the refresh
+    // token out from under the sell page and sign the seller out.
+    const session = await resolveClientSessionForMutation(supabase)
+    if (!session?.user) {
+      throw new Error("Sign in again to upload this photo.")
     }
 
     const ts = Date.now()
