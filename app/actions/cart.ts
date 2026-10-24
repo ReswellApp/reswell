@@ -3,7 +3,6 @@
 import { randomUUID } from "node:crypto"
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
-import { isCartEligibleSection } from "@/lib/cart-eligibility"
 import { attachListingInventorySources } from "@/lib/db/listingInventorySource"
 import { fetchAcceptedOffersForBuyerListings } from "@/lib/db/offers"
 import { trackKlaviyoAddedToCart } from "@/lib/klaviyo/track-added-to-cart"
@@ -17,6 +16,7 @@ import { trackMetaAddToCartServerEvent } from "@/lib/meta/track-add-to-cart-serv
 import { captureServerEvent } from "@/lib/posthog-server"
 import { acceptedUnitPriceForSingleItemOffer } from "@/lib/services/acceptedOfferCheckout"
 import { assertListingEligibleForCart, peerSurfboardAddCapError } from "@/lib/services/cartEligibility"
+import { keepCartPageListing, peerListingIdsForAcceptedOffers } from "@/lib/services/cartPageItems"
 import {
   cartFromCartCheckoutHref,
   cartItemCountFromQuantities,
@@ -503,7 +503,7 @@ export async function getCartPageItems(): Promise<{
     const L = Array.isArray(Lraw) ? Lraw[0] : Lraw
     if (!L) continue
     if (
-      !isListingPurchasable(
+      !keepCartPageListing(
         L as CartListingRow & {
           hidden_from_site?: boolean | null
           archived_at?: string | null
@@ -512,7 +512,6 @@ export async function getCartPageItems(): Promise<{
     ) {
       continue
     }
-    if (!isCartEligibleSection(L.section)) continue
     const p = L.profiles
     const profiles = Array.isArray(p) ? (p[0] ?? null) : (p ?? null)
     const listing: CartListingRow = { ...L, profiles }
@@ -547,9 +546,7 @@ export async function getCartPageItems(): Promise<{
     }
   })
 
-  const peerIds = items
-    .filter((row) => isPeerListingSection(row.listing.section))
-    .map((row) => row.listing.id)
+  const peerIds = peerListingIdsForAcceptedOffers(items.map((row) => row.listing))
   const acceptedOffers = await fetchAcceptedOffersForBuyerListings(supabase, user.id, peerIds)
   if (acceptedOffers.length > 0) {
     const agreedByListingId = new Map<string, number>()
