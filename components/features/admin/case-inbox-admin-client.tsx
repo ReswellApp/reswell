@@ -1,6 +1,14 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react"
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  useTransition,
+} from "react"
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { Inbox, PanelRight, RefreshCw } from "lucide-react"
@@ -23,6 +31,7 @@ import {
   filterInboxItems,
   findInboxItemBySelection,
   inboxLoadQueryKey,
+  inboxMobileShowsConversation,
   inboxViewFromSearchParams,
   mergeInboxPageItems,
   nextInboxSelectedKey,
@@ -76,6 +85,23 @@ import { cn } from "@/lib/utils"
 /** Deep link for order-type filter (legacy tab redirects land here). */
 export const ADMIN_SUPPORT_INBOX_ORDER_SUPPORT_HREF = "/admin/contact-messages?type=order"
 
+/** Matches the `md:` split used to hide the ticket list on phones. */
+const INBOX_NARROW_QUERY = "(max-width: 767px)"
+
+function subscribeInboxNarrow(onStoreChange: () => void) {
+  const mql = window.matchMedia(INBOX_NARROW_QUERY)
+  mql.addEventListener("change", onStoreChange)
+  return () => mql.removeEventListener("change", onStoreChange)
+}
+
+function getInboxNarrowSnapshot() {
+  return window.matchMedia(INBOX_NARROW_QUERY).matches
+}
+
+function useInboxNarrowViewport() {
+  return useSyncExternalStore(subscribeInboxNarrow, getInboxNarrowSnapshot, () => false)
+}
+
 const CASE_DRAFT_STORAGE_PREFIX = "reswell:support-draft:v1:"
 
 function readCaseDraft(caseId: string) {
@@ -108,6 +134,7 @@ export function CaseInboxAdminClient({
   const pathname = usePathname() ?? "/admin/contact-messages"
   const router = useRouter()
   const searchParams = useSearchParams()
+  const inboxNarrow = useInboxNarrowViewport()
 
   const parsed = inboxViewFromSearchParams({
     view: searchParams.get("view"),
@@ -336,10 +363,22 @@ export function CaseInboxAdminClient({
       filtered,
       selectedKey,
       loading,
+      autoSelectFirst: !inboxNarrow,
     })
     // undefined = keep the current key, including an unresolved ?case=
     if (nextKey !== undefined) setSelectedKey(nextKey)
-  }, [filtered, items, selectedKey, loading])
+  }, [filtered, items, selectedKey, loading, inboxNarrow])
+
+  const showMobileConversation = inboxMobileShowsConversation({
+    hasSelectedItem: Boolean(selected),
+    selectedKey,
+    loading,
+  })
+
+  const clearSelectedConversation = useCallback(() => {
+    setSelectedKey(null)
+    setDetailsOpen(false)
+  }, [])
 
   useEffect(() => {
     syncUrl(view, typeOverlay, selectedKey)
@@ -841,7 +880,7 @@ export function CaseInboxAdminClient({
         <section
           className={cn(
             "h-full min-h-0 flex-col overflow-hidden border-border/60 md:flex md:w-[260px] md:shrink-0 md:border-r xl:w-[280px]",
-            selectedKey ? "hidden md:flex" : "flex w-full",
+            showMobileConversation ? "hidden md:flex" : "flex w-full",
           )}
         >
           <div className="shrink-0 border-b border-border/40 px-2 py-2 2xl:hidden">
@@ -889,14 +928,25 @@ export function CaseInboxAdminClient({
         <section
           className={cn(
             "flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden",
-            selectedKey ? "flex" : "hidden md:flex",
+            showMobileConversation ? "flex" : "hidden md:flex",
           )}
         >
           {!selected ? (
-            <div className="flex flex-1 flex-col items-center justify-center gap-2 text-muted-foreground">
-              <Inbox className="h-10 w-10 opacity-30" />
-              <p className="text-sm">Select a conversation</p>
-              <p className="text-xs">Press ? for keyboard shortcuts</p>
+            <div className="flex flex-1 flex-col">
+              {selectedKey ? (
+                <button
+                  type="button"
+                  className="mb-1 self-start px-5 pt-4 text-xs text-muted-foreground md:hidden"
+                  onClick={clearSelectedConversation}
+                >
+                  ← Inbox
+                </button>
+              ) : null}
+              <div className="flex flex-1 flex-col items-center justify-center gap-2 text-muted-foreground">
+                <Inbox className="h-10 w-10 opacity-30" />
+                <p className="text-sm">Select a conversation</p>
+                <p className="text-xs">Press ? for keyboard shortcuts</p>
+              </div>
             </div>
           ) : (
             <div className="flex min-h-0 flex-1 overflow-hidden">
@@ -924,10 +974,7 @@ export function CaseInboxAdminClient({
                   draft={draft}
                   pending={replyPending}
                   savePending={savePending}
-                  onBack={() => {
-                    setDetailsOpen(false)
-                    setSelectedKey(null)
-                  }}
+                  onBack={clearSelectedConversation}
                   onOpenDetails={() => setDetailsOpen(true)}
                   onTake={takeSelected}
                   onAssigned={(id) => {
