@@ -1,4 +1,3 @@
-import * as AppleAuthentication from "expo-apple-authentication"
 import { useRouter } from "expo-router"
 import { useEffect, useState } from "react"
 import {
@@ -16,16 +15,11 @@ import { fontFamily, useReswellColors } from "@/theme"
 export default function SignInScreen() {
   const colors = useReswellColors()
   const router = useRouter()
-  const { configured, session, signIn, signInWithGoogle, signInWithApple } = useAuth()
+  const { configured, session, signIn, signInWithGoogle } = useAuth()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
-  const [appleAvailable, setAppleAvailable] = useState(false)
-
-  useEffect(() => {
-    AppleAuthentication.isAvailableAsync().then(setAppleAvailable).catch(() => setAppleAvailable(false))
-  }, [])
 
   useEffect(() => {
     if (session) router.dismissTo("/")
@@ -101,26 +95,6 @@ export default function SignInScreen() {
               </Text>
             )}
           </Pressable>
-          {appleAvailable ? (
-            <AppleAuthentication.AppleAuthenticationButton
-              buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-              buttonStyle={
-                colors.background === "#FFFFFF"
-                  ? AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
-                  : AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
-              }
-              cornerRadius={8}
-              style={styles.apple}
-              onPress={() => {
-                setBusy(true)
-                setError(null)
-                void signInWithApple().then((message) => {
-                  setError(message)
-                  setBusy(false)
-                })
-              }}
-            />
-          ) : null}
         </View>
       )}
     </View>
@@ -155,6 +129,5 @@ const styles = StyleSheet.create({
   },
   googleMark: { color: "#4285F4", fontSize: 18, fontWeight: "700" },
   googleLabel: { fontSize: 16, fontWeight: "600" },
-  apple: { width: "100%", height: 48 },
   error: { fontSize: 15 },
 })

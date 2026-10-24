@@ -1,7 +1,7 @@
 import { SymbolView } from "expo-symbols"
 import { useEffect, useState } from "react"
 import { Pressable, StyleSheet, Text, View } from "react-native"
-import { SellField } from "@/components/sell/sell-field"
+import { SellField, SellSwitchField } from "@/components/sell/sell-field"
 import { SellLocationField } from "@/components/sell/sell-location-field"
 import { SellPackageDimensionsCard } from "@/components/sell/sell-package-dimensions-card"
 import { fetchSellDropoffLocations } from "@/lib/api"
@@ -61,20 +61,15 @@ export function SellPlaceStep({
   const surfboard = draft.category === SURFBOARDS_CATEGORY_SLUG
 
   const shippingChoice = fulfillment.shipping_toggle ? (
-    <CheckChoice
+    <SellSwitchField
       label={fulfillment.shipping_label}
-      badge={fulfillment.shipping_badge}
-      checked={draft.shipping}
-      onPress={() => setShipping(!draft.shipping)}
+      value={draft.shipping}
+      onValueChange={setShipping}
+      trailing={fulfillment.shipping_badge ? <Badge label={fulfillment.shipping_badge} /> : null}
     />
   ) : null
   const pickupChoice = fulfillment.local_pickup ? (
-    <CheckChoice
-      label="Local pickup"
-      badge={null}
-      checked={draft.localPickup}
-      onPress={() => setPickup(!draft.localPickup)}
-    />
+    <SellSwitchField label="Local pickup" value={draft.localPickup} onValueChange={setPickup} />
   ) : null
 
   function setShipping(next: boolean) {
@@ -295,39 +290,6 @@ function ShippingCostOptions({
   )
 }
 
-function CheckChoice({
-  label,
-  badge,
-  checked,
-  onPress,
-}: {
-  label: string
-  badge: string | null
-  checked: boolean
-  onPress: () => void
-}) {
-  const colors = useReswellColors()
-  return (
-    <Pressable accessibilityRole="checkbox" accessibilityState={{ checked }} onPress={onPress} style={styles.checkRow}>
-      <View
-        style={[
-          styles.box,
-          {
-            borderColor: checked ? colors.listingHeart : colors.foreground,
-            backgroundColor: checked ? colors.listingHeart : "transparent",
-          },
-        ]}
-      >
-        {checked ? (
-          <SymbolView name={{ ios: "checkmark", android: "check", web: "check" }} size={12} tintColor="#FFFFFF" weight="bold" />
-        ) : null}
-      </View>
-      <Text style={[styles.checkLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}>{label}</Text>
-      {badge ? <Badge label={badge} /> : null}
-    </Pressable>
-  )
-}
-
 function Badge({ label }: { label: string }) {
   const colors = useReswellColors()
   return (
@@ -450,9 +412,6 @@ const styles = StyleSheet.create({
   note: { fontSize: 14, lineHeight: 20 },
   noteStack: { gap: 8 },
   retry: { fontSize: 14, fontWeight: "700", textDecorationLine: "underline" },
-  checkRow: { flexDirection: "row", alignItems: "center", gap: 10, minHeight: 28 },
-  box: { width: 18, height: 18, borderRadius: 4, borderWidth: 1.5, alignItems: "center", justifyContent: "center" },
-  checkLabel: { fontSize: 15, fontWeight: "600" },
   options: { gap: 10 },
   shippingSection: { borderWidth: 1, borderRadius: 12, overflow: "hidden" },
   sectionDivider: { height: StyleSheet.hairlineWidth },

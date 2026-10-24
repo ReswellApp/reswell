@@ -49,24 +49,24 @@ export function SellBoardSpecs({
   const dimensionFields = dimensions?.fields ?? []
   const facetFields = facets?.fields ?? []
 
-  const dimensionsFilled = dimensionFields.some((field) => fieldHasValue(field, values[field.id] ?? ""))
-  const facetsFilled = facetFields.some((field) => fieldHasValue(field, values[field.id] ?? ""))
+  const specFields = [...dimensionFields, ...facetFields]
+  const specsFilled = specFields.some((field) => fieldHasValue(field, values[field.id] ?? ""))
   const lengthField = dimensionFields.find((field) => field.id === "length")
   const lengthFilled = lengthField ? fieldHasValue(lengthField, values.length ?? "") : false
 
   return (
     <View style={styles.stack}>
       <Text style={[styles.lead, { color: colors.muted, fontFamily: fontFamily.text }]}>
-        Tap Dimensions to add length (required for search), size, and volume. Fins & construction are optional.
+        Add length (required for search), size, and volume. Fins and construction are optional.
       </Text>
 
-      {dimensionFields.length > 0 ? (
+      {specFields.length > 0 ? (
         <SellCollapsibleSection
-          title="Dimensions"
+          title="Dimensions & fins"
           subtitle={
-            dimensionsFilled
-              ? dimensionsSummary(dimensionFields, values, decimals)
-              : "Length, width, thickness & volume"
+            specsFilled
+              ? specsSummary(dimensionFields, facetFields, values, decimals)
+              : "Length, width, thickness, volume, fins & construction"
           }
           defaultExpanded={!lengthFilled}
         >
@@ -85,21 +85,6 @@ export function SellBoardSpecs({
                 />
               </View>
             ))}
-          </View>
-        </SellCollapsibleSection>
-      ) : null}
-
-      {facetFields.length > 0 ? (
-        <SellCollapsibleSection
-          title={facets?.title ?? "Fins & construction"}
-          subtitle={
-            facetsFilled
-              ? facetsSummary(facetFields, values, decimals)
-              : (facets?.hint ?? "Fin setup, system, construction & more")
-          }
-          defaultExpanded={facetsFilled}
-        >
-          <View style={styles.fields}>
             {facetFields.map((field) => (
               <SpecField
                 key={field.id}
@@ -153,6 +138,23 @@ function SpecField({
       onPress={() => onOpenPicker?.(field.id, decimals)}
     />
   )
+}
+
+function specsSummary(
+  dimensionFields: MobileSellSpecField[],
+  facetFields: MobileSellSpecField[],
+  values: Record<string, string>,
+  decimals: boolean,
+): string {
+  const parts: string[] = []
+  if (dimensionFields.some((field) => fieldHasValue(field, values[field.id] ?? ""))) {
+    parts.push(dimensionsSummary(dimensionFields, values, decimals))
+  }
+  if (facetFields.some((field) => fieldHasValue(field, values[field.id] ?? ""))) {
+    parts.push(facetsSummary(facetFields, values, decimals))
+  }
+  if (parts.length === 0) return "Length, width, thickness, volume, fins & construction"
+  return parts.join(" · ")
 }
 
 function dimensionsSummary(fields: MobileSellSpecField[], values: Record<string, string>, decimals: boolean): string {

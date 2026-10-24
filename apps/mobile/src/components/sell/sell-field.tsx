@@ -1,4 +1,5 @@
 import { SymbolView } from "expo-symbols"
+import type { ReactNode } from "react"
 import { Pressable, StyleSheet, Switch, Text, TextInput, View } from "react-native"
 import { fontFamily, useReswellColors } from "@/theme"
 
@@ -84,15 +85,20 @@ export function SellSwitchField({
   label,
   value,
   onValueChange,
+  trailing,
 }: {
   label: string
   value: boolean
   onValueChange: (next: boolean) => void
+  trailing?: ReactNode
 }) {
   const colors = useReswellColors()
   return (
     <View style={styles.switchWrap}>
-      <Text style={[styles.switchLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}>{label}</Text>
+      <Pressable accessible={false} onPress={() => onValueChange(!value)} style={styles.switchLabelRow}>
+        <Text style={[styles.switchLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}>{label}</Text>
+        {trailing}
+      </Pressable>
       <Switch
         accessibilityLabel={label}
         value={value}
@@ -167,7 +173,8 @@ const styles = StyleSheet.create({
     gap: 12,
     minHeight: 44,
   },
-  switchLabel: { flex: 1, fontSize: 16, fontWeight: "500" },
+  switchLabelRow: { flex: 1, flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 8 },
+  switchLabel: { flexShrink: 1, fontSize: 16, fontWeight: "500" },
   select: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
   selectLabel: { flex: 1, fontSize: 16 },
 })
