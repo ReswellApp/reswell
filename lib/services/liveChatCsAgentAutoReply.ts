@@ -9,7 +9,13 @@ import {
 import { replaceLatestMatchingSupportCaseAgentBody } from "@/lib/db/supportCases"
 import { isLatestLiveChatAutoReply, latestLiveChatVisitorContent } from "@/lib/live-chat/thread-sync"
 import { isLiveChatShipFromLabelUpdateIntent } from "@/lib/live-chat/label-update-intent"
-import { resolveLiveChatFallbackReply } from "@/lib/live-chat/fallback-reply"
+import {
+  LIVE_CHAT_LOOK_INTO_IT_REPLY,
+  isLiveChatGeneratedUngroundedReply,
+  isLiveChatLookIntoItReply,
+  resolveLiveChatFallbackReply,
+  shouldCreateLiveChatLookIntoItFollowUp,
+} from "@/lib/live-chat/fallback-reply"
 import { isLiveChatPresenceIntent } from "@/lib/live-chat/greeting-intent"
 import { isLiveChatCannedFailureReply } from "@/lib/live-chat/live-chat-cs-prompt"
 import {
@@ -21,6 +27,7 @@ import { liveChatPersonaAlreadyJoined } from "@/lib/live-chat/human-feel"
 import {
   appendLiveChatAgentTurnToCase,
   appendLiveChatVisitorTurnToCase,
+  ensureLiveChatLookIntoItFollowUp,
   openLiveChatSupportCase,
 } from "@/lib/services/liveChatSupportCase"
 import { bootstrapLiveChatLabelUpdate } from "@/lib/services/liveChatShipFromLabelUpdate"
@@ -136,7 +143,13 @@ async function generateWithModel(
   ])
   if (!draft || "error" in draft) return null
   const body = "data" in draft ? draft.data.body.trim() : draft.body.trim()
-  if (!body || isLiveChatCannedFailureReply(body)) return null
+  if (
+    !body ||
+    isLiveChatCannedFailureReply(body) ||
+    isLiveChatGeneratedUngroundedReply(body, visitorMessage)
+  ) {
+    return null
+  }
   return {
     body,
     closeTicket: "closeTicket" in draft && draft.closeTicket === true,
@@ -276,20 +289,21 @@ export async function autoSendLiveChatCsAgentReply(
       }
     }
 
-    const generated = caseId
-      ? await generateDraftBodyWithBudget(
-          svc,
-          caseId,
-          workingSession,
-          persona.firstName,
-          visitorMessage.content,
-        )
-      : null
-    if (generated) return { ...generated, needsHumanReview: false }
+    const generated = await generateDraftBodyWithBudget(
+      svc,
+      caseId,
+      workingSession,
+      persona.firstName,
+      visitorMessage.content,
+    )
+    if (generated && !isLiveChatLookIntoItReply(generated.body)) {
+      return { ...generated, needsHumanReview: false }
+    }
+    const body = generated?.body.trim() || resolveLiveChatFallbackReply(visitorMessage.content)
     return {
-      body: resolveLiveChatFallbackReply(visitorMessage.content),
+      body,
       closeTicket: false,
-      needsHumanReview: Boolean(caseId),
+      needsHumanReview: shouldCreateLiveChatLookIntoItFollowUp(body) || Boolean(caseId),
     }
   })()
 
@@ -314,22 +328,41 @@ export async function autoSendLiveChatCsAgentReply(
     })
 
     const generated = await generatePromise
-    const body = generated.body
+    let body = generated.body
     const closeTicket = generated.closeTicket
-    const needsHumanReview = generated.needsHumanReview
+    let needsHumanReview = generated.needsHumanReview
+    let replySession = workingSession
+    let replyCaseId = caseId
+
+    if (shouldCreateLiveChatLookIntoItFollowUp(body)) {
+      const fallback = resolveLiveChatFallbackReply(visitorMessage.content)
+      if (isLiveChatLookIntoItReply(fallback)) {
+        const followUp = await ensureLiveChatLookIntoItFollowUp(
+          svc,
+          workingSession,
+          visitorMessage.content,
+        )
+        replySession = followUp.session
+        replyCaseId = followUp.caseId
+        needsHumanReview = true
+        body = LIVE_CHAT_LOOK_INTO_IT_REPLY
+      } else {
+        body = fallback
+      }
+    }
 
     await holdLiveChatHumanFeel({
-      sessionId: workingSession.id,
+      sessionId: replySession.id,
       visitorContent: visitorMessage.content,
       replyContent: body,
       isFirstJoin,
       startedAtMs,
     })
 
-    const sent = await persistTeamReply(svc, workingSession, caseId, body, persona.firstName)
+    const sent = await persistTeamReply(svc, replySession, replyCaseId, body, persona.firstName)
     if (
       sent &&
-      caseId &&
+      replyCaseId &&
       shouldHonorLiveChatTicketClose({
         closeTicket,
         reply: body,
@@ -338,23 +371,29 @@ export async function autoSendLiveChatCsAgentReply(
       })
     ) {
       await resolveLiveChatConversation(svc, {
-        ...workingSession,
-        support_case_id: caseId,
-        contact_message_id: opened?.contactMessageId || workingSession.contact_message_id,
+        ...replySession,
+        support_case_id: replyCaseId,
+        contact_message_id: opened?.contactMessageId || replySession.contact_message_id,
       })
     }
     return sent
   } catch (error) {
     console.error("[liveChatCsAgentAutoReply] reply failed:", error)
-    return persistTeamReply(
-      svc,
-      workingSession,
-      caseId,
-      isLabelIntent
-        ? LIVE_CHAT_LABEL_UPDATE_REPLY
-        : resolveLiveChatFallbackReply(visitorMessage.content),
-      persona.firstName,
-    )
+    const fallbackBody = isLabelIntent
+      ? LIVE_CHAT_LABEL_UPDATE_REPLY
+      : resolveLiveChatFallbackReply(visitorMessage.content)
+    let replySession = workingSession
+    let replyCaseId = caseId
+    if (shouldCreateLiveChatLookIntoItFollowUp(fallbackBody)) {
+      const followUp = await ensureLiveChatLookIntoItFollowUp(
+        svc,
+        workingSession,
+        visitorMessage.content,
+      )
+      replySession = followUp.session
+      replyCaseId = followUp.caseId
+    }
+    return persistTeamReply(svc, replySession, replyCaseId, fallbackBody, persona.firstName)
   } finally {
     await broadcastLiveChatTyping({
       sessionId: workingSession.id,
