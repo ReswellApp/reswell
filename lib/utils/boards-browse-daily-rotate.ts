@@ -98,6 +98,24 @@ export function orderListingIdsForDailyRotate(
  * `skipIds` (e.g. suppressed) keep their existing position instead of being promoted.
  * Unknown pin ids (inactive / not in this view) are dropped.
  */
+/**
+ * Rotate ID pages must sort on `created_at` so they hit
+ * `listings_surfboards_public_browse_created_idx`. `order by id` cannot use that
+ * partial index; the unfiltered `/boards` scan then times out, returns [], and
+ * the hourly cache serves the empty-state card while `?sort=newest` still works.
+ */
+export const BOARDS_BROWSE_ROTATE_ID_SCAN_SORT = "created-at"
+
+/** When the seeded shuffle cannot build a page, fall through to indexed newest. */
+export function shouldFallbackBoardsBrowseRotate(input: {
+  idRowCount: number
+  pageIdCount: number
+  hydratedCount: number
+}): boolean {
+  if (input.idRowCount === 0) return true
+  return input.pageIdCount > 0 && input.hydratedCount === 0
+}
+
 export function prependPinnedListingIds(
   orderedIds: string[],
   pinnedIds: string[],
