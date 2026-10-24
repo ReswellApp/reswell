@@ -1,0 +1,37 @@
+{
+  "generated_for": "SR Surfboards official named standup catalog",
+  "source": "https://sr-surfboards.com/products.json and official product pages on sr-surfboards.com (Shopify). Skips custom deposits and empty apparel collection.",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "sr-surfboards",
+      "name": "SR Surfboards",
+      "website_url": "https://sr-surfboards.com",
+      "location_label": "Frisco, North Carolina",
+      "founder_name": "Scott Romig",
+      "lead_shaper_name": "Scott Romig",
+      "short_description": "Hand-shaped surfboards by Scott Romig in Frisco, North Carolina — built start to finish in the Outer Banks with US Blanks, Hexcel fiberglass, and Silmar resin.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/sr-surfboards.png",
+      "models": [
+        {
+          "name": "OBX Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0670/7465/4529/products/obxfishtop.jpg",
+          "description": "This template was developed in Morocco and is one of my all time favorite performance fish outlines. The outline features a moderately wide nose, a forward wide point and a slight hip that pulls into a tighter swallow tail. It has been adapted a bit for the waves encountered in the Outer Banks with a slightly more thinned out tail for control in steeper faces. A concave deck gets your feet closer to the water without too much reduction in volume. The bottom is a double concave inside of a belly vee that flattens a bit mid board and then reaccelerates out the tail, giving the board a somewhat aggressive rail line rocker, while flattening out the stringer line rocker. Paired with the deep double concaves, this board is incredible fast and responsive on rail. Glassed in a 4oz Outer Banks nautical chart fiber lam plus 6oz S cloth on the deck and 4oz S cloth plus a 4oz S fin patch on the bottom. Made using US blanks with an applecore stringer for a bit more break resistance and Lati wood plug reinforcements.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Asym Twin +",
+          "image_url": "https://cdn.shopify.com/s/files/1/0670/7465/4529/products/asymtwintop.jpg",
+          "description": "A newly developed asym twin based off a combination my favorite mid length asym and performance asym. This board features two channels on the heel side and one on the toe side and a double concave inside a belly vee. This concept was developed for a combination of low drama late drops, plenty of available speed, and larger arcing carves, ideally in overhead surf. Glassed in 4oz S cloth with a 4s fin patch on the bottom, and double 4s on the deck, this board is the perfect combination of strength and light weight. A lati wood fin plug reinforcement helps ensure longevity of the toe side fin plug.",
+          "board_category_slug": "asym"
+        },
+        {
+          "name": "East Coast Tube Shooter",
+          "image_url": "https://cdn.shopify.com/s/files/1/0670/7465/4529/products/tubeshootertop.jpg",
+          "description": "This board was designed for the heavier East Coast days. Slight entry vee helps cut through surface chop. Mid board features a double concave set inside a single that fades to pure double under the fins and vee out the tail. Glassed with Hexcel 4oz S cloth on the bottom and 4oz S + 6oz S on the deck and an Applecore stringer, this board is built to withstand the beatings handed out at heavy beach breaks.",
+          "board_category_slug": "shortboard"
+        }
+      ]
+    }
+  ]
+}
