@@ -16,6 +16,29 @@ export type ReswellTicketFileKind = (typeof RESWELL_TICKET_FILE_KINDS)[number]
 export const RESWELL_TICKET_VIEWS = ['all', 'by_status', 'mine', 'open', 'done'] as const
 export type ReswellTicketView = (typeof RESWELL_TICKET_VIEWS)[number]
 
+export const CURSOR_AGENT_STATUSES = ['ACTIVE', 'IDLE', 'ARCHIVED'] as const
+export type CursorAgentStatus = (typeof CURSOR_AGENT_STATUSES)[number]
+
+export const CURSOR_RUN_STATUSES = [
+  'CREATING',
+  'RUNNING',
+  'FINISHED',
+  'ERROR',
+  'CANCELLED',
+  'EXPIRED',
+] as const
+export type CursorRunStatus = (typeof CURSOR_RUN_STATUSES)[number]
+
+export interface ReswellTicketCursorAgent {
+  agentId: string
+  agentUrl: string | null
+  agentStatus: CursorAgentStatus | null
+  runId: string | null
+  runStatus: CursorRunStatus | null
+  prUrl: string | null
+  lastSyncedAt: string | null
+}
+
 export interface ReswellTicketStaff {
   id: string
   name: string
@@ -65,6 +88,7 @@ export interface ReswellTicket {
   comments: ReswellTicketComment[]
   subtasks: ReswellTicketSubtask[]
   files: ReswellTicketFile[]
+  cursorAgent: ReswellTicketCursorAgent | null
   createdBy: string | null
   createdAt: string
   updatedAt: string
@@ -77,4 +101,4 @@ export interface ReswellTicketsSnapshot {
 }
 
 export const RESWELL_TICKET_LIST_SELECT =
-  'id, title, status, due_date, priority, task_type, effort_level, description, description_image_url, created_by, created_at, updated_at' as const
+  'id, title, status, due_date, priority, task_type, effort_level, description, description_image_url, cursor_agent_id, cursor_agent_url, cursor_agent_status, cursor_run_id, cursor_run_status, cursor_pr_url, cursor_last_synced_at, created_by, created_at, updated_at' as const
