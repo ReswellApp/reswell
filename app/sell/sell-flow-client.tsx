@@ -3745,10 +3745,10 @@ function SellPageContentInner({
           listingId = effectiveEditId
           if (updated.published === true) {
             setEditListingStatus("active")
-          }
-          if (ownerEditsOwnListing && publishingFromDraftRow) {
-            requestKlaviyoListingCreated(effectiveEditId)
-            publishedDraftNeedsSideEffects = true
+            if (ownerEditsOwnListing) {
+              requestKlaviyoListingCreated(effectiveEditId)
+              publishedDraftNeedsSideEffects = true
+            }
           }
           if (ownerEditsOwnListing) {
             clearSellServerDraftListingId("surfboards")

@@ -6,7 +6,34 @@
  * has a title, a price, and a link.
  */
 
+import { isListingDiscoveryEligible } from "@/lib/listing-public-visibility"
+import { isPeerListingSection } from "@/lib/peer-listing-sections"
+
 const MIN_ALERT_PRICE = 0.01
+
+export type BoardSavedSearchAlertListingRow = {
+  section: string | null
+  status: string | null
+  title?: string | null
+  hidden_from_site?: boolean | null
+  archived_at?: string | null
+}
+
+/**
+ * Same discovery bar as browse/search: peer section, `active`, visible on site.
+ * Drafts, hidden, archived, and non-peer inventory never alert.
+ */
+export function listingIsEligibleForBoardSavedSearchAlert(
+  listing: BoardSavedSearchAlertListingRow,
+): boolean {
+  if (!isPeerListingSection(listing.section)) return false
+  return isListingDiscoveryEligible({
+    status: String(listing.status ?? ""),
+    title: listing.title,
+    hidden_from_site: listing.hidden_from_site,
+    archived_at: listing.archived_at,
+  })
+}
 
 export function parseAlertTimestamp(value: string | null | undefined): number | null {
   if (typeof value !== "string") return null

@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 import {
   boardAlertListingContent,
+  listingIsEligibleForBoardSavedSearchAlert,
   listingListedAfterSavedSearch,
 } from "./savedSearchAlertEligibility.ts"
 
@@ -26,6 +27,39 @@ describe("listingListedAfterSavedSearch", () => {
     assert.equal(listingListedAfterSavedSearch(null, SAVED_AT), false)
     assert.equal(listingListedAfterSavedSearch(LISTED_AFTER, ""), false)
     assert.equal(listingListedAfterSavedSearch("not-a-date", SAVED_AT), false)
+  })
+})
+
+describe("listingIsEligibleForBoardSavedSearchAlert", () => {
+  it("rejects drafts and hidden inventory", () => {
+    assert.equal(
+      listingIsEligibleForBoardSavedSearchAlert({
+        section: "surfboards",
+        status: "draft",
+        hidden_from_site: true,
+      }),
+      false,
+    )
+    assert.equal(
+      listingIsEligibleForBoardSavedSearchAlert({
+        section: "surfboards",
+        status: "active",
+        hidden_from_site: true,
+      }),
+      false,
+    )
+  })
+
+  it("accepts a visible active peer listing", () => {
+    assert.equal(
+      listingIsEligibleForBoardSavedSearchAlert({
+        section: "surfboards",
+        status: "active",
+        hidden_from_site: false,
+        title: "Sharp Eye Inferno",
+      }),
+      true,
+    )
   })
 })
 
