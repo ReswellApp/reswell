@@ -1,0 +1,229 @@
+{
+  "generated_for": "Third World Surf Co official named standup catalog",
+  "source": "https://www.thirdworldsurfco.com/surfboards.html and official model pages (Weebly) \u2014 excludes wake, skim, merch, custom-order deposits, and models with only footer copy or no unique product-front",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "third-world-surf-co",
+      "name": "Third World Surf Co.",
+      "website_url": "https://www.thirdworldsurfco.com/",
+      "location_label": "Santa Barbara, California",
+      "founder_name": "Jason Kline",
+      "lead_shaper_name": "Jason Kline",
+      "short_description": "Custom hand-shaped surfboards by Jason Kline in Santa Barbara \u2014 shortboards, fishes, funshapes, retros, longboards, and guns since 1999.",
+      "logo_url": "https://www.thirdworldsurfco.com/uploads/5/5/3/3/55336719/1435341943.png",
+      "models": [
+        {
+          "name": "Blacks",
+          "image_url": "https://www.thirdworldsurfco.com/uploads/5/5/3/3/55336719/6088244.jpg?325",
+          "description": "The Blacks model was designed to meet the needs of heavier waves below double-overhead: something with a lot of juice and power. The foil runs a little fuller through the nose and outline has a narrower tail to allow for high velocity turns.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "BPRP",
+          "image_url": "https://www.thirdworldsurfco.com/uploads/5/5/3/3/55336719/6587429.jpg?293",
+          "description": "This board has been a real favorite over the past years as the go-to board for your head high to overhead range. This round pin has a smooth rocker throughout to match the outline. With a typical foil, it's an ideal board for head to overhead waves and can handle bigger surf in the tropics.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Capistrano",
+          "image_url": "https://www.thirdworldsurfco.com/uploads/5/5/3/3/55336719/3965567.jpg?344",
+          "description": "The Capistrano is a high-performace swallow tail with a slightly narrower outline than the standard and thinner, harder rails designed to perform best when surfing hard and fast on head-high waves. The concaves run deep for those able to push back hard enough to reap its\u2019 benefits. I also removed the hips from the back third to keep the tail from releasing prematurely through a hard cutback. The rail is less forgiving than the standard, but holds better for accelerated surfing and power.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Chilean",
+          "image_url": "https://www.thirdworldsurfco.com/uploads/5/5/3/3/55336719/2057959.jpg?257",
+          "description": "For those wanting a shorter board for barrels in large surf, I designed the Chilean. This board is very narrow with thin hard rails and a semi-pin tail. The foil is thin as well. This board is ideal for waves that have a fast barrel, nimble in the pocket but not a board for large maneuvers or fast direction changes - Point. Go. Survive.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "EPM",
+          "image_url": "https://www.thirdworldsurfco.com/uploads/5/5/3/3/55336719/2048715.jpg",
+          "description": "I made this board for a trip down to Peru back in 2003. The rocker has a gentle curve throughout with a lower entry rocker and narrower tail width and straighter curve astern. The result is an almond-shaped outline halfway between pintail and roundpin, but a wide center point and wide nose that can get into waves earlier with excellent acceleration when leaning forward for speed. Another great pointbreak board. Single concave throughout.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "EPM II",
+          "image_url": "https://www.thirdworldsurfco.com/uploads/5/5/3/3/55336719/153313.jpg?307",
+          "description": "This later version of the EPM came from a team rider who loves his EPMs, but also wanted a deep barrel rider for more critical waves, but with all the early entry characteristics of the original. It has a wide point farther forward and is foiled forward for added buoyancy and nose weight to avoid getting hung up on the heavy lip of slab-style waves.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Mita",
+          "image_url": "https://www.thirdworldsurfco.com/uploads/5/5/3/3/55336719/4284695.png?352",
+          "description": "The MITA is an interesting design that works well for more nimble and lighter surfers. This is your small-wave groveling shortboard. The board is rather wide with hips and a thumbtail but very thin. The concave runs single throughout and provides adequate lift to help the thin rail. It has a beveled hull rail leading up to a sharp rail, which eases the resistance of rail to rail transitions, but still keeps its speed.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Sandspit",
+          "image_url": "https://www.thirdworldsurfco.com/uploads/5/5/3/3/55336719/8229943.png?339",
+          "description": "The SANDSPIT is similar to the BPRP but has a little more rocker and about 2\u201d to 4\u201d shorter. It was designed for surfing dredging beach breaks like the wave it is named after. The single concave runs throughout the outline, keeping it easy to surf and maintains speed through the turns.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Standard",
+          "image_url": "https://www.thirdworldsurfco.com/uploads/5/5/3/3/55336719/304731.jpg",
+          "description": "Just like the name implies, this is your standard issue shortboard. Standard width, thickness, foil, rocker, single or double concave. All of which adjusted to your build and intention. The Standard has the common slight hip to the rail line to help loosen the board up and the rocker is nothing extreme. If you\u2019re looking for your run-of-the-mill shortboard, this is it. This outline runs as a thruster with removable or glass-on fins.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Standard RP",
+          "image_url": "https://www.thirdworldsurfco.com/uploads/5/5/3/3/55336719/8051783.jpg?1441340696",
+          "description": "This is our barrel riding all-around shortboard model. Standard width, thickness, foil, performance rocker, and single concave. The Standard RP has a slight hip to help loosen things up and the rocker is suited for anything from shoulder high to 3 feet overhead. This is my standard issue shortboard for head-high juicy surf.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Standard SWL",
+          "image_url": "https://www.thirdworldsurfco.com/uploads/5/5/3/3/55336719/6145114.png?1440568917",
+          "description": "This is the fishier brother to the Standard. It's wider, has a swallow tail, and a low-entry rocker. In weaker surf, it's a great all-around shortboard and is a very popular model.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Driftwood",
+          "image_url": "https://www.thirdworldsurfco.com/uploads/5/5/3/3/55336719/5933362.jpg?218",
+          "description": "The Driftwood runs an 80\u2019s style rocker and forward foil. It has a flatter deck with full rails and a very curvy outline. I was first inspired to this design when I saw a guy tearing a shoulder-high wave apart years ago with a board like this and I began developing this model ever since.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "El Segundo",
+          "image_url": "https://www.thirdworldsurfco.com/uploads/5/5/3/3/55336719/4640903.png?309",
+          "description": "This board is more of a performance fish with enough area to plane on small or weaker surf. Shortboard rails and deck dome, with a single concave bottom. Perfect for waist-to-shoulder and a great transition between longboard and shortboard.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Nacho",
+          "image_url": "https://www.thirdworldsurfco.com/uploads/5/5/3/3/55336719/2081652.jpg?246",
+          "description": "Another small wave groveler but with a shortboard twist. This board is another desert island style board, able to surf small and overhead waves. Wide point forward and mellow tail rocker, this board excels in medium sized beach breaks and runs best as a thruster. This was a favorite from Sayulita and has been getting great reviews from everyone here in Cali. Very maneuverable and easy to ride in all conditions for a wide range in wave size.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Quadro",
+          "image_url": "https://www.thirdworldsurfco.com/uploads/5/5/3/3/55336719/7207568.jpg?1440915143",
+          "description": "Wide tailed, wide nosed, quad intended for punts. Wave Range Knee High to Head High.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Sayulita",
+          "image_url": "https://www.thirdworldsurfco.com/uploads/5/5/3/3/55336719/4101544.jpg?1440916885",
+          "description": "This board came from a series of boards made for a surf team in Sayulita, Mexico in 2001. They were made to shred on small waves and can be surfed in all ranges from 5\u2019 7\u201d mini-thrusters (see Grom models) to a 6\u20192\u201d big guy fish. Flat tail rocker, wide tail, and loose fin setup make this board perform better in smaller waves. With plenty of speed, it's ideal for air manuevers.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Sayulita XTR",
+          "image_url": "https://www.thirdworldsurfco.com/uploads/5/5/3/3/55336719/9678361.png?1440918014",
+          "description": "This board is built for speed in the head-high and under category. It is generally run with quad fins, and the added tail rocker complements this setup. The rails are slightly harder than the norm and the double-reduction tail lessens laminar flow across the rail providing that fish-like feel without sacrificing drive. Shallow single concave throughout and foil forward.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Shrimp Trawler",
+          "image_url": "https://www.thirdworldsurfco.com/uploads/5/5/3/3/55336719/4609711.jpg?342",
+          "description": "If you had to take one board on a trip to waves of any variety, this board was designed to be in-between all polar-opposites of design. Wider nose and fuller foil helps for smaller surf but is still duck-divable. Tail width and overall width is average, so turning on larger surf and planning on smaller waves is possible. The continuous rocker makes her maneuverable from more stances to accommodate fast or slow speeds.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Vaneros",
+          "image_url": "https://www.thirdworldsurfco.com/uploads/5/5/3/3/55336719/8257567.jpg?355",
+          "description": "This is the fatter, easier version of the Mita, intended for smaller waves and beginners who want to shortboard. The rails are very forgiving like the \u201cStandard\u201d and the hips help for looseness in the slow surf with 3 fins. Every time I make one of these I tell myself I need one just to have fun on!",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Barbados",
+          "image_url": "https://www.thirdworldsurfco.com/uploads/5/5/3/3/55336719/1195617.jpg?1441169367",
+          "description": "A higher performance funshape employing the benefits of the hip and thumb-tail combo and 2+1 set-up or thruster. Designed to be surfed faster and more nimble than its cousins. Single concave to vee double concave.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Devro",
+          "image_url": "https://www.thirdworldsurfco.com/uploads/5/5/3/3/55336719/9640977.jpg",
+          "description": "The thicker cousin of the Barbados, this typical funshape has a tail width that's a little wider and the rolling vee to flat panel vee makes it a very easy but slower board to ride. Available in all tail styles. Great for people in their first or second year of surfing. Fuller rails have been made to mimic the user-friendliness of a funshape that I first learned to surf on.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "La Modela Y",
+          "image_url": "https://www.thirdworldsurfco.com/uploads/5/5/3/3/55336719/8857559.jpg?271",
+          "description": "My quest for a round pin single fin easy to ride and highly maneuverable ended with this board. Lighter riders can nose ride this and the nose has a single concave to flat panel vee tail. Also works great as a nose-rider for groms.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Mini HP Log",
+          "image_url": "https://www.thirdworldsurfco.com/uploads/5/5/3/3/55336719/2910431.jpg?1441170052",
+          "description": "High performance funshape like the Barbados but with a straighter outline better for noseriding. Good for kids looking into longboarding and nimble, lightweight longboarders looking at surfing faster. Thin foil, single concave to double concave. Best in a 2+1 setup.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Barrel Flute",
+          "image_url": "https://www.thirdworldsurfco.com/uploads/5/5/3/3/55336719/6043039.jpg?1440656491",
+          "description": "If getting shacked is what you're into, then you've come to the right place. I originally was looking for a board with thin knifey rails and a super flat, forward projecting outline as this is an Alia/Twin fin hybrid built for speed. If you surf small to overhead barrels often and just love \"the view,\" then this is the board for you.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Beluga",
+          "image_url": "https://www.thirdworldsurfco.com/uploads/5/5/3/3/55336719/2242261.jpg?322",
+          "description": "This board I fashioned from an old longboard blank many years ago where I wanted to essentially make a 6 foot longboard. They have a very full nose and very wide tail to compliment its average 21\u201d width. I later found that the board was magic on knee to waist high waves, fully able to cheater-five too! Performs best in waves under shoulder high.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "El Dorado I",
+          "image_url": "https://www.thirdworldsurfco.com/uploads/5/5/3/3/55336719/6311835.jpg?1440824710",
+          "description": "I love this board! The board started out as a higher performance version of the \u201cClassic Twin\u201d and has undergone many changes through the years. There are 3 versions currently available. The original boasts a wide swallowtail with 60/40 rails, beak nose (full foil forward) semi-flat deck, and very short. If you live around Santa Barbara County this twin fin is a must. You\u2019ll surf circles around chop-hopping short boarders in waist high conditions\u2026",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "El Dorado II",
+          "image_url": "https://www.thirdworldsurfco.com/uploads/5/5/3/3/55336719/7797409.jpg?308",
+          "description": "This is the sleeker, faster cousin to the \u201cEl Dorado\u201d with a domed deck, thinner rails and for surfing shoulder to overhead waves. Compared to the original, this version has a narrower tail, flat to v-double concave, and twin fins set farther back or quad fins. The rails are also a thinner 60/40 rail, and there is more nose rocker and a thinner foiled nose.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "El Dorado III",
+          "image_url": "https://www.thirdworldsurfco.com/uploads/5/5/3/3/55336719/5128854.jpg?1440825493",
+          "description": "The 3 rd version kept the nose flip, bottom concave, and foil of the 2 nd , but expanded tail width, yet with a reduction tail and shortboard rails. Semi-flat deck. This is the more performance based version designed to carve hard, but not have to move your back foot around as much as you change directions.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Mini Sim HP",
+          "image_url": "https://www.thirdworldsurfco.com/uploads/5/5/3/3/55336719/4494726.jpg?343",
+          "description": "The idea behind this board was to create a board that went as fast, or faster, than any board on the planet, which stems from the principles Bob Simmons designed into his Simmons boards. However, we wanted a machine built for total performance surfing. Together with Shawn Tracht, we designed a model that could outrace any wave, yet throw down nasty layback turns, big off-the-lips, and barrel rides, all out of a board that can also surf one foot mush.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Nat Young",
+          "image_url": "https://www.thirdworldsurfco.com/uploads/5/5/3/3/55336719/8986442.jpg?325",
+          "description": "A good friend of mine sent me a picture once of an old Nat Young board and said she would like to have one made like it. I did my best to mimic the outline from the photo and designed the rest as to how I thought would best fit the nature of the outline and her intended use. It turns out they had it right thirty years ago and the board works surprisingly well. They come to life with a flexing single fin and turn and surf well in small waves. Size Guide Waist to Head High",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "NSOS",
+          "image_url": "https://www.thirdworldsurfco.com/uploads/5/5/3/3/55336719/8383593.jpg?311",
+          "description": "This board has been a successful development and was my first attempt to fuse retro-design with modern shortboarding in an effort to produce more maneuverable and user friendly renditions of old favorites. Aspects from the design of this mode have since been applied to all of my retro-models making them easier and more fun to surf. NSOS stands for \u201cNew School / Old School\u201d.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Kamakura",
+          "image_url": "https://www.thirdworldsurfco.com/uploads/5/5/3/3/55336719/9422978.jpg",
+          "description": "Squaretail or roundpin nose rider with a thin foil and thin round rails. Wave Range Knee to Chest High.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Buchu",
+          "image_url": "https://www.thirdworldsurfco.com/uploads/5/5/3/3/55336719/8251101.jpg?1441088851",
+          "description": "When its between overhead and double overhead and very cold, I recommend this board. I have thrown the foil forward of center and to help counter buoyancy issues from thick, heavy cold-water suits. The pin tail and lots of rocker are also ideal for surfing fast, dredging waves. Shallow single concave to vee double concave. A modified foil of this model is also available that works very well for barrel riding south of the border and is well suited for big Indo.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Outlaw",
+          "image_url": "https://www.thirdworldsurfco.com/uploads/5/5/3/3/55336719/7597514.jpg?222",
+          "description": "After its too big to ride the Buchu you might want to switch to its bigger cousin the \u201cOutlaw\u201d. It has a thin foil and lots of rocker, for duck diving capability and performance. This outline can also work well for guys over 200 lbs in place of the Buchu. The tail is run as a flat-panel vee.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Outlaw II",
+          "image_url": "https://www.thirdworldsurfco.com/uploads/5/5/3/3/55336719/6854339.jpg?240",
+          "description": "Step up from the Outlaw size range, these are in the 8' range. Less tail rocker and less tail width, this is getting closer to the survival end of the spectrum..when out-gunning that monster wall means everything.",
+          "board_category_slug": "step-up-gun"
+        }
+      ]
+    }
+  ]
+}
