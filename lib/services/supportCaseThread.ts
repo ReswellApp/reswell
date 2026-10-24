@@ -24,6 +24,7 @@ import { trackKlaviyoSupportTicketResponse } from "@/lib/klaviyo/track-support-t
 import { publicSiteOriginForEmail } from "@/lib/public-site-origin"
 import { supportCaseResponseAbsoluteUrl } from "@/lib/utils/support-case-paths"
 import { markSupportCaseReadForMember } from "@/lib/services/supportUnread"
+import { notifyStaffSupportCustomerReply } from "@/lib/services/adminSupportAlerts"
 import { recordSentSupportReplyExample, scheduleSupportReplyDraft } from "@/lib/services/supportReplyDraft"
 import { isLiveChatSupportChannel } from "@/lib/utils/support-ticket-display"
 
@@ -198,6 +199,15 @@ export async function sendSupportCaseMemberReplyForSession(
     status: row.status === "waiting_on_you" ? "in_progress" : undefined,
   })
   scheduleSupportReplyDraft(row.id)
+  notifyStaffSupportCustomerReply({
+    id: row.id,
+    subject: row.subject,
+    preview: body,
+    source_channel: row.source_channel,
+    uniqueId: posted.id
+      ? `support-ticket-admin-alert-reply-${posted.id}`
+      : undefined,
+  })
 
   return { success: true, case_id: row.id }
 }
