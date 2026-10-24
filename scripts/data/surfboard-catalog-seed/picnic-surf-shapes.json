@@ -1,0 +1,91 @@
+{
+  "generated_for": "Picnic Surf Shapes official named standup catalog",
+  "source": "https://surfpicnic.com/pages/shapes (official Shopify shape pages — excludes apparel, hats, fins, wax, zines, bags, stickers, and shop merch)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "picnic-surf-shapes",
+      "name": "Picnic Surf Shapes",
+      "website_url": "https://surfpicnic.com",
+      "location_label": "Galveston Island, Texas",
+      "founder_name": "Gregory Ruppe",
+      "lead_shaper_name": "Gregory Ruppe",
+      "short_description": "Hand-shaped wooden and experimental Gulf Coast surf craft from Gregory Ruppe in Galveston, Texas.",
+      "logo_url": "https://surfpicnic.com/cdn/shop/files/PICNIC_CRASS_OFFICIAL_2.png?v=1717445561",
+      "models": [
+        {
+          "name": "Local Wizard",
+          "image_url": "https://surfpicnic.com/cdn/shop/files/LW5_fb9a0390-2bcc-4188-9365-5e165d37d761.png?v=1717013808&width=1600&format=jpg",
+          "description": "A take on refined 1966 involvement action, wide point center, low rocker, lifted rails with a rolled bottom into vee. For anywhere, anytime longboard surf year round 2-5' maximum fun.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Bäbi Log",
+          "image_url": "https://surfpicnic.com/cdn/shop/files/BL1-scaled.jpg?v=1716489261&width=1600&format=jpg",
+          "description": "Named after the late Milford Graves, and designed with flow and agility in mind. Single to double concave with a healthy amount of continuous rocker. Wide point set slightly back of center.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Altered Being",
+          "image_url": "https://surfpicnic.com/cdn/shop/files/IMG_4149.heic?v=1752084531&width=1600&format=jpg",
+          "description": "A modern noserider based on the work of a Gulf Coast legend. Moderate rocker, healthy concave in the nose, bellied bottom to double concave in the tail.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Grackle",
+          "image_url": "https://surfpicnic.com/cdn/shop/files/PSS039.1.jpg?v=1739206277&width=1600&format=jpg",
+          "description": "The Grackle is a transitional model that bridges the gap between longboard and short single fin, and will handle a wide range of surf. Modest displacement hull to vee bottom.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "K.O.T.B.H",
+          "image_url": "https://surfpicnic.com/cdn/shop/files/KOTBH1.jpg?v=1716930189&width=1600&format=jpg",
+          "description": "Liddle inspired. Wide point forward, s-decked, full outline, rolled bottom to vee. A good all-around hull with neutral handling.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "K.O.T.B.H 2",
+          "image_url": "https://surfpicnic.com/cdn/shop/files/IMG_8876.png?v=1764701714&width=1600&format=jpg",
+          "description": "Evolved from the K.O.T.B.H. Rolled bottom forward fading to flat in the tail. Single fin with a full outline. Good all-rounder that can handle more when it turns on.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Luna Bruja",
+          "image_url": "https://surfpicnic.com/cdn/shop/files/PSS008.3.jpg?v=1716500274&width=1600&format=jpg",
+          "description": "A Mini Mal-inspired spell caster, simple and user-friendly, with natural rocker. 2-6ft waves.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Luna Brujita",
+          "image_url": "https://surfpicnic.com/cdn/shop/files/LB4.jpg?v=1716925936&width=1600&format=jpg",
+          "description": "A pared down version of the Luna Bruja. Increased speed and agility without sacrificing stability, loves a medium sized swell. Modern rails with subtle single concave entry to flat out the back. Works well as a single fin, 2+1, twin or quad.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Badtwin",
+          "image_url": "https://surfpicnic.com/cdn/shop/files/BT1.2.png?v=1716932236&width=1600&format=jpg",
+          "description": "Named after a past sound project and my take on the classic Simmons design. Full rails, low rocker, straight out the back. Fast and fun. Lots of room for variations here, from a traditional take on Simmons' keel design, to swallow tailed twin and quad set ups.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Beach Pigeon",
+          "image_url": "https://surfpicnic.com/cdn/shop/files/BP1.jpg?v=1739302110&width=1600&format=jpg",
+          "description": "Beach Pigeon, a Long Simmons version of the Bad Twin. Slight bellied bottom to channel. Fast and responsive, catches anything and everything.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Jazz Cabbage",
+          "image_url": "https://surfpicnic.com/cdn/shop/files/IMG_5933.jpg?v=1752085491&width=1600&format=jpg",
+          "description": "A Gulf Coast collab shape, first developed between Pontcha Surf Club and Louisiana shaper Shane Madere, and handed over to me for further development. A little of the Beach Pigeon, and a little of the Astrohull, offering up a speedy twin that can handle better surf without sacrificing paddle power or stepping down to a fish.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Acid Dad",
+          "image_url": "https://surfpicnic.com/cdn/shop/files/AD1.jpg?v=1717000452&width=1600&format=jpg",
+          "description": "A retro fish outline and rocker template with a little more volume for the dads. Single to double concave out the back.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
