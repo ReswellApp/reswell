@@ -14,8 +14,13 @@ type Props = {
 }
 
 export async function generateStaticParams() {
-  const directory = await getCachedTopCitiesDirectory()
-  return directory.cities.map((city) => ({ slug: city.slug }))
+  try {
+    const directory = await getCachedTopCitiesDirectory()
+    return directory.cities.map((city) => ({ slug: city.slug }))
+  } catch (error) {
+    console.warn("[reswell city static params] Falling back to on-demand generation", error)
+    return []
+  }
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
