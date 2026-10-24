@@ -1,0 +1,228 @@
+{
+  "generated_for": "Safari Surfboards official named model catalog",
+  "source": "https://safarisurf.com/products.json",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "safari-surfboards",
+      "name": "Safari Surfboards",
+      "website_url": "https://safarisurf.com/",
+      "location_label": "Durban, South Africa",
+      "founder_name": "Max Whetteland and Baron Stander",
+      "lead_shaper_name": "Spider Murphy",
+      "short_description": "Durban surfboards established in 1963; lead shaper Spider Murphy at the South Beach factory on Milne Street.",
+      "models": [
+        {
+          "name": "Pro Missile",
+          "image_url": "https://cdn.shopify.com/s/files/1/0044/7604/3299/products/promissletopdeck-ZC_002.png?v=1587624881",
+          "description": "The Pro Missile is the next level Missile Performance Shortboard for competitive and professional surfers. The same Missile rail technology improved, giving you the speed, power and flow with the awesome Pro Tail system for the right combination of control and release. This is the ultimate performance weapon in your quiver, for most conditions to double and a half overhead.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "A2",
+          "image_url": "https://cdn.shopify.com/s/files/1/0044/7604/3299/products/A2Front.jpg?v=1666085802",
+          "description": "The A2 was inspired by Andy Irons and is now tweaked and designed for Aiden Maisencamp. A squarish rail around the fin area and a hard rail a little higher up for quick maneuvers. It has a smooth rocker with a little flick up in the nose. To be ridden from small to as big as you can paddle into.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Havoc",
+          "image_url": "https://cdn.shopify.com/s/files/1/0044/7604/3299/products/havoc.png?v=1574759218",
+          "description": "A board that pushes the boundaries of surfboard rocker and concave. The objective is a surfboard that is faster, sharper, and extremely capable of pushing the limits of high-performance surfing. The Havoc demands to be surfed hard and aggressively.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Slash",
+          "image_url": "https://cdn.shopify.com/s/files/1/0044/7604/3299/products/slash.png?v=1574763045",
+          "description": "The Slash is our leading hi-performance board and competitive weapon of choice for Team Riders on the Qualifying Series of the WSL and local tours. It is very loose and smooth on the wave face with no \u201ccatch\u201d or limit on speed: its clean flowing lines enable big slashing manoeuvers. The Slash can be surfed on anything between knee-high and 3x overhead waves and the harder you surf the better it goes!",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Hydro Pro",
+          "image_url": "https://cdn.shopify.com/s/files/1/0044/7604/3299/products/hydro-pro.png?v=1574759647",
+          "description": "Designed for good surfers to surf aggressively. It has astonishing speed and is unmatched in tube riding performance. It will take you there in anything from knee-high to solid conditions and from onshore mush to offshore perfection. You need to be at pro level to appreciate the six gears it offers.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Hydro X",
+          "image_url": "https://cdn.shopify.com/s/files/1/0044/7604/3299/products/hydro-x_deef370d-8e78-4db6-8f15-59a8b0208289.png?v=1574759708",
+          "description": "Designed to Xtract every last ounce of energy from a wave and capable of handling the Xtremes of solid power waves to mushy beach breaks. It is the board of choice for Jbay, Indo and the Mentawais because of its incredible speed and performance in the barrel. A fullish outline and light single concave take the capability of bottom deck Hydro-Channels to new levels, resulting in a high-performance board suiting everyone from the average surfer to the hard-core competitor.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "GEO2",
+          "image_url": "https://cdn.shopify.com/s/files/1/0044/7604/3299/products/geo2.png?v=1574763892",
+          "description": "A Semi-Gun with a rounded pin-tail for bigger days. Designed for the fast shallow sandbanks of the Durban South Coast, as well as long point breaks. The GEO2 allows for vertical surfing in the hollowest part of the wave as well as holding a perfect line in the tube without sliding out. Buttery smooth, lots of drive and loose in the pocket.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "GE01",
+          "image_url": "https://cdn.shopify.com/s/files/1/0044/7604/3299/products/Geo1Topdeck-ZC.png?v=1587544847",
+          "description": "Geo 1 is the first generation step-up shortboard for crunchy point break waves, the volume under your chest glides onto the waves smoothly and the round tail allows for easy pivot through your bottom and top turns with the speed and acceleration to maximise the wave face for an exhilarating barrel ride.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Buzz",
+          "image_url": "https://cdn.shopify.com/s/files/1/0044/7604/3299/products/BuzzTop.jpg?v=1664859635",
+          "description": "The Buzz model was designed for summer and small days for the highest performance possible. It has fuller foiled rails to keep it alive over flat and dead spots. To be ridden 1/2 to 1 inch wider and 4 to 6 inches shorter. This board was attractive to shape from the moment Spider started it, with outline, rocker, rails and concaves all blending together.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "STTF",
+          "image_url": "https://cdn.shopify.com/s/files/1/0044/7604/3299/products/sttf.png?v=1574763370",
+          "description": "The Shaun Tomson Tri Fin has extra width and thickness in the nose area and a flat rocker giving her plenty of speed in and out of the barrel. Has extra width and volume under the front foot, allowing you to get up on the nose without sliding and skipping in the tube.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Fish Missile",
+          "image_url": "https://cdn.shopify.com/s/files/1/0044/7604/3299/products/missile_1_23dbc204-03dc-4933-a9a8-df90d136adae.png?v=1644313079",
+          "description": "The Fish Missile has the volume packed under the chest for ease of paddle. This Fish Missile will increase your wave count but also give you the agility to make heavy drops and packs in the speed when surfing rail to rail. This board was developed in 2014 and has progressed since then into a popular model.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Performance Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0044/7604/3299/products/performancefish.png?v=1675164904",
+          "description": "Has a bull nose, full plan shape, narrower fish tail, turned down rails into the nose and hidden volume. This board is easy to paddle, easy to surf and covers distance with ease. A real classic finished with appropriate artwork and a high polish, this is all about style.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "70s Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0044/7604/3299/products/70s-fish.png?v=1574757706",
+          "description": "A blast from the 70s with a bull nose, full-plan shape, pronounced fishtail, turned down rails into the nose, and hidden volume. This board is easy to paddle, easy to surf, and covers distance with ease. A real classic finished with appropriate artwork and a high polish, this is all about style.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Fish Bomb",
+          "image_url": "https://cdn.shopify.com/s/files/1/0044/7604/3299/products/fish-bomb_e0f8a218-804e-4d22-9622-f2b402d018a5.png?v=1574758088",
+          "description": "The Fish Bomb comes with bottom deck channels, swallow tail and a 5 fin setup. Designed to ride smaller waves but can still hold its line in solid surf. This high-performance fun board paddles fast and has a comfortable yet speedy take-off and glides easily over flat sections while still giving you plenty of drive to perform incredible roundhouse cutbacks. This model will keep your adrenalin pumping.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Pro Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0044/7604/3299/products/pro-twin.png?v=1574762298",
+          "description": "A high-performance board with foiled rails and heaps of vee throughout. The large twin fin set-up generates speed off the bottom turn. Super loose and free off the lip, allowing you to bust the fins out the back on every turn. Great for small summer days and surfers who want to use the rail through their turns.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Spin Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0044/7604/3299/products/Websitespintwintop.png?v=1617085278",
+          "description": "Spin Twin, is an upgrade of the ProTwin. New fin position, pulled further back. Ridden 2\u201d shorter than usual, the width and volume under the chest gives for ease of paddling. Rounded pin whips off the top. SpinTwin \u201cFloats like a longboard, surfs like a thruster, turns like a twin fin with no slide-out, you don\u2019t have to nurse the rail.\"",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Big Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0044/7604/3299/products/big-fish.png?v=1574757932",
+          "description": "Catches waves easily and is designed for really small, mushy surf, allowing you to generate maximum speed over flat sections and down the line. Generally 2 to 4 inches shorter than your normal board and with a wide tail, it has a slight single concave to Vee bottom.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Spider Bomb",
+          "image_url": "https://cdn.shopify.com/s/files/1/0044/7604/3299/products/spider-bomb.png?v=1574763166",
+          "description": "Designed for rail-to-rail surfers wanting more speed and control across a wider range of wave size & conditions. The rounded tail gives you a relaxed and loose skater feel and the finely shaped rails and mild rocker allows more radical turns in smaller waves. Loose, alive, and able to go on anything.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Flying Saucer",
+          "image_url": "https://cdn.shopify.com/s/files/1/0044/7604/3299/products/flyingsaucernewtop2.png?v=1610526807",
+          "description": "This versatile model is trendy and successful. It performs exceptionally well in all conditions, catering to surfers of various skill levels. As an in-between model option, it balances high-level performance with user-friendly handling. The slightly wider nose enhances paddling ability, while the thicker profile with foiled rails, high-performance tail, and bottom deck provides increased speed and maneuverability. This model surfs smoothly through flat spots on smaller days. Due to its widespread popularity, this model is rarely available as second-hand stock.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Accelerator",
+          "image_url": "https://cdn.shopify.com/s/files/1/0044/7604/3299/products/AcceleratorTop20190521_114632.jpg?v=1639552622",
+          "description": "The Accelerator is designed for groms to fully grown groms. As the name says, with an easy paddle it takes off onto the wave. The slightly rounded nose is a great safety feature for beginners.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Super Bug",
+          "image_url": "https://cdn.shopify.com/s/files/1/0044/7604/3299/products/superbug.png?v=1574763674",
+          "description": "The Super Bug is a modern board to which Spider added his 40 years of experience and many early surf sessions to refine. It is very comfortable on the take-off and flies over the flat spots and glides out of the turns while maintaining speed. The Hydro X channels for speed and a squash tail for added drive. Suits intermediate to proficient surfers.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Grom Bomb",
+          "image_url": "https://cdn.shopify.com/s/files/1/0044/7604/3299/products/grom-bomb.png?v=1574758754",
+          "description": "Fast, loose and easy to paddle, the GromBomb is designed to enable you to increase your wave count and hone the skills necessary to move onto high-performance boards. Combined with a sick colour design and some focus and dedication, this board could be your stepping stone to the WSL. Best suited to the grom who is just starting out.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Mid Length Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0044/7604/3299/products/MidLengthtopv3.png?v=1634538740",
+          "description": "The mid-length shape provides ample paddle power, smooth bottom turns, and the ability to project back up the face of the wave and sit in the pocket. The soft, thin, foiled rails and clean rocker entry flow through to a nice curve in the tail. While designed as a twin-fin, this board can also be surfed as a thruster or quad. For a full explanation of the fin setup, refer to the video from Spiders. Fin configuration: Twin fin with thruster setup or 4 fins with the thruster.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Two-Step",
+          "image_url": "https://cdn.shopify.com/s/files/1/0044/7604/3299/files/TWOSTEPFRONT.png?v=1691400824",
+          "description": "The Spider Two-Step is a fast paddler and generates speed out of the smallest of waves. Designed for flat and weak conditions, it turns much easier than a Minimal and can be enjoyed by anyone.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Loose Evo",
+          "image_url": "https://cdn.shopify.com/s/files/1/0044/7604/3299/products/loose-evo.png?v=1574759886",
+          "description": "The Loose Evo is a hybrid design with elements taken from the short board and Minimal. Easy to paddle and quick on the take-off, it features a concave into double concave into Vee along its length to give it a quick turning aggressiveness in the water, particularly off the front foot.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Glider",
+          "image_url": "https://cdn.shopify.com/s/files/1/0044/7604/3299/products/glider.png?v=1574758637",
+          "description": "The Spider Glider is a fast paddler and generates speed out of the smallest of waves. Designed for flat and weak conditions, it turns much easier than a Minimal and can be enjoyed by anyone.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Spider Egg",
+          "image_url": "https://cdn.shopify.com/s/files/1/0044/7604/3299/products/egg.png?v=1574763303",
+          "description": "A retro-styled board combining the best features of the past, present, and future to create a fabulous, laid-back board for small to medium-sized clean, mellow surf. The soft rails and egg shape allows for a smooth, flowing ride and the vee in the tail adds maneuverability. The rounded outline eliminates any potential harm from a sharp, pointed nose. It's an easy to surf board for the whole family.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Mini-Mal",
+          "image_url": "https://cdn.shopify.com/s/files/1/0044/7604/3299/products/minimal_2.png?v=1615808955",
+          "description": "The classic Mini-Mal is designed for easy paddling and loads of stability, designed for beginners and experienced surfers looking for easy fun. This model has a slight Vee in the nose area which flows into a flat bottom.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "L2 Pro",
+          "image_url": "https://cdn.shopify.com/s/files/1/0044/7604/3299/products/l2-pro.png?v=1574759778",
+          "description": "This Malibu holds its own in bigger surf with extra rocker from end to end. Designed to be ridden aggressively with hard turns and cut backs, it thrives on hollow waves. An optional concave can be added to the front-end for nose riding, email us for this custom spec.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Freedom",
+          "image_url": "https://cdn.shopify.com/s/files/1/0044/7604/3299/products/freedom.png?v=1574758576",
+          "description": "A classic performer designed to be a super loose in medium surf. It features a pin tail and a strong rocker to surf in the pocket of steep waves. Vee at the rear end keeps things loose. A solid kick in the tail assists with flowing turns, up front a deep concave to keep it elevated when nose-riding and a rail design throughout to maintain it smooth.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Pro Son",
+          "image_url": "https://cdn.shopify.com/s/files/1/0044/7604/3299/products/pro-son.png?v=1574762080",
+          "description": "The Pro Son is an ultra high-performance longboard with foiled rails, concave in the nose and double concave flowing into a vee in the tail. Designed specifically for competitive surfers with a progressive style.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Logger",
+          "image_url": "https://cdn.shopify.com/s/files/1/0044/7604/3299/products/thelogger.png?v=1637655406",
+          "description": "The Logger is an all-rounder and great for all conditions. Paddles with ease onto waves and back into the lineup. Very maneuverable with no catch which makes for smooth rail to rail surfing. The concave on the tail deck assists with nose riding and extra tail lift helps you turn with ease. Simply put a must for any quiver.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Goose",
+          "image_url": "https://cdn.shopify.com/s/files/1/0044/7604/3299/products/websitefront.png?v=1617690827",
+          "description": "The Goose is the ultimate in classic and performance longboard surfing. The board has a gentle rocker to allow for waves up to head high, the 60/40 rail fits snuggly into the wave, with a nose that allows you to hang ten comfortably without compromising the ease and responsiveness of quick reactive turns and drive down the line for faster sections.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Classic Nose Rider",
+          "image_url": "https://cdn.shopify.com/s/files/1/0044/7604/3299/products/classic-nose-rider.png?v=1605703040",
+          "description": "Designed for riding the nose and gliding in small, flat conditions, this board can turn on a dime and is the ultimate small to medium surf nose rider. It features a flat rocker, wide nose, even plain shape, and a square tail with a good tail lift to glide through the turns.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Spider Gun",
+          "image_url": "https://cdn.shopify.com/s/files/1/0044/7604/3299/products/MissileGun-Front.jpg?v=1666682630",
+          "description": "Safari's Spider Guns are designed to paddle in as fast as possible. It has super clean curves and thickness on the stringer. The rails are nicely foiled for easy duck-dives, open-faced turns and all-around maneuverability and the fuller outline keeps them shorter and looser. Spider Guns can be surfed from huge to waist high.",
+          "board_category_slug": "step-up-gun"
+        }
+      ]
+    }
+  ]
+}
