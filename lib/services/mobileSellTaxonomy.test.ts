@@ -41,9 +41,21 @@ describe("mobile sell taxonomy", () => {
     const taxonomy = getMobileSellTaxonomy()
     const bySlug = new Map(taxonomy.categories.map((category) => [category.slug, category.fulfillment]))
 
-    for (const fulfillment of bySlug.values()) {
+    for (const [slug, fulfillment] of bySlug.entries()) {
       assert.equal(fulfillment.shipping_default, true)
       assert.equal(fulfillment.local_pickup_default, false)
+      assert.equal(
+        fulfillment.local_pickup,
+        slug === "surfboards",
+        `${slug} local_pickup should only be true for surfboards`,
+      )
+      if (slug !== "surfboards") {
+        assert.deepEqual(
+          fulfillment.shipping_options.map((option) => option.id),
+          ["reswell", "free", "flat"],
+          `${slug} should expose Reswell, free, and flat shipping`,
+        )
+      }
     }
 
     const surfboards = bySlug.get("surfboards")
@@ -69,21 +81,16 @@ describe("mobile sell taxonomy", () => {
     assert.equal(wetsuits?.local_pickup, false)
 
     const apparel = bySlug.get("apparel")
-    assert.equal(apparel?.title, "Pickup & shipping")
-    assert.equal(apparel?.shipping_toggle, true)
-    assert.equal(apparel?.local_pickup, true)
-    assert.deepEqual(apparel?.shipping_options, [])
-    assert.match(apparel?.shipping_detail ?? "", /USPS/)
-    assert.equal(apparel?.shipping_badge, "Items sell faster")
+    assert.equal(apparel?.title, "Shipping")
+    assert.equal(apparel?.shipping_toggle, false)
 
     const leash = bySlug.get("leashes")
-    assert.equal(leash?.shipping_toggle, true)
+    assert.equal(leash?.shipping_toggle, false)
     assert.equal(leash?.shipping_options[0]?.id, "reswell")
 
     const magazines = bySlug.get("magazines")
     assert.equal(magazines?.title, "Shipping")
     assert.equal(magazines?.local_pickup, false)
-    assert.deepEqual(magazines?.shipping_options, [])
     assert.equal(magazines?.package_dimensions, true)
 
     assert.equal(taxonomy.categories.find((category) => category.slug === "surfboards")?.board_specs, true)

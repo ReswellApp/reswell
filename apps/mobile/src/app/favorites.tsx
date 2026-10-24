@@ -1,7 +1,7 @@
 import { Stack, useRouter } from "expo-router"
 import { useCallback, useState } from "react"
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native"
-import { useSafeAreaInsets } from "react-native-safe-area-context"
+import { ScreenSearchHeader } from "@/components/screen-search-header"
 import { ListingCard } from "@/components/listing-card"
 import { fetchFavorites } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
@@ -11,14 +11,14 @@ import { fontFamily, useReswellColors } from "@/theme"
 export default function FavoritesTabScreen() {
   const colors = useReswellColors()
   const router = useRouter()
-  const insets = useSafeAreaInsets()
   const { session } = useAuth()
   const signedIn = Boolean(session?.access_token)
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <Stack.Screen options={{ headerShown: false }} />
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+      <ScreenSearchHeader />
+      <View style={[styles.header, { paddingTop: 8 }]}>
         <Text style={[styles.title, { color: colors.foreground, fontFamily: fontFamily.headline }]}>Favorites</Text>
         <Text style={[styles.subtitle, { color: colors.muted, fontFamily: fontFamily.text }]}>
           Listings you've saved.

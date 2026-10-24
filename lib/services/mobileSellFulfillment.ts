@@ -34,6 +34,7 @@ const APPAREL_SHIPPING_DETAIL =
 function shipOnly(
   noun: string,
   options: MobileSellFulfillment["shipping_options"],
+  extras?: { shipping_detail?: string | null },
 ): MobileSellFulfillment {
   return mobileSellFulfillmentSchema.parse({
     title: "Shipping",
@@ -43,9 +44,9 @@ function shipOnly(
     shipping_toggle: false,
     shipping_label: "Shipping",
     shipping_badge: null,
-    shipping_detail: null,
+    shipping_detail: extras?.shipping_detail ?? null,
     delivery_title: null,
-    cost_title: "Shipping cost in the Continental U.S.",
+    cost_title: options.length > 0 ? "Shipping cost in the Continental U.S." : null,
     local_pickup: false,
     local_pickup_default: false,
     shipping_options: options,
@@ -75,24 +76,7 @@ const FULFILLMENT_BY_CATEGORY: Record<MobileListingCategory, MobileSellFulfillme
   }),
   fins: shipOnly("Fin", SHIPPING_COST_OPTIONS),
   wetsuits: shipOnly("Wetsuit", SHIPPING_COST_OPTIONS),
-  apparel: mobileSellFulfillmentSchema.parse({
-    title: "Shipping",
-    description:
-      "Pin where you're shipping from and choose how shipping works. Apparel listings ship only — local pickup isn't available.",
-    hint: null,
-    shipping_default: true,
-    shipping_toggle: false,
-    shipping_label: "Shipping",
-    shipping_badge: null,
-    shipping_detail: APPAREL_SHIPPING_DETAIL,
-    delivery_title: null,
-    cost_title: null,
-    local_pickup: false,
-    local_pickup_default: false,
-    shipping_options: [],
-    package_dimensions: true,
-    dropoff: false,
-  }),
+  apparel: shipOnly("Apparel", [], { shipping_detail: APPAREL_SHIPPING_DETAIL }),
   magazines: mobileSellFulfillmentSchema.parse({
     title: "Shipping",
     description:

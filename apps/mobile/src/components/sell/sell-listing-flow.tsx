@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState, type ReactNode } from "react"
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { SymbolView } from "expo-symbols"
-import { SellBoardSpecs } from "@/components/sell/sell-board-specs"
+import { findBoardSpecField, SellBoardSpecs } from "@/components/sell/sell-board-specs"
 import { SellDetailsStep } from "@/components/sell/sell-details-step"
 import { SellOptionSheet } from "@/components/sell/sell-option-sheet"
 import { SellPhotosStep } from "@/components/sell/sell-photos-step"
@@ -20,6 +20,7 @@ import {
 import { useAuth } from "@/lib/auth-context"
 import { clearSellDraft, loadSellDraft, saveSellDraft } from "@/lib/sell-draft"
 import {
+  defaultDeliveryForCategory,
   emptySellDraft,
   SELL_CONDITIONS,
   sellConditionLabel,
@@ -41,6 +42,7 @@ export function SellListingFlow({ initial }: { initial?: Partial<SellDraft> }) {
   const [boardSpecsError, setBoardSpecsError] = useState<string | null>(null)
   const [boardSpecsAttempt, setBoardSpecsAttempt] = useState(0)
   const [conditionOpen, setConditionOpen] = useState(false)
+  const [boardSpecPicker, setBoardSpecPicker] = useState<{ fieldId: string; decimals: boolean } | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [draftSaved, setDraftSaved] = useState(false)
   const [busy, setBusy] = useState<"draft" | "post" | null>(null)
@@ -64,6 +66,14 @@ export function SellListingFlow({ initial }: { initial?: Partial<SellDraft> }) {
   useEffect(() => {
     loadTaxonomy()
   }, [loadTaxonomy])
+
+  useEffect(() => {
+    if (!fulfillment || fulfillment.local_pickup) return
+    setDraft((current) => {
+      if (!current.localPickup && current.shipping) return current
+      return { ...current, localPickup: false, shipping: true }
+    })
+  }, [fulfillment])
 
   useEffect(() => {
     if (initial && Object.values(initial).some((value) => typeof value === "string" && value.length > 0)) return
@@ -100,8 +110,7 @@ export function SellListingFlow({ initial }: { initial?: Partial<SellDraft> }) {
     setDraft((current) => {
       const merged = { ...current, ...next }
       if (next.category && next.category !== current.category) {
-        merged.shipping = true
-        merged.localPickup = false
+        Object.assign(merged, defaultDeliveryForCategory(next.category))
         merged.shippingMode = "reswell"
         merged.shippingPrice = ""
         merged.dropoffLocationId = ""
@@ -170,7 +179,7 @@ export function SellListingFlow({ initial }: { initial?: Partial<SellDraft> }) {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <Stack.Screen options={{ headerShown: false }} />
-      <View style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.foreground }]}>
         <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={() => router.back()} hitSlop={8} style={styles.headerSide}>
           <SymbolView name={{ ios: "xmark", android: "close", web: "close" }} size={22} tintColor={colors.foreground} />
         </Pressable>
@@ -183,9 +192,24 @@ export function SellListingFlow({ initial }: { initial?: Partial<SellDraft> }) {
           </Text>
         </Pressable>
       </View>
-      <ScrollView keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets contentContainerStyle={styles.content}>
-        <Section title={`Add photos (up to 8)`}>
+      <ScrollView
+        keyboardShouldPersistTaps="always"
+        nestedScrollEnabled
+        automaticallyAdjustKeyboardInsets
+        contentContainerStyle={styles.content}
+      >
+        <Section>
           <SellPhotosStep photos={draft.photos} onChange={(photos) => patch({ photos })} />
+        </Section>
+        <Section>
+          <SellProductStep
+            draft={draft}
+            taxonomy={taxonomy}
+            error={taxonomyError}
+            onRetry={loadTaxonomy}
+            onChange={patch}
+            variant="identity"
+          />
         </Section>
         <Section title="Description">
           <SellDetailsStep draft={draft} onChange={patch} showCondition={false} />
@@ -197,42 +221,23 @@ export function SellListingFlow({ initial }: { initial?: Partial<SellDraft> }) {
             error={taxonomyError}
             onRetry={loadTaxonomy}
             onChange={patch}
+            variant="classification"
+            conditionLabel={conditionLabel || null}
+            onConditionPress={() => setConditionOpen(true)}
           />
-          {needsBoardSpecs ? (
+        </Section>
+        {needsBoardSpecs ? (
+          <Section title="Board specs">
             <SellBoardSpecs
               specs={boardSpecs}
               values={draft.specs}
               error={boardSpecsError}
               onRetry={() => setBoardSpecsAttempt((attempt) => attempt + 1)}
               onChange={(specs) => patch({ specs })}
+              onOpenPicker={(fieldId, decimals) => setBoardSpecPicker({ fieldId, decimals })}
             />
-          ) : null}
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => setConditionOpen(true)}
-            style={[
-              styles.condition,
-              {
-                backgroundColor: conditionLabel ? colors.foreground : colors.background,
-                borderColor: colors.foreground,
-              },
-            ]}
-          >
-            {conditionLabel ? (
-              <SymbolView name={{ ios: "checkmark", android: "check", web: "check" }} size={14} tintColor={colors.background} weight="bold" />
-            ) : (
-              <Text style={[styles.conditionPlus, { color: colors.foreground }]}>+</Text>
-            )}
-            <Text
-              style={[
-                styles.conditionLabel,
-                { color: conditionLabel ? colors.background : colors.foreground, fontFamily: fontFamily.text },
-              ]}
-            >
-              {conditionLabel || "Condition"}
-            </Text>
-          </Pressable>
-        </Section>
+          </Section>
+        ) : null}
         <Section title="Price">
           <SellPriceStep draft={draft} onChange={patch} />
         </Section>
@@ -251,7 +256,7 @@ export function SellListingFlow({ initial }: { initial?: Partial<SellDraft> }) {
           <Text style={[styles.notice, { color: colors.muted, fontFamily: fontFamily.text }]}>{notice}</Text>
         ) : null}
       </ScrollView>
-      <View style={[styles.footer, { borderTopColor: colors.border, paddingBottom: Math.max(insets.bottom, 12) }]}>
+      <View style={[styles.footer, { borderTopColor: colors.foreground, paddingBottom: Math.max(insets.bottom, 12) }]}>
         <Pressable
           accessibilityRole="button"
           disabled={!ready || busy !== null}
@@ -275,15 +280,38 @@ export function SellListingFlow({ initial }: { initial?: Partial<SellDraft> }) {
           onClose={() => setConditionOpen(false)}
         />
       ) : null}
+      {boardSpecPicker && boardSpecs ? (() => {
+        const field = findBoardSpecField(boardSpecs, boardSpecPicker.fieldId)
+        if (!field || field.kind !== "select") return null
+        return (
+          <SellOptionSheet
+            title={field.label}
+            options={field.options.map((option) => ({
+              value: option.value,
+              label:
+                boardSpecPicker.decimals && option.decimal_label ? option.decimal_label : option.label,
+            }))}
+            selected={draft.specs[field.id] ?? ""}
+            focusValue={field.focus_value}
+            onSelect={(value) => {
+              patch({ specs: { ...draft.specs, [field.id]: value } })
+              setBoardSpecPicker(null)
+            }}
+            onClose={() => setBoardSpecPicker(null)}
+          />
+        )
+      })() : null}
     </KeyboardAvoidingView>
   )
 }
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
+function Section({ title, children }: { title?: string; children: ReactNode }) {
   const colors = useReswellColors()
   return (
-    <View style={[styles.section, { borderTopColor: colors.border }]}>
-      <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: fontFamily.headline }]}>{title}</Text>
+    <View style={[styles.section, { borderTopColor: colors.foreground }]}>
+      {title ? (
+        <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: fontFamily.headline }]}>{title}</Text>
+      ) : null}
       {children}
     </View>
   )
@@ -298,25 +326,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   headerSide: { width: 72 },
   headerSideEnd: { alignItems: "flex-end" },
   headerTitle: { fontSize: 17, fontWeight: "700" },
   draft: { fontSize: 16, fontWeight: "700" },
   content: { paddingHorizontal: 16, paddingBottom: 28, gap: 8 },
-  condition: {
-    alignSelf: "flex-start",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    marginTop: 8,
-  },
-  conditionPlus: { fontSize: 16, fontWeight: "600" },
-  conditionLabel: { fontSize: 15, fontWeight: "600" },
   section: { gap: 14, paddingTop: 18, borderTopWidth: StyleSheet.hairlineWidth, marginTop: 8 },
   sectionTitle: { fontSize: 22, fontWeight: "700" },
   notice: { fontSize: 15, lineHeight: 21 },

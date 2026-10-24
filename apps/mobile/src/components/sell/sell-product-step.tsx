@@ -13,12 +13,19 @@ export function SellProductStep({
   error,
   onRetry,
   onChange,
+  conditionLabel,
+  onConditionPress,
+  variant = "all",
 }: {
   draft: SellDraft
   taxonomy: MobileSellTaxonomy | null
   error: string | null
   onRetry: () => void
   onChange: (patch: Partial<SellDraft>) => void
+  conditionLabel?: string | null
+  onConditionPress?: () => void
+  /** `identity` = title, brand, model. `classification` = category, condition. */
+  variant?: "all" | "identity" | "classification"
 }) {
   const colors = useReswellColors()
   const [sheet, setSheet] = useState<"category" | "subcategory" | null>(null)
@@ -43,10 +50,17 @@ export function SellProductStep({
     const next = taxonomy?.categories.find((item) => item.slug === slug)
     const keepSubcategory = next?.subcategories.some((item) => item.slug === draft.subcategory) ?? false
     onChange({ category: slug, subcategory: keepSubcategory ? draft.subcategory : "" })
+    if (next && next.subcategories.length > 0) {
+      setSheet("subcategory")
+      return
+    }
     setSheet(null)
   }
 
-  if (error) {
+  const showIdentity = variant === "all" || variant === "identity"
+  const showClassification = variant === "all" || variant === "classification"
+
+  if (showClassification && error) {
     return (
       <View style={styles.stack}>
         <Text style={[styles.copy, { color: colors.foreground, fontFamily: fontFamily.text }]}>{error}</Text>
@@ -57,60 +71,66 @@ export function SellProductStep({
     )
   }
 
-  if (!taxonomy) {
+  if (showClassification && !taxonomy) {
     return <Text style={[styles.copy, { color: colors.muted, fontFamily: fontFamily.text }]}>Loading categories…</Text>
   }
 
   return (
     <View style={styles.stack}>
-      <SellField
-        label="Listing title"
-        required
-        value={draft.title}
-        onChangeText={(title) => onChange({ title })}
-        placeholder="Album Ghost 5'8"
-        autoCapitalize="words"
-      />
-      <SellField
-        label="Brand"
-        required
-        value={draft.brand}
-        onChangeText={(brand) => {
-          setSuggesting(true)
-          onChange({ brand })
-        }}
-        onFocus={() => setSuggesting(true)}
-        placeholder="Album"
-        autoCapitalize="words"
-      />
-      {suggesting && suggestions.results.length > 0 ? (
-        <View style={[styles.suggestions, { borderColor: colors.border }]}>
-          {suggestions.results.map((row) => (
-            <Pressable
-              key={`${row.kind}-${row.id}`}
-              accessibilityRole="button"
-              onPress={() => applySuggestion(row)}
-              style={[styles.suggestion, { borderBottomColor: colors.border }]}
-            >
-              <Text style={[styles.suggestionTitle, { color: colors.foreground, fontFamily: fontFamily.text }]}>
-                {row.title}
-              </Text>
-              <Text style={[styles.suggestionMeta, { color: colors.muted, fontFamily: fontFamily.text }]}>
-                {row.category_label}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
+      {showIdentity ? (
+        <>
+          <SellField
+            label="Listing title"
+            required
+            value={draft.title}
+            onChangeText={(title) => onChange({ title })}
+            placeholder="Album Ghost 5'8"
+            autoCapitalize="words"
+          />
+          <SellField
+            label="Brand"
+            required
+            value={draft.brand}
+            onChangeText={(brand) => {
+              setSuggesting(true)
+              onChange({ brand })
+            }}
+            onFocus={() => setSuggesting(true)}
+            placeholder="Album"
+            autoCapitalize="words"
+          />
+          {suggesting && suggestions.results.length > 0 ? (
+            <View style={[styles.suggestions, { borderColor: colors.foreground }]}>
+              {suggestions.results.map((row) => (
+                <Pressable
+                  key={`${row.kind}-${row.id}`}
+                  accessibilityRole="button"
+                  onPress={() => applySuggestion(row)}
+                  style={[styles.suggestion, { borderBottomColor: colors.border }]}
+                >
+                  <Text style={[styles.suggestionTitle, { color: colors.foreground, fontFamily: fontFamily.text }]}>
+                    {row.title}
+                  </Text>
+                  <Text style={[styles.suggestionMeta, { color: colors.muted, fontFamily: fontFamily.text }]}>
+                    {row.category_label}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          ) : null}
+          <SellField
+            label="Model"
+            required
+            value={draft.model}
+            onChangeText={(model) => onChange({ model })}
+            onFocus={() => setSuggesting(false)}
+            placeholder="Ghost"
+            autoCapitalize="words"
+          />
+        </>
       ) : null}
-      <SellField
-        label="Model"
-        required
-        value={draft.model}
-        onChangeText={(model) => onChange({ model })}
-        onFocus={() => setSuggesting(false)}
-        placeholder="Ghost"
-        autoCapitalize="words"
-      />
+      {showClassification && taxonomy ? (
+        <>
       <SellSelectField
         label="Category"
         required
@@ -125,6 +145,15 @@ export function SellProductStep({
           value={subcategory?.label ?? ""}
           placeholder="Select one..."
           onPress={() => setSheet("subcategory")}
+        />
+      ) : null}
+      {onConditionPress ? (
+        <SellSelectField
+          label="Condition"
+          required
+          value={conditionLabel ?? ""}
+          placeholder="Select one..."
+          onPress={onConditionPress}
         />
       ) : null}
       {sheet === "category" ? (
@@ -148,12 +177,14 @@ export function SellProductStep({
           onClose={() => setSheet(null)}
         />
       ) : null}
+        </>
+      ) : null}
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  stack: { gap: 18 },
+  stack: { gap: 12 },
   copy: { fontSize: 16 },
   retry: { fontSize: 16, fontWeight: "600" },
   suggestions: { borderWidth: 1, borderRadius: 8, overflow: "hidden", marginTop: -8 },

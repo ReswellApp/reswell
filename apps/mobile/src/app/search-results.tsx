@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router"
-import { SearchCartHeader } from "@/components/search-cart-header"
+import { ScreenSearchHeader } from "@/components/screen-search-header"
 import { useEffect, useState } from "react"
 import {
   ActivityIndicator,
@@ -188,13 +188,12 @@ export default function SearchResultsScreen() {
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <Stack.Screen options={{ headerShown: false }} />
-      <SearchCartHeader
+      <ScreenSearchHeader
+        showBack
         mode="input"
         value={draft}
         onChangeText={setDraft}
         onSubmit={submitSearch}
-        onBack={() => router.back()}
-        onCart={() => router.push(session ? "/account/cart" : "/sign-in")}
       />
       {loading && listings.length === 0 ? (
         <ActivityIndicator style={styles.centered} color={colors.foreground} />

@@ -56,7 +56,6 @@ export type SellDraft = {
   state: string
   locationLat: number | null
   locationLng: number | null
-  /** Shipping starts on. Local pickup starts off until the seller turns it on. */
   localPickup: boolean
   shipping: boolean
   shippingMode: SellShippingMode
@@ -71,6 +70,16 @@ export type SellDraft = {
   serverDraftId: string
   /** Values for API-defined board spec fields. Keys are field ids from board specs. */
   specs: Record<string, string>
+}
+
+export const SURFBOARDS_CATEGORY_SLUG = "surfboards"
+
+/** Surfboards default to local pickup only; every other category defaults to shipping only. */
+export function defaultDeliveryForCategory(category: string): Pick<SellDraft, "shipping" | "localPickup"> {
+  if (category === SURFBOARDS_CATEGORY_SLUG) {
+    return { shipping: false, localPickup: true }
+  }
+  return { shipping: true, localPickup: false }
 }
 
 export function emptySellDraft(): SellDraft {

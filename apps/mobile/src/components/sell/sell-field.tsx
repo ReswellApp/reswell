@@ -1,5 +1,5 @@
 import { SymbolView } from "expo-symbols"
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native"
+import { Pressable, StyleSheet, Switch, Text, TextInput, View } from "react-native"
 import { fontFamily, useReswellColors } from "@/theme"
 
 function FieldLabel({ label, required }: { label: string; required?: boolean }) {
@@ -23,6 +23,7 @@ export function SellField({
   required = false,
   onFocus,
   accessibilityLabel,
+  suffix,
 }: {
   label: string
   value: string
@@ -34,28 +35,71 @@ export function SellField({
   required?: boolean
   onFocus?: () => void
   accessibilityLabel?: string
+  suffix?: string
 }) {
   const colors = useReswellColors()
+
+  const input = (
+    <TextInput
+      value={value}
+      onChangeText={onChangeText}
+      placeholder={placeholder}
+      placeholderTextColor={colors.muted}
+      multiline={multiline}
+      keyboardType={keyboardType}
+      autoCapitalize={autoCapitalize}
+      autoCorrect={autoCapitalize !== "characters"}
+      onFocus={onFocus}
+      accessibilityLabel={accessibilityLabel || label || placeholder || "Text field"}
+      style={[
+        styles.input,
+        multiline ? styles.multiline : null,
+        suffix ? styles.inputWithSuffix : null,
+        {
+          color: colors.foreground,
+          borderColor: colors.foreground,
+          backgroundColor: colors.background,
+          fontFamily: fontFamily.text,
+        },
+      ]}
+    />
+  )
 
   return (
     <View style={styles.wrap}>
       {label ? <FieldLabel label={label} required={required} /> : null}
-      <TextInput
+      {suffix ? (
+        <View style={[styles.input, styles.suffixRow, { borderColor: colors.foreground, backgroundColor: colors.background }]}>
+          {input}
+          <Text style={[styles.suffix, { color: colors.muted, fontFamily: fontFamily.text }]}>{suffix}</Text>
+        </View>
+      ) : (
+        input
+      )}
+    </View>
+  )
+}
+
+export function SellSwitchField({
+  label,
+  value,
+  onValueChange,
+}: {
+  label: string
+  value: boolean
+  onValueChange: (next: boolean) => void
+}) {
+  const colors = useReswellColors()
+  return (
+    <View style={styles.switchWrap}>
+      <Text style={[styles.switchLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}>{label}</Text>
+      <Switch
+        accessibilityLabel={label}
         value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor={colors.muted}
-        multiline={multiline}
-        keyboardType={keyboardType}
-        autoCapitalize={autoCapitalize}
-        autoCorrect={autoCapitalize !== "characters"}
-        onFocus={onFocus}
-        accessibilityLabel={accessibilityLabel || label || placeholder || "Text field"}
-        style={[
-          styles.input,
-          multiline ? styles.multiline : null,
-          { color: colors.foreground, borderColor: colors.border, fontFamily: fontFamily.text },
-        ]}
+        onValueChange={onValueChange}
+        trackColor={{ false: colors.border, true: colors.listingHeart }}
+        thumbColor="#FFFFFF"
+        ios_backgroundColor={colors.border}
       />
     </View>
   )
@@ -81,7 +125,7 @@ export function SellSelectField({
       <Pressable
         accessibilityRole="button"
         onPress={onPress}
-        style={[styles.input, styles.select, { borderColor: colors.border }]}
+        style={[styles.input, styles.select, { borderColor: colors.foreground, backgroundColor: colors.background }]}
       >
         <Text
           style={[
@@ -102,7 +146,7 @@ export function SellSelectField({
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: 6 },
+  wrap: { gap: 4 },
   label: { fontSize: 15, fontWeight: "700" },
   required: { fontWeight: "700" },
   input: {
@@ -110,9 +154,20 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 14,
-    paddingVertical: 14,
+    paddingVertical: 12,
   },
-  multiline: { minHeight: 200, textAlignVertical: "top" },
+  multiline: { minHeight: 128, textAlignVertical: "top", paddingVertical: 12 },
+  inputWithSuffix: { flex: 1, borderWidth: 0, paddingHorizontal: 0, paddingVertical: 0 },
+  suffixRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  suffix: { fontSize: 16, fontWeight: "600" },
+  switchWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    minHeight: 44,
+  },
+  switchLabel: { flex: 1, fontSize: 16, fontWeight: "500" },
   select: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
   selectLabel: { flex: 1, fontSize: 16 },
 })

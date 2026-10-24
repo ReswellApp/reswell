@@ -10,8 +10,8 @@ import {
   Text,
   View,
 } from "react-native"
-import { useSafeAreaInsets } from "react-native-safe-area-context"
 import type { MobileListingCard, MobileMarketplaceFeed, MobileMarketplaceFeedTab } from "@reswell/api-contract"
+import { ScreenSearchHeader } from "@/components/screen-search-header"
 import { ListingCard } from "@/components/listing-card"
 import { ListingLayoutSwitch, type ListingLayout } from "@/components/listing-layout-switch"
 import { fetchMarketplaceFeed } from "@/lib/api"
@@ -66,7 +66,6 @@ export default function FeedScreen() {
   const colors = useReswellColors()
   const router = useRouter()
   const params = useLocalSearchParams<{ tab?: string }>()
-  const insets = useSafeAreaInsets()
   const [tab, setTab] = useState<MobileMarketplaceFeedTab>(requestedFeedTab(params.tab) ?? "new")
   const [feed, setFeed] = useState<MobileMarketplaceFeed | null>(null)
   const [listings, setListings] = useState<MobileListingCard[]>([])
@@ -163,7 +162,8 @@ export default function FeedScreen() {
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <Stack.Screen options={{ headerShown: false }} />
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+      <ScreenSearchHeader insetTop bordered={false} />
+      <View style={[styles.header, { paddingTop: 8 }]}>
         <View style={styles.titleRow}>
           <Text style={[styles.title, { color: colors.foreground, fontFamily: fontFamily.headline }]}>{title}</Text>
           <View style={styles.headerActions}>

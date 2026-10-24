@@ -147,11 +147,11 @@ export function SellLocationField({
         placeholderTextColor={colors.muted}
         autoCapitalize="words"
         autoCorrect={false}
-        style={[styles.input, { color: colors.foreground, borderColor: colors.border, fontFamily: fontFamily.text }]}
+        style={[styles.input, { color: colors.foreground, borderColor: colors.foreground, fontFamily: fontFamily.text }]}
       />
       {searching ? <ActivityIndicator color={colors.listingHeart} style={styles.spinner} /> : null}
       {suggestions.length > 0 ? (
-        <View style={[styles.menu, { borderColor: colors.border, backgroundColor: colors.background }]}>
+        <View style={[styles.menu, { borderColor: colors.foreground, backgroundColor: colors.background }]}>
           {suggestions.map((suggestion) => (
             <Pressable
               key={suggestion.place_id ?? `${suggestion.label}-${suggestion.lat}`}

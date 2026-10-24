@@ -1,8 +1,16 @@
 import { useState } from "react"
-import { Pressable, StyleSheet, Switch, Text, TextInput, View } from "react-native"
-import { SellOptionSheet } from "@/components/sell/sell-option-sheet"
+import { Pressable, StyleSheet, Text, View } from "react-native"
+import { SellCollapsibleSection } from "@/components/sell/sell-collapsible-section"
+import { SellField, SellSelectField, SellSwitchField } from "@/components/sell/sell-field"
 import type { MobileSellBoardSpecs, MobileSellSpecField } from "@reswell/api-contract"
 import { fontFamily, useReswellColors } from "@/theme"
+
+export function findBoardSpecField(
+  specs: MobileSellBoardSpecs,
+  fieldId: string,
+): MobileSellSpecField | undefined {
+  return specs.sections.flatMap((section) => section.fields).find((field) => field.id === fieldId)
+}
 
 export function SellBoardSpecs({
   specs,
@@ -10,16 +18,17 @@ export function SellBoardSpecs({
   error,
   onRetry,
   onChange,
+  onOpenPicker,
 }: {
   specs: MobileSellBoardSpecs | null
   values: Record<string, string>
   error: string | null
   onRetry: () => void
   onChange: (specs: Record<string, string>) => void
+  onOpenPicker?: (fieldId: string, decimals: boolean) => void
 }) {
   const colors = useReswellColors()
   const [decimals, setDecimals] = useState(false)
-  const [openFieldId, setOpenFieldId] = useState<string | null>(null)
 
   if (error) {
     return (
@@ -35,184 +44,163 @@ export function SellBoardSpecs({
     )
   }
 
-  const openField = specs.sections.flatMap((section) => section.fields).find((field) => field.id === openFieldId) ?? null
-  let decimalsPlaced = false
+  const dimensions = specs.sections.find((section) => section.id === "dimensions")
+  const facets = specs.sections.find((section) => section.id === "facets")
+  const dimensionFields = dimensions?.fields ?? []
+  const facetFields = facets?.fields ?? []
+
+  const dimensionsFilled = dimensionFields.some((field) => fieldHasValue(field, values[field.id] ?? ""))
+  const facetsFilled = facetFields.some((field) => fieldHasValue(field, values[field.id] ?? ""))
+  const lengthField = dimensionFields.find((field) => field.id === "length")
+  const lengthFilled = lengthField ? fieldHasValue(lengthField, values.length ?? "") : false
 
   return (
     <View style={styles.stack}>
-      {specs.sections.map((section) => {
-        const hasDecimals = section.fields.some((field) => field.options.some((option) => option.decimal_label))
-        const showDecimals = hasDecimals && !decimalsPlaced
-        if (showDecimals) decimalsPlaced = true
-        return (
-          <View key={section.id} style={styles.section}>
-            {section.title ? (
-              <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: fontFamily.text }]}>
-                {section.title}
-              </Text>
-            ) : null}
-            {section.hint ? (
-              <Text style={[styles.note, { color: colors.muted, fontFamily: fontFamily.text }]}>{section.hint}</Text>
-            ) : null}
-            <View style={styles.grid}>
-              {section.fields.map((field) => (
-                <View key={field.id} style={styles.cell}>
-                  {field.kind === "text" ? (
-                    <TextSpec
-                      field={field}
-                      value={values[field.id] ?? ""}
-                      onChangeText={(next) => onChange({ ...values, [field.id]: next })}
-                    />
-                  ) : (
-                    <SelectSpec
-                      field={field}
-                      value={values[field.id] ?? ""}
-                      decimals={decimals}
-                      onPress={() => setOpenFieldId(field.id)}
-                    />
-                  )}
-                </View>
-              ))}
-            </View>
-            {showDecimals ? (
-              <View style={styles.decimals}>
-                <Text style={[styles.decimalsLabel, { color: colors.muted, fontFamily: fontFamily.text }]}>Decimals</Text>
-                <Switch
-                  accessibilityLabel="Decimals"
-                  value={decimals}
-                  onValueChange={setDecimals}
-                  trackColor={{ false: colors.border, true: colors.listingHeart }}
-                  thumbColor="#FFFFFF"
-                  ios_backgroundColor={colors.border}
+      <Text style={[styles.lead, { color: colors.muted, fontFamily: fontFamily.text }]}>
+        Tap Dimensions to add length (required for search), size, and volume. Fins & construction are optional.
+      </Text>
+
+      {dimensionFields.length > 0 ? (
+        <SellCollapsibleSection
+          title="Dimensions"
+          subtitle={
+            dimensionsFilled
+              ? dimensionsSummary(dimensionFields, values, decimals)
+              : "Length, width, thickness & volume"
+          }
+          defaultExpanded={!lengthFilled}
+        >
+          <View style={styles.fields}>
+            {dimensionFields.map((field) => (
+              <View key={field.id}>
+                {field.id === "volume" ? (
+                  <SellSwitchField label="Use decimal inches" value={decimals} onValueChange={setDecimals} />
+                ) : null}
+                <SpecField
+                  field={field}
+                  values={values}
+                  decimals={decimals}
+                  onChange={onChange}
+                  onOpenPicker={onOpenPicker}
                 />
               </View>
-            ) : null}
+            ))}
           </View>
-        )
-      })}
-      {openField && openField.kind === "select" ? (
-        <SellOptionSheet
-          title={openField.label}
-          options={openField.options.map((option) => ({
-            value: option.value,
-            label: decimals && option.decimal_label ? option.decimal_label : option.label,
-          }))}
-          selected={values[openField.id] ?? ""}
-          focusValue={openField.focus_value}
-          onSelect={(value) => {
-            onChange({ ...values, [openField.id]: value })
-            setOpenFieldId(null)
-          }}
-          onClose={() => setOpenFieldId(null)}
-        />
+        </SellCollapsibleSection>
       ) : null}
-    </View>
-  )
-}
 
-function SelectSpec({
-  field,
-  value,
-  decimals,
-  onPress,
-}: {
-  field: MobileSellSpecField
-  value: string
-  decimals: boolean
-  onPress: () => void
-}) {
-  const colors = useReswellColors()
-  const option = field.options.find((item) => item.value === value)
-  const label = option ? (decimals && option.decimal_label ? option.decimal_label : option.label) : (field.placeholder ?? "—")
-  const empty = !option || option.value === ""
-
-  return (
-    <View style={styles.field}>
-      <FieldLabel label={field.label} required={field.required} />
-      <Pressable
-        accessibilityRole="button"
-        onPress={onPress}
-        style={[styles.control, { borderColor: colors.border, backgroundColor: colors.background }]}
-      >
-        <Text
-          numberOfLines={1}
-          style={[styles.controlLabel, { color: empty ? colors.muted : colors.foreground, fontFamily: fontFamily.text }]}
+      {facetFields.length > 0 ? (
+        <SellCollapsibleSection
+          title={facets?.title ?? "Fins & construction"}
+          subtitle={
+            facetsFilled
+              ? facetsSummary(facetFields, values, decimals)
+              : (facets?.hint ?? "Fin setup, system, construction & more")
+          }
+          defaultExpanded={facetsFilled}
         >
-          {label}
-        </Text>
-        <Text style={[styles.chevron, { color: colors.muted }]}>▾</Text>
-      </Pressable>
-      {field.hint ? (
-        <Text style={[styles.hint, { color: colors.muted, fontFamily: fontFamily.text }]}>{field.hint}</Text>
+          <View style={styles.fields}>
+            {facetFields.map((field) => (
+              <SpecField
+                key={field.id}
+                field={field}
+                values={values}
+                decimals={decimals}
+                onChange={onChange}
+                onOpenPicker={onOpenPicker}
+              />
+            ))}
+          </View>
+        </SellCollapsibleSection>
       ) : null}
     </View>
   )
 }
 
-function TextSpec({
+function SpecField({
   field,
-  value,
-  onChangeText,
+  values,
+  decimals,
+  onChange,
+  onOpenPicker,
 }: {
   field: MobileSellSpecField
-  value: string
-  onChangeText: (value: string) => void
+  values: Record<string, string>
+  decimals: boolean
+  onChange: (specs: Record<string, string>) => void
+  onOpenPicker?: (fieldId: string, decimals: boolean) => void
 }) {
-  const colors = useReswellColors()
+  if (field.kind === "text") {
+    return (
+      <SellField
+        label={field.label}
+        required={field.required}
+        value={values[field.id] ?? ""}
+        onChangeText={(next) => onChange({ ...values, [field.id]: next })}
+        placeholder={field.placeholder ?? undefined}
+        keyboardType="decimal-pad"
+        autoCapitalize="none"
+        suffix={field.suffix ?? undefined}
+      />
+    )
+  }
   return (
-    <View style={styles.field}>
-      <FieldLabel label={field.label} required={field.required} />
-      <View style={[styles.control, { borderColor: colors.border, backgroundColor: colors.background }]}>
-        <TextInput
-          value={value}
-          onChangeText={onChangeText}
-          placeholder={field.placeholder ?? ""}
-          placeholderTextColor={colors.muted}
-          keyboardType="decimal-pad"
-          style={[styles.input, { color: colors.foreground, fontFamily: fontFamily.text }]}
-        />
-        {field.suffix ? (
-          <Text style={[styles.suffix, { color: colors.muted, fontFamily: fontFamily.text }]}>{field.suffix}</Text>
-        ) : null}
-      </View>
-    </View>
+    <SellSelectField
+      label={field.label}
+      required={field.required}
+      value={selectDisplay(field, values[field.id] ?? "", decimals)}
+      placeholder={field.placeholder ?? "Not specified"}
+      onPress={() => onOpenPicker?.(field.id, decimals)}
+    />
   )
 }
 
-function FieldLabel({ label, required }: { label: string; required: boolean }) {
-  const colors = useReswellColors()
-  return (
-    <Text style={[styles.fieldLabel, { color: colors.muted, fontFamily: fontFamily.text }]}>
-      {label}
-      {required ? <Text style={{ color: colors.destructive }}> *</Text> : null}
-    </Text>
-  )
+function dimensionsSummary(fields: MobileSellSpecField[], values: Record<string, string>, decimals: boolean): string {
+  const parts = fields
+    .map((field) => fieldDisplay(field, values[field.id] ?? "", decimals))
+    .filter((part) => part !== "")
+  if (parts.length === 0) return "Length, width, thickness & volume"
+  const sizeParts = parts.filter((part) => !part.endsWith(" L"))
+  const volumePart = parts.find((part) => part.endsWith(" L"))
+  const sizeLine = sizeParts.join(" × ")
+  if (sizeLine && volumePart) return `${sizeLine} · ${volumePart}`
+  return parts.join(" · ")
+}
+
+function facetsSummary(fields: MobileSellSpecField[], values: Record<string, string>, decimals: boolean): string {
+  const parts = fields
+    .map((field) => fieldDisplay(field, values[field.id] ?? "", decimals))
+    .filter((part) => part !== "")
+  if (parts.length === 0) return "Fin setup, system, construction & more"
+  if (parts.length <= 2) return parts.join(" · ")
+  return `${parts[0]} · +${parts.length - 1} more`
+}
+
+function fieldDisplay(field: MobileSellSpecField, raw: string, decimals: boolean): string {
+  if (!fieldHasValue(field, raw)) return ""
+  if (field.kind === "text") {
+    const suffix = field.suffix ? ` ${field.suffix}` : ""
+    return `${raw.trim()}${suffix}`
+  }
+  const option = field.options.find((item) => item.value === raw)
+  if (!option || option.value === "") return ""
+  return decimals && option.decimal_label ? option.decimal_label : option.label
+}
+
+function selectDisplay(field: MobileSellSpecField, raw: string, decimals: boolean): string {
+  return fieldDisplay(field, raw, decimals)
+}
+
+function fieldHasValue(field: MobileSellSpecField, raw: string): boolean {
+  const value = raw.trim()
+  if (!value) return false
+  if (field.kind === "select") return value !== ""
+  return true
 }
 
 const styles = StyleSheet.create({
-  stack: { gap: 18, marginTop: 8 },
-  section: { gap: 8 },
-  sectionTitle: { fontSize: 16, fontWeight: "700" },
+  stack: { gap: 12 },
+  lead: { fontSize: 14, lineHeight: 20 },
+  fields: { gap: 12 },
   note: { fontSize: 14, lineHeight: 20 },
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  cell: { width: "48%", flexGrow: 1 },
-  field: { gap: 4 },
-  fieldLabel: { fontSize: 13, fontWeight: "600" },
-  control: {
-    minHeight: 48,
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 8,
-  },
-  controlLabel: { flex: 1, fontSize: 15, fontWeight: "600" },
-  chevron: { fontSize: 14 },
-  input: { flex: 1, fontSize: 16, paddingVertical: 10 },
-  suffix: { fontSize: 15, fontWeight: "600" },
-  hint: { fontSize: 12, lineHeight: 16 },
-  decimals: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  decimalsLabel: { fontSize: 14, fontWeight: "600" },
 })

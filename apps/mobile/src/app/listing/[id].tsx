@@ -1,8 +1,8 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router"
-import { SymbolView } from "expo-symbols"
 import { useEffect, useState } from "react"
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native"
 import type { MobileListingDetail, MobileListingRailSection } from "@reswell/api-contract"
+import { ScreenSearchHeader } from "@/components/screen-search-header"
 import { ListingActions } from "@/components/listing-actions"
 import { ListingDetail } from "@/components/listing-detail"
 import { ListingGallery } from "@/components/listing-gallery"
@@ -49,28 +49,8 @@ export default function ListingScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
-      <Stack.Screen
-        options={{
-          title: "",
-          headerTransparent: true,
-          headerShadowVisible: false,
-          headerStyle: { backgroundColor: "transparent" },
-          headerLeft: () => (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Back"
-              onPress={() => router.back()}
-              style={[styles.back, { backgroundColor: colors.background }]}
-            >
-              <SymbolView
-                name={{ ios: "chevron.left", android: "arrow_back", web: "arrow_back" }}
-                size={18}
-                tintColor={colors.foreground}
-              />
-            </Pressable>
-          ),
-        }}
-      />
+      <Stack.Screen options={{ headerShown: false }} />
+      <ScreenSearchHeader showBack />
       {!listing && !error ? (
         <ActivityIndicator style={styles.centered} color={colors.foreground} />
       ) : error || !listing ? (
@@ -124,14 +104,6 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   scroll: { flex: 1 },
   scrollContent: { paddingBottom: 140 },
-  back: {
-    width: 36,
-    height: 36,
-    marginLeft: 8,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   centered: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, padding: 24 },
   error: { textAlign: "center", fontSize: 16 },
   retry: { fontSize: 16, fontWeight: "600" },

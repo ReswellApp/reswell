@@ -3,6 +3,7 @@ import { useEffect, useState } from "react"
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from "react-native"
 import type { MobileListingCard, MobileProfile, MobileReview } from "@reswell/api-contract"
 import { ListingCard } from "@/components/listing-card"
+import { ScreenSearchHeader } from "@/components/screen-search-header"
 import { ProfileFeedback, ProfileInfo } from "@/components/profile-panels"
 import { ProfileHeader, type SellerTab } from "@/components/profile-header"
 import { fetchProfile, fetchProfileListings, fetchProfileReviews, setFollow } from "@/lib/api"
@@ -99,7 +100,8 @@ export default function ProfileScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
-      <Stack.Screen options={{ title: "" }} />
+      <Stack.Screen options={{ headerShown: false }} />
+      <ScreenSearchHeader showBack />
       {!profile && !error ? (
         <ActivityIndicator style={styles.centered} color={colors.foreground} />
       ) : error && !profile ? (
