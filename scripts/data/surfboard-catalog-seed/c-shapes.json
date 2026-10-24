@@ -1,0 +1,181 @@
+{
+  "generated_for": "C Shapes official named standup catalog",
+  "source": "https://www.cshapes.com/surfboards and first-party model pages (Wix) — excludes merch, The Rack used/stock listings, shop, and the duplicate copy-of-c-monkey R1 page. Juggernaut is listed on the index without a dedicated named page and was skipped.",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "c-shapes",
+      "name": "C Shapes",
+      "website_url": "https://www.cshapes.com/",
+      "location_label": "Palm Bay, Florida",
+      "founder_name": "Carlos Reyes",
+      "lead_shaper_name": "Carlos Reyes",
+      "short_description": "Custom surfboards by Carlos Reyes in Palm Bay, Florida — 32 years of hand-built shortboards, fishes, mid-lengths, and longboards for East Coast waves.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/c-shapes.jpg",
+      "models": [
+        {
+          "name": "Sizzle Stick",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/c-shapes-sizzle-stick.jpg",
+          "description": "This is our hi-performance shortboard model. Modeled originally from a KS Semi-Pro, the latest version is now its own unique design with some minor tweaks here and there. It comes in two main variants: The swallow tail design and the round-pin tail, even though the original design was a round squash. The Sizzle Stick features a deep single to double concave to Vee. It also has plenty of curve in the rocker for vertical style surfing. Low rails are standard.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "C-Monkey",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/c-shapes-c-monkey.jpg",
+          "description": "The C-Monkey is our other Go-2 shortboard for decent wave conditions. It features a little more chest area and foam from the Sizzle Stick and customers have been getting it in 5-fin convertible. A good shortboard for someone who needs a little extra foam yet maintaining all the performance characteristics of a pro-shortboard.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Trix",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/c-shapes-trix.png",
+          "description": "The TRIX model is a tri-fin shortboard designed & developed with team rider Alex \"Al\" Casal. Al wanted a board like the Sizzle Stick 2, but with a squash tail. He also remembered having fun on his old Grenade model so this is something somewhere in between. The latest refinement for 2024 is the addition of the Bump-Squash more reminiscent of the Grenade model. This has been Al's go-to board for most Florida wave conditions and has had positive feedback from other customers. The Trix model is also a fav of team rider Chispy Gomez in Colombia.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Quiver Thriller",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/c-shapes-quiver-thriller.jpg",
+          "description": "Released in early 2018 the Quiver Thriller is a loose remake of the Quiver Killer from Lost with mine own personal touch. So far feedback has been killer. It's a thriller. It's a good looking, good working board for those of you who prefer a round thumb tail. Good all-a-around board & travel board too.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "R1",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/c-shapes-r1.jpg",
+          "description": "The R1 was a concept model made for Russell in Haiti. This design has withstood the test of time and it's still a favorite. A great model for someone needing a touch more volume than your pro-shortboard and a round-tail. It also features a bump at the hip for added release. Teamer Ron Keindl has one and he enjoys it when the waves call for it. Otherwise he's on his Hogfish most of the time.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Sizzle Up",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/c-shapes-sizzle-up.jpg",
+          "description": "Introducing the new Sizzle Up for 2026. Previously it was just called the Sizzle Stick Round-Pin. Then it was the Sizzle Stick Step-Up, because that's what it looks like at first glance. The name was a bit too long, so I've shortened it to the Sizzle Up. So what's the deal with the Sizzle Up? It's a Sizzle Stick base with an adjusted big wave round-pin tail. I also like to call it a Hawaiian pin-tail, based off the pin tails coming out of Hawaii. You'll be surprised how big a wave you can catch using a compact mini-gun like this. Speaking of big Florida swells, the Caribbean and places like Nicaragua, this board can handle all those barrel wave needs where you need just a little more than your daily shortboard.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Sizzle Stick 2",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/c-shapes-sizzle-stick-2.jpg",
+          "description": "The Sizzle Stick 2 is our purpose built small wave Hybrid. Designed to excel in weak junk surf conditions to bigger junk surf conditions up to head high. It has a little rocket fish in it with the swallow tail. Comes with single to double concave stock.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Psycho Turtle",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/c-shapes-psycho-turtle.jpg",
+          "description": "This is another small wave thruster. It's also a small wave enabler. It's short, extra wide and thick, with a wide squash tail, a hard edge and some fins. Originally a tri-fin it now comes in 5-fin. Why not? The bottom is clean with a shallow single concave running all the way through. Proven and tested in small summer surf at the shark park and other local Florida surf spots. This model \"as is\" is sure to be a favorite. Not much to change or add except getting your liters right and/or maybe adding a small set of tail channels for some extra speed.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "The Shroom",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/c-shapes-the-shroom.jpg",
+          "description": "The Shroom is a short and stocky small wave groveler. The main feature on this board is it's double concave all the way through ending in an extra wide moon tail. Comes in 5 fin convertible, but the go-to on this design is the Quad set up. Large keels go good on the sides with smaller trailers in the back. This board loves small gutless surf in the 2-4' range and it starts to get a bit slidey in anything bigger than chest high and punchy.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "The Bubbler",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/c-shapes-the-bubbler.jpg",
+          "description": "Short and pudgy retro shape. Float like a bubble. Climb over whitewater. Slip into a barrel. Comes tri-fin standard. You can order it in Twin or 5 fin.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Fast & Loose",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/c-shapes-fast-and-loose.jpg",
+          "description": "The Fast & Loose is our go-to Fish model. It features a traditional fish outline with wide point forward, a pointed beak nose and fish tail. It has low rocker, but with continuous curve. The standard bottom is a single to double concave with a touch of Vee out that back. Twin fin is standard with Quad optional. Our original F&L was 21\" wide with a narrow tail, but some customers get the wide version with a wider tail block. A true fish model should have plenty of volume and flotation comparable to riding a longboard.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Hogfish",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/c-shapes-hogfish.jpg",
+          "description": "The Hogfish is our HI-Performance fish model for those of you who would like a fish, but still want something more in line with your thruster. The Hogfish is meant to be half thruster. Half Fish. This model has been doing well with positive feedback and it's riders love it in all types of Florida surf from mushy and gutless to pitching 4'-6' stuff. Comes originally in Twin fin, but you can go Tri, Quad, even 5-fin. Team rider Ron Keindl loves his Hogfish as a Tri-fin using 2 big side fins with a smaller center fin.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Fang Toof",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/c-shapes-fang-toof.jpg",
+          "description": "The Fang Toof (or tooth) is a 5-fin version of the Fast & Loose meant to fill the 5'10\" thru 6'10\" range. Provides plenty of volume for paddling and ease of wave catching. This design features a shallow swallow tail for that center fin. Been adding a set of wings in the back to reduce the tail area some more. The Fang Toof is a fun-board design great for beginner to intermediate in all-a-round surf conditions as well as someone who just wants more foam than the typical shortboard thruster.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Redux",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/c-shapes-redux.jpg",
+          "description": "The Redux is a loose remake of the famed Lost Rocket Redux. I've only made a handful of these with its unique Diamond tail. After several shapes and good feedback from customers it's now available on our menu. The current model shown has some extra volume, but I've also made smaller grom sized versions. The name \"Redux\" stuck because everyone calls is that. They're like, \"Is that a Redux\"? So to make life easier on your mind the name stays. It's a C-Shapes redo of the Redux.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Loose Rocket",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/c-shapes-loose-rocket.jpg",
+          "description": "The Loose Rocket is a sibling of the Fast & Loose Fish. It has the same volume and dims with the exception being the Rocket Tail. This also gives it the room to put a center fin box. Good small wave board and beginner-intermediate design or just for someone who wants extra volume.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Nu Fish",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/c-shapes-nu-fish.jpg",
+          "description": "Something NU. This is a concept fish design with a moon tail. Features a single concave throughout. Comes in Twin Fin, but you can make it into any configuration. The original design is 6'1\" and is meant to be on the longer side and can go up to 6'8\", 6'10\" no problem. The latest NU fish designs have softer, rounded tail tips to avoid hitting your feet although it looks more aggressive with the pointed tips.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Latest Craze",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/c-shapes-the-latest-craze.jpg",
+          "description": "The Latest Craze is coming back. Again. Truly a timeless classic. The Retro outline is beautiful, sleek and useful in steep barrel waves. The original is longer around 6'3\" and can be stretched out to a mid-length, but for that we already have the Middle Earth model that is based off the Latest Craze. For 2026 we're shortening it with a standard Tri-Fin set up. A really good combination to start with, and you can still use it as a twin-pin. Add some quad boxes and make it a 5-fin, or go single fin and 2+1. The model is receptive to all fin combinations. It features a pointed nose with moderate chest outline, a wide point forward with a pulled in pin-tail. It also has a slight beak nose along with special bottom contours for a lively ride.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Twinner",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/c-shapes-the-twinner.jpg",
+          "description": "All-around fun to bigger wave. The new Twinner model is a retro style pin-tail with the still revolutionary twin-fin set up. The outline comes from the Latest Craze model with a flat bottom approach to Vee out the back. Very simple design and simplicity is key sometimes to greatness. Don't feel bad ordering this as a 2+1. We'll just have to call it a 3-Finner. Alternative ideas: Add some wings. Channels. Make it a Twinzer.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Swordfish",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/c-shapes-swordfish.jpg",
+          "description": "All new for late 2025, 2026. The Swordfish is a mid-lengthy fish with some nice curves and tapered outline. This shape reminds me of our old school Squid model fun shape. The tail it slightly more fish with a quad setup, but this can be made into a Twin or 5-fin as well. The rails are medium round, soft and forgiving with a touch of edge behind the fins. There's plenty of volume up in the front half with a decent amount of rocker. Great for charging bigger, steeper waves when needed. The bottom is clean with a slight single concave all the way through. Friendly reminder, everything is customizable. This is just a good starting point for the design.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Middle Earth",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/c-shapes-middle-earth.jpg",
+          "description": "Mid-lengths are a thing now. They have their own genre. Some will say they've been a thing since way back. For those who don't want a longboard or a shortboard, and need a little something in between. The 7'5\" Middle Earth will provide just the right board for such a need. It's got length. It's got volume. It's sleek and sporty. It can work in all-a-round wave conditions and skill levels.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Chariot",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/c-shapes-chariot.png",
+          "description": "Coming in hot for 2026 is this new midlegthy thumb tail named the Chariot. Based off the Swordfish design it comes in a round thumb tail with a slight bump at the hip. A good design for paddling into waves of all sizes, but as you can see by its length and outline this can handle bigger surf in the 8-10' range. So far the first one rips. Looking forward to making a few more Chariots this year.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Super Fun",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/c-shapes-super-fun.jpg",
+          "description": "A little on the skinny side. Technically a fun shape with a little gun in it. Paddles, catches waves and turns easy without all that extra foam. Duck divable at the standard dims. Been working on this design for a while now with Dave \"Watson\" who goes down to PR all the time. Started out with a wider nose like a longboard. Been making it pointier over time. Nothing fancy on the bottom contours. Just a natural free flowing flat bottom with a little V out the back and a slight concave up in the nose. Rails are low and not too boxy. Tail is pulled in ending in a baby round-squash tail.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "C Slug",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/c-shapes-c-slug.jpg",
+          "description": "This board has been a success because it's Miami and this is what most Miamian's need. A real thick, mid-length funshape that's remarkably nimble and fun. This board is blunt. Its got the extra width and volume for stability and paddle power. You are catching the wave whether you want to or not. You don't believe me? That's alright. C-Slug owners know what's up. This design just keeps getting bigger and better. We are now pushing the C-Slug all the way to 8'0\" nearing 24\" wide and 3.25\" thick, yet with all the extra foam the board is still surprisingly maneuverable. Must be the special bottom contours or the pin tail? This board is in the same class as the Walden Mega Magic. Yes, there is a special \"Slug\" genre of boards and yes, some shapers specialize in making full-figured Slugs for a living.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Soul Glider",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/c-shapes-soul-glider.jpg",
+          "description": "All new for late 2026. We're moving into Glider territory now with this sleek new design featuring a pulled in and pointed nose. The outline is closer to 22\" wide at 22.25\" thinned out pro dims @ 2.75\" thick going into a baby round squash at the end. Bottom contours are single concave nose to flat middle to double spiral Vee out the back. A touch more rocker nose and tail and we're ready to charge all sorts of surf conditions from knee high to overhead. This is a performance log that can be ridden on the front half as well as off the tail. Presenting the new Soul Glider this October 1st, 2026. Custom Made for Jonah. Featuring: a black and yellow epoxy resin tint, along with a 4+1 Futures fin setup.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Soul Saver",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/c-shapes-soul-saver.jpg",
+          "description": "The Soul Saver design has been my go to long board design for several years. I've gone through the different tail phases, like baby squash, square tail, moon tail, round thumb, and now I'm back to round squash in 2026. This year's design has a touch of PRO feel to it with some refinements close to what the pros ride. It's a simple design with a moderate concave nose blending into a slightly rolled belly to a rolled Vee tail out the back. The tail is thin with a moderate tail kick. Good for all wave conditions from knee high summer surf to overhead waves.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Flying Pig",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/c-shapes-flying-pig.jpg",
+          "description": "The Flying Pig is my alternate LB design. It has its wide point down below middle like a hip with a wide, rounded-corner moon tail. Still in the prototype phase, but so far it's working and the customers are stoked. This is also my first LB without any hard edge by the tail. It comes completely softened up from nose to tail with lots of convex V out the back for a buttery smooth ride. Whereas the Soul Saver is semi progressive with a little hard edge by the tail for more performance style surfing.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Fish Limo",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/c-shapes-fish-limo.jpg",
+          "description": "Bringing back an oldie but goodie. Back many years ago in Miami Dr. Paul had asked me for a stretched out Fish that rides like a longboard, and I called it a Fish Limo. Revamped now in 2025 for Ryan Woodruff in Barbados with the same concept as before. Special bottom contours include a flat entry, slightly rolled up by the nose to flat middle turning into a double spiral Vee exiting out the back through a large swallow tail. End result. \"It works good'! Not bad for the prototype. It passes the test. Special thanks to Larry Yepes for the glassing and tint in Poly/PU. Came out beautiful with a satin smooth sanded finish.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
