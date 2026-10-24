@@ -48,9 +48,7 @@ export function computeApparelSellSectionCompletion(
 
   const shippingRateOk = reswellPackageComplete(form)
   const delivery =
-    Boolean(form.locationCity.trim() && form.locationState.trim()) &&
-    form.shippingAvailable &&
-    shippingRateOk
+    Boolean(form.locationCity.trim() && form.locationState.trim()) && shippingRateOk
 
   const publish = sellListingPriceIsPublishable(form.price)
 

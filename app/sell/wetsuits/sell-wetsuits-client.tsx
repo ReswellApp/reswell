@@ -211,6 +211,9 @@ function wetsuitFormFromDraftSnapshot(snapshot: SellListingDraftFormSnapshot): W
       next[key] = value as never
     }
   }
+  // Ship-only: ignore stale pickup-only draft flags (no UI to flip them).
+  next.shippingAvailable = true
+  next.localPickup = false
   return next
 }
 

@@ -47,9 +47,7 @@ export function computeLeashSellSectionCompletion(
     (form.shippingMode === "flat" && Number(form.shippingPrice) >= 0 && form.shippingPrice !== "") ||
     (form.shippingMode === "reswell" && reswellPackageComplete(form))
   const delivery =
-    Boolean(form.locationCity.trim() && form.locationState.trim()) &&
-    form.shippingAvailable &&
-    shippingRateOk
+    Boolean(form.locationCity.trim() && form.locationState.trim()) && shippingRateOk
 
   const publish = sellListingPriceIsPublishable(form.price)
 

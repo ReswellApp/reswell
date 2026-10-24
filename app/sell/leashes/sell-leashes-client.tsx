@@ -247,6 +247,9 @@ function leashFormFromDraftSnapshot(snapshot: SellListingDraftFormSnapshot): Lea
       next[key] = value as never
     }
   }
+  // Ship-only: ignore stale pickup-only draft flags (no UI to flip them).
+  next.shippingAvailable = true
+  next.localPickup = false
   return next
 }
 
@@ -791,7 +794,7 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
       scrollLeashSellSectionIntoView("sell-leashes-section-delivery")
       return
     }
-    if (form.shippingAvailable && normalizeSellShippingCostMode(form.shippingMode, submitActorIsAdmin) === "reswell") {
+    if (normalizeSellShippingCostMode(form.shippingMode, submitActorIsAdmin) === "reswell") {
       const L = parseReswellParcelLengthRawToCarrierInches(form.reswellPackageLengthIn)
       const W = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageWidthIn)
       const H = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageHeightIn)
@@ -802,7 +805,6 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
       }
     }
     if (
-      form.shippingAvailable &&
       normalizeSellShippingCostMode(form.shippingMode, submitActorIsAdmin) === "flat" &&
       (form.shippingPrice === "" || Number(form.shippingPrice) < 0)
     ) {

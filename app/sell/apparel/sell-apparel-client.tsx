@@ -232,6 +232,9 @@ function apparelFormFromDraftSnapshot(snapshot: SellListingDraftFormSnapshot): A
       next[key] = value as never
     }
   }
+  // Ship-only: ignore stale pickup-only draft flags (no UI to flip them).
+  next.shippingAvailable = true
+  next.localPickup = false
   return next
 }
 
@@ -751,15 +754,13 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
       scrollApparelSellSectionIntoView("sell-apparel-section-delivery")
       return
     }
-    if (form.shippingAvailable) {
-      const L = parseReswellParcelLengthRawToCarrierInches(form.reswellPackageLengthIn)
-      const W = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageWidthIn)
-      const H = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageHeightIn)
-      if (L == null || L <= 0 || W == null || W <= 0 || H == null || H <= 0) {
-        failValidation("Enter packed box dimensions for Reswell shipping.")
-        scrollApparelSellSectionIntoView("sell-apparel-section-delivery")
-        return
-      }
+    const L = parseReswellParcelLengthRawToCarrierInches(form.reswellPackageLengthIn)
+    const W = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageWidthIn)
+    const H = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageHeightIn)
+    if (L == null || L <= 0 || W == null || W <= 0 || H == null || H <= 0) {
+      failValidation("Enter packed box dimensions for Reswell shipping.")
+      scrollApparelSellSectionIntoView("sell-apparel-section-delivery")
+      return
     }
 
     const payload = {
