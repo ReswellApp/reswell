@@ -1,0 +1,91 @@
+{
+  "generated_for": "Yahoo Surfboards official named standup catalog (Mark Ogram)",
+  "source": "https://www.yahoosurfboards.com.au/boards/mark-ogram/ (official WordPress catalog — Mark Ogram named standup models only; excludes Zak Ogram / Z Shapes, Dave Macaulay, softboards, fins, merch, hire boards, SUPs, and longboard models without a uniquely paired product-front)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "yahoo-surfboards",
+      "name": "Yahoo Surfboards",
+      "website_url": "https://www.yahoosurfboards.com.au",
+      "location_label": "Dunsborough, Western Australia",
+      "founder_name": "Mark Ogram",
+      "lead_shaper_name": "Mark Ogram",
+      "short_description": "Father-and-son Dunsborough shaping bay. This catalog is Mark Ogram's named Yahoo standup models — weird-and-wonderful fishes, mid-lengths, and everyday boards built for South West WA reefs and beaches.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/yahoo-surfboards.png",
+      "models": [
+        {
+          "name": "Kelvinator",
+          "image_url": "https://web.archive.org/web/20200419075005id_/https://www.yahoosurfboards.com.au/wp-content/uploads/2020/01/yahoo_surfboards_0053_kelvinator-deck.jpg",
+          "description": "The Kelvinator is based on the Mini Simmons design from the 1950s, plus a few refinements. Heaps of planing area and a low rocker are the secret to its endless speed, and we've added a single concave through the tail. In the nose we've rolled the bottom edge of the rail almost up to the deck which makes it really forgiving. Wide noses sometimes have a tendency to catch in critical or choppy conditions, but the Kelvinator just releases and takes you into the next turn. We've taken off the original keel fins and spiced it up with a quad set up.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Impersonator",
+          "image_url": "https://web.archive.org/web/20200419075015id_/https://www.yahoosurfboards.com.au/wp-content/uploads/2020/01/yahoo_surfboards_0051_impersonator-deck.jpg",
+          "description": "It's the Kelvinator in disguise — combining the speed of the Kelvinator with the drive of the Keel Fish. The concave tail gives it the Kelvinator's speed, but the narrower outline lets it go rail to rail easier while keeping the drive from the straight rail line through the tail. The rolled bow nose keeps it free up the front.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Captain Morgan",
+          "image_url": "https://web.archive.org/web/20200419075023id_/https://www.yahoosurfboards.com.au/wp-content/uploads/2020/01/yahoo_surfboards_0057_captain-morgan-deck.jpg",
+          "description": "Paddle power and performance — a winning combo. Surface area gets you in early, and the double concave Vee tail lets you put it wherever you want to go. The rolled bow nose keeps it free up front, while the Vee through the tail makes it easy to turn. Double concaves through the Vee keep it lively and the cutout in the tail takes a bit of the stringer line out to help the release.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Sir Francis",
+          "image_url": "https://web.archive.org/web/20200419075513id_/https://www.yahoosurfboards.com.au/wp-content/uploads/2020/01/yahoo_surfboards_0048_sir-francis-deck.jpg",
+          "description": "A step up from the Kelvinator. The narrower outline and roundtail make it a looser version of the old favourite. Keeping the rolled bow nose for release up front and the single concave through the tail for speed, we've loosened up the Kelvinator by bringing a flyer roundtail into the equation. A great option for a step up board from the Kelvinator for bigger, better waves.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Blackbeard",
+          "image_url": "https://web.archive.org/web/20200419075038id_/https://www.yahoosurfboards.com.au/wp-content/uploads/2020/01/yahoo_surfboards_0037_blackbeard-deck.jpg",
+          "description": "A one board quiver — wide enough to glide in the small waves, and narrow enough to handle the bigger ones. Slightly rolled through the nose to keep it free up front, into single and double concaves through the tail to keep it lively.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Yallingup Hippy",
+          "image_url": "https://web.archive.org/web/20200419075045id_/https://www.yahoosurfboards.com.au/wp-content/uploads/2020/01/yahoo_surfboards_0061_hippy-deck.jpg",
+          "description": "A classic fish with a twist. Paddle in early, enjoy the fishy feel, and put it on rail easily with the Vee in the tail. The Hippy's been a favourite in the Yahoo quiver for years. The extreme Vee through the tail takes away that flat feel that a lot of fishes have, without losing the speed.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Hunter Gatherer",
+          "image_url": "https://web.archive.org/web/20200419075052id_/https://www.yahoosurfboards.com.au/wp-content/uploads/2020/01/yahoo_surfboards_0047_HG-deck.jpg",
+          "description": "It's the Blackbeard on a diet — a little less width and a bit more rocker. This trimmed down version of the Blackbeard helps you handle the tight spots. With the same rolled nose into a single to double concave tail, it's another great all rounder.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Dhufish",
+          "image_url": "https://web.archive.org/web/20200419075059id_/https://www.yahoosurfboards.com.au/wp-content/uploads/2020/01/yahoo_surfboards_0001_dhufish-deck.jpg",
+          "description": "The original fish in the Yahoo quiver. Paddle power, performance and reliability have made it a life changer for many. It's a great crossover between a fish and a performance board, giving you the advantages of both. Single to double concave with a bit of Vee off the tail.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Wahoo",
+          "image_url": "https://web.archive.org/web/20200419075107id_/https://www.yahoosurfboards.com.au/wp-content/uploads/2020/01/yahoo_surfboards_0058_wahoo-deck.jpg",
+          "description": "Paddle power up front, smooth flowing turns off the tail. Single to double concaves with a moderate, reliable rocker makes this Mark Ogram's personal choice for good, clean waves with a bit of push.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Premier",
+          "image_url": "https://web.archive.org/web/20200419075114id_/https://www.yahoosurfboards.com.au/wp-content/uploads/2020/01/yahoo_surfboards_0033_premier-deck.jpg",
+          "description": "A scaled up shortboard for scaled up grommets. It's a high performance shortboard on steroids for those who still want to surf like they used to, but have grown up in various ways. The bottom shape has a single concave through the centre for speed, with double concaves through the tail to keep it loose. The nose is narrower than anything else in Mark's range, so with less area to throw around, you can tighten up those turns.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Twin Fun",
+          "image_url": "https://web.archive.org/web/20200419075121id_/https://www.yahoosurfboards.com.au/wp-content/uploads/2020/01/yahoo_surfboards_0041_twin-fun-deck.jpg",
+          "description": "It's got 2 fins (or 3 if you want) — loose and pivoty for summer fun. With slight double concaves under the fins and a bit of Vee off the tail, it'll have you sliding and gliding with ease. Put a stabiliser in the back if you want to control the slide.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Single Fin",
+          "image_url": "https://web.archive.org/web/20200419080927id_/https://www.yahoosurfboards.com.au/wp-content/uploads/2020/01/yahoo_surfboards_single-fin-deck.jpg",
+          "description": "Use the energy of the wave, not your back foot. A classic single fin is a thing of beauty with its clean simple curves, like the waves we ride them in. Flat under your chest with the area forward, it gives you easy entry into waves. The V through the narrow tail makes an easy rail to rail transition. Use that rail line for long carving turns.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
