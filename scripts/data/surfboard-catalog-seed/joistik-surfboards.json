@@ -1,0 +1,120 @@
+{
+  "generated_for": "Joistik Surfboards official named model catalog",
+  "source": "https://joistiksurfboards.com/wp-sitemap-posts-surfboard-1.xml",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "joistik-surfboards",
+      "name": "Joistik Surfboards",
+      "website_url": "https://joistiksurfboards.com/",
+      "location_label": "Freshwater, New South Wales",
+      "founder_name": "Nick Blair",
+      "lead_shaper_name": "Nick Blair",
+      "short_description": "Custom surfboards by Nick Blair in Freshwater on Sydney's Northern Beaches.",
+      "models": [
+        {
+          "name": "Banzai Blues",
+          "image_url": "https://joistiksurfboards.com/wp-content/uploads/2019/01/Banzai-Blues-front-wide.jpg",
+          "description": "If you're new to surfing, or intermediate and getting back into it, the Banzai Blues is a great choice. With plenty of float & paddle power, it's still manouverable to help you progress.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Bombay Blues",
+          "image_url": "https://joistiksurfboards.com/wp-content/uploads/2019/01/Bombay-Blues-front-wide.jpg",
+          "description": "An excellent all-rounder & one of the most popular models in the Joistik line-up. From 'CT level surfers to local groms, it's built for a variety of surfers and conditions.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Detonator",
+          "image_url": "https://joistiksurfboards.com/wp-content/uploads/2019/01/DEtonator-front-wide.jpg",
+          "description": "A classic high performance step-up shortboard for performance when the waves deliver. Excels in steeper conditions and delivers excellent down the line projection.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Heavy Hitter",
+          "image_url": "https://joistiksurfboards.com/wp-content/uploads/2019/01/Heavy-Hitter-front-wide.jpg",
+          "description": "A performance shortboard for the heavy, more powerful surfer. With a bit more volume, it's a true performance board, but one the heavier surfer won't feel they're overpowering.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "MindJar",
+          "image_url": "https://joistiksurfboards.com/wp-content/uploads/2019/01/Mind-Jar-front-wide.jpg",
+          "description": "Performance shortboard, drive off the front, release off the tail. At home in a variety of conditions, it really delivers when the waves turn on. It is a fast, drivey shortboard, which is often ordered with a semi flat deck. The MindJar has ample drive and speed off the front foot and explosive tail release off the back, featuring a full modern outline and foil. To achieve the design attributes, a staged rocker blends with a continuous rail line rocker which results in a drivier front foot apex and flare and release off the tail fulcrum, whilst still allowing hold through big rail turns and carves. The Mind Jar is a high performance board and deserves to be ridden in all-round good to excellent conditions and pockets.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Silent Savage",
+          "image_url": "https://joistiksurfboards.com/wp-content/uploads/2019/01/Silent-Savage-front-wide.jpg",
+          "description": "A straight up performance shortboard. The Silent Savage is built for the light to medium weighted surfer with a neutral to back-footed approach. Speed and drive is balanced with maneuverability and responsiveness. This model features a round, squash tail, medium rocker throughout with evenly slowly curve and subtle tail lift, flatter/volumised deck and full rail, medium single to double concave and thruster configuration. It has a high hit rate for most surfers and is a really versatile shortboard.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Atomic Amp",
+          "image_url": "https://joistiksurfboards.com/wp-content/uploads/2019/01/Atomic-Amp-front-wide.jpg",
+          "description": "Small wave performance for the bigger surfer. The ideal small wave groveller for the heavier rider.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Cab Sav",
+          "image_url": "https://joistiksurfboards.com/wp-content/uploads/2019/01/Cab-Sav-front-wide.jpg",
+          "description": "The Cab Sav is a small wave weapon which has to be ridden to be believed. The CabSav leans towards the fun side of small wave surfing but still maintains it’s small wave grovel aspects of speed and carry. The shallow concave deck packs in the volume but still allows for a responsive rail with a lower apex. Mild concave blends to deep double barrel forward of, and through the fins, with vee blending off a thin and sensitive tail. Add to that a higher nose entry and rocker with the apex pushed back towards the tail, this board maximises it’s grovel potential, but still remains more versatile in it’s performance to similar designs on the market. An epic tiny wave weapon, the Nick Blair CabSav is one of the more creative, thoughtful groveller surfboard designs available.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Cab Sav II",
+          "image_url": "https://joistiksurfboards.com/wp-content/uploads/2019/01/Cab-Sav-II-front-wide.jpg",
+          "description": "Popular, versatile, perfect for any summer quiver. The CabSav2 is our best selling board, and for good reason. It caters to a wide range of wave types and skill levels, is deisgned to improve your paddle performance and get you on more waves. It is an extension of the CabSav in length, roughly 4 inches, the outline is pulled in so the nose and tail widths have come in (although still a fuller outline) and the deck/rails are normal, full. In essence more versatile than the CabSav as the conditions get bigger, but also favours those who prefer a bit more length. Still has the trademark flow and speed of the CabSav in all conditions, as I’ve used the same rocker and rail line combo. The CabSav2 is a fun board that is incredibly easy to surf. This model has great take off speed, springs through turns and surfs well in everyday grovels.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Twin Cab",
+          "image_url": "https://joistiksurfboards.com/wp-content/uploads/2019/01/Twin-Cab-front-wide.jpg",
+          "description": "The modern TwinCab design brings together an old school feel with a contemporary bottom design, providing increased performance with the established elements of speed, control and maneuverability. The TwinCab is a fast, super fun, wave catching weapon. It handles pumping, down-the-line waves but still holds its own in average conditions. It provides an option for intermediate to advanced surfers who want a twin fin with updated performance qualities and want to mix up their average daily sessions. The TwinCab’s utilise the proven CabSav family rocker formula.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Fly Joi",
+          "image_url": "https://joistiksurfboards.com/wp-content/uploads/2019/01/Fly-Joi-front-wide.jpg",
+          "description": "Blending a drivey rocker with release off the tail, the FlyJoi adds joy to your turns. The wider tail block with a straighter rail line is great for increasing drive off the bottom & providing good release at the top. The FlyJoi has a single to double to vee bottom. The apex of the concave is in the centre of the board. Guaranteed to increase your wave count and fuel the stoke in your surfing.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Vector",
+          "image_url": "https://joistiksurfboards.com/wp-content/uploads/2019/01/Vector-front-wide.jpg",
+          "description": "The Vector is a fast, manoeuvrable and rippable all round shortboard. Want liveliness even in small conditions? Go the Vector. Short & stumpy it's perfectly suited to a bock-foot style of surfer.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "V2SV",
+          "image_url": "https://joistiksurfboards.com/wp-content/uploads/2019/01/V2SV-front-wide.jpg",
+          "description": "Designed to keep your high performance surfing dialled in in smaller waves, the V2SV takes the tried & tested rocker from our Cab Sav series and blends it seamlessly with a performance small wave outline. This results in more speed and drive incorporated into the design, whilst still maintaining manoeuvrability. The V2SV features a far more subtle (shallower) blend of concaves and vee to excel in weaker conditions, combined with the fuller outline and almost flat deck to maximise volume, flotation and planing ability in smaller waves. The slight hip in the tail outline together with a pulled in pod allows sensitivity and responsiveness in a variety of conditions.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Scrob",
+          "image_url": "https://joistiksurfboards.com/wp-content/uploads/2019/01/Scrob-front-wide.jpg",
+          "description": "An explosive all-round board originally designed for energetic medium size beach breaks, the Scrob has also proven itself in shifty and concentrated reef power. The flatter rocker provides ample speed, with a generous double concave running within the single and exiting as mild vee out the tail block. Together with the pronounced hip in the outline, you have a board that is sharp, precise and agile with speed and responsiveness to boot.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Shadow Boxer",
+          "image_url": "https://joistiksurfboards.com/wp-content/uploads/2019/02/Shadow-Boxer-adjusted-front-wide-2.5x.jpg",
+          "description": "A modern take on the performance short board, rock solid when there's some energy in the water. The Shadow Boxer is an excellent shortboard for trips to locations with larger, powerful, hollow waves. It has a rounded pin with medium tail width, which is pulled into a sensitive narrow pod. This is fast becoming a favourite for innovative, progressive surfing in good waves and conditions from 3-4 feet and upwards.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Vertrix2",
+          "image_url": "https://joistiksurfboards.com/wp-content/uploads/2019/02/Vertrix2.jpeg",
+          "description": "The Vertrix2 is very responsive, great for in the pocket surfing and the go to board when the waves are pumping. It is the board of choice for our team riders in competition. The Vertrix2 has a squash tail with a full rocker and a semi flat deck (you can therefore ride it a touch thinner than your normal boards). The Vertrix2 excels in critical, hollower, steeper conditions but also provides a competitive edge in smaller waves. If you want a cutting edge board with speed, flow and drive with great flare in the pocket and lip, then this is the board for you.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "PG",
+          "image_url": "https://joistiksurfboards.com/wp-content/uploads/2019/02/PG-model.jpg",
+          "description": "The PG model is the ultimate grom board. The PG has been designed to suit young surfers transitioning from a soft board to their first PU shortboard. This model has low to moderate continuous rocker, a full outline and fuller foil to add extra forgiveness and support to the novice surfer learning how to balance their weight distribution, whilst the generous deck volume in the right places adds to rail to rail stability. The PG is very user friendly for all ages, levels of surfing and suits all conditions. Straight up fun guaranteed.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
