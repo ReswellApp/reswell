@@ -175,7 +175,7 @@ export function NotificationDrawer() {
                           {n.actor?.city && (
                             <span className="text-muted-foreground"> · {n.actor.city}</span>
                           )}
-                          {isPriceDrop ? " dropped the price on" : " listed"}
+                          {isPriceDrop ? " dropped the price on" : " just posted"}
                           {listing && (
                             <>
                               {" "}

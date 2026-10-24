@@ -3,7 +3,6 @@
 import { useState } from "react"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { Loader2 } from "lucide-react"
@@ -47,7 +46,7 @@ export function NotificationPreferencesForm({ initial }: NotificationPreferences
               In-app notifications
             </Label>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Show a bell badge when followed sellers post new listings
+              Up to two a day in the bell when shops you follow post a listing.
             </p>
           </div>
           <Switch
@@ -57,14 +56,14 @@ export function NotificationPreferencesForm({ initial }: NotificationPreferences
           />
         </div>
 
-        {/* Email digest toggle */}
+        {/* Email toggle */}
         <div className="flex items-center justify-between gap-4">
           <div>
             <Label htmlFor="follow-email" className="font-medium text-sm">
-              Daily email digest
+              Email when a shop posts
             </Label>
             <p className="text-xs text-muted-foreground mt-0.5">
-              One email per day (max) summarising new listings from sellers you follow
+              Up to two emails a day when shops you follow post a listing.
             </p>
           </div>
           <Switch
@@ -73,33 +72,6 @@ export function NotificationPreferencesForm({ initial }: NotificationPreferences
             onCheckedChange={(v) => setPrefs((p) => ({ ...p, follow_email_digest: v }))}
           />
         </div>
-
-        {/* Digest time (only shown when email digest is on) */}
-        {prefs.follow_email_digest && (
-          <div className="pl-0 pt-1">
-            <Label className="text-sm font-medium mb-2 block">Email digest timing</Label>
-            <RadioGroup
-              value={prefs.digest_time}
-              onValueChange={(v) =>
-                setPrefs((p) => ({ ...p, digest_time: v as "morning" | "evening" }))
-              }
-              className="flex gap-6"
-            >
-              <div className="flex items-center gap-2">
-                <RadioGroupItem value="morning" id="digest-morning" />
-                <Label htmlFor="digest-morning" className="font-normal cursor-pointer">
-                  Morning (9am)
-                </Label>
-              </div>
-              <div className="flex items-center gap-2">
-                <RadioGroupItem value="evening" id="digest-evening" />
-                <Label htmlFor="digest-evening" className="font-normal cursor-pointer">
-                  Evening (6pm)
-                </Label>
-              </div>
-            </RadioGroup>
-          </div>
-        )}
       </div>
 
       <Button onClick={handleSave} disabled={saving || savedFlash} size="sm">

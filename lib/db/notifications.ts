@@ -151,6 +151,14 @@ function notificationPayload(row: NotificationRowDraft, now: Date) {
   }
 }
 
+export async function listFollowInAppOptOutUserIds(
+  supabase: SupabaseClient,
+  userIds: string[],
+): Promise<string[]> {
+  const optOut = await loadFollowOptOut(supabase, userIds)
+  return [...optOut]
+}
+
 async function loadFollowOptOut(supabase: SupabaseClient, userIds: string[]): Promise<Set<string>> {
   const optOut = new Set<string>()
   if (userIds.length === 0) return optOut

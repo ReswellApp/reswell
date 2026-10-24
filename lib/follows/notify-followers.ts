@@ -1,8 +1,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { listFollowInAppOptOutUserIds } from "@/lib/db/notifications"
 import { listingDetailHref } from "@/lib/listing-href"
+import {
+  claimFollowedSellerNewListingAlerts,
+  recipientsAllowedByListingAlertCap,
+} from "@/lib/services/followedSellerNewListingAlert"
 import {
   newListingBody,
   newListingDedupeKey,
+  newListingTitle,
   priceDropBody,
   priceDropDedupeKey,
   priceDropMeetsThreshold,
@@ -14,8 +20,9 @@ import type { InAppNotificationInput } from "@/lib/services/notifications/plan"
  * Fan out a "new listing" notification to followers of a seller.
  *
  * Pass `followerIds` when the caller is already paging the follow list.
- * Caps live in the publisher: two individual rows per seller per day, eight
- * overall, then one digest row per seller.
+ * Email and in-app share one database cap: two listings per follower per
+ * Pacific day, across every shop they follow. Past that, this sends nothing.
+ * `follow_in_app` opt-out skips the row and does not take a slot.
  */
 export async function notifyFollowersOfNewListing(
   supabase: SupabaseClient,
@@ -24,11 +31,20 @@ export async function notifyFollowersOfNewListing(
     listingId: string
     listingTitle: string
     listingSlug?: string | null
+    listingPrice?: number | string | null
     shopName?: string | null
     followerIds?: string[]
   },
 ) {
-  const { sellerId, listingId, listingTitle, listingSlug, shopName, followerIds: followerIdsOverride } = params
+  const {
+    sellerId,
+    listingId,
+    listingTitle,
+    listingSlug,
+    listingPrice,
+    shopName,
+    followerIds: followerIdsOverride,
+  } = params
 
   let followerIds: string[]
   if (followerIdsOverride) {
@@ -45,22 +61,47 @@ export async function notifyFollowersOfNewListing(
 
   if (followerIds.length === 0) return
 
-  const href = listingDetailHref({ id: listingId, slug: listingSlug })
-  const inputs: InAppNotificationInput[] = followerIds.map((followerId) => ({
-    userId: followerId,
-    type: "new_listing_from_followed",
-    actorId: sellerId,
+  const optedOut = new Set(await listFollowInAppOptOutUserIds(supabase, followerIds))
+  const eligibleIds = followerIds.filter((id) => !optedOut.has(id))
+  const claims = await claimFollowedSellerNewListingAlerts(supabase, {
     listingId,
-    subjectKey: sellerId,
-    digestActorName: shopName,
-    title: "New listing",
-    body: newListingBody(listingTitle),
-    href,
-    dedupeKey: newListingDedupeKey(listingId),
-    metadata: { listingId, sellerId },
-  }))
+    recipientIds: eligibleIds,
+  })
+  const allowed = recipientsAllowedByListingAlertCap(claims)
+  if (allowed.size === 0) return
+
+  const price = finiteListingPrice(listingPrice)
+  const href = listingDetailHref({ id: listingId, slug: listingSlug })
+  const inputs: InAppNotificationInput[] = followerIds
+    .filter((followerId) => allowed.has(followerId))
+    .map((followerId) => ({
+      userId: followerId,
+      type: "new_listing_from_followed",
+      actorId: sellerId,
+      listingId,
+      subjectKey: sellerId,
+      title: newListingTitle(shopName),
+      body: newListingBody(shopName, listingTitle, price),
+      href,
+      dedupeKey: newListingDedupeKey(listingId),
+      metadata: {
+        listingId,
+        sellerId,
+        shopName: shopName?.trim() || null,
+        ...(price != null ? { price } : {}),
+      },
+    }))
 
   await publishInAppNotifications(supabase, inputs)
+}
+
+function finiteListingPrice(value: number | string | null | undefined): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : null
+  }
+  return null
 }
 
 /**

@@ -130,7 +130,7 @@ async function runJob(
 ): Promise<{ done: boolean; followers: number }> {
   const { data: listing, error } = await supabase
     .from("listings")
-    .select("id, user_id, title, slug, section, status, hidden_from_site")
+    .select("id, user_id, title, price, slug, section, status, hidden_from_site")
     .eq("id", job.listing_id)
     .maybeSingle()
 
@@ -181,6 +181,8 @@ async function runJob(
         listingId: listing.id,
         listingTitle: String(listing.title ?? ""),
         listingSlug: typeof listing.slug === "string" ? listing.slug : null,
+        listingPrice:
+          typeof listing.price === "number" || typeof listing.price === "string" ? listing.price : null,
         shopName,
         followerIds,
       })
