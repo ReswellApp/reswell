@@ -1,0 +1,352 @@
+{
+  "generated_for": "reswell surfboards catalog",
+  "purpose": "Daily growth of small USA and Australia surfboard-maker brands",
+  "generated_on": "2026-08-25",
+  "product_category_slug": "surfboards",
+  "integrity": {
+    "first_party_only": true,
+    "surfboard_models_only": true,
+    "require_image_name_description_logo": true
+  },
+  "brands": [
+    {
+      "slug": "wrv-surfboards",
+      "name": "Wave Riding Vehicles",
+      "website_url": "https://www.waveridingvehicles.com",
+      "location_label": "Virginia Beach, Virginia",
+      "founder_name": null,
+      "lead_shaper_name": null,
+      "short_description": "East Coast factory surfboards from Virginia Beach — WRV's own-label shortboards, fishes, mid-lengths, and logs shaped in-house for Atlantic beach-break and point surf.",
+      "logo_url": "https://www.waveridingvehicles.com/cdn/shop/files/2026_WEBSITE_HEADER_LOGO_2.png",
+      "models": [
+        {
+          "name": "Wahoo",
+          "image_url": "https://cdn.shopify.com/s/files/1/1087/6474/files/Wahoo9Both.png",
+          "description": "Wahoo shaped by Leo Ravina • Length - 5'8\" • Width - 20.5\" • Thickness - 2.4375\" Board Description: • The Wahoo mixes a traditional fish outline with characteristics more commonly found in a modern high-performance shape. The deck at nose fades from a beveled rail down to a more modern rail at the mid-section down to the tail. Single to double concave to light v ee on the bottom, and fairly full volume throughout sets the tone for smooth, fluid surfing. Board Construction: • Poly - Tried and true. Still the industry standard. Denser foam and traditional stringer. Free in-store pick up at our Virginia Beach or Kitty Hawk locations. US Shipping starts at $99 for boards under 6’2. We will…"
+        },
+        {
+          "name": "Mary Jane Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/1087/6474/files/MJ6Both.png",
+          "description": "Mary Jane shaped by Josh Peterson • Length - 6'0\" • Width - 20\" • Thickness - 2.45\" Board Description: • The Mary Jane is a nice in between from a midlength or an alternative step up. The parallel outline adds extra drive for speed but a break in the outline at the tail combined with the vee between the channels really makes this board exciting to ride. The foam under nose and chest makes it a great paddler while the thinner foiling at the tail keeps it spicy and alive. Board Construction: • Poly - Tried and true. Still the industry standard. Denser foam and traditional stringer. Free in-store pick up at our Virginia Beach or Kitty Hawk locations. US Shipping starts at $99 for boards under…"
+        },
+        {
+          "name": "Ripper",
+          "image_url": "https://cdn.shopify.com/s/files/1/1087/6474/files/6_1-ripper-both_3bddac4b-9645-4f6d-82ec-0d0c414556ba.png",
+          "description": "Ripper shaped by Bob Yinger • Length - 5'10 • Width - 18.75 • Thickness - 2.40 • Volume - 27.32L Board Description: • Built for barrels, this board is essentially a fine-tuned cousin of the Chronic. With a highly responsive tail, the Ripper is your ideal, all-around performance shape. Designed for team rider Blayr Barton. Board Construction: • Poly - Tried and true. Still the industry standard. Denser foam and traditional stringer. Free in-store pick up at our Virginia Beach or Kitty Hawk locations. US Shipping starts at $99 for boards under 6’2. We will contact you with an exact quote rate to seek your approval before processing your order. We are currently working on building our online…"
+        },
+        {
+          "name": "Speed Pin",
+          "image_url": "https://cdn.shopify.com/s/files/1/1087/6474/files/JP5Both.png",
+          "description": "Speed Pin shaped by Josh Peterson • Length - 5'8\" • Width - 19.5\" • Thickness - 2.38\" • Volume - 29.4L Board Description: • Not quite a mid length and not quite a short board. Maybe you would call it an alternative step up? Maybe its a fast twin you want to pull into a honking tube with? It can be a lot of things but we know its becoming a favorite for the friends of the porpoise. It Paddles extremely well, gliding into waves with plenty of speed and maneuverability to keep things interesting. Board Construction: • Poly - Tried and true. Still the industry standard. Denser foam and traditional stringer. Free in-store pick up at our Virginia Beach or Kitty Hawk locations. US Shipping starts…"
+        },
+        {
+          "name": "Almond",
+          "image_url": "https://cdn.shopify.com/s/files/1/1087/6474/files/5_4-almond2-both.png",
+          "description": "This board got away, but you can start a custom just like it by clicking here. To find similar boards that we have in stock, call our Boards Department during regular business hours at (757)-422-8823 Ext. 2 Almond shaped by Macoto Kurihara • Length - 5'7 • Width - 20.86\" • Thickness - 2.52 • Volume - 33.2L Board Description: • The Almond features all the positives... speed, looseness, and maneuverability. Designed for small, powerless surf, this board will turn windblown chop into memorable sessions. With a wide outline and sufficient volume, it rides light in all conditions. Board Construction: • Poly - Tried and true. Still the industry standard. Denser foam and traditional stringer.…"
+        },
+        {
+          "name": "Cayken",
+          "image_url": "https://cdn.shopify.com/s/files/1/1087/6474/files/5_10-cayken-both_f1f32bdd-8a04-4830-9b03-36737a446b74.png",
+          "description": "Cayken shaped by Macoto Kurihara • Length - 5'10 • Width - 19.90\" • Thickness - 2.40\" • Volume - 33.2L Board Description: • The latest hybrid model, the Cayken is a fusion of 80’s design and current design. Beak nose, a down rail from the flat deck, a wing and a big round tail. This model can maximize performance while retaining overall volume. Easy paddle and takeoffs, sharp action, fast and stable feel. This model is suitable for any surfers wanting to perform but not exhaust themselves in the process. Board Construction: • Poly - Tried and true. Still the industry standard. Denser foam and traditional stringer. Free in-store pick up at our Virginia Beach or Kitty Hawk locations. US…"
+        },
+        {
+          "name": "Deuce",
+          "image_url": "https://cdn.shopify.com/s/files/1/1087/6474/files/5_9-duece-both.png",
+          "description": "Deuce shaped by Bob Yinger • Length - 5'10 • Width - 20\" • Thickness - 2.6 • Volume - 32.7L Board Description: • A very special board in our lineup. The fins are placed to be ridden as a twin with a trailer setup. The rails have a nice, full feel to them, but the center line rocker stays quite curvy. The Deuce has added speed and drive from a twin but also has the pivot abilities off the bottom from a thruster combined to make a perfect board. Board Construction: • Poly - Tried and true. Still the industry standard. Denser foam and traditional stringer. Free in-store pick up at our Virginia Beach or Kitty Hawk locations. US Shipping starts at $99 for boards under 6’2. We will contact you…"
+        },
+        {
+          "name": "Kee",
+          "image_url": "https://cdn.shopify.com/s/files/1/1087/6474/files/cat-kee-both.png",
+          "description": "The Kee shaped by Marty Keesecker • Length - 9'6 • Width - 23\" • Thickness - 2.625\" Board Description: • Formerly known as the Classic Tri or Classic Long, the Kee is a hand-shaped beauty made for your cruising pleasure. The Kee is available in multiple finishes, multiple stringers, nose and tail blocks, Volan glass and resin tints. The possibilities are endless. Board Construction: • Poly - Tried and true. Still the industry standard. Denser foam and traditional stringer. Free in-store pick up at our Virginia Beach or Kitty Hawk locations. US Shipping starts at $99 for boards under 6’2. We will contact you with an exact quote rate to seek your approval before processing your order. We are…"
+        },
+        {
+          "name": "Mod 67",
+          "image_url": "https://cdn.shopify.com/s/files/1/1087/6474/files/9_3-mod67-sep.png",
+          "description": "Mod 67 shaped by Leo Ravina • Length - 9'3 • Width - 22.75 • Thickness - 2.875 Board Description: • By late 1967, longboard design had reached its peak for the era. From that point on, boards began to get smaller with a bigger focus on radical maneuvering. The Mod 67 displays characteristics of that late 60's era. A wider shoveled tail, 60/40 rails, a rolled concave in the nose with more rocker. A combination of design elements that represent the best of an era. Board Construction: • Poly - Tried and true. Still the industry standard. Denser foam and traditional stringer. Free in-store pick up at our Virginia Beach or Kitty Hawk locations. US Shipping starts at $99 for boards under 6’2. We…"
+        },
+        {
+          "name": "Vapor",
+          "image_url": "https://cdn.shopify.com/s/files/1/1087/6474/files/color-vapor-both.png",
+          "description": "Vapor shaped by Bob Yinger • Length - 5'8 • Width - 19.62\" • Thickness - 2.44\" • Volume - 30.1L Board Description: • The Vapor pairs a retro outline with a high performance bottom. Take it to the beach and surf all day. Whether it’s 2 feet or the waves are firing, you won’t be let down by the Vapor. Its volume lies mainly in its width, flatter deck, and fuller rails. The pulled in winged swallow tail, deep single to double concave, and unique rocker give this board its responsiveness and maneuverability. Board Construction: • Poly - Tried and true. Still the industry standard. Denser foam and traditional stringer. Free in-store pick up at our Virginia Beach or Kitty Hawk locations. US…"
+        },
+        {
+          "name": "Bat",
+          "image_url": "https://cdn.shopify.com/s/files/1/1087/6474/files/5_6-bat-both_b6801d32-6498-4fa8-80b6-76602d465fc0.png",
+          "description": "For a limited time, all Bats are 15% off!! This brings the price from $710 down to $604 before tax (and shipping if applicable). We have a 5'4, two 5'5s, two 5'6s, two 5'7s, 5'8, two 5'9s, and two 5'10s in stock at our Virginia Beach location and will gladly ship your desired size anywhere in the US. Please call (757)-422-8823 Ext. 2 during business hours for more information about the Bats we have in stock or to purchase a Bat for yourself! Bat shaped by Bob Yinger • Length - 5'6 • Width - 18.75\" • Thickness - 2.25\" • Volume - 25.5L Board Description: • The Bat was found in Yinger's garage amongst about 100 boards. When we pulled it out, he said it was one of his favorite personals of all…"
+        },
+        {
+          "name": "El Jefe",
+          "image_url": "https://cdn.shopify.com/s/files/1/1087/6474/files/5_8-eljefe-both.png",
+          "description": "El Jefe shaped by Bob Yinger • Length - 5'8 • Width - 19.25\" • Thickness - 2.38\" • Volume - 28.3L Board Description: • It’s pronounced “El Hefe” and it’s Spanish for The Boss. When less than average conditions still demand optimal performance, the El Jefe is large and in charge. The advantage of added volume accommodates for challenging conditions while it's single to double concave with a slight vee turns on a dime. Own the lineup with the new chief of high volume. Board Construction: • Poly - Tried and true. Still the industry standard. Denser foam and traditional stringer. Free in-store pick up at our Virginia Beach or Kitty Hawk locations. US Shipping starts at $99 for boards under…"
+        },
+        {
+          "name": "Fish Taco",
+          "image_url": "https://cdn.shopify.com/s/files/1/1087/6474/files/59-fish-taco-both.png",
+          "description": "For a limited time, all Fish Tacos are 10% off!! This brings the price from $720 down to $648 before tax (and shipping if applicable). We have a 5'6, two 5'7s, two 5'8s, a 5'9, two 5'10s, two 5'11s, two 6'0s and a 6'2 in stock at our Virginia Beach location and will gladly ship your desired size anywhere in the US. Please call (757)-422-8823 Ext. 2 during business hours for more information about the Fish Tacos we have in stock or to purchase a Fish Taco for yourself! Fish Taco shaped by Bob Yinger • Length - 5'9 • Width - 20.88\" • Thickness - 2.34\" • Volume - 33.5L Board Description: • A tasty new favorite in our quiver. We modified the Vapor outline, kept the single wing swallow tail,…"
+        },
+        {
+          "name": "MA Mid",
+          "image_url": "https://cdn.shopify.com/s/files/1/1087/6474/files/7_2-mid-both.png",
+          "description": "This board got away, but you can start a custom just like it by clicking here. To find similar boards that we have in stock, call our Boards Department during regular business hours at (757)-422-8823 Ext. 2 MA Mid shaped by Macoto Kurihara • Length - 7'2 • Width - 21.25 • Thickness - 2.66 • Volume - 43.6 est. Board Description: • The MA Mid is a standard mid length made for cruising comfortably on waves. With a large beak nose and wide round tail, you can ride it freely and leisurely with a single fin, or add a little performance with a 2+1. Board Construction: • Poly - Tried and true. Still the industry standard. Denser foam and traditional stringer. Free in-store pick up at our Virginia…"
+        },
+        {
+          "name": "The 63",
+          "image_url": "https://cdn.shopify.com/s/files/1/1087/6474/files/the-63-both_06e2ad9f-415b-450e-9097-18b753a6a447.png",
+          "description": "The 63 shaped by Leo Ravina • Length - 9'4 • Width - 22.875\" • Thickness - 2.875\" Board Description: • Inspired by the board building developments of 1963, this model features a classic early 60's outline, parallel rails, and slight hip in the rear. It's a great paddler and is geared towards summer small wave surfing. The 63 is an excellent user friendly nose rider with 50/50 rails and a full bellied bottom. Board Construction: • Poly - Tried and true. Still the industry standard. Denser foam and traditional stringer. Free in-store pick up at our Virginia Beach or Kitty Hawk locations. US Shipping starts at $99 for boards under 6’2. We will contact you with an exact quote rate to seek your…"
+        },
+        {
+          "name": "Zen",
+          "image_url": "https://cdn.shopify.com/s/files/1/1087/6474/files/7_2-zen-both_876d11d1-85f4-4f1a-83cf-8d93787a0d98.png",
+          "description": "This board got away, but you can start a custom just like it by clicking here. To find similar boards that we have in stock, call our Boards Department during regular business hours at (757)-422-8823 Ext. 2 Zen shaped by Macoto Kurihara • Length - 7'2 • Width - 21.25 • Thickness - 2.7 • Volume - 45.6 est. Board Description: • The Zen has a moderate rocker that brings out the look and performance of an alternative board, and it is designed to draw the ideal maneuver. The box position offers the choice of a twin or single fin setup depending on wave conditions and your mood for the day. Board Construction: • Poly - Tried and true. Still the industry standard. Denser foam and traditional…"
+        },
+        {
+          "name": "Zinger",
+          "image_url": "https://cdn.shopify.com/s/files/1/1087/6474/files/cat-zinger-both.png",
+          "description": "This board got away, but you can start a custom just like it by clicking here. To find similar boards that we have in stock, call our Boards Department during regular business hours at (757)-422-8823 Ext. 2 Zinger shaped by Bob Yinger • Length - 7'4 • Width - 21.75\" • Thickness - 2.89\" • Volume - 51.4L Board Description: • This board is Les Shaw approved. Les asked Yinger to shape him a mid-length, and after a few shots, Les finally grumbled a triumphant approval. Paddle power, nice full rails with a vee in the nose fading to a pronounced double concave. The Zinger has the advantage of extra foam without the sacrifice of any performance, and the thumbs up from WRV’s top dog, Les Shaw.…"
+        }
+      ]
+    },
+    {
+      "slug": "grace-surfboards",
+      "name": "Grace Surfboards",
+      "website_url": "https://gracesurfboards.com",
+      "location_label": "Torquay, Victoria, Australia",
+      "founder_name": "Phil Grace",
+      "lead_shaper_name": "Phil Grace",
+      "short_description": "Classic and performance longboards from Phil Grace in Torquay — Silver Fox, Demibu, Glider, Nose Rider, and Heritage templates refined on Australian and Basque point waves.",
+      "logo_url": "https://cdn.shopify.com/s/files/1/0576/2380/6049/files/Grace_Sticker.pdf.jpg",
+      "models": [
+        {
+          "name": "All Rounder",
+          "image_url": "https://cdn.shopify.com/s/files/1/0576/2380/6049/files/All_Rounder.png",
+          "description": "All Rounder 9'2\" x 23 1/4\" X 3\" - 74.40L, 3x Single + 2 Boxes FCS 2 Fin Boxes, PU Blank: Burford Blanks 3/16\" basswood 1/8\" redwood 3/16\" baswood Fin Configuration: 10 inch center box, side fin FCS2 boxes Glass and description: 6 oz bottom, double 6 oz deck, tail patch reinforcement, bi-colored double panel spray top and bottom, polish finish. Round tail Sprays, Tints, Pigments, Pinlines, Wet Rub & Polish, Custom Stringers P.O.A Surfboard Model: All Rounder Surfboard Model Type: Longboard Fins: 3x Single + 2 Boxes FCS 2"
+        },
+        {
+          "name": "Demibu",
+          "image_url": "https://cdn.shopify.com/s/files/1/0576/2380/6049/files/Demibu.jpg",
+          "description": "Meet the Demibu – the original all-rounder by Phil Grace. Blending performance with flow, the Demibu is a go-to everyday board built for smooth transitions, fast rail-to-rail response, and total control across a wide range of conditions. A slightly fuller nose boosts paddle power, while its well-balanced outline and tuned rocker deliver speed and maneuverability in everything from playful beach breaks to punchier surf. The single-to-double concave bottom keeps you connected and quick through turns, offering a lively, responsive ride without sacrificing stability. Whether you're progressing your surfing or just need one board to do it all, the Demibu has your back. Available as a Thruster…"
+        },
+        {
+          "name": "Nose Rider",
+          "image_url": "https://cdn.shopify.com/s/files/1/0576/2380/6049/files/Noserider.jpg",
+          "description": "The Nose Rider – built for elegance and timeless style. Refined on the long, peeling points of Torquay and the Basque Country, The Nose Rider is Phil Grace’s tribute to classic longboarding – where rail setting, clean pivots, and graceful walks to the tip define the ride. Designed for pure nose-riding performance, this model features a generous 19-inch nose and a deep spoon concave that locks in trim even on the smallest of windswells. From ankle-high peelers to waist-high perfection, it holds the line and lets you hang ten with ease and elegance. Available in three finely tuned sizes: 9'0\" x 22 1/2\" x 2 7/8\" – 67.54L : A touch more responsive underfoot, ideal for tighter pockets and…"
+        },
+        {
+          "name": "Silver Fox",
+          "image_url": "https://cdn.shopify.com/s/files/1/0576/2380/6049/files/PurpleHaze.jpg",
+          "description": "Silver Fox – speed, soul, and single fin magic. An evolution of the legendary Silver Fox , The Purple Haze by Phil Grace is a love letter to an era when surfing was about style, not spray. Inspired by the days of hard rails, deep Vs, and pure trim, this board blends vintage soul with modern performance. It’s all about effortless glide and smooth clean arcs – no pumping, no frantic arms – just you, one fin, and a board that wants to fly. With Gracey’s signature rolled V and rail work, the Purple Haze hums with speed and flow straight from the take-off. For surfers who crave simplicity, rhythm, and stoke in every turn, The Purple Haze is the trip you've been waiting for. One fin. Endless…"
+        },
+        {
+          "name": "Single Fin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0576/2380/6049/files/SingleFin.jpg",
+          "description": "A true throwback with a twist, The Grace Single Fin captures the essence of pure surfing. With the wide point pushed forward, it channels the timeless lines of the original single fin era – but this isn’t just a relic. Phil Grace has brought it into the now, adding a subtle double concave for speed and smooth, effortless turns. Finished with Gracey’s signature fin, this board is built for those who ride with style and purpose. Old soul. New spark. All style. Standard dimensions available. Custom shapes available on request – contact us to make it your own. Sprays, Tints, Pigments, Pinlines, Wet Rub & Polish, Custom Stringers P.O.A 5'10\" x 19\" x 2 3/8\" 27.22 L 6'0\" x 19 1/4\" x 2 3/8\" 28.79…"
+        },
+        {
+          "name": "The Glider",
+          "image_url": "https://cdn.shopify.com/s/files/1/0576/2380/6049/files/Glider.jpg",
+          "description": "The Glider – built for distance, designed for soul. Effortless trim, endless glide – The Glider is Phil Grace’s ode to graceful lines and long journeys. A true paddle machine, it’s made to cruise across small conditions but holds its own up to head-high surf with poise and flow. With Gracey’s signature rolled V bottom and soft, downturned rails, The Glider is all about harnessing momentum and letting the board do the work. Designed for knee paddling, trimming, and long, unbroken lines, this board invites you to slow down and cover serious ground – or ocean. Ride it as a classic single fin or with 1+2 sidebites for added control. Starting at 9’0” and stretching up to a majestic 12’0”, The…"
+        },
+        {
+          "name": "The Heritage",
+          "image_url": "https://cdn.shopify.com/s/files/1/0576/2380/6049/files/Heritage_Surfboard.png",
+          "description": "The Heritage – a timeless nod to longboarding’s golden era. Crafted as a tribute to the roots of classic surf culture, The Heritage channels pure tradition with every glide. Its retro-style hip pulls the wide tail back, echoing the elegant lines and smooth flow of original longboard design. With a rolled V bottom and soft, downturned rails, this single-fin beauty is built for soulful trimming, graceful footwork, and laid-back style. Choose between a rounded square or pintail to suit your preferred line — either way, The Heritage invites you to slow it down and savour every ride. Standard dimensions available. Sprays, Tints, Pigments, Pinlines, Wet Rub & Polish, Custom Stringers P.O.A 8'0\"…"
+        }
+      ]
+    },
+    {
+      "slug": "ron-wade-surfboards",
+      "name": "Ron Wade Surfboards",
+      "website_url": "https://www.ronwadesurfboards.com.au",
+      "location_label": "Mona Vale, New South Wales, Australia",
+      "founder_name": "Ron Wade",
+      "lead_shaper_name": "Ron Wade",
+      "short_description": "Australian-made shortboards, mid-lengths, and longboards from Ron Wade in Mona Vale — Blackfeather, F1-11, and classic logs.",
+      "logo_url": "https://www.ronwadesurfboards.com.au/cdn/shop/files/logo-white-trans-2.png",
+      "models": [
+        {
+          "name": "F1-11",
+          "image_url": "https://cdn.shopify.com/s/files/1/0929/1009/2652/files/board1.png",
+          "description": "Size: 6’4” x 21” x 2 5/8” This F1-11 model has the Five fin configuration, so you can use it as a Thruster or Quad or use the 5 Fins for larger surf conditions. We have put dual concaves from in front of the fins to loosen the tail making it a very versatile board. The board has a very high polish finish which is very labour intensive. Makes this board a board to consider. Great buying at this price Shaped and designed by Ron.."
+        },
+        {
+          "name": "Blackfeather",
+          "image_url": "https://cdn.shopify.com/s/files/1/0929/1009/2652/files/Ron-Wade.jpg",
+          "description": "Size: 5'8\" x 19 1/4\" x 2 7/16\" {28 Litres} Our Black Feather model is available as a Thruster whilst the 5 fin configuration can also be used as a Quad. Slight concaves running from just in front of the fins helps loosen the tail and acceleration out of a turn. This board is suitable for small to medium size waves. Fins included."
+        },
+        {
+          "name": "Longboard",
+          "image_url": "https://cdn.shopify.com/s/files/1/0929/1009/2652/files/LongboardwithColouredDesignonthedeck.png",
+          "description": "Size: 9’2″ x 22.5″ x 2 7/8″ Australian made Longboard with dual 12mm cedar stringers. 3 stage bottom. Concave under nose, dual concaves in the tail section. This shape board is available as single or with sides. High polished finish very labour intensive. Shaped and designed by Ron."
+        },
+        {
+          "name": "Mid-Length",
+          "image_url": "https://cdn.shopify.com/s/files/1/0929/1009/2652/files/MidBluewithahighlypolishedfinish.png",
+          "description": "Size: 7’10” x 21 ½” x 2 5/5” {34.07 Litres.} 3 stage bottom, medium tail lift with dual concaves running through to the tail. Thruster- fin set up. Mid blue colour deck and bottom. Glossed with a high polished finish. {Very labour intensive}. Shaped and designed by Ron"
+        },
+        {
+          "name": "F1-11 Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0929/1009/2652/files/RW-Twin-101_3bd4c132-ed56-45a5-813e-794c0463bd24.png",
+          "description": "Size: 6’8” x 21 ½” x 2 3/4” Sky blue deck and Mid blue bottom, with dual pin lines around the deck. Highly polished, very labour intensive. A great board for surfing waves between 3ft to around 6 ft Shaped and designed by Ron."
+        }
+      ]
+    },
+    {
+      "slug": "shortie-surfboards",
+      "name": "Shortie Surfboards",
+      "website_url": "https://www.shortiesurfboards.com",
+      "location_label": "Redhead, New South Wales, Australia",
+      "founder_name": "Sam Ayton",
+      "lead_shaper_name": "Sam Ayton",
+      "short_description": "Hand-shaped East Coast Australian shortboards and mid-lengths from Sam Ayton — 717, Crazy Swayze, Twinkle Toes 2.0, Micro Mid, and HP Camel.",
+      "logo_url": "https://static1.squarespace.com/static/69c0e2823d16373084c9b460/t/69cdb7997a9698137bd9aa6f/1775089561307/shortieretro+sticker01+%281%29.png",
+      "models": [
+        {
+          "name": "717",
+          "image_url": "http://static1.squarespace.com/static/69c0e2823d16373084c9b460/69c0e43ddf54b2562523a9a6/69cccec862e8ac760d3702ef/1775032558744/717-1.jpg",
+          "description": "The 717 Model is a very versatile step-up for waves between 4-8 feet.    It has foam pushed forward for ease of paddling and a lower rail for extra bite in the tube.  It has a continuous rocker with a tad extra nose lift to accomodate for those steeper waves and to help avoid nose-diving.   With a single to double concave, this board also performs really well on the open face.  I recommend riding this 4” longer than your normal shortboard and about an 1/8” narrower.   The quad setup feels amazing in this board!  However, it can be ridden as a quad or a thruster."
+        },
+        {
+          "name": "Crazy Swayze",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/69c0e2823d16373084c9b460/6cc91eb5-3d54-43a8-9c60-00f5f82688dd/crazyswayze-front.jpg",
+          "description": "The Crazy Swayze is your ideal board for all conditions.  It has a low entry/exit rocker and a deep single concave to create lift and speed.  Combined with a double concave out the tail for maximum manoeuvrability, it makes it feel as if the board is doing all the work for you.  The outline is pushed slightly forward of centre for ease of paddling.  The rails are straightened off the tail to create some serious drive through turns.  I recommend riding this board about an inch longer than your own height."
+        },
+        {
+          "name": "HP Camel",
+          "image_url": "http://static1.squarespace.com/static/69c0e2823d16373084c9b460/69c0e43ddf54b2562523a9a6/69c0e43ddf54b2562523a9cd/1776203434356/hpcamel-front.jpg",
+          "description": "This is your high performance work horse.  Though it may appear to have a similar outline to the crazy Swayze, it has a little extra rocker in the nose and a late flow in the tail.  With a lower rail and a single to double concave, this board transitions from rail to rail with ease.   I’d recommend riding this board the same size as your standard Shortie shortboard!"
+        },
+        {
+          "name": "Micro Mid",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/69c0e2823d16373084c9b460/ac161a60-43cc-4f21-92a4-8640d0a2d28b/micromid-front.jpg",
+          "description": "The micro mid is the ultimate fun board, taking the shape of a mid-length, but subtracting the length while still holding plenty of volume.    ‍The wide point on this is pushed 2 1/2” North of the centre, making the nose nice and wide while the tail is pulled into a pin.  It surfs like a shortboard, but paddles as if it had 100 litres.   To add to this, it has a vee bottom running from the nose to tail and double concave out the back, so turning is made easy!  I recommend riding this board about 3”-5” longer than your short board.    It can be ridden as a straight twin fin or has the option for a stabiliser fin."
+        },
+        {
+          "name": "Twinkle Toes 2.0",
+          "image_url": "http://static1.squarespace.com/static/69c0e2823d16373084c9b460/69c0e43ddf54b2562523a9a6/69cb350fcfd0a23cbe586659/1776203261128/tan%2Bwhite-front.jpg",
+          "description": "The Twinkle Toes 2.0 is my modern spin on the retro twin fin, with extreme fun in mind.  This board has become even more refined than the original version.  It has a vee in the nose and under the chest to make paddling a breeze.  Then, it flows from a single concave into a double, that ultimately vees out of the swallow tail.    This board can be ridden as a straight twin or with a stabiliser fin.   I recommend riding this board the same length as you are tall."
+        }
+      ]
+    },
+    {
+      "slug": "a-mano-surf",
+      "name": "A Mano",
+      "website_url": "https://www.amanosurf.com",
+      "location_label": "Ewingsdale, Byron Bay, New South Wales, Australia",
+      "founder_name": "Simon",
+      "lead_shaper_name": "Simon",
+      "short_description": "Hand-shaped twin pins, fishes, eggs, and single fins from Simon's Byron Hinterland bay — every A Mano board is shaped start to finish in-house.",
+      "logo_url": "https://static1.squarespace.com/static/5e8c0a572c2c9840f7db0b98/t/69d5c9274f547d722ece73d1/logo.png",
+      "models": [
+        {
+          "name": "Classic Single",
+          "image_url": "http://static1.squarespace.com/static/5e8c0a572c2c9840f7db0b98/t/6a15ba6cad87056ce83c5bb3/1684696355917/4.jpg",
+          "description": "Our Classic Single Fin is designed for bigger waves hitting long point breaks; think long carving lines on big faces. This surfboard is handshaped in Byron Bay"
+        },
+        {
+          "name": "Egg",
+          "image_url": "http://static1.squarespace.com/static/5e8c0a572c2c9840f7db0b98/t/6a15ba4eed6ad700ce7b5e18/1684696355917/4.jpg",
+          "description": "Our most versatile and user friendly mid length, the Egg is the Cadillac of surfboards. The single fin Egg is the board you can surf every day of the year. 100% hand shaped in the Byron Bay Hinterland"
+        },
+        {
+          "name": "Fish",
+          "image_url": "http://static1.squarespace.com/static/5e8c0a572c2c9840f7db0b98/t/6a14b26c60d6bf52da13ee0c/1684696355917/4.jpg",
+          "description": "Our take on the traditional twin fin fish, this board has loads of foam squeezed in for excellent paddle power, featuring a beak nose combined with low refined rails. This surfboard is handshaped in Byron Bay"
+        },
+        {
+          "name": "Long Fish",
+          "image_url": "http://static1.squarespace.com/static/5e8c0a572c2c9840f7db0b98/t/6a15ddee3eac7f7529fb3200/1684696355917/4.jpg",
+          "description": "The Long Fish is our most dynamic and exciting mid length. Low refined rails combine with the twin fin set up to maintain sensitivity in a bigger board. This surfboard is 100% hand shaped in Byron Bay"
+        },
+        {
+          "name": "Mini Simmons",
+          "image_url": "http://static1.squarespace.com/static/5e8c0a572c2c9840f7db0b98/t/6a15ba365ae55543abf817ed/1684696355917/4.jpg",
+          "description": "The Mini Simons quad has all the speed you need to liven up small wave sessions, this board is a nod to one of surfing's great pioneers Bob Simmons.  100% hand shaped in the Byron Bay Hinterland"
+        },
+        {
+          "name": "Stage Two Twin Pin",
+          "image_url": "http://static1.squarespace.com/static/5e8c0a572c2c9840f7db0b98/t/6a14721808cdd61c0b8e0632/1684696355917/4.jpg",
+          "description": "The next generation of our Twin Pin, this trimmed down and performance orientated Twin Fin is a fast and reactive everyday shortboard that won’t let you down. This surfboard is hand shaped in Byron Bay"
+        },
+        {
+          "name": "Step Up Twin Pin",
+          "image_url": "http://static1.squarespace.com/static/5e8c0a572c2c9840f7db0b98/t/6a187b5d3a3ec3564c274b1d/1684696355917/4.jpg",
+          "description": "The next generation of our Twin Pin, this trimmed down and performance orientated Twin Fin is a fast and reactive everyday shortboard that won’t let you down. This surfboard is hand shaped in Byron Bay"
+        },
+        {
+          "name": "Twin Pin",
+          "image_url": "http://static1.squarespace.com/static/5e8c0a572c2c9840f7db0b98/t/6a14bf17e6f3784cfa710ef5/1684696355917/4.jpg",
+          "description": "Our Twin Pin stretches out a classic twin fin surfboard template to emphasise speed, excitement and reliability. 100% handshaped in our Byron Bay workshop"
+        }
+      ]
+    },
+    {
+      "slug": "pog-surfboards",
+      "name": "POG Surfboards",
+      "website_url": "https://www.pogsurfboards.com",
+      "location_label": "Sunshine Coast, Queensland, Australia",
+      "founder_name": "Paul O'Grady",
+      "lead_shaper_name": "Paul O'Grady",
+      "short_description": "Custom and off-the-rack boards from Paul O'Grady on the Sunshine Coast since 1981 — Flying Fish, Sick Squid, No Brainer, and classic mals.",
+      "logo_url": "https://www.pogsurfboards.com/wp-content/uploads/Pog-Surfboards-Logo-Transparent-Background.png",
+      "models": [
+        {
+          "name": "Cuttle Fish",
+          "image_url": "https://www.pogsurfboards.com/wp-content/uploads/Cuttle-Fish-Top.jpg",
+          "description": "The Cuttle Fish is a classic egg plan shape and a great all-rounder. Extremely versatile, it can be set up as a single, quad/thruster or even a twin. The simple plan shape is enhanced by a forward chined concave to double concave bottom."
+        },
+        {
+          "name": "Flying Fish",
+          "image_url": "https://www.pogsurfboards.com/wp-content/uploads/Flying-Fish-1.png",
+          "description": "A throwback to the late 70s and 80s with its distinctive semi-retro single-flyer swallowtail plan shape. With a little extra width and thickness, the Flying Fish will improve your wave count even on the smaller days. Designed with a single to double concave and a pulled-in tail, the Flying Fish thruster delivers powerful, top-to-bottom performance even on bigger days."
+        },
+        {
+          "name": "Flying Fish Single",
+          "image_url": "https://www.pogsurfboards.com/wp-content/uploads/Flying-Fish-Single-Fin.jpg",
+          "description": "Single flyer swallow tail with a pulled in nose and narrower tail — the Flying Fish as a dedicated single fin for longer lines and a more classic feel."
+        },
+        {
+          "name": "Flying Fish Twin",
+          "image_url": "https://www.pogsurfboards.com/wp-content/uploads/510_-Flying-Fish-twin-top.png",
+          "description": "A single flyer swallow tail twin fin throw-back to the late 70s and early 80s with heavy influences of Mark Richards and Larry Bertlemann. The plan shape of the Twin version has been tweaked to produce a shorter tail behind the fins to deliver drive while maintaining the looseness and speed of the Twin."
+        },
+        {
+          "name": "Fryed Fish",
+          "image_url": "https://www.pogsurfboards.com/wp-content/uploads/Fried-Fish-Bottom.jpg",
+          "description": "A modernised Steve Lis or Skip Frye twin keel fish with a wide deep swallow tail. A full nose with extra volume and width and low rocker allows the Fryed Fish to catch waves like a Malibu and surf like a skateboard."
+        },
+        {
+          "name": "Mal",
+          "image_url": "https://www.pogsurfboards.com/wp-content/uploads/Malibu-Longboard-Surfboard-Top.png",
+          "description": "Whether you prefer old-style logs with pinched rails or modern mals with noseriding rockers and concaves for manoeuvrability, POG custom mals are designed with the features you want on a classic longboard."
+        },
+        {
+          "name": "No Brainer",
+          "image_url": "https://www.pogsurfboards.com/wp-content/uploads/6022-thruster-No-Brainer-single-concave-squash-tail-1.jpg",
+          "description": "A post-apocalyptic modern shortboard for those who just want to shred in and above the lip. The No Brainer is a high-performance comp-light model for advanced surfers in all kinds of waves. Speed is maximised by a single concave running from the front foot to the back fin, usually set up with a thruster/quad option."
+        },
+        {
+          "name": "Sick Squid",
+          "image_url": "https://www.pogsurfboards.com/wp-content/uploads/Sick-Squid-Top.jpg",
+          "description": "Another all-rounder with a fuller nose and outline than the Flying Fish, this one lends itself to the single board quiver as well. Extra girth for paddle power in fatter conditions, with the versatility of a quad/thruster setup across a very broad range of surf."
+        },
+        {
+          "name": "Soul Fish",
+          "image_url": "https://www.pogsurfboards.com/wp-content/uploads/66_-Soul-Fish-Top-1.png",
+          "description": "The Soul Fish is not really a fish at all but a modernised single fin for the retro purist. Pulled-in nose and reduced tail area produce longer cleaner lines, complimented by a pin, rounded pin, or small swallow. A go-to for reef and solid point breaks."
+        },
+        {
+          "name": "Sprat",
+          "image_url": "https://www.pogsurfboards.com/wp-content/uploads/Sprat-Top.png",
+          "description": "The Sprat is a single flyer swallow tail twinzer with a wider tail and a wide round nose. This board has a concave chined hull forward into a double concave through the fins."
+        }
+      ]
+    }
+  ],
+  "rejected": [],
+  "summary": {
+    "brand_count": 6,
+    "model_count": 52,
+    "image_count": 52,
+    "logo_count": 6
+  }
+}
