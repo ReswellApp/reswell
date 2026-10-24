@@ -77,8 +77,8 @@ function DropoffCityOption({
       ) : (
         <p className="mt-0.5 text-xs leading-snug text-muted-foreground sm:text-sm">
           {boardLength.trim()
-            ? "This board is outside the sizes we pack here right now (up to 6'6, and 6'0 boards need to be 22\" wide or less). Pack and ship it yourself, or add width if it is 6'0 or under."
-            : "Add board length (and width if it is 6'0 or under) in Photos to use this city."}
+            ? "This board is outside the sizes we pack at this city. Pack and ship it yourself."
+            : "Add board length in Photos to use this city."}
         </p>
       )}
     </button>
