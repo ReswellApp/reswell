@@ -40,6 +40,7 @@ export function isPublicMarketplaceHtmlPath(pathname: string): boolean {
   ) {
     return true
   }
+  if (pathname.startsWith("/pricing/brand/")) return true
   if (isModelPagePathname(pathname)) return true
   return false
 }
