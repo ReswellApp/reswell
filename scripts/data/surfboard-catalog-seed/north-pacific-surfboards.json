@@ -1,0 +1,103 @@
+{
+  "generated_for": "North Pacific Surfboards official named standup catalog",
+  "source": "https://northpacificsurf.com/shop/ and WooCommerce product pages under category SurfBoards (official catalog — excludes foilboards, sailboards, kiteboards, SUPs, in-stock dimension SKUs, and construction-only listings)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "north-pacific-surfboards",
+      "name": "North Pacific Surfboards",
+      "website_url": "https://northpacificsurf.com/",
+      "location_label": "Hood River, Oregon",
+      "founder_name": "Art Colyer",
+      "lead_shaper_name": "Art Colyer",
+      "short_description": "Hood River surfboards hand-shaped by Art Colyer since 1985, built for the thick, fast waves of the Pacific Northwest.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/north-pacific-surfboards.png",
+      "models": [
+        {
+          "name": "El Patron",
+          "image_url": "https://northpacificsurf.com/wp-content/uploads/2015/12/73x21x234ElP.jpg",
+          "description": "Super versatile design for someone looking to travel light or a one-board quiver. A constant curve outline and rocker with a light progressive single to double concave bottom gives this model its range from easy surf up to overhead and barreling. Andele! Lengths: 6′-4″ to 7′-10″. Tri Fin recommended, Quad or 5 Fin optional.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Egg",
+          "image_url": "https://northpacificsurf.com/wp-content/uploads/2012/12/610WEggSun.jpg",
+          "description": "A great alternative to longboards for surfers who want the fast paddling but with more maneuverability. Features a constant curve outline and rocker with a slightly flipped up nose, round pin or squash tail. Tri fins standard, 2+1, Quad or Bonzer fin setup available on all lengths. Lengths: 6′-8″ to 8′-6″.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Wide Egg",
+          "image_url": "https://northpacificsurf.com/wp-content/uploads/2013/02/76x2112x318DWP.jpg",
+          "description": "Wider version of our original Egg. The Wide Egg features a lower nose rocker, flatter deck with the volume carried out to the rails. Designed to be a touch thinner, short versions are a playful performance board for decent waves. In the mid lengths, it is a great entry level model for lighter surfers who don’t need a longboard or mini to learn the magic of surfing. Lengths: 6′-0″ to 7′-10″. Tri Fin recommended.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Chubb",
+          "image_url": "https://northpacificsurf.com/wp-content/uploads/2013/02/511x1912x214Chubb.jpg",
+          "description": "A remarkably smooth riding shortboard. Wide point is slightly forward of center as is the matching rockerline giving the Chubb its flow. Essentially a medium size wave board, it retains great control up into bigger surf. Tri fin recommended. Lengths: 5′-8″ to 6′-6″.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Round Pin",
+          "image_url": "https://northpacificsurf.com/wp-content/uploads/2012/12/63x19x212RP.jpg",
+          "description": "This is the tool for good hollow wave performance surfing. Great smooth control when things get vertical. Features a moderate continual rocker and foiled out finish through the tail. Mild single concave to concave “V” is standard, optional flat to slight “V” can be ordered. Tri fin recommended. Lengths: 5′-8″ to 6′-6″.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "SC Squash",
+          "image_url": "https://northpacificsurf.com/wp-content/uploads/2012/12/510x19ST.jpg",
+          "description": "Great proven all around model. Continually refined since ’90. This board has retained the baseline of performance design for good waves. Moderate continual rocker with a single to double concave bottom. Tri or Quad fin set up. Lengths: 5′-10″ to 6′-6″.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Bug",
+          "image_url": "https://northpacificsurf.com/wp-content/uploads/2012/12/61x1914Bug.jpg",
+          "description": "Shortness, width and flatter rocker give the Bug a quick, fast planeing ride. Consolidating the volume into the compact curvy plan shape lets you go shorter but retains good paddling and performance. Tri or Quad fin set up. Lengths: 5′-8″ to 6′-4″.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Summer Quad",
+          "image_url": "https://northpacificsurf.com/wp-content/uploads/2012/12/61x2012x258SumQ.jpg",
+          "description": "Super fun skater for the knee to head high wave shred park. Planes up easily, fast down the line, then kick it up vertical for the finish. It does it all in a short package. Quad fin set recommended. Lengths: 5′-8″ to 6′-3″.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Fish",
+          "image_url": "https://northpacificsurf.com/wp-content/uploads/2012/12/58x21x212Fish.jpg",
+          "description": "Down the line speed with no top end, amazing wave catching ability, this “always been legit” design is a must have for a complete quiver. Featuring plenty of width and thickness with a flat to very slight V bottom. Available add-ons include wood keel glass on fins, quad fin set up, resin tints, and gloss finish. Lengths: 5′-6″ to 6′-6″.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Fun Fish",
+          "image_url": "https://northpacificsurf.com/wp-content/uploads/2012/12/68FunFish.jpg",
+          "description": "Great all around board, excellent wave catching and glide in the ride due to smooth rocker, subtle concaves and balanced outline. Also available as a quad. Lengths: 6′-0″ to 7′-0″.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Semi Gun",
+          "image_url": "https://northpacificsurf.com/wp-content/uploads/2012/12/70x185SemiGun.jpg",
+          "description": "Designed for serious surf and conditions that come with it; currents, long paddles, strong winds and speed. Features laminated stringer and 6 oz. glassing for strength, double layer glassing on the bottom of the larger versions. Tri fins standard. Quad fin set-up available. Lengths: 6′-6″ to 10′.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Mini",
+          "image_url": "https://northpacificsurf.com/wp-content/uploads/2012/12/611x2112x234WMini.jpg",
+          "description": "Down-sized version of the glider or Hi Performance only lighter, narrower and with a little more curve in the outline and rocker for maneuverability. Mini add-ons: custom colorwork, multi-stringers, gloss finish, assorted resin tint with cut laps. Lengths 7′-6″ – 8′-6″.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Hi-Performance",
+          "image_url": "https://northpacificsurf.com/wp-content/uploads/2013/02/90x2214x3HPLBB.jpg",
+          "description": "The Hi-Performance model is designed with an emphasis on carving turns and speed with a handling range up into larger surf. The board features a constant curve outline and rocker, low rails and a 2+1 fin setup. Hi-Performance add-ons: XtraLite glassing (4oz. ‘S’ cloth), gloss finish, assorted resin tint with cut laps, three stringer blank. Lengths: 8′-6″ to 9′-6″.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Glider",
+          "image_url": "https://northpacificsurf.com/wp-content/uploads/2012/12/Glider3Stringer.jpg",
+          "description": "The Glider has a straighter rocker line throughout, light concave in the nose area and fuller rails for stability, nose riding, and general all around surfing. Comes as a single fin or 2+1. Glider add-ons: multi-stringers, gloss finish, assorted resin tint with cut laps. Lengths: 8′-10″ to 11′-0″.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
