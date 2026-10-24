@@ -46,9 +46,7 @@ const hours =
       ? Number(args[hoursFlagIndex + 1])
       : 24
 
-const { scanVercelPlatformLogs } = await import(
-  "../lib/services/vercelRequestLogMonitor.ts"
-)
+const { scanVercelPlatformLogs } = await import("./lib/vercel-log-scan-core.mjs")
 
 const summary = await scanVercelPlatformLogs({
   sinceHours: Math.max(1, hours),
