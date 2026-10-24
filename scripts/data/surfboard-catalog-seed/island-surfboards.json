@@ -1,0 +1,250 @@
+{
+  "generated_for": "Island Surfboards official model catalog",
+  "source": "https://www.islandsurfboards.com.au/surfboards",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "island-surfboards",
+      "name": "Island Surfboards",
+      "website_url": "https://www.islandsurfboards.com.au/",
+      "location_label": "Cowes, Phillip Island, Victoria, Australia",
+      "short_description": "Phillip Island surfboards since 1969. Named production models from the Cowes factory at 147 Thompson Avenue.",
+      "models": [
+        {
+          "name": "FDT",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56ce2d7acf80a11b2f1489c7/49f72064-e62f-4785-b085-79e2eac84d99/gus-FDT-deck.jpg",
+          "description": "This small fish is designed for intermediate to advanced surfers who want to make the most of average summer waves. A flat deck with bevelled rails keeps the foam where it counts, adding glide and flow across the wave. The low rocker and single concave keep it quick and responsive, while the swallow tail adds extra width to carry speed through slower sections. Gus rides his 3–5 inches shorter than his standard shortboard for extra zip and maneuverability. *",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Variant",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56ce2d7acf80a11b2f1489c7/d5b91dda-1dff-46b2-b26a-662916cf85ff/gus-variant-deck.jpg",
+          "description": "This board’s got a low entry rocker and a performance-style tail, making it a great all-rounder for everyday surf. It’s perfect if you’re not after a super high-performance ride but still want something that can handle a variety of conditions. It grovels well in smaller surf, thanks to a bit of extra volume through the tail, and the single to double concave adds some nice speed and flow. The flyer helps trim down the tail width, giving you a bit more release and freedom through your turns. Recommended for intermediate to advanced surfers riding waves anywhere from waist high up to well overhead. Fin Tip: Gus runs a set of Futures AM1’s. *",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Darren",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56ce2d7acf80a11b2f1489c7/3cc2c4bd-e07e-44f5-938f-e600d8351cca/gus-darren-deck.jpg",
+          "description": "This is your go-to everyday shortboard, designed for intermediate to advanced surfers in a variety of conditions. A slightly fuller nose and tail add paddle power and stability, while the low entry rocker and moderate tail rocker balance speed with responsiveness. The single concave bottom helps generate lift and drive, making it fast, fun, and reliable in most surf. Fins Advice: Gus runs the Futures AM1s as his preferred fin for the Darren. *",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "NXT",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56ce2d7acf80a11b2f1489c7/1590383322264-3Y384WND9JNM8N1AQBOK/nxt-t.png",
+          "description": "Evolved from the 3rd GEAR the NXT is the latest high performance board in Ringa’s range and it’s a banger! Ridden by a lot of our competitive team riders and any good surfers looking for that extra performance pop in their board. The outline has an even curve through to a hip just above the fins. The rocker is medium low through the entry to get into waves and pick up speed quickly. However the tail rocker has plenty of curve for turning control and responsiveness. Mid to full rails help maintain performance whilst allowing some forgiveness. Suited to intermediate to advanced surfers looking for an all-round board, the NXT will perform in anything from 2-6ft beachies and reefs. L W Th Vol Wgt 6'0 19 1/4 2 3/8 29.0 60-80kg 6'1 19 1/2 2 3/8 30.0 60-80kg 6'2 19 3/4 2 1/2 32.0 60-80kg 6'3 19 7/8 2 9/16 33.0 70-90kg 6'4 20 1/8 2 5/8 34.7 70-90kg 6'5 20 1/4 2 5/8 35.4 70-90kg *",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "5G",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56ce2d7acf80a11b2f1489c7/c9f4d04a-a293-4e33-9fa4-a440ef793336/ringa-5G-deck.jpg",
+          "description": "Introducing our latest high-performance model— the 5G is built for intermediate to advanced surfers chasing powerful, well-shaped waves. With a higher rail-line rocker, this board handles steeper, hollower conditions with ease, while added concave through the bottom helps maintain speed and control. A well-balanced staged rocker gives it drive and release through turns, making it ideal for surfers who want to perform. Inspired by proven designs from Al Merrick and Darren Handley, it delivers reliable responsiveness in good conditions. Finished with a squash tail for all-around versatility, this board is ready for anything with push, power and shape. Fin Tip: Something drivey and raked. Either Mick Fanning’s (FCS2) or AM1s (Futures). *",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "X",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56ce2d7acf80a11b2f1489c7/04ba7adb-c281-4b22-9963-31ae4a99f85c/ringa-X-deck.jpg",
+          "description": "Built for those in-between days when it’s just big enough to ride a shortboard but you still want to rip, the X turns marginal conditions into an opportunity. Shorter and wider—especially through the tail—it generates extra planing speed through slower sections, making it an ideal option for wave pools or soft, tricky beach breaks. A low overall rocker keeps things fast and drivey, while a healthy single concave adds lift and responsiveness. Designed for intermediate surfers looking to squeeze the most out of less-than-perfect waves without sacrificing performance. Fin Tip: Reactors (FCS2) or a Pivot (Futures). *",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "3rd Gear",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56ce2d7acf80a11b2f1489c7/1590371163375-DVUC8N9UJOOM9WYTN8AD/tg-t.png",
+          "description": "Developed originally for guys that surf well, but need a little extra paddle power, this board has become very popular as a performance all-rounder. Ridden 2\" shorter than the Me, this model sits in between the Me and the Slop Rocket. It’s designed wider throughout the middle for increased paddle and forgiveness, but has a refined nose and tail for performance. It comes with standard (medium) entry and exit rockers to provide balanced speed and manoeuvrability. Mid to full rails help maintain performance whilst allowing some forgiveness. Suited to intermediate to advanced surfers looking for more paddle in a shorter board, the 3rd Gear is an all-round performer in beachies to mid-sized reefs in the 1-5ft range. L W Th Vol 5'10 19 1/4 2 3/8 29 5'11 19 1/2 2 3/8 30 6'0 19 3/4 2 1/2 31.3 6'1 20 2 1/2 33 6'2 20 1/4 2 5/8 34.5 6'3 20 1/2 2 5/8 35.9 6'4 20 3/4 2 11/16 37.3 6’6 20 3/4 2 3/4 39.3 6’8 21 2 3/4 41.4 *",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Me",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56ce2d7acf80a11b2f1489c7/1590376341259-LWLHCTVSZEI5UED0COWD/me-t.png",
+          "description": "This is the most refined, high performance step-up in Ringa's range. Its highly maneuverable, super responsive and designed for tight, in the pocket surfing. A standard (medium) entry rocker provides maneuverability, paddle power and speed whilst the increased (high) tail rocker allows maximum performance. Mid to low rails increase control and responsiveness at high speed. Single to slight double concave provides a nice balance of speed and lift for critical turns. This ever evolving design performs best in good quality beachies and reefs in the 3-8ft range. Suited to the intermediate to advanced surfer, this board is a combination of knowledge and expertises derived from the time Ringa spent travelling on the World Surf League. If its ultimate performance in bigger waves you're after then the 'Me' is the board for you. L W Th Vol Wgt 6'0 19 1/4 2 3/8 29.5 60-80kg 6'1 19 3/8 2 7/16 30.2 60-80kg 6'2 19 1/2 2 1/2 31.5 70-90kg 6'3 19 5/8 2 5/8 33 70-90kg 6'4 19 3/4 2 5/8 34.1 70-90kg 6'6 20 2 11/16 36 80-100kg *",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Go",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56ce2d7acf80a11b2f1489c7/1590375978985-K5TXQHORN0VG685SIRAH/go-t.png",
+          "description": "The GO can suit two different types of surfer. It can be ridden as a big boys shortboard or the perfect next step for someone looking for their first hardboard. Ridden bigger it suits the beginner to intermediate surfer. Ridden smaller (for the more advanced) this board is fast, smooth and gets into waves with ease. Still one of the more versatile boards in our range the GO comes with low entry rocker for extra paddle power and speed whilst maintaining a standard (medium) tail rocker for manoeuvrability. Full rails provide forgiveness and buoyancy whilst the slight single with pronouced double concave ensures speed, lift and easy turns. This board is stable, buoyant, fast and fun. A thruster set-up is preferred by most. The GO is designed to catch waves easily in just about all conditions ranging from 1-6Ft beach breaks. The perfect board to grab and GO. L W Th Vol Wgt 6'1 20 1/4 2 1/2 33.65 60-80kg 6'2 20 3/8 2 9/16 35.03 60-80kg 6'3 20 1/2 2 5/8 36.44 70-90kg 6'5 20 3/4 2 5/8 38.64 80-100kg 6’7 21 2 3/4 41.64 80-110kg 6’9 21 1/2 2 3/4 43.88 80-110kg+ 7’0 21 3/4 3 49.80 80-110kg+ *",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Twin Pin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56ce2d7acf80a11b2f1489c7/c7f743cc-d039-45ce-85a7-77831ebf4d42/gus-twinpin-deck.jpg",
+          "description": "This is the Rolls Royce of twin pins—smooth, fast, and built to perform. Don’t be afraid to go a bit longer than your regular shortboard, Gus recommends 2-4 inches longer. It’s got a flat deck with bevelled rails for a solid yet responsive feel. You can ride it as a twin or twin plus one, and it works best in average to solid waves. The wide point’s pushed forward with a low entry rocker for extra paddle power and flow, but it’ll still hit the lip when you want to turn it on. Recommended for intermediate to advanced surfers in waves anywhere from 2ft to 8ft. Fin Tip: Futures Akila Aipa (Twin) *",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Midriff",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56ce2d7acf80a11b2f1489c7/b2f6a2bd-4653-4af2-8d45-5bbbb482048e/ringa-midriff-deck.jpg",
+          "description": "The Midriff is your go-to board for smooth, flowing sessions in gentler, more laid-back conditions. Designed with low rocker, it excels in flatter, rolley waves but holds its own on bigger, open-faced walls like Surfies Point, Flynns, and Bells. A forward wide point and extended rail line through the tail offer excellent paddle power and easy entry, making it a dream for surfers who like to trim, glide, and carve without effort. Clean and simple—no hips, no bumps—just pure flow. The stock setup includes a single fin box with side fins for a customizable feel. Perfect for the cruisey surfer chasing fun, freedom, and style. *",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Big Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56ce2d7acf80a11b2f1489c7/1590376211020-G51L19A6U5ZMO2GD2U2V/fish-t.png",
+          "description": "Everybody loves a fish whether you’re just cruising or stepping down from something bigger. Designed for the novice to intermediate, its floaty, stable and yet still very manoeuvrable. The perfect next step after you've learnt the basics… The Big Fish has a low entry rocker for paddle-power and takeoff speed and a medium exit rocker for control and drive. Full rails give it control and forgiveness and the double to single concave helps with lift and rail to rail transitions. Most used as a thruster but the 5 fin setup gives you the option for a quad and the swallow tail provides added control. This board is stable, forgiving and manoeuvrable with great paddle power for the novice to intermediate surfer. Ideal conditions are 1-4ft small beach break waves and mid size reef breaks. L W Th Vol Wgt 6’0 20 3/4 2 5/8 36 50-70kg 6'2 21 2 11/16 38 50-70kg 6'4 21 1/4 2 3/4 40 60-80kg 6'6 21 1/2 2 7/8 43.6 60-80kg 6'8 21 5/8 2 7/8 45 70-90kg 6'10 21 3/4 2 7/8 47 70-90kg 7'0 22 3 50.91 70-90kg 7'2 22 1/4 3 52.31 80+kg 7'6 22 1/2 3 55.5 80+kg 8'0 23 3 62.8 80+kg *",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Ooh La La",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56ce2d7acf80a11b2f1489c7/1a654bfd-1891-4db7-8059-5b663733afc3/gus-oohlaalaablue-deck.jpg",
+          "description": "Designed for the more advanced longboarder, this board blends control and lift for smooth, stylish surfing. A rolled bottom with a subtle single concave up front adds stability and lift when you're on the nose, making it ideal for confident nose riding. The slightly pinched, upturned rails help the board sit deeper in the wave face, offering better hold in steeper, more pockety sections. Available with either a pin or square tail, so you can choose the setup that best suits your style and the waves you ride. *",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "BDE",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56ce2d7acf80a11b2f1489c7/5b0cb652-b47f-43f7-bfd7-918bb4da0d9e/gus-log-deck.jpg",
+          "description": "This is the most entry-level log in Gus’s lineup, suited to all skill levels and a variety of conditions. It features classic 50/50 rails for added stability and a smooth, forgiving feel. A rolled bottom with a touch of nose concave provides lift and control when up front, while the square tail keeps things easy and fluid through turns. *",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Proformance Mal",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56ce2d7acf80a11b2f1489c7/d7f28d5d-ac3b-47ae-aa35-0351b3c0de42/performancemal-deck-1.jpg",
+          "description": "Tried and tested by some of the best, this board is a true performance longboard that delivers. A single concave in the nose helps lock you in for controlled nose rides, while a double concave through the bottom adds drive and responsiveness underfoot. The low entry rocker up front makes it easy to roll into waves and set up on the nose, while extra curve through the tail gives added lift and sharper turns. Refined, low rails offer speed and solid engagement for smooth, stylish lines. Usually surfed as a single fin with side bytes, but also works great as a quad for a more progressive feel. Sandy won 3 State Titles in a row on this model! *",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Mini Mal",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56ce2d7acf80a11b2f1489c7/b72e32fd-5538-4187-a086-1e5e137abde4/minimal-deck-1.jpg",
+          "description": "Ringa’s Mini Mal is the perfect next step up from a Performance Softboard, offering a seamless transition into harder boards without sacrificing fun or flow. With good overall volume and a wide squash tail, it’s designed to lift into waves early and keep you moving through slower sections. Parallel rails provide natural glide and drive, while the vee double concave adds a touch of performance for smoother rail-to-rail transitions. Versatile and responsive, you can ride it as a twin or quad for a faster, looser feel, or as a single fin with side bytes for that classic mini mal style. A great all-rounder for building confidence and style. *",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Mini Me",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56ce2d7acf80a11b2f1489c7/1590375820055-TUSMDI9E4L53AF82MFE1/minime-t.png",
+          "description": "Ringa wanted to create a good all-round mid-length to suit all people and waves from beginner to advanced. This board does just that with the perfect balance of good paddling, great wave catching ability and plenty of performance. The double concave on the bottom adds lift and the vee out the tail provides rail to rail maneuverabiity. The increased (high) tail also helps the responsiveness of this board and the lowish entry rocker guarantees speed and easier paddling. Ideal in smaller beachies and reefs in the 1-4 ft range this mid-length is very versatile and is great for the beginner to advanced surfer. L W Th Vol Wgt 6'7 20 3/4 2 5/8 39.0 60-80kg 6'10 21 1/4 2 3/4 42.3 60-80kg 7'0 21 1/2 2 3/4 45.5 60-80kg 7'3 21 3/4 2 3/4 47.1 70-90kg 7'5 21 7/8 2 13/16 49.7 70-90kg 7'7 22 1/8 2 7/8 52.5 70-90kg 8'0 22 1/4 2 15/16 57.0 80-100kg 8’2 22 3/4 3 1/16 62.1 80-100kg *",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Flow",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56ce2d7acf80a11b2f1489c7/1590373491363-6HGWO9IZU7247MFE3T7M/flow-t.png",
+          "description": "Designed as a one board quiver, this board suits everyone. Ridden bigger it suits the beginner to intermediate surfer. Ridden smaller (for the more advanced) this board is fast, smooth and gets into waves with ease. Probably the most versatile board in our range the Flow comes with low entry rocker for extra paddle power and speed whilst maintaining a standard (medium) tail rocker for manoeuvrability. Full rails provide forgiveness and buoyancy whilst the single to slight double concave ensure speed, lift and easy turns. This board is stable, buoyant, fast and flowy it’s versatile and fun. A thruster set-up is preferred by most. The Flow is designed to catch waves for surfers of all levels and in just about all conditions ranging from 1-6Ft reefs and beach breaks. The perfect board for both surf trips or for family holidays. L W Th Vol Wgt 6'0 20 2 1/2 31.78 50-70kg 6'1 20 1/8 2 1/2 32.55 60-80kg 6'2 20 1/4 2 1/2 33.20 60-80kg 6'3 20 3/8 2 9/16 34.90 70-90kg 6’4 20 1/2 2 5/8 35.60 70-90kg 6'5 20 3/4 2 5/8 37.3 80-100kg 6’6 20 7/8 2 5/8 38.4 80-100kg 6’8 21 1/2 2 11/16 41.5 80-110kg 6’9 21 7/8 2 7/8 46.7 80-110kg+ 7’0 21 7/8 2 7/8 47.9 80-110kg+ *",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Performance Softboard - Mini Mal",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56ce2d7acf80a11b2f1489c7/55387ee9-1683-482a-869a-cf2e2eb5d49b/soft-minimal-deck.jpg",
+          "description": "Ringa’s go-to performance softboard that blends the best of both worlds—it glides like a mal but turns like a mid-length. With a full nose and parallel rails, it delivers natural speed and effortless trim, while the wide, thicker tail gives it lift and early entry into waves. Perfect for cruisey sessions or stylish turns, this board is as fun as it is functional. Plus, it comes with a soft handle on the bottom, making the walk to the beach that much easier. A true all-rounder with a playful edge. This is a surfboard for everybody. All Performance Softboards have a Polystyrene core layered with Epoxy laminate. A firm EVA foam wrap around the deck and rails provides comfort and control under foot, with a hard bottom giving the board a sense of speed and drive off the water. Board is complete with a Futures Fins thruster setup, with fins included.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Performance Softboard - Fun",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56ce2d7acf80a11b2f1489c7/1644458926900-Y7KA2YDVE6CS2QENVNKJ/blue.jpg",
+          "description": "Ringa’s Performance Softboard has been carefully designed to help beginner surfers progress past simple techniques and whitewater surfing. This is the next board in the quiver for a surfer looking to push into the intermediate stage, where the focus transitions to surfing bigger open faced waves, as well as learning to turn and position a surfboard in the more critical sections of a wave without sacrificing stability and control. It’s outline is based off a widened, thicker version of the Mini Me. The rounded tail gives the surfer a controlled manoeuvrability on the open face, with the wide nose and low entry rocker providing paddle power into the wave. It’s double concave, even curved design rounds out a versatile surfboard that will go in a variety of conditions ranging from waves in the 0.5ft - 4ft range. The Performance Softboard has a Polystyrene core layered with Epoxy laminate. A firm EVA foam wrap around the deck and rails provides comfort and control under foot, with a hard bottom giving the board a sense of speed and drive off the water. Board is complete with a Futures Fins thruster setup, with fins included. L W Th Vol 6’1 21” 2 3/4” 39lts 6’3 21 1/4” 2 3/4” 40lts 6’6 21 1/2” 2 7/8” 45lts 6’9 21 3/4” 2 7/8” 48lts 7’1 22” 3” 53lts 7’5 22 1/2” 3” 57lts 8’0 23” 3” 65lts",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Performance Softboard - Pro Grom",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56ce2d7acf80a11b2f1489c7/0b8c0d58-e148-4e28-a928-89378bf9f40a/progrom-deck-1.jpg",
+          "description": "Designed for young surfers starting to surf with real confidence, this board is a step up from the Grom Standard—shedding volume for a sleeker, more responsive feel. Though wrapped in a soft, durable outer layer for safety and longevity, it’s technically a performance board at heart. With a clean single concave and a refined rail-line rocker, it offers speed, control, and smooth turning. Ideal for groms who are strong enough to paddle out and navigate the lineup, this board bridges the gap between beginner gear and true high-performance surfing. All Performance Softboards have a Polystyrene core layered with Epoxy laminate. A firm EVA foam wrap around the deck and rails provides comfort and control under foot, with a hard bottom giving the board a sense of speed and drive off the water. Board is complete with a Futures Fins thruster setup, with fins included.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Performance Softboard - Grom",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56ce2d7acf80a11b2f1489c7/6a63f68f-dd7a-4989-9af3-ad13e5317e7d/soft-grom-deck.jpg",
+          "description": "This short, wide, and full-nosed board is the perfect next step for young surfers graduating from a big foamie. With extra volume in the nose and tail, it offers plenty of stability and paddle power, making it easier to catch waves and stay balanced—especially in white water. A double concave through the bottom helps the board transition smoothly from rail to rail, encouraging progression as your grom starts trimming along the wave face. Built with generous rails for added support, this board is ideal for kids who’ve figured out the basics and are ready to start riding waves with more control and confidence. All Performance Softboards have a Polystyrene core layered with Epoxy laminate. A firm EVA foam wrap around the deck and rails provides comfort and control under foot, with a hard bottom giving the board a sense of speed and drive off the water. Board is complete with a Futures Fins thruster setup, with fins included.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Softboard",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56ce2d7acf80a11b2f1489c7/1467258910657-C8RM41WR4XS0725BX4J9/softie_top.png",
+          "description": "Our Softboard was designed specifically for our surf school, due to a gap in the market for a decent learn to surf soft surfboard. We wanted to design and manufacture a better soft board for our students and the whole family to enjoy. Our Softie works best in white water to open face conditions between 0.5-3ft and was carefully designed for catching more waves and making learning to surf a whole lot more easier, safe and fun. An even curve, nose to tail, full/soft rails and a flat bottom allows better management over speed and turns and provides a controlled feel underfoot. This forgiving fun board is for the beginner of all ages. L W Th Vol Wgt 5'6 19 3/4 3 35.0 20-40kg 6'0 20 1/2 3 40.0 20-40kg 6'6 21 1/2 3 1/8 45.0 30-50kg 7'0 22 1/2 3 1/4 55.0 40-60kg 7'6 22 3/4 3 1/4 60.0 50-70kg (LIMITED STOCK - PLEASE CALL US) 8'0 23 3 1/2 65.0 60-80kg 8'6 23 1/2 3 1/2 75.0 70-90kg 9'0 23 1/2 3 1/2 85.0 80+kg *Also available in Blue",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Slop Rocket",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56ce2d7acf80a11b2f1489c7/1590376071542-WR54CISJGEINN3HE92GB/sr-t.png",
+          "description": "This board was originally designed for Bucky who wanted more of a short, skatey and fast feel out of a performance board in smaller beach-break conditions. Its lowish entry rocker makes paddling and generating speed easier whilst the standard (medium) tail rocker allows you to maintain good maneuverability. Single to slight double concave helps responsiveness with turns and making sections. The mid rail gives the board a performance feel but is a little more forgiving. With a fuller nose giving you a longer rail line means you can generate more instant speed whilst the hip and diamond tail still gives you lots of turn out the tail end of the board. Working well as a thruster or quad the 5 fin setup provides versatility. Perfect for everyday beach-break waves in the 1-4ft range, the Slop Rocket is a careful balance of performance and fun to ensure plenty of waves in poor to average conditions. L W Th Vol Wgt 5'8 19 1/2 2 1/2 30.4 60-80kg 5'10 20 2 1/2 31.5 60-80kg 5'11 20 1/4 2 1/2 33.1 70-90kg 6’1 20 5/8 2 3/4 35.6 70-90kg 6'2 20 3/4 2 13/16 37 70-90kg *",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Batfish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56ce2d7acf80a11b2f1489c7/1590375904031-3HWHTF2AZOBNUU1069H2/bat-t.png",
+          "description": "Designed for summer fun the Batfish is short, fast and straight for those who want refined, knifey speed in smaller waves. This board paddles well, it’s flat and is built for speed with medium entry and very low exit rockers. Refined rails for immediate response when turning paired with the single concave running the full length of the board to help with speed and lift through flatter parts of the wave. The Batfish works well as a thruster and comes with a bat-tail aimed at the intermediate to advanced surfer looking for small wave performance and fun. Most ride this board a couple of inches shorter than their standard shortboard. Ideally in 1-4ft waves. L W Th Vol Wgt 5'9 19 1/2 2 3/8 28.8 60-80kg 5'11 20 2 7/16 31.7 60-80kg 6'1 20 1/2 2 1/2 34.3 60-80kg 6'3 21 2 5/8 37.8 70-90kg *",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Frotha",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56ce2d7acf80a11b2f1489c7/1590377213298-WRWG6L7SSXO7W4SK14M1/fro-t.png",
+          "description": "Designed for summer fun this board is short and wide for those that want the volume but not the length in smaller waves. This board paddles like a mal and is very flat and is built for speed with low entry and exit rockers. Full boxy rails for buoyancy and forgiveness are paired with double to single concave to help with lift and turns as well as rail to rail manoeuvrability. The Frotha works well as both a quad or thruster and comes with a diamond swallow tail aimed at the beginner to advanced surfer looking for small wave fun. Ride this board 4-6\" shorter than you regular board ideally in 1-3ft plus conditions. L W Th Vol Wgt 5'6 21 2 1/2 32.5 60-80kg 5'8 21 1/4 2 5/8 35.5 60-80kg 5'10 21 1/2 2 5/8 37.0 60-80kg 6'0 21 3/4 2 3/4 39.5 70-90kg 6'3 22 3 44.5 70-90kg 6'6 22 1/4 3 1/16 48.5 80+kg *",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Sportstick",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56ce2d7acf80a11b2f1489c7/1590372423149-94PBRZDJZOA2IM1OHFBK/ss-t.png",
+          "description": "The Sport Stick is an elite performance shortboard made for waves of consequence and designed for our team riders who want to charge crazy waves. Tested at Shipsterns (TAS), the right (WA), G-land, Powlett, Express Point, North Point, Gnarloo, The Box, Cloudbreak and Puerto Escondido. This board has less area and refined rails to handle powerful hollow waves. Arguably the most barrelled model we sell the Sport Stick has an increased (high) nose and tail rocker to handle speed and lower rails for precision control and hold in critical sections. It has a full single concave for speed and is preferred as a thruster setup. This board is for intermediate to advanced surfers looking to step it up and take on powerful waves in the 4-15ft+ range. With this board in your quiver there’s no excuses not to paddle out! L W T Vol Wgt 6'0 18 7/8 2 3/8 27.0 60-80kg 6'2 19 2 3/8 28.5 60-80kg 6'4 19 1/4 2 1/2 31.5 70-90kg 6'6 19 3/8 2 1/2 32.5 70-90kg 6'8 19 1/2 2 3/4 35.5 70-90kg 6'10 19 3/4 2 7/8 39.5 80+kg 7'0 20 2 7/8 40.5 80+kg *",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Devil Dog",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56ce2d7acf80a11b2f1489c7/1590381780816-KRYW32FLMTEEPMVTHJB6/dd-t.png",
+          "description": "The Devil Dog is the performance shortboard in Hoges’ range. Ideal all rounder for everyday waves most surf here in Victoria. Built with an even curve outline for smooth flowing turns. Extra rocker giving you tighter rail arcs in the steeper sections but with a deep single concave providing you with drive and speed in the sloppier stuff. Most common with a rounded square tail and medium rails. Best for 1-6ft beach breaks and reefs. Also known to help you build street cred in the carpark! L W Th Vol Wgt 5'8 19 2 5/16 26.0 60-80kg 5'11 19 1/4 2 3/8 28.0 60-80kg 6'1 19 1/4 2 7/16 29.5 60-80kg 6'2 19 1/4 2 1/2 32.0 70-90kg 6'3 19 1/4 2 9/16 33.0 70-90kg 6'4 19 3/8 2 5/8 33.5 70-90kg 6'5 19 1/2 2 5/8 34.5 80-100kg 6’6 19 1/2 2 11/16 35.0 80+kg 6’7 20 2 3/4 39.0 80+kg 6’8 20 2 3/4 39.5 80+kg *",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Cage Fighter",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56ce2d7acf80a11b2f1489c7/1590381908409-VWIVZ1ZHBX3S87TWPI63/cf-t.png",
+          "description": "Step down to step up! The cage fighter is Hoges’ wave catching machine. Originally designed as a shorter wide nosed step up it has later been discovered thanks to the 5 fin option it also goes epic as a small wave board when set up as a quad. Ridden 3 inches shorter and than your standard step-up the Cage Fighter has a very flat entry rocker for paddle power and a medium tail rocker for hold and manoeuvrability. This is combined with low rails and a tight tail to help give you control and sharp turning area in critical conditions. Whereas the wide nose and quad set up give you ridiculous paddle and trimming speed in the smaller sloppier conditions. This board will suit intermediate to advanced surfers looking to have a board they can rely on in small and big waves in the 3-10ft range, beach and reef breaks. Board inspired by Tony ‘Doris’ Eltherington. L W Th Vol Wgt 5'10 20 1/2 2 1/2 30.5 60-80kg 6'0 20 1/2 2 1/2 31.0 60-80kg 6'2 20 1/2 2 5/8 34.0 60-80kg 6'4 20 1/2 2 5/8 35.0 70-90kg 6'6 20 3/4 2 5/8 36.0 70-90kg 6'8 20 7/8 2 3/4 39.0 70-90kg 7'0 21 3/4 3 45.0 80-100kg 7’2 21 3/4 3 47.0 100kg+ *",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "The Twin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56ce2d7acf80a11b2f1489c7/1590381841948-C6Y2F4CCDM3GEU0V6Z9Z/twin-t.png",
+          "description": "Double your pleasure, double your fun, surf with two fins instead of one! Hoges’ evil twin is the perfect board to get your summer groove on! With a flat rocker for plaining speed through the flat sections and medium full rails for forgiveness you’ll be flying past the crowd at your local break. It has a single to double concave to increase hold and make it user friendly for all levels. The evil twin is built for 1-4ft beach breaks to make those summer surf even more fun! You wont regret having one of these in your quiver! L W Th Vol Wgt 5'5 20 2 3/8 28.0 60-80kg 5'7 20 1/4 2 7/16 30.5 60-80kg 5'9 20 1/4 2 1/2 32.0 60-80kg 5'11 20 1/2 2 5/8 35.0 70-90kg 6'1 20 1/2 2 11/16 37.0 70-90kg 6'3 21 2 3/4 39.5 70-90kg 6'5 21 2 3/4 40.5 80-100kg 6’9 21 1/2 2 7/8 45.0 80+kg *",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Short Black",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56ce2d7acf80a11b2f1489c7/1590968734266-LB6ETCV5T3EIPAZVNELK/sb-t.png",
+          "description": "Originally this board was designed for Francis (one of our team riders) who needed a contest board that was versatile in all conditions, with awesome paddle power and manoeuvrability. A lot of time and development was put into getting the best performance to paddle ratio in this design. The Short Black has a lowish entry rocker for paddle and speed and a standard (medium) tail rocker for manoeuvrability and late take-offs. Single to double concaves create speed and whilst the round tail gives you the ability to make critical, tight turns in the pocket of the wave. This board goes well in most conditions from small beachies to good sized reefs in the 2-6FT range. Mostly ridden as a thruster. Fast, smooth, responsive and a great all-round traveller the Short Black is for the intermediate to advanced surfer or the heavier surfer wanting performance. L W Th Vol Wgt 5'10 19 2 3/8 26.5 60-80kg 6'0 19 1/4 2 3/8 28.5 60-80kg 6'1 19 3/4 2 1/2 30.5 60-80kg 6'2 20 2 1/2 31.5 70-90kg 6'3 20 2 1/2 32.5 70-90kg 6'4 20 1/2 2 5/8 34.5 70-90kg 6'6 21 2 3/4 39.0 80-100kg *",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Vaporizer",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56ce2d7acf80a11b2f1489c7/1467258364699-H56Q09VPD7UJ6VIWUBYH/vaporizer_top.png",
+          "description": "A staple in Hoges’ quiver, this swallow tailed design has been a popular model for a very long time. Advanced in its creation and ahead of its time as a wider flatter board, the Vaporizer by todays standards is a great all-rounder with the wide point forward and a narrower swallow tail. Medium entry and exit rockers provide a balance of speed and paddle power with slightly increased manoeuvrability. The rails are fuller and the single to double concaves allow good drive off the bottom, increased hold, control and length of turns. The thruster is the preferred option but some quad set-ups work really well in slightly smaller waves. Considered a one board quiver by many, the Vaporizer surfs in any and all conditions in the 1-8ft range and is popular with guys who only want 1 board. L W Th Vol Wgt 5'10 20 2 7/16 31 60-80kg 6'0 20 2 7/16 32.5 60-80kg 6'2 20 1/2 2 1/2 33 70-90kg 6'3 20 1/2 2 5/8 35 70-90kg 6'4 20 1/2 2 5/8 36.4 70-90kg 6'6 20 3/4 2 5/8 38 70-90kg 6'8 21 2 3/4 41 80-100kg 6'10 21 1/4 2 3/4 42.5 80-100kg 7'0 21 1/4 2 3/4 45 80-100kg 7'2 22 3 50.5 80-100kg *",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Mini Moon",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56ce2d7acf80a11b2f1489c7/1467258739581-ZRTI1IWAQIRC35P0EEQA/minimoon_top.png",
+          "description": "This is Greg's small wave high performance fish. Staff members liked the sound of the Moon Doggie, and asked for a shorter more performance version that was fast, flat, loose and a good paddler. It has a very low entry rocker for paddle and speed and low vee tail for easy rail to rail. Concaves are single to double for speed, lift and turn. The rails are full and boxy for forgiveness and buoyancy. This model works as a quad or thruster setup and is designed to go best in beachies in 1-3ft. This board was made for the small wave enthusiast or the eternal grommet that wants to surf everyday. This board allows you to surf more and perform when the rest of your short board quiver won't. L W Th Vol Wgt 5'6 20 1/4 2 1/2 28.0 60-80kg 5'8 20 1/2 2 9/16 30.5 60-80kg 5'10 20 1/2 2 5/8 32.0 70-90kg 6'0 21 2 5/8 34.0 70-90kg *",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Single Fin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56ce2d7acf80a11b2f1489c7/1467258962555-6COPNAZQEWFSPIOSFPJL/single_fin_top.png",
+          "description": "A modern take on an old classic, the Single Fin is made traditionally with tints, polish and a hand made glass fin but also boasts added performance. This board will perform in any conditions from beachies to hollow reefs in the 1-6ft range. Surfing with smooth, flowy, clean lines this model has a low entry and exit rocker as well as lowish rails for speed, paddling and control. The single to double concave ensures fast surfing comes with lift and turn. The Single fin gets you back to basics and teaches you to read the wave better and become a better surfer. It is suited to anyone who enjoys smooth, flowy, traditional surfing. L W Th Vol Wgt 6'0 20 2 3/8 29.5 60-80kg 6'3 19 7/8 2 1/2 32.0 70-90kg 6'6 19 1/2 2 1/2 32.5 70-90kg 7'0 20 2 7/8 41.5 80-100kg *",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Black Coffey",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56ce2d7acf80a11b2f1489c7/1467258471197-I4FVTUNXGIRT5YAD91JX/black_coffee_front.png",
+          "description": "Peter our glasser wanted a board to ride when conditions got really good! So we came up with this design which is the perfect board for the Mal rider when waves get a bit more shape, or a little bigger. The Black Coffey has a continuous bottom curve for manoeuvrability at this length and single to double concaves for speed, lift and turns. We also put a low rail with roll off the bottom for extra ease with initiating turns. The Black Coffey paddles like a Mal but turns like a shortboard. If your looking for performance in good waves this boards loves anything in the 2-10ft+ range, from small sucky waves to much larger. Made with traditional , strong, volomn cloth, various fin set-ups and huge paddle power there is simply no other design like this on the market. With a 2 +1 (centre fin box and thruster sides) fin configuration, most guys ride this with a larger centre fin and smaller side stabilising fins. There’s also THE BLACK COFFEY + 1 SUGAR which has a traditional thruster setup and lighter glassing. L W Th Vol Wgt 7'0 21 2 3/4 42.0 70-90kg 7'2 21 1/4 2 3/4 44.0 70-90kg 7'4 21 1/2 2 7/8 47.0 80-100kg 7'6 22 2 7/8 49.5 80-100kg 7'8 22 2 15/16 50.0 80-100kg 7'10 22 3 53.5 80-100kg 8'0 22 1/2 3 59.0 90+kg 8'2 22 1/3 3 60.0 90+kg *",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Black Coffey + 1 Sugar",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56ce2d7acf80a11b2f1489c7/1590378540989-75VSFPNTMJNQEH2SYZ25/black_coffee%2B1_front.png",
+          "description": "+ 1 SUGAR MODEL : thruster / lighter glass / reverse vee / slight nose concave Peter our glasser wanted a board to ride when conditions got really good! So we came up with this design which is the perfect board for the Mal rider when waves get a bit more shape, or a little bigger. The Black Coffee has a continuous bottom curve for maneuverability at this length and single to double concaves for speed, lift and turns. We also put a low rail with roll off the bottom for extra ease with initiating turns. The Black Coffee paddles like a Mal but turns like a shortboard. If your looking for performance in good waves this boards loves anything in the 2-10ft+ range, from small sucky waves to much larger. The + 1 SUGAR models has a traditional thruster setup and standard glassing. L W Th Vol Wgt 7'0 21 2 3/4 42.0 70-90kg 7'2 21 1/4 2 3/4 44.0 70-90kg 7'4 21 1/2 2 7/8 47.0 80-100kg 7'6 22 2 7/8 49.5 80-100kg 7'8 22 2 15/16 50.0 80-100kg 7'10 22 3 53.5 80-100kg 8'0 22 1/2 3 59.0 90+kg 8'2 22 1/3 3 60.0 90+kg *",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Moon Doggie",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56ce2d7acf80a11b2f1489c7/1467258779667-TGXLDMEWM299Q0L0EZK1/moon_doggie_top.png",
+          "description": "The Moon Doggie is the modern version of the old fashioned \"pig\" which had all the area in the tail and a thin nose. The narrower nose and full tail (with a hip) in this design helps maintain great speed and manoeuvrability for high performance mal surfing in smaller waves. The concave nose provides greater entry and paddle power for catching waves whilst the vee in the rest of the board helps transitions from rail to rail. The medium rails help provide control but are also forgiving. This mal is for small waves in the 1-3ft range that lack a little push. The Moon Doggie turns incredibly well and nose rides better than most and is a must for the small waver performance mal rider. The 7’0 - 7’6 stock comes standard with a rounded diamond tail and the 8’0 - 9’0 comes standard with a rounded pin. L W Th Vol Wgt 7'0 21 3/4 2 5/8 43.0 60-80kg 7'3 22 2 3/4 47.5 70-90kg 7'6 22 2 3/4 49.0 70-90kg 8'0 22 1/2 2 7/8 58.0 80-100kg 8'6 22 1/2 3 64.5 80+kg 9’0 23 3 70.2 80+kg *",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "LP",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56ce2d7acf80a11b2f1489c7/1467258656358-XG6JFW2W3GZE7B5VCVQF/lp_top.png",
+          "description": "According to Hoges this board is essentially a minimal, made for good conditions, but is so versatile that anyone can ride it in almost any conditions. The the LP is designed just for fun! It paddles well, turns well, but is still stable and buoyant. The low entry rocker makes it fast and easy to paddle and the increased (high) tail rocker makes it more manoeuvrable. Medium rails provide control and a single to double concave gives speed and lift. This smaller wave thruster performs well in anything 2-6ft and is a wave catching machine designed purely for fun. The LP will allow you to progress your surfing but you will never grow out of it. L W Th Vol Wgt 6'8 20 1/2 2 1/2 36.0 70-90kg 6'10 20 1/2 2 5/8 38.5 70-90kg 7'0 21 2 3/4 42.0 70-90kg 7'2 21 1/2 2 13/16 44.0 80-100kg 7'4 21 1/2 2 3/4 45.9 80-100kg 7'6 21 9/16 2 15/16 49.0 80-100kg 7'8 21 3/4 2 15/16 53.0 80+kg 7’10 22 3 54.5 80+kg 8’0 22 3 55.0 80+kg *",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Klemm Bell Mal",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/56ce2d7acf80a11b2f1489c7/1467258120581-RXRAF3RFCW3OE2455Q4X/classic_top.png",
+          "description": "Terry Klemm was dragged out of retirement 10 years ago, due to people wanting classic old school logs! Terry was one of the biggest surfboard manufactures in the 1960's, so these boards aren't replicas… they are they real deal! These custom made classics come with the traditional timber nose and tail blocks and come as either a single fin or 2 +1 configuration on request. With fullish rails, continuous even rocker and no concaves these collectors items are not only a piece of victorian surfing history but perfect for cruising smaller surf in the 1-3ft range. Either as a cruiser or a collector these boards are limited in production and are not only a tone of fun but a true investment in surfing history. L W Th Ltrs 9'1 23 2 7/8 68 9'3 23 1/4 3 9'6 23 3 1/4 9'8 23 1/4 3 1/2 *",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
