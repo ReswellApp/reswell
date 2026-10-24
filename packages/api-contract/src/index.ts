@@ -1754,6 +1754,8 @@ export const mobileCartBodySchema = z.object({
 export const mobileCartResultSchema = z.object({
   in_cart: z.boolean(),
   quantity: z.number().int().nonnegative(),
+  /** Sum of line quantities — use for header badge after add/remove. */
+  item_count: z.number().int().nonnegative(),
 })
 
 export const mobileMessageBodySchema = z.object({

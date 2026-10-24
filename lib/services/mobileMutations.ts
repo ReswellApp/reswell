@@ -41,6 +41,15 @@ function failure(status: number, error: string): MobileApiResult<never> {
   return { ok: false, status, error }
 }
 
+async function sumMobileCartItemCount(supabase: SupabaseClient, userId: string): Promise<number> {
+  const { data, error } = await supabase.from("cart_items").select("quantity").eq("profile_id", userId)
+  if (error) return 0
+  return (data ?? []).reduce((sum, row) => {
+    const quantity = Math.floor(Number(row.quantity) || 0)
+    return sum + (quantity > 0 ? quantity : 0)
+  }, 0)
+}
+
 export async function setMobileFavorite(
   supabase: SupabaseClient,
   user: User,
@@ -171,7 +180,8 @@ export async function setMobileCartItem(
       .eq("listing_id", listingId)
     if (error) return failure(500, "Could not update your cart.")
     revalidatePath("/cart")
-    return { ok: true, data: { in_cart: false, quantity: 0 } }
+    const item_count = await sumMobileCartItemCount(supabase, user.id)
+    return { ok: true, data: { in_cart: false, quantity: 0, item_count } }
   }
 
   const check = await assertListingEligibleForCart(supabase, listingId, user.id)
@@ -236,7 +246,8 @@ export async function setMobileCartItem(
     quantity: lineQuantity,
   })
   revalidatePath("/cart")
-  return { ok: true, data: { in_cart: true, quantity: lineQuantity } }
+  const item_count = await sumMobileCartItemCount(supabase, user.id)
+  return { ok: true, data: { in_cart: true, quantity: lineQuantity, item_count } }
 }
 
 async function deliverMessage(

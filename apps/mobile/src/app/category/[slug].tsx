@@ -1,5 +1,5 @@
-import { Stack, useLocalSearchParams, useRouter } from "expo-router"
-import { useCallback, useEffect, useState } from "react"
+import { Stack, useLocalSearchParams } from "expo-router"
+import { useCallback, useEffect, useState, type SetStateAction } from "react"
 import {
   ActivityIndicator,
   FlatList,
@@ -15,14 +15,16 @@ import { CategoryHero } from "@/components/category-hero"
 import { type CategoryPlace, type CategoryRadius } from "@/components/category-location-filter"
 import { CategoryToolbar } from "@/components/category-toolbar"
 import { ScreenSearchHeader } from "@/components/screen-search-header"
-import { ListingCard } from "@/components/listing-card"
+import { MarketplaceListingLayoutItem } from "@/components/marketplace-listing-layout-item"
+import { type ListingLayout } from "@/components/listing-layout-switch"
+import { marketplaceListContentStyle } from "@/components/listing-list-layout"
 import { fetchCategory, fetchCategoryListings } from "@/lib/api"
+import { useListingSellerFollow } from "@/lib/listing-seller-follow"
 import { categoryListingQuery, type SelectedFacets } from "@/lib/category-listing-query"
 import { fontFamily, useReswellColors } from "@/theme"
 
 export default function CategoryScreen() {
   const colors = useReswellColors()
-  const router = useRouter()
   const params = useLocalSearchParams<{ slug: string; type?: string }>()
   const slug = params.slug
   const boardType = params.type
@@ -36,7 +38,7 @@ export default function CategoryScreen() {
   const [selected, setSelected] = useState<SelectedFacets>({})
   const [place, setPlace] = useState<CategoryPlace | null>(null)
   const [radius, setRadius] = useState<CategoryRadius>("any")
-  const [layout, setLayout] = useState<"grid" | "list">("grid")
+  const [layout, setLayout] = useState<ListingLayout>("grid")
   const [sortOpen, setSortOpen] = useState(false)
   const [filtersOpen, setFiltersOpen] = useState(false)
   const load = useCallback(() => {
@@ -82,11 +84,17 @@ export default function CategoryScreen() {
       .finally(() => setLoadingMore(false))
   }
 
-  function openListing(listing: MobileListingCard) {
-    router.push({ pathname: "/listing/[id]", params: { id: listing.slug || listing.id } })
-  }
-
   const listings = page?.listings ?? []
+
+  const setListings = useCallback((action: SetStateAction<MobileListingCard[]>) => {
+    setPage((current) => {
+      if (!current) return current
+      const nextListings = typeof action === "function" ? action(current.listings) : action
+      return { ...current, listings: nextListings }
+    })
+  }, [])
+
+  const { viewerId, followBusyId, openListing, openSeller, toggleFollow } = useListingSellerFollow(setListings)
   const grid = layout === "grid" && listings.length % 2 === 1 ? [...listings, null] : listings
   const filterCount =
     Object.values(selected).reduce((sum, values) => sum + values.length, 0) + (shipping ? 1 : 0) + (place ? 1 : 0)
@@ -111,7 +119,9 @@ export default function CategoryScreen() {
           keyExtractor={(item) => item?.id ?? "spacer"}
           numColumns={layout === "grid" ? 2 : 1}
           columnWrapperStyle={layout === "grid" ? styles.columns : undefined}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={
+            layout === "list" ? marketplaceListContentStyle(styles.listBase, layout) : styles.list
+          }
           refreshing={loading}
           onRefresh={load}
           onEndReached={loadMore}
@@ -141,7 +151,15 @@ export default function CategoryScreen() {
           }
           renderItem={({ item }) =>
             item ? (
-              <ListingCard item={item} layout={layout} onPress={() => openListing(item)} />
+              <MarketplaceListingLayoutItem
+                layout={layout}
+                item={item}
+                viewerId={viewerId}
+                followBusy={followBusyId === item.seller?.id}
+                onPress={() => openListing(item)}
+                onPressSeller={openSeller}
+                onFollowSeller={toggleFollow}
+              />
             ) : (
               <View style={styles.spacer} />
             )
@@ -205,6 +223,7 @@ const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, padding: 24 },
   retry: { fontSize: 16, fontWeight: "600" },
   list: { paddingTop: 4, paddingBottom: 120, paddingHorizontal: 12 },
+  listBase: { paddingTop: 4, paddingBottom: 120 },
   columns: { gap: 12 },
   empty: { textAlign: "center", marginTop: 32, fontSize: 16 },
   footer: { marginVertical: 16 },

@@ -219,7 +219,7 @@ export function toMobileListingCard(
     city: nullableText(row.city),
     state: nullableText(row.state),
     shipping_available: Boolean(row.shipping_available),
-    local_pickup: Boolean(row.local_pickup),
+    local_pickup: row.local_pickup !== false,
     image_url: mediaUrl(listingCardImageSrc(row.listing_images)),
     shipping_label: peerListingShippingSubline(
       row.local_pickup,

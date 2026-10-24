@@ -1,39 +1,20 @@
 import { Image } from "expo-image"
 import { SymbolView } from "expo-symbols"
-import { Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native"
+import { Pressable, StyleSheet, Text, View } from "react-native"
 import type { MobileListingCard } from "@reswell/api-contract"
-import { listingListImageHeight } from "@/components/listing-list-layout"
+import { LISTING_TILE_ASPECT } from "@/components/listing-list-layout"
 import { ListingCartButton, ListingFavoriteButton } from "@/components/listing-tile-actions"
+import { canShowListingCartButton } from "@/lib/listing-cart-tile"
 import { fontFamily, useReswellColors } from "@/theme"
 
-/** Same peer sections the website cart button uses. */
-const PEER_SECTIONS = new Set([
-  "surfboards",
-  "fins",
-  "wetsuits",
-  "boardbags",
-  "surfpacks",
-  "leashes",
-  "apparel",
-  "accessories",
-  "magazines",
-  "traction",
-])
-
-function canAddToCart(item: MobileListingCard, badge?: string): boolean {
-  if (badge) return false
-  if (!PEER_SECTIONS.has(item.section)) return false
-  return item.local_pickup || item.shipping_available
-}
-
-/** Homepage peer tile: photo, heart, title, condition, price, ship mark, and cart. */
+/** Two-column marketplace tile: photo, heart, title, condition, price, ship mark, and cart. */
 export function ListingCard({
   item,
   onPress,
   badge,
   initialFavorited,
   onFavoritedChange,
-  layout = "grid",
+  viewerId,
 }: {
   item: MobileListingCard
   onPress: () => void
@@ -41,37 +22,23 @@ export function ListingCard({
   badge?: string
   initialFavorited?: boolean
   onFavoritedChange?: (favorited: boolean) => void
-  /** Single-column browse (category, etc.). Uses a narrower, shorter tile. */
-  layout?: "grid" | "list"
+  viewerId?: string | null
 }) {
   const colors = useReswellColors()
-  const { width: windowWidth } = useWindowDimensions()
-  const listImageHeight = listingListImageHeight(windowWidth)
-  const showCart = canAddToCart(item, badge)
-  const list = layout === "list"
+  const showCart = canShowListingCartButton(item, { badge, viewerId })
 
   return (
-    <View style={list ? styles.cardList : styles.card}>
+    <View style={styles.card}>
       <View>
         <Pressable onPress={onPress} accessibilityRole="button">
           {item.image_url ? (
             <Image
               source={{ uri: item.image_url }}
-              style={[
-                list ? styles.imageList : styles.image,
-                list ? { height: listImageHeight } : null,
-                { backgroundColor: colors.image },
-              ]}
+              style={[styles.image, { backgroundColor: colors.image }]}
               contentFit="cover"
             />
           ) : (
-            <View
-              style={[
-                list ? styles.imageList : styles.image,
-                list ? { height: listImageHeight } : null,
-                { backgroundColor: colors.image },
-              ]}
-            />
+            <View style={[styles.image, { backgroundColor: colors.image }]} />
           )}
         </Pressable>
         {badge ? (
@@ -112,9 +79,7 @@ export function ListingCard({
 
 const styles = StyleSheet.create({
   card: { flex: 1, gap: 4, marginBottom: 18 },
-  cardList: { gap: 4, marginBottom: 18 },
-  image: { width: "100%", aspectRatio: 3 / 4, borderRadius: 12 },
-  imageList: { width: "100%", borderRadius: 10 },
+  image: { width: "100%", aspectRatio: LISTING_TILE_ASPECT, borderRadius: 12 },
   badge: {
     position: "absolute",
     top: 8,

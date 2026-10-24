@@ -20,11 +20,13 @@ export function HomeFeed({
   onOpenResource,
   onOpenPage,
   rail,
+  viewerId,
 }: {
   sections: MobileHomeSection[]
   continueListings: MobileListingCard[]
   refreshing: boolean
   onRefresh: () => void
+  viewerId?: string | null
   onOpenListing: (listing: MobileListingCard) => void
   onOpenShop: (slug: string) => void
   onOpenBrand: (slug: string) => void
@@ -43,7 +45,12 @@ export function HomeFeed({
     >
       <CategorySlider items={rail} onOpenCategory={onOpenCategory} onOpenResource={onOpenResource} onOpenPage={onOpenPage} />
       {continueListings.length > 0 ? (
-        <ListingSection title="Pick up where you left off" listings={continueListings} onOpenListing={onOpenListing} />
+        <ListingSection
+          title="Pick up where you left off"
+          listings={continueListings}
+          viewerId={viewerId}
+          onOpenListing={onOpenListing}
+        />
       ) : null}
       {sections.map((section) =>
         section.kind === "listings" ? (
@@ -52,6 +59,7 @@ export function HomeFeed({
             title={section.title}
             listings={section.listings}
             badge={section.id === "recently_sold" ? "Sold" : undefined}
+            viewerId={viewerId}
             onOpenListing={onOpenListing}
           />
         ) : section.kind === "brands" ? (
@@ -94,11 +102,13 @@ function ListingSection({
   title,
   listings,
   badge,
+  viewerId,
   onOpenListing,
 }: {
   title: string
   listings: MobileListingCard[]
   badge?: string
+  viewerId?: string | null
   onOpenListing: (listing: MobileListingCard) => void
 }) {
   return (
@@ -107,7 +117,12 @@ function ListingSection({
       <HorizontalRail contentStyle={styles.rail}>
         {listings.map((listing) => (
           <View key={listing.id} style={styles.railCard}>
-            <ListingCard item={listing} badge={badge} onPress={() => onOpenListing(listing)} />
+            <ListingCard
+              item={listing}
+              badge={badge}
+              viewerId={viewerId}
+              onPress={() => onOpenListing(listing)}
+            />
           </View>
         ))}
       </HorizontalRail>

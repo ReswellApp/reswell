@@ -1,18 +1,14 @@
-import { Stack, useLocalSearchParams, useRouter } from "expo-router"
+import { Stack, useLocalSearchParams } from "expo-router"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native"
-import type {
-  MobileListingCard,
-  MobileListingCardSeller,
-  MobileMarketplaceFeed,
-  MobileMarketplaceFeedTab,
-} from "@reswell/api-contract"
-import { ScreenSearchHeader } from "@/components/screen-search-header"
-import { ListingCard } from "@/components/listing-card"
-import { FeedListingCard } from "@/components/feed-listing-card"
+import type { MobileMarketplaceFeed, MobileMarketplaceFeedTab } from "@reswell/api-contract"
+import { MarketplaceListingLayoutItem } from "@/components/marketplace-listing-layout-item"
 import { ListingLayoutSwitch, type ListingLayout } from "@/components/listing-layout-switch"
-import { fetchMarketplaceFeed, setFollow } from "@/lib/api"
+import { marketplaceListContentStyle } from "@/components/listing-list-layout"
+import { ScreenSearchHeader } from "@/components/screen-search-header"
+import { fetchMarketplaceFeed } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
+import { useListingSellerFollow } from "@/lib/listing-seller-follow"
 import { fontFamily, useReswellColors } from "@/theme"
 
 const FEED_SCREEN_TITLE = "New Listings Feed"
@@ -62,22 +58,10 @@ function requestedFeedTab(value: string | string[] | undefined): MobileMarketpla
   return null
 }
 
-function patchListingSeller(
-  listings: MobileListingCard[],
-  sellerId: string,
-  patch: Partial<MobileListingCardSeller>,
-): MobileListingCard[] {
-  return listings.map((listing) =>
-    listing.seller?.id === sellerId ? { ...listing, seller: { ...listing.seller, ...patch } } : listing,
-  )
-}
-
 export default function FeedScreen() {
   const colors = useReswellColors()
-  const router = useRouter()
   const { session } = useAuth()
   const token = session?.access_token
-  const viewerId = session?.user?.id
   const params = useLocalSearchParams<{ tab?: string }>()
   const [tab, setTab] = useState<MobileMarketplaceFeedTab>(requestedFeedTab(params.tab) ?? "new")
   const [feed, setFeed] = useState<MobileMarketplaceFeed | null>(null)
@@ -86,7 +70,7 @@ export default function FeedScreen() {
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [layout, setLayout] = useState<ListingLayout>("grid")
-  const [followBusyId, setFollowBusyId] = useState<string | null>(null)
+  const { viewerId, followBusyId, openListing, openSeller, toggleFollow } = useListingSellerFollow(setListings)
   const requestId = useRef(0)
   const loadingMoreRef = useRef(false)
   const tabRef = useRef(tab)
@@ -163,31 +147,6 @@ export default function FeedScreen() {
       })
   }
 
-  function openListing(listing: MobileListingCard) {
-    router.push({ pathname: "/listing/[id]", params: { id: listing.slug || listing.id } })
-  }
-
-  function openSeller(seller: MobileListingCardSeller) {
-    if (seller.seller_slug) {
-      router.push({ pathname: "/profile/[slug]", params: { slug: seller.seller_slug } })
-    }
-  }
-
-  function toggleFollow(seller: MobileListingCardSeller) {
-    if (!token) {
-      router.push("/sign-in")
-      return
-    }
-    const next = !seller.following
-    setFollowBusyId(seller.id)
-    setFollow(token, seller.id, next)
-      .then(() => {
-        setListings((current) => patchListingSeller(current, seller.id, { following: next }))
-      })
-      .catch(() => undefined)
-      .finally(() => setFollowBusyId(null))
-  }
-
   const grid = layout === "grid" && listings.length % 2 === 1 ? [...listings, null] : listings
   const empty = EMPTY_COPY[tab]
   const badge = badgeFor(tab)
@@ -221,7 +180,7 @@ export default function FeedScreen() {
           keyExtractor={(item) => item?.id ?? "spacer"}
           numColumns={layout === "grid" ? 2 : 1}
           columnWrapperStyle={layout === "grid" ? styles.columns : undefined}
-          contentContainerStyle={layout === "grid" ? styles.list : [styles.list, styles.listSingle]}
+          contentContainerStyle={marketplaceListContentStyle(styles.list, layout)}
           refreshing={loading}
           onRefresh={() => load(tab)}
           onEndReached={loadMore}
@@ -241,19 +200,16 @@ export default function FeedScreen() {
           }
           renderItem={({ item }) =>
             item ? (
-              layout === "list" ? (
-                <FeedListingCard
-                  item={item}
-                  badge={badge}
-                  viewerId={viewerId}
-                  followBusy={followBusyId === item.seller?.id}
-                  onPress={() => openListing(item)}
-                  onPressSeller={openSeller}
-                  onFollowSeller={toggleFollow}
-                />
-              ) : (
-                <ListingCard item={item} badge={badge} onPress={() => openListing(item)} />
-              )
+              <MarketplaceListingLayoutItem
+                layout={layout}
+                item={item}
+                badge={badge}
+                viewerId={viewerId}
+                followBusy={followBusyId === item.seller?.id}
+                onPress={() => openListing(item)}
+                onPressSeller={openSeller}
+                onFollowSeller={toggleFollow}
+              />
             ) : (
               <View style={styles.spacer} />
             )
@@ -324,7 +280,6 @@ const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, padding: 24 },
   retry: { fontSize: 16, fontWeight: "600" },
   list: { paddingTop: 8, paddingBottom: 120 },
-  listSingle: { paddingHorizontal: 12 },
   columns: { gap: 12, paddingHorizontal: 12 },
   empty: { alignItems: "center", paddingHorizontal: 28, paddingTop: 48, gap: 8 },
   emptyTitle: { fontSize: 18, fontWeight: "700" },

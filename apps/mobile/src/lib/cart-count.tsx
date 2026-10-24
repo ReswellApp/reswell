@@ -38,7 +38,16 @@ export function CartCountProvider({ children }: { children: ReactNode }) {
     return () => subscription.remove()
   }, [reload])
 
-  useEffect(() => subscribeCartChanged(reload), [reload])
+  useEffect(
+    () =>
+      subscribeCartChanged((detail) => {
+        if (detail?.itemCount != null) {
+          setCount(detail.itemCount)
+        }
+        reload()
+      }),
+    [reload],
+  )
 
   const value = useMemo(() => ({ count, reload }), [count, reload])
   return <CartCountContext.Provider value={value}>{children}</CartCountContext.Provider>

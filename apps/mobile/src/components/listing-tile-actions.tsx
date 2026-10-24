@@ -1,7 +1,7 @@
 import { useRouter } from "expo-router"
 import { SymbolView } from "expo-symbols"
 import { useEffect, useRef, useState } from "react"
-import { ActivityIndicator, Pressable, StyleSheet } from "react-native"
+import { ActivityIndicator, Alert, Pressable, StyleSheet } from "react-native"
 import { setCartItem, setFavorite } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
 import { useListingMarks } from "@/lib/listing-marks"
@@ -103,8 +103,10 @@ export function ListingCartButton({ listingId }: { listingId: string }) {
     try {
       await setCartItem(token, listingId, 1)
       setAdded(true)
-    } catch {
+    } catch (cause: unknown) {
       setAdded(false)
+      const message = cause instanceof Error ? cause.message : "Could not add this to your cart"
+      Alert.alert("Cart", message)
     } finally {
       setBusy(false)
     }
@@ -156,5 +158,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
+    zIndex: 4,
   },
 })

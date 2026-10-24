@@ -482,7 +482,7 @@ export function setCartItem(accessToken: string, listingId: string, quantity: nu
     listing_id: listingId,
     quantity,
   }).then((result) => {
-    notifyCartChanged()
+    notifyCartChanged({ itemCount: result.item_count })
     return result
   })
 }

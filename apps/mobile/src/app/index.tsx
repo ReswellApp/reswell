@@ -111,6 +111,7 @@ export default function ListingsScreen() {
           onOpenResource={openResource}
           onOpenPage={openPage}
           rail={rail?.items ?? null}
+          viewerId={session?.user?.id ?? null}
         />
       )}
     </View>
