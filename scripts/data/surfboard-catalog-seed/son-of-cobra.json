@@ -1,0 +1,59 @@
+{
+  "generated_for": "Son of Cobra official named standup catalog",
+  "source": "https://www.sonofcobra.com/surfboard-1 (official Squarespace models page — excludes automotive, parts, apparel, fins, and custom-order CTAs)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "son-of-cobra",
+      "name": "Son of Cobra",
+      "website_url": "https://www.sonofcobra.com",
+      "location_label": "Southern California, United States",
+      "short_description": "Handcrafted in Southern California, Son of Cobra surfboards draw inspiration from classic designs across eras. Blending timeless influence with modern innovation, each board is a fusion of art and performance.",
+      "logo_url": "https://images.squarespace-cdn.com/content/v1/5cbdf0ac8155126244f6caf6/3ce83c1c-111a-4c5b-b415-86f1c538e42e/favicon.ico?format=png",
+      "models": [
+        {
+          "name": "Round Twin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5cbdf0ac8155126244f6caf6/e2859f36-cfa7-4fe3-b90a-7f7a40a47ebb/Screen+Shot+2022-06-16+at+6.05.51+PM.png?format=png",
+          "description": "The Son of Cobra Round Twin offers effortless speed, drive, and flow. Its deep double concave enhances acceleration and control, while the added tail rocker allows for smooth release and vertical maneuvers. With balanced volume and low entry rocker, it trims forward for speed or drives off the tail for responsive turns. Ideal for waves ranging from 3 to 6 feet, it's a versatile board for everyday surf.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Round Twin V2",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5cbdf0ac8155126244f6caf6/128dfc74-f4bf-466e-9aa1-144493f0c6c7/Screen+Shot+2022-06-16+at+6.33.01+PM.png?format=png",
+          "description": "The Son of Cobra Round Twin V2 refines the original design with more rocker, lower rails, and a narrower outline for increased control and responsiveness in bigger conditions or high-performance surfing. The deep double concave enhances speed and drive, while the added tail rocker provides quick release and vertical maneuverability. With its refined volume distribution and fine-tuned entry rocker, the V2 offers precision and flow in waves from 4 to 8 feet, making it the go-to twin fin for more demanding surf.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Classic Twin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5cbdf0ac8155126244f6caf6/dd4e214e-fac1-4d6a-b028-cb32e9eff7d5/Screen+Shot+2022-06-16+at+6.57.33+PM.png?format=png",
+          "description": "The Son of Cobra Classic Twin, inspired by retro twin fins, delivers a fast, fluid, and stylish ride. Featuring a single full concave with its deepest point between the fins, it maximizes speed and responsiveness while maintaining effortless glide. Its wide outline, low rocker, and fuller rails provide control and smooth flow in smaller waves. Perfect for waves from 2 to 5 feet, this board is a must-have in your quiver for timeless style and pure fun.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Mid Twin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5cbdf0ac8155126244f6caf6/fdcc6154-e54f-4d15-9b40-2f832c1c07b5/Screen+Shot+2022-06-16+at+8.49.36+PM.png?format=png",
+          "description": "The Son of Cobra Mid Twin combines the outline of a mid-length with the proven bottom shape of the Round Twin, delivering a perfect blend of glide, speed, and control. Its single-to-double concave enhances drive and responsiveness, while the balanced rocker allows for smooth transitions and effortless trimming. The refined rails provide added control, making it ideal for stylish, drawn-out turns in waves from 3 to 7 feet. A versatile board that offers the best of both worlds, the Mid Twin is a must-have for those seeking classic flow with a modern twist.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Mid Length",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5cbdf0ac8155126244f6caf6/3a9c7060-5a93-4a75-9cff-76ae9f25a38d/Screen+Shot+2022-06-16+at+8.50.37+PM.png?format=png",
+          "description": "The Son of Cobra Mid Length is a versatile and minimalist board that blends classic style with seamless glide. Featuring a refined outline, balanced rocker, and a concave-to-vee bottom, it offers the perfect combination of speed and flow. The thin rails dive into the water with ease, allowing for fluid rail-to-rail transitions and easy turning. With a single fin setup for clean, stylish lines, this board excels in waves from 2 to 8 feet, making it an essential go-to for a wide range of conditions.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Round Pin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5cbdf0ac8155126244f6caf6/e2b1102c-6291-4d5f-ade7-7bab7a184fbe/Screen+Shot+2022-06-16+at+9.40.48+PM.png?format=png",
+          "description": "The Son of Cobra Round Pin is a versatile longboard that glides smoothly and trims with ease. Designed with a nose concave for added stability during nose rides, it transitions into a vee with a subtle double concave, enhancing control and flow through turns. The extra tail rocker allows for easy, responsive turning, while the refined round pin tail and balanced rocker provide a smooth ride across a range of conditions. With its lower rails for easy engagement, this board excels in waves from 2 to 8 feet and is an excellent choice for handling bigger surf with confidence.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Noserider",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5cbdf0ac8155126244f6caf6/4a197f36-24dd-4c37-b39c-08dccf453d89/Screen+Shot+2022-06-16+at+9.50.08+PM.png?format=png",
+          "description": "The Son of Cobra Noserider is a true noseriding longboard, designed to maximize time on the nose with style and control. Its deep nose concave and pulled-back widest point create exceptional lift and stability, making it the perfect board for extended nose rides. The soft rolled vee through the middle and tail allows for smooth rail-to-rail flow and graceful turns, while the wide outline and low rocker provide steady glide. Ideal for waves from 1 to 4 feet, this board is built for timeless style and classic longboarding.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
