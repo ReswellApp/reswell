@@ -14,8 +14,7 @@ import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
 import { ListingDetailDynamicGate } from "@/components/features/listings/listing-detail-dynamic-gate"
 import { ListingDetailPublicOrAuthenticated } from "@/components/features/listings/listing-detail-public-or-authenticated"
 import type { PublicListingRow } from "@/components/features/listings/listing-detail-public-body"
-import { ListingDetailRouteSkeleton } from "@/components/listing-detail-page-loading"
-import { ListingDetailCachedShell } from "@/components/features/listings/listing-detail-cached-shell"
+import { ListingDetailRoutePending } from "@/components/listing-detail-page-loading"
 import { ListingPublishedCelebration } from "@/components/features/listings/listing-published-celebration"
 
 /** ISR shell — keep in sync with `LISTING_PUBLIC_DETAIL_REVALIDATE_SECONDS`. */
@@ -72,15 +71,17 @@ export default async function ListingDetailPage(props: {
       redirect(`/l/${redirectSlug}`)
     }
 
+    // No photo-only Suspense fallback. The segment `loading.tsx` holds until the
+    // full above-the-fold PDP is ready so the gallery and the rest of the HTML
+    // commit together. Below-fold rails stay in their own Suspense inside the
+    // section page.
     return (
       <>
-        <Suspense fallback={<ListingDetailCachedShell listing={listing as PublicListingRow} />}>
-          <ListingDetailPublicOrAuthenticated
-            listingParam={listingParam}
-            listing={listing as PublicListingRow}
-            redirectSlug={redirectSlug}
-          />
-        </Suspense>
+        <ListingDetailPublicOrAuthenticated
+          listingParam={listingParam}
+          listing={listing as PublicListingRow}
+          redirectSlug={redirectSlug}
+        />
         <ListingPublishedCelebration listingParam={listingParam} />
       </>
     )
@@ -88,7 +89,7 @@ export default async function ListingDetailPage(props: {
 
   return (
     <>
-      <Suspense fallback={<ListingDetailRouteSkeleton />}>
+      <Suspense fallback={<ListingDetailRoutePending />}>
         <ListingDetailDynamicGate
           listingParam={listingParam}
           prefetchedListing={(listing as Record<string, unknown> | null) ?? null}
