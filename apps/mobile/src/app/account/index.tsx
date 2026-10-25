@@ -6,6 +6,7 @@ import { MeProfileHeader } from "@/components/me-profile-header"
 import { ScreenSearchHeader } from "@/components/screen-search-header"
 import { fetchDashboard, fetchEarnings } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
+import { useAuthGate } from "@/lib/auth-gate"
 import { dashboardPageHref } from "@/lib/dashboard-pages"
 import { useAccountResource } from "@/lib/use-account-resource"
 import { fontFamily, useReswellColors } from "@/theme"
@@ -14,6 +15,7 @@ export default function AccountScreen() {
   const colors = useReswellColors()
   const router = useRouter()
   const { session, signOut } = useAuth()
+  const { requestAuth } = useAuthGate()
   const token = session?.access_token
   const loadDashboard = useCallback((accessToken: string) => fetchDashboard(accessToken), [])
   const dashboardResource = useAccountResource(loadDashboard)
@@ -47,7 +49,7 @@ export default function AccountScreen() {
         <ScreenSearchHeader showBack showInbox insetTop bordered={false} />
         <View style={[styles.signedOut, { paddingTop: 24 }]}>
         <Text style={[styles.signedOutTitle, { color: colors.foreground, fontFamily: fontFamily.headline }]}>Sign in</Text>
-        <Pressable onPress={() => router.push("/sign-in")} style={[styles.sell, { backgroundColor: colors.primary }]}>
+        <Pressable onPress={() => requestAuth()} style={[styles.sell, { backgroundColor: colors.primary }]}>
           <Text style={[styles.sellLabel, { color: colors.primaryForeground, fontFamily: fontFamily.text }]}>Sign in</Text>
         </Pressable>
         </View>
@@ -72,13 +74,11 @@ export default function AccountScreen() {
       ) : dashboardResource.loading && !dashboard ? (
         <ActivityIndicator style={styles.centered} color={colors.foreground} />
       ) : dashboard ? (
-        <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
+        <ScrollView showsVerticalScrollIndicator={false}>
           <MeProfileHeader
             displayName={name}
             username={slug}
             avatarUrl={dashboard.avatar_url}
-            initials={initials(name)}
-            about={dashboard.about}
             websiteUrl={dashboard.website_url}
             onSellerProfile={sellerProfileHref ? () => router.push(sellerProfileHref) : undefined}
             sellerProfileLabel={sellerProfileHref ? "View my seller profile" : undefined}
@@ -96,17 +96,10 @@ export default function AccountScreen() {
   )
 }
 
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean)
-  const letters = parts.slice(0, 2).map((part) => part[0]?.toUpperCase() ?? "")
-  return letters.join("") || "R"
-}
-
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   signedOut: { justifyContent: "center", paddingHorizontal: 24, gap: 16 },
   signedOutTitle: { fontSize: 32, fontWeight: "700" },
-  list: { paddingBottom: 120 },
   centered: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, padding: 24 },
   error: { textAlign: "center", fontSize: 15, lineHeight: 21 },
   retry: { fontSize: 16, fontWeight: "700", textDecorationLine: "underline" },

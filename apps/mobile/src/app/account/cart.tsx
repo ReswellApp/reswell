@@ -1,11 +1,13 @@
 import { Image } from "expo-image"
 import { useRouter } from "expo-router"
+import { useEffect } from "react"
 import { Pressable, StyleSheet, Text, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { AccountState } from "@/components/account-state"
 import { VerticalScroll } from "@/components/horizontal-rail"
 import { fetchCart, setCartItem } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
+import { useAuthGate } from "@/lib/auth-gate"
 import { useAccountResource } from "@/lib/use-account-resource"
 import { fontFamily, useReswellColors } from "@/theme"
 
@@ -14,9 +16,30 @@ export default function CartScreen() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const { session } = useAuth()
+  const { requestAuth } = useAuthGate()
   const { data, error, loading, reload } = useAccountResource(fetchCart)
   const items = data?.items ?? []
   const subtotal = items.reduce((sum, item) => sum + item.listing.price_usd * item.quantity, 0)
+
+  useEffect(() => {
+    if (session?.access_token) return
+    requestAuth()
+  }, [requestAuth, session?.access_token])
+
+  if (!session?.access_token) {
+    return (
+      <AccountState
+        title="Cart"
+        loading={false}
+        error={null}
+        onRetry={() => requestAuth()}
+        empty="Sign in to see your cart."
+        isEmpty
+      >
+        {null}
+      </AccountState>
+    )
+  }
 
   return (
     <AccountState

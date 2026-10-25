@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context"
 import type { MobileInbox } from "@reswell/api-contract"
 import { fetchInbox } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
+import { useAuthGate } from "@/lib/auth-gate"
 import { useAccountResource } from "@/lib/use-account-resource"
 import { fontFamily, useReswellColors } from "@/theme"
 
@@ -21,9 +22,9 @@ const FILTERS: { id: Exclude<Filter, "activity">; label: string }[] = [
 
 export default function InboxScreen() {
   const colors = useReswellColors()
-  const router = useRouter()
   const insets = useSafeAreaInsets()
   const { session } = useAuth()
+  const { requestAuth } = useAuthGate()
   const signedIn = Boolean(session?.access_token)
 
   return (
@@ -37,7 +38,7 @@ export default function InboxScreen() {
       {signedIn ? <InboxList /> : (
         <View style={styles.centered}>
           <Text style={[styles.empty, { color: colors.muted, fontFamily: fontFamily.text }]}>Sign in to see messages and notifications.</Text>
-          <Pressable onPress={() => router.push("/sign-in")} style={[styles.signIn, { backgroundColor: colors.primary }]}>
+          <Pressable onPress={() => requestAuth()} style={[styles.signIn, { backgroundColor: colors.primary }]}>
             <Text style={[styles.signInLabel, { color: colors.primaryForeground, fontFamily: fontFamily.text }]}>Sign in</Text>
           </Pressable>
         </View>
@@ -65,7 +66,6 @@ function InboxList() {
       keyExtractor={(item) => item.id}
       refreshing={loading}
       onRefresh={reload}
-      contentContainerStyle={styles.list}
       ListHeaderComponent={
         <View style={styles.filters}>
           {FILTERS.map((item) => {
@@ -140,7 +140,6 @@ const styles = StyleSheet.create({
   pill: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
   pillLabel: { fontSize: 14, fontWeight: "700" },
   bell: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 999, width: 36, height: 36, alignItems: "center", justifyContent: "center" },
-  list: { paddingBottom: 120 },
   row: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 12 },
   thumb: { width: 64, height: 64, borderRadius: 10 },
   thumbEmpty: { alignItems: "center", justifyContent: "center" },

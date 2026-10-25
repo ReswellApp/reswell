@@ -7,12 +7,14 @@ import { HomeFeed } from "@/components/home-feed"
 import { HomeHeader } from "@/components/home-header"
 import { fetchBrowseRail, fetchHome, fetchRecentlyViewed } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
+import { useAuthGate } from "@/lib/auth-gate"
 import { fontFamily, useReswellColors } from "@/theme"
 
 export default function ListingsScreen() {
   const colors = useReswellColors()
   const router = useRouter()
   const { session } = useAuth()
+  const { requestAuth } = useAuthGate()
   const accessToken = session?.access_token ?? null
   const [home, setHome] = useState<MobileHome | null>(null)
   const [continueListings, setContinueListings] = useState<MobileListingCard[]>([])
@@ -79,7 +81,7 @@ export default function ListingsScreen() {
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <Stack.Screen options={{ headerShown: false }} />
-      <HomeHeader onCart={() => router.push(session ? "/account/cart" : "/sign-in")} />
+      <HomeHeader onCart={() => requestAuth(() => router.push("/account/cart"))} />
       {loading && !home ? (
         <ScrollView>
           <CategorySlider items={rail?.items ?? null} onOpenCategory={openCategory} onOpenResource={openResource} onOpenPage={openPage} />

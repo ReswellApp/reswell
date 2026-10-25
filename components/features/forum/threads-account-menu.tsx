@@ -24,12 +24,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { ProfileCircle } from "@/components/profile-circle"
 import { signOutAndRedirect } from "@/lib/auth/sign-out-and-redirect"
-import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
 import { forceReleaseBodyScrollLock } from "@/hooks/use-body-scroll-lock"
-import { threadsAvatarFallbackClassName } from "@/components/features/forum/threads-brand-styles"
-import { cn } from "@/lib/utils"
 
 type ThreadsAccountMenuProps = {
   displayName: string
@@ -52,8 +49,6 @@ export function ThreadsAccountMenu({
   onNewTopic,
   onPostReview,
 }: ThreadsAccountMenuProps) {
-  const initial = displayName.charAt(0).toUpperCase()
-
   const onOpenChange = useCallback((open: boolean) => {
     if (!open) forceReleaseBodyScrollLock()
   }, [])
@@ -67,12 +62,7 @@ export function ThreadsAccountMenu({
           className="flex h-auto max-w-[12rem] items-center gap-2 rounded-full border-border/70 bg-card px-2 py-1.5 pr-2.5 text-sm font-medium text-foreground shadow-sm hover:bg-muted/60 sm:max-w-none"
           aria-label="Threads profile menu"
         >
-          <Avatar className="h-7 w-7">
-            <AvatarImage src={profileMediaDisplaySrc(avatarUrl || "")} alt="" />
-            <AvatarFallback className={cn("text-xs", threadsAvatarFallbackClassName)}>
-              {initial}
-            </AvatarFallback>
-          </Avatar>
+          <ProfileCircle avatarUrl={avatarUrl} alt="" className="h-7 w-7 shadow-none" />
           <span className="truncate">{displayName}</span>
           <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
         </Button>
@@ -80,10 +70,7 @@ export function ThreadsAccountMenu({
       <DropdownMenuContent align="end" className="z-[120] w-72 p-0">
         <div className="border-b border-border/60 bg-[#355185]/5 px-3 py-3">
           <div className="flex items-center gap-3">
-            <Avatar className="h-11 w-11 shrink-0 border border-border/70">
-              <AvatarImage src={profileMediaDisplaySrc(avatarUrl || "")} alt="" />
-              <AvatarFallback className={threadsAvatarFallbackClassName}>{initial}</AvatarFallback>
-            </Avatar>
+            <ProfileCircle avatarUrl={avatarUrl} alt="" className="h-11 w-11 border border-border/70" />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold text-foreground">{displayName}</p>
               {email ? (

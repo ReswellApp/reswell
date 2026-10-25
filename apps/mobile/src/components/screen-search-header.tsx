@@ -1,6 +1,6 @@
 import { usePathname, useRouter } from "expo-router"
 import { SearchCartHeader } from "@/components/search-cart-header"
-import { useAuth } from "@/lib/auth-context"
+import { useAuthGate } from "@/lib/auth-gate"
 import { isSearchHeaderHidden } from "@/lib/search-header-visibility"
 
 type ScreenSearchHeaderProps = {
@@ -8,6 +8,8 @@ type ScreenSearchHeaderProps = {
   showInbox?: boolean
   insetTop?: boolean
   bordered?: boolean
+  /** Overrides the default back navigation (for in-screen steps). */
+  onBack?: () => void
 } & (
   | { mode?: "open" }
   | {
@@ -22,18 +24,18 @@ type ScreenSearchHeaderProps = {
 export function ScreenSearchHeader(props: ScreenSearchHeaderProps) {
   const pathname = usePathname()
   const router = useRouter()
-  const { session } = useAuth()
+  const { requestAuth } = useAuthGate()
 
   if (isSearchHeaderHidden(pathname)) return null
 
   const onHome = pathname === "/" || pathname === ""
   const showBack = props.showBack ?? !onHome
 
-  const onCart = () => router.push(session ? "/account/cart" : "/sign-in")
-  const onBack = showBack ? () => router.back() : undefined
+  const onCart = () => requestAuth(() => router.push("/account/cart"))
+  const onBack = showBack ? (props.onBack ?? (() => router.back())) : undefined
   const onInbox =
     props.showInbox === true
-      ? () => router.push(session ? "/inbox" : "/sign-in")
+      ? () => requestAuth(() => router.push("/inbox"))
       : undefined
   const insetTop = props.insetTop
   const bordered = props.bordered

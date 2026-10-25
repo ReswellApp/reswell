@@ -7,6 +7,7 @@ import { TextInput as GestureTextInput } from "react-native-gesture-handler"
 import { SymbolView } from "expo-symbols"
 import type { MobileProfileSettings } from "@reswell/api-contract"
 import { AccountState } from "@/components/account-state"
+import { ProfileCircle } from "@/components/profile-circle"
 import {
   changeProfileEmail,
   changeProfilePassword,
@@ -188,13 +189,7 @@ function ShopTab({ settings, onSaved }: { settings: MobileProfileSettings; onSav
   return (
     <View style={styles.shop}>
       <View style={styles.avatarWrap}>
-        {avatarUrl ? (
-          <Image source={{ uri: avatarUrl }} style={[styles.avatar, { backgroundColor: colors.image }]} contentFit="cover" />
-        ) : (
-          <View style={[styles.avatar, styles.avatarEmpty, { backgroundColor: colors.image }]}>
-            <SymbolView name={{ ios: "person", android: "person", web: "person" }} size={40} tintColor={colors.muted} />
-          </View>
-        )}
+        <ProfileCircle url={avatarUrl} size={96} />
         <Pressable
           accessibilityLabel="Edit photo"
           onPress={() => void pickPhoto()}
@@ -634,15 +629,13 @@ function NotificationsTab({ settings, onSaved }: { settings: MobileProfileSettin
 }
 
 const styles = StyleSheet.create({
-  page: { paddingBottom: 140 },
+  page: { paddingBottom: 24 },
   tabs: { flexDirection: "row", gap: 22, paddingHorizontal: 20, borderBottomWidth: StyleSheet.hairlineWidth },
   tab: { paddingTop: 8 },
   tabLabel: { fontSize: 15, fontWeight: "600" },
   tabMark: { height: 2, marginTop: 10, borderRadius: 2 },
   shop: { paddingHorizontal: 20, paddingTop: 22, gap: 8 },
   avatarWrap: { alignSelf: "center", marginBottom: 4 },
-  avatar: { width: 96, height: 96, borderRadius: 48 },
-  avatarEmpty: { alignItems: "center", justifyContent: "center" },
   pencil: {
     position: "absolute",
     right: 0,

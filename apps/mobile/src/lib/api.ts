@@ -654,6 +654,11 @@ export function startPayoutOnboarding(accessToken: string): Promise<{ url: strin
   return read("/api/mobile/v1/me/earnings/onboarding", (data) => mobilePayoutOnboardingSchema.parse(data), accessToken, {})
 }
 
+/** Opens Stripe so a connected seller can add or change a payout bank. */
+export function startAddBank(accessToken: string): Promise<{ url: string }> {
+  return read("/api/mobile/v1/me/earnings/bank", (data) => mobilePayoutOnboardingSchema.parse(data), accessToken, {})
+}
+
 export function cashOutEarnings(
   accessToken: string,
   body: { amount: number; speed: "standard" | "instant"; externalAccountId?: string },

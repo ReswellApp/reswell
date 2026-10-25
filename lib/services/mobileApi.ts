@@ -47,6 +47,7 @@ import {
   type ListingPublicVisibilityFields,
 } from "@/lib/listing-public-visibility"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
+import { absoluteProfileCircleUrl } from "@/lib/profile-circle"
 import { absoluteProxiedProfileMediaUrl } from "@/lib/public-media-display-src"
 import { configuredReswellShopOwnerUserId } from "@/lib/services/resolveReswellShopOwnerUser"
 import { listingPdpVideoPlaybackSrc } from "@/lib/listing-media-proxy-url"
@@ -158,13 +159,13 @@ function toMobileListingCardSeller(
   if (!sellerId) return null
   const seller = pickSeller(row.profiles)
   const avatar = seller?.is_shop
-    ? profileMedia(seller.shop_logo_url) ?? profileMedia(seller.avatar_url)
-    : profileMedia(seller?.avatar_url)
+    ? nullableText(seller?.shop_logo_url) ?? nullableText(seller?.avatar_url)
+    : nullableText(seller?.avatar_url)
   const summary = {
     id: sellerId,
     name: sellerDisplayName(seller),
     seller_slug: nullableText(seller?.seller_slug),
-    avatar_url: avatar,
+    avatar_url: absoluteProfileCircleUrl(avatar),
     verified: Boolean(seller?.is_shop && seller.shop_verified),
     ...(following === undefined ? {} : { following }),
   }
@@ -307,8 +308,8 @@ export function toMobileListingDetail(
     if (imageUrls.length >= 12) break
   }
   const avatar = seller?.is_shop
-    ? profileMedia(seller.shop_logo_url) ?? profileMedia(seller.avatar_url)
-    : profileMedia(seller?.avatar_url)
+    ? nullableText(seller?.shop_logo_url) ?? nullableText(seller?.avatar_url)
+    : nullableText(seller?.avatar_url)
   const detail = {
     ...card,
     status: row.status,
@@ -324,7 +325,7 @@ export function toMobileListingDetail(
       id: sellerId,
       name: sellerDisplayName(seller),
       seller_slug: nullableText(seller?.seller_slug),
-      avatar_url: avatar,
+      avatar_url: absoluteProfileCircleUrl(avatar),
       location_label: nullableText(seller?.location),
       verified: Boolean(seller?.is_shop && seller.shop_verified),
       joined_year: joinedYear(seller?.created_at),
@@ -361,7 +362,7 @@ export async function getMobileMeService(
     email: nullableText(user.email),
     display_name: nullableText(profile?.display_name) ?? "Reswell member",
     seller_slug: nullableText(profile?.seller_slug),
-    avatar_url: mediaUrl(profile?.avatar_url),
+    avatar_url: absoluteProfileCircleUrl(profile?.avatar_url),
   }
   const parsed = mobileMeSchema.safeParse(me)
   if (!parsed.success) {
@@ -471,9 +472,9 @@ export function toMobileProfile(
     about: nullableText(row.shop_description) ?? nullableText(row.bio),
     city,
     location_label: nullableText(row.shop_address) ?? city ?? nullableText(row.location),
-    avatar_url: isShop
-      ? profileMedia(row.shop_logo_url) ?? profileMedia(row.avatar_url)
-      : profileMedia(row.avatar_url),
+    avatar_url: absoluteProfileCircleUrl(
+      isShop ? nullableText(row.shop_logo_url) ?? nullableText(row.avatar_url) : nullableText(row.avatar_url),
+    ),
     banner_url: profileMedia(row.shop_banner_url),
     banner_focal_x: bannerFocal.x,
     banner_focal_y: bannerFocal.y,

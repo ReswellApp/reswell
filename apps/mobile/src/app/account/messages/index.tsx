@@ -35,6 +35,7 @@ export default function MessagesScreen() {
             title={item.other_name}
             subtitle={item.preview ?? item.listing_title}
             meta={item.unread_count > 0 ? String(item.unread_count) : when(item.last_message_at)}
+            avatar
             imageUrl={item.other_avatar_url}
             onPress={() => router.push({ pathname: "/account/messages/[id]", params: { id: item.id } })}
           />

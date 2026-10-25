@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { ProfileCircle } from "@/components/profile-circle"
 import { SellerRatingStarRow } from "@/components/seller-rating-stars"
 import { HowToSellSection } from "@/components/features/seller-resources/how-to-sell-section"
 import { VerifiedBadge } from "@/components/verified-badge"
@@ -14,12 +14,11 @@ function ShopSpotlightCard({ shop }: { shop: HowToSellShopSpotlight }) {
   return (
     <article className="rounded-[1.75rem] bg-white p-5 shadow-sm ring-1 ring-border">
       <Link href={shop.href} className="flex gap-3 transition-opacity hover:opacity-90">
-        <Avatar className="h-14 w-14 shrink-0 ring-2 ring-[#F4F7FB]">
-          <AvatarImage src={shop.avatarSrc} alt="" />
-          <AvatarFallback className="text-lg font-semibold">
-            {shop.name.charAt(0).toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
+        <ProfileCircle
+          avatarUrl={shop.avatarSrc}
+          alt=""
+          className="h-14 w-14 ring-2 ring-[#F4F7FB]"
+        />
         <div className="min-w-0">
           <p className="flex flex-wrap items-center gap-1.5 font-semibold text-[#001A4A]">
             <span className="truncate">{shop.name}</span>

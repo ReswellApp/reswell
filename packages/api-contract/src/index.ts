@@ -1238,13 +1238,18 @@ export const mobileDashboardSchema = z.object({
   pages: z.array(mobileDashboardPageSchema),
 })
 
+export const mobileEarningsActivityKindSchema = z.enum(["pending", "ready", "payout", "refund", "other"])
+
 export const mobileEarningsActivitySchema = z.object({
   id: z.string().uuid(),
   title: z.string().min(1),
   status_label: z.string().min(1),
+  kind: mobileEarningsActivityKindSchema,
   amount_usd: z.number(),
   amount_label: z.string(),
   created_at: z.string(),
+  image_url: z.string().nullable(),
+  sale_id: z.string().uuid().nullable(),
 })
 
 /** Wallet the seller can cash out, plus pending sales and recent ledger rows. */
@@ -1271,6 +1276,11 @@ export const mobileEarningsSchema = z.object({
       default: z.boolean(),
     }),
   ),
+  /** Sales still on hold. */
+  pending_items: z.array(mobileEarningsActivitySchema),
+  /** Released sales that still make up the ready balance. */
+  ready_items: z.array(mobileEarningsActivitySchema),
+  /** Full recent ledger, including payouts and refunds. */
   activity: z.array(mobileEarningsActivitySchema),
 })
 

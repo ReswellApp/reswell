@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo } from "react"
 import { formatDistanceToNowLabel, RelativeTime } from "@/components/ui/relative-time"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { ProfileCircle } from "@/components/profile-circle"
 import { ThreadLikeButton } from "@/components/forum/thread-like-button"
 import { ThreadCommentsPanel, type ThreadCommentRow } from "@/components/forum/thread-comments-panel"
 import { LinkifiedText } from "@/components/forum/linkified-text"
@@ -14,7 +14,6 @@ import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import { useThreadsPageLabel } from "@/components/features/forum/threads-breadcrumb-provider"
 import { capitalizeWords } from "@/lib/listing-labels"
 import type { ForumThreadParticipant } from "@/lib/services/forumThreads"
-import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
 import { threadsMarkerClassName } from "@/components/features/forum/threads-brand-styles"
 import { countUrlsInText } from "@/lib/utils/count-urls-in-text"
 import { cn } from "@/lib/utils"
@@ -68,7 +67,6 @@ export function ThreadDetailView({
   participantCount,
 }: ThreadDetailViewProps) {
   const openSignIn = useSignInGate()
-  const authorInitial = authorName.charAt(0).toUpperCase()
   const replyCount = comments.filter((c) => c.parent_id == null).length
   const linkCount = useMemo(() => countUrlsInText(body), [body])
 
@@ -120,10 +118,7 @@ export function ThreadDetailView({
       <article className="overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm">
         <div className="p-5 sm:p-6">
           <div className="flex gap-3 sm:gap-4">
-            <Avatar className="h-10 w-10 shrink-0 sm:h-11 sm:w-11">
-              <AvatarImage src={profileMediaDisplaySrc(authorAvatarUrl || "")} alt="" />
-              <AvatarFallback>{authorInitial}</AvatarFallback>
-            </Avatar>
+            <ProfileCircle avatarUrl={authorAvatarUrl} alt="" className="h-10 w-10 sm:h-11 sm:w-11" />
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="font-semibold text-foreground">{authorName}</p>

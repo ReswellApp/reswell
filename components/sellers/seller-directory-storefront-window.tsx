@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { ProfileCircle } from "@/components/profile-circle"
 import { SellerDirectoryStorefrontMosaic } from "@/components/sellers/seller-directory-storefront-mosaic"
 import { VerifiedBadge } from "@/components/verified-badge"
 import {
@@ -78,12 +78,11 @@ export function SellerDirectoryStorefrontWindow({
 
       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/40 to-transparent px-2.5 pb-2 pt-10">
         <div className="flex items-end gap-2">
-          <Avatar className="h-8 w-8 shrink-0 border-2 border-white/90 shadow-sm sm:h-9 sm:w-9">
-            {avatarSrc ? <AvatarImage src={avatarSrc} alt="" /> : null}
-            <AvatarFallback className="bg-white/15 text-xs font-semibold text-white">
-              {label.charAt(0).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
+          <ProfileCircle
+            avatarUrl={avatarSrc}
+            alt=""
+            className="h-8 w-8 border-2 border-white/90 shadow-sm sm:h-9 sm:w-9"
+          />
           <div className="min-w-0 flex-1 pb-0.5">
             <div className="flex min-w-0 items-center gap-1">
               <h2 className="truncate font-headline text-[15px] font-semibold leading-tight text-white">

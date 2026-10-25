@@ -8,18 +8,26 @@ export function MeStatTile({
   value,
   reviewStar,
   accentValue,
+  plain,
   onPress,
 }: {
   label: string
   value?: string
   /** Yellow star with count for reviews. */
   reviewStar?: boolean
-  /** Earnings-style value in brand indigo (`listingHeart`). */
+  /** Earnings-style value in brand dark blue (`BRAND_DARK_BLUE`). */
   accentValue?: boolean
+  /** No chip background — value/label only (Me earnings row). */
+  plain?: boolean
   onPress?: () => void
 }) {
   const colors = useReswellColors()
   const valueColor = accentValue ? colors.listingHeart : colors.foreground
+  const tileStyle = plain
+    ? [styles.tilePlain]
+    : [styles.tile, { backgroundColor: colors.secondary, borderColor: colors.border }]
+  const valueStyle = plain ? styles.valuePlain : styles.value
+  const labelStyle = plain ? styles.labelPlain : styles.label
   const body = (
     <>
       {reviewStar ? (
@@ -29,20 +37,23 @@ export function MeStatTile({
             size={14}
             tintColor={colors.reviewStar}
           />
-          <Text style={[styles.value, { color: valueColor, fontFamily: fontFamily.headline }]}>{value ?? "0"}</Text>
+          <Text style={[valueStyle, { color: valueColor, fontFamily: fontFamily.headline }]}>{value ?? "0"}</Text>
         </View>
       ) : (
-        <Text style={[styles.value, { color: valueColor, fontFamily: fontFamily.headline }]}>{value ?? "0"}</Text>
+        <Text
+          numberOfLines={plain ? 1 : undefined}
+          adjustsFontSizeToFit={Boolean(plain)}
+          minimumFontScale={plain ? 0.55 : undefined}
+          style={[valueStyle, plain ? styles.valuePlainFit : null, { color: valueColor, fontFamily: fontFamily.headline }]}
+        >
+          {value ?? "0"}
+        </Text>
       )}
-      <Text style={[styles.label, { color: colors.muted, fontFamily: fontFamily.text }]} numberOfLines={2}>
+      <Text style={[labelStyle, { color: colors.muted, fontFamily: fontFamily.text }]} numberOfLines={2}>
         {label}
       </Text>
     </>
   )
-  const tileStyle = [
-    styles.tile,
-    { backgroundColor: colors.secondary, borderColor: colors.border },
-  ]
   if (!onPress) {
     return <View style={tileStyle}>{body}</View>
   }
@@ -69,7 +80,26 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth,
   },
+  tilePlain: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "flex-start",
+    gap: 4,
+    minWidth: 0,
+    paddingTop: 2,
+    paddingHorizontal: 6,
+  },
   value: { fontSize: 15, fontWeight: "700" },
+  valuePlain: {
+    height: 28,
+    fontSize: 22,
+    lineHeight: 28,
+    fontWeight: "700",
+    letterSpacing: -0.4,
+    textAlign: "center",
+  },
+  valuePlainFit: { width: "100%" },
   label: { fontSize: 10, lineHeight: 13, textAlign: "center", fontWeight: "600" },
+  labelPlain: { height: 36, fontSize: 13, lineHeight: 17, textAlign: "center", fontWeight: "500" },
   reviewValue: { flexDirection: "row", alignItems: "center", gap: 3 },
 })

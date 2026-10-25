@@ -1,10 +1,9 @@
 import { SymbolView } from "expo-symbols"
-import { useRouter, type Href } from "expo-router"
+import { useRouter } from "expo-router"
 import { Pressable, StyleSheet, Text, View } from "react-native"
 import type { MobileDashboard, MobileDashboardPage } from "@reswell/api-contract"
 import { DashboardMenuIcon } from "@/components/dashboard-menu-icon"
 import { MeStatTile } from "@/components/me-stat-tile"
-import { DashboardAttention } from "@/components/dashboard-attention"
 import { dashboardPageHref } from "@/lib/dashboard-pages"
 import { groupMeDashboardPages } from "@/lib/dashboard-page-sections"
 import { fontFamily, useReswellColors } from "@/theme"
@@ -28,33 +27,33 @@ export function MeDashboardSections({
     if (href) router.push(href)
   }
 
-  function openHref(href: Href) {
-    router.push(href)
-  }
-
   return (
     <View style={styles.stack}>
-      <View style={styles.earningsRow}>
+      <View style={[styles.earningsRow, { borderTopColor: colors.border }]}>
         <MeStatTile
+          plain
           accentValue
-          label="Lifetime earnings"
+          label={"Lifetime\nEarnings"}
           value={dashboard.earnings_lifetime_label}
           onPress={() => router.push("/account/earnings")}
         />
+        <View style={[styles.earningsDivider, { backgroundColor: colors.border }]} />
         <MeStatTile
+          plain
           accentValue
-          label="Last 30 days"
+          label={"Last\n30 Days"}
           value={last30Label ?? "—"}
           onPress={() => router.push("/account/earnings")}
         />
+        <View style={[styles.earningsDivider, { backgroundColor: colors.border }]} />
         <MeStatTile
+          plain
           accentValue
-          label="Available"
+          label={"Available\nEarnings"}
           value={dashboard.wallet_balance_label}
           onPress={() => router.push("/account/earnings")}
         />
       </View>
-      <DashboardAttention data={dashboard} onOpen={openHref} />
       <DashboardSection title="Selling" pages={selling} onOpen={openPage} />
       <DashboardSection title="Buying" pages={buying} onOpen={openPage} />
       {account.length > 0 ? <DashboardSection title="Account" pages={account} onOpen={openPage} /> : null}
@@ -105,10 +104,18 @@ const styles = StyleSheet.create({
   stack: { gap: 8, paddingBottom: 32 },
   earningsRow: {
     flexDirection: "row",
-    paddingHorizontal: 16,
-    paddingTop: 6,
-    paddingBottom: 2,
-    gap: 6,
+    alignItems: "flex-start",
+    marginHorizontal: 8,
+    marginTop: 4,
+    paddingTop: 16,
+    paddingBottom: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  earningsDivider: {
+    width: StyleSheet.hairlineWidth,
+    height: 22,
+    marginTop: 5,
+    opacity: 0.7,
   },
   section: { paddingHorizontal: 16, paddingTop: 12, gap: 10 },
   sectionTitle: { fontSize: 22, fontWeight: "700" },

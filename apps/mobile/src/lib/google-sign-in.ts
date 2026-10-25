@@ -4,10 +4,27 @@ import {
   isErrorWithCode,
   isSuccessResponse,
   statusCodes,
+  type SignInParams,
 } from "@react-native-google-signin/google-signin"
+import {
+  CryptoDigestAlgorithm,
+  digestStringAsync,
+  randomUUID,
+} from "expo-crypto"
 import * as ExpoLinking from "expo-linking"
 import { Platform } from "react-native"
 import { publicGoogleIosClientId, publicGoogleWebClientId } from "@/lib/public-env"
+
+/**
+ * iOS AppAuth writes a nonce into the ID token. Supabase hashes the raw nonce
+ * and compares it to that claim, so Google must receive the SHA-256 digest.
+ */
+async function iosGoogleNonce(): Promise<{ rawNonce: string; hashedNonce: string } | null> {
+  if (Platform.OS !== "ios") return null
+  const rawNonce = randomUUID()
+  const hashedNonce = await digestStringAsync(CryptoDigestAlgorithm.SHA256, rawNonce)
+  return { rawNonce, hashedNonce }
+}
 
 /** OAuth return URL for web and legacy browser flows. */
 export function googleOAuthRedirectUri(): string {
@@ -54,7 +71,12 @@ async function signInWithGoogleNativeSdk(supabase: SupabaseClient): Promise<stri
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true })
     }
 
-    const response = await GoogleSignin.signIn()
+    const noncePair = await iosGoogleNonce()
+    // The published SignInParams type omits nonce. The iOS module forwards it.
+    const signInOptions: SignInParams | undefined = noncePair
+      ? ({ nonce: noncePair.hashedNonce } as SignInParams)
+      : undefined
+    const response = await GoogleSignin.signIn(signInOptions)
     if (!isSuccessResponse(response)) return null
 
     let idToken = response.data.idToken
@@ -77,6 +99,9 @@ async function signInWithGoogleNativeSdk(supabase: SupabaseClient): Promise<stri
       provider: "google",
       token: idToken,
       access_token: accessToken,
+      // Only the interactive sign-in token was minted with this nonce.
+      // A refreshed token from getTokens() would not match.
+      ...(noncePair && response.data.idToken ? { nonce: noncePair.rawNonce } : {}),
     })
     return error?.message ?? null
   } catch (error) {

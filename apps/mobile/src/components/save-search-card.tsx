@@ -3,22 +3,22 @@ import { SymbolView } from "expo-symbols"
 import { useState } from "react"
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native"
 import { setSavedSearch } from "@/lib/api"
+import { useAuthGate } from "@/lib/auth-gate"
 import { fontFamily, useReswellColors } from "@/theme"
 
 export function SaveSearchCard({
   query,
   accessToken,
   savedSearchId,
-  onSignIn,
   onChange,
 }: {
   query: string
   accessToken: string | null
   savedSearchId: string | null
-  onSignIn: () => void
   onChange: (savedSearchId: string | null) => void
 }) {
   const colors = useReswellColors()
+  const { requestAuth } = useAuthGate()
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const saved = Boolean(savedSearchId)
@@ -26,7 +26,16 @@ export function SaveSearchCard({
 
   function toggle() {
     if (!accessToken) {
-      onSignIn()
+      requestAuth((token) => {
+        setPending(true)
+        setError(null)
+        setSavedSearch(token, query, !saved)
+          .then((result) => onChange(result.saved_search_id))
+          .catch((cause: unknown) => {
+            setError(cause instanceof Error ? cause.message : "Unable to update this saved search")
+          })
+          .finally(() => setPending(false))
+      })
       return
     }
     setPending(true)

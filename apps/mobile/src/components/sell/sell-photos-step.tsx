@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Pressable, StyleSheet, Text, View } from "react-native"
 import { SymbolView } from "expo-symbols"
 import { SellBoardSpecs } from "@/components/sell/sell-board-specs"
+import { SellPhotoEditor } from "@/components/sell/sell-photo-editor"
 import { SellPhotoTips } from "@/components/sell/sell-photo-tips"
 import { SellUploadMenu } from "@/components/sell/sell-upload-menu"
 import { HorizontalRail } from "@/components/horizontal-rail"
@@ -32,7 +33,15 @@ export function SellPhotosStep({
   const [error, setError] = useState<string | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const [guideOpen, setGuideOpen] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const room = MAX_SELL_PHOTOS - photos.length
+  const editing = photos.find((photo) => photo.id === editingId) ?? null
+
+  function saveEdit(uri: string) {
+    if (!editing) return
+    onChange(photos.map((photo) => (photo.id === editing.id ? { id: photo.id, uri } : photo)))
+    setEditingId(null)
+  }
 
   async function addFromLibrary() {
     if (room <= 0) return
@@ -80,7 +89,14 @@ export function SellPhotosStep({
       <HorizontalRail contentStyle={styles.rail}>
         {photos.map((photo) => (
           <View key={photo.id} style={styles.tile}>
-            <Image source={{ uri: photo.uri }} style={[styles.image, { backgroundColor: colors.image }]} contentFit="cover" />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Edit photo"
+              onPress={() => setEditingId(photo.id)}
+              style={styles.editHit}
+            >
+              <Image source={{ uri: photo.uri }} style={[styles.image, { backgroundColor: colors.image }]} contentFit="cover" />
+            </Pressable>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Remove photo"
@@ -109,7 +125,11 @@ export function SellPhotosStep({
       </HorizontalRail>
       <Pressable
         accessibilityRole="button"
-        onPress={() => setMenuOpen(true)}
+        onPress={() => {
+          const first = photos[0]
+          if (first) setEditingId(first.id)
+          else setMenuOpen(true)
+        }}
         hitSlop={8}
         style={styles.editPhotos}
       >
@@ -129,6 +149,7 @@ export function SellPhotosStep({
       {menuOpen ? (
         <SellUploadMenu onLibrary={() => void addFromLibrary()} onCamera={() => void takePhoto()} onClose={() => setMenuOpen(false)} />
       ) : null}
+      {editing ? <SellPhotoEditor uri={editing.uri} onCancel={() => setEditingId(null)} onSave={saveEdit} /> : null}
     </View>
   )
 }
@@ -160,6 +181,7 @@ const styles = StyleSheet.create({
   },
   plus: { fontSize: 24, fontWeight: "500" },
   image: { width: "100%", height: "100%" },
+  editHit: { width: "100%", height: "100%" },
   remove: { position: "absolute", top: 6, right: 6 },
   editPhotos: { alignSelf: "flex-start", minHeight: 36, justifyContent: "center" },
   editPhotosLabel: { fontSize: 13, fontWeight: "600", textDecorationLine: "underline" },

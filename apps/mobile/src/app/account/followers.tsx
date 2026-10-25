@@ -28,6 +28,7 @@ export default function FollowersScreen() {
           <AccountRow
             title={item.name}
             subtitle={item.city}
+            avatar
             imageUrl={item.avatar_url}
             onPress={() => router.push({ pathname: "/profile/[slug]", params: { slug: item.seller_slug } })}
           />

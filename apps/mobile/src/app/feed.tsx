@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
   tabLabel: { fontSize: 13, textAlign: "center" },
   centered: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, padding: 24 },
   retry: { fontSize: 16, fontWeight: "600" },
-  list: { paddingTop: 8, paddingBottom: 120 },
+  list: { paddingTop: 8 },
   columns: { gap: 12, paddingHorizontal: 12 },
   empty: { alignItems: "center", paddingHorizontal: 28, paddingTop: 48, gap: 8 },
   emptyTitle: { fontSize: 18, fontWeight: "700" },

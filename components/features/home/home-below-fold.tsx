@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { Fragment, Suspense } from "react"
 import { ArrowRight, MapPin } from "lucide-react"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { ProfileCircle } from "@/components/profile-circle"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { FadeInSection } from "@/components/fade-in-section"
@@ -27,7 +27,6 @@ import { loadHomeFeedSection, visibleHomeFeedSlots } from "@/lib/services/homeFe
 import type { HomeFeedListingsSection, HomeFeedSectionId } from "@/lib/services/homeFeedPlan"
 import { listingProductCardSolidClassName } from "@/lib/listing-card-styles"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
-import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { cn } from "@/lib/utils"
 
@@ -167,14 +166,10 @@ function FeaturedShops({
                   </div>
                   <CardContent className="p-4 pt-0">
                     <div className="-mt-6 mb-3 flex items-end gap-3">
-                      <Avatar className="h-12 w-12 border-2 border-card">
-                        <AvatarImage
-                          src={profileMediaDisplaySrc(shop.shop_logo_url || shop.avatar_url || "")}
-                        />
-                        <AvatarFallback className="bg-primary text-sm text-primary-foreground">
-                          {(shop.shop_name || shop.display_name || "S").charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
+                      <ProfileCircle
+                        avatarUrl={shop.shop_logo_url || shop.avatar_url}
+                        className="h-12 w-12 border-2 border-card"
+                      />
                       {shop.shop_verified && <VerifiedBadge size="md" className="-ml-1 mb-0.5" />}
                     </div>
                     <h3 className="line-clamp-1 font-semibold text-foreground">

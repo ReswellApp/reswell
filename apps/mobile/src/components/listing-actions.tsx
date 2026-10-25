@@ -5,7 +5,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import type { MobileListingDetail } from "@reswell/api-contract"
 import { sendListingMessage, setCartItem, setFavorite } from "@/lib/api"
-import { useAuth } from "@/lib/auth-context"
+import { useAuthGate } from "@/lib/auth-gate"
 import { fontFamily, useReswellColors } from "@/theme"
 
 export function ListingActions({
@@ -18,30 +18,23 @@ export function ListingActions({
   const colors = useReswellColors()
   const insets = useSafeAreaInsets()
   const router = useRouter()
-  const { session } = useAuth()
+  const { requestAuth } = useAuthGate()
   const [busy, setBusy] = useState<"save" | "cart" | "message" | null>(null)
   const [draft, setDraft] = useState("")
   const [composing, setComposing] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
-  const token = session?.access_token
 
-  function requireSignIn() {
-    if (token) return true
-    router.push("/sign-in")
-    return false
-  }
-
-  async function run(kind: "save" | "cart" | "message", task: (accessToken: string) => Promise<void>) {
-    if (!requireSignIn() || !token || busy) return
-    setBusy(kind)
-    setNotice(null)
-    try {
-      await task(token)
-    } catch (cause: unknown) {
-      setNotice(cause instanceof Error ? cause.message : "Could not save that change")
-    } finally {
-      setBusy(null)
-    }
+  function run(kind: "save" | "cart" | "message", task: (accessToken: string) => Promise<void>) {
+    if (busy) return
+    requestAuth((accessToken) => {
+      setBusy(kind)
+      setNotice(null)
+      void task(accessToken)
+        .catch((cause: unknown) => {
+          setNotice(cause instanceof Error ? cause.message : "Could not save that change")
+        })
+        .finally(() => setBusy(null))
+    })
   }
 
   return (

@@ -49,7 +49,7 @@ import { mobileSaleHasLabel } from "@/lib/services/mobileSaleLabel"
 import { resolveSellerOrderDisplayAmounts } from "@/lib/seller-order-display-amounts"
 import { isListingPubliclyVisible, isListingVisibleInSavedList } from "@/lib/listing-public-visibility"
 import { redactShippingLabelArtifactsFromMessage } from "@/lib/messages/redact-seller-shipping-label"
-import { absoluteProxiedProfileMediaUrl } from "@/lib/public-media-display-src"
+import { absoluteProfileCircleUrl } from "@/lib/profile-circle"
 import { getMessagesInboxForUser } from "@/lib/services/messagesInbox"
 import {
   toMobileConversationPreview,
@@ -185,7 +185,7 @@ function followedSeller(row: MobileFollowedSellerRow) {
     id: row.id,
     seller_slug: slug,
     name: (isShop ? text(row.shop_name) ?? text(row.display_name) : text(row.display_name)) ?? "Reswell member",
-    avatar_url: avatar ? absoluteProxiedProfileMediaUrl(avatar) ?? null : null,
+    avatar_url: absoluteProfileCircleUrl(avatar),
     city: text(row.city),
     is_shop: isShop,
     verified: isShop && Boolean(row.shop_verified),
@@ -477,7 +477,7 @@ export async function getMobileConversationService(
     listing_title: text(listing?.title),
     listing_image_url: listingImage ? absolutePublicMediaUrl(listingImage) ?? null : null,
     other_name: getPublicSellerDisplayName(other),
-    other_avatar_url: avatar ? absoluteProxiedProfileMediaUrl(avatar) ?? null : null,
+    other_avatar_url: absoluteProfileCircleUrl(avatar),
     other_joined_label: joinedLabel(other?.created_at),
     other_review_count: reviews.data.reviewCount,
     other_rating_average: reviews.data.reviewCount > 0 ? reviews.data.avgRating : null,

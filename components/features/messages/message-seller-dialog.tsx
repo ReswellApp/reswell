@@ -7,7 +7,7 @@ import { Loader2, MessageSquare, Send } from 'lucide-react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { ProfileCircle } from '@/components/profile-circle'
 import { Button } from '@/components/ui/button'
 import { MessageComposerTextarea } from '@/components/features/messages/message-composer-textarea'
 import { VerifiedBadge } from '@/components/verified-badge'
@@ -237,12 +237,7 @@ export function MessageSellerDialog({
           </DialogTitle>
 
           <div className="mt-4 flex items-center gap-3">
-            <Avatar className="h-10 w-10 shrink-0">
-              <AvatarImage src={sellerAvatarSrc ?? undefined} alt="" />
-              <AvatarFallback className="text-sm font-semibold">
-                {sellerDisplayName.charAt(0).toUpperCase() || 'U'}
-              </AvatarFallback>
-            </Avatar>
+            <ProfileCircle avatarUrl={sellerAvatarSrc} alt="" className="h-10 w-10" />
             <p className="flex min-w-0 items-center gap-1.5 text-[15px] font-semibold text-foreground">
               <span className="truncate">{sellerDisplayName}</span>
               {sellerShopVerified ? <VerifiedBadge size="sm" /> : null}

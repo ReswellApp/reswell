@@ -10,6 +10,7 @@ import { getCachedSellersDirectoryCatalog } from "@/lib/cache/sellers-directory-
 import { listMobileListingRows } from "@/lib/db/mobile-listings"
 import { filterSellersDirectoryCatalog } from "@/lib/sellers/directory-catalog-filter"
 import { sellersDirectoryPageCopy, sellersDirectorySummary } from "@/lib/sellers/directory-page-copy"
+import { absoluteProfileCircleUrl } from "@/lib/profile-circle"
 import { absolutePublicMediaUrl } from "@/lib/site-metadata"
 import { getMobileProfileService, toMobileListingCard, type MobileApiResult } from "@/lib/services/mobileApi"
 import type { SupabaseClient } from "@supabase/supabase-js"
@@ -51,7 +52,7 @@ export async function getMobileSellersPageService(query: string | undefined): Pr
       slug,
       name,
       verified: item.shop.shop_verified === true,
-      avatar_url: mediaUrl(item.avatarSrc),
+      avatar_url: absoluteProfileCircleUrl(item.avatarSrc),
       image_urls: imageUrls,
       lines,
     }

@@ -59,7 +59,6 @@ export default function ModelScreen() {
           keyExtractor={(item) => item?.id ?? "spacer"}
           numColumns={2}
           columnWrapperStyle={styles.columns}
-          contentContainerStyle={styles.list}
           ListHeaderComponent={<ModelHeader page={page} tab={tab} onTab={setTab} onBrand={() => router.push({ pathname: "/brands/[slug]", params: { slug: page.brand_slug } })} />}
           ListFooterComponent={<ModelReviews page={page} />}
           ListEmptyComponent={
@@ -175,7 +174,6 @@ function ModelReviews({ page }: { page: MobileModelPage }) {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   centered: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24 },
-  list: { paddingBottom: 120 },
   columns: { paddingHorizontal: 12, gap: 8 },
   header: { paddingHorizontal: 16, paddingTop: 8, gap: 8 },
   brand: { fontSize: 15, fontWeight: "700", textDecorationLine: "underline" },

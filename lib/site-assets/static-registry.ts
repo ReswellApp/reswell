@@ -68,6 +68,9 @@ export function listStaticSiteAssets(): SiteAssetEntry[] {
     publicImage("reswell-wave-avatar.jpg", "Reswell wave mark", "brand", ["/shopify/connect"], {
       notes: "Shopify connect consent avatar.",
     }),
+    publicImage("reswell-profile-default.png", "Default profile circle", "brand", [], {
+      notes: "Solid #5574AD. Empty profile circle on the site and in the mobile API. Same color as an empty seller banner.",
+    }),
     publicImage("og-image.jpg", "Listing / brand OG fallback", "brand", [], {
       notes: "Used in listing share cards and brand metadata — not visible in page body.",
     }),

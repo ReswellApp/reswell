@@ -5,13 +5,14 @@ import { ScreenSearchHeader } from "@/components/screen-search-header"
 import { ListingCard } from "@/components/listing-card"
 import { fetchFavorites } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
+import { useAuthGate } from "@/lib/auth-gate"
 import { useAccountResource } from "@/lib/use-account-resource"
 import { fontFamily, useReswellColors } from "@/theme"
 
 export default function FavoritesTabScreen() {
   const colors = useReswellColors()
-  const router = useRouter()
   const { session } = useAuth()
+  const { requestAuth } = useAuthGate()
   const signedIn = Boolean(session?.access_token)
 
   return (
@@ -31,7 +32,7 @@ export default function FavoritesTabScreen() {
           <Text style={[styles.message, { color: colors.muted, fontFamily: fontFamily.text }]}>
             Sign in to see the listings you've saved.
           </Text>
-          <Pressable onPress={() => router.push("/sign-in")} style={[styles.button, { backgroundColor: colors.primary }]}>
+          <Pressable onPress={() => requestAuth()} style={[styles.button, { backgroundColor: colors.primary }]}>
             <Text style={[styles.buttonLabel, { color: colors.primaryForeground, fontFamily: fontFamily.text }]}>
               Sign in
             </Text>
@@ -117,7 +118,7 @@ const styles = StyleSheet.create({
   button: { borderRadius: 8, minHeight: 48, alignItems: "center", justifyContent: "center" },
   buttonLabel: { fontSize: 16, fontWeight: "600" },
   retry: { fontSize: 16, fontWeight: "600" },
-  list: { paddingTop: 8, paddingBottom: 120 },
+  list: { paddingTop: 8 },
   row: { gap: 12, paddingHorizontal: 12 },
   spacer: { flex: 1 },
 })

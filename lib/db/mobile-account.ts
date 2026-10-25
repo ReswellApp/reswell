@@ -150,13 +150,13 @@ export async function fetchMobileDashboardFacts(
       .eq("user_id", userId)
       .eq("status", "active")
       .is("archived_at", null),
-    supabase.from("wallets").select("balance, pending_balance").eq("user_id", userId).maybeSingle(),
+    supabase.from("wallets").select("balance").eq("user_id", userId).maybeSingle(),
   ])
 
   const failed = [following, favorites, purchases, sales, offers, profile, listings, wallet].find((result) => result.error)
   if (failed?.error) return { ok: false, message: failed.error.message }
 
-  const balance = usd(wallet.data?.balance) + usd(wallet.data?.pending_balance)
+  const balance = usd(wallet.data?.balance)
   return {
     ok: true,
     rows: {

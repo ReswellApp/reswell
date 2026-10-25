@@ -2,8 +2,9 @@
 
 import Link from "next/link"
 import { useEffect, useState } from "react"
-import { Check, ExternalLink, Loader2, Pencil, User } from "lucide-react"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Check, ExternalLink, Loader2, Pencil } from "lucide-react"
+import { ProfileCircleFallback } from "@/components/profile-circle"
+import { Avatar } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -187,9 +188,7 @@ export function ProfileShopTab({
               previewSrc={avatarPreviewUrl}
               alt={profile.display_name}
             />
-            <AvatarFallback className="bg-neutral-100">
-              <User className="h-10 w-10 text-primary/70" aria-hidden />
-            </AvatarFallback>
+            <ProfileCircleFallback />
           </Avatar>
           <label
             htmlFor="shop-avatar-upload"

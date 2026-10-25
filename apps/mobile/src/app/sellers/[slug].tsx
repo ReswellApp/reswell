@@ -8,6 +8,7 @@ import { ProfileHeader, type SellerTab } from "@/components/profile-header"
 import { ScreenSearchHeader } from "@/components/screen-search-header"
 import { fetchProfileListings, fetchProfileReviews, fetchSeller, setFollow } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
+import { useAuthGate } from "@/lib/auth-gate"
 import { fontFamily, useReswellColors } from "@/theme"
 
 export default function SellerScreen() {
@@ -15,6 +16,7 @@ export default function SellerScreen() {
   const colors = useReswellColors()
   const router = useRouter()
   const { session } = useAuth()
+  const { requestAuth } = useAuthGate()
   const token = session?.access_token
   const [tab, setTab] = useState<SellerTab>("listings")
   const [followBusy, setFollowBusy] = useState(false)
@@ -59,21 +61,19 @@ export default function SellerScreen() {
 
   function toggleFollow() {
     if (!profile) return
-    if (!token) {
-      router.push("/sign-in")
-      return
-    }
-    const next = !profile.following
-    setFollowBusy(true)
-    setFollowError(null)
-    setFollow(token, profile.id, next)
-      .then((result) => {
-        setProfile({ ...profile, following: result.following, follower_count: result.follower_count })
-      })
-      .catch((cause: unknown) => {
-        setFollowError(cause instanceof Error ? cause.message : "Could not update this follow")
-      })
-      .finally(() => setFollowBusy(false))
+    requestAuth((accessToken) => {
+      const next = !profile.following
+      setFollowBusy(true)
+      setFollowError(null)
+      setFollow(accessToken, profile.id, next)
+        .then((result) => {
+          setProfile({ ...profile, following: result.following, follower_count: result.follower_count })
+        })
+        .catch((cause: unknown) => {
+          setFollowError(cause instanceof Error ? cause.message : "Could not update this follow")
+        })
+        .finally(() => setFollowBusy(false))
+    })
   }
 
   function showTab(next: SellerTab) {

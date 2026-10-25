@@ -1,4 +1,5 @@
 import Image from "next/image"
+import { ProfileCircle } from "@/components/profile-circle"
 import Link from "next/link"
 import type { ReactNode } from "react"
 import {
@@ -12,11 +13,9 @@ import {
   Star,
   Store,
   Truck,
-  UserRound,
 } from "lucide-react"
 import {
   purchaseAccentTextClassName,
-  purchaseAvatarFallbackClassName,
   purchaseTrackRowClassName,
 } from "@/components/features/purchases/purchase-brand-styles"
 import { CopyOrderNumber } from "@/components/features/purchases/copy-order-number"
@@ -352,24 +351,7 @@ export function PurchaseDetailView(props: PurchaseDetailViewProps) {
       <section className="space-y-1 pt-2">
         <h2 className="text-base font-bold text-foreground">Seller</h2>
         <Link href={props.sellerHref} className="flex items-center gap-3 py-2">
-          {props.sellerAvatarUrl ? (
-            <Image
-              src={props.sellerAvatarUrl}
-              alt=""
-              width={40}
-              height={40}
-              className="h-10 w-10 rounded-full object-cover"
-            />
-          ) : (
-            <span
-              className={cn(
-                "flex h-10 w-10 items-center justify-center rounded-full",
-                purchaseAvatarFallbackClassName,
-              )}
-            >
-              <UserRound className="h-5 w-5" aria-hidden />
-            </span>
-          )}
+          <ProfileCircle avatarUrl={props.sellerAvatarUrl} alt="" className="h-10 w-10" />
           <span className="min-w-0">
             <span className="block font-semibold text-foreground">{props.sellerName}</span>
             {props.sellerHandle ? (

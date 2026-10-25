@@ -1,9 +1,8 @@
-import { useRouter } from "expo-router"
 import { SymbolView } from "expo-symbols"
 import { useEffect, useRef, useState } from "react"
 import { ActivityIndicator, Alert, Pressable, StyleSheet } from "react-native"
 import { setCartItem, setFavorite } from "@/lib/api"
-import { useAuth } from "@/lib/auth-context"
+import { useAuthGate } from "@/lib/auth-gate"
 import { useListingMarks } from "@/lib/listing-marks"
 import { useReswellColors } from "@/theme"
 
@@ -20,8 +19,7 @@ export function ListingFavoriteButton({
   initialFavorited?: boolean
   onFavoritedChange?: (favorited: boolean) => void
 }) {
-  const router = useRouter()
-  const { session } = useAuth()
+  const { requestAuth } = useAuthGate()
   const marks = useListingMarks()
   const saved = initialFavorited || marks.favorited.has(listingId)
   const [favorited, setFavorited] = useState(saved)
@@ -35,23 +33,19 @@ export function ListingFavoriteButton({
 
   async function toggle() {
     if (busy) return
-    const token = session?.access_token
-    if (!token) {
-      router.push("/sign-in")
-      return
-    }
-    setBusy(true)
-    touched.current = true
-    try {
-      const result = await setFavorite(token, listingId, !favorited)
-      setFavorited(result.favorited)
-      marks.setFavorited(listingId, result.favorited)
-      onFavoritedChange?.(result.favorited)
-    } catch {
-      setFavorited(favorited)
-    } finally {
-      setBusy(false)
-    }
+    requestAuth((token) => {
+      setBusy(true)
+      touched.current = true
+      const next = !favorited
+      void setFavorite(token, listingId, next)
+        .then((result) => {
+          setFavorited(result.favorited)
+          marks.setFavorited(listingId, result.favorited)
+          onFavoritedChange?.(result.favorited)
+        })
+        .catch(() => setFavorited(favorited))
+        .finally(() => setBusy(false))
+    })
   }
 
   return (
@@ -81,8 +75,7 @@ export function ListingFavoriteButton({
 /** Bag beside the price. Signed-out taps open the sign-in sheet. */
 export function ListingCartButton({ listingId }: { listingId: string }) {
   const colors = useReswellColors()
-  const router = useRouter()
-  const { session } = useAuth()
+  const { requestAuth } = useAuthGate()
   const [busy, setBusy] = useState(false)
   const [added, setAdded] = useState(false)
 
@@ -94,28 +87,23 @@ export function ListingCartButton({ listingId }: { listingId: string }) {
 
   async function add() {
     if (busy) return
-    const token = session?.access_token
-    if (!token) {
-      router.push("/sign-in")
-      return
-    }
-    setBusy(true)
-    try {
-      await setCartItem(token, listingId, 1)
-      setAdded(true)
-    } catch (cause: unknown) {
-      setAdded(false)
-      const message = cause instanceof Error ? cause.message : "Could not add this to your cart"
-      Alert.alert("Cart", message)
-    } finally {
-      setBusy(false)
-    }
+    requestAuth((token) => {
+      setBusy(true)
+      void setCartItem(token, listingId, 1)
+        .then(() => setAdded(true))
+        .catch((cause: unknown) => {
+          setAdded(false)
+          const message = cause instanceof Error ? cause.message : "Could not add this to your cart"
+          Alert.alert("Cart", message)
+        })
+        .finally(() => setBusy(false))
+    })
   }
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={session ? "Add to cart" : "Sign in to save to cart"}
+      accessibilityLabel="Add to cart"
       onPress={() => void add()}
       style={[styles.cart, { backgroundColor: colors.background, borderColor: colors.border }]}
     >

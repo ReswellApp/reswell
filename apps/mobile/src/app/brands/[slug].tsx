@@ -62,7 +62,6 @@ export default function BrandScreen() {
           keyExtractor={(item) => item?.id ?? "spacer"}
           numColumns={2}
           columnWrapperStyle={styles.columns}
-          contentContainerStyle={styles.list}
           ListHeaderComponent={
             <View style={styles.header}>
               <View style={styles.titleRow}>
@@ -156,7 +155,6 @@ function WebsiteLink({ url }: { url: string }) {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   centered: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24 },
-  list: { paddingBottom: 120 },
   columns: { paddingHorizontal: 12, gap: 8 },
   header: { paddingHorizontal: 16, paddingTop: 8, gap: 10 },
   titleRow: { flexDirection: "row", alignItems: "center", gap: 12 },

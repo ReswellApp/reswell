@@ -3,6 +3,7 @@ import { SymbolView } from "expo-symbols"
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native"
 import type { MobileListingCard, MobileListingCardSeller } from "@reswell/api-contract"
 import { listingListColumnStyle, LISTING_TILE_ASPECT } from "@/components/listing-list-layout"
+import { ProfileCircle } from "@/components/profile-circle"
 import { ListingCartButton, ListingFavoriteButton } from "@/components/listing-tile-actions"
 import { canShowListingCartButton } from "@/lib/listing-cart-tile"
 import { fontFamily, useReswellColors } from "@/theme"
@@ -29,15 +30,7 @@ function FeedListingSellerBar({
   return (
     <View style={styles.sellerRow}>
       <Pressable onPress={onPressSeller} style={styles.sellerIdentity} accessibilityRole="button">
-        {seller.avatar_url ? (
-          <Image source={{ uri: seller.avatar_url }} style={[styles.sellerAvatar, { backgroundColor: colors.image }]} />
-        ) : (
-          <View style={[styles.sellerAvatar, styles.sellerAvatarFallback, { backgroundColor: colors.image }]}>
-            <Text style={[styles.sellerAvatarLabel, { color: colors.foreground, fontFamily: fontFamily.headline }]}>
-              {seller.name.slice(0, 1).toUpperCase()}
-            </Text>
-          </View>
-        )}
+        <ProfileCircle url={seller.avatar_url} size={30} />
         <View style={styles.sellerCopy}>
           <Text numberOfLines={1} style={[styles.sellerName, { color: colors.foreground, fontFamily: fontFamily.text }]}>
             {sellerHandle(seller)}
@@ -176,9 +169,6 @@ const styles = StyleSheet.create({
   card: { marginBottom: 18 },
   sellerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },
   sellerIdentity: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8, minWidth: 0 },
-  sellerAvatar: { width: 30, height: 30, borderRadius: 15 },
-  sellerAvatarFallback: { alignItems: "center", justifyContent: "center" },
-  sellerAvatarLabel: { fontSize: 13, fontWeight: "700" },
   sellerCopy: { flex: 1, flexDirection: "row", alignItems: "center", gap: 4, minWidth: 0 },
   sellerName: { flexShrink: 1, fontSize: 14, fontWeight: "600" },
   follow: {

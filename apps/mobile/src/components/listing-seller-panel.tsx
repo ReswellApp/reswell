@@ -1,11 +1,11 @@
-import { Image } from "expo-image"
 import { Link, useRouter } from "expo-router"
 import { SymbolView } from "expo-symbols"
 import { useState } from "react"
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native"
 import type { MobileListingDetail, MobileReview } from "@reswell/api-contract"
+import { ProfileCircle } from "@/components/profile-circle"
 import { fetchProfileReviews, sendListingMessage } from "@/lib/api"
-import { useAuth } from "@/lib/auth-context"
+import { useAuthGate } from "@/lib/auth-gate"
 import { fontFamily, useReswellColors } from "@/theme"
 
 export function ListingSellerPanel({ listing }: { listing: MobileListingDetail }) {
@@ -18,7 +18,7 @@ export function ListingSellerPanel({ listing }: { listing: MobileListingDetail }
     <View style={[styles.panel, { borderTopColor: colors.border }]}>
       <Text style={[styles.heading, { color: colors.foreground, fontFamily: fontFamily.text }]}>About the seller</Text>
       <View style={styles.identity}>
-        <Avatar name={seller.name} url={seller.avatar_url} />
+        <ProfileCircle url={seller.avatar_url} size={56} />
         <View style={styles.identityCopy}>
           <View style={styles.nameRow}>
             <Text style={[styles.name, { color: colors.foreground, fontFamily: fontFamily.text }]}>{seller.name}</Text>
@@ -78,29 +78,20 @@ export function ListingSellerPanel({ listing }: { listing: MobileListingDetail }
   )
 }
 
-function Avatar({ name, url }: { name: string; url: string | null }) {
-  const colors = useReswellColors()
-  if (url) return <Image source={{ uri: url }} style={styles.avatar} contentFit="cover" />
-  return (
-    <View style={[styles.avatar, styles.avatarFallback, { backgroundColor: colors.image }]}>
-      <Text style={[styles.avatarLabel, { color: colors.foreground, fontFamily: fontFamily.headline }]}>
-        {name.slice(0, 1).toUpperCase()}
-      </Text>
-    </View>
-  )
-}
-
 function MessageButton({ listingId, open, onOpen }: { listingId: string; open: boolean; onOpen: () => void }) {
   const colors = useReswellColors()
   const router = useRouter()
-  const { session } = useAuth()
+  const { requestAuth } = useAuthGate()
   const [draft, setDraft] = useState("")
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   return (
     <View style={styles.messageBlock}>
-      <Pressable style={[styles.button, { backgroundColor: colors.image }]} onPress={onOpen}>
+      <Pressable
+        style={[styles.button, { backgroundColor: colors.image }]}
+        onPress={() => requestAuth(() => onOpen())}
+      >
         <SymbolView name={{ ios: "bubble.left", android: "chat_bubble", web: "chat_bubble" }} size={16} tintColor={colors.foreground} />
         <Text style={[styles.buttonLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}>Message seller</Text>
       </Pressable>
@@ -112,13 +103,9 @@ function MessageButton({ listingId, open, onOpen }: { listingId: string; open: b
           placeholderTextColor={colors.muted}
           style={[styles.input, { color: colors.foreground, backgroundColor: colors.image, fontFamily: fontFamily.text }]}
           onSubmitEditing={() => {
-            const token = session?.access_token
             const body = draft.trim()
-            if (!token) {
-              router.push("/sign-in")
-              return
-            }
             if (!body || busy) return
+            requestAuth((token) => {
             setBusy(true)
             setError(null)
             void sendListingMessage(token, listingId, body)
@@ -130,6 +117,7 @@ function MessageButton({ listingId, open, onOpen }: { listingId: string; open: b
                 setError(cause instanceof Error ? cause.message : "Could not send that message")
               })
               .finally(() => setBusy(false))
+            })
           }}
         />
       ) : null}
@@ -206,9 +194,6 @@ const styles = StyleSheet.create({
   name: { fontSize: 16, fontWeight: "700" },
   meta: { fontSize: 14 },
   joined: { fontSize: 14, fontWeight: "700" },
-  avatar: { width: 56, height: 56, borderRadius: 28 },
-  avatarFallback: { alignItems: "center", justifyContent: "center" },
-  avatarLabel: { fontSize: 20, fontWeight: "700" },
   button: { minHeight: 48, borderRadius: 14, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8 },
   buttonLabel: { fontSize: 16, fontWeight: "600" },
   messageBlock: { gap: 8 },

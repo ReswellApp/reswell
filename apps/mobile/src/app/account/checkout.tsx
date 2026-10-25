@@ -25,16 +25,24 @@ import {
   startCheckoutPayment,
 } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
+import { useAuthGate } from "@/lib/auth-gate"
 import { useAccountResource } from "@/lib/use-account-resource"
 import { fontFamily, useReswellColors } from "@/theme"
 
 const EMPTY_ADDRESS = { full_name: "", line1: "", line2: "", city: "", state: "", postal_code: "" }
 
 export default function CheckoutScreen() {
-  const { session } = useAuth()
+  const colors = useReswellColors()
+  const { session, ready } = useAuth()
+  const { requestAuth } = useAuthGate()
   const token = session?.access_token ?? null
   const [publishableKey, setPublishableKey] = useState<string | null>(null)
   const [configError, setConfigError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!ready || token) return
+    requestAuth()
+  }, [ready, requestAuth, token])
 
   useEffect(() => {
     if (!token) return
@@ -56,6 +64,10 @@ export default function CheckoutScreen() {
       <Stack.Screen options={{ title: "Checkout" }} />
       {configError ? (
         <Text style={styles.centered}>{configError}</Text>
+      ) : !token ? (
+        <Pressable onPress={() => requestAuth()} style={styles.centered}>
+          <Text style={{ color: colors.foreground, fontFamily: fontFamily.text }}>Sign in to check out</Text>
+        </Pressable>
       ) : !publishableKey ? (
         <ActivityIndicator style={styles.centered} />
       ) : (

@@ -1,10 +1,42 @@
 import { GlassView, isGlassEffectAPIAvailable, isLiquidGlassAvailable } from "expo-glass-effect"
 import { SymbolView, type AndroidSymbol } from "expo-symbols"
 import { usePathname, useRouter } from "expo-router"
+import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react"
 import { Pressable, StyleSheet, Text, useColorScheme, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import type { SFSymbol } from "sf-symbols-typescript"
+import { useAuth } from "@/lib/auth-context"
+import { useAuthGate } from "@/lib/auth-gate"
 import { fontFamily, useReswellColors } from "@/theme"
+
+/** Used until the bar reports its laid-out height. Icon, label, and vertical padding. */
+const TAB_BAR_FALLBACK_HEIGHT = 58
+/** Space between scroll content and the top of the bar. */
+const TAB_BAR_CONTENT_GAP = 12
+
+const TabBarHeightContext = createContext<{
+  height: number
+  setHeight: (height: number) => void
+} | null>(null)
+
+export function FloatingTabBarInsetProvider({ children }: { children: ReactNode }) {
+  const [height, setBarHeight] = useState(0)
+  const setHeight = useCallback((next: number) => {
+    setBarHeight((current) => (current === next ? current : next))
+  }, [])
+  const value = useMemo(() => ({ height, setHeight }), [height, setHeight])
+  return <TabBarHeightContext.Provider value={value}>{children}</TabBarHeightContext.Provider>
+}
+
+/** Bottom space the root stack should keep clear while the floating bar is on screen. */
+export function useFloatingTabBarClearance(): number {
+  const pathname = usePathname()
+  const insets = useSafeAreaInsets()
+  const measured = useContext(TabBarHeightContext)?.height ?? 0
+  if (tabBarHidden(pathname)) return 0
+  const barHeight = measured > 0 ? measured : TAB_BAR_FALLBACK_HEIGHT
+  return barHeight + Math.max(insets.bottom, 8) + TAB_BAR_CONTENT_GAP
+}
 
 type TabIcon = {
   ios: SFSymbol
@@ -75,12 +107,17 @@ function tabBarHidden(pathname: string): boolean {
   )
 }
 
+const AUTH_TABS = new Set<TabItem["href"]>(["/sell/new", "/favorites", "/account"])
+
 export function FloatingTabBar() {
   const pathname = usePathname()
   const router = useRouter()
+  const { session } = useAuth()
+  const { requestAuth } = useAuthGate()
   const colors = useReswellColors()
   const scheme = useColorScheme()
   const insets = useSafeAreaInsets()
+  const tabBarHeight = useContext(TabBarHeightContext)
 
   if (tabBarHidden(pathname)) return null
 
@@ -127,6 +164,10 @@ export function FloatingTabBar() {
               accessibilityRole="button"
               accessibilityState={{ selected: active }}
               onPress={() => {
+                if (AUTH_TABS.has(href) && !session?.access_token) {
+                  requestAuth(() => router.navigate(href))
+                  return
+                }
                 if (href === "/" && (pathname === "/" || pathname === "")) return
                 if (href === "/feed" && pathname === "/feed") return
                 if (href === "/sell/new" && (pathname === "/sell" || pathname.startsWith("/sell/"))) return
@@ -142,7 +183,11 @@ export function FloatingTabBar() {
   })
 
   return (
-    <View pointerEvents="box-none" style={[styles.wrap, { bottom: Math.max(insets.bottom, 8) }]}>
+    <View
+      pointerEvents="box-none"
+      onLayout={(event) => tabBarHeight?.setHeight(event.nativeEvent.layout.height)}
+      style={[styles.wrap, { bottom: Math.max(insets.bottom, 8) }]}
+    >
       <View style={styles.shadow}>
         {glass ? (
           <GlassView

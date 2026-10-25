@@ -1,10 +1,10 @@
-import { Image } from "expo-image"
 import { Pressable, StyleSheet, Text, View } from "react-native"
 import { RefreshControl } from "react-native-gesture-handler"
 import type { MobileBrowseRailItem, MobileHomeSection, MobileListingCard, MobileListingCategory } from "@reswell/api-contract"
 import { CategorySlider } from "@/components/browse-chips"
 import { HorizontalRail, VerticalScroll } from "@/components/horizontal-rail"
 import { ListingCard } from "@/components/listing-card"
+import { ProfileCircle } from "@/components/profile-circle"
 import { fontFamily, useReswellColors } from "@/theme"
 
 export function HomeFeed({
@@ -40,7 +40,6 @@ export function HomeFeed({
   return (
     <VerticalScroll
       style={styles.feed}
-      contentContainerStyle={styles.page}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.foreground} />}
     >
       <CategorySlider items={rail} onOpenCategory={onOpenCategory} onOpenResource={onOpenResource} onOpenPage={onOpenPage} />
@@ -166,11 +165,7 @@ function ShopMark({
   const colors = useReswellColors()
   const body = (
     <View style={styles.shop}>
-      {avatarUrl ? (
-        <Image source={{ uri: avatarUrl }} style={[styles.avatar, { backgroundColor: colors.image }]} />
-      ) : (
-        <View style={[styles.avatar, { backgroundColor: colors.image }]} />
-      )}
+      <ProfileCircle url={avatarUrl} size={72} />
       <Text numberOfLines={1} style={[styles.brandName, { color: colors.foreground, fontFamily: fontFamily.text }]}>
         {name}
       </Text>
@@ -187,7 +182,6 @@ function ShopMark({
 
 const styles = StyleSheet.create({
   feed: { flex: 1 },
-  page: { paddingBottom: 120 },
   section: { marginTop: 20 },
   title: { fontSize: 22, fontWeight: "700", letterSpacing: -0.4, paddingHorizontal: 16, marginBottom: 12 },
   directory: { paddingHorizontal: 16, marginTop: -6, marginBottom: 10 },
@@ -199,6 +193,5 @@ const styles = StyleSheet.create({
   logoInitial: { fontSize: 28, fontWeight: "700" },
   brandName: { fontSize: 13, fontWeight: "600", textAlign: "center" },
   shop: { width: 120, alignItems: "center", gap: 4 },
-  avatar: { width: 72, height: 72, borderRadius: 36 },
   location: { fontSize: 12, textAlign: "center" },
 })

@@ -222,7 +222,7 @@ function RowButton({ label, onPress }: { label: string; onPress: () => void }) {
 }
 
 const styles = StyleSheet.create({
-  page: { padding: 16, paddingBottom: 120, gap: 14 },
+  page: { padding: 16, gap: 14 },
   switch: { flexDirection: "row", borderRadius: 999, padding: 4 },
   switchItem: { flex: 1, borderRadius: 999, alignItems: "center", paddingVertical: 8 },
   switchLabel: { fontSize: 14, fontWeight: "700" },

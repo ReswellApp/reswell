@@ -6,11 +6,19 @@ import {
   type MobileEarnings,
 } from "@reswell/api-contract"
 import type { SupabaseClient } from "@supabase/supabase-js"
+import type { EarningsTransaction } from "@/components/features/earnings/earnings-types"
+import { parseDescription } from "@/components/features/earnings/earnings-activity-helpers"
+import type { EarningsBalanceListingRow } from "@/lib/earnings-balance-listings"
+import { orderIdFromSellerSaleLedger } from "@/lib/earnings-sale-ledger"
 import { getMySellerEarningsTotals } from "@/lib/db/sellerEarningsTotals"
+import { absolutePublicMediaUrl } from "@/lib/site-metadata"
+import { attachListingsToEarningsTransactions } from "@/lib/services/earningsActivityListings"
+import { getEarningsBalanceListings } from "@/lib/services/earningsBalanceListings"
 import type { MobileApiResult } from "@/lib/services/mobileApi"
 import { trackKlaviyoPayout } from "@/lib/klaviyo/track-payout"
 import {
   cashOutToStripeConnectedAccount,
+  createConnectExpressLoginLink,
   createConnectHostedOnboardingLink,
   ensureExpressConnectedAccount,
   getStripeConnectStatusForUser,
@@ -18,7 +26,115 @@ import {
 import { STRIPE_INSTANT_BANK_PAYOUT_FEE_RATE } from "@/lib/utils/stripe-connect-cashout"
 import type { StripeConnectStatusPayload } from "@/lib/utils/stripe-connect-status"
 
-const ACTIVITY_LIMIT = 20
+const ACTIVITY_LIMIT = 40
+
+type ActivityKind = MobileEarnings["activity"][number]["kind"]
+
+function txType(value: string): EarningsTransaction["type"] {
+  if (value === "sale" || value === "purchase" || value === "cashout" || value === "deposit" || value === "refund") {
+    return value
+  }
+  return "sale"
+}
+
+function activityKind(tx: EarningsTransaction): ActivityKind {
+  if (tx.type === "cashout") return "payout"
+  if (tx.type === "refund" || tx.description.startsWith("Refund")) return "refund"
+  if (tx.description.startsWith("Pending —") || tx.reference_type === "order_pending_earnings") return "pending"
+  if (
+    tx.description.startsWith("Available —") ||
+    tx.reference_type === "order_seller_earnings" ||
+    tx.type === "sale"
+  ) {
+    return "ready"
+  }
+  return "other"
+}
+
+function statusLabel(kind: ActivityKind): string {
+  if (kind === "pending") return "Pending"
+  if (kind === "ready") return "Ready"
+  if (kind === "payout") return "Payout"
+  if (kind === "refund") return "Refund"
+  return "Activity"
+}
+
+function displayTitle(tx: EarningsTransaction): string {
+  if (tx.listing?.title) return tx.listing.title
+  const title = parseDescription(tx.description, tx.type).title
+  const cleaned = title.replace(/^(Pending|Available|Sold|Refund|Payout|Purchased) — /, "").trim()
+  return cleaned || "Activity"
+}
+
+function uuidOrNull(value: string | null | undefined): string | null {
+  if (!value) return null
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value) ? value : null
+}
+
+function saleIdFromHref(href: string | null): string | null {
+  const match = href?.match(/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i)
+  return uuidOrNull(match?.[1])
+}
+
+function mediaUrl(src: string | null | undefined): string | null {
+  return absolutePublicMediaUrl(src) ?? null
+}
+
+function ledgerLine(tx: EarningsTransaction): MobileEarnings["activity"][number] | null {
+  const amount = usd(tx.amount)
+  if (Math.abs(amount) < 0.005 && tx.description.startsWith("Available —")) return null
+  const kind = activityKind(tx)
+  const signed = kind === "payout" ? -Math.abs(amount) : amount
+  const saleId = uuidOrNull(orderIdFromSellerSaleLedger(tx))
+  return {
+    id: tx.id,
+    title: displayTitle(tx),
+    status_label: statusLabel(kind),
+    kind,
+    amount_usd: signed,
+    amount_label: money(signed),
+    created_at: tx.created_at,
+    image_url: mediaUrl(tx.listing?.imageUrl),
+    sale_id: saleId,
+  }
+}
+
+function balanceLine(row: EarningsBalanceListingRow, kind: "pending" | "ready"): MobileEarnings["activity"][number] {
+  return {
+    id: row.key,
+    title: row.title,
+    status_label: kind === "pending" ? "Pending" : "Ready",
+    kind,
+    amount_usd: row.amountUsd,
+    amount_label: money(row.amountUsd),
+    created_at: row.createdAt,
+    image_url: mediaUrl(row.imageUrl),
+    sale_id: saleIdFromHref(row.saleHref),
+  }
+}
+
+function asEarningsTx(row: {
+  id: string
+  type: string | null
+  amount: number | string | null
+  description: string | null
+  status: string | null
+  created_at: string | null
+  reference_id: string | null
+  reference_type: string | null
+}): EarningsTransaction {
+  return {
+    id: row.id,
+    type: txType(row.type ?? ""),
+    amount: String(row.amount ?? "0"),
+    balance_after: "0",
+    description: row.description ?? "",
+    status: row.status ?? "",
+    created_at: row.created_at ?? "",
+    reference_id: row.reference_id,
+    reference_type: row.reference_type,
+  }
+}
 
 function usd(value: unknown): number {
   const amount = typeof value === "number" ? value : Number(value)
@@ -29,22 +145,6 @@ function usd(value: unknown): number {
 function money(amount: number): string {
   const sign = amount < 0 ? "-" : ""
   return `${sign}$${Math.abs(amount).toFixed(2)}`
-}
-
-function activityTitle(description: string, type: string): string {
-  const cleaned = description
-    .replace(/^Pending — /, "")
-    .replace(/^Available — /, "")
-    .trim()
-  return cleaned || type
-}
-
-function activityStatus(type: string, description: string, status: string): string {
-  if (type === "cashout") return "Payout"
-  if (type === "refund") return "Refund"
-  if (description.startsWith("Pending") || status === "pending") return "Pending"
-  if (type === "sale") return "Ready"
-  return status ? status.charAt(0).toUpperCase() + status.slice(1) : "Activity"
 }
 
 function payoutCopy(status: StripeConnectStatusPayload): { label: string; detail: string } {
@@ -88,12 +188,12 @@ export async function getMobileEarningsService(
   const available = Math.round((ready + pending) * 100) / 100
   const cashedOut = Math.max(0, usd(wallet?.lifetime_cashed_out))
 
-  const [totals, activityResult, payoutStatus] = await Promise.all([
+  const [totals, activityResult, payoutStatus, balanceListings] = await Promise.all([
     getMySellerEarningsTotals(supabase),
     wallet
       ? supabase
           .from("wallet_transactions")
-          .select("id, type, amount, description, status, created_at")
+          .select("id, type, amount, description, status, created_at, reference_id, reference_type")
           .eq("wallet_id", wallet.id)
           .order("created_at", { ascending: false })
           .limit(ACTIVITY_LIMIT)
@@ -105,6 +205,13 @@ export async function getMobileEarningsService(
       })
       return null
     }),
+    wallet
+      ? getEarningsBalanceListings(supabase, {
+          walletId: wallet.id,
+          sellerId: userId,
+          readyBalanceUsd: ready,
+        })
+      : Promise.resolve({ pending: [], ready: [], reversedOrderIds: [] }),
   ])
   const payout = payoutStatus
     ? payoutCopy(payoutStatus)
@@ -122,22 +229,22 @@ export async function getMobileEarningsService(
     return { ok: false, status: 500, error: "Unable to load earnings right now" }
   }
 
-  const activity = (activityResult.data ?? [])
-    .map((row) => {
-      const amount = usd(row.amount)
-      const description = typeof row.description === "string" ? row.description : ""
-      const type = typeof row.type === "string" ? row.type : "activity"
-      if (Math.abs(amount) < 0.005 && description.startsWith("Available —")) return null
-      return {
-        id: String(row.id),
-        title: activityTitle(description, type),
-        status_label: activityStatus(type, description, typeof row.status === "string" ? row.status : ""),
-        amount_usd: amount,
-        amount_label: money(type === "cashout" ? -Math.abs(amount) : amount),
-        created_at: String(row.created_at ?? ""),
-      }
-    })
-    .filter((row) => row != null)
+  const rawActivity = (activityResult.data ?? []).map((row) =>
+    asEarningsTx({
+      id: String(row.id),
+      type: typeof row.type === "string" ? row.type : null,
+      amount: row.amount,
+      description: typeof row.description === "string" ? row.description : null,
+      status: typeof row.status === "string" ? row.status : null,
+      created_at: typeof row.created_at === "string" ? row.created_at : null,
+      reference_id: typeof row.reference_id === "string" ? row.reference_id : null,
+      reference_type: typeof row.reference_type === "string" ? row.reference_type : null,
+    }),
+  )
+  const withListings = await attachListingsToEarningsTransactions(supabase, rawActivity)
+  const activity = withListings.map(ledgerLine).filter((row) => row != null && uuidOrNull(row.id))
+  const pendingItems = balanceListings.pending.filter((row) => uuidOrNull(row.key)).map((row) => balanceLine(row, "pending"))
+  const readyItems = balanceListings.ready.filter((row) => uuidOrNull(row.key)).map((row) => balanceLine(row, "ready"))
 
   const earnedLast30 = Math.max(0, totals?.earnedLast30dUsd ?? 0)
   const parsed = mobileEarningsSchema.safeParse({
@@ -157,9 +264,14 @@ export async function getMobileEarningsService(
     minimum_usd: 10,
     instant_fee_rate: STRIPE_INSTANT_BANK_PAYOUT_FEE_RATE,
     banks,
+    pending_items: pendingItems,
+    ready_items: readyItems,
     activity,
   })
-  if (!parsed.success) return { ok: false, status: 500, error: "Unable to load earnings right now" }
+  if (!parsed.success) {
+    console.error("[mobile-api] earnings payload invalid", { timestamp: new Date().toISOString(), issues: parsed.error.flatten() })
+    return { ok: false, status: 500, error: "Unable to load earnings right now" }
+  }
   return { ok: true, data: parsed.data }
 }
 
@@ -177,6 +289,35 @@ export async function createMobilePayoutOnboardingService(
   if ("error" in link) return { ok: false, status: 502, error: link.error }
   const parsed = mobilePayoutOnboardingSchema.safeParse(link)
   if (!parsed.success) return { ok: false, status: 502, error: "Could not open Stripe verification. Try again shortly." }
+  return { ok: true, data: parsed.data }
+}
+
+/** Stripe-hosted bank setup. First connection uses onboarding; a connected account opens the Express dashboard to add a bank. */
+export async function createMobileAddBankService(
+  supabase: SupabaseClient,
+  userId: string,
+  email: string | null,
+): Promise<MobileApiResult<{ url: string }>> {
+  if (!process.env.STRIPE_SECRET_KEY?.trim()) {
+    return { ok: false, status: 503, error: "Stripe payouts are not configured" }
+  }
+  const ensured = await ensureExpressConnectedAccount(supabase, userId, email)
+  if ("error" in ensured) return { ok: false, status: 400, error: ensured.error }
+
+  const status = await getStripeConnectStatusForUser(supabase, userId).catch(() => null)
+  const link = status?.cashOutReady
+    ? await createConnectExpressLoginLink(ensured.stripeAccountId)
+    : await createConnectHostedOnboardingLink(ensured.stripeAccountId)
+  if ("error" in link && status?.cashOutReady) {
+    const fallback = await createConnectHostedOnboardingLink(ensured.stripeAccountId)
+    if ("error" in fallback) return { ok: false, status: 502, error: link.error }
+    const parsedFallback = mobilePayoutOnboardingSchema.safeParse(fallback)
+    if (!parsedFallback.success) return { ok: false, status: 502, error: "Could not open bank setup. Try again shortly." }
+    return { ok: true, data: parsedFallback.data }
+  }
+  if ("error" in link) return { ok: false, status: 502, error: link.error }
+  const parsed = mobilePayoutOnboardingSchema.safeParse(link)
+  if (!parsed.success) return { ok: false, status: 502, error: "Could not open bank setup. Try again shortly." }
   return { ok: true, data: parsed.data }
 }
 

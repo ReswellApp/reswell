@@ -16,6 +16,7 @@ import {
 } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import type { MobileConversationDetail, MobileMessage } from "@reswell/api-contract"
+import { ProfileCircle } from "@/components/profile-circle"
 import { fetchConversation, sendConversationMessage } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
 import { publicApiUrl } from "@/lib/public-env"
@@ -171,7 +172,7 @@ function ThreadTitle({ name, avatarUrl, joined }: { name: string; avatarUrl: str
   const colors = useReswellColors()
   return (
     <View style={styles.titleRow}>
-      <Avatar name={name} url={avatarUrl} size={32} />
+      <ProfileCircle url={avatarUrl} size={32} />
       <View>
         <Text numberOfLines={1} style={[styles.titleName, { color: colors.foreground, fontFamily: fontFamily.text }]}>
           {name}
@@ -194,7 +195,7 @@ function PersonSummary({ conversation }: { conversation: MobileConversationDetai
       : `${conversation.other_rating_average?.toFixed(1) ?? ""} · ${conversation.other_review_count} reviews`
   return (
     <View style={styles.person}>
-      <Avatar name={conversation.other_name} url={conversation.other_avatar_url} size={72} />
+      <ProfileCircle url={conversation.other_avatar_url} size={72} />
       <Text style={[styles.personName, { color: colors.foreground, fontFamily: fontFamily.text }]}>{conversation.other_name}</Text>
       {conversation.other_joined_label ? (
         <Text style={[styles.personMeta, { color: colors.muted, fontFamily: fontFamily.text }]}>{conversation.other_joined_label}</Text>
@@ -251,27 +252,13 @@ function MessageRow({
   }
   return (
     <View style={[styles.messageRow, message.mine ? styles.mine : styles.theirs]}>
-      {message.mine ? null : <Avatar name={name} url={avatarUrl} size={28} />}
+      {message.mine ? null : <ProfileCircle url={avatarUrl} size={28} />}
       <View style={styles.bubbleWrap}>
         <View style={[styles.bubble, { borderColor: colors.border, backgroundColor: message.mine ? colors.image : colors.background }]}>
           <Text style={[styles.body, { color: colors.foreground, fontFamily: fontFamily.text }]}>{message.body}</Text>
         </View>
         <Text style={[styles.time, message.mine ? styles.timeMine : null, { color: colors.muted, fontFamily: fontFamily.text }]}>{time}</Text>
       </View>
-    </View>
-  )
-}
-
-function Avatar({ name, url, size }: { name: string; url: string | null; size: number }) {
-  const colors = useReswellColors()
-  if (url) {
-    return <Image source={{ uri: url }} style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: colors.image }} contentFit="cover" />
-  }
-  return (
-    <View style={[styles.fallback, { width: size, height: size, borderRadius: size / 2, backgroundColor: colors.image }]}>
-      <Text style={{ color: colors.foreground, fontFamily: fontFamily.text, fontSize: size > 40 ? 22 : 12, fontWeight: "700" }}>
-        {initials(name)}
-      </Text>
     </View>
   )
 }
@@ -300,12 +287,6 @@ function timeLabel(iso: string): string {
   const date = new Date(iso)
   if (Number.isNaN(date.getTime())) return ""
   return date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
-}
-
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean).slice(0, 2)
-  const letters = parts.map((part) => part[0]?.toUpperCase() ?? "").join("")
-  return letters || "?"
 }
 
 const styles = StyleSheet.create({
@@ -341,7 +322,6 @@ const styles = StyleSheet.create({
   orderMeta: { fontSize: 13, lineHeight: 18 },
   orderButton: { marginTop: 8, borderRadius: 12, alignItems: "center", paddingVertical: 10 },
   orderButtonLabel: { fontSize: 15, fontWeight: "700" },
-  fallback: { alignItems: "center", justifyContent: "center" },
   safety: { flexDirection: "row", alignItems: "center", gap: 10, borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 20, paddingVertical: 12 },
   safetyText: { flex: 1, fontSize: 13, lineHeight: 18 },
   safetyLink: { fontWeight: "700" },

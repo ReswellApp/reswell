@@ -1,4 +1,5 @@
 import { Image, type ImageContentPosition } from "expo-image"
+import { ProfileCircle } from "@/components/profile-circle"
 import { SymbolView } from "expo-symbols"
 import { ActivityIndicator, Linking, Pressable, Share, StyleSheet, Text, View } from "react-native"
 import type { MobileProfile } from "@reswell/api-contract"
@@ -64,11 +65,12 @@ export function ProfileHeader({
           <>
             <Image
               source={{ uri: profile.banner_url }}
-              style={StyleSheet.absoluteFillObject}
+              style={styles.heroMedia}
               contentFit="cover"
               contentPosition={bannerContentPosition(profile.banner_focal_x, profile.banner_focal_y)}
+              pointerEvents="none"
             />
-            <View style={[StyleSheet.absoluteFillObject, styles.heroOverlay]} />
+            <View pointerEvents="none" style={styles.heroOverlay} />
           </>
         ) : null}
         <View style={styles.heroActions}>
@@ -82,13 +84,7 @@ export function ProfileHeader({
           </Pressable>
         </View>
         <View style={styles.heroIdentity}>
-          {profile.avatar_url ? (
-            <Image source={{ uri: profile.avatar_url }} style={styles.heroAvatar} contentFit="cover" />
-          ) : (
-            <View style={[styles.heroAvatar, styles.heroAvatarFallback]}>
-              <SymbolView name={{ ios: "person.fill", android: "person", web: "person" }} size={32} tintColor={colors.listingHeart} />
-            </View>
-          )}
+          <ProfileCircle url={profile.avatar_url} size={72} style={styles.heroAvatar} />
           <View style={styles.heroCopy}>
             <Text style={[styles.heroName, { fontFamily: fontFamily.headline }]} numberOfLines={2}>
               {profile.name}
@@ -192,7 +188,21 @@ const styles = StyleSheet.create({
     padding: 16,
     minHeight: 148,
   },
-  heroOverlay: { backgroundColor: "rgba(4, 7, 14, 0.45)" },
+  heroMedia: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+  },
+  heroOverlay: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    backgroundColor: "rgba(4, 7, 14, 0.45)",
+  },
   heroActions: { flexDirection: "row", justifyContent: "flex-end", gap: 8, marginBottom: 12 },
   iconCircle: {
     width: 34,
@@ -204,14 +214,9 @@ const styles = StyleSheet.create({
   },
   heroIdentity: { flexDirection: "row", alignItems: "flex-start", gap: 14 },
   heroAvatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
     borderWidth: 3,
     borderColor: "#FFFFFF",
-    backgroundColor: "#FFFFFF",
   },
-  heroAvatarFallback: { alignItems: "center", justifyContent: "center" },
   heroCopy: { flex: 1, gap: 4, paddingTop: 4 },
   heroName: { color: "#FFFFFF", fontSize: 22, fontWeight: "700", letterSpacing: -0.3 },
   heroHandle: { color: "rgba(255, 255, 255, 0.88)", fontSize: 15, fontWeight: "600" },

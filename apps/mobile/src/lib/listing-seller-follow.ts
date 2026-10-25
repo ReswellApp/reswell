@@ -1,4 +1,5 @@
 import { useRouter } from "expo-router"
+import { useAuthGate } from "@/lib/auth-gate"
 import { useCallback, useState, type Dispatch, type SetStateAction } from "react"
 import type { MobileListingCard, MobileListingCardSeller } from "@reswell/api-contract"
 import { setFollow } from "@/lib/api"
@@ -18,7 +19,7 @@ export function patchListingSeller(
 export function useListingSellerFollow(setListings: Dispatch<SetStateAction<MobileListingCard[]>>) {
   const router = useRouter()
   const { session } = useAuth()
-  const token = session?.access_token
+  const { requestAuth } = useAuthGate()
   const viewerId = session?.user?.id ?? null
   const [followBusyId, setFollowBusyId] = useState<string | null>(null)
 
@@ -40,20 +41,18 @@ export function useListingSellerFollow(setListings: Dispatch<SetStateAction<Mobi
 
   const toggleFollow = useCallback(
     (seller: MobileListingCardSeller) => {
-      if (!token) {
-        router.push("/sign-in")
-        return
-      }
+      requestAuth((accessToken) => {
       const next = !seller.following
       setFollowBusyId(seller.id)
-      setFollow(token, seller.id, next)
+      setFollow(accessToken, seller.id, next)
         .then(() => {
           setListings((current) => patchListingSeller(current, seller.id, { following: next }))
         })
         .catch(() => undefined)
         .finally(() => setFollowBusyId(null))
+      })
     },
-    [router, setListings, token],
+    [requestAuth, setListings],
   )
 
   return { viewerId, followBusyId, openListing, openSeller, toggleFollow }

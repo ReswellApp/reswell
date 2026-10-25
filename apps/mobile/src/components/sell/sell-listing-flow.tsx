@@ -18,6 +18,7 @@ import {
   uploadSellPhotos,
 } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
+import { useAuthGate } from "@/lib/auth-gate"
 import { clearSellDraft, loadSellDraft, saveSellDraft } from "@/lib/sell-draft"
 import {
   defaultDeliveryForCategory,
@@ -35,6 +36,7 @@ export function SellListingFlow({ initial }: { initial?: Partial<SellDraft> }) {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const { session } = useAuth()
+  const { requestAuth } = useAuthGate()
   const [draft, setDraft] = useState<SellDraft>(() => ({ ...emptySellDraft(), ...initial }))
   const [taxonomy, setTaxonomy] = useState<MobileSellTaxonomy | null>(null)
   const [taxonomyError, setTaxonomyError] = useState<string | null>(null)
@@ -120,16 +122,18 @@ export function SellListingFlow({ initial }: { initial?: Partial<SellDraft> }) {
     })
   }
 
-  async function saveDraft() {
+  async function saveDraft(accessToken?: string) {
     if (busy) return
-    const token = session?.access_token
+    const token = accessToken ?? session?.access_token
     if (!token) {
       try {
         await saveSellDraft(draft)
       } catch {
         // The account draft is what matters once they sign in.
       }
-      router.push("/sign-in")
+      requestAuth((nextToken) => {
+        void saveDraft(nextToken)
+      })
       return
     }
     if (!draft.category) {
@@ -153,11 +157,13 @@ export function SellListingFlow({ initial }: { initial?: Partial<SellDraft> }) {
     }
   }
 
-  async function postListing() {
+  async function postListing(accessToken?: string) {
     if (!ready || busy) return
-    const token = session?.access_token
+    const token = accessToken ?? session?.access_token
     if (!token) {
-      router.push("/sign-in")
+      requestAuth((nextToken) => {
+        void postListing(nextToken)
+      })
       return
     }
     setBusy("post")

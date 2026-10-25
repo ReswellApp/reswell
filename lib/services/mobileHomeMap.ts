@@ -10,7 +10,7 @@ import type { HomeFeedSection } from "@/lib/services/homeFeedPlan"
 import { brandLogoDisplaySrc } from "@/lib/brand-media-proxy-url"
 import type { MobileListingRow } from "@/lib/db/mobile-listings"
 import { toMobileListingCard } from "@/lib/services/mobileApi"
-import { absoluteProxiedProfileMediaUrl } from "@/lib/public-media-display-src"
+import { absoluteProfileCircleUrl } from "@/lib/profile-circle"
 import { absolutePublicMediaUrl } from "@/lib/site-metadata"
 
 /** Homepage peer card after the site has already chosen and ordered it. */
@@ -133,7 +133,7 @@ export function homeShopToMobile(shop: HomeShopSource): MobileHomeShop | null {
     id: shop.id,
     seller_slug: nullableText(shop.seller_slug),
     name: nullableText(shop.shop_name) ?? nullableText(shop.display_name) ?? "Reswell member",
-    avatar_url: avatar ? absoluteProxiedProfileMediaUrl(avatar) ?? null : null,
+    avatar_url: absoluteProfileCircleUrl(avatar),
     location_label: nullableText(shop.shop_address) ?? nullableText(shop.city) ?? nullableText(shop.location),
     verified: Boolean(shop.is_shop && shop.shop_verified),
   })

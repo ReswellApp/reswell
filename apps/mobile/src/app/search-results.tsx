@@ -233,7 +233,6 @@ export default function SearchResultsScreen() {
                   query={query}
                   accessToken={session?.access_token ?? null}
                   savedSearchId={savedSearchId}
-                  onSignIn={() => router.push("/sign-in")}
                   onChange={setSavedSearchId}
                 />
               </View>
@@ -332,7 +331,7 @@ function filterSearchListings(
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   centered: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24 },
-  list: { paddingTop: 8, paddingBottom: 120, paddingHorizontal: 12 },
+  list: { paddingTop: 8, paddingHorizontal: 12 },
   columns: { gap: 12 },
   empty: { textAlign: "center", marginTop: 32, fontSize: 16 },
   footer: { marginVertical: 16 },

@@ -14,6 +14,8 @@ import {
   toMobileProfile,
 } from "./mobileApi.ts"
 import type { MobileProfileRow } from "@/lib/db/mobile-profiles"
+import { STANDARD_PROFILE_AVATAR_PATH } from "@/lib/profile-circle"
+import { absoluteUrl } from "@/lib/site-metadata"
 import type { MobileListingRow } from "@/lib/db/mobile-listings"
 
 const ROW: MobileListingRow = {
@@ -113,7 +115,7 @@ describe("mobile listings contract", () => {
     assert.equal(detail.seller.name, "North Shop")
     assert.equal(detail.seller.id, "11111111-1111-1111-1111-111111111111")
     assert.equal(detail.seller.seller_slug, "north-shop")
-    assert.equal(detail.seller.avatar_url, null)
+    assert.equal(detail.seller.avatar_url, absoluteUrl(STANDARD_PROFILE_AVATAR_PATH))
     assert.equal(detail.seller.review_count, 0)
     assert.equal(detail.view_count, 0)
     assert.equal(detail.location_line, "SANTA CRUZ, CA")

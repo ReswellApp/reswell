@@ -5,7 +5,7 @@ import { MOBILE_BOARD_STYLE_FILTERS, type MobileListingDetail } from "@reswell/a
 import { ListingFulfillment } from "@/components/listing-fulfillment"
 import { ListingSellerPanel } from "@/components/listing-seller-panel"
 import { setCartItem } from "@/lib/api"
-import { useAuth } from "@/lib/auth-context"
+import { useAuthGate } from "@/lib/auth-gate"
 import { publicApiUrl } from "@/lib/public-env"
 import { fontFamily, useReswellColors } from "@/theme"
 
@@ -102,21 +102,18 @@ function Engagement({ listing }: { listing: MobileListingDetail }) {
 function KlarnaLine({ listingId }: { listingId: string }) {
   const colors = useReswellColors()
   const router = useRouter()
-  const { session } = useAuth()
+  const { requestAuth } = useAuthGate()
   return (
     <Text style={[styles.klarna, { color: colors.foreground, fontFamily: fontFamily.text }]}>
       As low as monthly payments with{" "}
       <Text
         style={styles.link}
         onPress={() => {
-          const token = session?.access_token
-          if (!token) {
-            router.push("/sign-in")
-            return
-          }
-          void setCartItem(token, listingId, 1)
-            .then(() => router.push("/account/cart"))
-            .catch(() => router.push("/account/cart"))
+          requestAuth((token) => {
+            void setCartItem(token, listingId, 1)
+              .then(() => router.push("/account/cart"))
+              .catch(() => router.push("/account/cart"))
+          })
         }}
       >
         Klarna

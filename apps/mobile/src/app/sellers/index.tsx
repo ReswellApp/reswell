@@ -6,6 +6,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import type { MobileSellerCard, MobileSellersPage } from "@reswell/api-contract"
 import { VerticalScroll } from "@/components/horizontal-rail"
+import { ProfileCircle } from "@/components/profile-circle"
 import { fetchSellers } from "@/lib/api"
 import { fontFamily, useReswellColors } from "@/theme"
 
@@ -95,13 +96,13 @@ export default function SellersScreen() {
 
 function SellerRow({ seller, onPress }: { seller: MobileSellerCard; onPress: () => void }) {
   const colors = useReswellColors()
-  const photo = seller.image_urls[0] ?? seller.avatar_url
+  const photo = seller.image_urls[0]
   return (
     <Pressable accessibilityRole="button" onPress={onPress} style={[styles.row, { borderBottomColor: colors.border }]}>
       {photo ? (
         <Image source={{ uri: photo }} style={[styles.photo, { backgroundColor: colors.image }]} contentFit="cover" />
       ) : (
-        <View style={[styles.photo, { backgroundColor: colors.image }]} />
+        <ProfileCircle url={seller.avatar_url} size={72} />
       )}
       <View style={styles.copy}>
         <Text style={[styles.name, { color: colors.foreground, fontFamily: fontFamily.headline }]}>{seller.name}</Text>

@@ -41,7 +41,6 @@ export default function AccountShipperScreen() {
           keyExtractor={(item) => item.id}
           refreshing={loading}
           onRefresh={reload}
-          contentContainerStyle={styles.list}
           ListHeaderComponent={<ShipperHeader data={data} pending={pending} error={actionError} onToggle={(enabled) => run({ action: "schedule", enabled })} />}
           ListEmptyComponent={<Text style={[styles.empty, { color: colors.muted, fontFamily: fontFamily.text }]}>No boards on your runs this week.</Text>}
           renderItem={({ item }) => (
@@ -107,7 +106,6 @@ function ShipperHeader({
 }
 
 const styles = StyleSheet.create({
-  list: { paddingBottom: 120 },
   header: { padding: 20, gap: 8 },
   headerRow: { flexDirection: "row", alignItems: "center", gap: 12 },
   headerCopy: { flex: 1, gap: 4 },

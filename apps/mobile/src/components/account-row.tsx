@@ -1,5 +1,6 @@
 import { Image } from "expo-image"
 import { Pressable, StyleSheet, Text, View } from "react-native"
+import { ProfileCircle } from "@/components/profile-circle"
 import { fontFamily, useReswellColors } from "@/theme"
 
 export function AccountRow({
@@ -7,18 +8,23 @@ export function AccountRow({
   subtitle,
   meta,
   imageUrl,
+  avatar = false,
   onPress,
 }: {
   title: string
   subtitle?: string | null
   meta?: string | null
   imageUrl?: string | null
+  /** Person row. Always shows the standard profile circle, including the banner-blue default. */
+  avatar?: boolean
   onPress?: () => void
 }) {
   const colors = useReswellColors()
   const body = (
     <View style={[styles.row, { borderColor: colors.border }]}>
-      {imageUrl ? (
+      {avatar ? (
+        <ProfileCircle url={imageUrl} size={48} />
+      ) : imageUrl ? (
         <Image source={{ uri: imageUrl }} style={[styles.image, { backgroundColor: colors.image }]} contentFit="cover" />
       ) : null}
       <View style={styles.copy}>

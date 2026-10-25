@@ -17,7 +17,7 @@ import type { ListingImageForCard } from "@/lib/listing-image-display"
 import { redactShippingLabelArtifactsFromMessage } from "@/lib/messages/redact-seller-shipping-label"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { orderStatusLabel } from "@/lib/order-status"
-import { absoluteProxiedProfileMediaUrl } from "@/lib/public-media-display-src"
+import { absoluteProfileCircleUrl } from "@/lib/profile-circle"
 import { absolutePublicMediaUrl } from "@/lib/site-metadata"
 import type { DashboardOfferRow, DashboardProfileLite } from "@/lib/types/offers-dashboard"
 import type { InboxConversationRow } from "@/lib/utils/messages-inbox-grouping"
@@ -132,7 +132,7 @@ export function toMobileConversationPreview(
     listing_id: row.listing_id,
     listing_title: text(row.listing?.title),
     other_name: getPublicSellerDisplayName(other),
-    other_avatar_url: avatar ? absoluteProxiedProfileMediaUrl(avatar) ?? null : null,
+    other_avatar_url: absoluteProfileCircleUrl(avatar),
     preview,
     last_message_at: row.last_message_at,
     unread_count: unread,
