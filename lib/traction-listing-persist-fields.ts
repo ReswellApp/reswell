@@ -18,14 +18,6 @@ export function tractionListingShippingFieldsFor(
   shipping_price: number | null
   board_shipping_cost_mode: string | null
 } {
-  if (!input.shippingAvailable) {
-    return {
-      shipping_available: false,
-      local_pickup: true,
-      shipping_price: null,
-      board_shipping_cost_mode: null,
-    }
-  }
   const mode = normalizeSellShippingCostMode(
     input.shippingCostMode,
     options?.allowPrivilegedShippingModes === true,
@@ -33,7 +25,7 @@ export function tractionListingShippingFieldsFor(
   if (mode === "free") {
     return {
       shipping_available: true,
-      local_pickup: input.localPickup,
+      local_pickup: false,
       shipping_price: 0,
       board_shipping_cost_mode: "free",
     }
@@ -41,14 +33,14 @@ export function tractionListingShippingFieldsFor(
   if (mode === "reswell") {
     return {
       shipping_available: true,
-      local_pickup: input.localPickup,
+      local_pickup: false,
       shipping_price: 0,
       board_shipping_cost_mode: "reswell",
     }
   }
   return {
     shipping_available: true,
-    local_pickup: input.localPickup,
+    local_pickup: false,
     shipping_price: input.shippingPrice ?? 0,
     board_shipping_cost_mode: "flat",
   }
