@@ -1,0 +1,43 @@
+{
+  "generated_for": "DMac Surfboards official named standup catalog",
+  "source": "https://dmacsurfboards.com.au/our-surfboards (official model lineup — excludes rider testimonials and custom-order-only copy)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "dmac-surfboards",
+      "name": "DMac Surfboards",
+      "website_url": "https://dmacsurfboards.com.au",
+      "location_label": "Margaret River / Gracetown, Western Australia",
+      "founder_name": "Dave Macaulay",
+      "lead_shaper_name": "Dave Macaulay",
+      "short_description": "High-performance custom surfboards handcrafted in Margaret River by Dave Macaulay — loose with drive and speed, shaped to each rider's waves.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/dmac-surfboards.png",
+      "models": [
+        {
+          "name": "MacAttack",
+          "image_url": "https://img1.wsimg.com/isteam/ip/17292837-40cc-4083-ad0b-231381a14590/Dmac_surfboards_macattack-bottom-8a48b6a.jpg/:/cr=t:0%25,l:0%25,w:100%25,h:100%25/rs=w:1600,cg:true",
+          "description": "The MacAttack allows you to have a blast when the waves aren't quite cooking. With extra area through the whole board, it will carry through flat or dead sections of a wave with speed. The wing pulls the tail area in for back foot control, and the round tail adds to the feeling of control with looseness. It has a moderate single to double concave and a medium constant rocker that's not too flat. The MacAttack will still perform when the waves are good and you want to jam it in the pocket or punt. On the MacAttack you'll be frothing to get out there, regardless of the conditions.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "MacLovin'",
+          "image_url": "https://img1.wsimg.com/isteam/ip/17292837-40cc-4083-ad0b-231381a14590/Dmac_surfboards_maclovin_white.jpg/:/cr=t:0%25,l:0%25,w:100%25,h:100%25/rs=w:1600,cg:true",
+          "description": "I've put plenty of love into the MacLovin' design and it's a great all round short board for surfers in the 65-85kg range. It has a fairly deep single concave with a slight double inside the single concave that runs through the tail. The rocker is constant so is great for tight, in the pocket surfing, and punting if that's your gig! This design suits both rounded square tails and round pins. Jump on board, you'll be lovin' it!",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Bruce",
+          "image_url": "https://img1.wsimg.com/isteam/ip/17292837-40cc-4083-ad0b-231381a14590/Dmac_surfboards_bruce-deck-8a48b6a.jpg/:/cr=t:0%25,l:0%25,w:100%25,h:100%25/rs=w:1600,cg:true",
+          "description": "When I was a grom Bruce Lee was The Man! Among other things he represents speed, precision and power – the way we all want to surf, right? The Bruce (also my middle name!) is designed with this in mind. It has a single concave through the tail for plenty of speed and acceleration. Designed for those who want to move some water with power, the Bruce has a moderate but constant rocker for ample projection off the bottom but still fits nicely in the pocket with precision.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The MacDaddy",
+          "image_url": "https://img1.wsimg.com/isteam/ip/17292837-40cc-4083-ad0b-231381a14590/Dmac_surfboards_mac_daddy_white.jpg/:/cr=t:0%25,l:0%25,w:100%25,h:100%25/rs=w:1600,cg:true",
+          "description": "Whether it's Margs main break, solid Yals, Bears Bombie or an adventure to Gnaraloo, Indo or Hawaii, the MacDaddy will give you the hold, drive and paddle power you need when the waves get juicy! The MacDaddy has a medium constant rocker with a mild single to double concave in a round pin for a great feeling of hold, drive, speed and carve-ability. She's been thoroughly tested in the gurgling barrels and open faces of Tombies and Centres at Gnaraloo, as well as around Margaret River. With some extra foam under your chest and a nose entry designed to let you in early, the MacDaddy will get you on, in and out with reliability! When things get serious, in MacDaddy we trust!",
+          "board_category_slug": "step-up-gun"
+        }
+      ]
+    }
+  ]
+}
