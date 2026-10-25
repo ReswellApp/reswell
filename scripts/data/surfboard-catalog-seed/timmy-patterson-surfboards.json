@@ -1,0 +1,238 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "timmy-patterson-surfboards",
+      "name": "Timmy Patterson Surfboards",
+      "website_url": "https://www.tpattersonsurfboards.com/",
+      "location_label": "San Clemente, California",
+      "founder_name": "Timmy Patterson",
+      "lead_shaper_name": "Timmy Patterson",
+      "short_description": "Custom surfboards from San Clemente — official T.Patterson Board Builder models.",
+      "models": [
+        {
+          "name": "Alan Cleland File",
+          "image_url": "https://static.wixstatic.com/media/cb8e82_e8de58ec716442ed9337d29efd0e1818~mv2.png",
+          "description": "The original IF15 is built for flat-out speed on open faces and aerials with its flatter deck design, spreading volume out to the rails. With the Alan Cleland File, we’ve moved to a dome deck, concentrating the board’s thickness along the stringer and reducing rail volume. This refined shape allows for seamless rail-to-rail transitions, providing riders with sharper control and enhanced carving ability in steeper, more technical parts of the wave.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "All In",
+          "image_url": "https://static.wixstatic.com/media/cb8e82_e053aec56a3543b29f86608e22cbe096~mv2.png",
+          "description": "Known for his meticulous approach to board design, Italo worked hand-in-hand with the T.Patterson and Silver Surf teams to shape the ALL IN. After making waves in the surfing world with his celebrated IF15, Italo sought to fine-tune his craft by experimenting with a variety of board designs. Taking inspiration from both T.Patterson and Silver Surf designs, he cherry-picked the features that best matched his explosive style.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Alley Rat",
+          "image_url": "https://static.wixstatic.com/media/cb8e82_9f12d8f0e74a4687958f7fb4d6b653a1~mv2.png",
+          "description": "The Alley Rat holds moderate bottom contours. We've implemented a single concave under your front foot to generate speed, transitioning into a double concave in between the fins and vee off the tail for enhanced maneuverability rail to rail. This design facilitates smooth transitions and provides the versatility needed to excel in different wave conditions.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Blue Fin",
+          "image_url": "https://static.wixstatic.com/media/cb8e82_051bbd4b6199437988c19c1ab1bc5e43~mv2.png",
+          "description": "Introducing the Blue Fin model, a versatile surfboard designed to excel in shorter mid-length sizes ranging from 6'6\" to 7'10\". This board is perfect for those seeking a slightly longer and higher-volume option compared to traditional shortboards. Get ready to catch more waves and experience the difference from your very first paddle out.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Board With No Name",
+          "image_url": "https://static.wixstatic.com/media/cb8e82_5adcd9e1e4e249c5a480157fc2056f7e~mv2.png",
+          "description": "This exceptional model features a medium full rail, offering the perfect combination of control and forgiveness. When selecting your board, consider riding it approximately 2 inches shorter than your day-to-day board, with adjustments based on width preferences. Maintain a thickness comparable to your shortboard or slightly increase it if you opt for a shorter length. \"The Board With No Name\" thrives in a wide range of wave conditions, from knee-high to overhead, adapting seamlessly to the unique characteristics of each wave. It is designed for a standard tri-fin setup and is exclusively available with a swallow tail, embracing its enigmatic identity.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Built For Speed",
+          "image_url": "https://static.wixstatic.com/media/cb8e82_8775ad31703745df89165ebc8d252383~mv2.png",
+          "description": "The double wing swallow tail is synonymous with Matt's style, pulling in the tail block to facilitate tight and snappy turns at higher speeds, right in the pocket. The Built For Speed model features high rocker that delivers lots of drive off the backfoot, paying homage to the setup Matt still rides to this day. Additionally, Matt preferred medium fuller rails, allowing for confident rail-to-rail transitions. In instances when he strayed from his signature channel bottoms, he opted for a single-to-slight-double concave bottom contour, gracefully transitioning into a vee off the tail. True to its name, The Built For Speed is meticulously crafted to deliver unparalleled velocity.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Built For Speed Two",
+          "image_url": "https://static.wixstatic.com/media/cb8e82_152c65f6a0874a33961664e08b2cce0e~mv2.png",
+          "description": "We took the familiar outline and rails of the Built For Speed, adding width to the nose and tail block for extra volume that lets you ride it shorter and go harder. The bottom contour, with a single concave flowing into a double and then a vee through the tail, offers the perfect mix of speed and maneuverability, making transitions feel effortless even in weaker waves.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "CA Classic",
+          "image_url": "https://static.wixstatic.com/media/cb8e82_102122a46b1446a9bd6b0d87b5e5bd2c~mv2.png",
+          "description": "Embrace the elegance of the Ca Classic and embark on a journey that pays homage to the roots of longboarding while embracing the possibilities of modern craftsmanship. Immerse yourself in the art of wave riding and experience the joy of gliding across the water with timeless style and grace. The Ca Classic invites you to rediscover the magic of longboarding and create cherished memories on every wave.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "CA Twin",
+          "image_url": "https://static.wixstatic.com/media/cb8e82_bcc93246364844519b92ef965aa37b49~mv2.png",
+          "description": "Introducing the Ca Twin, a surfboard model that redefines the classic twin fin concept with a high-performance twist. We've taken the iconic California Fish outline and infused it with the perfect blend of speed and maneuverability. This is not your typical retro fish that stays stagnant on the wave. We've engineered this board to excel in speed and responsiveness, allowing you to push the limits and turn on a dime.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Chili Pepper",
+          "image_url": "https://static.wixstatic.com/media/cb8e82_42a16059f2e04cd69f34f7031b324418~mv2.png",
+          "description": "The lower nose rocker of The Chili Pepper generates an initial burst of speed as you take off on a wave. Once you reach the bottom, the medium tail rocker kicks in, propelling the board into second gear. You'll feel the drive and responsiveness as you execute that first bottom turn. Timmy designed the bottom of this board with concave under the nose that goes flat down until underneath your back foot where it fades into vee running off the tail. This strategic bottom contouring enables smooth rail-to-rail transitions at higher speeds, especially in critical sections of the wave.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Devil Fish",
+          "image_url": "https://static.wixstatic.com/media/cb8e82_1bc4e450555048eda4829c350bd8a308~mv2.png",
+          "description": "Beneath the surface, the Devil Fish boasts a progressive flat to vee concave bottom contour. This innovative design facilitates high-performance rail-to-rail surfing at incredible speeds. The semi-down rail allows the board to effortlessly roll onto its edge, eliminating the need to struggle to maintain steady lines. It's this unique combination of features that sets the Devil Fish apart as one of the most dynamic and high-performance fish designs on the market.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Duster",
+          "image_url": "https://static.wixstatic.com/media/cb8e82_09991877e0f9497ba6a2040cfcc3df32~mv2.png",
+          "description": "The Duster takes the exhilarating experience of riding the Synthetic 84 and transforms it into a high-performance shortboard design. Crafted by the skilled hands of Timmy, this surfboard embodies the same formula that made the Synthetic 84 a fan favorite. By incorporating a lower rocker and maintaining the flat-to-slight-single-bottom contour, transitioning into a subtle double that gracefully blends into a vee off the tail, we've ensured that the Duster generates speed effortlessly right from the takeoff.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Five Speed",
+          "image_url": "https://static.wixstatic.com/media/cb8e82_4de8ef59aa1d4923b25fef57e818e783~mv2.png",
+          "description": "The Five Speed is the quintessential all-arounder, perfect for surfers who rely on a single board for any given day's surf conditions. This versatile board is designed to be driven off your front foot while allowing for increased looseness under your back foot. It seamlessly combines the high-performance feel of a shortboard with the ability to handle medium-sized waves up to solid overhead conditions.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Flight Risk",
+          "image_url": "https://static.wixstatic.com/media/cb8e82_2377daa6ef1542b7aca64b9a8022d3cf~mv2.png",
+          "description": "Drawing inspiration from the Pool Party model, the Flight Risk inherits its generous volume, perfect for groveling. However, this board is anything but sluggish. It delivers an exceptional level of responsiveness and agility, particularly when the energy starts flowing. Its design enables effortless release and forgives minor mistakes, allowing you to push your limits with confidence. The bottom contour features a slight single-to-double concave, complemented by a gentle vee off the tail, ensuring optimal performance in a variety of conditions.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Flying Saucer",
+          "image_url": "https://static.wixstatic.com/media/cb8e82_fc197034a92d4dd7914864a51bafe4f0~mv2.png",
+          "description": "One of the unique aspects of the Flying Saucer is its versatility when it comes to fin setups. You have the freedom to experiment and discover your preferred configuration. While it performs exceptionally well with various setups, one standout option is a quad setup with a small nubster as the fifth fin in the center. This setup provides excellent control and maneuverability. The Timmy Patterson 6 fin TP-3 fin set is also highly recommended, offering the convenience of having multiple fin setups with just one set.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "FMTR",
+          "image_url": "https://static.wixstatic.com/media/cb8e82_44102f8c9bc9433db8ed1fcd476959de~mv2.png",
+          "description": "The rails have been lowered and refined compared to traditional mid-volume designs — not extreme, but tuned just enough to provide better bite, control, and hold in critical sections. This rail profile, combined with the pulled-in tail, keeps the board locked in on fast, hollow faces and prevents excess volume from getting in the way during hard turns or late takeoffs.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Full Moon",
+          "image_url": "https://static.wixstatic.com/media/cb8e82_412259b6561b488b9601767d3c00040a~mv2.png",
+          "description": "One of the standout qualities of the Full Moon is its adaptability to various sizes. Some surfers prefer pushing the limits and opting for a shorter board, maximizing volume for a dynamic experience. Others find success by opting for a slightly longer length, capitalizing on the board's overall performance. The Full Moon showcases a round tail, providing stability and control during every maneuver.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Gas Pedal",
+          "image_url": "https://static.wixstatic.com/media/cb8e82_94d32e8f08fa451a9638f11575fb3808~mv2.png",
+          "description": "If you're seeking a board that effortlessly glides through slow and weak sections, the Gas Pedal is the perfect choice. This board delivers a high-performance feel without compromising on speed. Timmy has cracked the code for every surfer's need for speed. Whether you're dealing with small, gutless waves or overhead conditions, the Gas Pedal is a versatile and dependable option for all your surfing needs.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "IF15",
+          "image_url": "https://static.wixstatic.com/media/cb8e82_cf5f6ed2f25544479c4d42e2a2a10074~mv2.png",
+          "description": "Introducing the IF15 Italo Ferreira model, a high-performance surfboard designed specifically for WCT surfer Italo Ferreira. This board strikes the perfect balance between stability and maneuverability, allowing riders to excel in extreme maneuvers with ease. With its well-balanced outline, the IF15 features a foiled shape that expands into a fuller and wider nose, ensuring exceptional stability upon landing from radical maneuvers. The sharp edge around the tail curve provides maximum control throughout any maneuver, giving riders the confidence to push their limits. The board's bottom boasts a slight single concave, contributing to its performance characteristics. The medium rocker enhances speed and responsiveness, while the board's versatility is showcased by its compatibility with different tail shapes such as squash, round, or swallow, suitable for waves from all corners of the globe. We offer the IF15 model in various sizes, ensuring a perfect fit for every customer. Despite being a WCT performance shape, this board actually has more volume than conventional models. Italo Ferreira's ability to maintain high speed through landings without sinking inspired this design, providin",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "IF15 Gold",
+          "image_url": "https://static.wixstatic.com/media/cb8e82_32b882312273485a8b2fe3744255fddf~mv2.png",
+          "description": "We were able to thicken up the tail block, widen the outline so slightly and give it just a little more width in the tail and nose area. Given that extra width in the tail block we wanted to dig out more concave this time. This gives you that extra drive through your turns. Especially since Timmy dropped the rail line in the rocker off the tail block. Giving you even more drive off your back foot.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Izzy",
+          "image_url": "https://static.wixstatic.com/media/cb8e82_fb03a39e97534eb5851041ad1a3e3b81~mv2.png",
+          "description": "Introducing the IZZY, Timmy Patterson's exceptional pro model designed in collaboration with Izzy Paskowitz. Born out of Timmy's passion for innovation, this board showcases one of his favorite outlines, meticulously crafted to meet the demands of longboard competition and versatile freestyle surfing across diverse conditions.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "New Sun",
+          "image_url": "https://static.wixstatic.com/media/cb8e82_a0b156c45b484962b983e89f7d49cd5a~mv2.png",
+          "description": "Customize your riding experience by exploring different fin setups tailored to your preferences. This versatile board accommodates a variety of options, allowing you to fine-tune your performance for every wave and condition. Whether you're an experienced surfer or just starting out, the New Sun is designed to cater to surfers of all levels. It strikes the perfect balance between user-friendly functionality and progressive performance.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Next Level",
+          "image_url": "https://static.wixstatic.com/media/cb8e82_72140ed6a77749d29091ac695561ddc2~mv2.png",
+          "description": "The overall medium rocker balances speed and control, while a pronounced flip in the nose rocker provides forgiveness on late drops, ensuring you can commit to steep, critical takeoffs. The outline features a moderately pulled-in tail, more refined than a standard high-performance shortboard but not as extreme as a traditional step-up, offering increased hold in bigger conditions while maintaining everyday usability. The nose outline is similarly fine-tuned, providing versatility without sacrificing paddle power or entry ease.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Pool Party One",
+          "image_url": "https://static.wixstatic.com/media/cb8e82_3da2dcba1e1445c6a4c55c4d9ed8cbb9~mv2.png",
+          "description": "This board pretty much sums it all up in the name. Italo's Pool Party is everything fun. Thats what we're selling here is just pure 100% fun! The Pool Party was made as a special board designed to work in Kelly's wave pool for the WCT events. Italo had some small wave adjustments made to what he would normally ride. Kelly's pool had multi sections in the wave so Timmy came up with something that could still be super snappy and drivey yet fit in the pocket on chest to just over head style waves. Since thats pretty much what we surf in southern California on a regular basis, we know just what to do. Comes standard in medium full rail. Has a lower rocker, and the bottom runs from a single to slight double concave that fades into subtle vee off the tail. You want to try this model a couple inches shorter than your standard go to performance board, You also go wider and that will get you more volume fit in since your going shorter. There is more width in the nose and tail area with this outline so you don't want to order to thick.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Pool Party Two",
+          "image_url": "https://static.wixstatic.com/media/cb8e82_c146144b0d404af4a345f8dea18bdc07~mv2.png",
+          "description": "Introducing Italo Ferreira's Pool Party TWO, an exceptional model following the tremendous success of the original Pool Party. Designed to excel in your everyday average surfing conditions, this board caters to those who seek a high-performance option for smaller waves. Unfortunately, these are the conditions most of us encounter on a regular basis.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Rising Sun",
+          "image_url": "https://static.wixstatic.com/media/cb8e82_a919635126764eeab7166b9977261b2c~mv2.png",
+          "description": "The wide point on the board has been strategically pushed further up, while the tip of the nose has been subtly pulled in. This ingenious combination allows for unparalleled drive in and out of turns, without compromising on speed. The Rising Sun boasts ample volume and a fuller outline, providing exceptional stability and paddle power. Its distinctive double wing rounded squash tail design enhances maneuverability and responsiveness, giving you the freedom to explore the full range of your skills.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "S-Twin",
+          "image_url": "https://static.wixstatic.com/media/cb8e82_a9ca1732dd5e4baaba95b480d575d7e4~mv2.png",
+          "description": "Designed with a low rocker, the S-Twin excels in smaller, mushier waves. However, it has also gained a following among those who ride it year-round. Timmy has specifically crafted this board to be paired with a twin fin setup and a small trailer center fin, offering maximum creativity and adaptability. The S-Twin welcomes experimentation with length preferences. Some riders opt for longer boards with generous volume, while others push the boundaries by going shorter and maximizing volume.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Scorpion",
+          "image_url": "https://static.wixstatic.com/media/cb8e82_23d3964a95ca4e41a5b59657604abb7e~mv2.png",
+          "description": "This exceptional board thrives in waves ranging from waist-high to slightly overhead, allowing you to dominate a variety of conditions. Originally available as a swallow tail, we have recently expanded the options to include round tails, and for those seeking even more innovation, chopped tails have become a favorite among riders. The Scorpion is ideally ridden as a tri-fin setup, maximizing versatility and performance.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Single Fin",
+          "image_url": "https://static.wixstatic.com/media/cb8e82_6abfcf6bcffc4e6b9d32094a4307f557~mv2.png",
+          "description": "The Timmy Patterson Single Fin showcases a flatter deck, providing stability and a platform for smooth transitions. The semi-down rails contribute to the board's responsiveness and maneuverability, allowing you to effortlessly navigate different sections of the wave. The fuller nose gradually tapers into the classic beak nose, optimizing performance and flow.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Stoke-ed",
+          "image_url": "https://static.wixstatic.com/media/cb8e82_d874cf1b74c94aa1bf5d81691388f919~mv2.png",
+          "description": "All of Italo's models have been hand crafted to be the most forgiving high performance models on the market. Timmy and Italo have become masters of hiding foam in all the right places. Making it easy to perform and come out of some radical positions in the wave while maintaining top speeds. This model comes standard in medium full rail. Has a lower nose rocker, and the bottom runs from a single to slight double concave that fades into subtle vee off the tail. We have a tiny bit of kick running off the tail rocker that will help release in the steeper sections of the wave. You also can go wider and that will get you more volume fit in since your going to want to go an inch or two shorter on this model. There is more width in the nose with this outline so you don't want to order to thick since you got that bit of extra volume already.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Synthetic '84",
+          "image_url": "https://static.wixstatic.com/media/cb8e82_dcce2b02fcf643fc891c2f2df8e9b2b5~mv2.png",
+          "description": "The Synthetic 84 is a tribute to the good old days, when Timmy started his first surfboard label Synthetic surfboards and was working with the legendary Damian Brawner in the 1980’s. Timmy has taken all the positive aspects of boards he built then and has incorporated them into the modern shapes of today. This combo is nothing but pure magic and has been tested by some of the top surfers from around the globe. The consensus of all that have ridden the Synthetic 84’ was nothing but fantastic! As a matter of fact, the “psych meter” went through the roof! As result of such positive feedback, we had to release this one for all of you guys to try for yourself. This board’s niche is just between the Rising Sun and the high performance shortboard. It’s the missing link we are all looking for. The Synthetic 84’ can be ordered up with a bump squash or bump round tail. There is also the custom order option of adding the classic belly four channels that go under your front foot above the fins. The Synthetic 84 has a lower rocker and the bottom runs flat to a slight single into a slight double and fades into vee off the tail. The deck stays flat with a down rail and beak nose. This allows for",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Flag",
+          "image_url": "https://static.wixstatic.com/media/cb8e82_fdb5dc9962a04f989e135b63a483b5fc~mv2.png",
+          "description": "With a low entry rocker seamlessly transitioning into an aggressive tail rocker, this surfboard effortlessly navigates tighter sections of the wave. Experience newfound freedom as you maneuver the board swiftly and snappily, conquering spots that may have posed challenges before. The meticulous craftsmanship by Timmy incorporates a subtle single-to-double concave bottom contour, seamlessly rolling into a slight vee off the tail. This refined design enhances the board's ability to adapt to varying wave conditions, offering unmatched control and precision.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Pill",
+          "image_url": "https://static.wixstatic.com/media/cb8e82_092a21754e5f4d578b08d65827a5165b~mv2.png",
+          "description": "What sets The Pill apart is its ability to deliver impressive speed and responsiveness, even with its wider tail. The combination of the carefully crafted curve and the innovative bottom contour creates a dynamic platform for high-speed surfing and snappy turns. When equipped with larger side fins as a twin fin setup, this board truly comes alive, allowing you to reach exhilarating speeds. For those seeking additional control and precision in their turns, adding a small trailer fin in the center provides that extra boost of drive.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "The Pill Two",
+          "image_url": "https://static.wixstatic.com/media/cb8e82_7ff4061013e44eafa67de46e5a3dbafa~mv2.png",
+          "description": "Experience the evolution of The Pill with The Pill Two. Embrace the fuller round nose, refined tail design, and advanced features that elevate your surfing experience. Whether you opt for a tri fin, quad, or the highly recommended twin fin with a trailer fin, this board is designed to push boundaries and elevate your surfing to new levels. Get ready to redefine your performance on The Pill Two.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Twinner",
+          "image_url": "https://static.wixstatic.com/media/cb8e82_c92673431d7a4463a14f3ab0f39696bd~mv2.png",
+          "description": "The Twinner is defined by its single wing swallow tail, a signature element that enhances maneuverability and responsiveness. The pulled-in tail block enables snappy turns on critical sections of the wave, while maintaining control and precision. The bottom contour of this board incorporates a blend of high-performance elements with a modern touch. It features a single concave that seamlessly fades into a slight vee off the tail, optimizing speed and flow. The medium entry rocker ensures smooth wave entry, while a subtle flip in the tail adds a touch of playfulness.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Twinthetic",
+          "image_url": "https://static.wixstatic.com/media/cb8e82_37813767c86b42fbbbac123e0eeba47b~mv2.png",
+          "description": "The true magic of the Twinthetic lies in its fin placement. We've pushed the fins further back on the tail, deviating from the traditional standard placement. This unique configuration generates exceptional drive at high speeds, allowing you to thrive in hollower conditions. The bottom contour boasts a single concave under the front foot, gracefully transitioning into a double-to-vee/double configuration off the tail, further enhancing performance and responsiveness.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "X-File Two",
+          "image_url": "https://static.wixstatic.com/media/cb8e82_559837df93cb464abecc675667f98dea~mv2.png",
+          "description": "The true magic lies in the bottom contour of this board, harmoniously merging all its elements. Starting with a single concave that seamlessly transitions into a double concave, culminating in a noticeable vee off the tail block. This innovative design allows you to harness incredible speed and effortlessly lean into powerful turns, without encountering any resistance. The X-File Two is ideally ridden at your height, give or take an inch or two, catering to a wide range of surfers. It thrives in smaller surf conditions, up to head high overhead waves.",
+          "board_category_slug": "step-up-gun"
+        }
+      ]
+    }
+  ]
+}
