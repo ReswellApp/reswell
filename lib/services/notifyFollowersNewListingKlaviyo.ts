@@ -1,6 +1,8 @@
 /**
  * Fan-out Klaviyo **Followed Seller New Listing** to every follower when a seller
  * publishes. Klaviyo `uniqueId` is per follower+listing so duplicate publish paths are safe.
+ * Each follower gets at most two of these emails per Pacific day, across every shop
+ * they follow. The same grant row gates the in-app notification.
  */
 
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
@@ -8,6 +10,10 @@ import { trackKlaviyoFollowedSellerNewListing } from "@/lib/klaviyo/track-follow
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { publicSiteOriginForEmail } from "@/lib/public-site-origin"
 import { sellerProfileHref } from "@/lib/seller-slug"
+import {
+  claimFollowedSellerNewListingAlerts,
+  recipientsAllowedByListingAlertCap,
+} from "@/lib/services/followedSellerNewListingAlert"
 import { enqueueNewListingInAppFanout } from "@/lib/services/notifications/fanout"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 
@@ -15,6 +21,7 @@ export type NotifyFollowersNewListingKlaviyoResult = {
   followerCount: number
   emitted: number
   skippedEmailPref: number
+  skippedDailyCap: number
   skippedReason?: string
 }
 
@@ -42,6 +49,7 @@ function listingPublicPath(listing: {
 /**
  * When a peer listing goes live, email followers via Klaviyo (**Followed Seller New Listing**).
  * Respects `notification_preferences.follow_email_digest` (default on).
+ * Opted-out followers do not take a daily slot. A failed cap check sends no email.
  */
 export async function notifyFollowersNewListingKlaviyo(
   listingId: string,
@@ -50,7 +58,7 @@ export async function notifyFollowersNewListingKlaviyo(
   try {
     service = createServiceRoleClient()
   } catch {
-    return { followerCount: 0, emitted: 0, skippedEmailPref: 0, skippedReason: "missing_service_role" }
+    return { followerCount: 0, emitted: 0, skippedEmailPref: 0, skippedDailyCap: 0, skippedReason: "missing_service_role" }
   }
 
   const { data: listing, error: listingErr } = await service
@@ -62,7 +70,7 @@ export async function notifyFollowersNewListingKlaviyo(
     .maybeSingle()
 
   if (listingErr || !listing) {
-    return { followerCount: 0, emitted: 0, skippedEmailPref: 0, skippedReason: "listing_not_found" }
+    return { followerCount: 0, emitted: 0, skippedEmailPref: 0, skippedDailyCap: 0, skippedReason: "listing_not_found" }
   }
 
   if (
@@ -74,6 +82,7 @@ export async function notifyFollowersNewListingKlaviyo(
       followerCount: 0,
       emitted: 0,
       skippedEmailPref: 0,
+      skippedDailyCap: 0,
       skippedReason: "listing_not_alertable",
     }
   }
@@ -91,6 +100,7 @@ export async function notifyFollowersNewListingKlaviyo(
       followerCount: 0,
       emitted: 0,
       skippedEmailPref: 0,
+      skippedDailyCap: 0,
       skippedReason: "fetch_follows_failed",
     }
   }
@@ -100,7 +110,7 @@ export async function notifyFollowersNewListingKlaviyo(
     .filter((id): id is string => typeof id === "string" && id !== sellerId)
 
   if (followerIds.length === 0) {
-    return { followerCount: 0, emitted: 0, skippedEmailPref: 0 }
+    return { followerCount: 0, emitted: 0, skippedEmailPref: 0, skippedDailyCap: 0 }
   }
 
   try {
@@ -136,6 +146,28 @@ export async function notifyFollowersNewListingKlaviyo(
       .filter((p) => p.follow_email_digest === false)
       .map((p) => p.user_id as string),
   )
+  const emailRecipientIds = followerIds.filter((id) => !emailOptOut.has(id))
+
+  let allowedEmail: Set<string>
+  try {
+    const claims = await claimFollowedSellerNewListingAlerts(service, {
+      listingId: listing.id,
+      recipientIds: emailRecipientIds,
+    })
+    allowedEmail = recipientsAllowedByListingAlertCap(claims)
+  } catch (error) {
+    console.error(
+      "[klaviyo] followed-seller listing daily cap:",
+      error instanceof Error ? error.message : error,
+    )
+    return {
+      followerCount: followerIds.length,
+      emitted: 0,
+      skippedEmailPref: followerIds.length - emailRecipientIds.length,
+      skippedDailyCap: 0,
+      skippedReason: "daily_cap_check_failed",
+    }
+  }
 
   const origin = publicSiteOriginForEmail().replace(/\/$/, "")
   const shopDisplayName = displayNameFromProfile(seller)
@@ -153,10 +185,15 @@ export async function notifyFollowersNewListingKlaviyo(
 
   let emitted = 0
   let skippedEmailPref = 0
+  let skippedDailyCap = 0
 
   for (const followerId of followerIds) {
     if (emailOptOut.has(followerId)) {
       skippedEmailPref += 1
+      continue
+    }
+    if (!allowedEmail.has(followerId)) {
+      skippedDailyCap += 1
       continue
     }
 
@@ -179,5 +216,5 @@ export async function notifyFollowersNewListingKlaviyo(
     emitted += 1
   }
 
-  return { followerCount: followerIds.length, emitted, skippedEmailPref }
+  return { followerCount: followerIds.length, emitted, skippedEmailPref, skippedDailyCap }
 }

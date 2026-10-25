@@ -7,7 +7,6 @@ import {
   listingSavedBody,
   listingSavedDedupeKey,
   listingSavedDigestDedupeKey,
-  newListingDigestDedupeKey,
   notificationDayKey,
   offerDedupeKey,
   offerNotificationTitle,
@@ -163,9 +162,6 @@ function digestKeysFor(inputs: InAppNotificationInput[], day: string): string[] 
   const keys = new Set<string>()
   for (const input of inputs) {
     if (input.type === "listing_saved") keys.add(listingSavedDigestDedupeKey(day))
-    if (input.type === "new_listing_from_followed" && input.subjectKey?.trim()) {
-      keys.add(newListingDigestDedupeKey(input.subjectKey.trim(), day))
-    }
   }
   return [...keys]
 }

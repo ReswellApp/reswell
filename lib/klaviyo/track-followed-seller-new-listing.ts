@@ -4,15 +4,18 @@
  *
  * **Metric name in Klaviyo:** `Followed Seller New Listing` — profile is the **follower**.
  *
- * **Building the flow:** Flows → Metric → **Followed Seller New Listing** → email with
- * `{{ event.Title }}`, `{{ event.Price }}`, `{{ event.Listing_URL }}`, `{{ event.photo_url }}`,
- * `{{ event.shop.display_name }}`, `{{ event.shop.url }}`, `{{ event.following_feed_url }}`.
+ * **Building the flow:** Flows → Metric → **Followed Seller New Listing** → paste
+ * `KLAVIYO_FOLLOWED_SELLER_NEW_LISTING_EMAIL_HTML` from
+ * `followed-seller-new-listing-email-liquid.ts`. Event fields:
+ * `{{ event.Title }}`, `{{ event.price_display }}`, `{{ event.Listing_URL }}`,
+ * `{{ event.photo_url }}`, `{{ event.shop_display_name }}`, `{{ event.shop.url }}`,
+ * `{{ event.following_feed_url }}`.
  *
  * Do not also fire `Board Alert Match` for shop follows — that metric is for saved
  * searches / model / brand alerts. Shop email is this metric only.
  */
 
-import { absoluteKlaviyoListingPhotoUrl } from "@/lib/klaviyo/catalog-product"
+import { absoluteKlaviyoListingPhotoUrl, formatKlaviyoPriceDisplay } from "@/lib/klaviyo/catalog-product"
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
 
@@ -44,6 +47,7 @@ export async function trackKlaviyoFollowedSellerNewListing(
     typeof payload.listingPrice === "number"
       ? payload.listingPrice
       : Number(payload.listingPrice)
+  const price = Number.isFinite(priceNum) ? priceNum : null
 
   return sendKlaviyoServerEvent({
     metricName: "Followed Seller New Listing",
@@ -56,13 +60,15 @@ export async function trackKlaviyoFollowedSellerNewListing(
       time: new Date().toISOString(),
       Listing_ID: payload.listingId,
       Title: payload.listingTitle,
-      Price: Number.isFinite(priceNum) ? priceNum : payload.listingPrice,
+      Price: price ?? payload.listingPrice,
+      price_display: formatKlaviyoPriceDisplay(price),
       Listing_URL: payload.listingAbsoluteUrl,
       photo_url: payload.listingPhotoUrl
         ? absoluteKlaviyoListingPhotoUrl(payload.listingPhotoUrl)
         : "",
       Section: payload.listingSection ?? "",
       following_feed_url: payload.followingFeedUrl,
+      shop_display_name: payload.shopDisplayName,
       shop: {
         user_id: payload.sellerUserId,
         display_name: payload.shopDisplayName,
@@ -70,7 +76,7 @@ export async function trackKlaviyoFollowedSellerNewListing(
         url: payload.shopUrl,
       },
     },
-    value: Number.isFinite(priceNum) ? priceNum : undefined,
+    value: price ?? undefined,
     valueCurrency: "USD",
   })
 }
