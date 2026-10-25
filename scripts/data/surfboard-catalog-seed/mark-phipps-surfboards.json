@@ -1,0 +1,193 @@
+{
+  "generated_for": "Mark Phipps Surfboards official named standup catalog",
+  "source": "https://www.markphipps.com/surfboards (official WordPress model pages at /surfboard/{slug} — excludes custom-order forms, merch, and grom size variants of the same named models)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "mark-phipps-surfboards",
+      "name": "Mark Phipps Surfboards",
+      "website_url": "https://www.markphipps.com",
+      "location_label": "Point Lonsdale, Victoria, Australia",
+      "founder_name": "Mark Phipps",
+      "lead_shaper_name": "Mark Phipps",
+      "short_description": "Custom performance shortboards, hybrids, longboards, and guns from Mark Phipps in Point Lonsdale, Victoria.",
+      "logo_url": "https://www.markphipps.com/wp-content/uploads/2022/04/logo.png",
+      "models": [
+        {
+          "name": "Caviar",
+          "image_url": "https://www.markphipps.com/wp-content/uploads/2022/05/CAVIAR_f_1080x.jpg",
+          "description": "Following the raging success of the One Bad Egg Mark has designed the Caviar. The Caviar is the reduced length version of the One Bad Egg and incorporating a fish tail. This board will cover any conditions up to 6 foot and with its amazing paddling speed will get you into any wave you want.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Cheeta",
+          "image_url": "https://www.markphipps.com/wp-content/uploads/2022/05/cheeta_f_1080x.jpg",
+          "description": "Two years ago sitting on the beach and watching his friends (former QS Grinder) Harry Mann demolished a small onshore wave in Victoria, Mark Phipps started to scratch his head. He sat with him and inspected the board like it was a T-bone steak ready to barbecue. Harry told Mark “mate it’s like cheating riding this board! I can do anything I want.”",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Crazy B",
+          "image_url": "https://www.markphipps.com/wp-content/uploads/2022/06/Crazy-B-Front-e1654647287359.png",
+          "description": "The Mark Phipps Crazy B is a modern homage to a beautifully preserved 1970s single fin—an original gem owned by Ben, who wanted to protect the board’s legacy while still enjoying its unique feel in the water. To preserve the original, Phipps crafted a faithful replica, capturing the authentic curves, flowing lines, and soulful character of the era. What began as a pure single-fin reproduction later evolved when Ben added side fin plugs, giving the Crazy B a versatile, modern twist while honoring its roots.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Dish",
+          "image_url": "https://www.markphipps.com/wp-content/uploads/2022/05/DISHback-800x800-1.jpg",
+          "description": "Retro twin fFin. Concave deck in tail; Big swallow tail; Single concave with a large amount of veer off tail; 0.2 to 2 metre waves.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Hartza",
+          "image_url": "https://www.markphipps.com/wp-content/uploads/2022/04/hartza_top.jpg",
+          "description": "The Mark Phipps Hartza is a purpose-built big wave gun designed for surfers who demand absolute confidence, precision, and control when the ocean steps into its most powerful moods. Crafted for charging serious surf, the Hartza blends Phipps’ decades of shaping experience with carefully tuned design elements that help surfers harness speed, maintain hold, and commit fully to towering faces. At first glance, the outline reflects classic gun DNA—sleek, narrow, and streamlined for maximum paddling efficiency and stability at high speeds. The refined nose entry allows the board to penetrate steep drops with accuracy, while the pulled-in tail offers exceptional hold and control when driving through heavy water or carving wide, drawn-out lines. The rocker is meticulously balanced: enough nose lift to prevent catching during critical takeoffs, yet flat enough through the midsection to generate and maintain down-the-line speed when every second counts.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Hipster",
+          "image_url": "https://www.markphipps.com/wp-content/uploads/2022/05/hipster-front-800x800-1.jpg",
+          "description": "Small to medium wave performance board. The shape has a hip running through from the front fins to the tail to reduce the surface area – gives more response when unloading into turns or aerials; Low entry rocker and wider template through the front – increases planing speed; Performance shape tail makes the board easier to handle with the speed it generates; The Hipster can do it all in waves where you would usually struggle to find the sections to hit; Order 3 to 4 inches shorter and 1/4 to 1/2 inch wider but keep the same thickness as your normal shortboard; The Hipster has already won a 5star WQS and has been seen busting big moves on the freesurf scene.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Humpback",
+          "image_url": "https://www.markphipps.com/wp-content/uploads/2022/05/Humpback_f_1080x.jpg",
+          "description": "The Humpback by Mark Phipps is about redefining what we imagine a high performance longboard can be. Low volume with thinner refined rails and a thinner nose and tail. The Humpback is the opposite of your heavy cruisy log. Wide nose and single concave with a flipped beak (uplifted nose rocker) Mark added a rolled V from the middle of the board down to the tail. A rounded squaretail and setup with a 2 + 1 (box).",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "MK II New",
+          "image_url": "https://www.markphipps.com/wp-content/uploads/2022/05/MK2-800x800-1.jpg",
+          "description": "My standard short board and base to most models. High performance short board; Ultra versatile, all rounder; Fast Drivie Rocker with a a slightly flipped nose; Single concave; Any tail shape; 0.3 to 2.5 metre wave.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "MK IX",
+          "image_url": "https://www.markphipps.com/wp-content/uploads/2022/05/MK9-front-800x800-1.jpg",
+          "description": "Made for paddling and performance. Shorter than traditional boards in line with the current trend; Added width up front and thicker rail give the board speed in paddling and instant response when you’re up; A curve through the back half of the board and the rounded pin give the board performance and hold in serious waves; Made to be put on rail and hold the line in the barrel; Order 3 inches shorter and a 1/2 inch wider than your standard board, but keep the same thickness.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "MK V",
+          "image_url": "https://www.markphipps.com/wp-content/uploads/2022/05/MK5-800x800-1.jpg",
+          "description": "Small to medium wave performance board or for an intermediate surfer. Wider nose and tail than the MK II; Low nose rocker; Single into double or double inside single concaves; Rounded square with hip or swallow tail; 0.2 to 2 metre waves; Also comes in quad setup; From 5’8 to 6’9.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "MK VIII",
+          "image_url": "https://www.markphipps.com/wp-content/uploads/2022/05/MK8-front-800x800-1.jpg",
+          "description": "High performance. Great board for good waves; Deep single concave; Any tail shape; 0.75 to 2.5m waves; Came together after Mark found an old board in his house in Victoria. He surfed it and loved it; A favourite amongst some of Europe’s hottest surfers, including Jeremy Flores and Tim Boal.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "MK XI",
+          "image_url": "https://www.markphipps.com/wp-content/uploads/2022/05/MK11-front-800x800-1.jpg",
+          "description": "Made for paddling and performance. This is the small to medium wave version of the MK11 by adding volume to the nose and chest area and lower nose rocker; Added width up front and thicker rail give the board speed in paddling and instant response when you’re up; Deep single concave; Low entry rocker and wider template through the front – increases planing speed; Normally a round square tail.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "MK XII",
+          "image_url": "https://www.markphipps.com/wp-content/uploads/2022/05/MK12_front.jpg",
+          "description": "The MK12 is the Hipster Pro without the large wing and a little more volume under the chest. For small to medium size waves. Deep single into double concave with vee off the tail; any tail shape; moderate rocker with a kick tail; 0.5m to 2m waves.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "MK XIV",
+          "image_url": "https://www.markphipps.com/wp-content/uploads/2022/05/MK14-front-800x800-1.jpg",
+          "description": "The MK14 was created in the Canary Islands for small waves. Featuring a flatter than normal deck that flows into boxy rails. Which meanings you can ride this board thinner than normal, but still get the volume you need.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "MK XV",
+          "image_url": "https://www.markphipps.com/wp-content/uploads/2022/05/MK15-front-800x800-1.jpg",
+          "description": "Small wave performance board. Great all round board; Single to double concave; Any tail shape, normally a rounded square tail with a hip; Moderate rocker; Boxy rails in the back half, full and round in the front; A little wider nose and tail than a standard short board; 0.3 to 2 metre waves.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "MP Gun",
+          "image_url": "https://www.markphipps.com/wp-content/uploads/2022/05/MP-Gun-800x800-1.jpg",
+          "description": "Extra large wave board. Narrower tail than the MP Semi-Gun; Long even flowing rocker; Vee bottom; Generally a pin tail; 2.5 to 5 metre plus waves.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "MP Longboard",
+          "image_url": "https://www.markphipps.com/wp-content/uploads/2022/05/Longboard-performer-front.jpg",
+          "description": "The Performer by Mark Phipps is his traditional go to everyday longboard. Soft round rails that don’t catch and make transitional longboarding a pleasure. A nice full round nose with a spoon concave inbuilt for nose riding.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "MP Semi Gun",
+          "image_url": "https://www.markphipps.com/wp-content/uploads/2022/05/MP-Semi-Gun-800x800-1.jpg",
+          "description": "Performance large wave board. Even flowing rocker with slightly flipped nose; Single concave or vee; Generally rounded pin or pin tail; 1.5 to 3.5 metre waves.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "MP Twin",
+          "image_url": "https://www.markphipps.com/wp-content/uploads/2022/05/TWIN_f_1080x.jpg",
+          "description": "The MP twin was born from the need for speed and freedom. This board will turn faster than any board you have ever ridden. It will give you a turning arc on even the smallest of waves.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "NiHak",
+          "image_url": "https://www.markphipps.com/wp-content/uploads/2022/06/NiHak-f-1080x.jpg",
+          "description": "The Mark Phipps NiHak is a finely tuned small-wave performance surfboard designed to bridge the gap between everyday grovelers and true high-performance shortboards. It’s the model I most often recommend for surfers ready to step up to their first performance board, as well as for experienced riders who want a board that brings genuine spark and agility to weaker conditions. The NiHak blends accessibility with advanced design, giving surfers the ability to push their surfing forward without sacrificing paddle power or stability.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Not Quite Right",
+          "image_url": "https://www.markphipps.com/wp-content/uploads/2022/06/Not-Quite-Right-b-1080x.jpg",
+          "description": "The Mark Phipps Not Quite Right Twin Fin Mid-Length is a surfboard shaped for intermediate to advanced surfers who want speed, freedom, and flow in a refined mid-length package. True to its name, the Not Quite Right is intentionally a little unconventional—its outline blends classic curves with modern tweaks, creating a board that feels playful yet highly responsive underfoot. Riding this board, the first thing you notice is how loose and easy to turn it is. The twin-fin setup, combined with its balanced rocker, gives it a lively, skatey feel that encourages smooth rail-to-rail transitions and sweeping carves. Despite its agility, it never feels unstable; the board maintains drive through turns and holds surprising control even when pushed hard on the face.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "One Bad Egg",
+          "image_url": "https://www.markphipps.com/wp-content/uploads/2022/04/ONE_BAD_EGG_610_PHIPPS_frt2_1080x.jpg",
+          "description": "The One Bad Egg by Phipps is a hipster’s delight. Clean lines of a performance egg with low rails and slight concave to V bottom. This board is amazing in big overhead surf with incredible paddle power and drive.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Shrimpboat",
+          "image_url": "https://www.markphipps.com/wp-content/uploads/2022/05/Shrimpboat-800x800-1.jpg",
+          "description": "Developed by Mark at his home beaches in Torquay and Seignosse. Shreds fast and clean in smaller and marginal conditions; Gives instant speed; Easy to turn; Paddles incredibly fast; Order 3 to 6 inches shorter than your standard shortboard.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Snowshoe",
+          "image_url": "https://www.markphipps.com/wp-content/uploads/2022/04/SNOWSHOE_f_1080x.jpg",
+          "description": "Performance mini mal. Wide nose making it possible to nose ride; Performance tail outline, rocker and rails for manoeuvrability; Concave nose running into a double concave vee in the back half of the board; Single, 2 plus 1or thruster fin set ups available; Round pin tail; 0.2 to 2 metre waves.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Super Bad Egg",
+          "image_url": "https://www.markphipps.com/wp-content/uploads/2025/12/Super-Bad-Egg-blue-etched.jpg",
+          "description": "The Mark Phipps Super Bad Egg is a refined evolution of the popular One Bad Egg, designed for surfers who love the smooth, flowing feel of an egg outline but want a board capable of handling more powerful, hollow, and technically demanding waves. While it shares the clean curves and versatile DNA of the original, the Super Bad Egg introduces several performance-driven adjustments that elevate its capabilities when the surf steps up. One of the most notable enhancements is its reduced area forward. By pulling in the nose outline, Phipps has created a board that fits far more comfortably into steeper sections. This narrower forward template cuts down swing weight while helping the board engage more predictably on late drops and quick direction changes—crucial characteristics when riding hollow or fast-breaking waves. Complementing this outline adjustment is the increased nose rocker, which adds forgiveness and security in critical takeoffs. The extra lift prevents pearling and allows the board to knife into the pocket with confidence, opening the door to a higher level of performance in waves where traditional mid-lengths often struggle.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Animal",
+          "image_url": "https://www.markphipps.com/wp-content/uploads/2022/06/Animal_f_1080x.jpg",
+          "description": "Performance fish for ripping tiny to medium size waves. Super fast and loose with great hold through turns; Deep single to double concave; Any tail shape, normally a swallow or moon tail; Low rocker; Boxy rails; Full nose, wide tail; 3, 4 or 5 fins; 0.3m to 2m surf.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Tombstone",
+          "image_url": "https://www.markphipps.com/wp-content/uploads/2022/05/tombestone-front-800x.jpg",
+          "description": "Small to medium waves. Single into double concave; Low nose rocker and kicked tail rocker; Easy paddling board for not too deep waves; Fast and maneuverable.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Yo",
+          "image_url": "https://www.markphipps.com/wp-content/uploads/2022/04/yo_board_f_1080x.jpg",
+          "description": "The Yo was designed by Mark for someone that wants one board that he or she can count on without hesitation. The outline resembles a single fin in the nose due to the fact the original custom Yo was a 1finbox + 2 trailer setup.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Yo Yo",
+          "image_url": "https://www.markphipps.com/wp-content/uploads/2022/05/yoyo_front-800x.jpg",
+          "description": "The Yoyo is the summer hybrid of its good wave mother the Yo. Mark squashed the Yo by widening the tail and adding a slight tail lift. Low beveled rails that bite the wave and full volume in the nose using the beak method. The Yoyo is an incredibly versatile all-rounder that excels in small fun wave. Slight single to double concave and nice round tail this board comes in a 5 fin setup. Thruster on the days for turns and quads on the days for speed and control.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
