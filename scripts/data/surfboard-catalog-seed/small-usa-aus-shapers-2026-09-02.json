@@ -1,0 +1,164 @@
+{
+  "generated_for": "reswell daily small USA / Australia surfboard catalog growth",
+  "generated_on": "2026-09-02",
+  "product_category_slug": "surfboards",
+  "integrity": {
+    "first_party_only": true,
+    "surfboard_models_only": true,
+    "require_unique_image_description_logo": true,
+    "collapsed_size_color_construction_variants": true,
+    "dropped_misc": [
+      "Mana Shopify option SKUs (fins, fin placement, material, colour, tint)",
+      "Campbell Designed gift cards"
+    ],
+    "scanned_but_not_imported": [
+      "Senator / James Fulbright (Galveston) — sold through multi-brand Strictly Hardcore shop; no clean first-party Senator wordmark; many SKUs are sized one-offs",
+      "Strive Surfboards (Santa Cruz) — named copy exists but the official page does not pair a unique board photo to each model",
+      "Leatherman Surfboards (Oregon) — named families exist; Squarespace photos are portraits and lineups, not unique product shots",
+      "BLANCS (Tweed / Byron) — custom-order form only",
+      "Donald Brink / Brink Surf — custom-only, no named production catalog",
+      "LAD Surfboards (Margaret River) — no public first-party catalog",
+      "Yahoo Surfboards / Dave Macaulay — SiteGround image CDN still blocked",
+      "Sanctum Surf (Warriewood) — shop feed still 403",
+      "Aloha Australia boardstore — stocks MF Softboards and other labels; not a small single-shaper catalog"
+    ]
+  },
+  "summary": {
+    "brand_count": 2,
+    "model_count": 16,
+    "brands": [
+      {
+        "slug": "mana-surfboards",
+        "name": "Mana Surfboards",
+        "models": 6
+      },
+      {
+        "slug": "campbell-designed",
+        "name": "Campbell Designed",
+        "models": 10
+      }
+    ]
+  },
+  "brands": [
+    {
+      "slug": "mana-surfboards",
+      "name": "Mana Surfboards",
+      "website_url": "https://manasurfboards.com",
+      "location_label": "Central Coast, New South Wales, Australia",
+      "founder_name": "Dan McManus",
+      "lead_shaper_name": "Dan McManus",
+      "short_description": "Performance custom surfboards by Central Coast shaper Dan McManus — high-performance shortboards, grovelers, mid-length trackers, and heavy-water guns.",
+      "logo_url": "https://manasurfboards.com/cdn/shop/files/Mana-Circular-jaws-Jaws.png",
+      "models": [
+        {
+          "name": "Apex Step-Up",
+          "image_url": "https://cdn.shopify.com/s/files/1/0627/6887/3650/products/apex_step-up-main.jpg",
+          "description": "When conditions are solid and firing. Subtle single concave from the nose to the centre of the board, to a slight double concave just forward of the fins to tail exit. The Apex has an exaggerated nose to tail curve to compensate of hollow waves with lower rails than the M1 range for bite in the steepest of sections. Comes standard as a round pin or baby swallow. Ride the Apex the same width as your M1V4, with 1/8” more thickness to accommodate the lower rail.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Foot Soldier",
+          "image_url": "https://cdn.shopify.com/s/files/1/0627/6887/3650/products/FS_main.jpg",
+          "description": "The ultimate workhorse in our range. A daily driver originally taken from the curve and outline of the M1 series and relaxed to suit a broader range of waves and surfing ability. We lowered the overall nose and tail rocker to accommodate a more ‘groveller’ curve but still left enough for it to be very responsive and easy to surf in the pocket. The bottom remains as a single concave from nose to tail as standard to create lift, speed and drive, with a widened tail pod incorporating an exaggerated hip to rounded square tail for smooth rail transition through turns. We have had huge success also in a RT option. This boards fits directly between the SABRE and the MDM1. Ridden 2” shorter, a…",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "M1V5",
+          "image_url": "https://cdn.shopify.com/s/files/1/0627/6887/3650/products/M1V4.jpg",
+          "description": "The fith version of our OG performance shortboard is our best yet. Influenced by the early to mid 00’s golden era of Australian performance designs (length, curve & concave) and mixed with contemporary widths and volume. Designed for 2-6ft fun to good waves, the M1V5 revolves around maximum performance, but with added forgiveness and fine tuning for it to be surfed in a wide variety of conditions. We needed the new M1V4 to provide spark for explosive manoeuvres in everyday waves, while being predictable and reliable in pumping surf from our backyard beach breaks and slabs, to destinations like the Gold Coast points and small reef passes overseas. Fast and alive with a single concave…",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Mammoth Gun",
+          "image_url": "https://cdn.shopify.com/s/files/1/0627/6887/3650/products/mana-mammoth-gun.jpg",
+          "description": "For the biggest days at home and abroad, the Mammoth is designed to chip in early in and knife into huge beach breaks, deep water bombies and open heavy water reefs such as Cloudbreak, Pipe and G-Land. Built beak-nosed and bevelled-railed, this board allows for maximum rail thickness with the minimal rail height. The deck is slightly concaved, allowing greater sensitivity when setting your line or in the tube. The outline is slightly wider through the nose than standard guns to aid in stability and ease when paddling into critically large waves. The bottom features a slight single entry concave, to deep double concave from the centre of the board through the front two quads into a…",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Sabre",
+          "image_url": "https://cdn.shopify.com/s/files/1/0627/6887/3650/products/sabre_main.jpg",
+          "description": "Short, thick and wide stubby designed to still be surfed like a regular performance shortboard for 1-3ft poor to average waves. Deep single concave to vee in the last 6 inches of the tail. Low entry rocker to get into waves easily and moderate tail rocker for projection off the lip and quick directional changes. Comes standard as a hip- diamond swallow tail. Thruster set up but loves to be ridden as a twin, 2+1 or quad. Another super addictive groveller designed to have fun in the worst waves. Ride the Sabre 3-4” shorter and 3L more than your Foot Soldier.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Ventura",
+          "image_url": "https://cdn.shopify.com/s/files/1/0627/6887/3650/products/ventra-master.jpg",
+          "description": "Our mid length/tracker for 2-10ft clean waves. Many of our people have simultaneously replaced a tiny grovel and big wave board with this. Standard as a twin but can be custom built as a single or 2 + 1. Traditional tracker outline with modern performance rails and bottom contours. Moderate entry rocker with a lower tail rocker to allow for wave catchability, speed and the ability to surf in critical sections of the wave. Subtle vee concave on the entry to spiral vee throughout the entire board, creating speed, drive and perfect hold in any fin configuration on any size wave. Comes standard as a pintail, with tail and channel custom options available. Ride the Ventura 10-12” longer than…",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    },
+    {
+      "slug": "campbell-designed",
+      "name": "Campbell Designed",
+      "website_url": "https://www.campbelldesigned.com",
+      "location_label": "Noosa, Queensland, Australia",
+      "founder_name": "Stuart Campbell",
+      "lead_shaper_name": "Stuart Campbell",
+      "short_description": "Noosa father-and-son label from Stuart and Ryan Campbell — performance shortboards, fishes, and mid-lengths built with patented Exo Flex construction.",
+      "logo_url": "https://www.campbelldesigned.com/cdn/shop/files/cambelldesigned.png?v=1637198707",
+      "models": [
+        {
+          "name": "Campbelltoe",
+          "image_url": "https://cdn.shopify.com/s/files/1/0268/5809/4705/products/CAMPBELLTOE5_11TOP.jpg",
+          "description": "The “CAMPBELLTOE” is a high performance slight step-up shortboard for the days when the surf is pumping. More subtle concaves and vee, narrower planshape, extra rocker and surfed as a narrow round tail providing great hold and speed in bigger conditions. SKILL LEVEL / INTERMEDIATE - PRO The \"CAMPBELLTOE\" was designed for the intermediate to pro level surfer looking to draw longer lines and do big turns making the most out of those epic bigger days. SUITABLE WAVES / CHEST HIGH - DOUBLE OVERHEAD + The narrower outline and increased rocker make this board ideal for the better days and hollower conditions in the chest high to double overhead range.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Chunky Toe",
+          "image_url": "https://cdn.shopify.com/s/files/1/0268/5809/4705/products/CHUNKYTOETOP.jpg",
+          "description": "﻿﻿\"CHUNKY TOE\" was developed based off our \"THE TOE\" board file but designed to be surfed a little shorter with an ever so slightly flatter rocker, more area under the chest, deeper concaves and vee in the tail to create a lively board capable of fast on rail performance in everyday to below average conditions. ﻿SKILL LEVEL / ADVANCED BEGINNER - PRO ﻿﻿Best suited for anyone from advanced beginner through to pro level surfer the \"CHUNKY TOE\" is surfed around 1-3\" inches shorter than your regular shortboard. ﻿SUITABLE WAVES / THIGH HIGH - OVERHEAD + ﻿ ﻿The \"CHUNKY TOE\" is a high performance board suited for small to overhead waves from onshore sloppy beach breaks to clean reeling point breaks.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Hip//Toe",
+          "image_url": "https://cdn.shopify.com/s/files/1/0268/5809/4705/products/HIPTOE5_9TOP.jpg",
+          "description": "\"HIP//TOE\" is a versatile, performance shortboard that was particularly designed around smallish beach break conditions. Lowered rocker for speed this board also features a little added tail kick behind the fins and a corresponding hip in the planshape for tight surfing in the pocket. SKILL LEVEL / ADVANCED BEGINNER - PRO Best suited for an advanced beginner through to a pro level surfer the \"HIP//TOE\" slots in as the ideal shorter beach break board and is surfed slightly smaller at 3-5inches shorter than your standard shortboard though carrying the same volume. SUITABLE WAVES / KNEE HIGH - OVERHEAD ﻿ ﻿Designed primarily for shorter, peaky beach break surf in the small to overhead range…",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Little Toe",
+          "image_url": "https://cdn.shopify.com/s/files/1/0268/5809/4705/products/LITTLETOE5_3TOP.jpg",
+          "description": "﻿ ﻿\"LITTLE TOE\" is a performance grommet board and is a scaled down version of our highly popular \"THE TOE\" model. Featuring soft forgiving rails towards the front of the board and the same concave, vee, concave bottom contours as our other models. \"LITTLE TOE\" is a true performance board designed specifically for kids. ﻿SKILL LEVEL / BEGINNER - ADVANCED GROM ﻿\"LITTLE TOE\"s scaled down proportions are designed for the beginner to advanced grommet to take their surfing ability to that next level. SUITABLE WAVES / FLAT - OVERHEAD + ﻿﻿Being a grommet allrounder the \"LITTLE TOE\" is aimed at the flat to overhead plus size range on beach breaks or points and all surface conditions.﻿",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Middle Toe",
+          "image_url": "https://cdn.shopify.com/s/files/1/0268/5809/4705/products/MIDDLETOETOP.jpg",
+          "description": "The quest for an easy to surf, fast paddling, maneuverable longer board that would increase your wave count lead to the development of the \"MIDDLE TOE\". A longer rail line, low rocker, area pin tail, twin keels and a set of channels to increase drive giving a silky smooth ride to a versatile board in the 6'6\" - 7'6\" range. SKILL LEVEL / BEGINNER - PRO The extra length and width in the \"MIDDLE TOE\" provide stability and ease of paddling ideal not just for the novice but also the experienced surfer after a smooth ride and glide feel. ﻿SUITABLE WAVES / FLAT - OVERHEAD + ﻿ ﻿The length and smooth low rocker allows this board to glide in minimal conditions but also paddle with ease into well…",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Missletoe",
+          "image_url": "https://cdn.shopify.com/s/files/1/0268/5809/4705/files/MISSILETOE6.0TOP.jpg",
+          "description": "The “MISSLETOE” fits neatly between our “THE TOE” and “CAMPBELLTOE” models and just loves above average to good conditions. Slightly narrower, with a little more rocker than “THE TOE” a nice pulled in round tail providing excellent hold in hollower steep faced conditions complements our slight concave, vee, concave bottom contours which add incredible speed built for rail to rail surfing. SKILL LEVEL / INTERMEDIATE - PRO The “MISSLETOE” with its slightly narrower planshape and additional rocker makes it suited to surfers from the intermediate level right up to high level pros looking to push the limits of their surfing on those better days or for someone chasing an all rounder for that…",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Sacrifishal",
+          "image_url": "https://cdn.shopify.com/s/files/1/0268/5809/4705/products/SACRIFISHAL5_6TOP.jpg",
+          "description": "A performance keel inspired fish the \"SACRIFISHAL\" is a hybrid combining down the line speed with maneuverability in the pocket. Low rocker and soft central concave work to outrun long sections while the concave tail vee and flyer facilitate tight pocket surfing. Suitable for a wide range of surf size and conditions the \"SACRIFISHAL\" can be surfed as a quad, twin or twin + trailer. SKILL LEVEL / BEGINNER - PRO \"SACRIFISHAL\" suits all levels of surfer and is generally surfed around 4'5\" inches shorter than your regular shortboard and we suggest around a litre of additional volume. SUITABLE WAVES / FLAT - OVERHEAD + \"SACRIFISHAL\"s abundant plaining area provides fantastic paddle power and…",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Toe",
+          "image_url": "https://cdn.shopify.com/s/files/1/0268/5809/4705/products/THETOE5_10TOP.jpg",
+          "description": "﻿ ﻿\"THE TOE\" was designed and refined as a performance shortboard aimed at everyday conditions. With a medium rocker, our proven concave, vee, concave bottom contours producing lift and speed, while allowing lightning fast rail to rail transitions and tight in the pocket surfing this combination producing a fantastic all round surfboard. ﻿SKILL LEVEL / ADVANCED BEGINNER - PRO ﻿﻿One of our most popular models \"THE TOE\" is ridden by the advanced beginner to pro level surfer it's versatility perfect for an everyday surfer. ﻿SUITABLE WAVES / WAIST HIGH - DOUBLE OVERHEAD ﻿ ﻿\"THE TOE\"s optimum performance is designed for waves over a large size range from waist high shore break break conditions…",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Twin Cam",
+          "image_url": "https://cdn.shopify.com/s/files/1/0268/5809/4705/files/TWIN-FRONT.jpg",
+          "description": "A performance fish the \"TWIN CAM\" is a modern version of the popular old 70's style keel fish. Combining low rocker, a central concave giving it plenty of down the line speed & drive to outrun long sections, a pulled in fish tail along with the fins set back around the 8inch mark, coupled with concave vee off the tail lets this board perform drawn out carves as well as tight turns in the pocket . Suitable for a wide range of surf size and conditions the \"TWIN CAM\" is the ideal fish. SKILL LEVEL / BEGINNER - PRO \"TWIN CAM\" suits all levels of surfer and is generally surfed around 2-3\" inches shorter than your regular shortboard and we suggest around a 0.5-1 Litre of additional volume.…",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Wingman",
+          "image_url": "https://cdn.shopify.com/s/files/1/0268/5809/4705/files/WINGMAN6_4TOP_f9000c44-1d35-4ec9-a005-658f93794039.jpg",
+          "description": "A little old school but with a total modern twist, the “WINGMAN” incorporates some features from the past blended with the new to create an easy surfing performance oriented twin fin. The wide point forward of halfway and extra volume under the chest provide incredible paddle speed while the fuller planshape with a pulled in roundtail make for a very versatile twin fin board suited to a wide range of conditions. SKILL LEVEL / ADVANCED BEGINNER - PRO The added forward volume in the “WINGMAN” greatly assists getting into waves early which makes it not only suitable for the advanced beginner but anyone chasing extra paddle power whether for battling strong currents or for paddling early in…",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
