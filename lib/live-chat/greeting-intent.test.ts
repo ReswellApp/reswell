@@ -19,6 +19,9 @@ describe("live chat presence intent", () => {
       "hi there. anything there?",
       "hey is anyone there",
       "is someone around",
+      "are you there?",
+      "are you here?",
+      "hey are you there",
     ]) {
       assert.equal(isLiveChatPresenceIntent(text), true, text)
     }
