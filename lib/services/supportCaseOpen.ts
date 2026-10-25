@@ -5,6 +5,7 @@ import {
   type SupportCaseRow,
 } from "@/lib/db/supportCases"
 import { formatSupportCaseReference } from "@/lib/utils/support-case-display"
+import { notifyStaffSupportCaseOpened } from "@/lib/services/adminSupportAlerts"
 import { scheduleSupportReplyDraft } from "@/lib/services/supportReplyDraft"
 
 const WELCOME = "Thanks — we received this. Reply here anytime."
@@ -32,5 +33,6 @@ export async function createSupportCaseWithOpeningMessage(
     body: `${WELCOME} Case ${formatSupportCaseReference(inserted.data.id)}.`,
   })
   scheduleSupportReplyDraft(inserted.data.id)
+  notifyStaffSupportCaseOpened(inserted.data)
   return inserted.data
 }
