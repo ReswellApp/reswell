@@ -303,7 +303,7 @@ function SellListingPhotoTile({
                 ) : null}
                 {isPendingAuth ? (
                   <span className="text-[10px] bg-background/90 px-1 rounded text-foreground ring-1 ring-border">
-                    Ready to publish
+                    Sign in to upload
                   </span>
                 ) : null}
               </div>

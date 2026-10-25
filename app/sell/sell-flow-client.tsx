@@ -1343,9 +1343,8 @@ function SellPageContentInner({
       clearSellCatalogSearchAgain()
       setCameFromCatalogSearch(false)
       setCatalogSelectionCard(null)
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
+      const session = await resolveClientSessionForMutation(supabase)
+      const user = session?.user ?? null
       if (user) await clearSellListingDraft(user.id)
       await clearGuestSellListingDraft()
       toast.message("Starting a new listing — saved drafts stay in your dashboard.")
@@ -1888,9 +1887,8 @@ function SellPageContentInner({
       setSavedListingLocations(localSaved)
     }
     void (async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
+      const session = await resolveClientSessionForMutation(supabase)
+      const user = session?.user ?? null
       if (!user || cancelled) return
       const { data: profile } = await supabase
         .from("profiles")
@@ -2404,9 +2402,8 @@ function SellPageContentInner({
     setRemovedImageIds([])
     setPublishPreview(null)
     void (async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
+      const session = await resolveClientSessionForMutation(supabase)
+      const user = session?.user ?? null
       if (user) await clearSellListingDraft(user.id)
       await clearGuestSellListingDraft()
       clearSellServerDraftListingId("surfboards")
@@ -2455,9 +2452,8 @@ function SellPageContentInner({
         (pendingPublishResume || (!wantsBlankListing && !suppressIdbForNewListing)) &&
         !getImpersonation()
       ) {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser()
+        const session = await resolveClientSessionForMutation(supabase)
+        const user = session?.user ?? null
         if (!cancelled && user) {
           await migrateGuestSellListingDraftToUser(user.id)
         }
@@ -2512,25 +2508,25 @@ function SellPageContentInner({
       setActorIsAdmin(profile?.is_admin === true)
     }
 
-    void supabase.auth.getUser().then(({ data: { user } }) => {
-      setSignedInUserId(user?.id ?? null)
-      sellDraftUserIdRef.current = user?.id ?? null
-      void loadActorAdmin(user?.id ?? null, { keepExistingIfUnsigned: true })
-    })
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       const uid = session?.user?.id ?? null
       sellDraftUserIdRef.current = uid
       setSignedInUserId(uid)
-      void loadActorAdmin(uid, { keepExistingIfUnsigned: _event === "INITIAL_SESSION" })
-      if (!uid) return
-      void migrateGuestSellListingDraftToUser(uid)
-      for (const slot of imagesRef.current) {
-        if (!slot.sourceFile) continue
-        if (slot.uploadPhase === "done") continue
-        void optimizeAndUploadSlot(slot)
-      }
+      // INITIAL_SESSION / TOKEN_REFRESHED run inside the refresh that just
+      // finished. Nested getSession/getUser from here can start another refresh
+      // with the token that was just used and sign the seller out.
+      window.setTimeout(() => {
+        void loadActorAdmin(uid, { keepExistingIfUnsigned: event === "INITIAL_SESSION" })
+        if (!uid) return
+        void migrateGuestSellListingDraftToUser(uid)
+        for (const slot of imagesRef.current) {
+          if (!slot.sourceFile) continue
+          if (slot.uploadPhase === "done") continue
+          void optimizeAndUploadSlot(slot)
+        }
+      }, 0)
     })
     return () => subscription.unsubscribe()
   }, [supabase])

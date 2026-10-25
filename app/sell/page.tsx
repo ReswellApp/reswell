@@ -2,9 +2,9 @@ import { Suspense } from "react"
 import { redirect } from "next/navigation"
 import { SellPhotoIdentifyGate } from "@/components/features/sell/sell-photo-identify-gate"
 import { SellStart } from "@/components/features/sell/sell-start"
+import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
 import { fetchProfileIsAdmin } from "@/lib/db/profileAdmin"
 import { SURFBOARD_SELL_BOARDS_CREATE_HREF } from "@/lib/sell-flow/surfboard-sell-paths"
-import { createClient } from "@/lib/supabase/server"
 import SellFlowShell from "./sell-flow-client"
 
 function parseEditListingId(
@@ -39,9 +39,7 @@ export default async function SellPage({
   const type = firstParam(qs.type)
   const chooseSurfboard = firstParam(qs.choose) === "surfboard"
 
-  const supabase = await createClient()
-  const { data: userData } = await supabase.auth.getUser()
-  const user = userData.user
+  const { supabase, user } = await getCachedRequestSession()
 
   // Legacy choose=surfboard — send to Guided boards.
   if (chooseSurfboard && !editId && type !== "surfboard") {

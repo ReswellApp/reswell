@@ -34,12 +34,20 @@ export function isUserAuthBanned(
   user:
     | {
         banned_until?: string | null
-        app_metadata?: { banned?: unknown } | null
+        // Supabase `User.app_metadata` is a wide JSON object, not `{ banned }`.
+        app_metadata?: object | null
       }
     | null
     | undefined,
 ): boolean {
-  if (user?.app_metadata?.banned === true) return true
+  const metadata = user?.app_metadata
+  if (
+    metadata &&
+    "banned" in metadata &&
+    (metadata as { banned?: unknown }).banned === true
+  ) {
+    return true
+  }
   if (!user?.banned_until) return false
   const bannedUntilMs = Date.parse(user.banned_until)
   return Number.isFinite(bannedUntilMs) && bannedUntilMs > Date.now()

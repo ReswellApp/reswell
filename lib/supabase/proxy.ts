@@ -3,6 +3,7 @@ import {
   isAuthLockTimeoutError,
   isInvalidRefreshTokenError,
   isNonFatalGetUserError,
+  isRefreshTokenAlreadyUsedError,
   isTransientAuthNetworkError,
 } from '@/lib/auth/clear-supabase-auth-cookies'
 import { ACCOUNT_BANNED_ERROR } from '@/lib/messages/account-ban-errors'
@@ -178,6 +179,13 @@ async function refreshSupabaseSession(
           clearSupabaseAuthCookies(request, supabaseResponse)
           break
         }
+        // Reuse detection: another request already rotated this refresh token.
+        // Retrying uses the dead token again and can revoke the whole session.
+        // Leave cookies alone so the winner's Set-Cookie can stick.
+        if (isRefreshTokenAlreadyUsedError(error)) {
+          authLookupFailedUpstream = true
+          break
+        }
         if (isNonFatalGetUserError(error)) {
           if (
             isTransientAuthNetworkError(error) ||
@@ -200,6 +208,10 @@ async function refreshSupabaseSession(
     } catch (error) {
       if (isInvalidRefreshTokenError(error)) {
         clearSupabaseAuthCookies(request, supabaseResponse)
+        break
+      }
+      if (isRefreshTokenAlreadyUsedError(error)) {
+        authLookupFailedUpstream = true
         break
       }
       if (isNonFatalGetUserError(error)) {
