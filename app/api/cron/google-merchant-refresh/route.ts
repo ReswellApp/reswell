@@ -1,13 +1,19 @@
 import { NextResponse } from "next/server"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { isGoogleMerchantConfigured } from "@/lib/google-merchant/config"
-import { syncAllActiveListingsToGoogleMerchant } from "@/lib/services/googleMerchantSync"
+import { refreshExpiringGoogleMerchantListings } from "@/lib/services/googleMerchantSync"
+
+export const maxDuration = 300
 
 /**
- * Hourly refresh + reconciliation for Google Merchant product feed.
+ * Hourly Google Ads / Merchant Center refresh.
  * GET /api/cron/google-merchant-refresh
  *
- * Protected with CRON_SECRET when set. Scheduled in vercel.json (`0 * * * *`).
+ * Shopping products expire 30 days after the last successful publish. This job
+ * resubmits active listings at the 29-day mark (and listings with no publish
+ * row), then removes products for listings that are no longer eligible.
+ *
+ * Protected with CRON_SECRET when set. Scheduled in vercel.json (`20 * * * *`).
  */
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization")
@@ -28,7 +34,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const summary = await syncAllActiveListingsToGoogleMerchant(supabase)
+    const summary = await refreshExpiringGoogleMerchantListings(supabase)
     return NextResponse.json({
       ok: true,
       summary,
@@ -36,6 +42,7 @@ export async function GET(request: Request) {
     })
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
+    console.error("[cron] google-merchant-refresh failed:", msg)
     return NextResponse.json({ error: msg }, { status: 500 })
   }
 }
