@@ -18,7 +18,7 @@ import { SHIPPING_DEADLINE_DAYS } from "../shipping-deadline.ts"
 
 describe("cs agent harness", () => {
   it("pins a dedicated prompt version for draft fingerprints", () => {
-    assert.equal(CS_AGENT_PROMPT_VERSION, "cs-agent-v7")
+    assert.equal(CS_AGENT_PROMPT_VERSION, "cs-agent-v8")
   })
 
   it("caps inbox tool rounds, and gives live chat more steps and time", () => {
@@ -130,6 +130,7 @@ describe("cs agent harness", () => {
     assert.match(pack, /close_ticket true only when the issue is fully solved/)
     assert.match(pack, /do not guess/i)
     assert.match(pack, /do not need an order number/i)
+    assert.match(pack, /look into it now/)
     assert.match(pack, /This chat/)
     assert.match(pack, /hi there. anything there/)
     assert.match(pack, /never list buying/i)
@@ -249,6 +250,7 @@ describe("cs agent harness", () => {
     assert.match(prompt, /anything there/)
     assert.match(prompt, /never list buying/i)
     assert.match(prompt, /Do not ask for an order number/)
+    assert.match(prompt, /look into it now/)
     assert.doesNotMatch(prompt, /sends immediately as Reswell Team/)
   })
 
