@@ -31,6 +31,20 @@ export function ListingDetailBottomStripSkeleton({
   )
 }
 
+/**
+ * Holds the footer down while `/l` resolves. No shimmer tile — that near-white
+ * flat was the flash on the way into a listing.
+ */
+export function ListingDetailRoutePending() {
+  return (
+    <div
+      className="min-h-[calc(100dvh-9rem)] w-full flex-1 sm:min-h-[calc(100dvh-8rem)]"
+      role="status"
+      aria-label="Loading listing"
+    />
+  )
+}
+
 export function ListingDetailRouteSkeleton() {
   return (
     <main
