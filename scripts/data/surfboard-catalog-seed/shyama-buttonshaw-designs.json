@@ -1,0 +1,85 @@
+{
+  "generated_for": "Shyama Buttonshaw Designs official named standup catalog",
+  "source": "https://www.shyamabuttonshaw.com/shapes (Squarespace official Shapes menu — named surfboard models only; excludes order-process, colour, fin, and price blocks)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "shyama-buttonshaw-designs",
+      "name": "Shyama Buttonshaw Designs",
+      "website_url": "https://www.shyamabuttonshaw.com/",
+      "location_label": "Bells Beach, Victoria, Australia",
+      "founder_name": "Shyama Buttonshaw",
+      "lead_shaper_name": "Shyama Buttonshaw",
+      "short_description": "Hand-shaped surfboards by Shyama Buttonshaw from his Bells Beach studio — gliders, twins, quads, logs, and performance shortboards refined on the Southern Ocean.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/shyama-buttonshaw-designs.png",
+      "models": [
+        {
+          "name": "FD Quad",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/640aa64e8e657207db017ce1/20cd712e-895f-4ab7-9b60-3e8c744ad422/DSC07784.png?format=jpg",
+          "description": "Actively generate speed with ease. Loose and lively. I was looking for a groveller that would suit small Japanese waves and waves around home I started working on the FD quad. I was looking for something that generated speed quickly from the start without having to work too hard. The board has a flat deck with rail chine running from the nose then blending out in-between your feet. Injecting extra foam throughout the board without having the foam distribution reverse like a beak creates. Concave throughout the whole board with the option of a spiral vee tail exit for added grip and drive or a flat tail to loosen the board and give more release. This is a board for knee to over head waves. Would suit anyone wanting an active style small wave board.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Valley Quad",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/640aa64e8e657207db017ce1/7381c97a-ef1d-4ca8-863d-9726229e524a/DSC07788.png?format=jpg",
+          "description": "Suited to anyone who is looking for a board with added volume but surfs active. This board first started when Jeff Sweeny was looking for a overvolumed surfboard that was still lively and active under his feet. Having some trouble with his shoulders we wanted to increase the paddling efficiency whilst not sacrificing the ability to turn tight and surf dynamic. I split boards into two categories passive and active, this one sitting somewhat in the middle. Having some trim when planning but having the ability to be dynamic and get feedback from the board when pumping. Nose to tail vee allows the board to sit on rail with little effort, slight concave added through the tail giving a bit of push back and drive through the tail whilst keeping a little bit more curve throughout the rail line. Subtle beak and rail chine adds more foam under the chest, simultaneously keeping a lower soft rail. This board is ridden around 1/2\" - 1\" wider than your normal shortboard and around 1/4\" thicker. Suited to anyone who is looking for a board that is easy to catch waves and perform forgiving turns. Aging surfers who still want to lay it on rail.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "SB Twin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/640aa64e8e657207db017ce1/1719740851934-2TQIKYU83VD5IZB1HNAR/DSC04456.jpg?format=jpg",
+          "description": "Stability and drive with the freeness of a twin-fin. The SB twin provides myself and customers with a direct alternative to a short board thruster. Born from my experience with upright performance twins, where I found the erratic nature frustrating but loved the acceleration and freedom they offered. The SB twin resulted from blending my knowledge of quads, twin fins, and thrusters, finding what elements worked best between them. It sits somewhere between all three, featuring a single concave for trimming off a flatter bottom line. A moderate rail line curve gives it lively response and prevents it from feeling flat, dramatically reducing the instability of generic upright twin fins. Fins positioned further back offset the pivot whilst adding forward projection. These boards are versatile, scaling from small wave all-rounders to larger wave step-ups. The small wave SB twin has reduced rocker throughout and a wider plan shape in the nose and tail, ideal for softer beach breaks in Japan. Though not a full fish, this board performs well in the shoulder to well-overhead range. The SB twin + features a moderate continuous rocker and pulled-in outline for greater control in larger, more powerful surf, suitable from head high to well over double overhead.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Mini Glider",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/640aa64e8e657207db017ce1/1726441412559-DJO40UQVUAFGMI2AGR4S/Screenshot+2024-08-13+at+8.22.59+pm.jpg?format=jpg",
+          "description": "A smooth passive board that give a balance of trim and sensitivity. The mini glider was born out of years dedicated to riding gliders in a variety of surf. I loved the inherent trim and carry gliders gave you from knee high waves all the way up to triple overhead. I wanted to explore if I could carry over the same feeling of trim and glide, then apply it to a shorter and more agile size. Substantial width has been added to the mini glider to keep stability and trim in smaller surf. Light hull in the nose entry to help keep the nose from poking in steeper surf whilst maintain a lower entry rocker. Through the centre there is flat panel with subtle roll into the rails allows the board to trim and sit on top of the water contrasting to a generic hull bottom that sucks to the water surface therefore creating drag. The contour then runs into panel vee / vee double to add drive and sensitivity when turning. I love the feeling of being able to swoop a larger board onto rail rather than having to swivel the board flat or bog the rail. I found this subtle blend of contours and rail line curve achieved this. These style boards are very forgiving and don't need to be surfed with expert technique like much hull bottom mid-lengths.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Single with Sides",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/640aa64e8e657207db017ce1/1726566497828-06ZNXKVOOROWT3FX4XPB/DSC04466.jpg?format=jpg",
+          "description": "A board with passive speed generation. To suit fuller face waves. I first shaped a 2+1 when I was transiting back to surfing from a knee reconstruction. I was riding long boards and gliders in baby waves, However I was now looking to create something for stronger waves that I did not need to keep active to generate speed. I shaped the board 1 1/2\" wider and 3/8\" thicker than more standard shortboard dims. To my surprise the board carried allot of passive speed and gave allot of push back through carves. These boards are suited to more powerful waves harnessing the energy with a more relaxed rocker and increased foam throughout the board. The beaked nose and flat deck give you the feeling of sitting on top of the water rather than in it like a conventional short board, giving a feeling of trim and economy to speed generation. They don't have the same get up and go speed like a twin or shortboard more starting in 2nd gear so would not be appropriate as a small wave board.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Thruster",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/640aa64e8e657207db017ce1/1727240328176-IU84F5J7ACSF6ASR7GHQ/DSC01592.jpg?format=jpg",
+          "description": "Shortboards adjusted to each individual customer. Built through lived experience. I spent my early junior years through to my early twenties surfing for Simon Anderson. We worked closely on performance, with Simon sharing design changes to achieve different outcomes. This process, followed by working with Maurice Cole, built my foundation of knowledge in performance shortboards. My shortboards, being fully custom, allow me to make adjustments in response to feedback on weight distribution, stance width, and foot positioning, as well as the waves and conditions the customers intend to surf. I have developed three main rockers: one tailored closely with feedback from Ben Howard, who is a dominant front-footed surfer; another tailored for a more back-footed approach, developed from close feedback from Tom Carroll; and a third, neutral rocker designed for people with a balanced weight distribution.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Glider",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/640aa64e8e657207db017ce1/1726268153355-Q1ARVOF1RSNBNY95OGUX/DSC04474.jpg?format=jpg",
+          "description": "Trims well and allows you to turn off the whole length of the rail. This style board has been closest to my heart since I first created one in 2018. A tow surfing injury led to torn ligaments in my knee, keeping me out of the water for 16 months. This setback prompted me to broaden my perspective on surfing and board design. While I admired the surfing on Skip Fry style gliders in San Diego, I sought a more balanced outline and rocker for my board. This would extend the sweet spot and create a natural curve from nose to tail. I needed a board to glide along smaller point breaks around Bells without exerting too much pressure on my recovering knee. As my recovery progressed, I tested these boards in more critical surf, adapting the design along the way. The testing ground primarily was my home break at Bells Beach. I appreciated the momentum gained through rail turns, even in flatter sections. The single fin proved crucial in maintaining speed and drive, unlike some thrusters that slow down as they lose activation. This board is a good option for someone looking for a long board that trims well and allows you to turn off the whole length of rail.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Rincon Log",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/640aa64e8e657207db017ce1/1726441487630-5AJKHG2IIDSGY2A70XE9/DSC04890.jpg?format=jpg",
+          "description": "Combines speed and trim with nose riding and rail turns, great for versatile longboarding. Developed from surfing Rincon at Bells Beach, I needed a board that would maintain speed and trim through faster sections whilst being able to nose ride and turn on rail when the wave slows down. The Rincon longboard has been designed to have a neutral rocker and foil from nose to tail. The balanced rocker and foil allows you to actively use the entirety of the surfboard. Utilising glide from the centre forward, elevation from the nose concave and responsiveness from the tail. All without having to surf around a break in the bottom line. Earlier tail curve has been added to the board to surf on rail throughout turns as well as being able to pivot off the fin when needed. The rails are a little fuller and less pinched to minimise tracking throughout rail turns where thin pinched rails would roll onto rail and project straight. Throughout the middle of the board I run a central flat plan with roll off the sides. This flat helps the board sit on top of the central planning surface rather than sitting into the water like a traditional hull. Helping the board trim and carry its speed through longer sections. If you're looking for a well balanced log that isn't solely focused on one aspect of longboarding, this would be the most suited in my range.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Widow Maker",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/640aa64e8e657207db017ce1/1726565745584-UVHRZRN4F1O142TISYED/DSC05546_1.jpg?format=jpg",
+          "description": "Step up with passive speed that allows you to engage your rail easily. This board has constant curve in the rail line rocker with a slight exaggerated curve near the rear fin. This helps you surf from further forward on the board for drive and carry whilst being able to step back further to tighten your archs. The entry curve can be adjusted to desired wave shape. Flatter entry for more slopey waves and added rocker for steeper waves. Beaked nose, with a flat deck and chine running into a foiled-out tail gives plenty of paddability whilst keeping the tail sensitive. The Fin configuration has extra small side bites paired with a 7 -8\" reduced area single fin. The smaller sides bites help engage your rail in a broader range of conditions with a straight single, however they are small enough to not interfere too much with the trim of a single fin. This board covers a large range of surf from fuller waves like the Bells bowl to steeper more powerful surf. It really likes having an open face or something curving back at you to help with feeding the board onto rail. Offering an alternative option to a traditional thruster step-up, giving you more trim and glide with a slight compromise on agility.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Step-Up",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/640aa64e8e657207db017ce1/1727240966159-YI1JMFII0JM72H3IBZD3/DSC02646.jpg?format=jpg",
+          "description": "Step-up's designed to your own style of surfing and body shape. Foundations built off making step-ups and short boards for a large variety of types of surfers over the last 12 years. Throughout this time making custom boards I have developed two different styles of rockers to cater for the different stances and styles of surfing. The first was developed with feedback from Ben Howard and my own surfing, with added rail line rocker through the tail to help keep a longer board feeling agile and lively. This style would be suited to someone who drives a little more off their front foot or is looking to have a slightly looser step up. The second was developed with feedback from Tom Carroll, having a more elongated rail line rocker blending into spiral vee through the tail exit. This one is for someone who may have a little more power through their back foot or a little narrower in stance. This provides the surfer with allot of hold and drive. Both style boards can have other ingredients calibrated to each surfers needs and taste.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Speed Shape",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/640aa64e8e657207db017ce1/1726371246777-835ML4V6MJ5EMFQD2ZT4/Speedshape.jpg?format=jpg",
+          "description": "Long board suited for open face waves shoulder high and above. The speed shape came about from needing to make a longboard work in a variety of conditions at waves similar to Bells Bowl. I was working closely with Bea Conroy on trying to carry some of the characteristics of my gliders over to a long board that nose rides in slightly larger surf. I kept the constant rocker and outline curve to allows you to roll the board over onto rail from a larger sweet spot. Edging on the tail helped remove the rocking feeling of a roll bottom and increased drive. This board should give you a balanced feeling of control nose riding and being able to swoop a longer rail line in open faced waves similar to Bells Beach.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
