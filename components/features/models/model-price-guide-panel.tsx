@@ -5,7 +5,7 @@ import { formatStoredListingDimensions } from "@/lib/listing-dimensions-display"
 import { listingDetailHref } from "@/lib/listing-href"
 import { formatCondition } from "@/lib/listing-labels"
 import { formatCompCount, formatGuideUsd } from "@/lib/price-guide/format"
-import { priceGuideModelHref } from "@/lib/price-guide/categories"
+import { modelPricingHref } from "@/lib/pricing/model-pricing"
 import { modelUsedRangeLabel } from "@/lib/models/model-page-hero"
 import type { ModelMarketplaceListing } from "@/lib/db/brand-listings"
 import type { PriceGuideComp, PriceGuideModelPage } from "@/lib/types/price-guide"
@@ -130,7 +130,6 @@ export function ModelPriceGuidePanel({
   const rows = page && page.recent_sold.length > 0 ? rowsFromComps(page.recent_sold) : rowsFromSold(soldListings)
   const emphasizeRange = listingCount > 0 && Boolean(range)
   const bands = (page?.condition_bands ?? []).filter((band) => band.sample_count > 0)
-  const fullHref = page ? priceGuideModelHref(page.category_slug, brandSlug, modelSlug) : null
   const stats = [
     page?.typical.mid_usd != null ? `${formatGuideUsd(page.typical.mid_usd)} typical` : null,
     page && page.asking.count > 0 && page.asking.median_usd != null
@@ -160,13 +159,14 @@ export function ModelPriceGuidePanel({
         </p>
       ) : null}
       <SaleRows rows={rows} />
-      {fullHref ? (
-        <p className="mt-4 text-sm">
-          <Link href={fullHref} className="font-medium text-foreground underline-offset-4 hover:underline">
-            Full price guide
-          </Link>
-        </p>
-      ) : null}
+      <p className="mt-4 text-sm">
+        <Link
+          href={modelPricingHref(brandSlug, modelSlug)}
+          className="font-medium text-foreground underline-offset-4 hover:underline"
+        >
+          Pricing
+        </Link>
+      </p>
     </div>
   )
 }
