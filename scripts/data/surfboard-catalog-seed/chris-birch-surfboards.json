@@ -1,0 +1,97 @@
+{
+  "generated_for": "Chris Birch Surfboards official named standup catalog",
+  "source": "https://www.surfboardsbychrisbirch.com/models (official Wix model lineup — named production shapes only)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "chris-birch-surfboards",
+      "name": "Chris Birch Surfboards",
+      "website_url": "https://www.surfboardsbychrisbirch.com/",
+      "location_label": "Satellite Beach, Florida",
+      "founder_name": "Chris Birch",
+      "lead_shaper_name": "Chris Birch",
+      "short_description": "American-made custom surfboards by Chris Birch, shaped in his Satellite Beach, Florida factory — shortboards, fishes, mid-lengths, and longboards from a shaper who has been building boards on the Space Coast since 1978.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/chris-birch-surfboards.png",
+      "models": [
+        {
+          "name": "Accelerator",
+          "image_url": "https://static.wixstatic.com/media/3845d7_55f0bdb47e7d45328a0e3ac7e484e75e~mv2.jpg",
+          "description": "The #1 seller and the model Chris Birch rides. Generates speed with ease and works well in 2 ft. to overhead surf. Comes with his quad fin set. Pictured 6'4\" — nose 15 3/4\", center 21 3/4\", tail 17\".",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Accelerator II",
+          "image_url": "https://static.wixstatic.com/media/3845d7_c2a7bb80754b4535ae8f20cf145f19ef~mv2.jpg",
+          "description": "Same outline as the Accelerator, but with a fish tail. Can be ordered as a twin, tri, or quad fin (quad preferred). Pictured 6'2\" — nose 15 7/8\", center 21 1/2\", tail 17 1/2\".",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Afishionado",
+          "image_url": "https://static.wixstatic.com/media/3845d7_64775acd914447859e030edf596b7319~mv2.jpg",
+          "description": "Chris Birch's most retro fish outline. A wide template combined with flatter rocker and thickness throughout allows the rider to go shorter than his everyday board. Pictured 5'8\" — nose 18 1/8\", center 21 1/2\", tail 17 1/4\".",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Sweet Pea",
+          "image_url": "https://static.wixstatic.com/media/3845d7_cb78e4e7b0c4480884f4a29a8512cf2e~mv2.jpg",
+          "description": "Mini-Simmons influenced, for the surfer who wants to push the limits of shortness. Can be ordered as twin or quad fin. Pictured 5'2\" — nose 19\", center 21 1/2\", tail 17 1/2\".",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Element",
+          "image_url": "https://static.wixstatic.com/media/3845d7_f4801c6018524df2811ad0838fbea197~mv2.jpg",
+          "description": "Rocket Fish outline, based off of Chris Birch's love for Mark Richards twin-fins of the 1980's. Can be ordered as twin, tri, or quad fin. Pictured 5'8\" — nose 14\", center 20 3/8\", tail 15 7/8\".",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Chauffeur",
+          "image_url": "https://static.wixstatic.com/media/3845d7_6f2648d6840e49769eb627534baf79b6~mv2.jpg",
+          "description": "Combines performance longboarding with nose-ridability. A great all-around longboard. Pictured 9'1\" — nose 18 1/8\", center 22 1/2\", tail 14\".",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Mini Chauffeur",
+          "image_url": "https://static.wixstatic.com/media/3845d7_2a0ef25cc6954d43a877b96299e19504~mv2.jpg",
+          "description": "The ease of paddling and wave catchability of a longboard in a shorter version of the Chauffeur. Pictured 7'8\" — nose 18 1/4\", center 21 3/4\", tail 14 1/2\".",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Cousin Dupree",
+          "image_url": "https://static.wixstatic.com/media/3845d7_0ebacc68761941fb91e8678b1701b722~mv2.jpg",
+          "description": "Classic outline with flatter rocker for a smooth, easy ride — just plain fun. Pictured 7'2\" — nose 16 3/4\", center 21 5/8\", tail 14 1/2\".",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Soloist",
+          "image_url": "https://static.wixstatic.com/media/3845d7_3b0a0546ce0d49f78e0d60c32cfce7ec~mv2.jpg",
+          "description": "Old-school slightly forward outline with modernized rocker and thickness flow. Versatile outline that can be ordered with any fin set-up. Pictured 6'4\" — nose 14\", wide point 20 1/2\", tail 14 1/2\".",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Rabble Rouser",
+          "image_url": "https://static.wixstatic.com/media/3845d7_df83216be2ad41f5a0232db28d916d8c~mv2.jpg",
+          "description": "Chris Birch's standard performance thruster, built with a single-to-double concave bottom. Pictured 6'0\" — nose 11 3/4\", center 19 1/2\", tail 15\".",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Velocity",
+          "image_url": "https://static.wixstatic.com/media/3845d7_5104226f43f64e2e9bde7140affe01b2~mv2.jpg",
+          "description": "Chris Birch has been building this model since the early 1990's. Extreme down-the-line speed. Pictured 6'3\" — nose 12 1/2\", center 20 1/2\", tail 16 1/4\".",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Buford Stick",
+          "image_url": "https://static.wixstatic.com/media/3845d7_ac637397fae9497fba3938f1f3ee8450~mv2.jpg",
+          "description": "More emphasis on cruising and noseriding. Wider throughout than the Chauffeur. Pictured 9'4\" — nose 19 5/8\", center 23 1/4\", tail 14 5/8\".",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Garrett Spencer",
+          "image_url": "https://static.wixstatic.com/media/3845d7_038357cd1e1c405e9f839306f1857a33~mv2.jpg",
+          "description": "This single-fin longboard is designed to turn well off the tail and noseride in the pocket. Fast and responsive, it adds a modern touch to this classic-inspired board. Pictured 9'6\" — nose 17\", center 23\", tail 16\".",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
