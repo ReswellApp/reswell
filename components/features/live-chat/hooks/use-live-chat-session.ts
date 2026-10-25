@@ -15,6 +15,7 @@ import {
   isLiveChatSessionMissingPayload,
 } from "@/lib/live-chat/errors"
 import { isLegacyLiveChatWidgetCopy } from "@/lib/live-chat/team-display"
+import { mergeIncomingLiveChatUiMessage } from "@/lib/live-chat/merge-messages"
 import { hasTeamReplySince } from "@/lib/live-chat/thread-sync"
 
 const VISITOR_DISPLAY_NAME = "Guest"
@@ -59,27 +60,6 @@ function sortMessages(messages: LiveChatUiMessage[]): LiveChatUiMessage[] {
   return [...messages].sort(
     (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
   )
-}
-
-function mergeIncomingMessage(
-  prev: LiveChatUiMessage[],
-  incoming: LiveChatUiMessage,
-): LiveChatUiMessage[] {
-  if (prev.some((message) => message.id === incoming.id)) return prev
-  if (incoming.sender_type === "visitor" && !incoming.pending) {
-    const pendingIndex = prev.findIndex(
-      (message) =>
-        message.pending &&
-        message.sender_type === "visitor" &&
-        message.content === incoming.content,
-    )
-    if (pendingIndex >= 0) {
-      const next = [...prev]
-      next[pendingIndex] = { ...incoming, pending: false }
-      return sortMessages(next)
-    }
-  }
-  return sortMessages([...prev, incoming])
 }
 
 function inferThreadMode(messages: LiveChatUiMessage[]): ThreadModeHint {
@@ -311,7 +291,7 @@ export function useLiveChatSession(options?: {
     if (message.sender_type === "agent" || message.sender_type === "bot") {
       stopTeamReplyWait()
     }
-    setMessages((prev) => mergeIncomingMessage(prev, message))
+    setMessages((prev) => mergeIncomingLiveChatUiMessage(prev, message))
   }, [stopTeamReplyWait])
 
   const replaceMessage = useCallback((optimisticId: string, confirmed: LiveChatUiMessage) => {

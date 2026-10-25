@@ -68,14 +68,13 @@ function mergeAdminMessages(
 function toAdminMessage(
   message: LiveChatUiMessage,
   sessionId: string,
-  fallbackAgentId: string | null,
 ): LiveChatAdminMessage {
   return {
     id: message.id,
     session_id: sessionId,
     sender_type: message.sender_type,
-    sender_agent_id:
-      message.sender_agent_id ?? (message.sender_type === "agent" ? fallbackAgentId : null),
+    // Keep null sender_agent_id — that is how auto-replies stay rateable after regenerate.
+    sender_agent_id: message.sender_agent_id ?? null,
     content: message.content,
     created_at: message.created_at,
     agent_display_name:
@@ -233,9 +232,9 @@ function ThreadPane({
 
   const appendRemote = useCallback((message: LiveChatUiMessage) => {
     setLocalMessages((prev) =>
-      mergeAdminMessages(prev, [toAdminMessage(message, session.id, staff.userId)]),
+      mergeAdminMessages(prev, [toAdminMessage(message, session.id)]),
     )
-  }, [session.id, staff.userId])
+  }, [session.id])
 
   useLiveChatSessionRealtime(session.id, true, appendRemote)
   const { typingName, publishTyping } = useLiveChatTyping({
@@ -348,36 +347,41 @@ function ThreadPane({
     note: string,
   ) {
     setRegeneratingMessageId(messageId)
-    const result = await requestLiveChatReplyRegenerate({
-      sessionId: session.id,
-      messageId,
-      rating,
-      note,
-    })
-    setRegeneratingMessageId(null)
-    if ("error" in result) {
-      toast.error(result.error)
-      return
+    try {
+      const result = await requestLiveChatReplyRegenerate({
+        sessionId: session.id,
+        messageId,
+        rating,
+        note,
+      })
+      if ("error" in result) {
+        toast.error(result.error)
+        return
+      }
+      setRatedMessageIds((prev) => {
+        const next = new Set(prev)
+        next.delete(messageId)
+        return next
+      })
+      setLocalMessages((prev) =>
+        mergeAdminMessages(prev, [
+          {
+            id: result.id,
+            session_id: session.id,
+            sender_type: "agent",
+            sender_agent_id: null,
+            content: result.content,
+            created_at: result.created_at,
+            agent_display_name: null,
+          },
+        ]),
+      )
+      toast.success("New reply is ready to rate.")
+    } catch {
+      toast.error("Could not regenerate that reply.")
+    } finally {
+      setRegeneratingMessageId(null)
     }
-    setRatedMessageIds((prev) => {
-      const next = new Set(prev)
-      next.delete(messageId)
-      return next
-    })
-    setLocalMessages((prev) =>
-      mergeAdminMessages(prev, [
-        {
-          id: result.id,
-          session_id: session.id,
-          sender_type: "agent",
-          sender_agent_id: null,
-          content: result.content,
-          created_at: result.created_at,
-          agent_display_name: null,
-        },
-      ]),
-    )
-    toast.success("New reply is ready to rate.")
   }
 
   return (
