@@ -8,6 +8,7 @@ import {
   searchEmailStudioProductsAction,
 } from "@/lib/actions/emailStudio"
 import { emailImageSrc } from "@/lib/email-studio/email-image-url"
+import { reconcileEmailStudioProductBlock } from "@/lib/email-studio/product-reconciliation"
 import { EMAIL_MERGE_TOKENS } from "@/lib/email-studio/tokens"
 import { listingPhotoCoverClassName } from "@/lib/listing-photo-fill"
 import { cn } from "@/lib/utils"
@@ -340,7 +341,7 @@ function ProductFields({
       setError(result.error)
       return
     }
-    onChange({ ...block, items: result.data })
+    onChange(reconcileEmailStudioProductBlock(block, result.data))
   }
 
   const toggles: { key: "showPrice" | "showCondition" | "showDimensions" | "showBoardType" | "showAvailability"; label: string }[] = [
