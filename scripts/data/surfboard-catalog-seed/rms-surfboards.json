@@ -1,0 +1,85 @@
+{
+  "generated_for": "RMS Surfboards official named surfboard catalog",
+  "source": "https://www.rmshapes.com.au/category/all-products (Wix — named standup models only; excludes Diamond Disc and Squelch spec-sheet tiles, merch, and custom deposits)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "rms-surfboards",
+      "name": "RMS Surfboards",
+      "website_url": "https://www.rmshapes.com.au/",
+      "location_label": "Tuggerah / Forresters Beach, Central Coast, New South Wales, Australia",
+      "founder_name": "Rex Marechal",
+      "lead_shaper_name": "Rex Marechal",
+      "short_description": "Custom performance surfboards hand-shaped by Rex Marechal on the Central Coast of New South Wales — shortboards, twins, grovelers, and mid-lengths from a factory in Tuggerah.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/rms-surfboards.jpg",
+      "models": [
+        {
+          "name": "The Percolator",
+          "image_url": "https://static.wixstatic.com/media/14f593_41c14f89bd534d2d9608e25322d62d0c~mv2.png",
+          "description": "Fun high volume performance Round Tail. This Model has been in development over the past year, making several tweaks to perfect the Model. Profile and concaves are the same as the popular Escalator Model, a deep single into double concave, accelerated curve through the nose and relaxed curve out the tail. We've added a fuller deck and teardrop round tail outline. Great all round board for most types of surf.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Squeak",
+          "image_url": "https://static.wixstatic.com/media/14f593_63b0ddded741442b8195e1361e412f45~mv2.png",
+          "description": "Our team favourite. Hi-performance shortboard that rivals all the iconic performance boards out there at the moment. Made for good surfers in good waves. A match made in heaven. Slight single-to-double concave with full rocker and forgiving rails make this one ride like a dream in good surf. The Squeak is designed to react quickly and confidently for those who like to push the limits.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "HP Twin",
+          "image_url": "https://static.wixstatic.com/media/14f593_258460c3a5c148d2b30cf05185323b09~mv2.png",
+          "description": "One of our most popular models, the HP Twin is a hi-performance twin fin designed for intermediate to advanced surfers in small performance surf. Dolphin bottom inspired spiral vee, wing swallow. Rolled deck for hiding the volume and allowing a thinner rail. Fast and loose is the order of the day for this craft.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Blood Diamond",
+          "image_url": "https://static.wixstatic.com/media/14f593_de668cfcb6ae463a9b9aa926c72456af~mv2.jpg",
+          "description": "Absolutely our best selling small wave craft. Dophin bottom with a full outline. Works great in grovel and good surf. Recommended with a convertible 5-fin set up for versatility as a thruster or 4-fin. Low rails hide the high volume while keeping it loose in the wave face. Without a doubt, one of the best small wave boards on the market.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Escalator",
+          "image_url": "https://static.wixstatic.com/media/14f593_55f01f5ab14a4831b91854dc6353ecf2~mv2.jpg",
+          "description": "A high volume stumpy shortboard with fine rails and deep single into double concaves. A fine rail keeps the performance alive in small to medium surf. A great all-rounder too with mega drive. Available in Round Square, Swallow and Round tails.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Freckle 24",
+          "image_url": "https://static.wixstatic.com/media/14f593_2ac6052baa28469fac6330881f88c641~mv2.jpg",
+          "description": "Hi Performance step-down model based off our most popular performance model The Squeak. It has a hip with lower nose rocker, wider nose and fuller rail the the Squeak. Really fun pocket riding shorty for smaller and less desireable surf. Fans of this model will be pleased with the slight tweaks in refinement for 2024. Super clean, fun board that excels in beach break conditions.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Boom",
+          "image_url": "https://static.wixstatic.com/media/14f593_754ec943eb72450e90b9d97da504cfb7~mv2_d_2048_2048_s_2.jpg",
+          "description": "Hi-performance with deeper double concave and slighty lower nose rocker. A proven performer in good surf. Available in Round Square, Swallow and Round Tails.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Roundabout",
+          "image_url": "https://static.wixstatic.com/media/14f593_4afebde622094d00a69ae2639a13f582~mv2.png/v1/fit/w_1200,h_1200,q_90/file.jpg",
+          "description": "Based off our Squeak Model ( our most popular Hi Performance Model), the Roundabout is a round tail with a single concave. Super quick and drivey. Refined Rails and foiled nose and tail for the ultimate in performance. Paired together with a beautiful outline, the result is butter.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Mish Mash 24",
+          "image_url": "https://static.wixstatic.com/media/14f593_ab64dc8d2a8b4e38bbff8cd8c7bf4491~mv2.webp/v1/fit/w_1200,h_1200,q_90/file.jpg",
+          "description": "New for 2024. Another Performance Shortboard with combined elements of all of our teams' favourites. Single into double concave, a bit more chunk in the tail for fast rebounds, and a fuller nose with relaxed entry rocker make this a wave catcher and a good compromise for one who needs a bit more foam. Proven performer offered in Swallow Tail or Round Square. Designed as a step down or for those who prefer a bit more volume in their performance models.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Retro Single or Twin Fin",
+          "image_url": "https://static.wixstatic.com/media/14f593_cb079bb34840428aa44875e3733c13b8~mv2.jpg",
+          "description": "Super fast mid length design diamond tail or round tail. This shape is available as either a Single Fin (Box) or FCS2 or Futures Twin set up.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Pwin",
+          "image_url": "https://static.wixstatic.com/media/14f593_e13601dcb26b49818eceac51675a56bb~mv2.jpg",
+          "description": "Mid Length Twin. Super fast double concave, semi beak nose retro ripper.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
