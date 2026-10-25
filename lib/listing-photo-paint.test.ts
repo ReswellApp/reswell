@@ -59,6 +59,12 @@ describe("listing photo wells", () => {
     assert.match(loading, /ListingDetailRoutePending/)
 
     const page = readFileSync(new URL("../app/l/[listing]/page.tsx", import.meta.url), "utf8")
-    assert.match(page, /ListingDetailCachedShell/)
+    assert.doesNotMatch(page, /ListingDetailCachedShell/)
+    // Catalog PDPs must not stream a photo-only Suspense shell ahead of the page.
+    assert.doesNotMatch(
+      page,
+      /Suspense fallback=\{<ListingDetailCachedShell|Suspense fallback=\{<ListingDetailRouteSkeleton/,
+    )
+    assert.match(page, /ListingDetailPublicOrAuthenticated/)
   })
 })
