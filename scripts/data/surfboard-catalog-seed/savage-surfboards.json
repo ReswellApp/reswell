@@ -1,0 +1,91 @@
+{
+  "generated_for": "Savage Surfboards official named standup catalog",
+  "source": "https://www.savagesurfboards.com/models.html (official 2026 models lineup only — excludes shop one-off inventory SKUs, ding repair, custom deposits, fins, and merch)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "savage-surfboards",
+      "name": "Savage Surfboards",
+      "website_url": "https://www.savagesurfboards.com",
+      "location_label": "Wilmington, North Carolina",
+      "founder_name": "Kenny Briel",
+      "lead_shaper_name": "Kenny Briel / Shawn O'Donnell",
+      "short_description": "Handcrafted East Coast surfboards from Kenny Briel and Shawn O'Donnell in Wilmington, North Carolina — performance shortboards, grovelers, fish, and longboards built in the USA since 1982.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/savage-surfboards.png",
+      "models": [
+        {
+          "name": "Jason Motes / Iron Man",
+          "image_url": "https://www.savagesurfboards.com/uploads/1/2/1/9/121966979/savage-motes_orig.png",
+          "description": "Made for champions. Modeled for Jason Motes who has 30+ National Championship titles. Today's performance with a bit of 80's influence. Ideal wave size: knee to chest high. Sized 5'0–6'8.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Mush Burger",
+          "image_url": "https://www.savagesurfboards.com/uploads/1/2/1/9/121966979/savage-mush-burger_orig.png",
+          "description": "The Mush Burger is a favorite of Savage Team Riders. A high-performance board designed for advanced-level surfers to excel in heavier East-Coast conditions. Performance rocker with a single-to-double concave allows this board to excel in the pocket. Ideal wave size: knee to chest high. Sized 4'8–6'8.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Creature",
+          "image_url": "https://www.savagesurfboards.com/uploads/1/2/1/9/121966979/savage-creature_orig.png",
+          "description": "A groveler with increased volume in the chest for a blend of performance and added paddle power. Perfect contest board for when the conditions aren't 100% ideal. Ideal wave size: knee-high to overhead. Sized 4'8–6'6.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Mantis",
+          "image_url": "https://www.savagesurfboards.com/uploads/1/2/1/9/121966979/savage-mantis_orig.png",
+          "description": "Our take on the traditional fish shape. Wide outline with an updated single-to-double concave to ensure paddle power and maneuverability on waves of all sizes. Ideal wave size: knee to chest high. Sized 5'0–6'8.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Clinger",
+          "image_url": "https://www.savagesurfboards.com/uploads/1/2/1/9/121966979/savage-clinger_orig.png",
+          "description": "Our Mantis shape with a shorter rail line and rocket tail, giving the board a looser feel. Custom order only. Ideal wave size: shin to chest high. Sized 5'0–6'6.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Big Rat",
+          "image_url": "https://www.savagesurfboards.com/uploads/1/2/1/9/121966979/savage-big-rat_1.png",
+          "description": "Our take on a performance groveler with a pulled in tail that gives advanced surfers a looser pivot point on carves and top-to-bottom maneuvers. Ideal wave size: knee to chest high. Sized 5'0–6'6.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Predator",
+          "image_url": "https://www.savagesurfboards.com/uploads/1/2/1/9/121966979/predator_orig.png",
+          "description": "Want to bring your skate style to the ocean? The Predator is your go-to. Our swallow-tail, channel bottom design offers a responsive ride that performs best in medium surf, but has enough go to flow down the line on smaller days. The snub nose creates a straighter drawn out rail, which increases speed and decreases drag and allows for tighter surfing in the pocket. Custom order only. Ideal wave size: knee-high to shoulder. Sized 5'4–6'4.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Egg Beater",
+          "image_url": "https://www.savagesurfboards.com/uploads/1/2/1/9/121966979/savage-egg-beater_orig.png",
+          "description": "More-than-your-average funboard! A great option for younger riders starting to advance their surfing or older guys looking to get more performance out of a bigger board. Ideal wave size: knee-high to overhead. Sized 6'10–7'10.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Bootlegger",
+          "image_url": "https://www.savagesurfboards.com/uploads/1/2/1/9/121966979/savage-bootlegger_1.png",
+          "description": "A fun board with performance shortboard rockers and today's concave for the surfer looking for paddle power while maintaining a maneuverability and drive. Ideal wave size: knee-high to overhead. Sized 6'6–6'10.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Salted Sow",
+          "image_url": "https://www.savagesurfboards.com/uploads/1/2/1/9/121966979/savage-salted-sow_orig.png",
+          "description": "The Salted Sow is our tried-and-true noserider model. Everybody loves bacon. Ideal wave size: ankle to chest high. Sized 9'0–10'0.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Orange Blossom Special",
+          "image_url": "https://www.savagesurfboards.com/uploads/1/2/1/9/121966979/savage-orange-blossom-special_orig.png",
+          "description": "Our all-around longboard, perfect balance of performance and noserider. Ideal wave size: ankle to chest high. Sized 9'0–9'8.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "California Classic",
+          "image_url": "https://www.savagesurfboards.com/uploads/1/2/1/9/121966979/editor/savage-california-classic.png",
+          "description": "A traditional California noserider with a flatter rocker for East Coast waves. Ideal wave size: ankle to chest high. Sized 9'6–10'0.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
