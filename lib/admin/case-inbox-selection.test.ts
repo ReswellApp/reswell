@@ -5,6 +5,7 @@ import {
   firstNonEmptyText,
   inboxItemPassesMineFilter,
   inboxLoadQueryKey,
+  inboxMobileShowsConversation,
   mergeInboxPageItems,
   nextInboxSelectedKey,
   pinSelectedInboxItem,
@@ -117,6 +118,74 @@ describe("nextInboxSelectedKey", () => {
       if (nextKey !== undefined) selectedKey = nextKey
     }
     assert.equal(selectedKey, "sc:missing-contact")
+  })
+
+  it("picks the first filtered row when nothing is selected", () => {
+    assert.equal(
+      nextInboxSelectedKey({
+        items: [{ key: "sc:first" }, { key: "sc:second" }],
+        filtered: [{ key: "sc:first" }, { key: "sc:second" }],
+        selectedKey: null,
+        loading: false,
+      }),
+      "sc:first",
+    )
+  })
+
+  it("does not auto-open the first row when the phone list should stay visible", () => {
+    assert.equal(
+      nextInboxSelectedKey({
+        items: [{ key: "sc:first" }, { key: "sc:second" }],
+        filtered: [{ key: "sc:first" }, { key: "sc:second" }],
+        selectedKey: null,
+        loading: false,
+        autoSelectFirst: false,
+      }),
+      undefined,
+    )
+  })
+})
+
+describe("inboxMobileShowsConversation", () => {
+  it("keeps a resolved ticket on the conversation pane", () => {
+    assert.equal(
+      inboxMobileShowsConversation({
+        hasSelectedItem: true,
+        selectedKey: "sc:open",
+        loading: false,
+      }),
+      true,
+    )
+  })
+
+  it("holds the conversation pane only while a deep link is still loading", () => {
+    assert.equal(
+      inboxMobileShowsConversation({
+        hasSelectedItem: false,
+        selectedKey: "sc:missing",
+        loading: true,
+      }),
+      true,
+    )
+    assert.equal(
+      inboxMobileShowsConversation({
+        hasSelectedItem: false,
+        selectedKey: "sc:missing",
+        loading: false,
+      }),
+      false,
+    )
+  })
+
+  it("stays on the list after Back clears the key", () => {
+    assert.equal(
+      inboxMobileShowsConversation({
+        hasSelectedItem: false,
+        selectedKey: null,
+        loading: false,
+      }),
+      false,
+    )
   })
 })
 

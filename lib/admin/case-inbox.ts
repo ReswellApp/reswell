@@ -455,6 +455,7 @@ export {
   firstNonEmptyText,
   inboxItemPassesMineFilter,
   inboxLoadQueryKey,
+  inboxMobileShowsConversation,
   mergeInboxPageItems,
   nextInboxSelectedKey,
   pinSelectedInboxItem,
