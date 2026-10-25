@@ -60,7 +60,11 @@ describe("listing photo wells", () => {
 
     const page = readFileSync(new URL("../app/l/[listing]/page.tsx", import.meta.url), "utf8")
     assert.doesNotMatch(page, /ListingDetailCachedShell/)
-    assert.doesNotMatch(page, /Suspense fallback=\{<ListingDetail/)
+    // Catalog PDPs must not stream a photo-only Suspense shell ahead of the page.
+    assert.doesNotMatch(
+      page,
+      /Suspense fallback=\{<ListingDetailCachedShell|Suspense fallback=\{<ListingDetailRouteSkeleton/,
+    )
     assert.match(page, /ListingDetailPublicOrAuthenticated/)
   })
 })

@@ -50,6 +50,7 @@ export const MODEL_PAGE_RESERVED_BRAND_SEGMENTS = new Set([
   "offers",
   "openapi.json",
   "priceguide",
+  "pricing",
   "privacy",
   "protection-policy",
   "public-api",
