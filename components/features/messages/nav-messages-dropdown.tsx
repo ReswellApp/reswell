@@ -369,7 +369,9 @@ export function NavMessagesDropdown({
     const fromInbox = countUnreadInboxActivityNotifications(notifications)
     return Math.max(fromInbox, liveSupportUnread)
   }, [notifications, liveSupportUnread])
-  const tickerCount = unreadMessages + liveSupportUnread
+  // Speech-bubble badge is marketplace /messages only. Support replies stay on
+  // the Activity tab, Help, and the account menu — not this ticker.
+  const tickerCount = unreadMessages
   const chatGroups = useMemo(
     () => groupConversationsByCounterparty(conversations, userId).slice(0, NAV_PREVIEW_LIMIT),
     [conversations, userId],
