@@ -1,0 +1,91 @@
+{
+  "generated_for": "Palaia Surf official named standup catalog",
+  "source": "https://www.palaiasurf.com/board-models (Wix first-party named models only — excludes shop vinyl, used boards, demo SKUs, Falcon Quad / Roundtail stock listings not on the models page, and ding repair)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "palaia-surf",
+      "name": "Palaia Surf",
+      "website_url": "https://www.palaiasurf.com/",
+      "location_label": "South Jersey, United States",
+      "founder_name": "Tony Palaia",
+      "lead_shaper_name": "Tony Palaia",
+      "short_description": "Hand-shaped custom surfboards by Tony Palaia at The Forge in South Jersey — pods, twins, grovelers, shortboards, and mini logs built with traditional and alternative composites.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/palaia-surf.png",
+      "models": [
+        {
+          "name": "Poison Dart",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/palaia-surf-poison-dart.png",
+          "board_category_slug": "fish",
+          "description": "Our favorite pod, the Poison Dart, has evolved a bit since its inception in 2019. Full-figured and fairly flat, it also features a prominent double-barrel bonzer-esque channel for enhanced lift with control and a rocket tail that allows you to push all you want through turns. Surfs like a fish on steroids and speed. Built as a quad."
+        },
+        {
+          "name": "Groveler",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/palaia-surf-groveler.jpg",
+          "board_category_slug": "groveler",
+          "description": "No clever name for this one (yet), but it's such a fun summer cheater that we always end up making a bunch of them each year. Wider everywhere, but balanced in the center with relaxed shortboard rocker, thumb tail, and a standard thruster setup."
+        },
+        {
+          "name": "80's Thruster",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/palaia-surf-80s-thruster.png",
+          "board_category_slug": "shortboard",
+          "description": "Even without the spray, this design doesn't hide its era of influence. Its a little wider and shorter than your shortboard, but the wide point is still between your feet. Its got relaxed rocker and a flatter foiled deck with the rails turned down just a bit, giving it a skatey but stable feel. Single to double concave, thruster setup. You don't have to listen to Punk Rock to love this board, but it'll make you want to."
+        },
+        {
+          "name": "Performance Twin+1",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/palaia-surf-performance-twin.jpg",
+          "board_category_slug": "fish",
+          "description": "This is Tony's favorite \"everyday\" hybrid twin. Not built for the smallest waves or the biggest, but it slays everything in between. This comes with a flat deck and a beveled rail for increased float but a sensitive response. It soars with performance keels and shreds with upright twins, and if you need a little more hold for more powerful waves, it steps right up to the task with the +1 option."
+        },
+        {
+          "name": "SCS Quad",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/palaia-surf-scs-quad.jpg",
+          "board_category_slug": "fish",
+          "description": "The SideCut Swallow is one of the longest-running models in our lineup. This experiment immediately exceeded expectations by all riders when pushed in both average and above-average waves. Formulated with fish DNA paired with aggressive performance elements, this board paddles like a dream but drives off the bottom and offers insane pivot for a quad. (Yes, it's a quad. Trust us.)"
+        },
+        {
+          "name": "Hippie Twin",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/palaia-surf-hippie-twin.jpg",
+          "board_category_slug": "fish",
+          "description": "This is a refined twin fin with more curve in the outline than any \"classic fish\", and an updated rocker. Named the Hippie Twin because of the subtle hip above the pulled-in tail and our recommended EPS/Flax fabric construction (Flax Tech?). Single-handedly saving the planet, one fish at a time."
+        },
+        {
+          "name": "Rocket Twin",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/palaia-surf-rocket-twin.jpg",
+          "board_category_slug": "fish",
+          "description": "The Rocket Twin is a smidge wider and less curvy than the Hippie Twin. Combined with its lower rocker throughout makes this little bullet fast and loose. Feels like skating a bowl, but with fewer consequences."
+        },
+        {
+          "name": "Over-Easy Twin",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/palaia-surf-over-easy-twin.jpg",
+          "board_category_slug": "hybrid",
+          "description": "One of our newest models, this egg is the product of a few years of testing \"longer\" shapes to make surfing through long cold winters in 5 and 6mm wetsuits way easier and more fun. Designed to be ridden 6\" longer than your shortboard, the increase in volume offers plenty of extra paddle power so we could keep the rocker up for flowing carves. It also features a chined rail to help it roll over more easily. Enjoyed as a twin, it's also great as a thruster or 2+1."
+        },
+        {
+          "name": "HP Short",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/palaia-surf-hp-short.jpg",
+          "board_category_slug": "shortboard",
+          "description": "This is our high-performance short board. No extra foam, no flattened rocker, no cheat codes. Nothing to get between you and shredding. Designed to be the most sensitive, most responsive driver in our catalog. Level up with this one."
+        },
+        {
+          "name": "ED Short",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/palaia-surf-ed-short.jpg",
+          "board_category_slug": "shortboard",
+          "description": "The Every Day Short is a high-performance SB with just a little less entry rocker, a pinch more width throughout, and a slight hip to bring the tail in for more pivot. Made for most of the waves you'll come across, besides the absolute best and the absolute worst."
+        },
+        {
+          "name": "Step-Up",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/palaia-surf-step-up.jpg",
+          "board_category_slug": "step-up-gun",
+          "description": "It's a Step-Up with early 2000's influence. 0rder 6\" longer than than your shortboard and it'll still be about the same width. Generous rocker and a knifey rail, but ample foam along the centerline for paddling heavy currents and wrangling big sets. Comes with confidence to spare, no extra charge."
+        },
+        {
+          "name": "Mini Log",
+          "image_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/board-models/palaia-surf-mini-log.jpg",
+          "board_category_slug": "longboard",
+          "description": "Not to say we don't build the occasional longboard, but the Mini Log is what we'd rather be surfing when it's below waist-high or just too soft to ride anything else. Tide too high? Not anymore. Knee-high peelers? Perfect. From 7'0\" to 8'6\", it's still light and maneuverable and can even offer you some tip time if you're into that sort of thing."
+        }
+      ]
+    }
+  ]
+}
