@@ -15,6 +15,7 @@ import { ListingDetailDynamicGate } from "@/components/features/listings/listing
 import { ListingDetailPublicOrAuthenticated } from "@/components/features/listings/listing-detail-public-or-authenticated"
 import type { PublicListingRow } from "@/components/features/listings/listing-detail-public-body"
 import { ListingDetailRouteSkeleton } from "@/components/listing-detail-page-loading"
+import { ListingDetailCachedShell } from "@/components/features/listings/listing-detail-cached-shell"
 import { ListingPublishedCelebration } from "@/components/features/listings/listing-published-celebration"
 
 /** ISR shell — keep in sync with `LISTING_PUBLIC_DETAIL_REVALIDATE_SECONDS`. */
@@ -73,7 +74,7 @@ export default async function ListingDetailPage(props: {
 
     return (
       <>
-        <Suspense fallback={<ListingDetailRouteSkeleton />}>
+        <Suspense fallback={<ListingDetailCachedShell listing={listing as PublicListingRow} />}>
           <ListingDetailPublicOrAuthenticated
             listingParam={listingParam}
             listing={listing as PublicListingRow}
