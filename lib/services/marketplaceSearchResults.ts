@@ -21,10 +21,13 @@ import {
 } from "@/lib/listing-image-display"
 import { hydrateListingsByIds } from "@/lib/search/hydrate-listings"
 import { expansionsForMarketplaceQuery } from "@/lib/services/searchSynonyms"
+import {
+  buildMarketplaceSearchPlan,
+  type MarketplaceSearchEsPass,
+} from "@/lib/services/marketplaceSearchPlan"
 import { resolveSearchOverrideListingIds } from "@/lib/services/searchResultOverrides"
 import type { MarketplaceParsedQuery } from "@/lib/services/marketplaceQueryParse"
 import {
-  brandLegacyRecallTokens,
   fuzzyBrandNamePrefix,
   stripMarketplaceSearchNoiseWords,
 } from "@/lib/utils/marketplace-brand-query"
@@ -49,20 +52,24 @@ export async function resolveSearchListings(
   searchMeta: MarketplaceSearchResolutionMeta | null
 }> {
   const categoryId = category?.id ?? null
+  const fallbackExpansions =
+    parsed != null ? [] : await expansionsForMarketplaceQuery(rawQuery)
+  const plan = buildMarketplaceSearchPlan({
+    rawQuery,
+    parsed,
+    brand,
+    brandFromUrl,
+    categoryId,
+    fallbackExpansions,
+  })
 
   // Brand inventory only for brand-only intent (URL brand with no q, or parsed brand-only).
   // Skip exclusive inventory when synonyms exist (Lost ↔ Mayhem) so alias titles recall too.
-  const useBrandInventory =
-    Boolean(brand) &&
-    ((!rawQuery.trim() && brandFromUrl) || Boolean(parsed?.isBrandOnly)) &&
-    (parsed?.expansions.length ?? 0) === 0
-
-  if (useBrandInventory && brand) {
-    const inventorySections = parsed?.sectionIntent ? [parsed.sectionIntent] : undefined
+  if (plan.useBrandInventory && brand) {
     const listings = await listActiveListingsForBrand(supabase, brand, {
       limit: LIMIT,
       categoryId,
-      sections: inventorySections,
+      sections: plan.inventorySections,
     })
     if (listings.length > 0) {
       return { listings, searchMeta: null }
@@ -71,7 +78,7 @@ export async function resolveSearchListings(
     // Brand-only free text must fall through so last-name titles still recall
     // (e.g. "Christenson" → "6'6 Christenson Lane Splitter"). Section-scoped
     // inventory can also be empty for co-brands (CI query → Futures fins).
-    if (!rawQuery.trim()) {
+    if (plan.inventoryIsFinal) {
       return { listings, searchMeta: null }
     }
   }
@@ -81,119 +88,30 @@ export async function resolveSearchListings(
     return { listings, searchMeta: null }
   }
 
-  const expansions = [
-    ...(parsed?.expansions ?? (await expansionsForMarketplaceQuery(rawQuery))),
-    ...(brand ? brandLegacyRecallTokens(brand.name) : []),
-  ]
-  // Prefer parser text (may be "" for section-only "fins" → all listings in that section).
-  // Brand-only + aliases: empty keyword so brand_id OR alias text is the recall clause.
-  const widenBrandWithAliases = Boolean(
-    parsed?.isBrandOnly && expansions.length > 0 && (parsed.brand?.id || brand?.id),
-  )
-  const textQuery = widenBrandWithAliases
-    ? ""
-    : parsed != null
-      ? (parsed.textQuery ?? "").trim()
-      : rawQuery.trim()
-  const brandModelIds =
-    parsed?.modelIds?.length
-      ? parsed.modelIds
-      : parsed?.model?.id
-        ? [parsed.model.id]
-        : []
-  const brandId =
-    brandModelIds.length > 0
-      ? null
-      : parsed?.brand?.id ?? (brandFromUrl ? brand?.id : null) ?? null
-  const lengthInches = parsed?.lengthInches ?? null
-  const boardTypes = parsed?.styleIntent?.length ? parsed.styleIntent : null
-  const sections = categoryId
-    ? ["surfboards"]
-    : parsed?.sectionIntent
-      ? [parsed.sectionIntent]
-      : [...ELASTICSEARCH_INDEXED_LISTING_SECTIONS]
+  const { expansions, brandModelIds, boardTypes, sections } = plan
 
   let listings: RecentListing[]
   let backend: MarketplaceSearchResolutionMeta["backend"]
 
   if (isElasticsearchConfigured()) {
     try {
-      const runEs = (opts: {
-        q: string
-        brandModelIds?: string[] | null
-        brandId?: string | null
-        lengthInches?: number | null
-        boardTypes?: string[] | null
-        typoFallback?: boolean
-        sections?: string[]
-      }) =>
-        searchListingIdsFromElasticsearch(opts.q, LIMIT, {
+      const runEs = (pass: MarketplaceSearchEsPass) =>
+        searchListingIdsFromElasticsearch(pass.q, LIMIT, {
           categoryName: category?.name ?? null,
           expansions,
-          sections: opts.sections ?? sections,
-          brandId: opts.brandId,
-          brandModelIds: opts.brandModelIds,
-          lengthInches: opts.lengthInches,
-          boardTypes: opts.boardTypes,
-          typoFallback: opts.typoFallback,
+          sections: pass.sections,
+          brandId: pass.brandId,
+          brandModelIds: pass.brandModelIds,
+          lengthInches: pass.lengthInches,
+          boardTypes: pass.boardTypes,
+          typoFallback: pass.typoFallback,
         })
 
-      // Progressive relaxation: model+length → model only → text (+ brand) → typo.
-      let ids = await runEs({
-        q: textQuery,
-        brandModelIds,
-        brandId,
-        lengthInches,
-        boardTypes,
-      })
-      if (ids.length === 0 && lengthInches != null && brandModelIds.length > 0) {
-        ids = await runEs({
-          q: textQuery,
-          brandModelIds,
-          brandId: null,
-          lengthInches: null,
-          boardTypes,
-        })
-      }
-      if (ids.length === 0 && brandModelIds.length > 0) {
-        ids = await runEs({
-          q: rawQuery.trim(),
-          brandModelIds: null,
-          brandId: parsed?.brand?.id ?? brandId,
-          lengthInches: null,
-          boardTypes,
-        })
-      }
-      if (ids.length === 0) {
-        ids = await runEs({
-          q: rawQuery.trim(),
-          brandModelIds: null,
-          brandId: null,
-          lengthInches: null,
-          boardTypes,
-        })
-      }
-      if (ids.length === 0) {
-        ids = await runEs({
-          q: textQuery || rawQuery,
-          brandModelIds: null,
-          brandId: null,
-          lengthInches: null,
-          boardTypes,
-          typoFallback: true,
-        })
-      }
-      // Last recall pass: drop inferred section / style filters (e.g. "captain fin"
-      // must not stay locked to `fins` when the boards live in another section).
-      if (ids.length === 0 && (parsed?.sectionIntent || (boardTypes?.length ?? 0) > 0)) {
-        ids = await runEs({
-          q: rawQuery.trim(),
-          brandModelIds: null,
-          brandId: null,
-          lengthInches: null,
-          boardTypes: null,
-          sections: [...ELASTICSEARCH_INDEXED_LISTING_SECTIONS],
-        })
+      // Same order as saved-search alerts: stop at the first pass that has rows.
+      let ids: string[] = []
+      for (const pass of plan.esPasses) {
+        ids = await runEs(pass)
+        if (ids.length > 0) break
       }
       listings = await hydrateListingsByIds(supabase, ids)
       // Stale ES hits (deleted/hidden) skip relaxation because ids.length > 0.
@@ -204,6 +122,8 @@ export async function resolveSearchListings(
           brandId: null,
           lengthInches: null,
           boardTypes,
+          sections,
+          typoFallback: false,
         })
         listings = await hydrateListingsByIds(supabase, ids)
       }

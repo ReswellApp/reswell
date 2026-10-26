@@ -9,6 +9,7 @@ import {
   ensureListingIndexedForSavedSearchAlerts,
   listingMatchesSavedSearch,
   type ListingRowForBoardAlert,
+  type SavedSearchMatchCache,
 } from "@/lib/services/boardSavedSearchMatch"
 import { savedSearchAbsoluteUrl } from "@/lib/klaviyo/saved-search-url"
 import { resolveBoardAlertPhotoUrl } from "@/lib/services/resolveBoardAlertPhoto"
@@ -119,9 +120,13 @@ export async function notifyBoardSavedSearchMatchesForListing(
 
   const candidates = searches.filter((s) => s.user_id !== row.user_id)
   const eligible: typeof candidates = []
+  const matchCache: SavedSearchMatchCache = {
+    marketplaceParses: new Map(),
+    searchWinners: new Map(),
+  }
   for (const s of candidates) {
     if (!listingListedAfterSavedSearch(listedAt, s.created_at)) continue
-    const matches = await listingMatchesSavedSearch(listingId, row, s.criteria)
+    const matches = await listingMatchesSavedSearch(listingId, row, s.criteria, matchCache)
     if (matches) eligible.push(s)
   }
 
