@@ -4,8 +4,8 @@ import { SearchCartHeader } from "@/components/search-cart-header"
 import { Wordmark } from "@/components/wordmark"
 import { useReswellColors } from "@/theme"
 
-/** Wordmark on its own row, then the search field and cart beside each other. */
-export function HomeHeader({ onCart }: { onCart: () => void }) {
+/** Wordmark on its own row, then the search field, inbox, and cart beside each other. */
+export function HomeHeader({ onCart, onInbox }: { onCart: () => void; onInbox: () => void }) {
   const colors = useReswellColors()
   const insets = useSafeAreaInsets()
   return (
@@ -13,7 +13,7 @@ export function HomeHeader({ onCart }: { onCart: () => void }) {
       <View style={styles.mark}>
         <Wordmark />
       </View>
-      <SearchCartHeader mode="open" onCart={onCart} insetTop={false} bordered={false} />
+      <SearchCartHeader mode="open" onCart={onCart} onInbox={onInbox} insetTop={false} bordered={false} />
     </View>
   )
 }

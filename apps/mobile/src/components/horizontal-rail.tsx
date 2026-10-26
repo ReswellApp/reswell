@@ -1,8 +1,5 @@
-import { createContext, useContext, useMemo, type ReactElement, type ReactNode } from "react"
-import { ScrollView as NativeScrollView, StyleSheet, type RefreshControlProps, type StyleProp, type ViewStyle } from "react-native"
-import { Gesture, GestureDetector, ScrollView, type NativeGesture } from "react-native-gesture-handler"
-
-const ScrollNativeContext = createContext<NativeGesture | null>(null)
+import type { ReactElement, ReactNode } from "react"
+import { ScrollView, StyleSheet, type RefreshControlProps, type StyleProp, type ViewStyle } from "react-native"
 
 interface VerticalScrollProps {
   children: ReactNode
@@ -12,7 +9,11 @@ interface VerticalScrollProps {
   contentInsetAdjustmentBehavior?: "automatic" | "scrollableAxes" | "never" | "always"
 }
 
-/** Page scroll. Horizontal rails use this gesture so a vertical swipe still moves the page. */
+/**
+ * Page scroll. Horizontal rails are plain nested scroll views, so iOS and Android
+ * pick the axis from the finger movement. A gesture arena here leaves the page
+ * stuck after a swipe that starts on a rail.
+ */
 export function VerticalScroll({
   children,
   style,
@@ -20,27 +21,21 @@ export function VerticalScroll({
   refreshControl,
   contentInsetAdjustmentBehavior,
 }: VerticalScrollProps) {
-  const native = useMemo(() => Gesture.Native(), [])
   return (
-    <ScrollNativeContext.Provider value={native}>
-      <GestureDetector gesture={native}>
-        <ScrollView
-          style={style}
-          contentContainerStyle={contentContainerStyle}
-          contentInsetAdjustmentBehavior={contentInsetAdjustmentBehavior}
-          refreshControl={refreshControl}
-        >
-          {children}
-        </ScrollView>
-      </GestureDetector>
-    </ScrollNativeContext.Provider>
+    <ScrollView
+      style={style}
+      contentContainerStyle={contentContainerStyle}
+      contentInsetAdjustmentBehavior={contentInsetAdjustmentBehavior}
+      refreshControl={refreshControl}
+      nestedScrollEnabled
+      keyboardShouldPersistTaps="handled"
+    >
+      {children}
+    </ScrollView>
   )
 }
 
-/**
- * Native horizontal scroll: a flick keeps moving after you let go.
- * A vertical swipe fails this row and scrolls the page instead.
- */
+/** Horizontal row. Momentum stays on the native scroller. A vertical swipe scrolls the page. */
 export function HorizontalRail({
   children,
   contentStyle,
@@ -48,29 +43,19 @@ export function HorizontalRail({
   children: ReactNode
   contentStyle?: StyleProp<ViewStyle>
 }) {
-  const pageGesture = useContext(ScrollNativeContext)
-  const gesture = useMemo(() => {
-    const scrolling = Gesture.Native()
-    const vertical = Gesture.Pan().activeOffsetY([-10, 10]).failOffsetX([-8, 8])
-    if (pageGesture) vertical.simultaneousWithExternalGesture(pageGesture)
-    return Gesture.Exclusive(vertical, scrolling)
-  }, [pageGesture])
-
   return (
-    <GestureDetector gesture={gesture}>
-      <NativeScrollView
-        horizontal
-        directionalLockEnabled
-        nestedScrollEnabled
-        showsHorizontalScrollIndicator={false}
-        alwaysBounceHorizontal
-        decelerationRate="normal"
-        style={styles.scroller}
-        contentContainerStyle={contentStyle}
-      >
-        {children}
-      </NativeScrollView>
-    </GestureDetector>
+    <ScrollView
+      horizontal
+      nestedScrollEnabled
+      showsHorizontalScrollIndicator={false}
+      alwaysBounceHorizontal
+      decelerationRate="normal"
+      keyboardShouldPersistTaps="handled"
+      style={styles.scroller}
+      contentContainerStyle={contentStyle}
+    >
+      {children}
+    </ScrollView>
   )
 }
 

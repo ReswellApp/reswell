@@ -21,9 +21,11 @@ export default function ListingsScreen() {
   const [rail, setRail] = useState<MobileBrowseRail | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
 
-  const load = useCallback(() => {
+  const load = useCallback((mode: "focus" | "pull" = "focus") => {
     let cancelled = false
+    if (mode === "pull") setRefreshing(true)
     setLoading(true)
     fetchBrowseRail()
       .then((next) => {
@@ -49,7 +51,10 @@ export default function ListingsScreen() {
         }
       })
       .finally(() => {
-        if (!cancelled) setLoading(false)
+        if (!cancelled) {
+          setLoading(false)
+          if (mode === "pull") setRefreshing(false)
+        }
       })
     return () => {
       cancelled = true
@@ -81,7 +86,10 @@ export default function ListingsScreen() {
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <Stack.Screen options={{ headerShown: false }} />
-      <HomeHeader onCart={() => requestAuth(() => router.push("/account/cart"))} />
+      <HomeHeader
+        onCart={() => requestAuth(() => router.push("/account/cart"))}
+        onInbox={() => requestAuth(() => router.push("/inbox"))}
+      />
       {loading && !home ? (
         <ScrollView>
           <CategorySlider items={rail?.items ?? null} onOpenCategory={openCategory} onOpenResource={openResource} onOpenPage={openPage} />
@@ -92,7 +100,7 @@ export default function ListingsScreen() {
           <CategorySlider items={rail?.items ?? null} onOpenCategory={openCategory} onOpenResource={openResource} onOpenPage={openPage} />
           <View style={styles.centered}>
             <Text style={{ color: colors.foreground, fontFamily: fontFamily.text }}>{error}</Text>
-            <Pressable onPress={load}>
+            <Pressable onPress={() => { load() }}>
               <Text style={[styles.headerAction, { color: colors.foreground, fontFamily: fontFamily.text }]}>
                 Try again
               </Text>
@@ -103,8 +111,10 @@ export default function ListingsScreen() {
         <HomeFeed
           sections={home?.sections ?? []}
           continueListings={continueListings}
-          refreshing={loading}
-          onRefresh={load}
+          refreshing={refreshing}
+          onRefresh={() => {
+            load("pull")
+          }}
           onOpenListing={(listing) => openListing(listing.slug || listing.id)}
           onOpenShop={(slug) => router.push({ pathname: "/profile/[slug]", params: { slug } })}
           onOpenBrand={(slug) => router.push({ pathname: "/brands/[slug]", params: { slug } })}

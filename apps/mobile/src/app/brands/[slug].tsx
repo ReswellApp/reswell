@@ -1,6 +1,6 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router"
 import { useEffect, useState } from "react"
-import { ActivityIndicator, FlatList, Linking, Pressable, StyleSheet, Text, View } from "react-native"
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native"
 import type { MobileBrandPage, MobileListingCard } from "@reswell/api-contract"
 import { ScreenSearchHeader } from "@/components/screen-search-header"
 import { HorizontalRail } from "@/components/horizontal-rail"
@@ -82,9 +82,6 @@ export default function BrandScreen() {
                     .join(" · ")}
                 </Text>
               ) : null}
-              {brand.website_url ? (
-                <WebsiteLink url={brand.website_url} />
-              ) : null}
               {brand.models.length > 0 ? (
                 <View style={styles.models}>
                   <Text style={[styles.section, { color: colors.foreground, fontFamily: fontFamily.headline }]}>Models</Text>
@@ -140,18 +137,6 @@ export default function BrandScreen() {
   )
 }
 
-function WebsiteLink({ url }: { url: string }) {
-  const colors = useReswellColors()
-  return (
-    <Text
-      style={[styles.link, { color: colors.foreground, fontFamily: fontFamily.text }]}
-      onPress={() => void Linking.openURL(url)}
-    >
-      Website
-    </Text>
-  )
-}
-
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   centered: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24 },
@@ -162,7 +147,6 @@ const styles = StyleSheet.create({
   title: { fontSize: 28, fontWeight: "700", letterSpacing: -0.4 },
   meta: { fontSize: 14 },
   body: { fontSize: 15, lineHeight: 21 },
-  link: { fontSize: 15, fontWeight: "700", textDecorationLine: "underline" },
   models: { gap: 8, marginTop: 8 },
   section: { fontSize: 20, fontWeight: "700" },
   modelRail: { gap: 12, paddingRight: 16 },

@@ -1,21 +1,38 @@
 /**
  * Same public variables as the website. Metro inlines them from the repo
  * `.env.local` / `.env`. Server secrets are never read here.
+ * EAS inlines the same names from the build environment.
  */
+function cleanPublicEnv(value: string | undefined): string {
+  let next = value?.trim() ?? ""
+  if (
+    (next.startsWith('"') && next.endsWith('"')) ||
+    (next.startsWith("'") && next.endsWith("'"))
+  ) {
+    next = next.slice(1, -1).trim()
+  }
+  return next
+}
+
 export function publicSupabaseUrl(): string {
-  return process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() ?? ""
+  return cleanPublicEnv(process.env.NEXT_PUBLIC_SUPABASE_URL)
 }
 
 export function publicSupabaseAnonKey(): string {
-  return process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() ?? ""
+  return cleanPublicEnv(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
 }
 
 /**
  * Local Expo talks to the Next dev server. `NEXT_PUBLIC_SITE_URL` stays the
  * production site even in `.env.local`, so it is not the API origin.
+ *
+ * `https://reswell.app` 308s to `https://www.reswell.app`. That is a different
+ * origin, so the phone drops `Authorization` while following the redirect and
+ * every signed-in API call comes back as "Sign in required".
  */
 export function publicApiUrl(): string {
-  return process.env.NEXT_PUBLIC_URL?.trim() || "http://localhost:3000"
+  const configured = cleanPublicEnv(process.env.NEXT_PUBLIC_URL) || "http://localhost:3000"
+  return configured.replace(/^https:\/\/reswell\.app(?=\/|$)/i, "https://www.reswell.app")
 }
 
 /** Public storefront links (share, deep links). */

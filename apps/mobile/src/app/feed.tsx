@@ -1,13 +1,14 @@
 import { Stack, useLocalSearchParams } from "expo-router"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native"
-import type { MobileMarketplaceFeed, MobileMarketplaceFeedTab } from "@reswell/api-contract"
+import type { MobileListingCard, MobileMarketplaceFeed, MobileMarketplaceFeedTab } from "@reswell/api-contract"
 import { MarketplaceListingLayoutItem } from "@/components/marketplace-listing-layout-item"
 import { ListingLayoutSwitch, type ListingLayout } from "@/components/listing-layout-switch"
 import { marketplaceListContentStyle } from "@/components/listing-list-layout"
 import { ScreenSearchHeader } from "@/components/screen-search-header"
 import { fetchMarketplaceFeed } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
+import { useAuthGate } from "@/lib/auth-gate"
 import { useListingSellerFollow } from "@/lib/listing-seller-follow"
 import { fontFamily, useReswellColors } from "@/theme"
 
@@ -60,13 +61,16 @@ function requestedFeedTab(value: string | string[] | undefined): MobileMarketpla
 
 export default function FeedScreen() {
   const colors = useReswellColors()
-  const { session } = useAuth()
+  const { session, signOut } = useAuth()
+  const { requestAuth } = useAuthGate()
   const token = session?.access_token
   const params = useLocalSearchParams<{ tab?: string }>()
   const [tab, setTab] = useState<MobileMarketplaceFeedTab>(requestedFeedTab(params.tab) ?? "new")
   const [feed, setFeed] = useState<MobileMarketplaceFeed | null>(null)
   const [listings, setListings] = useState<MobileListingCard[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [needsSignIn, setNeedsSignIn] = useState(false)
+  const [promptSignIn, setPromptSignIn] = useState(false)
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [layout, setLayout] = useState<ListingLayout>("grid")
@@ -86,18 +90,28 @@ export default function FeedScreen() {
         setFeed(next)
         setListings(next.listings)
         setError(null)
+        setNeedsSignIn(false)
       })
       .catch((cause: unknown) => {
         if (requestId.current !== id) return
+        const message = cause instanceof Error ? cause.message : "Unable to load the feed"
+        if (message === "Sign in required") {
+          setError(null)
+          setNeedsSignIn(true)
+          setPromptSignIn(true)
+          if (token) void signOut()
+          return
+        }
+        setNeedsSignIn(false)
         setFeed(null)
         setListings([])
-        setError(cause instanceof Error ? cause.message : "Unable to load the feed")
+        setError(message)
       })
       .finally(() => {
         if (requestId.current === id) setLoading(false)
       })
   },
-    [token],
+    [signOut, token],
   )
 
   useEffect(() => {
@@ -108,6 +122,12 @@ export default function FeedScreen() {
   useEffect(() => {
     load(tab)
   }, [load, tab])
+
+  useEffect(() => {
+    if (!promptSignIn || session?.access_token) return
+    setPromptSignIn(false)
+    requestAuth()
+  }, [promptSignIn, requestAuth, session?.access_token])
 
   function chooseFeed(next: MobileMarketplaceFeedTab) {
     if (next === tab) return
@@ -164,8 +184,16 @@ export default function FeedScreen() {
         </View>
         <FeedTabBar tab={tab} onTab={chooseFeed} />
       </View>
-      {loading && listings.length === 0 ? (
+      {(loading || (needsSignIn && Boolean(session?.access_token))) && listings.length === 0 ? (
         <ActivityIndicator style={styles.centered} color={colors.foreground} />
+      ) : needsSignIn && listings.length === 0 ? (
+        <View style={styles.centered}>
+          <Pressable onPress={() => requestAuth()} style={[styles.signIn, { backgroundColor: colors.primary }]}>
+            <Text style={[styles.signInLabel, { color: colors.primaryForeground, fontFamily: fontFamily.text }]}>
+              Sign in
+            </Text>
+          </Pressable>
+        </View>
       ) : error && listings.length === 0 ? (
         <View style={styles.centered}>
           <Text style={{ color: colors.foreground, fontFamily: fontFamily.text }}>{error}</Text>
@@ -279,6 +307,8 @@ const styles = StyleSheet.create({
   tabLabel: { fontSize: 13, textAlign: "center" },
   centered: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, padding: 24 },
   retry: { fontSize: 16, fontWeight: "600" },
+  signIn: { minHeight: 44, borderRadius: 22, paddingHorizontal: 22, alignItems: "center", justifyContent: "center" },
+  signInLabel: { fontSize: 16, fontWeight: "700" },
   list: { paddingTop: 8 },
   columns: { gap: 12, paddingHorizontal: 12 },
   empty: { alignItems: "center", paddingHorizontal: 28, paddingTop: 48, gap: 8 },

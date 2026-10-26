@@ -5,6 +5,7 @@ import { isSearchHeaderHidden } from "@/lib/search-header-visibility"
 
 type ScreenSearchHeaderProps = {
   showBack?: boolean
+  /** Inbox bell beside the cart. Shown unless set to false. */
   showInbox?: boolean
   insetTop?: boolean
   bordered?: boolean
@@ -20,7 +21,7 @@ type ScreenSearchHeaderProps = {
     }
 )
 
-/** Search + cart row for browse screens. Hidden automatically on sell, cart, checkout, and chat. */
+/** Search, inbox, and cart row for browse screens. Hidden automatically on sell, cart, checkout, and chat. */
 export function ScreenSearchHeader(props: ScreenSearchHeaderProps) {
   const pathname = usePathname()
   const router = useRouter()
@@ -34,9 +35,9 @@ export function ScreenSearchHeader(props: ScreenSearchHeaderProps) {
   const onCart = () => requestAuth(() => router.push("/account/cart"))
   const onBack = showBack ? (props.onBack ?? (() => router.back())) : undefined
   const onInbox =
-    props.showInbox === true
-      ? () => requestAuth(() => router.push("/inbox"))
-      : undefined
+    props.showInbox === false
+      ? undefined
+      : () => requestAuth(() => router.push("/inbox"))
   const insetTop = props.insetTop
   const bordered = props.bordered
 

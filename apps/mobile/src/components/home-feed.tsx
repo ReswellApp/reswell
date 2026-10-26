@@ -1,11 +1,12 @@
-import { Pressable, StyleSheet, Text, View } from "react-native"
-import { RefreshControl } from "react-native-gesture-handler"
+import { useState } from "react"
+import { Pressable, RefreshControl, StyleSheet, Text, View } from "react-native"
+import { Image } from "expo-image"
 import type { MobileBrowseRailItem, MobileHomeSection, MobileListingCard, MobileListingCategory } from "@reswell/api-contract"
 import { CategorySlider } from "@/components/browse-chips"
 import { HorizontalRail, VerticalScroll } from "@/components/horizontal-rail"
 import { ListingCard } from "@/components/listing-card"
 import { ProfileCircle } from "@/components/profile-circle"
-import { fontFamily, useReswellColors } from "@/theme"
+import { fontFamily, lightColors, useReswellColors } from "@/theme"
 
 export function HomeFeed({
   sections,
@@ -63,13 +64,30 @@ export function HomeFeed({
           />
         ) : section.kind === "brands" ? (
           <View key={section.id} style={styles.section}>
-            <SectionTitle title={section.title} />
-            <Pressable onPress={onOpenDirectory} style={styles.directory}>
-              <Text style={[styles.directoryLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}>All brands</Text>
-            </Pressable>
+            <View style={styles.sectionHeader}>
+              <Text
+                style={[
+                  styles.title,
+                  styles.titleInHeader,
+                  { color: colors.foreground, fontFamily: fontFamily.headline },
+                ]}
+              >
+                {section.title}
+              </Text>
+              <Pressable accessibilityRole="button" onPress={onOpenDirectory} hitSlop={8}>
+                <Text style={[styles.directoryLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}>
+                  All brands
+                </Text>
+              </Pressable>
+            </View>
             <HorizontalRail contentStyle={styles.rail}>
               {section.brands.map((brand) => (
-                <BrandMark key={brand.id} name={brand.name} onPress={() => onOpenBrand(brand.slug)} />
+                <BrandMark
+                  key={brand.id}
+                  name={brand.name}
+                  logoUrl={brand.logo_url}
+                  onPress={() => onOpenBrand(brand.slug)}
+                />
               ))}
             </HorizontalRail>
           </View>
@@ -136,13 +154,34 @@ function SectionTitle({ title }: { title: string }) {
   )
 }
 
-function BrandMark({ name, onPress }: { name: string; onPress: () => void }) {
+function BrandMark({
+  name,
+  logoUrl,
+  onPress,
+}: {
+  name: string
+  logoUrl: string | null
+  onPress: () => void
+}) {
   const colors = useReswellColors()
+  const [failedUrl, setFailedUrl] = useState<string | null>(null)
   const initial = name.trim().charAt(0).toUpperCase() || "?"
+  const uri = logoUrl?.trim() || null
+  const showLogo = Boolean(uri) && failedUrl !== uri
   return (
     <Pressable onPress={onPress} style={styles.brand}>
-      <View style={[styles.logo, { backgroundColor: colors.image }]}>
-        <Text style={[styles.logoInitial, { color: colors.foreground, fontFamily: fontFamily.headline }]}>{initial}</Text>
+      <View style={[styles.logo, { backgroundColor: showLogo ? lightColors.image : colors.image }]}>
+        {showLogo && uri ? (
+          <Image
+            source={{ uri }}
+            style={styles.logoImage}
+            contentFit="contain"
+            accessibilityIgnoresInvertColors
+            onError={() => setFailedUrl(uri)}
+          />
+        ) : (
+          <Text style={[styles.logoInitial, { color: colors.foreground, fontFamily: fontFamily.headline }]}>{initial}</Text>
+        )}
       </View>
       <Text numberOfLines={1} style={[styles.brandName, { color: colors.foreground, fontFamily: fontFamily.text }]}>
         {name}
@@ -184,12 +223,21 @@ const styles = StyleSheet.create({
   feed: { flex: 1 },
   section: { marginTop: 20 },
   title: { fontSize: 22, fontWeight: "700", letterSpacing: -0.4, paddingHorizontal: 16, marginBottom: 12 },
-  directory: { paddingHorizontal: 16, marginTop: -6, marginBottom: 10 },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    marginBottom: 12,
+    gap: 12,
+  },
+  titleInHeader: { flexShrink: 1, paddingHorizontal: 0, marginBottom: 0 },
   directoryLabel: { fontSize: 14, fontWeight: "700", textDecorationLine: "underline" },
   rail: { paddingHorizontal: 16, gap: 12 },
   railCard: { width: 168 },
   brand: { width: 88, alignItems: "center", gap: 6 },
-  logo: { width: 72, height: 72, borderRadius: 36, alignItems: "center", justifyContent: "center" },
+  logo: { width: 72, height: 72, borderRadius: 36, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  logoImage: { width: 58, height: 58 },
   logoInitial: { fontSize: 28, fontWeight: "700" },
   brandName: { fontSize: 13, fontWeight: "600", textAlign: "center" },
   shop: { width: 120, alignItems: "center", gap: 4 },

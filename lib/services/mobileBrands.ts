@@ -41,18 +41,6 @@ function publicImage(raw: string | null | undefined): string | null {
   return absolutePublicMediaUrl(src) ?? null
 }
 
-function websiteUrl(raw: string | null | undefined): string | null {
-  const value = raw?.trim()
-  if (!value) return null
-  try {
-    const url = new URL(value)
-    if (url.protocol !== "https:" && url.protocol !== "http:") return null
-    return url.toString()
-  } catch {
-    return null
-  }
-}
-
 function categoryLabel(slug: string | null | undefined): string {
   if (slug && (BRAND_PRODUCT_CATEGORY_SLUGS as readonly string[]).includes(slug)) {
     return brandProductCategoryLabel(slug as BrandProductCategorySlug)
@@ -144,7 +132,8 @@ export async function getMobileBrandPageService(slug: string): Promise<MobileApi
     name: brand.name,
     logo_url: publicLogo(brand.logo_url),
     short_description: brand.short_description?.trim() || null,
-    website_url: websiteUrl(brand.website_url),
+    // Kept on the contract so older app builds still parse. Never send the official site.
+    website_url: null,
     location_label: brand.location_label?.trim() || null,
     founder_name: brand.founder_name?.trim() || null,
     lead_shaper_name: brand.lead_shaper_name?.trim() || null,

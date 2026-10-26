@@ -11,6 +11,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useColorScheme,
   View,
 } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
@@ -31,6 +32,7 @@ export function AuthSheet({
   onDismiss: () => void
 }) {
   const colors = useReswellColors()
+  const scheme = useColorScheme()
   const insets = useSafeAreaInsets()
   const { configured, signIn, signUp, signInWithGoogle, signInWithApple } = useAuth()
   const [step, setStep] = useState<Step>("start")
@@ -79,19 +81,19 @@ export function AuthSheet({
     step === "create" ? "Create your account" : step === "password" ? "Sign in" : "Log in or sign up"
 
   return (
-    <Modal visible={presented} transparent animationType="slide" onRequestClose={onDismiss}>
-      <View style={styles.overlay}>
-        <Pressable style={styles.backdrop} accessibilityRole="button" accessibilityLabel="Dismiss" onPress={onDismiss} />
-        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.sheetWrap}>
-          <View
-            style={[
-              styles.sheet,
-              {
-                backgroundColor: colors.background,
-                paddingBottom: Math.max(insets.bottom, 16) + 8,
-              },
-            ]}
-          >
+    <Modal visible={presented} animationType="slide" presentationStyle="pageSheet" onRequestClose={onDismiss}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={[styles.sheet, { backgroundColor: colors.background, paddingBottom: Math.max(insets.bottom, 16) }]}
+      >
+            <View style={styles.grabberWrap} accessibilityElementsHidden>
+              <View
+                style={[
+                  styles.grabber,
+                  { backgroundColor: scheme === "dark" ? "rgba(255,255,255,0.3)" : "rgba(60,60,67,0.3)" },
+                ]}
+              />
+            </View>
             <View style={styles.sheetHeader}>
               {step !== "start" ? (
                 <Pressable
@@ -309,9 +311,7 @@ export function AuthSheet({
                 </View>
               )}
             </ScrollView>
-          </View>
-        </KeyboardAvoidingView>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   )
 }
@@ -358,25 +358,20 @@ function passwordProblem(password: string): string | null {
   return null
 }
 
-const SHEET_RADIUS = 20
-
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: "flex-end",
-  },
-  backdrop: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: "rgba(0, 0, 0, 0.45)",
-  },
-  sheetWrap: {
-    maxHeight: "92%",
-  },
   sheet: {
-    borderTopLeftRadius: SHEET_RADIUS,
-    borderTopRightRadius: SHEET_RADIUS,
+    flex: 1,
     paddingHorizontal: 24,
-    paddingTop: 8,
+  },
+  grabberWrap: {
+    alignItems: "center",
+    paddingTop: 6,
+    paddingBottom: 2,
+  },
+  grabber: {
+    width: 36,
+    height: 5,
+    borderRadius: 2.5,
   },
   sheetHeader: {
     flexDirection: "row",
