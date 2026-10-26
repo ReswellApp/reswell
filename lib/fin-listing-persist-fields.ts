@@ -12,6 +12,7 @@ import {
   normalizeSellShippingCostMode,
   type ListingPersistShippingOptions,
 } from "@/lib/sell-shipping-cost-mode"
+import { shipOnlyListingShippingFieldsFor } from "@/lib/sell-ship-only-listing-shipping"
 import type { CreateFinListingInput } from "@/lib/validations/fin-listing"
 
 export function finListingShippingFieldsFor(
@@ -23,32 +24,13 @@ export function finListingShippingFieldsFor(
   shipping_price: number | null
   board_shipping_cost_mode: string | null
 } {
-  const mode = normalizeSellShippingCostMode(
-    input.shippingCostMode,
-    options?.allowPrivilegedShippingModes === true,
+  return shipOnlyListingShippingFieldsFor(
+    {
+      shippingCostMode: input.shippingCostMode,
+      shippingPrice: input.shippingPrice,
+    },
+    options,
   )
-  if (mode === "free") {
-    return {
-      shipping_available: true,
-      local_pickup: false,
-      shipping_price: 0,
-      board_shipping_cost_mode: "free",
-    }
-  }
-  if (mode === "reswell") {
-    return {
-      shipping_available: true,
-      local_pickup: false,
-      shipping_price: 0,
-      board_shipping_cost_mode: "reswell",
-    }
-  }
-  return {
-    shipping_available: true,
-    local_pickup: false,
-    shipping_price: input.shippingPrice ?? 0,
-    board_shipping_cost_mode: "flat",
-  }
 }
 
 /** Maps validated sell-form input to `listings` columns for create/update. */

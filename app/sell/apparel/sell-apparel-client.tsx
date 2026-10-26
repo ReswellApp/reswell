@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/breadcrumb"
 import { LocationPicker } from "@/components/location-picker"
 import { SellFormSection } from "@/components/features/sell/sell-form-section"
+import { SellShipOnlyDeliverySection } from "@/components/features/sell/sell-ship-only-delivery-section"
 import { SellListingPhotoEmptyDropzone } from "@/components/features/sell/sell-listing-photo-empty-dropzone"
 import { SellSimplePhotoTile } from "@/components/features/sell/sell-simple-photo-tile"
 import { useSimpleListingPhotoRotate } from "@/components/features/sell/hooks/use-simple-listing-photo-rotate"
@@ -198,8 +199,8 @@ const INITIAL_STATE: ApparelFormState = {
   locationLat: null,
   locationLng: null,
   locationDisplay: "",
-  shippingAvailable: false,
-  localPickup: true,
+  shippingAvailable: true,
+  localPickup: false,
   shippingMode: "reswell",
   shippingPrice: "",
   reswellPackageLengthIn: "",
@@ -402,8 +403,8 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
         locationLat: listing.latitude != null ? Number(listing.latitude) : null,
         locationLng: listing.longitude != null ? Number(listing.longitude) : null,
         locationDisplay: [listing.city, listing.state].filter(Boolean).join(", "),
-        shippingAvailable: Boolean(listing.shipping_available),
-        localPickup: listing.local_pickup !== false,
+        shippingAvailable: true,
+        localPickup: false,
         shippingMode: "reswell",
         shippingPrice: shippingPriceToFormValue(listing.shipping_price),
         ...loadedReswellPackage,
@@ -750,18 +751,13 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
       scrollApparelSellSectionIntoView("sell-apparel-section-delivery")
       return
     }
-    if (!form.shippingAvailable && !form.localPickup) {
-      failValidation("Choose shipping, local pickup, or both.")
-      scrollApparelSellSectionIntoView("sell-apparel-section-delivery")
-      return
-    }
     if (form.shippingAvailable) {
       const L = parseReswellParcelLengthRawToCarrierInches(form.reswellPackageLengthIn)
       const W = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageWidthIn)
       const H = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageHeightIn)
       if (L == null || L <= 0 || W == null || W <= 0 || H == null || H <= 0) {
         failValidation("Enter packed box dimensions for Reswell shipping.")
-        scrollApparelSellSectionIntoView("sell-apparel-section-reswell-package")
+        scrollApparelSellSectionIntoView("sell-apparel-section-delivery")
         return
       }
     }
@@ -780,9 +776,9 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
       locationState: form.locationState,
       locationLat: form.locationLat ?? undefined,
       locationLng: form.locationLng ?? undefined,
-      shippingAvailable: form.shippingAvailable,
-      localPickup: form.localPickup,
-      shippingCostMode: form.shippingAvailable ? ("reswell" as const) : null,
+      shippingAvailable: true,
+      localPickup: false,
+      shippingCostMode: "reswell" as const,
       shippingPrice: null,
       reswellPackageLengthIn: form.reswellPackageLengthIn,
       reswellPackageWidthIn: form.reswellPackageWidthIn,
@@ -1204,157 +1200,16 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
                 </div>
               </SellFormSection>
 
-              <SellFormSection
+              <SellShipOnlyDeliverySection
                 sectionId="sell-apparel-section-delivery"
-                title="Pickup & shipping"
-                description="Pin where the apparel is and choose delivery options."
-              >
-                <div className="space-y-8">
-                  <LocationPicker
-                    initialLat={form.locationLat ?? undefined}
-                    initialLng={form.locationLng ?? undefined}
-                    initialCity={form.locationCity}
-                    initialState={form.locationState}
-                    initialDisplay={form.locationDisplay}
-                    onLocationSelect={(loc) => {
-                      setForm((prev) => ({
-                        ...prev,
-                        locationLat: loc.lat,
-                        locationLng: loc.lng,
-                        locationCity: loc.city,
-                        locationState: loc.state,
-                        locationDisplay: loc.displayName,
-                      }))
-                    }}
-                    onLocationClear={() => {
-                      setForm((prev) => ({
-                        ...prev,
-                        locationLat: null,
-                        locationLng: null,
-                        locationCity: "",
-                        locationState: "",
-                        locationDisplay: "",
-                      }))
-                    }}
-                  />
-
-                  <div className="space-y-4 rounded-xl border border-border bg-card p-5 shadow-sm sm:p-6">
-                    <div>
-                      <h3 className="text-sm font-semibold text-foreground">
-                        Delivery options{" "}
-                        <span className="text-destructive" aria-hidden>
-                          *
-                        </span>
-                      </h3>
-                      <p className="mt-1 text-sm text-muted-foreground">You can select both options.</p>
-                    </div>
-                    <div className="space-y-4">
-                      <div className="flex items-start gap-3">
-                        <Checkbox
-                          id="sell-apparel-delivery-shipping"
-                          checked={form.shippingAvailable}
-                          onCheckedChange={(v) => {
-                            const want = v === true
-                            setForm((prev) => ({
-                              ...prev,
-                              shippingAvailable: want,
-                              localPickup: want || prev.localPickup ? prev.localPickup : true,
-                              ...(want
-                                ? {}
-                                : {
-                                    shippingMode: "reswell" as const,
-                                    shippingPrice: "",
-                                    reswellPackageLengthIn: "",
-                                    reswellPackageWidthIn: "",
-                                    reswellPackageHeightIn: "",
-                                    reswellPackageWeightLb: "",
-                                    reswellPackageWeightOz: "",
-                                  }),
-                            }))
-                          }}
-                          className="mt-0.5"
-                        />
-                        <div className="min-w-0 space-y-0.5">
-                          <Label
-                            htmlFor="sell-apparel-delivery-shipping"
-                            className="flex cursor-pointer flex-wrap items-center gap-2 text-sm font-medium leading-snug"
-                          >
-                            Shipping
-                            <Badge
-                              variant="default"
-                              className="h-auto border-0 bg-listingHeart px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white hover:bg-[#2a4170]"
-                            >
-                              Items sell faster
-                            </Badge>
-                          </Label>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-3">
-                        <Checkbox
-                          id="sell-apparel-delivery-pickup"
-                          checked={form.localPickup}
-                          onCheckedChange={(v) => {
-                            const want = v === true
-                            setForm((prev) => ({
-                              ...prev,
-                              localPickup: want,
-                              shippingAvailable:
-                                want || prev.shippingAvailable ? prev.shippingAvailable : true,
-                            }))
-                          }}
-                          className="mt-0.5"
-                        />
-                        <Label
-                          htmlFor="sell-apparel-delivery-pickup"
-                          className="cursor-pointer pt-0.5 text-sm font-medium leading-snug"
-                        >
-                          Local pickup
-                        </Label>
-                      </div>
-                    </div>
-                  </div>
-
-                  {form.shippingAvailable ? (
-                    <div className="space-y-2 rounded-xl border border-border bg-card p-5 shadow-sm sm:p-6">
-                      <h3 className="text-sm font-semibold text-foreground">
-                        Reswell shipping
-                      </h3>
-                      <p className="text-sm leading-relaxed text-muted-foreground">
-                        Buyers pay a live USPS rate at checkout. Reswell buys the label and adds
-                        tracking to your sale automatically.
-                      </p>
-                    </div>
-                  ) : null}
-                </div>
-              </SellFormSection>
-
-              {form.shippingAvailable ? (
-                <SellFormSection
-                  sectionId="sell-apparel-section-reswell-package"
-                  title="Reswell shipping: packed size & weight"
-                >
-                  <ReswellPackageDimensionsCard
-                    showHeading={false}
-                    className="rounded-none border-0 bg-transparent p-0 shadow-none"
-                    lengthIn={form.reswellPackageLengthIn}
-                    widthIn={form.reswellPackageWidthIn}
-                    heightIn={form.reswellPackageHeightIn}
-                    weightLb={form.reswellPackageWeightLb}
-                    weightOz={form.reswellPackageWeightOz}
-                    onLengthInChange={(v) =>
-                      setField("reswellPackageLengthIn", normalizeBoardLengthInput(v))
-                    }
-                    onWidthInChange={(v) =>
-                      setField("reswellPackageWidthIn", normalizeTapeStyleInchesInput(v))
-                    }
-                    onHeightInChange={(v) =>
-                      setField("reswellPackageHeightIn", normalizeTapeStyleInchesInput(v))
-                    }
-                    onWeightLbChange={(v) => setField("reswellPackageWeightLb", v)}
-                    onWeightOzChange={(v) => setField("reswellPackageWeightOz", v)}
-                  />
-                </SellFormSection>
-              ) : null}
+                productNoun="Apparel"
+                idPrefix="sell-apparel"
+                complete={sellSectionCompletion["sell-apparel-section-delivery"] === true}
+                form={form}
+                onPatch={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
+                reswellCalculatedOnly
+                reswellCalculatedOnlyBlurb="Buyers pay a live USPS rate at checkout. Reswell buys the label and adds tracking to your sale automatically."
+              />
 
               <SellFormSection
                 sectionId="sell-apparel-section-publish"

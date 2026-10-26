@@ -23,6 +23,7 @@ import {
 import { listingAlwaysUsesReswellShipping } from "@/lib/apparel-listing-config"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { reswellPackageFieldsToDb, reswellPackageFormFromDbRow } from "@/lib/sell-listing-fulfillment-flags"
+import { sellSectionIsShipOnly } from "@/lib/sell-section-fulfillment"
 import { normalizeSellShippingCostMode, type SellShippingCostMode } from "@/lib/sell-shipping-cost-mode"
 import { shippingPriceToFormValue } from "@/lib/sell-flow/shipping-price-to-form-value"
 import {
@@ -153,7 +154,6 @@ function knownSlug(value: string | null | undefined, allowed: Set<string>): stri
   return allowed.has(slug) ? slug : ""
 }
 
-const SHIP_ONLY_SECTIONS = new Set(["fins", "wetsuits", "magazines"])
 const DROPOFF_ID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
@@ -211,7 +211,7 @@ function fulfillmentFromSpec(
   if (section === "magazines") {
     return { local_pickup: false, shipping_available: true, mode: "reswell" }
   }
-  if (SHIP_ONLY_SECTIONS.has(section)) {
+  if (sellSectionIsShipOnly(section)) {
     return { local_pickup: false, shipping_available: true, mode: spec.shippingCostMode }
   }
   let shipping = spec.shippingAvailable
