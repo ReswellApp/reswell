@@ -1,8 +1,10 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 import {
+  BOARDS_BROWSE_ROTATE_ID_SCAN_SORT,
   orderListingIdsForDailyRotate,
   prependPinnedListingIds,
+  shouldFallbackBoardsBrowseRotate,
 } from "./boards-browse-daily-rotate.ts"
 
 describe("prependPinnedListingIds", () => {
@@ -36,6 +38,58 @@ describe("prependPinnedListingIds", () => {
       "a",
       "c",
     ])
+  })
+})
+
+describe("BOARDS_BROWSE_ROTATE_ID_SCAN_SORT", () => {
+  it("uses created_at so the ID scan can hit the public browse index", () => {
+    assert.equal(BOARDS_BROWSE_ROTATE_ID_SCAN_SORT, "created-at")
+  })
+})
+
+describe("shouldFallbackBoardsBrowseRotate", () => {
+  it("falls back when the ID scan returns nothing", () => {
+    assert.equal(
+      shouldFallbackBoardsBrowseRotate({
+        idRowCount: 0,
+        pageIdCount: 0,
+        hydratedCount: 0,
+      }),
+      true,
+    )
+  })
+
+  it("falls back when hydrate drops every id on the page", () => {
+    assert.equal(
+      shouldFallbackBoardsBrowseRotate({
+        idRowCount: 40,
+        pageIdCount: 30,
+        hydratedCount: 0,
+      }),
+      true,
+    )
+  })
+
+  it("keeps a successful rotate page", () => {
+    assert.equal(
+      shouldFallbackBoardsBrowseRotate({
+        idRowCount: 40,
+        pageIdCount: 30,
+        hydratedCount: 30,
+      }),
+      false,
+    )
+  })
+
+  it("does not treat an empty trailing page as a failed scan", () => {
+    assert.equal(
+      shouldFallbackBoardsBrowseRotate({
+        idRowCount: 30,
+        pageIdCount: 0,
+        hydratedCount: 0,
+      }),
+      false,
+    )
   })
 })
 
