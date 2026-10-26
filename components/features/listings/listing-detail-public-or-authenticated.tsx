@@ -8,8 +8,12 @@ import type { ListingDetailPageSharedProps } from "@/lib/listing-detail-page-loa
  * Visible catalog PDP. Always the anonymous shell so `/l/[listing]` can be
  * cached for every visitor. Owner protection copy and listing controls render
  * in the browser only after the session matches the seller.
+ *
+ * Awaits the section page before returning so the route `loading.tsx` boundary
+ * does not clear until the gallery and the rest of the above-the-fold HTML are
+ * ready to commit together.
  */
-export function ListingDetailPublicOrAuthenticated({
+export async function ListingDetailPublicOrAuthenticated({
   listingParam,
   listing,
 }: {
@@ -23,11 +27,9 @@ export function ListingDetailPublicOrAuthenticated({
     anonymousPublicView: true,
   }
 
-  return (
-    <ListingDetailPublicBody
-      listing={listing}
-      listingParam={listingParam}
-      sectionProps={sectionProps}
-    />
-  )
+  return ListingDetailPublicBody({
+    listing,
+    listingParam,
+    sectionProps,
+  })
 }

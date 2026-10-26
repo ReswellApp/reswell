@@ -24,7 +24,10 @@ import { getNoindexManagedPaths } from "@/lib/seo/resolve-page-seo"
 import { getAllHelpRetrievalDocuments } from "@/lib/help-center/retrieval-docs"
 import { helpTopicIndexes } from "@/lib/help-center/topics"
 import { helpTopicPath } from "@/lib/help-center/paths"
-import { buildModelPageSitemapEntries } from "@/lib/sitemap/model-page-entries"
+import {
+  buildModelPageSitemapEntries,
+  buildModelPricingSitemapEntries,
+} from "@/lib/sitemap/model-page-entries"
 import type { SitemapUrlEntry } from "@/lib/sitemap/types"
 
 export type { SitemapUrlEntry } from "@/lib/sitemap/types"
@@ -225,6 +228,7 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
   }))
 
   const modelPages = buildModelPageSitemapEntries(modelRows, BASE, now)
+  const modelPricingPages = buildModelPricingSitemapEntries(modelRows, BASE, now)
 
   const cityPages: SitemapUrlEntry[] = cityDirectory.cities.map((city) => ({
     url: `${BASE}${cityLandingHref(city.slug)}`,
@@ -289,6 +293,7 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
     ...boardFilterPages(now),
     ...brandPages,
     ...modelPages,
+    ...modelPricingPages,
     ...cityPages,
     ...surfShopPages,
     ...sellerPages,

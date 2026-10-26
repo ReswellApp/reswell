@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation"
 import { BoardsBrowsePageSkeleton } from "@/components/boards-browse-page-skeleton"
 import { SellFlowRouteSkeleton } from "@/components/features/sell/sell-flow-route-skeleton"
-import { ListingDetailRouteSkeleton } from "@/components/listing-detail-page-loading"
+import { ListingDetailRoutePending } from "@/components/listing-detail-page-loading"
 import { ListingTileScrollRowSkeleton } from "@/components/listing-tile-skeleton"
 import { RouteTransitionMark } from "@/components/route-transition-mark"
 import { isCategoryBrowsePathname } from "@/lib/site-category-browse-paths"
@@ -52,7 +52,7 @@ export function RootRouteLoading() {
     return <HomeLoadingSkeleton />
   }
   if (pathname?.startsWith("/l/")) {
-    return <ListingDetailRouteSkeleton />
+    return <ListingDetailRoutePending />
   }
   if (pathname?.startsWith("/sell")) {
     return <SellFlowRouteSkeleton />

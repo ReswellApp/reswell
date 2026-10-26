@@ -12,7 +12,6 @@ import { ListingMediaFillImage } from "@/components/listing-media-fill-image"
 import { useListingPhotoReady } from "@/components/features/listings/hooks/use-listing-photo-ready"
 import { listingImageIsDecoded } from "@/lib/listing-photo-paint"
 import { listingPhotoFrameFillStyle } from "@/lib/listing-photo-fill"
-import { ListingTileShimmer } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import {
   listingPdpCropCssFit,
@@ -40,8 +39,12 @@ export interface ListingGalleryPhotoProps {
   crop?: ListingPdpCrop | null
 }
 
+/**
+ * The bitmap stays in normal flow. A private compositor layer on the img is
+ * filled white by WebKit until decode, which is the flat on the way into `/l`.
+ */
 const PHOTO_LAYER =
-  "bg-transparent select-none object-center backface-hidden transform-gpu [-webkit-user-drag:none]"
+  "bg-transparent select-none object-center [-webkit-user-drag:none]"
 
 /** Block HTML image-drag so Embla swipe still owns the pointer. Right-click is unchanged. */
 export function preventNativeListingImageDrag(event: DragEvent<HTMLImageElement>): void {
@@ -70,9 +73,11 @@ export function listingPhotoBackdropStyle(
 export { listingPhotoIsCached } from "@/lib/listing-photo-paint"
 
 /**
- * Listing gallery photo. Before paint we ask the mounted image if it already
- * has pixels. A cached tile or PDP photo skips the wave. An uncached bitmap
- * stays under it until decode. The preview stays under the sharp image.
+ * Listing gallery photo. The preview bitmap (the card the shopper just left)
+ * stays visible. The sharp PDP file stacks on top of it and is transparent
+ * until the browser has pixels, so nothing has to hide the photo behind the
+ * near-white shimmer. A CSS background of the same file is intentionally not
+ * used — under a fit crop it reads as a second copy of the board.
  */
 export function ListingGalleryPhoto({
   src,
@@ -95,11 +100,9 @@ export function ListingGalleryPhoto({
 
   const preview =
     previewSrc && previewSrc !== src && previewSrc !== "/placeholder.svg" ? previewSrc : ""
+  // The sharp file stays invisible until it has pixels when a card preview is
+  // already showing. An empty img on top of that preview paints as a white box.
   const sourcePaint = useListingPhotoReady(src)
-  const previewPaint = useListingPhotoReady(preview)
-  const srcReady = sourcePaint.ready
-  const previewReady = previewPaint.ready
-  const painted = srcReady || previewReady
   const cssFit = listingPdpCropCssFit(crop)
   const objectPosition = crop ? listingPdpCropObjectPosition(crop) : undefined
   const precise = listingPdpCropNeedsPreciseLayout(crop)
@@ -172,13 +175,6 @@ export function ListingGalleryPhoto({
     setFrameEl((prev) => (prev === parent ? prev : parent))
   }, [])
 
-  const attachPreview = useCallback(
-    (img: HTMLImageElement | null) => {
-      previewPaint.ref(img)
-    },
-    [previewPaint.ref],
-  )
-
   const rememberNaturalSize = useCallback((img: HTMLImageElement) => {
     const naturalWidth = img.naturalWidth
     const naturalHeight = img.naturalHeight
@@ -208,20 +204,10 @@ export function ListingGalleryPhoto({
           draggable={false}
           onDragStart={preventNativeListingImageDrag}
           aria-hidden
-          className={cn(
-            layerClass,
-            "pointer-events-none z-[1]",
-            className,
-            previewReady && !srcReady ? "opacity-100" : "opacity-0",
-          )}
+          className={cn(layerClass, "pointer-events-none z-[1]", className)}
           style={cropStyle}
           sizes={sizes}
           loading={priority ? "eager" : loading}
-          ref={attachPreview}
-          onLoad={(event) => {
-            // Preview is paint-only — never size the hero from the tile derivative.
-            previewPaint.onLoad(event.currentTarget)
-          }}
         />
       ) : null}
       <ListingMediaFillImage
@@ -234,8 +220,7 @@ export function ListingGalleryPhoto({
           layerClass,
           "pointer-events-auto z-[2]",
           className,
-          preview && previewReady ? "transition-opacity duration-200 ease-out" : null,
-          srcReady ? "opacity-100" : "opacity-0",
+          preview && !sourcePaint.ready ? "opacity-0" : "opacity-100",
         )}
         style={cropStyle}
         sizes={sizes}
@@ -249,12 +234,6 @@ export function ListingGalleryPhoto({
           if (listingImageIsDecoded(img)) rememberNaturalSize(img)
         }}
       />
-      {painted ? null : (
-        <ListingTileShimmer
-          aria-hidden
-          className="absolute inset-0 z-[3] rounded-none"
-        />
-      )}
     </>
   )
 }
