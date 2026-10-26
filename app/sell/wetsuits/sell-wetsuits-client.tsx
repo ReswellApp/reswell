@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { toast } from "sonner"
 import {
-  parseSellListingPrice,
   readLiveSellListingPrice,
   sellListingPriceIsPublishable,
 } from "@/lib/utils/sell-listing-price"
@@ -65,6 +64,7 @@ import type { ListingPhotoSlot } from "@/lib/sell-flow/listing-photo-slot"
 import {
   WETSUIT_LISTING_MAX_PHOTOS,
   WETSUIT_LISTING_TITLE_MAX_LENGTH,
+  createWetsuitListingSchema,
   type CreateWetsuitListingInput,
 } from "@/lib/validations/wetsuit-listing"
 import { createWetsuitListingAction } from "@/lib/actions/wetsuitListingActions"
@@ -653,7 +653,7 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
     const payload = {
       title: form.title,
       description: form.description,
-      price: parseSellListingPrice(livePrice) ?? 0,
+      price: livePrice,
       condition: form.condition as CreateWetsuitListingInput["condition"],
       stockQuantity: parseBrandNewListingQuantity(form.stockQuantity) ?? 1,
       size: form.size || null,
@@ -688,6 +688,13 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
       })),
       videos: readyVideo ? [readyVideo] : [],
     }
+
+    const parsedListing = createWetsuitListingSchema.safeParse(payload)
+    if (!parsedListing.success) {
+      failValidation(parsedListing.error.issues[0]?.message ?? "Please check the form and try again.")
+      return
+    }
+    const listingInput = parsedListing.data as CreateWetsuitListingInput
 
     setSubmitting(true)
     try {
@@ -728,11 +735,11 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
         if (adminImpersonatesListingOwner) {
           const updated = await updateOwnedListingViaApi({
             listingId: editId,
-            listing: buildWetsuitListingPersistFields(payload, { allowPrivilegedShippingModes: true }),
+            listing: buildWetsuitListingPersistFields(listingInput, { allowPrivilegedShippingModes: true }),
             removedImageIds,
-            images: peerImagesToOwnedUpdateOps(payload.images),
+            images: peerImagesToOwnedUpdateOps(listingInput.images),
             removedVideoIds,
-            videos: payload.videos,
+            videos: listingInput.videos,
           })
           if (!updated.ok) {
             const message = sellActionErrorMessage(updated.error)
@@ -772,11 +779,11 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
 
         const updated = await updateOwnedListingViaApi({
           listingId: editId,
-          listing: buildWetsuitListingPersistFields(payload),
+          listing: buildWetsuitListingPersistFields(listingInput),
           removedImageIds,
-          images: peerImagesToOwnedUpdateOps(payload.images),
+          images: peerImagesToOwnedUpdateOps(listingInput.images),
           removedVideoIds,
-          videos: payload.videos,
+          videos: listingInput.videos,
         })
         if (!updated.ok) {
           const message = sellActionErrorMessage(updated.error)
@@ -809,22 +816,22 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
       await finalizePeerListingCreate({
         listingImpersonation,
         listingFields: buildWetsuitListingPersistFields(
-          payload,
+          listingInput,
           listingImpersonation ? { allowPrivilegedShippingModes: true } : undefined,
         ),
-        images: payload.images.map((img) => ({
+        images: listingInput.images.map((img) => ({
           url: img.url,
           thumbnailUrl: img.thumbnailUrl,
         })),
-        videos: payload.videos,
-        title: payload.title,
+        videos: listingInput.videos,
+        title: listingInput.title,
         section: "wetsuits",
         bulkSlotId,
         router,
         publishStartedAt,
         successToast: "Your wetsuit is live!",
         setSubmitting,
-        directCreate: () => createWetsuitListingAction(payload),
+        directCreate: () => createWetsuitListingAction(listingInput),
         onCreateSuccess: () => clearRecoveredDraft(),
       })
     } catch (err) {

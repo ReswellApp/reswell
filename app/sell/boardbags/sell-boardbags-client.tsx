@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { toast } from "sonner"
 import {
-  parseSellListingPrice,
   readLiveSellListingPrice,
   sellListingPriceIsPublishable,
 } from "@/lib/utils/sell-listing-price"
@@ -81,6 +80,7 @@ import { uploadListingImagePairToSupabase } from "@/lib/listing-image-storage"
 import {
   BOARDBAG_LISTING_MAX_PHOTOS,
   BOARDBAG_LISTING_TITLE_MAX_LENGTH,
+  createBoardbagListingSchema,
   type CreateBoardbagListingInput,
 } from "@/lib/validations/boardbag-listing"
 import { createBoardbagListingAction } from "@/lib/actions/boardbagListingActions"
@@ -814,7 +814,7 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
     const payload = {
       title: form.title,
       description: form.description,
-      price: parseSellListingPrice(livePrice) ?? 0,
+      price: livePrice,
       condition: form.condition as CreateBoardbagListingInput["condition"],
       stockQuantity: parseBrandNewListingQuantity(form.stockQuantity) ?? 1,
       size: form.size || null,
@@ -849,6 +849,13 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
       })),
       videos: readyVideo ? [readyVideo] : [],
     }
+
+    const parsedListing = createBoardbagListingSchema.safeParse(payload)
+    if (!parsedListing.success) {
+      failValidation(parsedListing.error.issues[0]?.message ?? "Please check the form and try again.")
+      return
+    }
+    const listingInput = parsedListing.data as CreateBoardbagListingInput
 
     setSubmitting(true)
     try {
@@ -889,11 +896,11 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
         if (adminImpersonatesListingOwner) {
           const updated = await updateOwnedListingViaApi({
             listingId: editId,
-            listing: buildBoardbagListingPersistFields(payload, { allowPrivilegedShippingModes: true }),
+            listing: buildBoardbagListingPersistFields(listingInput, { allowPrivilegedShippingModes: true }),
             removedImageIds,
-            images: peerImagesToOwnedUpdateOps(payload.images),
+            images: peerImagesToOwnedUpdateOps(listingInput.images),
             removedVideoIds,
-            videos: payload.videos,
+            videos: listingInput.videos,
           })
           if (!updated.ok) {
             const message = sellActionErrorMessage(updated.error)
@@ -928,11 +935,11 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
 
         const updated = await updateOwnedListingViaApi({
           listingId: editId,
-          listing: buildBoardbagListingPersistFields(payload),
+          listing: buildBoardbagListingPersistFields(listingInput),
           removedImageIds,
-          images: peerImagesToOwnedUpdateOps(payload.images),
+          images: peerImagesToOwnedUpdateOps(listingInput.images),
           removedVideoIds,
-          videos: payload.videos,
+          videos: listingInput.videos,
         })
         if (!updated.ok) {
           const message = sellActionErrorMessage(updated.error)
@@ -960,22 +967,22 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
       await finalizePeerListingCreate({
         listingImpersonation,
         listingFields: buildBoardbagListingPersistFields(
-          payload,
+          listingInput,
           listingImpersonation ? { allowPrivilegedShippingModes: true } : undefined,
         ),
-        images: payload.images.map((img) => ({
+        images: listingInput.images.map((img) => ({
           url: img.url,
           thumbnailUrl: img.thumbnailUrl,
         })),
-        videos: payload.videos,
-        title: payload.title,
+        videos: listingInput.videos,
+        title: listingInput.title,
         section: "boardbags",
         bulkSlotId,
         router,
         publishStartedAt,
         successToast: "Your boardbag is live!",
         setSubmitting,
-        directCreate: () => createBoardbagListingAction(payload),
+        directCreate: () => createBoardbagListingAction(listingInput),
         onCreateSuccess: () => clearRecoveredDraft(),
       })
     } catch (err) {

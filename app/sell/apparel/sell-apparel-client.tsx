@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { toast } from "sonner"
 import {
-  parseSellListingPrice,
   readLiveSellListingPrice,
   sellListingPriceIsPublishable,
 } from "@/lib/utils/sell-listing-price"
@@ -71,6 +70,7 @@ import { stageListingPhotoInstantPreview } from "@/lib/sell-flow/reveal-listing-
 import {
   APPAREL_LISTING_MAX_PHOTOS,
   APPAREL_LISTING_TITLE_MAX_LENGTH,
+  createApparelListingSchema,
   type CreateApparelListingInput,
 } from "@/lib/validations/apparel-listing"
 import { createApparelListingAction } from "@/lib/actions/apparelListingActions"
@@ -765,7 +765,7 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
     const payload = {
       title: form.title,
       description: form.description,
-      price: parseSellListingPrice(livePrice) ?? 0,
+      price: livePrice,
       condition: form.condition as CreateApparelListingInput["condition"],
       stockQuantity: parseBrandNewListingQuantity(form.stockQuantity) ?? 1,
       kind: form.kind as CreateApparelListingInput["kind"],
@@ -798,6 +798,13 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
       })),
       videos: readyVideo ? [readyVideo] : [],
     }
+
+    const parsedListing = createApparelListingSchema.safeParse(payload)
+    if (!parsedListing.success) {
+      failValidation(parsedListing.error.issues[0]?.message ?? "Please check the form and try again.")
+      return
+    }
+    const listingInput = parsedListing.data as CreateApparelListingInput
 
     setSubmitting(true)
     try {
@@ -838,11 +845,11 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
         if (adminImpersonatesListingOwner) {
           const updated = await updateOwnedListingViaApi({
             listingId: editId,
-            listing: buildApparelListingPersistFields(payload, { allowPrivilegedShippingModes: true }),
+            listing: buildApparelListingPersistFields(listingInput, { allowPrivilegedShippingModes: true }),
             removedImageIds,
-            images: peerImagesToOwnedUpdateOps(payload.images),
+            images: peerImagesToOwnedUpdateOps(listingInput.images),
             removedVideoIds,
-            videos: payload.videos,
+            videos: listingInput.videos,
           })
           if (!updated.ok) {
             const message = sellActionErrorMessage(updated.error)
@@ -877,11 +884,11 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
 
         const updated = await updateOwnedListingViaApi({
           listingId: editId,
-          listing: buildApparelListingPersistFields(payload),
+          listing: buildApparelListingPersistFields(listingInput),
           removedImageIds,
-          images: peerImagesToOwnedUpdateOps(payload.images),
+          images: peerImagesToOwnedUpdateOps(listingInput.images),
           removedVideoIds,
-          videos: payload.videos,
+          videos: listingInput.videos,
         })
         if (!updated.ok) {
           const message = sellActionErrorMessage(updated.error)
@@ -909,22 +916,22 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
       await finalizePeerListingCreate({
         listingImpersonation,
         listingFields: buildApparelListingPersistFields(
-          payload,
+          listingInput,
           listingImpersonation ? { allowPrivilegedShippingModes: true } : undefined,
         ),
-        images: payload.images.map((img) => ({
+        images: listingInput.images.map((img) => ({
           url: img.url,
           thumbnailUrl: img.thumbnailUrl,
         })),
-        videos: payload.videos,
-        title: payload.title,
+        videos: listingInput.videos,
+        title: listingInput.title,
         section: "apparel",
         bulkSlotId,
         router,
         publishStartedAt,
         successToast: "Your apparel is live!",
         setSubmitting,
-        directCreate: () => createApparelListingAction(payload),
+        directCreate: () => createApparelListingAction(listingInput),
         onCreateSuccess: () => clearRecoveredDraft(),
       })
     } catch (err) {

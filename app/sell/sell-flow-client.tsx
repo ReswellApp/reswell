@@ -129,10 +129,10 @@ import {
 import { minimumOfferAmountFromDb, minimumOfferAmountToDb } from "@/lib/utils/offers-minimum-amount"
 import { sellerPurchasePriceToDb } from "@/lib/utils/seller-purchase-price"
 import {
-  parseSellListingPrice,
   readLiveSellListingPrice,
   sellListingPriceIsPublishable,
 } from "@/lib/utils/sell-listing-price"
+import { sellListingPriceField } from "@/lib/validations/sell-listing-price"
 import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import {
   logSellForkToFull,
@@ -3462,6 +3462,24 @@ function SellPageContentInner({
       }
 
       const fd = submitFormForSave
+      const parsedListingPrice = sellListingPriceField.safeParse(fd.price)
+      if (!parsedListingPrice.success) {
+        const message = parsedListingPrice.error.issues[0]?.message ?? "Enter a listing price."
+        logSellFunnelEvent({
+          listingType: "surfboards",
+          event: "validation_failed",
+          message,
+        })
+        setLoading(false)
+        setPublishValidationBanner(message)
+        window.requestAnimationFrame(() => {
+          document
+            .getElementById("sell-publish-validation-banner")
+            ?.scrollIntoView({ behavior: "smooth", block: "center" })
+        })
+        return
+      }
+      const listingPriceUsd = parsedListingPrice.data
 
       const persistBoardCatalogSnapshot = (listingIdForSnap: string, sellerUserId: string) => {
         void upsertUserListingBoardModelDataFromSellForm(supabase, {
@@ -3651,7 +3669,7 @@ function SellPageContentInner({
         const editListingFields = {
           title: resolvedListingTitle,
           description: fd.description,
-          price: parseSellListingPrice(fd.price) ?? 0,
+          price: listingPriceUsd,
           condition: fd.condition,
           stock_quantity: stockQuantityForSellCondition(fd.condition, fd.stockQuantity),
           section: "surfboards" as const,
@@ -3686,8 +3704,8 @@ function SellPageContentInner({
           seller_purchased_from: fd.sellerPurchasedFrom.trim() || null,
           seller_purchased_on: fd.sellerPurchasedOn || null,
           compare_at_price: resolveCompareAtPriceOnUpdate({
-            currentPriceUsd: fd.loadedPublishedPriceUsd ?? parseSellListingPrice(fd.price) ?? 0,
-            nextPriceUsd: parseSellListingPrice(fd.price) ?? 0,
+            currentPriceUsd: fd.loadedPublishedPriceUsd ?? listingPriceUsd,
+            nextPriceUsd: listingPriceUsd,
             existingCompareAtUsd: fd.loadedCompareAtPriceUsd,
             showPriceMarkdown: fd.showPriceMarkdown === true,
           }),
@@ -3771,7 +3789,7 @@ function SellPageContentInner({
         const listingFields = {
           title: resolvedListingTitle,
           description: fd.description,
-          price: parseSellListingPrice(fd.price) ?? 0,
+          price: listingPriceUsd,
           condition: fd.condition,
           stock_quantity: stockQuantityForSellCondition(fd.condition, fd.stockQuantity),
           section: "surfboards" as const,

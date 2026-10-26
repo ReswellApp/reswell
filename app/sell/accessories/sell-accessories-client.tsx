@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { toast } from "sonner"
 import {
-  parseSellListingPrice,
   readLiveSellListingPrice,
   sellListingPriceIsPublishable,
 } from "@/lib/utils/sell-listing-price"
@@ -73,6 +72,7 @@ import { uploadListingImagePairToSupabase } from "@/lib/listing-image-storage"
 import {
   ACCESSORY_LISTING_MAX_PHOTOS,
   ACCESSORY_LISTING_TITLE_MAX_LENGTH,
+  createAccessoryListingSchema,
   type CreateAccessoryListingInput,
 } from "@/lib/validations/accessory-listing"
 import { createAccessoryListingAction } from "@/lib/actions/accessoryListingActions"
@@ -782,7 +782,7 @@ export default function SellAccessoriesFlow({ editListingId = null }: { editList
     const payload = {
       title: form.title,
       description: form.description,
-      price: parseSellListingPrice(livePrice) ?? 0,
+      price: livePrice,
       condition: form.condition as CreateAccessoryListingInput["condition"],
       stockQuantity: parseBrandNewListingQuantity(form.stockQuantity) ?? 1,
       size: form.size || null,
@@ -817,6 +817,13 @@ export default function SellAccessoriesFlow({ editListingId = null }: { editList
       })),
       videos: readyVideo ? [readyVideo] : [],
     }
+
+    const parsedListing = createAccessoryListingSchema.safeParse(payload)
+    if (!parsedListing.success) {
+      failValidation(parsedListing.error.issues[0]?.message ?? "Please check the form and try again.")
+      return
+    }
+    const listingInput = parsedListing.data as CreateAccessoryListingInput
 
     setSubmitting(true)
     try {
@@ -857,11 +864,11 @@ export default function SellAccessoriesFlow({ editListingId = null }: { editList
         if (adminImpersonatesListingOwner) {
           const updated = await updateOwnedListingViaApi({
             listingId: editId,
-            listing: buildAccessoryListingPersistFields(payload, { allowPrivilegedShippingModes: true }),
+            listing: buildAccessoryListingPersistFields(listingInput, { allowPrivilegedShippingModes: true }),
             removedImageIds,
-            images: peerImagesToOwnedUpdateOps(payload.images),
+            images: peerImagesToOwnedUpdateOps(listingInput.images),
             removedVideoIds,
-            videos: payload.videos,
+            videos: listingInput.videos,
           })
           if (!updated.ok) {
             const message = sellActionErrorMessage(updated.error)
@@ -896,11 +903,11 @@ export default function SellAccessoriesFlow({ editListingId = null }: { editList
 
         const updated = await updateOwnedListingViaApi({
           listingId: editId,
-          listing: buildAccessoryListingPersistFields(payload),
+          listing: buildAccessoryListingPersistFields(listingInput),
           removedImageIds,
-          images: peerImagesToOwnedUpdateOps(payload.images),
+          images: peerImagesToOwnedUpdateOps(listingInput.images),
           removedVideoIds,
-          videos: payload.videos,
+          videos: listingInput.videos,
         })
         if (!updated.ok) {
           const message = sellActionErrorMessage(updated.error)
@@ -928,22 +935,22 @@ export default function SellAccessoriesFlow({ editListingId = null }: { editList
       await finalizePeerListingCreate({
         listingImpersonation,
         listingFields: buildAccessoryListingPersistFields(
-          payload,
+          listingInput,
           listingImpersonation ? { allowPrivilegedShippingModes: true } : undefined,
         ),
-        images: payload.images.map((img) => ({
+        images: listingInput.images.map((img) => ({
           url: img.url,
           thumbnailUrl: img.thumbnailUrl,
         })),
-        videos: payload.videos,
-        title: payload.title,
+        videos: listingInput.videos,
+        title: listingInput.title,
         section: "accessories",
         bulkSlotId,
         router,
         publishStartedAt,
         successToast: "Your accessory is live!",
         setSubmitting,
-        directCreate: () => createAccessoryListingAction(payload),
+        directCreate: () => createAccessoryListingAction(listingInput),
         onCreateSuccess: () => clearRecoveredDraft(),
       })
     } catch (err) {

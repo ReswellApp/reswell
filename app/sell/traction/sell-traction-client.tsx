@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { toast } from "sonner"
 import {
-  parseSellListingPrice,
   readLiveSellListingPrice,
   sellListingPriceIsPublishable,
 } from "@/lib/utils/sell-listing-price"
@@ -73,6 +72,7 @@ import { uploadListingImagePairToSupabase } from "@/lib/listing-image-storage"
 import {
   TRACTION_LISTING_MAX_PHOTOS,
   TRACTION_LISTING_TITLE_MAX_LENGTH,
+  createTractionListingSchema,
   type CreateTractionListingInput,
 } from "@/lib/validations/traction-listing"
 import { createTractionListingAction } from "@/lib/actions/tractionListingActions"
@@ -782,7 +782,7 @@ export default function SellTractionFlow({ editListingId = null }: { editListing
     const payload = {
       title: form.title,
       description: form.description,
-      price: parseSellListingPrice(livePrice) ?? 0,
+      price: livePrice,
       condition: form.condition as CreateTractionListingInput["condition"],
       stockQuantity: parseBrandNewListingQuantity(form.stockQuantity) ?? 1,
       size: form.size || null,
@@ -817,6 +817,13 @@ export default function SellTractionFlow({ editListingId = null }: { editListing
       })),
       videos: readyVideo ? [readyVideo] : [],
     }
+
+    const parsedListing = createTractionListingSchema.safeParse(payload)
+    if (!parsedListing.success) {
+      failValidation(parsedListing.error.issues[0]?.message ?? "Please check the form and try again.")
+      return
+    }
+    const listingInput = parsedListing.data as CreateTractionListingInput
 
     setSubmitting(true)
     try {
@@ -857,11 +864,11 @@ export default function SellTractionFlow({ editListingId = null }: { editListing
         if (adminImpersonatesListingOwner) {
           const updated = await updateOwnedListingViaApi({
             listingId: editId,
-            listing: buildTractionListingPersistFields(payload, { allowPrivilegedShippingModes: true }),
+            listing: buildTractionListingPersistFields(listingInput, { allowPrivilegedShippingModes: true }),
             removedImageIds,
-            images: peerImagesToOwnedUpdateOps(payload.images),
+            images: peerImagesToOwnedUpdateOps(listingInput.images),
             removedVideoIds,
-            videos: payload.videos,
+            videos: listingInput.videos,
           })
           if (!updated.ok) {
             const message = sellActionErrorMessage(updated.error)
@@ -896,11 +903,11 @@ export default function SellTractionFlow({ editListingId = null }: { editListing
 
         const updated = await updateOwnedListingViaApi({
           listingId: editId,
-          listing: buildTractionListingPersistFields(payload),
+          listing: buildTractionListingPersistFields(listingInput),
           removedImageIds,
-          images: peerImagesToOwnedUpdateOps(payload.images),
+          images: peerImagesToOwnedUpdateOps(listingInput.images),
           removedVideoIds,
-          videos: payload.videos,
+          videos: listingInput.videos,
         })
         if (!updated.ok) {
           const message = sellActionErrorMessage(updated.error)
@@ -928,22 +935,22 @@ export default function SellTractionFlow({ editListingId = null }: { editListing
       await finalizePeerListingCreate({
         listingImpersonation,
         listingFields: buildTractionListingPersistFields(
-          payload,
+          listingInput,
           listingImpersonation ? { allowPrivilegedShippingModes: true } : undefined,
         ),
-        images: payload.images.map((img) => ({
+        images: listingInput.images.map((img) => ({
           url: img.url,
           thumbnailUrl: img.thumbnailUrl,
         })),
-        videos: payload.videos,
-        title: payload.title,
+        videos: listingInput.videos,
+        title: listingInput.title,
         section: "traction",
         bulkSlotId,
         router,
         publishStartedAt,
         successToast: "Your traction is live!",
         setSubmitting,
-        directCreate: () => createTractionListingAction(payload),
+        directCreate: () => createTractionListingAction(listingInput),
         onCreateSuccess: () => clearRecoveredDraft(),
       })
     } catch (err) {
