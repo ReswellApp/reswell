@@ -195,7 +195,7 @@ function LightboxSlide({
             }}
           />
         ) : null}
-        {!slideReady ? (
+        {!slideReady && !backdropSrc ? (
           <ListingTileShimmer
             aria-hidden
             className="listing-tile-shimmer-overlay absolute inset-0 z-[3] rounded-none"

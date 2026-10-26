@@ -1,7 +1,7 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { ProfileCircleFallback } from "@/components/profile-circle"
+import { Avatar, AvatarImage } from "@/components/ui/avatar"
 import type { ForumThreadParticipant } from "@/lib/services/forumThreads"
 import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
-import { threadsAvatarFallbackClassName } from "@/components/features/forum/threads-brand-styles"
 import { cn } from "@/lib/utils"
 
 type ThreadsParticipantStackProps = {
@@ -28,7 +28,6 @@ export function ThreadsParticipantStack({
   return (
     <div className={cn("flex -space-x-2", className)} aria-hidden>
       {shown.map((p) => {
-        const initial = p.displayName.charAt(0).toUpperCase()
         return (
           <Avatar
             key={p.userId}
@@ -36,7 +35,7 @@ export function ThreadsParticipantStack({
             title={p.displayName}
           >
             <AvatarImage src={profileMediaDisplaySrc(p.avatarUrl || "")} alt="" />
-            <AvatarFallback className={threadsAvatarFallbackClassName}>{initial}</AvatarFallback>
+            <ProfileCircleFallback />
           </Avatar>
         )
       })}

@@ -6,7 +6,7 @@ import Image from "next/image"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { ProfileCircle } from "@/components/profile-circle"
 import { Bell, ExternalLink, Package } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { FollowNotification } from "@/lib/follows/types"
@@ -14,8 +14,6 @@ import { getFollowNotifications, markFollowNotificationsRead } from "@/app/actio
 import { listingDetailHref } from "@/lib/listing-href"
 import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
-import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
-
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime()
   const mins = Math.floor(diff / 60000)
@@ -145,15 +143,7 @@ export function NotificationDrawer() {
                     )}
                   >
                     {/* Seller avatar */}
-                    <Avatar className="h-10 w-10 shrink-0">
-                      <AvatarImage
-                        src={profileMediaDisplaySrc(n.actor?.avatar_url || "")}
-                        alt={actorName}
-                      />
-                      <AvatarFallback className="text-sm font-semibold bg-primary text-primary-foreground">
-                        {actorName.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
+                    <ProfileCircle avatarUrl={n.actor?.avatar_url} alt={actorName} className="h-10 w-10" />
 
                     <div className="flex-1 min-w-0">
                       {isDigest ? (

@@ -1,0 +1,662 @@
+import {
+  mobileListingCardSchema,
+  mobileListingDetailSchema,
+  mobileMeSchema,
+  mobileProfileSchema,
+  type MobileListingCard,
+  type MobileListingDetail,
+  type MobileListingsPage,
+  type MobileListingsQuery,
+  type MobileMe,
+  type MobileProfile,
+} from "@reswell/api-contract"
+import { fetchDashboardProfile } from "@/lib/db/dashboard-profile"
+import {
+  countMobileProfileListings,
+  fetchMobileProfileBySlug,
+  type MobileProfileRow,
+} from "@/lib/db/mobile-profiles"
+import { resolveProfileBannerFocal } from "@/lib/utils/profile-banner-focal"
+import {
+  listMobileListingRows,
+  MOBILE_LISTING_DETAIL_SELECT,
+  type MobileListingRow,
+  type MobileListingSellerRow,
+  type MobileListingVideoRow,
+} from "@/lib/db/mobile-listings"
+import { isSellerBanActive } from "@/lib/db/sellerBan"
+import { getListingCartHolderCount } from "@/lib/db/listing-cart-holders"
+import { getListingFavoriteCount } from "@/lib/db/listing-favorite-count"
+import { getSellerReviewSummary } from "@/lib/db/seller-reviews"
+import { listingPickupCaption } from "@/lib/listing-fulfillment"
+import {
+  listingCardImageSrc,
+  orderedListingGalleryImages,
+} from "@/lib/listing-image-display"
+import {
+  formatListingGeometryLine,
+  formatListingVolumePart,
+  formatStoredListingDimensions,
+} from "@/lib/listing-dimensions-display"
+import { formatCondition, formatHomePeerListingConditionLine, capitalizeWords, getPublicSellerDisplayName } from "@/lib/listing-labels"
+import { peerListingShippingSubline } from "@/lib/listing-pdp-price-line"
+import { findListingByParam } from "@/lib/listing-query"
+import {
+  isListingPubliclyVisible,
+  isListingVisibleInPublicSoldFeed,
+  type ListingPublicVisibilityFields,
+} from "@/lib/listing-public-visibility"
+import { isPeerListingSection } from "@/lib/peer-listing-sections"
+import { absoluteProfileCircleUrl } from "@/lib/profile-circle"
+import { absoluteProxiedProfileMediaUrl } from "@/lib/public-media-display-src"
+import { configuredReswellShopOwnerUserId } from "@/lib/services/resolveReswellShopOwnerUser"
+import { listingPdpVideoPlaybackSrc } from "@/lib/listing-media-proxy-url"
+import { absolutePublicMediaUrl, absoluteUrl } from "@/lib/site-metadata"
+import { resolveListingCatalogSlugs } from "@/lib/services/mobileListingCatalog"
+import { getDb } from "@/lib/supabase/db"
+import type { SupabaseClient, User } from "@supabase/supabase-js"
+
+export type MobileApiResult<T> =
+  | { ok: true; data: T }
+  | { ok: false; status: number; error: string }
+
+function moneyUsd(value: number | string | null | undefined): number {
+  if (value == null) return 0
+  const amount = typeof value === "number" ? value : Number(value)
+  if (!Number.isFinite(amount)) return 0
+  return Math.round(amount * 100) / 100
+}
+
+function mediaUrl(path: string | null | undefined): string | null {
+  const trimmed = path?.trim()
+  if (!trimmed) return null
+  return absolutePublicMediaUrl(trimmed) ?? null
+}
+
+function pickSeller(
+  profiles: MobileListingRow["profiles"],
+): MobileListingSellerRow | null {
+  if (!profiles) return null
+  return Array.isArray(profiles) ? profiles[0] ?? null : profiles
+}
+
+function nullableText(value: string | null | undefined): string | null {
+  const trimmed = value?.trim()
+  return trimmed ? trimmed : null
+}
+
+function listingPriceLabel(priceUsd: number): string {
+  return `$${priceUsd.toFixed(2)}`
+}
+
+/** Same Dimensions and Volume lines the public listing page shows. Never the stored JSON. */
+function buyerFacingDimensions(raw: string | null | undefined): {
+  dimensions: string | null
+  volume_label: string | null
+} {
+  const text = nullableText(raw)
+  if (!text) return { dimensions: null, volume_label: null }
+  const geometry = formatListingGeometryLine({ dimensions: text })
+  const volume = formatListingVolumePart({ dimensions: text })
+  return {
+    dimensions: geometry ?? (volume ? null : formatStoredListingDimensions(text)),
+    volume_label: volume,
+  }
+}
+
+function listingVideoPlaybackUrl(raw: string | null | undefined): string | null {
+  const src = listingPdpVideoPlaybackSrc(raw)
+  if (!src) return null
+  if (/^https?:\/\//i.test(src)) return src
+  if (src.startsWith("/")) return absoluteUrl(src)
+  return null
+}
+
+function durationSeconds(value: number | string | null | undefined): number | null {
+  if (value == null || value === "") return null
+  const amount = typeof value === "number" ? value : Number(value)
+  if (!Number.isFinite(amount) || amount < 0) return null
+  return Math.round(amount * 10) / 10
+}
+
+/** Same order as the website gallery: first playable clip by sort order. */
+function listingVideos(rows: MobileListingVideoRow[] | null | undefined) {
+  const sorted = [...(rows ?? [])].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+  const videos = []
+  for (const row of sorted) {
+    const id = nullableText(row.id)
+    const url = listingVideoPlaybackUrl(row.url)
+    if (!id || !url) continue
+    videos.push({
+      id,
+      url,
+      poster_url: mediaUrl(row.thumbnail_url),
+      content_type: nullableText(row.content_type),
+      duration_seconds: durationSeconds(row.duration_seconds),
+    })
+    if (videos.length >= 4) break
+  }
+  return videos
+}
+
+function shippingCostMode(
+  value: string | null | undefined,
+): "reswell" | "flat" | "free" | null {
+  if (value === "reswell" || value === "flat" || value === "free") return value
+  return null
+}
+
+export type MobileListingCardOptions = {
+  /** When the viewer is signed in, whether they follow this listing's seller. */
+  following?: boolean
+}
+
+function toMobileListingCardSeller(
+  row: MobileListingRow,
+  following?: boolean,
+): MobileListingCard["seller"] {
+  const sellerId = nullableText(row.user_id)
+  if (!sellerId) return null
+  const seller = pickSeller(row.profiles)
+  const avatar = seller?.is_shop
+    ? nullableText(seller?.shop_logo_url) ?? nullableText(seller?.avatar_url)
+    : nullableText(seller?.avatar_url)
+  const summary = {
+    id: sellerId,
+    name: sellerDisplayName(seller),
+    seller_slug: nullableText(seller?.seller_slug),
+    avatar_url: absoluteProfileCircleUrl(avatar),
+    verified: Boolean(seller?.is_shop && seller.shop_verified),
+    ...(following === undefined ? {} : { following }),
+  }
+  return summary
+}
+
+export async function followingSellerIdsForViewer(
+  supabase: SupabaseClient,
+  viewerId: string,
+  sellerIds: readonly string[],
+): Promise<Set<string>> {
+  const unique = [...new Set(sellerIds.filter(Boolean))]
+  if (unique.length === 0) return new Set()
+  const { data, error } = await supabase
+    .from("seller_follows")
+    .select("seller_id")
+    .eq("follower_id", viewerId)
+    .in("seller_id", unique)
+  if (error) {
+    console.error("[mobile-api] following lookup failed", {
+      timestamp: new Date().toISOString(),
+      message: error.message,
+    })
+    return new Set()
+  }
+  return new Set((data ?? []).map((row) => row.seller_id).filter(Boolean))
+}
+
+export function toMobileListingCard(
+  row: MobileListingRow,
+  options?: MobileListingCardOptions,
+): MobileListingCard | null {
+  const priceUsd = moneyUsd(row.price)
+  const condition = nullableText(row.condition)
+  const conditionLabel = condition ? formatCondition(condition) : ""
+  const place = [nullableText(row.city), nullableText(row.state)].filter(Boolean).join(", ")
+  const card = {
+    id: row.id,
+    slug: nullableText(row.slug),
+    title: capitalizeWords(row.title) || "Untitled listing",
+    brand: nullableText(row.brand),
+    model: nullableText(row.model),
+    condition,
+    condition_label: conditionLabel || null,
+    condition_line: formatHomePeerListingConditionLine(row.condition),
+    section: nullableText(row.section) ?? "other",
+    board_type: nullableText(row.board_type),
+    ...buyerFacingDimensions(row.dimensions),
+    price_usd: priceUsd,
+    price_cents: Math.round(priceUsd * 100),
+    price_label: listingPriceLabel(priceUsd),
+    city: nullableText(row.city),
+    state: nullableText(row.state),
+    shipping_available: Boolean(row.shipping_available),
+    local_pickup: row.local_pickup !== false,
+    image_url: mediaUrl(listingCardImageSrc(row.listing_images)),
+    shipping_label: peerListingShippingSubline(
+      row.local_pickup,
+      row.shipping_available,
+      row.shipping_price,
+      shippingCostMode(row.board_shipping_cost_mode),
+    ),
+    pickup_label: listingPickupCaption(row.local_pickup !== false, place || null),
+    listed_label: listedLabel(row.created_at),
+    seller: toMobileListingCardSeller(row, options?.following),
+  }
+  const parsed = mobileListingCardSchema.safeParse(card)
+  if (!parsed.success) return null
+  return parsed.data
+}
+
+export type MobileListingDetailStats = {
+  watcherCount: number
+  cartHolderCount: number
+  ratingAverage: number
+  reviewCount: number
+}
+
+function countField(value: number | string | null | undefined): number {
+  const amount = typeof value === "number" ? value : Number(value)
+  if (!Number.isFinite(amount) || amount < 0) return 0
+  return Math.floor(amount)
+}
+
+function sellerDisplayName(seller: MobileListingSellerRow | null): string {
+  if (seller?.is_shop) {
+    const shop = nullableText(seller.shop_name)
+    if (shop) return shop
+  }
+  return getPublicSellerDisplayName(seller)
+}
+
+function joinedYear(value: string | null | undefined): string | null {
+  const text = nullableText(value)
+  if (!text) return null
+  const joined = new Date(text)
+  if (Number.isNaN(joined.getTime())) return null
+  return String(joined.getUTCFullYear())
+}
+
+/** Same relative phrasing `/l` prints next to Listed. */
+function listedLabel(value: string | null | undefined): string | null {
+  const text = nullableText(value)
+  if (!text) return null
+  const listed = new Date(text)
+  if (Number.isNaN(listed.getTime())) return null
+  const days = Math.max(0, Math.floor((Date.now() - listed.getTime()) / 86_400_000))
+  if (days === 0) return "today"
+  if (days === 1) return "1 day ago"
+  if (days < 30) return `${days} days ago`
+  const months = Math.floor(days / 30)
+  if (months < 12) return months === 1 ? "1 month ago" : `${months} months ago`
+  const years = Math.floor(months / 12)
+  return years === 1 ? "1 year ago" : `${years} years ago`
+}
+
+function locationLine(city: string | null | undefined, state: string | null | undefined): string | null {
+  const line = [nullableText(city), nullableText(state)].filter(Boolean).join(", ")
+  return line ? line.toUpperCase() : null
+}
+
+export function toMobileListingDetail(
+  row: MobileListingRow,
+  viewer?: { favorited: boolean; in_cart: boolean; following?: boolean },
+  stats?: MobileListingDetailStats,
+  catalog?: { brandSlug: string | null; modelSlug: string | null },
+): MobileListingDetail | null {
+  const card = toMobileListingCard(row, viewer?.following === undefined ? undefined : { following: viewer.following })
+  if (!card) return null
+  const seller = pickSeller(row.profiles)
+  const sellerId = nullableText(row.user_id)
+  if (!sellerId) return null
+  const imageUrls: string[] = []
+  const seen = new Set<string>()
+  for (const image of orderedListingGalleryImages(row.listing_images)) {
+    const url = mediaUrl(image.url) ?? mediaUrl(image.thumbnail_url)
+    if (!url || seen.has(url)) continue
+    seen.add(url)
+    imageUrls.push(url)
+    if (imageUrls.length >= 12) break
+  }
+  const avatar = seller?.is_shop
+    ? nullableText(seller?.shop_logo_url) ?? nullableText(seller?.avatar_url)
+    : nullableText(seller?.avatar_url)
+  const detail = {
+    ...card,
+    status: row.status,
+    description: nullableText(row.description),
+    image_urls: imageUrls,
+    videos: listingVideos(row.listing_videos),
+    view_count: countField(row.views),
+    watcher_count: countField(stats?.watcherCount),
+    cart_holder_count: countField(stats?.cartHolderCount),
+    listed_label: listedLabel(row.created_at),
+    location_line: locationLine(row.city, row.state),
+    seller: {
+      id: sellerId,
+      name: sellerDisplayName(seller),
+      seller_slug: nullableText(seller?.seller_slug),
+      avatar_url: absoluteProfileCircleUrl(avatar),
+      location_label: nullableText(seller?.location),
+      verified: Boolean(seller?.is_shop && seller.shop_verified),
+      joined_year: joinedYear(seller?.created_at),
+      rating_average: Math.min(5, Math.max(0, stats?.ratingAverage ?? 0)),
+      review_count: countField(stats?.reviewCount),
+      ...(viewer?.following === undefined ? {} : { following: viewer.following }),
+    },
+    ...(viewer ? { favorited: viewer.favorited, in_cart: viewer.in_cart } : {}),
+    brand_slug: catalog?.brandSlug ?? null,
+    model_slug: catalog?.modelSlug ?? null,
+  }
+  const parsed = mobileListingDetailSchema.safeParse(detail)
+  if (!parsed.success) return null
+  return parsed.data
+}
+
+export async function getMobileMeService(
+  supabase: SupabaseClient,
+  user: User,
+): Promise<MobileApiResult<MobileMe>> {
+  const profileResult = await fetchDashboardProfile(supabase, user.id)
+  if (profileResult.error && profileResult.error !== "Profile not found") {
+    console.error("[mobile-api] profile failed", {
+      userId: user.id,
+      timestamp: new Date().toISOString(),
+      message: profileResult.error,
+    })
+    return { ok: false, status: 500, error: "Unable to load your account right now" }
+  }
+
+  const profile = profileResult.profile
+  const me = {
+    id: user.id,
+    email: nullableText(user.email),
+    display_name: nullableText(profile?.display_name) ?? "Reswell member",
+    seller_slug: nullableText(profile?.seller_slug),
+    avatar_url: absoluteProfileCircleUrl(profile?.avatar_url),
+  }
+  const parsed = mobileMeSchema.safeParse(me)
+  if (!parsed.success) {
+    console.error("[mobile-api] me shape failed", {
+      userId: user.id,
+      timestamp: new Date().toISOString(),
+    })
+    return { ok: false, status: 500, error: "Unable to load your account right now" }
+  }
+  return { ok: true, data: parsed.data }
+}
+
+export async function listMobileListingsService(
+  query: MobileListingsQuery,
+): Promise<MobileApiResult<MobileListingsPage>> {
+  const requestedSection = (query.category ?? query.section)?.trim()
+  if (requestedSection && !isPeerListingSection(requestedSection)) {
+    return { ok: false, status: 400, error: "Invalid listings query" }
+  }
+  if (query.board_type && requestedSection && requestedSection !== "surfboards") {
+    return { ok: false, status: 400, error: "Invalid listings query" }
+  }
+
+  const listed = await listMobileListingRows({
+    limit: query.limit,
+    offset: query.offset,
+    q: query.q?.trim() || undefined,
+    section: query.board_type ? "surfboards" : requestedSection || undefined,
+    boardType: query.board_type,
+  })
+  if (!listed.ok) {
+    console.error("[mobile-api] listings failed", {
+      timestamp: new Date().toISOString(),
+      message: listed.message,
+    })
+    return { ok: false, status: 500, error: "Unable to load listings right now" }
+  }
+
+  const listings: MobileListingCard[] = []
+  for (const row of listed.rows) {
+    if (!isListingPubliclyVisible(row)) continue
+    const card = toMobileListingCard(row)
+    if (card) listings.push(card)
+  }
+
+  return {
+    ok: true,
+    data: {
+      listings,
+      limit: query.limit,
+      offset: query.offset,
+      has_more: listed.hasMore,
+    },
+  }
+}
+
+function publicHttpUrl(value: string | null | undefined): string | null {
+  const trimmed = nullableText(value)
+  if (!trimmed) return null
+  try {
+    const url = new URL(trimmed)
+    if (url.protocol !== "http:" && url.protocol !== "https:") return null
+    return url.toString()
+  } catch {
+    return null
+  }
+}
+
+function profileMedia(value: string | null | undefined): string | null {
+  const trimmed = nullableText(value)
+  if (!trimmed) return null
+  return absoluteProxiedProfileMediaUrl(trimmed) ?? null
+}
+
+function countOrZero(value: number | null | undefined): number {
+  if (value == null || !Number.isFinite(value) || value < 0) return 0
+  return Math.floor(value)
+}
+
+export function toMobileProfile(
+  row: MobileProfileRow,
+  stats: {
+    listingCount: number
+    ratingAverage: number
+    reviewCount: number
+    following?: boolean
+    followingCount?: number
+  },
+): MobileProfile | null {
+  const slug = nullableText(row.seller_slug)
+  if (!slug) return null
+
+  const isShop = Boolean(row.is_shop)
+  const name =
+    (isShop ? nullableText(row.shop_name) ?? nullableText(row.display_name) : nullableText(row.display_name)) ??
+    "Reswell member"
+  const joined = new Date(row.created_at)
+  if (Number.isNaN(joined.getTime())) return null
+
+  const city = nullableText(row.city)
+  const bannerFocal = resolveProfileBannerFocal(row.shop_banner_focal_x_pct, row.shop_banner_focal_y_pct)
+  const profile = {
+    id: row.id,
+    seller_slug: slug,
+    name,
+    is_shop: isShop,
+    about: nullableText(row.shop_description) ?? nullableText(row.bio),
+    city,
+    location_label: nullableText(row.shop_address) ?? city ?? nullableText(row.location),
+    avatar_url: absoluteProfileCircleUrl(
+      isShop ? nullableText(row.shop_logo_url) ?? nullableText(row.avatar_url) : nullableText(row.avatar_url),
+    ),
+    banner_url: profileMedia(row.shop_banner_url),
+    banner_focal_x: bannerFocal.x,
+    banner_focal_y: bannerFocal.y,
+    verified: isShop && Boolean(row.shop_verified),
+    website_url: publicHttpUrl(row.shop_website),
+    phone: nullableText(row.shop_phone),
+    sales_count: countOrZero(row.sales_count),
+    follower_count: countOrZero(row.follower_count),
+    listing_count: countOrZero(stats.listingCount),
+    rating_average: Math.min(5, Math.max(0, stats.ratingAverage)),
+    review_count: countOrZero(stats.reviewCount),
+    member_since: joined.toISOString(),
+    member_since_label: new Intl.DateTimeFormat("en-US", {
+      month: "long",
+      year: "numeric",
+      timeZone: "UTC",
+    }).format(joined),
+    ...(stats.following == null ? {} : { following: stats.following }),
+    ...(stats.followingCount == null ? {} : { following_count: stats.followingCount }),
+  }
+
+  const parsed = mobileProfileSchema.safeParse(profile)
+  if (!parsed.success) return null
+  return parsed.data
+}
+
+export async function loadPublicMobileProfileRow(
+  slug: string,
+): Promise<MobileApiResult<MobileProfileRow>> {
+  const found = await fetchMobileProfileBySlug(slug)
+  if (!found.ok) {
+    console.error("[mobile-api] profile failed", {
+      timestamp: new Date().toISOString(),
+      message: found.message,
+    })
+    return { ok: false, status: 500, error: "Unable to load profile right now" }
+  }
+
+  const row = found.row
+  if (!row || isSellerBanActive({ sellerBannedAt: row.seller_banned_at, sellerBannedReason: null })) {
+    return { ok: false, status: 404, error: "Profile not found" }
+  }
+  if (configuredReswellShopOwnerUserId() === row.id) {
+    return { ok: false, status: 404, error: "Profile not found" }
+  }
+  return { ok: true, data: row }
+}
+
+export async function getMobileProfileService(
+  slug: string,
+  viewer?: { supabase: SupabaseClient; userId: string },
+): Promise<MobileApiResult<MobileProfile>> {
+  const loaded = await loadPublicMobileProfileRow(slug)
+  if (!loaded.ok) return loaded
+  const row = loaded.data
+
+  const supabase = getDb({ consistency: "eventual", purpose: "catalog" })
+  const [reviews, listings] = await Promise.all([
+    getSellerReviewSummary(supabase, row.id),
+    countMobileProfileListings(row.id),
+  ])
+  if (!listings.ok) {
+    console.error("[mobile-api] profile listings failed", {
+      timestamp: new Date().toISOString(),
+      message: listings.message,
+    })
+    return { ok: false, status: 500, error: "Unable to load profile right now" }
+  }
+
+  let following: boolean | undefined
+  let followingCount: number | undefined
+  if (viewer) {
+    const ownProfile = viewer.userId === row.id
+    const [followRow, followingListed] = await Promise.all([
+      viewer.supabase
+        .from("seller_follows")
+        .select("id")
+        .eq("follower_id", viewer.userId)
+        .eq("seller_id", row.id)
+        .maybeSingle(),
+      ownProfile
+        ? viewer.supabase
+            .from("seller_follows")
+            .select("id", { count: "exact", head: true })
+            .eq("follower_id", viewer.userId)
+        : Promise.resolve({ count: null }),
+    ])
+    following = Boolean(followRow.data)
+    if (ownProfile) followingCount = followingListed.count ?? 0
+  }
+
+  const profile = toMobileProfile(row, {
+    listingCount: listings.count,
+    ratingAverage: reviews.data.avgRating,
+    reviewCount: reviews.data.reviewCount,
+    following,
+    followingCount,
+  })
+  if (!profile) {
+    return { ok: false, status: 500, error: "Unable to load profile right now" }
+  }
+  return { ok: true, data: profile }
+}
+
+/** Browse listings stay purchasable-only. A sold listing stays open when it belongs on the public sold feed. */
+export function isMobileListingDetailVisible(listing: ListingPublicVisibilityFields): boolean {
+  return isListingPubliclyVisible(listing) || isListingVisibleInPublicSoldFeed(listing)
+}
+
+export async function getMobileListingService(
+  listingParam: string,
+  viewer?: { supabase: SupabaseClient; userId: string },
+): Promise<MobileApiResult<MobileListingDetail>> {
+  const supabase = getDb({ consistency: "eventual", purpose: "catalog" })
+  const found = await findListingByParam(supabase, listingParam, {
+    select: MOBILE_LISTING_DETAIL_SELECT,
+  })
+  if (found.queryFailed) {
+    return { ok: false, status: 500, error: "Unable to load listing right now" }
+  }
+
+  const row = found.listing as MobileListingRow | null
+  if (!row || !isMobileListingDetailVisible(row)) {
+    return { ok: false, status: 404, error: "Listing not found" }
+  }
+
+  const sold = row.status === "sold"
+  const sellerId = nullableText(row.user_id)
+  const [viewerState, watcherCount, cartHolderCount, reviews, catalog] = await Promise.all([
+    viewer
+      ? Promise.all([
+          viewer.supabase
+            .from("favorites")
+            .select("id")
+            .eq("user_id", viewer.userId)
+            .eq("listing_id", row.id)
+            .maybeSingle(),
+          viewer.supabase
+            .from("cart_items")
+            .select("id")
+            .eq("profile_id", viewer.userId)
+            .eq("listing_id", row.id)
+            .maybeSingle(),
+          sellerId
+            ? viewer.supabase
+                .from("seller_follows")
+                .select("id")
+                .eq("follower_id", viewer.userId)
+                .eq("seller_id", sellerId)
+                .maybeSingle()
+            : Promise.resolve({ data: null }),
+        ]).then(([favorite, cart, follow]) => ({
+          favorited: Boolean(favorite.data),
+          in_cart: Boolean(cart.data),
+          following: sellerId ? Boolean(follow.data) : undefined,
+        }))
+      : Promise.resolve(undefined),
+    sold ? Promise.resolve(0) : getListingFavoriteCount(supabase, row.id),
+    sold ? Promise.resolve(0) : getListingCartHolderCount(supabase, row.id),
+    sellerId
+      ? getSellerReviewSummary(supabase, sellerId)
+      : Promise.resolve({ data: { avgRating: 0, reviewCount: 0 }, error: null }),
+    resolveListingCatalogSlugs(supabase, {
+      brandId: row.brand_id ?? null,
+      brandName: row.brand,
+      modelName: row.model,
+    }),
+  ])
+
+  const detail = toMobileListingDetail(
+    row,
+    viewerState,
+    {
+      watcherCount,
+      cartHolderCount,
+      ratingAverage: reviews.data.avgRating,
+      reviewCount: reviews.data.reviewCount,
+    },
+    catalog,
+  )
+  if (!detail) {
+    return { ok: false, status: 500, error: "Unable to load listing right now" }
+  }
+  return { ok: true, data: detail }
+}

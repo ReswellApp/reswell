@@ -571,7 +571,7 @@ export function ImageGallery({
             >
               <span
                 className={cn(
-                  "listing-tile-shimmer relative block",
+                  "relative block bg-muted",
                   compactMobile ? "w-11 md:w-16" : "w-16",
                 )}
                 style={{ paddingBottom: "133.33%" }}
@@ -616,7 +616,7 @@ export function ImageGallery({
             >
               <span
                 className={cn(
-                  "listing-tile-shimmer relative block",
+                  "relative block bg-muted",
                   compactMobile ? "w-11 md:w-16" : "w-16",
                 )}
                 style={{ paddingBottom: "133.33%" }}

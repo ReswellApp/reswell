@@ -78,7 +78,7 @@ export function buildSellSectionNavItems(
   return [
     { id: `sell-${prefix}-section-photos-title`, label: "Photos & title", shortLabel: "Start" },
     { id: `sell-${prefix}-section-details`, label: detailsLabel, shortLabel: "Details" },
-    { id: `sell-${prefix}-section-delivery`, label: "Pickup & shipping", shortLabel: "Delivery" },
+    { id: `sell-${prefix}-section-delivery`, label: "Shipping", shortLabel: "Shipping" },
     { id: `sell-${prefix}-section-publish`, label: "Price & publish", shortLabel: "Publish" },
   ]
 }

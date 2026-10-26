@@ -12,6 +12,7 @@ import { listingHeroSlideSrc } from "@/lib/listing-image-display"
 import { listingDetailHref, peerListingCheckoutHref } from "@/lib/listing-href"
 import { formatBoardType, formatCondition } from "@/lib/listing-labels"
 import { modelPageHeroImage, pickModelPageListingWithImage } from "@/lib/models/listing-image"
+import { modelPricingHref } from "@/lib/pricing/model-pricing"
 import {
   lowestListingPrice,
   modelPageHeroOffer,
@@ -144,14 +145,22 @@ export function ModelPageHeader({
             <Link href={LIST_YOUR_SURFBOARD_SELL_HREF}>Sell yours</Link>
           </Button>
         </div>
-        {single ? (
+        <p className="mt-3 flex flex-wrap gap-x-4 text-sm font-medium">
+          {single ? (
+            <Link
+              href={listingDetailHref(single)}
+              className="text-foreground underline-offset-4 hover:underline"
+            >
+              View listing
+            </Link>
+          ) : null}
           <Link
-            href={listingDetailHref(single)}
-            className="mt-3 inline-flex text-sm font-medium text-foreground underline-offset-4 hover:underline"
+            href={modelPricingHref(brand.slug, page.modelSlug)}
+            className="text-foreground underline-offset-4 hover:underline"
           >
-            View listing
+            Pricing
           </Link>
-        ) : null}
+        </p>
       </div>
     </header>
   )

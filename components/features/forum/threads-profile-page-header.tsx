@@ -1,11 +1,7 @@
 "use client"
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
-import {
-  threadsAccentTextClassName,
-  threadsAvatarFallbackClassName,
-} from "@/components/features/forum/threads-brand-styles"
+import { ProfileCircle } from "@/components/profile-circle"
+import { threadsAccentTextClassName } from "@/components/features/forum/threads-brand-styles"
 import { cn } from "@/lib/utils"
 
 type ThreadsProfilePageHeaderProps = {
@@ -23,8 +19,6 @@ export function ThreadsProfilePageHeader({
   bio,
   className,
 }: ThreadsProfilePageHeaderProps) {
-  const initial = displayName.charAt(0).toUpperCase()
-
   return (
     <header
       className={cn(
@@ -34,12 +28,11 @@ export function ThreadsProfilePageHeader({
     >
       <div className="h-2 bg-[#355185]" aria-hidden />
       <div className="flex flex-col gap-4 px-5 py-5 sm:flex-row sm:items-center sm:gap-5 sm:px-6">
-        <Avatar className="h-16 w-16 shrink-0 border-2 border-background ring-2 ring-[#5574AD]/20">
-          <AvatarImage src={profileMediaDisplaySrc(avatarUrl || "")} alt="" />
-          <AvatarFallback className={cn("text-xl", threadsAvatarFallbackClassName)}>
-            {initial}
-          </AvatarFallback>
-        </Avatar>
+        <ProfileCircle
+          avatarUrl={avatarUrl}
+          alt=""
+          className="h-16 w-16 border-2 border-background ring-2 ring-[#5574AD]/20"
+        />
         <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold uppercase tracking-wide text-[#5574AD]">Threads profile</p>
           <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground">{displayName}</h1>

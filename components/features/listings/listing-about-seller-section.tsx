@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { ProfileCircle } from "@/components/profile-circle"
 import { Button } from "@/components/ui/button"
 import {
   Accordion,
@@ -159,12 +159,11 @@ export function ListingAboutSellerSection({
           prefetch={false}
           className="group flex min-w-0 gap-4 transition-opacity hover:opacity-[0.92]"
         >
-          <Avatar className="h-[4.25rem] w-[4.25rem] shrink-0 ring-2 ring-neutral-100 dark:ring-neutral-800">
-            <AvatarImage src={avatarSrc} alt="" />
-            <AvatarFallback className="text-lg font-semibold">
-              {displayName.charAt(0).toUpperCase() || "U"}
-            </AvatarFallback>
-          </Avatar>
+          <ProfileCircle
+            avatarUrl={avatarSrc}
+            alt=""
+            className="h-[4.25rem] w-[4.25rem] ring-2 ring-neutral-100 dark:ring-neutral-800"
+          />
           <div className="min-w-0 pt-0.5">
             <p className="flex flex-wrap items-center gap-2 truncate text-[18px] font-bold tracking-tight text-foreground">
               <span className="truncate">{displayName}</span>

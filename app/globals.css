@@ -1,6 +1,5 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@config "../tailwind.config.ts";
 
 /* ─── Cart badge (header): pulse when items change via localStorage `cartUpdated` ─ */
 @keyframes cart-badge-bump {
@@ -806,6 +805,16 @@ html[data-reswell-scroll-lock] body {
   max-width: none !important;
   object-fit: cover !important;
   object-position: center center !important;
+}
+
+/*
+ * Unloaded replaced images paint an opaque white box in WebKit. That box is
+ * the flat on `/l` while the PDP file is still decoding. The bitmap stays
+ * transparent until it has pixels; the card preview underneath shows through.
+ */
+img.listing-photo-fill {
+  background-color: transparent !important;
+  color: transparent;
 }
 
 .listing-pdp-hero img.listing-pdp-seller-crop,

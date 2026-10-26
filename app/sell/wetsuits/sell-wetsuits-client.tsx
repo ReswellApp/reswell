@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/breadcrumb"
 import { LocationPicker } from "@/components/location-picker"
 import { SellFormSection } from "@/components/features/sell/sell-form-section"
+import { SellShipOnlyDeliverySection } from "@/components/features/sell/sell-ship-only-delivery-section"
 import { SellShippingCostModeRadios } from "@/components/features/sell/sell-shipping-cost-mode-radios"
 import { normalizeSellShippingCostMode } from "@/lib/sell-shipping-cost-mode"
 import {
@@ -636,7 +637,7 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
       const H = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageHeightIn)
       if (L == null || L <= 0 || W == null || W <= 0 || H == null || H <= 0) {
         failValidation("Enter packed box dimensions for Reswell shipping.")
-        scrollWetsuitSellSectionIntoView("sell-wetsuits-section-reswell-package")
+        scrollWetsuitSellSectionIntoView("sell-wetsuits-section-delivery")
         return
       }
     }
@@ -1023,111 +1024,14 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
                 </div>
               </SellFormSection>
 
-              <SellFormSection
+              <SellShipOnlyDeliverySection
                 sectionId="sell-wetsuits-section-delivery"
-                title="Shipping"
-                description="Pin where you're shipping from and choose how shipping works. Wetsuit listings ship only — local pickup isn't available."
-              >
-                <div className="space-y-8">
-                  <LocationPicker
-                    initialLat={form.locationLat ?? undefined}
-                    initialLng={form.locationLng ?? undefined}
-                    initialCity={form.locationCity}
-                    initialState={form.locationState}
-                    initialDisplay={form.locationDisplay}
-                    onLocationSelect={(loc) => {
-                      setForm((prev) => ({
-                        ...prev,
-                        locationLat: loc.lat,
-                        locationLng: loc.lng,
-                        locationCity: loc.city,
-                        locationState: loc.state,
-                        locationDisplay: loc.displayName,
-                      }))
-                    }}
-                    onLocationClear={() => {
-                      setForm((prev) => ({
-                        ...prev,
-                        locationLat: null,
-                        locationLng: null,
-                        locationCity: "",
-                        locationState: "",
-                        locationDisplay: "",
-                      }))
-                    }}
-                  />
-
-                  <div className="space-y-4 rounded-xl border border-border bg-card p-5 shadow-sm sm:p-6">
-                    <h3 className="text-sm font-semibold text-foreground">
-                      Shipping cost in the Continental U.S.{" "}
-                      <span className="text-destructive" aria-hidden>
-                        *
-                      </span>
-                    </h3>
-                    <SellShippingCostModeRadios
-                      idPrefix="sell-wetsuits"
-                      value={form.shippingMode}
-                      onChange={(mode) => setField("shippingMode", mode)}
-                      flatRateSlot={
-                        <div className="space-y-2 rounded-lg border border-border bg-background p-4 sm:p-5">
-                          <Label htmlFor="wetsuit-shipping-price" className="text-sm font-semibold text-foreground">
-                            Shipping rate{" "}
-                            <span className="text-destructive" aria-hidden>
-                              *
-                            </span>
-                          </Label>
-                          <div className="relative max-w-md">
-                            <span
-                              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm tabular-nums text-muted-foreground"
-                              aria-hidden
-                            >
-                              $
-                            </span>
-                            <Input
-                              id="wetsuit-shipping-price"
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              placeholder="0.00"
-                              value={form.shippingPrice}
-                              onChange={(e) => setField("shippingPrice", e.target.value)}
-                              className="h-11 border-foreground/20 bg-card pl-8 tabular-nums shadow-sm placeholder:text-muted-foreground"
-                            />
-                          </div>
-                        </div>
-                      }
-                    />
-                  </div>
-                </div>
-              </SellFormSection>
-
-              {form.shippingMode === "reswell" ? (
-                <SellFormSection
-                  sectionId="sell-wetsuits-section-reswell-package"
-                  title="Reswell shipping: packed size & weight"
-                >
-                  <ReswellPackageDimensionsCard
-                    showHeading={false}
-                    className="rounded-none border-0 bg-transparent p-0 shadow-none"
-                    lengthIn={form.reswellPackageLengthIn}
-                    widthIn={form.reswellPackageWidthIn}
-                    heightIn={form.reswellPackageHeightIn}
-                    weightLb={form.reswellPackageWeightLb}
-                    weightOz={form.reswellPackageWeightOz}
-                    onLengthInChange={(v) =>
-                      setField("reswellPackageLengthIn", normalizeBoardLengthInput(v))
-                    }
-                    onWidthInChange={(v) =>
-                      setField("reswellPackageWidthIn", normalizeTapeStyleInchesInput(v))
-                    }
-                    onHeightInChange={(v) =>
-                      setField("reswellPackageHeightIn", normalizeTapeStyleInchesInput(v))
-                    }
-                    onWeightLbChange={(v) => setField("reswellPackageWeightLb", v)}
-                    onWeightOzChange={(v) => setField("reswellPackageWeightOz", v)}
-                  />
-                </SellFormSection>
-              ) : null}
+                productNoun="Wetsuit"
+                idPrefix="sell-wetsuits"
+                complete={sellSectionCompletion["sell-wetsuits-section-delivery"] === true}
+                form={form}
+                onPatch={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
+              />
 
               <SellFormSection
                 sectionId="sell-wetsuits-section-publish"

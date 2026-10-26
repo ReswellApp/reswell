@@ -15,7 +15,7 @@ import {
 import { marketingCtaBannerPanelClassName } from "@/components/marketing-cta-banners"
 import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
 import { PageStructuredData } from "@/components/seo/page-structured-data"
-import { getCachedHomeRecentlyListedGridCatalog } from "@/lib/cache/home-public-catalog"
+import { loadHomeFeedSection } from "@/lib/services/homeFeed"
 
 export async function generateMetadata() {
   return resolvePageMetadata("home")
@@ -29,7 +29,9 @@ export async function generateMetadata() {
 export const revalidate = 3600
 
 export default async function HomePage() {
-  const { recentlyListedGrid, featuredListingIds } = await getCachedHomeRecentlyListedGridCatalog()
+  const recentlyListed = await loadHomeFeedSection("recently_listed")
+  const recentlyListedGrid = recentlyListed?.kind === "listings" ? recentlyListed.listings : null
+  const featuredListingIds = recentlyListed?.kind === "listings" ? recentlyListed.listingIds : []
 
   return (
     <HomeViewerProvider listingIds={featuredListingIds}>
@@ -90,7 +92,9 @@ export default async function HomePage() {
             <section className="max-lg:pt-6 max-lg:pb-12 lg:py-16">
               <div className="container mx-auto max-lg:px-4 sm:max-lg:px-6">
                 <div className="mb-4 flex min-w-0 items-center justify-between lg:mb-8">
-                  <h2 className="text-2xl font-bold">Recently listed</h2>
+                  <h2 className="text-2xl font-bold">
+                    {recentlyListed?.kind === "listings" ? recentlyListed.title : "Recently listed"}
+                  </h2>
                 </div>
                 <HomeRecentlyListedGrid listings={recentlyListedGrid} />
               </div>

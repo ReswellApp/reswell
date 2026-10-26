@@ -5,7 +5,7 @@ import Link from "next/link"
 import { formatDistanceToNow } from "date-fns"
 import { Loader2, ShoppingCart, Tag } from "lucide-react"
 import { toast } from "sonner"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { ProfileCircle } from "@/components/profile-circle"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -15,18 +15,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { SellerMakeOfferToBuyerDialog } from "@/components/features/messages/seller-make-offer-to-buyer-dialog"
-import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
 import { LISTING_SHIPPING_EMPHASIS_CLASS } from "@/lib/listing-fulfillment"
 import { dashboardOffersPath } from "@/lib/utils/offers-dashboard-display"
 import { cn } from "@/lib/utils"
 import type { ListingCartHolder } from "@/lib/types/listing-cart-holders"
-
-function holderInitials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean)
-  if (parts.length === 0) return "M"
-  if (parts.length === 1) return parts[0]!.slice(0, 1).toUpperCase()
-  return `${parts[0]!.slice(0, 1)}${parts[1]!.slice(0, 1)}`.toUpperCase()
-}
 
 function addedAgo(iso: string): string {
   const date = new Date(iso)
@@ -213,17 +205,13 @@ export function SellerOfferToCartHolders({
                 ) : (
                   <ul className="space-y-2">
                     {holders.map((holder) => {
-                      const avatarSrc = profileMediaDisplaySrc(holder.avatarUrl)
                       const hasOpenOffer = Boolean(holder.openOfferId)
                       return (
                         <li
                           key={holder.buyerUserId}
                           className="flex flex-wrap items-center gap-3 rounded-xl border border-border/60 bg-card px-3 py-2.5"
                         >
-                          <Avatar className="h-10 w-10 shrink-0">
-                            {avatarSrc ? <AvatarImage src={avatarSrc} alt="" /> : null}
-                            <AvatarFallback>{holderInitials(holder.displayName)}</AvatarFallback>
-                          </Avatar>
+                          <ProfileCircle avatarUrl={holder.avatarUrl} alt="" className="h-10 w-10" />
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-sm font-medium text-foreground">
                               {holder.displayName}

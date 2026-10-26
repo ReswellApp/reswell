@@ -1,5 +1,6 @@
 import { z } from "zod"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
+import type { SupabaseClient } from "@supabase/supabase-js"
 import {
   getSupportCaseById,
   insertSupportCaseMessage,
@@ -48,10 +49,10 @@ async function requireStaff() {
 }
 
 async function resolveOrBackfillForMember(
+  supabase: SupabaseClient,
   userId: string,
   caseId: string,
 ): Promise<SupportCaseRow | null> {
-  const supabase = await createClient()
   const direct = await resolveSupportCaseByAnyId(supabase, caseId)
   if (direct && direct.requester_user_id === userId) return direct
 
@@ -86,9 +87,10 @@ async function resolveOrBackfillForMember(
 export async function getSupportCaseThreadForMember(
   userId: string,
   caseId: string,
+  session?: SupabaseClient,
 ): Promise<{ case: SupportCaseRow; messages: SupportCaseThreadMessage[] } | { error: string }> {
-  const supabase = await createClient()
-  const row = await resolveOrBackfillForMember(userId, caseId)
+  const supabase = session ?? (await createClient())
+  const row = await resolveOrBackfillForMember(supabase, userId, caseId)
   if (!row || row.requester_user_id !== userId || isLiveChatSupportChannel(row.source_channel)) {
     return { error: "Case not found." }
   }
@@ -163,19 +165,28 @@ export async function sendSupportCaseMemberReplyService(
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return { error: "Sign in to reply." }
+  return sendSupportCaseMemberReplyForSession(supabase, user.id, parsed.data.case_id, parsed.data.content)
+}
 
-  const row = await resolveSupportCaseByAnyId(supabase, parsed.data.case_id)
-  if (!row || row.requester_user_id !== user.id || isLiveChatSupportChannel(row.source_channel)) {
+export async function sendSupportCaseMemberReplyForSession(
+  supabase: SupabaseClient,
+  userId: string,
+  caseId: string,
+  content: string,
+): Promise<{ success: true; case_id: string } | { error: string }> {
+  const row = await resolveSupportCaseByAnyId(supabase, caseId)
+  if (!row || row.requester_user_id !== userId || isLiveChatSupportChannel(row.source_channel)) {
     return { error: "Case not found." }
   }
   if (row.status === "resolved") {
     return { error: "This case is closed. Open a new request if you still need help." }
   }
 
-  const body = parsed.data.content.trim()
+  const body = content.trim()
+  if (!body) return { error: "Write a message first." }
   const posted = await insertSupportCaseMessage(supabase, {
     case_id: row.id,
-    author_user_id: user.id,
+    author_user_id: userId,
     author_role: "customer",
     body,
   })

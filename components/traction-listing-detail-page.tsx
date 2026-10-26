@@ -74,10 +74,9 @@ import {
   HomeListingScrollRow,
   type HomePeerScrollListing,
 } from "@/components/features/home"
-import {
-  HOME_PEER_LISTING_WITH_PROFILE_SELECT,
-  hydrateHomePeerListingRows,
-} from "@/lib/db/home-peer-listing-feed"
+import { hydrateHomePeerListingRows } from "@/lib/db/home-peer-listing-feed"
+import { fetchMoreFromSellerListings } from "@/lib/db/listing-pdp-seller-listings"
+import { sellerListingRailTitle, similarListingRailTitle } from "@/lib/listing-pdp-rail-titles"
 import {
   getCachedReswellPlatformReviewSummary,
   getCachedSellerReviewSummary,
@@ -164,16 +163,12 @@ async function renderTractionListingDetailPage({
     getCachedSellerReviewSummary(sellerId),
     listSellerReviewPreviews(supabase, sellerId),
     getCachedReswellPlatformReviewSummary(),
-    supabase
-      .from("listings")
-      .select(HOME_PEER_LISTING_WITH_PROFILE_SELECT)
-      .eq("user_id", sellerId)
-      .eq("status", "active")
-      .eq("section", TRACTION_SECTION)
-      .eq("hidden_from_site", false)
-      .neq("id", traction.id)
-      .order("created_at", { ascending: false })
-      .limit(SELLER_TRACTION_PDP_LIMIT),
+    fetchMoreFromSellerListings(supabase, {
+      sellerId,
+      section: TRACTION_SECTION,
+      excludeListingId: traction.id as string,
+      limit: SELLER_TRACTION_PDP_LIMIT,
+    }),
     brandId ? getBrandById(supabase, brandId) : Promise.resolve(null),
     fetchSimilarPeerListingsForListingPdp(supabase, {
       excludeListingId: traction.id as string,
@@ -191,7 +186,7 @@ async function renderTractionListingDetailPage({
     sellerReviewSummaryRes
   const sellerReviewPreviews = sellerReviewPreviewRes.data ?? []
   const reswellPlatformReviewSummary = reswellPlatformReviewSummaryRes
-  const sellerTraction = hydrateHomePeerListingRows((sellerTractionRes.data ?? []) as Record<string, unknown>[])
+  const sellerTraction = sellerTractionRes
   const similarTraction = hydrateHomePeerListingRows(similarTractionRaw)
 
   const sellerTractionIds = (sellerTraction ?? []).map((f) => f.id)
@@ -722,7 +717,7 @@ async function renderTractionListingDetailPage({
             {similarTraction.length > 0 ? (
               <div className="col-span-full min-w-0 max-w-full max-lg:order-5 lg:[grid-area:similar] lg:order-none">
                 <section className="mt-10 border-t border-neutral-200/90 pt-8 dark:border-neutral-700/70">
-                  <h2 className="mb-8 text-2xl font-bold text-foreground">Similar traction</h2>
+                  <h2 className="mb-8 text-2xl font-bold text-foreground">{similarListingRailTitle(TRACTION_SECTION)}</h2>
                   <HomeListingScrollRow uniformCardHeights>
                     {similarTraction.map((row) => (
                       <HomePeerListingScrollTile
@@ -740,7 +735,7 @@ async function renderTractionListingDetailPage({
 
         {sellerTraction && sellerTraction.length > 0 && (
           <section className="mt-16 min-w-0 w-full border-t border-neutral-200/90 pt-12 dark:border-neutral-700/70">
-            <h2 className="mb-8 text-2xl font-bold text-foreground">More traction from this seller</h2>
+            <h2 className="mb-8 text-2xl font-bold text-foreground">{sellerListingRailTitle(TRACTION_SECTION)}</h2>
             <HomeListingScrollRow uniformCardHeights>
               {sellerTraction.map((item) => (
                 <HomePeerListingScrollTile

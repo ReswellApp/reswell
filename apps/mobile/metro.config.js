@@ -1,0 +1,37 @@
+const { loadRepoEnv } = require("./load-root-env")
+
+loadRepoEnv()
+
+const path = require("path")
+const { getDefaultConfig } = require("expo/metro-config")
+
+const projectRoot = __dirname
+const contractEntry = path.resolve(projectRoot, "../../packages/api-contract/src/index.ts")
+
+const config = getDefaultConfig(projectRoot)
+
+config.cacheVersion = [
+  process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
+  process.env.NEXT_PUBLIC_URL ?? "",
+  process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? "",
+  process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? "",
+].join("\0")
+
+config.resolver.assetExts = [...config.resolver.assetExts, "woff", "woff2"]
+config.watchFolders = [path.resolve(projectRoot, "../../packages/api-contract")]
+config.resolver.nodeModulesPaths = [path.resolve(projectRoot, "node_modules")]
+config.resolver.disableHierarchicalLookup = true
+
+const upstreamResolve = config.resolver.resolveRequest
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (moduleName === "@reswell/api-contract") {
+    return { filePath: contractEntry, type: "sourceFile" }
+  }
+  if (upstreamResolve) {
+    return upstreamResolve(context, moduleName, platform)
+  }
+  return context.resolveRequest(context, moduleName, platform)
+}
+
+module.exports = config

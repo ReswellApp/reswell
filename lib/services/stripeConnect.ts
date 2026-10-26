@@ -580,6 +580,21 @@ export async function createConnectAccountSessionClientSecret(
   }
 }
 
+/** Express dashboard, where a connected seller adds or changes a payout bank. */
+export async function createConnectExpressLoginLink(
+  stripeAccountId: string,
+): Promise<{ url: string } | { error: string }> {
+  const stripe = getStripe()
+  try {
+    const link = await stripe.accounts.createLoginLink(stripeAccountId)
+    if (!link.url) return { error: "Stripe did not return a bank link" }
+    return { url: link.url }
+  } catch (e) {
+    console.error("[stripe connect] createConnectExpressLoginLink", e)
+    return { error: "Could not open bank setup. Try again shortly." }
+  }
+}
+
 /** Hosted Stripe onboarding — reliable when embedded onboarding has nothing left to show. */
 export async function createConnectHostedOnboardingLink(
   stripeAccountId: string,

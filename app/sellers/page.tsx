@@ -12,6 +12,7 @@ import {
 } from "@/components/sellers/sellers-directory-viewer"
 import { SellersDirectoryGridSkeleton } from "@/components/sellers/sellers-page-skeleton"
 import { getCachedSellersDirectoryCatalog } from "@/lib/cache/sellers-directory-catalog"
+import { sellersDirectoryPageCopy } from "@/lib/sellers/directory-page-copy"
 import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
 
 /**
@@ -52,11 +53,10 @@ export default function SellersPage() {
             <SellersBreadcrumbs className="mb-6 min-w-0 max-w-full sm:mb-8" />
             <div className="mx-auto max-w-3xl text-center">
               <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl text-balance">
-                Explore sellers on Reswell
+                {sellersDirectoryPageCopy.title}
               </h1>
               <p className="mx-auto mt-3 max-w-2xl text-sm text-muted-foreground text-pretty sm:text-base">
-                Every purchase you make on Reswell supports another surfer just like you. Browse profiles below to find
-                sellers near you or who offer shipping to your area.
+                {sellersDirectoryPageCopy.description}
               </p>
               <SellersDirectorySearchField className="mx-auto mt-7 max-w-lg" />
             </div>

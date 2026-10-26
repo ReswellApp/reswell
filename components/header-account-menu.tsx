@@ -19,7 +19,6 @@ import type { LucideIcon } from "lucide-react"
 import { EMPLOYEE_TOOLS } from "@/lib/admin/employee-access"
 import { AccountSwitchDialog } from "@/components/features/dashboard/account-switcher"
 import type { HeaderShopAccess } from "@/lib/auth/header-site-bootstrap"
-import { headerInitialFromDisplayName } from "@/lib/header-user-display"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -29,7 +28,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { ProfileCircleFallback } from "@/components/profile-circle"
+import { Avatar, AvatarImage } from "@/components/ui/avatar"
 import { dashboardNavSections } from "@/lib/dashboard-nav-links"
 import { forceReleaseBodyScrollLock } from "@/hooks/use-body-scroll-lock"
 import { NavUnreadCountBadge } from "@/components/nav-unread-count-badge"
@@ -39,7 +39,6 @@ export type HeaderAccountMenuProps = {
   profileAvatarUrl: string | null
   avatarImageFailed: boolean
   onAvatarImageFailed: () => void
-  resolvedInitial: string
   resolvedDisplayName: string
   walletBalance: number | null
   unreadSupport: number
@@ -56,13 +55,11 @@ function ProfileAvatar({
   profileAvatarUrl,
   avatarImageFailed,
   onAvatarImageFailed,
-  initial,
   imageAlt,
 }: {
   profileAvatarUrl: string | null
   avatarImageFailed: boolean
   onAvatarImageFailed: () => void
-  initial: string
   imageAlt: string
 }) {
   return (
@@ -76,7 +73,7 @@ function ProfileAvatar({
           }}
         />
       ) : null}
-      <AvatarFallback className="text-sm text-foreground">{initial}</AvatarFallback>
+      <ProfileCircleFallback />
     </Avatar>
   )
 }
@@ -116,7 +113,6 @@ function HeaderAccountMenuInner({
   profileAvatarUrl,
   avatarImageFailed,
   onAvatarImageFailed,
-  resolvedInitial,
   resolvedDisplayName,
   walletBalance,
   unreadSupport,
@@ -134,9 +130,6 @@ function HeaderAccountMenuInner({
   const canSwitchAccount = (shopAccess?.options.length ?? 0) > 1
   const workingShop = canSwitchAccount && shopAccess?.actingAsShop === true ? shopAccess : null
   const menuName = workingShop ? workingShop.shopLabel : resolvedDisplayName
-  const menuInitial = workingShop
-    ? headerInitialFromDisplayName(workingShop.shopLabel)
-    : resolvedInitial
 
   const onOpenChange = useCallback((open: boolean) => {
     setMenuOpen(open)
@@ -165,7 +158,7 @@ function HeaderAccountMenuInner({
                 }}
               />
             ) : null}
-            <AvatarFallback className="text-foreground">{resolvedInitial}</AvatarFallback>
+            <ProfileCircleFallback />
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
@@ -194,7 +187,6 @@ function HeaderAccountMenuInner({
               profileAvatarUrl={profileAvatarUrl}
               avatarImageFailed={avatarImageFailed}
               onAvatarImageFailed={onAvatarImageFailed}
-              initial={menuInitial}
               imageAlt=""
             />
             <div className="min-w-0 flex-1">
@@ -210,7 +202,6 @@ function HeaderAccountMenuInner({
               profileAvatarUrl={profileAvatarUrl}
               avatarImageFailed={avatarImageFailed}
               onAvatarImageFailed={onAvatarImageFailed}
-              initial={resolvedInitial}
               imageAlt=""
             />
             <div className="min-w-0 flex-1">

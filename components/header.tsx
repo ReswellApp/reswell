@@ -26,7 +26,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { ProfileCircleFallback } from "@/components/profile-circle"
+import { Avatar, AvatarImage } from "@/components/ui/avatar"
 import { NavMessagesDropdown } from "@/components/features/messages/nav-messages-dropdown"
 import {
   X,
@@ -60,7 +61,7 @@ import {
 } from "@/lib/site-category-directory"
 import { siteFooterNavLinks } from "@/lib/site-footer-nav"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
-import { headerDisplayName, headerInitialFromDisplayName } from "@/lib/header-user-display"
+import { headerDisplayName } from "@/lib/header-user-display"
 import { useAuthModal } from "@/components/auth/auth-modal-context"
 import {
   HEADER_AUTH_REFRESH_EVENT,
@@ -265,7 +266,7 @@ function deriveHeaderNavState(payload: SiteChromeAuthPayload): HeaderDerivedNavS
 /**
  * Shop logo when `is_shop`; else `profiles.avatar_url`.
  * OAuth picture is only used before the profile row is available — once loaded, a cleared
- * `avatar_url` means the user removed their photo and should see the initials fallback.
+ * `avatar_url` means the user removed their photo and should see the banner-blue circle.
  */
 function resolveHeaderAvatarUrl(
   user: SupabaseUser,
@@ -586,10 +587,6 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
   const resolvedDisplayName = useMemo(
     () => (user ? headerDisplayName(profileDisplayName, user) : ""),
     [user, profileDisplayName],
-  )
-  const resolvedInitial = useMemo(
-    () => headerInitialFromDisplayName(resolvedDisplayName || "User"),
-    [resolvedDisplayName],
   )
 
   useEffect(() => {
@@ -1310,7 +1307,6 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         profileAvatarUrl={profileAvatarUrl}
         avatarImageFailed={avatarImageFailed}
         onAvatarImageFailed={() => setAvatarImageFailed(true)}
-        resolvedInitial={resolvedInitial}
         resolvedDisplayName={resolvedDisplayName}
         walletBalance={walletBalance}
         unreadSupport={unreadSupport}
@@ -1805,7 +1801,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                         }}
                       />
                     ) : null}
-                    <AvatarFallback className="text-lg text-foreground">{resolvedInitial}</AvatarFallback>
+                    <ProfileCircleFallback />
                   </Avatar>
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-semibold text-foreground">

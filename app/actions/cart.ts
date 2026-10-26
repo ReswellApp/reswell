@@ -3,27 +3,20 @@
 import { randomUUID } from "node:crypto"
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
-import { isBlockedOwnListingPurchase, isCartEligibleSection } from "@/lib/cart-eligibility"
 import { attachListingInventorySources } from "@/lib/db/listingInventorySource"
 import { fetchAcceptedOffersForBuyerListings } from "@/lib/db/offers"
 import { trackKlaviyoAddedToCart } from "@/lib/klaviyo/track-added-to-cart"
 import { listingTileImageSrcFromRow } from "@/lib/listing-image-display"
-import { isListingPurchasable } from "@/lib/listing-public-visibility"
-import { trackMetaAddToCartServerEvent } from "@/lib/meta/track-add-to-cart-server-event"
-import type { PeerListingCartFields } from "@/lib/peer-listing-cart"
-import { isPeerListingSection } from "@/lib/peer-listing-sections"
-import { captureServerEvent } from "@/lib/posthog-server"
-import { isReswellShopListing } from "@/lib/reswell-shop"
 import {
   clampListingBuyerQuantity,
   listingBuyerQuantityCap,
   listingSupportsBuyerQuantity,
-  peerBrandNewStockQuantity,
 } from "@/lib/listing-stock-quantity"
-import { isShopifyManagedListing } from "@/lib/shopify/listing"
-import { shopifyManagedCheckoutBilling } from "@/lib/services/shopifyBilling"
+import { trackMetaAddToCartServerEvent } from "@/lib/meta/track-add-to-cart-server-event"
+import { captureServerEvent } from "@/lib/posthog-server"
 import { acceptedUnitPriceForSingleItemOffer } from "@/lib/services/acceptedOfferCheckout"
-import { assertBuyerMayPurchaseListingExclusiveWindow } from "@/lib/services/listingBuyerExclusiveWindow"
+import { assertListingEligibleForCart, peerSurfboardAddCapError } from "@/lib/services/cartEligibility"
+import { keepCartPageListing, peerListingIdsForAcceptedOffers } from "@/lib/services/cartPageItems"
 import {
   cartFromCartCheckoutHref,
   cartItemCountFromQuantities,
@@ -66,82 +59,6 @@ export type CartPageItem = {
   listing: CartListingRow
   /** Accepted single-item offer unit price. Cart/checkout charge this instead of list price. */
   agreedPriceUsd: number | null
-}
-
-type CartEligibleListing = PeerListingCartFields & {
-  hidden_from_site?: boolean | null
-  archived_at?: string | null
-  stock_quantity?: number | null
-  inventory_source?: string | null
-}
-
-async function assertListingEligibleForCart(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  listingId: string,
-  buyerId: string,
-): Promise<{ ok: true; listing: CartEligibleListing } | { ok: false; message: string }> {
-  const { data: row, error } = await supabase
-    .from("listings")
-    .select(
-      "id, user_id, section, status, condition, local_pickup, shipping_available, hidden_from_site, archived_at, stock_quantity",
-    )
-    .eq("id", listingId)
-    .maybeSingle()
-
-  if (error || !row) {
-    return { ok: false, message: "Listing not found" }
-  }
-
-  const listing = row as CartEligibleListing
-  const sourced = await attachListingInventorySources(supabase, [listing])
-  if (!sourced.ok) {
-    return { ok: false, message: sourced.error }
-  }
-  const ready = sourced.listings[0]
-  if (!ready) {
-    return { ok: false, message: "Listing not found" }
-  }
-  if (!isListingPurchasable(ready)) {
-    return { ok: false, message: "This listing is not available" }
-  }
-  if (!isCartEligibleSection(ready.section)) {
-    return { ok: false, message: "This listing cannot be added to cart" }
-  }
-  const lp = ready.local_pickup !== false
-  const sa = !!ready.shipping_available
-  if (!lp && !sa) {
-    return { ok: false, message: "This listing has no checkout option" }
-  }
-  if (isBlockedOwnListingPurchase(ready, buyerId)) {
-    return { ok: false, message: "You cannot add your own listing" }
-  }
-  if (
-    isReswellShopListing(ready.section) ||
-    isShopifyManagedListing(ready) ||
-    peerBrandNewStockQuantity(ready) >= 1
-  ) {
-    const stock = Math.max(0, Math.floor(Number(ready.stock_quantity) || 0))
-    if (stock < 1) {
-      return { ok: false, message: "This item is out of stock" }
-    }
-  }
-  const shopifyBilling = await shopifyManagedCheckoutBilling([ready])
-  if (!shopifyBilling.ok) {
-    return { ok: false, message: shopifyBilling.error }
-  }
-
-  if (isPeerListingSection(ready.section)) {
-    const exclusiveCheck = await assertBuyerMayPurchaseListingExclusiveWindow(
-      supabase,
-      listingId,
-      buyerId,
-    )
-    if (!exclusiveCheck.ok) {
-      return { ok: false, message: exclusiveCheck.message }
-    }
-  }
-
-  return { ok: true, listing: ready }
 }
 
 export type AddCartItemResult = {
@@ -263,6 +180,11 @@ export async function addCartItem(
   const canChooseQuantity = listingSupportsBuyerQuantity(check.listing)
   if (cap < 1) {
     return { ok: false, error: "This item is out of stock" }
+  }
+
+  const surfboardCapError = await peerSurfboardAddCapError(supabase, check.listing, user.id)
+  if (surfboardCapError) {
+    return { ok: false, error: surfboardCapError }
   }
   if (addQty > cap) {
     return {
@@ -581,7 +503,7 @@ export async function getCartPageItems(): Promise<{
     const L = Array.isArray(Lraw) ? Lraw[0] : Lraw
     if (!L) continue
     if (
-      !isListingPurchasable(
+      !keepCartPageListing(
         L as CartListingRow & {
           hidden_from_site?: boolean | null
           archived_at?: string | null
@@ -590,7 +512,6 @@ export async function getCartPageItems(): Promise<{
     ) {
       continue
     }
-    if (!isCartEligibleSection(L.section)) continue
     const p = L.profiles
     const profiles = Array.isArray(p) ? (p[0] ?? null) : (p ?? null)
     const listing: CartListingRow = { ...L, profiles }
@@ -625,9 +546,7 @@ export async function getCartPageItems(): Promise<{
     }
   })
 
-  const peerIds = items
-    .filter((row) => isPeerListingSection(row.listing.section))
-    .map((row) => row.listing.id)
+  const peerIds = peerListingIdsForAcceptedOffers(items.map((row) => row.listing))
   const acceptedOffers = await fetchAcceptedOffersForBuyerListings(supabase, user.id, peerIds)
   if (acceptedOffers.length > 0) {
     const agreedByListingId = new Map<string, number>()

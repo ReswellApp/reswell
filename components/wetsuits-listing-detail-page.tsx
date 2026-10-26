@@ -74,10 +74,9 @@ import {
   HomeListingScrollRow,
   type HomePeerScrollListing,
 } from "@/components/features/home"
-import {
-  HOME_PEER_LISTING_WITH_PROFILE_SELECT,
-  hydrateHomePeerListingRows,
-} from "@/lib/db/home-peer-listing-feed"
+import { hydrateHomePeerListingRows } from "@/lib/db/home-peer-listing-feed"
+import { fetchMoreFromSellerListings } from "@/lib/db/listing-pdp-seller-listings"
+import { sellerListingRailTitle, similarListingRailTitle } from "@/lib/listing-pdp-rail-titles"
 import {
   getCachedReswellPlatformReviewSummary,
   getCachedSellerReviewSummary,
@@ -169,16 +168,12 @@ async function renderWetsuitsListingDetailPage({
     getCachedSellerReviewSummary(sellerId),
     listSellerReviewPreviews(supabase, sellerId),
     getCachedReswellPlatformReviewSummary(),
-    supabase
-      .from("listings")
-      .select(HOME_PEER_LISTING_WITH_PROFILE_SELECT)
-      .eq("user_id", sellerId)
-      .eq("status", "active")
-      .eq("section", WETSUITS_SECTION)
-      .eq("hidden_from_site", false)
-      .neq("id", wetsuit.id)
-      .order("created_at", { ascending: false })
-      .limit(SELLER_WETSUITS_PDP_LIMIT),
+    fetchMoreFromSellerListings(supabase, {
+      sellerId,
+      section: WETSUITS_SECTION,
+      excludeListingId: wetsuit.id as string,
+      limit: SELLER_WETSUITS_PDP_LIMIT,
+    }),
     brandId ? getBrandById(supabase, brandId) : Promise.resolve(null),
     fetchSimilarPeerListingsForListingPdp(supabase, {
       excludeListingId: wetsuit.id as string,
@@ -196,7 +191,7 @@ async function renderWetsuitsListingDetailPage({
     sellerReviewSummaryRes
   const sellerReviewPreviews = sellerReviewPreviewRes.data ?? []
   const reswellPlatformReviewSummary = reswellPlatformReviewSummaryRes
-  const sellerWetsuits = hydrateHomePeerListingRows((sellerWetsuitsRes.data ?? []) as Record<string, unknown>[])
+  const sellerWetsuits = sellerWetsuitsRes
   const similarWetsuits = hydrateHomePeerListingRows(similarWetsuitsRaw)
 
   const sellerWetsuitIds = (sellerWetsuits ?? []).map((f) => f.id)
@@ -737,7 +732,7 @@ async function renderWetsuitsListingDetailPage({
             {similarWetsuits.length > 0 ? (
               <div className="col-span-full min-w-0 max-w-full max-lg:order-5 lg:[grid-area:similar] lg:order-none">
                 <section className="mt-10 border-t border-neutral-200/90 pt-8 dark:border-neutral-700/70">
-                  <h2 className="mb-8 text-2xl font-bold text-foreground">Similar wetsuits</h2>
+                  <h2 className="mb-8 text-2xl font-bold text-foreground">{similarListingRailTitle(WETSUITS_SECTION)}</h2>
                   <HomeListingScrollRow uniformCardHeights>
                     {similarWetsuits.map((row) => (
                       <HomePeerListingScrollTile
@@ -755,7 +750,7 @@ async function renderWetsuitsListingDetailPage({
 
         {sellerWetsuits && sellerWetsuits.length > 0 && (
           <section className="mt-16 min-w-0 w-full border-t border-neutral-200/90 pt-12 dark:border-neutral-700/70">
-            <h2 className="mb-8 text-2xl font-bold text-foreground">More wetsuits from this seller</h2>
+            <h2 className="mb-8 text-2xl font-bold text-foreground">{sellerListingRailTitle(WETSUITS_SECTION)}</h2>
             <HomeListingScrollRow uniformCardHeights>
               {sellerWetsuits.map((item) => (
                 <HomePeerListingScrollTile
