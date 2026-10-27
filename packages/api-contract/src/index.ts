@@ -1728,12 +1728,17 @@ export const mobileMessageOrderSchema = z.object({
   hint: z.string(),
 })
 
+export const mobileMessageAttachmentSchema = z.object({
+  kind: z.enum(["image", "video"]),
+})
+
 export const mobileMessageSchema = z.object({
   id: z.string().uuid(),
   body: z.string(),
   created_at: z.string(),
   mine: z.boolean(),
   order: mobileMessageOrderSchema.nullable(),
+  attachment: mobileMessageAttachmentSchema.nullable().optional(),
 })
 
 export const mobileConversationDetailSchema = z.object({
@@ -1790,6 +1795,19 @@ export const mobileMessageBodySchema = z.object({
   body: z.string().trim().min(1).max(4000),
 })
 
+export const mobileMessageMediaBodySchema = z.object({
+  attachment: z.object({
+    kind: z.literal("image"),
+    path: z.string().min(1).max(500),
+    file_name: z.string().min(1).max(500),
+    mime_type: z.enum(["image/jpeg", "image/png", "image/webp", "image/gif"]),
+    size_bytes: z.number().int().positive(),
+    width: z.number().int().positive().optional(),
+    height: z.number().int().positive().optional(),
+  }),
+  caption: z.string().trim().max(4000).optional(),
+})
+
 export const mobileMessageResultSchema = z.object({
   id: z.string().uuid(),
   conversation_id: z.string().uuid(),
@@ -1822,6 +1840,7 @@ export type MobileFavoriteBody = z.infer<typeof mobileFavoriteBodySchema>
 export type MobileFollowBody = z.infer<typeof mobileFollowBodySchema>
 export type MobileCartBody = z.infer<typeof mobileCartBodySchema>
 export type MobileMessageBody = z.infer<typeof mobileMessageBodySchema>
+export type MobileMessageMediaBody = z.infer<typeof mobileMessageMediaBodySchema>
 export type MobileMessageResult = z.infer<typeof mobileMessageResultSchema>
 export type MobileOfferActionBody = z.infer<typeof mobileOfferActionBodySchema>
 export type MobileOfferActionResult = z.infer<typeof mobileOfferActionResultSchema>

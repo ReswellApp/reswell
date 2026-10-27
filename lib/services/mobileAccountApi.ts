@@ -26,6 +26,11 @@ import {
 } from "@reswell/api-contract"
 import { getConversationForBuyerSellerListing, userParticipatesInConversation } from "@/lib/db/conversations"
 import {
+  composeMediaAttachmentMessageBody,
+  parseMarketplaceMessageImageAttachment,
+  parseMarketplaceMessageVideoAttachment,
+} from "@/lib/validations/marketplace-message-attachment"
+import {
   fetchMobileDashboardAccess,
   fetchMobileDashboardFacts,
   listMobileCartRows,
@@ -475,12 +480,24 @@ export async function getMobileConversationService(
   const messages = listed.rows.map((row) => {
     const redacted = redactShippingLabelArtifactsFromMessage(row)
     const order = orderCard(row.metadata, viewerIsSeller)
+    const imageAtt = parseMarketplaceMessageImageAttachment(row.metadata)
+    const videoAtt = parseMarketplaceMessageVideoAttachment(row.metadata)
+    const attachment = imageAtt ? ({ kind: "image" as const } ) : videoAtt ? ({ kind: "video" as const }) : null
+    const rawBody = order ? "" : text(typeof redacted.content === "string" ? redacted.content : row.content) ?? ""
+    const placeholder =
+      attachment?.kind === "image"
+        ? composeMediaAttachmentMessageBody("image")
+        : attachment?.kind === "video"
+          ? composeMediaAttachmentMessageBody("video")
+          : null
+    const body = attachment && rawBody === placeholder ? "" : rawBody
     return {
       id: row.id,
-      body: order ? "" : text(typeof redacted.content === "string" ? redacted.content : row.content) ?? "",
+      body,
       created_at: row.created_at,
       mine: row.sender_id === userId,
       order,
+      attachment,
     }
   })
 

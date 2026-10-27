@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { requireAdmin } from "@/lib/brands/admin-server"
 import {
@@ -22,8 +23,9 @@ export type MarketplaceAttachmentDownloadAuthResult =
  */
 export async function authorizeMarketplaceAttachmentDownload(
   messageId: string,
+  sessionSupabase?: SupabaseClient,
 ): Promise<MarketplaceAttachmentDownloadAuthResult> {
-  const supabase = await createClient()
+  const supabase = sessionSupabase ?? (await createClient())
   const {
     data: { user },
   } = await supabase.auth.getUser()

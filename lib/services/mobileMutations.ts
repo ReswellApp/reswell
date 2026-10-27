@@ -36,6 +36,8 @@ import { respondToOfferService } from "@/lib/services/respondToOffer"
 import { withdrawListingOffer } from "@/lib/services/withdrawListingOffer"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import type { MobileApiResult } from "@/lib/services/mobileApi"
+import { sendMarketplaceMediaMessage } from "@/lib/services/sendMarketplaceMediaMessage"
+import type { MobileMessageMediaBody } from "@reswell/api-contract"
 
 function failure(status: number, error: string): MobileApiResult<never> {
   return { ok: false, status, error }
@@ -340,6 +342,53 @@ export async function sendMobileConversationMessage(
     .maybeSingle()
   if (error || !conversation) return failure(404, "Conversation not found")
   return deliverMessage(supabase, user, conversation, body)
+}
+
+export async function sendMobileConversationMediaMessage(
+  supabase: SupabaseClient,
+  user: User,
+  conversationId: string,
+  input: MobileMessageMediaBody,
+): Promise<MobileApiResult<MobileMessageResult>> {
+  const { data: conversation, error } = await supabase
+    .from("conversations")
+    .select("id, buyer_id, seller_id, listing_id")
+    .eq("id", conversationId)
+    .maybeSingle()
+  if (error || !conversation) return failure(404, "Conversation not found")
+  if (user.id !== conversation.buyer_id && user.id !== conversation.seller_id) {
+    return failure(404, "Conversation not found")
+  }
+
+  const caption = input.caption?.trim() || undefined
+  if (caption) {
+    const policyDecision = await evaluateMessagePolicyForSend(supabase, user.id, conversation.id, caption)
+    if (policyDecision && messagePolicyBlocksDelivery(policyDecision.reasonCode)) {
+      return failure(400, "That message can't be sent.")
+    }
+  }
+
+  const result = await sendMarketplaceMediaMessage({
+    conversationId,
+    senderId: user.id,
+    attachment: input.attachment,
+    caption,
+  })
+
+  if (!result.ok) {
+    if (result.policyReason) return failure(400, "That message can't be sent.")
+    return failure(result.status ?? 400, result.error)
+  }
+
+  return {
+    ok: true,
+    data: {
+      id: result.message.id,
+      conversation_id: conversationId,
+      body: result.message.content,
+      created_at: result.message.created_at,
+    },
+  }
 }
 
 export async function sendMobileListingMessage(

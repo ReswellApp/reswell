@@ -37,6 +37,7 @@ import {
   mobileListingsPageSchema,
   mobileMeSchema,
   mobileModelPageSchema,
+  mobileMessageMediaBodySchema,
   mobileMessageResultSchema,
   mobileOfferActionResultSchema,
   mobileOffersSchema,
@@ -108,6 +109,7 @@ import {
   type MobileListingsPage,
   type MobileMe,
   type MobileModelPage,
+  type MobileMessageMediaBody,
   type MobileMessageResult,
   type MobileOffer,
   type MobileOfferActionBody,
@@ -525,6 +527,25 @@ export function sendConversationMessage(
     accessToken,
     { body },
   )
+}
+
+export function sendConversationMediaMessage(
+  accessToken: string,
+  conversationId: string,
+  payload: MobileMessageMediaBody,
+): Promise<MobileMessageResult> {
+  const body = mobileMessageMediaBodySchema.parse(payload)
+  return read(
+    `/api/mobile/v1/conversations/${encodeURIComponent(conversationId)}/messages/media`,
+    (data) => mobileMessageResultSchema.parse(data),
+    accessToken,
+    body,
+  )
+}
+
+/** Authenticated attachment bytes for a marketplace message (same route as the website). */
+export function messageAttachmentUrl(messageId: string): string {
+  return `${apiOrigin()}/api/messages/${encodeURIComponent(messageId)}/attachment`
 }
 
 export function actOnOffer(

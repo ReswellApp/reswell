@@ -4,8 +4,9 @@ import { ActivityIndicator, FlatList, StyleSheet, Text, View } from "react-nativ
 import type { MobileProfile, MobileReview } from "@reswell/api-contract"
 import { ListingCard } from "@/components/listing-card"
 import { ScreenSearchHeader } from "@/components/screen-search-header"
-import { ProfileFeedback, ProfileInfo } from "@/components/profile-panels"
+import { ProfileInfo } from "@/components/profile-panels"
 import { ProfileHeader, type SellerTab } from "@/components/profile-header"
+import { ProfileReviewsSheet } from "@/components/profile-reviews-sheet"
 import { fetchProfile, fetchProfileReviews, setFollow } from "@/lib/api"
 import { useProfileShopListings } from "@/lib/use-profile-shop-listings"
 import { useAuth } from "@/lib/auth-context"
@@ -28,6 +29,7 @@ export default function ProfileScreen() {
   const [error, setError] = useState<string | null>(null)
   const [shopQuery, setShopQuery] = useState("")
   const [shopSort, setShopSort] = useState<ProfileShopSort>("newest")
+  const [reviewsOpen, setReviewsOpen] = useState(false)
   const shopTab = tab === "sold" ? "sold" : "listings"
   const shop = useProfileShopListings(slug, shopTab)
 
@@ -132,6 +134,13 @@ export default function ProfileScreen() {
                 onShopSectionChange={shop.setSectionId}
                 shopSort={shopSort}
                 onShopSortChange={setShopSort}
+                onReviewsPress={() => setReviewsOpen(true)}
+              />
+              <ProfileReviewsSheet
+                profile={profile}
+                reviews={reviews}
+                visible={reviewsOpen}
+                onClose={() => setReviewsOpen(false)}
               />
               {followError ? (
                 <Text style={[styles.empty, { color: colors.foreground, fontFamily: fontFamily.text }]}>{followError}</Text>
@@ -159,10 +168,7 @@ export default function ProfileScreen() {
                 </Text>
               )
             ) : tab === "info" ? (
-              <View>
-                <ProfileInfo profile={profile} />
-                <ProfileFeedback profile={profile} reviews={reviews} />
-              </View>
+              <ProfileInfo profile={profile} />
             ) : null
           }
           renderItem={({ item }) =>

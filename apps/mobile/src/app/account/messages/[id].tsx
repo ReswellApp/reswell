@@ -1,3 +1,4 @@
+import * as ImagePicker from "expo-image-picker"
 import { Image } from "expo-image"
 import { Stack, useLocalSearchParams, useRouter } from "expo-router"
 import { SymbolView } from "expo-symbols"
@@ -17,7 +18,9 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import type { MobileConversationDetail, MobileMessage } from "@reswell/api-contract"
 import { ProfileCircle } from "@/components/profile-circle"
-import { fetchConversation, sendConversationMessage } from "@/lib/api"
+import { SellUploadMenu } from "@/components/sell/sell-upload-menu"
+import { fetchConversation, messageAttachmentUrl, sendConversationMediaMessage, sendConversationMessage } from "@/lib/api"
+import { uploadConversationImageAttachment } from "@/lib/message-media-upload"
 import { useAuth } from "@/lib/auth-context"
 import { publicApiUrl } from "@/lib/public-env"
 import { useAccountResource } from "@/lib/use-account-resource"
@@ -34,7 +37,10 @@ export default function ConversationScreen() {
   const [draft, setDraft] = useState("")
   const [sendError, setSendError] = useState<string | null>(null)
   const [sending, setSending] = useState(false)
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
+  const [photoMenuOpen, setPhotoMenuOpen] = useState(false)
   const [safetyOpen, setSafetyOpen] = useState(true)
+  const accessToken = session?.access_token ?? null
   const load = useCallback(
     (token: string) => {
       if (!id) return Promise.reject(new Error("Missing conversation"))
@@ -45,6 +51,7 @@ export default function ConversationScreen() {
   const { data, error, loading, reload } = useAccountResource(load)
 
   return (
+    <>
     <KeyboardAvoidingView
       style={[styles.screen, { backgroundColor: colors.background }]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -95,6 +102,7 @@ export default function ConversationScreen() {
               ) : (
                 <MessageRow
                   message={item.message}
+                  accessToken={accessToken}
                   avatarUrl={data.other_avatar_url}
                   name={data.other_name}
                   viewerIsSeller={data.viewer_is_seller}
@@ -125,6 +133,25 @@ export default function ConversationScreen() {
           ) : null}
           <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
             <View style={[styles.inputShell, { borderColor: colors.border }]}>
+              <Pressable
+                disabled={sending || uploadingPhoto}
+                accessibilityLabel="Add photo"
+                onPress={() => {
+                  if (!id || !accessToken) return
+                  setPhotoMenuOpen(true)
+                }}
+                style={styles.attach}
+              >
+                {uploadingPhoto ? (
+                  <ActivityIndicator size="small" color={colors.foreground} />
+                ) : (
+                  <SymbolView
+                    name={{ ios: "photo.on.rectangle", android: "photo_library", web: "photo_library" }}
+                    size={20}
+                    tintColor={colors.foreground}
+                  />
+                )}
+              </Pressable>
               <TextInput
                 value={draft}
                 onChangeText={setDraft}
@@ -133,10 +160,10 @@ export default function ConversationScreen() {
                 style={[styles.input, { color: colors.foreground, fontFamily: fontFamily.text }]}
               />
               <Pressable
-                disabled={sending || draft.trim().length === 0}
+                disabled={sending || uploadingPhoto || draft.trim().length === 0}
                 accessibilityLabel="Send"
                 onPress={() => {
-                  const token = session?.access_token
+                  const token = accessToken
                   const body = draft.trim()
                   if (!token || !id || !body) return
                   setSending(true)
@@ -156,7 +183,7 @@ export default function ConversationScreen() {
                 <SymbolView
                   name={{ ios: "paperplane.fill", android: "send", web: "send" }}
                   size={18}
-                  tintColor={draft.trim() ? colors.foreground : colors.muted}
+                  tintColor={draft.trim() && !uploadingPhoto ? colors.foreground : colors.muted}
                 />
               </Pressable>
             </View>
@@ -165,6 +192,46 @@ export default function ConversationScreen() {
         </>
       ) : null}
     </KeyboardAvoidingView>
+    {photoMenuOpen && id && accessToken ? (
+      <SellUploadMenu
+        onClose={() => setPhotoMenuOpen(false)}
+        onLibrary={() => {
+          setPhotoMenuOpen(false)
+          void sendConversationPhoto({
+            source: "library",
+            conversationId: id,
+            accessToken,
+            caption: draft,
+            onCaptionClear: () => setDraft(""),
+            onError: setSendError,
+            onStart: () => {
+              setUploadingPhoto(true)
+              setSendError(null)
+            },
+            onFinish: () => setUploadingPhoto(false),
+            onSent: reload,
+          })
+        }}
+        onCamera={() => {
+          setPhotoMenuOpen(false)
+          void sendConversationPhoto({
+            source: "camera",
+            conversationId: id,
+            accessToken,
+            caption: draft,
+            onCaptionClear: () => setDraft(""),
+            onError: setSendError,
+            onStart: () => {
+              setUploadingPhoto(true)
+              setSendError(null)
+            },
+            onFinish: () => setUploadingPhoto(false),
+            onSent: reload,
+          })
+        }}
+      />
+    ) : null}
+    </>
   )
 }
 
@@ -208,14 +275,69 @@ function PersonSummary({ conversation }: { conversation: MobileConversationDetai
   )
 }
 
+async function sendConversationPhoto(opts: {
+  source: "library" | "camera"
+  conversationId: string
+  accessToken: string
+  caption: string
+  onCaptionClear: () => void
+  onError: (message: string) => void
+  onStart: () => void
+  onFinish: () => void
+  onSent: () => void
+}) {
+  opts.onStart()
+  try {
+    const asset = opts.source === "camera" ? await pickCameraPhoto() : await pickLibraryPhoto()
+    if (!asset) return
+    const attachment = await uploadConversationImageAttachment(opts.conversationId, {
+      uri: asset.uri,
+      fileName: asset.fileName,
+      mimeType: asset.mimeType,
+      width: asset.width,
+      height: asset.height,
+      fileSize: asset.fileSize,
+    })
+    const caption = opts.caption.trim()
+    await sendConversationMediaMessage(opts.accessToken, opts.conversationId, {
+      attachment,
+      ...(caption ? { caption } : {}),
+    })
+    if (caption) opts.onCaptionClear()
+    opts.onSent()
+  } catch (cause: unknown) {
+    opts.onError(cause instanceof Error ? cause.message : "Could not send that photo")
+  } finally {
+    opts.onFinish()
+  }
+}
+
+async function pickLibraryPhoto(): Promise<ImagePicker.ImagePickerAsset | null> {
+  const permission = await ImagePicker.requestMediaLibraryPermissionsAsync()
+  if (!permission.granted) throw new Error("Photo access is off. Enable it in Settings to send photos.")
+  const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.85 })
+  if (result.canceled || !result.assets[0]) return null
+  return result.assets[0]
+}
+
+async function pickCameraPhoto(): Promise<ImagePicker.ImagePickerAsset | null> {
+  const permission = await ImagePicker.requestCameraPermissionsAsync()
+  if (!permission.granted) throw new Error("Camera access is off. Enable it in Settings to take photos.")
+  const result = await ImagePicker.launchCameraAsync({ mediaTypes: ["images"], quality: 0.85 })
+  if (result.canceled || !result.assets[0]) return null
+  return result.assets[0]
+}
+
 function MessageRow({
   message,
+  accessToken,
   avatarUrl,
   name,
   viewerIsSeller,
   onOpenOrder,
 }: {
   message: MobileMessage
+  accessToken: string | null
   avatarUrl: string | null
   name: string
   viewerIsSeller: boolean
@@ -250,12 +372,26 @@ function MessageRow({
       </View>
     )
   }
+  const imageAttachment = message.attachment?.kind === "image"
+  const authHeaders = accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined
+
   return (
     <View style={[styles.messageRow, message.mine ? styles.mine : styles.theirs]}>
       {message.mine ? null : <ProfileCircle url={avatarUrl} size={28} />}
       <View style={styles.bubbleWrap}>
-        <View style={[styles.bubble, { borderColor: colors.border, backgroundColor: message.mine ? colors.image : colors.background }]}>
-          <Text style={[styles.body, { color: colors.foreground, fontFamily: fontFamily.text }]}>{message.body}</Text>
+        <View style={[styles.bubble, imageAttachment ? styles.mediaBubble : null, { borderColor: colors.border, backgroundColor: message.mine ? colors.image : colors.background }]}>
+          {imageAttachment ? (
+            <Image
+              source={{ uri: messageAttachmentUrl(message.id), headers: authHeaders }}
+              style={[styles.messageImage, { backgroundColor: colors.image }]}
+              contentFit="cover"
+            />
+          ) : null}
+          {message.body ? (
+            <Text style={[styles.body, imageAttachment ? styles.mediaCaption : null, { color: colors.foreground, fontFamily: fontFamily.text }]}>
+              {message.body}
+            </Text>
+          ) : null}
         </View>
         <Text style={[styles.time, message.mine ? styles.timeMine : null, { color: colors.muted, fontFamily: fontFamily.text }]}>{time}</Text>
       </View>
@@ -326,8 +462,12 @@ const styles = StyleSheet.create({
   safetyText: { flex: 1, fontSize: 13, lineHeight: 18 },
   safetyLink: { fontWeight: "700" },
   composer: { paddingHorizontal: 20, paddingTop: 4 },
-  inputShell: { flexDirection: "row", alignItems: "center", borderWidth: StyleSheet.hairlineWidth, borderRadius: 24, paddingLeft: 16, paddingRight: 6 },
-  input: { flex: 1, fontSize: 16, paddingVertical: 10 },
+  inputShell: { flexDirection: "row", alignItems: "center", borderWidth: StyleSheet.hairlineWidth, borderRadius: 24, paddingLeft: 4, paddingRight: 6 },
+  attach: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
+  input: { flex: 1, fontSize: 16, paddingVertical: 10, paddingRight: 4 },
   send: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
+  mediaBubble: { paddingHorizontal: 4, paddingVertical: 4, overflow: "hidden" },
+  messageImage: { width: 220, height: 220, borderRadius: 14 },
+  mediaCaption: { paddingHorizontal: 10, paddingTop: 8, paddingBottom: 4 },
   sendError: { paddingHorizontal: 20, paddingBottom: 8, fontSize: 13 },
 })
