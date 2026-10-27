@@ -21,6 +21,7 @@ import {
   composeListingDimensionsFromSplitListingFields,
   listingDimensionsColumnTrim,
 } from '@/lib/listing-dimensions-storage'
+import { insertListingImages } from '@/lib/db/listingImagesInsert'
 import { getAdminListingsList } from '@/lib/services/adminListingsList'
 import { adminListingsListQuerySchema } from '@/lib/validations/admin-listings-list'
 
@@ -248,7 +249,12 @@ export async function POST(request: NextRequest) {
         sort_order: index,
       }
     })
-    await supabase.from('listing_images').insert(imageInserts)
+    try {
+      await insertListingImages(supabase, imageInserts)
+    } catch (imageError) {
+      await supabase.from('listings').delete().eq('id', listing.id)
+      return NextResponse.json({ error: 'Failed to save listing photos' }, { status: 500 })
+    }
   }
 
   const firstEntry = (images as (string | { url: string; thumbnail_url?: string | null })[])[0]

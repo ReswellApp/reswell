@@ -952,13 +952,27 @@ export async function uploadSellPhoto(accessToken: string, uri: string): Promise
   return mobileSellPhotoSchema.parse(body.data)
 }
 
+async function sellPhotoStorageUrlReachable(url: string): Promise<boolean> {
+  try {
+    const res = await fetch(url, { method: "HEAD", signal: AbortSignal.timeout(12_000) })
+    return res.ok
+  } catch {
+    return false
+  }
+}
+
 /** Uploads photos that are still only on the phone. Photos already stored are reused. */
 export async function uploadSellPhotos(accessToken: string, photos: SellPhoto[]): Promise<SellPhoto[]> {
   const uploaded: SellPhoto[] = []
   for (const photo of photos) {
     if (photo.url && photo.thumbnailUrl) {
-      uploaded.push(photo)
-      continue
+      const stored =
+        (await sellPhotoStorageUrlReachable(photo.url)) &&
+        (await sellPhotoStorageUrlReachable(photo.thumbnailUrl))
+      if (stored) {
+        uploaded.push(photo)
+        continue
+      }
     }
     const stored = await uploadSellPhoto(accessToken, photo.uri)
     uploaded.push({ ...photo, url: stored.url, thumbnailUrl: stored.thumbnail_url })

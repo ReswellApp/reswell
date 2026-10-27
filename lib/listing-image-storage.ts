@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { PreparedListingImagePair } from "@/lib/listing-image-pipeline"
 import { listingObjectPublicUrl } from "@/lib/supabase/storage-upload-xhr"
+import { verifyStorageObjectExists } from "@/lib/supabase/storage-object-exists"
 
 /**
  * Cap concurrent listing storage uploads. Each photo uses one connection at a time (thumb, then
@@ -143,6 +144,13 @@ export async function uploadListingImagePairToSupabase(opts: {
       contentType: prepared.fullContentType,
     })
     opts.onProgressFull?.(prepared.full.size, prepared.full.size)
+
+    const fullReadable = await verifyStorageObjectExists("listings", fullPath)
+    const thumbReadable = await verifyStorageObjectExists("listings", thumbPath)
+    if (!fullReadable || !thumbReadable) {
+      await supabase.storage.from("listings").remove([thumbPath, filmPath, cardPath, fullPath])
+      throw new Error("Upload did not finish. Try that photo again.")
+    }
 
     return {
       fullUrl: listingObjectPublicUrl(supabaseUrl, fullPath),

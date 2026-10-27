@@ -12,6 +12,7 @@ import { persistableListingThumbnailUrl } from "@/lib/listing-media-proxy-url"
 import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import { TRACTION_SECTION } from "@/lib/traction-listing-config"
 import { buildTractionListingPersistFields } from "@/lib/traction-listing-persist-fields"
+import { insertListingImages } from "@/lib/db/listingImagesInsert"
 import { syncListingImages } from "@/lib/services/sync-listing-images"
 import {
   insertListingVideos,
@@ -140,10 +141,11 @@ export async function createTractionListing(
     sort_order: img.sortOrder ?? index,
   }))
 
-  const { error: imageError } = await supabase.from("listing_images").insert(imageRows)
-  if (imageError) {
+  try {
+    await insertListingImages(supabase, imageRows)
+  } catch (imageError) {
     await supabase.from("listings").delete().eq("id", listingId)
-    throw new Error(imageError.message)
+    throw imageError instanceof Error ? imageError : new Error("Failed to save listing photos")
   }
 
   try {
