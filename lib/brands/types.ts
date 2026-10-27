@@ -14,6 +14,6 @@ export type BrandRow = {
   model_count: number
   /** Product types this brand manufactures (surfboards, fins, wetsuits, …). */
   product_categories: BrandProductCategorySlug[]
-  /** Legacy DB column; no longer shown or edited — kept optional for typed selects. */
-  about_paragraphs?: string[]
+  /** Long-form brand history from CMS (`brands.about_paragraphs`). */
+  about_paragraphs: string[]
 }

@@ -2,19 +2,22 @@ import type { BrandRow } from "@/lib/brands/types"
 import type { BrandPageTab } from "@/lib/brands/routes"
 import { BrandDetailAdminBar } from "@/components/brands/brand-detail-admin-bar"
 import { BrandPageBreadcrumbs } from "@/components/brands/brand-page-breadcrumbs"
+import { BrandPageIntro } from "@/components/brands/brand-page-intro"
+import { BrandPageModelsGrid } from "@/components/brands/brand-page-models-grid"
+import type { BrandPageModelCard } from "@/lib/brands/model-cards"
 import { BrandPageMarketplace } from "@/components/brands/brand-page-marketplace"
-import { SaveEntitySearchButton } from "@/components/features/saved-search/save-entity-search-button"
 import type { RecentListing } from "@/components/recent-feed-client"
 import type { BoardSavedSearchCriteria } from "@/lib/validations/boardSavedSearch"
 
 /**
- * Brand marketplace — Reverb-style header and listing grid, with a sold feed tab.
+ * Brand profile — CMS intro, catalog models, and marketplace listings.
  */
 export function BrandProfileView({
   brand,
   criteria,
   initialSavedSearchId,
   initialTab,
+  catalogModels,
   brandListings,
   brandSoldListings,
   listingsCapped,
@@ -27,6 +30,7 @@ export function BrandProfileView({
   criteria: BoardSavedSearchCriteria
   initialSavedSearchId: string | null
   initialTab: BrandPageTab
+  catalogModels: BrandPageModelCard[]
   brandListings: RecentListing[]
   brandSoldListings: RecentListing[]
   listingsCapped: boolean
@@ -43,36 +47,38 @@ export function BrandProfileView({
           <BrandDetailAdminBar brand={brand} />
         </div>
 
-        <div className="mt-6 flex flex-col gap-4 sm:mt-8 sm:flex-row sm:items-end sm:justify-between">
-          <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-            {brand.name}
-          </h1>
-          <SaveEntitySearchButton
+        <div className="mt-6 sm:mt-8">
+          <BrandPageIntro
+            brand={brand}
             criteria={criteria}
-            label="Save this brand"
-            savedLabel="Brand saved"
-            savedSearchLabel={brand.name}
-            successTitle="Brand saved"
-            successDescription={`We'll email you when new ${brand.name} gear is listed on Reswell.`}
-            isLoggedIn={isLoggedIn}
             initialSavedSearchId={initialSavedSearchId}
+            isLoggedIn={isLoggedIn}
           />
         </div>
 
-        <BrandPageMarketplace
+        <BrandPageModelsGrid
           brandSlug={brand.slug}
           brandName={brand.name}
-          criteria={criteria}
-          initialSavedSearchId={initialSavedSearchId}
-          initialTab={initialTab}
-          listings={brandListings}
-          soldListings={brandSoldListings}
-          listingsCapped={listingsCapped}
-          soldCapped={soldCapped}
-          favoritedListingIds={favoritedListingIds}
-          isLoggedIn={isLoggedIn}
-          viewerUserId={viewerUserId}
+          brandLogoUrl={brand.logo_url}
+          models={catalogModels}
         />
+
+        <div className="mt-10 border-t border-border/80 pt-10 sm:mt-14 sm:pt-12">
+          <BrandPageMarketplace
+            brandSlug={brand.slug}
+            brandName={brand.name}
+            criteria={criteria}
+            initialSavedSearchId={initialSavedSearchId}
+            initialTab={initialTab}
+            listings={brandListings}
+            soldListings={brandSoldListings}
+            listingsCapped={listingsCapped}
+            soldCapped={soldCapped}
+            favoritedListingIds={favoritedListingIds}
+            isLoggedIn={isLoggedIn}
+            viewerUserId={viewerUserId}
+          />
+        </div>
       </div>
     </main>
   )

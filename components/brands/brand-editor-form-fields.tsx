@@ -133,7 +133,8 @@ export function BrandEditorFormFields({
             placeholder="One-line summary"
           />
           <p className="text-xs text-muted-foreground">
-            The only story blurb on the public brand page (below the logo). Long multi-paragraph bios are not used.
+            Shown as the lead line on the public brand page when long-form history exists in the catalog; otherwise
+            used as the main story blurb.
           </p>
         </div>
       </FieldSection>
