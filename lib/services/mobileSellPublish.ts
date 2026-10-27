@@ -11,7 +11,9 @@ import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import { mobileSellDraftFields, mobileSellListingFields } from "@/lib/services/mobileSellListingFields"
 import { applyPublishedListingSideEffects } from "@/lib/services/publishListingDraft"
 import type { MobileApiResult } from "@/lib/services/mobileApi"
+import { syncListingImages } from "@/lib/services/sync-listing-images"
 import { verifyListingImageObjectsExist } from "@/lib/services/verifyListingImageStorage"
+import { verifyStorageObjectExists } from "@/lib/supabase/storage-object-exists"
 
 const PHOTO_MAX_BYTES = 12 * 1024 * 1024
 
@@ -68,7 +70,16 @@ export async function uploadMobileSellPhotoService(
       upsert: false,
       cacheControl: "31536000",
     })
-    if (thumbUploaded.error) return { ok: false, status: 400, error: "Couldn't upload that photo" }
+    if (thumbUploaded.error) {
+      await supabase.storage.from("listings").remove([fullPath])
+      return { ok: false, status: 400, error: "Couldn't upload that photo" }
+    }
+    const fullReadable = await verifyStorageObjectExists("listings", fullPath)
+    const thumbReadable = await verifyStorageObjectExists("listings", thumbPath)
+    if (!fullReadable || !thumbReadable) {
+      await supabase.storage.from("listings").remove([fullPath, thumbPath])
+      return { ok: false, status: 400, error: "Couldn't upload that photo" }
+    }
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""
     return {
       ok: true,
@@ -93,22 +104,25 @@ async function replaceListingImages(
   images: MobileSellPhoto[],
 ): Promise<string | null> {
   const previous = await supabase.from("listing_images").select("id").eq("listing_id", listingId)
-  const inserted = await supabase
-    .from("listing_images")
-    .insert(
+  const previousIds = (previous.data ?? []).map((row) => row.id as string)
+  try {
+    await syncListingImages(
+      supabase,
+      listingId,
+      previousIds,
       images.map((image, index) => ({
-        listing_id: listingId,
         url: image.url,
-        thumbnail_url: image.thumbnail_url,
-        is_primary: index === 0,
-        sort_order: index,
+        thumbnailUrl: image.thumbnail_url,
+        isPrimary: index === 0,
+        sortOrder: index,
       })),
     )
-    .select("id")
-  if (inserted.error) return "Couldn't save the listing photos"
-  const previousIds = (previous.data ?? []).map((row) => row.id as string)
-  if (previousIds.length > 0) {
-    await supabase.from("listing_images").delete().in("id", previousIds)
+  } catch (error) {
+    console.error("[mobile-api] listing_images sync failed", {
+      listingId,
+      message: error instanceof Error ? error.message : String(error),
+    })
+    return "Couldn't save the listing photos"
   }
   return null
 }

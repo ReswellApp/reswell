@@ -10,7 +10,7 @@ import {
   type ListingImageWriteOrder,
 } from "@/lib/services/listing-image-write-order"
 import { deleteListingMediaRowsThenStorage } from "@/lib/services/listingStorageCleanup"
-import { assertListingImageObjectsExist } from "@/lib/services/verifyListingImageStorage"
+import { assertAllListingImageObjectsExist } from "@/lib/services/verifyListingImageStorage"
 
 export type ListingImageUpdateOp = {
   id?: string
@@ -179,11 +179,9 @@ export async function syncListingImages(
   removedImageIds: string[],
   images: ListingImageUpdateOp[],
 ): Promise<SyncedListingImage[]> {
-  for (const img of images) {
-    const url = img.url.trim()
-    if (!url) continue
-    await assertListingImageObjectsExist(url, img.thumbnailUrl)
-  }
+  await assertAllListingImageObjectsExist(
+    images.map((img) => ({ url: img.url, thumbnailUrl: img.thumbnailUrl })),
+  )
 
   const keptImageIds = new Set(images.flatMap((img) => (img.id ? [img.id] : [])))
   await deleteListingMediaRowsThenStorage(

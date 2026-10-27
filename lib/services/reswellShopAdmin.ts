@@ -8,7 +8,9 @@ import {
   reswellShopShippingPersistFields,
   type ReswellShopPackageInches,
 } from "@/lib/reswell-shop-shipping"
+import { insertListingImages } from "@/lib/db/listingImagesInsert"
 import { persistableListingThumbnailUrl } from "@/lib/listing-media-proxy-url"
+import { syncListingImages } from "@/lib/services/sync-listing-images"
 import { resolveReswellShopOwnerUserId } from "@/lib/services/resolveReswellShopOwnerUser"
 
 export type ReswellShopAdminProduct = {
@@ -180,17 +182,19 @@ export async function createReswellShopProduct(
 
   const urls = input.image_urls.map((u) => u.trim()).filter(Boolean)
   if (urls.length > 0) {
-    const { error: imgErr } = await serviceSupabase.from("listing_images").insert(
-      urls.map((url, index) => ({
-        listing_id: listing.id,
-        url,
-        thumbnail_url: persistableListingThumbnailUrl(null, url),
-        is_primary: index === 0,
-        sort_order: index,
-      })),
-    )
-    if (imgErr) {
-      console.error("[reswellShopAdmin] images:", imgErr.message)
+    try {
+      await insertListingImages(
+        serviceSupabase,
+        urls.map((url, index) => ({
+          listing_id: listing.id,
+          url,
+          thumbnail_url: persistableListingThumbnailUrl(null, url),
+          is_primary: index === 0,
+          sort_order: index,
+        })),
+      )
+    } catch (imgErr) {
+      console.error("[reswellShopAdmin] images:", imgErr instanceof Error ? imgErr.message : imgErr)
     }
   }
 
@@ -242,21 +246,29 @@ export async function updateReswellShopProduct(
   }
 
   const urls = input.image_urls.map((u) => u.trim()).filter(Boolean)
-  await serviceSupabase.from("listing_images").delete().eq("listing_id", listingId)
-  if (urls.length > 0) {
-    const { error: imgErr } = await serviceSupabase.from("listing_images").insert(
+  const { data: previousImages } = await serviceSupabase
+    .from("listing_images")
+    .select("id")
+    .eq("listing_id", listingId)
+  const previousIds = (previousImages ?? []).map((row) => row.id as string)
+  try {
+    await syncListingImages(
+      serviceSupabase,
+      listingId,
+      previousIds,
       urls.map((url, index) => ({
-        listing_id: listingId,
         url,
-        thumbnail_url: persistableListingThumbnailUrl(null, url),
-        is_primary: index === 0,
-        sort_order: index,
+        thumbnailUrl: persistableListingThumbnailUrl(null, url),
+        isPrimary: index === 0,
+        sortOrder: index,
       })),
     )
-    if (imgErr) {
-      console.error("[reswellShopAdmin] update images:", imgErr.message)
-      return { ok: false, error: "Could not update product photos" }
-    }
+  } catch (imgErr) {
+    console.error(
+      "[reswellShopAdmin] update images:",
+      imgErr instanceof Error ? imgErr.message : imgErr,
+    )
+    return { ok: false, error: "Could not update product photos" }
   }
 
   // Shop PDP (`/l/...`) reads hourly `getCachedPublicShopListing` — bust it so rotated photos show.

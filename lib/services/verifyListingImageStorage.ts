@@ -36,3 +36,13 @@ export async function assertListingImageObjectsExist(
     throw new Error("One or more photos are missing from storage. Upload them again.")
   }
 }
+
+export async function assertAllListingImageObjectsExist(
+  images: ReadonlyArray<{ url: string; thumbnailUrl?: string | null }>,
+): Promise<void> {
+  for (const image of images) {
+    const url = image.url.trim()
+    if (!url) continue
+    await assertListingImageObjectsExist(url, image.thumbnailUrl)
+  }
+}

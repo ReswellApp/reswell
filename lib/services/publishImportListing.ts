@@ -16,6 +16,7 @@ import { notifyBoardSavedSearchMatchesForListing } from "@/lib/services/notifyBo
 import { notifyFollowersNewListingKlaviyo } from "@/lib/services/notifyFollowersNewListingKlaviyo"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { persistableListingThumbnailUrl } from "@/lib/listing-media-proxy-url"
+import { insertListingImages } from "@/lib/db/listingImagesInsert"
 import { mirrorExternalListingImagesToStorage } from "@/lib/services/importListingImages"
 import { slugify } from "@/lib/slugify"
 import type { z } from "zod"
@@ -138,8 +139,9 @@ export async function publishImportListing(opts: {
     sort_order: index,
   }))
 
-  const { error: imagesError } = await supabase.from("listing_images").insert(imageInserts)
-  if (imagesError) {
+  try {
+    await insertListingImages(supabase, imageInserts)
+  } catch (imagesError) {
     console.error("[publishImportListing] listing_images:", imagesError)
     return { ok: false, status: 500, error: "Listing was created but photos failed to save." }
   }
