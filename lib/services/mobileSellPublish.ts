@@ -11,6 +11,7 @@ import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import { mobileSellDraftFields, mobileSellListingFields } from "@/lib/services/mobileSellListingFields"
 import { applyPublishedListingSideEffects } from "@/lib/services/publishListingDraft"
 import type { MobileApiResult } from "@/lib/services/mobileApi"
+import { verifyListingImageObjectsExist } from "@/lib/services/verifyListingImageStorage"
 
 const PHOTO_MAX_BYTES = 12 * 1024 * 1024
 
@@ -18,6 +19,18 @@ function ownedListingImage(url: string, userId: string): boolean {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""
   if (!supabaseUrl) return false
   return url.startsWith(listingObjectPublicUrl(supabaseUrl, `${userId}/`))
+}
+
+async function assertMobileSellImagesInStorage(
+  images: MobileSellPhoto[],
+): Promise<string | null> {
+  for (const image of images) {
+    const ok = await verifyListingImageObjectsExist(image.url, image.thumbnail_url)
+    if (!ok) {
+      return "Upload the listing photos again"
+    }
+  }
+  return null
 }
 
 export async function uploadMobileSellPhotoService(
@@ -108,6 +121,8 @@ export async function saveMobileSellDraftService(
   if (input.images.some((image) => !ownedListingImage(image.url, userId) || !ownedListingImage(image.thumbnail_url, userId))) {
     return { ok: false, status: 400, error: "Upload the listing photos again" }
   }
+  const storageError = await assertMobileSellImagesInStorage(input.images)
+  if (storageError) return { ok: false, status: 400, error: storageError }
   const built = mobileSellDraftFields(input)
   if (!built.ok) return { ok: false, status: 400, error: built.error }
 
@@ -150,6 +165,8 @@ export async function publishMobileListingService(
   if (input.images.some((image) => !ownedListingImage(image.url, userId) || !ownedListingImage(image.thumbnail_url, userId))) {
     return { ok: false, status: 400, error: "Upload the listing photos again" }
   }
+  const storageError = await assertMobileSellImagesInStorage(input.images)
+  if (storageError) return { ok: false, status: 400, error: storageError }
   const built = mobileSellListingFields(input)
   if (!built.ok) return { ok: false, status: 400, error: built.error }
 
