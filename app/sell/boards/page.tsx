@@ -72,9 +72,7 @@ export default async function SellBoardsPage({
         sellerHasPublishedListingInSection(supabase, user.id, "surfboards"),
       ])
     : [false, false]
-  const surfboardShippedSell = initialActorIsAdmin
-    ? await getSurfboardShippedSellOffer()
-    : null
+  const surfboardShippedSell = await getSurfboardShippedSellOffer()
 
   const initialViewMode: BoardSellViewMode = editId
     ? "guided"

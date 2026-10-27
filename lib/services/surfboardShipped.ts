@@ -109,12 +109,10 @@ export function surfboardShippedDropoffCopy(
 
 /** Seller option on /sell/boards. Buyer address is not known yet. */
 export function surfboardShippedSellVisible(input: {
-  isAdmin: boolean
   pickupState: string | null | undefined
   shippers: CoastalMatchShipper[]
 }): boolean {
   return (
-    input.isAdmin &&
     isCaliforniaAddressState(input.pickupState) &&
     liveSurfboardShippers(input.shippers).length > 0
   )
@@ -141,14 +139,12 @@ export function isGoogleCaliforniaStreet(
 
 /** Checkout option. Hidden unless Google placed both streets in California and a shipper is live. */
 export function surfboardShippedCheckoutVisible(input: {
-  isAdmin: boolean
   sellerOptedIn: boolean
   pickupInCalifornia: boolean
   buyerInCalifornia: boolean
   shippers: CoastalMatchShipper[]
 }): boolean {
   return (
-    input.isAdmin &&
     input.sellerOptedIn &&
     input.pickupInCalifornia &&
     input.buyerInCalifornia &&

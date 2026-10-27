@@ -50,22 +50,11 @@ describe("surfboard shipped gates", () => {
     assert.equal(isCaliforniaAddressState(""), false)
   })
 
-  it("shows the sell option only for an admin with a California pickup and a live shipper", () => {
-    assert.equal(
-      surfboardShippedSellVisible({ isAdmin: true, pickupState: "CA", shippers: live }),
-      true,
-    )
-    assert.equal(
-      surfboardShippedSellVisible({ isAdmin: false, pickupState: "CA", shippers: live }),
-      false,
-    )
-    assert.equal(
-      surfboardShippedSellVisible({ isAdmin: true, pickupState: "Oregon", shippers: live }),
-      false,
-    )
+  it("shows the sell option for a California pickup when a shipper is live", () => {
+    assert.equal(surfboardShippedSellVisible({ pickupState: "CA", shippers: live }), true)
+    assert.equal(surfboardShippedSellVisible({ pickupState: "Oregon", shippers: live }), false)
     assert.equal(
       surfboardShippedSellVisible({
-        isAdmin: true,
         pickupState: "CA",
         shippers: [shipper("a", "Avery", 2, false, false)],
       }),
@@ -73,7 +62,6 @@ describe("surfboard shipped gates", () => {
     )
     assert.equal(
       surfboardShippedSellVisible({
-        isAdmin: true,
         pickupState: "CA",
         shippers: [shipper("a", "Avery", 2, false, true)],
       }),
@@ -81,16 +69,14 @@ describe("surfboard shipped gates", () => {
     )
   })
 
-  it("hides checkout unless the buyer is an admin, Google placed both streets in California, and a shipper is live", () => {
+  it("hides checkout unless the seller opted in, both ends are in California, and a shipper is live", () => {
     const base = {
-      isAdmin: true,
       sellerOptedIn: true,
       pickupInCalifornia: true,
       buyerInCalifornia: true,
       shippers: live,
     }
     assert.equal(surfboardShippedCheckoutVisible(base), true)
-    assert.equal(surfboardShippedCheckoutVisible({ ...base, isAdmin: false }), false)
     assert.equal(surfboardShippedCheckoutVisible({ ...base, buyerInCalifornia: false }), false)
     assert.equal(surfboardShippedCheckoutVisible({ ...base, pickupInCalifornia: false }), false)
     assert.equal(surfboardShippedCheckoutVisible({ ...base, sellerOptedIn: false }), false)

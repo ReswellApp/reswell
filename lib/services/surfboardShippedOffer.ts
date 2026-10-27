@@ -1,4 +1,3 @@
-import { requireAdmin } from "@/lib/brands/admin-server"
 import { listCoastalCoverageIndex, listCoastalShipperSchedules, listCoastalStops } from "@/lib/db/coastal-delivery"
 import type { CoastalShipperScheduleRecord } from "@/lib/db/coastal-delivery"
 import {
@@ -62,9 +61,6 @@ export type SurfboardShippedCharge = {
 const UNAVAILABLE = "Surfboard Shipped is not available."
 
 export async function getSurfboardShippedSellOffer(): Promise<SurfboardShippedSellOffer | null> {
-  const gate = await requireAdmin()
-  if (!gate.ok) return null
-
   try {
     const shippers = await loadMatchShippers()
     const live = liveSurfboardShippers(shippers)
@@ -79,8 +75,8 @@ export async function getSurfboardShippedSellOffer(): Promise<SurfboardShippedSe
 export async function saveListingSurfboardShipped(
   input: SaveListingSurfboardShippedInput,
 ): Promise<{ error: string | null }> {
-  const gate = await requireAdmin()
-  if (!gate.ok) return { error: "Admin only" }
+  const session = await signedInSession()
+  if (!session) return { error: "Sign in to save Surfboard Shipped." }
 
   try {
     const db = createServiceRoleClient()
@@ -88,6 +84,11 @@ export async function saveListingSurfboardShipped(
     if (listing.error) return { error: "Could not save Surfboard Shipped." }
     if (!listing.row || listing.row.section !== "surfboards") {
       return { error: "Listing not found." }
+    }
+
+    const isAdmin = await fetchProfileIsAdmin(session.supabase, session.userId)
+    if (listing.row.userId !== session.userId && !isAdmin) {
+      return { error: "You can only change your own listings." }
     }
 
     if (!input.enabled) {
@@ -146,13 +147,17 @@ export async function getListingSurfboardShippedChoice(listingId: string): Promi
   enabled: boolean
   address: ProfileAddressRow | null
 } | null> {
-  const gate = await requireAdmin()
-  if (!gate.ok) return null
+  const session = await signedInSession()
+  if (!session) return null
 
   try {
     const db = createServiceRoleClient()
     const listing = await fetchListingSurfboardShipped(db, listingId)
     if (listing.error || !listing.row) return { enabled: false, address: null }
+
+    const isAdmin = await fetchProfileIsAdmin(session.supabase, session.userId)
+    if (listing.row.userId !== session.userId && !isAdmin) return null
+
     if (!listing.row.optedIn || !listing.row.pickupAddressId) {
       return { enabled: false, address: null }
     }
@@ -171,9 +176,6 @@ export async function getListingSurfboardShippedChoice(listingId: string): Promi
 export async function getSurfboardShippedCheckoutSeed(
   listingId: string,
 ): Promise<SurfboardShippedCheckoutSeed | null> {
-  const session = await adminSession()
-  if (!session) return null
-
   try {
     const db = createServiceRoleClient()
     const loaded = await loadOptedInPickup(db, listingId)
@@ -205,7 +207,7 @@ export async function previewSurfboardShippedCheckout(input: {
     matchedWeekday: null,
   }
 
-  const session = await adminSession()
+  const session = await signedInSession()
   if (!session) return hidden
 
   const { data: address, error } = await session.supabase
@@ -242,8 +244,8 @@ export async function prepareSurfboardShippedCharge(input: {
 }): Promise<
   { ok: true; charge: SurfboardShippedCharge } | { ok: false; error: string; status: number }
 > {
-  const session = await adminSession()
-  if (!session) return { ok: false, error: UNAVAILABLE, status: 403 }
+  const session = await signedInSession()
+  if (!session) return { ok: false, error: UNAVAILABLE, status: 401 }
 
   try {
     const charge = await buildCharge(input.listingId, input.buyer)
@@ -268,14 +270,15 @@ export async function prepareSurfboardShippedCharge(input: {
   }
 }
 
-async function adminSession(): Promise<{ supabase: Awaited<ReturnType<typeof createClient>>; userId: string } | null> {
+async function signedInSession(): Promise<{
+  supabase: Awaited<ReturnType<typeof createClient>>
+  userId: string
+} | null> {
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return null
-  const isAdmin = await fetchProfileIsAdmin(supabase, user.id)
-  if (!isAdmin) return null
   return { supabase, userId: user.id }
 }
 
@@ -427,4 +430,3 @@ function scheduleToMatchShipper(schedule: CoastalShipperScheduleRecord): Coastal
     })),
   }
 }
-
