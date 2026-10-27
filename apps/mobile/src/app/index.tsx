@@ -3,6 +3,7 @@ import { useCallback, useState } from "react"
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import type { MobileBrowseRail, MobileHome, MobileListingCard, MobileListingCategory } from "@reswell/api-contract"
 import { CategorySlider } from "@/components/browse-chips"
+import { useFloatingTabBarContentInset } from "@/components/floating-tab-bar"
 import { HomeFeed } from "@/components/home-feed"
 import { HomeHeader } from "@/components/home-header"
 import { fetchBrowseRail, fetchHome, fetchRecentlyViewed } from "@/lib/api"
@@ -22,6 +23,7 @@ export default function ListingsScreen() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const tabBarInset = useFloatingTabBarContentInset()
 
   const load = useCallback((mode: "focus" | "pull" = "focus") => {
     let cancelled = false
@@ -91,12 +93,12 @@ export default function ListingsScreen() {
         onInbox={() => requestAuth(() => router.push("/inbox"))}
       />
       {loading && !home ? (
-        <ScrollView>
+        <ScrollView contentContainerStyle={tabBarInset}>
           <CategorySlider items={rail?.items ?? null} onOpenCategory={openCategory} onOpenResource={openResource} onOpenPage={openPage} />
           <ActivityIndicator style={styles.centered} color={colors.foreground} />
         </ScrollView>
       ) : error && !home ? (
-        <ScrollView>
+        <ScrollView contentContainerStyle={tabBarInset}>
           <CategorySlider items={rail?.items ?? null} onOpenCategory={openCategory} onOpenResource={openResource} onOpenPage={openPage} />
           <View style={styles.centered}>
             <Text style={{ color: colors.foreground, fontFamily: fontFamily.text }}>{error}</Text>

@@ -19,6 +19,7 @@ import {
   type MobileListingsPage,
   type MobileSearchResults,
 } from "@reswell/api-contract"
+import { useFloatingTabBarContentInset } from "@/components/floating-tab-bar"
 import { CategoryFilters } from "@/components/category-filters"
 import { CategoryToolbar } from "@/components/category-toolbar"
 import { type CategoryPlace, type CategoryRadius } from "@/components/category-location-filter"
@@ -184,6 +185,7 @@ export default function SearchResultsScreen() {
   const sorts = category?.sorts ?? SORTS
   const filterCount =
     Object.values(selected).reduce((sum, values) => sum + values.length, 0) + (shipping ? 1 : 0) + (place ? 1 : 0)
+  const tabBarInset = useFloatingTabBarContentInset()
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
@@ -207,7 +209,7 @@ export default function SearchResultsScreen() {
           keyExtractor={(item) => item?.id ?? "spacer"}
           numColumns={2}
           columnWrapperStyle={listings.length > 0 ? styles.columns : undefined}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={[styles.list, tabBarInset]}
           onEndReached={loadMore}
           onEndReachedThreshold={0.4}
           ListHeaderComponent={

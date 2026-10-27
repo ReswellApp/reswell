@@ -1,6 +1,7 @@
 import { Stack, useRouter } from "expo-router"
 import { useCallback, useState } from "react"
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native"
+import { useFloatingTabBarContentInset } from "@/components/floating-tab-bar"
 import { ScreenSearchHeader } from "@/components/screen-search-header"
 import { ListingCard } from "@/components/listing-card"
 import { fetchFavorites } from "@/lib/api"
@@ -46,6 +47,7 @@ export default function FavoritesTabScreen() {
 function FavoritesList() {
   const colors = useReswellColors()
   const router = useRouter()
+  const tabBarInset = useFloatingTabBarContentInset()
   const load = useCallback((accessToken: string) => fetchFavorites(accessToken), [])
   const { data, error, loading, reload } = useAccountResource(load)
   const favorites = data?.favorites ?? []
@@ -74,7 +76,7 @@ function FavoritesList() {
       keyExtractor={(item) => item?.id ?? "spacer"}
       numColumns={2}
       columnWrapperStyle={styles.row}
-      contentContainerStyle={styles.list}
+      contentContainerStyle={[styles.list, tabBarInset]}
       refreshing={loading}
       onRefresh={() => {
         setRemoved(new Set())

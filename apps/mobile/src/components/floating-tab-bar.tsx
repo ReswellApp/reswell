@@ -1,8 +1,7 @@
-import { GlassView, isGlassEffectAPIAvailable, isLiquidGlassAvailable } from "expo-glass-effect"
 import { SymbolView, type AndroidSymbol } from "expo-symbols"
 import { usePathname, useRouter } from "expo-router"
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react"
-import { Pressable, StyleSheet, Text, useColorScheme, View } from "react-native"
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react"
+import { Platform, Pressable, StyleSheet, Text, useColorScheme, View, type ViewStyle } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import type { SFSymbol } from "sf-symbols-typescript"
 import { useAuth } from "@/lib/auth-context"
@@ -14,18 +13,78 @@ const TAB_BAR_FALLBACK_HEIGHT = 58
 /** Space between scroll content and the top of the bar. */
 const TAB_BAR_CONTENT_GAP = 12
 
+type StackRoute = { name: string }
+type StackNavigationState = { index: number; routes: StackRoute[] }
+type StackNavigationForTabBar = { getState(): StackNavigationState | undefined }
+
 const TabBarHeightContext = createContext<{
   height: number
   setHeight: (height: number) => void
 } | null>(null)
 
+/** Pathname updates after stack transitions; override only for the in-flight animation. */
+type TabBarTransitionOverride = "show" | "hide" | null
+
+const TabBarTransitionContext = createContext<{
+  transitionOverride: TabBarTransitionOverride
+  setTransitionOverride: (next: TabBarTransitionOverride) => void
+} | null>(null)
+
 export function FloatingTabBarInsetProvider({ children }: { children: ReactNode }) {
   const [height, setBarHeight] = useState(0)
+  const [transitionOverride, setTransitionOverride] = useState<TabBarTransitionOverride>(null)
   const setHeight = useCallback((next: number) => {
     setBarHeight((current) => (current === next ? current : next))
   }, [])
-  const value = useMemo(() => ({ height, setHeight }), [height, setHeight])
-  return <TabBarHeightContext.Provider value={value}>{children}</TabBarHeightContext.Provider>
+  const heightValue = useMemo(() => ({ height, setHeight }), [height, setHeight])
+  const transitionValue = useMemo(
+    () => ({ transitionOverride, setTransitionOverride }),
+    [transitionOverride],
+  )
+  return (
+    <TabBarTransitionContext.Provider value={transitionValue}>
+      <TabBarHeightContext.Provider value={heightValue}>{children}</TabBarHeightContext.Provider>
+    </TabBarTransitionContext.Provider>
+  )
+}
+
+/** Pass to root `<Stack screenListeners={...} />` to sync tab bar visibility with stack transitions. */
+export function useFloatingTabBarStackScreenListeners(): (props: {
+  navigation: StackNavigationForTabBar
+}) => {
+  transitionStart: (event: { data?: { closing?: boolean } }) => void
+  gestureCancel: () => void
+} {
+  const setTransitionOverride = useContext(TabBarTransitionContext)?.setTransitionOverride
+  return useCallback(
+    ({ navigation }) => ({
+      transitionStart(event) {
+        if (!setTransitionOverride) return
+        const state = navigation.getState()
+        if (!state) return
+        const focused = state.routes[state.index]
+        if (!focused) return
+
+        if (event.data?.closing) {
+          if (state.index <= 0) return
+          const previous = state.routes[state.index - 1]
+          if (!previous) return
+          if (!tabBarHiddenForRouteName(String(focused.name))) return
+          if (tabBarHiddenForRouteName(String(previous.name))) return
+          setTransitionOverride("show")
+          return
+        }
+
+        if (tabBarHiddenForRouteName(String(focused.name))) {
+          setTransitionOverride("hide")
+        }
+      },
+      gestureCancel() {
+        setTransitionOverride?.(null)
+      },
+    }),
+    [setTransitionOverride],
+  )
 }
 
 /** Bottom space the root stack should keep clear while the floating bar is on screen. */
@@ -33,9 +92,17 @@ export function useFloatingTabBarClearance(): number {
   const pathname = usePathname()
   const insets = useSafeAreaInsets()
   const measured = useContext(TabBarHeightContext)?.height ?? 0
+  // Match pathname only — not transition override. Early "show" on pop must not
+  // shrink the stack mid-gesture (that exposed a full-width strip behind the pill).
   if (tabBarHidden(pathname)) return 0
   const barHeight = measured > 0 ? measured : TAB_BAR_FALLBACK_HEIGHT
   return barHeight + Math.max(insets.bottom, 8) + TAB_BAR_CONTENT_GAP
+}
+
+/** Bottom inset for scroll content on tab screens (stack is full-bleed; bar floats on top). */
+export function useFloatingTabBarContentInset(): ViewStyle {
+  const clearance = useFloatingTabBarClearance()
+  return clearance > 0 ? { paddingBottom: clearance } : {}
 }
 
 type TabIcon = {
@@ -107,10 +174,42 @@ function tabBarHidden(pathname: string): boolean {
   )
 }
 
+/** Expo Router stack `route.name` — used before `usePathname()` updates on swipe-back. */
+function tabBarHiddenForRouteName(name: string): boolean {
+  if (name === "sign-in") return true
+  if (name === "sell/index" || name === "sell/new" || name.startsWith("sell/")) return true
+  if (name === "account/cart" || name === "account/checkout") return true
+  if (name === "account/messages/[id]") return true
+  if (name.startsWith("listing")) return true
+  if (name.startsWith("profile")) return true
+  if (name.startsWith("seller-resources")) return true
+  if (name.startsWith("sellers")) return true
+  return false
+}
+
+function useFloatingTabBarShown(): boolean {
+  const pathname = usePathname()
+  const pathnameShowsBar = !tabBarHidden(pathname)
+  const transition = useContext(TabBarTransitionContext)
+  const transitionOverride = transition?.transitionOverride ?? null
+  const setTransitionOverride = transition?.setTransitionOverride
+
+  useEffect(() => {
+    if (!setTransitionOverride || transitionOverride === null) return
+    if (transitionOverride === "show" && pathnameShowsBar) setTransitionOverride(null)
+    if (transitionOverride === "hide" && !pathnameShowsBar) setTransitionOverride(null)
+  }, [pathnameShowsBar, setTransitionOverride, transitionOverride])
+
+  if (transitionOverride === "show") return true
+  if (transitionOverride === "hide") return false
+  return pathnameShowsBar
+}
+
 const AUTH_TABS = new Set<TabItem["href"]>(["/sell/new", "/favorites", "/account"])
 
 export function FloatingTabBar() {
   const pathname = usePathname()
+  const shown = useFloatingTabBarShown()
   const router = useRouter()
   const { session } = useAuth()
   const { requestAuth } = useAuthGate()
@@ -119,10 +218,10 @@ export function FloatingTabBar() {
   const insets = useSafeAreaInsets()
   const tabBarHeight = useContext(TabBarHeightContext)
 
-  if (tabBarHidden(pathname)) return null
+  if (!shown) return null
 
-  const glass = isLiquidGlassAvailable() && isGlassEffectAPIAvailable()
   const tabInk = colors.foreground
+  const barSurface = colors.background
   const tabInkInactive =
     scheme === "dark" ? "rgba(250, 250, 250, 0.82)" : "rgba(4, 7, 14, 0.88)"
 
@@ -189,24 +288,17 @@ export function FloatingTabBar() {
       style={[styles.wrap, { bottom: Math.max(insets.bottom, 8) }]}
     >
       <View style={styles.shadow}>
-        {glass ? (
-          <GlassView
-            glassEffectStyle="regular"
-            style={styles.bar}
-            tintColor={scheme === "dark" ? "rgba(26,26,26,0.88)" : "rgba(255,255,255,0.92)"}
-          >
-            {tabs}
-          </GlassView>
-        ) : (
-          <View
-            style={[
-              styles.bar,
-              { backgroundColor: scheme === "dark" ? "rgba(26,26,26,0.88)" : "rgba(255,255,255,0.92)" },
-            ]}
-          >
-            {tabs}
-          </View>
-        )}
+        <View
+          style={[
+            styles.bar,
+            {
+              backgroundColor: barSurface,
+              borderColor: colors.border,
+            },
+          ]}
+        >
+          {tabs}
+        </View>
       </View>
     </View>
   )
@@ -217,23 +309,31 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 14,
     right: 14,
+    backgroundColor: "transparent",
   },
   shadow: {
     borderRadius: 32,
-    shadowColor: "#000000",
-    shadowOpacity: 0.14,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 8,
+    backgroundColor: "transparent",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000000",
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 4 },
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
   },
   bar: {
     borderRadius: 32,
-    overflow: "hidden",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 10,
     paddingVertical: 6,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   press: { flex: 1, minHeight: 44 },
   item: { alignItems: "center", justifyContent: "center", gap: 2, paddingVertical: 2 },

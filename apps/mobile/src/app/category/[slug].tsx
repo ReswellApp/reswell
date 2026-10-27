@@ -14,6 +14,7 @@ import { CategoryFilters } from "@/components/category-filters"
 import { CategoryHero } from "@/components/category-hero"
 import { type CategoryPlace, type CategoryRadius } from "@/components/category-location-filter"
 import { CategoryToolbar } from "@/components/category-toolbar"
+import { useFloatingTabBarContentInset } from "@/components/floating-tab-bar"
 import { ScreenSearchHeader } from "@/components/screen-search-header"
 import { MarketplaceListingLayoutItem } from "@/components/marketplace-listing-layout-item"
 import { type ListingLayout } from "@/components/listing-layout-switch"
@@ -95,6 +96,7 @@ export default function CategoryScreen() {
   }, [])
 
   const { viewerId, followBusyId, openListing, openSeller, toggleFollow } = useListingSellerFollow(setListings)
+  const tabBarInset = useFloatingTabBarContentInset()
   const grid = layout === "grid" && listings.length % 2 === 1 ? [...listings, null] : listings
   const filterCount =
     Object.values(selected).reduce((sum, values) => sum + values.length, 0) + (shipping ? 1 : 0) + (place ? 1 : 0)
@@ -119,9 +121,10 @@ export default function CategoryScreen() {
           keyExtractor={(item) => item?.id ?? "spacer"}
           numColumns={layout === "grid" ? 2 : 1}
           columnWrapperStyle={layout === "grid" ? styles.columns : undefined}
-          contentContainerStyle={
-            layout === "list" ? marketplaceListContentStyle(styles.listBase, layout) : styles.list
-          }
+          contentContainerStyle={[
+            layout === "list" ? marketplaceListContentStyle(styles.listBase, layout) : styles.list,
+            tabBarInset,
+          ]}
           refreshing={loading}
           onRefresh={load}
           onEndReached={loadMore}

@@ -1,5 +1,6 @@
 import type { ReactElement, ReactNode } from "react"
 import { ScrollView, StyleSheet, type RefreshControlProps, type StyleProp, type ViewStyle } from "react-native"
+import { useFloatingTabBarContentInset } from "@/components/floating-tab-bar"
 
 interface VerticalScrollProps {
   children: ReactNode
@@ -21,10 +22,11 @@ export function VerticalScroll({
   refreshControl,
   contentInsetAdjustmentBehavior,
 }: VerticalScrollProps) {
+  const tabBarInset = useFloatingTabBarContentInset()
   return (
     <ScrollView
       style={style}
-      contentContainerStyle={contentContainerStyle}
+      contentContainerStyle={[tabBarInset, contentContainerStyle]}
       contentInsetAdjustmentBehavior={contentInsetAdjustmentBehavior}
       refreshControl={refreshControl}
       nestedScrollEnabled

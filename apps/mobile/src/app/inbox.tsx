@@ -5,6 +5,7 @@ import { useCallback, useState } from "react"
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import type { MobileInbox } from "@reswell/api-contract"
+import { useFloatingTabBarContentInset } from "@/components/floating-tab-bar"
 import { fetchInbox } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
 import { useAuthGate } from "@/lib/auth-gate"
@@ -50,6 +51,7 @@ export default function InboxScreen() {
 function InboxList() {
   const colors = useReswellColors()
   const router = useRouter()
+  const tabBarInset = useFloatingTabBarContentInset()
   const load = useCallback((accessToken: string) => fetchInbox(accessToken), [])
   const { data, error, loading, reload } = useAccountResource(load)
   const [filter, setFilter] = useState<Filter>("all")
@@ -64,6 +66,7 @@ function InboxList() {
     <FlatList
       data={items}
       keyExtractor={(item) => item.id}
+      contentContainerStyle={tabBarInset}
       refreshing={loading}
       onRefresh={reload}
       ListHeaderComponent={

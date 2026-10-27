@@ -4,6 +4,7 @@ import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "
 import type { MobileListingCard, MobileMarketplaceFeed, MobileMarketplaceFeedTab } from "@reswell/api-contract"
 import { MarketplaceListingLayoutItem } from "@/components/marketplace-listing-layout-item"
 import { ListingLayoutSwitch, type ListingLayout } from "@/components/listing-layout-switch"
+import { useFloatingTabBarContentInset } from "@/components/floating-tab-bar"
 import { marketplaceListContentStyle } from "@/components/listing-list-layout"
 import { ScreenSearchHeader } from "@/components/screen-search-header"
 import { fetchMarketplaceFeed } from "@/lib/api"
@@ -75,6 +76,7 @@ export default function FeedScreen() {
   const [loadingMore, setLoadingMore] = useState(false)
   const [layout, setLayout] = useState<ListingLayout>("grid")
   const { viewerId, followBusyId, openListing, openSeller, toggleFollow } = useListingSellerFollow(setListings)
+  const tabBarInset = useFloatingTabBarContentInset()
   const requestId = useRef(0)
   const loadingMoreRef = useRef(false)
   const tabRef = useRef(tab)
@@ -208,7 +210,7 @@ export default function FeedScreen() {
           keyExtractor={(item) => item?.id ?? "spacer"}
           numColumns={layout === "grid" ? 2 : 1}
           columnWrapperStyle={layout === "grid" ? styles.columns : undefined}
-          contentContainerStyle={marketplaceListContentStyle(styles.list, layout)}
+          contentContainerStyle={[marketplaceListContentStyle(styles.list, layout), tabBarInset]}
           refreshing={loading}
           onRefresh={() => load(tab)}
           onEndReached={loadMore}

@@ -1,6 +1,7 @@
 import { Stack, useRouter } from "expo-router"
 import { useCallback, useEffect, useState } from "react"
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
+import { useFloatingTabBarContentInset } from "@/components/floating-tab-bar"
 import { MeDashboardSections } from "@/components/me-dashboard-sections"
 import { MeProfileHeader } from "@/components/me-profile-header"
 import { ScreenSearchHeader } from "@/components/screen-search-header"
@@ -23,6 +24,7 @@ export default function AccountScreen() {
 
   const dashboard = dashboardResource.data
   const slug = dashboard?.seller_slug ?? null
+  const tabBarInset = useFloatingTabBarContentInset()
 
   useEffect(() => {
     if (!token) {
@@ -74,7 +76,7 @@ export default function AccountScreen() {
       ) : dashboardResource.loading && !dashboard ? (
         <ActivityIndicator style={styles.centered} color={colors.foreground} />
       ) : dashboard ? (
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={tabBarInset}>
           <MeProfileHeader
             displayName={name}
             username={slug}
