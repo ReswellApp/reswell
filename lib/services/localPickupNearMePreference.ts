@@ -1,6 +1,7 @@
+import { revalidateLocalPickupNearMePreference } from "@/lib/cache/revalidate-local-pickup-near-me-preference"
+import { getCachedLocalPickupNearMePreferenceForUser } from "@/lib/cache/local-pickup-near-me-preference"
 import { createClient } from "@/lib/supabase/server"
 import {
-  getLocalPickupNearMePreferenceForUser,
   upsertLocalPickupNearMePreferenceForUser,
   type LocalPickupNearMePreference,
 } from "@/lib/db/localPickupNearMePreference"
@@ -14,8 +15,7 @@ export type LocalPickupNearMePreferenceState = LocalPickupNearMePreference
 export async function loadLocalPickupNearMePreferenceForUser(
   userId: string,
 ): Promise<LocalPickupNearMePreferenceState> {
-  const supabase = await createClient()
-  return getLocalPickupNearMePreferenceForUser(supabase, userId)
+  return getCachedLocalPickupNearMePreferenceForUser(userId)
 }
 
 export type SaveLocalPickupNearMePreferenceResult =
@@ -67,6 +67,8 @@ export async function saveLocalPickupNearMePreference(
   if (!saved.ok) {
     return saved
   }
+
+  revalidateLocalPickupNearMePreference(user.id)
 
   return { ok: true, preference }
 }

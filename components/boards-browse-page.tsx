@@ -120,10 +120,7 @@ async function BoardListings({
   searchParams: Promise<BoardsBrowseSearchParams>
 }) {
   const supabase = getDb({ consistency: "eventual" })
-  const rawSearchParams = await searchParamsPromise
-  const { user } = await getCachedRequestSession()
-  const mergedBrowse = await loadMergedBoardsBrowseFilters(supabase, user?.id, rawSearchParams)
-  const searchParams = mergedBrowse.searchParams
+  const searchParams = await searchParamsPromise
   const parsedPage = parseInt(searchParams.page || "1", 10)
   const page = Number.isFinite(parsedPage) && parsedPage >= 1 ? parsedPage : 1
   const limit = BOARDS_BROWSE_PAGE_SIZE
@@ -730,9 +727,8 @@ export async function BoardsBrowsePage(props: {
     redirect(geocodeRedirectHref)
   }
 
-  const browseSupabase = getDb({ consistency: "eventual" })
   const { user: browseUser } = await getCachedRequestSession()
-  const mergedNearMe = await loadMergedBoardsBrowseFilters(browseSupabase, browseUser?.id, searchParams)
+  const mergedNearMe = await loadMergedBoardsBrowseFilters(browseUser?.id, searchParams)
   const nearMeRedirectHref = boardsBrowseLocalPickupNearMeRedirectHref(
     browsePath,
     searchParams,

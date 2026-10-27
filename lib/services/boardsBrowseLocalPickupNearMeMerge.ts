@@ -1,8 +1,5 @@
-import type { SupabaseClient } from "@supabase/supabase-js"
-import {
-  getLocalPickupNearMePreferenceForUser,
-  type LocalPickupNearMePreference,
-} from "@/lib/db/localPickupNearMePreference"
+import { getLocalPickupNearMePreferenceForBrowse } from "@/lib/cache/local-pickup-near-me-preference"
+import type { LocalPickupNearMePreference } from "@/lib/db/localPickupNearMePreference"
 import { normalizeBoardBrowseRadius } from "@/lib/boards-browse-location"
 import {
   boardsBrowseHasLatLng,
@@ -80,14 +77,10 @@ export function mergeLocalPickupNearMeIntoBrowseParams(
 }
 
 export async function loadMergedBoardsBrowseFilters(
-  supabase: SupabaseClient,
   userId: string | null | undefined,
   searchParams: BoardsBrowseSearchParams,
 ): Promise<BoardsBrowseEffectiveFilters> {
-  if (!userId) {
-    return mergeLocalPickupNearMeIntoBrowseParams(searchParams, null)
-  }
-  const pref = await getLocalPickupNearMePreferenceForUser(supabase, userId)
+  const pref = await getLocalPickupNearMePreferenceForBrowse(userId)
   return mergeLocalPickupNearMeIntoBrowseParams(searchParams, pref)
 }
 
