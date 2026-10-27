@@ -1,14 +1,16 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router"
 import { useEffect, useMemo, useState } from "react"
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from "react-native"
-import type { MobileListingCard, MobileProfile, MobileReview } from "@reswell/api-contract"
+import type { MobileProfile, MobileReview } from "@reswell/api-contract"
 import { ListingCard } from "@/components/listing-card"
 import { ScreenSearchHeader } from "@/components/screen-search-header"
 import { ProfileFeedback, ProfileInfo } from "@/components/profile-panels"
 import { ProfileHeader, type SellerTab } from "@/components/profile-header"
-import { fetchProfile, fetchProfileListings, fetchProfileReviews, setFollow } from "@/lib/api"
+import { fetchProfile, fetchProfileReviews, setFollow } from "@/lib/api"
+import { useProfileShopListings } from "@/lib/use-profile-shop-listings"
 import { useAuth } from "@/lib/auth-context"
 import { useAuthGate } from "@/lib/auth-gate"
+import { sortProfileShopListings, type ProfileShopSort } from "@/lib/profile-shop-sort"
 import { fontFamily, useReswellColors } from "@/theme"
 
 export default function ProfileScreen() {
@@ -22,13 +24,12 @@ export default function ProfileScreen() {
   const [followBusy, setFollowBusy] = useState(false)
   const [followError, setFollowError] = useState<string | null>(null)
   const [profile, setProfile] = useState<MobileProfile | null>(null)
-  const [listings, setListings] = useState<MobileListingCard[]>([])
-  const [sold, setSold] = useState<MobileListingCard[] | null>(null)
   const [reviews, setReviews] = useState<MobileReview[]>([])
   const [error, setError] = useState<string | null>(null)
-  const [listingsError, setListingsError] = useState<string | null>(null)
-  const [loadingListings, setLoadingListings] = useState(true)
   const [shopQuery, setShopQuery] = useState("")
+  const [shopSort, setShopSort] = useState<ProfileShopSort>("newest")
+  const shopTab = tab === "sold" ? "sold" : "listings"
+  const shop = useProfileShopListings(slug, shopTab)
 
   useEffect(() => {
     if (!slug) return
@@ -40,16 +41,6 @@ export default function ProfileScreen() {
       })
       .catch((cause: unknown) => {
         if (!cancelled) setError(cause instanceof Error ? cause.message : "Unable to load profile")
-      })
-    fetchProfileListings(slug)
-      .then((page) => {
-        if (!cancelled) setListings(page.listings)
-      })
-      .catch((cause: unknown) => {
-        if (!cancelled) setListingsError(cause instanceof Error ? cause.message : "Unable to load listings")
-      })
-      .finally(() => {
-        if (!cancelled) setLoadingListings(false)
       })
     fetchProfileReviews(slug)
       .then((page) => {
@@ -82,24 +73,16 @@ export default function ProfileScreen() {
 
   function showTab(next: SellerTab) {
     setTab(next)
-    if (next !== "sold" || !slug || sold) return
-    setLoadingListings(true)
-    setListingsError(null)
-    fetchProfileListings(slug, { status: "sold" })
-      .then((page) => setSold(page.listings))
-      .catch((cause: unknown) => {
-        setSold([])
-        setListingsError(cause instanceof Error ? cause.message : "Unable to load listings")
-      })
-      .finally(() => setLoadingListings(false))
+    if (next === "sold") shop.loadSold()
   }
 
-  const inventory = tab === "sold" ? (sold ?? []) : listings
+  const loadingListings = tab === "sold" ? shop.loadingSold : shop.loadingCurrent
+  const inventory = tab === "sold" ? (shop.soldListings ?? []) : shop.currentListings
   const filteredInventory = useMemo(() => {
     const q = shopQuery.trim().toLowerCase()
-    if (!q) return inventory
-    return inventory.filter((item) => item.title.toLowerCase().includes(q))
-  }, [inventory, shopQuery])
+    const searched = q ? inventory.filter((item) => item.title.toLowerCase().includes(q)) : inventory
+    return sortProfileShopListings(searched, shopSort, shop.sectionId)
+  }, [inventory, shopQuery, shopSort, shop.sectionId])
   const showingGrid = tab === "listings" || tab === "sold"
   const grid =
     showingGrid && filteredInventory.length % 2 === 1
@@ -125,6 +108,11 @@ export default function ProfileScreen() {
           numColumns={2}
           columnWrapperStyle={grid.length > 0 ? styles.row : undefined}
           contentContainerStyle={styles.list}
+          onEndReached={() => {
+            if (tab !== "listings" && tab !== "sold") return
+            shop.loadMore(tab === "sold" ? "sold" : "current")
+          }}
+          onEndReachedThreshold={0.4}
           ListHeaderComponent={
             <View>
               <ProfileHeader
@@ -139,15 +127,25 @@ export default function ProfileScreen() {
                 onEdit={ownProfile ? () => router.push("/account/profile") : undefined}
                 shopQuery={shopQuery}
                 onShopQueryChange={setShopQuery}
+                shopSections={shop.sectionOptions}
+                shopSectionId={shop.sectionId}
+                onShopSectionChange={shop.setSectionId}
+                shopSort={shopSort}
+                onShopSortChange={setShopSort}
               />
               {followError ? (
                 <Text style={[styles.empty, { color: colors.foreground, fontFamily: fontFamily.text }]}>{followError}</Text>
               ) : null}
               {showingGrid && loadingListings ? <ActivityIndicator color={colors.foreground} style={styles.listingsSpinner} /> : null}
-              {showingGrid && listingsError ? (
-                <Text style={[styles.empty, { color: colors.foreground, fontFamily: fontFamily.text }]}>{listingsError}</Text>
+              {showingGrid && shop.error ? (
+                <Text style={[styles.empty, { color: colors.foreground, fontFamily: fontFamily.text }]}>{shop.error}</Text>
               ) : null}
             </View>
+          }
+          ListFooterComponent={
+            showingGrid && shop.loadingMore ? (
+              <ActivityIndicator color={colors.foreground} style={styles.listingsSpinner} />
+            ) : null
           }
           ListEmptyComponent={
             showingGrid ? (

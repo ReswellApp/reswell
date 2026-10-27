@@ -1129,6 +1129,8 @@ export type MobileSellerCard = z.infer<typeof mobileSellerCardSchema>
 export type MobileSellersPage = z.infer<typeof mobileSellersPageSchema>
 export type MobileSellerPage = z.infer<typeof mobileSellerPageSchema>
 export type MobileProfile = z.infer<typeof mobileProfileSchema>
+export type MobileProfileShopSection = z.infer<typeof mobileProfileShopSectionSchema>
+export type MobileProfileShopFilters = z.infer<typeof mobileProfileShopFiltersSchema>
 
 const mobilePageFields = {
   limit: z.number().int(),
@@ -1138,6 +1140,22 @@ const mobilePageFields = {
 
 export const mobileProfileListingsQuerySchema = mobileListingsQueryObject.extend({
   status: z.enum(["current", "sold"]).default("current"),
+})
+
+/** Seller shop category chips — same peer sections the website filters on. */
+export const mobileProfileShopSectionSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+  count: z.number().int().nonnegative(),
+})
+
+export const mobileProfileShopFiltersQuerySchema = z.object({
+  status: z.enum(["current", "sold"]).default("current"),
+})
+
+export const mobileProfileShopFiltersSchema = z.object({
+  status: z.enum(["current", "sold"]),
+  sections: z.array(mobileProfileShopSectionSchema),
 })
 
 export const mobileReviewsQuerySchema = z.object({
@@ -1844,3 +1862,8 @@ export type MobileSale = z.infer<typeof mobileSaleSchema>
 export type MobileConversationPreview = z.infer<typeof mobileConversationPreviewSchema>
 export type MobileMessage = z.infer<typeof mobileMessageSchema>
 export type MobileConversationDetail = z.infer<typeof mobileConversationDetailSchema>
+
+export {
+  listingFulfillmentPdpCopy,
+  type ListingFulfillmentPdpCopy,
+} from "./listing-fulfillment-pdp"

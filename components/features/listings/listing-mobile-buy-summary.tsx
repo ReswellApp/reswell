@@ -5,14 +5,10 @@ import {
   ListingDetailEngagementMetrics,
   type ListingOfferToCartProps,
 } from "@/components/listing-detail-engagement-metrics"
+import { ListingPdpDeliveryCaption } from "@/components/features/listings/listing-pdp-delivery-caption"
 import { ListingKlarnaAsLowAs } from "@/components/features/listings/listing-klarna-as-low-as"
 import { ListingPriceWithMarkdown } from "@/components/features/listings/listing-price-with-markdown"
-import {
-  LISTING_SHIPPING_EMPHASIS_CLASS,
-  listingPickupCaption,
-} from "@/lib/listing-fulfillment"
-import { cn } from "@/lib/utils"
-
+import { listingFulfillmentPdpCopy } from "@reswell/api-contract"
 const RECENTLY_LISTED_MS = 14 * 24 * 60 * 60 * 1000
 const iconClassName = "mt-0.5 h-4 w-4 shrink-0 text-listingHeart"
 
@@ -21,65 +17,6 @@ function isRecentlyListed(value: string | number | Date | null | undefined): boo
   const d = new Date(value)
   if (Number.isNaN(d.getTime())) return false
   return Date.now() - d.getTime() < RECENTLY_LISTED_MS
-}
-
-function priceShippingNote(caption: string | null): string | null {
-  if (!caption) return null
-  if (caption === "Free shipping included") return "Free Shipping"
-  if (caption === "Local pickup · shipping not offered") return "Local pickup"
-  if (caption === "Shipping rate calculated at checkout") return "Shipping calculated at checkout"
-  return caption
-}
-
-function shippingStatusRow({
-  isSold,
-  soldShipped,
-  shippingOffered,
-  pickupOffered,
-  shippingCostMode,
-  shippingFlatRate,
-  locationLine,
-}: {
-  isSold: boolean
-  soldShipped: boolean
-  shippingOffered: boolean
-  pickupOffered: boolean
-  shippingCostMode: "reswell" | "flat" | "free" | null
-  shippingFlatRate: number
-  locationLine: string | null
-}): { title: string; detail: string | null } | null {
-  if (isSold) {
-    return soldShipped ? { title: "This item was shipped", detail: null } : null
-  }
-  const from = locationLine ? `from ${locationLine}` : null
-  if (shippingOffered && pickupOffered) {
-    if (shippingCostMode === "free") {
-      return { title: "Free shipping or local pickup", detail: from }
-    }
-    if (shippingCostMode === "reswell") {
-      return { title: "Shipping or local pickup", detail: from }
-    }
-    if (shippingFlatRate > 0) {
-      return {
-        title: "Shipping or local pickup",
-        detail: [`+ $${shippingFlatRate.toFixed(2)} shipping`, from].filter(Boolean).join(" "),
-      }
-    }
-    return { title: "Shipping or local pickup", detail: from }
-  }
-  if (shippingOffered && shippingCostMode === "free") {
-    return { title: "Free Shipping", detail: from }
-  }
-  if (!shippingOffered && pickupOffered) {
-    return { title: listingPickupCaption(true, locationLine) ?? "Local pickup", detail: null }
-  }
-  if (shippingOffered && shippingCostMode !== "reswell" && shippingFlatRate > 0) {
-    return { title: "Shipping", detail: [`+ $${shippingFlatRate.toFixed(2)}`, from].filter(Boolean).join(" ") }
-  }
-  if (shippingOffered) {
-    return { title: "Shipping", detail: from }
-  }
-  return null
 }
 
 export interface ListingMobileBuySummaryProps {
@@ -132,15 +69,15 @@ export function ListingMobileBuySummary({
   afterPrice = null,
   children,
 }: ListingMobileBuySummaryProps) {
-  const shippingNote = isSold ? null : priceShippingNote(shippingPriceCaption)
-  const shippingRow = shippingStatusRow({
-    isSold,
-    soldShipped,
-    shippingOffered,
+  const fulfillment = listingFulfillmentPdpCopy({
     pickupOffered,
+    shippingOffered,
+    locationLine,
+    shippingLine: shippingPriceCaption,
     shippingCostMode,
     shippingFlatRate,
-    locationLine,
+    isSold,
+    soldShipped,
   })
   const recentlyListed = !isSold && isRecentlyListed(createdAt)
   const cartDetail =
@@ -182,18 +119,15 @@ export function ListingMobileBuySummary({
           />
         </p>
       )}
-      {shippingNote ? (
-        <p
-          className={cn(
-            "mt-1 text-[14px]",
-            shippingNote === "Local pickup"
-              ? "text-muted-foreground"
-              : LISTING_SHIPPING_EMPHASIS_CLASS,
-          )}
-        >
-          {shippingNote}
-        </p>
-      ) : null}
+      <ListingPdpDeliveryCaption
+        isSold={isSold}
+        shippingOffered={shippingOffered}
+        pickupOffered={pickupOffered}
+        shippingPriceCaption={shippingPriceCaption}
+        locationLine={locationLine}
+        compact
+        className="mt-1"
+      />
       {!isSold ? (
         <ListingKlarnaAsLowAs listingId={listingId} isLoggedIn={isLoggedIn} className="mt-2" />
       ) : null}
@@ -205,15 +139,15 @@ export function ListingMobileBuySummary({
       {children ? <div className="mt-5">{children}</div> : null}
       {afterPrice ? <div className="mt-5">{afterPrice}</div> : null}
 
-      {shippingRow || showScarcity || recentlyListed || showPurchaseProtection ? (
+      {fulfillment || showScarcity || recentlyListed || showPurchaseProtection ? (
         <ul className="mt-5 space-y-2.5">
-          {shippingRow ? (
+          {fulfillment ? (
             <li className="flex gap-2.5 text-[14px] leading-snug">
               <Truck className={iconClassName} aria-hidden />
               <p>
-                <span className="font-semibold text-foreground">{shippingRow.title}</span>
-                {shippingRow.detail ? (
-                  <span className="text-muted-foreground"> {shippingRow.detail}</span>
+                <span className="font-semibold text-foreground">{fulfillment.headline}</span>
+                {fulfillment.subline ? (
+                  <span className="text-muted-foreground"> {fulfillment.subline}</span>
                 ) : null}
               </p>
             </li>

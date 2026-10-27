@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from "react-native"
 import type { MobileListingCard, MobileListingRailSection } from "@reswell/api-contract"
-import { HorizontalRail } from "@/components/horizontal-rail"
+import { HorizontalRail, SCREEN_GUTTER } from "@/components/horizontal-rail"
 import { ListingCard } from "@/components/listing-card"
 import { fontFamily, useReswellColors } from "@/theme"
 
@@ -21,7 +21,7 @@ export function ListingRails({
           <Text style={[styles.title, { color: colors.foreground, fontFamily: fontFamily.headline }]}>
             {section.title}
           </Text>
-          <HorizontalRail contentStyle={styles.rail}>
+          <HorizontalRail>
             {section.listings.map((listing) => (
               <View key={listing.id} style={styles.card}>
                 <ListingCard item={listing} onPress={() => onOpenListing(listing)} />
@@ -37,7 +37,6 @@ export function ListingRails({
 const styles = StyleSheet.create({
   wrap: { paddingBottom: 24 },
   section: { marginTop: 28 },
-  title: { fontSize: 22, fontWeight: "700", letterSpacing: -0.4, paddingHorizontal: 16, marginBottom: 12 },
-  rail: { paddingHorizontal: 16, gap: 12 },
+  title: { fontSize: 22, fontWeight: "700", letterSpacing: -0.4, paddingHorizontal: SCREEN_GUTTER, marginBottom: 12 },
   card: { width: 168 },
 })

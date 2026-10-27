@@ -15,6 +15,8 @@ export async function GET(request: NextRequest, context: RouteContext) {
       limit: request.nextUrl.searchParams.get("limit") ?? undefined,
       offset: request.nextUrl.searchParams.get("offset") ?? undefined,
       status: request.nextUrl.searchParams.get("status") ?? undefined,
+      section: request.nextUrl.searchParams.get("section") ?? undefined,
+      q: request.nextUrl.searchParams.get("q") ?? undefined,
     })
     if (!parsedSlug.success || !parsedQuery.success) {
       return mobileDataResponse(

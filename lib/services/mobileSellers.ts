@@ -84,7 +84,7 @@ export async function getMobileSellerPageService(
   if (!profile.ok) return profile
 
   const listed = await listMobileListingRows({
-    limit: 24,
+    limit: 20,
     offset: 0,
     sellerId: profile.data.id,
     availability: "current",

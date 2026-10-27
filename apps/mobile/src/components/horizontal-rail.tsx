@@ -1,41 +1,8 @@
-import type { ReactElement, ReactNode } from "react"
-import { ScrollView, StyleSheet, type RefreshControlProps, type StyleProp, type ViewStyle } from "react-native"
-import { useFloatingTabBarContentInset } from "@/components/floating-tab-bar"
+import type { ReactNode } from "react"
+import { Platform, ScrollView, StyleSheet, type StyleProp, type ViewStyle } from "react-native"
+import { horizontalRailContentStyle } from "@/components/screen-shell"
 
-interface VerticalScrollProps {
-  children: ReactNode
-  style?: StyleProp<ViewStyle>
-  contentContainerStyle?: StyleProp<ViewStyle>
-  refreshControl?: ReactElement<RefreshControlProps>
-  contentInsetAdjustmentBehavior?: "automatic" | "scrollableAxes" | "never" | "always"
-}
-
-/**
- * Page scroll. Horizontal rails are plain nested scroll views, so iOS and Android
- * pick the axis from the finger movement. A gesture arena here leaves the page
- * stuck after a swipe that starts on a rail.
- */
-export function VerticalScroll({
-  children,
-  style,
-  contentContainerStyle,
-  refreshControl,
-  contentInsetAdjustmentBehavior,
-}: VerticalScrollProps) {
-  const tabBarInset = useFloatingTabBarContentInset()
-  return (
-    <ScrollView
-      style={style}
-      contentContainerStyle={[tabBarInset, contentContainerStyle]}
-      contentInsetAdjustmentBehavior={contentInsetAdjustmentBehavior}
-      refreshControl={refreshControl}
-      nestedScrollEnabled
-      keyboardShouldPersistTaps="handled"
-    >
-      {children}
-    </ScrollView>
-  )
-}
+export { VerticalScroll, horizontalRailContentStyle, SCREEN_GUTTER } from "@/components/screen-shell"
 
 /** Horizontal row. Momentum stays on the native scroller. A vertical swipe scrolls the page. */
 export function HorizontalRail({
@@ -50,11 +17,12 @@ export function HorizontalRail({
       horizontal
       nestedScrollEnabled
       showsHorizontalScrollIndicator={false}
-      alwaysBounceHorizontal
+      alwaysBounceHorizontal={Platform.OS === "ios"}
+      overScrollMode="always"
       decelerationRate="normal"
       keyboardShouldPersistTaps="handled"
       style={styles.scroller}
-      contentContainerStyle={contentStyle}
+      contentContainerStyle={[horizontalRailContentStyle(), contentStyle]}
     >
       {children}
     </ScrollView>

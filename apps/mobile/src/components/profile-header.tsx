@@ -2,7 +2,8 @@ import { Image, type ImageContentPosition } from "expo-image"
 import { ProfileCircle } from "@/components/profile-circle"
 import { SymbolView } from "expo-symbols"
 import { ActivityIndicator, Linking, Pressable, Share, StyleSheet, Text, View } from "react-native"
-import type { MobileProfile } from "@reswell/api-contract"
+import type { MobileProfile, MobileProfileShopSection } from "@reswell/api-contract"
+import type { ProfileShopSort } from "@/lib/profile-shop-sort"
 import { ProfileSegmentTabs } from "@/components/profile-segment-tabs"
 import { ProfileShopToolbar } from "@/components/profile-shop-toolbar"
 import { ProfileStatsRow } from "@/components/profile-stats-row"
@@ -27,6 +28,11 @@ export function ProfileHeader({
   onEdit,
   shopQuery,
   onShopQueryChange,
+  shopSections,
+  shopSectionId,
+  onShopSectionChange,
+  shopSort,
+  onShopSortChange,
 }: {
   profile: MobileProfile
   tab: SellerTab
@@ -39,6 +45,11 @@ export function ProfileHeader({
   onEdit?: () => void
   shopQuery?: string
   onShopQueryChange?: (value: string) => void
+  shopSections?: MobileProfileShopSection[]
+  shopSectionId?: string | null
+  onShopSectionChange?: (sectionId: string | null) => void
+  shopSort?: ProfileShopSort
+  onShopSortChange?: (sort: ProfileShopSort) => void
 }) {
   const colors = useReswellColors()
   const handle = `@${profile.seller_slug}`
@@ -138,6 +149,11 @@ export function ProfileHeader({
             sellerName={profile.name}
             query={shopQuery ?? ""}
             onQueryChange={onShopQueryChange}
+            sections={shopSections}
+            sectionId={shopSectionId ?? null}
+            onSectionChange={onShopSectionChange}
+            sort={shopSort ?? "newest"}
+            onSortChange={onShopSortChange ?? (() => undefined)}
           />
         </View>
       ) : null}

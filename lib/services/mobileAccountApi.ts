@@ -51,6 +51,7 @@ import { isListingPubliclyVisible, isListingVisibleInSavedList } from "@/lib/lis
 import { redactShippingLabelArtifactsFromMessage } from "@/lib/messages/redact-seller-shipping-label"
 import { absoluteProfileCircleUrl } from "@/lib/profile-circle"
 import { getMessagesInboxForUser } from "@/lib/services/messagesInbox"
+import { resolveProfileShopSectionFilter } from "@/lib/sellers/profile-shop-section-filter"
 import {
   toMobileConversationPreview,
   toMobileOffer,
@@ -89,16 +90,29 @@ function cardsFromRows(
 
 export async function listMobileProfileListingsService(
   slug: string,
-  query: { limit: number; offset: number; status: "current" | "sold" },
+  query: {
+    limit: number
+    offset: number
+    status: "current" | "sold"
+    section?: string
+    q?: string
+  },
 ): Promise<MobileApiResult<{ listings: NonNullable<ReturnType<typeof toMobileListingCard>>[]; limit: number; offset: number; has_more: boolean }>> {
   const profile = await loadPublicMobileProfileRow(slug)
   if (!profile.ok) return profile
+
+  const section = resolveProfileShopSectionFilter(query.section)
+  if (query.section?.trim() && !section) {
+    return { ok: false, status: 400, error: "Invalid shop category" }
+  }
 
   const listed = await listMobileListingRows({
     limit: query.limit,
     offset: query.offset,
     sellerId: profile.data.id,
     availability: query.status === "sold" ? "sold" : "current",
+    section,
+    q: query.q,
   })
   if (!listed.ok) {
     console.error("[mobile-api] profile listings failed", {

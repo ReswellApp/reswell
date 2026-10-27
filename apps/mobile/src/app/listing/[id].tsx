@@ -6,7 +6,7 @@ import { ScreenSearchHeader } from "@/components/screen-search-header"
 import { ListingActions } from "@/components/listing-actions"
 import { ListingDetail } from "@/components/listing-detail"
 import { ListingGallery } from "@/components/listing-gallery"
-import { VerticalScroll } from "@/components/horizontal-rail"
+import { ScreenFooter, ScreenScroll, ScreenShell } from "@/components/screen-shell"
 import { ListingRails } from "@/components/listing-rails"
 import { fetchListing, fetchListingRails } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
@@ -48,7 +48,7 @@ export default function ListingScreen() {
   }, [id, token, attempt])
 
   return (
-    <View style={[styles.screen, { backgroundColor: colors.background }]}>
+    <ScreenShell style={{ backgroundColor: colors.background }}>
       <Stack.Screen options={{ headerShown: false }} />
       <ScreenSearchHeader showBack />
       {!listing && !error ? (
@@ -64,9 +64,8 @@ export default function ListingScreen() {
         </View>
       ) : (
         <>
-          <VerticalScroll
-            style={styles.scroll}
-            contentContainerStyle={styles.scrollContent}
+          <ScreenScroll
+            reserveFooter={listing.status !== "sold"}
             contentInsetAdjustmentBehavior="never"
           >
             <ListingGallery
@@ -86,11 +85,15 @@ export default function ListingScreen() {
                 router.push({ pathname: "/listing/[id]", params: { id: item.slug || item.id } })
               }
             />
-          </VerticalScroll>
-          {listing.status === "sold" ? null : <ListingActions listing={listing} onChange={setListing} />}
+          </ScreenScroll>
+          {listing.status === "sold" ? null : (
+            <ScreenFooter bordered={false}>
+              <ListingActions listing={listing} onChange={setListing} />
+            </ScreenFooter>
+          )}
         </>
       )}
-    </View>
+    </ScreenShell>
   )
 }
 
@@ -101,9 +104,6 @@ function listingDimensionsLine(dimensions: string | null, volume: string | null)
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
-  scroll: { flex: 1 },
-  scrollContent: { paddingBottom: 140 },
   centered: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, padding: 24 },
   error: { textAlign: "center", fontSize: 16 },
   retry: { fontSize: 16, fontWeight: "600" },

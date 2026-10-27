@@ -4,7 +4,7 @@ import { useEffect } from "react"
 import { Pressable, StyleSheet, Text, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { AccountState } from "@/components/account-state"
-import { VerticalScroll } from "@/components/horizontal-rail"
+import { ScreenFooter, ScreenScroll, ScreenShell } from "@/components/screen-shell"
 import { fetchCart, setCartItem } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
 import { useAuthGate } from "@/lib/auth-gate"
@@ -50,7 +50,8 @@ export default function CartScreen() {
       empty="Your cart is empty."
       isEmpty={items.length === 0}
     >
-      <VerticalScroll contentContainerStyle={styles.list}>
+      <ScreenShell>
+      <ScreenScroll reserveFooter contentContainerStyle={styles.list}>
         {items.length > 1 ? (
           <Text style={[styles.note, { color: colors.muted, fontFamily: fontFamily.text }]}>
             Checkout is one item at a time.
@@ -117,26 +118,24 @@ export default function CartScreen() {
             </View>
           )
         })}
-      </VerticalScroll>
-      <View
-        style={[
-          styles.footer,
-          { borderColor: colors.border, backgroundColor: colors.background, paddingBottom: Math.max(insets.bottom, 16) },
-        ]}
-      >
-        <View style={styles.footerCopy}>
-          <Text style={[styles.meta, { color: colors.muted, fontFamily: fontFamily.text }]}>Subtotal</Text>
-          <Text style={[styles.total, { color: colors.foreground, fontFamily: fontFamily.headline }]}>
-            ${subtotal.toFixed(2)}
-          </Text>
+      </ScreenScroll>
+      <ScreenFooter style={{ borderColor: colors.border, backgroundColor: colors.background }}>
+        <View style={[styles.footerInner, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+          <View style={styles.footerCopy}>
+            <Text style={[styles.meta, { color: colors.muted, fontFamily: fontFamily.text }]}>Subtotal</Text>
+            <Text style={[styles.total, { color: colors.foreground, fontFamily: fontFamily.headline }]}>
+              ${subtotal.toFixed(2)}
+            </Text>
+          </View>
         </View>
-      </View>
+      </ScreenFooter>
+      </ScreenShell>
     </AccountState>
   )
 }
 
 const styles = StyleSheet.create({
-  list: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 140, gap: 14 },
+  list: { paddingHorizontal: 16, paddingTop: 12, gap: 14 },
   note: { fontSize: 14, lineHeight: 20, paddingHorizontal: 2 },
   card: { borderWidth: 1, borderRadius: 16, padding: 14, gap: 14 },
   item: { flexDirection: "row", gap: 12 },
@@ -150,15 +149,7 @@ const styles = StyleSheet.create({
   checkoutLabel: { fontSize: 15, fontWeight: "700" },
   removeButton: { minHeight: 44, paddingHorizontal: 8, alignItems: "center", justifyContent: "center" },
   remove: { fontSize: 15, fontWeight: "600" },
-  footer: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: 16,
-    paddingTop: 14,
-  },
+  footerInner: { paddingHorizontal: 16, paddingTop: 14 },
   footerCopy: { gap: 2 },
   total: { fontSize: 22, fontWeight: "700" },
 })

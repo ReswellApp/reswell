@@ -1,7 +1,8 @@
 import { useRouter } from "expo-router"
 import { SymbolView } from "expo-symbols"
 import { Linking, StyleSheet, Text, View } from "react-native"
-import { MOBILE_BOARD_STYLE_FILTERS, type MobileListingDetail } from "@reswell/api-contract"
+import type { MobileListingDetail } from "@reswell/api-contract"
+import { ListingDeliveryCaption } from "@/components/listing-delivery-caption"
 import { ListingFulfillment } from "@/components/listing-fulfillment"
 import { ListingSellerPanel } from "@/components/listing-seller-panel"
 import { setCartItem } from "@/lib/api"
@@ -9,26 +10,10 @@ import { useAuthGate } from "@/lib/auth-gate"
 import { publicApiUrl } from "@/lib/public-env"
 import { fontFamily, useReswellColors } from "@/theme"
 
-function shapeLabel(boardType: string | null): string | null {
-  if (!boardType || boardType === "other") return null
-  return MOBILE_BOARD_STYLE_FILTERS.find((item) => item.board_type === boardType)?.label ?? null
-}
-
-function specRows(listing: MobileListingDetail): { label: string; value: string }[] {
-  const rows: { label: string; value: string }[] = []
-  if (listing.condition_line) rows.push({ label: "Condition", value: listing.condition_line })
-  const shape = shapeLabel(listing.board_type)
-  if (shape) rows.push({ label: "Shape", value: shape })
-  if (listing.dimensions) rows.push({ label: "Dimensions", value: listing.dimensions })
-  if (listing.volume_label) rows.push({ label: "Volume", value: listing.volume_label })
-  return rows
-}
-
 export function ListingDetail({ listing }: { listing: MobileListingDetail }) {
   const colors = useReswellColors()
   const sold = listing.status === "sold"
   const pending = listing.status === "pending_sale"
-  const rows = specRows(listing)
 
   return (
     <View style={styles.body}>
@@ -60,15 +45,10 @@ export function ListingDetail({ listing }: { listing: MobileListingDetail }) {
           ) : null}
         </View>
       )}
-      {!sold && listing.shipping_label ? (
-        <Text style={[styles.shippingNote, { color: colors.shipping, fontFamily: fontFamily.text }]}>
-          {listing.shipping_label}
-        </Text>
-      ) : null}
+      {sold ? null : <ListingDeliveryCaption listing={listing} />}
       {sold ? null : <KlarnaLine listingId={listing.id} />}
-      {rows.length > 0 ? <SpecTable rows={rows} /> : null}
-      <ListingFulfillment listing={listing} />
       <ListingSellerPanel listing={listing} />
+      <ListingFulfillment listing={listing} />
     </View>
   )
 }
@@ -173,26 +153,6 @@ function Identity({
   )
 }
 
-function SpecTable({ rows }: { rows: { label: string; value: string }[] }) {
-  const colors = useReswellColors()
-  return (
-    <View style={[styles.specs, { borderColor: colors.border }]}>
-      {rows.map((row, index) => (
-        <View
-          key={row.label}
-          style={[
-            styles.specRow,
-            index > 0 ? { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border } : null,
-          ]}
-        >
-          <Text style={[styles.specLabel, { color: colors.muted, fontFamily: fontFamily.text }]}>{row.label}</Text>
-          <Text style={[styles.specValue, { color: colors.foreground, fontFamily: fontFamily.text }]}>{row.value}</Text>
-        </View>
-      ))}
-    </View>
-  )
-}
-
 const styles = StyleSheet.create({
   body: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 28 },
   title: { fontSize: 22, fontWeight: "700", letterSpacing: -0.44, lineHeight: 28 },
@@ -208,11 +168,6 @@ const styles = StyleSheet.create({
   soldBannerPrice: { fontSize: 16, fontWeight: "600" },
   status: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
   statusLabel: { fontSize: 13, fontWeight: "600" },
-  shippingNote: { marginTop: 4, fontSize: 15, fontWeight: "600" },
   klarna: { marginTop: 8, fontSize: 14, lineHeight: 20 },
   link: { fontWeight: "700", textDecorationLine: "underline" },
-  specs: { marginTop: 20, borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth },
-  specRow: { flexDirection: "row", alignItems: "baseline", gap: 16, paddingVertical: 8 },
-  specLabel: { width: 116, fontSize: 13, fontWeight: "500" },
-  specValue: { flex: 1, fontSize: 13, lineHeight: 18 },
 })

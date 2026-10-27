@@ -15,6 +15,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import type { MobileCheckoutAddress, MobileCheckoutQuote } from "@reswell/api-contract"
 import { VerticalScroll } from "@/components/horizontal-rail"
+import { ScreenFooter, ScreenScroll, ScreenShell } from "@/components/screen-shell"
 import {
   fetchCart,
   fetchCheckoutAddresses,
@@ -210,7 +211,7 @@ function CheckoutForm() {
   }
 
   return (
-    <View style={[styles.flex, { backgroundColor: colors.background }]}>
+    <ScreenShell style={{ backgroundColor: colors.background }}>
       {cart.loading && items.length === 0 ? (
         <ActivityIndicator style={styles.centered} color={colors.foreground} />
       ) : items.length === 0 ? (
@@ -218,7 +219,7 @@ function CheckoutForm() {
           That item is no longer in your cart.
         </Text>
       ) : (
-        <VerticalScroll contentContainerStyle={styles.list}>
+        <ScreenScroll reserveFooter contentContainerStyle={styles.list}>
           {items.map((item) => {
             const place = listedPlace(item.listing.city, item.listing.state)
             return (
@@ -330,23 +331,27 @@ function CheckoutForm() {
           )}
 
           {error ? <Text style={[styles.error, { color: colors.destructive, fontFamily: fontFamily.text }]}>{error}</Text> : null}
-        </VerticalScroll>
+        </ScreenScroll>
       )}
-      <View style={[styles.footer, { borderColor: colors.border, backgroundColor: colors.background, paddingBottom: Math.max(insets.bottom, 16) }]}>
-        <View style={styles.footerCopy}>
-          <Text style={[styles.meta, { color: colors.muted, fontFamily: fontFamily.text }]}>Total</Text>
-          <Text style={[styles.footerTotal, { color: colors.foreground, fontFamily: fontFamily.headline }]}>{totalLabel}</Text>
-        </View>
-        <Pressable
-          disabled={!ready || paying}
-          onPress={() => void pay()}
-          style={[styles.pay, { backgroundColor: colors.foreground, opacity: !ready || paying ? 0.45 : 1 }]}
-        >
-          <Text style={[styles.payLabel, { color: colors.primaryForeground, fontFamily: fontFamily.text }]}>
-            {paying ? "Opening…" : "Proceed to pay"}
-          </Text>
-        </Pressable>
-      </View>
+      {items.length > 0 ? (
+        <ScreenFooter style={{ borderColor: colors.border, backgroundColor: colors.background }}>
+          <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+            <View style={styles.footerCopy}>
+              <Text style={[styles.meta, { color: colors.muted, fontFamily: fontFamily.text }]}>Total</Text>
+              <Text style={[styles.footerTotal, { color: colors.foreground, fontFamily: fontFamily.headline }]}>{totalLabel}</Text>
+            </View>
+            <Pressable
+              disabled={!ready || paying}
+              onPress={() => void pay()}
+              style={[styles.pay, { backgroundColor: colors.foreground, opacity: !ready || paying ? 0.45 : 1 }]}
+            >
+              <Text style={[styles.payLabel, { color: colors.primaryForeground, fontFamily: fontFamily.text }]}>
+                {paying ? "Opening…" : "Proceed to pay"}
+              </Text>
+            </Pressable>
+          </View>
+        </ScreenFooter>
+      ) : null}
       <AddressSheet
         open={addressOpen}
         addresses={addresses}
@@ -364,7 +369,7 @@ function CheckoutForm() {
           setAddressOpen(false)
         }}
       />
-    </View>
+    </ScreenShell>
   )
 }
 
@@ -525,7 +530,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   centered: { flex: 1, marginTop: 48 },
   missing: { marginTop: 48, paddingHorizontal: 24, textAlign: "center", fontSize: 16 },
-  list: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 140, gap: 12 },
+  list: { paddingHorizontal: 16, paddingTop: 8, gap: 12 },
   product: { flexDirection: "row", gap: 12, borderWidth: StyleSheet.hairlineWidth, borderRadius: 16, padding: 12 },
   thumb: { width: 72, height: 72, borderRadius: 10 },
   productCopy: { flex: 1, justifyContent: "center", gap: 4 },
@@ -546,7 +551,7 @@ const styles = StyleSheet.create({
   rate: { fontSize: 13, lineHeight: 18 },
   addressName: { fontSize: 15, fontWeight: "600" },
   error: { fontSize: 14 },
-  footer: { flexDirection: "row", alignItems: "center", gap: 12, borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 16, paddingTop: 12 },
+  footer: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingTop: 12 },
   footerCopy: { gap: 2 },
   footerTotal: { fontSize: 22, fontWeight: "700" },
   pay: { flex: 1, borderRadius: 14, alignItems: "center", paddingVertical: 14 },

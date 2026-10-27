@@ -1,14 +1,16 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router"
 import { useEffect, useMemo, useState } from "react"
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from "react-native"
-import type { MobileListingCard, MobileProfile, MobileReview } from "@reswell/api-contract"
+import type { MobileProfile, MobileReview } from "@reswell/api-contract"
 import { ListingCard } from "@/components/listing-card"
 import { ProfileFeedback, ProfileInfo } from "@/components/profile-panels"
 import { ProfileHeader, type SellerTab } from "@/components/profile-header"
 import { ScreenSearchHeader } from "@/components/screen-search-header"
-import { fetchProfileListings, fetchProfileReviews, fetchSeller, setFollow } from "@/lib/api"
+import { fetchProfile, fetchProfileReviews, setFollow } from "@/lib/api"
+import { useProfileShopListings } from "@/lib/use-profile-shop-listings"
 import { useAuth } from "@/lib/auth-context"
 import { useAuthGate } from "@/lib/auth-gate"
+import { sortProfileShopListings, type ProfileShopSort } from "@/lib/profile-shop-sort"
 import { fontFamily, useReswellColors } from "@/theme"
 
 export default function SellerScreen() {
@@ -22,30 +24,23 @@ export default function SellerScreen() {
   const [followBusy, setFollowBusy] = useState(false)
   const [followError, setFollowError] = useState<string | null>(null)
   const [profile, setProfile] = useState<MobileProfile | null>(null)
-  const [listings, setListings] = useState<MobileListingCard[]>([])
-  const [sold, setSold] = useState<MobileListingCard[] | null>(null)
   const [reviews, setReviews] = useState<MobileReview[]>([])
   const [error, setError] = useState<string | null>(null)
-  const [loadingListings, setLoadingListings] = useState(true)
   const [shopQuery, setShopQuery] = useState("")
+  const [shopSort, setShopSort] = useState<ProfileShopSort>("newest")
+  const shopTab = tab === "sold" ? "sold" : "listings"
+  const shop = useProfileShopListings(slug, shopTab)
 
   useEffect(() => {
     if (!slug) return
     let cancelled = false
     setError(null)
-    setLoadingListings(true)
-    fetchSeller(slug, token)
-      .then((page) => {
-        if (!cancelled) {
-          setProfile(page.profile)
-          setListings(page.listings)
-        }
+    fetchProfile(slug, token)
+      .then((next) => {
+        if (!cancelled) setProfile(next)
       })
       .catch((cause: unknown) => {
         if (!cancelled) setError(cause instanceof Error ? cause.message : "Unable to load this seller")
-      })
-      .finally(() => {
-        if (!cancelled) setLoadingListings(false)
       })
     fetchProfileReviews(slug)
       .then((page) => {
@@ -78,20 +73,16 @@ export default function SellerScreen() {
 
   function showTab(next: SellerTab) {
     setTab(next)
-    if (next !== "sold" || !slug || sold) return
-    setLoadingListings(true)
-    fetchProfileListings(slug, { status: "sold" })
-      .then((page) => setSold(page.listings))
-      .catch(() => setSold([]))
-      .finally(() => setLoadingListings(false))
+    if (next === "sold") shop.loadSold()
   }
 
-  const inventory = tab === "sold" ? (sold ?? []) : listings
+  const loadingListings = tab === "sold" ? shop.loadingSold : shop.loadingCurrent
+  const inventory = tab === "sold" ? (shop.soldListings ?? []) : shop.currentListings
   const filteredInventory = useMemo(() => {
     const q = shopQuery.trim().toLowerCase()
-    if (!q) return inventory
-    return inventory.filter((item) => item.title.toLowerCase().includes(q))
-  }, [inventory, shopQuery])
+    const searched = q ? inventory.filter((item) => item.title.toLowerCase().includes(q)) : inventory
+    return sortProfileShopListings(searched, shopSort, shop.sectionId)
+  }, [inventory, shopQuery, shopSort, shop.sectionId])
   const showingGrid = tab === "listings" || tab === "sold"
   const grid =
     showingGrid && filteredInventory.length % 2 === 1
@@ -117,6 +108,11 @@ export default function SellerScreen() {
           numColumns={2}
           columnWrapperStyle={grid.length > 0 ? styles.row : undefined}
           contentContainerStyle={styles.list}
+          onEndReached={() => {
+            if (tab !== "listings" && tab !== "sold") return
+            shop.loadMore(tab === "sold" ? "sold" : "current")
+          }}
+          onEndReachedThreshold={0.4}
           ListHeaderComponent={
             <View>
               <ProfileHeader
@@ -131,12 +127,25 @@ export default function SellerScreen() {
                 onEdit={ownProfile ? () => router.push("/account/profile") : undefined}
                 shopQuery={shopQuery}
                 onShopQueryChange={setShopQuery}
+                shopSections={shop.sectionOptions}
+                shopSectionId={shop.sectionId}
+                onShopSectionChange={shop.setSectionId}
+                shopSort={shopSort}
+                onShopSortChange={setShopSort}
               />
               {followError ? (
                 <Text style={[styles.empty, { color: colors.foreground, fontFamily: fontFamily.text }]}>{followError}</Text>
               ) : null}
+              {showingGrid && shop.error ? (
+                <Text style={[styles.empty, { color: colors.foreground, fontFamily: fontFamily.text }]}>{shop.error}</Text>
+              ) : null}
               {showingGrid && loadingListings ? <ActivityIndicator color={colors.foreground} style={styles.listingsSpinner} /> : null}
             </View>
+          }
+          ListFooterComponent={
+            showingGrid && shop.loadingMore ? (
+              <ActivityIndicator color={colors.foreground} style={styles.listingsSpinner} />
+            ) : null
           }
           ListEmptyComponent={
             showingGrid ? (

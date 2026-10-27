@@ -44,6 +44,7 @@ import {
   mobileProfileAvatarResultSchema,
   mobileProfileBannerResultSchema,
   mobileProfileSchema,
+  mobileProfileShopFiltersSchema,
   mobileProfileSignInActionSchema,
   mobileProfileSettingsSchema,
   mobileSellerPageSchema,
@@ -113,6 +114,7 @@ import {
   type MobileOfferActionResult,
   type MobileOrder,
   type MobileProfile,
+  type MobileProfileShopFilters,
   type MobileProfileAvatarResult,
   type MobileProfileBannerResult,
   type MobileProfileEmail,
@@ -421,15 +423,27 @@ export function relistListing(accessToken: string, listingId: string): Promise<{
 
 export function fetchProfileListings(
   slug: string,
-  query?: { offset?: number; status?: "current" | "sold" },
+  query?: { offset?: number; status?: "current" | "sold"; section?: string },
 ): Promise<MobileListingsPage> {
   const params = new URLSearchParams({
     limit: "20",
     offset: String(query?.offset ?? 0),
     status: query?.status ?? "current",
   })
+  if (query?.section) params.set("section", query.section)
   return read(`/api/mobile/v1/profiles/${encodeURIComponent(slug)}/listings?${params.toString()}`, (data) =>
     mobileListingsPageSchema.parse(data),
+  )
+}
+
+export function fetchProfileShopFilters(
+  slug: string,
+  status: "current" | "sold" = "current",
+): Promise<MobileProfileShopFilters> {
+  const params = new URLSearchParams({ status })
+  return read(
+    `/api/mobile/v1/profiles/${encodeURIComponent(slug)}/shop-filters?${params.toString()}`,
+    (data) => mobileProfileShopFiltersSchema.parse(data),
   )
 }
 
