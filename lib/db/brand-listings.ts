@@ -254,6 +254,73 @@ export async function listActiveListingsForBrand(
 }
 
 /**
+ * Same active-listing filters as `listActiveListingsForBrand`, for one id.
+ * Saved-search alerts use this so a brand search only includes a board the
+ * search page's brand inventory would return.
+ */
+export async function listingIsInActiveBrandInventory(
+  supabase: SupabaseClient,
+  listingId: string,
+  brand: { id: string; name: string },
+  options: { categoryId?: string | null; sections?: string[] } = {},
+): Promise<boolean> {
+  const id = listingId.trim()
+  if (!id) return false
+
+  const { categoryId = null, sections } = options
+  let q = supabase
+    .from("listings")
+    .select("id")
+    .eq("id", id)
+    .eq("status", "active")
+    .eq("hidden_from_site", false)
+
+  if (categoryId) {
+    q = q.eq("category_id", categoryId)
+  } else if (sections?.length) {
+    q = q.in("section", sections)
+  } else {
+    q = q.in("section", PEER_LISTING_SECTIONS_FILTER)
+  }
+
+  const { data, error } = await q.or(brandInventoryOrClause(brand)).limit(1)
+  if (error) {
+    console.error("[listingIsInActiveBrandInventory]", error.message)
+    return false
+  }
+  return (data ?? []).some((row) => row.id === id)
+}
+
+/** True when `/search` would show at least one row from this brand inventory. */
+export async function activeBrandInventoryHasListings(
+  supabase: SupabaseClient,
+  brand: { id: string; name: string },
+  options: { categoryId?: string | null; sections?: string[] } = {},
+): Promise<boolean> {
+  const { categoryId = null, sections } = options
+  let q = supabase
+    .from("listings")
+    .select("id")
+    .eq("status", "active")
+    .eq("hidden_from_site", false)
+
+  if (categoryId) {
+    q = q.eq("category_id", categoryId)
+  } else if (sections?.length) {
+    q = q.in("section", sections)
+  } else {
+    q = q.in("section", PEER_LISTING_SECTIONS_FILTER)
+  }
+
+  const { data, error } = await q.or(brandInventoryOrClause(brand)).limit(1)
+  if (error) {
+    console.error("[activeBrandInventoryHasListings]", error.message)
+    return false
+  }
+  return (data ?? []).length > 0
+}
+
+/**
  * Sold peer marketplace listings for a directory brand.
  * Reswell retail (`section = new`) is excluded — it lives only on `/reswell/shop`.
  */

@@ -42,15 +42,13 @@ export function computeSurfpackSellSectionCompletion(
 
   const details = Boolean(form.condition.trim()) && Boolean(form.description.trim())
 
-  const hasDelivery = form.shippingAvailable || form.localPickup
   const shippingRateOk =
-    !form.shippingAvailable ||
     form.shippingMode === "free" ||
     (form.shippingMode === "flat" && Number(form.shippingPrice) >= 0 && form.shippingPrice !== "") ||
     (form.shippingMode === "reswell" && reswellPackageComplete(form))
   const delivery =
     Boolean(form.locationCity.trim() && form.locationState.trim()) &&
-    hasDelivery &&
+    form.shippingAvailable &&
     shippingRateOk
 
   const publish = sellListingPriceIsPublishable(form.price)

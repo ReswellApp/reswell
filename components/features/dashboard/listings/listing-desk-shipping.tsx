@@ -11,10 +11,9 @@ import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { listingAlwaysUsesReswellShipping } from "@/lib/apparel-listing-config"
+import { sellSectionIsShipOnly, sellSectionSupportsLocalPickup } from "@/lib/sell-section-fulfillment"
 import type { ListingDeskSpec } from "@/lib/listings-desk-fields"
 import type { SellShippingCostMode } from "@/lib/sell-shipping-cost-mode"
-
-const SHIP_ONLY = new Set(["fins", "wetsuits", "magazines"])
 
 interface ListingDeskShippingProps {
   listingId: string
@@ -31,7 +30,7 @@ export function ListingDeskShipping({
   disabled,
   onChange,
 }: ListingDeskShippingProps) {
-  const shipOnly = SHIP_ONLY.has(section)
+  const shipOnly = sellSectionIsShipOnly(section)
   const reswellOnly = section === "magazines" || listingAlwaysUsesReswellShipping(section)
 
   function setLocation(loc: { lat: number; lng: number; city: string; state: string; displayName: string }) {
@@ -65,7 +64,7 @@ export function ListingDeskShipping({
       <div>
         <h3 className="text-sm font-semibold text-foreground">Shipping</h3>
         <p className="mt-1 text-xs leading-relaxed text-muted-foreground sm:text-sm">
-          {section === "surfboards"
+          {sellSectionSupportsLocalPickup(section)
             ? "Buyers see your city for pickup. Pack and ship it yourself, or drop it off in a city we serve and we pack and ship it for you."
             : shipOnly
               ? "Pin where you're shipping from. These listings ship only — local pickup isn't available."

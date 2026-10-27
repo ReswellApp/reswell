@@ -53,11 +53,6 @@ const getCachedBrowseCategories = unstable_cache(
   { revalidate: 60 * 60 * 24, tags: ["browse-categories"] },
 )
 
-type MarketplaceSearchResolutionMeta = {
-  resultCount: number
-  backend: "elasticsearch" | "supabase"
-}
-
 function searchResultsHeading({
   brandUnknown,
   query,

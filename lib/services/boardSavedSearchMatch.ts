@@ -29,6 +29,10 @@ import {
   boardDimensionBrowseIlikeTokens,
 } from "@/lib/utils/board-dimension-browse-filter"
 import { resolveSavedSearchSection } from "@/lib/utils/peer-saved-search-criteria"
+import {
+  listingAppearsInMarketplaceSearch,
+  type SavedSearchMatchCache,
+} from "@/lib/services/marketplaceSearchMembership"
 
 export type ListingRowForBoardAlert = {
   id: string
@@ -383,21 +387,40 @@ export function listingMatchesBoardSavedCriteria(
   return true
 }
 
+export type { SavedSearchMatchCache }
+
 /**
  * True when the listing would appear in the saved search.
- * Surfboards prefer Elasticsearch browse replay; other sections use field matching.
+ * A `/search?q=` save uses the same result pass as that page. Surfboard browse
+ * saves replay `/boards`. Other sections use field matching.
  */
 export async function listingMatchesSavedSearch(
   listingId: string,
   listing: ListingRowForBoardAlert,
   rawCriteria: unknown,
+  cache?: SavedSearchMatchCache,
 ): Promise<boolean> {
   const parsed = boardSavedSearchCriteriaSchema.safeParse(rawCriteria)
   if (!parsed.success) return false
 
   if (!sectionAllowsListing(parsed.data, listing.section)) return false
 
+  const q = parsed.data.q?.trim() ?? ""
   const target = resolveSavedSearchSection(parsed.data)
+  if (
+    target === "any" &&
+    q &&
+    !parsed.data.brandId?.trim() &&
+    !parsed.data.brandModelId?.trim()
+  ) {
+    const appears = await listingAppearsInMarketplaceSearch(listingId, q, cache)
+    if (appears === null) {
+      return listingMatchesBoardSavedCriteria(listing, rawCriteria)
+    }
+    if (!appears) return false
+    return listingMatchesBoardSavedCriteria(listing, { ...parsed.data, q: undefined })
+  }
+
   const useBoardsEs =
     (target === "surfboards" || (target === "any" && listing.section === "surfboards")) &&
     isBoardsBrowseEsEnabled()
@@ -411,6 +434,7 @@ export async function listingMatchesSavedSearch(
         from: 0,
         size: 1,
         sort: "newest",
+        typoFallback: false,
       })
       if (res !== null) {
         return res.total > 0 || res.ids.includes(listingId)

@@ -8,6 +8,7 @@
  */
 
 import type { estypes } from "@elastic/elasticsearch"
+import { boardsBrowseUsesTypoFallback } from "./boards-browse-typo-fallback"
 import { getElasticsearchClient } from "./client"
 import { ELASTICSEARCH_LISTINGS_INDEX } from "./config"
 import {
@@ -389,6 +390,14 @@ export type BoardsBrowseEsSearchParams = BoardsBrowseEsContext & {
   useSuppressionSort?: boolean
   restrictToIds?: string[]
   excludeIds?: string[]
+  /**
+   * When the strict keyword query misses, retry with a fuzzy longest-token query.
+   * Browse keeps this on so a typo can still show boards. Saved-search membership
+   * must pass false: fuzzy "lost" matches "last" / "most" and emails the wrong board.
+   * Defaults to on. Also skipped when `restrictToIds` is set — a miss on one
+   * listing is not an empty search page.
+   */
+  typoFallback?: boolean
   from: number
   size: number
 }
@@ -579,6 +588,8 @@ export async function searchBoardsBrowse(
   const parsed = parseBoardsBrowseHits(res)
   const q = params.query?.trim()
   if (!q || parsed.total > 0 || parsed.ids.length > 0) return parsed
+
+  if (!boardsBrowseUsesTypoFallback(params)) return parsed
 
   // Same typo recovery as `/search` when the strict listings query returns nothing.
   const typoQuery = boardsBrowseKeywordQuery(

@@ -12,6 +12,10 @@ import {
 } from "@/components/ui/accordion"
 import { SELL_CONTROL_CLASS } from "@/components/features/sell/sell-form-surface"
 import { SellEarningsBreakdown } from "@/components/features/sell/sell-earnings-breakdown"
+import {
+  SellPriceGuidancePicker,
+  type SellPriceGuidancePickerProps,
+} from "@/components/features/sell/sell-price-guidance-picker"
 import { SellRequiredMark } from "@/components/features/sell/sell-required-mark"
 import { ListingPriceMarkdownToggle } from "@/components/features/listings/listing-price-markdown-toggle"
 import { cn } from "@/lib/utils"
@@ -45,6 +49,14 @@ export interface SellPriceFieldsProps {
   existingCompareAtPriceUsd?: number | null
   showPriceMarkdown?: boolean
   onShowPriceMarkdownChange?: (value: boolean) => void
+  /**
+   * Optional Reswell price guidance (surfboards + fins). When brand + model are set,
+   * shows clickable low / best / high suggestions from the price guide + market comps.
+   */
+  priceGuidance?: Omit<
+    SellPriceGuidancePickerProps,
+    "listingPrice" | "onSelectPrice" | "className"
+  > | null
 }
 
 export function SellPriceFields({
@@ -64,6 +76,7 @@ export function SellPriceFields({
   existingCompareAtPriceUsd = null,
   showPriceMarkdown = false,
   onShowPriceMarkdownChange,
+  priceGuidance = null,
 }: SellPriceFieldsProps) {
   useAdoptAutofilledSellPrice("sell-listing-price", listingPrice, onListingPriceChange)
   const nextPrice = parseOptionalUsdAmount(listingPrice)
@@ -88,6 +101,17 @@ export function SellPriceFields({
       <p className="text-sm leading-relaxed text-muted-foreground">
         Fair, competitive listings tend to sell faster on Reswell.
       </p>
+
+      {priceGuidance ? (
+        <SellPriceGuidancePicker
+          categorySlug={priceGuidance.categorySlug}
+          brandId={priceGuidance.brandId}
+          brandModelId={priceGuidance.brandModelId}
+          condition={priceGuidance.condition}
+          listingPrice={listingPrice}
+          onSelectPrice={onListingPriceChange}
+        />
+      ) : null}
 
       <div className="space-y-2">
         <Label htmlFor="sell-listing-price" className="text-sm font-semibold text-foreground">
