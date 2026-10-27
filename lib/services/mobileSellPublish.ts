@@ -11,6 +11,9 @@ import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import { mobileSellDraftFields, mobileSellListingFields } from "@/lib/services/mobileSellListingFields"
 import { applyPublishedListingSideEffects } from "@/lib/services/publishListingDraft"
 import type { MobileApiResult } from "@/lib/services/mobileApi"
+import { syncListingImages } from "@/lib/services/sync-listing-images"
+import { verifyListingImageObjectsExist } from "@/lib/services/verifyListingImageStorage"
+import { verifyStorageObjectExists } from "@/lib/supabase/storage-object-exists"
 
 const PHOTO_MAX_BYTES = 12 * 1024 * 1024
 
@@ -18,6 +21,18 @@ function ownedListingImage(url: string, userId: string): boolean {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""
   if (!supabaseUrl) return false
   return url.startsWith(listingObjectPublicUrl(supabaseUrl, `${userId}/`))
+}
+
+async function assertMobileSellImagesInStorage(
+  images: MobileSellPhoto[],
+): Promise<string | null> {
+  for (const image of images) {
+    const ok = await verifyListingImageObjectsExist(image.url, image.thumbnail_url)
+    if (!ok) {
+      return "Upload the listing photos again"
+    }
+  }
+  return null
 }
 
 export async function uploadMobileSellPhotoService(
@@ -55,7 +70,16 @@ export async function uploadMobileSellPhotoService(
       upsert: false,
       cacheControl: "31536000",
     })
-    if (thumbUploaded.error) return { ok: false, status: 400, error: "Couldn't upload that photo" }
+    if (thumbUploaded.error) {
+      await supabase.storage.from("listings").remove([fullPath])
+      return { ok: false, status: 400, error: "Couldn't upload that photo" }
+    }
+    const fullReadable = await verifyStorageObjectExists("listings", fullPath)
+    const thumbReadable = await verifyStorageObjectExists("listings", thumbPath)
+    if (!fullReadable || !thumbReadable) {
+      await supabase.storage.from("listings").remove([fullPath, thumbPath])
+      return { ok: false, status: 400, error: "Couldn't upload that photo" }
+    }
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""
     return {
       ok: true,
@@ -80,22 +104,25 @@ async function replaceListingImages(
   images: MobileSellPhoto[],
 ): Promise<string | null> {
   const previous = await supabase.from("listing_images").select("id").eq("listing_id", listingId)
-  const inserted = await supabase
-    .from("listing_images")
-    .insert(
+  const previousIds = (previous.data ?? []).map((row) => row.id as string)
+  try {
+    await syncListingImages(
+      supabase,
+      listingId,
+      previousIds,
       images.map((image, index) => ({
-        listing_id: listingId,
         url: image.url,
-        thumbnail_url: image.thumbnail_url,
-        is_primary: index === 0,
-        sort_order: index,
+        thumbnailUrl: image.thumbnail_url,
+        isPrimary: index === 0,
+        sortOrder: index,
       })),
     )
-    .select("id")
-  if (inserted.error) return "Couldn't save the listing photos"
-  const previousIds = (previous.data ?? []).map((row) => row.id as string)
-  if (previousIds.length > 0) {
-    await supabase.from("listing_images").delete().in("id", previousIds)
+  } catch (error) {
+    console.error("[mobile-api] listing_images sync failed", {
+      listingId,
+      message: error instanceof Error ? error.message : String(error),
+    })
+    return "Couldn't save the listing photos"
   }
   return null
 }
@@ -108,6 +135,8 @@ export async function saveMobileSellDraftService(
   if (input.images.some((image) => !ownedListingImage(image.url, userId) || !ownedListingImage(image.thumbnail_url, userId))) {
     return { ok: false, status: 400, error: "Upload the listing photos again" }
   }
+  const storageError = await assertMobileSellImagesInStorage(input.images)
+  if (storageError) return { ok: false, status: 400, error: storageError }
   const built = mobileSellDraftFields(input)
   if (!built.ok) return { ok: false, status: 400, error: built.error }
 
@@ -150,6 +179,8 @@ export async function publishMobileListingService(
   if (input.images.some((image) => !ownedListingImage(image.url, userId) || !ownedListingImage(image.thumbnail_url, userId))) {
     return { ok: false, status: 400, error: "Upload the listing photos again" }
   }
+  const storageError = await assertMobileSellImagesInStorage(input.images)
+  if (storageError) return { ok: false, status: 400, error: storageError }
   const built = mobileSellListingFields(input)
   if (!built.ok) return { ok: false, status: 400, error: built.error }
 

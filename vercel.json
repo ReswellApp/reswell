@@ -141,6 +141,10 @@
     {
       "path": "/api/cron/notification-fanout",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/listing-image-storage-drift",
+      "schedule": "15 14 * * *"
     }
   ]
 }

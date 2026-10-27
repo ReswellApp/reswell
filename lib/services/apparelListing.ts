@@ -13,6 +13,7 @@ import { fetchProfileIsAdmin } from "@/lib/db/profileAdmin"
 import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import { APPAREL_SECTION, APPAREL_SELL_ADMIN_ONLY } from "@/lib/apparel-listing-config"
 import { buildApparelListingPersistFields } from "@/lib/apparel-listing-persist-fields"
+import { insertListingImages } from "@/lib/db/listingImagesInsert"
 import { syncListingImages } from "@/lib/services/sync-listing-images"
 import {
   insertListingVideos,
@@ -152,10 +153,11 @@ export async function createApparelListing(
     sort_order: img.sortOrder ?? index,
   }))
 
-  const { error: imageError } = await supabase.from("listing_images").insert(imageRows)
-  if (imageError) {
+  try {
+    await insertListingImages(supabase, imageRows)
+  } catch (imageError) {
     await supabase.from("listings").delete().eq("id", listingId)
-    throw new Error(imageError.message)
+    throw imageError instanceof Error ? imageError : new Error("Failed to save listing photos")
   }
 
   try {
