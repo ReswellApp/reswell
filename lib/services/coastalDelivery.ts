@@ -15,7 +15,7 @@ import {
   upsertCoastalShipperRun,
   type CoastalShipperScheduleRecord,
 } from "@/lib/db/coastal-delivery"
-import { createServiceRoleClient } from "@/lib/supabase/server"
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import type {
   CoastalDeliveryChoiceView,
   CoastalListingHit,
@@ -133,18 +133,21 @@ export async function enrollCoastalShipperAccount(input: {
 }
 
 export async function joinCoastalShipper(input: CoastalShipperJoinInput): Promise<Ok<{ profile: CoastalShipperProfileView }> | Err> {
-  const gate = await requireAdmin()
-  if (!gate.ok) return { ok: false, error: "Admin only" }
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { ok: false, error: "Sign in to join as a shipper." }
 
   try {
     const db = createServiceRoleClient()
     await upsertCoastalShipperProfile(db, {
-      userId: gate.ctx.user.id,
+      userId: user.id,
       displayName: input.displayName,
       phone: blankToNull(input.phone),
       notes: blankToNull(input.notes),
     })
-    const schedule = await getCoastalShipperByUserId(db, gate.ctx.user.id)
+    const schedule = await getCoastalShipperByUserId(db, user.id)
     if (!schedule) return { ok: false, error: "Could not save the shipper profile." }
     return { ok: true, data: { profile: toProfile(schedule) } }
   } catch (error) {

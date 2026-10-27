@@ -81,16 +81,14 @@ describe("surfboard shipped gates", () => {
     )
   })
 
-  it("hides checkout unless the buyer is an admin, Google placed both streets in California, and a shipper is live", () => {
+  it("hides checkout unless the seller opted in, both ends are in California, and a shipper is live", () => {
     const base = {
-      isAdmin: true,
       sellerOptedIn: true,
       pickupInCalifornia: true,
       buyerInCalifornia: true,
       shippers: live,
     }
     assert.equal(surfboardShippedCheckoutVisible(base), true)
-    assert.equal(surfboardShippedCheckoutVisible({ ...base, isAdmin: false }), false)
     assert.equal(surfboardShippedCheckoutVisible({ ...base, buyerInCalifornia: false }), false)
     assert.equal(surfboardShippedCheckoutVisible({ ...base, pickupInCalifornia: false }), false)
     assert.equal(surfboardShippedCheckoutVisible({ ...base, sellerOptedIn: false }), false)

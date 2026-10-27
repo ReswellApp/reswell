@@ -63,7 +63,7 @@ export function CoastalJoinForm({ profile }: CoastalJoinFormProps) {
         </p>
       ) : (
         <p className="text-sm text-muted-foreground">
-          Joining is instant in this draft. The weekly schedule starts off until you turn it on.
+          Your schedule starts off until you turn Shipper on and add a trip.
         </p>
       )}
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
