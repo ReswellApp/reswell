@@ -6,6 +6,9 @@ import { createClient } from "@/lib/supabase/server"
 import { getBrandBySlug } from "@/lib/brands/server"
 import { parseBrandPageTab } from "@/lib/brands/routes"
 import { listActiveListingsForBrand, listRecentlySoldListingsForBrand } from "@/lib/db/brand-listings"
+import { listBrandModelsForPublicPageByBrandId } from "@/lib/db/brand-models"
+import { toBrandPageModelCards } from "@/lib/brands/model-cards"
+import { brandStoryParagraphs } from "@/lib/brands/page-content"
 import { viewerSavedSearchIdForBrand } from "@/lib/services/viewerSavedSearch"
 import { brandSavedSearchCriteria } from "@/lib/utils/saved-search-alert-kind"
 import { absoluteUrl } from "@/lib/site-metadata"
@@ -32,8 +35,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return { title: "Brand — Reswell" }
   }
   const fallbackTitle = `${brand.name} · Surf brand — Reswell`
+  const storySnippet = brandStoryParagraphs({
+    short_description: brand.short_description,
+    about_paragraphs: brand.about_paragraphs,
+  })
+    .join(" ")
+    .slice(0, 320)
   const fallbackDescription =
     brand.short_description?.trim() ||
+    storySnippet ||
     `Used ${brand.name} on Reswell — current listings and recently sold gear.`
   const seo = await resolveDynamicSeo(
     "type:brand",
@@ -74,10 +84,12 @@ export default async function BrandPage({ params, searchParams }: Props) {
   }
 
   const brandRef = { id: brand.id, name: brand.name }
-  const [brandListings, brandSoldListings] = await Promise.all([
+  const [catalogModelRows, brandListings, brandSoldListings] = await Promise.all([
+    listBrandModelsForPublicPageByBrandId(supabase, brand.id),
     listActiveListingsForBrand(supabase, brandRef, { limit: BRAND_PAGE_LISTING_LIMIT }),
     listRecentlySoldListingsForBrand(supabase, brandRef, { limit: BRAND_PAGE_LISTING_LIMIT }),
   ])
+  const catalogModels = toBrandPageModelCards(catalogModelRows)
 
   const {
     data: { user },
@@ -108,6 +120,7 @@ export default async function BrandPage({ params, searchParams }: Props) {
       criteria={criteria}
       initialSavedSearchId={initialSavedSearchId}
       initialTab={parseBrandPageTab(tab)}
+      catalogModels={catalogModels}
       brandListings={brandListings}
       brandSoldListings={brandSoldListings}
       listingsCapped={brandListings.length >= BRAND_PAGE_LISTING_LIMIT}

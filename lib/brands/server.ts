@@ -5,18 +5,23 @@ import {
   listBrandIdsMatchingProductCategories,
   listBrandProductCategoriesByBrandIds,
 } from "@/lib/db/brand-product-categories"
+import { brandAboutParagraphs } from "@/lib/brands/page-content"
 
 const BRAND_SELECT =
-  "id, slug, brand_request_id, name, short_description, website_url, logo_url, founder_name, lead_shaper_name, location_label, model_count"
+  "id, slug, brand_request_id, name, short_description, website_url, logo_url, founder_name, lead_shaper_name, location_label, model_count, about_paragraphs"
 
 export type ListBrandsOptions = {
   /** When set, include brands tagged with at least one of these categories. */
   productCategories?: readonly BrandProductCategorySlug[]
 }
 
+type BrandRowFromDb = Omit<BrandRow, "product_categories" | "about_paragraphs"> & {
+  about_paragraphs?: unknown
+}
+
 async function attachProductCategories(
   supabase: SupabaseClient,
-  rows: Omit<BrandRow, "product_categories">[],
+  rows: BrandRowFromDb[],
 ): Promise<BrandRow[]> {
   if (rows.length === 0) return []
   const categoryMap = await listBrandProductCategoriesByBrandIds(
@@ -25,6 +30,7 @@ async function attachProductCategories(
   )
   return rows.map((row) => ({
     ...row,
+    about_paragraphs: brandAboutParagraphs(row.about_paragraphs),
     product_categories: categoryMap.get(row.id) ?? [],
   }))
 }
@@ -51,7 +57,7 @@ export async function listBrands(
     return []
   }
 
-  return attachProductCategories(supabase, (data ?? []) as Omit<BrandRow, "product_categories">[])
+  return attachProductCategories(supabase, (data ?? []) as BrandRowFromDb[])
 }
 
 export async function getBrandBySlug(
@@ -70,9 +76,7 @@ export async function getBrandBySlug(
   }
   if (!data) return null
 
-  const [brand] = await attachProductCategories(supabase, [
-    data as Omit<BrandRow, "product_categories">,
-  ])
+  const [brand] = await attachProductCategories(supabase, [data as BrandRowFromDb])
   return brand ?? null
 }
 
@@ -92,8 +96,6 @@ export async function getBrandById(
   }
   if (!data) return null
 
-  const [brand] = await attachProductCategories(supabase, [
-    data as Omit<BrandRow, "product_categories">,
-  ])
+  const [brand] = await attachProductCategories(supabase, [data as BrandRowFromDb])
   return brand ?? null
 }
