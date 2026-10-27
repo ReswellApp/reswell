@@ -43,10 +43,8 @@ import {
   isBoardsBrowseShippingAvailableParam,
   type BoardsBrowseSearchParams,
 } from "@/lib/marketplace-slug-metadata"
-import {
-  boardsBrowseLocalPickupNearMeRedirectHref,
-  loadMergedBoardsBrowseFilters,
-} from "@/lib/services/boardsBrowseLocalPickupNearMeMerge"
+import { loadMergedBoardsBrowseFilters } from "@/lib/services/boardsBrowseLocalPickupNearMeApply"
+import { boardsBrowseLocalPickupNearMeRedirectHref } from "@/lib/services/boardsBrowseLocalPickupNearMeMerge"
 import { getCachedForwardGeocodePlace } from "@/lib/cache/forward-geocode-place"
 import { resolveBoardsBrowseGeocodeRedirectHref } from "@/lib/services/boardsBrowseGeocode"
 import {

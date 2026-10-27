@@ -1,4 +1,3 @@
-import { getLocalPickupNearMePreferenceForBrowse } from "@/lib/cache/local-pickup-near-me-preference"
 import type { LocalPickupNearMePreference } from "@/lib/db/localPickupNearMePreference"
 import { normalizeBoardBrowseRadius } from "@/lib/boards-browse-location"
 import {
@@ -74,14 +73,6 @@ export function mergeLocalPickupNearMeIntoBrowseParams(
     localPickupFromPreference: true,
     geoFromPreference,
   }
-}
-
-export async function loadMergedBoardsBrowseFilters(
-  userId: string | null | undefined,
-  searchParams: BoardsBrowseSearchParams,
-): Promise<BoardsBrowseEffectiveFilters> {
-  const pref = await getLocalPickupNearMePreferenceForBrowse(userId)
-  return mergeLocalPickupNearMeIntoBrowseParams(searchParams, pref)
 }
 
 function browseParamsEqual(a: BoardsBrowseSearchParams, b: BoardsBrowseSearchParams): boolean {
