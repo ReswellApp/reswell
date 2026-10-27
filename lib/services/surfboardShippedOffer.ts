@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/brands/admin-server"
 import { listCoastalCoverageIndex, listCoastalShipperSchedules, listCoastalStops } from "@/lib/db/coastal-delivery"
 import type { CoastalShipperScheduleRecord } from "@/lib/db/coastal-delivery"
 import {
@@ -6,7 +7,6 @@ import {
   saveSurfboardShippedPickupAddress,
   setListingSurfboardShipped,
 } from "@/lib/db/surfboard-shipped"
-import { fetchProfileIsAdmin } from "@/lib/db/profileAdmin"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import type { CoastalMatchShipper } from "@/lib/services/coastalDeliveryMatch"
 import type { GoogleResolvedStreet } from "@/lib/maps/google-geocoding-server"
@@ -61,6 +61,9 @@ export type SurfboardShippedCharge = {
 const UNAVAILABLE = "Surfboard Shipped is not available."
 
 export async function getSurfboardShippedSellOffer(): Promise<SurfboardShippedSellOffer | null> {
+  const gate = await requireAdmin()
+  if (!gate.ok) return null
+
   try {
     const shippers = await loadMatchShippers()
     const live = liveSurfboardShippers(shippers)
@@ -75,8 +78,8 @@ export async function getSurfboardShippedSellOffer(): Promise<SurfboardShippedSe
 export async function saveListingSurfboardShipped(
   input: SaveListingSurfboardShippedInput,
 ): Promise<{ error: string | null }> {
-  const session = await signedInSession()
-  if (!session) return { error: "Sign in to save Surfboard Shipped." }
+  const gate = await requireAdmin()
+  if (!gate.ok) return { error: "Admin only" }
 
   try {
     const db = createServiceRoleClient()
@@ -86,9 +89,8 @@ export async function saveListingSurfboardShipped(
       return { error: "Listing not found." }
     }
 
-    const isAdmin = await fetchProfileIsAdmin(session.supabase, session.userId)
-    if (listing.row.userId !== session.userId && !isAdmin) {
-      return { error: "You can only change your own listings." }
+    if (listing.row.userId !== gate.ctx.user.id) {
+      return { error: "You can only enable Surfboard Shipped on your own listings." }
     }
 
     if (!input.enabled) {
@@ -147,16 +149,14 @@ export async function getListingSurfboardShippedChoice(listingId: string): Promi
   enabled: boolean
   address: ProfileAddressRow | null
 } | null> {
-  const session = await signedInSession()
-  if (!session) return null
+  const gate = await requireAdmin()
+  if (!gate.ok) return null
 
   try {
     const db = createServiceRoleClient()
     const listing = await fetchListingSurfboardShipped(db, listingId)
     if (listing.error || !listing.row) return { enabled: false, address: null }
-
-    const isAdmin = await fetchProfileIsAdmin(session.supabase, session.userId)
-    if (listing.row.userId !== session.userId && !isAdmin) return null
+    if (listing.row.userId !== gate.ctx.user.id) return null
 
     if (!listing.row.optedIn || !listing.row.pickupAddressId) {
       return { enabled: false, address: null }

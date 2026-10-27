@@ -737,7 +737,7 @@ type SellPageContentProps = {
   hasPublishedSurfboard?: boolean
   fromGiveaway?: boolean
   initialViewMode?: BoardSellViewMode
-  /** Null when no coastal shipper is live. */
+  /** Null for non-admins and when no coastal shipper is live. */
   surfboardShippedSell?: SurfboardShippedSellOffer | null
 }
 

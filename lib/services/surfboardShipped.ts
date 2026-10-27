@@ -107,12 +107,14 @@ export function surfboardShippedDropoffCopy(
   return description ? `${timing}. ${description}` : `${timing}.`
 }
 
-/** Seller option on /sell/boards. Buyer address is not known yet. */
+/** Seller option on /sell/boards. Admins only until we open opt-in broadly. */
 export function surfboardShippedSellVisible(input: {
+  isAdmin: boolean
   pickupState: string | null | undefined
   shippers: CoastalMatchShipper[]
 }): boolean {
   return (
+    input.isAdmin &&
     isCaliforniaAddressState(input.pickupState) &&
     liveSurfboardShippers(input.shippers).length > 0
   )
