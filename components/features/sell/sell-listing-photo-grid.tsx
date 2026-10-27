@@ -30,6 +30,8 @@ import { LISTING_PHOTO_ACCEPT } from "@/lib/sell-flow/listing-photo-file"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import {
   isLocalListingPhotoPreviewUrl,
+  listingPhotosUploadReady,
+  listingPhotosUploadingCount,
   listingPhotoTilePreviewSrc,
   listingPhotoTileSkeletonVisible,
   type ListingPhotoSlot,
@@ -697,7 +699,15 @@ export function SellListingPhotoGrid({
   const photoFailed = images.some(
     (image) => image.optimizePhase === "error" || image.uploadPhase === "error",
   )
-  const photosReady = images.length >= minPhotos && !photoFailed
+  const photosUploadingCount = listingPhotosUploadingCount(images)
+  const photosServerReady =
+    images.length >= minPhotos && !photoFailed && listingPhotosUploadReady(images)
+  const photosPendingAuth =
+    images.length >= minPhotos &&
+    !photoFailed &&
+    photosUploadingCount === 0 &&
+    !listingPhotosUploadReady(images) &&
+    images.some((image) => image.uploadPhase === "pending_auth")
   const photoCountLabel =
     images.length === 1 ? "1 photo" : `${images.length} photos`
   const videoEnabled = Boolean(
@@ -733,7 +743,7 @@ export function SellListingPhotoGrid({
             <p className="text-xs text-muted-foreground sm:text-sm">{resolvedPhotoDescription}</p>
           </div>
           <div className="shrink-0 pt-0.5" aria-live="polite">
-            {photosReady ? (
+            {photosServerReady ? (
               <span className={SELL_COMPLETE_BADGE_CLASS}>
                 <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
                 {photoCountLabel} · Ready
@@ -741,6 +751,22 @@ export function SellListingPhotoGrid({
             ) : photoFailed ? (
               <span className="inline-flex items-center rounded-full bg-destructive/10 px-2.5 py-1 text-xs font-medium text-destructive ring-1 ring-inset ring-destructive/20">
                 Retry failed photos
+              </span>
+            ) : photosUploadingCount > 0 ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-muted-foreground ring-1 ring-inset ring-slate-200/80">
+                <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" aria-hidden />
+                {photosUploadingCount === 1 && images.length === 1
+                  ? "1 photo · Uploading…"
+                  : `${photosUploadingCount} uploading…`}
+              </span>
+            ) : photosPendingAuth ? (
+              <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-muted-foreground ring-1 ring-inset ring-slate-200/80">
+                Sign in to upload
+              </span>
+            ) : images.length >= minPhotos ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-muted-foreground ring-1 ring-inset ring-slate-200/80">
+                <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" aria-hidden />
+                Finishing upload…
               </span>
             ) : (
               <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-muted-foreground ring-1 ring-inset ring-slate-200/80">
@@ -826,7 +852,7 @@ export function SellListingPhotoGrid({
 
       {belowGrid}
 
-      {hideHeader && photosReady ? (
+      {hideHeader && photosServerReady ? (
         <p className="text-sm text-muted-foreground" aria-live="polite">
           {photoCountLabel} ready — drag to reorder; first is cover.
           {videoEnabled ? " Optional video sits beside your photos." : null}

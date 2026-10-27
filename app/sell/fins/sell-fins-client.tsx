@@ -1576,7 +1576,7 @@ export default function SellFinsFlow({
                     type="submit"
                     size="lg"
                     className="relative w-full transition-shadow"
-                    disabled={submitting}
+                    disabled={submitting || uploadingCount > 0}
                   >
                     {submitting ? (
                       <>
