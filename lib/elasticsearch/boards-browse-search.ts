@@ -198,6 +198,8 @@ export type BoardsBrowseEsContext = {
   locationText?: string
   /** When true, only listings where the seller offers shipping. */
   shippingAvailable?: boolean
+  /** When true, only listings that offer local pickup. */
+  localPickupAvailable?: boolean
   /** Admin synonym expansions for keyword recall (e.g. "ci" → "channel islands"). */
   expansions?: string[]
   /** Exact board length from query parse (`5'10` → 70); applied as a tight inches range. */
@@ -339,6 +341,13 @@ function baseContextFilters(ctx: BoardsBrowseEsContext): object[] {
   ]
   if (ctx.shippingAvailable) {
     filters.push({ term: { shipping_available: true } })
+  }
+  if (ctx.localPickupAvailable) {
+    filters.push({
+      bool: {
+        must_not: [{ term: { local_pickup: false } }],
+      },
+    })
   }
   // Exact length wins over open bounds when both are present.
   const exactLength = lengthInchesClause(ctx.lengthInches)

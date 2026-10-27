@@ -32,6 +32,8 @@ export type FacetCountContext = {
   location?: string
   /** When true, only listings where the seller offers shipping. */
   shippingAvailable?: boolean
+  /** When true, only listings that offer local pickup. */
+  localPickupAvailable?: boolean
 }
 
 function escapePostgrestIlikeFragment(fragment: string): string {
@@ -64,6 +66,9 @@ export async function fetchSurfboardFacetCountRows(
   }
   if (ctx.shippingAvailable) {
     dbQuery = dbQuery.eq("shipping_available", true)
+  }
+  if (ctx.localPickupAvailable) {
+    dbQuery = dbQuery.or("local_pickup.eq.true,local_pickup.is.null")
   }
 
   const brandModelId = ctx.brandModelId?.trim()

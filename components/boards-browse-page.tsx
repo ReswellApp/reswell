@@ -39,9 +39,14 @@ import {
 import {
   boardsBrowseBoardTypeLabel,
   BOARDS_BROWSE_DEFAULT_SORT,
+  isBoardsBrowseLocalPickupAvailableParam,
   isBoardsBrowseShippingAvailableParam,
   type BoardsBrowseSearchParams,
 } from "@/lib/marketplace-slug-metadata"
+import {
+  boardsBrowseLocalPickupNearMeRedirectHref,
+  loadMergedBoardsBrowseFilters,
+} from "@/lib/services/boardsBrowseLocalPickupNearMeMerge"
 import { getCachedForwardGeocodePlace } from "@/lib/cache/forward-geocode-place"
 import { resolveBoardsBrowseGeocodeRedirectHref } from "@/lib/services/boardsBrowseGeocode"
 import {
@@ -114,8 +119,11 @@ async function BoardListings({
 }: {
   searchParams: Promise<BoardsBrowseSearchParams>
 }) {
-  const searchParams = await searchParamsPromise
   const supabase = getDb({ consistency: "eventual" })
+  const rawSearchParams = await searchParamsPromise
+  const { user } = await getCachedRequestSession()
+  const mergedBrowse = await loadMergedBoardsBrowseFilters(supabase, user?.id, rawSearchParams)
+  const searchParams = mergedBrowse.searchParams
   const parsedPage = parseInt(searchParams.page || "1", 10)
   const page = Number.isFinite(parsedPage) && parsedPage >= 1 ? parsedPage : 1
   const limit = BOARDS_BROWSE_PAGE_SIZE
@@ -148,6 +156,9 @@ async function BoardListings({
   const urlMinPrice = searchParams.minPrice ? Number(searchParams.minPrice) : undefined
   const urlMaxPrice = searchParams.maxPrice ? Number(searchParams.maxPrice) : undefined
   const urlShipping = isBoardsBrowseShippingAvailableParam(searchParams.shipping)
+    ? true
+    : undefined
+  const urlPickup = isBoardsBrowseLocalPickupAvailableParam(searchParams.pickup)
     ? true
     : undefined
   const radiusMi = searchParams.radius ? Number(searchParams.radius) : undefined
@@ -187,6 +198,7 @@ async function BoardListings({
   const maxPrice =
     urlMaxPrice != null && !Number.isNaN(urlMaxPrice) ? urlMaxPrice : nl?.maxPrice
   const shippingAvailable = urlShipping ?? nl?.shippingAvailable
+  const localPickupAvailable = urlPickup ?? undefined
 
   // When resolve ran, honor its keyword (including "none") — never fall back to the raw
   // URL `q`. Falling back re-introduces filter words ("under", "$800") into ES `must`
@@ -262,6 +274,7 @@ async function BoardListings({
         minPrice,
         maxPrice,
         shippingAvailable,
+        localPickupAvailable,
         locationText: location.trim() && !useGeocodedAnchor ? location : undefined,
         geo:
           hasLatLng && (filterByRadius || isNearestSort)
@@ -334,6 +347,7 @@ async function BoardListings({
       minPrice,
       maxPrice,
       shippingAvailable,
+      localPickupAvailable,
       useSuppressionSort,
       geoBbox:
         filterByRadius && hasLatLng
@@ -404,6 +418,7 @@ async function BoardListings({
           minPrice,
           maxPrice,
           shippingAvailable,
+          localPickupAvailable,
           useSuppressionSort: false,
           geoBbox:
             filterByRadius && hasLatLng
@@ -487,6 +502,7 @@ async function BoardListings({
         minPrice,
         maxPrice,
         shippingAvailable,
+        localPickupAvailable,
         offset,
         limit,
         useSuppressionSort,
@@ -686,11 +702,10 @@ export async function BoardsBrowsePage(props: {
   const rawSearchParams = await props.searchParams
   const browsePath = props.browsePath?.trim() || "/boards"
   const pageDefaultSort = props.defaultSort ?? BOARDS_BROWSE_DEFAULT_SORT
-  const searchParams: BoardsBrowseSearchParams = {
+  let searchParams: BoardsBrowseSearchParams = {
     ...rawSearchParams,
     sort: rawSearchParams.sort?.trim() || pageDefaultSort,
   }
-  const searchParamsPromise = Promise.resolve(searchParams)
   if (searchParams.type === "foamie") {
     const next = boardsBrowseSearchParamsToURLSearchParams(searchParams, new Set(["type"]))
     redirect(boardsBrowsePathWithSearchParams(browsePath, next))
@@ -714,7 +729,23 @@ export async function BoardsBrowsePage(props: {
   if (geocodeRedirectHref) {
     redirect(geocodeRedirectHref)
   }
-  const typeCrumb = boardsBrowseBoardTypeLabel(searchParams.type)
+
+  const browseSupabase = getDb({ consistency: "eventual" })
+  const { user: browseUser } = await getCachedRequestSession()
+  const mergedNearMe = await loadMergedBoardsBrowseFilters(browseSupabase, browseUser?.id, searchParams)
+  const nearMeRedirectHref = boardsBrowseLocalPickupNearMeRedirectHref(
+    browsePath,
+    searchParams,
+    mergedNearMe,
+  )
+  if (nearMeRedirectHref) {
+    redirect(nearMeRedirectHref)
+  }
+  const effectiveSearchParams = mergedNearMe.searchParams
+  const searchParamsForPage = effectiveSearchParams
+  const searchParamsPromise = Promise.resolve(searchParamsForPage)
+
+  const typeCrumb = boardsBrowseBoardTypeLabel(searchParamsForPage.type)
   const pageTitle = typeCrumb ?? surfboardsBrowseRootLabel
   const openGiveaway = props.showListYourSurfboardCta ? null : getOpenBoardsGiveaway()
   const giveawayEnter: BoardsGiveawayEnterProps | null = openGiveaway
@@ -723,7 +754,7 @@ export async function BoardsBrowsePage(props: {
 
   return (
     <main className="flex-1">
-      <BoardsBrowseJsonLd searchParams={searchParams} />
+      <BoardsBrowseJsonLd searchParams={searchParamsForPage} />
       {!props.showListYourSurfboardCta ? (
         <section className="bg-offwhite pt-1 sm:pt-2 lg:pt-6">
           <div className="container mx-auto">
@@ -731,12 +762,12 @@ export async function BoardsBrowsePage(props: {
               <CategoryBrowseBreadcrumbs
                 rootHref="/boards"
                 rootLabel={surfboardsBrowseRootLabel}
-                searchParams={searchParams}
+                searchParams={searchParamsForPage}
                 segment={
-                  typeCrumb && searchParams.type?.trim()
+                  typeCrumb && searchParamsForPage.type?.trim()
                     ? {
                         label: typeCrumb,
-                        href: `/boards?type=${encodeURIComponent(searchParams.type.trim())}`,
+                        href: `/boards?type=${encodeURIComponent(searchParamsForPage.type.trim())}`,
                         ownedParamKeys: ["type"],
                       }
                     : undefined

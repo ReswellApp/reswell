@@ -210,6 +210,8 @@ export type SurfboardBrowseFilterParams = {
   locationTextFilter?: string
   /** When true, only listings where the seller offers shipping. */
   shippingAvailable?: boolean
+  /** When true, only listings that offer local pickup. */
+  localPickupAvailable?: boolean
 }
 
 const ROTATE_ID_PAGE_SIZE = 1000
@@ -453,6 +455,8 @@ export async function buildSurfboardBrowseBaseQuery(
     locationTextFilter?: string
     /** When true, only listings where the seller offers shipping. */
     shippingAvailable?: boolean
+    /** When true, only listings that offer local pickup. */
+    localPickupAvailable?: boolean
     useSuppressionSort?: boolean
     excludeListingIds?: string[]
     restrictToListingIds?: string[]
@@ -538,6 +542,10 @@ export async function buildSurfboardBrowseBaseQuery(
 
   if (params.shippingAvailable) {
     dbQuery = dbQuery.eq("shipping_available", true)
+  }
+
+  if (params.localPickupAvailable) {
+    dbQuery = dbQuery.or("local_pickup.eq.true,local_pickup.is.null")
   }
 
   if (params.prependCreatedAtOrder) {
@@ -677,6 +685,7 @@ export async function fetchNearestSurfboardsWithinRadius(params: {
   minPrice?: number
   maxPrice?: number
   shippingAvailable?: boolean
+  localPickupAvailable?: boolean
   offset: number
   limit: number
   maxFetch: number
@@ -696,6 +705,7 @@ export async function fetchNearestSurfboardsWithinRadius(params: {
     minPrice: params.minPrice,
     maxPrice: params.maxPrice,
     shippingAvailable: params.shippingAvailable,
+    localPickupAvailable: params.localPickupAvailable,
     useSuppressionSort: params.useSuppressionSort,
     geoBbox: {
       lat: params.anchorLat,
@@ -741,6 +751,7 @@ type NearbySurfboardFallbackParams = {
   minPrice?: number
   maxPrice?: number
   shippingAvailable?: boolean
+  localPickupAvailable?: boolean
   offset: number
   limit: number
   useSuppressionSort?: boolean
@@ -809,6 +820,7 @@ function nearbyFallbackFilters(
         ? params.maxPrice
         : null,
     shippingAvailable: params.shippingAvailable === true,
+    localPickupAvailable: params.localPickupAvailable === true,
   }
 }
 
@@ -870,6 +882,7 @@ export function isBoardsBrowseCategoryTypeView(sp: BoardsBrowseSearchParams): bo
   if (hasNonEmptyParam(sp.minPrice)) return false
   if (hasNonEmptyParam(sp.maxPrice)) return false
   if (hasNonEmptyParam(sp.shipping)) return false
+  if (hasNonEmptyParam(sp.pickup)) return false
   if (hasNonEmptyParam(sp.radius)) return false
   if (hasNonEmptyParam(sp.lat)) return false
   if (hasNonEmptyParam(sp.lng)) return false

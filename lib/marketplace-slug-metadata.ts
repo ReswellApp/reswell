@@ -94,6 +94,11 @@ export type BoardsBrowseSearchParams = {
    * Omitted when the filter is off.
    */
   shipping?: string
+  /**
+   * When `1` / `true`, only listings that offer local pickup (`local_pickup` not false).
+   * Omitted when the filter is off.
+   */
+  pickup?: string
   /** Pro facet params (comma-separated slug lists). See `lib/boards-browse-facets.ts`. */
   style?: string
   fin?: string
@@ -105,6 +110,14 @@ export type BoardsBrowseSearchParams = {
 
 /** True when `/boards?shipping=` requests the shipping-available filter. */
 export function isBoardsBrowseShippingAvailableParam(
+  value: string | undefined | null,
+): boolean {
+  const v = value?.trim().toLowerCase()
+  return v === "1" || v === "true" || v === "yes"
+}
+
+/** True when `/boards?pickup=` requests the local-pickup-available filter. */
+export function isBoardsBrowseLocalPickupAvailableParam(
   value: string | undefined | null,
 ): boolean {
   const v = value?.trim().toLowerCase()
