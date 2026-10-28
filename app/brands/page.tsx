@@ -6,8 +6,11 @@ import { BrandsExplorer } from "@/components/brands/brands-explorer"
 import { BrandsListAdminBar } from "@/components/brands/brands-list-admin-bar"
 import { createClient } from "@/lib/supabase/server"
 import { listBrands } from "@/lib/brands/server"
-import { sortDirectoryBrands } from "@/lib/brands/directory-rank"
-import { countActiveListingsByBrandIds } from "@/lib/db/brand-listings"
+import { sortDirectoryBrands, sumDirectoryListingCounts } from "@/lib/brands/directory-rank"
+import {
+  countActiveListingsByBrandIds,
+  countPublicSoldListingsByBrandIds,
+} from "@/lib/db/brand-listings"
 import { parseBrandsDirectoryFilterCategorySlugsFromSearchParam } from "@/lib/brand-product-categories"
 import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
 
@@ -35,11 +38,15 @@ export default async function BrandsPage({
   const brands = await listBrands(supabase, {
     productCategories: categoryFilter.length > 0 ? categoryFilter : undefined,
   })
-  const activeListingCounts = await countActiveListingsByBrandIds(
-    supabase,
-    brands.map((brand) => brand.id),
+  const brandIds = brands.map((brand) => brand.id)
+  const [activeListingCounts, soldListingCounts] = await Promise.all([
+    countActiveListingsByBrandIds(supabase, brandIds),
+    countPublicSoldListingsByBrandIds(supabase, brandIds),
+  ])
+  const rankedBrands = sortDirectoryBrands(
+    brands,
+    sumDirectoryListingCounts(activeListingCounts, soldListingCounts),
   )
-  const rankedBrands = sortDirectoryBrands(brands, activeListingCounts)
   const activeListingCountByBrandId = Object.fromEntries(activeListingCounts)
 
   return (

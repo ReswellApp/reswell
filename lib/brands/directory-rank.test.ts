@@ -1,6 +1,10 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
-import { compareDirectoryBrands, sortDirectoryBrands } from "@/lib/brands/directory-rank"
+import {
+  compareDirectoryBrands,
+  sortDirectoryBrands,
+  sumDirectoryListingCounts,
+} from "@/lib/brands/directory-rank"
 
 function brand(
   id: string,
@@ -19,10 +23,10 @@ describe("compareDirectoryBrands", () => {
     ["album", 9],
   ])
 
-  it("puts brands with models ahead of listing-only brands", () => {
+  it("puts listing brands ahead of catalog-only models", () => {
     const withModels = brand("indie", "1-DA Shapes", 8)
     const listingsOnly = brand("empty-listing", "TERRAMAR SURF", 0)
-    assert.ok(compareDirectoryBrands(withModels, listingsOnly, counts) < 0)
+    assert.ok(compareDirectoryBrands(listingsOnly, withModels, counts) < 0)
   })
 
   it("puts attached listings ahead of zero-listing catalog brands", () => {
@@ -52,7 +56,7 @@ describe("compareDirectoryBrands", () => {
 })
 
 describe("sortDirectoryBrands", () => {
-  it("orders a mixed directory: models+listings, models, listings, then the rest", () => {
+  it("orders a mixed directory: listings+models, listings, models, then the rest", () => {
     const rows = [
       brand("zzz", "Zed Empty", 0),
       brand("listings", "Listing Only", 0),
@@ -66,6 +70,23 @@ describe("sortDirectoryBrands", () => {
       ["listings", 24],
     ])
     const sorted = sortDirectoryBrands(rows, counts).map((row) => row.id)
-    assert.deepEqual(sorted, ["ci", "album", "quiet", "listings", "zzz"])
+    assert.deepEqual(sorted, ["ci", "album", "listings", "quiet", "zzz"])
+  })
+})
+
+describe("sumDirectoryListingCounts", () => {
+  it("adds sold activity onto active counts", () => {
+    const active = new Map([
+      ["ci", 2],
+      ["quiet", 0],
+    ])
+    const sold = new Map([
+      ["ci", 5],
+      ["sold-only", 3],
+    ])
+    const summed = sumDirectoryListingCounts(active, sold)
+    assert.equal(summed.get("ci"), 7)
+    assert.equal(summed.get("quiet"), 0)
+    assert.equal(summed.get("sold-only"), 3)
   })
 })
