@@ -37,6 +37,7 @@ import {
   mobileListingsPageSchema,
   mobileMeSchema,
   mobileModelPageSchema,
+  mobileMessageMediaBodySchema,
   mobileMessageResultSchema,
   mobileOfferActionResultSchema,
   mobileOffersSchema,
@@ -44,6 +45,7 @@ import {
   mobileProfileAvatarResultSchema,
   mobileProfileBannerResultSchema,
   mobileProfileSchema,
+  mobileProfileShopFiltersSchema,
   mobileProfileSignInActionSchema,
   mobileProfileSettingsSchema,
   mobileSellerPageSchema,
@@ -107,12 +109,14 @@ import {
   type MobileListingsPage,
   type MobileMe,
   type MobileModelPage,
+  type MobileMessageMediaBody,
   type MobileMessageResult,
   type MobileOffer,
   type MobileOfferActionBody,
   type MobileOfferActionResult,
   type MobileOrder,
   type MobileProfile,
+  type MobileProfileShopFilters,
   type MobileProfileAvatarResult,
   type MobileProfileBannerResult,
   type MobileProfileEmail,
@@ -421,15 +425,27 @@ export function relistListing(accessToken: string, listingId: string): Promise<{
 
 export function fetchProfileListings(
   slug: string,
-  query?: { offset?: number; status?: "current" | "sold" },
+  query?: { offset?: number; status?: "current" | "sold"; section?: string },
 ): Promise<MobileListingsPage> {
   const params = new URLSearchParams({
     limit: "20",
     offset: String(query?.offset ?? 0),
     status: query?.status ?? "current",
   })
+  if (query?.section) params.set("section", query.section)
   return read(`/api/mobile/v1/profiles/${encodeURIComponent(slug)}/listings?${params.toString()}`, (data) =>
     mobileListingsPageSchema.parse(data),
+  )
+}
+
+export function fetchProfileShopFilters(
+  slug: string,
+  status: "current" | "sold" = "current",
+): Promise<MobileProfileShopFilters> {
+  const params = new URLSearchParams({ status })
+  return read(
+    `/api/mobile/v1/profiles/${encodeURIComponent(slug)}/shop-filters?${params.toString()}`,
+    (data) => mobileProfileShopFiltersSchema.parse(data),
   )
 }
 
@@ -511,6 +527,25 @@ export function sendConversationMessage(
     accessToken,
     { body },
   )
+}
+
+export function sendConversationMediaMessage(
+  accessToken: string,
+  conversationId: string,
+  payload: MobileMessageMediaBody,
+): Promise<MobileMessageResult> {
+  const body = mobileMessageMediaBodySchema.parse(payload)
+  return read(
+    `/api/mobile/v1/conversations/${encodeURIComponent(conversationId)}/messages/media`,
+    (data) => mobileMessageResultSchema.parse(data),
+    accessToken,
+    body,
+  )
+}
+
+/** Authenticated attachment bytes for a marketplace message (same route as the website). */
+export function messageAttachmentUrl(messageId: string): string {
+  return `${apiOrigin()}/api/messages/${encodeURIComponent(messageId)}/attachment`
 }
 
 export function actOnOffer(
@@ -952,13 +987,27 @@ export async function uploadSellPhoto(accessToken: string, uri: string): Promise
   return mobileSellPhotoSchema.parse(body.data)
 }
 
+async function sellPhotoStorageUrlReachable(url: string): Promise<boolean> {
+  try {
+    const res = await fetch(url, { method: "HEAD", signal: AbortSignal.timeout(12_000) })
+    return res.ok
+  } catch {
+    return false
+  }
+}
+
 /** Uploads photos that are still only on the phone. Photos already stored are reused. */
 export async function uploadSellPhotos(accessToken: string, photos: SellPhoto[]): Promise<SellPhoto[]> {
   const uploaded: SellPhoto[] = []
   for (const photo of photos) {
     if (photo.url && photo.thumbnailUrl) {
-      uploaded.push(photo)
-      continue
+      const stored =
+        (await sellPhotoStorageUrlReachable(photo.url)) &&
+        (await sellPhotoStorageUrlReachable(photo.thumbnailUrl))
+      if (stored) {
+        uploaded.push(photo)
+        continue
+      }
     }
     const stored = await uploadSellPhoto(accessToken, photo.uri)
     uploaded.push({ ...photo, url: stored.url, thumbnailUrl: stored.thumbnail_url })

@@ -1,20 +1,45 @@
 import { SymbolView } from "expo-symbols"
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native"
+import { ScrollView, StyleSheet, TextInput, View } from "react-native"
+import type { MobileProfileShopSection } from "@reswell/api-contract"
+import { ProfileShopDropdownPill } from "@/components/profile-shop-dropdown-pill"
+import {
+  PROFILE_SHOP_SORT_OPTIONS,
+  profileShopSortPillLabel,
+  type ProfileShopSort,
+} from "@/lib/profile-shop-sort"
 import { fontFamily, useReswellColors } from "@/theme"
 
 export function ProfileShopToolbar({
   sellerName,
   query,
   onQueryChange,
+  sections,
+  sectionId,
+  onSectionChange,
+  sort,
+  onSortChange,
 }: {
   sellerName: string
   query: string
   onQueryChange: (value: string) => void
+  sections?: MobileProfileShopSection[]
+  sectionId?: string | null
+  onSectionChange?: (sectionId: string | null) => void
+  sort: ProfileShopSort
+  onSortChange: (sort: ProfileShopSort) => void
 }) {
   const colors = useReswellColors()
   const placeholder = `Search ${sellerName.split(/\s+/)[0] ?? "seller"}'s shop…`
+  const categoryOptions = [
+    { id: null, label: "All categories" },
+    ...(sections ?? []).map((section) => ({ id: section.id, label: section.label })),
+  ]
+  const activeSection = sections?.find((section) => section.id === sectionId)
+  const categoryLabel = activeSection?.label ?? "Category"
+  const sortOptions = PROFILE_SHOP_SORT_OPTIONS.map((option) => ({ id: option.id, label: option.label }))
+
   return (
-    <View style={styles.row}>
+    <View style={styles.wrap}>
       <View style={[styles.field, { borderColor: colors.border, backgroundColor: colors.background }]}>
         <SymbolView name={{ ios: "magnifyingglass", android: "search", web: "search" }} size={16} tintColor={colors.muted} />
         <TextInput
@@ -28,22 +53,41 @@ export function ProfileShopToolbar({
           style={[styles.input, { color: colors.foreground, fontFamily: fontFamily.text }]}
         />
       </View>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Sort listings"
-        style={[styles.sort, { borderColor: colors.border, backgroundColor: colors.background }]}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.filterRow}
+        keyboardShouldPersistTaps="handled"
       >
-        <Text style={[styles.sortLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}>Recent</Text>
-        <SymbolView name={{ ios: "chevron.down", android: "expand_more", web: "expand_more" }} size={14} tintColor={colors.muted} />
-      </Pressable>
+        {sections && sections.length > 0 && onSectionChange ? (
+          <ProfileShopDropdownPill
+            label={categoryLabel}
+            accessibilityLabel="Filter by category"
+            emphasized={sectionId != null}
+            options={categoryOptions}
+            value={sectionId ?? null}
+            onChange={onSectionChange}
+          />
+        ) : null}
+        <ProfileShopDropdownPill
+          label={profileShopSortPillLabel(sort)}
+          accessibilityLabel="Sort listings"
+          options={sortOptions}
+          value={sort}
+          onChange={(id) => {
+            if (id && PROFILE_SHOP_SORT_OPTIONS.some((option) => option.id === id)) {
+              onSortChange(id as ProfileShopSort)
+            }
+          }}
+        />
+      </ScrollView>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: "row", alignItems: "center", gap: 8 },
+  wrap: { gap: 10 },
   field: {
-    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
@@ -53,14 +97,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   input: { flex: 1, fontSize: 15, paddingVertical: 8 },
-  sort: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 2,
-    minHeight: 40,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-  },
-  sortLabel: { fontSize: 14, fontWeight: "600" },
+  filterRow: { flexDirection: "row", gap: 8, paddingVertical: 2 },
 })

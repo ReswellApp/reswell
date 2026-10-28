@@ -1,6 +1,5 @@
-import { notFound } from "next/navigation"
-
 import { DashboardShipperHome } from "@/components/features/dashboard/shipper/dashboard-shipper-home"
+import { DashboardShipperJoin } from "@/components/features/dashboard/shipper/dashboard-shipper-join"
 import { privatePageMetadata } from "@/lib/site-metadata"
 import { getCoastalShipperDashboard } from "@/lib/services/coastalShipperDashboard"
 
@@ -15,7 +14,7 @@ export const metadata = privatePageMetadata({
 export default async function DashboardShipperPage() {
   const loaded = await getCoastalShipperDashboard({ shipperId: null })
   if (!loaded.ok) {
-    if (loaded.code === "not_found") notFound()
+    if (loaded.code === "not_found") return <DashboardShipperJoin />
     throw new Error("Could not load the shipper dashboard.")
   }
 

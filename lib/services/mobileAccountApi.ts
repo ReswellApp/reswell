@@ -26,6 +26,11 @@ import {
 } from "@reswell/api-contract"
 import { getConversationForBuyerSellerListing, userParticipatesInConversation } from "@/lib/db/conversations"
 import {
+  composeMediaAttachmentMessageBody,
+  parseMarketplaceMessageImageAttachment,
+  parseMarketplaceMessageVideoAttachment,
+} from "@/lib/validations/marketplace-message-attachment"
+import {
   fetchMobileDashboardAccess,
   fetchMobileDashboardFacts,
   listMobileCartRows,
@@ -51,6 +56,7 @@ import { isListingPubliclyVisible, isListingVisibleInSavedList } from "@/lib/lis
 import { redactShippingLabelArtifactsFromMessage } from "@/lib/messages/redact-seller-shipping-label"
 import { absoluteProfileCircleUrl } from "@/lib/profile-circle"
 import { getMessagesInboxForUser } from "@/lib/services/messagesInbox"
+import { resolveProfileShopSectionFilter } from "@/lib/sellers/profile-shop-section-filter"
 import {
   toMobileConversationPreview,
   toMobileOffer,
@@ -89,16 +95,29 @@ function cardsFromRows(
 
 export async function listMobileProfileListingsService(
   slug: string,
-  query: { limit: number; offset: number; status: "current" | "sold" },
+  query: {
+    limit: number
+    offset: number
+    status: "current" | "sold"
+    section?: string
+    q?: string
+  },
 ): Promise<MobileApiResult<{ listings: NonNullable<ReturnType<typeof toMobileListingCard>>[]; limit: number; offset: number; has_more: boolean }>> {
   const profile = await loadPublicMobileProfileRow(slug)
   if (!profile.ok) return profile
+
+  const section = resolveProfileShopSectionFilter(query.section)
+  if (query.section?.trim() && !section) {
+    return { ok: false, status: 400, error: "Invalid shop category" }
+  }
 
   const listed = await listMobileListingRows({
     limit: query.limit,
     offset: query.offset,
     sellerId: profile.data.id,
     availability: query.status === "sold" ? "sold" : "current",
+    section,
+    q: query.q,
   })
   if (!listed.ok) {
     console.error("[mobile-api] profile listings failed", {
@@ -461,12 +480,24 @@ export async function getMobileConversationService(
   const messages = listed.rows.map((row) => {
     const redacted = redactShippingLabelArtifactsFromMessage(row)
     const order = orderCard(row.metadata, viewerIsSeller)
+    const imageAtt = parseMarketplaceMessageImageAttachment(row.metadata)
+    const videoAtt = parseMarketplaceMessageVideoAttachment(row.metadata)
+    const attachment = imageAtt ? ({ kind: "image" as const } ) : videoAtt ? ({ kind: "video" as const }) : null
+    const rawBody = order ? "" : text(typeof redacted.content === "string" ? redacted.content : row.content) ?? ""
+    const placeholder =
+      attachment?.kind === "image"
+        ? composeMediaAttachmentMessageBody("image")
+        : attachment?.kind === "video"
+          ? composeMediaAttachmentMessageBody("video")
+          : null
+    const body = attachment && rawBody === placeholder ? "" : rawBody
     return {
       id: row.id,
-      body: order ? "" : text(typeof redacted.content === "string" ? redacted.content : row.content) ?? "",
+      body,
       created_at: row.created_at,
       mine: row.sender_id === userId,
       order,
+      attachment,
     }
   })
 

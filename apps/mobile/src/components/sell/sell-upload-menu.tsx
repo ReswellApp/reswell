@@ -16,9 +16,20 @@ export function SellUploadMenu({
   const insets = useSafeAreaInsets()
 
   return (
-    <Modal transparent animationType="slide" onRequestClose={onClose}>
+    <Modal
+      transparent
+      animationType="slide"
+      presentationStyle="overFullScreen"
+      statusBarTranslucent
+      onRequestClose={onClose}
+    >
       <View style={styles.screen}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={onClose} style={styles.backdrop} />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Close"
+          onPress={onClose}
+          style={styles.backdrop}
+        />
         <View
           style={[
             styles.sheet,
@@ -62,13 +73,15 @@ function MenuRow({
 
 const styles = StyleSheet.create({
   screen: { flex: 1, justifyContent: "flex-end" },
-  backdrop: { ...StyleSheet.absoluteFill, backgroundColor: "rgba(0,0,0,0.35)" },
+  /** Flex dim above the sheet — not absoluteFill, so the sheet never sits under the scrim. */
+  backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.35)" },
   sheet: {
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingHorizontal: 16,
     paddingTop: 10,
     gap: 10,
+    zIndex: 1,
   },
   handle: { alignSelf: "center", width: 36, height: 4, borderRadius: 2, marginBottom: 6 },
   title: { fontSize: 20, fontWeight: "700", marginBottom: 4 },

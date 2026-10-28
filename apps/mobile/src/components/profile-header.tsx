@@ -2,9 +2,11 @@ import { Image, type ImageContentPosition } from "expo-image"
 import { ProfileCircle } from "@/components/profile-circle"
 import { SymbolView } from "expo-symbols"
 import { ActivityIndicator, Linking, Pressable, Share, StyleSheet, Text, View } from "react-native"
-import type { MobileProfile } from "@reswell/api-contract"
+import type { MobileProfile, MobileProfileShopSection } from "@reswell/api-contract"
+import type { ProfileShopSort } from "@/lib/profile-shop-sort"
 import { ProfileSegmentTabs } from "@/components/profile-segment-tabs"
 import { ProfileShopToolbar } from "@/components/profile-shop-toolbar"
+import { ProfileBannerReviews } from "@/components/profile-reviews-sheet"
 import { ProfileStatsRow } from "@/components/profile-stats-row"
 import { publicSiteUrl } from "@/lib/public-env"
 import { fontFamily, useReswellColors } from "@/theme"
@@ -27,6 +29,12 @@ export function ProfileHeader({
   onEdit,
   shopQuery,
   onShopQueryChange,
+  shopSections,
+  shopSectionId,
+  onShopSectionChange,
+  shopSort,
+  onShopSortChange,
+  onReviewsPress,
 }: {
   profile: MobileProfile
   tab: SellerTab
@@ -37,8 +45,14 @@ export function ProfileHeader({
   onFollowers?: () => void
   onFollowing?: () => void
   onEdit?: () => void
+  onReviewsPress?: () => void
   shopQuery?: string
   onShopQueryChange?: (value: string) => void
+  shopSections?: MobileProfileShopSection[]
+  shopSectionId?: string | null
+  onShopSectionChange?: (sectionId: string | null) => void
+  shopSort?: ProfileShopSort
+  onShopSortChange?: (sort: ProfileShopSort) => void
 }) {
   const colors = useReswellColors()
   const handle = `@${profile.seller_slug}`
@@ -92,6 +106,7 @@ export function ProfileHeader({
             <Text style={[styles.heroHandle, { fontFamily: fontFamily.text }]} numberOfLines={1}>
               {handle}
             </Text>
+            {onReviewsPress ? <ProfileBannerReviews profile={profile} onPress={onReviewsPress} /> : null}
             {profile.verified ? (
               <View style={styles.verifiedRow}>
                 <SymbolView name={{ ios: "checkmark.seal.fill", android: "verified", web: "verified" }} size={12} tintColor="#FFFFFF" />
@@ -138,12 +153,13 @@ export function ProfileHeader({
             sellerName={profile.name}
             query={shopQuery ?? ""}
             onQueryChange={onShopQueryChange}
+            sections={shopSections}
+            sectionId={shopSectionId ?? null}
+            onSectionChange={onShopSectionChange}
+            sort={shopSort ?? "newest"}
+            onSortChange={onShopSortChange ?? (() => undefined)}
           />
         </View>
-      ) : null}
-
-      {tab === "info" && profile.about ? (
-        <Text style={[styles.about, { color: colors.muted, fontFamily: fontFamily.text }]}>{profile.about}</Text>
       ) : null}
 
       {tab === "info" ? <ContactRow website={profile.website_url} phone={profile.phone} /> : null}
@@ -236,7 +252,6 @@ const styles = StyleSheet.create({
   followActive: { backgroundColor: "rgba(255, 255, 255, 0.2)" },
   followLabel: { color: "#FFFFFF", fontSize: 13, fontWeight: "700" },
   section: { paddingHorizontal: 16, paddingTop: 14 },
-  about: { paddingHorizontal: 16, paddingTop: 12, fontSize: 15, lineHeight: 22 },
   contacts: { flexDirection: "row", gap: 8, paddingHorizontal: 16, paddingTop: 10, paddingBottom: 4 },
   contact: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: "center", justifyContent: "center" },
 })

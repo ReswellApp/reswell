@@ -3,8 +3,6 @@ import { View, type StyleProp, type ViewStyle } from "react-native"
 import { publicSiteUrl } from "@/lib/public-env"
 
 const DEFAULT_PROFILE_PATH = "/images/reswell-profile-default.png"
-/** Empty seller banner. Same as `SELLER_PROFILE_BANNER_DEFAULT`. */
-const DEFAULT_PROFILE_BLUE = "#5574AD"
 
 /** Same public file the API returns when a profile has no photo. */
 export function standardProfileAvatarUrl(): string {
@@ -30,15 +28,14 @@ export function ProfileCircle({
     width: size,
     height: size,
     borderRadius: size / 2,
-    backgroundColor: DEFAULT_PROFILE_BLUE,
+    overflow: "hidden",
+    backgroundColor: "#E8F0FA",
   }
   const photo = url?.trim()
-  if (!photo || isDefaultProfileAvatar(photo)) {
-    return <View style={[circle, style]} />
-  }
+  const source = !photo || isDefaultProfileAvatar(photo) ? standardProfileAvatarUrl() : photo
   return (
     <Image
-      source={{ uri: photo }}
+      source={{ uri: source }}
       accessibilityIgnoresInvertColors
       style={[circle, style]}
       contentFit="cover"

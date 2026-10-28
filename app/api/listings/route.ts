@@ -22,6 +22,7 @@ import {
   isListingDimensionDisplaySchemaCacheError,
   withoutListingDimensionDisplayDbFields,
 } from '@/lib/listing-dimensions-display'
+import { insertListingImages } from '@/lib/db/listingImagesInsert'
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -237,7 +238,12 @@ export async function POST(request: NextRequest) {
       },
     )
 
-    await supabase.from('listing_images').insert(imageInserts)
+    try {
+      await insertListingImages(supabase, imageInserts)
+    } catch (imageError) {
+      await supabase.from('listings').delete().eq('id', listing.id)
+      return NextResponse.json({ error: 'Failed to save listing photos' }, { status: 500 })
+    }
   }
 
   try {

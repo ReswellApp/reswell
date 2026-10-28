@@ -58,6 +58,9 @@ export function validateFinListingForm(
     return "Add at least one photo."
   }
   if (!opts.imagesUploadReady) {
+    if (opts.imageCount > 0) {
+      return "Your photos are still uploading. Wait until Photos shows Ready, then try again."
+    }
     return "Hang tight — your photos are still uploading."
   }
   if (opts.videoUploadReady === false) {

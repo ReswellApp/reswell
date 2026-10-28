@@ -1,5 +1,6 @@
 import { LISTING_SELLER_PROFILES_EMBED } from "@/lib/db/listing-seller-profile-embed"
 import { listingBoardTypeDbValuesForFilter } from "@/lib/board-type-canonical"
+import { PEER_LISTING_SECTIONS_FILTER } from "@/lib/peer-listing-sections"
 import { getDb } from "@/lib/supabase/db"
 import { categoryIdForBrowseBoardType } from "@/lib/utils/board-type-from-category-id"
 import type { ListingImageForCard } from "@/lib/listing-image-display"
@@ -134,7 +135,9 @@ export async function listMobileListingRows(
     request = request.eq("status", "active").eq("hidden_from_site", false).is("archived_at", null)
   }
 
-  if (query.sellerId) request = request.eq("user_id", query.sellerId)
+  if (query.sellerId) {
+    request = request.eq("user_id", query.sellerId).in("section", PEER_LISTING_SECTIONS_FILTER)
+  }
   if (query.section) request = request.eq("section", query.section)
   if (query.boardType) {
     const dbTypes = listingBoardTypeDbValuesForFilter(query.boardType)

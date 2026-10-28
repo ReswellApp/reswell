@@ -7,7 +7,6 @@ import {
   saveSurfboardShippedPickupAddress,
   setListingSurfboardShipped,
 } from "@/lib/db/surfboard-shipped"
-import { fetchProfileIsAdmin } from "@/lib/db/profileAdmin"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import type { CoastalMatchShipper } from "@/lib/services/coastalDeliveryMatch"
 import type { GoogleResolvedStreet } from "@/lib/maps/google-geocoding-server"
@@ -90,6 +89,10 @@ export async function saveListingSurfboardShipped(
       return { error: "Listing not found." }
     }
 
+    if (listing.row.userId !== gate.ctx.user.id) {
+      return { error: "You can only enable Surfboard Shipped on your own listings." }
+    }
+
     if (!input.enabled) {
       const cleared = await setListingSurfboardShipped(db, input.listingId, {
         optedIn: false,
@@ -153,6 +156,8 @@ export async function getListingSurfboardShippedChoice(listingId: string): Promi
     const db = createServiceRoleClient()
     const listing = await fetchListingSurfboardShipped(db, listingId)
     if (listing.error || !listing.row) return { enabled: false, address: null }
+    if (listing.row.userId !== gate.ctx.user.id) return null
+
     if (!listing.row.optedIn || !listing.row.pickupAddressId) {
       return { enabled: false, address: null }
     }
@@ -171,9 +176,6 @@ export async function getListingSurfboardShippedChoice(listingId: string): Promi
 export async function getSurfboardShippedCheckoutSeed(
   listingId: string,
 ): Promise<SurfboardShippedCheckoutSeed | null> {
-  const session = await adminSession()
-  if (!session) return null
-
   try {
     const db = createServiceRoleClient()
     const loaded = await loadOptedInPickup(db, listingId)
@@ -205,7 +207,7 @@ export async function previewSurfboardShippedCheckout(input: {
     matchedWeekday: null,
   }
 
-  const session = await adminSession()
+  const session = await signedInSession()
   if (!session) return hidden
 
   const { data: address, error } = await session.supabase
@@ -242,8 +244,8 @@ export async function prepareSurfboardShippedCharge(input: {
 }): Promise<
   { ok: true; charge: SurfboardShippedCharge } | { ok: false; error: string; status: number }
 > {
-  const session = await adminSession()
-  if (!session) return { ok: false, error: UNAVAILABLE, status: 403 }
+  const session = await signedInSession()
+  if (!session) return { ok: false, error: UNAVAILABLE, status: 401 }
 
   try {
     const charge = await buildCharge(input.listingId, input.buyer)
@@ -268,14 +270,15 @@ export async function prepareSurfboardShippedCharge(input: {
   }
 }
 
-async function adminSession(): Promise<{ supabase: Awaited<ReturnType<typeof createClient>>; userId: string } | null> {
+async function signedInSession(): Promise<{
+  supabase: Awaited<ReturnType<typeof createClient>>
+  userId: string
+} | null> {
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return null
-  const isAdmin = await fetchProfileIsAdmin(supabase, user.id)
-  if (!isAdmin) return null
   return { supabase, userId: user.id }
 }
 
@@ -427,4 +430,3 @@ function scheduleToMatchShipper(schedule: CoastalShipperScheduleRecord): Coastal
     })),
   }
 }
-

@@ -1129,6 +1129,8 @@ export type MobileSellerCard = z.infer<typeof mobileSellerCardSchema>
 export type MobileSellersPage = z.infer<typeof mobileSellersPageSchema>
 export type MobileSellerPage = z.infer<typeof mobileSellerPageSchema>
 export type MobileProfile = z.infer<typeof mobileProfileSchema>
+export type MobileProfileShopSection = z.infer<typeof mobileProfileShopSectionSchema>
+export type MobileProfileShopFilters = z.infer<typeof mobileProfileShopFiltersSchema>
 
 const mobilePageFields = {
   limit: z.number().int(),
@@ -1138,6 +1140,22 @@ const mobilePageFields = {
 
 export const mobileProfileListingsQuerySchema = mobileListingsQueryObject.extend({
   status: z.enum(["current", "sold"]).default("current"),
+})
+
+/** Seller shop category chips — same peer sections the website filters on. */
+export const mobileProfileShopSectionSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+  count: z.number().int().nonnegative(),
+})
+
+export const mobileProfileShopFiltersQuerySchema = z.object({
+  status: z.enum(["current", "sold"]).default("current"),
+})
+
+export const mobileProfileShopFiltersSchema = z.object({
+  status: z.enum(["current", "sold"]),
+  sections: z.array(mobileProfileShopSectionSchema),
 })
 
 export const mobileReviewsQuerySchema = z.object({
@@ -1710,12 +1728,17 @@ export const mobileMessageOrderSchema = z.object({
   hint: z.string(),
 })
 
+export const mobileMessageAttachmentSchema = z.object({
+  kind: z.enum(["image", "video"]),
+})
+
 export const mobileMessageSchema = z.object({
   id: z.string().uuid(),
   body: z.string(),
   created_at: z.string(),
   mine: z.boolean(),
   order: mobileMessageOrderSchema.nullable(),
+  attachment: mobileMessageAttachmentSchema.nullable().optional(),
 })
 
 export const mobileConversationDetailSchema = z.object({
@@ -1772,6 +1795,19 @@ export const mobileMessageBodySchema = z.object({
   body: z.string().trim().min(1).max(4000),
 })
 
+export const mobileMessageMediaBodySchema = z.object({
+  attachment: z.object({
+    kind: z.literal("image"),
+    path: z.string().min(1).max(500),
+    file_name: z.string().min(1).max(500),
+    mime_type: z.enum(["image/jpeg", "image/png", "image/webp", "image/gif"]),
+    size_bytes: z.number().int().positive(),
+    width: z.number().int().positive().optional(),
+    height: z.number().int().positive().optional(),
+  }),
+  caption: z.string().trim().max(4000).optional(),
+})
+
 export const mobileMessageResultSchema = z.object({
   id: z.string().uuid(),
   conversation_id: z.string().uuid(),
@@ -1804,6 +1840,7 @@ export type MobileFavoriteBody = z.infer<typeof mobileFavoriteBodySchema>
 export type MobileFollowBody = z.infer<typeof mobileFollowBodySchema>
 export type MobileCartBody = z.infer<typeof mobileCartBodySchema>
 export type MobileMessageBody = z.infer<typeof mobileMessageBodySchema>
+export type MobileMessageMediaBody = z.infer<typeof mobileMessageMediaBodySchema>
 export type MobileMessageResult = z.infer<typeof mobileMessageResultSchema>
 export type MobileOfferActionBody = z.infer<typeof mobileOfferActionBodySchema>
 export type MobileOfferActionResult = z.infer<typeof mobileOfferActionResultSchema>
@@ -1844,3 +1881,8 @@ export type MobileSale = z.infer<typeof mobileSaleSchema>
 export type MobileConversationPreview = z.infer<typeof mobileConversationPreviewSchema>
 export type MobileMessage = z.infer<typeof mobileMessageSchema>
 export type MobileConversationDetail = z.infer<typeof mobileConversationDetailSchema>
+
+export {
+  listingFulfillmentPdpCopy,
+  type ListingFulfillmentPdpCopy,
+} from "./listing-fulfillment-pdp"

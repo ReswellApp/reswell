@@ -83,7 +83,7 @@ interface CheckoutClientProps {
   suggestedFulfillment?: "pickup" | "shipping" | null
   /** Listing ids whose displayed price is the accepted offer amount. */
   acceptedOfferListingIds?: string[]
-  /** Admin checkout seed. Null hides Surfboard Shipped. */
+  /** Checkout seed when the listing opted into Surfboard Shipped. Null hides the option. */
   surfboardShippedSeed?: SurfboardShippedCheckoutSeed | null
   /** Admin pilot. Null hides Pay with Reswell Bucks. */
   reswellBucksCheckout?: { spendableUsd: number } | null

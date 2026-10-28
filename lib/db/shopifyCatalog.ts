@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { insertListingImages } from "@/lib/db/listingImagesInsert"
 import type { PeerListingSection } from "@/lib/peer-listing-sections"
 import {
   parseShopCategoryPackageSizeMap,
@@ -237,14 +238,15 @@ export async function dbReplaceShopifyListingImage(
     .eq("listing_id", listingId)
   if (deleteError) throw new Error(deleteError.message)
   if (!imageUrl) return
-  const { error } = await supabase.from("listing_images").insert({
-    listing_id: listingId,
-    url: imageUrl,
-    thumbnail_url: imageUrl,
-    is_primary: true,
-    sort_order: 0,
-  })
-  if (error) throw new Error(error.message)
+  await insertListingImages(supabase, [
+    {
+      listing_id: listingId,
+      url: imageUrl,
+      thumbnail_url: imageUrl,
+      is_primary: true,
+      sort_order: 0,
+    },
+  ])
 }
 
 export async function dbSaveShopifyMapping(

@@ -1,3 +1,8 @@
+import { publicStorageObjectUrl } from "@/lib/supabase/storage-upload-xhr"
+
+/** Buckets with `public = true` — verifiable in the browser without the service role. */
+const PUBLIC_STORAGE_BUCKETS = new Set(["listings"])
+
 function encodeStorageObjectPath(path: string): string {
   return path
     .split("/")
@@ -7,22 +12,35 @@ function encodeStorageObjectPath(path: string): string {
 
 async function storageObjectHeadExists(bucket: string, path: string): Promise<boolean> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "")
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!supabaseUrl || !serviceKey) return false
+  if (!supabaseUrl) return false
 
-  const res = await fetch(
-    `${supabaseUrl}/storage/v1/object/${bucket}/${encodeStorageObjectPath(path)}`,
-    {
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (serviceKey) {
+    const res = await fetch(
+      `${supabaseUrl}/storage/v1/object/${bucket}/${encodeStorageObjectPath(path)}`,
+      {
+        method: "HEAD",
+        headers: { Authorization: `Bearer ${serviceKey}` },
+      },
+    )
+    return res.ok
+  }
+
+  if (PUBLIC_STORAGE_BUCKETS.has(bucket)) {
+    const res = await fetch(publicStorageObjectUrl(supabaseUrl, bucket, path), {
       method: "HEAD",
-      headers: { Authorization: `Bearer ${serviceKey}` },
-    },
-  )
-  return res.ok
+      cache: "no-store",
+    })
+    return res.ok
+  }
+
+  return false
 }
 
 /**
- * Confirms an object is readable in storage after a client upload.
- * Retries briefly because list/search can lag right after POST.
+ * Confirms an object is readable in storage after upload.
+ * Server code uses the service role; browser code uses public URLs for public buckets.
+ * Retries briefly because storage can lag right after POST.
  */
 export async function verifyStorageObjectExists(
   bucket: string,

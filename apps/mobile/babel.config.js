@@ -4,6 +4,8 @@ const PUBLIC_KEYS = new Set([
   "NEXT_PUBLIC_SUPABASE_URL",
   "NEXT_PUBLIC_SUPABASE_ANON_KEY",
   "NEXT_PUBLIC_URL",
+  "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID",
+  "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID",
 ])
 
 function inlineNextPublicEnv({ types: t }) {
@@ -25,7 +27,13 @@ function inlineNextPublicEnv({ types: t }) {
 module.exports = function (api) {
   loadRepoEnv()
   api.cache.using(() =>
-    ["NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "NEXT_PUBLIC_URL"]
+    [
+      "NEXT_PUBLIC_SUPABASE_URL",
+      "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+      "NEXT_PUBLIC_URL",
+      "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID",
+      "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID",
+    ]
       .map((key) => process.env[key] ?? "")
       .join("\0"),
   )
