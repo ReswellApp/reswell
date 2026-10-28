@@ -30,7 +30,7 @@ describe("dashboardNavSections", () => {
     )
     assert.deepEqual(
       sections.find((s) => s.id === "account")?.links.map((l) => l.name),
-      ["Overview", "Profile", "Messages", "Support"],
+      ["Overview", "Profile", "Messages", "Reswell help"],
     )
   })
 

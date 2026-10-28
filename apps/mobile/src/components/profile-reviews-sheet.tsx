@@ -70,7 +70,13 @@ export function ProfileReviewsSheet({
   const title = `Reviews for ${profile.name}'s shop`
 
   useEffect(() => {
-    if (!visible) return
+    if (!visible) {
+      closing.current = false
+      translateY.setValue(SHEET_OFFSET)
+      backdrop.setValue(0)
+      return
+    }
+    closing.current = false
     translateY.setValue(SHEET_OFFSET)
     backdrop.setValue(0)
     Animated.parallel([
@@ -80,24 +86,35 @@ export function ProfileReviewsSheet({
   }, [backdrop, translateY, visible])
 
   function close() {
-    if (closing.current) return
+    if (closing.current) {
+      onClose()
+      return
+    }
     closing.current = true
     Animated.parallel([
       Animated.timing(backdrop, { toValue: 0, duration: 180, useNativeDriver: true }),
       Animated.timing(translateY, { toValue: SHEET_OFFSET, duration: 220, useNativeDriver: true }),
-    ]).start(() => {
+    ]).start(({ finished }) => {
       closing.current = false
-      onClose()
+      if (finished) onClose()
     })
+    // If the close animation never completes (Modal inside scroll views), still dismiss.
+    setTimeout(() => {
+      if (closing.current) {
+        closing.current = false
+        onClose()
+      }
+    }, 260)
   }
 
   return (
     <Modal visible={visible} transparent animationType="none" statusBarTranslucent onRequestClose={close}>
-      <View style={styles.overlay}>
-        <Animated.View style={[styles.scrim, { opacity: backdrop }]}>
+      <View style={styles.overlay} pointerEvents="box-none">
+        <Animated.View pointerEvents="auto" style={[styles.scrim, { opacity: backdrop }]}>
           <Pressable accessibilityLabel="Dismiss reviews" style={StyleSheet.absoluteFill} onPress={close} />
         </Animated.View>
         <Animated.View
+          pointerEvents="box-none"
           style={[
             styles.sheet,
             {
@@ -110,7 +127,13 @@ export function ProfileReviewsSheet({
         >
           <View style={styles.sheetTop}>
             <View style={styles.handle} />
-            <Pressable accessibilityLabel="Close reviews" onPress={close} hitSlop={10} style={styles.close}>
+            <Pressable
+              accessibilityLabel="Close reviews"
+              onPress={close}
+              hitSlop={12}
+              style={styles.close}
+              pointerEvents="auto"
+            >
               <SymbolView name={{ ios: "xmark", android: "close", web: "close" }} size={16} tintColor={colors.foreground} />
             </Pressable>
           </View>

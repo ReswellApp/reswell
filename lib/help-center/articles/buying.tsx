@@ -576,7 +576,7 @@ export const buyingHelpArticles: HelpArticle[] = [
                     Submit from Help Hub. We usually review Purchase Protection claims within{" "}
                     <strong>3 business days</strong>. Include tracking numbers, delivery dates, and
                     photos when you have them. Track replies under{" "}
-                    {helpLink("/dashboard/support", "Support")}.
+                    {helpLink("/dashboard/support", "Reswell help")}.
                   </>
                 ),
               },
@@ -1376,7 +1376,7 @@ export const buyingHelpArticles: HelpArticle[] = [
     quickAnswer: (
       <>
         Message the other person first. If you still need us, open the purchase or sale and tap{" "}
-        <strong>Get help</strong>, or start from {helpLink("/support", "Support")}. Choose a
+        <strong>Get help</strong>, or start from {helpLink("/support", "Reswell help")}. Choose a
         purchase, sale, Purchase Protection claim, or another topic. We typically review protection
         claims within <strong>3 business days</strong>.
       </>
@@ -1400,7 +1400,7 @@ export const buyingHelpArticles: HelpArticle[] = [
         heading: "Support hub when there is no order",
         body: (
           <p>
-            Use {helpLink("/support", "Support")} (or {helpLink("/dashboard/support", "Support in your dashboard")}{" "}
+            Use {helpLink("/support", "Reswell help")} (or {helpLink("/dashboard/support", "Reswell help in your dashboard")}{" "}
             when signed in) for buying or selling questions, payments and payouts, account issues, or
             safety reports. Search the Help Center from that page if an article already answers it.
           </p>

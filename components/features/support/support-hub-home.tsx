@@ -66,12 +66,12 @@ export function SupportHubHome({
     <SupportHubActionGroup>
       {atLimit ? (
         <p className="px-4 py-3.5 text-[13px] leading-relaxed text-muted-foreground">
-          You have {MAX_OPEN_USER_SUPPORT_CASES} open requests — the most we can work at once.
-          Reply on one of those threads, or wait until one is closed, to start another.
+          You have {MAX_OPEN_USER_SUPPORT_CASES} open help threads — the most we can work at once.
+          Reply on one of those threads, or wait until one is resolved, to start another.
         </p>
       ) : collapseNewRequest ? (
         <SupportHubActionDrawer
-          title="Open another request"
+          title="Start another help thread"
           defaultOpen={query.trim().length > 0}
         >
           {newRequestSection}

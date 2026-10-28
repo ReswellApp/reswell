@@ -132,7 +132,7 @@ const ACCOUNT_LINKS: DashboardNavLink[] = [
   { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { name: "Profile", href: "/dashboard/profile", icon: UserCircle },
   DASHBOARD_MESSAGES_NAV,
-  { name: "Support", href: "/dashboard/support", icon: LifeBuoy },
+  { name: "Reswell help", href: "/dashboard/support", icon: LifeBuoy },
 ]
 
 /** Grouped nav for sidebar / mobile / account menu (Pango-style Selling / Buying / Account). */
@@ -168,5 +168,5 @@ export const DASHBOARD_NAV_LINKS: DashboardNavLink[] = [
   { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { name: "Profile", href: "/dashboard/profile", icon: UserCircle },
   DASHBOARD_MESSAGES_NAV,
-  { name: "Support", href: "/dashboard/support", icon: LifeBuoy },
+  { name: "Reswell help", href: "/dashboard/support", icon: LifeBuoy },
 ]

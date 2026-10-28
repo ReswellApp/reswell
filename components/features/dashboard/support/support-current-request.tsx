@@ -28,7 +28,7 @@ export function SupportCurrentRequest({ item }: { item: UserSupportCaseListItem 
       : `${item.unreadCount} new messages from Reswell`
     : waiting
       ? "Reply needed"
-      : "Open request"
+      : "Open help thread"
   const actionLabel = unread ? "Read" : waiting ? "Reply" : "Open"
   const orderAlreadyInTitle = Boolean(item.orderRef && title.includes(item.orderRef))
   const meta = [
@@ -141,7 +141,7 @@ export function SupportEmptyRequest() {
       className="rounded-2xl border border-dashed border-border/80 px-5 py-10 text-center"
     >
       <h2 id="support-empty-heading" className="text-[17px] font-semibold tracking-tight text-foreground">
-        No open request
+        No open help thread
       </h2>
       <p className="mx-auto mt-2 max-w-[18rem] text-[14px] leading-relaxed text-muted-foreground">
         Ask us about an order, shipping, Purchase Protection, or your account.
@@ -149,7 +149,7 @@ export function SupportEmptyRequest() {
       <Button asChild className="mt-6 rounded-full px-5">
         <Link href={helpHubHref()}>
           <Plus className="mr-1.5 h-4 w-4" />
-          Message Support
+          Get help
         </Link>
       </Button>
     </section>

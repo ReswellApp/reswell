@@ -24,6 +24,7 @@ export function ProfileHeader({
   ownProfile,
   followBusy,
   onFollow,
+  onMessage,
   onFollowers,
   onFollowing,
   onEdit,
@@ -42,6 +43,7 @@ export function ProfileHeader({
   ownProfile: boolean
   followBusy?: boolean
   onFollow?: () => void
+  onMessage?: () => void
   onFollowers?: () => void
   onFollowing?: () => void
   onEdit?: () => void
@@ -113,24 +115,18 @@ export function ProfileHeader({
                 <Text style={[styles.verifiedLabel, { fontFamily: fontFamily.text }]}>Verified shop</Text>
               </View>
             ) : null}
-            {!ownProfile ? (
-              <Pressable
-                onPress={onFollow}
-                disabled={followBusy}
-                style={[styles.follow, profile.following ? styles.followActive : null]}
-              >
-                {followBusy ? (
-                  <ActivityIndicator color="#FFFFFF" />
-                ) : (
-                  <Text style={[styles.followLabel, { fontFamily: fontFamily.text }]}>
-                    {profile.following ? "Following" : "Follow"}
-                  </Text>
-                )}
-              </Pressable>
-            ) : null}
           </View>
         </View>
       </View>
+
+      {!ownProfile && (onFollow || onMessage) ? (
+        <ProfileShopActions
+          following={profile.following}
+          followBusy={followBusy}
+          onFollow={onFollow}
+          onMessage={onMessage}
+        />
+      ) : null}
 
       <View style={styles.section}>
         <ProfileSegmentTabs tabs={segmentTabs} active={activeSegment} onChange={onTab} />
@@ -163,6 +159,64 @@ export function ProfileHeader({
       ) : null}
 
       {tab === "info" ? <ContactRow website={profile.website_url} phone={profile.phone} /> : null}
+    </View>
+  )
+}
+
+function ProfileShopActions({
+  following,
+  followBusy,
+  onFollow,
+  onMessage,
+}: {
+  following: boolean
+  followBusy?: boolean
+  onFollow?: () => void
+  onMessage?: () => void
+}) {
+  const colors = useReswellColors()
+
+  return (
+    <View style={styles.actionBar}>
+      <View style={styles.actionCluster}>
+        {onFollow ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={onFollow}
+            disabled={followBusy}
+            style={({ pressed }) => [
+              styles.followPill,
+              {
+                backgroundColor: following ? colors.image : colors.protection,
+                borderColor: following ? colors.border : "transparent",
+              },
+              pressed && !followBusy ? styles.actionPressed : null,
+            ]}
+          >
+            {followBusy ? (
+              <ActivityIndicator color={colors.shipping} size="small" />
+            ) : (
+              <Text style={[styles.followPillLabel, { color: colors.shipping, fontFamily: fontFamily.text }]}>
+                {following ? "Following" : "Follow"}
+              </Text>
+            )}
+          </Pressable>
+        ) : null}
+        {onMessage ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Message seller"
+            onPress={onMessage}
+            style={({ pressed }) => [
+              styles.messageButton,
+              { backgroundColor: colors.image, borderColor: colors.border },
+              pressed ? styles.actionPressed : null,
+            ]}
+          >
+            <SymbolView name={{ ios: "bubble.left", android: "chat_bubble", web: "chat_bubble" }} size={18} tintColor={colors.shipping} />
+          </Pressable>
+        ) : null}
+      </View>
     </View>
   )
 }
@@ -238,19 +292,27 @@ const styles = StyleSheet.create({
   heroHandle: { color: "rgba(255, 255, 255, 0.88)", fontSize: 15, fontWeight: "600" },
   verifiedRow: { flexDirection: "row", alignItems: "center", gap: 4 },
   verifiedLabel: { color: "rgba(255, 255, 255, 0.92)", fontSize: 12, fontWeight: "600" },
-  follow: {
-    alignSelf: "flex-start",
-    marginTop: 6,
-    minHeight: 32,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "#FFFFFF",
-    paddingHorizontal: 16,
+  actionBar: { alignItems: "center", paddingTop: 14, paddingBottom: 2, paddingHorizontal: 16 },
+  actionCluster: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10 },
+  actionPressed: { opacity: 0.72 },
+  messageButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: StyleSheet.hairlineWidth,
     alignItems: "center",
     justifyContent: "center",
   },
-  followActive: { backgroundColor: "rgba(255, 255, 255, 0.2)" },
-  followLabel: { color: "#FFFFFF", fontSize: 13, fontWeight: "700" },
+  followPill: {
+    minWidth: 132,
+    height: 44,
+    paddingHorizontal: 20,
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  followPillLabel: { fontSize: 14, fontWeight: "700" },
   section: { paddingHorizontal: 16, paddingTop: 14 },
   contacts: { flexDirection: "row", gap: 8, paddingHorizontal: 16, paddingTop: 10, paddingBottom: 4 },
   contact: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: "center", justifyContent: "center" },

@@ -809,7 +809,7 @@ export const sellingHelpArticles: HelpArticle[] = [
                   <>
                     Choose cancel or another sale issue, then include a clear explanation (at least 10
                     characters). Our team will guide next steps. Track the case under{" "}
-                    {helpLink("/dashboard/support", "Support")}.
+                    {helpLink("/dashboard/support", "Reswell help")}.
                   </>
                 ),
               },

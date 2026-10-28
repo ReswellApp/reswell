@@ -11,8 +11,8 @@ import {
 } from "@/lib/help/help-hub-intents"
 
 export const metadata = privatePageMetadata({
-  title: "Support — Reswell",
-  description: "Chat with Reswell Support.",
+  title: "Reswell help",
+  description: "Get help from the Reswell team.",
   path: "/dashboard/support",
 })
 

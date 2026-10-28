@@ -7,7 +7,7 @@ import { ProfileInfo } from "@/components/profile-panels"
 import { ProfileHeader, type SellerTab } from "@/components/profile-header"
 import { ProfileReviewsSheet } from "@/components/profile-reviews-sheet"
 import { ScreenSearchHeader } from "@/components/screen-search-header"
-import { fetchProfile, fetchProfileReviews, setFollow } from "@/lib/api"
+import { fetchProfile, fetchProfileReviews, openProfileConversation, setFollow } from "@/lib/api"
 import { useProfileShopListings } from "@/lib/use-profile-shop-listings"
 import { useAuth } from "@/lib/auth-context"
 import { useAuthGate } from "@/lib/auth-gate"
@@ -24,6 +24,7 @@ export default function SellerScreen() {
   const [tab, setTab] = useState<SellerTab>("listings")
   const [followBusy, setFollowBusy] = useState(false)
   const [followError, setFollowError] = useState<string | null>(null)
+  const [messageError, setMessageError] = useState<string | null>(null)
   const [profile, setProfile] = useState<MobileProfile | null>(null)
   const [reviews, setReviews] = useState<MobileReview[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -55,6 +56,18 @@ export default function SellerScreen() {
       cancelled = true
     }
   }, [slug, token])
+
+  function openMessage() {
+    if (!profile) return
+    requestAuth((accessToken) => {
+      setMessageError(null)
+      void openProfileConversation(accessToken, profile.seller_slug)
+        .then((result) => router.push({ pathname: "/account/messages/[id]", params: { id: result.conversation_id } }))
+        .catch((cause: unknown) => {
+          setMessageError(cause instanceof Error ? cause.message : "Could not open messages")
+        })
+    })
+  }
 
   function toggleFollow() {
     if (!profile) return
@@ -124,6 +137,7 @@ export default function SellerScreen() {
                 ownProfile={ownProfile}
                 followBusy={followBusy}
                 onFollow={toggleFollow}
+                onMessage={ownProfile ? undefined : openMessage}
                 onFollowers={ownProfile ? () => router.push("/account/followers") : undefined}
                 onFollowing={ownProfile ? () => router.push("/account/following") : undefined}
                 onEdit={ownProfile ? () => router.push("/account/profile") : undefined}
@@ -136,14 +150,11 @@ export default function SellerScreen() {
                 onShopSortChange={setShopSort}
                 onReviewsPress={() => setReviewsOpen(true)}
               />
-              <ProfileReviewsSheet
-                profile={profile}
-                reviews={reviews}
-                visible={reviewsOpen}
-                onClose={() => setReviewsOpen(false)}
-              />
               {followError ? (
                 <Text style={[styles.empty, { color: colors.foreground, fontFamily: fontFamily.text }]}>{followError}</Text>
+              ) : null}
+              {messageError ? (
+                <Text style={[styles.empty, { color: colors.foreground, fontFamily: fontFamily.text }]}>{messageError}</Text>
               ) : null}
               {showingGrid && shop.error ? (
                 <Text style={[styles.empty, { color: colors.foreground, fontFamily: fontFamily.text }]}>{shop.error}</Text>
@@ -182,6 +193,14 @@ export default function SellerScreen() {
               <View style={styles.spacer} />
             )
           }
+        />
+      ) : null}
+      {profile ? (
+        <ProfileReviewsSheet
+          profile={profile}
+          reviews={reviews}
+          visible={reviewsOpen}
+          onClose={() => setReviewsOpen(false)}
         />
       ) : null}
     </View>

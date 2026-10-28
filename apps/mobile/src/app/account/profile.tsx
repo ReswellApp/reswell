@@ -2,11 +2,12 @@ import { Image } from "expo-image"
 import * as ImagePicker from "expo-image-picker"
 import { useRouter } from "expo-router"
 import { useCallback, useState } from "react"
-import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native"
+import { Pressable, StyleSheet, Switch, Text, TextInput, View } from "react-native"
 import { TextInput as GestureTextInput } from "react-native-gesture-handler"
 import { SymbolView } from "expo-symbols"
 import type { MobileProfileSettings } from "@reswell/api-contract"
 import { AccountState } from "@/components/account-state"
+import { ScreenScroll, ScreenShell } from "@/components/screen-shell"
 import { ProfileCircle } from "@/components/profile-circle"
 import {
   changeProfileEmail,
@@ -49,13 +50,15 @@ export default function AccountProfileScreen() {
       isEmpty={!data}
     >
       {data ? (
-        <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
-          <TabBar tab={tab} onChange={setTab} />
-          {tab === "shop" ? <ShopTab settings={data} onSaved={reload} /> : null}
-          {tab === "sign-in" ? <SignInTab settings={data} /> : null}
-          {tab === "addresses" ? <AddressesTab settings={data} /> : null}
-          {tab === "notifications" ? <NotificationsTab settings={data} onSaved={reload} /> : null}
-        </ScrollView>
+        <ScreenShell>
+          <ScreenScroll contentInsetAdjustmentBehavior="never">
+            <TabBar tab={tab} onChange={setTab} />
+            {tab === "shop" ? <ShopTab settings={data} onSaved={reload} /> : null}
+            {tab === "sign-in" ? <SignInTab settings={data} /> : null}
+            {tab === "addresses" ? <AddressesTab settings={data} /> : null}
+            {tab === "notifications" ? <NotificationsTab settings={data} onSaved={reload} /> : null}
+          </ScreenScroll>
+        </ScreenShell>
       ) : null}
     </AccountState>
   )
@@ -629,7 +632,6 @@ function NotificationsTab({ settings, onSaved }: { settings: MobileProfileSettin
 }
 
 const styles = StyleSheet.create({
-  page: { paddingBottom: 24 },
   tabs: { flexDirection: "row", gap: 22, paddingHorizontal: 20, borderBottomWidth: StyleSheet.hairlineWidth },
   tab: { paddingTop: 8 },
   tabLabel: { fontSize: 15, fontWeight: "600" },

@@ -17,6 +17,7 @@ import {
 } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import type { MobileConversationDetail, MobileMessage } from "@reswell/api-contract"
+import { MessageComposerBar } from "@/components/message-composer-bar"
 import { ProfileCircle } from "@/components/profile-circle"
 import { SellUploadMenu } from "@/components/sell/sell-upload-menu"
 import { fetchConversation, messageAttachmentUrl, sendConversationMediaMessage, sendConversationMessage } from "@/lib/api"
@@ -131,8 +132,31 @@ export default function ConversationScreen() {
               </Pressable>
             </View>
           ) : null}
-          <View style={[styles.composer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
-            <View style={[styles.inputShell, { borderColor: colors.border }]}>
+          <MessageComposerBar
+            draft={draft}
+            onChangeText={setDraft}
+            sending={sending || uploadingPhoto}
+            sendDisabled={uploadingPhoto}
+            placeholder="Write a private message..."
+            paddingBottom={Math.max(insets.bottom, 12)}
+            error={sendError}
+            onSend={() => {
+              const token = accessToken
+              const body = draft.trim()
+              if (!token || !id || !body) return
+              setSending(true)
+              setSendError(null)
+              sendConversationMessage(token, id, body)
+                .then(() => {
+                  setDraft("")
+                  reload()
+                })
+                .catch((cause: unknown) => {
+                  setSendError(cause instanceof Error ? cause.message : "Could not send that message")
+                })
+                .finally(() => setSending(false))
+            }}
+            leading={
               <Pressable
                 disabled={sending || uploadingPhoto}
                 accessibilityLabel="Add photo"
@@ -152,43 +176,8 @@ export default function ConversationScreen() {
                   />
                 )}
               </Pressable>
-              <TextInput
-                value={draft}
-                onChangeText={setDraft}
-                placeholder="Write a private message..."
-                placeholderTextColor={colors.muted}
-                style={[styles.input, { color: colors.foreground, fontFamily: fontFamily.text }]}
-              />
-              <Pressable
-                disabled={sending || uploadingPhoto || draft.trim().length === 0}
-                accessibilityLabel="Send"
-                onPress={() => {
-                  const token = accessToken
-                  const body = draft.trim()
-                  if (!token || !id || !body) return
-                  setSending(true)
-                  setSendError(null)
-                  sendConversationMessage(token, id, body)
-                    .then(() => {
-                      setDraft("")
-                      reload()
-                    })
-                    .catch((cause: unknown) => {
-                      setSendError(cause instanceof Error ? cause.message : "Could not send that message")
-                    })
-                    .finally(() => setSending(false))
-                }}
-                style={styles.send}
-              >
-                <SymbolView
-                  name={{ ios: "paperplane.fill", android: "send", web: "send" }}
-                  size={18}
-                  tintColor={draft.trim() && !uploadingPhoto ? colors.foreground : colors.muted}
-                />
-              </Pressable>
-            </View>
-          </View>
-          {sendError ? <Text style={[styles.sendError, { color: colors.destructive, fontFamily: fontFamily.text }]}>{sendError}</Text> : null}
+            }
+          />
         </>
       ) : null}
     </KeyboardAvoidingView>
@@ -461,13 +450,8 @@ const styles = StyleSheet.create({
   safety: { flexDirection: "row", alignItems: "center", gap: 10, borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 20, paddingVertical: 12 },
   safetyText: { flex: 1, fontSize: 13, lineHeight: 18 },
   safetyLink: { fontWeight: "700" },
-  composer: { paddingHorizontal: 20, paddingTop: 4 },
-  inputShell: { flexDirection: "row", alignItems: "center", borderWidth: StyleSheet.hairlineWidth, borderRadius: 24, paddingLeft: 4, paddingRight: 6 },
   attach: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
-  input: { flex: 1, fontSize: 16, paddingVertical: 10, paddingRight: 4 },
-  send: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
   mediaBubble: { paddingHorizontal: 4, paddingVertical: 4, overflow: "hidden" },
   messageImage: { width: 220, height: 220, borderRadius: 14 },
   mediaCaption: { paddingHorizontal: 10, paddingTop: 8, paddingBottom: 4 },
-  sendError: { paddingHorizontal: 20, paddingBottom: 8, fontSize: 13 },
 })

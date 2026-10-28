@@ -41,14 +41,14 @@ export function MeProfileHeader({
           style={({ pressed }) => [
             styles.storefront,
             {
-              backgroundColor: colors.secondary,
-              borderColor: colors.border,
+              backgroundColor: colors.protection,
+              borderColor: colors.listingHeart,
               opacity: pressed ? 0.88 : 1,
             },
           ]}
         >
-          <SymbolView name={{ ios: "storefront", android: "store", web: "store" }} size={18} tintColor={colors.listingHeart} />
-          <Text style={[styles.storefrontLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}>{sellerProfileLabel}</Text>
+          <SymbolView name={{ ios: "storefront", android: "store", web: "store" }} size={18} tintColor={colors.sold} />
+          <Text style={[styles.storefrontLabel, { color: colors.sold, fontFamily: fontFamily.text }]}>{sellerProfileLabel}</Text>
         </Pressable>
       ) : null}
       {websiteUrl ? (
@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
     gap: 8,
     marginHorizontal: 16,
     marginTop: 14,
-    borderRadius: 10,
+    borderRadius: 16,
     borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 12,
     paddingVertical: 10,

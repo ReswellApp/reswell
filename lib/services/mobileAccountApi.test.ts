@@ -146,7 +146,7 @@ describe("mobile account contract", () => {
       "My Listings",
       "Offers",
       "Messages",
-      "Support",
+      "Reswell help",
       "Purchases",
       "Sales",
       "Favorites",

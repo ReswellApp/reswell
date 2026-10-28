@@ -98,7 +98,7 @@ export async function uploadMobileSellPhotoService(
   }
 }
 
-async function replaceListingImages(
+export async function replaceListingImages(
   supabase: SupabaseClient,
   listingId: string,
   images: MobileSellPhoto[],

@@ -6,8 +6,9 @@ import { CategorySlider } from "@/components/browse-chips"
 import { useFloatingTabBarContentInset } from "@/components/floating-tab-bar"
 import { HomeFeed } from "@/components/home-feed"
 import { HomeHeader } from "@/components/home-header"
-import { fetchBrowseRail, fetchHome, fetchRecentlyViewed } from "@/lib/api"
+import { fetchBrowseRail, fetchHome } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
+import { getRecentlyViewedCached, refreshRecentlyViewed } from "@/lib/recently-viewed-cache"
 import { useAuthGate } from "@/lib/auth-gate"
 import { fontFamily, useReswellColors } from "@/theme"
 
@@ -17,6 +18,7 @@ export default function ListingsScreen() {
   const { session } = useAuth()
   const { requestAuth } = useAuthGate()
   const accessToken = session?.access_token ?? null
+  const userId = session?.user?.id ?? null
   const [home, setHome] = useState<MobileHome | null>(null)
   const [continueListings, setContinueListings] = useState<MobileListingCard[]>([])
   const [rail, setRail] = useState<MobileBrowseRail | null>(null)
@@ -34,14 +36,15 @@ export default function ListingsScreen() {
         if (!cancelled) setRail(next)
       })
       .catch(() => undefined)
-    const recent = accessToken
-      ? fetchRecentlyViewed(accessToken).catch(() => ({ listings: [] }))
-      : Promise.resolve({ listings: [] })
+    const recent =
+      accessToken && userId
+        ? refreshRecentlyViewed(accessToken, userId).catch(() => getRecentlyViewedCached(userId))
+        : Promise.resolve([])
     Promise.all([fetchHome(), recent])
-      .then(([next, viewed]) => {
+      .then(([next, viewedListings]) => {
         if (!cancelled) {
           setHome(next)
-          setContinueListings(viewed.listings)
+          setContinueListings(viewedListings)
           setError(null)
         }
       })
@@ -61,7 +64,7 @@ export default function ListingsScreen() {
     return () => {
       cancelled = true
     }
-  }, [accessToken])
+  }, [accessToken, userId])
 
   useFocusEffect(load)
 

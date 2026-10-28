@@ -11,6 +11,7 @@ import type {
 import { revalidateSellerProfileAndDirectoryCatalog } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { revalidateMessagesInboxForParticipants } from "@/lib/cache/revalidate-messages-inbox"
 import {
+  ensureConversationBetweenBuyerAndSeller,
   ensureConversationForBuyerSellerListing,
   getConversationForBuyerSellerListing,
 } from "@/lib/db/conversations"
@@ -389,6 +390,17 @@ export async function sendMobileConversationMediaMessage(
       created_at: result.message.created_at,
     },
   }
+}
+
+export async function openMobileSellerConversation(
+  supabase: SupabaseClient,
+  user: User,
+  sellerId: string,
+): Promise<MobileApiResult<{ conversation_id: string }>> {
+  if (user.id === sellerId) return failure(400, "You can't message yourself.")
+  const opened = await ensureConversationBetweenBuyerAndSeller(supabase, user.id, sellerId)
+  if (!opened) return failure(500, "Could not open this conversation.")
+  return { ok: true, data: { conversation_id: opened.id } }
 }
 
 export async function sendMobileListingMessage(

@@ -4,6 +4,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-nati
 import type { MobileListingDetail, MobileListingRailSection } from "@reswell/api-contract"
 import { ScreenSearchHeader } from "@/components/screen-search-header"
 import { ListingActions } from "@/components/listing-actions"
+import { ListingOwnerActions } from "@/components/listing-owner-actions"
 import { ListingDetail } from "@/components/listing-detail"
 import { ListingGallery } from "@/components/listing-gallery"
 import { ScreenFooter, ScreenScroll, ScreenShell } from "@/components/screen-shell"
@@ -65,7 +66,7 @@ export default function ListingScreen() {
       ) : (
         <>
           <ScreenScroll
-            reserveFooter={listing.status !== "sold"}
+            reserveFooter={listing.status !== "sold" && !listing.owner}
             contentInsetAdjustmentBehavior="never"
           >
             <ListingGallery
@@ -78,6 +79,9 @@ export default function ListingScreen() {
               sold={listing.status === "sold"}
               dimensionsLine={listingDimensionsLine(listing.dimensions, listing.volume_label)}
             />
+            {listing.status !== "sold" && listing.owner ? (
+              <ListingOwnerActions listing={listing} onChange={setListing} />
+            ) : null}
             <ListingDetail listing={listing} />
             <ListingRails
               sections={rails}
@@ -86,7 +90,7 @@ export default function ListingScreen() {
               }
             />
           </ScreenScroll>
-          {listing.status === "sold" ? null : (
+          {listing.status === "sold" || listing.owner ? null : (
             <ScreenFooter bordered={false}>
               <ListingActions listing={listing} onChange={setListing} />
             </ScreenFooter>

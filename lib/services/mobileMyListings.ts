@@ -7,8 +7,11 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { fetchMyListings, type MyListingRow } from "@/lib/db/my-listings"
 import { listingCardImageSrc } from "@/lib/listing-image-display"
 import type { MobileApiResult } from "@/lib/services/mobileApi"
+import { endSellerListing } from "@/lib/services/listingEnd"
+import { markSellerListingSoldOffPlatform } from "@/lib/services/listingMarkSold"
 import { relistSellerMarkedSoldListing } from "@/lib/services/listingRelist"
 import { setListingVacationModeForSeller } from "@/lib/services/listingVacationMode"
+import type { MarkListingSoldBody } from "@/lib/validations/mark-listing-sold"
 import { setShopVacationModeForSeller } from "@/lib/services/shopVacationMode"
 import { absolutePublicMediaUrl } from "@/lib/site-metadata"
 
@@ -86,6 +89,39 @@ export async function setMobileListingVacationService(
     message: input.enabled ? "Vacation is on." : "Vacation is off.",
   })
   if (!parsed.success) return { ok: false, status: 500, error: "Unable to update vacation right now" }
+  return { ok: true, data: parsed.data }
+}
+
+export async function endMobileListingService(
+  supabase: SupabaseClient,
+  userId: string,
+  listingId: string,
+): Promise<MobileApiResult<{ message: string }>> {
+  const result = await endSellerListing(supabase, { listingId, sellerUserId: userId })
+  if (!result.ok) return { ok: false, status: result.status, error: result.error }
+  const parsed = mobileListingActionResultSchema.safeParse({ message: "Listing deleted." })
+  if (!parsed.success) return { ok: false, status: 500, error: "Unable to delete listing right now" }
+  return { ok: true, data: parsed.data }
+}
+
+export async function markMobileListingSoldService(
+  supabase: SupabaseClient,
+  userId: string,
+  listingId: string,
+  body: MarkListingSoldBody,
+  sellerEmail?: string | null,
+): Promise<MobileApiResult<{ message: string }>> {
+  const result = await markSellerListingSoldOffPlatform(supabase, {
+    listingId,
+    sellerUserId: userId,
+    sellerEmail,
+    channel: body.channel,
+    detail: body.detail,
+    reswellHelpedFindBuyer: body.reswellHelpedFindBuyer,
+  })
+  if (!result.ok) return { ok: false, status: result.status, error: result.error }
+  const parsed = mobileListingActionResultSchema.safeParse({ message: "Listing marked as sold." })
+  if (!parsed.success) return { ok: false, status: 500, error: "Unable to mark listing sold right now" }
   return { ok: true, data: parsed.data }
 }
 

@@ -159,7 +159,12 @@ function tabIsActive(pathname: string, href: TabItem["href"]): boolean {
   return false
 }
 
+function isAccountTabRoot(pathname: string): boolean {
+  return pathname === "/account" || pathname === "/account/"
+}
+
 function tabBarHidden(pathname: string): boolean {
+  if (!isAccountTabRoot(pathname) && pathname.startsWith("/account/")) return true
   return (
     pathname.startsWith("/listing") ||
     pathname.startsWith("/profile") ||
@@ -167,9 +172,6 @@ function tabBarHidden(pathname: string): boolean {
     pathname.startsWith("/sellers") ||
     pathname === "/sell" ||
     pathname.startsWith("/sell/") ||
-    pathname.startsWith("/account/messages/") ||
-    pathname.startsWith("/account/cart") ||
-    pathname.startsWith("/account/checkout") ||
     pathname === "/sign-in"
   )
 }
@@ -178,8 +180,8 @@ function tabBarHidden(pathname: string): boolean {
 function tabBarHiddenForRouteName(name: string): boolean {
   if (name === "sign-in") return true
   if (name === "sell/index" || name === "sell/new" || name.startsWith("sell/")) return true
-  if (name === "account/cart" || name === "account/checkout") return true
-  if (name === "account/messages/[id]") return true
+  if (name === "account/index") return false
+  if (name.startsWith("account/")) return true
   if (name.startsWith("listing")) return true
   if (name.startsWith("profile")) return true
   if (name.startsWith("seller-resources")) return true

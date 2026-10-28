@@ -58,7 +58,7 @@ export function DashboardOverviewManage({ model }: DashboardOverviewManageProps)
       ),
     },
     {
-      name: "Support",
+      name: "Reswell help",
       href: "/dashboard/support",
       icon: LifeBuoy,
       emphasis: model.unreadSupportCount > 0,

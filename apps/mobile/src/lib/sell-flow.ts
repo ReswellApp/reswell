@@ -36,6 +36,8 @@ export type SellPhoto = {
   /** Public listing-photo URLs after a successful upload. */
   url?: string
   thumbnailUrl?: string
+  /** Existing `listing_images.id` when editing a published listing. */
+  serverImageId?: string
 }
 
 export type SellDraft = {

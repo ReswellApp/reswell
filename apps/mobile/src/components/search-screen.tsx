@@ -8,24 +8,31 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native"
-import { useSafeAreaInsets } from "react-native-safe-area-context"
 import type { MobileListingCard } from "@reswell/api-contract"
-import { fetchRecentlyViewed, fetchSearchSuggest } from "@/lib/api"
+import { fetchSearchSuggest } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
+import {
+  getRecentlyViewedCached,
+  loadRecentlyViewedForSearch,
+} from "@/lib/recently-viewed-cache"
 import { readRecentSearches, rememberSearch } from "@/lib/recent-searches"
 import { fontFamily, useReswellColors } from "@/theme"
 
-export function SearchScreen({ onClose }: { onClose: (after?: () => void) => void }) {
-  const colors = useReswellColors()
-  const insets = useSafeAreaInsets()
+type SearchOverlayBodyProps = {
+  query: string
+  onChangeQuery: (value: string) => void
+  onClose: (after?: () => void) => void
+}
+
+/** Recent, viewed, and live suggestions — rendered below the sticky search bar. */
+export function SearchOverlayBody({ query, onChangeQuery, onClose }: SearchOverlayBodyProps) {
   const router = useRouter()
   const { session } = useAuth()
-  const [query, setQuery] = useState("")
+  const userId = session?.user?.id ?? null
   const [recent, setRecent] = useState<string[]>([])
-  const [viewed, setViewed] = useState<MobileListingCard[]>([])
+  const [viewed, setViewed] = useState<MobileListingCard[]>(() => getRecentlyViewedCached(userId))
   const [hits, setHits] = useState<MobileListingCard[]>([])
   const [loading, setLoading] = useState(false)
   const trimmed = query.trim()
@@ -37,22 +44,30 @@ export function SearchScreen({ onClose }: { onClose: (after?: () => void) => voi
 
   useEffect(() => {
     const token = session?.access_token
-    if (!token) {
+    if (!token || !userId) {
       setViewed([])
       return
     }
     let cancelled = false
-    fetchRecentlyViewed(token)
-      .then((page) => {
-        if (!cancelled) setViewed(page.listings)
+    const cached = getRecentlyViewedCached(userId)
+    if (cached.length > 0) setViewed(cached)
+    loadRecentlyViewedForSearch(token, userId)
+      .then((listings) => {
+        if (!cancelled) setViewed(listings)
       })
       .catch(() => {
-        if (!cancelled) setViewed([])
+        if (!cancelled && cached.length === 0) setViewed([])
       })
     return () => {
       cancelled = true
     }
-  }, [session?.access_token])
+  }, [session?.access_token, userId])
+
+  useEffect(() => {
+    for (const listing of viewed) {
+      if (listing.image_url) Image.prefetch(listing.image_url).catch(() => undefined)
+    }
+  }, [viewed])
 
   useEffect(() => {
     if (!searching) {
@@ -94,49 +109,18 @@ export function SearchScreen({ onClose }: { onClose: (after?: () => void) => voi
   }
 
   return (
-    <View style={[styles.screen, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-      <View style={styles.bar}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Close search" hitSlop={8} onPress={() => onClose()}>
-          <SymbolView name={{ ios: "chevron.down", android: "expand_more", web: "expand_more" }} size={22} tintColor={colors.foreground} />
-        </Pressable>
-        <View style={[styles.field, { borderColor: colors.border }]}>
-          <TextInput
-            autoFocus
-            value={query}
-            onChangeText={setQuery}
-            placeholder="Search surfboards, fins, wetsuits or apparel…"
-            placeholderTextColor={colors.muted}
-            autoCapitalize="none"
-            autoCorrect={false}
-            returnKeyType="search"
-            onSubmitEditing={openResults}
-            style={[styles.input, { color: colors.foreground, fontFamily: fontFamily.text }]}
-          />
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Clear search"
-            hitSlop={8}
-            disabled={query.length === 0}
-            onPress={() => setQuery("")}
-            style={query.length === 0 ? styles.clearHidden : null}
-          >
-            <SymbolView name={{ ios: "xmark.circle.fill", android: "cancel", web: "cancel" }} size={18} tintColor={colors.muted} />
-          </Pressable>
-        </View>
-      </View>
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.body}>
-        {searching ? (
-          <Results hits={hits} loading={loading} onOpen={openListing} onSeeAll={openResults} />
-        ) : (
-          <Idle
-            recent={recent}
-            viewed={viewed}
-            onRecent={(value) => setQuery(value)}
-            onOpen={(listing) => openListing(listing.slug || listing.id)}
-          />
-        )}
-      </ScrollView>
-    </View>
+    <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.body}>
+      {searching ? (
+        <Results hits={hits} loading={loading} onOpen={openListing} onSeeAll={openResults} />
+      ) : (
+        <Idle
+          recent={recent}
+          viewed={viewed}
+          onRecent={onChangeQuery}
+          onOpen={(listing) => openListing(listing.slug || listing.id)}
+        />
+      )}
+    </ScrollView>
   )
 }
 
@@ -242,28 +226,14 @@ function Results({
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
-  bar: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 16, paddingBottom: 8 },
-  field: {
-    flex: 1,
-    minHeight: 44,
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingLeft: 16,
-    paddingRight: 12,
-  },
-  input: { flex: 1, fontSize: 16, paddingVertical: 8 },
-  clearHidden: { opacity: 0 },
   body: { paddingBottom: 40 },
   idle: { gap: 28 },
   block: { gap: 4, paddingTop: 12 },
   heading: { fontSize: 18, fontWeight: "700", paddingHorizontal: 20, marginBottom: 8 },
   recentRow: { flexDirection: "row", alignItems: "center", gap: 14, paddingHorizontal: 20, paddingVertical: 12 },
   recentLabel: { fontSize: 16 },
-  viewedRow: { gap: 10, paddingHorizontal: 20 },
-  viewedImage: { width: 92, height: 122, borderRadius: 10 },
+  viewedRow: { gap: 8, paddingHorizontal: 20 },
+  viewedImage: { width: 76, height: 100, borderRadius: 8 },
   spinner: { marginTop: 24 },
   empty: { paddingHorizontal: 20, paddingVertical: 16, fontSize: 16 },
   hit: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 20, paddingVertical: 6 },

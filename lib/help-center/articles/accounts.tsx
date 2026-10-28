@@ -516,7 +516,7 @@ export const accountsHelpArticles: HelpArticle[] = [
     quickAnswer: (
       <>
         Search the {helpLink("/help", "Help Center")} first. For an order, use <strong>Get help</strong>{" "}
-        on the purchase or sale. For everything else, open {helpLink("/support", "Support")} or{" "}
+        on the purchase or sale. For everything else, open {helpLink("/support", "Reswell help")} or{" "}
         {helpLink("/contact", "Contact")}. We read every message. Protection claims are typically
         reviewed within 3 business days.
       </>
@@ -531,7 +531,7 @@ export const accountsHelpArticles: HelpArticle[] = [
                 {helpLink("/help", "Help Center")} for self-serve articles.
               </>,
               <>
-                {helpLink("/support", "Support hub")} to open a case with the team.
+                {helpLink("/support", "Reswell help")} to start a help thread with the team.
               </>,
               <>
                 <strong>Get help</strong> on a {helpLink("/dashboard/purchases", "purchase")} or{" "}

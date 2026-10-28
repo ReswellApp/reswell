@@ -1,6 +1,7 @@
 import { SymbolView } from "expo-symbols"
 import { Pressable, StyleSheet, Text, View } from "react-native"
 import { ListingLayoutSwitch, type ListingLayout } from "@/components/listing-layout-switch"
+import { ReswellFilterIcon } from "@/components/reswell-icons"
 import { fontFamily, useReswellColors } from "@/theme"
 
 /** Circular filter, Sort by pill, and result count. Shared by category and search. */
@@ -29,11 +30,7 @@ export function CategoryToolbar({
           onPress={onFilter}
           style={[styles.filter, { backgroundColor: colors.image }]}
         >
-          <SymbolView
-            name={{ ios: "slider.horizontal.3", android: "tune", web: "tune" }}
-            size={20}
-            tintColor={colors.foreground}
-          />
+          <ReswellFilterIcon />
           {filterCount > 0 ? (
             <View style={[styles.badge, { backgroundColor: colors.foreground }]}>
               <Text style={[styles.badgeLabel, { color: colors.primaryForeground }]}>{filterCount}</Text>

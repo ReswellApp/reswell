@@ -1,6 +1,6 @@
 import { Stack, useRouter } from "expo-router"
 import { useCallback, useEffect, useState, type ReactNode } from "react"
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { SymbolView } from "expo-symbols"
 import { findBoardSpecField, SellBoardSpecs } from "@/components/sell/sell-board-specs"
@@ -12,9 +12,11 @@ import { SellPriceStep } from "@/components/sell/sell-price-step"
 import { SellProductStep } from "@/components/sell/sell-product-step"
 import {
   fetchSellBoardSpecs,
+  fetchSellListingEdit,
   fetchSellTaxonomy,
   publishSellListing,
   saveSellListingDraft,
+  updateSellListing,
   uploadSellPhotos,
 } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
@@ -28,10 +30,18 @@ import {
   sellDraftIsReady,
   type SellDraft,
 } from "@/lib/sell-flow"
+import { sellDraftFromMobileEdit } from "@/lib/sell-edit"
 import type { MobileSellBoardSpecs, MobileSellTaxonomy } from "@reswell/api-contract"
 import { fontFamily, useReswellColors } from "@/theme"
 
-export function SellListingFlow({ initial }: { initial?: Partial<SellDraft> }) {
+export function SellListingFlow({
+  initial,
+  editListingId,
+}: {
+  initial?: Partial<SellDraft>
+  editListingId?: string
+}) {
+  const isEdit = Boolean(editListingId?.trim())
   const colors = useReswellColors()
   const insets = useSafeAreaInsets()
   const router = useRouter()
@@ -48,6 +58,8 @@ export function SellListingFlow({ initial }: { initial?: Partial<SellDraft> }) {
   const [notice, setNotice] = useState<string | null>(null)
   const [draftSaved, setDraftSaved] = useState(false)
   const [busy, setBusy] = useState<"draft" | "post" | null>(null)
+  const [editLoading, setEditLoading] = useState(isEdit)
+  const [editError, setEditError] = useState<string | null>(null)
   const category = taxonomy?.categories.find((item) => item.slug === draft.category) ?? null
   const fulfillment = category?.fulfillment ?? null
   const needsBoardSpecs = category?.board_specs === true
@@ -78,6 +90,7 @@ export function SellListingFlow({ initial }: { initial?: Partial<SellDraft> }) {
   }, [fulfillment])
 
   useEffect(() => {
+    if (isEdit) return
     if (initial && Object.values(initial).some((value) => typeof value === "string" && value.length > 0)) return
     let cancelled = false
     loadSellDraft()
@@ -88,7 +101,37 @@ export function SellListingFlow({ initial }: { initial?: Partial<SellDraft> }) {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [initial, isEdit])
+
+  useEffect(() => {
+    if (!editListingId?.trim()) return
+    let cancelled = false
+    const load = (accessToken: string) => {
+      setEditLoading(true)
+      setEditError(null)
+      fetchSellListingEdit(accessToken, editListingId)
+        .then((payload) => {
+          if (!cancelled) setDraft(sellDraftFromMobileEdit(payload))
+        })
+        .catch((cause: unknown) => {
+          if (!cancelled) {
+            setEditError(cause instanceof Error ? cause.message : "Unable to load listing for edit")
+          }
+        })
+        .finally(() => {
+          if (!cancelled) setEditLoading(false)
+        })
+    }
+    const token = session?.access_token
+    if (token) {
+      load(token)
+    } else {
+      requestAuth((accessToken) => load(accessToken))
+    }
+    return () => {
+      cancelled = true
+    }
+  }, [editListingId, requestAuth, session?.access_token])
 
   useEffect(() => {
     if (!needsBoardSpecs) return
@@ -170,13 +213,40 @@ export function SellListingFlow({ initial }: { initial?: Partial<SellDraft> }) {
     setNotice(null)
     try {
       const photos = await uploadSellPhotos(token, draft.photos)
+      if (isEdit && editListingId) {
+        const saved = await updateSellListing(token, editListingId, { ...draft, photos })
+        router.replace(`/listing/${saved.slug || saved.id}`)
+        return
+      }
       const published = await publishSellListing(token, { ...draft, photos })
       await clearSellDraft()
       router.replace(`/listing/${published.slug || published.id}`)
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Couldn't publish this listing.")
+      setNotice(error instanceof Error ? error.message : isEdit ? "Couldn't save this listing." : "Couldn't publish this listing.")
       setBusy(null)
     }
+  }
+
+  if (isEdit && editLoading) {
+    return (
+      <View style={[styles.screen, styles.editLoading, { backgroundColor: colors.background }]}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <ActivityIndicator color={colors.foreground} />
+        <Text style={[styles.notice, { color: colors.muted, fontFamily: fontFamily.text }]}>Loading listing…</Text>
+      </View>
+    )
+  }
+
+  if (isEdit && editError) {
+    return (
+      <View style={[styles.screen, styles.editLoading, { backgroundColor: colors.background }]}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <Text style={[styles.notice, { color: colors.foreground, fontFamily: fontFamily.text }]}>{editError}</Text>
+        <Pressable onPress={() => router.back()}>
+          <Text style={[styles.draft, { color: colors.foreground, fontFamily: fontFamily.text }]}>Go back</Text>
+        </Pressable>
+      </View>
+    )
   }
 
   return (
@@ -190,13 +260,17 @@ export function SellListingFlow({ initial }: { initial?: Partial<SellDraft> }) {
           <SymbolView name={{ ios: "xmark", android: "close", web: "close" }} size={22} tintColor={colors.foreground} />
         </Pressable>
         <Text style={[styles.headerTitle, { color: colors.foreground, fontFamily: fontFamily.headline }]}>
-          Sell an item
+          {isEdit ? "Edit listing" : "Sell an item"}
         </Text>
-        <Pressable accessibilityRole="button" disabled={busy !== null} onPress={() => void saveDraft()} hitSlop={8} style={[styles.headerSide, styles.headerSideEnd]}>
-          <Text style={[styles.draft, { color: draftSaved ? colors.muted : colors.foreground, fontFamily: fontFamily.text }]}>
-            {busy === "draft" ? "Saving" : "Draft"}
-          </Text>
-        </Pressable>
+        {isEdit ? (
+          <View style={[styles.headerSide, styles.headerSideEnd]} />
+        ) : (
+          <Pressable accessibilityRole="button" disabled={busy !== null} onPress={() => void saveDraft()} hitSlop={8} style={[styles.headerSide, styles.headerSideEnd]}>
+            <Text style={[styles.draft, { color: draftSaved ? colors.muted : colors.foreground, fontFamily: fontFamily.text }]}>
+              {busy === "draft" ? "Saving" : "Draft"}
+            </Text>
+          </Pressable>
+        )}
       </View>
       <ScrollView
         keyboardShouldPersistTaps="always"
@@ -270,7 +344,15 @@ export function SellListingFlow({ initial }: { initial?: Partial<SellDraft> }) {
           style={[styles.post, { backgroundColor: colors.foreground, opacity: ready && busy === null ? 1 : 0.35 }]}
         >
           <Text style={[styles.postLabel, { color: colors.background, fontFamily: fontFamily.text }]}>
-            {busy === "post" ? "Posting…" : signedIn ? "Post listing" : "Sign in to publish"}
+            {busy === "post"
+              ? isEdit
+                ? "Saving…"
+                : "Posting…"
+              : isEdit
+                ? "Save changes"
+                : signedIn
+                  ? "Post listing"
+                  : "Sign in to publish"}
           </Text>
         </Pressable>
       </View>
@@ -325,6 +407,7 @@ function Section({ title, children }: { title?: string; children: ReactNode }) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
+  editLoading: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, padding: 24 },
   header: {
     minHeight: 52,
     paddingHorizontal: 16,

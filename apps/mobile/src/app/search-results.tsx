@@ -10,6 +10,7 @@ import {
   Text,
   View,
 } from "react-native"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 import {
   MOBILE_LISTING_CATEGORIES,
   type MobileCategory,
@@ -20,6 +21,7 @@ import {
   type MobileSearchResults,
 } from "@reswell/api-contract"
 import { useFloatingTabBarContentInset } from "@/components/floating-tab-bar"
+import { bottomSheetListPaddingBottom } from "@/components/screen-shell"
 import { CategoryFilters } from "@/components/category-filters"
 import { CategoryToolbar } from "@/components/category-toolbar"
 import { type CategoryPlace, type CategoryRadius } from "@/components/category-location-filter"
@@ -39,6 +41,7 @@ const SORTS: { id: MobileCategorySortId; label: string }[] = [
 
 export default function SearchResultsScreen() {
   const colors = useReswellColors()
+  const insets = useSafeAreaInsets()
   const router = useRouter()
   const { session } = useAuth()
   const params = useLocalSearchParams<{ q?: string }>()
@@ -254,7 +257,12 @@ export default function SearchResultsScreen() {
       )}
       <Modal visible={sortOpen} transparent animationType="fade" onRequestClose={() => setSortOpen(false)}>
         <Pressable style={styles.scrim} onPress={() => setSortOpen(false)}>
-          <View style={[styles.sheet, { backgroundColor: colors.background }]}>
+          <View
+            style={[
+              styles.sheet,
+              { backgroundColor: colors.background, paddingBottom: bottomSheetListPaddingBottom(insets.bottom) },
+            ]}
+          >
             {sorts.map((item) => (
               <Pressable
                 key={item.id}
@@ -339,6 +347,6 @@ const styles = StyleSheet.create({
   footer: { marginVertical: 16 },
   spacer: { flex: 1 },
   scrim: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.28)" },
-  sheet: { borderTopLeftRadius: 18, borderTopRightRadius: 18, paddingVertical: 8 },
+  sheet: { borderTopLeftRadius: 18, borderTopRightRadius: 18, paddingTop: 8 },
   sheetRow: { paddingHorizontal: 20, paddingVertical: 16 },
 })

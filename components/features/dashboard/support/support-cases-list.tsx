@@ -100,7 +100,7 @@ export function SupportCasesList({
   const history = (
     <>
       {otherOpen.length > 0 ? (
-        <CaseDrawer title="Other open requests" count={otherOpen.length}>
+        <CaseDrawer title="Other open help threads" count={otherOpen.length}>
           {otherOpen.map((item) => (
             <HistoryRow key={`${item.backend}-${item.id}`} item={item} showStatus />
           ))}
@@ -108,7 +108,7 @@ export function SupportCasesList({
       ) : null}
 
       {closed.length > 0 ? (
-        <CaseDrawer title="Past conversations" count={closed.length} defaultOpen={showPastOpen}>
+        <CaseDrawer title="Past help threads" count={closed.length} defaultOpen={showPastOpen}>
           {closed.map((item) => (
             <HistoryRow key={`${item.backend}-${item.id}`} item={item} />
           ))}

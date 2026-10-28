@@ -22,7 +22,7 @@ export function mobileDashboardPages(access: MobileDashboardPageAccess): MobileD
     ...(access.hasShopifyAccess ? [{ id: "shopify" as const, label: "Shopify" }] : []),
     { id: "offers", label: "Offers" },
     { id: "messages", label: "Messages" },
-    { id: "support", label: "Support" },
+    { id: "support", label: "Reswell help" },
     { id: "purchases", label: "Purchases" },
     { id: "sales", label: "Sales" },
     { id: "favorites", label: "Favorites" },

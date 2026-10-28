@@ -1,13 +1,15 @@
 import { useRouter } from "expo-router"
+import { useCallback } from "react"
 import { FlatList } from "react-native"
-import { AccountRow } from "@/components/account-row"
 import { AccountState } from "@/components/account-state"
+import { SellerFollowRow } from "@/components/seller-follow-row"
 import { fetchFollowers } from "@/lib/api"
 import { useAccountResource } from "@/lib/use-account-resource"
 
 export default function FollowersScreen() {
   const router = useRouter()
-  const { data, error, loading, reload } = useAccountResource(fetchFollowers)
+  const load = useCallback((accessToken: string) => fetchFollowers(accessToken), [])
+  const { data, error, loading, reload } = useAccountResource(load)
   const sellers = data?.sellers ?? []
 
   return (
@@ -25,12 +27,9 @@ export default function FollowersScreen() {
         refreshing={loading}
         onRefresh={reload}
         renderItem={({ item }) => (
-          <AccountRow
-            title={item.name}
-            subtitle={item.city}
-            avatar
-            imageUrl={item.avatar_url}
-            onPress={() => router.push({ pathname: "/profile/[slug]", params: { slug: item.seller_slug } })}
+          <SellerFollowRow
+            seller={item}
+            onPressProfile={() => router.push({ pathname: "/profile/[slug]", params: { slug: item.seller_slug } })}
           />
         )}
       />

@@ -111,7 +111,7 @@ const SECTION_META_BY_PREFIX: { prefix: string; meta: DashboardSectionMeta }[] =
   {
     prefix: "/dashboard/support",
     meta: {
-      sectionName: "Support",
+      sectionName: "Reswell help",
       description: "Choose a topic, pick a purchase or sale, then message the Reswell team.",
     },
   },

@@ -38,6 +38,7 @@ import {
   mobileMeSchema,
   mobileModelPageSchema,
   mobileMessageMediaBodySchema,
+  mobileConversationOpenResultSchema,
   mobileMessageResultSchema,
   mobileOfferActionResultSchema,
   mobileOffersSchema,
@@ -65,12 +66,15 @@ import {
   mobileShopifySchema,
   mobileSupportCasesSchema,
   mobileSupportCreateResultSchema,
+  mobileSupportMediaBodySchema,
+  mobileSupportMediaResultSchema,
   mobileSupportReplyResultSchema,
   mobileSupportThreadSchema,
   mobileSellBoardSpecsSchema,
   mobileSellCatalogSearchSchema,
   mobileSellDropoffLocationsSchema,
   mobileSellPhotoSchema,
+  mobileSellEditLoadSchema,
   mobileSellPublishResultSchema,
   mobileSellTaxonomySchema,
   mobilePlaceDetailsSchema,
@@ -109,6 +113,7 @@ import {
   type MobileListingsPage,
   type MobileMe,
   type MobileModelPage,
+  type MobileConversationOpenResult,
   type MobileMessageMediaBody,
   type MobileMessageResult,
   type MobileOffer,
@@ -139,6 +144,7 @@ import {
   type MobileShopifyActionBody,
   type MobileShopifyActionResult,
   type MobileSupportCases,
+  type MobileSupportMediaBody,
   type MobileSupportReplyResult,
   type MobileSupportThread,
   type MobileSellBoardSpecs,
@@ -185,6 +191,30 @@ function apiOrigin(): string {
     if (host) url.hostname = host
   }
   return url.origin
+}
+
+async function putJson(path: string, accessToken: string, payload: unknown): Promise<unknown> {
+  const response = await fetch(`${apiOrigin()}${path}`, {
+    method: "PUT",
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  })
+  const body: unknown = await response.json()
+  if (!response.ok) {
+    const message =
+      body && typeof body === "object" && "error" in body && typeof body.error === "string"
+        ? body.error
+        : "Request failed"
+    throw new Error(message)
+  }
+  if (!body || typeof body !== "object" || !("data" in body)) {
+    throw new Error("Unexpected response")
+  }
+  return body.data
 }
 
 async function getJson(path: string, accessToken?: string | null, payload?: unknown): Promise<unknown> {
@@ -423,6 +453,24 @@ export function relistListing(accessToken: string, listingId: string): Promise<{
   )
 }
 
+export function endListing(accessToken: string, listingId: string): Promise<{ message: string }> {
+  return read(
+    `/api/mobile/v1/me/listings/${encodeURIComponent(listingId)}/end`,
+    (data) => mobileListingActionResultSchema.parse(data),
+    accessToken,
+    {},
+  )
+}
+
+export function markListingSold(accessToken: string, listingId: string): Promise<{ message: string }> {
+  return read(
+    `/api/mobile/v1/me/listings/${encodeURIComponent(listingId)}/mark-sold`,
+    (data) => mobileListingActionResultSchema.parse(data),
+    accessToken,
+    {},
+  )
+}
+
 export function fetchProfileListings(
   slug: string,
   query?: { offset?: number; status?: "current" | "sold"; section?: string },
@@ -501,6 +549,15 @@ export function setCartItem(accessToken: string, listingId: string, quantity: nu
     notifyCartChanged({ itemCount: result.item_count })
     return result
   })
+}
+
+export function openProfileConversation(accessToken: string, slug: string): Promise<MobileConversationOpenResult> {
+  return read(
+    `/api/mobile/v1/profiles/${encodeURIComponent(slug)}/conversation`,
+    (data) => mobileConversationOpenResultSchema.parse(data),
+    accessToken,
+    {},
+  )
 }
 
 export function sendListingMessage(
@@ -828,6 +885,25 @@ export function replySupportCase(accessToken: string, caseId: string, body: stri
   )
 }
 
+export function sendSupportMediaMessage(
+  accessToken: string,
+  caseId: string,
+  payload: MobileSupportMediaBody,
+): Promise<{ id: string; case_id: string; body: string; created_at: string }> {
+  const body = mobileSupportMediaBodySchema.parse(payload)
+  return read(
+    `/api/mobile/v1/me/support/${encodeURIComponent(caseId)}/media`,
+    (data) => mobileSupportMediaResultSchema.parse(data),
+    accessToken,
+    body,
+  )
+}
+
+/** Authenticated attachment bytes for a help thread message (same pattern as marketplace messages). */
+export function supportCaseMessageAttachmentUrl(messageId: string): string {
+  return `${apiOrigin()}/api/support/messages/${encodeURIComponent(messageId)}/attachment`
+}
+
 export function fetchShipper(accessToken: string): Promise<MobileShipper> {
   return read("/api/mobile/v1/me/shipper", (data) => mobileShipperSchema.parse(data), accessToken)
 }
@@ -1025,6 +1101,34 @@ export function saveSellListingDraft(accessToken: string, draft: SellDraft): Pro
     accessToken,
     sellListingBody(draft, images, false),
   )
+}
+
+export function fetchSellListingEdit(accessToken: string, listingId: string) {
+  return getJson(`/api/mobile/v1/me/listings/${encodeURIComponent(listingId)}/edit`, accessToken).then((data) =>
+    mobileSellEditLoadSchema.parse(data),
+  )
+}
+
+function editSellListingBody(draft: SellDraft, images: MobileSellPhoto[], listingId: string) {
+  const body = sellListingBody(draft, images, false) as Record<string, unknown>
+  delete body.id
+  delete body.draft_id
+  return { ...body, listing_id: listingId }
+}
+
+export function updateSellListing(
+  accessToken: string,
+  listingId: string,
+  draft: SellDraft,
+): Promise<MobileSellPublishResult> {
+  const images = draft.photos.flatMap((photo) =>
+    photo.url && photo.thumbnailUrl ? [{ url: photo.url, thumbnail_url: photo.thumbnailUrl }] : [],
+  )
+  return putJson(
+    `/api/mobile/v1/me/listings/${encodeURIComponent(listingId)}/edit`,
+    accessToken,
+    editSellListingBody(draft, images, listingId),
+  ).then((data) => mobileSellPublishResultSchema.parse(data))
 }
 
 export function publishSellListing(accessToken: string, draft: SellDraft): Promise<MobileSellPublishResult> {

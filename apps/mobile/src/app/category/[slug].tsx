@@ -9,6 +9,7 @@ import {
   Text,
   View,
 } from "react-native"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 import type { MobileCategory, MobileCategorySortId, MobileListingCard, MobileListingsPage } from "@reswell/api-contract"
 import { CategoryFilters } from "@/components/category-filters"
 import { CategoryHero } from "@/components/category-hero"
@@ -19,6 +20,7 @@ import { ScreenSearchHeader } from "@/components/screen-search-header"
 import { MarketplaceListingLayoutItem } from "@/components/marketplace-listing-layout-item"
 import { type ListingLayout } from "@/components/listing-layout-switch"
 import { marketplaceListContentStyle } from "@/components/listing-list-layout"
+import { bottomSheetListPaddingBottom } from "@/components/screen-shell"
 import { fetchCategory, fetchCategoryListings } from "@/lib/api"
 import { useListingSellerFollow } from "@/lib/listing-seller-follow"
 import { categoryListingQuery, type SelectedFacets } from "@/lib/category-listing-query"
@@ -26,6 +28,7 @@ import { fontFamily, useReswellColors } from "@/theme"
 
 export default function CategoryScreen() {
   const colors = useReswellColors()
+  const insets = useSafeAreaInsets()
   const params = useLocalSearchParams<{ slug: string; type?: string }>()
   const slug = params.slug
   const boardType = params.type
@@ -171,7 +174,12 @@ export default function CategoryScreen() {
       ) : null}
       <Modal visible={sortOpen} transparent animationType="fade" onRequestClose={() => setSortOpen(false)}>
         <Pressable style={styles.scrim} onPress={() => setSortOpen(false)}>
-          <View style={[styles.sheet, { backgroundColor: colors.background }]}>
+          <View
+            style={[
+              styles.sheet,
+              { backgroundColor: colors.background, paddingBottom: bottomSheetListPaddingBottom(insets.bottom) },
+            ]}
+          >
             {category?.sorts.map((item) => (
               <Pressable
                 key={item.id}
@@ -232,6 +240,6 @@ const styles = StyleSheet.create({
   footer: { marginVertical: 16 },
   spacer: { flex: 1 },
   scrim: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.28)" },
-  sheet: { borderTopLeftRadius: 18, borderTopRightRadius: 18, paddingVertical: 8 },
+  sheet: { borderTopLeftRadius: 18, borderTopRightRadius: 18, paddingTop: 8 },
   sheetRow: { paddingHorizontal: 20, paddingVertical: 16 },
 })

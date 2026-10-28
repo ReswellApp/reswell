@@ -49,6 +49,7 @@ export default function CartScreen() {
       onRetry={reload}
       empty="Your cart is empty."
       isEmpty={items.length === 0}
+      edgeToEdgeBottom
     >
       <ScreenShell>
       <ScreenScroll reserveFooter contentContainerStyle={styles.list}>

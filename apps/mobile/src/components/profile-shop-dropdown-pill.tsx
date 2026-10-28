@@ -1,6 +1,8 @@
 import { SymbolView } from "expo-symbols"
 import { useState } from "react"
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
+import { bottomSheetListPaddingBottom } from "@/components/screen-shell"
 import { fontFamily, useReswellColors } from "@/theme"
 
 export type ProfileShopDropdownOption = {
@@ -24,6 +26,7 @@ export function ProfileShopDropdownPill({
   onChange: (id: string | null) => void
 }) {
   const colors = useReswellColors()
+  const insets = useSafeAreaInsets()
   const [open, setOpen] = useState(false)
 
   return (
@@ -48,7 +51,12 @@ export function ProfileShopDropdownPill({
       </Pressable>
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <Pressable style={styles.scrim} onPress={() => setOpen(false)}>
-          <View style={[styles.sheet, { backgroundColor: colors.background }]}>
+          <View
+            style={[
+              styles.sheet,
+              { backgroundColor: colors.background, paddingBottom: bottomSheetListPaddingBottom(insets.bottom) },
+            ]}
+          >
             {options.map((option) => {
               const selected = option.id === value
               return (
@@ -95,6 +103,6 @@ const styles = StyleSheet.create({
   },
   pillLabel: { fontSize: 14, fontWeight: "600", flexShrink: 1 },
   scrim: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.28)" },
-  sheet: { borderTopLeftRadius: 18, borderTopRightRadius: 18, paddingVertical: 8 },
+  sheet: { borderTopLeftRadius: 18, borderTopRightRadius: 18, paddingTop: 8 },
   sheetRow: { paddingHorizontal: 20, paddingVertical: 16 },
 })

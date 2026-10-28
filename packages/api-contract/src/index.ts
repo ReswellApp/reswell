@@ -138,6 +138,14 @@ export const mobileListingDetailSchema = mobileListingCardSchema.extend({
   /** Present when the request includes a signed-in session. */
   favorited: z.boolean().optional(),
   in_cart: z.boolean().optional(),
+  /** Present when the signed-in viewer owns this listing. */
+  owner: z
+    .object({
+      can_delete: z.boolean(),
+      on_vacation: z.boolean(),
+      can_vacation: z.boolean(),
+    })
+    .optional(),
   /** Directory brand page. Null when the listing brand is not in the catalog. */
   brand_slug: z.string().nullable(),
   /** Catalog model page under that brand. Null when the model is not in the catalog. */
@@ -740,49 +748,58 @@ export const mobileSellPhotoSchema = z.object({
   thumbnail_url: z.string().url(),
 })
 
-export const mobileSellPublishSchema = z
-  .object({
-    title: z.string().trim().min(1).max(160),
-    description: z.string().trim().min(1).max(8000),
-    brand: z.string().trim().min(1).max(80),
-    model: z.string().trim().min(1).max(80),
-    category: z.enum(MOBILE_LISTING_CATEGORIES),
-    subcategory: z.string().trim().max(40),
-    condition: z.enum(["brand_new", "excellent", "very_good", "good", "fair", "poor"]),
-    price: z.number().positive().max(999_999.99),
-    city: z.string().trim().min(1).max(80),
-    state: z.string().trim().min(1).max(40),
-    location_lat: z.number().gte(-90).lte(90),
-    location_lng: z.number().gte(-180).lte(180),
-    local_pickup: z.boolean(),
-    shipping: z.boolean(),
-    shipping_mode: z.enum(["reswell", "free", "flat"]),
-    shipping_price: z.number().min(0).max(9999).nullable(),
-    package_length: z.string().max(12),
-    package_width: z.string().max(12),
-    package_height: z.string().max(12),
-    package_weight_lb: z.string().max(12),
-    package_weight_oz: z.string().max(12),
-    dropoff_location_id: z.string().uuid().nullable(),
-    specs: z.object({
-      length: z.string().max(20).optional(),
-      width: z.string().max(20).optional(),
-      thickness: z.string().max(20).optional(),
-      volume: z.string().max(20).optional(),
-      fin_setup: z.string().max(40).optional(),
-      fin_system: z.string().max(40).optional(),
-      fins_included: z.string().max(40).optional(),
-      construction: z.string().max(40).optional(),
-    }),
-    images: z.array(mobileSellPhotoSchema).min(1).max(8),
-    draft_id: z.string().uuid().nullable(),
-  })
-  .refine((value) => value.shipping || value.local_pickup, {
-    message: "Choose shipping or local pickup",
-  })
-  .refine((value) => value.category !== "surfboards" || value.subcategory.length > 0, {
-    message: "Choose a board style",
-  })
+const mobileSellPublishRefinements = <T extends z.ZodTypeAny>(schema: T) =>
+  schema
+    .refine((value: z.infer<typeof mobileSellPublishBodySchema>) => value.shipping || value.local_pickup, {
+      message: "Choose shipping or local pickup",
+    })
+    .refine(
+      (value: z.infer<typeof mobileSellPublishBodySchema>) =>
+        value.category !== "surfboards" || value.subcategory.length > 0,
+      {
+        message: "Choose a board style",
+      },
+    )
+
+/** Publish payload before cross-field refinements (`.omit` / `.extend` need a plain object schema). */
+export const mobileSellPublishBodySchema = z.object({
+  title: z.string().trim().min(1).max(160),
+  description: z.string().trim().min(1).max(8000),
+  brand: z.string().trim().min(1).max(80),
+  model: z.string().trim().min(1).max(80),
+  category: z.enum(MOBILE_LISTING_CATEGORIES),
+  subcategory: z.string().trim().max(40),
+  condition: z.enum(["brand_new", "excellent", "very_good", "good", "fair", "poor"]),
+  price: z.number().positive().max(999_999.99),
+  city: z.string().trim().min(1).max(80),
+  state: z.string().trim().min(1).max(40),
+  location_lat: z.number().gte(-90).lte(90),
+  location_lng: z.number().gte(-180).lte(180),
+  local_pickup: z.boolean(),
+  shipping: z.boolean(),
+  shipping_mode: z.enum(["reswell", "free", "flat"]),
+  shipping_price: z.number().min(0).max(9999).nullable(),
+  package_length: z.string().max(12),
+  package_width: z.string().max(12),
+  package_height: z.string().max(12),
+  package_weight_lb: z.string().max(12),
+  package_weight_oz: z.string().max(12),
+  dropoff_location_id: z.string().uuid().nullable(),
+  specs: z.object({
+    length: z.string().max(20).optional(),
+    width: z.string().max(20).optional(),
+    thickness: z.string().max(20).optional(),
+    volume: z.string().max(20).optional(),
+    fin_setup: z.string().max(40).optional(),
+    fin_system: z.string().max(40).optional(),
+    fins_included: z.string().max(40).optional(),
+    construction: z.string().max(40).optional(),
+  }),
+  images: z.array(mobileSellPhotoSchema).min(1).max(8),
+  draft_id: z.string().uuid().nullable(),
+})
+
+export const mobileSellPublishSchema = mobileSellPublishRefinements(mobileSellPublishBodySchema)
 
 /** Incomplete sell form. Saved as a hidden website draft, not a live listing. */
 export const mobileSellDraftSchema = z.object({
@@ -826,6 +843,30 @@ export const mobileSellPublishResultSchema = z.object({
   id: z.string().uuid(),
   slug: z.string().min(1),
 })
+
+export const mobileSellEditImageSchema = mobileSellPhotoSchema.extend({
+  image_id: z.string().uuid().optional(),
+})
+
+/** Owner edit hydrate for the mobile sell screen. */
+export const mobileSellEditLoadSchema = mobileSellDraftSchema
+  .omit({ images: true })
+  .extend({
+    listing_id: z.string().uuid(),
+    status: z.string(),
+    slug: z.string().nullable(),
+    location_label: z.string().nullable(),
+    images: z.array(mobileSellEditImageSchema).max(8),
+  })
+
+export const mobileSellUpdateSchema = mobileSellPublishRefinements(
+  mobileSellPublishBodySchema.omit({ draft_id: true }).extend({
+    listing_id: z.string().uuid(),
+  }),
+)
+
+export type MobileSellEditLoad = z.infer<typeof mobileSellEditLoadSchema>
+export type MobileSellUpdate = z.infer<typeof mobileSellUpdateSchema>
 
 export type MobileSellPublish = z.infer<typeof mobileSellPublishSchema>
 export type MobileSellPublishResult = z.infer<typeof mobileSellPublishResultSchema>
@@ -1332,6 +1373,8 @@ export const mobileSupportCaseSchema = z.object({
   status_label: z.string(),
   subject: z.string(),
   preview: z.string(),
+  /** Latest public agent reply snippet for inbox-style summaries. */
+  team_reply_preview: z.string().nullable(),
   order_ref: z.string().nullable(),
   updated_at: z.string(),
   unread_count: z.number().int().nonnegative(),
@@ -1351,12 +1394,17 @@ export const mobileSupportCreateResultSchema = z.object({
   id: z.string().uuid(),
 })
 
+export const mobileSupportMessageAttachmentSchema = z.object({
+  kind: z.literal("image"),
+})
+
 export const mobileSupportMessageSchema = z.object({
   id: z.string().uuid(),
   body: z.string(),
   created_at: z.string(),
   mine: z.boolean(),
   author_role: z.enum(["customer", "agent", "system"]),
+  attachment: mobileSupportMessageAttachmentSchema.nullable().optional(),
 })
 
 export const mobileSupportThreadSchema = z.object({
@@ -1371,8 +1419,28 @@ export const mobileSupportReplyBodySchema = z.object({
   body: z.string().trim().min(1).max(4000),
 })
 
+export const mobileSupportMediaBodySchema = z.object({
+  attachment: z.object({
+    kind: z.literal("image"),
+    path: z.string().min(1).max(500),
+    file_name: z.string().min(1).max(500),
+    mime_type: z.enum(["image/jpeg", "image/png", "image/webp", "image/gif"]),
+    size_bytes: z.number().int().positive(),
+    width: z.number().int().positive().optional(),
+    height: z.number().int().positive().optional(),
+  }),
+  caption: z.string().trim().max(4000).optional(),
+})
+
 export const mobileSupportReplyResultSchema = z.object({
   case_id: z.string().uuid(),
+})
+
+export const mobileSupportMediaResultSchema = z.object({
+  id: z.string().uuid(),
+  case_id: z.string().uuid(),
+  body: z.string(),
+  created_at: z.string(),
 })
 
 export const MOBILE_SHIPPER_STATUSES = ["waiting_for_run", "picked_up", "dropped_off", "cancelled"] as const
@@ -1815,6 +1883,10 @@ export const mobileMessageResultSchema = z.object({
   created_at: z.string(),
 })
 
+export const mobileConversationOpenResultSchema = z.object({
+  conversation_id: z.string().uuid(),
+})
+
 export const mobileOfferActionBodySchema = z
   .object({
     action: z.enum(["accept", "decline", "counter", "withdraw"]),
@@ -1842,6 +1914,7 @@ export type MobileCartBody = z.infer<typeof mobileCartBodySchema>
 export type MobileMessageBody = z.infer<typeof mobileMessageBodySchema>
 export type MobileMessageMediaBody = z.infer<typeof mobileMessageMediaBodySchema>
 export type MobileMessageResult = z.infer<typeof mobileMessageResultSchema>
+export type MobileConversationOpenResult = z.infer<typeof mobileConversationOpenResultSchema>
 export type MobileOfferActionBody = z.infer<typeof mobileOfferActionBodySchema>
 export type MobileOfferActionResult = z.infer<typeof mobileOfferActionResultSchema>
 export type MobileFavoriteResult = z.infer<typeof mobileFavoriteResultSchema>
@@ -1856,6 +1929,8 @@ export type MobileFollowers = z.infer<typeof mobileFollowersSchema>
 export type MobileSupportCase = z.infer<typeof mobileSupportCaseSchema>
 export type MobileSupportCases = z.infer<typeof mobileSupportCasesSchema>
 export type MobileSupportThread = z.infer<typeof mobileSupportThreadSchema>
+export type MobileSupportMediaBody = z.infer<typeof mobileSupportMediaBodySchema>
+export type MobileSupportMediaResult = z.infer<typeof mobileSupportMediaResultSchema>
 export type MobileSupportReplyBody = z.infer<typeof mobileSupportReplyBodySchema>
 export type MobileSupportReplyResult = z.infer<typeof mobileSupportReplyResultSchema>
 export type MobileShipper = z.infer<typeof mobileShipperSchema>

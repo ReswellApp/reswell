@@ -33,7 +33,7 @@ export function SupportCaseOpenedCard({
           </span>
           <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Case opened
+              Help thread opened
             </p>
             <p className="truncate text-sm font-medium text-foreground">{parsed.topicLabel}</p>
           </div>

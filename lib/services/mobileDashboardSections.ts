@@ -6,8 +6,11 @@ import {
   mobileShopifySchema,
   mobileSupportCasesSchema,
   mobileSupportCreateResultSchema,
+  mobileSupportMediaResultSchema,
   mobileSupportReplyResultSchema,
   mobileSupportThreadSchema,
+  type MobileSupportMediaBody,
+  type MobileSupportMediaResult,
   type MobileBalanceSheet,
   type MobileShipper,
   type MobileShipperActionBody,
@@ -20,6 +23,8 @@ import {
   type MobileSupportThread,
 } from "@reswell/api-contract"
 import { createSupportCaseWithOpeningMessage } from "@/lib/services/supportCaseOpen"
+import { rejectIfMemberHasOpenSupportCase } from "@/lib/services/supportCaseOpenLimit"
+import { createServiceRoleClient } from "@/lib/supabase/server"
 import { shipperJobActions, supportStatusLabel } from "@/lib/services/mobileDashboardSectionMap"
 import {
   getCoastalShipperDashboard,
@@ -35,11 +40,15 @@ import {
   selectMerchantShopifyProduct,
   unpublishMerchantShopifyProduct,
 } from "@/lib/services/shopifyConnection"
+import { latestAgentReplyPreviewsByCaseIds } from "@/lib/db/supportCases"
 import { listUserSupportCasesForClient } from "@/lib/services/supportCases"
+import { humanizeSupportCasePreview } from "@/lib/utils/humanize-support-case-preview"
 import {
   getSupportCaseThreadForMember,
   sendSupportCaseMemberReplyForSession,
 } from "@/lib/services/supportCaseThread"
+import { sendSupportCaseMediaMessage } from "@/lib/services/sendSupportCaseMediaMessage"
+import { parseSupportCaseMessageImageAttachment } from "@/lib/validations/support-case-attachment"
 import type { CoastalDeliveryStatus } from "@/lib/types/coastal-delivery"
 import type { MobileApiResult } from "@/lib/services/mobileApi"
 import type { SupabaseClient, User } from "@supabase/supabase-js"
@@ -61,43 +70,64 @@ export async function listMobileSupportCasesService(
   user: User,
 ): Promise<MobileApiResult<MobileSupportCases>> {
   const cases = await listUserSupportCasesForClient(supabase, user.id, user.email ?? null, "all")
+  const agentBodies = await latestAgentReplyPreviewsByCaseIds(
+    supabase,
+    cases.map((row) => row.id),
+  )
   const parsed = mobileSupportCasesSchema.safeParse({
-    cases: cases.map((row) => ({
-      id: row.id,
-      status: row.status,
-      status_label: supportStatusLabel(row.status),
-      subject: row.subject,
-      preview: row.preview,
-      order_ref: row.orderRef,
-      updated_at: row.updatedAt,
-      unread_count: row.unreadCount,
-      closed: row.status === "resolved",
-    })),
+    cases: cases.map((row) => {
+      const agentBody = agentBodies.get(row.id)
+      const teamReplyPreview = agentBody ? humanizeSupportCasePreview(agentBody, 140) : null
+      return {
+        id: row.id,
+        status: row.status,
+        status_label: supportStatusLabel(row.status),
+        subject: row.subject,
+        preview: row.preview,
+        team_reply_preview: teamReplyPreview && teamReplyPreview.length > 0 ? teamReplyPreview : null,
+        order_ref: row.orderRef,
+        updated_at: row.updatedAt,
+        unread_count: row.unreadCount,
+        closed: row.status === "resolved",
+      }
+    }),
   })
-  if (!parsed.success) return { ok: false, status: 500, error: "Unable to load support right now" }
+  if (!parsed.success) return { ok: false, status: 500, error: "Unable to load help right now" }
   return { ok: true, data: parsed.data }
 }
 
 export async function openMobileSupportCaseService(
-  supabase: SupabaseClient,
+  _supabase: SupabaseClient,
   user: User,
   input: { subject: string; body: string },
 ): Promise<MobileApiResult<{ id: string }>> {
-  const opened = await createSupportCaseWithOpeningMessage(supabase, {
+  const openGate = await rejectIfMemberHasOpenSupportCase(user.id)
+  if (!openGate.ok) {
+    return { ok: false, status: 409, error: openGate.error }
+  }
+
+  const email = (user.email ?? "").trim()
+  if (!email) {
+    return { ok: false, status: 400, error: "Your account needs an email address before you can start a help thread." }
+  }
+
+  // Members can SELECT own rows via RLS; inserts are server-side (same as Help Hub / Messages support).
+  const service = createServiceRoleClient()
+  const opened = await createSupportCaseWithOpeningMessage(service, {
     kind: "general",
     subject: input.subject,
     preview: input.body.slice(0, 180),
     body: input.body,
     requester_user_id: user.id,
-    requester_email: user.email ?? null,
+    requester_email: email,
     requester_role: "member",
     authorUserId: user.id,
     source_channel: "mobile",
     opened_by: "requester",
   })
-  if (!opened) return { ok: false, status: 500, error: "Unable to open a support case right now" }
+  if (!opened) return { ok: false, status: 500, error: "Unable to start a help thread right now" }
   const parsed = mobileSupportCreateResultSchema.safeParse({ id: opened.id })
-  if (!parsed.success) return { ok: false, status: 500, error: "Unable to open a support case right now" }
+  if (!parsed.success) return { ok: false, status: 500, error: "Unable to start a help thread right now" }
   return { ok: true, data: parsed.data }
 }
 
@@ -107,7 +137,7 @@ export async function getMobileSupportThreadService(
   caseId: string,
 ): Promise<MobileApiResult<MobileSupportThread>> {
   const thread = await getSupportCaseThreadForMember(userId, caseId, supabase)
-  if ("error" in thread) return { ok: false, status: 404, error: "Case not found" }
+  if ("error" in thread) return { ok: false, status: 404, error: "Help thread not found" }
   const parsed = mobileSupportThreadSchema.safeParse({
     id: thread.case.id,
     subject: thread.case.subject,
@@ -115,15 +145,19 @@ export async function getMobileSupportThreadService(
     closed: thread.case.status === "resolved",
     messages: thread.messages
       .filter((message) => !message.is_internal)
-      .map((message) => ({
-        id: message.id,
-        body: message.body,
-        created_at: message.created_at,
-        mine: message.author_user_id === userId,
-        author_role: message.author_role,
-      })),
+      .map((message) => {
+        const image = parseSupportCaseMessageImageAttachment(message.metadata)
+        return {
+          id: message.id,
+          body: message.body,
+          created_at: message.created_at,
+          mine: message.author_user_id === userId,
+          author_role: message.author_role,
+          attachment: image ? { kind: "image" as const } : undefined,
+        }
+      }),
   })
-  if (!parsed.success) return { ok: false, status: 500, error: "Unable to load this case right now" }
+  if (!parsed.success) return { ok: false, status: 500, error: "Unable to load this help thread right now" }
   return { ok: true, data: parsed.data }
 }
 
@@ -140,6 +174,26 @@ export async function replyMobileSupportCaseService(
   }
   const parsed = mobileSupportReplyResultSchema.safeParse({ case_id: sent.case_id })
   if (!parsed.success) return { ok: false, status: 500, error: "Unable to send your message right now" }
+  return { ok: true, data: parsed.data }
+}
+
+export async function sendMobileSupportMediaMessage(
+  user: User,
+  caseId: string,
+  input: MobileSupportMediaBody,
+): Promise<MobileApiResult<MobileSupportMediaResult>> {
+  const result = await sendSupportCaseMediaMessage({
+    caseId,
+    senderId: user.id,
+    attachment: input.attachment,
+    caption: input.caption,
+  })
+  if (!result.ok) {
+    const missing = result.error === "Case not found."
+    return { ok: false, status: missing ? 404 : (result.status ?? 400), error: result.error }
+  }
+  const parsed = mobileSupportMediaResultSchema.safeParse(result.message)
+  if (!parsed.success) return { ok: false, status: 500, error: "Unable to send that photo right now" }
   return { ok: true, data: parsed.data }
 }
 

@@ -45,7 +45,7 @@ export function OverviewAttention({
     supportCount > 0
       ? {
           key: "support",
-          label: "Support",
+          label: "Reswell help",
           count: supportCount,
           href: "/dashboard/support",
         }

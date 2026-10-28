@@ -122,6 +122,7 @@ export type SupportCaseMessageRow = {
   author_role: "customer" | "agent" | "system"
   body: string
   is_internal: boolean
+  metadata: Record<string, unknown>
   created_at: string
 }
 
@@ -143,6 +144,7 @@ export async function insertSupportCaseMessage(
     body: string
     is_internal?: boolean
     inbound_email_id?: string | null
+    metadata?: Record<string, unknown>
   },
 ): Promise<{ id: string | null; error: Error | null; duplicate?: boolean }> {
   const insert: Record<string, unknown> = {
@@ -151,6 +153,9 @@ export async function insertSupportCaseMessage(
     author_role: row.author_role,
     body: row.body,
     is_internal: row.is_internal ?? false,
+  }
+  if (row.metadata && Object.keys(row.metadata).length > 0) {
+    insert.metadata = row.metadata
   }
   if (row.inbound_email_id?.trim()) {
     insert.inbound_email_id = row.inbound_email_id.trim()
@@ -419,6 +424,37 @@ export async function countOpenSupportCasesForRequester(
   return count ?? 0
 }
 
+/** Newest agent message body per case (for member-facing thread previews). */
+export async function latestAgentReplyPreviewsByCaseIds(
+  supabase: SupabaseClient,
+  caseIds: string[],
+): Promise<Map<string, string>> {
+  if (caseIds.length === 0) return new Map()
+
+  const { data, error } = await supabase
+    .from("support_case_messages")
+    .select("case_id, body, created_at")
+    .in("case_id", caseIds)
+    .eq("author_role", "agent")
+    .eq("is_internal", false)
+    .order("created_at", { ascending: false })
+    .limit(Math.min(caseIds.length * 4, 400))
+
+  if (error) {
+    console.warn("[support_case_messages] agent preview batch skipped:", error.message)
+    return new Map()
+  }
+
+  const map = new Map<string, string>()
+  for (const row of data ?? []) {
+    const caseId = String((row as { case_id: string }).case_id)
+    if (map.has(caseId)) continue
+    const body = String((row as { body: string }).body ?? "").trim()
+    if (body) map.set(caseId, body)
+  }
+  return map
+}
+
 export async function listSupportCaseMessages(
   supabase: SupabaseClient,
   caseId: string,
@@ -426,7 +462,7 @@ export async function listSupportCaseMessages(
 ): Promise<SupportCaseMessageRow[]> {
   let query = supabase
     .from("support_case_messages")
-    .select("id, case_id, author_user_id, author_role, body, is_internal, created_at")
+    .select("id, case_id, author_user_id, author_role, body, is_internal, metadata, created_at")
     .eq("case_id", caseId)
     .order("created_at", { ascending: true })
     .limit(500)
@@ -438,7 +474,13 @@ export async function listSupportCaseMessages(
     console.warn("[support_case_messages] list skipped:", error.message)
     return []
   }
-  return (data ?? []) as SupportCaseMessageRow[]
+  return (data ?? []).map((row) => ({
+    ...(row as Omit<SupportCaseMessageRow, "metadata">),
+    metadata:
+      row.metadata && typeof row.metadata === "object" && !Array.isArray(row.metadata)
+        ? (row.metadata as Record<string, unknown>)
+        : {},
+  }))
 }
 
 export async function replaceLatestMatchingSupportCaseAgentBody(

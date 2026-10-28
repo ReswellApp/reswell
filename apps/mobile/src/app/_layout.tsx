@@ -10,6 +10,7 @@ import {
 import { AuthGateProvider } from "@/lib/auth-gate"
 import { AuthProvider } from "@/lib/auth-context"
 import { CartCountProvider } from "@/lib/cart-count"
+import { InboxUnreadProvider } from "@/lib/inbox-unread-count"
 import { ListingMarksProvider } from "@/lib/listing-marks"
 import { useReswellColors, fontFamily } from "@/theme"
 
@@ -29,9 +30,11 @@ export default function RootLayout() {
       <AuthGateProvider>
       <ListingMarksProvider>
       <CartCountProvider>
-        <FloatingTabBarInsetProvider>
-          <AppShell titleFont={type} />
-        </FloatingTabBarInsetProvider>
+        <InboxUnreadProvider>
+          <FloatingTabBarInsetProvider>
+            <AppShell titleFont={type} />
+          </FloatingTabBarInsetProvider>
+        </InboxUnreadProvider>
       </CartCountProvider>
       </ListingMarksProvider>
       </AuthGateProvider>

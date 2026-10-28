@@ -17,6 +17,11 @@ import {
   type MobileProfileRow,
 } from "@/lib/db/mobile-profiles"
 import { resolveProfileBannerFocal } from "@/lib/utils/profile-banner-focal"
+import { listingCanBePermanentlyDeleted } from "@/lib/db/listingDeleteEligibility"
+import {
+  canUseListingVacationMode,
+  listingIsOnVacation,
+} from "@/lib/listing-vacation-mode"
 import {
   listMobileListingRows,
   MOBILE_LISTING_DETAIL_SELECT,
@@ -292,6 +297,7 @@ export function toMobileListingDetail(
   viewer?: { favorited: boolean; in_cart: boolean; following?: boolean },
   stats?: MobileListingDetailStats,
   catalog?: { brandSlug: string | null; modelSlug: string | null },
+  owner?: { can_delete: boolean; on_vacation: boolean; can_vacation: boolean },
 ): MobileListingDetail | null {
   const card = toMobileListingCard(row, viewer?.following === undefined ? undefined : { following: viewer.following })
   if (!card) return null
@@ -334,6 +340,7 @@ export function toMobileListingDetail(
       ...(viewer?.following === undefined ? {} : { following: viewer.following }),
     },
     ...(viewer ? { favorited: viewer.favorited, in_cart: viewer.in_cart } : {}),
+    ...(owner ? { owner } : {}),
     brand_slug: catalog?.brandSlug ?? null,
     model_slug: catalog?.modelSlug ?? null,
   }
@@ -603,7 +610,8 @@ export async function getMobileListingService(
 
   const sold = row.status === "sold"
   const sellerId = nullableText(row.user_id)
-  const [viewerState, watcherCount, cartHolderCount, reviews, catalog] = await Promise.all([
+  const isOwner = Boolean(viewer && sellerId && viewer.userId === sellerId)
+  const [viewerState, watcherCount, cartHolderCount, reviews, catalog, canDelete] = await Promise.all([
     viewer
       ? Promise.all([
           viewer.supabase
@@ -642,7 +650,21 @@ export async function getMobileListingService(
       brandName: row.brand,
       modelName: row.model,
     }),
+    isOwner && row.status !== "draft"
+      ? listingCanBePermanentlyDeleted(viewer!.supabase, row.id)
+      : Promise.resolve(false),
   ])
+
+  const owner = isOwner
+    ? {
+        can_delete: canDelete,
+        on_vacation: listingIsOnVacation({
+          status: row.status,
+          hiddenFromSite: row.hidden_from_site,
+        }),
+        can_vacation: canUseListingVacationMode(row.status),
+      }
+    : undefined
 
   const detail = toMobileListingDetail(
     row,
@@ -654,6 +676,7 @@ export async function getMobileListingService(
       reviewCount: reviews.data.reviewCount,
     },
     catalog,
+    owner,
   )
   if (!detail) {
     return { ok: false, status: 500, error: "Unable to load listing right now" }

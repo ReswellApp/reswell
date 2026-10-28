@@ -20,7 +20,7 @@ export const SUPPORT_CASE_STATUS_DESCRIPTION: Record<SupportCaseStatus, string> 
   in_review: "A teammate is reviewing the details.",
   in_progress: "Our team is actively working on this with you.",
   waiting_on_you: "We need a reply or more info from you to continue.",
-  resolved: "This case is closed. Open a new request anytime if you still need help.",
+  resolved: "This help thread is closed. Start a new one anytime if you still need help.",
 }
 
 export const SUPPORT_CASE_KIND_LABEL: Record<SupportCaseKind, string> = {

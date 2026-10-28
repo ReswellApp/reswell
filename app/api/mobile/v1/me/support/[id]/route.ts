@@ -19,7 +19,7 @@ export async function GET(request: Request, context: RouteContext) {
     const result = await getMobileSupportThreadService(session.supabase, session.user.id, caseId.data)
     return mobileDataResponse(result, "private, no-store")
   } catch (error) {
-    return mobileFailure("/api/mobile/v1/me/support/[id]", error, "Unable to load this case right now")
+    return mobileFailure("/api/mobile/v1/me/support/[id]", error, "Unable to load this help thread right now")
   }
 }
 

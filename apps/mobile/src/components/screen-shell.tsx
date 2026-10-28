@@ -25,6 +25,13 @@ export const SCREEN_GUTTER = 16
 /** Extra space below the last row when there is no sticky footer (tab screens include gap in tab inset). */
 export const SCROLL_END_PADDING = 24
 
+/** Minimum padding below the last row in compact option picker sheets. */
+export const BOTTOM_SHEET_LIST_MIN_PADDING = 20
+
+export function bottomSheetListPaddingBottom(safeAreaBottom: number): number {
+  return Math.max(safeAreaBottom, BOTTOM_SHEET_LIST_MIN_PADDING)
+}
+
 /** Space between scroll content and a sticky footer (matches floating tab bar content gap). */
 export const SCREEN_FOOTER_CONTENT_GAP = 12
 
