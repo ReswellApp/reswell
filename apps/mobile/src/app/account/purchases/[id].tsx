@@ -27,7 +27,7 @@ export default function PurchaseDetailScreen() {
       isEmpty={!data}
     >
       {data ? (
-        <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.scroll}>
+        <ScrollView contentInsetAdjustmentBehavior="never" contentContainerStyle={styles.scroll}>
           <PurchaseDetailView purchase={data} />
         </ScrollView>
       ) : null}

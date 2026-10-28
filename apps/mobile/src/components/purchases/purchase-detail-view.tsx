@@ -90,15 +90,6 @@ export function PurchaseDetailView({ purchase }: { purchase: MobilePurchaseDetai
       <Text style={[styles.subtitle, { color: colors.muted, fontFamily: fontFamily.text }]}>
         Track and manage your orders.
       </Text>
-      <Pressable
-        onPress={() => router.push("/account/purchases")}
-        accessibilityRole="button"
-        accessibilityLabel="Back to list"
-        style={[styles.back, { backgroundColor: colors.image }]}
-      >
-        <SymbolView name={{ ios: "chevron.left", android: "chevron_left", web: "chevron_left" }} size={16} tintColor={accent} />
-        <Text style={[styles.backLabel, { color: accent, fontFamily: fontFamily.text }]}>Back to List</Text>
-      </Pressable>
 
       <Text style={[styles.heading, { color: colors.foreground, fontFamily: fontFamily.headline }]}>Purchase Details</Text>
 
@@ -360,16 +351,6 @@ export function PurchaseDetailView({ purchase }: { purchase: MobilePurchaseDetai
 const styles = StyleSheet.create({
   page: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 32, gap: 16 },
   subtitle: { fontSize: 15, lineHeight: 20 },
-  back: {
-    alignSelf: "flex-start",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 2,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  backLabel: { fontSize: 14, fontWeight: "600" },
   heading: { fontSize: 26, fontWeight: "700", letterSpacing: -0.4 },
   card: { borderRadius: 14, borderCurve: "continuous", padding: 16, gap: 12 },
   item: { flexDirection: "row", alignItems: "flex-start", gap: 12 },

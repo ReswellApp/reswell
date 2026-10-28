@@ -34,6 +34,7 @@ import { assertListingEligibleForCart, peerSurfboardAddCapError } from "@/lib/se
 import { notifyShopFollowKlaviyo } from "@/lib/services/notifyShopFollowKlaviyo"
 import { respondToCounterOfferService } from "@/lib/services/respondToCounterOffer"
 import { respondToOfferService } from "@/lib/services/respondToOffer"
+import { revokeSellerInitiatedOffer } from "@/lib/services/revokeSellerInitiatedOffer"
 import { withdrawListingOffer } from "@/lib/services/withdrawListingOffer"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import type { MobileApiResult } from "@/lib/services/mobileApi"
@@ -440,12 +441,15 @@ export async function actOnMobileOffer(
 ): Promise<MobileApiResult<MobileOfferActionResult>> {
   const { data: offer, error } = await supabase
     .from("offers")
-    .select("id, buyer_id, seller_id, status")
+    .select("id, buyer_id, seller_id, status, seller_initiated")
     .eq("id", offerId)
     .maybeSingle()
   if (error || !offer) return failure(404, "Offer not found.")
 
   if (offer.seller_id === userId && (input.action === "accept" || input.action === "decline" || input.action === "counter")) {
+    if (offer.seller_initiated) {
+      return failure(400, "Wait for the buyer to respond to your offer.")
+    }
     const result = await respondToOfferService(supabase, userId, {
       offerId,
       action: input.action,
@@ -455,6 +459,13 @@ export async function actOnMobileOffer(
     if (!result.ok) return failure(400, result.error)
     revalidatePath("/dashboard/offers")
     return { ok: true, data: { offer_id: offerId, removed: false } }
+  }
+
+  if (offer.seller_id === userId && input.action === "withdraw") {
+    const result = await revokeSellerInitiatedOffer(supabase, userId, offerId)
+    if (!result.ok) return failure(400, result.error)
+    revalidatePath("/dashboard/offers")
+    return { ok: true, data: { offer_id: offerId, removed: true } }
   }
 
   if (offer.buyer_id === userId && input.action === "withdraw") {

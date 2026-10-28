@@ -29,7 +29,7 @@ export default function SaleDetailScreen() {
       {data ? (
         <ScrollView
           keyboardShouldPersistTaps="handled"
-          contentInsetAdjustmentBehavior="automatic"
+          contentInsetAdjustmentBehavior="never"
           contentContainerStyle={styles.scroll}
         >
           <SaleDetailView sale={data} onVerified={reload} />

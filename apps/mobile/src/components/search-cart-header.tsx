@@ -1,6 +1,7 @@
 import { SymbolView } from "expo-symbols"
 import { useRouter } from "expo-router"
 import { ReswellInboxIcon } from "@/components/reswell-icons"
+import { ScreenBackButton } from "@/components/screen-back-button"
 import { useEffect, useRef, useState } from "react"
 import {
   Animated,
@@ -174,19 +175,8 @@ export function SearchCartHeader(props: SearchCartHeaderProps) {
   function renderBarChrome(mode: "idle" | "active" | "input") {
     return (
     <>
-      {props.onBack ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Back"
-          hitSlop={8}
-          onPress={mode === "active" ? () => closeSearch() : props.onBack}
-        >
-          <SymbolView name={{ ios: "chevron.left", android: "arrow_back", web: "arrow_back" }} size={22} tintColor={colors.foreground} />
-        </Pressable>
-      ) : mode === "active" ? (
-        <Pressable accessibilityRole="button" accessibilityLabel="Back" hitSlop={8} onPress={() => closeSearch()}>
-          <SymbolView name={{ ios: "chevron.left", android: "arrow_back", web: "arrow_back" }} size={22} tintColor={colors.foreground} />
-        </Pressable>
+      {props.onBack || mode === "active" ? (
+        <ScreenBackButton onPress={mode === "active" ? () => closeSearch() : props.onBack} />
       ) : null}
       {mode === "input" ? (
         <View style={[styles.field, { borderColor: colors.border }]}>

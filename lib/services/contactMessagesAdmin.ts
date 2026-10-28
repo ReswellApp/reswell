@@ -5,7 +5,6 @@ import {
   updateContactMessageRow,
   type ContactMessageSupportStatus,
 } from "@/lib/db/contactMessages"
-import { ensureConversationBetweenBuyerAndSeller } from "@/lib/db/conversations"
 import {
   bulkUpdateContactMessagesAdminSchema,
   updateContactMessageAdminSchema,
@@ -16,16 +15,16 @@ import {
   resolveLiveChatSessionsForCases,
   resolveLiveChatSessionsForTickets,
 } from "@/lib/services/liveChatEscalation"
-import { resolveSupportRecipientUserId } from "@/lib/services/resolveSupportRecipientUser"
-import {
-  insertSupportStaffThreadMessage,
-} from "@/lib/services/supportTicketThreadNotifications"
 import {
   getSupportCaseByContactMessageId,
   updateSupportCaseAdmin,
 } from "@/lib/db/supportCases"
 import { contactStatusToCaseStatus } from "@/lib/utils/support-case-display"
-import { postSupportCaseSystemMessage } from "@/lib/services/supportCaseThread"
+import { ensureCaseForContactMessage } from "@/lib/services/supportCaseBackfill"
+import {
+  postSupportCaseSystemMessage,
+  sendSupportCaseAdminReplyService,
+} from "@/lib/services/supportCaseThread"
 import {
   ensureSupportTicketThreadSchema,
   supportTicketReplyFromAdminSchema,
@@ -187,28 +186,6 @@ export async function bulkUpdateContactMessagesAdminService(
   return { success: true }
 }
 
-function adminSupportRoutingError(resolved: { ok: false; error: string }): string {
-  const hasId = Boolean(process.env.MESSAGES_DIRECT_SUPPORT_USER_ID?.trim())
-  const hasEmail = Boolean(process.env.MESSAGES_DIRECT_SUPPORT_EMAIL?.trim())
-  if (!hasId && !hasEmail) {
-    return "Support routing isn’t configured. Set MESSAGES_DIRECT_SUPPORT_USER_ID (preferred) or MESSAGES_DIRECT_SUPPORT_EMAIL in your environment (see .env.example), then restart the dev server."
-  }
-  return `Support routing failed: ${resolved.error}`
-}
-
-function formatLinkedSupportThreadIntro(args: { ticketId: string; topic: string | null }): string {
-  const topicLabel = args.topic?.trim() || "Support request"
-  return [
-    "Reswell support ticket",
-    "",
-    `Topic: ${topicLabel}`,
-    "",
-    "This chat is linked to your support request — our team can reply here anytime.",
-    "",
-    `Ticket ID: ${args.ticketId}`,
-  ].join("\n")
-}
-
 async function loadTicketForSupportInboxStaff(
   supabaseUser: Awaited<ReturnType<typeof createClient>>,
   ticketId: string,
@@ -245,8 +222,32 @@ async function loadTicketForSupportInboxStaff(
   return { ok: true, supabaseUser, row }
 }
 
+async function ensureCaseForStaffTicket(
+  row: NonNullable<Awaited<ReturnType<typeof getContactMessageRowById>>>,
+): Promise<{ success: true; case_id: string } | { error: string }> {
+  let serviceRole
+  try {
+    serviceRole = createServiceRoleClient()
+  } catch {
+    return { error: "Messaging is not available in this environment." }
+  }
+
+  const opened = await ensureCaseForContactMessage(serviceRole, {
+    id: row.id,
+    subject: row.subject,
+    message: row.message,
+    email: row.email,
+    user_id: row.user_id,
+    source: row.source,
+  })
+  if (!opened) {
+    return { error: "Could not open the support case." }
+  }
+  return { success: true, case_id: opened.id }
+}
+
 /**
- * Ensures member ↔ support teammate conversation exists for this ticket and saves `support_conversation_id`.
+ * Ensures the canonical support_cases row exists. Does not create a marketplace DM.
  */
 export async function ensureSupportTicketThreadAdminService(
   raw: unknown,
@@ -262,62 +263,12 @@ export async function ensureSupportTicketThreadAdminService(
     return { error: loaded.error }
   }
 
-  const { row, supabaseUser: sb } = loaded
-
-  if (!row.user_id) {
-    return { error: "This ticket has no member account linked — inbox replies are unavailable." }
+  const opened = await ensureCaseForStaffTicket(loaded.row)
+  if ("error" in opened) return opened
+  return {
+    success: true,
+    support_conversation_id: loaded.row.support_conversation_id ?? opened.case_id,
   }
-
-  let serviceRole
-  try {
-    serviceRole = createServiceRoleClient()
-  } catch {
-    return { error: "Messaging is not available in this environment." }
-  }
-
-  const resolvedSupport = await resolveSupportRecipientUserId()
-  if (!resolvedSupport.ok) {
-    return { error: adminSupportRoutingError(resolvedSupport) }
-  }
-
-  const memberId = row.user_id
-  const supportUserId = resolvedSupport.userId
-  if (memberId === supportUserId) {
-    return { error: "Routing conflict for this ticket." }
-  }
-
-  if (row.support_conversation_id) {
-    return { success: true, support_conversation_id: row.support_conversation_id }
-  }
-
-  const conv = await ensureConversationBetweenBuyerAndSeller(serviceRole, memberId, supportUserId)
-  if (!conv?.id) {
-    return { error: "Could not create the support conversation." }
-  }
-
-  const conversationId = conv.id
-
-  const { error } = await updateContactMessageRow(sb, {
-    id: row.id,
-    support_conversation_id: conversationId,
-  })
-
-  if (error) {
-    console.error("ensureSupportTicketThreadAdminService patch", error)
-    return { error: "Could not save the linked thread." }
-  }
-
-  const posted = await insertSupportStaffThreadMessage({
-    conversationId,
-    supportUserId,
-    content: formatLinkedSupportThreadIntro({ ticketId: row.id, topic: row.subject }),
-  })
-
-  if (!posted.ok) {
-    console.error("ensureSupportTicketThreadAdminService: intro message insert failed")
-  }
-
-  return { success: true, support_conversation_id: conversationId }
 }
 
 export async function sendSupportTicketAdminReplyService(
@@ -334,72 +285,17 @@ export async function sendSupportTicketAdminReplyService(
     return { error: loaded.error }
   }
 
-  const { row, supabaseUser: sb } = loaded
+  const opened = await ensureCaseForStaffTicket(loaded.row)
+  if ("error" in opened) return opened
 
-  if (!row.user_id) {
-    return { error: "This ticket has no member account linked — inbox replies are unavailable." }
-  }
-
-  let serviceRole
-  try {
-    serviceRole = createServiceRoleClient()
-  } catch {
-    return { error: "Messaging is not available in this environment." }
-  }
-
-  const resolvedSupport = await resolveSupportRecipientUserId()
-  if (!resolvedSupport.ok) {
-    return { error: adminSupportRoutingError(resolvedSupport) }
-  }
-
-  const memberId = row.user_id
-  const supportUserId = resolvedSupport.userId
-  if (memberId === supportUserId) {
-    return { error: "Routing conflict for this ticket." }
-  }
-
-  let conversationId = row.support_conversation_id
-  if (!conversationId) {
-    const conv = await ensureConversationBetweenBuyerAndSeller(serviceRole, memberId, supportUserId)
-    if (!conv?.id) {
-      return { error: "Could not create the support conversation." }
-    }
-    conversationId = conv.id
-
-    const { error: patchErr } = await updateContactMessageRow(sb, {
-      id: row.id,
-      support_conversation_id: conversationId,
-    })
-
-    if (patchErr) {
-      console.error("sendSupportTicketAdminReplyService patch", patchErr)
-      return { error: "Could not link the reply to this ticket." }
-    }
-  }
-
-  const trimmed = parsed.data.content.trim()
-  const posted = await insertSupportStaffThreadMessage({
-    conversationId,
-    supportUserId,
-    content: trimmed,
+  const posted = await sendSupportCaseAdminReplyService({
+    case_id: opened.case_id,
+    content: parsed.data.content.trim(),
   })
+  if ("error" in posted) return posted
 
-  if (!posted.ok) {
-    return { error: "Could not send the message." }
+  return {
+    success: true,
+    support_conversation_id: loaded.row.support_conversation_id ?? opened.case_id,
   }
-
-  if (row.email.trim()) {
-    const shadow = await getSupportCaseByContactMessageId(serviceRole, row.id)
-    void trackKlaviyoSupportTicketResponse({
-      supportTicketId: row.id,
-      supportCaseId: shadow?.id,
-      email: row.email.trim(),
-      externalId: row.user_id,
-      response: trimmed,
-      responseType: "admin_inbox_reply",
-      uniqueId: `support-ticket-admin-inbox-${posted.messageId}`,
-    })
-  }
-
-  return { success: true, support_conversation_id: conversationId }
 }

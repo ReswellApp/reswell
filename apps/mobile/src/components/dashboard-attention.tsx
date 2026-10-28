@@ -22,7 +22,7 @@ export function DashboardAttention({
   if (data.unread_message_count > 0) {
     items.push({
       label: data.unread_message_count === 1 ? "1 unread message" : `${data.unread_message_count} unread messages`,
-      href: "/account/messages",
+      href: { pathname: "/inbox", params: { filter: "messages" } },
     })
   }
   if (data.wallet_balance_usd > 0) {

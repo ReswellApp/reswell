@@ -149,6 +149,7 @@ export function OfferRow({
     !isSold &&
     role === "seller" &&
     offer.status === "PENDING" &&
+    !offer.seller_initiated &&
     Number.isFinite(listPrice) &&
     listPrice > 0
 

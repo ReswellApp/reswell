@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context"
 import type { MobileConversationDetail, MobileMessage } from "@reswell/api-contract"
 import { MessageComposerBar } from "@/components/message-composer-bar"
 import { ProfileCircle } from "@/components/profile-circle"
+import { ScreenSearchHeader } from "@/components/screen-search-header"
 import { SellUploadMenu } from "@/components/sell/sell-upload-menu"
 import { fetchConversation, messageAttachmentUrl, sendConversationMediaMessage, sendConversationMessage } from "@/lib/api"
 import { uploadConversationImageAttachment } from "@/lib/message-media-upload"
@@ -125,16 +126,13 @@ export default function ConversationScreen() {
 
   return (
     <>
+    <View style={[styles.screen, { backgroundColor: colors.background }]}>
+      <Stack.Screen options={{ headerShown: false, title: data?.other_name ?? "Messages" }} />
+      <ScreenSearchHeader showBack showInbox insetTop bordered={false} />
     <KeyboardAvoidingView
-      style={[styles.screen, { backgroundColor: colors.background }]}
+      style={styles.thread}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
-      keyboardVerticalOffset={88}
     >
-      <Stack.Screen
-        options={{
-          headerTitle: () => <ThreadTitle name={data?.other_name ?? "Messages"} avatarUrl={data?.other_avatar_url ?? null} joined={data?.other_joined_label ?? null} />,
-        }}
-      />
       {loading && !data ? (
         <ActivityIndicator style={styles.centered} color={colors.foreground} />
       ) : error && !data ? (
@@ -146,6 +144,9 @@ export default function ConversationScreen() {
         </View>
       ) : data ? (
         <>
+          <View style={[styles.titleBar, { borderBottomColor: colors.border }]}>
+            <ThreadTitle name={data.other_name} avatarUrl={data.other_avatar_url} joined={data.other_joined_label} />
+          </View>
           {data.listing_id ? (
             <Pressable
               onPress={() => router.push({ pathname: "/listing/[id]", params: { id: data.listing_slug || data.listing_id || "" } })}
@@ -262,6 +263,7 @@ export default function ConversationScreen() {
         </>
       ) : null}
     </KeyboardAvoidingView>
+    </View>
     {photoMenuOpen && id && accessToken ? (
       <SellUploadMenu
         onClose={() => setPhotoMenuOpen(false)}
@@ -497,9 +499,11 @@ function timeLabel(iso: string): string {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
+  thread: { flex: 1 },
   centered: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, padding: 24 },
   retry: { fontSize: 16, fontWeight: "700" },
-  titleRow: { flexDirection: "row", alignItems: "center", gap: 8, maxWidth: 220 },
+  titleBar: { paddingHorizontal: 16, paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth },
+  titleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   titleName: { fontSize: 16, fontWeight: "700" },
   titleMeta: { fontSize: 12 },
   listing: { flexDirection: "row", alignItems: "center", gap: 10, borderBottomWidth: StyleSheet.hairlineWidth, paddingHorizontal: 16, paddingVertical: 10 },

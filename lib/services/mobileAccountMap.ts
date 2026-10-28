@@ -21,6 +21,7 @@ import { absoluteProfileCircleUrl } from "@/lib/profile-circle"
 import { absolutePublicMediaUrl } from "@/lib/site-metadata"
 import type { DashboardOfferRow, DashboardProfileLite } from "@/lib/types/offers-dashboard"
 import { conversationLastActivityIso, type InboxConversationRow } from "@/lib/utils/messages-inbox-grouping"
+import { isOfferSentByUser, userParticipationRole } from "@/lib/utils/offers-dashboard-display"
 
 function usd(value: number | string | null | undefined): number {
   if (value == null) return 0
@@ -61,24 +62,55 @@ export function toMobileOffer(
   row: DashboardOfferRow,
   role: "sent" | "received",
   counterparty: DashboardProfileLite | undefined,
+  side: "buyer" | "seller",
 ): MobileOffer | null {
   const listing = Array.isArray(row.listings) ? row.listings[0] : row.listings
   const amount = usd(row.current_amount)
+  const initial = usd(row.initial_amount)
+  const listingPrice = usd(listing?.price)
+  const note =
+    side === "seller"
+      ? text(row.buyer_note)
+      : row.status === "COUNTERED"
+        ? text(row.seller_counter_note)
+        : null
   const offer = {
     id: row.id,
     status: row.status,
     role,
+    side,
     amount_usd: amount,
     amount_label: moneyLabel(amount),
+    initial_amount_usd: initial,
+    initial_amount_label: moneyLabel(initial),
+    listing_price_usd: listingPrice,
+    listing_price_label: moneyLabel(listingPrice),
     expires_at: row.expires_at,
-    note: text(role === "received" ? row.buyer_note : row.seller_counter_note),
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    note,
     listing_id: listing?.id ?? row.listing_id,
     listing_title: text(listing?.title) ?? "Listing",
     listing_image_url: imageUrl(listing?.listing_images ?? null),
     counterparty_name: getPublicSellerDisplayName(counterparty),
+    seller_initiated: Boolean(row.seller_initiated),
   }
   const parsed = mobileOfferSchema.safeParse(offer)
   return parsed.success ? parsed.data : null
+}
+
+/** Maps a dashboard offer for the signed-in viewer: direction, participation, and the other person. */
+export function toMobileOfferForUser(
+  row: DashboardOfferRow,
+  userId: string,
+  sellersById: Record<string, DashboardProfileLite>,
+  buyersById: Record<string, DashboardProfileLite>,
+): MobileOffer | null {
+  const side = userParticipationRole(row, userId)
+  if (!side) return null
+  const role = isOfferSentByUser(row, userId) ? "sent" : "received"
+  const counterparty = side === "buyer" ? sellersById[row.seller_id] : buyersById[row.buyer_id]
+  return toMobileOffer(row, role, counterparty, side)
 }
 
 export function toMobileOrder(row: MobileOrderRow): MobileOrder | null {

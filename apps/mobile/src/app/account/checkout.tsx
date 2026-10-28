@@ -15,6 +15,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import type { MobileCheckoutAddress, MobileCheckoutQuote } from "@reswell/api-contract"
 import { VerticalScroll } from "@/components/horizontal-rail"
+import { ScreenSearchHeader } from "@/components/screen-search-header"
 import { ScreenFooter, ScreenScroll, ScreenShell } from "@/components/screen-shell"
 import {
   fetchCart,
@@ -62,7 +63,8 @@ export default function CheckoutScreen() {
 
   return (
     <View style={styles.screen}>
-      <Stack.Screen options={{ title: "Checkout" }} />
+      <Stack.Screen options={{ headerShown: false, title: "Checkout" }} />
+      <ScreenSearchHeader showBack showInbox insetTop bordered={false} />
       {configError ? (
         <Text style={styles.centered}>{configError}</Text>
       ) : !token ? (
@@ -219,7 +221,7 @@ function CheckoutForm() {
           That item is no longer in your cart.
         </Text>
       ) : (
-        <ScreenScroll reserveFooter contentContainerStyle={styles.list}>
+        <ScreenScroll reserveFooter contentInsetAdjustmentBehavior="never" contentContainerStyle={styles.list}>
           {items.map((item) => {
             const place = listedPlace(item.listing.city, item.listing.state)
             return (

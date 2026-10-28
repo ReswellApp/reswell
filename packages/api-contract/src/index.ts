@@ -1769,15 +1769,25 @@ export const mobileCheckoutFinalizeSchema = z.object({
 export const mobileOfferSchema = z.object({
   id: z.string().uuid(),
   status: z.string(),
+  /** Who started the negotiation — drives Sent / Received filters. */
   role: z.enum(["sent", "received"]),
+  /** Whether the viewer is the buyer or seller on the row. */
+  side: z.enum(["buyer", "seller"]),
   amount_usd: z.number(),
   amount_label: z.string(),
+  initial_amount_usd: z.number(),
+  initial_amount_label: z.string(),
+  listing_price_usd: z.number(),
+  listing_price_label: z.string(),
   expires_at: z.string(),
+  created_at: z.string(),
+  updated_at: z.string(),
   note: z.string().nullable(),
   listing_id: z.string().uuid(),
   listing_title: z.string(),
   listing_image_url: z.string().nullable(),
   counterparty_name: z.string(),
+  seller_initiated: z.boolean(),
 })
 
 export const mobileOffersSchema = z.object({

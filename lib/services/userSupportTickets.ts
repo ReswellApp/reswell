@@ -5,8 +5,8 @@ import {
   type ContactMessageUserRow,
   type UserSupportTicketFilter,
 } from "@/lib/db/contactMessages"
-import { userParticipatesInConversation } from "@/lib/db/conversations"
-import { insertMemberMessageInConversation } from "@/lib/services/supportTicketThreadNotifications"
+import { ensureCaseForContactMessage } from "@/lib/services/supportCaseBackfill"
+import { sendSupportCaseMemberReplyForSession } from "@/lib/services/supportCaseThread"
 import { userSupportTicketReplySchema } from "@/lib/validations/userSupportTickets"
 
 export async function listUserSupportTicketsService(
@@ -48,31 +48,24 @@ export async function sendUserSupportTicketReplyService(
     return { error: "Ticket not found." }
   }
 
-  if (!ticket.support_conversation_id) {
-    return {
-      error:
-        "Your support chat is not ready yet. Our team will reach out by email — you can reply here once the thread is linked.",
-    }
+  const opened = await ensureCaseForContactMessage(supabase, {
+    id: ticket.id,
+    subject: ticket.subject,
+    message: ticket.message,
+    email: ticket.email,
+    user_id: ticket.user_id,
+    source: ticket.source,
+  })
+  if (!opened) {
+    return { error: "Could not open your support case. Try again in a moment." }
   }
 
-  const participates = await userParticipatesInConversation(
+  const posted = await sendSupportCaseMemberReplyForSession(
     supabase,
     user.id,
-    ticket.support_conversation_id,
+    opened.id,
+    parsed.data.content.trim(),
   )
-  if (!participates) {
-    return { error: "You do not have access to this conversation." }
-  }
-
-  const posted = await insertMemberMessageInConversation(supabase, {
-    conversationId: ticket.support_conversation_id,
-    senderId: user.id,
-    content: parsed.data.content.trim(),
-  })
-
-  if (!posted) {
-    return { error: "Could not send your message. Try again in a moment." }
-  }
-
+  if ("error" in posted) return posted
   return { success: true }
 }

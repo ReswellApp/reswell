@@ -3,11 +3,13 @@ import { describe, it } from "node:test"
 import type { DashboardOfferRow } from "@/lib/types/offers-dashboard"
 import {
   dashboardOffersPath,
+  isOfferSentByUser,
   offerAwaitsUser,
   offerStatusLabel,
   offersPageLoginRedirect,
   parseOfferFocusId,
   parseOffersTab,
+  partitionOffersByDirection,
 } from "./offers-dashboard-display.ts"
 
 const OFFER_ID = "11111111-1111-4111-8111-111111111111"
@@ -143,6 +145,12 @@ describe("offerAwaitsUser", () => {
     assert.equal(offerAwaitsUser(countered, "seller", now), false)
   })
 
+  it("asks the buyer — not the seller — to respond to a seller-initiated offer", () => {
+    const sellerOffer = row({ status: "COUNTERED", seller_initiated: true })
+    assert.equal(offerAwaitsUser(sellerOffer, "buyer", now), true)
+    assert.equal(offerAwaitsUser(sellerOffer, "seller", now), false)
+  })
+
   it("skips expired and sold negotiations", () => {
     assert.equal(
       offerAwaitsUser(row({ expires_at: "2020-01-01T00:00:00.000Z" }), "seller", now),
@@ -167,5 +175,21 @@ describe("offerAwaitsUser", () => {
       ),
       false,
     )
+  })
+})
+
+describe("isOfferSentByUser", () => {
+  it("treats a seller-initiated offer as sent by the seller and received by the buyer", () => {
+    const sellerOffer = row({ seller_initiated: true, status: "COUNTERED" })
+    assert.equal(isOfferSentByUser(sellerOffer, "seller-1"), true)
+    assert.equal(isOfferSentByUser(sellerOffer, "buyer-1"), false)
+    const { sent, received } = partitionOffersByDirection([sellerOffer], "seller-1")
+    assert.equal(sent.length, 1)
+    assert.equal(received.length, 0)
+  })
+
+  it("treats a buyer bid as sent by the buyer", () => {
+    assert.equal(isOfferSentByUser(row(), "buyer-1"), true)
+    assert.equal(isOfferSentByUser(row(), "seller-1"), false)
   })
 })

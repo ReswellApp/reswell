@@ -34,7 +34,7 @@ export default function PurchasesScreen() {
         refreshing={loading}
         onRefresh={reload}
         keyboardShouldPersistTaps="handled"
-        contentInsetAdjustmentBehavior="automatic"
+        contentInsetAdjustmentBehavior="never"
         ListHeaderComponent={
           <View style={styles.header}>
             <Text style={[styles.count, { color: colors.muted, fontFamily: fontFamily.text }]}>{countLabel}</Text>

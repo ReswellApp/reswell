@@ -52,7 +52,7 @@ export default function CartScreen() {
       edgeToEdgeBottom
     >
       <ScreenShell>
-      <ScreenScroll reserveFooter contentContainerStyle={styles.list}>
+      <ScreenScroll reserveFooter contentInsetAdjustmentBehavior="never" contentContainerStyle={styles.list}>
         {items.length > 1 ? (
           <Text style={[styles.note, { color: colors.muted, fontFamily: fontFamily.text }]}>
             Checkout is one item at a time.

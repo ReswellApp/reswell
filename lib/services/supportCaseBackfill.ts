@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import {
+  attachSupportCaseRequesterForContactMessage,
   getSupportCaseByContactMessageId,
   getSupportCaseByOrderSupportId,
   insertSupportCase,
@@ -117,6 +118,47 @@ export async function ensureCaseForContactMessage(
     body: row.message,
   })
   return inserted.data
+}
+
+/**
+ * After a guest contact ticket is matched to a member, attach (or create) the
+ * support_cases row. Does not create a marketplace conversation.
+ */
+export async function ensureContactMessageCaseOwnedByMember(
+  supabase: SupabaseClient,
+  ticket: {
+    id: string
+    subject: string | null
+    message: string
+    email: string
+    source: string
+  },
+  memberId: string,
+): Promise<SupportCaseRow | null> {
+  const existing = await getSupportCaseByContactMessageId(supabase, ticket.id)
+  if (!existing) {
+    return ensureCaseForContactMessage(supabase, {
+      ...ticket,
+      user_id: memberId,
+    })
+  }
+  if (existing.requester_user_id && existing.requester_user_id !== memberId) {
+    return existing
+  }
+  const attached = await attachSupportCaseRequesterForContactMessage(
+    supabase,
+    ticket.id,
+    memberId,
+  )
+  if (attached.error) {
+    console.warn("[support_cases] attach requester skipped:", attached.error.message)
+    return existing
+  }
+  return {
+    ...existing,
+    requester_user_id: memberId,
+    requester_role: "member",
+  }
 }
 
 /** Backfill this member’s legacy tickets so My Cases / deep links resolve. */

@@ -82,15 +82,15 @@ export function OfferMessageCard({
   const [dialogOpen, setDialogOpen] = useState(false)
   const pending = offer.status === "PENDING"
   const countered = offer.status === "COUNTERED"
+  const sellerInitiated = !!offer.seller_initiated
   const counterDeadlineMs = offer.expires_at ? new Date(offer.expires_at).getTime() : null
   const counterExpired =
     countered &&
     counterDeadlineMs !== null &&
     Number.isFinite(counterDeadlineMs) &&
     counterDeadlineMs <= Date.now()
-  const showSellerActions = isSeller && pending
+  const showSellerActions = isSeller && pending && !sellerInitiated
   const showBuyerCounterActions = !isSeller && countered && !counterExpired
-  const sellerInitiated = !!offer.seller_initiated
   const offerLineItems = parseOfferLineItems(offer.line_items) ?? []
   const isBundleOffer = offerLineItems.length > 1
   const display = buildOfferMessageDisplay(offer, messageContent, isSeller)

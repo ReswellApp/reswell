@@ -1,12 +1,11 @@
 import { Image } from "expo-image"
-import { Stack, useRouter } from "expo-router"
+import { useRouter } from "expo-router"
 import { SymbolView } from "expo-symbols"
 import { useCallback, useState, type ReactNode } from "react"
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import type { MobileEarnings } from "@reswell/api-contract"
 import { DashboardPageGate } from "@/components/dashboard-page-gate"
 import { EarningsTransfer } from "@/components/earnings-transfer"
-import { ScreenSearchHeader } from "@/components/screen-search-header"
 import { fetchEarnings } from "@/lib/api"
 import { publicSiteUrl } from "@/lib/public-env"
 import { useAccountResource } from "@/lib/use-account-resource"
@@ -31,48 +30,37 @@ export default function AccountEarningsScreen() {
   const [pane, setPane] = useState<EarningsPane>("menu")
 
   return (
-    <>
-      <Stack.Screen options={{ headerShown: false }} />
-      <DashboardPageGate id="earnings" title="Earnings">
-        {() => (
-          <View style={styles.screen}>
-            <Stack.Screen options={{ headerShown: false, title: "" }} />
-            <ScreenSearchHeader
-              showBack
-              showInbox
-              insetTop
-              bordered={false}
-              onBack={
-                pane === "menu" ? undefined : pane === "transfer" ? () => setPane("available") : () => setPane("menu")
-              }
-            />
-            <ScrollView>
-              {earnings.loading && !earnings.data ? (
-                <Text style={[styles.loading, { color: colors.muted, fontFamily: fontFamily.text }]}>Loading earnings…</Text>
-              ) : earnings.error && !earnings.data ? (
-                <Text style={[styles.loading, { color: colors.foreground, fontFamily: fontFamily.text }]}>{earnings.error}</Text>
-              ) : earnings.data ? (
-                pane === "pending" ? (
-                  <PendingRelease data={earnings.data} />
-                ) : pane === "available" ? (
-                  <AvailableBalance data={earnings.data} onTransfer={() => setPane("transfer")} />
-                ) : pane === "activity" ? (
-                  <ActivityHistory items={earnings.data.activity} />
-                ) : pane === "transfer" ? (
-                  <EarningsTransfer
-                    data={earnings.data}
-                    onReload={earnings.reload}
-                    onDone={() => setPane("available")}
-                  />
-                ) : (
-                  <EarningsMenu data={earnings.data} onOpen={setPane} />
-                )
-              ) : null}
-            </ScrollView>
-          </View>
-        )}
-      </DashboardPageGate>
-    </>
+    <DashboardPageGate
+      id="earnings"
+      title="Earnings"
+      onBack={pane === "menu" ? undefined : pane === "transfer" ? () => setPane("available") : () => setPane("menu")}
+    >
+      {() => (
+        <ScrollView style={styles.screen} contentInsetAdjustmentBehavior="never">
+          {earnings.loading && !earnings.data ? (
+            <Text style={[styles.loading, { color: colors.muted, fontFamily: fontFamily.text }]}>Loading earnings…</Text>
+          ) : earnings.error && !earnings.data ? (
+            <Text style={[styles.loading, { color: colors.foreground, fontFamily: fontFamily.text }]}>{earnings.error}</Text>
+          ) : earnings.data ? (
+            pane === "pending" ? (
+              <PendingRelease data={earnings.data} />
+            ) : pane === "available" ? (
+              <AvailableBalance data={earnings.data} onTransfer={() => setPane("transfer")} />
+            ) : pane === "activity" ? (
+              <ActivityHistory items={earnings.data.activity} />
+            ) : pane === "transfer" ? (
+              <EarningsTransfer
+                data={earnings.data}
+                onReload={earnings.reload}
+                onDone={() => setPane("available")}
+              />
+            ) : (
+              <EarningsMenu data={earnings.data} onOpen={setPane} />
+            )
+          ) : null}
+        </ScrollView>
+      )}
+    </DashboardPageGate>
   )
 }
 

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 import { mobileDashboardSchema } from "@reswell/api-contract"
-import { toMobileOffer, toMobileOrder, toMobileReview, toMobileSale } from "./mobileAccountMap.ts"
+import { toMobileOffer, toMobileOfferForUser, toMobileOrder, toMobileReview, toMobileSale } from "./mobileAccountMap.ts"
 import { mobileDashboardPages } from "./mobileDashboardPages.ts"
 import { shipperJobActions, supportStatusLabel } from "./mobileDashboardSectionMap.ts"
 import type { MobileOrderRow, MobileReviewRow } from "@/lib/db/mobile-account"
@@ -52,20 +52,68 @@ const ORDER: MobileOrderRow = {
 
 describe("mobile account contract", () => {
   it("maps an offer the buyer sent", () => {
-    const offer = toMobileOffer(OFFER, "sent", { id: OFFER.seller_id, display_name: "North Shop", avatar_url: null, shop_name: null, is_shop: false })
+    const offer = toMobileOffer(
+      OFFER,
+      "sent",
+      { id: OFFER.seller_id, display_name: "North Shop", avatar_url: null, shop_name: null, is_shop: false },
+      "buyer",
+    )
     if (!offer) throw new Error("expected an offer")
     assert.equal(offer.role, "sent")
+    assert.equal(offer.side, "buyer")
     assert.equal(offer.amount_label, "$640.00")
+    assert.equal(offer.initial_amount_label, "$640.00")
+    assert.equal(offer.listing_price_label, "$725.00")
     assert.equal(offer.listing_title, "Album Twin")
     assert.equal(offer.counterparty_name, "North Shop")
+    assert.equal(offer.seller_initiated, false)
     assert.equal(offer.note, null)
   })
 
   it("keeps the buyer note on an offer the seller received", () => {
-    const offer = toMobileOffer(OFFER, "received", { id: OFFER.buyer_id, display_name: "Alex", avatar_url: null, shop_name: null, is_shop: false })
+    const offer = toMobileOffer(
+      OFFER,
+      "received",
+      { id: OFFER.buyer_id, display_name: "Alex", avatar_url: null, shop_name: null, is_shop: false },
+      "seller",
+    )
     if (!offer) throw new Error("expected an offer")
+    assert.equal(offer.side, "seller")
     assert.equal(offer.note, "Can you do 640?")
     assert.equal(offer.counterparty_name, "Alex")
+    assert.equal(offer.listing_price_label, "$725.00")
+    assert.equal(offer.created_at, OFFER.created_at)
+    assert.equal(offer.updated_at, OFFER.updated_at)
+  })
+
+  it("maps a seller-initiated offer for the seller as sent to the buyer", () => {
+    const row: DashboardOfferRow = { ...OFFER, seller_initiated: true, status: "COUNTERED", buyer_note: null }
+    const offer = toMobileOfferForUser(
+      row,
+      OFFER.seller_id,
+      { [OFFER.seller_id]: { id: OFFER.seller_id, display_name: "Hayden Garfields Shop", avatar_url: null, shop_name: "Hayden Garfields Shop", is_shop: true } },
+      { [OFFER.buyer_id]: { id: OFFER.buyer_id, display_name: "Alex", avatar_url: null, shop_name: null, is_shop: false } },
+    )
+    if (!offer) throw new Error("expected an offer")
+    assert.equal(offer.role, "sent")
+    assert.equal(offer.side, "seller")
+    assert.equal(offer.seller_initiated, true)
+    assert.equal(offer.counterparty_name, "Alex")
+  })
+
+  it("maps a seller-initiated offer for the buyer as received from the shop", () => {
+    const row: DashboardOfferRow = { ...OFFER, seller_initiated: true, status: "COUNTERED", buyer_note: null }
+    const offer = toMobileOfferForUser(
+      row,
+      OFFER.buyer_id,
+      { [OFFER.seller_id]: { id: OFFER.seller_id, display_name: "Hayden Garfields Shop", avatar_url: null, shop_name: null, is_shop: true } },
+      { [OFFER.buyer_id]: { id: OFFER.buyer_id, display_name: "Alex", avatar_url: null, shop_name: null, is_shop: false } },
+    )
+    if (!offer) throw new Error("expected an offer")
+    assert.equal(offer.role, "received")
+    assert.equal(offer.side, "buyer")
+    assert.equal(offer.seller_initiated, true)
+    assert.equal(offer.counterparty_name, "Hayden Garfields Shop")
   })
 
   it("maps a purchase without seller earnings", () => {
@@ -132,7 +180,7 @@ describe("mobile account contract", () => {
     assert.equal(parsed.earnings_lifetime_label, "$680.00")
   })
 
-  it("returns the dashboard pages this account is allowed to open", () => {
+  it("returns the dashboard pages this account is allowed to open on mobile", () => {
     const member = mobileDashboardPages({
       isAdmin: false,
       isShipper: false,
@@ -168,12 +216,9 @@ describe("mobile account contract", () => {
 
     assert.deepEqual(shop, [
       "overview",
-      "shipper",
       "profile",
       "earnings",
-      "balance-sheet",
       "listings",
-      "shopify",
       "offers",
       "messages",
       "support",
@@ -183,5 +228,9 @@ describe("mobile account contract", () => {
       "following",
       "seller-profile",
     ])
+    assert.equal(
+      shop.some((id) => id === "shipper" || id === "shopify" || id === "balance-sheet"),
+      false,
+    )
   })
 })

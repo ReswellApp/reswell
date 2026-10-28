@@ -1,8 +1,7 @@
-/** Routes where the browse search bar would crowd checkout, forms, or focused tasks. */
+/** Routes where the browse search bar would crowd a focused task. */
 export function isSearchHeaderHidden(pathname: string): boolean {
   if (pathname === "/sign-in") return true
-  if (pathname === "/account/cart" || pathname === "/account/checkout") return true
   if (pathname === "/sell" || pathname.startsWith("/sell/")) return true
-  if (pathname.startsWith("/account/messages/")) return true
+  if (pathname === "/account/support" || pathname.startsWith("/account/support/")) return true
   return false
 }

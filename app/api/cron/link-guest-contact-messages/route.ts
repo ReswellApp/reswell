@@ -6,9 +6,9 @@ export const maxDuration = 60
 
 /**
  * Hourly: links guest contact form tickets (user_id IS NULL) to member accounts when
- * the submitter email matches profiles.email or Auth login email. When support routing
- * is configured, creates the member ↔ support DM thread so the ticket appears in
- * Dashboard → Support with a live conversation.
+ * the submitter email matches profiles.email or Auth login email, and attaches the
+ * canonical support_cases row so the ticket appears under Help. Does not create
+ * marketplace conversations.
  *
  * Protected with CRON_SECRET (same pattern as other cron routes).
  */

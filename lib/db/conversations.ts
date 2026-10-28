@@ -11,7 +11,8 @@ export type ConversationRef = {
 
 /**
  * Resolves the marketplace thread between a buyer, seller, and listing.
- * Pass `listingId: null` for support / general threads (one per buyer+seller pair).
+ * Pass `listingId: null` for a listing-less marketplace DM (not support tickets —
+ * those live on `support_cases` and must not create conversation rows).
  */
 export async function getConversationForBuyerSellerListing(
   supabase: SupabaseClient,
@@ -90,7 +91,10 @@ export async function userParticipatesInConversation(
   return true
 }
 
-/** Creates buyer↔seller thread if missing. Caller must be authenticated as `buyerId` (insert RLS). */
+/**
+ * Creates a listing-less marketplace DM if missing.
+ * Do not use this for Reswell Support tickets.
+ */
 export async function ensureConversationBetweenBuyerAndSeller(
   supabase: SupabaseClient,
   buyerId: string,

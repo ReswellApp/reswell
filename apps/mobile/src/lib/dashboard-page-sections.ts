@@ -1,14 +1,9 @@
 import type { MobileDashboardPage, MobileDashboardPageId } from "@reswell/api-contract"
 
-const SELLING: ReadonlySet<MobileDashboardPageId> = new Set([
-  "shipper",
-  "earnings",
-  "balance-sheet",
-  "shopify",
-  "offers",
-  "sales",
-  "seller-profile",
-])
+/** Extra-permission tools that stay on the website. */
+const WEB_ONLY: ReadonlySet<MobileDashboardPageId> = new Set(["shipper", "balance-sheet", "shopify"])
+
+const SELLING: ReadonlySet<MobileDashboardPageId> = new Set(["earnings", "offers", "sales", "seller-profile"])
 
 const BUYING: ReadonlySet<MobileDashboardPageId> = new Set(["purchases", "favorites", "following"])
 
@@ -16,7 +11,9 @@ const ACCOUNT: ReadonlySet<MobileDashboardPageId> = new Set(["profile", "message
 
 /** Dashboard menu rows for Me — no overview (this screen) or listings (removed from Me). */
 export function meDashboardPages(pages: MobileDashboardPage[]): MobileDashboardPage[] {
-  return pages.filter((page) => page.id !== "overview" && page.id !== "listings")
+  return pages.filter(
+    (page) => page.id !== "overview" && page.id !== "listings" && !WEB_ONLY.has(page.id),
+  )
 }
 
 export function groupMeDashboardPages(pages: MobileDashboardPage[]): {

@@ -3,9 +3,11 @@ import { describe, it } from "node:test"
 
 import {
   applyInboxThreadActivity,
+  filterOutSupportInboxConversations,
   getUnreadCountForConversation,
   groupConversationsByCounterparty,
   inboxActivityFromMessageRow,
+  isSupportInboxConversation,
   markConversationMessagesReadLocally,
   mergeInboxConversationSnapshots,
   type InboxConversationRow,
@@ -157,6 +159,58 @@ describe("inbox ordering and unread", () => {
     const groups = groupConversationsByCounterparty(merged, ME)
     assert.equal(groups[0]?.latestMessage?.content, "latest")
     assert.equal(groups[0]?.totalUnread, 0)
+  })
+
+  it("treats leftover member↔support DMs as Help tickets, not marketplace threads", () => {
+    const supportUser = OTHER
+    const supportDm = conversation("support-dm", "2026-10-11T12:00:00.000Z", [
+      {
+        id: "m-ticket",
+        content: "Reswell support ticket",
+        is_read: false,
+        sender_id: ME,
+        created_at: "2026-10-11T12:00:00.000Z",
+      },
+    ], supportUser)
+    const listingThread: InboxConversationRow = {
+      ...conversation("listing", "2026-10-11T12:00:00.000Z", [
+        {
+          id: "m-listing",
+          content: "still for sale?",
+          is_read: false,
+          sender_id: ME,
+          created_at: "2026-10-11T12:00:00.000Z",
+        },
+      ], supportUser),
+      listing_id: "listing-1",
+    }
+    const staffOutbound = conversation(
+      "staff-dm",
+      "2026-10-11T12:00:00.000Z",
+      [
+        {
+          id: "m-staff",
+          content: "checking in",
+          is_read: false,
+          sender_id: supportUser,
+          created_at: "2026-10-11T12:00:00.000Z",
+        },
+      ],
+      supportUser,
+    )
+    staffOutbound.buyer_id = supportUser
+    staffOutbound.seller_id = ME
+
+    assert.equal(isSupportInboxConversation(supportDm, supportUser), true)
+    assert.equal(isSupportInboxConversation(listingThread, supportUser), false)
+    assert.equal(isSupportInboxConversation(staffOutbound, supportUser), false)
+    assert.deepEqual(
+      filterOutSupportInboxConversations(
+        [supportDm, listingThread, staffOutbound],
+        supportUser,
+      ).map((row) => row.id),
+      ["listing", "staff-dm"],
+    )
   })
 
   it("reads a realtime message row into inbox activity", () => {

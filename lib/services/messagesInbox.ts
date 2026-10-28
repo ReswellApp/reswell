@@ -18,10 +18,9 @@ import {
 } from "@/lib/utils/messages-inbox-grouping"
 
 /**
- * Marketplace `/messages` never shows Reswell Support threads.
- * Hide member↔support DMs (listing_id null, support user as seller) and any
- * conversation linked as a support_conversation_id — including order claims.
- * Staff-outbound marketplace DMs (staff as buyer) stay here.
+ * Marketplace `/messages` is conversations + messages only.
+ * Support chat lives on support_cases / support_case_messages.
+ * Hide leftover dual-written DMs so they cannot appear as marketplace threads.
  */
 export async function retainMarketplaceInboxConversations(
   conversations: InboxConversationRow[],

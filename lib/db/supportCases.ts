@@ -869,3 +869,23 @@ export async function getSupportCaseByContactMessageId(
   if (error || !data) return null
   return data as SupportCaseRow
 }
+
+/** Link a guest-submitted case to the matching member. Never steals another member’s case. */
+export async function attachSupportCaseRequesterForContactMessage(
+  supabase: SupabaseClient,
+  contactMessageId: string,
+  userId: string,
+): Promise<{ error: Error | null }> {
+  const { error } = await supabase
+    .from("support_cases")
+    .update({
+      requester_user_id: userId,
+      requester_role: "member",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("contact_message_id", contactMessageId)
+    .or(`requester_user_id.is.null,requester_user_id.eq.${userId}`)
+
+  if (error) return { error: new Error(error.message) }
+  return { error: null }
+}

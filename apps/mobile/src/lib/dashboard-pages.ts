@@ -21,7 +21,7 @@ export function dashboardPageHref(id: MobileDashboardPageId, sellerSlug: string 
     case "offers":
       return "/account/offers"
     case "messages":
-      return "/account/messages"
+      return { pathname: "/inbox", params: { filter: "messages" } }
     case "support":
       return "/account/support"
     case "purchases":

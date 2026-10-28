@@ -49,7 +49,7 @@ import { revalidateMessagesInboxForParticipants } from "@/lib/cache/revalidate-m
 import { resolveProfileShopSectionFilter } from "@/lib/sellers/profile-shop-section-filter"
 import {
   toMobileConversationPreview,
-  toMobileOffer,
+  toMobileOfferForUser,
   toMobileReview,
 } from "@/lib/services/mobileAccountMap"
 import {
@@ -305,12 +305,8 @@ export async function listMobileOffersService(
     return { ok: false, status: 500, error: "Unable to load offers right now" }
   }
   const offers: MobileOffer[] = []
-  for (const row of partitioned.sent) {
-    const offer = toMobileOffer(row, "sent", partitioned.sellersById[row.seller_id])
-    if (offer) offers.push(offer)
-  }
-  for (const row of partitioned.received) {
-    const offer = toMobileOffer(row, "received", partitioned.buyersById[row.buyer_id])
+  for (const row of [...partitioned.sent, ...partitioned.received]) {
+    const offer = toMobileOfferForUser(row, userId, partitioned.sellersById, partitioned.buyersById)
     if (offer) offers.push(offer)
   }
   const parsed = mobileOffersSchema.safeParse({ offers })

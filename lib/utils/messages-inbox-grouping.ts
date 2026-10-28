@@ -68,9 +68,9 @@ export function filterConversationsWithMessages(
 }
 
 /**
- * Member↔Reswell Support ticket DMs use `listing_id: null` with the member as
- * `buyer_id` and the configured support user as `seller_id`. Those belong under
- * `/dashboard/support`, not the marketplace `/messages` inbox.
+ * Leftover dual-written support DMs used `listing_id: null` with the member as
+ * `buyer_id` and the configured support user as `seller_id`. Hide them from
+ * `/messages`. The live support thread is `support_case_messages`.
  *
  * Staff-outbound marketplace DMs (admin/employee messaging a member) use the
  * opposite orientation (`buyer_id` = staff). Those must stay in `/messages` —

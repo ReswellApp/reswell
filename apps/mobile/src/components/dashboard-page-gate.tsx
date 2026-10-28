@@ -9,10 +9,12 @@ import { useAccountResource } from "@/lib/use-account-resource"
 export function DashboardPageGate({
   id,
   title,
+  onBack,
   children,
 }: {
   id: MobileDashboardPageId
   title: string
+  onBack?: () => void
   children: (dashboard: MobileDashboard) => ReactNode
 }) {
   const loadDashboard = useCallback((accessToken: string) => fetchDashboard(accessToken), [])
@@ -22,6 +24,7 @@ export function DashboardPageGate({
   return (
     <AccountState
       title={title}
+      onBack={onBack}
       loading={loading}
       error={error}
       onRetry={reload}

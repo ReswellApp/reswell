@@ -270,7 +270,8 @@ export function DashboardOffersView({
   ]
 
   const renderOffer = (offer: DashboardOfferRow, highlighted = false) => {
-    const role = userParticipationRole(offer, userId) ?? "buyer"
+    const role = userParticipationRole(offer, userId)
+    if (!role) return null
     return (
       <OfferRow
         key={offer.id}

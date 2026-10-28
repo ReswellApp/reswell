@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-nati
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import type { ReactNode } from "react"
 import { useFloatingTabBarClearance } from "@/components/floating-tab-bar"
+import { ScreenSearchHeader } from "@/components/screen-search-header"
 import { SCROLL_END_PADDING } from "@/components/screen-shell"
 import { fontFamily, useReswellColors } from "@/theme"
 
@@ -22,6 +23,8 @@ export function AccountState({
   empty,
   isEmpty,
   edgeToEdgeBottom = false,
+  searchHeader = true,
+  onBack,
   children,
 }: {
   title: string
@@ -32,6 +35,10 @@ export function AccountState({
   isEmpty: boolean
   /** Skip bottom inset when the screen owns sticky footer or composer chrome to the home indicator. */
   edgeToEdgeBottom?: boolean
+  /** Me screens share the search nav. Support keeps the native stack header. */
+  searchHeader?: boolean
+  /** Overrides search-header back (in-screen steps). */
+  onBack?: () => void
   children: ReactNode
 }) {
   const colors = useReswellColors()
@@ -39,7 +46,10 @@ export function AccountState({
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
-      <Stack.Screen options={{ title }} />
+      <Stack.Screen options={{ title, headerShown: !searchHeader }} />
+      {searchHeader ? (
+        <ScreenSearchHeader showBack showInbox insetTop bordered={false} onBack={onBack} />
+      ) : null}
       {loading && isEmpty ? (
         <ActivityIndicator style={styles.centered} color={colors.foreground} />
       ) : error && isEmpty ? (

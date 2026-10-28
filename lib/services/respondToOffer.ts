@@ -54,7 +54,7 @@ export async function respondToOfferService(
   const { data: offer, error: offerErr } = await supabase
     .from("offers")
     .select(
-      "id, listing_id, buyer_id, seller_id, status, current_amount, counter_count, fulfillment, shipping_amount, payment_intent_id",
+      "id, listing_id, buyer_id, seller_id, status, current_amount, counter_count, fulfillment, shipping_amount, payment_intent_id, seller_initiated",
     )
     .eq("id", offerId)
     .maybeSingle()
@@ -65,6 +65,10 @@ export async function respondToOfferService(
 
   if (offer.seller_id !== sellerUserId) {
     return { ok: false, error: "Only the seller can respond to this offer." }
+  }
+
+  if (offer.seller_initiated === true) {
+    return { ok: false, error: "Wait for the buyer to respond to your offer." }
   }
 
   const paymentIntentId =

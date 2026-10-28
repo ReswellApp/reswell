@@ -99,7 +99,8 @@ export function offerIsSoldPresentation(offer: DashboardOfferRow): boolean {
 
 /**
  * True when this person still has to act: a seller on a pending bid, or a buyer
- * on a counter that has not expired.
+ * on a counter / seller-initiated offer that has not expired.
+ * The listing owner never accepts their own offer to a buyer.
  */
 export function offerAwaitsUser(
   offer: DashboardOfferRow,
@@ -107,6 +108,9 @@ export function offerAwaitsUser(
   nowMs = Date.now(),
 ): boolean {
   if (offerIsSoldPresentation(offer) || isInactiveOffer(offer, nowMs)) return false
+  if (offer.seller_initiated) {
+    return role === "buyer" && (offer.status === "COUNTERED" || offer.status === "PENDING")
+  }
   if (role === "seller") return offer.status === "PENDING"
   return offer.status === "COUNTERED"
 }

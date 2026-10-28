@@ -55,7 +55,7 @@ export default function SalesScreen() {
         refreshing={loading}
         onRefresh={reload}
         keyboardShouldPersistTaps="handled"
-        contentInsetAdjustmentBehavior="automatic"
+        contentInsetAdjustmentBehavior="never"
         ListHeaderComponent={
           <View style={styles.header}>
             <Text style={[styles.subtitle, { color: colors.muted, fontFamily: fontFamily.text }]}>

@@ -1,5 +1,5 @@
 import { Image } from "expo-image"
-import { Stack, useRouter } from "expo-router"
+import { Stack, useLocalSearchParams, useRouter } from "expo-router"
 import { SymbolView } from "expo-symbols"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { AppState, FlatList, Pressable, StyleSheet, Text, View } from "react-native"
@@ -22,6 +22,12 @@ const FILTERS: { id: Exclude<Filter, "activity">; label: string }[] = [
   { id: "selling", label: "Selling" },
   { id: "buying", label: "Buying" },
 ]
+
+function inboxFilterFromParam(value: string | string[] | undefined): Filter {
+  const raw = Array.isArray(value) ? value[0] : value
+  if (raw === "messages" || raw === "selling" || raw === "buying" || raw === "activity") return raw
+  return "all"
+}
 
 export default function InboxScreen() {
   const colors = useReswellColors()
@@ -61,7 +67,17 @@ function InboxList() {
     [syncInboxUnread],
   )
   const { data, error, loading, reload } = useAccountResource(load)
-  const [filter, setFilter] = useState<Filter>("all")
+  const params = useLocalSearchParams<{ filter?: string }>()
+  const [filter, setFilter] = useState<Filter>(() => inboxFilterFromParam(params.filter))
+
+  useEffect(() => {
+    setFilter(inboxFilterFromParam(params.filter))
+  }, [params.filter])
+
+  const selectFilter = (next: Filter) => {
+    setFilter(next)
+    router.setParams({ filter: next })
+  }
 
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (state) => {
@@ -91,7 +107,7 @@ function InboxList() {
             return (
               <Pressable
                 key={item.id}
-                onPress={() => setFilter(item.id)}
+                onPress={() => selectFilter(item.id)}
                 style={[
                   styles.pill,
                   styles.pillFlex,
@@ -119,7 +135,7 @@ function InboxList() {
             accessibilityRole="button"
             accessibilityLabel="Activity notifications"
             accessibilityState={{ selected: activityActive }}
-            onPress={() => setFilter("activity")}
+            onPress={() => selectFilter("activity")}
             style={[
               styles.pill,
               styles.pillIcon,

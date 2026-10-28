@@ -102,16 +102,6 @@ export function SaleDetailView({ sale, onVerified }: { sale: MobileSaleDetail; o
 
   return (
     <View style={styles.page}>
-      <Pressable
-        onPress={() => router.push("/account/sales")}
-        accessibilityRole="button"
-        accessibilityLabel="Back to list"
-        style={[styles.back, { backgroundColor: colors.image }]}
-      >
-        <SymbolView name={{ ios: "chevron.left", android: "chevron_left", web: "chevron_left" }} size={16} tintColor={accent} />
-        <Text style={[styles.backLabel, { color: accent, fontFamily: fontFamily.text }]}>Back to List</Text>
-      </Pressable>
-
       <Text style={[styles.heading, { color: colors.foreground, fontFamily: fontFamily.headline }]}>Sale Details</Text>
 
       <View style={[styles.card, card]}>
@@ -375,16 +365,6 @@ export function SaleDetailView({ sale, onVerified }: { sale: MobileSaleDetail; o
 
 const styles = StyleSheet.create({
   page: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 32, gap: 16 },
-  back: {
-    alignSelf: "flex-start",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 2,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  backLabel: { fontSize: 14, fontWeight: "600" },
   heading: { fontSize: 26, fontWeight: "700", letterSpacing: -0.4 },
   card: { borderRadius: 14, borderCurve: "continuous", padding: 16, gap: 12 },
   item: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
