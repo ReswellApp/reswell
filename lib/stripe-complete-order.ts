@@ -148,6 +148,85 @@ function isUniqueViolation(err: { code?: string; message?: string } | null): boo
   return Boolean(err.message?.toLowerCase().includes("duplicate"))
 }
 
+const CONCURRENT_ORDER_COMPLETION_POLL_MS = 200
+const CONCURRENT_ORDER_COMPLETION_MAX_WAIT_MS = 20_000
+
+function sleepMs(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms)
+  })
+}
+
+function isConcurrentOrderCompletionBusy(result: StripeCompleteOrderResult): boolean {
+  return (
+    !result.ok &&
+    result.status === 503 &&
+    (result.error === "Order completion is already in progress" ||
+      result.error === "Order completion is still in progress")
+  )
+}
+
+async function isMarketplaceOrderCommitSettled(
+  serviceSupabase: ReturnType<typeof createServiceRoleClient>,
+  orderId: string,
+  expectedOrderItemLines: number,
+): Promise<boolean> {
+  const minLines = Math.max(1, expectedOrderItemLines)
+
+  const { count: itemCount, error: itemErr } = await serviceSupabase
+    .from("order_items")
+    .select("id", { count: "exact", head: true })
+    .eq("order_id", orderId)
+
+  if (!itemErr && (itemCount ?? 0) >= minLines) {
+    return true
+  }
+
+  const { data: pendingLedger } = await serviceSupabase
+    .from("wallet_transactions")
+    .select("id")
+    .eq("reference_type", "order_pending_earnings")
+    .eq("reference_id", orderId)
+    .maybeSingle()
+
+  return Boolean(pendingLedger?.id)
+}
+
+/**
+ * When the browser finalize route and the Stripe webhook race, one worker may still be
+ * writing order_items while another hits a unique constraint. Wait for the commit to settle,
+ * then re-run idempotent completion so the buyer gets a success response with orderId.
+ */
+async function resolveConcurrentOrderCompletion(
+  serviceSupabase: ReturnType<typeof createServiceRoleClient>,
+  pi: Stripe.PaymentIntent,
+  orderId: string,
+): Promise<StripeCompleteOrderResult> {
+  const expectedLines = marketplaceListingIdsFromPaymentIntent(pi).length
+  const deadline = Date.now() + CONCURRENT_ORDER_COMPLETION_MAX_WAIT_MS
+
+  while (Date.now() < deadline) {
+    if (await isMarketplaceOrderCommitSettled(serviceSupabase, orderId, expectedLines)) {
+      break
+    }
+    await sleepMs(CONCURRENT_ORDER_COMPLETION_POLL_MS)
+  }
+
+  while (Date.now() < deadline) {
+    const result = await completeMarketplaceOrderFromPaymentIntent(pi)
+    if (result.ok) return result
+    if (!isConcurrentOrderCompletionBusy(result)) return result
+    await sleepMs(CONCURRENT_ORDER_COMPLETION_POLL_MS)
+  }
+
+  return {
+    ok: false,
+    error:
+      "Your purchase is still processing. Open Purchases in a moment — your card was charged only once.",
+    status: 503,
+  }
+}
+
 function terminalCustomerContactFromPaymentIntent(
   pi: Stripe.PaymentIntent,
 ): {
@@ -483,11 +562,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       if (!hasItems) {
         const orderAgeMs = Date.now() - Date.parse(existing.created_at)
         if (Number.isFinite(orderAgeMs) && orderAgeMs < 5 * 60_000) {
-          return {
-            ok: false,
-            error: "Order completion is still in progress",
-            status: 503,
-          }
+          return resolveConcurrentOrderCompletion(serviceSupabase, pi, existing.id)
         }
         const refundState = await refundShopifyInventoryConflict(
           serviceSupabase,
@@ -1070,11 +1145,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
         .eq("stripe_checkout_session_id", piId)
         .maybeSingle()
       if (raced?.id) {
-        return {
-          ok: false,
-          error: "Order completion is already in progress",
-          status: 503,
-        }
+        return resolveConcurrentOrderCompletion(serviceSupabase, pi, raced.id)
       }
     }
     console.error(

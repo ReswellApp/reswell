@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button"
 import { BRAND_CTA_BLUE } from "@/lib/brand-colors"
 import { stripePublishableKey } from "@/lib/stripe/client-checkout-enabled"
 import { buildOrderSuccessPath } from "@/lib/google-ads/purchase-success-path"
+import { finalizeMarketplaceOrderClient } from "@/lib/stripe/finalize-marketplace-order-client"
 import { cn } from "@/lib/utils"
 
 const publishableKey = stripePublishableKey()
@@ -77,22 +78,12 @@ function CheckoutForm({
 
   const completeAfterSuccess = useCallback(
     async (paymentIntentId: string) => {
-      const res = await fetch("/api/stripe/finalize-order", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ payment_intent_id: paymentIntentId }),
-      })
-      const data = (await res.json()) as { error?: string; orderId?: string }
-      if (!res.ok) {
-        toast.error(data.error ?? "Could not complete order")
+      const result = await finalizeMarketplaceOrderClient(paymentIntentId)
+      if (!result.ok) {
+        toast.error(result.error)
         return
       }
-      if (data.orderId) {
-        router.replace(buildOrderSuccessPath(data.orderId, { reportPurchase: true }))
-      } else {
-        router.replace("/checkout/success")
-      }
+      router.replace(buildOrderSuccessPath(result.orderId, { reportPurchase: true }))
     },
     [router],
   )

@@ -5,6 +5,7 @@ import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { buildOrderSuccessPath } from "@/lib/google-ads/purchase-success-path"
+import { finalizeMarketplaceOrderClient } from "@/lib/stripe/finalize-marketplace-order-client"
 import { Card, CardContent } from "@/components/ui/card"
 import { CheckCircle2, Loader2 } from "lucide-react"
 
@@ -73,27 +74,17 @@ function CheckoutSuccessInner() {
 
     ;(async () => {
       try {
-        const res = await fetch("/api/stripe/finalize-order", {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ payment_intent_id: paymentIntent }),
-        })
-        const data = (await res.json()) as { error?: string; orderId?: string }
+        const result = await finalizeMarketplaceOrderClient(paymentIntent)
         if (cancelled) return
-        if (res.status === 401) {
-          setFinalizeAuth(true)
+        if (!result.ok) {
+          if (result.unauthorized) {
+            setFinalizeAuth(true)
+            return
+          }
+          setFinalizeError(result.error)
           return
         }
-        if (!res.ok) {
-          setFinalizeError(data.error ?? "Could not complete your purchase.")
-          return
-        }
-        if (!data.orderId?.trim()) {
-          setFinalizeError("Could not complete your purchase.")
-          return
-        }
-        setFinalizedOrderId(data.orderId.trim())
+        setFinalizedOrderId(result.orderId)
       } catch {
         if (!cancelled) setFinalizeError("Something went wrong completing your purchase.")
       } finally {
