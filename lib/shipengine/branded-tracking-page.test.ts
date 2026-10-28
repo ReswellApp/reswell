@@ -27,6 +27,19 @@ describe("branded tracking page", () => {
     assert.equal(url, "https://track.shipengine.com/se/v1/MYkORKpDv02x-LX3yv7bdQ")
   })
 
+  it("parses a nested data wrapper or top-level url", () => {
+    assert.equal(
+      parseBrandedTrackingPageUrl({
+        data: { url: "https://track.shipengine.com/se/v1/nested" },
+      }),
+      "https://track.shipengine.com/se/v1/nested",
+    )
+    assert.equal(
+      parseBrandedTrackingPageUrl({ url: "https://track.shipengine.com/se/v1/top" }),
+      "https://track.shipengine.com/se/v1/top",
+    )
+  })
+
   it("rejects other hosts", () => {
     assert.equal(normalizeBrandedTrackingUrl("https://tools.usps.com/go/TrackConfirmAction"), null)
     assert.equal(normalizeBrandedTrackingUrl("javascript:alert(1)"), null)
@@ -58,7 +71,7 @@ describe("branded tracking page", () => {
     assert.equal(brandedTrackingCountrySupported("DE"), false)
   })
 
-  it("prefers the branded page over the carrier site", () => {
+  it("prefers the branded page and never returns a carrier site", () => {
     assert.equal(
       preferredTrackingUrl({
         brandedUrl: "https://track.shipengine.com/se/v1/abc",
@@ -67,9 +80,9 @@ describe("branded tracking page", () => {
       }),
       "https://track.shipengine.com/se/v1/abc",
     )
-    assert.match(
-      preferredTrackingUrl({ trackingNumber: "1Z999", trackingCarrier: "ups" }) ?? "",
-      /^https:\/\/www\.ups\.com\/track/,
+    assert.equal(
+      preferredTrackingUrl({ trackingNumber: "1Z999", trackingCarrier: "ups" }),
+      null,
     )
   })
 
@@ -103,6 +116,21 @@ describe("branded tracking page", () => {
         trackingCarrier: "usps",
       }),
       "https://track.shipengine.com/se/v1/abc",
+    )
+    assert.equal(
+      packageTrackHref({
+        orderId,
+        trackingNumber: "1Z999AA10123456784",
+        trackingCarrier: "ups",
+      }),
+      `/api/orders/${orderId}/track`,
+    )
+    assert.equal(
+      packageTrackHref({
+        trackingNumber: "1Z999AA10123456784",
+        trackingCarrier: "ups",
+      }),
+      null,
     )
   })
 })

@@ -101,7 +101,7 @@ describe("mobile purchases", () => {
       conversationId: null,
       buyerReview: null,
       sellerReview: null,
-      trackUrl: "https://tools.usps.com/go/TrackConfirmAction?tLabels=1",
+      trackUrl: "https://track.shipengine.com/se/v1/abc",
     })
     if (!detail) throw new Error("expected purchase details")
     assert.equal(detail.order_number, "GRV86Q")
@@ -116,6 +116,6 @@ describe("mobile purchases", () => {
     assert.ok(detail.address_lines.some((line) => line.includes("915 DE LA VINA ST")))
     assert.equal(detail.seller_handle, "terramar-surf")
     assert.equal(detail.can_review, false)
-    assert.equal(detail.track_url, "https://tools.usps.com/go/TrackConfirmAction?tLabels=1")
+    assert.equal(detail.track_url, "https://track.shipengine.com/se/v1/abc")
   })
 })

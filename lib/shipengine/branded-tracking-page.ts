@@ -1,4 +1,5 @@
 import { getShipEngineApiBase, getShipEngineBrandedTrackingThemeGuid } from "@/lib/shipengine/config"
+import { shipEngineCarrierCodesToTry } from "@/lib/shipping/resolve-carrier-code"
 import { normalizeBrandedTrackingUrl } from "@/lib/utils/branded-tracking-url"
 
 const TRACKING_PAGE_TIMEOUT_MS = 12_000
@@ -47,13 +48,19 @@ export function serviceCodeFromTrackingCarrier(carrier: string | null | undefine
 export function parseBrandedTrackingPageUrl(data: unknown): string | null {
   const root = asRecord(data)
   if (!root) return null
-  const pages = root.tracking_pages ?? root.tracking_page
-  const list = Array.isArray(pages) ? pages : pages != null ? [pages] : []
-  for (const item of list) {
-    const row = asRecord(item)
-    const url = typeof row?.url === "string" ? row.url : null
-    const normalized = normalizeBrandedTrackingUrl(url)
-    if (normalized) return normalized
+  const nested = asRecord(root.data)
+  const sources = [root, nested].filter((row): row is Record<string, unknown> => row != null)
+  for (const source of sources) {
+    const direct = normalizeBrandedTrackingUrl(typeof source.url === "string" ? source.url : null)
+    if (direct) return direct
+    const pages = source.tracking_pages ?? source.tracking_page
+    const list = Array.isArray(pages) ? pages : pages != null ? [pages] : []
+    for (const item of list) {
+      const row = asRecord(item)
+      const url = typeof row?.url === "string" ? row.url : null
+      const normalized = normalizeBrandedTrackingUrl(url)
+      if (normalized) return normalized
+    }
   }
   return null
 }
@@ -171,4 +178,30 @@ export async function createBrandedTrackingPage(
   } finally {
     clearTimeout(timer)
   }
+}
+
+export type BrandedTrackingShipmentInput = {
+  trackingNumber: string
+  trackingCarrier?: string | null
+  shipTo: BrandedTrackingLocality
+  shipFrom: BrandedTrackingLocality
+}
+
+/** Tries the likely ShipEngine carrier codes until a branded page URL is returned. */
+export async function createBrandedTrackingPageForShipment(
+  input: BrandedTrackingShipmentInput,
+): Promise<string | null> {
+  const codes = shipEngineCarrierCodesToTry(input.trackingNumber, input.trackingCarrier)
+  const serviceCode = serviceCodeFromTrackingCarrier(input.trackingCarrier)
+  for (const carrierCode of codes) {
+    const url = await createBrandedTrackingPage({
+      trackingNumber: input.trackingNumber,
+      carrierCode,
+      serviceCode,
+      shipTo: input.shipTo,
+      shipFrom: input.shipFrom,
+    })
+    if (url) return url
+  }
+  return null
 }

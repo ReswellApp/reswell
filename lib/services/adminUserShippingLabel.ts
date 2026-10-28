@@ -10,9 +10,8 @@ import {
 } from "@/lib/shipengine/surfboard-label"
 import { profileRowToRateQuoteAddress, type RateQuoteAddressFields } from "@/lib/shipping/rate-address"
 import { validateLabelParcelEntry } from "@/lib/shipping/surfboard-label-limits"
-import { createBrandedTrackingPage, serviceCodeFromTrackingCarrier } from "@/lib/shipengine/branded-tracking-page"
+import { createBrandedTrackingPageForShipment } from "@/lib/shipengine/branded-tracking-page"
 import { preferredTrackingUrl } from "@/lib/utils/carrier-tracking-url"
-import { resolveShipEngineCarrierCode } from "@/lib/shipping/resolve-carrier-code"
 import type { AdminUserShippingLabelShipTo } from "@/lib/validations/adminUserShippingLabel"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import {
@@ -260,27 +259,22 @@ export async function purchaseAdminUserShippingLabel(params: {
   const trackingCarrier = purchased.result.trackingCarrier?.trim() || null
   const shipFrom = resolveReswellShipFrom()
   const shipTo = shipToToRateQuoteAddress(params.shipTo)
-  const carrierCode = resolveShipEngineCarrierCode(trackingNumber, trackingCarrier)
-  const brandedUrl =
-    carrierCode == null
-      ? null
-      : await createBrandedTrackingPage({
-          trackingNumber,
-          carrierCode,
-          serviceCode: serviceCodeFromTrackingCarrier(trackingCarrier),
-          shipFrom: {
-            cityLocality: shipFrom.city_locality,
-            stateProvince: shipFrom.state_province,
-            postalCode: shipFrom.postal_code,
-            countryCode: shipFrom.country_code,
-          },
-          shipTo: {
-            cityLocality: shipTo.city_locality,
-            stateProvince: shipTo.state_province,
-            postalCode: shipTo.postal_code,
-            countryCode: shipTo.country_code,
-          },
-        })
+  const brandedUrl = await createBrandedTrackingPageForShipment({
+    trackingNumber,
+    trackingCarrier,
+    shipFrom: {
+      cityLocality: shipFrom.city_locality,
+      stateProvince: shipFrom.state_province,
+      postalCode: shipFrom.postal_code,
+      countryCode: shipFrom.country_code,
+    },
+    shipTo: {
+      cityLocality: shipTo.city_locality,
+      stateProvince: shipTo.state_province,
+      postalCode: shipTo.postal_code,
+      countryCode: shipTo.country_code,
+    },
+  })
 
   const notified = await startStaffOutboundMarketplaceConversation({
     supabase: params.supabase,

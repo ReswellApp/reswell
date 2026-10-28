@@ -15,7 +15,7 @@ import {
   Shield,
   Truck,
 } from "lucide-react"
-import { preferredTrackingUrl } from "@/lib/utils/carrier-tracking-url"
+import { packageTrackHref } from "@/lib/utils/carrier-tracking-url"
 import { deliveryStatusLabel } from "@/lib/order-status"
 import {
   daysUntilShippingDeadline,
@@ -255,12 +255,13 @@ export function BuyerOrderExperience(props: BuyerOrderExperienceProps) {
 
   const trackUrl = useMemo(
     () =>
-      preferredTrackingUrl({
+      packageTrackHref({
+        orderId: props.orderId,
         brandedUrl: props.brandedTrackingUrl,
         trackingNumber: props.trackingNumber,
         trackingCarrier: props.trackingCarrier,
       }),
-    [props.brandedTrackingUrl, props.trackingNumber, props.trackingCarrier],
+    [props.orderId, props.brandedTrackingUrl, props.trackingNumber, props.trackingCarrier],
   )
 
   const journey = useMemo(() => buildJourney(props), [props])

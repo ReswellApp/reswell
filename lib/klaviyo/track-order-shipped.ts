@@ -8,7 +8,7 @@
  * Template variables: `{{ event.Title }}`, `{{ event.tracking_number }}`,
  * `{{ event.tracking_carrier }}`, `{{ event.tracking_url }}`, `{{ event.order_url }}`,
  * `{{ event.sms_milestone }}`, `{{ event.has_sms_phone }}`.
- * `tracking_url` is the ShipEngine branded page when one exists, otherwise the carrier tracker.
+ * `tracking_url` is the ShipEngine branded page when one exists, otherwise the purchase page.
  *
  * Profile on the event is the **buyer**. When a phone is on file it is attached as `phone_number`
  * so Klaviyo SMS actions can send.
@@ -31,7 +31,7 @@ export type KlaviyoOrderShippedPayload = {
   listingTitle: string
   trackingNumber: string
   trackingCarrier: string | null
-  /** Branded tracker when ShipEngine issued one; otherwise the carrier tracker. */
+  /** ShipEngine branded tracker when one was created for this shipment. */
   trackingUrl?: string | null
 }
 

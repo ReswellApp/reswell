@@ -1,3 +1,30 @@
+const SHIPENGINE_CARRIER_CODES = [
+  "stamps_com",
+  "usps",
+  "ups",
+  "fedex",
+  "dhl_express",
+  "dhl_ecommerce",
+] as const
+
+function isUspsTrackingNumber(trackingNumber: string): boolean {
+  return /\b(94|93|92|420)[0-9]{18,}\b/.test(trackingNumber.trim().replace(/\s/g, ""))
+}
+
+function knownCarrierCodeFromToken(token: string): string | null {
+  const t = token.trim().toLowerCase()
+  if (!t) return null
+  for (const code of SHIPENGINE_CARRIER_CODES) {
+    if (t === code) return code
+  }
+  if (t.startsWith("stamps")) return "stamps_com"
+  if (t.startsWith("usps")) return "usps"
+  if (t.startsWith("ups")) return "ups"
+  if (t.startsWith("fedex") || t.startsWith("fed_ex")) return "fedex"
+  if (t.startsWith("dhl")) return "dhl_express"
+  return null
+}
+
 /**
  * Maps free-text carrier hints and tracking-number patterns to ShipEngine carrier_code values.
  */
@@ -9,17 +36,18 @@ export function resolveShipEngineCarrierCode(
   const tn = trackingNumber.trim().replace(/\s/g, "")
   const firstSegment = hint.split("·")[0]?.trim() ?? ""
 
-  // Stored labels look like `stamps_com · usps_priority_mail`. The service
-  // segment often contains "usps", so the carrier code has to come first.
+  // Stored labels look like `stamps_com · usps_priority_mail`. Service-only
+  // blobs (`usps_priority_mail`, `ups_ground`) must not be sent as carrier_code.
   if (firstSegment && /^[a-z0-9_]+$/.test(firstSegment)) {
-    return firstSegment
+    const known = knownCarrierCodeFromToken(firstSegment)
+    if (known) return known
   }
 
-  if (hint.includes("usps") || hint.includes("postal") || hint.includes("post office")) {
-    return "usps"
-  }
   if (hint.includes("stamps")) {
     return "stamps_com"
+  }
+  if (hint.includes("usps") || hint.includes("postal") || hint.includes("post office")) {
+    return "usps"
   }
   if (hint.includes("ups")) {
     return "ups"
@@ -34,11 +62,44 @@ export function resolveShipEngineCarrierCode(
   if (/^1Z/i.test(tn)) {
     return "ups"
   }
-  if (/\b(94|93|92|420)[0-9]{18,}\b/.test(tn)) {
+  if (isUspsTrackingNumber(tn)) {
     return "usps"
   }
 
   return null
+}
+
+/**
+ * Ordered carrier codes to try when creating a ShipEngine branded tracking page.
+ * USPS labels bought through ShipEngine are often `stamps_com`.
+ */
+export function shipEngineCarrierCodesToTry(
+  trackingNumber: string,
+  carrierHint: string | null | undefined,
+): string[] {
+  const codes: string[] = []
+  const push = (code: string | null | undefined) => {
+    const c = code?.trim().toLowerCase()
+    if (!c || codes.includes(c)) return
+    codes.push(c)
+  }
+
+  const primary = resolveShipEngineCarrierCode(trackingNumber, carrierHint)
+  push(primary)
+
+  const firstSegment = (carrierHint ?? "").trim().toLowerCase().split("·")[0]?.trim() ?? ""
+  if (firstSegment && /^[a-z0-9_]+$/.test(firstSegment) && !knownCarrierCodeFromToken(firstSegment)) {
+    push(firstSegment)
+  }
+
+  const tn = trackingNumber.trim().replace(/\s/g, "")
+  if (/^1Z/i.test(tn)) push("ups")
+  if (primary === "stamps_com" || primary === "usps" || isUspsTrackingNumber(tn)) {
+    push("stamps_com")
+    push("usps")
+  }
+
+  return codes
 }
 
 /** Human-readable carrier label for UI. */

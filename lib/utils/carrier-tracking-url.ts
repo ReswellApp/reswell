@@ -14,8 +14,8 @@ export function orderPackageTrackPath(orderId: string | null | undefined): strin
 }
 
 /**
- * Branded page when we already have one. Otherwise the live redirect, which
- * creates the page on click. Carrier sites are only used when there is no order id.
+ * Branded ShipEngine page when we already have one. Otherwise the live redirect,
+ * which creates the page on click. Never sends buyers to UPS/USPS/FedEx.
  */
 export function packageTrackHref(params: {
   orderId?: string | null
@@ -27,30 +27,23 @@ export function packageTrackHref(params: {
   if (branded) return branded
   const live = orderPackageTrackPath(params.orderId)
   if (live && params.trackingNumber?.trim()) return live
-  return preferredTrackingUrl({
-    trackingNumber: params.trackingNumber,
-    trackingCarrier: params.trackingCarrier,
-  })
+  return null
 }
 
 /**
- * Prefer the stored ShipEngine branded page. Otherwise the carrier's public tracker.
+ * ShipEngine branded page only. Carrier websites are not used for Track your order.
  */
 export function preferredTrackingUrl(params: {
   brandedUrl?: string | null
   trackingNumber?: string | null
   trackingCarrier?: string | null
 }): string | null {
-  const branded = normalizeBrandedTrackingUrl(params.brandedUrl)
-  if (branded) return branded
-  const trackingNumber = params.trackingNumber?.trim()
-  if (!trackingNumber) return null
-  return carrierTrackingUrl(trackingNumber, params.trackingCarrier)
+  return normalizeBrandedTrackingUrl(params.brandedUrl)
 }
 
 /**
  * Best-effort public tracking URLs from free-text carrier + tracking number.
- * Does not guarantee the carrier matches; sellers should enter carrier names consistently.
+ * Not used for Track your order — that always goes through ShipEngine.
  */
 export function carrierTrackingUrl(
   trackingNumber: string,

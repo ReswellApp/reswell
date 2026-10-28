@@ -1,12 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import {
   brandedTrackingCountrySupported,
-  createBrandedTrackingPage,
-  serviceCodeFromTrackingCarrier,
+  createBrandedTrackingPageForShipment,
   type BrandedTrackingLocality,
 } from "@/lib/shipengine/branded-tracking-page"
 import { normalizeBrandedTrackingUrl } from "@/lib/utils/branded-tracking-url"
-import { preferredTrackingUrl } from "@/lib/utils/carrier-tracking-url"
 import { getReswellWarehouseAddress } from "@/lib/reswell-warehouse-address"
 import { fetchSantaBarbaraDropoffOrderIds } from "@/lib/services/santaBarbaraDropoffOrderAccess"
 import { resolveSellerShipFromAddress } from "@/lib/services/sellerShipFromAddress"
@@ -16,7 +14,6 @@ import {
   profileRowToRateQuoteAddress,
   type RateQuoteAddressFields,
 } from "@/lib/shipping/rate-address"
-import { resolveShipEngineCarrierCode } from "@/lib/shipping/resolve-carrier-code"
 import { getShipEngineBrandedTrackingThemeGuid } from "@/lib/shipengine/config"
 import { createServiceRoleClient } from "@/lib/supabase/service-role"
 
@@ -46,7 +43,7 @@ function localityFromRateAddress(address: RateQuoteAddressFields): BrandedTracki
 /**
  * Creates the ShipEngine branded tracking page for this order's current tracking
  * number and stores the URL. Safe to call on every scan: a matching stored URL
- * is returned without another API call. Failures leave the carrier link in place.
+ * is returned without another API call.
  */
 export async function ensureOrderBrandedTrackingUrl(orderId: string): Promise<string | null> {
   const id = orderId.trim()
@@ -106,12 +103,6 @@ export async function ensureOrderBrandedTrackingUrl(orderId: string): Promise<st
     return null
   }
 
-  const carrierCode = resolveShipEngineCarrierCode(trackingNumber, order.tracking_carrier)
-  if (!carrierCode) {
-    console.error("[branded-tracking] carrier unresolved", { orderId: id })
-    return null
-  }
-
   const shipTo = orderShippingJsonToRateQuoteAddress(order.shipping_address)
   const to = shipTo ? localityFromRateAddress(shipTo) : null
   if (!to) {
@@ -127,16 +118,17 @@ export async function ensureOrderBrandedTrackingUrl(orderId: string): Promise<st
     const sellerFrom = await resolveSellerShipFromAddress(supabase, order.seller_id)
     fromAddress = sellerFrom.ok ? profileRowToRateQuoteAddress(sellerFrom.address) : null
   }
-  const from = fromAddress ? localityFromRateAddress(fromAddress) : null
+  const from =
+    (fromAddress ? localityFromRateAddress(fromAddress) : null) ??
+    localityFromRateAddress(getReswellWarehouseAddress())
   if (!from) {
     console.error("[branded-tracking] ship-from incomplete", { orderId: id })
     return null
   }
 
-  const url = await createBrandedTrackingPage({
+  const url = await createBrandedTrackingPageForShipment({
     trackingNumber,
-    carrierCode,
-    serviceCode: serviceCodeFromTrackingCarrier(order.tracking_carrier),
+    trackingCarrier: order.tracking_carrier,
     shipTo: to,
     shipFrom: from,
   })
@@ -163,33 +155,9 @@ export async function ensureOrderBrandedTrackingUrl(orderId: string): Promise<st
 }
 
 /**
- * Branded portal when ShipEngine can build one, otherwise the carrier tracker.
- * Used by the track redirect so older messages are not stuck on a saved carrier URL.
+ * ShipEngine branded portal for this order. Used by the track redirect so older
+ * messages are not stuck on a saved carrier URL. Never returns UPS/USPS/FedEx.
  */
 export async function resolveOrderPackageTrackingUrl(orderId: string): Promise<string | null> {
-  const brandedUrl = await ensureOrderBrandedTrackingUrl(orderId)
-  if (brandedUrl) return brandedUrl
-
-  const id = orderId.trim()
-  if (!id) return null
-
-  try {
-    const supabase = createServiceRoleClient()
-    const { data, error } = await supabase
-      .from("orders")
-      .select("tracking_number, tracking_carrier")
-      .eq("id", id)
-      .maybeSingle()
-    if (error || !data) return null
-    const row = data as { tracking_number?: string | null; tracking_carrier?: string | null }
-    return preferredTrackingUrl({
-      trackingNumber: row.tracking_number,
-      trackingCarrier: row.tracking_carrier,
-    })
-  } catch (error) {
-    console.error("[branded-tracking] carrier fallback unavailable", {
-      message: error instanceof Error ? error.message : "missing service role",
-    })
-    return null
-  }
+  return ensureOrderBrandedTrackingUrl(orderId)
 }
