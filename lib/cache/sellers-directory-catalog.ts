@@ -5,6 +5,11 @@ import type {
 } from "@/components/sellers/seller-directory-card"
 import { listSellersDirectoryDemotedProfileIdsOrdered } from "@/lib/db/sellers-directory-demotions"
 import {
+  deriveSellerDirectoryDisplayBanners,
+  type SellerDirectoryDisplayBanner,
+  type SellerListingForDisplayBanners,
+} from "@/lib/sellers/directory-display-banners"
+import {
   buildSellerDirectoryMosaicSlots,
   SELLER_DIRECTORY_MOSAIC_COVER_POOL,
   type SellerDirectoryMosaicSlot,
@@ -37,7 +42,8 @@ const profilePublicFields =
   "id, seller_slug, display_name, avatar_url, avatar_focal_x_pct, avatar_focal_y_pct, location, city, bio, created_at, updated_at, is_shop, shop_name, shop_description, shop_banner_url, shop_banner_focal_x_pct, shop_banner_focal_y_pct, shop_tile_banner_url, shop_tile_banner_focal_x_pct, shop_tile_banner_focal_y_pct, shop_logo_url, shop_verified, shop_website, shop_phone, shop_address, sales_count"
 
 type ListingDirectoryRow = SellerDirectoryListingThumb &
-  SellerListingForTileMeta & {
+  SellerListingForTileMeta &
+  SellerListingForDisplayBanners & {
     user_id: string
   }
 
@@ -50,6 +56,7 @@ export type SellersDirectoryCachedTile = {
   inventoryCount: number
   avatarSrc: string
   mosaicSlots: SellerDirectoryMosaicSlot[]
+  displayBanners: SellerDirectoryDisplayBanner[]
 }
 
 export type SellersDirectoryCatalog = {
@@ -93,13 +100,14 @@ async function loadSellersDirectoryCatalogUncached(): Promise<SellersDirectoryCa
 
   const thumbsBySeller = new Map<string, SellerDirectoryListingThumb[]>()
   const listingsForMetaBySeller = new Map<string, SellerListingForTileMeta[]>()
+  const listingsForBannersBySeller = new Map<string, SellerListingForDisplayBanners[]>()
   const orderedSellerIds = orderedShops.map((shop) => shop.id)
 
   const [{ data: invRows, error: invError }, { data: reviewRows }] = await Promise.all([
     supabase
       .from("listings")
       .select(
-        "id, user_id, title, price, slug, section, created_at, city, state, shipping_available, primary_image_url, primary_thumbnail_url",
+        "id, user_id, title, price, slug, section, created_at, city, state, shipping_available, primary_image_url, primary_thumbnail_url, buyer_offers_enabled, minimum_offer_amount, minimum_offer_pct",
       )
       .in("user_id", orderedSellerIds)
       .eq("status", "active")
@@ -126,6 +134,16 @@ async function loadSellersDirectoryCatalogUncached(): Promise<SellersDirectoryCa
     const metaList = listingsForMetaBySeller.get(row.user_id) ?? []
     metaList.push(metaRow)
     listingsForMetaBySeller.set(row.user_id, metaList)
+
+    const bannerRow: SellerListingForDisplayBanners = {
+      buyer_offers_enabled: row.buyer_offers_enabled ?? null,
+      price: row.price,
+      minimum_offer_amount: row.minimum_offer_amount ?? null,
+      minimum_offer_pct: row.minimum_offer_pct ?? null,
+    }
+    const bannerList = listingsForBannersBySeller.get(row.user_id) ?? []
+    bannerList.push(bannerRow)
+    listingsForBannersBySeller.set(row.user_id, bannerList)
 
     const cur = thumbsBySeller.get(row.user_id) ?? []
     if (cur.length < THUMB_PER_SELLER) {
@@ -189,18 +207,24 @@ async function loadSellersDirectoryCatalogUncached(): Promise<SellersDirectoryCa
   const items = orderedShops.map((shop) => {
     const shopRow = shop as SellerDirectoryCardShop
     const thumbs = thumbsBySeller.get(shop.id) ?? []
+    const listingsForMeta = listingsForMetaBySeller.get(shop.id) ?? []
+    const tileMeta = deriveSellerDirectoryTileMeta(listingsForMeta)
     const { avgRating, reviewCount } = summarizeSellerReviews(reviewsBySeller.get(shop.id))
     const inventoryCount = inventoryCountBySeller.get(shop.id) ?? 0
 
     return {
       shop: shopRow,
       thumbs,
-      tileMeta: deriveSellerDirectoryTileMeta(listingsForMetaBySeller.get(shop.id) ?? []),
+      tileMeta,
       avgRating,
       reviewCount,
       inventoryCount,
       avatarSrc: resolveSellerProfileDisplayImageUrl(shopRow, thumbs),
       mosaicSlots: buildSellerDirectoryMosaicSlots(thumbs, shopRow),
+      displayBanners: deriveSellerDirectoryDisplayBanners(
+        listingsForBannersBySeller.get(shop.id) ?? [],
+        { offersShipping: tileMeta.offersShipping },
+      ),
     }
   })
 
@@ -210,7 +234,7 @@ async function loadSellersDirectoryCatalogUncached(): Promise<SellersDirectoryCa
 
 export const getCachedSellersDirectoryCatalog = unstable_cache(
   loadSellersDirectoryCatalogUncached,
-  ["sellers-directory-catalog-v9"],
+  ["sellers-directory-catalog-v10"],
   {
     revalidate: SELLERS_DIRECTORY_REVALIDATE_SECONDS,
     tags: [SELLERS_DIRECTORY_CACHE_TAG],

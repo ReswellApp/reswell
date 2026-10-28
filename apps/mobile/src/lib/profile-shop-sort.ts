@@ -37,15 +37,16 @@ export function sortProfileShopListings(
   sort: ProfileShopSort,
   sectionFilter: string | null,
 ): MobileListingCard[] {
+  // Keep paginated newest order. Section-grouping the growing window jumps the list.
+  if (sort === "newest") return listings
   const result = [...listings]
   result.sort((a, b) => {
-    if (!sectionFilter) {
+    if (!sectionFilter && sort === "relevant") {
       const sectionRank = sectionSortRank(a.section) - sectionSortRank(b.section)
       if (sectionRank !== 0) return sectionRank
     }
     if (sort === "price_asc") return listingPrice(a) - listingPrice(b)
     if (sort === "price_desc") return listingPrice(b) - listingPrice(a)
-    if (sort === "newest") return 0
     return 0
   })
   return result

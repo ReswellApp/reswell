@@ -1,5 +1,5 @@
 import { readMobileSession } from "@/lib/auth/mobile-session"
-import { listMobileSalesService } from "@/lib/services/mobileAccountApi"
+import { listMobileSalesService } from "@/lib/services/mobileSales"
 import { mobileDataResponse, mobileFailure } from "@/lib/utils/mobile-api-response"
 
 export const dynamic = "force-dynamic"

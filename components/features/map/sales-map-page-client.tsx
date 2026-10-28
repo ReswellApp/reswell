@@ -8,7 +8,7 @@ import { SalesMapTopSellers } from "@/components/features/map/sales-map-top-sell
 import { SellerResourcesCta } from "@/components/features/seller-resources/seller-resources-cta"
 import { Button } from "@/components/ui/button"
 import { HOW_TO_SELL_HREF, HOW_TO_SHIP_HREF } from "@/lib/seller-resources"
-import type { MarketplaceSalesMapPayload } from "@/lib/types/marketplace-sales-map"
+import type { MobileMarketplaceSalesMap } from "@reswell/api-contract"
 import { BRAND_CTA_BLUE, BRAND_DARK_BLUE, BRAND_DEEP_BLUE } from "@/lib/brand-colors"
 import { formatGmv } from "@/lib/format-gmv"
 import { cn } from "@/lib/utils"
@@ -66,7 +66,7 @@ function hexToRgba(hex: string, alpha: number): string {
 }
 
 type UsaSalesFlowMapProps = {
-  data: MarketplaceSalesMapPayload
+  data: MobileMarketplaceSalesMap
   className?: string
   /** Compact height for directory embeds; default matches `/map`. */
   size?: "default" | "compact"
@@ -378,7 +378,7 @@ export function UsaSalesFlowMap({
 }
 
 type SalesMapPageClientProps = {
-  data: MarketplaceSalesMapPayload
+  data: MobileMarketplaceSalesMap
 }
 
 export function SalesMapPageClient({ data }: SalesMapPageClientProps) {
@@ -386,7 +386,7 @@ export function SalesMapPageClient({ data }: SalesMapPageClientProps) {
     <main className="flex-1 bg-white">
       <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:py-12">
         <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_21rem] xl:grid-cols-[minmax(0,1fr)_22.5rem] xl:gap-10">
-          <div>
+          <div className="min-w-0">
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#5574AD]">
               Seller Resources
             </p>
@@ -451,8 +451,8 @@ export function SalesMapPageClient({ data }: SalesMapPageClientProps) {
             </p>
           </div>
 
-          <div className="lg:sticky lg:top-24">
-            <SalesMapTopSellers sellers={data.topSellers} />
+          <div className="min-w-0 lg:sticky lg:top-24">
+            <SalesMapTopSellers sellers={data.topSellers} className="mt-2 lg:mt-0" />
           </div>
         </div>
       </section>

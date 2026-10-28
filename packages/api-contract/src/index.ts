@@ -543,6 +543,10 @@ const mobileSellerResourceCardSchema = z.object({
   screen: z.enum(MOBILE_SELLER_RESOURCE_SLUGS).nullable(),
   listing_id: z.string().nullable(),
   image_url: z.string().nullable(),
+  /** Website path the app can open — seller profile (`/sellers/…`), help, etc. */
+  href: z.string().nullable(),
+  /** Optional chip — e.g. "Soon" on coming-soon hub cards. */
+  badge: z.string().nullable(),
 })
 
 export const mobileSellerResourceSectionSchema = z.discriminatedUnion("kind", [
@@ -573,10 +577,104 @@ export const mobileSellerResourceSchema = z.object({
   slug: z.enum(MOBILE_SELLER_RESOURCE_SLUGS),
   title: z.string(),
   description: z.string(),
+  /** Primary CTA under the hero. App maps known hrefs to native routes. */
+  cta_label: z.string().nullable(),
+  cta_href: z.string().nullable(),
   sections: z.array(mobileSellerResourceSectionSchema),
 })
 
 export type MobileSellerResource = z.infer<typeof mobileSellerResourceSchema>
+
+/** Public marketplace sales geography — `/map` and mobile Sales Map. */
+export const mobileMarketplaceSalesMapFlowSchema = z.object({
+  sellerState: z.string(),
+  buyerState: z.string(),
+  count: z.number(),
+  volumeUsd: z.number(),
+})
+
+export const mobileMarketplaceSalesMapStateStatSchema = z.object({
+  state: z.string(),
+  stateName: z.string(),
+  asSeller: z.number(),
+  asBuyer: z.number(),
+  volumeUsd: z.number(),
+})
+
+export const mobileMarketplaceSalesMapSaleSchema = z.object({
+  id: z.string(),
+  sellerState: z.string(),
+  buyerState: z.string(),
+  amountUsd: z.number(),
+  soldAt: z.string(),
+  listingTitle: z.string().nullable(),
+  section: z.string().nullable(),
+  fulfillmentMethod: z.string().nullable(),
+})
+
+export const mobileMarketplaceSalesMapTotalsSchema = z.object({
+  confirmedSales: z.number(),
+  mappableSales: z.number(),
+  statesSelling: z.number(),
+  statesBuying: z.number(),
+  crossStateSales: z.number(),
+  volumeUsd: z.number(),
+})
+
+export const mobileMarketplaceSalesMapTopSellerSchema = z.object({
+  id: z.string(),
+  href: z.string(),
+  name: z.string(),
+  imageSrc: z.string(),
+  salesCount: z.number(),
+  shopVerified: z.boolean(),
+})
+
+export const mobileMarketplaceSalesMapStatePathSchema = z.object({
+  code: z.string(),
+  name: z.string(),
+  d: z.string(),
+})
+
+export const mobileMarketplaceSalesMapFlowPathSchema = z.object({
+  sellerState: z.string(),
+  buyerState: z.string(),
+  count: z.number(),
+  volumeUsd: z.number(),
+  d: z.string(),
+  width: z.number(),
+  opacity: z.number(),
+})
+
+export const mobileMarketplaceSalesMapStateDotSchema = z.object({
+  code: z.string(),
+  cx: z.number(),
+  cy: z.number(),
+  radius: z.number(),
+  fill: z.string(),
+})
+
+export const mobileMarketplaceSalesMapGeometrySchema = z.object({
+  width: z.number(),
+  height: z.number(),
+  statePaths: z.array(mobileMarketplaceSalesMapStatePathSchema),
+  flowPaths: z.array(mobileMarketplaceSalesMapFlowPathSchema),
+  stateDots: z.array(mobileMarketplaceSalesMapStateDotSchema),
+})
+
+export const mobileMarketplaceSalesMapSchema = z.object({
+  flows: z.array(mobileMarketplaceSalesMapFlowSchema),
+  stateStats: z.array(mobileMarketplaceSalesMapStateStatSchema),
+  recentSales: z.array(mobileMarketplaceSalesMapSaleSchema),
+  topSellers: z.array(mobileMarketplaceSalesMapTopSellerSchema),
+  totals: mobileMarketplaceSalesMapTotalsSchema,
+  userCountsByState: z.record(z.string(), z.number()),
+  geometry: mobileMarketplaceSalesMapGeometrySchema,
+  generatedAt: z.string(),
+  truncated: z.boolean(),
+})
+
+export type MobileMarketplaceSalesMap = z.infer<typeof mobileMarketplaceSalesMapSchema>
 
 /**
  * Homepage slider. Categories match the website rail. Menus match a website dropdown,
@@ -1030,15 +1128,41 @@ export const mobileProfileSchema = z.object({
   following_count: z.number().int().nonnegative().optional(),
 })
 
+/** Green pills on the directory mosaic — server-rendered labels only. */
+export const mobileSellerDisplayBannerSchema = z.object({
+  kind: z.enum(["promo", "offer"]),
+  label: z.string().min(1).max(80),
+})
+
 /** `/sellers` directory. Order, copy, and lines come from the same catalog as the website. */
 export const mobileSellerCardSchema = z.object({
   id: z.string().uuid(),
   slug: z.string().min(1),
   name: z.string(),
   verified: z.boolean(),
+  /** Shop account — same flag the website tile uses under the name. */
+  is_shop: z.boolean(),
   avatar_url: z.string().nullable(),
   image_urls: z.array(z.string()).max(3),
+  /** Pills overlaid on the storefront mosaic (promos, offers, shipping). */
+  display_banners: z.array(mobileSellerDisplayBannerSchema).max(2),
+  rating_average: z.number().min(0).max(5),
+  review_count: z.number().int().nonnegative(),
+  /** Short location under the name on the mosaic (state / city). */
+  location: z.string().nullable(),
+  specialty_line: z.string().nullable(),
+  inventory_line: z.string().nullable(),
+  shipping_line: z.string().nullable(),
+  offers_shipping: z.boolean(),
+  /** Flattened meta for older clients — prefer the structured fields above. */
   lines: z.array(z.string()).max(6),
+  /**
+   * Same rule as the website directory tile: show Follow for everyone except the
+   * signed-in seller looking at their own card.
+   */
+  show_follow: z.boolean(),
+  /** Present when the request includes a signed-in session (not the seller's own tile). */
+  following: z.boolean().optional(),
 })
 
 export const mobileSellersQuerySchema = z.object({
@@ -1166,6 +1290,7 @@ export function savedSearchCardCopy(input: { saved: boolean; compact: boolean; n
     button: input.saved ? "Saved" : "Save Search",
   }
 }
+export type MobileSellerDisplayBanner = z.infer<typeof mobileSellerDisplayBannerSchema>
 export type MobileSellerCard = z.infer<typeof mobileSellerCardSchema>
 export type MobileSellersPage = z.infer<typeof mobileSellersPageSchema>
 export type MobileSellerPage = z.infer<typeof mobileSellerPageSchema>
@@ -1680,16 +1805,135 @@ export const mobileOrdersSchema = z.object({
   orders: z.array(mobileOrderSchema),
 })
 
+/** Same tones the website purchase list and detail use. */
+export const mobilePurchaseStatusToneSchema = z.enum(["success", "warning", "danger", "neutral"])
+
+/**
+ * Buyer purchase row. Keeps every `mobileOrderSchema` field and adds the website
+ * purchases-list columns (split price, status tone, condition line).
+ */
+export const mobilePurchaseListItemSchema = mobileOrderSchema.extend({
+  seller_name: z.string(),
+  detail_line: z.string(),
+  item_amount_usd: z.number(),
+  item_amount_label: z.string(),
+  shipping_amount_usd: z.number(),
+  shipping_amount_label: z.string(),
+  show_shipping: z.boolean(),
+  amount_struck: z.boolean(),
+  refund_note: z.string().nullable(),
+  status_tone: mobilePurchaseStatusToneSchema,
+})
+
+export const mobilePurchasesSchema = z.object({
+  orders: z.array(mobilePurchaseListItemSchema),
+})
+
+export const mobilePurchaseDetailItemSchema = z.object({
+  id: z.string().uuid(),
+  title: z.string(),
+  seller_name: z.string(),
+  detail_line: z.string(),
+  image_url: z.string().nullable(),
+  listing_id: z.string().uuid().nullable(),
+  listing_slug: z.string().nullable(),
+  price_usd: z.number().nullable(),
+  price_label: z.string().nullable(),
+})
+
+export const mobilePurchaseTimelineEventSchema = z.object({
+  id: z.string().min(1),
+  title: z.string(),
+  occurred_at: z.string().nullable(),
+  state: z.enum(["done", "current", "upcoming"]),
+})
+
+export const mobilePurchaseReviewSchema = z.object({
+  id: z.string().uuid(),
+  rating: z.number().int().min(1).max(5),
+  comment: z.string().nullable(),
+})
+
+/** One buyer order. Same sections as `/dashboard/purchases/[id]`. */
+export const mobilePurchaseDetailSchema = z.object({
+  id: z.string().uuid(),
+  order_number: z.string(),
+  items: z.array(mobilePurchaseDetailItemSchema).min(1),
+  item_amount_usd: z.number(),
+  item_amount_label: z.string(),
+  shipping_amount_usd: z.number(),
+  shipping_amount_label: z.string(),
+  show_shipping: z.boolean(),
+  total_amount_usd: z.number(),
+  total_amount_label: z.string(),
+  amount_struck: z.boolean(),
+  refund_note: z.string().nullable(),
+  status_label: z.string(),
+  status_tone: mobilePurchaseStatusToneSchema,
+  status_date: z.string().nullable(),
+  shipping_deadline: z.string().nullable(),
+  shipping_days_left: z.number().int().nullable(),
+  shipping_window_days: z.number().int().positive(),
+  timeline_heading: z.string(),
+  timeline: z.array(mobilePurchaseTimelineEventSchema),
+  address_name: z.string().nullable(),
+  address_lines: z.array(z.string()),
+  track_url: z.string().nullable(),
+  seller_id: z.string().uuid(),
+  seller_name: z.string(),
+  seller_handle: z.string().nullable(),
+  seller_avatar_url: z.string().nullable(),
+  listing_id: z.string().uuid().nullable(),
+  listing_slug: z.string().nullable(),
+  conversation_id: z.string().uuid().nullable(),
+  can_review: z.boolean(),
+  hide_review_prompt: z.boolean(),
+  existing_review: mobilePurchaseReviewSchema.nullable(),
+  review_from_seller: mobilePurchaseReviewSchema.nullable(),
+})
+
 export const mobileSaleSchema = mobileOrderSchema.extend({
   seller_earnings_usd: z.number(),
   seller_earnings_label: z.string(),
 })
 
-export const mobileSalesSchema = z.object({
-  sales: z.array(mobileSaleSchema),
+export const mobileSalePendingKindSchema = z.enum(["shipment", "pickup"])
+
+/**
+ * Seller sale row. Keeps every `mobileSaleSchema` field and adds the website
+ * sales-list columns (buyer, earnings suffix, fulfillment filters).
+ */
+export const mobileSaleListItemSchema = mobileSaleSchema.extend({
+  buyer_name: z.string(),
+  detail_line: z.string(),
+  primary_suffix: z.string().nullable(),
+  shipping_amount_usd: z.number(),
+  shipping_amount_label: z.string(),
+  show_shipping: z.boolean(),
+  amount_struck: z.boolean(),
+  refund_note: z.string().nullable(),
+  status_tone: mobilePurchaseStatusToneSchema,
+  needs_fulfillment: z.boolean(),
+  pending_kind: mobileSalePendingKindSchema.nullable(),
 })
 
-/** One seller order. The sales list stays a summary; this is the order itself. */
+export const mobileSalesSchema = z.object({
+  sales: z.array(mobileSaleListItemSchema),
+})
+
+export const mobileSaleDetailItemSchema = z.object({
+  id: z.string().uuid(),
+  title: z.string(),
+  buyer_name: z.string(),
+  detail_line: z.string(),
+  image_url: z.string().nullable(),
+  listing_id: z.string().uuid().nullable(),
+  listing_slug: z.string().nullable(),
+  price_usd: z.number().nullable(),
+  price_label: z.string().nullable(),
+})
+
+/** One seller order. Same sections as `/dashboard/sales/[id]`. */
 export const mobileSaleDetailSchema = mobileSaleSchema.extend({
   created_label: z.string(),
   buyer_paid_label: z.string(),
@@ -1701,6 +1945,40 @@ export const mobileSaleDetailSchema = mobileSaleSchema.extend({
   conversation_id: z.string().uuid().nullable(),
   listing_slug: z.string().nullable(),
   label_available: z.boolean(),
+  items: z.array(mobileSaleDetailItemSchema).min(1),
+  item_amount_usd: z.number(),
+  item_amount_label: z.string(),
+  shipping_amount_usd: z.number(),
+  show_shipping: z.boolean(),
+  platform_fee_usd: z.number(),
+  platform_fee_label: z.string(),
+  show_platform_fee: z.boolean(),
+  payment_label: z.string(),
+  amount_struck: z.boolean(),
+  refund_note: z.string().nullable(),
+  promo_note: z.string().nullable(),
+  shipping_note: z.string().nullable(),
+  status_tone: mobilePurchaseStatusToneSchema,
+  status_date: z.string().nullable(),
+  address_name: z.string().nullable(),
+  address_lines: z.array(z.string()),
+  track_url: z.string().nullable(),
+  buyer_id: z.string().uuid().nullable(),
+  buyer_name: z.string(),
+  is_pickup: z.boolean(),
+  can_verify_pickup: z.boolean(),
+  fulfillment_locked: z.boolean(),
+  delivery_badge_label: z.string().nullable(),
+  payout_badge_label: z.string().nullable(),
+  can_request_support: z.boolean(),
+})
+
+export const mobileSaleVerifyPickupBodySchema = z.object({
+  code: z.string().trim().min(1).max(12),
+})
+
+export const mobileSaleVerifyPickupSchema = z.object({
+  ok: z.literal(true),
 })
 
 export const mobileSaleLabelSchema = z.object({
@@ -1708,6 +1986,10 @@ export const mobileSaleLabelSchema = z.object({
 })
 
 export type MobileSaleDetail = z.infer<typeof mobileSaleDetailSchema>
+export type MobileSaleDetailItem = z.infer<typeof mobileSaleDetailItemSchema>
+export type MobileSaleListItem = z.infer<typeof mobileSaleListItemSchema>
+export type MobileSales = z.infer<typeof mobileSalesSchema>
+export type MobileSaleVerifyPickup = z.infer<typeof mobileSaleVerifyPickupSchema>
 
 export const mobileMyListingSchema = z.object({
   id: z.string().uuid(),
@@ -1952,6 +2234,13 @@ export type MobileCheckoutPayment = z.infer<typeof mobileCheckoutPaymentSchema>
 export type MobileCheckoutFinalize = z.infer<typeof mobileCheckoutFinalizeSchema>
 export type MobileOffer = z.infer<typeof mobileOfferSchema>
 export type MobileOrder = z.infer<typeof mobileOrderSchema>
+export type MobilePurchaseListItem = z.infer<typeof mobilePurchaseListItemSchema>
+export type MobilePurchases = z.infer<typeof mobilePurchasesSchema>
+export type MobilePurchaseDetail = z.infer<typeof mobilePurchaseDetailSchema>
+export type MobilePurchaseDetailItem = z.infer<typeof mobilePurchaseDetailItemSchema>
+export type MobilePurchaseTimelineEvent = z.infer<typeof mobilePurchaseTimelineEventSchema>
+export type MobilePurchaseReview = z.infer<typeof mobilePurchaseReviewSchema>
+export type MobilePurchaseStatusTone = z.infer<typeof mobilePurchaseStatusToneSchema>
 export type MobileSale = z.infer<typeof mobileSaleSchema>
 export type MobileConversationPreview = z.infer<typeof mobileConversationPreviewSchema>
 export type MobileMessage = z.infer<typeof mobileMessageSchema>

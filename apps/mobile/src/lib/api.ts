@@ -25,6 +25,7 @@ import {
   mobileBrandPageSchema,
   mobileBrandsPageSchema,
   mobileBrowseRailSchema,
+  mobileMarketplaceSalesMapSchema,
   mobileSellerResourceSchema,
   mobileCategorySchema,
   mobileHomeSchema,
@@ -42,7 +43,8 @@ import {
   mobileMessageResultSchema,
   mobileOfferActionResultSchema,
   mobileOffersSchema,
-  mobileOrdersSchema,
+  mobilePurchaseDetailSchema,
+  mobilePurchasesSchema,
   mobileProfileAvatarResultSchema,
   mobileProfileBannerResultSchema,
   mobileProfileSchema,
@@ -59,6 +61,7 @@ import {
   mobileBalanceSheetSchema,
   mobileSaleDetailSchema,
   mobileSaleLabelSchema,
+  mobileSaleVerifyPickupSchema,
   mobileSalesSchema,
   mobileShipperActionResultSchema,
   mobileShipperSchema,
@@ -84,6 +87,7 @@ import {
   type MobileBrowseRail,
   type MobileSellerPage,
   type MobileSellersPage,
+  type MobileMarketplaceSalesMap,
   type MobileSellerResource,
   type MobileCategory,
   type MobileCategoryListingsQuery,
@@ -119,7 +123,8 @@ import {
   type MobileOffer,
   type MobileOfferActionBody,
   type MobileOfferActionResult,
-  type MobileOrder,
+  type MobilePurchaseDetail,
+  type MobilePurchases,
   type MobileProfile,
   type MobileProfileShopFilters,
   type MobileProfileAvatarResult,
@@ -135,8 +140,9 @@ import {
   type MobileSearch,
   type MobileSearchResults,
   type MobileBalanceSheet,
-  type MobileSale,
   type MobileSaleDetail,
+  type MobileSales,
+  type MobileSaleVerifyPickup,
   type MobileShipper,
   type MobileShipperActionBody,
   type MobileShipperActionResult,
@@ -191,6 +197,41 @@ function apiOrigin(): string {
     if (host) url.hostname = host
   }
   return url.origin
+}
+
+/** Expo fetch multipart only accepts Blob parts — not RN `{ uri }` objects. */
+async function blobFromDeviceUri(uri: string, mimeType: string): Promise<Blob> {
+  const response = await fetch(uri)
+  if (!response.ok) throw new Error("Could not read that photo.")
+  const blob = await response.blob()
+  if (blob.type || !mimeType) return blob
+  return new Blob([await blob.arrayBuffer()], { type: mimeType })
+}
+
+async function postMultipartFileField(
+  accessToken: string,
+  path: string,
+  uri: string,
+  fileName: string,
+  mimeType = "image/jpeg",
+): Promise<unknown> {
+  const form = new FormData()
+  form.append("file", await blobFromDeviceUri(uri, mimeType), fileName)
+  const response = await fetch(`${apiOrigin()}${path}`, {
+    method: "POST",
+    headers: { Accept: "application/json", Authorization: `Bearer ${accessToken}` },
+    body: form,
+  })
+  const body: unknown = await response.json()
+  if (!response.ok) {
+    const message =
+      body && typeof body === "object" && "error" in body && typeof body.error === "string"
+        ? body.error
+        : "Upload failed"
+    throw new Error(message)
+  }
+  if (!body || typeof body !== "object" || !("data" in body)) throw new Error("Unexpected response")
+  return body.data
 }
 
 async function putJson(path: string, accessToken: string, payload: unknown): Promise<unknown> {
@@ -253,13 +294,13 @@ export function fetchBrowseRail(): Promise<MobileBrowseRail> {
   return read("/api/mobile/v1/browse-rail", (data) => mobileBrowseRailSchema.parse(data))
 }
 
-/** `/sellers`. Copy, order, and lines follow the website directory. */
-export function fetchSellers(query?: string): Promise<MobileSellersPage> {
+/** `/sellers`. Copy, order, mosaic, banners, and ratings follow the website directory. */
+export function fetchSellers(query?: string, accessToken?: string | null): Promise<MobileSellersPage> {
   const params = new URLSearchParams()
   const q = query?.trim()
   if (q) params.set("q", q)
   const path = params.size > 0 ? `/api/mobile/v1/sellers?${params.toString()}` : "/api/mobile/v1/sellers"
-  return read(path, (data) => mobileSellersPageSchema.parse(data))
+  return read(path, (data) => mobileSellersPageSchema.parse(data), accessToken)
 }
 
 export function fetchBrands(): Promise<MobileBrandsPage> {
@@ -282,11 +323,21 @@ export function fetchSeller(slug: string, accessToken?: string | null): Promise<
   return read(`/api/mobile/v1/sellers/${encodeURIComponent(slug)}`, (data) => mobileSellerPageSchema.parse(data), accessToken)
 }
 
-/** Seller resource page. Copy comes from the same source as the website. */
-export function fetchSellerResource(slug: string): Promise<MobileSellerResource> {
-  return read(`/api/mobile/v1/seller-resources/${encodeURIComponent(slug)}`, (data) =>
-    mobileSellerResourceSchema.parse(data),
+/** Seller resource page. Copy + signed-in CTA come from the same source as the website. */
+export function fetchSellerResource(
+  slug: string,
+  accessToken?: string | null,
+): Promise<MobileSellerResource> {
+  return read(
+    `/api/mobile/v1/seller-resources/${encodeURIComponent(slug)}`,
+    (data) => mobileSellerResourceSchema.parse(data),
+    accessToken,
   )
+}
+
+/** Full sales geography for `/map` — same payload as the website map. */
+export function fetchMarketplaceSalesMap(): Promise<MobileMarketplaceSalesMap> {
+  return read("/api/mobile/v1/marketplace/sales-map", (data) => mobileMarketplaceSalesMapSchema.parse(data))
 }
 
 export function fetchMarketplaceFeed(
@@ -649,37 +700,12 @@ export function sendProfilePasswordReset(accessToken: string): Promise<MobilePro
 }
 
 export async function uploadProfileAvatar(accessToken: string, uri: string): Promise<MobileProfileAvatarResult> {
-  const form = new FormData()
-  form.append("file", { uri, name: "avatar.jpg", type: "image/jpeg" } as unknown as Blob)
-  const response = await fetch(`${apiOrigin()}/api/mobile/v1/me/profile/avatar`, {
-    method: "POST",
-    headers: { Accept: "application/json", Authorization: `Bearer ${accessToken}` },
-    body: form,
-  })
-  const body: unknown = await response.json()
-  if (!response.ok) {
-    const message = body && typeof body === "object" && "error" in body && typeof body.error === "string" ? body.error : "Upload failed"
-    throw new Error(message)
-  }
-  if (!body || typeof body !== "object" || !("data" in body)) throw new Error("Unexpected response")
-  return mobileProfileAvatarResultSchema.parse(body.data)
+  const data = await postMultipartFileField(accessToken, "/api/mobile/v1/me/profile/avatar", uri, "avatar.jpg")
+  return mobileProfileAvatarResultSchema.parse(data)
 }
 
 async function postProfilePhoto(accessToken: string, path: string, uri: string, name: string): Promise<unknown> {
-  const form = new FormData()
-  form.append("file", { uri, name, type: "image/jpeg" } as unknown as Blob)
-  const response = await fetch(`${apiOrigin()}${path}`, {
-    method: "POST",
-    headers: { Accept: "application/json", Authorization: `Bearer ${accessToken}` },
-    body: form,
-  })
-  const body: unknown = await response.json()
-  if (!response.ok) {
-    const message = body && typeof body === "object" && "error" in body && typeof body.error === "string" ? body.error : "Upload failed"
-    throw new Error(message)
-  }
-  if (!body || typeof body !== "object" || !("data" in body)) throw new Error("Unexpected response")
-  return body.data
+  return postMultipartFileField(accessToken, path, uri, name)
 }
 
 async function deleteProfilePhoto(accessToken: string, path: string): Promise<unknown> {
@@ -840,11 +866,19 @@ export function fetchOffers(accessToken: string): Promise<{ offers: MobileOffer[
   return read("/api/mobile/v1/me/offers", (data) => mobileOffersSchema.parse(data), accessToken)
 }
 
-export function fetchPurchases(accessToken: string): Promise<{ orders: MobileOrder[] }> {
-  return read("/api/mobile/v1/me/purchases", (data) => mobileOrdersSchema.parse(data), accessToken)
+export function fetchPurchases(accessToken: string): Promise<MobilePurchases> {
+  return read("/api/mobile/v1/me/purchases", (data) => mobilePurchasesSchema.parse(data), accessToken)
 }
 
-export function fetchSales(accessToken: string): Promise<{ sales: MobileSale[] }> {
+export function fetchPurchase(accessToken: string, orderId: string): Promise<MobilePurchaseDetail> {
+  return read(
+    `/api/mobile/v1/me/purchases/${encodeURIComponent(orderId)}`,
+    (data) => mobilePurchaseDetailSchema.parse(data),
+    accessToken,
+  )
+}
+
+export function fetchSales(accessToken: string): Promise<MobileSales> {
   return read("/api/mobile/v1/me/sales", (data) => mobileSalesSchema.parse(data), accessToken)
 }
 
@@ -857,6 +891,19 @@ export function fetchSaleLabel(accessToken: string, orderId: string): Promise<{ 
     `/api/mobile/v1/me/sales/${encodeURIComponent(orderId)}/label`,
     (data) => mobileSaleLabelSchema.parse(data),
     accessToken,
+  )
+}
+
+export function verifySalePickup(
+  accessToken: string,
+  orderId: string,
+  code: string,
+): Promise<MobileSaleVerifyPickup> {
+  return read(
+    `/api/mobile/v1/me/sales/${encodeURIComponent(orderId)}/verify-pickup`,
+    (data) => mobileSaleVerifyPickupSchema.parse(data),
+    accessToken,
+    { code },
   )
 }
 
@@ -1047,20 +1094,8 @@ function sellListingBody(draft: SellDraft, images: MobileSellPhoto[], includeDra
 }
 
 export async function uploadSellPhoto(accessToken: string, uri: string): Promise<MobileSellPhoto> {
-  const form = new FormData()
-  form.append("file", { uri, name: "photo.jpg", type: "image/jpeg" } as unknown as Blob)
-  const response = await fetch(`${apiOrigin()}/api/mobile/v1/sell/photos`, {
-    method: "POST",
-    headers: { Accept: "application/json", Authorization: `Bearer ${accessToken}` },
-    body: form,
-  })
-  const body: unknown = await response.json()
-  if (!response.ok) {
-    const message = body && typeof body === "object" && "error" in body && typeof body.error === "string" ? body.error : "Couldn't upload that photo"
-    throw new Error(message)
-  }
-  if (!body || typeof body !== "object" || !("data" in body)) throw new Error("Couldn't upload that photo")
-  return mobileSellPhotoSchema.parse(body.data)
+  const data = await postMultipartFileField(accessToken, "/api/mobile/v1/sell/photos", uri, "photo.jpg")
+  return mobileSellPhotoSchema.parse(data)
 }
 
 async function sellPhotoStorageUrlReachable(url: string): Promise<boolean> {

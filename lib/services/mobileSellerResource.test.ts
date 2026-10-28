@@ -9,11 +9,22 @@ describe("mobile seller resources", () => {
   it("builds For surf shops from the website copy", () => {
     const page = buildMobileSellerResource("for-surf-shops")
     assert.equal(page.title, "For surf shops")
+    assert.equal(page.cta_label, "Create a free account")
     const intro = page.sections.find((section) => section.kind === "paragraphs")
     assert.equal(intro?.kind, "paragraphs")
     if (intro?.kind !== "paragraphs") return
     assert.equal(intro.paragraphs[0], FOR_SURF_SHOPS_HERO_DESCRIPTION)
     assert.ok(page.sections.some((section) => section.kind === "faqs"))
+  })
+
+  it("uses the website signed-in CTA for For surf shops", () => {
+    const page = buildMobileSellerResource("for-surf-shops", { signedIn: true })
+    assert.equal(page.cta_label, "List a used board")
+    assert.notEqual(page.cta_label, "Create a free account")
+    const faqs = page.sections.find((section) => section.kind === "faqs")
+    assert.equal(faqs?.kind, "faqs")
+    if (faqs?.kind !== "faqs") return
+    assert.equal(faqs.title, "Selling from the shop")
   })
 
   it("builds How to Sell without live shop data", () => {
@@ -28,7 +39,10 @@ describe("mobile seller resources", () => {
 
   it("links the hub cards to the other native screens", () => {
     const page = buildMobileSellerResource("seller-resources")
-    const cards = page.sections.find((section) => section.kind === "cards" && section.title === null)
+    assert.equal(page.cta_label, "Start a listing")
+    const cards = page.sections.find(
+      (section) => section.kind === "cards" && section.title === "Start with the basics",
+    )
     assert.equal(cards?.kind, "cards")
     if (cards?.kind !== "cards") return
     assert.deepEqual(

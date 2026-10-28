@@ -1,6 +1,6 @@
 import { z } from "zod"
 import { readMobileSession } from "@/lib/auth/mobile-session"
-import { getMobileSaleDetailService } from "@/lib/services/mobileAccountApi"
+import { getMobileSaleDetailService } from "@/lib/services/mobileSales"
 import { mobileDataResponse, mobileFailure } from "@/lib/utils/mobile-api-response"
 
 export const dynamic = "force-dynamic"

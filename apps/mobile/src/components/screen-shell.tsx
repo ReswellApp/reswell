@@ -136,7 +136,8 @@ export function ScreenScroll({
   return (
     <ScrollView
       style={[styles.scroll, style]}
-      contentContainerStyle={[scrollInsets, contentContainerStyle]}
+      // Insets last so `paddingBottom` from callers cannot cover the sticky footer / tab bar.
+      contentContainerStyle={[contentContainerStyle, scrollInsets]}
       contentInsetAdjustmentBehavior={contentInsetAdjustmentBehavior}
       refreshControl={refreshControl}
       nestedScrollEnabled

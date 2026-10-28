@@ -1,5 +1,5 @@
 import type { MobileListingCard, MobileProfileShopSection } from "@reswell/api-contract"
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { fetchProfileListings, fetchProfileShopFilters } from "@/lib/api"
 
 type InventoryPage = {
@@ -16,9 +16,10 @@ function emptyPage(): InventoryPage {
 }
 
 function mergePage(previous: InventoryPage, next: InventoryPage): InventoryPage {
+  const seen = new Set(previous.listings.map((listing) => listing.id))
   return {
     ...next,
-    listings: [...previous.listings, ...next.listings],
+    listings: [...previous.listings, ...next.listings.filter((listing) => !seen.has(listing.id))],
   }
 }
 
@@ -34,10 +35,21 @@ export function useProfileShopListings(slug: string | undefined, shopTab: "listi
   const [loadingSold, setLoadingSold] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const currentRef = useRef(current)
+  const soldRef = useRef(sold)
+  const loadingMoreRef = useRef(false)
+  const currentGeneration = useRef(0)
+  const soldGeneration = useRef(0)
+  currentRef.current = current
+  soldRef.current = sold
 
   useEffect(() => {
     if (!slug) return
     let cancelled = false
+    currentGeneration.current += 1
+    soldGeneration.current += 1
+    loadingMoreRef.current = false
+    setLoadingMore(false)
     setSectionId(null)
     setCurrent(emptyPage())
     setSold(emptyPage())
@@ -67,27 +79,29 @@ export function useProfileShopListings(slug: string | undefined, shopTab: "listi
   useEffect(() => {
     if (!slug) return
     let cancelled = false
+    const generation = ++currentGeneration.current
+    loadingMoreRef.current = false
+    setLoadingMore(false)
     setError(null)
     setLoadingCurrent(true)
     setCurrent(emptyPage())
     fetchProfileListings(slug, { status: "current", section: sectionId ?? undefined })
       .then((page) => {
-        if (!cancelled) {
-          setCurrent({
-            listings: page.listings,
-            offset: page.offset,
-            limit: page.limit,
-            has_more: page.has_more,
-          })
-        }
+        if (cancelled || currentGeneration.current !== generation) return
+        setCurrent({
+          listings: page.listings,
+          offset: page.offset,
+          limit: page.limit,
+          has_more: page.has_more,
+        })
       })
       .catch((cause: unknown) => {
-        if (!cancelled) {
+        if (!cancelled && currentGeneration.current === generation) {
           setError(cause instanceof Error ? cause.message : "Unable to load listings")
         }
       })
       .finally(() => {
-        if (!cancelled) setLoadingCurrent(false)
+        if (!cancelled && currentGeneration.current === generation) setLoadingCurrent(false)
       })
     return () => {
       cancelled = true
@@ -97,28 +111,30 @@ export function useProfileShopListings(slug: string | undefined, shopTab: "listi
   useEffect(() => {
     if (!slug || !soldRequested) return
     let cancelled = false
+    const generation = ++soldGeneration.current
+    loadingMoreRef.current = false
+    setLoadingMore(false)
     setError(null)
     setLoadingSold(true)
     setSold(emptyPage())
     fetchProfileListings(slug, { status: "sold", section: sectionId ?? undefined })
       .then((page) => {
-        if (!cancelled) {
-          setSold({
-            listings: page.listings,
-            offset: page.offset,
-            limit: page.limit,
-            has_more: page.has_more,
-          })
-        }
+        if (cancelled || soldGeneration.current !== generation) return
+        setSold({
+          listings: page.listings,
+          offset: page.offset,
+          limit: page.limit,
+          has_more: page.has_more,
+        })
       })
       .catch((cause: unknown) => {
-        if (!cancelled) {
+        if (!cancelled && soldGeneration.current === generation) {
           setSold(emptyPage())
           setError(cause instanceof Error ? cause.message : "Unable to load listings")
         }
       })
       .finally(() => {
-        if (!cancelled) setLoadingSold(false)
+        if (!cancelled && soldGeneration.current === generation) setLoadingSold(false)
       })
     return () => {
       cancelled = true
@@ -131,9 +147,11 @@ export function useProfileShopListings(slug: string | undefined, shopTab: "listi
 
   const loadMore = useCallback(
     (status: ShopTab) => {
-      if (!slug || loadingMore) return
-      const page = status === "sold" ? sold : current
+      if (!slug || loadingMoreRef.current) return
+      const page = status === "sold" ? soldRef.current : currentRef.current
       if (!page.has_more) return
+      const generation = status === "sold" ? soldGeneration.current : currentGeneration.current
+      loadingMoreRef.current = true
       setLoadingMore(true)
       fetchProfileListings(slug, {
         status,
@@ -141,6 +159,8 @@ export function useProfileShopListings(slug: string | undefined, shopTab: "listi
         offset: page.offset + page.limit,
       })
         .then((next) => {
+          const active = status === "sold" ? soldGeneration.current : currentGeneration.current
+          if (active !== generation) return
           if (status === "sold") {
             setSold((previous) => mergePage(previous, next))
           } else {
@@ -148,9 +168,14 @@ export function useProfileShopListings(slug: string | undefined, shopTab: "listi
           }
         })
         .catch(() => undefined)
-        .finally(() => setLoadingMore(false))
+        .finally(() => {
+          const active = status === "sold" ? soldGeneration.current : currentGeneration.current
+          if (active !== generation) return
+          loadingMoreRef.current = false
+          setLoadingMore(false)
+        })
     },
-    [slug, current, sold, loadingMore, sectionId],
+    [slug, sectionId],
   )
 
   const sectionOptions = activeStatus === "sold" ? soldSections : currentSections

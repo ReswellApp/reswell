@@ -12,7 +12,12 @@ import { filterSellersDirectoryCatalog } from "@/lib/sellers/directory-catalog-f
 import { sellersDirectoryPageCopy, sellersDirectorySummary } from "@/lib/sellers/directory-page-copy"
 import { absoluteProfileCircleUrl } from "@/lib/profile-circle"
 import { absolutePublicMediaUrl } from "@/lib/site-metadata"
-import { getMobileProfileService, toMobileListingCard, type MobileApiResult } from "@/lib/services/mobileApi"
+import {
+  followingSellerIdsForViewer,
+  getMobileProfileService,
+  toMobileListingCard,
+  type MobileApiResult,
+} from "@/lib/services/mobileApi"
 import type { SupabaseClient } from "@supabase/supabase-js"
 
 function mediaUrl(value: string | null | undefined): string | null {
@@ -28,33 +33,58 @@ function inventoryLabel(count: number, sales: number | null | undefined): string
   return null
 }
 
-export async function getMobileSellersPageService(query: string | undefined): Promise<MobileApiResult<MobileSellersPage>> {
+function roundRating(value: number): number {
+  return Math.round(value * 10) / 10
+}
+
+export async function getMobileSellersPageService(
+  query: string | undefined,
+  viewer?: { supabase: SupabaseClient; userId: string },
+): Promise<MobileApiResult<MobileSellersPage>> {
   const catalog = await getCachedSellersDirectoryCatalog()
   const filtered = filterSellersDirectoryCatalog(catalog, query)
   const searching = Boolean(query?.trim())
+
+  const sellerIds = filtered.items.map((item) => item.shop.id)
+  const followingIds =
+    viewer != null ? await followingSellerIdsForViewer(viewer.supabase, viewer.userId, sellerIds) : new Set<string>()
+
   const sellers = []
   for (const item of filtered.items) {
     const slug = item.shop.seller_slug?.trim()
     if (!slug) continue
     const name = item.shop.shop_name?.trim() || item.shop.display_name?.trim() || "Seller"
-    const lines = [
-      item.tileMeta.locationShort,
-      item.tileMeta.specialtyLine,
-      item.tileMeta.shippingLine,
-      inventoryLabel(item.inventoryCount, item.shop.sales_count),
-    ].filter((line): line is string => Boolean(line))
+    const location = item.tileMeta.locationShort?.trim() || null
+    const specialtyLine = item.tileMeta.specialtyLine?.trim() || null
+    const shippingLine = item.tileMeta.shippingLine?.trim() || null
+    const stockLine = inventoryLabel(item.inventoryCount, item.shop.sales_count)
+    const lines = [location, specialtyLine, shippingLine, stockLine].filter(
+      (line): line is string => Boolean(line),
+    )
     const imageUrls = item.mosaicSlots
-      .map((slot) => mediaUrl(slot.src))
+      .map((slot) => mediaUrl(slot.candidates[0]))
       .filter((url): url is string => Boolean(url))
       .slice(0, 3)
+    const isOwnProfile = viewer?.userId === item.shop.id
     const card = {
       id: item.shop.id,
       slug,
       name,
       verified: item.shop.shop_verified === true,
+      is_shop: item.shop.is_shop === true,
       avatar_url: absoluteProfileCircleUrl(item.avatarSrc),
       image_urls: imageUrls,
+      display_banners: item.displayBanners,
+      rating_average: roundRating(item.avgRating),
+      review_count: item.reviewCount,
+      location,
+      specialty_line: specialtyLine,
+      inventory_line: stockLine,
+      shipping_line: shippingLine,
+      offers_shipping: item.tileMeta.offersShipping === true,
       lines,
+      show_follow: !isOwnProfile,
+      ...(viewer && !isOwnProfile ? { following: followingIds.has(item.shop.id) } : {}),
     }
     const parsed = mobileSellerCardSchema.safeParse(card)
     if (parsed.success) sellers.push(parsed.data)

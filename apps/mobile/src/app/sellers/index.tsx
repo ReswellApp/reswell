@@ -1,33 +1,38 @@
-import { Image } from "expo-image"
 import { Stack, useRouter } from "expo-router"
-import { SymbolView } from "expo-symbols"
-import { useEffect, useState } from "react"
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native"
-import { useSafeAreaInsets } from "react-native-safe-area-context"
+import { useCallback, useEffect, useState } from "react"
+import { ActivityIndicator, StyleSheet, Text, TextInput, View } from "react-native"
 import type { MobileSellerCard, MobileSellersPage } from "@reswell/api-contract"
-import { VerticalScroll } from "@/components/horizontal-rail"
-import { ProfileCircle } from "@/components/profile-circle"
-import { fetchSellers } from "@/lib/api"
+import { SellerDirectoryCard } from "@/components/sellers/seller-directory-card"
+import { ScreenSearchHeader } from "@/components/screen-search-header"
+import { SCREEN_GUTTER, ScreenScroll, ScreenShell } from "@/components/screen-shell"
+import { fetchSellers, setFollow } from "@/lib/api"
+import { useAuth } from "@/lib/auth-context"
+import { useAuthGate } from "@/lib/auth-gate"
 import { fontFamily, useReswellColors } from "@/theme"
 
 export default function SellersScreen() {
   const colors = useReswellColors()
   const router = useRouter()
-  const insets = useSafeAreaInsets()
+  const { session } = useAuth()
+  const { requestAuth } = useAuthGate()
+  const token = session?.access_token ?? null
   const [draft, setDraft] = useState("")
   const [page, setPage] = useState<MobileSellersPage | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [followBusyId, setFollowBusyId] = useState<string | null>(null)
+  const [followOverrides, setFollowOverrides] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     let cancelled = false
     setLoading(true)
     const timer = setTimeout(() => {
-      fetchSellers(draft)
+      fetchSellers(draft, token)
         .then((next) => {
           if (!cancelled) {
             setPage(next)
             setError(null)
+            setFollowOverrides({})
           }
         })
         .catch((cause: unknown) => {
@@ -41,119 +46,118 @@ export default function SellersScreen() {
       cancelled = true
       clearTimeout(timer)
     }
-  }, [draft])
+  }, [draft, token])
+
+  const handleFollow = useCallback(
+    (seller: MobileSellerCard) => {
+      if (!seller.show_follow) return
+      const current = followOverrides[seller.id] ?? seller.following ?? false
+      const next = !current
+      if (!token) {
+        requestAuth()
+        return
+      }
+      setFollowBusyId(seller.id)
+      setFollowOverrides((prev) => ({ ...prev, [seller.id]: next }))
+      setFollow(token, seller.id, next)
+        .catch(() => {
+          setFollowOverrides((prev) => ({ ...prev, [seller.id]: current }))
+        })
+        .finally(() => setFollowBusyId(null))
+    },
+    [followOverrides, requestAuth, token],
+  )
 
   return (
-    <View style={[styles.screen, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+    <ScreenShell style={{ backgroundColor: colors.background }}>
       <Stack.Screen options={{ headerShown: false }} />
-      <View style={[styles.bar, { borderBottomColor: colors.border }]}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Back" hitSlop={8} onPress={() => router.back()}>
-          <SymbolView name={{ ios: "chevron.left", android: "arrow_back", web: "arrow_back" }} size={22} tintColor={colors.foreground} />
-        </Pressable>
-        <Text style={[styles.barTitle, { color: colors.foreground, fontFamily: fontFamily.headline }]}>
-          {page?.title ?? "Sellers"}
-        </Text>
-      </View>
-      <VerticalScroll contentContainerStyle={styles.body}>
-        {page ? (
-          <>
-            <Text style={[styles.description, { color: colors.muted, fontFamily: fontFamily.text }]}>{page.description}</Text>
-            <TextInput
-              value={draft}
-              onChangeText={setDraft}
-              placeholder={page.search_placeholder}
-              placeholderTextColor={colors.muted}
-              autoCapitalize="none"
-              autoCorrect={false}
-              style={[styles.search, { color: colors.foreground, borderColor: colors.border, fontFamily: fontFamily.text }]}
-            />
-            {page.summary ? (
-              <Text style={[styles.summary, { color: colors.muted, fontFamily: fontFamily.text }]}>{page.summary}</Text>
-            ) : null}
-          </>
-        ) : null}
+      <ScreenSearchHeader showBack onBack={() => router.back()} />
+      <ScreenScroll contentInsetAdjustmentBehavior="never" contentContainerStyle={styles.body}>
+        <View style={[styles.hero, { borderBottomColor: colors.border, backgroundColor: colors.secondary }]}>
+          <Text style={[styles.pageTitle, { color: colors.foreground, fontFamily: fontFamily.headline }]}>
+            {page?.title ?? "Sellers"}
+          </Text>
+          {page ? (
+            <>
+              <Text style={[styles.description, { color: colors.muted, fontFamily: fontFamily.text }]}>
+                {page.description}
+              </Text>
+              <TextInput
+                value={draft}
+                onChangeText={setDraft}
+                placeholder={page.search_placeholder}
+                placeholderTextColor={colors.muted}
+                autoCapitalize="none"
+                autoCorrect={false}
+                clearButtonMode="while-editing"
+                style={[
+                  styles.search,
+                  {
+                    color: colors.foreground,
+                    borderColor: colors.border,
+                    backgroundColor: colors.background,
+                    fontFamily: fontFamily.text,
+                  },
+                ]}
+              />
+              {page.summary ? (
+                <Text style={[styles.summary, { color: colors.muted, fontFamily: fontFamily.text }]}>
+                  {page.summary}
+                </Text>
+              ) : null}
+            </>
+          ) : null}
+        </View>
+
         {loading && !page ? <ActivityIndicator color={colors.foreground} style={styles.spinner} /> : null}
         {error && !page ? (
           <Text style={[styles.empty, { color: colors.foreground, fontFamily: fontFamily.text }]}>{error}</Text>
         ) : null}
         {page && page.sellers.length === 0 && !loading ? (
           <View style={styles.emptyBlock}>
-            <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: fontFamily.headline }]}>{page.empty_title}</Text>
+            <Text style={[styles.emptyTitle, { color: colors.foreground, fontFamily: fontFamily.headline }]}>
+              {page.empty_title}
+            </Text>
             <Text style={[styles.empty, { color: colors.muted, fontFamily: fontFamily.text }]}>{page.empty_body}</Text>
           </View>
         ) : null}
         {page?.sellers.map((seller) => (
-          <SellerRow
+          <SellerDirectoryCard
             key={seller.id}
             seller={seller}
+            following={followOverrides[seller.id] ?? seller.following === true}
+            followBusy={followBusyId === seller.id}
             onPress={() => router.push({ pathname: "/sellers/[slug]", params: { slug: seller.slug } })}
+            onPressFollow={() => handleFollow(seller)}
           />
         ))}
-      </VerticalScroll>
-    </View>
-  )
-}
-
-function SellerRow({ seller, onPress }: { seller: MobileSellerCard; onPress: () => void }) {
-  const colors = useReswellColors()
-  const photo = seller.image_urls[0]
-  return (
-    <Pressable accessibilityRole="button" onPress={onPress} style={[styles.row, { borderBottomColor: colors.border }]}>
-      {photo ? (
-        <Image source={{ uri: photo }} style={[styles.photo, { backgroundColor: colors.image }]} contentFit="cover" />
-      ) : (
-        <ProfileCircle url={seller.avatar_url} size={72} />
-      )}
-      <View style={styles.copy}>
-        <Text style={[styles.name, { color: colors.foreground, fontFamily: fontFamily.headline }]}>{seller.name}</Text>
-        {seller.lines.map((line, index) => (
-          <Text key={`${index}-${line}`} style={[styles.line, { color: colors.muted, fontFamily: fontFamily.text }]}>
-            {line}
-          </Text>
-        ))}
-      </View>
-    </Pressable>
+      </ScreenScroll>
+    </ScreenShell>
   )
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
-  bar: {
-    minHeight: 48,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingBottom: 10,
+  body: { paddingBottom: 32 },
+  hero: {
+    paddingHorizontal: SCREEN_GUTTER,
+    paddingTop: 16,
+    paddingBottom: 18,
     borderBottomWidth: StyleSheet.hairlineWidth,
+    gap: 10,
   },
-  barTitle: { flex: 1, fontSize: 18, fontWeight: "700" },
-  body: { paddingBottom: 40 },
-  description: { fontSize: 15, lineHeight: 21, paddingHorizontal: 16, paddingTop: 16 },
+  pageTitle: { fontSize: 26, lineHeight: 30, fontWeight: "700", textAlign: "center" },
+  description: { fontSize: 15, lineHeight: 22, textAlign: "center" },
   search: {
-    marginHorizontal: 16,
-    marginTop: 14,
+    marginTop: 6,
     minHeight: 44,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 999,
     paddingHorizontal: 16,
     fontSize: 16,
   },
-  summary: { paddingHorizontal: 16, paddingTop: 14, fontSize: 14 },
+  summary: { textAlign: "center", fontSize: 13, marginTop: 2 },
   spinner: { marginTop: 24 },
   emptyBlock: { paddingHorizontal: 24, paddingTop: 32, gap: 8 },
   emptyTitle: { textAlign: "center", fontSize: 18, fontWeight: "700" },
   empty: { textAlign: "center", fontSize: 15, lineHeight: 21 },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  photo: { width: 72, height: 72, borderRadius: 12 },
-  copy: { flex: 1, gap: 2 },
-  name: { fontSize: 16, fontWeight: "700" },
-  line: { fontSize: 13, lineHeight: 18 },
 })

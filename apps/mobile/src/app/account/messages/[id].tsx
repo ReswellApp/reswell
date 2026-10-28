@@ -2,17 +2,19 @@ import * as ImagePicker from "expo-image-picker"
 import { Image } from "expo-image"
 import { Stack, useLocalSearchParams, useRouter } from "expo-router"
 import { SymbolView } from "expo-symbols"
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"
 import {
   ActivityIndicator,
   FlatList,
   KeyboardAvoidingView,
+  LayoutChangeEvent,
   Linking,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   Platform,
   Pressable,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
@@ -52,6 +54,69 @@ export default function ConversationScreen() {
   )
   const { data, error, loading, reload } = useAccountResource(load)
   const reloadUnread = useInboxUnreadReload()
+  const listRef = useRef<FlatList<ThreadRow>>(null)
+  const listViewportHeightRef = useRef(0)
+  const listContentHeightRef = useRef(0)
+  const stickToBottomRef = useRef(true)
+  const programmaticScrollRef = useRef(false)
+
+  const scrollThreadToBottom = useCallback((animated: boolean) => {
+    programmaticScrollRef.current = true
+    const offset = Math.max(0, listContentHeightRef.current - listViewportHeightRef.current)
+    if (offset > 0) {
+      listRef.current?.scrollToOffset({ offset, animated })
+    } else {
+      listRef.current?.scrollToEnd({ animated })
+    }
+    requestAnimationFrame(() => {
+      programmaticScrollRef.current = false
+    })
+  }, [])
+
+  useLayoutEffect(() => {
+    stickToBottomRef.current = true
+  }, [id])
+
+  useLayoutEffect(() => {
+    if (!data) return
+    if (!stickToBottomRef.current) return
+    scrollThreadToBottom(false)
+  }, [id, data, scrollThreadToBottom])
+
+  const onListLayout = useCallback(
+    (event: LayoutChangeEvent) => {
+      listViewportHeightRef.current = event.nativeEvent.layout.height
+      if (!stickToBottomRef.current) return
+      scrollThreadToBottom(false)
+    },
+    [scrollThreadToBottom],
+  )
+
+  const onThreadContentSizeChange = useCallback(
+    (_width: number, height: number) => {
+      listContentHeightRef.current = height
+      if (!stickToBottomRef.current) return
+      scrollThreadToBottom(false)
+    },
+    [scrollThreadToBottom],
+  )
+
+  const onThreadFooterLayout = useCallback(() => {
+    if (!stickToBottomRef.current) return
+    scrollThreadToBottom(false)
+  }, [scrollThreadToBottom])
+
+  useLayoutEffect(() => {
+    if (!data || !stickToBottomRef.current) return
+    scrollThreadToBottom(false)
+  }, [safetyOpen, data, scrollThreadToBottom])
+
+  const onThreadScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (programmaticScrollRef.current) return
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent
+    const distanceFromBottom = contentSize.height - contentOffset.y - layoutMeasurement.height
+    stickToBottomRef.current = distanceFromBottom < 72
+  }, [])
 
   useEffect(() => {
     if (!data) return
@@ -98,11 +163,18 @@ export default function ConversationScreen() {
             </Pressable>
           ) : null}
           <FlatList
+            ref={listRef}
+            style={styles.listFlex}
             data={threadRows(data.messages)}
             keyExtractor={(item) => (item.kind === "day" ? item.id : item.message.id)}
-            contentContainerStyle={styles.list}
+            contentContainerStyle={styles.listContent}
             refreshing={loading}
             onRefresh={reload}
+            onLayout={onListLayout}
+            onContentSizeChange={onThreadContentSizeChange}
+            onScroll={onThreadScroll}
+            scrollEventThrottle={16}
+            keyboardShouldPersistTaps="handled"
             ListHeaderComponent={<PersonSummary conversation={data} />}
             renderItem={({ item }) =>
               item.kind === "day" ? (
@@ -125,21 +197,22 @@ export default function ConversationScreen() {
               )
             }
           />
-          {safetyOpen ? (
-            <View style={[styles.safety, { borderColor: colors.border }]}>
-              <SymbolView name={{ ios: "shield.fill", android: "shield", web: "shield" }} size={18} tintColor={colors.shipping} />
-              <Text style={[styles.safetyText, { color: colors.foreground, fontFamily: fontFamily.text }]}>
-                Keep it on Reswell. Only chat in the app and never share info like your email or phone number.{" "}
-                <Text style={styles.safetyLink} onPress={() => void Linking.openURL(`${publicApiUrl()}/safety`)}>
-                  Get safety tips
+          <View onLayout={onThreadFooterLayout}>
+            {safetyOpen ? (
+              <View style={[styles.safety, { borderColor: colors.border }]}>
+                <SymbolView name={{ ios: "shield.fill", android: "shield", web: "shield" }} size={18} tintColor={colors.shipping} />
+                <Text style={[styles.safetyText, { color: colors.foreground, fontFamily: fontFamily.text }]}>
+                  Keep it on Reswell. Only chat in the app and never share info like your email or phone number.{" "}
+                  <Text style={styles.safetyLink} onPress={() => void Linking.openURL(`${publicApiUrl()}/safety`)}>
+                    Get safety tips
+                  </Text>
                 </Text>
-              </Text>
-              <Pressable onPress={() => setSafetyOpen(false)} accessibilityLabel="Dismiss safety note">
-                <SymbolView name={{ ios: "xmark", android: "close", web: "close" }} size={14} tintColor={colors.muted} />
-              </Pressable>
-            </View>
-          ) : null}
-          <MessageComposerBar
+                <Pressable onPress={() => setSafetyOpen(false)} accessibilityLabel="Dismiss safety note">
+                  <SymbolView name={{ ios: "xmark", android: "close", web: "close" }} size={14} tintColor={colors.muted} />
+                </Pressable>
+              </View>
+            ) : null}
+            <MessageComposerBar
             draft={draft}
             onChangeText={setDraft}
             sending={sending || uploadingPhoto}
@@ -184,7 +257,8 @@ export default function ConversationScreen() {
                 )}
               </Pressable>
             }
-          />
+            />
+          </View>
         </>
       ) : null}
     </KeyboardAvoidingView>
@@ -431,7 +505,14 @@ const styles = StyleSheet.create({
   listing: { flexDirection: "row", alignItems: "center", gap: 10, borderBottomWidth: StyleSheet.hairlineWidth, paddingHorizontal: 16, paddingVertical: 10 },
   listingImage: { width: 40, height: 40, borderRadius: 6 },
   listingTitle: { flex: 1, fontSize: 15, fontWeight: "600" },
-  list: { paddingHorizontal: 16, paddingBottom: 16, gap: 10 },
+  listFlex: { flex: 1 },
+  listContent: {
+    flexGrow: 1,
+    justifyContent: "flex-end",
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    gap: 10,
+  },
   person: { alignItems: "center", gap: 4, paddingTop: 12, paddingBottom: 20 },
   personName: { marginTop: 8, fontSize: 18, fontWeight: "700" },
   personMeta: { fontSize: 14 },

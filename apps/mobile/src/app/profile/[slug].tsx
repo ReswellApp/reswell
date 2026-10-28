@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router"
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from "react-native"
 import type { MobileProfile, MobileReview } from "@reswell/api-contract"
 import { ListingCard } from "@/components/listing-card"
@@ -106,6 +106,10 @@ export default function ProfileScreen() {
         ? filteredInventory
         : []
   const ownProfile = Boolean(session?.user.id && profile && session.user.id === profile.id)
+  const loadMore = useCallback(() => {
+    if (!showingGrid || loadingListings) return
+    shop.loadMore(tab === "sold" ? "sold" : "current")
+  }, [loadingListings, shop.loadMore, showingGrid, tab])
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
@@ -123,10 +127,7 @@ export default function ProfileScreen() {
           numColumns={2}
           columnWrapperStyle={grid.length > 0 ? styles.row : undefined}
           contentContainerStyle={styles.list}
-          onEndReached={() => {
-            if (tab !== "listings" && tab !== "sold") return
-            shop.loadMore(tab === "sold" ? "sold" : "current")
-          }}
+          onEndReached={loadMore}
           onEndReachedThreshold={0.4}
           ListHeaderComponent={
             <View>
@@ -156,9 +157,11 @@ export default function ProfileScreen() {
               {messageError ? (
                 <Text style={[styles.empty, { color: colors.foreground, fontFamily: fontFamily.text }]}>{messageError}</Text>
               ) : null}
-              {showingGrid && loadingListings ? <ActivityIndicator color={colors.foreground} style={styles.listingsSpinner} /> : null}
               {showingGrid && shop.error ? (
                 <Text style={[styles.empty, { color: colors.foreground, fontFamily: fontFamily.text }]}>{shop.error}</Text>
+              ) : null}
+              {showingGrid && loadingListings && inventory.length === 0 ? (
+                <ActivityIndicator color={colors.foreground} style={styles.listingsSpinner} />
               ) : null}
             </View>
           }

@@ -7,10 +7,7 @@ import {
   mobileFollowersSchema,
   mobileFollowingSchema,
   mobileOffersSchema,
-  mobileOrdersSchema,
   mobileReviewsPageSchema,
-  mobileSaleDetailSchema,
-  mobileSalesSchema,
   type MobileCart,
   type MobileConversationDetail,
   type MobileDashboard,
@@ -18,13 +15,10 @@ import {
   type MobileFavorite,
   type MobileFollowing,
   type MobileOffer,
-  type MobileOrder,
   type MobileReview,
   type MobileReviewsPage,
-  type MobileSale,
-  type MobileSaleDetail,
 } from "@reswell/api-contract"
-import { getConversationForBuyerSellerListing, userParticipatesInConversation } from "@/lib/db/conversations"
+import { userParticipatesInConversation } from "@/lib/db/conversations"
 import {
   composeMediaAttachmentMessageBody,
   parseMarketplaceMessageImageAttachment,
@@ -38,11 +32,8 @@ import {
   listMobileFollowedSellers,
   listMobileFollowers,
   listMobileMessageRows,
-  getMobileSaleDetailRow,
-  listMobileOrderRows,
   listMobileReviewRows,
   type MobileFollowedSellerRow,
-  type MobileOrderRow,
 } from "@/lib/db/mobile-account"
 import { listMobileListingRows, type MobileListingRow } from "@/lib/db/mobile-listings"
 import { fetchDashboardOffersPartitioned } from "@/lib/db/offers-dashboard"
@@ -50,8 +41,6 @@ import { getSellerReviewSummary } from "@/lib/db/seller-reviews"
 import { getPublicSellerDisplayName } from "@/lib/listing-labels"
 import { absolutePublicMediaUrl } from "@/lib/site-metadata"
 import { parseOrderPlacedMessageMetadata } from "@/lib/validations/order-placed-message-metadata"
-import { mobileSaleHasLabel } from "@/lib/services/mobileSaleLabel"
-import { resolveSellerOrderDisplayAmounts } from "@/lib/seller-order-display-amounts"
 import { isListingPubliclyVisible, isListingVisibleInSavedList } from "@/lib/listing-public-visibility"
 import { redactShippingLabelArtifactsFromMessage } from "@/lib/messages/redact-seller-shipping-label"
 import { absoluteProfileCircleUrl } from "@/lib/profile-circle"
@@ -61,9 +50,7 @@ import { resolveProfileShopSectionFilter } from "@/lib/sellers/profile-shop-sect
 import {
   toMobileConversationPreview,
   toMobileOffer,
-  toMobileOrder,
   toMobileReview,
-  toMobileSale,
 } from "@/lib/services/mobileAccountMap"
 import {
   getMobileMeService,
@@ -331,90 +318,11 @@ export async function listMobileOffersService(
   return { ok: true, data: parsed.data }
 }
 
-async function listOrders(
-  supabase: SupabaseClient,
-  userId: string,
-  role: "buyer" | "seller",
-): Promise<MobileOrderRow[] | MobileApiResult<never>> {
-  const listed = await listMobileOrderRows(supabase, userId, role)
-  if (!listed.ok) return { ok: false, status: 500, error: "Unable to load orders right now" }
-  return listed.rows
-}
-
-export async function listMobilePurchasesService(
-  supabase: SupabaseClient,
-  userId: string,
-): Promise<MobileApiResult<{ orders: MobileOrder[] }>> {
-  const rows = await listOrders(supabase, userId, "buyer")
-  if (!Array.isArray(rows)) return rows
-  const orders = rows.map(toMobileOrder).filter((order): order is MobileOrder => order != null)
-  const parsed = mobileOrdersSchema.safeParse({ orders })
-  if (!parsed.success) return { ok: false, status: 500, error: "Unable to load orders right now" }
-  return { ok: true, data: parsed.data }
-}
-
-export async function listMobileSalesService(
-  supabase: SupabaseClient,
-  userId: string,
-): Promise<MobileApiResult<{ sales: MobileSale[] }>> {
-  const rows = await listOrders(supabase, userId, "seller")
-  if (!Array.isArray(rows)) return rows
-  const sales = rows.map(toMobileSale).filter((sale): sale is MobileSale => sale != null)
-  const parsed = mobileSalesSchema.safeParse({ sales })
-  if (!parsed.success) return { ok: false, status: 500, error: "Unable to load sales right now" }
-  return { ok: true, data: parsed.data }
-}
-
-export async function getMobileSaleDetailService(
-  supabase: SupabaseClient,
-  userId: string,
-  orderId: string,
-): Promise<MobileApiResult<MobileSaleDetail>> {
-  const loaded = await getMobileSaleDetailRow(supabase, userId, orderId)
-  if (!loaded.ok) return { ok: false, status: 500, error: "Unable to load this sale right now" }
-  if (!loaded.rows) return { ok: false, status: 404, error: "Sale not found" }
-
-  const sale = toMobileSale(loaded.rows)
-  if (!sale) return { ok: false, status: 500, error: "Unable to load this sale right now" }
-  const amounts = resolveSellerOrderDisplayAmounts({
-    amount: loaded.rows.amount ?? 0,
-    shipping_amount: loaded.rows.shipping_amount,
-    platform_fee: loaded.rows.platform_fee,
-    seller_earnings: loaded.rows.seller_earnings ?? 0,
-    promo_discount_usd: loaded.rows.promo_discount_usd,
-  })
-  const [conversation, labelAvailable] = await Promise.all([
-    getConversationForBuyerSellerListing(
-    supabase,
-    loaded.rows.buyer_id,
-    userId,
-    sale.listing_id,
-    ),
-    mobileSaleHasLabel(supabase, userId, orderId, loaded.rows.tracking_number),
-  ])
-  const created = new Date(loaded.rows.created_at)
-  const parsed = mobileSaleDetailSchema.safeParse({
-    ...sale,
-    created_label: Number.isNaN(created.getTime())
-      ? ""
-      : created.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-    buyer_paid_label: moneyLabel(amounts.buyerPaidTotal),
-    shipping_label: moneyLabel(amounts.shippingAmount),
-    fee_label: moneyLabel(amounts.platformFee),
-    ship_to: loaded.rows.ship_to,
-    tracking_carrier: loaded.rows.tracking_carrier,
-    payout_status: loaded.rows.payout_status,
-    conversation_id: conversation?.id ?? null,
-    listing_slug: loaded.rows.listing_slug,
-    label_available: labelAvailable,
-  })
-  if (!parsed.success) return { ok: false, status: 500, error: "Unable to load this sale right now" }
-  return { ok: true, data: parsed.data }
-}
-
-function moneyLabel(amount: number): string {
-  return `$${amount.toFixed(2)}`
-}
+export { listMobilePurchasesService } from "@/lib/services/mobilePurchases"
+export {
+  getMobileSaleDetailService,
+  listMobileSalesService,
+} from "@/lib/services/mobileSales"
 
 export async function listMobileConversationsService(
   userId: string,
