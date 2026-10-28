@@ -6,7 +6,7 @@ import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { formatDistanceToNow } from "date-fns"
 import { Bell, ChevronDown, Heart, LifeBuoy, MessageSquare, X } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Button, iconButtonHoverClassName } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
 import { NavUnreadCountBadge } from "@/components/nav-unread-count-badge"
@@ -486,7 +486,11 @@ export function NavMessagesDropdown({
     <Button
       variant="ghost"
       size="icon"
-      className={cn("relative text-foreground hover:bg-black/5 md:hover:bg-muted", triggerClassName)}
+      className={cn(
+        "text-foreground",
+        iconButtonHoverClassName,
+        triggerClassName,
+      )}
       aria-label={triggerIcon === "bell" ? "Notifications" : "Messages and activity"}
       aria-expanded={open}
       onClick={isMobile ? () => handleOpenChange(true) : undefined}

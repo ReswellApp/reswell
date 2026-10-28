@@ -19,7 +19,7 @@ import {
   hasSupabaseAuthCookiesClient,
 } from "@/lib/auth/has-supabase-auth-cookies"
 import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
-import { Button } from "@/components/ui/button"
+import { Button, iconButtonHoverClassName } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -126,11 +126,16 @@ const listYourBoardNavButtonClassName = cn(
   "shrink-0 whitespace-nowrap rounded-full border-foreground/20 px-5 text-[14px] font-medium",
 )
 
+/** Desktop header icon cluster. 8px at md+ keeps hover fills off neighboring icons/badges. */
+const headerActionsClusterClassName = "flex items-center gap-1 sm:gap-1.5 md:gap-2"
+
 /** Mobile header actions: compact Reverb-like targets (32px / 20px icons). */
 const mobileActionStrokeWidth = 1.5
 const mobileActionIconClassName = "h-5 w-5"
-const mobileActionIconButtonClassName =
-  "h-8 w-8 text-foreground hover:bg-black/5 [&_svg]:size-5"
+const mobileActionIconButtonClassName = cn(
+  "h-8 w-8 text-foreground [&_svg]:size-5",
+  iconButtonHoverClassName,
+)
 const mobileActionRowClassName = "flex shrink-0 items-center justify-end gap-1.5"
 const mobileSellButtonClassName =
   "h-8 shrink-0 whitespace-nowrap rounded-full border border-foreground px-3 py-0 text-[13px] font-medium leading-none text-foreground shadow-none hover:bg-muted/50 md:h-9 md:px-3.5 md:text-[14px]"
@@ -178,7 +183,7 @@ function HeaderMobileNavActionsSkeleton() {
 function HeaderDesktopNavActionsSkeleton() {
   return (
     <div
-      className="flex shrink-0 items-center gap-1 sm:gap-1.5 md:gap-0.5"
+      className={cn("shrink-0", headerActionsClusterClassName)}
       aria-busy="true"
       aria-label="Loading navigation"
     >
@@ -1556,14 +1561,15 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
           {/* CLS-FIX: actions area keeps a stable minimum width while auth loads.
               The invisible placeholder reserves space equal to the logged-in
               desktop layout so the search bar never shifts horizontally. */}
-          <div className="ml-auto flex min-w-0 shrink-0 items-center gap-1 sm:gap-1.5 md:gap-0.5 text-foreground">
+          <div className={cn("ml-auto min-w-0 shrink-0 text-foreground", headerActionsClusterClassName)}>
             <Popover open={searchOpen} onOpenChange={setSearchOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="ghost"
                   size="icon"
                   className={cn(
-                    "flex h-10 w-10 text-foreground hover:bg-muted",
+                    "flex h-10 w-10 text-foreground",
+                    iconButtonHoverClassName,
                     !headerRowCompact && "md:hidden",
                   )}
                   aria-label="Search"
@@ -1585,7 +1591,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
               </PopoverContent>
             </Popover>
 
-            <div data-rw-guest-auth className="flex min-w-0 items-center gap-1 sm:gap-1.5 md:gap-0.5">
+            <div data-rw-guest-auth className={cn("min-w-0", headerActionsClusterClassName)}>
             {!authLoaded ? (
               <HeaderDesktopNavActionsSkeleton />
             ) : (
@@ -1631,7 +1637,11 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                     }
               }
             >
-              <Button variant="ghost" size="icon" className="text-foreground">
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn("text-foreground", iconButtonHoverClassName)}
+              >
                 <Heart className="h-6 w-6" />
                 <span className="sr-only">Favorites</span>
               </Button>
@@ -1644,7 +1654,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
             />
 
             {user ? (
-              <div className="flex shrink-0 items-center gap-1 sm:gap-1.5 md:gap-0.5">
+              <div className={cn("shrink-0", headerActionsClusterClassName)}>
                 <CartHeaderLink authResolved={authLoaded} userId={user.id} />
                 <NavMessagesDropdown
                   userId={user.id}
