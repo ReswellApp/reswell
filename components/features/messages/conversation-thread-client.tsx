@@ -26,6 +26,7 @@ import {
   type ConversationThreadData,
 } from '@/app/actions/messages'
 import {
+  dispatchConversationInboxActivity,
   dispatchConversationThreadOpened,
   dispatchMessagesInboxRefresh,
   dispatchUnreadCountRefresh,
@@ -625,6 +626,18 @@ export function ConversationThreadClient({
           fetchOfferForMessage(msg.offer_id, isCurrentThread)
         }
       }
+      dispatchConversationInboxActivity({
+        conversationId: id,
+        at: msg.created_at,
+        message: {
+          id: msg.id,
+          content: msg.content,
+          sender_id: msg.sender_id,
+          created_at: msg.created_at,
+          is_read: true,
+          metadata: msg.metadata,
+        },
+      })
       if (currentUserId && msg.sender_id !== currentUserId) {
         // Viewing this thread — clear badge/inbox for the inbound message
         // immediately so the ticker never flashes while mark-read runs.
@@ -717,6 +730,18 @@ export function ConversationThreadClient({
 
       const inserted = result.message as Message
       setMessages((prev) => prev.map((m) => (m.id === tempId ? inserted : m)))
+      dispatchConversationInboxActivity({
+        conversationId: id,
+        at: inserted.created_at,
+        message: {
+          id: inserted.id,
+          content: inserted.content,
+          sender_id: inserted.sender_id,
+          created_at: inserted.created_at,
+          is_read: true,
+          metadata: inserted.metadata,
+        },
+      })
     } catch (e) {
       setMessages((prev) => prev.filter((m) => m.id !== tempId))
       setNewMessage(content)
@@ -738,8 +763,20 @@ export function ConversationThreadClient({
         const withoutDup = prev.filter((m) => m.id !== inserted.id)
         return [...withoutDup, inserted]
       })
+      dispatchConversationInboxActivity({
+        conversationId: id,
+        at: inserted.created_at,
+        message: {
+          id: inserted.id,
+          content: inserted.content,
+          sender_id: inserted.sender_id,
+          created_at: inserted.created_at,
+          is_read: true,
+          metadata: inserted.metadata,
+        },
+      })
     },
-    [],
+    [id],
   )
 
   const formatMessageDate = (dateStr: string) => {

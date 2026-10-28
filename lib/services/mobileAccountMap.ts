@@ -20,7 +20,7 @@ import { orderStatusLabel } from "@/lib/order-status"
 import { absoluteProfileCircleUrl } from "@/lib/profile-circle"
 import { absolutePublicMediaUrl } from "@/lib/site-metadata"
 import type { DashboardOfferRow, DashboardProfileLite } from "@/lib/types/offers-dashboard"
-import type { InboxConversationRow } from "@/lib/utils/messages-inbox-grouping"
+import { conversationLastActivityIso, type InboxConversationRow } from "@/lib/utils/messages-inbox-grouping"
 
 function usd(value: number | string | null | undefined): number {
   if (value == null) return 0
@@ -134,7 +134,7 @@ export function toMobileConversationPreview(
     other_name: getPublicSellerDisplayName(other),
     other_avatar_url: absoluteProfileCircleUrl(avatar),
     preview,
-    last_message_at: row.last_message_at,
+    last_message_at: conversationLastActivityIso(row),
     unread_count: unread,
   })
   return parsed.success ? parsed.data : null

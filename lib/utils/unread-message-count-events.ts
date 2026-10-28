@@ -1,8 +1,12 @@
+import type { InboxThreadActivity } from "@/lib/utils/messages-inbox-grouping"
+
 export const UNREAD_MESSAGE_COUNT_ADJUST_EVENT = "unreadMessageCountAdjust"
 export const UNREAD_COUNT_REFRESH_EVENT = "unreadCountRefresh"
 export const CONVERSATION_THREAD_OPENED_EVENT = "conversationThreadOpened"
 /** Inbox list reconcile after mark-read (separate from header unreadCountRefresh). */
 export const MESSAGES_INBOX_REFRESH_EVENT = "messagesInboxRefresh"
+/** A sent or received message should move its thread to the top of the inbox immediately. */
+export const CONVERSATION_INBOX_ACTIVITY_EVENT = "conversationInboxActivity"
 
 export type UnreadMessageCountAdjustDetail = {
   delta: number
@@ -34,6 +38,16 @@ export function dispatchUnreadCountRefresh(): void {
 export function dispatchMessagesInboxRefresh(): void {
   if (typeof window === "undefined") return
   window.dispatchEvent(new CustomEvent(MESSAGES_INBOX_REFRESH_EVENT))
+}
+
+/** Move a marketplace thread to the top of the inbox as soon as its latest message changes. */
+export function dispatchConversationInboxActivity(activity: InboxThreadActivity): void {
+  if (typeof window === "undefined" || !activity.conversationId) return
+  window.dispatchEvent(
+    new CustomEvent<InboxThreadActivity>(CONVERSATION_INBOX_ACTIVITY_EVENT, {
+      detail: activity,
+    }),
+  )
 }
 
 /**

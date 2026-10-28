@@ -4,6 +4,7 @@ import { z } from "zod"
 import { revalidateMessagesInboxForParticipants } from "@/lib/cache/revalidate-messages-inbox"
 import { resolveOperableOrderSellerId } from "@/lib/account-access/order-operator-session"
 import { getShopAccountContext, viewerForConversation } from "@/lib/services/accountAccess"
+import { markMarketplaceConversationRead } from "@/lib/services/messagesInbox"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { findMessagesSupportTicketMetaByConversationId } from "@/lib/db/contactMessages"
 import { getSupportCaseByContactMessageId } from "@/lib/db/supportCases"
@@ -1454,25 +1455,18 @@ export async function markConversationThreadRead(
     return { error: "Conversation not found" }
   }
 
-  const [{ error: msgErr }] = await Promise.all([
-    service
-      .from("messages")
-      .update({ is_read: true })
-      .eq("conversation_id", conversationId)
-      .neq("sender_id", viewer.viewerId)
-      .eq("is_read", false),
-    service
-      .from("notifications")
-      .update({ is_read: true })
-      .eq("user_id", user.id)
-      .eq("is_read", false),
-  ])
-
-  if (msgErr) {
-    return { error: "Failed to mark read" }
+  const marked = await markMarketplaceConversationRead(viewer.viewerId, conversationId)
+  if (!marked.ok) {
+    return { error: marked.error }
   }
 
-  revalidateMessagesInboxForParticipants(buyerId, sellerId)
+  await service
+    .from("notifications")
+    .update({ is_read: true })
+    .eq("user_id", user.id)
+    .eq("is_read", false)
+
+  revalidateMessagesInboxForParticipants(marked.buyerId, marked.sellerId)
 
   return { ok: true }
 }

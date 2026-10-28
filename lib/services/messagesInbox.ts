@@ -1,3 +1,4 @@
+import { z } from "zod"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { listConversationIdsLinkedToSupportTickets } from "@/lib/db/contactMessages"
 import { listConversationIdsLinkedToOrderSupport } from "@/lib/db/order-support"
@@ -11,6 +12,7 @@ import { resolveSupportRecipientUserId } from "@/lib/services/resolveSupportReci
 import { loadSupportInboxActivityNotifications } from "@/lib/services/supportInboxActivity"
 import { mergeInboxActivityNotifications } from "@/lib/utils/support-inbox-activity"
 import {
+  getConversationLastActivityMs,
   isSupportInboxConversation,
   type InboxConversationRow,
 } from "@/lib/utils/messages-inbox-grouping"
@@ -93,8 +95,57 @@ export async function getMessagesInboxForUser(userId: string): Promise<MessagesI
           }
         })
 
+  const conversationsByActivity = [...redactedConversations].sort(
+    (a, b) => getConversationLastActivityMs(b) - getConversationLastActivityMs(a),
+  )
+
   return {
-    conversations: redactedConversations,
+    conversations: conversationsByActivity,
     notifications: mergeInboxActivityNotifications(payload.notifications, supportActivity),
   }
+}
+
+/**
+ * Marks inbound messages in one marketplace thread read for the viewer.
+ * Opening a thread on web and mobile both go through this so the unread
+ * bubble clears from the same write.
+ */
+export async function markMarketplaceConversationRead(
+  viewerId: string,
+  conversationId: string,
+): Promise<{ ok: true; buyerId: string; sellerId: string } | { ok: false; error: string }> {
+  if (!z.string().uuid().safeParse(viewerId).success || !z.string().uuid().safeParse(conversationId).success) {
+    return { ok: false, error: "Invalid request" }
+  }
+
+  const service = createServiceRoleClient()
+  const { data: conv, error } = await service
+    .from("conversations")
+    .select("buyer_id, seller_id")
+    .eq("id", conversationId)
+    .maybeSingle()
+
+  if (error || !conv?.buyer_id || !conv.seller_id) {
+    return { ok: false, error: "Conversation not found" }
+  }
+
+  const buyerId = conv.buyer_id as string
+  const sellerId = conv.seller_id as string
+  if (viewerId !== buyerId && viewerId !== sellerId) {
+    return { ok: false, error: "Conversation not found" }
+  }
+
+  const { error: msgErr } = await service
+    .from("messages")
+    .update({ is_read: true })
+    .eq("conversation_id", conversationId)
+    .neq("sender_id", viewerId)
+    .eq("is_read", false)
+
+  if (msgErr) {
+    console.error("[markMarketplaceConversationRead]", msgErr)
+    return { ok: false, error: "Failed to mark read" }
+  }
+
+  return { ok: true, buyerId, sellerId }
 }

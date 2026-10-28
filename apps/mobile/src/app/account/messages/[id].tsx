@@ -2,7 +2,7 @@ import * as ImagePicker from "expo-image-picker"
 import { Image } from "expo-image"
 import { Stack, useLocalSearchParams, useRouter } from "expo-router"
 import { SymbolView } from "expo-symbols"
-import { useCallback, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import {
   ActivityIndicator,
   FlatList,
@@ -23,6 +23,7 @@ import { SellUploadMenu } from "@/components/sell/sell-upload-menu"
 import { fetchConversation, messageAttachmentUrl, sendConversationMediaMessage, sendConversationMessage } from "@/lib/api"
 import { uploadConversationImageAttachment } from "@/lib/message-media-upload"
 import { useAuth } from "@/lib/auth-context"
+import { useInboxUnreadReload } from "@/lib/inbox-unread-count"
 import { publicApiUrl } from "@/lib/public-env"
 import { useAccountResource } from "@/lib/use-account-resource"
 import { fontFamily, useReswellColors } from "@/theme"
@@ -50,6 +51,12 @@ export default function ConversationScreen() {
     [id],
   )
   const { data, error, loading, reload } = useAccountResource(load)
+  const reloadUnread = useInboxUnreadReload()
+
+  useEffect(() => {
+    if (!data) return
+    reloadUnread()
+  }, [data, reloadUnread])
 
   return (
     <>

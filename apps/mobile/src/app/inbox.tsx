@@ -1,8 +1,8 @@
 import { Image } from "expo-image"
 import { Stack, useRouter } from "expo-router"
 import { SymbolView } from "expo-symbols"
-import { useCallback, useMemo, useState } from "react"
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native"
+import { useCallback, useEffect, useMemo, useState } from "react"
+import { AppState, FlatList, Pressable, StyleSheet, Text, View } from "react-native"
 import type { MobileInbox } from "@reswell/api-contract"
 import { useFloatingTabBarContentInset } from "@/components/floating-tab-bar"
 import { ReswellInboxActivityIcon } from "@/components/reswell-icons"
@@ -62,6 +62,13 @@ function InboxList() {
   )
   const { data, error, loading, reload } = useAccountResource(load)
   const [filter, setFilter] = useState<Filter>("all")
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active") reload()
+    })
+    return () => subscription.remove()
+  }, [reload])
 
   const items = useMemo(() => {
     return (data?.items ?? []).filter((item) => {

@@ -2,6 +2,7 @@ import { mobileInboxSchema, type MobileInbox } from "@reswell/api-contract"
 import { listingCardImageSrc } from "@/lib/listing-image-display"
 import type { MobileApiResult } from "@/lib/services/mobileApi"
 import { getMessagesInboxForUser } from "@/lib/services/messagesInbox"
+import { conversationLastActivityIso } from "@/lib/utils/messages-inbox-grouping"
 import { absoluteProxiedProfileMediaUrl } from "@/lib/public-media-display-src"
 import { absolutePublicMediaUrl } from "@/lib/site-metadata"
 import { getPublicSellerDisplayName } from "@/lib/listing-labels"
@@ -38,13 +39,14 @@ export async function getMobileInboxService(userId: string): Promise<MobileApiRe
     const latest = [...conversation.messages].sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))[0]
     const listingImage = listingCardImageSrc(conversation.listing?.listing_images)
     const avatar = other?.avatar_url
+    const activityAt = conversationLastActivityIso(conversation)
     return {
       id: `message:${conversation.id}`,
       kind: "message" as const,
       title: getPublicSellerDisplayName(other),
       preview: latest?.content?.trim() || conversation.listing?.title || null,
-      created_at: conversation.last_message_at,
-      time_label: timeLabel(conversation.last_message_at),
+      created_at: activityAt,
+      time_label: timeLabel(activityAt),
       unread: conversation.messages.some((message) => !message.is_read && message.sender_id !== userId),
       image_url: mediaUrl(listingImage, false) ?? mediaUrl(avatar, true),
       bucket: buying ? ("buying" as const) : ("selling" as const),

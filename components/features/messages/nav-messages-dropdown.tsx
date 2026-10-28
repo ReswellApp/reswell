@@ -19,9 +19,13 @@ import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
 import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import {
+  applyInboxThreadActivity,
   counterpartyInboxHref,
   groupConversationsByCounterparty,
+  markConversationMessagesReadLocally,
+  mergeInboxConversationSnapshots,
   type InboxConversationRow,
+  type InboxThreadActivity,
 } from "@/lib/utils/messages-inbox-grouping"
 import {
   activityKindLabel,
@@ -32,7 +36,12 @@ import {
 } from "@/lib/utils/messages-inbox-activity"
 import { formatInboxChatPreviewText } from "@/lib/utils/messages-inbox-preview"
 import { cn } from "@/lib/utils"
-import { dispatchUnreadCountRefresh } from "@/lib/utils/unread-message-count-events"
+import {
+  CONVERSATION_INBOX_ACTIVITY_EVENT,
+  CONVERSATION_THREAD_OPENED_EVENT,
+  dispatchUnreadCountRefresh,
+  type ConversationThreadOpenedDetail,
+} from "@/lib/utils/unread-message-count-events"
 import { useLiveUnreadSupportCount } from "@/components/features/support/use-live-unread-support-count"
 
 const NAV_PREVIEW_LIMIT = 8
@@ -381,7 +390,7 @@ export function NavMessagesDropdown({
     try {
       const fresh = await refreshMessagesInbox()
       if ("error" in fresh) return
-      setConversations(fresh.conversations)
+      setConversations((current) => mergeInboxConversationSnapshots(current, fresh.conversations))
       setNotifications(fresh.notifications)
     } finally {
       setLoading(false)
@@ -397,9 +406,27 @@ export function NavMessagesDropdown({
     function onUnreadRefresh() {
       if (open) void loadInbox()
     }
+    function onThreadOpened(event: Event) {
+      const detail = (event as CustomEvent<ConversationThreadOpenedDetail>).detail
+      if (!detail?.conversationId) return
+      setConversations((current) =>
+        markConversationMessagesReadLocally(current, detail.conversationId, userId),
+      )
+    }
+    function onInboxActivity(event: Event) {
+      const detail = (event as CustomEvent<InboxThreadActivity>).detail
+      if (!detail?.conversationId) return
+      setConversations((current) => applyInboxThreadActivity(current, detail))
+    }
     window.addEventListener("unreadCountRefresh", onUnreadRefresh)
-    return () => window.removeEventListener("unreadCountRefresh", onUnreadRefresh)
-  }, [open, loadInbox])
+    window.addEventListener(CONVERSATION_THREAD_OPENED_EVENT, onThreadOpened)
+    window.addEventListener(CONVERSATION_INBOX_ACTIVITY_EVENT, onInboxActivity)
+    return () => {
+      window.removeEventListener("unreadCountRefresh", onUnreadRefresh)
+      window.removeEventListener(CONVERSATION_THREAD_OPENED_EVENT, onThreadOpened)
+      window.removeEventListener(CONVERSATION_INBOX_ACTIVITY_EVENT, onInboxActivity)
+    }
+  }, [open, loadInbox, userId])
 
   const handleOpenChange = useCallback(
     (next: boolean) => {

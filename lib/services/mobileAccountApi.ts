@@ -55,7 +55,8 @@ import { resolveSellerOrderDisplayAmounts } from "@/lib/seller-order-display-amo
 import { isListingPubliclyVisible, isListingVisibleInSavedList } from "@/lib/listing-public-visibility"
 import { redactShippingLabelArtifactsFromMessage } from "@/lib/messages/redact-seller-shipping-label"
 import { absoluteProfileCircleUrl } from "@/lib/profile-circle"
-import { getMessagesInboxForUser } from "@/lib/services/messagesInbox"
+import { getMessagesInboxForUser, markMarketplaceConversationRead } from "@/lib/services/messagesInbox"
+import { revalidateMessagesInboxForParticipants } from "@/lib/cache/revalidate-messages-inbox"
 import { resolveProfileShopSectionFilter } from "@/lib/sellers/profile-shop-section-filter"
 import {
   toMobileConversationPreview,
@@ -424,6 +425,7 @@ export async function listMobileConversationsService(
     const preview = toMobileConversationPreview(row, userId)
     if (preview) conversations.push(preview)
   }
+  conversations.sort((a, b) => Date.parse(b.last_message_at) - Date.parse(a.last_message_at))
   return { ok: true, data: { conversations } }
 }
 
@@ -434,6 +436,11 @@ export async function getMobileConversationService(
 ): Promise<MobileApiResult<MobileConversationDetail>> {
   const allowed = await userParticipatesInConversation(supabase, userId, conversationId)
   if (!allowed) return { ok: false, status: 404, error: "Conversation not found" }
+
+  const readPromise = markMarketplaceConversationRead(userId, conversationId).catch((error: unknown) => {
+    console.warn("[mobile conversation] mark read skipped", error)
+    return { ok: false as const, error: "Failed to mark read" }
+  })
 
   const { data: conversation, error } = await supabase
     .from("conversations")
@@ -450,6 +457,11 @@ export async function getMobileConversationService(
     )
     .eq("id", conversationId)
     .maybeSingle()
+
+  const marked = await readPromise
+  if (marked.ok) {
+    revalidateMessagesInboxForParticipants(marked.buyerId, marked.sellerId)
+  }
 
   if (error || !conversation) return { ok: false, status: 500, error: "Unable to load messages right now" }
 
