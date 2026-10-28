@@ -68,6 +68,7 @@ function isLockedEmptyEsResult(input: BoardsBrowseEsPageInput): boolean {
     input.minPrice != null ||
     input.maxPrice != null ||
     Boolean(input.shippingAvailable) ||
+    Boolean(input.localPickupAvailable) ||
     Boolean(input.facets && hasAnyFacetSelection(input.facets))
   )
 }

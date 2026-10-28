@@ -33,6 +33,7 @@ import { AccountTeamPanel } from "@/components/features/dashboard/account-team-p
 import type { AccountTeamPanelData } from "@/lib/services/accountAccess"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import type { DashboardProfileRow } from "@/lib/db/dashboard-profile"
+import type { LocalPickupNearMePreference } from "@/lib/db/localPickupNearMePreference"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 
 interface DashboardProfileSettingsProps {
@@ -43,6 +44,7 @@ interface DashboardProfileSettingsProps {
   initialMessageSmsOptIn?: boolean
   initialHasSmsPhone?: boolean
   initialSmsPhone?: string | null
+  initialLocalPickupNearMe?: LocalPickupNearMePreference
   variant?: "dashboard" | "threads"
   team?: AccountTeamPanelData | null
   /** Login email for password reset. Stays the signed-in person when the shop profile is loaded. */
@@ -57,6 +59,13 @@ export function DashboardProfileSettings({
   initialMessageSmsOptIn = false,
   initialHasSmsPhone = false,
   initialSmsPhone = null,
+  initialLocalPickupNearMe = {
+    enabled: false,
+    location: "",
+    lat: null,
+    lng: null,
+    radiusMi: null,
+  },
   variant = "dashboard",
   team = null,
   signInEmail,
@@ -694,6 +703,7 @@ export function DashboardProfileSettings({
           copy={s.notifications}
           initialMessageSmsOptIn={initialMessageSmsOptIn}
           initialPhone={initialSmsPhone}
+          initialLocalPickupNearMe={initialLocalPickupNearMe}
         />
       ) : null}
     </div>

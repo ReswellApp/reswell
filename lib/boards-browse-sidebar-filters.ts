@@ -5,6 +5,7 @@ import {
 import { normalizeBoardBrowseRadius } from "@/lib/boards-browse-location"
 import {
   BOARDS_BROWSE_NEWEST_SORT,
+  isBoardsBrowseLocalPickupAvailableParam,
   isBoardsBrowseShippingAvailableParam,
   type BoardsBrowseSearchParams,
 } from "@/lib/marketplace-slug-metadata"
@@ -30,6 +31,7 @@ export function boardsBrowseSidebarFilterCount(sp: SidebarFilterParams): number 
   if (sp.location?.trim()) n += 1
   if (normalizeBoardBrowseRadius(sp.radius ?? null) !== "any") n += 1
   if (isBoardsBrowseShippingAvailableParam(sp.shipping)) n += 1
+  if (isBoardsBrowseLocalPickupAvailableParam(sp.pickup)) n += 1
   return n
 }
 
