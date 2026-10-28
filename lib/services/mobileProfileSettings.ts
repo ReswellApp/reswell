@@ -11,6 +11,12 @@ import {
 import { fetchDashboardProfile } from "@/lib/db/dashboard-profile"
 import { fetchProfileAddresses, profileAddressOneLine } from "@/lib/db/profile-addresses"
 import { upsertMessageSmsOptInForUser } from "@/lib/db/messageSmsNotifications"
+import {
+  getPushTopicFlagsForUser,
+  patchPushTopicForUser,
+  upsertPushOptInForUser,
+} from "@/lib/db/pushTokens"
+import { anyPushTopicEnabled, type PushTopic } from "@/lib/utils/push-topics"
 import { validateDisplayName } from "@/lib/display-name-validation"
 import { absoluteProxiedProfileMediaUrl } from "@/lib/public-media-display-src"
 import { loadMessageSmsNotificationsStateForUser } from "@/lib/services/messageSmsNotifications"
@@ -52,6 +58,23 @@ export async function getMobileProfileSettingsService(
     })
   }
 
+  let pushTopics = {
+    messages: true,
+    offers: true,
+    saves: true,
+    follows: true,
+    orders: true,
+  }
+  try {
+    pushTopics = await getPushTopicFlagsForUser(supabase, user.id)
+  } catch (cause) {
+    console.error("[mobile-api] profile push failed", {
+      userId: user.id,
+      timestamp: new Date().toISOString(),
+      message: cause instanceof Error ? cause.message : String(cause),
+    })
+  }
+
   const providers = user.app_metadata?.providers
   const signedInWith = Array.isArray(providers) && providers.includes("google") ? "google" : "email"
   const hasEmailPassword = user.identities?.some((identity) => identity.provider === "email") === true
@@ -70,6 +93,12 @@ export async function getMobileProfileSettingsService(
     has_email_password: hasEmailPassword,
     message_sms_opt_in: sms.message_sms_opt_in,
     sms_phone: sms.phone,
+    push_opt_in: anyPushTopicEnabled(pushTopics),
+    push_messages: pushTopics.messages,
+    push_offers: pushTopics.offers,
+    push_saves: pushTopics.saves,
+    push_follows: pushTopics.follows,
+    push_orders: pushTopics.orders,
     addresses: addresses.addresses.map((address) => ({
       id: address.id,
       label: address.label,
@@ -113,6 +142,26 @@ export async function updateMobileProfileSettingsService(
 
   if (typeof parsed.data.message_sms_opt_in === "boolean") {
     const saved = await upsertMessageSmsOptInForUser(supabase, user.id, parsed.data.message_sms_opt_in)
+    if (!saved.ok) return { ok: false, status: 400, error: saved.error }
+  }
+
+  const topicPatch: Partial<Record<PushTopic, boolean>> = {
+    messages: parsed.data.push_messages,
+    offers: parsed.data.push_offers,
+    saves: parsed.data.push_saves,
+    follows: parsed.data.push_follows,
+    orders: parsed.data.push_orders,
+  }
+  const topicUpdates = (Object.entries(topicPatch) as Array<[PushTopic, boolean | undefined]>).filter(
+    (entry): entry is [PushTopic, boolean] => typeof entry[1] === "boolean",
+  )
+  if (topicUpdates.length > 0) {
+    for (const [topic, enabled] of topicUpdates) {
+      const saved = await patchPushTopicForUser(supabase, user.id, topic, enabled)
+      if (!saved.ok) return { ok: false, status: 400, error: saved.error }
+    }
+  } else if (typeof parsed.data.push_opt_in === "boolean") {
+    const saved = await upsertPushOptInForUser(supabase, user.id, parsed.data.push_opt_in)
     if (!saved.ok) return { ok: false, status: 400, error: saved.error }
   }
 

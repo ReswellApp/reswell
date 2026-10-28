@@ -26,6 +26,13 @@ export const mobileProfileSettingsSchema = z.object({
   has_email_password: z.boolean(),
   message_sms_opt_in: z.boolean(),
   sms_phone: z.string().nullable(),
+  /** True when any lock-screen topic is on. */
+  push_opt_in: z.boolean(),
+  push_messages: z.boolean(),
+  push_offers: z.boolean(),
+  push_saves: z.boolean(),
+  push_follows: z.boolean(),
+  push_orders: z.boolean(),
   addresses: z.array(mobileProfileAddressSchema),
 })
 
@@ -35,6 +42,31 @@ export const mobileProfileSettingsPatchSchema = z.object({
   location: z.string().trim().max(160).optional(),
   city: z.string().trim().max(80).optional(),
   message_sms_opt_in: z.boolean().optional(),
+  push_opt_in: z.boolean().optional(),
+  push_messages: z.boolean().optional(),
+  push_offers: z.boolean().optional(),
+  push_saves: z.boolean().optional(),
+  push_follows: z.boolean().optional(),
+  push_orders: z.boolean().optional(),
+})
+
+export const expoPushTokenSchema = z
+  .string()
+  .trim()
+  .regex(/^Expo(nent)?PushToken\[.+\]$/, "That push token is not valid.")
+
+export const mobilePushTokenBodySchema = z.object({
+  token: expoPushTokenSchema,
+  platform: z.enum(["ios", "android"]),
+  device_id: z.string().trim().min(1).max(128),
+})
+
+export const mobilePushTokenResultSchema = z.object({
+  ok: z.literal(true),
+})
+
+export const mobilePushTestResultSchema = z.object({
+  sent: z.number().int().nonnegative(),
 })
 
 export const mobileProfileAvatarResultSchema = z.object({
@@ -1200,6 +1232,9 @@ export const mobileApiErrorSchema = z.object({
 
 export type MobileProfileSettings = z.infer<typeof mobileProfileSettingsSchema>
 export type MobileProfileSettingsPatch = z.infer<typeof mobileProfileSettingsPatchSchema>
+export type MobilePushTokenBody = z.infer<typeof mobilePushTokenBodySchema>
+export type MobilePushTokenResult = z.infer<typeof mobilePushTokenResultSchema>
+export type MobilePushTestResult = z.infer<typeof mobilePushTestResultSchema>
 export type MobileProfileAvatarResult = z.infer<typeof mobileProfileAvatarResultSchema>
 export type MobileProfileBannerResult = z.infer<typeof mobileProfileBannerResultSchema>
 export type MobileProfilePassword = z.infer<typeof mobileProfilePasswordSchema>
@@ -2054,6 +2089,8 @@ export const mobileInboxItemSchema = z.object({
   conversation_id: z.string().uuid().nullable(),
   listing_id: z.string().uuid().nullable(),
   support_case_id: z.string().uuid().nullable(),
+  /** Website path. App maps `/dashboard/sales` and `/dashboard/purchases` to native account screens. */
+  href: z.string().nullable().optional(),
 })
 
 export const mobileInboxSchema = z.object({

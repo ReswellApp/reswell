@@ -10,7 +10,8 @@
     "ios": {
       "bundleIdentifier": "app.reswell.reswell",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIBackgroundModes": ["remote-notification"]
       }
     },
     "android": {
@@ -39,6 +40,12 @@
       "expo-web-browser",
       "expo-router",
       "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "enableBackgroundRemoteNotifications": true
+        }
+      ],
       "expo-apple-authentication",
       [
         "expo-image-picker",

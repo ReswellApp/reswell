@@ -20,6 +20,7 @@ import {
   type InAppNotificationInput,
   type PlannedNotification,
 } from "@/lib/services/notifications/plan"
+import { schedulePushForPlannedDeliveries } from "@/lib/services/push"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 
 export interface PublishInAppSummary {
@@ -58,6 +59,7 @@ export async function publishInAppNotifications(
   const planned = planInAppNotifications(valid, snapshot)
   const collapsed = collapsePlannedDeliveries(planned)
   await writePlannedNotifications(supabase, { ...collapsed, now })
+  schedulePushForPlannedDeliveries(collapsed.rows)
   return summarize(planned, inputs.length - valid.length)
 }
 

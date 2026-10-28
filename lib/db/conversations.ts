@@ -194,3 +194,36 @@ export async function mapListingConversationIdsForUser(
 
   return conversationRowsToOfferKeyMap((data ?? []) as ConversationOfferKeyRow[])
 }
+
+export type ConversationMessageHistoryRow = {
+  id: string
+  sender_id: string
+  content: string
+  created_at: string
+}
+
+/** Oldest-first history for a leftover support DM (service-role / staff reads). */
+export async function listConversationMessageHistory(
+  supabase: SupabaseClient,
+  conversationId: string,
+  limit = 500,
+): Promise<ConversationMessageHistoryRow[]> {
+  const { data, error } = await supabase
+    .from("messages")
+    .select("id, sender_id, content, created_at")
+    .eq("conversation_id", conversationId)
+    .order("created_at", { ascending: true })
+    .limit(limit)
+
+  if (error) {
+    console.warn("[conversations] message history skipped:", error.message)
+    return []
+  }
+
+  return (data ?? []).map((row) => ({
+    id: String((row as { id: string }).id),
+    sender_id: String((row as { sender_id: string }).sender_id),
+    content: String((row as { content?: string | null }).content ?? ""),
+    created_at: String((row as { created_at: string }).created_at),
+  }))
+}

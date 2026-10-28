@@ -5,6 +5,7 @@ import {
   isNotificationType,
   listingSavedDigestBody,
   listingSavedDigestDedupeKey,
+  lockScreenPushFor,
   newListingDigestBody,
   newListingDigestDedupeKey,
   notificationDayKey,
@@ -71,6 +72,8 @@ export interface PlannedDelivery {
   logDedupeKey: string
   subjectKey: string | null
   rollupKey: string | null
+  /** Lock-screen push. Quieter types cap this below the in-app window. */
+  lockScreen: boolean
 }
 
 export interface PlannedSkip {
@@ -126,7 +129,9 @@ export function collapsePlannedDeliveries(planned: PlannedNotification[]): {
 
   for (const item of planned) {
     if (item.action !== "deliver") continue
-    rows.set(planPairKey(item.row.userId, item.row.dedupeKey), item)
+    const key = planPairKey(item.row.userId, item.row.dedupeKey)
+    const previous = rows.get(key)
+    rows.set(key, previous ? { ...item, lockScreen: previous.lockScreen || item.lockScreen } : item)
     if (!item.recordLog) continue
     logs.push({
       userId: item.row.userId,
@@ -172,20 +177,20 @@ function planOne(
   if (policy.mode === "once") {
     if (seen.has(identity) || existing) return skip("duplicate", input)
     seen.add(identity)
-    return deliverPrimary(input, actorId, "delivered", null)
+    return deliverPrimary(input, actorId, "delivered", null, true, 1)
   }
 
   if (policy.mode === "upsert_unread") {
     const inWindow = window.keys.has(dedupeKey)
     if (inWindow || (existing && !existing.isRead)) {
-      return deliverPrimary(input, actorId, "delivered", null, false)
+      return deliverPrimary(input, actorId, "delivered", null, false, window.count)
     }
     if (policy.maxPerWindow != null && window.count >= policy.maxPerWindow) {
       return skip("cap", input)
     }
     window.count += 1
     window.keys.add(dedupeKey)
-    return deliverPrimary(input, actorId, "delivered", null, true)
+    return deliverPrimary(input, actorId, "delivered", null, true, window.count)
   }
 
   if (seen.has(identity) || existing) return skip("duplicate", input)
@@ -208,7 +213,7 @@ function planOne(
   window.keys.add(dedupeKey)
   if (subjectKey) window.subjectCounts.set(subjectKey, subjectCount + 1)
   seen.add(identity)
-  return deliverPrimary(input, actorId, "delivered", null, true)
+  return deliverPrimary(input, actorId, "delivered", null, true, window.count)
 }
 
 function deliverDigest(
@@ -251,6 +256,7 @@ function deliverDigest(
     logDedupeKey: input.dedupeKey,
     subjectKey,
     rollupKey,
+    lockScreen: count === 1,
   }
 }
 
@@ -260,6 +266,7 @@ function deliverPrimary(
   outcome: "delivered",
   rollupKey: null,
   recordLog = true,
+  windowCount = 1,
 ): PlannedDelivery {
   return {
     action: "deliver",
@@ -280,6 +287,7 @@ function deliverPrimary(
     logDedupeKey: input.dedupeKey,
     subjectKey: cleanId(input.subjectKey),
     rollupKey,
+    lockScreen: recordLog && lockScreenPushFor(input.type, windowCount),
   }
 }
 

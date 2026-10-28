@@ -7,6 +7,7 @@ import {
   SUPPORT_CASE_STATUS_LABEL,
   SUPPORT_DESK_NAME,
 } from "@/lib/utils/support-case-display"
+import { humanizeSupportCasePreview } from "@/lib/utils/humanize-support-case-preview"
 import type { SupportCaseKind, SupportCaseStatus } from "@/lib/types/supportCase"
 import type { SupportCaseThreadMessage } from "@/lib/services/supportCaseThread"
 import { SupportCaseThread } from "@/components/features/support/support-case-thread"
@@ -31,6 +32,8 @@ export function SupportCaseResponseView({
   caseId,
   subject,
   status,
+  preview,
+  createdAt,
   orderRef,
   orderHref,
   messages,
@@ -38,6 +41,7 @@ export function SupportCaseResponseView({
 }: SupportCaseResponseViewProps) {
   const { title } = splitSupportCaseSubject(subject)
   const open = isSupportCaseOpen(status)
+  const openingBody = humanizeSupportCasePreview(preview, 12000)
   const subtitleParts = [
     title,
     formatSupportCaseReference(caseId),
@@ -103,6 +107,11 @@ export function SupportCaseResponseView({
           canReply
           role="member"
           closed={status === "resolved"}
+          originalRequest={
+            openingBody
+              ? { body: openingBody, createdAt, name: "You" }
+              : null
+          }
         />
       </div>
     </div>

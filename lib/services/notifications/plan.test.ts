@@ -2,8 +2,10 @@ import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 import { CARRIER_DELIVERY_PAYOUT_HOLD_DAYS } from "@/lib/shipping/carrier-delivery-payout-timing"
 import {
+  LISTING_SAVED_PUSH_CAP,
   listingSavedDedupeKey,
   listingSavedDigestDedupeKey,
+  lockScreenPushFor,
   newListingDedupeKey,
   newListingDigestDedupeKey,
   notificationDayKey,
@@ -119,6 +121,21 @@ describe("planInAppNotifications", () => {
     assert.equal(collapsed.rows.filter((row) => row.row.type === "listing_saved_digest").length, 1)
     assert.equal(collapsed.rows.find((row) => row.row.type === "listing_saved_digest")?.row.metadata.count, 2)
     assert.equal(collapsed.logs.filter((log) => log.outcome === "digested").length, 2)
+
+    const lockScreenSaves = delivered.filter(
+      (item) => item.row.type === "listing_saved" && item.lockScreen,
+    )
+    assert.equal(lockScreenSaves.length, LISTING_SAVED_PUSH_CAP)
+    const digestRows = delivered.filter((item) => item.row.type === "listing_saved_digest")
+    assert.equal(digestRows[0]?.lockScreen, true)
+    assert.equal(digestRows[1]?.lockScreen, false)
+    assert.equal(collapsed.rows.find((row) => row.row.type === "listing_saved_digest")?.lockScreen, true)
+  })
+
+  it("pushes transactional offers without a quieter cap", () => {
+    assert.equal(lockScreenPushFor("offer_received", 1), true)
+    assert.equal(lockScreenPushFor("listing_saved", LISTING_SAVED_PUSH_CAP), true)
+    assert.equal(lockScreenPushFor("listing_saved", LISTING_SAVED_PUSH_CAP + 1), false)
   })
 
   it("does not count the same save twice in one day", () => {

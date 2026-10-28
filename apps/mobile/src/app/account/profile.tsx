@@ -1,7 +1,7 @@
 import { Image } from "expo-image"
 import * as ImagePicker from "expo-image-picker"
 import { useRouter } from "expo-router"
-import { useCallback, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Pressable, StyleSheet, Switch, Text, TextInput, View } from "react-native"
 import { TextInput as GestureTextInput } from "react-native-gesture-handler"
 import { SymbolView } from "expo-symbols"
@@ -13,6 +13,7 @@ import {
   changeProfileEmail,
   changeProfilePassword,
   fetchProfileSettings,
+  sendPushTest,
   removeProfileAvatar,
   removeProfileBanner,
   removeProfileTileBanner,
@@ -23,6 +24,7 @@ import {
   uploadProfileTileBanner,
 } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
+import { requestPushPermissionAndRegister } from "@/lib/push-token"
 import { useAccountResource } from "@/lib/use-account-resource"
 import { fontFamily, useReswellColors } from "@/theme"
 
@@ -593,17 +595,107 @@ function AddressesTab({ settings }: { settings: MobileProfileSettings }) {
   )
 }
 
+const PUSH_TOPIC_ROWS: Array<{
+  key: "push_messages" | "push_offers" | "push_saves" | "push_follows" | "push_orders"
+  title: string
+  hint: string
+}> = [
+  { key: "push_messages", title: "Messages", hint: "New chats about your listings." },
+  { key: "push_offers", title: "Offers", hint: "Offers you send and receive." },
+  { key: "push_saves", title: "Saves", hint: "When someone saves your listing." },
+  { key: "push_follows", title: "Following", hint: "New listings and price drops from people you follow." },
+  { key: "push_orders", title: "Orders", hint: "Deliveries, payouts, and listing status." },
+]
+
+function pushTopicsFromSettings(settings: MobileProfileSettings) {
+  return {
+    push_messages: settings.push_messages,
+    push_offers: settings.push_offers,
+    push_saves: settings.push_saves,
+    push_follows: settings.push_follows,
+    push_orders: settings.push_orders,
+  }
+}
+
 function NotificationsTab({ settings, onSaved }: { settings: MobileProfileSettings; onSaved: () => void }) {
   const colors = useReswellColors()
   const { session } = useAuth()
-  const [enabled, setEnabled] = useState(settings.message_sms_opt_in)
+  const [smsEnabled, setSmsEnabled] = useState(settings.message_sms_opt_in)
+  const [topics, setTopics] = useState(pushTopicsFromSettings(settings))
   const [message, setMessage] = useState<string | null>(null)
+  const [messageOk, setMessageOk] = useState(false)
+  const [testBusy, setTestBusy] = useState(false)
+  const pushEnabled = Object.values(topics).some(Boolean)
+
+  useEffect(() => {
+    setTopics(pushTopicsFromSettings(settings))
+    setSmsEnabled(settings.message_sms_opt_in)
+  }, [settings])
 
   return (
     <View style={styles.shop}>
       <Text style={[styles.hint, { color: colors.muted, fontFamily: fontFamily.text }]}>
-        Choose how Reswell reaches you about messages.
+        Choose how Reswell reaches you about messages and activity.
       </Text>
+      <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: fontFamily.text }]}>App</Text>
+      {PUSH_TOPIC_ROWS.map((row) => (
+        <View key={row.key} style={[styles.card, styles.notifyRow, { borderColor: colors.border }]}>
+          <View style={styles.notifyCopy}>
+            <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: fontFamily.text }]}>{row.title}</Text>
+            <Text style={[styles.hint, { color: colors.muted, fontFamily: fontFamily.text }]}>{row.hint}</Text>
+          </View>
+          <Switch
+            value={topics[row.key]}
+            onValueChange={(next) => {
+              const token = session?.access_token
+              if (!token) return
+              const previous = topics[row.key]
+              const turningFirstOn = next && !Object.values(topics).some(Boolean)
+              setTopics((current) => ({ ...current, [row.key]: next }))
+              setMessage(null)
+              setMessageOk(false)
+              const save = async () => {
+                if (turningFirstOn) {
+                  const permission = await requestPushPermissionAndRegister(token)
+                  if (!permission.ok) throw new Error(permission.error)
+                }
+                await saveProfileSettings(token, { display_name: settings.display_name, [row.key]: next })
+                onSaved()
+              }
+              save().catch((cause: unknown) => {
+                setTopics((current) => ({ ...current, [row.key]: previous }))
+                setMessage(cause instanceof Error ? cause.message : "Unable to update alerts")
+              })
+            }}
+          />
+        </View>
+      ))}
+      {pushEnabled ? (
+        <Pressable
+          onPress={() => {
+            const token = session?.access_token
+            if (!token || testBusy) return
+            setTestBusy(true)
+            setMessage(null)
+            setMessageOk(false)
+            sendPushTest(token)
+              .then(() => {
+                setMessageOk(true)
+                setMessage("Test alert sent. Check this iPhone.")
+              })
+              .catch((cause: unknown) => {
+                setMessageOk(false)
+                setMessage(cause instanceof Error ? cause.message : "Unable to send a test alert")
+              })
+              .finally(() => setTestBusy(false))
+          }}
+          style={[styles.outline, { borderColor: colors.border, marginTop: 8 }]}
+        >
+          <Text style={[styles.link, { color: colors.foreground, fontFamily: fontFamily.text }]}>
+            {testBusy ? "Sending…" : "Send a test alert"}
+          </Text>
+        </Pressable>
+      ) : null}
       <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: fontFamily.text }]}>Messages</Text>
       <View style={[styles.card, styles.notifyRow, { borderColor: colors.border }]}>
         <View style={styles.notifyCopy}>
@@ -611,22 +703,27 @@ function NotificationsTab({ settings, onSaved }: { settings: MobileProfileSettin
           <Text style={[styles.hint, { color: colors.muted, fontFamily: fontFamily.text }]}>{settings.sms_phone || "Add a phone number on an address first."}</Text>
         </View>
         <Switch
-          value={enabled}
+          value={smsEnabled}
           onValueChange={(next) => {
             const token = session?.access_token
             if (!token) return
-            setEnabled(next)
+            setSmsEnabled(next)
             setMessage(null)
+            setMessageOk(false)
             saveProfileSettings(token, { display_name: settings.display_name, message_sms_opt_in: next })
               .then(() => onSaved())
               .catch((cause: unknown) => {
-                setEnabled(!next)
+                setSmsEnabled(!next)
                 setMessage(cause instanceof Error ? cause.message : "Unable to update alerts")
               })
-          }}
-        />
-      </View>
-      {message ? <Text style={[styles.message, { color: colors.destructive, fontFamily: fontFamily.text }]}>{message}</Text> : null}
+            }}
+          />
+        </View>
+      {message ? (
+        <Text style={[styles.message, { color: messageOk ? colors.foreground : colors.destructive, fontFamily: fontFamily.text }]}>
+          {message}
+        </Text>
+      ) : null}
     </View>
   )
 }

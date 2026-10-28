@@ -21,7 +21,7 @@ type ScreenSearchHeaderProps = {
     }
 )
 
-/** Search, inbox, and cart row. Hidden on sell and Reswell help. */
+/** Search, inbox, and cart row. Hidden on sell. */
 export function ScreenSearchHeader(props: ScreenSearchHeaderProps) {
   const pathname = usePathname()
   const router = useRouter()

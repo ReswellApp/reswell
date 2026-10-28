@@ -3,6 +3,7 @@ import { listingCardImageSrc } from "@/lib/listing-image-display"
 import type { MobileApiResult } from "@/lib/services/mobileApi"
 import { getMessagesInboxForUser } from "@/lib/services/messagesInbox"
 import { conversationLastActivityIso } from "@/lib/utils/messages-inbox-grouping"
+import { inboxActivityNotificationHref } from "@/lib/utils/messages-inbox-activity"
 import { absoluteProxiedProfileMediaUrl } from "@/lib/public-media-display-src"
 import { absolutePublicMediaUrl } from "@/lib/site-metadata"
 import { getPublicSellerDisplayName } from "@/lib/listing-labels"
@@ -53,6 +54,7 @@ export async function getMobileInboxService(userId: string): Promise<MobileApiRe
       conversation_id: conversation.id,
       listing_id: conversation.listing_id,
       support_case_id: null,
+      href: null,
     }
   })
   const notifications = inbox.notifications.map((notification) => {
@@ -70,6 +72,7 @@ export async function getMobileInboxService(userId: string): Promise<MobileApiRe
       conversation_id: null,
       listing_id: notification.listing_id,
       support_case_id: notification.support_case_id ?? null,
+      href: inboxActivityNotificationHref(notification),
     }
   })
   const items = [...messages, ...notifications].sort(

@@ -12,6 +12,7 @@ import { AuthProvider } from "@/lib/auth-context"
 import { CartCountProvider } from "@/lib/cart-count"
 import { InboxUnreadProvider } from "@/lib/inbox-unread-count"
 import { ListingMarksProvider } from "@/lib/listing-marks"
+import { PushNotificationsProvider } from "@/lib/push-notifications"
 import { useReswellColors, fontFamily } from "@/theme"
 
 export default function RootLayout() {
@@ -31,13 +32,15 @@ export default function RootLayout() {
       <ListingMarksProvider>
       <CartCountProvider>
         <InboxUnreadProvider>
+          <PushNotificationsProvider>
           <FloatingTabBarInsetProvider>
             <AppShell titleFont={type} />
           </FloatingTabBarInsetProvider>
+          </PushNotificationsProvider>
         </InboxUnreadProvider>
       </CartCountProvider>
       </ListingMarksProvider>
-      </AuthGateProvider>
+    </AuthGateProvider>
     </AuthProvider>
     </GestureHandlerRootView>
   )

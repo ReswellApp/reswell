@@ -1,6 +1,6 @@
 import * as ImagePicker from "expo-image-picker"
 import { Image } from "expo-image"
-import { Stack, useLocalSearchParams } from "expo-router"
+import { useLocalSearchParams } from "expo-router"
 import { SymbolView } from "expo-symbols"
 import { useCallback, useState } from "react"
 import {
@@ -66,7 +66,6 @@ export default function SupportThreadScreen() {
   return (
     <AccountState
       title="Reswell help"
-      searchHeader={false}
       loading={loading}
       error={error}
       onRetry={reload}
@@ -74,11 +73,9 @@ export default function SupportThreadScreen() {
       isEmpty={messages.length === 0 && !data}
       edgeToEdgeBottom
     >
-      <Stack.Screen options={{ title: "Reswell help" }} />
       <KeyboardAvoidingView
         style={[styles.thread, { backgroundColor: colors.background }]}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 88 : 0}
       >
         <FlatList
           style={styles.list}
@@ -91,7 +88,9 @@ export default function SupportThreadScreen() {
           refreshing={loading}
           onRefresh={reload}
           ListEmptyComponent={
-            <Text style={[styles.empty, { color: colors.muted, fontFamily: fontFamily.text }]}>No messages yet. Send one below.</Text>
+            <Text style={[styles.empty, { color: colors.muted, fontFamily: fontFamily.text }]}>
+              {data?.closed ? "No messages in this thread." : "No messages yet. Send one below."}
+            </Text>
           }
           renderItem={({ item }) => (
             <SupportMessageBubble message={item} accessToken={accessToken} colors={colors} />

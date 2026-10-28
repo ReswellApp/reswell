@@ -48,6 +48,7 @@ import {
   sendSupportCaseMemberReplyForSession,
 } from "@/lib/services/supportCaseThread"
 import { sendSupportCaseMediaMessage } from "@/lib/services/sendSupportCaseMediaMessage"
+import { isSupportStatusUpdateMessage } from "@/lib/messages/parse-support-thread-message"
 import { parseSupportCaseMessageImageAttachment } from "@/lib/validations/support-case-attachment"
 import type { CoastalDeliveryStatus } from "@/lib/types/coastal-delivery"
 import type { MobileApiResult } from "@/lib/services/mobileApi"
@@ -145,6 +146,10 @@ export async function getMobileSupportThreadService(
     closed: thread.case.status === "resolved",
     messages: thread.messages
       .filter((message) => !message.is_internal)
+      .filter(
+        (message) =>
+          !(message.author_role === "system" && isSupportStatusUpdateMessage(message.body)),
+      )
       .map((message) => {
         const image = parseSupportCaseMessageImageAttachment(message.metadata)
         return {

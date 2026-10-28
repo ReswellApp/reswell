@@ -51,6 +51,8 @@ import {
   mobileProfileShopFiltersSchema,
   mobileProfileSignInActionSchema,
   mobileProfileSettingsSchema,
+  mobilePushTestResultSchema,
+  mobilePushTokenResultSchema,
   mobileSellerPageSchema,
   mobileSellersPageSchema,
   mobileRecentlyViewedSchema,
@@ -134,6 +136,8 @@ import {
   type MobileProfileSettings,
   type MobileProfileSignInAction,
   type MobileProfileSettingsPatch,
+  type MobilePushTestResult,
+  type MobilePushTokenBody,
   type MobileRecentlyViewed,
   type MobileReviewsPage,
   type MobileSavedSearch,
@@ -675,6 +679,38 @@ export function fetchProfileSettings(accessToken: string): Promise<MobileProfile
 
 export function saveProfileSettings(accessToken: string, body: MobileProfileSettingsPatch): Promise<MobileProfileSettings> {
   return read("/api/mobile/v1/me/profile", (data) => mobileProfileSettingsSchema.parse(data), accessToken, body)
+}
+
+export function registerPushToken(accessToken: string, body: MobilePushTokenBody): Promise<{ ok: true }> {
+  return read("/api/mobile/v1/me/push-tokens", (data) => mobilePushTokenResultSchema.parse(data), accessToken, body)
+}
+
+export function sendPushTest(accessToken: string): Promise<MobilePushTestResult> {
+  return read("/api/mobile/v1/me/push-tokens/test", (data) => mobilePushTestResultSchema.parse(data), accessToken, {})
+}
+
+export async function deletePushToken(accessToken: string, body: MobilePushTokenBody): Promise<{ ok: true }> {
+  const response = await fetch(`${apiOrigin()}/api/mobile/v1/me/push-tokens`, {
+    method: "DELETE",
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  })
+  const parsed: unknown = await response.json()
+  if (!response.ok) {
+    const message =
+      parsed && typeof parsed === "object" && "error" in parsed && typeof parsed.error === "string"
+        ? parsed.error
+        : "Unable to remove this device"
+    throw new Error(message)
+  }
+  if (!parsed || typeof parsed !== "object" || !("data" in parsed)) {
+    throw new Error("Unexpected response")
+  }
+  return mobilePushTokenResultSchema.parse(parsed.data)
 }
 
 export function changeProfileEmail(accessToken: string, body: MobileProfileEmail): Promise<MobileProfileSignInAction> {

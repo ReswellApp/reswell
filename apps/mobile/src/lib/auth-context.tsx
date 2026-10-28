@@ -2,6 +2,7 @@ import type { Session } from "@supabase/supabase-js"
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react"
 import { signInWithAppleNative } from "@/lib/apple-sign-in"
 import { signInWithGoogleNative, signOutGoogleNative } from "@/lib/google-sign-in"
+import { unregisterPushToken } from "@/lib/push-token"
 import { getSupabase } from "@/lib/supabase"
 
 type SignUpInput = {
@@ -89,6 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return message || null
       },
       async signOut() {
+        await unregisterPushToken(session?.access_token)
         await signOutGoogleNative()
         if (!supabase) return
         await supabase.auth.signOut()

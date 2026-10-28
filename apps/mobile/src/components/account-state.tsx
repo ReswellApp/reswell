@@ -35,7 +35,7 @@ export function AccountState({
   isEmpty: boolean
   /** Skip bottom inset when the screen owns sticky footer or composer chrome to the home indicator. */
   edgeToEdgeBottom?: boolean
-  /** Me screens share the search nav. Support keeps the native stack header. */
+  /** Me screens share the search nav. Set false only for a native stack title. */
   searchHeader?: boolean
   /** Overrides search-header back (in-screen steps). */
   onBack?: () => void

@@ -6,7 +6,12 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "environment": "development",
+      "env": {
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "942414488993-7pcabkve6dcps7cm9vj6fmhj5rss9rer.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "942414488993-n5gdufmef931jqjl54nuletre76iqguq.apps.googleusercontent.com"
+      }
     },
     "simulator": {
       "extends": "development",
@@ -16,11 +21,19 @@
       }
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "942414488993-7pcabkve6dcps7cm9vj6fmhj5rss9rer.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "942414488993-n5gdufmef931jqjl54nuletre76iqguq.apps.googleusercontent.com"
+      }
     },
     "production": {
       "autoIncrement": true,
-      "environment": "production"
+      "environment": "production",
+      "env": {
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "942414488993-7pcabkve6dcps7cm9vj6fmhj5rss9rer.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "942414488993-n5gdufmef931jqjl54nuletre76iqguq.apps.googleusercontent.com"
+      }
     },
     "development-simulator": {
       "developmentClient": true,
@@ -28,7 +41,11 @@
       "ios": {
         "simulator": true
       },
-      "environment": "development"
+      "environment": "development",
+      "env": {
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "942414488993-7pcabkve6dcps7cm9vj6fmhj5rss9rer.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "942414488993-n5gdufmef931jqjl54nuletre76iqguq.apps.googleusercontent.com"
+      }
     }
   },
   "submit": {

@@ -18,6 +18,7 @@ import { getMessageSmsReceiverContext } from "@/lib/db/messageSmsNotifications"
 import { subscribeKlaviyoProfileSmsConsent } from "@/lib/klaviyo/subscribe-profile-sms-consent"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
+import { scheduleNewMessagePush } from "@/lib/services/push"
 
 function scheduleMessageSentWork(work: () => Promise<void>): void {
   const run = () =>
@@ -145,6 +146,16 @@ export async function trackKlaviyoMessageSent(
   payload: KlaviyoMessageSentPayload,
 ): Promise<void> {
   scheduleMessageSentWork(() => performTrackKlaviyoMessageSent(payload))
+  const senderName = payload.sessionSender
+    ? displayNameFromProfileRow(payload.sessionSender.profile)
+    : null
+  scheduleNewMessagePush({
+    receiverUserId: payload.receiverUserId,
+    conversationId: payload.conversationId,
+    listingId: payload.listingId,
+    senderName,
+    message: payload.message,
+  })
 }
 
 async function performTrackKlaviyoMessageSent(

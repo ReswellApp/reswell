@@ -10,6 +10,8 @@ import { ScreenSearchHeader } from "@/components/screen-search-header"
 import { fetchInbox } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
 import { useAuthGate } from "@/lib/auth-gate"
+import { inboxItemToNative } from "@/lib/inbox-href"
+import { requestPushPermissionAndRegister } from "@/lib/push-token"
 import { useSyncInboxUnreadCount } from "@/lib/inbox-unread-count"
 import { useAccountResource } from "@/lib/use-account-resource"
 import { fontFamily, useReswellColors } from "@/theme"
@@ -56,6 +58,7 @@ export default function InboxScreen() {
 function InboxList() {
   const colors = useReswellColors()
   const router = useRouter()
+  const { session } = useAuth()
   const tabBarInset = useFloatingTabBarContentInset()
   const syncInboxUnread = useSyncInboxUnreadCount()
   const load = useCallback(
@@ -85,6 +88,12 @@ function InboxList() {
     })
     return () => subscription.remove()
   }, [reload])
+
+  useEffect(() => {
+    const token = session?.access_token
+    if (!token) return
+    void requestPushPermissionAndRegister(token)
+  }, [session?.access_token])
 
   const items = useMemo(() => {
     return (data?.items ?? []).filter((item) => {
@@ -166,24 +175,10 @@ function InboxList() {
             {error ?? (loading ? "Loading inbox…" : "Nothing in your inbox yet.")}
           </Text>
         }
-        renderItem={({ item }) => <InboxRow item={item} onPress={() => openInboxItem(router, item)} />}
+        renderItem={({ item }) => <InboxRow item={item} onPress={() => router.push(inboxItemToNative(item))} />}
       />
     </View>
   )
-}
-
-function openInboxItem(router: ReturnType<typeof useRouter>, item: MobileInbox["items"][number]) {
-  if (item.conversation_id) {
-    router.push({ pathname: "/account/messages/[id]", params: { id: item.conversation_id } })
-    return
-  }
-  if (item.support_case_id) {
-    router.push({ pathname: "/account/support/[id]", params: { id: item.support_case_id } })
-    return
-  }
-  if (item.listing_id) {
-    router.push({ pathname: "/listing/[id]", params: { id: item.listing_id } })
-  }
 }
 
 function InboxRow({ item, onPress }: { item: MobileInbox["items"][number]; onPress: () => void }) {

@@ -3,9 +3,12 @@ import { CARRIER_DELIVERY_PAYOUT_HOLD_DAYS } from "@/lib/shipping/carrier-delive
 /** In-app notification types, caps, and copy. Email stays on the existing Klaviyo callers. */
 
 export const LISTING_SAVED_DAILY_CAP = 10
+export const LISTING_SAVED_PUSH_CAP = 3
 export const NEW_LISTING_DAILY_CAP = 8
 export const NEW_LISTING_PER_SELLER_DAILY_CAP = 2
+export const NEW_LISTING_PUSH_CAP = 3
 export const PRICE_DROP_DAILY_CAP = 5
+export const PRICE_DROP_PUSH_CAP = 3
 export const PRICE_DROP_MIN_FRACTION = 0.1
 export const NOTIFICATION_WINDOW_HOURS = 24
 
@@ -58,6 +61,11 @@ export interface NotificationPolicy {
   digestType?: NotificationType
   /** When set, a false preference skips the row. Transactional types omit this. */
   preference?: "follow_in_app"
+  /**
+   * Lock-screen cap for quieter types. Omit to push every first-write in-app
+   * row (offers, orders). Digests push once when first created.
+   */
+  pushMaxPerWindow?: number
 }
 
 export const NOTIFICATION_POLICIES: Record<NotificationType, NotificationPolicy> = {
@@ -66,6 +74,7 @@ export const NOTIFICATION_POLICIES: Record<NotificationType, NotificationPolicy>
     mode: "capped_then_digest",
     windowHours: NOTIFICATION_WINDOW_HOURS,
     maxPerWindow: LISTING_SAVED_DAILY_CAP,
+    pushMaxPerWindow: LISTING_SAVED_PUSH_CAP,
     digestType: "listing_saved_digest",
   },
   listing_saved_digest: {
@@ -90,6 +99,7 @@ export const NOTIFICATION_POLICIES: Record<NotificationType, NotificationPolicy>
     windowHours: NOTIFICATION_WINDOW_HOURS,
     maxPerWindow: NEW_LISTING_DAILY_CAP,
     maxPerSubjectWindow: NEW_LISTING_PER_SELLER_DAILY_CAP,
+    pushMaxPerWindow: NEW_LISTING_PUSH_CAP,
     digestType: "new_listing_from_followed_digest",
     preference: "follow_in_app",
   },
@@ -104,6 +114,7 @@ export const NOTIFICATION_POLICIES: Record<NotificationType, NotificationPolicy>
     mode: "upsert_unread",
     windowHours: NOTIFICATION_WINDOW_HOURS,
     maxPerWindow: PRICE_DROP_DAILY_CAP,
+    pushMaxPerWindow: PRICE_DROP_PUSH_CAP,
     preference: "follow_in_app",
   },
   payout_info_required: {
@@ -140,6 +151,13 @@ export const NOTIFICATION_POLICIES: Record<NotificationType, NotificationPolicy>
 
 export function isNotificationType(value: string): value is NotificationType {
   return (NOTIFICATION_TYPES as readonly string[]).includes(value)
+}
+
+/** First-write rows under this count also go to the lock screen. */
+export function lockScreenPushFor(type: NotificationType, windowCount: number): boolean {
+  const max = NOTIFICATION_POLICIES[type].pushMaxPerWindow
+  if (max == null) return true
+  return windowCount <= max
 }
 
 export function notificationDayKey(now: Date): string {
@@ -326,3 +344,5 @@ export function sellerListingAutoHiddenEmailBody(): string {
 export const LISTING_SAVED_DIGEST_HREF = "/dashboard/listings"
 export const NEW_LISTING_DIGEST_HREF = "/following"
 export const PAYOUT_INFO_HREF = "/dashboard/earnings"
+export const ORDER_DELIVERED_SELLER_HREF = "/dashboard/sales"
+export const ORDER_DELIVERED_BUYER_HREF = "/dashboard/purchases"

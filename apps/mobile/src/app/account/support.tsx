@@ -60,7 +60,6 @@ export default function AccountSupportScreen() {
   return (
     <AccountState
       title="Reswell help"
-      searchHeader={false}
       loading={loading}
       error={error}
       onRetry={reload}

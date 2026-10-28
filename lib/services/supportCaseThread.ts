@@ -12,6 +12,7 @@ import {
   type SupportCaseMessageRow,
   type SupportCaseRow,
 } from "@/lib/db/supportCases"
+import { listConversationMessageHistory } from "@/lib/db/conversations"
 import { getContactMessageForUser, getContactMessageRowById } from "@/lib/db/contactMessages"
 import { getOrderSupportRequestById, getOrderSupportRequestForUser } from "@/lib/db/order-support"
 import {
@@ -26,6 +27,8 @@ import { supportCaseResponseAbsoluteUrl } from "@/lib/utils/support-case-paths"
 import { markSupportCaseReadForMember } from "@/lib/services/supportUnread"
 import { recordSentSupportReplyExample, scheduleSupportReplyDraft } from "@/lib/services/supportReplyDraft"
 import { isLiveChatSupportChannel } from "@/lib/utils/support-ticket-display"
+import { humanizeSupportCasePreview } from "@/lib/utils/humanize-support-case-preview"
+import { restoreSupportThreadHistory } from "@/lib/utils/support-case-thread-history"
 
 export type SupportCaseThreadMessage = SupportCaseMessageRow
 
@@ -84,6 +87,52 @@ async function resolveOrBackfillForMember(
   return direct && direct.requester_user_id === userId ? direct : null
 }
 
+function serviceRoleOrSession(session: SupabaseClient): SupabaseClient {
+  try {
+    return createServiceRoleClient()
+  } catch {
+    return session
+  }
+}
+
+async function messagesForSupportCaseThread(
+  reader: SupabaseClient,
+  row: SupportCaseRow,
+  opts?: { includeInternal?: boolean },
+): Promise<SupportCaseThreadMessage[]> {
+  const existing = await listSupportCaseMessages(reader, row.id, opts)
+  let leftoverConversationId: string | null = null
+  let openingBody = humanizeSupportCasePreview(row.preview, 12000)
+
+  if (row.contact_message_id) {
+    const ticket = await getContactMessageRowById(reader, row.contact_message_id)
+    leftoverConversationId = ticket?.support_conversation_id ?? leftoverConversationId
+    if (!openingBody) {
+      openingBody = humanizeSupportCasePreview(ticket?.message ?? "", 12000)
+    }
+  }
+  if (row.order_support_request_id) {
+    const order = await getOrderSupportRequestById(reader, row.order_support_request_id)
+    leftoverConversationId = leftoverConversationId ?? order?.support_conversation_id ?? null
+    if (!openingBody) {
+      openingBody = humanizeSupportCasePreview(order?.body ?? "", 12000)
+    }
+  }
+
+  const leftover = leftoverConversationId
+    ? await listConversationMessageHistory(reader, leftoverConversationId)
+    : []
+
+  return restoreSupportThreadHistory({
+    existing,
+    leftover,
+    requesterUserId: row.requester_user_id,
+    caseId: row.id,
+    openingBody: openingBody || null,
+    createdAt: row.created_at,
+  })
+}
+
 export async function getSupportCaseThreadForMember(
   userId: string,
   caseId: string,
@@ -94,7 +143,7 @@ export async function getSupportCaseThreadForMember(
   if (!row || row.requester_user_id !== userId || isLiveChatSupportChannel(row.source_channel)) {
     return { error: "Case not found." }
   }
-  const messages = await listSupportCaseMessages(supabase, row.id)
+  const messages = await messagesForSupportCaseThread(serviceRoleOrSession(supabase), row)
   await markSupportCaseReadForMember(supabase, userId, row.id)
   return { case: row, messages }
 }
@@ -148,7 +197,7 @@ export async function getSupportCaseThreadForStaff(
   }
   if (!row) return { error: "Case not found." }
   const [messages, events] = await Promise.all([
-    listSupportCaseMessages(service, row.id, { includeInternal: true }),
+    messagesForSupportCaseThread(service, row, { includeInternal: true }),
     listSupportCaseEvents(service, row.id),
   ])
   return { case: row, messages, events }
