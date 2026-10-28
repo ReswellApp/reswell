@@ -3,20 +3,21 @@ import { BOARD_RADIUS_VALUES } from "@/lib/boards-browse-location"
 
 const radiusSchema = z.enum(BOARD_RADIUS_VALUES)
 
-export const saveLocalPickupNearMePreferenceSchema = z
+export const saveProfileBrowseHomeSchema = z
   .object({
-    enabled: z.boolean(),
+    applyOnBoards: z.boolean(),
+    localPickupOnly: z.boolean(),
     location: z.string().trim().max(300),
     lat: z.number().gte(-90).lte(90).nullable(),
     lng: z.number().gte(-180).lte(180).nullable(),
     radiusMi: radiusSchema.nullable(),
   })
   .superRefine((data, ctx) => {
-    if (!data.enabled) return
+    if (!data.applyOnBoards) return
     if (!data.location.trim()) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Choose a city or ZIP for local pickup.",
+        message: "Choose a home city or ZIP.",
         path: ["location"],
       })
     }
@@ -36,6 +37,4 @@ export const saveLocalPickupNearMePreferenceSchema = z
     }
   })
 
-export type SaveLocalPickupNearMePreferenceInput = z.infer<
-  typeof saveLocalPickupNearMePreferenceSchema
->
+export type SaveProfileBrowseHomeInput = z.infer<typeof saveProfileBrowseHomeSchema>

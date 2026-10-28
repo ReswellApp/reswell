@@ -43,8 +43,8 @@ import {
   isBoardsBrowseShippingAvailableParam,
   type BoardsBrowseSearchParams,
 } from "@/lib/marketplace-slug-metadata"
-import { loadMergedBoardsBrowseFilters } from "@/lib/services/boardsBrowseLocalPickupNearMeApply"
-import { boardsBrowseLocalPickupNearMeRedirectHref } from "@/lib/services/boardsBrowseLocalPickupNearMeMerge"
+import { loadMergedBoardsBrowseFilters } from "@/lib/services/boardsBrowseProfileHomeApply"
+import { boardsBrowseProfileHomeRedirectHref } from "@/lib/services/boardsBrowseProfileHomeMerge"
 import { getCachedForwardGeocodePlace } from "@/lib/cache/forward-geocode-place"
 import { resolveBoardsBrowseGeocodeRedirectHref } from "@/lib/services/boardsBrowseGeocode"
 import {
@@ -727,7 +727,7 @@ export async function BoardsBrowsePage(props: {
 
   const { user: browseUser } = await getCachedRequestSession()
   const mergedNearMe = await loadMergedBoardsBrowseFilters(browseUser?.id, searchParams)
-  const nearMeRedirectHref = boardsBrowseLocalPickupNearMeRedirectHref(
+  const nearMeRedirectHref = boardsBrowseProfileHomeRedirectHref(
     browsePath,
     searchParams,
     mergedNearMe,

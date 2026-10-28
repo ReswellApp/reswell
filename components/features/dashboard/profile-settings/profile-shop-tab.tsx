@@ -16,7 +16,9 @@ import { ProfileBannerImage } from "@/components/features/dashboard/profile-bann
 import { SELLER_PROFILE_BANNER_DEFAULT } from "@/lib/brand-colors"
 import type { ProfileBannerFocal } from "@/lib/utils/profile-banner-focal"
 import { cn } from "@/lib/utils"
+import { ProfileBrowseHomeSection, type ProfileBrowseHomeSectionCopy } from "@/components/features/dashboard/profile-browse-home-section"
 import type { DashboardProfileRow } from "@/lib/db/dashboard-profile"
+import type { ProfileBrowseHome } from "@/lib/db/profileBrowseHome"
 import {
   profileInputClass,
   profileLabelClass,
@@ -75,6 +77,8 @@ export type ProfileShopTabCopy = {
 interface ProfileShopTabProps {
   profile: DashboardProfileRow
   copy: ProfileShopTabCopy
+  browseHomeCopy: ProfileBrowseHomeSectionCopy
+  initialBrowseHome: ProfileBrowseHome
   sellerStoreHref: string | null
   saving: boolean
   savedFlash: boolean
@@ -105,6 +109,8 @@ interface ProfileShopTabProps {
 export function ProfileShopTab({
   profile,
   copy,
+  browseHomeCopy,
+  initialBrowseHome,
   sellerStoreHref,
   saving,
   savedFlash,
@@ -327,12 +333,14 @@ export function ProfileShopTab({
               placeholder={copy.cityPlaceholder}
             />
           </div>
+          </div>
         </div>
-      </div>
 
-      <div className="space-y-3 border-t border-neutral-200/80 pt-6">
-        <div>
-          <p className={profileSectionTitleClass}>{copy.sellerBannerTitle}</p>
+        <ProfileBrowseHomeSection initialHome={initialBrowseHome} copy={browseHomeCopy} />
+
+        <div className="space-y-3 border-t border-neutral-200/80 pt-6">
+          <div>
+            <p className={profileSectionTitleClass}>{copy.sellerBannerTitle}</p>
           <p className={cn(profileSectionHintClass, "mt-1")}>{copy.bannerHint}</p>
         </div>
         <div className="overflow-hidden rounded-xl">

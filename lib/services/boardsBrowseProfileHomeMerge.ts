@@ -1,4 +1,4 @@
-import type { LocalPickupNearMePreference } from "@/lib/db/localPickupNearMePreference"
+import type { ProfileBrowseHome } from "@/lib/db/profileBrowseHome"
 import { normalizeBoardBrowseRadius } from "@/lib/boards-browse-location"
 import {
   boardsBrowseHasLatLng,
@@ -13,65 +13,68 @@ import {
 
 export type BoardsBrowseEffectiveFilters = {
   searchParams: BoardsBrowseSearchParams
-  /** True when the saved near-me preference forced local pickup filtering. */
-  localPickupFromPreference: boolean
-  /** True when geo anchor came from the saved preference (URL had no lat/lng). */
-  geoFromPreference: boolean
+  /** True when profile home area adjusted browse params. */
+  homeFromProfile: boolean
+  /** True when geo anchor came from profile (URL had no lat/lng). */
+  geoFromProfile: boolean
 }
 
-function prefIsComplete(pref: LocalPickupNearMePreference): boolean {
+function homeGeoComplete(home: ProfileBrowseHome): boolean {
   return (
-    pref.enabled &&
-    pref.lat != null &&
-    pref.lng != null &&
-    pref.radiusMi != null &&
-    pref.location.trim().length > 0
+    home.applyOnBoards &&
+    home.lat != null &&
+    home.lng != null &&
+    home.radiusMi != null &&
+    home.location.trim().length > 0
   )
 }
 
 /**
- * Applies the signed-in user's saved local-pickup-near-me preference onto browse
- * params. Preference geo fills in only when the URL has no coordinates; local
- * pickup filtering is always enforced while the preference is enabled.
+ * Applies the signed-in user's saved home area onto browse params when
+ * `browse_home_apply_on_boards` is true. Geo fills in only when the URL has
+ * no coordinates. Optional local-pickup-only adds `pickup=1`.
  */
-export function mergeLocalPickupNearMeIntoBrowseParams(
+export function mergeProfileBrowseHomeIntoBrowseParams(
   searchParams: BoardsBrowseSearchParams,
-  pref: LocalPickupNearMePreference | null | undefined,
+  home: ProfileBrowseHome | null | undefined,
 ): BoardsBrowseEffectiveFilters {
-  if (!pref || !pref.enabled) {
+  if (!home?.applyOnBoards) {
     return {
       searchParams,
-      localPickupFromPreference: false,
-      geoFromPreference: false,
+      homeFromProfile: false,
+      geoFromProfile: false,
     }
   }
 
   const next: BoardsBrowseSearchParams = { ...searchParams }
-  let geoFromPreference = false
+  let geoFromProfile = false
 
-  if (prefIsComplete(pref)) {
+  if (homeGeoComplete(home)) {
     const hasUrlGeo = boardsBrowseHasLatLng(searchParams.lat, searchParams.lng)
     if (!hasUrlGeo) {
-      geoFromPreference = true
-      next.location = pref.location.trim()
-      next.lat = String(pref.lat)
-      next.lng = String(pref.lng)
-      next.radius = pref.radiusMi ?? undefined
-    } else if (!next.radius?.trim() && pref.radiusMi) {
-      next.radius = pref.radiusMi
-    } else if (!next.location?.trim() && pref.location.trim()) {
-      next.location = pref.location.trim()
+      geoFromProfile = true
+      next.location = home.location.trim()
+      next.lat = String(home.lat)
+      next.lng = String(home.lng)
+      next.radius = home.radiusMi ?? undefined
+    } else if (!next.radius?.trim() && home.radiusMi) {
+      next.radius = home.radiusMi
+    } else if (!next.location?.trim() && home.location.trim()) {
+      next.location = home.location.trim()
     }
   }
 
-  if (!isBoardsBrowseLocalPickupAvailableParam(next.pickup)) {
+  if (
+    home.localPickupOnly &&
+    !isBoardsBrowseLocalPickupAvailableParam(next.pickup)
+  ) {
     next.pickup = "1"
   }
 
   return {
     searchParams: next,
-    localPickupFromPreference: true,
-    geoFromPreference,
+    homeFromProfile: true,
+    geoFromProfile,
   }
 }
 
@@ -97,13 +100,13 @@ function browseParamsEqual(a: BoardsBrowseSearchParams, b: BoardsBrowseSearchPar
   return true
 }
 
-/** Redirect href when URL params should reflect an active near-me preference. */
-export function boardsBrowseLocalPickupNearMeRedirectHref(
+/** Redirect href when URL params should reflect an active profile home area. */
+export function boardsBrowseProfileHomeRedirectHref(
   browsePath: string,
   rawSearchParams: BoardsBrowseSearchParams,
   merged: BoardsBrowseEffectiveFilters,
 ): string | null {
-  if (!merged.localPickupFromPreference) return null
+  if (!merged.homeFromProfile) return null
   if (browseParamsEqual(rawSearchParams, merged.searchParams)) return null
   const params = boardsBrowseSearchParamsToURLSearchParams(merged.searchParams)
   return boardsBrowsePathWithSearchParams(browsePath, params)

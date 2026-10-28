@@ -6,6 +6,7 @@ import { DashboardProfileSettings } from "@/components/features/dashboard/dashbo
 import { ThreadsProfilePageHeader } from "@/components/features/forum/threads-profile-page-header"
 import { createClient } from "@/lib/supabase/client"
 import type { DashboardProfileRow } from "@/lib/db/dashboard-profile"
+import type { ProfileBrowseHome } from "@/lib/db/profileBrowseHome"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 
 type ThreadsProfilePageClientProps = {
@@ -16,6 +17,7 @@ type ThreadsProfilePageClientProps = {
   initialMessageSmsOptIn?: boolean
   initialHasSmsPhone?: boolean
   initialSmsPhone?: string | null
+  initialBrowseHome?: ProfileBrowseHome
 }
 
 export function ThreadsProfilePageClient(props: ThreadsProfilePageClientProps) {

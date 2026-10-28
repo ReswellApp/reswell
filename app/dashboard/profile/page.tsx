@@ -4,7 +4,7 @@ import { fetchDashboardProfile } from "@/lib/db/dashboard-profile"
 import { fetchProfileAddresses } from "@/lib/db/profile-addresses"
 import { getShopAccountContext, loadAccountTeamPanelData } from "@/lib/services/accountAccess"
 import { loadMessageSmsNotificationsStateForUser } from "@/lib/services/messageSmsNotifications"
-import { loadLocalPickupNearMePreferenceForUser } from "@/lib/services/localPickupNearMePreference"
+import { loadProfileBrowseHomeForUser } from "@/lib/services/profileBrowseHome"
 import { privatePageMetadata } from "@/lib/site-metadata"
 
 export const metadata = privatePageMetadata({
@@ -21,12 +21,12 @@ export default async function DashboardProfilePage() {
   const profileId =
     shop?.permissions.has("profile.manage") ? shop.accountId : user.id
 
-  const [{ profile, error: profileError }, { addresses, error: addressesError }, smsState, localPickupNearMe, team] =
+  const [{ profile, error: profileError }, { addresses, error: addressesError }, smsState, browseHome, team] =
     await Promise.all([
       fetchDashboardProfile(supabase, profileId),
       fetchProfileAddresses(supabase, profileId),
       loadMessageSmsNotificationsStateForUser(user.id, user.phone),
-      loadLocalPickupNearMePreferenceForUser(user.id),
+      loadProfileBrowseHomeForUser(user.id),
       loadAccountTeamPanelData(),
     ])
 
@@ -55,7 +55,7 @@ export default async function DashboardProfilePage() {
       initialMessageSmsOptIn={smsState.message_sms_opt_in}
       initialHasSmsPhone={smsState.has_phone}
       initialSmsPhone={smsState.phone}
-      initialLocalPickupNearMe={localPickupNearMe}
+      initialBrowseHome={browseHome}
       team={team}
       signInEmail={user.email ?? ""}
     />

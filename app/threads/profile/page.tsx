@@ -4,7 +4,7 @@ import { getCachedDashboardSession } from "@/lib/dashboard-session"
 import { fetchDashboardProfile } from "@/lib/db/dashboard-profile"
 import { fetchProfileAddresses } from "@/lib/db/profile-addresses"
 import { loadMessageSmsNotificationsStateForUser } from "@/lib/services/messageSmsNotifications"
-import { loadLocalPickupNearMePreferenceForUser } from "@/lib/services/localPickupNearMePreference"
+import { loadProfileBrowseHomeForUser } from "@/lib/services/profileBrowseHome"
 import { pageSeoMetadata } from "@/lib/site-metadata"
 
 export const metadata: Metadata = pageSeoMetadata({
@@ -21,12 +21,12 @@ export default async function ThreadsProfilePage() {
     return <ThreadsProfilePageClient initialProfile={null} initialAddresses={[]} />
   }
 
-  const [{ profile, error: profileError }, { addresses, error: addressesError }, smsState, localPickupNearMe] =
+  const [{ profile, error: profileError }, { addresses, error: addressesError }, smsState, browseHome] =
     await Promise.all([
       fetchDashboardProfile(supabase, user.id),
       fetchProfileAddresses(supabase, user.id),
       loadMessageSmsNotificationsStateForUser(user.id, user.phone),
-      loadLocalPickupNearMePreferenceForUser(user.id),
+      loadProfileBrowseHomeForUser(user.id),
     ])
 
   if (profileError) {
@@ -54,7 +54,7 @@ export default async function ThreadsProfilePage() {
       initialMessageSmsOptIn={smsState.message_sms_opt_in}
       initialHasSmsPhone={smsState.has_phone}
       initialSmsPhone={smsState.phone}
-      initialLocalPickupNearMe={localPickupNearMe}
+      initialBrowseHome={browseHome}
     />
   )
 }
