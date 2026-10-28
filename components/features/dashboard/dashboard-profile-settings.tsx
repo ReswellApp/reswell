@@ -33,7 +33,7 @@ import { AccountTeamPanel } from "@/components/features/dashboard/account-team-p
 import type { AccountTeamPanelData } from "@/lib/services/accountAccess"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import type { DashboardProfileRow } from "@/lib/db/dashboard-profile"
-import type { LocalPickupNearMePreference } from "@/lib/db/localPickupNearMePreference"
+import type { ProfileBrowseHome } from "@/lib/db/profileBrowseHome"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 
 interface DashboardProfileSettingsProps {
@@ -44,7 +44,7 @@ interface DashboardProfileSettingsProps {
   initialMessageSmsOptIn?: boolean
   initialHasSmsPhone?: boolean
   initialSmsPhone?: string | null
-  initialLocalPickupNearMe?: LocalPickupNearMePreference
+  initialBrowseHome?: ProfileBrowseHome
   variant?: "dashboard" | "threads"
   team?: AccountTeamPanelData | null
   /** Login email for password reset. Stays the signed-in person when the shop profile is loaded. */
@@ -59,8 +59,9 @@ export function DashboardProfileSettings({
   initialMessageSmsOptIn = false,
   initialHasSmsPhone = false,
   initialSmsPhone = null,
-  initialLocalPickupNearMe = {
-    enabled: false,
+  initialBrowseHome = {
+    applyOnBoards: false,
+    localPickupOnly: false,
     location: "",
     lat: null,
     lng: null,
@@ -577,6 +578,8 @@ export function DashboardProfileSettings({
       {activeTab === "shop" ? (
         <ProfileShopTab
           profile={profile}
+          initialBrowseHome={initialBrowseHome}
+          browseHomeCopy={p.browseHome}
           copy={{
             displayName: p.displayName,
             displayNamePlaceholder: p.displayNamePlaceholder,
@@ -703,7 +706,6 @@ export function DashboardProfileSettings({
           copy={s.notifications}
           initialMessageSmsOptIn={initialMessageSmsOptIn}
           initialPhone={initialSmsPhone}
-          initialLocalPickupNearMe={initialLocalPickupNearMe}
         />
       ) : null}
     </div>

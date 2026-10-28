@@ -72,6 +72,16 @@ type Translations = {
       editTileBannerDescription: string
       save: string
       saving: string
+      browseHome: {
+        title: string
+        description: string
+        applyLabel: string
+        applyHint: string
+        pickupOnlyLabel: string
+        pickupOnlyHint: string
+        locationHint: string
+        saving: string
+      }
     }
     personalInfo: {
       title: string
@@ -164,14 +174,6 @@ type Translations = {
     notifications: {
       intro: string
       messagesTitle: string
-      localPickup: {
-        title: string
-        description: string
-        toggleLabel: string
-        toggleHint: string
-        locationHint: string
-        saving: string
-      }
     }
   }
 }
@@ -240,6 +242,19 @@ const en: Translations = {
       editTileBannerDescription: 'Drag the image to choose what shows on your sellers directory tile.',
       save: 'Save',
       saving: 'Saving...',
+      browseHome: {
+        title: 'Home surf area',
+        description:
+          'Your default city or break for browsing boards. Separate from the public location above — this is private and only affects your browse experience when you turn it on.',
+        applyLabel: 'Use on surfboard browse',
+        applyHint:
+          'When signed in, /boards opens with your home area and radius already applied (you can still change filters).',
+        pickupOnlyLabel: 'Local pickup only',
+        pickupOnlyHint:
+          'Optional. When on with browse default, only show boards that offer local pickup near your home area.',
+        locationHint: 'City or ZIP — same controls as the surfboard browse location filter.',
+        saving: 'Changes save automatically.',
+      },
     },
     personalInfo: {
       title: 'Personal information',
@@ -342,16 +357,6 @@ const en: Translations = {
     notifications: {
       intro: 'Choose which notifications you want. These apply to your account on the web and in the app.',
       messagesTitle: 'Messages',
-      localPickup: {
-        title: 'Local pickup near you',
-        description:
-          'When this is on, surfboard browse shows listings you can pick up within your chosen radius.',
-        toggleLabel: 'Show local pickup near me on browse',
-        toggleHint:
-          'Applies location and local-pickup filters whenever you browse surfboards while signed in.',
-        locationHint: 'Same city/ZIP and radius controls as the surfboard browse filters.',
-        saving: 'Changes save automatically.',
-      },
     },
   },
 }
@@ -420,6 +425,19 @@ const es: Translations = {
       editTileBannerDescription: 'Arrastra la imagen para elegir qué se muestra en tu ficha del directorio.',
       save: 'Guardar',
       saving: 'Guardando...',
+      browseHome: {
+        title: 'Zona habitual',
+        description:
+          'Tu ciudad o zona para buscar tablas. Es privado y distinto de la ubicación pública de arriba.',
+        applyLabel: 'Usar en la búsqueda de tablas',
+        applyHint:
+          'Con la sesión iniciada, /boards abre con tu zona y radio (puedes cambiar los filtros).',
+        pickupOnlyLabel: 'Solo recogida local',
+        pickupOnlyHint:
+          'Opcional. Si está activo con la búsqueda predeterminada, solo tablas con recogida local cerca.',
+        locationHint: 'Ciudad o código postal — mismos controles que en los filtros de tablas.',
+        saving: 'Los cambios se guardan automáticamente.',
+      },
     },
     personalInfo: {
       title: 'Información personal',
@@ -522,16 +540,6 @@ const es: Translations = {
     notifications: {
       intro: 'Elige qué notificaciones quieres. Se aplican a tu cuenta en la web y en la app.',
       messagesTitle: 'Mensajes',
-      localPickup: {
-        title: 'Recogida local cerca de ti',
-        description:
-          'Cuando está activo, la búsqueda de tablas muestra anuncios con recogida local en tu radio.',
-        toggleLabel: 'Mostrar recogida local cerca de mí',
-        toggleHint:
-          'Aplica filtros de ubicación y recogida local al navegar tablas con la sesión iniciada.',
-        locationHint: 'Misma ciudad/código postal y radio que en los filtros de tablas.',
-        saving: 'Los cambios se guardan automáticamente.',
-      },
     },
   },
 }
