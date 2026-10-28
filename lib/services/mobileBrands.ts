@@ -13,6 +13,8 @@ import {
   brandProductCategoryLabel,
   type BrandProductCategorySlug,
 } from "@/lib/brand-product-categories"
+import { sortDirectoryBrands } from "@/lib/brands/directory-rank"
+import { brandDirectoryBlurb } from "@/lib/brands/page-content"
 import { getBrandBySlug, listBrands } from "@/lib/brands/server"
 import { countActiveListingsByBrandIds, listActiveListingsForBrand, listRecentlySoldListingsForBrand } from "@/lib/db/brand-listings"
 import { listBrandModelsForPublicPageByBrandId } from "@/lib/db/brand-models"
@@ -98,13 +100,14 @@ export async function listMobileBrandsService(): Promise<MobileApiResult<MobileB
     supabase,
     brands.map((brand) => brand.id),
   )
+  const ranked = sortDirectoryBrands(brands, counts)
   const parsed = mobileBrandsPageSchema.safeParse({
-    brands: brands.map((brand) => ({
+    brands: ranked.map((brand) => ({
       id: brand.id,
       slug: brand.slug,
       name: brand.name,
       logo_url: publicLogo(brand.logo_url),
-      short_description: brand.short_description?.trim() || null,
+      short_description: brandDirectoryBlurb(brand.short_description),
       location_label: brand.location_label?.trim() || null,
       listing_count: counts.get(brand.id) ?? 0,
       model_count: brand.model_count,

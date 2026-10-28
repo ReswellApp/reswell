@@ -6,6 +6,7 @@ import { BrandsExplorer } from "@/components/brands/brands-explorer"
 import { BrandsListAdminBar } from "@/components/brands/brands-list-admin-bar"
 import { createClient } from "@/lib/supabase/server"
 import { listBrands } from "@/lib/brands/server"
+import { sortDirectoryBrands } from "@/lib/brands/directory-rank"
 import { countActiveListingsByBrandIds } from "@/lib/db/brand-listings"
 import { parseBrandsDirectoryFilterCategorySlugsFromSearchParam } from "@/lib/brand-product-categories"
 import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
@@ -38,6 +39,7 @@ export default async function BrandsPage({
     supabase,
     brands.map((brand) => brand.id),
   )
+  const rankedBrands = sortDirectoryBrands(brands, activeListingCounts)
   const activeListingCountByBrandId = Object.fromEntries(activeListingCounts)
 
   return (
@@ -45,7 +47,7 @@ export default async function BrandsPage({
       <section className="border-b border-border/80 bg-offwhite">
         <div className="container relative mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-14">
           <div className="absolute right-4 top-10 sm:right-6 sm:top-12">
-            <BrandsListAdminBar brandRequestImportId={brandRequestImportId} brands={brands} />
+            <BrandsListAdminBar brandRequestImportId={brandRequestImportId} brands={rankedBrands} />
           </div>
           <div className="text-center">
             <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Directory</p>
@@ -54,7 +56,7 @@ export default async function BrandsPage({
               Shapers and labels in the Reswell catalog. Browse live listings and recently sold gear by brand.
             </p>
             <div className="mx-auto mt-8 max-w-xl">
-              <BrandsDirectorySearch brands={brands} />
+              <BrandsDirectorySearch brands={rankedBrands} />
             </div>
           </div>
         </div>
@@ -67,7 +69,7 @@ export default async function BrandsPage({
         </div>
       </section>
       <BrandsExplorer
-        brands={brands}
+        brands={rankedBrands}
         categoryFilter={categoryFilter}
         activeListingCountByBrandId={activeListingCountByBrandId}
       />

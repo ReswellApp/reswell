@@ -7,6 +7,9 @@ type CategoryRow = {
   category_slug: BrandProductCategorySlug
 }
 
+const BRAND_ID_IN_CHUNK = 200
+const CATEGORY_LIST_PAGE = 1000
+
 export async function listBrandProductCategoriesByBrandIds(
   supabase: SupabaseClient,
   brandIds: readonly string[],
@@ -14,20 +17,23 @@ export async function listBrandProductCategoriesByBrandIds(
   const out = new Map<string, BrandProductCategorySlug[]>()
   if (brandIds.length === 0) return out
 
-  const { data, error } = await supabase
-    .from("brand_product_categories")
-    .select("brand_id, category_slug")
-    .in("brand_id", [...brandIds])
+  for (let i = 0; i < brandIds.length; i += BRAND_ID_IN_CHUNK) {
+    const chunk = brandIds.slice(i, i + BRAND_ID_IN_CHUNK)
+    const { data, error } = await supabase
+      .from("brand_product_categories")
+      .select("brand_id, category_slug")
+      .in("brand_id", chunk)
 
-  if (error) {
-    console.error("listBrandProductCategoriesByBrandIds:", error.message)
-    return out
-  }
+    if (error) {
+      console.error("listBrandProductCategoriesByBrandIds:", error.message)
+      break
+    }
 
-  for (const row of (data ?? []) as CategoryRow[]) {
-    const existing = out.get(row.brand_id) ?? []
-    existing.push(row.category_slug)
-    out.set(row.brand_id, existing)
+    for (const row of (data ?? []) as CategoryRow[]) {
+      const existing = out.get(row.brand_id) ?? []
+      existing.push(row.category_slug)
+      out.set(row.brand_id, existing)
+    }
   }
 
   for (const [brandId, slugs] of out) {
@@ -43,17 +49,30 @@ export async function listBrandIdsMatchingProductCategories(
 ): Promise<string[] | null> {
   if (categories.length === 0) return null
 
-  const { data, error } = await supabase
-    .from("brand_product_categories")
-    .select("brand_id")
-    .in("category_slug", [...categories])
+  const ids = new Set<string>()
+  let from = 0
+  for (;;) {
+    const { data, error } = await supabase
+      .from("brand_product_categories")
+      .select("brand_id")
+      .in("category_slug", [...categories])
+      .order("brand_id", { ascending: true })
+      .range(from, from + CATEGORY_LIST_PAGE - 1)
 
-  if (error) {
-    console.error("listBrandIdsMatchingProductCategories:", error.message)
-    return []
+    if (error) {
+      console.error("listBrandIdsMatchingProductCategories:", error.message)
+      return [...ids]
+    }
+
+    const rows = (data ?? []) as { brand_id: string }[]
+    for (const row of rows) {
+      if (row.brand_id) ids.add(row.brand_id)
+    }
+    if (rows.length < CATEGORY_LIST_PAGE) break
+    from += CATEGORY_LIST_PAGE
   }
 
-  return [...new Set((data ?? []).map((row) => row.brand_id as string))]
+  return [...ids]
 }
 
 export async function syncBrandProductCategories(

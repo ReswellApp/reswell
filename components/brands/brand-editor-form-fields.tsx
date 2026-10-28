@@ -130,11 +130,11 @@ export function BrandEditorFormFields({
             value={shortDescription}
             onChange={(e) => onShortDescriptionChange(e.target.value)}
             rows={2}
-            placeholder="One-line summary"
+            placeholder="Al Merrick performance shortboards and everyday drivers."
           />
           <p className="text-xs text-muted-foreground">
-            Shown as the lead line on the public brand page when long-form history exists in the catalog; otherwise
-            used as the main story blurb.
+            One or two short sentences (about 160 characters). This is the directory card copy and the lead line on
+            the public brand page.
           </p>
         </div>
       </FieldSection>

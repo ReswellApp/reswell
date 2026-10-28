@@ -39,3 +39,34 @@ export function brandStoryLead(input: {
   if (input.about_paragraphs.length === 0) return null
   return short
 }
+
+/** Directory card copy — one or two short sentences, never a pasted bio. */
+export const BRAND_DIRECTORY_BLURB_MAX = 160
+
+export function brandDirectoryBlurb(
+  raw: string | null | undefined,
+  maxLen = BRAND_DIRECTORY_BLURB_MAX,
+): string | null {
+  let text = raw?.trim() ?? ""
+  if (!text) return null
+
+  const wrapped =
+    (text.startsWith('"') && text.endsWith('"')) ||
+    (text.startsWith("\u201c") && text.endsWith("\u201d"))
+  if (wrapped) text = text.slice(1, -1).trim()
+  if (!text) return null
+
+  if (text.length > maxLen) {
+    const sentence = text.match(/^(.+?[.!?])(?:\s|$)/)
+    if (sentence?.[1] && sentence[1].length <= maxLen) {
+      text = sentence[1]
+    }
+  }
+
+  if (text.length <= maxLen) return text
+
+  const cut = text.slice(0, maxLen - 1)
+  const lastSpace = cut.lastIndexOf(" ")
+  const clipped = (lastSpace > 80 ? cut.slice(0, lastSpace) : cut).trimEnd()
+  return clipped ? `${clipped}…` : null
+}

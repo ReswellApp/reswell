@@ -21,7 +21,7 @@ const BROWSE_LIMIT = 36
 const SUGGEST_DEBOUNCE_MS = 280
 
 function browseBrands(brands: BrandRow[]): BrandRow[] {
-  return [...brands].sort((a, b) => a.name.localeCompare(b.name)).slice(0, BROWSE_LIMIT)
+  return brands.slice(0, BROWSE_LIMIT)
 }
 
 type BrandsDirectorySearchProps = {
