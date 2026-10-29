@@ -1,18 +1,18 @@
 import { Image } from "expo-image"
 import { Stack, useLocalSearchParams, useRouter } from "expo-router"
 import { SymbolView } from "expo-symbols"
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { AppState, FlatList, Pressable, StyleSheet, Text, View } from "react-native"
 import type { MobileInbox } from "@reswell/api-contract"
 import { useFloatingTabBarContentInset } from "@/components/floating-tab-bar"
 import { ReswellInboxActivityIcon } from "@/components/reswell-icons"
 import { ScreenSearchHeader } from "@/components/screen-search-header"
-import { fetchInbox } from "@/lib/api"
+import { fetchInbox, markInboxNotificationRead } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
 import { useAuthGate } from "@/lib/auth-gate"
-import { inboxItemToNative } from "@/lib/inbox-href"
+import { inboxItemNotificationId, inboxItemToNative } from "@/lib/inbox-href"
 import { requestPushPermissionAndRegister } from "@/lib/push-token"
-import { useSyncInboxUnreadCount } from "@/lib/inbox-unread-count"
+import { useInboxUnreadAdjust, useSyncInboxUnreadCount } from "@/lib/inbox-unread-count"
 import { useAccountResource } from "@/lib/use-account-resource"
 import { fontFamily, useReswellColors } from "@/theme"
 
@@ -61,10 +61,16 @@ function InboxList() {
   const { session } = useAuth()
   const tabBarInset = useFloatingTabBarContentInset()
   const syncInboxUnread = useSyncInboxUnreadCount()
+  const adjustInboxUnread = useInboxUnreadAdjust()
+  const [readItemIds, setReadItemIds] = useState<Set<string>>(() => new Set())
+  const readItemIdsRef = useRef(readItemIds)
+  readItemIdsRef.current = readItemIds
   const load = useCallback(
     (accessToken: string) =>
       fetchInbox(accessToken).then((inbox) => {
-        syncInboxUnread(inbox.unread_count)
+        const locallyRead = readItemIdsRef.current
+        const unread = inbox.items.filter((item) => item.unread && !locallyRead.has(item.id)).length
+        syncInboxUnread(unread)
         return inbox
       }),
     [syncInboxUnread],
@@ -96,16 +102,39 @@ function InboxList() {
   }, [session?.access_token])
 
   const items = useMemo(() => {
-    return (data?.items ?? []).filter((item) => {
-      if (filter === "activity") return item.kind === "notification"
-      if (filter === "messages") return item.kind === "message"
-      if (filter === "selling" || filter === "buying") return item.bucket === filter
-      return true
-    })
-  }, [data?.items, filter])
+    return (data?.items ?? [])
+      .map((item) => (readItemIds.has(item.id) ? { ...item, unread: false } : item))
+      .filter((item) => {
+        if (filter === "activity") return item.kind === "notification"
+        if (filter === "messages") return item.kind === "message"
+        if (filter === "selling" || filter === "buying") return item.bucket === filter
+        return true
+      })
+  }, [data?.items, filter, readItemIds])
 
   const activityActive = filter === "activity"
-  const hasUnreadNotifications = (data?.items ?? []).some((item) => item.kind === "notification" && item.unread)
+  const hasUnreadNotifications = (data?.items ?? []).some(
+    (item) => item.kind === "notification" && item.unread && !readItemIds.has(item.id),
+  )
+
+  const openItem = useCallback(
+    (item: MobileInbox["items"][number]) => {
+      if (item.kind === "notification" && item.unread && !readItemIdsRef.current.has(item.id)) {
+        const next = new Set(readItemIdsRef.current)
+        next.add(item.id)
+        readItemIdsRef.current = next
+        setReadItemIds(next)
+        adjustInboxUnread(-1)
+        const notificationId = inboxItemNotificationId(item.id)
+        const token = session?.access_token
+        if (notificationId && token) {
+          void markInboxNotificationRead(token, notificationId).catch(() => undefined)
+        }
+      }
+      router.push(inboxItemToNative(item))
+    },
+    [adjustInboxUnread, router, session?.access_token],
+  )
 
   return (
     <View style={styles.inboxBody}>
@@ -175,7 +204,7 @@ function InboxList() {
             {error ?? (loading ? "Loading inbox…" : "Nothing in your inbox yet.")}
           </Text>
         }
-        renderItem={({ item }) => <InboxRow item={item} onPress={() => router.push(inboxItemToNative(item))} />}
+        renderItem={({ item }) => <InboxRow item={item} onPress={() => openItem(item)} />}
       />
     </View>
   )

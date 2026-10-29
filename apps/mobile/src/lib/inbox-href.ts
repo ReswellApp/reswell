@@ -1,4 +1,5 @@
 import type { Href } from "expo-router"
+import { z } from "zod"
 
 export type InboxNavigationItem = {
   conversation_id?: string | null
@@ -36,6 +37,16 @@ export function inboxHrefToNative(href: string | null | undefined): Href | null 
   if (path === "/inbox" || path === "/messages") return "/inbox"
 
   return null
+}
+
+const NOTIFICATION_ITEM_PREFIX = "notification:"
+const notificationIdSchema = z.string().uuid()
+
+/** UUID for a stored inbox notification. Synthetic support rows are not stored on `notifications`. */
+export function inboxItemNotificationId(itemId: string): string | null {
+  if (!itemId.startsWith(NOTIFICATION_ITEM_PREFIX)) return null
+  const parsed = notificationIdSchema.safeParse(itemId.slice(NOTIFICATION_ITEM_PREFIX.length))
+  return parsed.success ? parsed.data : null
 }
 
 export function inboxItemToNative(item: InboxNavigationItem): Href {

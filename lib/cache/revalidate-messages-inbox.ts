@@ -4,14 +4,18 @@ import { messagesInboxTag } from "@/lib/cache/messages-inbox"
 
 const EXPIRE_NOW = { expire: 0 } as const
 
+export function revalidateMessagesInboxForUser(userId: string): void {
+  // Expire immediately. "max" serves the previous list while revalidating, so a
+  // new reply stays buried and an opened thread keeps its unread bubble.
+  revalidateTag(messagesInboxTag(userId), EXPIRE_NOW)
+}
+
 export function revalidateMessagesInboxForParticipants(
   buyerId: string,
   sellerId: string,
 ): void {
-  // Expire immediately. "max" serves the previous list while revalidating, so a
-  // new reply stays buried and an opened thread keeps its unread bubble.
-  revalidateTag(messagesInboxTag(buyerId), EXPIRE_NOW)
-  revalidateTag(messagesInboxTag(sellerId), EXPIRE_NOW)
+  revalidateMessagesInboxForUser(buyerId)
+  revalidateMessagesInboxForUser(sellerId)
 }
 
 /** When only `conversationId` is known (support/system inserts). */

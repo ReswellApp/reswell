@@ -2098,7 +2098,18 @@ export const mobileInboxSchema = z.object({
   items: z.array(mobileInboxItemSchema),
 })
 
+export const mobileInboxReadBodySchema = z.object({
+  notification_id: z.string().uuid(),
+})
+
+export const mobileInboxReadResultSchema = z.object({
+  notification_id: z.string().uuid(),
+  unread: z.literal(false),
+})
+
 export type MobileInbox = z.infer<typeof mobileInboxSchema>
+export type MobileInboxReadBody = z.infer<typeof mobileInboxReadBodySchema>
+export type MobileInboxReadResult = z.infer<typeof mobileInboxReadResultSchema>
 
 export const mobileConversationPreviewSchema = z.object({
   id: z.string().uuid(),

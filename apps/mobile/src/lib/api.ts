@@ -29,6 +29,7 @@ import {
   mobileSellerResourceSchema,
   mobileCategorySchema,
   mobileHomeSchema,
+  mobileInboxReadResultSchema,
   mobileInboxSchema,
   mobileMarketplaceFeedSchema,
   mobileListingActionResultSchema,
@@ -111,6 +112,7 @@ import {
   type MobileFollowing,
   type MobileHome,
   type MobileInbox,
+  type MobileInboxReadResult,
   type MobileListingDetail,
   type MobileMyListings,
   type MobileListingRails,
@@ -1013,6 +1015,18 @@ export function actOnShopify(accessToken: string, body: MobileShopifyActionBody)
 
 export function fetchInbox(accessToken: string): Promise<MobileInbox> {
   return read("/api/mobile/v1/me/inbox", (data) => mobileInboxSchema.parse(data), accessToken)
+}
+
+export function markInboxNotificationRead(
+  accessToken: string,
+  notificationId: string,
+): Promise<MobileInboxReadResult> {
+  return read(
+    "/api/mobile/v1/me/inbox",
+    (data) => mobileInboxReadResultSchema.parse(data),
+    accessToken,
+    { notification_id: notificationId },
+  )
 }
 
 export function fetchConversations(accessToken: string): Promise<{ conversations: MobileConversationPreview[] }> {

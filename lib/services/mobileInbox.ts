@@ -1,7 +1,11 @@
 import { mobileInboxSchema, type MobileInbox } from "@reswell/api-contract"
+import { revalidateMessagesInboxForUser } from "@/lib/cache/revalidate-messages-inbox"
 import { listingCardImageSrc } from "@/lib/listing-image-display"
 import type { MobileApiResult } from "@/lib/services/mobileApi"
-import { getMessagesInboxForUser } from "@/lib/services/messagesInbox"
+import {
+  getMessagesInboxForUser,
+  markInboxNotificationsReadForUser,
+} from "@/lib/services/messagesInbox"
 import { conversationLastActivityIso } from "@/lib/utils/messages-inbox-grouping"
 import { inboxActivityNotificationHref } from "@/lib/utils/messages-inbox-activity"
 import { absoluteProxiedProfileMediaUrl } from "@/lib/public-media-display-src"
@@ -84,4 +88,21 @@ export async function getMobileInboxService(userId: string): Promise<MobileApiRe
   })
   if (!parsed.success) return { ok: false, status: 500, error: "Unable to load your inbox right now" }
   return { ok: true, data: parsed.data }
+}
+
+export async function markMobileInboxNotificationReadService(
+  userId: string,
+  notificationId: string,
+): Promise<MobileApiResult<{ notification_id: string; unread: false }>> {
+  const result = await markInboxNotificationsReadForUser(userId, notificationId)
+  if (!result.ok) {
+    const invalid = result.error === "Invalid request"
+    return {
+      ok: false,
+      status: invalid ? 400 : 500,
+      error: invalid ? "Invalid notification" : "Unable to update this notification right now",
+    }
+  }
+  revalidateMessagesInboxForUser(userId)
+  return { ok: true, data: { notification_id: notificationId, unread: false } }
 }

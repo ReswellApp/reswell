@@ -148,3 +148,37 @@ export async function markMarketplaceConversationRead(
 
   return { ok: true, buyerId, sellerId }
 }
+
+/**
+ * Marks inbox notifications read for the viewer. Pass `notificationId` to mark
+ * one row; omit it to mark every unread notification (website Activity tab).
+ */
+export async function markInboxNotificationsReadForUser(
+  userId: string,
+  notificationId?: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!z.string().uuid().safeParse(userId).success) {
+    return { ok: false, error: "Invalid request" }
+  }
+  if (notificationId !== undefined && !z.string().uuid().safeParse(notificationId).success) {
+    return { ok: false, error: "Invalid request" }
+  }
+
+  const service = createServiceRoleClient()
+  let query = service
+    .from("notifications")
+    .update({ is_read: true })
+    .eq("user_id", userId)
+    .eq("is_read", false)
+  if (notificationId) {
+    query = query.eq("id", notificationId)
+  }
+
+  const { error } = await query
+  if (error) {
+    console.error("[markInboxNotificationsReadForUser]", error)
+    return { ok: false, error: "Failed to update notifications" }
+  }
+
+  return { ok: true }
+}

@@ -1,10 +1,16 @@
 "use server"
 
 import { z } from "zod"
-import { revalidateMessagesInboxForParticipants } from "@/lib/cache/revalidate-messages-inbox"
+import {
+  revalidateMessagesInboxForParticipants,
+  revalidateMessagesInboxForUser,
+} from "@/lib/cache/revalidate-messages-inbox"
 import { resolveOperableOrderSellerId } from "@/lib/account-access/order-operator-session"
 import { getShopAccountContext, viewerForConversation } from "@/lib/services/accountAccess"
-import { markMarketplaceConversationRead } from "@/lib/services/messagesInbox"
+import {
+  markInboxNotificationsReadForUser,
+  markMarketplaceConversationRead,
+} from "@/lib/services/messagesInbox"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { findMessagesSupportTicketMetaByConversationId } from "@/lib/db/contactMessages"
 import { getSupportCaseByContactMessageId } from "@/lib/db/supportCases"
@@ -1204,17 +1210,9 @@ export async function markInboxNotificationsRead(): Promise<
     return { error: "Unauthorized" }
   }
 
-  const service = createServiceRoleClient()
-  const { error } = await service
-    .from("notifications")
-    .update({ is_read: true })
-    .eq("user_id", user.id)
-    .eq("is_read", false)
-
-  if (error) {
-    return { error: "Failed to update notifications" }
-  }
-
+  const result = await markInboxNotificationsReadForUser(user.id)
+  if (!result.ok) return { error: result.error }
+  revalidateMessagesInboxForUser(user.id)
   return { ok: true }
 }
 

@@ -7,6 +7,7 @@ type InboxUnreadValue = {
   count: number
   reload: () => void
   sync: (count: number) => void
+  adjust: (delta: number) => void
 }
 
 const InboxUnreadContext = createContext<InboxUnreadValue | null>(null)
@@ -19,6 +20,10 @@ export function InboxUnreadProvider({ children }: { children: ReactNode }) {
 
   const sync = useCallback((next: number) => {
     setCount(Math.max(0, next))
+  }, [])
+
+  const adjust = useCallback((delta: number) => {
+    setCount((current) => Math.max(0, current + delta))
   }, [])
 
   const reload = useCallback(() => {
@@ -42,7 +47,7 @@ export function InboxUnreadProvider({ children }: { children: ReactNode }) {
     return () => subscription.remove()
   }, [reload])
 
-  const value = useMemo(() => ({ count, reload, sync }), [count, reload, sync])
+  const value = useMemo(() => ({ count, reload, sync, adjust }), [count, reload, sync, adjust])
   return <InboxUnreadContext.Provider value={value}>{children}</InboxUnreadContext.Provider>
 }
 
@@ -56,4 +61,8 @@ export function useInboxUnreadReload(): () => void {
 
 export function useSyncInboxUnreadCount(): (count: number) => void {
   return useContext(InboxUnreadContext)?.sync ?? (() => undefined)
+}
+
+export function useInboxUnreadAdjust(): (delta: number) => void {
+  return useContext(InboxUnreadContext)?.adjust ?? (() => undefined)
 }
