@@ -422,21 +422,25 @@ function MessageRow({
     return (
       <View style={[styles.orderWrap, message.mine ? styles.mine : styles.theirs]}>
         <View style={[styles.orderCard, { borderColor: colors.border, backgroundColor: colors.background }]}>
-          <Text style={[styles.orderKicker, { color: colors.muted, fontFamily: fontFamily.text }]}>Order placed</Text>
-          <Text style={[styles.orderNum, { color: colors.foreground, fontFamily: fontFamily.text }]}>#{order.order_num}</Text>
+          <View style={styles.orderHeader}>
+            <View style={styles.orderHeaderText}>
+              <Text style={[styles.orderKicker, { color: colors.foreground, fontFamily: fontFamily.text }]}>Order placed</Text>
+              <Text style={[styles.orderNum, { color: colors.muted, fontFamily: fontFamily.text }]}>#{order.order_num}</Text>
+            </View>
+            <Text style={[styles.orderTotal, { color: colors.foreground, fontFamily: fontFamily.headline }]}>{order.total_label}</Text>
+          </View>
           {order.items.map((item, index) => (
             <Text key={`${order.order_id}-${index}`} style={[styles.orderItem, { color: colors.foreground, fontFamily: fontFamily.text }]}>
               {order.items.length > 1 ? `• ${item}` : item}
             </Text>
           ))}
-          <Text style={[styles.orderTotal, { color: colors.foreground, fontFamily: fontFamily.headline }]}>{order.total_label}</Text>
           <Text style={[styles.orderMeta, { color: colors.muted, fontFamily: fontFamily.text }]}>
             {order.payment_label} · {order.fulfillment_label}
           </Text>
           <Text style={[styles.orderMeta, { color: colors.muted, fontFamily: fontFamily.text }]}>{order.hint}</Text>
           <Pressable onPress={() => onOpenOrder(order.order_id)} style={[styles.orderButton, { backgroundColor: colors.foreground }]}>
             <Text style={[styles.orderButtonLabel, { color: colors.primaryForeground, fontFamily: fontFamily.text }]}>
-              {viewerIsSeller ? "View sale" : "View purchases"}
+              {viewerIsSeller ? "View sale" : "View purchase"}
             </Text>
           </Pressable>
         </View>
@@ -531,14 +535,16 @@ const styles = StyleSheet.create({
   mine: { alignSelf: "flex-end" },
   theirs: { alignSelf: "flex-start" },
   orderWrap: { maxWidth: "86%", gap: 4 },
-  orderCard: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 18, padding: 14, gap: 4 },
-  orderKicker: { fontSize: 11, fontWeight: "700", letterSpacing: 0.4, textTransform: "uppercase" },
-  orderNum: { fontSize: 17, fontWeight: "700" },
-  orderItem: { fontSize: 14, lineHeight: 18 },
-  orderTotal: { marginTop: 4, fontSize: 20, fontWeight: "700" },
+  orderCard: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 16, padding: 14, gap: 6 },
+  orderHeader: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 12 },
+  orderHeaderText: { flex: 1, minWidth: 0, gap: 2 },
+  orderKicker: { fontSize: 15, fontWeight: "600" },
+  orderNum: { fontSize: 13 },
+  orderItem: { fontSize: 13, lineHeight: 18 },
+  orderTotal: { fontSize: 15, fontWeight: "600" },
   orderMeta: { fontSize: 13, lineHeight: 18 },
-  orderButton: { marginTop: 8, borderRadius: 12, alignItems: "center", paddingVertical: 10 },
-  orderButtonLabel: { fontSize: 15, fontWeight: "700" },
+  orderButton: { marginTop: 4, borderRadius: 8, alignItems: "center", paddingVertical: 9 },
+  orderButtonLabel: { fontSize: 13, fontWeight: "600" },
   safety: { flexDirection: "row", alignItems: "center", gap: 10, borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 20, paddingVertical: 12 },
   safetyText: { flex: 1, fontSize: 13, lineHeight: 18 },
   safetyLink: { fontWeight: "700" },
