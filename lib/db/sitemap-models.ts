@@ -12,6 +12,7 @@ import {
   type ModelSitemapCandidate,
   type ModelSitemapSignal,
 } from "@/lib/models/model-page-indexable"
+import { isPublicCatalogModelName } from "@/lib/brands/public-catalog-model"
 import { modelPageSlug } from "@/lib/models/routes"
 import { PEER_LISTING_SECTIONS_FILTER } from "@/lib/peer-listing-sections"
 
@@ -104,6 +105,7 @@ async function fetchModelCandidates(
   }[]) {
     const joined = row.brands
     const brandSlug = (Array.isArray(joined) ? joined[0]?.slug : joined?.slug)?.trim() ?? ""
+    if (!isPublicCatalogModelName(row.name)) continue
     const modelSlug = row.name ? modelPageSlug(row.name) : ""
     const id = row.id?.trim() ?? ""
     if (!id || !brandSlug || !modelSlug) continue

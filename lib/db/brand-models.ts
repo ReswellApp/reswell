@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { BrandProductCategorySlug } from "@/lib/brand-product-categories"
+import { isPublicCatalogModelName } from "@/lib/brands/public-catalog-model"
 import type { SurfboardSellCategoryKey } from "@/lib/surfboard-sell-categories"
 
 export type BrandModelRow = {
@@ -112,14 +113,16 @@ export async function listBrandModelsForPublicPageByBrandId(
     return []
   }
 
-  return ((data ?? []) as BrandModelRow[]).map((row) => ({
-    ...row,
-    name: row.name.trim(),
-    description: row.description?.trim() || null,
-    image_url: row.image_url ?? null,
-    product_category_slug: row.product_category_slug ?? "surfboards",
-    board_category_slug: row.board_category_slug ?? null,
-  }))
+  return ((data ?? []) as BrandModelRow[])
+    .map((row) => ({
+      ...row,
+      name: row.name.trim(),
+      description: row.description?.trim() || null,
+      image_url: row.image_url ?? null,
+      product_category_slug: row.product_category_slug ?? "surfboards",
+      board_category_slug: row.board_category_slug ?? null,
+    }))
+    .filter((row) => isPublicCatalogModelName(row.name))
 }
 
 /** Public catalog rows for sell-flow model picker (`brand_models` only — not variants). */
