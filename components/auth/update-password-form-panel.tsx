@@ -76,7 +76,7 @@ export function UpdatePasswordFormPanel() {
   useEffect(() => {
     if (phase !== "success") return
     const timer = window.setTimeout(() => {
-      router.push("/dashboard")
+      router.push("/dashboard/listings")
       router.refresh()
     }, 2400)
     return () => window.clearTimeout(timer)
@@ -96,12 +96,12 @@ export function UpdatePasswordFormPanel() {
             </div>
             <CardTitle className="text-2xl">Password updated</CardTitle>
             <CardDescription>
-              You&apos;re all set. Taking you to your dashboard…
+              You&apos;re all set. Taking you to your listings…
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button asChild className="w-full">
-              <Link href="/dashboard">Continue to dashboard</Link>
+              <Link href="/dashboard/listings">Continue to listings</Link>
             </Button>
           </CardContent>
         </Card>

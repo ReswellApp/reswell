@@ -14,12 +14,12 @@ export default async function DashboardLayout({
   const { supabase, user } = await getCachedDashboardSession()
 
   if (!user) {
-    redirect("/auth/login?redirect=/dashboard")
+    redirect("/auth/login?redirect=/dashboard/listings")
   }
 
   const shop = await getShopAccountContext()
   if (!shop) {
-    redirect("/auth/login?redirect=/dashboard")
+    redirect("/auth/login?redirect=/dashboard/listings")
   }
 
   const [{ data: shipperRow, error: shipperError }, { data: dropoffRow, error: dropoffError }] =

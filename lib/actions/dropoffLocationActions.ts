@@ -39,7 +39,7 @@ export async function updateDropoffLocationAction(raw: unknown) {
   return { success: true as const, location: result.location }
 }
 
-const GRANT_PATHS = ["/admin/dropoff-locations", "/dashboard", "/dashboard/dropoff-location", "/messages"]
+const GRANT_PATHS = ["/admin/dropoff-locations", "/dashboard/dropoff-location", "/messages"]
 
 export async function grantDropoffLocationAccountAction(raw: unknown) {
   const parsed = dropoffLocationGrantSchema.safeParse(raw)

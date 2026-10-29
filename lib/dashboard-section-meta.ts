@@ -4,9 +4,9 @@ export interface DashboardSectionMeta {
   description: string
 }
 
-const OVERVIEW_META: DashboardSectionMeta = {
-  sectionName: "Overview",
-  description: "Your balance, listings, and every part of your account.",
+const FALLBACK_META: DashboardSectionMeta = {
+  sectionName: "Account",
+  description: "Your listings, purchases, and account settings.",
 }
 
 const SECTION_META_BY_PREFIX: { prefix: string; meta: DashboardSectionMeta }[] = [
@@ -120,15 +120,11 @@ const SECTION_META_BY_PREFIX: { prefix: string; meta: DashboardSectionMeta }[] =
 export function resolveDashboardSectionMeta(pathname: string): DashboardSectionMeta {
   const normalized = pathname.replace(/\/$/, "") || "/"
 
-  if (normalized === "/dashboard") {
-    return OVERVIEW_META
-  }
-
   for (const { prefix, meta } of SECTION_META_BY_PREFIX) {
     if (normalized === prefix || normalized.startsWith(`${prefix}/`)) {
       return meta
     }
   }
 
-  return OVERVIEW_META
+  return FALLBACK_META
 }

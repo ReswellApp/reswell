@@ -1787,7 +1787,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
             {user && authLoaded && (
               <>
                 <Link
-                  href="/dashboard"
+                  href="/dashboard/listings"
                   onClick={onMobileDrawerLinkClick}
                   className="mb-3 flex items-center gap-3 rounded-xl border border-border bg-muted/30 p-3 no-underline transition-colors hover:bg-muted/50"
                 >

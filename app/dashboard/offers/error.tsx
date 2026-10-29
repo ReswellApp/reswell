@@ -36,7 +36,7 @@ export default function DashboardOffersError({
           Try again
         </Button>
         <Button type="button" variant="outline" asChild>
-          <Link href="/dashboard">Back to dashboard</Link>
+          <Link href="/dashboard/listings">Back to listings</Link>
         </Button>
       </div>
       {error.digest && (

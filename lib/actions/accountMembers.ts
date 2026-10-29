@@ -15,7 +15,6 @@ import {
 } from "@/lib/validations/account-members"
 
 function revalidateAccountSurfaces() {
-  revalidatePath("/dashboard")
   revalidatePath("/dashboard/profile")
   revalidatePath("/dashboard/profile/team")
   revalidatePath("/dashboard/listings")
