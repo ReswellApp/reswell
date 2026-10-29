@@ -1,5 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { getLatestAdminLabelUrlsForOrder } from "@/lib/db/adminOrderShippingLabels"
+import {
+  pickLatestPaperlessQrByOrderId,
+  type OrderPaperlessQrSummary,
+  type PaperlessQrLabelRow,
+} from "@/lib/shipping/seller-shipping-label-qr"
 
 export type OrderShippingLabelOrigin = "auto_reswell_checkout" | "seller_paid"
 
@@ -373,4 +378,27 @@ export async function fetchOrderIdsWithPrintableShippingLabelPdfs(
   }
 
   return printable
+}
+
+const PAPERLESS_QR_SELECT =
+  "order_id, created_at, paperless_qr_url, paperless_qr_storage_path, paperless_instructions, paperless_handoff_code"
+
+/** Latest marketplace or admin paperless QR per order, when the carrier returned one. */
+export async function fetchPaperlessQrByOrderId(
+  supabase: SupabaseClient,
+  orderIds: string[],
+): Promise<Map<string, OrderPaperlessQrSummary>> {
+  const ids = [...new Set(orderIds.filter(Boolean))]
+  if (ids.length === 0) return new Map()
+
+  const [marketplaceRes, adminRes] = await Promise.all([
+    supabase.from("order_shipping_labels").select(PAPERLESS_QR_SELECT).in("order_id", ids),
+    supabase.from("order_admin_shipping_labels").select(PAPERLESS_QR_SELECT).in("order_id", ids),
+  ])
+
+  const rows: PaperlessQrLabelRow[] = [
+    ...((marketplaceRes.data ?? []) as PaperlessQrLabelRow[]),
+    ...((adminRes.data ?? []) as PaperlessQrLabelRow[]),
+  ]
+  return pickLatestPaperlessQrByOrderId(rows)
 }

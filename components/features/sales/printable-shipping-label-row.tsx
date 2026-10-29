@@ -2,11 +2,12 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { Printer } from "lucide-react"
+import { Printer, QrCode } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
+import { sellerOpenShipmentLabelStatus } from "@/lib/shipping/seller-shipping-label-qr"
 import { listingPortraitThumbClass, listingPortraitThumbSizes } from "@/lib/utils/dashboard-display-styles"
 import { cn } from "@/lib/utils"
 
@@ -17,6 +18,9 @@ export type PrintableShippingLabelSale = {
   imageUrl: string | null
   buyerName: string
   hasPrintableLabel: boolean
+  hasPaperlessQr: boolean
+  paperlessInstructions: string | null
+  paperlessHandoffCode: string | null
 }
 
 export function PrintableShippingLabelRow({
@@ -24,12 +28,16 @@ export function PrintableShippingLabelRow({
   checked,
   onToggle,
   onPrint,
+  onShowQr,
 }: {
   sale: PrintableShippingLabelSale
   checked: boolean
   onToggle: (next: boolean) => void
   onPrint: () => void
+  onShowQr: () => void
 }) {
+  const ready = sale.hasPrintableLabel || sale.hasPaperlessQr
+
   return (
     <li>
       <div className={cn("flex items-center gap-3 px-3 py-3", checked && "bg-primary/[0.04]")}>
@@ -63,21 +71,37 @@ export function PrintableShippingLabelRow({
               Sale #{sale.orderNum} · {sale.buyerName}
             </p>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              {sale.hasPrintableLabel ? "Label ready to print" : "Needs a shipping label"}
+              {sellerOpenShipmentLabelStatus(sale)}
             </p>
           </div>
         </div>
-        {sale.hasPrintableLabel ? (
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="shrink-0 gap-1.5"
-            onClick={onPrint}
-          >
-            <Printer className="h-3.5 w-3.5" />
-            Print label
-          </Button>
+        {ready ? (
+          <div className="flex shrink-0 flex-col gap-1.5 sm:flex-row">
+            {sale.hasPaperlessQr ? (
+              <Button
+                type="button"
+                size="sm"
+                className="shrink-0 gap-1.5"
+                onClick={onShowQr}
+                aria-label={`Show USPS QR code for ${sale.title}`}
+              >
+                <QrCode className="h-3.5 w-3.5" />
+                Show QR
+              </Button>
+            ) : null}
+            {sale.hasPrintableLabel ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="shrink-0 gap-1.5"
+                onClick={onPrint}
+              >
+                <Printer className="h-3.5 w-3.5" />
+                Print label
+              </Button>
+            ) : null}
+          </div>
         ) : (
           <Button size="sm" className="shrink-0" asChild>
             <Link href={`/shipping?order=${encodeURIComponent(sale.orderId)}`}>Buy label</Link>
