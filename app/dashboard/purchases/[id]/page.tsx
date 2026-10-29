@@ -38,7 +38,6 @@ import {
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
 import { packageTrackHref } from "@/lib/utils/carrier-tracking-url"
-import { formatCarrierDisplayName } from "@/lib/shipping/resolve-carrier-code"
 import { helpHubHref } from "@/lib/help/help-hub-intents"
 import {
   daysUntilShippingDeadline,
@@ -261,9 +260,6 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
   const isRefunded = orderStatusIsRefunded(order.status)
   const fulfillmentLocked = orderStatusLocksDuringRefund(order.status)
   const carrierTracking = parseOrderTrackingDetail(trackingDetailRaw)
-  const carrierName = order.tracking_carrier?.trim()
-    ? formatCarrierDisplayName(order.tracking_carrier, null)
-    : null
   const actualDeliveryAt =
     carrierTracking?.actual_delivery_date ?? order.carrier_delivered_at ?? null
   const statusDisplay = resolveSaleCardStatusDisplay({
@@ -403,7 +399,7 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
           deliveryStatus: order.delivery_status,
           orderStatus: order.status,
           hasTrackingNumber: Boolean(order.tracking_number?.trim()),
-          carrierName: carrierName === "Carrier" ? null : carrierName,
+          carrierStatusCode: carrierTracking?.status_code,
           events: carrierTracking?.events ?? [],
           actualDeliveryAt,
           refundedAt: order.refunded_at,

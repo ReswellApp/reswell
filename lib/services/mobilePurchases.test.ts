@@ -111,7 +111,10 @@ describe("mobile purchases", () => {
     assert.equal(detail.shipping_amount_label, "$6.50")
     assert.equal(detail.total_amount_label, "$176.50")
     assert.equal(detail.timeline_heading, "Shipping Details")
-    assert.equal(detail.timeline[0]?.title, "Purchased")
+    assert.deepEqual(
+      detail.timeline.map((step) => step.title),
+      ["Purchased", "Shipping Label Created"],
+    )
     assert.equal(detail.address_name, "Hayden Garfield")
     assert.ok(detail.address_lines.some((line) => line.includes("915 DE LA VINA ST")))
     assert.equal(detail.seller_handle, "terramar-surf")
