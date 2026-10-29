@@ -2,7 +2,10 @@ import { NextResponse } from "next/server"
 import { z } from "zod"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { requireAdmin } from "@/lib/brands/admin-server"
-import type { AdminOrderCapabilities } from "@/lib/admin/admin-order-capabilities"
+import {
+  adminOrderStaffCapabilities,
+  type AdminOrderCapabilities,
+} from "@/lib/admin/admin-order-capabilities"
 import { getOrderDetailForAdmin, isPostgrestSchemaStaleError } from "@/lib/db/adminOrders"
 import { dbGetIncreasedAdjustmentTotalsByOrderIds } from "@/lib/db/shipengineLabelAdjustments"
 import {
@@ -81,31 +84,21 @@ export async function GET(
       }
     : null
 
-  const canFulfillReswellShop =
-    gate.ctx.isAdmin &&
-    data.is_reswell_shop &&
-    data.status === "confirmed" &&
-    data.fulfillment_method === "shipping" &&
-    data.delivery_status === "pending" &&
-    Boolean(data.buyer_id)
-
-  const canReplaceShippingLabel =
-    gate.ctx.isAdmin &&
-    !data.is_reswell_shop &&
-    data.fulfillment_method === "shipping" &&
-    (data.status === "confirmed" || data.status === "refunding") &&
-    data.delivery_status !== "delivered" &&
-    data.delivery_status !== "picked_up"
+  const staff = adminOrderStaffCapabilities({
+    isAdmin: gate.ctx.isAdmin,
+    isReswellShop: data.is_reswell_shop,
+    status: data.status,
+    fulfillmentMethod: data.fulfillment_method,
+    deliveryStatus: data.delivery_status,
+    hasBuyer: Boolean(data.buyer_id),
+  })
 
   const capabilities: AdminOrderCapabilities = {
-    canRefund: gate.ctx.isAdmin,
-    canReleaseShippingSellerEarnings: gate.ctx.isAdmin && !data.is_reswell_shop,
+    ...staff,
     hasShippingLabel,
     hasPaperlessQr,
     paperlessInstructions: preparedShippingLabel?.paperless_instructions ?? null,
     paperlessHandoffCode: preparedShippingLabel?.paperless_handoff_code ?? null,
-    canFulfillReswellShop,
-    canReplaceShippingLabel,
     shipFromOnFile,
   }
 
