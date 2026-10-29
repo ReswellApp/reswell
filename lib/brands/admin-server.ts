@@ -5,6 +5,8 @@ import type { SupabaseClient, User } from "@supabase/supabase-js"
 export type AdminContext = {
   supabase: SupabaseClient
   user: User
+  /** Always true: this helper only succeeds for marketplace admins. */
+  isAdmin: true
 }
 
 export type AdminStaffContext = {
@@ -69,5 +71,5 @@ export async function requireAdmin():
   if (!profile?.is_admin) {
     return { ok: false, response: NextResponse.json({ error: "Admin only" }, { status: 403 }) }
   }
-  return { ok: true, ctx: { supabase, user } }
+  return { ok: true, ctx: { supabase, user, isAdmin: true } }
 }
