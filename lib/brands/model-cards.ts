@@ -1,4 +1,5 @@
 import type { BrandModelRow } from "@/lib/db/brand-models"
+import { isPublicCatalogModelName } from "@/lib/brands/public-catalog-model"
 import { modelPageSlug } from "@/lib/models/routes"
 
 export type BrandPageModelCard = {
@@ -13,6 +14,7 @@ export type BrandPageModelCard = {
 export function toBrandPageModelCards(models: BrandModelRow[]): BrandPageModelCard[] {
   const out: BrandPageModelCard[] = []
   for (const model of models) {
+    if (!isPublicCatalogModelName(model.name)) continue
     const slug = modelPageSlug(model.name)
     if (!slug) continue
     out.push({
