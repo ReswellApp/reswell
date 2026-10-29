@@ -10,6 +10,7 @@ import { parseOrderTrackingDetail } from "@/lib/shipping/order-tracking-detail"
 import {
   fetchOrderIdsWithPreparedShippingLabels,
   fetchOrderIdsWithPrintableShippingLabelPdfs,
+  fetchPaperlessQrByOrderId,
 } from "@/lib/db/orderShippingLabels"
 import { resolveSaleCardStatusDisplay } from "@/lib/sale-card-status"
 import { getOrderReturnSummariesByOrderIds } from "@/lib/db/orderReturnStatusSummary"
@@ -247,9 +248,10 @@ export default async function SalesPage({
   )
 
   const orderIds = list.map((s) => s.id)
-  const [preparedLabelOrderIds, printablePdfOrderIds] = await Promise.all([
+  const [preparedLabelOrderIds, printablePdfOrderIds, paperlessQrByOrderId] = await Promise.all([
     fetchOrderIdsWithPreparedShippingLabels(supabase, orderIds),
     fetchOrderIdsWithPrintableShippingLabelPdfs(supabase, orderIds),
+    fetchPaperlessQrByOrderId(supabase, orderIds),
   ])
   const returnSummaries = await getOrderReturnSummariesByOrderIds(
     supabase,
@@ -329,6 +331,9 @@ export default async function SalesPage({
         }),
         hasPrintableLabel:
           saleHasPrintableOpenLabel(saleFilterInput(sale)) && printablePdfOrderIds.has(sale.id),
+        hasPaperlessQr: paperlessQrByOrderId.has(sale.id),
+        paperlessInstructions: paperlessQrByOrderId.get(sale.id)?.paperlessInstructions ?? null,
+        paperlessHandoffCode: paperlessQrByOrderId.get(sale.id)?.paperlessHandoffCode ?? null,
       }
     })
 
@@ -349,6 +354,9 @@ export default async function SalesPage({
         orderNum: formatOrderNumForCustomer(sale.order_num, sale.id),
         title: listing?.title ? capitalizeWords(listing.title) : "Item (listing removed)",
         imageUrl: primaryImage(listing?.listing_images ?? null),
+        hasPaperlessQr: paperlessQrByOrderId.has(sale.id),
+        paperlessInstructions: paperlessQrByOrderId.get(sale.id)?.paperlessInstructions ?? null,
+        paperlessHandoffCode: paperlessQrByOrderId.get(sale.id)?.paperlessHandoffCode ?? null,
       }
     })
 
