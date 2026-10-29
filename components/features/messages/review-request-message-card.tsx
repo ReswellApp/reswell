@@ -1,7 +1,6 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
-import { format, isToday, isYesterday } from "date-fns"
 import { CheckCircle2, Star } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
@@ -13,13 +12,13 @@ import type { ExistingSellerReview } from "@/components/review-seller-controls"
 import { SellerReviewDialog } from "@/components/features/messages/seller-review-dialog"
 import { LocalDateTime } from "@/components/ui/local-datetime"
 import { ratingStarEmptyClassName, ratingStarFilledClassName } from "@/lib/rating-star-styles"
-
-function formatThreadTime(dateStr: string) {
-  const date = new Date(dateStr)
-  if (isToday(date)) return format(date, "h:mm a")
-  if (isYesterday(date)) return `Yesterday ${format(date, "h:mm a")}`
-  return format(date, "MMM d, h:mm a")
-}
+import {
+  THREAD_EVENT_CTA_CLASS,
+  ThreadEventActions,
+  ThreadEventCard,
+  ThreadEventHint,
+  ThreadEventListings,
+} from "@/components/features/messages/thread-event-card"
 
 const STAR_FILLED = ratingStarFilledClassName
 const STAR_EMPTY = ratingStarEmptyClassName
@@ -108,31 +107,17 @@ export function ReviewRequestMessageCard({
 
   return (
     <>
-      <div
-        className={cn(
-          "w-full max-w-[min(100%,20rem)] rounded-[20px] border border-border/60 bg-card p-3.5 text-foreground shadow-sm sm:max-w-[min(100%,22rem)]",
-          "ring-1 ring-foreground/[0.04]",
-        )}
+      <ThreadEventCard
+        icon={Star}
+        tone="accent"
+        title="Review requested"
+        subtitle={`#${orderNum}`}
+        createdAt={createdAt}
       >
-        <div className="flex items-start gap-2.5">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-[#EBB847]/14">
-            <Star className={cn("h-5 w-5", ratingStarFilledClassName)} strokeWidth={0} aria-hidden />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              Review request
-            </p>
-            <p className="mt-0.5 truncate text-[17px] font-semibold leading-snug tracking-[-0.02em]">
-              #{orderNum}
-            </p>
-          </div>
-        </div>
-
-        <p className="mt-3 line-clamp-3 text-[15px] leading-snug text-foreground/90">{listingTitle}</p>
-
+        <ThreadEventListings titles={[listingTitle]} />
         {viewerIsBuyer ? (
           existing ? (
-            <div className="mt-3 rounded-2xl border border-primary/15 bg-primary/[0.04] px-3 py-2.5">
+            <div className="rounded-xl border border-primary/15 bg-primary/[0.04] px-3 py-2.5">
               <p className="flex items-center gap-1.5 text-[13px] font-semibold text-primary/90">
                 <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden />
                 You reviewed this seller
@@ -145,30 +130,28 @@ export function ReviewRequestMessageCard({
                 </span>
               </div>
               {existing.comment ? (
-                <p className="mt-2 text-[14px] leading-snug text-muted-foreground whitespace-pre-wrap">
+                <p className="mt-2 text-[13px] leading-snug text-muted-foreground whitespace-pre-wrap">
                   {existing.comment}
                 </p>
               ) : null}
               <MarketplaceReviewPhotos reviewId={existing.id} photos={existing.photos} size="sm" />
             </div>
           ) : (
-            <Button
-              type="button"
-              className="mt-3 h-10 w-full rounded-xl text-[15px] font-semibold"
-              variant="default"
-              onClick={() => setReviewOpen(true)}
-            >
-              Write review
-            </Button>
+            <ThreadEventActions>
+              <Button
+                type="button"
+                className={THREAD_EVENT_CTA_CLASS}
+                variant="default"
+                onClick={() => setReviewOpen(true)}
+              >
+                Write review
+              </Button>
+            </ThreadEventActions>
           )
         ) : (
-          <p className="mt-3 rounded-2xl bg-muted/45 px-3 py-2.5 text-[14px] leading-snug text-foreground/90">
-            A review request was sent to the buyer for this sale.
-          </p>
+          <ThreadEventHint>A review request was sent to the buyer for this sale.</ThreadEventHint>
         )}
-
-        <p className="mt-2 text-[11px] tabular-nums text-muted-foreground">{formatThreadTime(createdAt)}</p>
-      </div>
+      </ThreadEventCard>
 
       {viewerIsBuyer && !existing ? (
         <SellerReviewDialog

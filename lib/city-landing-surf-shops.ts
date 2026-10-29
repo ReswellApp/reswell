@@ -65,6 +65,43 @@ export const CITY_SURF_SHOPS: CitySurfShop[] = [
       "Independent surf shop at the bottom of State Street, steps from the water. Surf N' Wear's Beach House, serving Santa Barbara since 1962.",
   },
   {
+    id: "channel-islands-surfboards",
+    slug: "channel-islands-surfboards",
+    name: "Channel Islands Surfboards",
+    city: "Santa Barbara",
+    state: "CA",
+    citySlugs: ["santa-barbara"],
+    nearbyCitySlug: "santa-barbara",
+    nearbyCityName: "Santa Barbara",
+    logoSrc: "/images/cities/surf-shops/channel-islands-surfboards.png",
+    address: "36 Anacapa St, Santa Barbara, CA 93101",
+    phone: "(805) 966-7213",
+    mapsUrl:
+      "https://www.google.com/maps/search/?api=1&query=Channel+Islands+Surfboards+36+Anacapa+St+Santa+Barbara+CA",
+    websiteUrl: "https://cisurfboards.com",
+    foundedYear: 1969,
+    description:
+      "Channel Islands' Santa Barbara retail shop on Anacapa Street. Performance surfboards from Al Merrick and the CI team, est. 1969.",
+  },
+  {
+    id: "mollusk-santa-barbara",
+    slug: "mollusk-santa-barbara",
+    name: "Mollusk Surf Shop",
+    city: "Santa Barbara",
+    state: "CA",
+    citySlugs: ["santa-barbara"],
+    nearbyCitySlug: "santa-barbara",
+    nearbyCityName: "Santa Barbara",
+    logoSrc: "/images/cities/surf-shops/mollusk.png",
+    address: "208 Gray Ave, Santa Barbara, CA 93101",
+    phone: "(805) 568-0908",
+    mapsUrl:
+      "https://www.google.com/maps/search/?api=1&query=Mollusk+Surf+Shop+208+Gray+Ave+Santa+Barbara+CA",
+    websiteUrl: "https://mollusksurfshop.com/santa-barbara",
+    description:
+      "Independent surf shop on Gray Avenue in Santa Barbara. Boards, wetsuits, and Mollusk hardgoods.",
+  },
+  {
     id: "surf-country-goleta",
     slug: "surf-country-goleta",
     name: "Surf Country",

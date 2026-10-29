@@ -1,10 +1,11 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { Printer } from "lucide-react"
+import { Printer, QrCode } from "lucide-react"
 import { toast } from "sonner"
 import { PrintShippingLabelPreviewDialog } from "@/components/features/sales/print-shipping-label-preview-dialog"
 import { PrintableShippingLabelRow } from "@/components/features/sales/printable-shipping-label-row"
+import { SellerShippingLabelQrDialog } from "@/components/features/sales/seller-shipping-label-qr-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -18,6 +19,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import type { PrintableShippingLabelSale } from "@/components/features/sales/printable-shipping-label-row"
+import { sellerShippingLabelQrHref } from "@/lib/shipping/seller-shipping-label-qr"
 import { SELLER_PRINT_SHIPPING_LABELS_MAX } from "@/lib/validations/seller-print-shipping-labels"
 import { CarrierAdjustmentNotice } from "@/components/features/shipping/carrier-adjustment-notice"
 
@@ -42,9 +44,23 @@ export function PrintShippingLabelsModule({
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [previewIds, setPreviewIds] = useState<string[] | null>(null)
   const [previewLoading, setPreviewLoading] = useState(false)
+  const [qrSale, setQrSale] = useState<PrintableShippingLabelSale | null>(null)
 
   const printableSales = useMemo(() => sales.filter((sale) => sale.hasPrintableLabel), [sales])
-  const needsLabelCount = sales.length - printableSales.length
+  const qrReadyCount = useMemo(
+    () => sales.filter((sale) => sale.hasPaperlessQr).length,
+    [sales],
+  )
+  const needsLabelCount = useMemo(
+    () => sales.filter((sale) => !sale.hasPrintableLabel && !sale.hasPaperlessQr).length,
+    [sales],
+  )
+  const singleQrSale = useMemo(() => {
+    const qrSales = sales.filter((sale) => sale.hasPaperlessQr)
+    return qrSales.length === 1 ? (qrSales[0] ?? null) : null
+  }, [sales])
+  const showPickerButton =
+    printableSales.length > 0 || needsLabelCount > 0 || qrReadyCount > 1
   const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds])
   const allSelected = printableSales.length > 0 && selectedIds.length === printableSales.length
   const previewHref = previewIds && previewIds.length > 0 ? bundleLabelHref(previewIds) : null
@@ -52,8 +68,14 @@ export function PrintShippingLabelsModule({
     printableSales.length > 0 && needsLabelCount > 0
       ? `${printableSales.length} ${printableSales.length === 1 ? "label" : "labels"} ready to print. ${needsLabelCount} still ${needsLabelCount === 1 ? "needs" : "need"} a label.`
       : printableSales.length > 0
-        ? "Open shipments with a label ready. Print one, several, or all at once."
-        : "These orders still need a shipping label. Buy a label, then print it here."
+        ? qrReadyCount > 0
+          ? "Open shipments with a label ready. Print the PDF, or show a USPS QR code at the Post Office."
+          : "Open shipments with a label ready. Print one, several, or all at once."
+        : qrReadyCount > 0
+          ? needsLabelCount > 0
+            ? "Show a USPS QR code at the Post Office, or buy a printable label."
+            : "Show a USPS QR code at the Post Office — they will print and apply the label."
+          : "These orders still need a shipping label. Buy a label, then print it here."
 
   function toggleId(orderId: string, next: boolean) {
     setSelectedIds((current) => {
@@ -88,14 +110,38 @@ export function PrintShippingLabelsModule({
               </Badge>
             </div>
             <p className="text-sm text-muted-foreground">{cardCopy}</p>
-            {printableSales.length > 0 ? (
+            {printableSales.length > 0 || qrReadyCount > 0 ? (
               <CarrierAdjustmentNotice className="mt-2 max-w-xl" />
             ) : null}
           </div>
-          <Button type="button" className="shrink-0 gap-2" onClick={() => setOpen(true)}>
-            <Printer className="h-4 w-4" />
-            {printableSales.length > 0 ? "Print shipping labels" : "Get shipping labels"}
-          </Button>
+          <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+            {singleQrSale ? (
+              <Button
+                type="button"
+                className="gap-2"
+                onClick={() => setQrSale(singleQrSale)}
+                aria-label="Show USPS QR code"
+              >
+                <QrCode className="h-4 w-4" />
+                Show QR
+              </Button>
+            ) : null}
+            {showPickerButton ? (
+              <Button
+                type="button"
+                variant={singleQrSale ? "outline" : "default"}
+                className="gap-2"
+                onClick={() => setOpen(true)}
+              >
+                <Printer className="h-4 w-4" />
+                {printableSales.length > 0
+                  ? "Print shipping labels"
+                  : qrReadyCount > 1
+                    ? "Show shipping QR codes"
+                    : "Get shipping labels"}
+              </Button>
+            ) : null}
+          </div>
         </CardContent>
       </Card>
 
@@ -104,8 +150,8 @@ export function PrintShippingLabelsModule({
           <DialogHeader className="shrink-0 space-y-1.5 border-b px-6 py-4 text-left">
             <DialogTitle>Print shipping labels</DialogTitle>
             <DialogDescription>
-              Open shipments that still need to go out. Print labels that are ready, or buy a label
-              for orders that do not have one yet.
+              Open shipments that still need to go out. Print a label, show a USPS QR code at the
+              Post Office, or buy a label for orders that do not have one yet.
             </DialogDescription>
           </DialogHeader>
 
@@ -138,6 +184,10 @@ export function PrintShippingLabelsModule({
                       checked={selectedSet.has(sale.orderId)}
                       onToggle={(next) => toggleId(sale.orderId, next)}
                       onPrint={() => openPreview([sale.orderId])}
+                      onShowQr={() => {
+                        setQrSale(sale)
+                        setOpen(false)
+                      }}
                     />
                   ))}
                 </ul>
@@ -183,6 +233,16 @@ export function PrintShippingLabelsModule({
           setPreviewLoading(false)
           toast.error("Could not load shipping label")
         }}
+      />
+
+      <SellerShippingLabelQrDialog
+        open={qrSale != null}
+        onOpenChange={(next) => {
+          if (!next) setQrSale(null)
+        }}
+        qrHref={qrSale ? sellerShippingLabelQrHref({ orderId: qrSale.orderId }) : null}
+        paperlessInstructions={qrSale?.paperlessInstructions ?? null}
+        paperlessHandoffCode={qrSale?.paperlessHandoffCode ?? null}
       />
     </>
   )

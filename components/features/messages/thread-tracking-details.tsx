@@ -26,14 +26,12 @@ export function ThreadTrackingDetails({
   }
 
   return (
-    <div className="mt-3 space-y-2 rounded-2xl bg-muted/45 px-3 py-2.5 text-[14px] leading-snug text-foreground/90">
+    <div className="space-y-1.5 text-[13px] leading-snug">
       {trackingNumber ? (
         <div className="flex items-start gap-2">
-          <Truck className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+          <Truck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              Tracking
-            </p>
+            <p className="text-[11px] text-muted-foreground">Tracking</p>
             <button
               type="button"
               onClick={() => void copyTracking()}
@@ -47,13 +45,12 @@ export function ThreadTrackingDetails({
         </div>
       ) : null}
       {carrier ? (
-        <p className={cn(!trackingNumber && "flex items-center gap-2")}>
+        <p className={cn("text-muted-foreground", !trackingNumber && "flex items-center gap-2")}>
           {!trackingNumber ? (
-            <Truck className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+            <Truck className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
           ) : null}
           <span>
-            <span className="text-muted-foreground">Carrier </span>
-            <span className="font-medium text-foreground">{carrier}</span>
+            Carrier <span className="font-medium text-foreground">{carrier}</span>
           </span>
         </p>
       ) : null}
