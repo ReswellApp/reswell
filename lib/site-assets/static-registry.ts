@@ -184,6 +184,16 @@ export function listStaticSiteAssets(): SiteAssetEntry[] {
       ["/reswell/santa-barbara", "/surf-shops", "/surf-shops/beach-house-santa-barbara"],
     ),
     publicImage(
+      "cities/surf-shops/channel-islands-surfboards.png",
+      "Channel Islands Surfboards logo",
+      "marketing",
+      [
+        "/reswell/santa-barbara",
+        "/surf-shops",
+        "/surf-shops/channel-islands-surfboards",
+      ],
+    ),
+    publicImage(
       "cities/surf-shops/surf-country-goleta.jpg",
       "Surf Country Goleta logo",
       "marketing",
@@ -247,7 +257,13 @@ export function listStaticSiteAssets(): SiteAssetEntry[] {
       "cities/surf-shops/mollusk.png",
       "Mollusk Surf Shop logo",
       "marketing",
-      ["/reswell/san-francisco", "/surf-shops", "/surf-shops/mollusk-surf-shop"],
+      [
+        "/reswell/san-francisco",
+        "/reswell/santa-barbara",
+        "/surf-shops",
+        "/surf-shops/mollusk-surf-shop",
+        "/surf-shops/mollusk-santa-barbara",
+      ],
     ),
     publicImage(
       "cities/surf-shops/wavelengths.png",
