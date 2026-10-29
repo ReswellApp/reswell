@@ -8,6 +8,7 @@ import { BrandLogoMark } from "@/components/brands/brand-logo-mark"
 import { BrandProductCategoryBadges } from "@/components/brands/brand-product-category-badges"
 import type { BrandProductCategorySlug } from "@/lib/brand-product-categories"
 import { brandProductCategoryLabel } from "@/lib/brand-product-categories"
+import { brandDirectoryBlurb } from "@/lib/brands/page-content"
 
 function BrandDirectoryTile({
   entry,
@@ -16,8 +17,15 @@ function BrandDirectoryTile({
   entry: BrandRow
   availableCount: number
 }) {
-  const availableLabel =
-    availableCount === 1 ? "1 available" : `${availableCount} available`
+  const blurb = brandDirectoryBlurb(entry.short_description)
+  const stats: string[] = []
+  if (availableCount > 0) {
+    stats.push(availableCount === 1 ? "1 available" : `${availableCount} available`)
+  }
+  if (entry.model_count > 0) {
+    stats.push(entry.model_count === 1 ? "1 model" : `${entry.model_count} models`)
+  }
+  const statsLabel = stats.join(" · ")
 
   return (
     <Link
@@ -44,12 +52,16 @@ function BrandDirectoryTile({
         </div>
       </div>
 
-      {entry.short_description ? (
+      {blurb ? (
         <p className="mt-4 hidden line-clamp-3 flex-1 text-sm leading-relaxed text-muted-foreground sm:block">
-          {entry.short_description}
+          {blurb}
         </p>
       ) : (
-        <p className="mt-4 hidden flex-1 text-sm text-muted-foreground/80 sm:block">Profile in catalog.</p>
+        <p className="mt-4 hidden flex-1 text-sm text-muted-foreground/80 sm:block">
+          {entry.location_label?.trim()
+            ? `${entry.name} from ${entry.location_label.trim()}.`
+            : `${entry.name} in the Reswell catalog.`}
+        </p>
       )}
 
       {entry.product_categories.length > 0 ? (
@@ -61,7 +73,9 @@ function BrandDirectoryTile({
       ) : null}
 
       <div className="mt-auto flex items-center justify-center gap-3 border-t border-border/60 pt-2.5 sm:mt-5 sm:justify-between sm:pt-4">
-        <span className="text-[11px] tabular-nums text-muted-foreground sm:text-xs">{availableLabel}</span>
+        <span className="text-[11px] tabular-nums text-muted-foreground sm:text-xs">
+          {statsLabel || "Catalog"}
+        </span>
         <span className="hidden items-center gap-1 text-sm font-medium text-foreground sm:inline-flex">
           View
           <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />

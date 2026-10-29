@@ -169,16 +169,26 @@ function mapRowToRecentListing(row: BrandMarketplaceListingRow): RecentListing {
 const BRAND_ID_IN_CHUNK = 80
 const LISTING_BRAND_ID_PAGE = 1000
 
-/**
- * Active peer-marketplace listing counts keyed by directory `brands.id`.
- * Counts rows with `listings.brand_id` set (same discovery gates as brand inventory lists).
- */
-export async function countActiveListingsByBrandIds(
-  supabase: SupabaseClient,
-  brandIds: readonly string[],
-): Promise<Map<string, number>> {
+type BrandIdCountRow = {
+  brand_id: string | null
+  status?: string | null
+  title?: string | null
+  hidden_from_site?: boolean | null
+  archived_at?: string | null
+}
+
+function emptyBrandIdCounts(brandIds: readonly string[]): Map<string, number> {
   const counts = new Map<string, number>()
   for (const id of brandIds) counts.set(id, 0)
+  return counts
+}
+
+async function countPeerListingsAttachedByBrandIds(
+  supabase: SupabaseClient,
+  brandIds: readonly string[],
+  options: { status: "active" | "sold"; logLabel: string },
+): Promise<Map<string, number>> {
+  const counts = emptyBrandIdCounts(brandIds)
   if (brandIds.length === 0) return counts
 
   for (let i = 0; i < brandIds.length; i += BRAND_ID_IN_CHUNK) {
@@ -186,23 +196,40 @@ export async function countActiveListingsByBrandIds(
     let from = 0
 
     for (;;) {
-      const { data, error } = await supabase
+      let query = supabase
         .from("listings")
-        .select("brand_id")
-        .eq("status", "active")
-        .eq("hidden_from_site", false)
+        .select(
+          options.status === "sold"
+            ? "brand_id, status, title, hidden_from_site, archived_at"
+            : "brand_id",
+        )
+        .eq("status", options.status)
         .in("section", PEER_LISTING_SECTIONS_FILTER)
         .in("brand_id", chunk)
         .range(from, from + LISTING_BRAND_ID_PAGE - 1)
 
+      if (options.status === "active") {
+        query = query.eq("hidden_from_site", false)
+      }
+
+      const { data, error } = await query
+
       if (error) {
-        console.error("[countActiveListingsByBrandIds]", error.message)
+        console.error(`[${options.logLabel}]`, error.message)
         break
       }
 
-      const rows = (data ?? []) as { brand_id: string | null }[]
+      const rows = (data ?? []) as BrandIdCountRow[]
       for (const row of rows) {
         if (!row.brand_id) continue
+        if (options.status === "sold" && !isListingVisibleInPublicSoldFeed({
+          status: row.status ?? "sold",
+          title: row.title,
+          hidden_from_site: row.hidden_from_site,
+          archived_at: row.archived_at,
+        })) {
+          continue
+        }
         counts.set(row.brand_id, (counts.get(row.brand_id) ?? 0) + 1)
       }
 
@@ -212,6 +239,34 @@ export async function countActiveListingsByBrandIds(
   }
 
   return counts
+}
+
+/**
+ * Active peer-marketplace listing counts keyed by directory `brands.id`.
+ * Counts rows with `listings.brand_id` set (same discovery gates as brand inventory lists).
+ */
+export async function countActiveListingsByBrandIds(
+  supabase: SupabaseClient,
+  brandIds: readonly string[],
+): Promise<Map<string, number>> {
+  return countPeerListingsAttachedByBrandIds(supabase, brandIds, {
+    status: "active",
+    logLabel: "countActiveListingsByBrandIds",
+  })
+}
+
+/**
+ * Public sold-feed listing counts keyed by directory `brands.id`.
+ * Counts sold peer listings with `listings.brand_id` set that appear on the site.
+ */
+export async function countPublicSoldListingsByBrandIds(
+  supabase: SupabaseClient,
+  brandIds: readonly string[],
+): Promise<Map<string, number>> {
+  return countPeerListingsAttachedByBrandIds(supabase, brandIds, {
+    status: "sold",
+    logLabel: "countPublicSoldListingsByBrandIds",
+  })
 }
 
 /**

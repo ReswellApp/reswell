@@ -13,8 +13,15 @@ import {
   brandProductCategoryLabel,
   type BrandProductCategorySlug,
 } from "@/lib/brand-product-categories"
+import { sortDirectoryBrands, sumDirectoryListingCounts } from "@/lib/brands/directory-rank"
+import { brandDirectoryBlurb } from "@/lib/brands/page-content"
 import { getBrandBySlug, listBrands } from "@/lib/brands/server"
-import { countActiveListingsByBrandIds, listActiveListingsForBrand, listRecentlySoldListingsForBrand } from "@/lib/db/brand-listings"
+import {
+  countActiveListingsByBrandIds,
+  countPublicSoldListingsByBrandIds,
+  listActiveListingsForBrand,
+  listRecentlySoldListingsForBrand,
+} from "@/lib/db/brand-listings"
 import { listBrandModelsForPublicPageByBrandId } from "@/lib/db/brand-models"
 import type { BrandModelVariantRow } from "@/lib/db/brand-model-variants"
 import type { MobileListingRow } from "@/lib/db/mobile-listings"
@@ -94,17 +101,22 @@ function variantLabel(row: BrandModelVariantRow): string {
 export async function listMobileBrandsService(): Promise<MobileApiResult<MobileBrandsPage>> {
   const supabase = getDb({ consistency: "eventual", purpose: "catalog" })
   const brands = await listBrands(supabase)
-  const counts = await countActiveListingsByBrandIds(
-    supabase,
-    brands.map((brand) => brand.id),
+  const brandIds = brands.map((brand) => brand.id)
+  const [counts, soldCounts] = await Promise.all([
+    countActiveListingsByBrandIds(supabase, brandIds),
+    countPublicSoldListingsByBrandIds(supabase, brandIds),
+  ])
+  const ranked = sortDirectoryBrands(
+    brands,
+    sumDirectoryListingCounts(counts, soldCounts),
   )
   const parsed = mobileBrandsPageSchema.safeParse({
-    brands: brands.map((brand) => ({
+    brands: ranked.map((brand) => ({
       id: brand.id,
       slug: brand.slug,
       name: brand.name,
       logo_url: publicLogo(brand.logo_url),
-      short_description: brand.short_description?.trim() || null,
+      short_description: brandDirectoryBlurb(brand.short_description),
       location_label: brand.location_label?.trim() || null,
       listing_count: counts.get(brand.id) ?? 0,
       model_count: brand.model_count,
