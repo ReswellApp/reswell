@@ -41,7 +41,7 @@ export default async function BalanceSheetPage({
     sheet = await getAdminSellerBalanceSheet(requestedPage, PAGE_SIZE, category, sort)
   } catch (error) {
     if (error instanceof SellerBalanceSheetAccessError) {
-      redirect("/dashboard")
+      redirect("/dashboard/listings")
     }
     throw error
   }

@@ -50,7 +50,6 @@ export async function enrollCoastalShipperAccountAction(raw: unknown) {
   const result = await enrollCoastalShipperAccount(parsed.data)
   if (!result.ok) return { error: result.error }
   revalidatePath("/admin/shipper")
-  revalidatePath("/dashboard")
   revalidatePath("/dashboard/shipper")
   revalidatePath("/messages")
   return { success: true as const }
@@ -62,7 +61,6 @@ export async function joinCoastalShipperAction(raw: unknown) {
   const result = await joinCoastalShipper(parsed.data)
   if (!result.ok) return { error: result.error }
   revalidatePath("/admin/shipper")
-  revalidatePath("/dashboard")
   revalidatePath("/dashboard/shipper")
   revalidatePath("/messages")
   return { success: true as const, profile: result.data.profile }

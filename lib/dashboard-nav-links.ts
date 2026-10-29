@@ -1,6 +1,5 @@
 import type { LucideIcon } from "lucide-react"
 import {
-  LayoutDashboard,
   Banknote,
   Handshake,
   Heart,
@@ -129,7 +128,6 @@ const BUYING_LINKS: DashboardNavLink[] = [
 ]
 
 const ACCOUNT_LINKS: DashboardNavLink[] = [
-  { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { name: "Profile", href: "/dashboard/profile", icon: UserCircle },
   DASHBOARD_MESSAGES_NAV,
   { name: "Reswell help", href: "/dashboard/support", icon: LifeBuoy },
@@ -165,7 +163,6 @@ export const DASHBOARD_NAV_LINKS: DashboardNavLink[] = [
   BUYING_OFFERS_NAV,
   { name: "Favorites", href: "/favorites", icon: Heart },
   { name: "Following", href: "/dashboard/following", icon: Users },
-  { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
   { name: "Profile", href: "/dashboard/profile", icon: UserCircle },
   DASHBOARD_MESSAGES_NAV,
   { name: "Reswell help", href: "/dashboard/support", icon: LifeBuoy },

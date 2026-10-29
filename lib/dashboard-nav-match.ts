@@ -11,7 +11,7 @@ export function dashboardNavTabParam(href: string): string | null {
   return new URLSearchParams(href.slice(q + 1)).get("tab")
 }
 
-/** True when `pathname` is this dashboard href, including nested routes except Overview. */
+/** True when `pathname` is this dashboard href, including nested routes. The dashboard root matches only itself. */
 export function dashboardPathMatchesHref(pathname: string, href: string): boolean {
   const normalized = pathname.replace(/\/$/, "") || "/"
   const target = dashboardNavPathname(href)

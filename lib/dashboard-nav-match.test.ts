@@ -38,7 +38,7 @@ describe("isMostSpecificDashboardNavMatch", () => {
     )
   })
 
-  it("keeps Overview exact and Messages prefix-aware", () => {
+  it("matches the dashboard root only on itself and Messages by prefix", () => {
     assert.equal(isMostSpecificDashboardNavMatch("/dashboard", "/dashboard", HREFS), true)
     assert.equal(isMostSpecificDashboardNavMatch("/dashboard/profile", "/dashboard", HREFS), false)
     assert.equal(isMostSpecificDashboardNavMatch("/messages/abc", "/messages", HREFS), true)
