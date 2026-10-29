@@ -25,15 +25,15 @@ function roleCopy(
   }
   if (viewer === "seller") {
     return payload.hasPaperlessQr
-      ? "Print the label or open the USPS QR from your sale page, pack the item, and confirm drop-off when you’re done."
-      : "Print the label from your sale page, pack the item, and confirm drop-off when you’re done."
+      ? "Pack the item and ship it with this label, or the USPS QR on your sale page."
+      : "Pack the item and ship it with this label."
   }
   if (viewer === "buyer") {
     return payload.trackingNumber
-      ? "Tracking is on your purchase. Delivery protection and payout follow the usual timeline after drop-off."
-      : "The seller has the label. Tracking will show on your purchase as soon as it’s available."
+      ? "You can track this shipment here or from your purchase."
+      : "The seller has the label. Tracking will appear once the carrier scans it."
   }
-  return "The carrier label is saved on this order. Open it here to print and ship."
+  return "The carrier label is saved on this order."
 }
 
 export function ShippingLabelMessageCard({
