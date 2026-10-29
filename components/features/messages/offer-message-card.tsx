@@ -2,9 +2,8 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Badge } from "@/components/ui/badge"
+import { Handshake } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
 import { acceptedOfferCheckoutHref } from "@/lib/listing-href"
 import { parseOfferLineItems } from "@/lib/types/offer-line-item"
 import { BuyerCounterRespondButtons } from "@/components/features/messages/buyer-counter-respond-buttons"
@@ -15,47 +14,38 @@ import { resolveOfferThreadNote } from "@/lib/utils/parse-offer-negotiation-mess
 import { latestSellerCounterNoteFromTimeline } from "@/lib/utils/offer-timeline"
 import { buildOfferMessageDisplay } from "@/lib/utils/offer-message-display"
 import { dashboardOffersPath } from "@/lib/utils/offers-dashboard-display"
+import {
+  THREAD_EVENT_CTA_CLASS,
+  ThreadEventActions,
+  ThreadEventCard,
+  ThreadEventHint,
+  ThreadEventLink,
+  type ThreadEventTone,
+} from "@/components/features/messages/thread-event-card"
 import { SellerOfferResponseDialog, type OfferRowLite } from "./seller-offer-response-dialog"
-import { format, isToday, isYesterday, formatDistanceToNow } from "date-fns"
+import { formatDistanceToNow } from "date-fns"
 
-function statusLabel(status: string, sellerInitiated?: boolean | null): string {
-  if (status === "COUNTERED" && sellerInitiated) return "From seller"
-  switch (status) {
-    case "PENDING":
-      return "Pending"
-    case "ACCEPTED":
-      return "Accepted"
-    case "DECLINED":
-      return "Declined"
-    case "COUNTERED":
-      return "Countered"
-    case "EXPIRED":
-      return "Expired"
-    case "WITHDRAWN":
-      return "Withdrawn"
-    case "COMPLETED":
-      return "Completed"
-    default:
-      return status
-  }
+function offerTone(status: string): ThreadEventTone {
+  if (status === "ACCEPTED" || status === "COMPLETED") return "success"
+  if (status === "DECLINED" || status === "EXPIRED" || status === "WITHDRAWN") return "warning"
+  if (status === "COUNTERED" || status === "PENDING") return "info"
+  return "neutral"
 }
 
-function statusVariant(
-  status: string,
-): "default" | "secondary" | "destructive" | "outline" {
-  if (status === "ACCEPTED") return "default"
-  if (status === "DECLINED" || status === "EXPIRED" || status === "WITHDRAWN") {
-    return "secondary"
+function sellerStatusHint(offer: OfferRowLite): string | null {
+  if (offer.status === "PENDING") return null
+  if (offer.status === "COUNTERED") {
+    return offer.seller_initiated
+      ? "Waiting for the buyer to respond. You can update or revoke this offer."
+      : "Waiting for the buyer to reply to your counter."
   }
-  if (status === "COUNTERED") return "outline"
-  return "secondary"
-}
-
-function formatThreadTime(dateStr: string) {
-  const date = new Date(dateStr)
-  if (isToday(date)) return format(date, "h:mm a")
-  if (isYesterday(date)) return `Yesterday ${format(date, "h:mm a")}`
-  return format(date, "MMM d, h:mm a")
+  if (offer.status === "ACCEPTED") {
+    return offerIsBinding(offer)
+      ? "This purchase is complete."
+      : "Waiting for the buyer to complete checkout."
+  }
+  if (offer.status === "COMPLETED") return "This purchase is complete."
+  return "This offer is closed."
 }
 
 export function OfferMessageCard({
@@ -98,188 +88,154 @@ export function OfferMessageCard({
     role: isSeller ? "seller" : "buyer",
     offerId: offer.id,
   })
-  // Prefer timeline note for countered cards (message content may be the opening offer line).
   const shownNote = showBuyerCounterActions
     ? latestSellerCounterNoteFromTimeline(offer.offer_timeline) ??
       resolveOfferThreadNote(messageContent, offer.offer_timeline, {
         sellerInitiated: sellerInitiated,
       })
     : display.note
+  const subtitle = [display.contextLine, display.fulfillmentLabel].filter(Boolean).join(" · ")
+  const showCheckout = !isSeller && offer.status === "ACCEPTED" && !offerIsBinding(offer)
+  const hasPrimaryAction =
+    showSellerActions ||
+    showBuyerCounterActions ||
+    showCheckout ||
+    Boolean(isSeller && sellerInitiated && countered && offer.listing_id) ||
+    Boolean(!isSeller && pending && offerIsBinding(offer))
 
   return (
     <>
-      <div
-        className={cn(
-          "w-full max-w-[min(100%,20rem)] overflow-hidden rounded-[20px] border border-border/60 bg-card text-foreground shadow-sm sm:max-w-[min(100%,22rem)]",
-          "ring-1 ring-foreground/[0.04]",
-        )}
+      <ThreadEventCard
+        icon={Handshake}
+        tone={offerTone(offer.status)}
+        title={display.headline}
+        subtitle={subtitle || null}
+        amount={display.amount}
+        createdAt={createdAt}
       >
-        <div className="border-b border-border/40 bg-muted/25 px-3.5 py-2.5">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge
-              variant="outline"
-              className="rounded-lg px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
-            >
-              Offer
-            </Badge>
-            <Badge variant={statusVariant(offer.status)} className="rounded-lg text-[11px] font-medium">
-              {statusLabel(offer.status, offer.seller_initiated)}
-            </Badge>
-          </div>
-          <p className="mt-2 text-[13px] font-medium leading-snug text-muted-foreground">
-            {display.headline}
-          </p>
-          <p className="mt-1 text-[26px] font-semibold tabular-nums leading-none tracking-tight text-foreground">
-            {display.amount}
-          </p>
-          {display.contextLine ? (
-            <p className="mt-1.5 text-[12px] text-muted-foreground">{display.contextLine}</p>
-          ) : null}
-          {display.fulfillmentLabel ? (
-            <p className="mt-1.5 text-[12px] text-muted-foreground">{display.fulfillmentLabel}</p>
-          ) : null}
-        </div>
+        {display.lineItems && display.lineItems.length > 1 ? (
+          <ul className="space-y-1">
+            {display.lineItems.map((row) => (
+              <li
+                key={row.listing_id}
+                className="flex items-start justify-between gap-2 text-[13px] leading-snug"
+              >
+                <span className="min-w-0 flex-1 text-foreground/85">
+                  {row.title?.trim() || "Listing"}
+                </span>
+                <span className="shrink-0 tabular-nums font-medium text-foreground">
+                  ${row.amount.toFixed(2)}
+                </span>
+              </li>
+            ))}
+            {display.itemsSubtotal || display.shippingAmount ? (
+              <li className="flex items-center justify-between gap-2 pt-1 text-[12px] text-muted-foreground">
+                <span>
+                  {display.itemsSubtotal ? `${display.itemsSubtotal}` : null}
+                  {display.shippingAmount ? ` · Shipping ${display.shippingAmount}` : null}
+                </span>
+              </li>
+            ) : null}
+          </ul>
+        ) : null}
 
-        <div className="px-3.5 py-3">
-          {display.lineItems && display.lineItems.length > 1 ? (
-            <ul className="mb-3 space-y-1.5 rounded-xl border border-border/50 bg-muted/20 px-3 py-2.5">
-              {display.lineItems.map((row) => (
-                <li
-                  key={row.listing_id}
-                  className="flex items-start justify-between gap-2 text-[13px] leading-snug"
-                >
-                  <span className="min-w-0 flex-1 text-foreground/90">
-                    {row.title?.trim() || "Listing"}
-                  </span>
-                  <span className="shrink-0 tabular-nums font-medium text-foreground">
-                    ${row.amount.toFixed(2)}
-                  </span>
-                </li>
-              ))}
-              {display.itemsSubtotal || display.shippingAmount ? (
-                <li className="flex items-center justify-between gap-2 border-t border-border/40 pt-2 text-[12px] text-muted-foreground">
-                  <span>
-                    {display.itemsSubtotal ? `${display.itemsSubtotal}` : null}
-                    {display.shippingAmount ? ` · Shipping ${display.shippingAmount}` : null}
-                  </span>
-                </li>
-              ) : null}
-            </ul>
-          ) : null}
+        {shownNote ? (
+          <p className="text-[13px] leading-snug text-foreground/85">&ldquo;{shownNote}&rdquo;</p>
+        ) : null}
 
-          {shownNote ? (
-            <p className="text-[14px] leading-snug text-foreground/90">&ldquo;{shownNote}&rdquo;</p>
-          ) : null}
+        {!showSellerActions && isSeller && !pending ? (
+          <ThreadEventHint>{sellerStatusHint(offer)}</ThreadEventHint>
+        ) : null}
 
-          <p className={cn("text-[12px] leading-snug text-muted-foreground", shownNote && "mt-2")}>
-            <Link
-              href={offerHref}
-              className="font-medium text-foreground underline decoration-foreground/25 underline-offset-2 transition-colors hover:decoration-foreground/60"
-            >
-              View offer
-            </Link>
-          </p>
+        {!isSeller && countered && counterExpired ? (
+          <ThreadEventHint>This offer has expired.</ThreadEventHint>
+        ) : null}
 
-          {showSellerActions && (
-            <div className="mt-3">
+        {!isSeller && countered && !counterExpired && offer.expires_at ? (
+          <ThreadEventHint>
+            Accept or decline {formatDistanceToNow(new Date(offer.expires_at), { addSuffix: true })}.
+          </ThreadEventHint>
+        ) : null}
+
+        {!isSeller && pending ? (
+          <ThreadEventHint>
+            {offerIsBinding(offer)
+              ? "We’ve reserved your payment. If they accept, this becomes your order."
+              : "Waiting for the seller to respond."}
+          </ThreadEventHint>
+        ) : null}
+
+        {showCheckout ? (
+          <ThreadEventHint>
+            {isBundleOffer
+              ? "Pay for every item in this bundle in one checkout at your agreed prices."
+              : "Pay at your agreed price. Choose pickup or shipping at checkout if both are offered."}
+          </ThreadEventHint>
+        ) : null}
+
+        {hasPrimaryAction ? (
+          <ThreadEventActions>
+            {showSellerActions ? (
               <Button
                 type="button"
-                size="sm"
-                className="h-10 w-full rounded-xl text-[14px] font-semibold"
+                className={THREAD_EVENT_CTA_CLASS}
                 onClick={() => setDialogOpen(true)}
               >
                 Review & respond
               </Button>
-            </div>
-          )}
+            ) : null}
 
-          {!showSellerActions && isSeller && !pending && (
-            <p className={cn("text-[12px] text-muted-foreground", (shownNote || isSeller) && "mt-2")}>
-              {offer.status === "COUNTERED"
-                ? sellerInitiated
-                  ? "Waiting for the buyer to respond. You can update or revoke this offer."
-                  : "Waiting for the buyer to reply to your counter."
-                : "This offer is closed."}
-            </p>
-          )}
+            {isSeller && sellerInitiated && countered && offer.listing_id ? (
+              <SellerOfferManageActions
+                offerId={offer.id}
+                listingId={offer.listing_id}
+                buyerUserId={offer.buyer_id}
+                sellerUserId={offer.seller_id}
+                listingTitle={listingTitle}
+                listPrice={listPrice}
+                onCompleted={onThreadRefresh}
+              />
+            ) : null}
 
-          {isSeller && sellerInitiated && countered && offer.listing_id ? (
-            <SellerOfferManageActions
-              className="mt-3"
-              offerId={offer.id}
-              listingId={offer.listing_id}
-              buyerUserId={offer.buyer_id}
-              sellerUserId={offer.seller_id}
-              listingTitle={listingTitle}
-              listPrice={listPrice}
-              onCompleted={onThreadRefresh}
-            />
-          ) : null}
-
-          {!isSeller && countered && counterExpired && (
-            <p className={cn("text-[12px] text-muted-foreground", shownNote && "mt-2")}>
-              This offer has expired.
-            </p>
-          )}
-
-          {!isSeller && countered && !counterExpired && offer.expires_at ? (
-            <p className={cn("text-[12px] text-muted-foreground", shownNote && "mt-2")}>
-              Accept or decline {formatDistanceToNow(new Date(offer.expires_at), { addSuffix: true })}.
-            </p>
-          ) : null}
-
-          {!isSeller && offer.status === "ACCEPTED" && !offerIsBinding(offer) && (
-            <div className={cn("mt-3 space-y-2", shownNote && "mt-2")}>
-              <Button
-                type="button"
-                size="sm"
-                className="h-10 w-full rounded-xl text-[14px] font-semibold"
-                asChild
-              >
+            {showCheckout ? (
+              <Button className={THREAD_EVENT_CTA_CLASS} asChild>
                 <Link href={acceptedOfferCheckoutHref(offer.id)}>
                   {isBundleOffer
                     ? `Checkout all ${offerLineItems.length} items`
                     : "Checkout now"}
                 </Link>
               </Button>
-              <p className="text-[12px] text-muted-foreground">
-                {isBundleOffer
-                  ? "Pay for every item in this bundle in one checkout at your agreed prices. Choose local pickup or shipping there."
-                  : "Pay at your agreed price. Choose local pickup or shipping at checkout if this listing offers both."}
-              </p>
-            </div>
-          )}
+            ) : null}
 
-          {!isSeller && pending && (
-            <div className={cn("space-y-2", shownNote && "mt-2")}>
-              <p className="text-[12px] text-muted-foreground">
-                {offerIsBinding(offer)
-                  ? "We’ve reserved your payment. If they accept, this becomes your order."
-                  : "Waiting for the seller to respond."}
-              </p>
-              {offerIsBinding(offer) ? (
-                <OfferWithdrawButton
-                  offerId={offer.id}
-                  onCompleted={onThreadRefresh}
-                  className="h-10 w-full rounded-xl text-[14px] font-semibold"
-                />
-              ) : null}
-            </div>
-          )}
+            {!isSeller && pending && offerIsBinding(offer) ? (
+              <OfferWithdrawButton
+                offerId={offer.id}
+                onCompleted={onThreadRefresh}
+                className={THREAD_EVENT_CTA_CLASS}
+              />
+            ) : null}
 
-          {showBuyerCounterActions ? (
-            <BuyerCounterRespondButtons
-              offerId={offer.id}
-              onCompleted={onThreadRefresh}
-              className="mt-3"
-            />
-          ) : null}
+            {showBuyerCounterActions ? (
+              <BuyerCounterRespondButtons
+                offerId={offer.id}
+                onCompleted={onThreadRefresh}
+              />
+            ) : null}
+          </ThreadEventActions>
+        ) : null}
 
-          <p className="mt-2.5 text-[11px] tabular-nums leading-none text-muted-foreground">
-            {formatThreadTime(createdAt)}
+        {hasPrimaryAction ? (
+          <p>
+            <ThreadEventLink href={offerHref}>View offer</ThreadEventLink>
           </p>
-        </div>
-      </div>
+        ) : (
+          <ThreadEventActions>
+            <Button className={THREAD_EVENT_CTA_CLASS} variant="outline" asChild>
+              <Link href={offerHref}>View offer</Link>
+            </Button>
+          </ThreadEventActions>
+        )}
+      </ThreadEventCard>
 
       <SellerOfferResponseDialog
         open={dialogOpen}

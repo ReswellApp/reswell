@@ -33,7 +33,7 @@ export function SellerOfferManageActions({
   const [updateOpen, setUpdateOpen] = useState(false)
   const buttonClass = compact
     ? "h-9 rounded-md px-3.5 text-[13px] font-semibold"
-    : "h-10 rounded-xl text-[14px] font-semibold"
+    : "h-9 rounded-lg text-[13px] font-medium"
 
   return (
     <div className={cn(compact ? "flex flex-wrap gap-1.5" : "grid grid-cols-2 gap-2", className)}>

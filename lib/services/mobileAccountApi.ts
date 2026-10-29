@@ -474,8 +474,8 @@ function orderCard(metadata: unknown, viewerIsSeller: boolean) {
     fulfillment_label: shipping ? "Shipping" : "Local pickup",
     hint: shipping
       ? viewerIsSeller
-        ? "The ship-to address is on the sale. Mark it shipped from Sales when you send it."
-        : "Track it from Purchases once the seller ships."
+        ? "Ship from your sale page when it’s packed."
+        : "Tracking appears here once the seller ships."
       : "Reply here to set a pickup time.",
   }
 }

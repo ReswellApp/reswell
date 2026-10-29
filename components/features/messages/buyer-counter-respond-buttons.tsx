@@ -42,7 +42,7 @@ export function BuyerCounterRespondButtons({
       <Button
         type="button"
         size="sm"
-        className="h-10 rounded-xl text-[14px] font-semibold"
+        className="h-9 rounded-lg text-[13px] font-medium"
         disabled={busy !== null}
         onClick={() => void run("accept")}
       >
@@ -52,7 +52,7 @@ export function BuyerCounterRespondButtons({
         type="button"
         variant="outline"
         size="sm"
-        className="h-10 rounded-xl border-destructive/40 text-[14px] font-semibold text-destructive hover:bg-destructive/10 hover:text-destructive"
+        className="h-9 rounded-lg border-destructive/40 text-[13px] font-medium text-destructive hover:bg-destructive/10 hover:text-destructive"
         disabled={busy !== null}
         onClick={() => void run("decline")}
       >
