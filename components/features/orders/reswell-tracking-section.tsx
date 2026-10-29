@@ -102,7 +102,7 @@ export function ReswellTrackingSection(props: {
   pollOnly?: boolean
   /** Defaults to `/api/orders/:id/carrier-tracking` (buyer/seller). Pass admin path for staff views. */
   carrierTrackingFetchPath?: string
-  /** External tracker. Branded ShipEngine page when one exists. */
+  /** On-site Reswell tracker (`/track/{orderId}`). */
   trackUrl?: string | null
   sectionTitle?: string
   sectionDescription?: string

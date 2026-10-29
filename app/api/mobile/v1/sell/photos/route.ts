@@ -6,7 +6,10 @@ import { mobileDataResponse, mobileFailure } from "@/lib/utils/mobile-api-respon
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
 
-/** POST `/api/mobile/v1/sell/photos` — one listing photo, stored on the seller's account. */
+/**
+ * POST `/api/mobile/v1/sell/photos` — fallback server encode for one listing photo.
+ * The Expo app prefers device prepare + direct Supabase `listings` upload (same as website sell).
+ */
 export async function POST(request: Request) {
   try {
     const session = await readMobileSession(request)

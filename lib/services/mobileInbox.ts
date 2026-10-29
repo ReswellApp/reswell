@@ -1,11 +1,13 @@
 import { mobileInboxSchema, type MobileInbox } from "@reswell/api-contract"
 import { revalidateMessagesInboxForUser } from "@/lib/cache/revalidate-messages-inbox"
+import { loadInboxTickerCountsForUser } from "@/lib/db/messagesInbox"
 import { listingCardImageSrc } from "@/lib/listing-image-display"
 import type { MobileApiResult } from "@/lib/services/mobileApi"
 import {
   getMessagesInboxForUser,
   markInboxNotificationsReadForUser,
 } from "@/lib/services/messagesInbox"
+import { inboxTickerCount } from "@/lib/utils/inbox-ticker-count"
 import { conversationLastActivityIso } from "@/lib/utils/messages-inbox-grouping"
 import { inboxActivityNotificationHref } from "@/lib/utils/messages-inbox-activity"
 import { absoluteProxiedProfileMediaUrl } from "@/lib/public-media-display-src"
@@ -37,7 +39,10 @@ function notificationTitle(notification: MessagesInboxNotification): string {
 }
 
 export async function getMobileInboxService(userId: string): Promise<MobileApiResult<MobileInbox>> {
-  const inbox = await getMessagesInboxForUser(userId)
+  const [inbox, ticker] = await Promise.all([
+    getMessagesInboxForUser(userId),
+    loadInboxTickerCountsForUser(userId),
+  ])
   const messages = inbox.conversations.map((conversation) => {
     const buying = conversation.buyer_id === userId
     const other = buying ? conversation.seller : conversation.buyer
@@ -83,7 +88,7 @@ export async function getMobileInboxService(userId: string): Promise<MobileApiRe
     (a, b) => Date.parse(b.created_at) - Date.parse(a.created_at),
   )
   const parsed = mobileInboxSchema.safeParse({
-    unread_count: items.filter((item) => item.unread).length,
+    unread_count: inboxTickerCount(ticker.unreadMessages, ticker.unreadSupport),
     items,
   })
   if (!parsed.success) return { ok: false, status: 500, error: "Unable to load your inbox right now" }

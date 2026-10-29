@@ -1,6 +1,6 @@
 import * as ImagePicker from "expo-image-picker"
 import { Image } from "expo-image"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Pressable, StyleSheet, Text, View } from "react-native"
 import { SymbolView } from "expo-symbols"
 import { SellBoardSpecs } from "@/components/sell/sell-board-specs"
@@ -8,34 +8,47 @@ import { SellPhotoEditor } from "@/components/sell/sell-photo-editor"
 import { SellPhotoTips } from "@/components/sell/sell-photo-tips"
 import { SellUploadMenu } from "@/components/sell/sell-upload-menu"
 import { HorizontalRail } from "@/components/horizontal-rail"
-import { MAX_SELL_PHOTOS, type SellPhoto } from "@/lib/sell-flow"
+import { SellVideoAddTile, SellVideoFilledTile } from "@/components/sell/sell-video-tile"
+import { fetchSellPhotoGuide } from "@/lib/api"
+import { MAX_SELL_PHOTOS, type SellPhoto, type SellVideo } from "@/lib/sell-flow"
+import { LISTING_VIDEO_MAX_DURATION_SECONDS, sellVideoFromPickerAsset } from "@/lib/sell-video"
 import type { MobileSellBoardSpecs } from "@reswell/api-contract"
 import { fontFamily, useReswellColors } from "@/theme"
 
 export function SellPhotosStep({
   photos,
+  video,
   boardSpecs,
   specValues,
   specsError,
   onRetrySpecs,
   onChange,
+  onVideoChange,
+  onVideoRetry,
   onSpecsChange,
 }: {
   photos: SellPhoto[]
+  video: SellVideo | null
   boardSpecs?: MobileSellBoardSpecs | null
   specValues?: Record<string, string>
   specsError?: string | null
   onRetrySpecs?: () => void
   onChange: (photos: SellPhoto[]) => void
+  onVideoChange: (video: SellVideo | null) => void
+  onVideoRetry?: () => void
   onSpecsChange?: (specs: Record<string, string>) => void
 }) {
   const colors = useReswellColors()
   const [error, setError] = useState<string | null>(null)
-  const [menuOpen, setMenuOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState<"photo" | "video" | null>(null)
   const [guideOpen, setGuideOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const room = MAX_SELL_PHOTOS - photos.length
   const editing = photos.find((photo) => photo.id === editingId) ?? null
+
+  useEffect(() => {
+    void fetchSellPhotoGuide()
+  }, [])
 
   function saveEdit(uri: string) {
     if (!editing) return
@@ -45,7 +58,7 @@ export function SellPhotosStep({
 
   async function addFromLibrary() {
     if (room <= 0) return
-    setMenuOpen(false)
+    setMenuOpen(null)
     setError(null)
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync()
     if (!permission.granted) {
@@ -64,7 +77,7 @@ export function SellPhotosStep({
 
   async function takePhoto() {
     if (room <= 0) return
-    setMenuOpen(false)
+    setMenuOpen(null)
     setError(null)
     const permission = await ImagePicker.requestCameraPermissionsAsync()
     if (!permission.granted) {
@@ -74,6 +87,51 @@ export function SellPhotosStep({
     const result = await ImagePicker.launchCameraAsync({ mediaTypes: ["images"], quality: 0.8 })
     if (result.canceled) return
     onChange([...photos, ...toPhotos(result.assets)].slice(0, MAX_SELL_PHOTOS))
+  }
+
+  async function addVideoFromLibrary() {
+    setMenuOpen(null)
+    setError(null)
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync()
+    if (!permission.granted) {
+      setError("Photo access is off. Enable it in Settings to add a listing video.")
+      return
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["videos"],
+      allowsMultipleSelection: false,
+      videoMaxDuration: LISTING_VIDEO_MAX_DURATION_SECONDS,
+    })
+    if (result.canceled) return
+    const asset = result.assets[0]
+    if (!asset) return
+    try {
+      onVideoChange(await sellVideoFromPickerAsset(asset))
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Couldn't add that video")
+    }
+  }
+
+  async function recordVideo() {
+    setMenuOpen(null)
+    setError(null)
+    const permission = await ImagePicker.requestCameraPermissionsAsync()
+    if (!permission.granted) {
+      setError("Camera access is off. Enable it in Settings to record a listing video.")
+      return
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ["videos"],
+      videoMaxDuration: LISTING_VIDEO_MAX_DURATION_SECONDS,
+    })
+    if (result.canceled) return
+    const asset = result.assets[0]
+    if (!asset) return
+    try {
+      onVideoChange(await sellVideoFromPickerAsset(asset))
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Couldn't add that video")
+    }
   }
 
   return (
@@ -116,19 +174,24 @@ export function SellPhotosStep({
             key={`empty-${index}`}
             accessibilityRole="button"
             accessibilityLabel="Add photo"
-            onPress={() => setMenuOpen(true)}
+            onPress={() => setMenuOpen("photo")}
             style={[styles.tile, styles.empty, { borderColor: colors.foreground, backgroundColor: colors.image }]}
           >
             <Text style={[styles.plus, { color: colors.muted }]}>+</Text>
           </Pressable>
         ))}
+        {video ? (
+          <SellVideoFilledTile video={video} onRemove={() => onVideoChange(null)} onRetry={onVideoRetry} />
+        ) : (
+          <SellVideoAddTile onPress={() => setMenuOpen("video")} />
+        )}
       </HorizontalRail>
       <Pressable
         accessibilityRole="button"
         onPress={() => {
           const first = photos[0]
           if (first) setEditingId(first.id)
-          else setMenuOpen(true)
+          else setMenuOpen("photo")
         }}
         hitSlop={8}
         style={styles.editPhotos}
@@ -146,8 +209,20 @@ export function SellPhotosStep({
         />
       ) : null}
       {guideOpen ? <SellPhotoTips onClose={() => setGuideOpen(false)} /> : null}
-      {menuOpen ? (
-        <SellUploadMenu onLibrary={() => void addFromLibrary()} onCamera={() => void takePhoto()} onClose={() => setMenuOpen(false)} />
+      {menuOpen === "photo" ? (
+        <SellUploadMenu onLibrary={() => void addFromLibrary()} onCamera={() => void takePhoto()} onClose={() => setMenuOpen(null)} />
+      ) : null}
+      {menuOpen === "video" ? (
+        <SellUploadMenu
+          title="Add a video"
+          libraryLabel="Video Library"
+          cameraLabel="Record Video"
+          libraryIcon={{ ios: "film", android: "videocam" }}
+          cameraIcon={{ ios: "video", android: "videocam" }}
+          onLibrary={() => void addVideoFromLibrary()}
+          onCamera={() => void recordVideo()}
+          onClose={() => setMenuOpen(null)}
+        />
       ) : null}
       {editing ? <SellPhotoEditor uri={editing.uri} onCancel={() => setEditingId(null)} onSave={saveEdit} /> : null}
     </View>

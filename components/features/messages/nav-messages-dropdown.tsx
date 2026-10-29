@@ -43,6 +43,7 @@ import {
   type ConversationThreadOpenedDetail,
 } from "@/lib/utils/unread-message-count-events"
 import { useLiveUnreadSupportCount } from "@/components/features/support/use-live-unread-support-count"
+import { inboxTickerCount } from "@/lib/utils/inbox-ticker-count"
 
 const NAV_PREVIEW_LIMIT = 8
 
@@ -378,7 +379,7 @@ export function NavMessagesDropdown({
     const fromInbox = countUnreadInboxActivityNotifications(notifications)
     return Math.max(fromInbox, liveSupportUnread)
   }, [notifications, liveSupportUnread])
-  const tickerCount = unreadMessages + liveSupportUnread
+  const tickerCount = inboxTickerCount(unreadMessages, liveSupportUnread)
   const chatGroups = useMemo(
     () => groupConversationsByCounterparty(conversations, userId).slice(0, NAV_PREVIEW_LIMIT),
     [conversations, userId],

@@ -101,7 +101,7 @@ describe("mobile purchases", () => {
       conversationId: null,
       buyerReview: null,
       sellerReview: null,
-      trackUrl: "https://track.shipengine.com/se/v1/abc",
+      trackUrl: "https://www.reswell.app/track/44444444-4444-4444-8444-444444444444",
     })
     if (!detail) throw new Error("expected purchase details")
     assert.equal(detail.order_number, "GRV86Q")
@@ -119,6 +119,9 @@ describe("mobile purchases", () => {
     assert.ok(detail.address_lines.some((line) => line.includes("915 DE LA VINA ST")))
     assert.equal(detail.seller_handle, "terramar-surf")
     assert.equal(detail.can_review, false)
-    assert.equal(detail.track_url, "https://track.shipengine.com/se/v1/abc")
+    assert.equal(
+      detail.track_url,
+      "https://www.reswell.app/track/44444444-4444-4444-8444-444444444444",
+    )
   })
 })

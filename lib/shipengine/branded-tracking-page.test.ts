@@ -6,6 +6,7 @@ import {
   parseBrandedTrackingPageUrl,
   serviceCodeFromTrackingCarrier,
 } from "./branded-tracking-page"
+import { publicSiteOrigin } from "@/lib/public-site-origin"
 import { normalizeBrandedTrackingUrl } from "@/lib/utils/branded-tracking-url"
 import { packageTrackHref, preferredTrackingUrl } from "@/lib/utils/carrier-tracking-url"
 import { resolveShipEngineCarrierCode } from "@/lib/shipping/resolve-carrier-code"
@@ -71,7 +72,17 @@ describe("branded tracking page", () => {
     assert.equal(brandedTrackingCountrySupported("DE"), false)
   })
 
-  it("prefers the branded page and never returns a carrier site", () => {
+  it("uses the Reswell tracker for marketplace orders and branded pages only without an order", () => {
+    const orderId = "11111111-1111-4111-8111-111111111111"
+    assert.equal(
+      preferredTrackingUrl({
+        orderId,
+        brandedUrl: "https://track.shipengine.com/se/v1/abc",
+        trackingNumber: "1Z999",
+        trackingCarrier: "ups",
+      }),
+      `${publicSiteOrigin()}/track/${orderId}`,
+    )
     assert.equal(
       preferredTrackingUrl({
         brandedUrl: "https://track.shipengine.com/se/v1/abc",
@@ -97,7 +108,7 @@ describe("branded tracking page", () => {
     )
   })
 
-  it("retries the branded page on click when the saved link is a carrier site", () => {
+  it("keeps marketplace track links on Reswell", () => {
     const orderId = "11111111-1111-4111-8111-111111111111"
     assert.equal(
       packageTrackHref({
@@ -106,7 +117,7 @@ describe("branded tracking page", () => {
         trackingNumber: "9400111899223197428490",
         trackingCarrier: "usps",
       }),
-      `/api/orders/${orderId}/track`,
+      `/track/${orderId}`,
     )
     assert.equal(
       packageTrackHref({
@@ -115,7 +126,7 @@ describe("branded tracking page", () => {
         trackingNumber: "9400111899223197428490",
         trackingCarrier: "usps",
       }),
-      "https://track.shipengine.com/se/v1/abc",
+      `/track/${orderId}`,
     )
     assert.equal(
       packageTrackHref({
@@ -123,7 +134,7 @@ describe("branded tracking page", () => {
         trackingNumber: "1Z999AA10123456784",
         trackingCarrier: "ups",
       }),
-      `/api/orders/${orderId}/track`,
+      `/track/${orderId}`,
     )
     assert.equal(
       packageTrackHref({

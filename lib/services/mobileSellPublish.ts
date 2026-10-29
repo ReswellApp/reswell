@@ -7,15 +7,22 @@ import type {
 import type { SupabaseClient } from "@supabase/supabase-js"
 import sharp from "sharp"
 import { listingObjectPublicUrl } from "@/lib/supabase/storage-upload-xhr"
+import { decodeImageBufferForSharp } from "@/lib/services/decodeImageForSharp"
 import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import { mobileSellDraftFields, mobileSellListingFields } from "@/lib/services/mobileSellListingFields"
 import { applyPublishedListingSideEffects } from "@/lib/services/publishListingDraft"
 import type { MobileApiResult } from "@/lib/services/mobileApi"
 import { syncListingImages } from "@/lib/services/sync-listing-images"
+import {
+  assertMobileSellVideos,
+  replaceListingVideos,
+} from "@/lib/services/mobileSellVideos"
 import { verifyListingImageObjectsExist } from "@/lib/services/verifyListingImageStorage"
 import { verifyStorageObjectExists } from "@/lib/supabase/storage-object-exists"
+import { SERVER_IMAGE_CONVERT_MAX_BYTES } from "@/lib/utils/server-image-convert"
 
-const PHOTO_MAX_BYTES = 12 * 1024 * 1024
+/** Fallback path only — prefer device → Supabase storage (see apps/mobile sell-photo-upload). */
+const PHOTO_MAX_BYTES = SERVER_IMAGE_CONVERT_MAX_BYTES
 
 function ownedListingImage(url: string, userId: string): boolean {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""
@@ -35,16 +42,28 @@ async function assertMobileSellImagesInStorage(
   return null
 }
 
+/**
+ * Fallback for clients that still POST bytes through Vercel.
+ * Primary mobile path prepares JPEGs on device and uploads to `listings` directly.
+ */
 export async function uploadMobileSellPhotoService(
   supabase: SupabaseClient,
   userId: string,
   file: File,
 ): Promise<MobileApiResult<MobileSellPhoto>> {
   if (file.size > PHOTO_MAX_BYTES) {
-    return { ok: false, status: 400, error: "Each photo must be under 12MB" }
+    return {
+      ok: false,
+      status: 413,
+      error: `Each photo must be under ${(PHOTO_MAX_BYTES / (1024 * 1024)).toFixed(0)}MB when uploaded through the API`,
+    }
   }
   try {
-    const source = Buffer.from(await file.arrayBuffer())
+    const raw = Buffer.from(await file.arrayBuffer())
+    const source = await decodeImageBufferForSharp(raw, {
+      originalFilename: file.name || "photo.jpg",
+      mimeType: file.type || "image/jpeg",
+    })
     const image = sharp(source, { failOn: "none" }).rotate()
     const full = await image
       .clone()
@@ -94,6 +113,10 @@ export async function uploadMobileSellPhotoService(
       timestamp: new Date().toISOString(),
       message: cause instanceof Error ? cause.message : String(cause),
     })
+    const message = cause instanceof Error ? cause.message : ""
+    if (/heic|heif|unsupported|corrupted/i.test(message)) {
+      return { ok: false, status: 400, error: "Couldn't read that photo. Try exporting it as JPEG from Photos." }
+    }
     return { ok: false, status: 400, error: "Couldn't read that photo" }
   }
 }
@@ -137,6 +160,8 @@ export async function saveMobileSellDraftService(
   }
   const storageError = await assertMobileSellImagesInStorage(input.images)
   if (storageError) return { ok: false, status: 400, error: storageError }
+  const videoError = await assertMobileSellVideos(input.videos, userId)
+  if (videoError) return { ok: false, status: 400, error: videoError }
   const built = mobileSellDraftFields(input)
   if (!built.ok) return { ok: false, status: 400, error: built.error }
 
@@ -168,6 +193,10 @@ export async function saveMobileSellDraftService(
   } else if (input.id) {
     await supabase.from("listing_images").delete().eq("listing_id", listingId)
   }
+  if (input.videos !== undefined) {
+    const listingVideoError = await replaceListingVideos(supabase, listingId, input.videos)
+    if (listingVideoError) return { ok: false, status: 400, error: listingVideoError }
+  }
   return { ok: true, data: { id: listingId, slug } }
 }
 
@@ -181,6 +210,8 @@ export async function publishMobileListingService(
   }
   const storageError = await assertMobileSellImagesInStorage(input.images)
   if (storageError) return { ok: false, status: 400, error: storageError }
+  const videoError = await assertMobileSellVideos(input.videos, userId)
+  if (videoError) return { ok: false, status: 400, error: videoError }
   const built = mobileSellListingFields(input)
   if (!built.ok) return { ok: false, status: 400, error: built.error }
 
@@ -228,6 +259,18 @@ export async function publishMobileListingService(
       await supabase.from("listings").delete().eq("id", listingId).eq("user_id", userId)
     }
     return { ok: false, status: 400, error: imageError }
+  }
+
+  if (input.videos !== undefined) {
+    const listingVideoError = await replaceListingVideos(supabase, listingId, input.videos)
+    if (listingVideoError) {
+      if (input.draft_id) {
+        await supabase.from("listings").update({ status: "draft", hidden_from_site: true }).eq("id", listingId).eq("user_id", userId)
+      } else {
+        await supabase.from("listings").delete().eq("id", listingId).eq("user_id", userId)
+      }
+      return { ok: false, status: 400, error: listingVideoError }
+    }
   }
 
   void applyPublishedListingSideEffects(supabase, listingId, userId)

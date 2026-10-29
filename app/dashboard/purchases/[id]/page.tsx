@@ -44,8 +44,6 @@ import {
   getShippingDeadlineDate,
   isEligibleForShippingDeadlineAutoCancel,
 } from "@/lib/shipping-deadline"
-import { ensureOrderBrandedTrackingUrl } from "@/lib/services/ensureOrderBrandedTrackingUrl"
-
 export async function generateMetadata(props: {
   params: Promise<{ id: string }>
 }): Promise<Metadata> {
@@ -326,12 +324,8 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
       .neq("sender_id", user.id)
   }
 
-  const brandedTrackingUrl = order.tracking_number?.trim()
-    ? await ensureOrderBrandedTrackingUrl(order.id)
-    : null
   const trackUrl = packageTrackHref({
     orderId: order.id,
-    brandedUrl: brandedTrackingUrl,
     trackingNumber: order.tracking_number,
     trackingCarrier: order.tracking_carrier,
   })

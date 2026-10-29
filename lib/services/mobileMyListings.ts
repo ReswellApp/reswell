@@ -6,6 +6,7 @@ import {
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { fetchMyListings, type MyListingRow } from "@/lib/db/my-listings"
 import { listingCardImageSrc } from "@/lib/listing-image-display"
+import { LISTING_CONDITION_LABELS } from "@/lib/listing-labels"
 import type { MobileApiResult } from "@/lib/services/mobileApi"
 import { endSellerListing } from "@/lib/services/listingEnd"
 import { markSellerListingSoldOffPlatform } from "@/lib/services/listingMarkSold"
@@ -28,13 +29,21 @@ function statusLabel(listing: MyListingRow): string {
   return listing.status.replaceAll("_", " ")
 }
 
+function conditionLabel(raw: string | null): string | null {
+  if (!raw?.trim()) return null
+  return LISTING_CONDITION_LABELS[raw.trim()] ?? null
+}
+
 function toCard(listing: MyListingRow) {
   const image = listingCardImageSrc(listing.listing_images)
   const created = new Date(listing.created_at)
+  const brand = listing.brand?.trim() || null
   return {
     id: listing.id,
     slug: listing.slug,
     title: listing.title,
+    brand,
+    condition_label: conditionLabel(listing.condition),
     price_label: listing.status === "draft" ? "Draft" : money(Number(listing.price) || 0),
     status: listing.status,
     status_label: statusLabel(listing),
@@ -45,6 +54,7 @@ function toCard(listing: MyListingRow) {
     on_vacation: listing.hidden_from_site === true,
     can_vacation: listing.status === "active" || listing.status === "pending_sale",
     can_relist: listing.canRelist,
+    can_edit: listing.status === "active" || listing.status === "draft" || listing.status === "pending_sale" || listing.status === "delinquent",
     created_label: Number.isNaN(created.getTime())
       ? ""
       : created.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),

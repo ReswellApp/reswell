@@ -23,7 +23,6 @@ import {
 import type { LiveChatActionActor } from "@/lib/services/liveChatActionPolicy"
 import { assessCsAgentRefundEligibility } from "@/lib/utils/cs-agent-refund"
 import { csAgentEmailsMatch, csAgentOrderIsInScope } from "@/lib/utils/cs-agent-scope"
-import { ensureOrderBrandedTrackingUrl } from "@/lib/services/ensureOrderBrandedTrackingUrl"
 import { preferredTrackingUrl } from "@/lib/utils/carrier-tracking-url"
 import { normalizeTrackingNumberForCarrier } from "@/lib/shipping/normalize-tracking-number"
 import type { CsAgentAccountSnapshot, CsAgentPriorTicket } from "@/lib/llm/cs-agent"
@@ -285,7 +284,7 @@ export function createCsAgentLookups(
           trackingCarrier: order.trackingCarrier,
           carrierDeliveredAt: order.carrierDeliveredAt,
           trackingUrl: preferredTrackingUrl({
-            brandedUrl: trackingNumber ? await ensureOrderBrandedTrackingUrl(order.id) : null,
+            orderId: order.id,
             trackingNumber,
             trackingCarrier: order.trackingCarrier,
           }),

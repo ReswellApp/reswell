@@ -3,7 +3,6 @@ import { resolvePayableAmount } from "@/lib/purchase-amount"
 import { capitalizeWords, formatCategory, formatCondition } from "@/lib/listing-labels"
 import type { CheckoutOrderSuccessPayload } from "@/components/checkout-order-success"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
-import { ensureOrderBrandedTrackingUrl } from "@/lib/services/ensureOrderBrandedTrackingUrl"
 
 type ShippingAddressJson = {
   name?: string | null
@@ -290,9 +289,5 @@ export async function fetchBuyerOrderSuccessPayload(
     return null
   }
 
-  const payload = mapOrderRowToCheckoutPayload(row as unknown as OrderSuccessOrderRow, buyerEmail)
-  if (payload.trackingNumber) {
-    payload.brandedTrackingUrl = await ensureOrderBrandedTrackingUrl(payload.orderId)
-  }
-  return payload
+  return mapOrderRowToCheckoutPayload(row as unknown as OrderSuccessOrderRow, buyerEmail)
 }

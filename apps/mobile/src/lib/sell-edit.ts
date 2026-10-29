@@ -1,5 +1,5 @@
 import type { MobileSellEditLoad } from "@reswell/api-contract"
-import type { SellDraft, SellPhoto } from "@/lib/sell-flow"
+import type { SellDraft, SellPhoto, SellVideo } from "@/lib/sell-flow"
 
 export function sellDraftFromMobileEdit(payload: MobileSellEditLoad): SellDraft {
   const photos: SellPhoto[] = payload.images.map((image, index) => ({
@@ -9,9 +9,25 @@ export function sellDraftFromMobileEdit(payload: MobileSellEditLoad): SellDraft 
     thumbnailUrl: image.thumbnail_url,
     serverImageId: image.image_id,
   }))
+  const firstVideo = payload.videos[0]
+  const video: SellVideo | null = firstVideo?.url
+    ? {
+        id: firstVideo.video_id ?? "listing-video",
+        uri: firstVideo.thumbnail_url || firstVideo.url,
+        url: firstVideo.url,
+        thumbnailUrl: firstVideo.thumbnail_url ?? null,
+        thumbnailUri: firstVideo.thumbnail_url ?? null,
+        contentType: firstVideo.content_type ?? null,
+        durationSeconds: firstVideo.duration_seconds ?? null,
+        byteSize: firstVideo.byte_size ?? null,
+        serverVideoId: firstVideo.video_id,
+        status: "ready",
+      }
+    : null
 
   return {
     photos,
+    video,
     title: payload.title,
     brand: payload.brand,
     model: payload.model,

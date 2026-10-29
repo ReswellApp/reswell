@@ -1,30 +1,67 @@
+import type { MobileSellPhotoGuideExample } from "@reswell/api-contract"
+import { Image } from "expo-image"
 import { SymbolView, type AndroidSymbol, type SFSymbol } from "expo-symbols"
+import { useEffect, useState } from "react"
 import { Pressable, StyleSheet, Text, View } from "react-native"
+import { fetchSellPhotoGuide } from "@/lib/api"
 import { fontFamily, useReswellColors } from "@/theme"
 
-const EXAMPLES: { label: string; ios: SFSymbol; android: AndroidSymbol }[] = [
-  { label: "Primary", ios: "photo", android: "photo" },
-  { label: "Every angle", ios: "square.on.square", android: "filter_none" },
-  { label: "Details", ios: "magnifyingglass", android: "search" },
-  { label: "In use", ios: "person", android: "person" },
-  { label: "Size and scale", ios: "ruler", android: "straighten" },
-  { label: "Imperfections", ios: "exclamationmark.circle", android: "error_outline" },
+const FALLBACK: { id: string; label: string; ios: SFSymbol; android: AndroidSymbol }[] = [
+  { id: "primary", label: "Primary", ios: "photo", android: "photo" },
+  { id: "bottom", label: "Bottom", ios: "square.on.square", android: "filter_none" },
+  { id: "rails", label: "Rails", ios: "magnifyingglass", android: "search" },
+  { id: "tail-fins", label: "Tail & fins", ios: "person", android: "person" },
+  { id: "size-scale", label: "Size and scale", ios: "ruler", android: "straighten" },
+  { id: "imperfections", label: "Imperfections", ios: "exclamationmark.circle", android: "error_outline" },
 ]
+
+function fallbackFor(id: string) {
+  return FALLBACK.find((example) => example.id === id) ?? FALLBACK[0]
+}
 
 export function SellPhotoExampleGrid() {
   const colors = useReswellColors()
+  const [examples, setExamples] = useState<MobileSellPhotoGuideExample[] | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    fetchSellPhotoGuide()
+      .then((guide) => {
+        if (!cancelled) setExamples(guide.examples)
+      })
+      .catch(() => {
+        if (!cancelled) setExamples([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const photos = examples && examples.length > 0 ? examples : null
+  const tiles = photos ?? FALLBACK
+
   return (
     <View style={styles.grid}>
-      {EXAMPLES.map((example) => (
-        <View key={example.label} style={[styles.card, { borderColor: colors.border }]}>
-          <SymbolView
-            name={{ ios: example.ios, android: example.android, web: example.android }}
-            size={28}
-            tintColor={colors.muted}
-          />
-          <Text style={[styles.label, { color: colors.foreground, fontFamily: fontFamily.text }]}>{example.label}</Text>
-        </View>
-      ))}
+      {tiles.map((example) => {
+        const imageUrl = "image_url" in example ? example.image_url : null
+        const icon = fallbackFor(example.id)
+        return (
+          <View key={example.id} style={[styles.card, { borderColor: colors.border, backgroundColor: colors.image }]}>
+            {imageUrl ? (
+              <Image source={{ uri: imageUrl }} style={StyleSheet.absoluteFill} contentFit="cover" />
+            ) : examples === null ? null : (
+              <SymbolView
+                name={{ ios: icon.ios, android: icon.android, web: icon.android }}
+                size={28}
+                tintColor={colors.muted}
+              />
+            )}
+            <View style={styles.labelBar}>
+              <Text style={[styles.label, { color: "#FFFFFF", fontFamily: fontFamily.text }]}>{example.label}</Text>
+            </View>
+          </View>
+        )
+      })}
     </View>
   )
 }
@@ -56,10 +93,19 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     borderWidth: 1,
     borderRadius: 12,
+    overflow: "hidden",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
-    padding: 8,
   },
-  label: { fontSize: 12, textAlign: "center" },
+  labelBar: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: 4,
+    paddingBottom: 6,
+    paddingTop: 16,
+    backgroundColor: "rgba(0,0,0,0.45)",
+  },
+  label: { fontSize: 11, fontWeight: "600", textAlign: "center" },
 })

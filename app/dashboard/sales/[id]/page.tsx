@@ -61,7 +61,6 @@ import { ReviewBuyerControls } from "@/components/review-buyer-controls"
 import { effectiveBoardShippingMode } from "@/lib/services/peerListingShippingQuote"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { resolveMarketplaceOrderBuyerLabel } from "@/lib/order-buyer-display"
-import { ensureOrderBrandedTrackingUrl } from "@/lib/services/ensureOrderBrandedTrackingUrl"
 import { packageTrackHref } from "@/lib/utils/carrier-tracking-url"
 import {
   listingUsesSantaBarbaraDropoff,
@@ -351,12 +350,8 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
     trackingNumber: sale.tracking_number,
   })
   const hasShippingTracking = !!sale.tracking_number?.trim()
-  const brandedTrackingUrl = hasShippingTracking
-    ? await ensureOrderBrandedTrackingUrl(sale.id)
-    : null
   const packageTrackUrl = packageTrackHref({
     orderId: sale.id,
-    brandedUrl: brandedTrackingUrl,
     trackingNumber: sale.tracking_number,
     trackingCarrier: sale.tracking_carrier,
   })

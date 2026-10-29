@@ -57,6 +57,26 @@ describe("mobile sell publish fields", () => {
     assert.equal(typeof built.fields.dimensions, "string")
   })
 
+  it("stores a flat shipping rate", () => {
+    const built = mobileSellListingFields(
+      publishInput({
+        shipping_mode: "flat",
+        shipping_price: 5,
+        package_length: "",
+        package_width: "",
+        package_height: "",
+        package_weight_lb: "",
+        package_weight_oz: "",
+      }),
+    )
+    assert.equal(built.ok, true)
+    if (!built.ok) return
+    assert.equal(built.fields.shipping_available, true)
+    assert.equal(built.fields.board_shipping_cost_mode, "flat")
+    assert.equal(built.fields.shipping_price, 5)
+    assert.equal(built.fields.shipping_packed_length_in, null)
+  })
+
   it("stores a fin on the fins category", () => {
     const built = mobileSellListingFields(
       publishInput({ category: "fins", subcategory: "", specs: {}, package_length: "" }),

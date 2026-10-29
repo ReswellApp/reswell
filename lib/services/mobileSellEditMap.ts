@@ -61,6 +61,7 @@ function shippingState(row: OwnedListingForEditRow): Pick<
 }
 
 type EditImage = MobileSellDraft["images"][number] & { image_id?: string }
+type EditVideo = NonNullable<MobileSellDraft["videos"]>[number]
 
 function listingImages(row: OwnedListingForEditRow): EditImage[] {
   const rows = [...(row.listing_images ?? [])].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
@@ -69,6 +70,28 @@ function listingImages(row: OwnedListingForEditRow): EditImage[] {
     if (!url) return []
     const thumbnail = text(image.thumbnail_url) || url
     return [{ url, thumbnail_url: thumbnail, image_id: image.id }]
+  })
+}
+
+function listingVideos(row: OwnedListingForEditRow): EditVideo[] {
+  const rows = [...(row.listing_videos ?? [])].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+  return rows.flatMap((video) => {
+    const url = text(video.url)
+    if (!url) return []
+    const thumb = text(video.thumbnail_url)
+    return [
+      {
+        url,
+        thumbnail_url: thumb || null,
+        content_type: text(video.content_type) || null,
+        duration_seconds: numberOrNull(video.duration_seconds),
+        byte_size: (() => {
+          const bytes = numberOrNull(video.byte_size)
+          return bytes != null ? Math.round(bytes) : null
+        })(),
+        video_id: video.id,
+      },
+    ]
   })
 }
 
@@ -151,6 +174,7 @@ export function ownedListingRowToMobileSellEdit(row: OwnedListingForEditRow):
     dropoff_location_id: text(row.dropoff_location_id) || null,
     specs,
     images: listingImages(row),
+    videos: listingVideos(row),
   }
 
   return {

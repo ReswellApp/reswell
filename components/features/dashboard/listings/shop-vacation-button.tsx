@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Loader2, Palmtree, Sun } from "lucide-react"
 import { toast } from "sonner"
@@ -14,24 +14,59 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
-import { setShopVacationModeAction } from "@/lib/actions/shopVacationMode"
+import {
+  getShopVacationStatusAction,
+  setShopVacationModeAction,
+} from "@/lib/actions/shopVacationMode"
 import { sellActionErrorMessage } from "@/lib/sell-flow/sell-submit-error"
-import { shopVacationButtonMode, shopVacationTargetIds, type ShopVacationListing } from "@/lib/shop-vacation"
+import {
+  shopVacationButtonMode,
+  shopVacationTargetIds,
+  type ShopVacationListing,
+} from "@/lib/shop-vacation"
 import { cn } from "@/lib/utils"
 
 interface ShopVacationButtonProps {
-  listings: ShopVacationListing[]
+  /** When omitted, status loads from the profile/shop vacation action. */
+  listings?: ShopVacationListing[]
   className?: string
   onComplete?: (vacationMode: boolean) => void
 }
 
-export function ShopVacationButton({ listings, className, onComplete }: ShopVacationButtonProps) {
+export function ShopVacationButton({ listings: listingsProp, className, onComplete }: ShopVacationButtonProps) {
   const router = useRouter()
-  const mode = shopVacationButtonMode(listings)
+  const [listings, setListings] = useState<ShopVacationListing[] | null>(listingsProp ?? null)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
+
+  const reload = useCallback(async () => {
+    if (listingsProp) {
+      setListings(listingsProp)
+      return
+    }
+    const result = await getShopVacationStatusAction()
+    if ("error" in result) {
+      setLoadError(result.error)
+      setListings([])
+      return
+    }
+    setLoadError(null)
+    setListings(result.listings)
+  }, [listingsProp])
+
+  useEffect(() => {
+    if (listingsProp) {
+      setListings(listingsProp)
+      return
+    }
+    void reload()
+  }, [listingsProp, reload])
+
+  const mode = listings == null ? "unavailable" : shopVacationButtonMode(listings)
   const turningOn = mode !== "off"
-  const targetCount = mode === "unavailable" ? 0 : shopVacationTargetIds(listings, mode).length
+  const targetCount = mode === "unavailable" || !listings ? 0 : shopVacationTargetIds(listings, mode).length
+  const loading = listings == null && !loadError
 
   async function confirm() {
     if (busy || mode === "unavailable") return
@@ -60,6 +95,7 @@ export function ShopVacationButton({ listings, className, onComplete }: ShopVaca
       }
       onComplete?.(turningOn)
       setOpen(false)
+      await reload()
       router.refresh()
     } catch {
       toast.error("Could not update vacation mode.")
@@ -81,11 +117,17 @@ export function ShopVacationButton({ listings, className, onComplete }: ShopVaca
             : "border-border",
           className,
         )}
-        disabled={mode === "unavailable" || busy}
-        title={mode === "unavailable" ? "No live listings to pause" : undefined}
+        disabled={loading || mode === "unavailable" || busy}
+        title={
+          loadError
+            ? loadError
+            : mode === "unavailable"
+              ? "No live listings to pause"
+              : undefined
+        }
         onClick={() => setOpen(true)}
       >
-        {busy ? (
+        {busy || loading ? (
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
         ) : turningOn ? (
           <Palmtree className="h-3.5 w-3.5" />
@@ -102,7 +144,7 @@ export function ShopVacationButton({ listings, className, onComplete }: ShopVaca
             </AlertDialogTitle>
             <AlertDialogDescription>
               {turningOn
-                ? `This hides ${targetCount === 1 ? "your live listing" : `all ${targetCount} live listings`} from browse, search, and checkout. Drafts and sold listings stay as they are. You can bring the shop back from this page.`
+                ? `This hides ${targetCount === 1 ? "your live listing" : `all ${targetCount} live listings`} from browse, search, and checkout. Drafts and sold listings stay as they are. You can bring the shop back from Profile.`
                 : `This puts ${targetCount === 1 ? "the listing you paused" : `${targetCount} listings you paused`} back on the site. Listings hidden by Reswell stay hidden.`}
             </AlertDialogDescription>
           </AlertDialogHeader>

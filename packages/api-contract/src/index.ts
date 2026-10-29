@@ -397,6 +397,7 @@ export const mobileModelPriceGuideSchema = z.object({
 export const mobileModelPageSchema = z.object({
   brand_slug: z.string(),
   brand_name: z.string(),
+  brand_logo_url: z.string().nullable(),
   model_slug: z.string(),
   name: z.string(),
   description: z.string().nullable(),
@@ -847,6 +848,20 @@ export const mobileSellBoardSpecsSchema = z.object({
 export type MobileSellBoardSpecs = z.infer<typeof mobileSellBoardSpecsSchema>
 export type MobileSellSpecField = z.infer<typeof mobileSellSpecFieldSchema>
 
+/** One example shot in the sell photo guide. Same six tiles as website `/sell`. */
+export const mobileSellPhotoGuideExampleSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+  image_url: z.string().url(),
+})
+
+export const mobileSellPhotoGuideSchema = z.object({
+  examples: z.array(mobileSellPhotoGuideExampleSchema).min(1),
+})
+
+export type MobileSellPhotoGuide = z.infer<typeof mobileSellPhotoGuideSchema>
+export type MobileSellPhotoGuideExample = z.infer<typeof mobileSellPhotoGuideExampleSchema>
+
 export const mobileSellDropoffPackageSchema = z.object({
   length: z.string().min(1),
   width: z.string().min(1),
@@ -876,6 +891,17 @@ export type MobileSellDropoffLocations = z.infer<typeof mobileSellDropoffLocatio
 export const mobileSellPhotoSchema = z.object({
   url: z.string().url(),
   thumbnail_url: z.string().url(),
+})
+
+/** Optional listing clip. Uploaded to the `listings` bucket from the device, same as photos. */
+export const mobileSellVideoSchema = z.object({
+  url: z.string().url(),
+  thumbnail_url: z.string().url().nullable().optional(),
+  content_type: z.string().trim().max(100).nullable().optional(),
+  duration_seconds: z.number().nonnegative().nullable().optional(),
+  byte_size: z.number().int().nonnegative().nullable().optional(),
+  /** Existing `listing_videos.id` when editing. */
+  video_id: z.string().uuid().optional(),
 })
 
 const mobileSellPublishRefinements = <T extends z.ZodTypeAny>(schema: T) =>
@@ -926,6 +952,8 @@ export const mobileSellPublishBodySchema = z.object({
     construction: z.string().max(40).optional(),
   }),
   images: z.array(mobileSellPhotoSchema).min(1).max(8),
+  /** Omitted by older app builds — leave existing videos alone. `[]` removes the clip. */
+  videos: z.array(mobileSellVideoSchema).max(1, "You can add up to 1 video").optional(),
   draft_id: z.string().uuid().nullable(),
 })
 
@@ -967,6 +995,7 @@ export const mobileSellDraftSchema = z.object({
     construction: z.string().max(40).optional(),
   }),
   images: z.array(mobileSellPhotoSchema).max(8),
+  videos: z.array(mobileSellVideoSchema).max(1, "You can add up to 1 video").optional(),
 })
 
 export const mobileSellPublishResultSchema = z.object({
@@ -980,13 +1009,14 @@ export const mobileSellEditImageSchema = mobileSellPhotoSchema.extend({
 
 /** Owner edit hydrate for the mobile sell screen. */
 export const mobileSellEditLoadSchema = mobileSellDraftSchema
-  .omit({ images: true })
+  .omit({ images: true, videos: true })
   .extend({
     listing_id: z.string().uuid(),
     status: z.string(),
     slug: z.string().nullable(),
     location_label: z.string().nullable(),
     images: z.array(mobileSellEditImageSchema).max(8),
+    videos: z.array(mobileSellVideoSchema).max(1).optional().default([]),
   })
 
 export const mobileSellUpdateSchema = mobileSellPublishRefinements(
@@ -1002,6 +1032,7 @@ export type MobileSellPublish = z.infer<typeof mobileSellPublishSchema>
 export type MobileSellPublishResult = z.infer<typeof mobileSellPublishResultSchema>
 export type MobileSellDraft = z.infer<typeof mobileSellDraftSchema>
 export type MobileSellPhoto = z.infer<typeof mobileSellPhotoSchema>
+export type MobileSellVideo = z.infer<typeof mobileSellVideoSchema>
 
 /** Google place dropdown for the sell location field. `place_id` is set when Google returned the row. */
 export const mobilePlaceSuggestionSchema = z.object({
@@ -1255,6 +1286,7 @@ export type MobileMarketplaceFeedStats = z.infer<typeof mobileMarketplaceFeedSta
 export type MobileHome = z.infer<typeof mobileHomeSchema>
 export type MobileBrandCard = z.infer<typeof mobileBrandCardSchema>
 export type MobileBrandsPage = z.infer<typeof mobileBrandsPageSchema>
+export type MobileBrandModelCard = z.infer<typeof mobileBrandModelCardSchema>
 export type MobileBrandPage = z.infer<typeof mobileBrandPageSchema>
 export type MobileModelPage = z.infer<typeof mobileModelPageSchema>
 export type MobileRecentlyViewed = z.infer<typeof mobileRecentlyViewedSchema>
@@ -2040,6 +2072,8 @@ export const mobileMyListingSchema = z.object({
   id: z.string().uuid(),
   slug: z.string().nullable(),
   title: z.string(),
+  brand: z.string().nullable(),
+  condition_label: z.string().nullable(),
   price_label: z.string(),
   status: z.string(),
   status_label: z.string(),
@@ -2050,6 +2084,7 @@ export const mobileMyListingSchema = z.object({
   on_vacation: z.boolean(),
   can_vacation: z.boolean(),
   can_relist: z.boolean(),
+  can_edit: z.boolean(),
   created_label: z.string(),
 })
 
@@ -2094,6 +2129,7 @@ export const mobileInboxItemSchema = z.object({
 })
 
 export const mobileInboxSchema = z.object({
+  /** Website header ticker: unread DMs + unread support. Activity favorites/orders are not included. */
   unread_count: z.number().int().nonnegative(),
   items: z.array(mobileInboxItemSchema),
 })
@@ -2308,3 +2344,14 @@ export {
   listingFulfillmentPdpCopy,
   type ListingFulfillmentPdpCopy,
 } from "./listing-fulfillment-pdp"
+
+export {
+  APP_LINK_HOST,
+  APP_LINK_ANDROID_PATH_PREFIXES,
+  APP_LINK_AASA_COMPONENTS,
+  APP_LINK_AASA_PATHS,
+  hrefPathAndSearch,
+  webHrefToNativePath,
+  nativeIntentPath,
+  type HrefPathAndSearch,
+} from "./web-to-native-path"

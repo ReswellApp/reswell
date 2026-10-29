@@ -3,7 +3,7 @@ import { isDevice } from "expo-device"
 import { Platform } from "react-native"
 import { notifyCartChanged } from "@/lib/cart-count-events"
 import { publicApiUrl } from "@/lib/public-env"
-import type { SellDraft, SellPhoto } from "@/lib/sell-flow"
+import type { SellDraft, SellPhoto, SellVideo } from "@/lib/sell-flow"
 import {
   mobileCartResultSchema,
   mobileCashOutResultSchema,
@@ -77,9 +77,11 @@ import {
   mobileSupportReplyResultSchema,
   mobileSupportThreadSchema,
   mobileSellBoardSpecsSchema,
+  mobileSellPhotoGuideSchema,
   mobileSellCatalogSearchSchema,
   mobileSellDropoffLocationsSchema,
   mobileSellPhotoSchema,
+  mobileSellVideoSchema,
   mobileSellEditLoadSchema,
   mobileSellPublishResultSchema,
   mobileSellTaxonomySchema,
@@ -160,9 +162,11 @@ import {
   type MobileSupportReplyResult,
   type MobileSupportThread,
   type MobileSellBoardSpecs,
+  type MobileSellPhotoGuide,
   type MobileSellCatalogSearch,
   type MobileSellDropoffLocations,
   type MobileSellPhoto,
+  type MobileSellVideo,
   type MobileSellPublishResult,
   type MobileSellTaxonomy,
   type MobilePlaceDetails,
@@ -205,13 +209,50 @@ function apiOrigin(): string {
   return url.origin
 }
 
-/** Expo fetch multipart only accepts Blob parts — not RN `{ uri }` objects. */
-async function blobFromDeviceUri(uri: string, mimeType: string): Promise<Blob> {
+/**
+ * Expo fetch multipart accepts a Blob or `{ name, type, bytes() }`.
+ * RN `Blob.arrayBuffer` is often missing, which threw "undefined is not a function" on Post listing.
+ */
+type ExpoBytesFilePart = {
+  name: string
+  type: string
+  bytes: () => Promise<Uint8Array>
+}
+
+async function readBlobBytes(blob: Blob): Promise<ArrayBuffer> {
+  if (typeof blob.arrayBuffer === "function") return blob.arrayBuffer()
+  if (typeof FileReader !== "function") throw new Error("Could not read that photo.")
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      if (reader.result instanceof ArrayBuffer) resolve(reader.result)
+      else reject(new Error("Could not read that photo."))
+    }
+    reader.onerror = () => reject(new Error("Could not read that photo."))
+    reader.readAsArrayBuffer(blob)
+  })
+}
+
+async function readDeviceUriBytes(uri: string): Promise<Uint8Array> {
   const response = await fetch(uri)
   if (!response.ok) throw new Error("Could not read that photo.")
-  const blob = await response.blob()
-  if (blob.type || !mimeType) return blob
-  return new Blob([await blob.arrayBuffer()], { type: mimeType })
+  if (typeof response.arrayBuffer === "function") {
+    return new Uint8Array(await response.arrayBuffer())
+  }
+  return new Uint8Array(await readBlobBytes(await response.blob()))
+}
+
+function multipartFileValue(bytes: Uint8Array, fileName: string, mimeType: string): Blob {
+  if (Platform.OS === "web") {
+    if (typeof File === "function") return new File([bytes], fileName, { type: mimeType })
+    return new Blob([bytes], { type: mimeType })
+  }
+  const part: ExpoBytesFilePart = {
+    name: fileName,
+    type: mimeType,
+    bytes: async () => bytes,
+  }
+  return part as unknown as Blob
 }
 
 async function postMultipartFileField(
@@ -221,23 +262,34 @@ async function postMultipartFileField(
   fileName: string,
   mimeType = "image/jpeg",
 ): Promise<unknown> {
-  const form = new FormData()
-  form.append("file", await blobFromDeviceUri(uri, mimeType), fileName)
-  const response = await fetch(`${apiOrigin()}${path}`, {
-    method: "POST",
-    headers: { Accept: "application/json", Authorization: `Bearer ${accessToken}` },
-    body: form,
-  })
-  const body: unknown = await response.json()
-  if (!response.ok) {
-    const message =
-      body && typeof body === "object" && "error" in body && typeof body.error === "string"
-        ? body.error
-        : "Upload failed"
-    throw new Error(message)
+  try {
+    const form = new FormData()
+    form.append("file", multipartFileValue(await readDeviceUriBytes(uri), fileName, mimeType), fileName)
+    const response = await fetch(`${apiOrigin()}${path}`, {
+      method: "POST",
+      headers: { Accept: "application/json", Authorization: `Bearer ${accessToken}` },
+      body: form,
+    })
+    const body: unknown = await response.json()
+    if (!response.ok) {
+      const message =
+        body && typeof body === "object" && "error" in body && typeof body.error === "string"
+          ? body.error
+          : "Upload failed"
+      throw new Error(message)
+    }
+    if (!body || typeof body !== "object" || !("data" in body)) throw new Error("Unexpected response")
+    return body.data
+  } catch (cause) {
+    if (
+      cause instanceof Error &&
+      cause.message.trim() &&
+      !/is not a function/i.test(cause.message)
+    ) {
+      throw cause
+    }
+    throw new Error("Couldn't upload that photo")
   }
-  if (!body || typeof body !== "object" || !("data" in body)) throw new Error("Unexpected response")
-  return body.data
 }
 
 async function putJson(path: string, accessToken: string, payload: unknown): Promise<unknown> {
@@ -1059,6 +1111,21 @@ export function fetchSellBoardSpecs(): Promise<MobileSellBoardSpecs> {
   return read("/api/mobile/v1/sell/board-specs", (data) => mobileSellBoardSpecsSchema.parse(data))
 }
 
+let sellPhotoGuidePromise: Promise<MobileSellPhotoGuide> | null = null
+
+/** Same six example shots as website `/sell`. Cached for the photo-guide sheet. */
+export function fetchSellPhotoGuide(): Promise<MobileSellPhotoGuide> {
+  if (!sellPhotoGuidePromise) {
+    sellPhotoGuidePromise = read("/api/mobile/v1/sell/photo-guide", (data) =>
+      mobileSellPhotoGuideSchema.parse(data),
+    ).catch((error: unknown) => {
+      sellPhotoGuidePromise = null
+      throw error
+    })
+  }
+  return sellPhotoGuidePromise
+}
+
 /** Surfboard drop-off cities. Same list as the website sell flow. Availability follows board length and width. */
 export function fetchSellDropoffLocations(boardLength: string, boardWidth: string): Promise<MobileSellDropoffLocations> {
   const params = new URLSearchParams()
@@ -1139,13 +1206,34 @@ function sellListingBody(draft: SellDraft, images: MobileSellPhoto[], includeDra
       construction: draft.specs.construction,
     },
     images,
+    videos: sellVideosBody(draft),
     ...(includeDraftId ? { draft_id: DRAFT_ID.test(draft.serverDraftId) ? draft.serverDraftId : null } : { id: DRAFT_ID.test(draft.serverDraftId) ? draft.serverDraftId : null }),
   }
 }
 
-export async function uploadSellPhoto(accessToken: string, uri: string): Promise<MobileSellPhoto> {
-  const data = await postMultipartFileField(accessToken, "/api/mobile/v1/sell/photos", uri, "photo.jpg")
-  return mobileSellPhotoSchema.parse(data)
+function sellVideosBody(draft: SellDraft): MobileSellVideo[] {
+  const video = draft.video
+  if (!video?.url) return []
+  return [
+    {
+      url: video.url,
+      thumbnail_url: video.thumbnailUrl ?? null,
+      content_type: video.contentType ?? null,
+      duration_seconds: video.durationSeconds ?? null,
+      byte_size: video.byteSize ?? null,
+      ...(video.serverVideoId ? { video_id: video.serverVideoId } : {}),
+    },
+  ]
+}
+
+/**
+ * Listing photos go to Supabase storage from the device (same model as website sell).
+ * `accessToken` is unused for the upload itself — the Expo Supabase session owns the write —
+ * but callers still pass it so publish/draft stay gated on a signed-in API user.
+ */
+export async function uploadSellPhoto(_accessToken: string, uri: string): Promise<MobileSellPhoto> {
+  const { uploadSellPhotoToListingsStorage } = await import("@/lib/sell-photo-upload")
+  return mobileSellPhotoSchema.parse(await uploadSellPhotoToListingsStorage(uri))
 }
 
 async function sellPhotoStorageUrlReachable(url: string): Promise<boolean> {
@@ -1154,6 +1242,42 @@ async function sellPhotoStorageUrlReachable(url: string): Promise<boolean> {
     return res.ok
   } catch {
     return false
+  }
+}
+
+export async function uploadSellVideo(
+  _accessToken: string,
+  video: SellVideo,
+  onProgress?: (ratio: number) => void,
+): Promise<MobileSellVideo> {
+  const { uploadSellVideoToListingsStorage } = await import("@/lib/sell-video-upload")
+  return mobileSellVideoSchema.parse(await uploadSellVideoToListingsStorage(video, onProgress))
+}
+
+/** Uploads a local clip. Reuses the stored object when the public URL still resolves. */
+export async function uploadSellVideoIfNeeded(
+  accessToken: string,
+  video: SellVideo | null,
+  onProgress?: (ratio: number) => void,
+): Promise<SellVideo | null> {
+  if (!video) return null
+  if (video.url) {
+    const stored = await sellPhotoStorageUrlReachable(video.url)
+    const thumbOk =
+      !video.thumbnailUrl || (await sellPhotoStorageUrlReachable(video.thumbnailUrl))
+    if (stored && thumbOk) return { ...video, status: "ready", errorMessage: null }
+  }
+  const stored = await uploadSellVideo(accessToken, video, onProgress)
+  return {
+    ...video,
+    url: stored.url,
+    thumbnailUrl: stored.thumbnail_url ?? null,
+    contentType: stored.content_type ?? video.contentType,
+    durationSeconds: stored.duration_seconds ?? video.durationSeconds,
+    byteSize: stored.byte_size ?? video.byteSize,
+    status: "ready",
+    uploadProgress: 1,
+    errorMessage: null,
   }
 }
 

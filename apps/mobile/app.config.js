@@ -29,9 +29,16 @@ if (iosUrlScheme) {
   plugins.push(["@react-native-google-signin/google-signin", { iosUrlScheme }])
 }
 
+const appleTeamId = process.env.APPLE_TEAM_ID?.trim() || ""
+
 module.exports = {
   expo: {
     ...appJson.expo,
     plugins,
+    ios: {
+      ...appJson.expo.ios,
+      associatedDomains: ["applinks:www.reswell.app"],
+      ...(appleTeamId ? { appleTeamId } : {}),
+    },
   },
 }

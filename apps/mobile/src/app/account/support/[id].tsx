@@ -2,7 +2,7 @@ import * as ImagePicker from "expo-image-picker"
 import { Image } from "expo-image"
 import { useLocalSearchParams } from "expo-router"
 import { SymbolView } from "expo-symbols"
-import { useCallback, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import {
   ActivityIndicator,
   FlatList,
@@ -20,6 +20,7 @@ import { MessageComposerBar } from "@/components/message-composer-bar"
 import { SellUploadMenu } from "@/components/sell/sell-upload-menu"
 import { fetchSupportThread, replySupportCase, sendSupportMediaMessage, supportCaseMessageAttachmentUrl } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
+import { useInboxUnreadReload } from "@/lib/inbox-unread-count"
 import { useAccountResource } from "@/lib/use-account-resource"
 import { uploadSupportCaseImageAttachment } from "@/lib/support-case-media-upload"
 import { fontFamily, useReswellColors } from "@/theme"
@@ -43,7 +44,13 @@ export default function SupportThreadScreen() {
     [id],
   )
   const { data, error, loading, reload } = useAccountResource(load)
+  const reloadUnread = useInboxUnreadReload()
   const messages = data?.messages ?? []
+
+  useEffect(() => {
+    if (!data) return
+    reloadUnread()
+  }, [data, reloadUnread])
   const composerBottom = Math.max(insets.bottom, 12)
 
   const sendMessage = () => {

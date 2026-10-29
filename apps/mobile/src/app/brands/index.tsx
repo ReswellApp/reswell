@@ -1,8 +1,11 @@
 import { Stack, useRouter } from "expo-router"
 import { useEffect, useMemo, useState } from "react"
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native"
+import { ActivityIndicator, FlatList, StyleSheet, Text, TextInput, View } from "react-native"
 import type { MobileBrandCard } from "@reswell/api-contract"
-import { VerticalScroll } from "@/components/horizontal-rail"
+import { BrandDirectoryCard } from "@/components/brands/brand-directory-card"
+import { useFloatingTabBarContentInset } from "@/components/floating-tab-bar"
+import { ScreenSearchHeader } from "@/components/screen-search-header"
+import { SCREEN_GUTTER } from "@/components/screen-shell"
 import { fetchBrands } from "@/lib/api"
 import { fontFamily, useReswellColors } from "@/theme"
 
@@ -13,6 +16,7 @@ export default function BrandsScreen() {
   const [query, setQuery] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const tabBarInset = useFloatingTabBarContentInset()
 
   useEffect(() => {
     let cancelled = false
@@ -39,10 +43,12 @@ export default function BrandsScreen() {
     if (!q) return brands
     return brands.filter((brand) => brand.name.toLowerCase().includes(q))
   }, [brands, query])
+  const grid = visible.length % 2 === 1 ? [...visible, null] : visible
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
-      <Stack.Screen options={{ title: "Brands" }} />
+      <Stack.Screen options={{ headerShown: false }} />
+      <ScreenSearchHeader showBack />
       {loading ? (
         <ActivityIndicator style={styles.centered} color={colors.foreground} />
       ) : error ? (
@@ -50,32 +56,59 @@ export default function BrandsScreen() {
           <Text style={{ color: colors.foreground, fontFamily: fontFamily.text }}>{error}</Text>
         </View>
       ) : (
-        <VerticalScroll contentContainerStyle={styles.list}>
-          <TextInput
-            value={query}
-            onChangeText={setQuery}
-            placeholder="Search brands"
-            placeholderTextColor={colors.muted}
-            autoCapitalize="none"
-            autoCorrect={false}
-            style={[styles.search, { color: colors.foreground, borderColor: colors.border, fontFamily: fontFamily.text }]}
-          />
-          {visible.map((brand) => (
-            <Pressable
-              key={brand.id}
-              onPress={() => router.push({ pathname: "/brands/[slug]", params: { slug: brand.slug } })}
-              style={[styles.row, { borderColor: colors.border }]}
-            >
-              <View style={styles.copy}>
-                <Text style={[styles.name, { color: colors.foreground, fontFamily: fontFamily.text }]}>{brand.name}</Text>
-                <Text style={[styles.meta, { color: colors.muted, fontFamily: fontFamily.text }]}>
-                  {brand.listing_count.toLocaleString("en-US")} for sale
-                  {brand.model_count > 0 ? ` · ${brand.model_count.toLocaleString("en-US")} models` : ""}
-                </Text>
+        <FlatList
+          data={grid}
+          keyExtractor={(item, index) => item?.id ?? `spacer-${index}`}
+          numColumns={2}
+          columnWrapperStyle={grid.length > 0 ? styles.columns : undefined}
+          contentContainerStyle={[styles.list, tabBarInset]}
+          keyboardShouldPersistTaps="handled"
+          ListHeaderComponent={
+            <View style={[styles.hero, { borderBottomColor: colors.border, backgroundColor: colors.secondary }]}>
+              <Text style={[styles.pageTitle, { color: colors.foreground, fontFamily: fontFamily.headline }]}>
+                Surf Brands
+              </Text>
+              <Text style={[styles.description, { color: colors.muted, fontFamily: fontFamily.text }]}>
+                Shapers and labels in the Reswell catalog.
+              </Text>
+              <TextInput
+                value={query}
+                onChangeText={setQuery}
+                placeholder="Search brands"
+                placeholderTextColor={colors.muted}
+                autoCapitalize="none"
+                autoCorrect={false}
+                clearButtonMode="while-editing"
+                style={[
+                  styles.search,
+                  {
+                    color: colors.foreground,
+                    borderColor: colors.border,
+                    backgroundColor: colors.background,
+                    fontFamily: fontFamily.text,
+                  },
+                ]}
+              />
+            </View>
+          }
+          ListEmptyComponent={
+            <Text style={[styles.empty, { color: colors.muted, fontFamily: fontFamily.text }]}>
+              {query.trim() ? "No brands match that search." : "No brands yet."}
+            </Text>
+          }
+          renderItem={({ item }) =>
+            item ? (
+              <View style={styles.cell}>
+                <BrandDirectoryCard
+                  brand={item}
+                  onPress={() => router.push({ pathname: "/brands/[slug]", params: { slug: item.slug } })}
+                />
               </View>
-            </Pressable>
-          ))}
-        </VerticalScroll>
+            ) : (
+              <View style={styles.cell} />
+            )
+          }
+        />
       )}
     </View>
   )
@@ -83,11 +116,27 @@ export default function BrandsScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  centered: { flex: 1, alignItems: "center", justifyContent: "center" },
-  list: { padding: 16, gap: 8 },
-  search: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16 },
-  row: { flexDirection: "row", alignItems: "center", gap: 12, borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 10 },
-  copy: { flex: 1, gap: 2 },
-  name: { fontSize: 16, fontWeight: "600" },
-  meta: { fontSize: 13 },
+  centered: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24 },
+  list: { paddingBottom: 16 },
+  hero: {
+    paddingHorizontal: SCREEN_GUTTER,
+    paddingTop: 16,
+    paddingBottom: 18,
+    marginBottom: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    gap: 10,
+  },
+  pageTitle: { fontSize: 26, lineHeight: 30, fontWeight: "700", textAlign: "center" },
+  description: { fontSize: 15, lineHeight: 22, textAlign: "center" },
+  search: {
+    marginTop: 6,
+    minHeight: 44,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 999,
+    paddingHorizontal: 16,
+    fontSize: 16,
+  },
+  columns: { paddingHorizontal: 12, gap: 12, marginBottom: 12 },
+  cell: { flex: 1 },
+  empty: { textAlign: "center", paddingHorizontal: 24, paddingVertical: 32, fontSize: 15, lineHeight: 21 },
 })

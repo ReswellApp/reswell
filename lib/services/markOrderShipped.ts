@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { getConversationForBuyerSellerListing, ensureConversationForBuyerSellerListing } from "@/lib/db/conversations"
 import { notifyOrderShippedKlaviyoIfMissing } from "@/lib/services/notifyOrderShippedKlaviyo"
-import { ensureOrderBrandedTrackingUrl } from "@/lib/services/ensureOrderBrandedTrackingUrl"
+import { preferredTrackingUrl } from "@/lib/utils/carrier-tracking-url"
 import { normalizeTrackingNumberForCarrier } from "@/lib/shipping/normalize-tracking-number"
 import { buildOrderShippedPlainText } from "@/lib/messages/order-shipped-thread"
 import { broadcastInsertedMarketplaceMessage } from "@/lib/services/broadcastMarketplaceThreadMessage"
@@ -85,7 +85,11 @@ async function postOrderShippedNotification(
   if (alreadySent) return
 
   const carrier = trackingCarrier?.trim() || null
-  const brandedUrl = await ensureOrderBrandedTrackingUrl(ctx.id)
+  const trackingUrl = preferredTrackingUrl({
+    orderId: ctx.id,
+    trackingNumber,
+    trackingCarrier: carrier,
+  })
   const msgContent = buildOrderShippedPlainText({
     listingTitle,
     trackingNumber,
@@ -98,7 +102,7 @@ async function postOrderShippedNotification(
     listingTitle,
     trackingNumber,
     trackingCarrier: carrier,
-    ...(brandedUrl ? { trackingUrl: brandedUrl } : {}),
+    ...(trackingUrl ? { trackingUrl } : {}),
   }
 
   const { data: inserted, error: msgErr } = await supabase

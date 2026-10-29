@@ -74,7 +74,7 @@ describe("email studio html", () => {
     assert.match(preview, /\$576/)
     assert.match(preview, /UPS/)
     assert.match(preview, /1Z999AA10123456784/)
-    assert.match(preview, /ups\.com\/track/)
+    assert.match(preview, /reswell\.app\/track\//)
     assert.match(preview, /dashboard\/purchases/)
   })
 
@@ -95,7 +95,7 @@ describe("email studio html", () => {
       /\{\{ event\|lookup:'tracking_url'\|default:'https:\/\/www\.reswell\.app\/dashboard\/purchases' \}\}/,
     )
     assert.doesNotMatch(html, /default:event\.order_url/)
-    assert.match(withEmailPreviewSamples(html), /https:\/\/www\.ups\.com\/track\?tracknum=/)
+    assert.match(withEmailPreviewSamples(html), /https:\/\/www\.reswell\.app\/track\//)
   })
 
   it("renders a buyer order starter as a table email", () => {

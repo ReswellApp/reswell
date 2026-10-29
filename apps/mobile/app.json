@@ -9,6 +9,7 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "bundleIdentifier": "app.reswell.reswell",
+      "associatedDomains": ["applinks:www.reswell.app"],
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "UIBackgroundModes": ["remote-notification"]
@@ -22,7 +23,30 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "category": ["BROWSABLE", "DEFAULT"],
+          "data": [
+            { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/l" },
+            { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/dashboard/purchases" },
+            { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/dashboard/sales" },
+            { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/dashboard/listings" },
+            { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/dashboard/earnings" },
+            { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/dashboard/offers" },
+            { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/dashboard/orders" },
+            { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/messages" },
+            { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/inbox" },
+            { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/following" },
+            { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/favorites" },
+            { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/sellers" },
+            { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/checkout" },
+            { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/cart" }
+          ]
+        }
+      ]
     },
     "web": {
       "output": "static",
@@ -51,7 +75,8 @@
         "expo-image-picker",
         {
           "photosPermission": "Reswell uses your photos so buyers can see what you're selling.",
-          "cameraPermission": "Reswell uses the camera so you can photograph what you're selling."
+          "cameraPermission": "Reswell uses the camera so you can photograph what you're selling.",
+          "microphonePermission": "Reswell uses the microphone so you can record a listing video."
         }
       ],
       [

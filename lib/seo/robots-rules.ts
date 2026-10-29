@@ -20,6 +20,7 @@ export const ROBOTS_BLOCKED_APP_PATHS = [
   "/successpage/",
   "/favorites",
   "/following",
+  "/track",
 ] as const
 
 /** Required for Google Merchant Center product + image_link crawling. */

@@ -58,12 +58,10 @@ import {
   ListingsViewTabs,
   type ListingsDeskView,
 } from "@/components/features/dashboard/listings/listings-view-tabs"
-import { ShopVacationButton } from "@/components/features/dashboard/listings/shop-vacation-button"
 import type { ListingQuickEditSaved } from "@/lib/services/listingQuickEdit"
 import type { MyListingRow, MyListingsDashboardStats } from "@/lib/db/my-listings"
 import type { ListingPackageColumns } from "@/lib/shop-category-package-sizes"
 import { EMPTY_SHOP_SHIPPING_DEFAULTS, type ShopShippingDefaults } from "@/lib/shop-shipping-defaults"
-import { shopVacationTargetIds } from "@/lib/shop-vacation"
 import { cn } from "@/lib/utils"
 import {
   dashboardFilterSelectClass,
@@ -489,14 +487,6 @@ export function MyListingsClient({
     [displayListings, vacationById],
   )
 
-  function handleShopVacation(enabled: boolean) {
-    const targets = shopVacationTargetIds(vacationAwareListings, enabled ? "on" : "off")
-    setVacationById((current) => {
-      const next = { ...current }
-      for (const listingId of targets) next[listingId] = enabled
-      return next
-    })
-  }
 
   const listingCountLabel =
     statusFilter === "draft"
@@ -532,17 +522,14 @@ export function MyListingsClient({
             : "Summary of your listing inventory and performance."
         }
         actions={
-          <>
-            <ShopVacationButton listings={vacationAwareListings} onComplete={handleShopVacation} />
-            {!sellerBanned ? (
-              <Button asChild size="sm" className="rounded-full">
-                <Link href="/sell?new=1">
-                  <Plus className="h-4 w-4" />
-                  New listing
-                </Link>
-              </Button>
-            ) : null}
-          </>
+          !sellerBanned ? (
+            <Button asChild size="sm" className="rounded-full">
+              <Link href="/sell?new=1">
+                <Plus className="h-4 w-4" />
+                New listing
+              </Link>
+            </Button>
+          ) : null
         }
       />
 

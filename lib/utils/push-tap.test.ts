@@ -41,6 +41,10 @@ describe("pushTapRoute", () => {
     assert.deepEqual(pushTapRoute(push.data), { kind: "messages", id: "conv-1" })
   })
 
+  it("opens a chat thread from a /messages href", () => {
+    assert.deepEqual(pushTapRoute({ href: "/messages/conv-9" }), { kind: "messages", id: "conv-9" })
+  })
+
   it("opens the listing from an offer alert", () => {
     const [push] = pushDeliveriesFromPlanned([offerDelivery()])
     assert.ok(push)

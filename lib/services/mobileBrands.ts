@@ -183,6 +183,7 @@ export async function getMobileModelPageService(
   const parsed = mobileModelPageSchema.safeParse({
     brand_slug: page.brand.slug,
     brand_name: page.brand.name,
+    brand_logo_url: publicLogo(page.brand.logo_url),
     model_slug: page.modelSlug,
     name: page.model.name,
     description: page.model.description?.trim() || null,

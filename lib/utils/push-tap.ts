@@ -41,6 +41,9 @@ export function pushTapRoute(data: PushTapData): PushTapRoute {
   const purchase = path.match(/^\/dashboard\/purchases(?:\/([^/]+))?$/)
   if (purchase) return { kind: "purchases", id: purchase[1] ?? null }
 
+  const thread = path.match(/^\/messages\/([^/]+)$/)
+  if (thread?.[1]) return { kind: "messages", id: thread[1] }
+
   if (path === "/dashboard/listings") return { kind: "listings" }
   if (path === "/dashboard/earnings") return { kind: "earnings" }
   if (path === "/following") return { kind: "following" }

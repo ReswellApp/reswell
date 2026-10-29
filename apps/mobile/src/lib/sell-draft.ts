@@ -19,6 +19,9 @@ export async function loadSellDraft(): Promise<SellDraft | null> {
   if (!parsed || typeof parsed !== "object") return null
   const draft = { ...emptySellDraft(), ...(parsed as Partial<SellDraft>) }
   if (!Array.isArray(draft.photos)) draft.photos = []
+  if (!draft.video || typeof draft.video !== "object" || typeof draft.video.uri !== "string") {
+    draft.video = null
+  }
   if (typeof draft.serverDraftId !== "string") draft.serverDraftId = ""
   return draft
 }

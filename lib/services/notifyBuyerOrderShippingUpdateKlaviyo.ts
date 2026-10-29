@@ -11,7 +11,6 @@ import {
 } from "@/lib/db/orderBuyerNotifiedDelivered"
 import { resolveProfilePhoneE164 } from "@/lib/db/profilePersonalInfo"
 import { createServiceRoleClient } from "@/lib/supabase/server"
-import { ensureOrderBrandedTrackingUrl } from "@/lib/services/ensureOrderBrandedTrackingUrl"
 import { preferredTrackingUrl } from "@/lib/utils/carrier-tracking-url"
 import {
   parseOrderTrackingDetail,
@@ -117,9 +116,8 @@ export async function notifyBuyerOrderShippingUpdateKlaviyo(
   }
 
   try {
-    const brandedUrl = await ensureOrderBrandedTrackingUrl(orderId)
     const trackingUrl = preferredTrackingUrl({
-      brandedUrl,
+      orderId,
       trackingNumber,
       trackingCarrier: order.tracking_carrier,
     })

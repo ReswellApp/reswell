@@ -15,7 +15,7 @@ export type SellStep = (typeof SELL_STEPS)[number]
 
 export const SELL_STEP_TITLES: Record<SellStep, string> = {
   product: "Product info",
-  photos: "Photos",
+  photos: "Photos & video",
   details: "Condition",
   price: "Price",
   place: "Shipping",
@@ -40,8 +40,28 @@ export type SellPhoto = {
   serverImageId?: string
 }
 
+export type SellVideoStatus = "idle" | "uploading" | "ready" | "error"
+
+/** Optional one-clip listing video. Same 6s–2min / 200MB rules as website sell. */
+export type SellVideo = {
+  id: string
+  uri: string
+  url?: string
+  thumbnailUrl?: string | null
+  thumbnailUri?: string | null
+  contentType?: string | null
+  durationSeconds?: number | null
+  byteSize?: number | null
+  /** Existing `listing_videos.id` when editing. */
+  serverVideoId?: string
+  status?: SellVideoStatus
+  uploadProgress?: number | null
+  errorMessage?: string | null
+}
+
 export type SellDraft = {
   photos: SellPhoto[]
+  video: SellVideo | null
   title: string
   brand: string
   model: string
@@ -87,6 +107,7 @@ export function defaultDeliveryForCategory(category: string): Pick<SellDraft, "s
 export function emptySellDraft(): SellDraft {
   return {
     photos: [],
+    video: null,
     title: "",
     brand: "",
     model: "",

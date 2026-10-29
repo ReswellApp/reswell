@@ -12,7 +12,7 @@ import { useAuth } from "@/lib/auth-context"
 import { useAuthGate } from "@/lib/auth-gate"
 import { inboxItemNotificationId, inboxItemToNative } from "@/lib/inbox-href"
 import { requestPushPermissionAndRegister } from "@/lib/push-token"
-import { useInboxUnreadAdjust, useSyncInboxUnreadCount } from "@/lib/inbox-unread-count"
+import { useSyncInboxUnreadCount } from "@/lib/inbox-unread-count"
 import { useAccountResource } from "@/lib/use-account-resource"
 import { fontFamily, useReswellColors } from "@/theme"
 
@@ -61,16 +61,13 @@ function InboxList() {
   const { session } = useAuth()
   const tabBarInset = useFloatingTabBarContentInset()
   const syncInboxUnread = useSyncInboxUnreadCount()
-  const adjustInboxUnread = useInboxUnreadAdjust()
   const [readItemIds, setReadItemIds] = useState<Set<string>>(() => new Set())
   const readItemIdsRef = useRef(readItemIds)
   readItemIdsRef.current = readItemIds
   const load = useCallback(
     (accessToken: string) =>
       fetchInbox(accessToken).then((inbox) => {
-        const locallyRead = readItemIdsRef.current
-        const unread = inbox.items.filter((item) => item.unread && !locallyRead.has(item.id)).length
-        syncInboxUnread(unread)
+        syncInboxUnread(inbox.unread_count)
         return inbox
       }),
     [syncInboxUnread],
@@ -124,7 +121,6 @@ function InboxList() {
         next.add(item.id)
         readItemIdsRef.current = next
         setReadItemIds(next)
-        adjustInboxUnread(-1)
         const notificationId = inboxItemNotificationId(item.id)
         const token = session?.access_token
         if (notificationId && token) {
@@ -133,7 +129,7 @@ function InboxList() {
       }
       router.push(inboxItemToNative(item))
     },
-    [adjustInboxUnread, router, session?.access_token],
+    [router, session?.access_token],
   )
 
   return (

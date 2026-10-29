@@ -4,10 +4,20 @@ import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { fontFamily, useReswellColors } from "@/theme"
 
 export function SellUploadMenu({
+  title = "Add a photo",
+  libraryLabel = "Photo Library",
+  cameraLabel = "Take Photo",
+  libraryIcon = { ios: "photo.on.rectangle", android: "photo_library" },
+  cameraIcon = { ios: "camera", android: "photo_camera" },
   onLibrary,
   onCamera,
   onClose,
 }: {
+  title?: string
+  libraryLabel?: string
+  cameraLabel?: string
+  libraryIcon?: { ios: SFSymbol; android: AndroidSymbol }
+  cameraIcon?: { ios: SFSymbol; android: AndroidSymbol }
   onLibrary: () => void
   onCamera: () => void
   onClose: () => void
@@ -37,9 +47,9 @@ export function SellUploadMenu({
           ]}
         >
           <View style={[styles.handle, { backgroundColor: colors.border }]} />
-          <Text style={[styles.title, { color: colors.foreground, fontFamily: fontFamily.headline }]}>Add a photo</Text>
-          <MenuRow icon={{ ios: "photo.on.rectangle", android: "photo_library" }} label="Photo Library" onPress={onLibrary} />
-          <MenuRow icon={{ ios: "camera", android: "photo_camera" }} label="Take Photo" onPress={onCamera} />
+          <Text style={[styles.title, { color: colors.foreground, fontFamily: fontFamily.headline }]}>{title}</Text>
+          <MenuRow icon={libraryIcon} label={libraryLabel} onPress={onLibrary} />
+          <MenuRow icon={cameraIcon} label={cameraLabel} onPress={onCamera} />
           <Pressable accessibilityRole="button" onPress={onClose} style={styles.cancel}>
             <Text style={[styles.cancelLabel, { color: colors.muted, fontFamily: fontFamily.text }]}>Cancel</Text>
           </Pressable>

@@ -5,7 +5,6 @@ import { trackKlaviyoOrderShipped } from "@/lib/klaviyo/track-order-shipped"
 import { trackKlaviyoSellerOrderShipped } from "@/lib/klaviyo/track-seller-order-shipped"
 import { findSentKlaviyoUniqueIds } from "@/lib/db/klaviyoEventLog"
 import { resolveProfilePhoneE164 } from "@/lib/db/profilePersonalInfo"
-import { ensureOrderBrandedTrackingUrl } from "@/lib/services/ensureOrderBrandedTrackingUrl"
 import { preferredTrackingUrl } from "@/lib/utils/carrier-tracking-url"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 
@@ -75,9 +74,8 @@ export async function notifyOrderShippedKlaviyoIfMissing(
 
   const listingTitle = listingTitleFromEmbed(order.listings)
   const trackingCarrier = order.tracking_carrier?.trim() || null
-  const brandedUrl = await ensureOrderBrandedTrackingUrl(order.id)
   const trackingUrl = preferredTrackingUrl({
-    brandedUrl,
+    orderId: order.id,
     trackingNumber,
     trackingCarrier,
   })

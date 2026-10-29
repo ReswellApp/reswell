@@ -1,33 +1,12 @@
 "use client"
 
-import { useState, type ComponentType } from "react"
+import { useState } from "react"
 
-import {
-  SurfboardBottomIcon,
-  SurfboardDeckIcon,
-  SurfboardDingIcon,
-  SurfboardRailsIcon,
-  SurfboardScaleIcon,
-  SurfboardTailIcon,
-} from "@/components/features/sell/sell-photo-example-icons"
+import { ListingMediaFillImage } from "@/components/listing-media-fill-image"
+import { SELL_PHOTO_GUIDE_EXAMPLES } from "@/lib/sell-flow/sell-photo-guide"
 import { cn } from "@/lib/utils"
 
 const HIDE_STORAGE_KEY = "sell-photo-examples-hidden"
-
-interface PhotoExample {
-  label: string
-  Icon: ComponentType<{ className?: string }>
-}
-
-const SURFBOARD_PHOTO_EXAMPLES: readonly PhotoExample[] = [
-  { label: "Primary", Icon: SurfboardDeckIcon },
-  { label: "Bottom", Icon: SurfboardBottomIcon },
-  { label: "Rails", Icon: SurfboardRailsIcon },
-  { label: "Tail & fins", Icon: SurfboardTailIcon },
-  { label: "Size and scale", Icon: SurfboardScaleIcon },
-  // Zero-width space lets this wrap on a phone tile without a visible hyphen.
-  { label: "Imper\u200Bfections", Icon: SurfboardDingIcon },
-]
 
 function initiallyHidden(): boolean {
   if (typeof window === "undefined") return false
@@ -41,6 +20,7 @@ function initiallyHidden(): boolean {
 /**
  * Shot checklist under the uploader. Each tile is a square so the row
  * stays short on the wide sell form. Hideable; stays hidden per device.
+ * Photos are from Hayden's Quadratic Formula listing.
  */
 export function SellPhotoExamplesBanner({ className }: { className?: string }) {
   const [hidden, setHidden] = useState(initiallyHidden)
@@ -73,14 +53,14 @@ export function SellPhotoExamplesBanner({ className }: { className?: string }) {
       </div>
       {!hidden ? (
         <ul className="grid w-full max-w-[34rem] grid-cols-6 gap-1.5 sm:gap-2">
-          {SURFBOARD_PHOTO_EXAMPLES.map(({ label, Icon }) => (
+          {SELL_PHOTO_GUIDE_EXAMPLES.map((example) => (
             <li
-              key={label}
-              className="flex aspect-square min-w-0 flex-col items-center justify-center gap-1 overflow-hidden rounded-lg border border-border bg-white px-0.5 sm:gap-1.5 sm:px-1"
+              key={example.id}
+              className="relative aspect-square min-w-0 overflow-hidden rounded-lg border border-border bg-white"
             >
-              <Icon className="h-5 w-5 shrink-0 text-midgray/65 sm:h-6 sm:w-6" />
-              <span className="w-full text-center text-[9px] font-medium leading-tight text-foreground sm:text-[11px]">
-                {label}
+              <ListingMediaFillImage src={example.path} alt={example.label} />
+              <span className="absolute inset-x-0 bottom-0 z-[1] bg-gradient-to-t from-black/75 to-transparent px-0.5 pb-1 pt-3 text-center text-[9px] font-medium leading-tight text-white sm:text-[11px]">
+                {example.label}
               </span>
             </li>
           ))}

@@ -5,6 +5,25 @@ import { shopVacationTargetIds, type ShopVacationListing } from "@/lib/shop-vaca
 const SHOP_VACATION_SELECT = "id, status, hidden_from_site, site_visibility_reason, archived_at"
 const CONCURRENCY = 4
 
+/** Slim listing rows for shop-wide vacation UI (profile / listings tools). */
+export async function loadShopVacationListingsForSeller(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<{ ok: true; listings: ShopVacationListing[] } | { ok: false; error: string; status: number }> {
+  const { data, error } = await supabase
+    .from("listings")
+    .select(SHOP_VACATION_SELECT)
+    .eq("user_id", userId)
+    .is("archived_at", null)
+
+  if (error) {
+    console.error("[shopVacationMode] load listings", error.message)
+    return { ok: false, error: "Could not load your listings.", status: 500 }
+  }
+
+  return { ok: true, listings: (data ?? []) as ShopVacationListing[] }
+}
+
 async function mapPool(
   ids: string[],
   worker: (id: string) => Promise<boolean>,
@@ -38,19 +57,10 @@ export async function setShopVacationModeForSeller(params: {
   | { ok: true; updated: number; failed: number; vacationMode: boolean }
   | { ok: false; error: string; status: number }
 > {
-  const { data, error } = await params.supabase
-    .from("listings")
-    .select(SHOP_VACATION_SELECT)
-    .eq("user_id", params.userId)
-    .is("archived_at", null)
+  const loaded = await loadShopVacationListingsForSeller(params.supabase, params.userId)
+  if (!loaded.ok) return loaded
 
-  if (error) {
-    console.error("[shopVacationMode] load listings", error.message)
-    return { ok: false, error: "Could not load your listings.", status: 500 }
-  }
-
-  const rows = (data ?? []) as ShopVacationListing[]
-  const targets = shopVacationTargetIds(rows, params.vacationMode ? "on" : "off")
+  const targets = shopVacationTargetIds(loaded.listings, params.vacationMode ? "on" : "off")
   if (targets.length === 0) {
     return { ok: true, updated: 0, failed: 0, vacationMode: params.vacationMode }
   }

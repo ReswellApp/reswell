@@ -107,6 +107,28 @@ export async function loadMessagesInboxForUser(userId: string): Promise<Messages
   }
 }
 
+/** Same columns the website header badge reads from `profiles`. */
+export async function loadInboxTickerCountsForUser(
+  userId: string,
+): Promise<{ unreadMessages: number; unreadSupport: number }> {
+  const supabase = createServiceRoleClient()
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("unread_message_count, unread_support_count")
+    .eq("id", userId)
+    .maybeSingle()
+
+  if (error) {
+    console.error("[loadInboxTickerCountsForUser]", error)
+    return { unreadMessages: 0, unreadSupport: 0 }
+  }
+
+  return {
+    unreadMessages: Math.max(0, Math.floor(Number(data?.unread_message_count) || 0)),
+    unreadSupport: Math.max(0, Math.floor(Number(data?.unread_support_count) || 0)),
+  }
+}
+
 /**
  * Loads unread incoming messages for the given conversations and merges them
  * into each conversation's `messages` array (alongside the already-loaded latest

@@ -1,42 +1,44 @@
 import { Image } from "expo-image"
-import { useRouter, type Href } from "expo-router"
-import { useCallback, useState } from "react"
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
+import { SymbolView } from "expo-symbols"
+import { useRouter } from "expo-router"
+import { useCallback, useMemo, useState } from "react"
+import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native"
 import type { MobileMyListings } from "@reswell/api-contract"
 import { DashboardPageGate } from "@/components/dashboard-page-gate"
+import { SCREEN_GUTTER } from "@/components/screen-shell"
 import { fetchMyListings, relistListing, setListingVacation } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
 import { useAccountResource } from "@/lib/use-account-resource"
 import { fontFamily, useReswellColors } from "@/theme"
 
-type ViewMode = "basic" | "advanced"
-type StatusFilter = "all" | "active" | "draft" | "vacation" | "sold"
+type StatusTab = "active" | "draft" | "sold" | "vacation"
+type SortMode = "recent" | "views" | "price"
 type Listing = MobileMyListings["listings"][number]
 
-const VIEWS: { id: ViewMode; label: string }[] = [
-  { id: "basic", label: "Basic" },
-  { id: "advanced", label: "Advanced" },
-]
-const FILTERS: { id: StatusFilter; label: string }[] = [
-  { id: "all", label: "All" },
+const TABS: { id: StatusTab; label: string }[] = [
   { id: "active", label: "Active" },
   { id: "draft", label: "Drafts" },
-  { id: "vacation", label: "Vacation" },
   { id: "sold", label: "Sold" },
+  { id: "vacation", label: "Vacation" },
+]
+
+const SORTS: { id: SortMode; label: string }[] = [
+  { id: "recent", label: "Recent" },
+  { id: "views", label: "Views" },
+  { id: "price", label: "Price" },
 ]
 
 export default function AccountListingsScreen() {
   const load = useCallback((accessToken: string) => fetchMyListings(accessToken), [])
   const listings = useAccountResource(load)
   return (
-    <DashboardPageGate id="listings" title="My Listings">
-      {(dashboard) => (
+    <DashboardPageGate id="listings" title="Listings">
+      {() => (
         <ListingsDesk
           data={listings.data}
           loading={listings.loading}
           error={listings.error}
           onReload={listings.reload}
-          sellerSlug={dashboard.seller_slug}
         />
       )}
     </DashboardPageGate>
@@ -48,25 +50,45 @@ function ListingsDesk({
   loading,
   error,
   onReload,
-  sellerSlug,
 }: {
   data: MobileMyListings | null
   loading: boolean
   error: string | null
   onReload: () => void
-  sellerSlug: string | null
 }) {
   const colors = useReswellColors()
   const router = useRouter()
   const { session } = useAuth()
-  const [view, setView] = useState<ViewMode>("basic")
-  const [filter, setFilter] = useState<StatusFilter>("all")
+  const [tab, setTab] = useState<StatusTab>("active")
+  const [sort, setSort] = useState<SortMode>("recent")
+  const [sortOpen, setSortOpen] = useState(false)
+  const [query, setQuery] = useState("")
   const [busyId, setBusyId] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+
   const listings = data?.listings ?? []
-  const visible = listings.filter((listing) => matches(listing, filter))
-  const vacationTargets = listings.filter((listing) => listing.can_vacation)
-  const shopOnVacation = vacationTargets.length > 0 && vacationTargets.every((listing) => listing.on_vacation)
+  const counts = useMemo(() => {
+    return {
+      active: listings.filter((listing) => matchesTab(listing, "active")).length,
+      draft: listings.filter((listing) => matchesTab(listing, "draft")).length,
+      sold: listings.filter((listing) => matchesTab(listing, "sold")).length,
+      vacation: listings.filter((listing) => matchesTab(listing, "vacation")).length,
+    }
+  }, [listings])
+
+  const filtered = useMemo(() => {
+    const needle = query.trim().toLowerCase()
+    const rows = listings.filter((listing) => {
+      if (!matchesTab(listing, tab)) return false
+      if (!needle) return true
+      return (
+        listing.title.toLowerCase().includes(needle) ||
+        (listing.brand?.toLowerCase().includes(needle) ?? false) ||
+        listing.status_label.toLowerCase().includes(needle)
+      )
+    })
+    return sortListings(rows, sort)
+  }, [listings, query, sort, tab])
 
   async function run(id: string, action: (token: string) => Promise<{ message: string }>) {
     const token = session?.access_token
@@ -85,170 +107,422 @@ function ListingsDesk({
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.page}>
-      <View style={[styles.switch, { backgroundColor: colors.image }]}>
-        {VIEWS.map((item) => {
-          const active = view === item.id
-          return (
-            <Pressable key={item.id} onPress={() => setView(item.id)} style={[styles.switchItem, active && { backgroundColor: colors.background }]}>
-              <Text style={[styles.switchLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}>{item.label}</Text>
-            </Pressable>
-          )
-        })}
-      </View>
-      <View style={styles.actions}>
-        <Pressable onPress={() => router.push("/sell/new")} style={[styles.primary, { backgroundColor: colors.primary }]}>
-          <Text style={[styles.primaryLabel, { color: colors.primaryForeground, fontFamily: fontFamily.text }]}>New listing</Text>
-        </Pressable>
-        {vacationTargets.length > 0 ? (
-          <Pressable
-            onPress={() => void run("shop", (token) => setListingVacation(token, { enabled: !shopOnVacation }))}
-            style={[styles.secondary, { borderColor: colors.border }]}
-          >
-            <Text style={[styles.secondaryLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}>
-              {shopOnVacation ? "End shop vacation" : "Shop vacation"}
-            </Text>
-          </Pressable>
-        ) : null}
-      </View>
-      {view === "advanced" && data ? (
-        <>
-          <View style={styles.stats}>
-            <Stat label="Listings" value={String(data.total_listings)} />
-            <Stat label="Views" value={String(data.total_views)} />
-            <Stat label="In carts" value={String(data.in_carts)} />
-            <Stat label="Saved" value={String(data.saved)} />
+    <FlatList
+      data={filtered}
+      keyExtractor={(item) => item.id}
+      refreshing={loading}
+      onRefresh={onReload}
+      keyboardShouldPersistTaps="handled"
+      contentInsetAdjustmentBehavior="never"
+      contentContainerStyle={styles.list}
+      ItemSeparatorComponent={() => <View style={[styles.separator, { backgroundColor: colors.border }]} />}
+      ListHeaderComponent={
+        <View style={styles.header}>
+          <Text style={[styles.pageTitle, { color: colors.foreground, fontFamily: fontFamily.headline }]}>
+            Listings
+          </Text>
+
+          <View style={[styles.tabs, { borderBottomColor: colors.border }]}>
+            {TABS.map((item) => {
+              const active = tab === item.id
+              const count = counts[item.id]
+              return (
+                <Pressable
+                  key={item.id}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: active }}
+                  onPress={() => setTab(item.id)}
+                  style={[styles.tab, active && { borderBottomColor: colors.listingHeart }]}
+                >
+                  <Text
+                    style={[
+                      styles.tabLabel,
+                      {
+                        color: active ? colors.listingHeart : colors.muted,
+                        fontFamily: fontFamily.text,
+                      },
+                    ]}
+                  >
+                    {item.label}
+                    {count > 0 ? ` (${count})` : ""}
+                  </Text>
+                </Pressable>
+              )
+            })}
           </View>
-          <View style={styles.tools}>
-            <Tool label="Shop profile" href="/account/profile" />
-            <Tool label="Offers" href="/account/offers" />
-            <Tool label="Earnings" href="/account/earnings" />
-            {sellerSlug ? <Tool label="View shop" href={{ pathname: "/profile/[slug]", params: { slug: sellerSlug } }} /> : null}
-          </View>
-        </>
-      ) : null}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
-        {FILTERS.map((item) => {
-          const active = filter === item.id
-          return (
-            <Pressable key={item.id} onPress={() => setFilter(item.id)} style={[styles.filter, { backgroundColor: active ? colors.foreground : colors.image }]}>
-              <Text style={[styles.filterLabel, { color: active ? colors.background : colors.foreground, fontFamily: fontFamily.text }]}>{item.label}</Text>
-            </Pressable>
-          )
-        })}
-      </ScrollView>
-      {notice ? <Text style={[styles.notice, { color: colors.foreground, fontFamily: fontFamily.text }]}>{notice}</Text> : null}
-      {loading && !data ? <Text style={[styles.notice, { color: colors.muted, fontFamily: fontFamily.text }]}>Loading listings…</Text> : null}
-      {error && !data ? <Text style={[styles.notice, { color: colors.destructive, fontFamily: fontFamily.text }]}>{error}</Text> : null}
-      {data && visible.length === 0 ? (
-        <Text style={[styles.notice, { color: colors.muted, fontFamily: fontFamily.text }]}>No listings in this view.</Text>
-      ) : null}
-      {visible.map((listing) => (
-        <View key={listing.id} style={[styles.card, { borderColor: colors.border }]}>
-          <Pressable
-            onPress={() => listing.slug && router.push({ pathname: "/listing/[id]", params: { id: listing.slug } })}
-            style={styles.identity}
-          >
-            {listing.image_url ? (
-              <Image source={{ uri: listing.image_url }} style={[styles.image, { backgroundColor: colors.image }]} contentFit="cover" />
-            ) : (
-              <View style={[styles.image, { backgroundColor: colors.image }]} />
-            )}
-            <View style={styles.copy}>
-              <Text style={[styles.status, { color: colors.muted, fontFamily: fontFamily.text }]}>{listing.status_label}</Text>
-              <Text numberOfLines={2} style={[styles.title, { color: colors.foreground, fontFamily: fontFamily.headline }]}>{listing.title}</Text>
-              <Text style={[styles.price, { color: colors.foreground, fontFamily: fontFamily.text }]}>{listing.price_label}</Text>
-              {view === "advanced" ? (
-                <Text style={[styles.meta, { color: colors.muted, fontFamily: fontFamily.text }]}>
-                  {listing.views} views · {listing.cart_count} in carts · {listing.favorite_count} saved
-                </Text>
-              ) : null}
+
+          {data ? (
+            <View style={[styles.statsCard, { backgroundColor: colors.secondary }]}>
+              <StatPill value={data.total_views} label="Views" />
+              <View style={[styles.statsDivider, { backgroundColor: colors.border }]} />
+              <StatPill value={data.in_carts} label="Carts" />
+              <View style={[styles.statsDivider, { backgroundColor: colors.border }]} />
+              <StatPill value={data.saved} label="Saves" />
             </View>
-          </Pressable>
-          <View style={styles.rowButtons}>
-            {listing.can_vacation ? (
-              <RowButton
-                label={busyId === listing.id ? "Saving…" : listing.on_vacation ? "End vacation" : "Vacation"}
-                onPress={() => void run(listing.id, (token) => setListingVacation(token, { listing_id: listing.id, enabled: !listing.on_vacation }))}
+          ) : null}
+
+          <View style={styles.toolbar}>
+            <View
+              style={[
+                styles.searchWrap,
+                { backgroundColor: colors.secondary, borderColor: colors.border },
+              ]}
+            >
+              <SymbolView
+                name={{ ios: "magnifyingglass", android: "search", web: "search" }}
+                size={16}
+                tintColor={colors.muted}
               />
-            ) : null}
-            {listing.can_relist ? (
-              <RowButton label={busyId === listing.id ? "Saving…" : "Relist"} onPress={() => void run(listing.id, (token) => relistListing(token, listing.id))} />
-            ) : null}
-            {listing.slug ? (
-              <RowButton label="View" onPress={() => router.push({ pathname: "/listing/[id]", params: { id: listing.slug ?? listing.id } })} />
-            ) : null}
+              <TextInput
+                value={query}
+                onChangeText={setQuery}
+                placeholder="Search listings"
+                placeholderTextColor={colors.muted}
+                accessibilityLabel="Search listings"
+                autoCapitalize="none"
+                autoCorrect={false}
+                clearButtonMode="while-editing"
+                style={[styles.searchInput, { color: colors.foreground, fontFamily: fontFamily.text }]}
+              />
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setSortOpen((open) => !open)}
+              style={[styles.sortChip, { borderColor: colors.border, backgroundColor: colors.background }]}
+            >
+              <Text style={[styles.sortLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}>
+                {SORTS.find((item) => item.id === sort)?.label ?? "Recent"}
+              </Text>
+              <SymbolView
+                name={{
+                  ios: sortOpen ? "chevron.up" : "chevron.down",
+                  android: sortOpen ? "expand_less" : "expand_more",
+                  web: "expand_more",
+                }}
+                size={14}
+                tintColor={colors.muted}
+              />
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="New listing"
+              onPress={() => router.push("/sell/new")}
+              style={[styles.filterButton, { backgroundColor: colors.listingHeart }]}
+            >
+              <SymbolView
+                name={{ ios: "plus", android: "add", web: "add" }}
+                size={18}
+                tintColor="#FFFFFF"
+              />
+            </Pressable>
           </View>
+
+          {sortOpen ? (
+            <View style={[styles.sortMenu, { borderColor: colors.border, backgroundColor: colors.background }]}>
+              {SORTS.map((item) => {
+                const active = sort === item.id
+                return (
+                  <Pressable
+                    key={item.id}
+                    onPress={() => {
+                      setSort(item.id)
+                      setSortOpen(false)
+                    }}
+                    style={styles.sortOption}
+                  >
+                    <Text
+                      style={[
+                        styles.sortOptionLabel,
+                        {
+                          color: active ? colors.listingHeart : colors.foreground,
+                          fontFamily: fontFamily.text,
+                        },
+                      ]}
+                    >
+                      {item.label}
+                    </Text>
+                  </Pressable>
+                )
+              })}
+            </View>
+          ) : null}
+
+          {notice ? (
+            <Text style={[styles.notice, { color: colors.foreground, fontFamily: fontFamily.text }]}>{notice}</Text>
+          ) : null}
+          {loading && !data ? (
+            <Text style={[styles.notice, { color: colors.muted, fontFamily: fontFamily.text }]}>Loading listings…</Text>
+          ) : null}
+          {error && !data ? (
+            <Text style={[styles.notice, { color: colors.destructive, fontFamily: fontFamily.text }]}>{error}</Text>
+          ) : null}
         </View>
-      ))}
-    </ScrollView>
+      }
+      ListEmptyComponent={
+        data ? (
+          <Text style={[styles.empty, { color: colors.muted, fontFamily: fontFamily.text }]}>
+            {query.trim()
+              ? "No listings match that search."
+              : tab === "draft"
+                ? "No drafts yet."
+                : tab === "sold"
+                  ? "No sold listings yet."
+                  : tab === "vacation"
+                    ? "No listings on vacation."
+                    : "No active listings yet."}
+          </Text>
+        ) : null
+      }
+      renderItem={({ item }) => (
+        <ListingRow
+          listing={item}
+          busy={busyId === item.id}
+          onOpen={() => {
+            if (item.slug) router.push({ pathname: "/listing/[id]", params: { id: item.slug } })
+          }}
+          onEdit={() => router.push({ pathname: "/listing/edit/[id]", params: { id: item.id } })}
+          onVacation={() =>
+            void run(item.id, (token) =>
+              setListingVacation(token, { listing_id: item.id, enabled: !item.on_vacation }),
+            )
+          }
+          onRelist={() => void run(item.id, (token) => relistListing(token, item.id))}
+        />
+      )}
+    />
   )
 }
 
-function matches(listing: Listing, filter: StatusFilter): boolean {
-  if (filter === "all") return true
-  if (filter === "vacation") return listing.on_vacation && listing.status !== "sold" && listing.status !== "draft"
-  if (filter === "active") return listing.status === "active" && !listing.on_vacation
-  return listing.status === filter
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
+function ListingRow({
+  listing,
+  busy,
+  onOpen,
+  onEdit,
+  onVacation,
+  onRelist,
+}: {
+  listing: Listing
+  busy: boolean
+  onOpen: () => void
+  onEdit: () => void
+  onVacation: () => void
+  onRelist: () => void
+}) {
   const colors = useReswellColors()
+  const subtitle = listing.brand ? `by ${listing.brand}` : listing.status_label
+  const detail = [listing.condition_label, listing.on_vacation ? "Vacation" : null]
+    .filter((part): part is string => Boolean(part))
+    .join(" · ")
+
   return (
-    <View style={[styles.stat, { borderColor: colors.border }]}>
-      <Text style={[styles.meta, { color: colors.muted, fontFamily: fontFamily.text }]}>{label}</Text>
-      <Text style={[styles.statValue, { color: colors.foreground, fontFamily: fontFamily.headline }]}>{value}</Text>
+    <View style={styles.row}>
+      <Pressable accessibilityRole="button" onPress={onOpen} style={styles.rowMain}>
+        {listing.image_url ? (
+          <Image
+            source={{ uri: listing.image_url }}
+            style={[styles.thumb, { backgroundColor: colors.image }]}
+            contentFit="cover"
+          />
+        ) : (
+          <View style={[styles.thumb, { backgroundColor: colors.image }]} />
+        )}
+        <View style={styles.rowCopy}>
+          <Text numberOfLines={2} style={[styles.title, { color: colors.foreground, fontFamily: fontFamily.headline }]}>
+            {listing.title}
+          </Text>
+          <Text numberOfLines={1} style={[styles.subtitle, { color: colors.muted, fontFamily: fontFamily.text }]}>
+            {subtitle}
+          </Text>
+          <Text style={[styles.price, { color: colors.listingHeart, fontFamily: fontFamily.text }]}>
+            {listing.price_label}
+          </Text>
+          {detail ? (
+            <Text style={[styles.meta, { color: colors.muted, fontFamily: fontFamily.text }]}>{detail}</Text>
+          ) : null}
+          {listing.created_label ? (
+            <Text style={[styles.meta, { color: colors.muted, fontFamily: fontFamily.text }]}>
+              Listed {listing.created_label}
+            </Text>
+          ) : null}
+        </View>
+      </Pressable>
+
+      <View style={styles.rowAside}>
+        {listing.can_edit ? (
+          <Pressable accessibilityRole="button" accessibilityLabel="Edit listing" onPress={onEdit} hitSlop={8}>
+            <SymbolView
+              name={{ ios: "square.and.pencil", android: "edit", web: "edit" }}
+              size={20}
+              tintColor={colors.listingHeart}
+            />
+          </Pressable>
+        ) : (
+          <View style={styles.editSpacer} />
+        )}
+        <View style={styles.engagement}>
+          <Engagement icon="eye" label={plural(listing.views, "view")} />
+          <Engagement icon="heart" label={plural(listing.favorite_count, "save")} />
+        </View>
+        {listing.can_vacation || listing.can_relist ? (
+          <View style={styles.rowActions}>
+            {listing.can_vacation ? (
+              <Pressable disabled={busy} onPress={onVacation}>
+                <Text style={[styles.rowAction, { color: colors.listingHeart, fontFamily: fontFamily.text }]}>
+                  {busy ? "…" : listing.on_vacation ? "End vacation" : "Vacation"}
+                </Text>
+              </Pressable>
+            ) : null}
+            {listing.can_relist ? (
+              <Pressable disabled={busy} onPress={onRelist}>
+                <Text style={[styles.rowAction, { color: colors.listingHeart, fontFamily: fontFamily.text }]}>
+                  {busy ? "…" : "Relist"}
+                </Text>
+              </Pressable>
+            ) : null}
+          </View>
+        ) : null}
+      </View>
     </View>
   )
 }
 
-function Tool({ label, href }: { label: string; href: Href }) {
+function StatPill({ value, label }: { value: number; label: string }) {
   const colors = useReswellColors()
-  const router = useRouter()
   return (
-    <Pressable onPress={() => router.push(href)} style={[styles.tool, { borderColor: colors.border }]}>
-      <Text style={[styles.secondaryLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}>{label}</Text>
-    </Pressable>
+    <View style={styles.statPill}>
+      <Text style={[styles.statValue, { color: colors.foreground, fontFamily: fontFamily.headline }]}>{value}</Text>
+      <Text style={[styles.statLabel, { color: colors.muted, fontFamily: fontFamily.text }]}>{label}</Text>
+    </View>
   )
 }
 
-function RowButton({ label, onPress }: { label: string; onPress: () => void }) {
+function Engagement({ icon, label }: { icon: "eye" | "heart"; label: string }) {
   const colors = useReswellColors()
   return (
-    <Pressable onPress={onPress} style={[styles.rowButton, { backgroundColor: colors.image }]}>
-      <Text style={[styles.rowButtonLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}>{label}</Text>
-    </Pressable>
+    <View style={styles.engagementItem}>
+      <SymbolView
+        name={
+          icon === "eye"
+            ? { ios: "eye", android: "visibility", web: "visibility" }
+            : { ios: "heart", android: "favorite", web: "favorite" }
+        }
+        size={12}
+        tintColor={colors.muted}
+      />
+      <Text style={[styles.engagementLabel, { color: colors.muted, fontFamily: fontFamily.text }]}>{label}</Text>
+    </View>
   )
+}
+
+function matchesTab(listing: Listing, tab: StatusTab): boolean {
+  if (tab === "vacation") return listing.on_vacation && listing.status !== "sold" && listing.status !== "draft"
+  if (tab === "active") return listing.status === "active" && !listing.on_vacation
+  if (tab === "draft") return listing.status === "draft"
+  return listing.status === "sold"
+}
+
+function sortListings(listings: Listing[], sort: SortMode): Listing[] {
+  const rows = [...listings]
+  if (sort === "views") return rows.sort((a, b) => b.views - a.views)
+  if (sort === "price") {
+    return rows.sort((a, b) => priceValue(b.price_label) - priceValue(a.price_label))
+  }
+  return rows
+}
+
+function priceValue(label: string): number {
+  const value = Number(label.replace(/[^0-9.]/g, ""))
+  return Number.isFinite(value) ? value : 0
+}
+
+function plural(count: number, noun: string): string {
+  return `${count} ${noun}${count === 1 ? "" : "s"}`
 }
 
 const styles = StyleSheet.create({
-  page: { padding: 16, gap: 14 },
-  switch: { flexDirection: "row", borderRadius: 999, padding: 4 },
-  switchItem: { flex: 1, borderRadius: 999, alignItems: "center", paddingVertical: 8 },
-  switchLabel: { fontSize: 14, fontWeight: "700" },
-  actions: { flexDirection: "row", gap: 8 },
-  primary: { borderRadius: 999, paddingHorizontal: 16, paddingVertical: 10 },
-  primaryLabel: { fontSize: 14, fontWeight: "700" },
-  secondary: { borderRadius: 999, borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: 16, paddingVertical: 10 },
-  secondaryLabel: { fontSize: 14, fontWeight: "600" },
-  stats: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  stat: { width: "48%", borderWidth: StyleSheet.hairlineWidth, borderRadius: 14, padding: 12, gap: 4 },
-  statValue: { fontSize: 22, fontWeight: "700" },
-  tools: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  tool: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8 },
-  filters: { gap: 8 },
-  filter: { borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8 },
-  filterLabel: { fontSize: 13, fontWeight: "700" },
+  list: { paddingBottom: 28 },
+  header: { paddingHorizontal: SCREEN_GUTTER, paddingTop: 8, gap: 14, paddingBottom: 8 },
+  pageTitle: { fontSize: 34, fontWeight: "700", letterSpacing: -0.6 },
+  tabs: {
+    flexDirection: "row",
+    gap: 18,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  tab: {
+    paddingBottom: 10,
+    borderBottomWidth: 2,
+    borderBottomColor: "transparent",
+  },
+  tabLabel: { fontSize: 15, fontWeight: "700" },
+  statsCard: {
+    minHeight: 56,
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 12,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  statPill: { flex: 1, alignItems: "center", gap: 2 },
+  statValue: { fontSize: 18, fontWeight: "700" },
+  statLabel: { fontSize: 12, fontWeight: "600" },
+  statsDivider: { width: StyleSheet.hairlineWidth, alignSelf: "stretch", marginVertical: 4 },
+  toolbar: { flexDirection: "row", alignItems: "center", gap: 8 },
+  searchWrap: {
+    flex: 1,
+    minHeight: 40,
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  searchInput: { flex: 1, fontSize: 15, paddingVertical: 8 },
+  sortChip: {
+    minHeight: 40,
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  sortLabel: { fontSize: 14, fontWeight: "600" },
+  filterButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sortMenu: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  sortOption: { paddingHorizontal: 14, paddingVertical: 12 },
+  sortOptionLabel: { fontSize: 15, fontWeight: "600" },
   notice: { fontSize: 14 },
-  card: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 16, padding: 12, gap: 12 },
-  identity: { flexDirection: "row", gap: 12 },
-  image: { width: 84, height: 112, borderRadius: 12 },
-  copy: { flex: 1, gap: 2 },
-  status: { fontSize: 12, fontWeight: "700", letterSpacing: 0.4, textTransform: "uppercase" },
-  title: { fontSize: 16, fontWeight: "700" },
-  price: { fontSize: 15, fontWeight: "700" },
-  meta: { fontSize: 12 },
-  rowButtons: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  rowButton: { borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8 },
-  rowButtonLabel: { fontSize: 13, fontWeight: "700" },
+  empty: { paddingHorizontal: SCREEN_GUTTER, paddingVertical: 48, textAlign: "center", fontSize: 14 },
+  separator: { height: StyleSheet.hairlineWidth, marginLeft: SCREEN_GUTTER + 72 + 12 },
+  row: {
+    paddingHorizontal: SCREEN_GUTTER,
+    paddingVertical: 14,
+    flexDirection: "row",
+    gap: 12,
+  },
+  rowMain: { flex: 1, flexDirection: "row", gap: 12, minWidth: 0 },
+  thumb: { width: 72, height: 72, borderRadius: 10 },
+  rowCopy: { flex: 1, minWidth: 0, gap: 2 },
+  title: { fontSize: 16, fontWeight: "700", lineHeight: 21 },
+  subtitle: { fontSize: 13, lineHeight: 18 },
+  price: { fontSize: 16, fontWeight: "700", marginTop: 2 },
+  meta: { fontSize: 12, lineHeight: 16 },
+  rowAside: { alignItems: "flex-end", gap: 8, paddingTop: 2 },
+  editSpacer: { height: 20 },
+  engagement: { alignItems: "flex-end", gap: 4 },
+  engagementItem: { flexDirection: "row", alignItems: "center", gap: 4 },
+  engagementLabel: { fontSize: 11, lineHeight: 14 },
+  rowActions: { alignItems: "flex-end", gap: 4, marginTop: 2 },
+  rowAction: { fontSize: 12, fontWeight: "700" },
 })

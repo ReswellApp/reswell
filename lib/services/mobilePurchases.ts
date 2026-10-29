@@ -35,7 +35,6 @@ import {
 } from "@/lib/purchases-list-display"
 import { resolveSaleCardStatusDisplay, type OrderReturnSummaryForStatus } from "@/lib/sale-card-status"
 import { canSubmitSellerReview } from "@/lib/services/orderSellerReview"
-import { ensureOrderBrandedTrackingUrl } from "@/lib/services/ensureOrderBrandedTrackingUrl"
 import type { MobileApiResult } from "@/lib/services/mobileApi"
 import {
   daysUntilShippingDeadline,
@@ -216,7 +215,7 @@ export async function getMobilePurchaseDetailService(
 
   const order = loaded.rows
   const listingId = order.listing_id.trim() || null
-  const [trackingDetailRaw, conversation, buyerReview, sellerReview, brandedUrl] = await Promise.all([
+  const [trackingDetailRaw, conversation, buyerReview, sellerReview] = await Promise.all([
     fetchOptionalOrderTrackingDetailJson(supabase, {
       orderId,
       role: "buyer",
@@ -225,7 +224,6 @@ export async function getMobilePurchaseDetailService(
     getConversationForBuyerSellerListing(supabase, userId, order.seller_id, listingId),
     loadReview(supabase, orderId, userId),
     loadReview(supabase, orderId, order.seller_id),
-    order.tracking_number?.trim() ? ensureOrderBrandedTrackingUrl(order.id) : Promise.resolve(null),
   ])
   const detail = buildMobilePurchaseDetail(order, parseOrderTrackingDetail(trackingDetailRaw), {
     conversationId: conversation?.id ?? null,
@@ -235,7 +233,6 @@ export async function getMobilePurchaseDetailService(
       ? absoluteTrackUrl(
           packageTrackHref({
             orderId: order.id,
-            brandedUrl: brandedUrl,
             trackingNumber: order.tracking_number,
             trackingCarrier: order.tracking_carrier,
           }),

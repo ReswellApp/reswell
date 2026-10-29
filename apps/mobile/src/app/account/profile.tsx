@@ -12,6 +12,7 @@ import { ProfileCircle } from "@/components/profile-circle"
 import {
   changeProfileEmail,
   changeProfilePassword,
+  fetchMyListings,
   fetchProfileSettings,
   sendPushTest,
   removeProfileAvatar,
@@ -19,6 +20,7 @@ import {
   removeProfileTileBanner,
   saveProfileSettings,
   sendProfilePasswordReset,
+  setListingVacation,
   uploadProfileAvatar,
   uploadProfileBanner,
   uploadProfileTileBanner,
@@ -287,10 +289,105 @@ function ShopTab({ settings, onSaved }: { settings: MobileProfileSettings; onSav
         onRemove={() => removeBanner("tile")}
       />
 
+      <ShopVacationCard />
+
       {message ? <Text style={[styles.message, { color: colors.destructive, fontFamily: fontFamily.text }]}>{message}</Text> : null}
       <Pressable onPress={save} disabled={saving} style={[styles.save, { backgroundColor: saving || saved ? colors.border : colors.primary }]}>
         <Text style={[styles.saveLabel, { color: colors.primaryForeground, fontFamily: fontFamily.text }]}>
           {saving ? "Saving" : saved ? "Saved" : "Save"}
+        </Text>
+      </Pressable>
+    </View>
+  )
+}
+
+function ShopVacationCard() {
+  const colors = useReswellColors()
+  const { session } = useAuth()
+  const [loading, setLoading] = useState(true)
+  const [busy, setBusy] = useState(false)
+  const [message, setMessage] = useState<string | null>(null)
+  const [vacationTargets, setVacationTargets] = useState<
+    { id: string; on_vacation: boolean; can_vacation: boolean }[]
+  >([])
+
+  const reload = useCallback(async () => {
+    const token = session?.access_token
+    if (!token) {
+      setLoading(false)
+      return
+    }
+    setLoading(true)
+    try {
+      const data = await fetchMyListings(token)
+      setVacationTargets(
+        data.listings
+          .filter((listing) => listing.can_vacation)
+          .map((listing) => ({
+            id: listing.id,
+            on_vacation: listing.on_vacation,
+            can_vacation: listing.can_vacation,
+          })),
+      )
+      setMessage(null)
+    } catch (cause: unknown) {
+      setMessage(cause instanceof Error ? cause.message : "Unable to load vacation status")
+    } finally {
+      setLoading(false)
+    }
+  }, [session?.access_token])
+
+  useEffect(() => {
+    void reload()
+  }, [reload])
+
+  const available = vacationTargets.length > 0
+  const shopOnVacation = available && vacationTargets.every((listing) => listing.on_vacation)
+
+  async function toggle() {
+    const token = session?.access_token
+    if (!token || busy || !available) return
+    setBusy(true)
+    setMessage(null)
+    try {
+      const result = await setListingVacation(token, { enabled: !shopOnVacation })
+      setMessage(result.message)
+      await reload()
+    } catch (cause: unknown) {
+      setMessage(cause instanceof Error ? cause.message : "Unable to update vacation")
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <View style={[styles.vacationCard, { borderColor: colors.border, backgroundColor: colors.secondary }]}>
+      <View style={styles.vacationCopy}>
+        <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: fontFamily.text }]}>
+          Shop vacation
+        </Text>
+        <Text style={[styles.hint, { color: colors.muted, fontFamily: fontFamily.text }]}>
+          Temporarily hide all live listings from browse, search, and checkout.
+        </Text>
+        {message ? (
+          <Text style={[styles.hint, { color: colors.foreground, fontFamily: fontFamily.text }]}>{message}</Text>
+        ) : null}
+      </View>
+      <Pressable
+        accessibilityRole="button"
+        disabled={loading || busy || !available}
+        onPress={() => void toggle()}
+        style={[
+          styles.vacationButton,
+          {
+            backgroundColor: colors.background,
+            borderColor: colors.border,
+            opacity: loading || busy || !available ? 0.55 : 1,
+          },
+        ]}
+      >
+        <Text style={[styles.vacationButtonLabel, { color: colors.listingHeart, fontFamily: fontFamily.text }]}>
+          {loading ? "Loading…" : busy ? "Updating…" : !available ? "No live listings" : shopOnVacation ? "End vacation" : "Turn on vacation"}
         </Text>
       </Pressable>
     </View>
@@ -760,6 +857,23 @@ const styles = StyleSheet.create({
   banner: { height: 96, borderRadius: 12, marginTop: 8, overflow: "hidden" },
   bannerEmpty: { alignItems: "center", justifyContent: "center", gap: 6 },
   bannerAdd: { fontSize: 15, fontWeight: "600" },
+  vacationCard: {
+    marginTop: 18,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 14,
+    padding: 14,
+    gap: 12,
+  },
+  vacationCopy: { gap: 4 },
+  vacationButton: {
+    minHeight: 40,
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 14,
+  },
+  vacationButtonLabel: { fontSize: 14, fontWeight: "700" },
   sectionTitle: { fontSize: 15, fontWeight: "700", marginTop: 8 },
   hint: { fontSize: 14, lineHeight: 20 },
   message: { fontSize: 14, marginTop: 8 },

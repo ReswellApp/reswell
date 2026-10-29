@@ -12,7 +12,7 @@ type InboxUnreadValue = {
 
 const InboxUnreadContext = createContext<InboxUnreadValue | null>(null)
 
-/** Header inbox badge from GET /api/mobile/v1/me/inbox `unread_count`. */
+/** Header inbox badge from GET /api/mobile/v1/me/inbox `unread_count` (website ticker). */
 export function InboxUnreadProvider({ children }: { children: ReactNode }) {
   const { session } = useAuth()
   const token = session?.access_token ?? null

@@ -15,7 +15,6 @@ import {
   type LiveChatActionActor,
 } from "@/lib/services/liveChatActionPolicy"
 import { csAgentOrderIsInScope } from "@/lib/utils/cs-agent-scope"
-import { ensureOrderBrandedTrackingUrl } from "@/lib/services/ensureOrderBrandedTrackingUrl"
 import { preferredTrackingUrl } from "@/lib/utils/carrier-tracking-url"
 import type { LiveChatShippingActionType } from "@/lib/validations/liveChatActions"
 
@@ -109,7 +108,7 @@ export async function getLiveChatShippingLabelStatus(
     trackingNumber,
     trackingCarrier: order.trackingCarrier,
     trackingUrl: preferredTrackingUrl({
-      brandedUrl: trackingNumber ? await ensureOrderBrandedTrackingUrl(order.id) : null,
+      orderId: order.id,
       trackingNumber,
       trackingCarrier: order.trackingCarrier,
     }),

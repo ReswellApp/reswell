@@ -27,6 +27,7 @@ import {
   profileSectionTitleClass,
   profileTextareaClass,
 } from "@/components/features/dashboard/profile-settings/profile-settings-styles"
+import { ShopVacationButton } from "@/components/features/dashboard/listings/shop-vacation-button"
 
 export type ProfileShopTabCopy = {
   displayName: string
@@ -184,6 +185,19 @@ export function ProfileShopTab({
 
   return (
     <div className="mx-auto max-w-xl space-y-8 pt-2">
+      <section className="rounded-xl border border-border bg-muted/40 px-4 py-4 sm:px-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0 space-y-1">
+            <h3 className={profileSectionTitleClass}>Shop vacation</h3>
+            <p className={profileSectionHintClass}>
+              Temporarily hide all live listings from browse, search, and checkout. Drafts and sold
+              listings stay as they are.
+            </p>
+          </div>
+          <ShopVacationButton className="shrink-0 self-start sm:self-center" />
+        </div>
+      </section>
+
       <div className="flex flex-col items-center gap-3">
         <div className="relative">
           <Avatar className="h-24 w-24 border-2 border-neutral-200 bg-neutral-100">

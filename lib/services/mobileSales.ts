@@ -15,7 +15,6 @@ import { fetchOrderIdsWithPreparedShippingLabels } from "@/lib/db/orderShippingL
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { compareSalesForSellerList, type SaleFulfillmentFilterInput } from "@/lib/sale-fulfillment-filters"
 import { broadcastInsertedMarketplaceMessage } from "@/lib/services/broadcastMarketplaceThreadMessage"
-import { ensureOrderBrandedTrackingUrl } from "@/lib/services/ensureOrderBrandedTrackingUrl"
 import type { MobileApiResult } from "@/lib/services/mobileApi"
 import {
   absoluteTrackUrl,
@@ -90,13 +89,12 @@ export async function getMobileSaleDetailService(
 
   const order = loaded.rows
   const listingId = order.listing_id.trim() || order.listing?.id || null
-  const [conversation, preparedIds, returnSummaries, brandedUrl] = await Promise.all([
+  const [conversation, preparedIds, returnSummaries] = await Promise.all([
     order.buyer_id
       ? getConversationForBuyerSellerListing(supabase, order.buyer_id, userId, listingId)
       : Promise.resolve(null),
     fetchOrderIdsWithPreparedShippingLabels(supabase, [orderId]),
     getOrderReturnSummariesByOrderIds(supabase, [orderId]),
-    order.tracking_number?.trim() ? ensureOrderBrandedTrackingUrl(order.id) : Promise.resolve(null),
   ])
   const santaBarbara = saleUsesSantaBarbaraDropoff(order)
   const labelAvailable = preparedIds.has(orderId) && !santaBarbara
@@ -110,7 +108,6 @@ export async function getMobileSaleDetailService(
       ? absoluteTrackUrl(
           packageTrackHref({
             orderId: order.id,
-            brandedUrl,
             trackingNumber: order.tracking_number,
             trackingCarrier: order.tracking_carrier,
           }),

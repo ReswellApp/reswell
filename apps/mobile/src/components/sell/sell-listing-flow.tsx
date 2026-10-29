@@ -18,6 +18,7 @@ import {
   saveSellListingDraft,
   updateSellListing,
   uploadSellPhotos,
+  uploadSellVideoIfNeeded,
 } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
 import { useAuthGate } from "@/lib/auth-gate"
@@ -165,6 +166,40 @@ export function SellListingFlow({
     })
   }
 
+  function markVideoUploadError(error: unknown) {
+    setDraft((current) =>
+      current.video && !current.video.url
+        ? {
+            ...current,
+            video: {
+              ...current.video,
+              status: "error",
+              errorMessage: sellActionErrorMessage(error, "Couldn't upload that video"),
+            },
+          }
+        : current,
+    )
+  }
+
+  async function uploadSellMedia(accessToken: string, current: SellDraft): Promise<SellDraft> {
+    const photos = await uploadSellPhotos(accessToken, current.photos)
+    if (current.video && !current.video.url) {
+      setDraft((existing) => ({
+        ...existing,
+        photos,
+        video: existing.video ? { ...existing.video, status: "uploading", errorMessage: null } : existing.video,
+      }))
+    }
+    const video = await uploadSellVideoIfNeeded(accessToken, current.video, (ratio) => {
+      setDraft((existing) =>
+        existing.video
+          ? { ...existing, video: { ...existing.video, status: "uploading", uploadProgress: ratio } }
+          : existing,
+      )
+    })
+    return { ...current, photos, video }
+  }
+
   async function saveDraft(accessToken?: string) {
     if (busy) return
     const token = accessToken ?? session?.access_token
@@ -186,15 +221,16 @@ export function SellListingFlow({
     setBusy("draft")
     setNotice(null)
     try {
-      const photos = await uploadSellPhotos(token, draft.photos)
-      const saved = await saveSellListingDraft(token, { ...draft, photos })
-      const next = { ...draft, photos, serverDraftId: saved.id }
+      const nextDraft = await uploadSellMedia(token, draft)
+      const saved = await saveSellListingDraft(token, nextDraft)
+      const next = { ...nextDraft, serverDraftId: saved.id }
       setDraft(next)
       await saveSellDraft(next)
       setDraftSaved(true)
       setNotice("Draft saved to your account.")
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Couldn't save this draft.")
+      markVideoUploadError(error)
+      setNotice(sellActionErrorMessage(error, "Couldn't save this draft."))
     } finally {
       setBusy(null)
     }
@@ -212,17 +248,21 @@ export function SellListingFlow({
     setBusy("post")
     setNotice(null)
     try {
-      const photos = await uploadSellPhotos(token, draft.photos)
+      const nextDraft = await uploadSellMedia(token, draft)
+      setDraft(nextDraft)
       if (isEdit && editListingId) {
-        const saved = await updateSellListing(token, editListingId, { ...draft, photos })
+        const saved = await updateSellListing(token, editListingId, nextDraft)
         router.replace(`/listing/${saved.slug || saved.id}`)
         return
       }
-      const published = await publishSellListing(token, { ...draft, photos })
+      const published = await publishSellListing(token, nextDraft)
       await clearSellDraft()
       router.replace(`/listing/${published.slug || published.id}`)
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : isEdit ? "Couldn't save this listing." : "Couldn't publish this listing.")
+      markVideoUploadError(error)
+      setNotice(
+        sellActionErrorMessage(error, isEdit ? "Couldn't save this listing." : "Couldn't publish this listing."),
+      )
       setBusy(null)
     }
   }
@@ -279,7 +319,16 @@ export function SellListingFlow({
         contentContainerStyle={styles.content}
       >
         <Section>
-          <SellPhotosStep photos={draft.photos} onChange={(photos) => patch({ photos })} />
+          <SellPhotosStep
+            photos={draft.photos}
+            video={draft.video}
+            onChange={(photos) => patch({ photos })}
+            onVideoChange={(video) => patch({ video })}
+            onVideoRetry={() => {
+              if (!draft.video) return
+              patch({ video: { ...draft.video, status: "idle", errorMessage: null } })
+            }}
+          />
         </Section>
         <Section>
           <SellProductStep
@@ -391,6 +440,15 @@ export function SellListingFlow({
       })() : null}
     </KeyboardAvoidingView>
   )
+}
+
+function sellActionErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof TypeError) return fallback
+  if (error instanceof Error && error.message.trim()) {
+    if (/is not a function/i.test(error.message)) return fallback
+    return error.message
+  }
+  return fallback
 }
 
 function Section({ title, children }: { title?: string; children: ReactNode }) {

@@ -2,19 +2,11 @@ import { Image } from "expo-image"
 import { useRouter } from "expo-router"
 import { Linking, Pressable, StyleSheet, Text, View } from "react-native"
 import type { MobileOrder, MobileSale } from "@reswell/api-contract"
+import { publicSiteUrl } from "@/lib/public-env"
 import { fontFamily, useReswellColors } from "@/theme"
 
-function trackingUrl(trackingNumber: string): string {
-  const number = trackingNumber.trim()
-  if (/^1Z/i.test(number)) return `https://www.ups.com/track?tracknum=${encodeURIComponent(number)}`
-  const compact = number.replace(/\s/g, "")
-  if (/^(94|93|92|420)\d{20,}$/.test(compact)) {
-    return `https://tools.usps.com/go/TrackConfirmAction?tLabels=${encodeURIComponent(number)}`
-  }
-  if (/^\d{12}$/.test(compact) || /^\d{14,15}$/.test(compact)) {
-    return `https://www.fedex.com/fedextrack/?trknbr=${encodeURIComponent(number)}`
-  }
-  return `https://www.google.com/search?q=${encodeURIComponent(`track package ${number}`)}`
+function trackingUrl(orderId: string): string {
+  return `${publicSiteUrl().replace(/\/$/, "")}/track/${orderId}`
 }
 
 export function OrderAccountCard({
@@ -62,7 +54,7 @@ export function OrderAccountCard({
         ) : null}
         {order.tracking_number ? (
           <Pressable
-            onPress={() => void Linking.openURL(trackingUrl(order.tracking_number ?? ""))}
+            onPress={() => void Linking.openURL(trackingUrl(order.id))}
             style={[styles.button, { backgroundColor: colors.primary }]}
           >
             <Text style={[styles.buttonLabel, { color: colors.primaryForeground, fontFamily: fontFamily.text }]}>Track package</Text>

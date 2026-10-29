@@ -13,6 +13,10 @@ import type { MobileApiResult } from "@/lib/services/mobileApi"
 import { ownedListingRowToMobileSellEdit } from "@/lib/services/mobileSellEditMap"
 import { mobileSellListingFields } from "@/lib/services/mobileSellListingFields"
 import { replaceListingImages } from "@/lib/services/mobileSellPublish"
+import {
+  assertMobileSellVideos,
+  replaceListingVideos,
+} from "@/lib/services/mobileSellVideos"
 import { verifyListingImageObjectsExist } from "@/lib/services/verifyListingImageStorage"
 import { listingObjectPublicUrl } from "@/lib/supabase/storage-upload-xhr"
 
@@ -104,6 +108,8 @@ export async function updateMobileListingEditService(
     const ok = await verifyListingImageObjectsExist(image.url, image.thumbnail_url)
     if (!ok) return { ok: false, status: 400, error: "Upload the listing photos again" }
   }
+  const videoError = await assertMobileSellVideos(publishInput.videos, userId)
+  if (videoError) return { ok: false, status: 400, error: videoError }
 
   const updated = await supabase
     .from("listings")
@@ -116,6 +122,10 @@ export async function updateMobileListingEditService(
 
   const imageError = await replaceListingImages(supabase, listingId, publishInput.images)
   if (imageError) return { ok: false, status: 400, error: imageError }
+  if (publishInput.videos !== undefined) {
+    const listingVideoError = await replaceListingVideos(supabase, listingId, publishInput.videos)
+    if (listingVideoError) return { ok: false, status: 400, error: listingVideoError }
+  }
 
   const slug = (existing.data.slug as string | null) || listingId
   try {

@@ -1,23 +1,30 @@
 import { manipulateAsync, SaveFormat } from "expo-image-manipulator"
 import { Image } from "expo-image"
 import { SymbolView } from "expo-symbols"
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { ActivityIndicator, Image as RNImage, Modal, Pressable, StatusBar, StyleSheet, Text, View } from "react-native"
 import { Gesture, GestureDetector } from "react-native-gesture-handler"
-import Animated, { runOnJS, useAnimatedStyle, useSharedValue } from "react-native-reanimated"
+import Animated, {
+  ReduceMotion,
+  cancelAnimation,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from "react-native-reanimated"
+import { scheduleOnRN } from "react-native-worklets"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { fontFamily } from "@/theme"
 
-type Aspect = "original" | "square" | "listing"
-
-const ASPECTS: { id: Aspect; label: string }[] = [
-  { id: "original", label: "Original" },
-  { id: "square", label: "Square" },
-  { id: "listing", label: "3:4" },
-]
-
+const LISTING_RATIO = 3 / 4
+const MAX_ZOOM = 4
 const TICKS = 31
 const PIXELS_PER_DEGREE = 3
+const SETTLE = {
+  duration: 400,
+  dampingRatio: 0.8,
+  overshootClamping: true,
+  reduceMotion: ReduceMotion.System,
+} as const
 
 export function SellPhotoEditor({
   uri,
@@ -31,22 +38,27 @@ export function SellPhotoEditor({
   const insets = useSafeAreaInsets()
   const [source, setSource] = useState(uri)
   const [pixel, setPixel] = useState<{ width: number; height: number } | null>(null)
-  const [aspect, setAspect] = useState<Aspect>("original")
   const [stage, setStage] = useState({ width: 0, height: 0 })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const adjusted = useRef(false)
 
   const scale = useSharedValue(1)
-  const savedScale = useSharedValue(1)
   const tx = useSharedValue(0)
   const ty = useSharedValue(0)
-  const savedTx = useSharedValue(0)
-  const savedTy = useSharedValue(0)
   const rotation = useSharedValue(0)
   const savedFine = useSharedValue(0)
   const stageW = useSharedValue(0)
   const stageH = useSharedValue(0)
+  const frameWSv = useSharedValue(1)
+  const frameHSv = useSharedValue(1)
+  const displayWSv = useSharedValue(1)
+  const displayHSv = useSharedValue(1)
+  const originScale = useSharedValue(1)
+  const originTx = useSharedValue(0)
+  const originTy = useSharedValue(0)
+  const originFocalX = useSharedValue(0)
+  const originFocalY = useSharedValue(0)
 
   useEffect(() => {
     let cancelled = false
@@ -64,152 +76,221 @@ export function SellPhotoEditor({
     }
   }, [source])
 
-  const imageRatio = pixel && pixel.height > 0 ? pixel.width / pixel.height : 1
-  const frameRatio = aspect === "square" ? 1 : aspect === "listing" ? 3 / 4 : imageRatio
   const maxW = Math.max(1, stage.width - 28)
   const maxH = Math.max(1, stage.height - 28)
   let frameW = maxW
-  let frameH = frameW / frameRatio
+  let frameH = frameW / LISTING_RATIO
   if (frameH > maxH) {
     frameH = maxH
-    frameW = frameH * frameRatio
+    frameW = frameH * LISTING_RATIO
   }
-  const displayW = frameW
-  const displayH = pixel ? displayW * (pixel.height / pixel.width) : frameH
+  const imageRatio = pixel && pixel.height > 0 ? pixel.width / pixel.height : LISTING_RATIO
+  const cover = coverSize(imageRatio, frameW, frameH)
+  const displayW = cover.width
+  const displayH = cover.height
+  const fitKey = `${source}|${pixel?.width ?? 0}|${pixel?.height ?? 0}|${Math.round(frameW)}|${Math.round(frameH)}`
 
-  function coverScale(degrees: number) {
-    const rad = (degrees * Math.PI) / 180
-    const c = Math.abs(Math.cos(rad))
-    const s = Math.abs(Math.sin(rad))
-    const boundW = displayW * c + displayH * s
-    const boundH = displayW * s + displayH * c
-    if (boundW <= 0 || boundH <= 0) return 1
-    return Math.max(frameW / boundW, frameH / boundH)
-  }
-
-  const fitKey = `${aspect}|${source}|${pixel?.width ?? 0}|${pixel?.height ?? 0}|${Math.round(frameW)}|${Math.round(frameH)}`
   useEffect(() => {
     adjusted.current = false
-  }, [aspect, source])
+  }, [source])
+
+  useEffect(() => {
+    frameWSv.set(frameW)
+    frameHSv.set(frameH)
+    displayWSv.set(displayW)
+    displayHSv.set(displayH)
+  }, [displayH, displayHSv, displayW, displayWSv, frameH, frameHSv, frameW, frameWSv])
+
   useEffect(() => {
     if (!pixel || frameW <= 1 || frameH <= 1 || adjusted.current) return
-    const start = coverScale(savedFine.value)
-    scale.value = start
-    savedScale.value = start
-    tx.value = 0
-    ty.value = 0
-    savedTx.value = 0
-    savedTy.value = 0
-  }, [fitKey, pixel, frameW, frameH, scale, savedScale, tx, ty, savedTx, savedTy, savedFine])
+    const start = minCoverScale(savedFine.get(), displayW, displayH, frameW, frameH)
+    cancelAnimation(scale)
+    cancelAnimation(tx)
+    cancelAnimation(ty)
+    scale.set(start)
+    tx.set(0)
+    ty.set(0)
+  }, [displayH, displayW, fitKey, frameH, frameW, pixel, savedFine, scale, tx, ty])
 
-  function markAdjusted() {
+  const markAdjusted = useCallback(() => {
     adjusted.current = true
-  }
+  }, [])
 
   function resetView() {
-    scale.value = coverScale(0)
-    savedScale.value = scale.value
-    tx.value = 0
-    ty.value = 0
-    savedTx.value = 0
-    savedTy.value = 0
-    rotation.value = 0
-    savedFine.value = 0
+    adjusted.current = false
+    cancelAnimation(scale)
+    cancelAnimation(tx)
+    cancelAnimation(ty)
+    cancelAnimation(rotation)
+    scale.set(minCoverScale(0, displayW, displayH, frameW, frameH))
+    tx.set(0)
+    ty.set(0)
+    rotation.set(0)
+    savedFine.set(0)
   }
 
-  function clampToFrame(nextScale: number, nextX: number, nextY: number, degrees: number) {
-    "worklet"
-    const rad = (degrees * Math.PI) / 180
-    const c = Math.abs(Math.cos(rad))
-    const s = Math.abs(Math.sin(rad))
-    const min = Math.max(frameW / (displayW * c + displayH * s), frameH / (displayW * s + displayH * c))
-    const clampedScale = Math.max(nextScale, Number.isFinite(min) ? min : 1)
-    const maxX = Math.max(0, (displayW * clampedScale * c + displayH * clampedScale * s - frameW) / 2)
-    const maxY = Math.max(0, (displayW * clampedScale * s + displayH * clampedScale * c - frameH) / 2)
-    return {
-      scale: clampedScale,
-      x: Math.min(maxX, Math.max(-maxX, nextX)),
-      y: Math.min(maxY, Math.max(-maxY, nextY)),
-    }
-  }
+  const pinch = useMemo(
+    () =>
+      Gesture.Pinch()
+        .onBegin((event) => {
+          cancelAnimation(scale)
+          cancelAnimation(tx)
+          cancelAnimation(ty)
+          originScale.set(scale.get())
+          originTx.set(tx.get())
+          originTy.set(ty.get())
+          originFocalX.set(event.focalX)
+          originFocalY.set(event.focalY)
+          scheduleOnRN(markAdjusted)
+        })
+        .onUpdate((event) => {
+          const degrees = savedFine.get()
+          const displayWidth = displayWSv.get()
+          const displayHeight = displayHSv.get()
+          const frameWidth = frameWSv.get()
+          const frameHeight = frameHSv.get()
+          const min = minCoverScale(degrees, displayWidth, displayHeight, frameWidth, frameHeight)
+          const max = Math.max(min, MAX_ZOOM)
+          const nextScale = rubberbandScale(originScale.get() * event.scale, min, max)
+          const ratio = originScale.get() > 0 ? nextScale / originScale.get() : 1
+          const startFocalX = originFocalX.get() - stageW.get() / 2
+          const startFocalY = originFocalY.get() - stageH.get() / 2
+          const currentFocalX = event.focalX - stageW.get() / 2
+          const currentFocalY = event.focalY - stageH.get() / 2
+          const nextX = originTx.get() * ratio + startFocalX * (1 - ratio) + (currentFocalX - startFocalX)
+          const nextY = originTy.get() * ratio + startFocalY * (1 - ratio) + (currentFocalY - startFocalY)
+          const edge = panExtent(nextScale, degrees, displayWidth, displayHeight, frameWidth, frameHeight)
+          scale.set(nextScale)
+          tx.set(rubberbandAxis(nextX, edge.maxX, frameWidth))
+          ty.set(rubberbandAxis(nextY, edge.maxY, frameHeight))
+        })
+        .onEnd((event) => {
+          settleTransform({
+            scale,
+            tx,
+            ty,
+            nextScale: scale.get(),
+            nextX: tx.get(),
+            nextY: ty.get(),
+            degrees: savedFine.get(),
+            displayW: displayWSv.get(),
+            displayH: displayHSv.get(),
+            frameW: frameWSv.get(),
+            frameH: frameHSv.get(),
+            velocityScale: event.velocity,
+            velocityX: 0,
+            velocityY: 0,
+          })
+        }),
+    [displayHSv, displayWSv, frameHSv, frameWSv, markAdjusted, originFocalX, originFocalY, originScale, originTx, originTy, savedFine, scale, stageH, stageW, tx, ty],
+  )
 
-  const pinch = Gesture.Pinch()
-    .onBegin(() => {
-      runOnJS(markAdjusted)()
-    })
-    .onUpdate((event) => {
-      const nextScale = savedScale.value * event.scale
-      const ratio = savedScale.value > 0 ? nextScale / savedScale.value : 1
-      const focalX = event.focalX - stageW.value / 2
-      const focalY = event.focalY - stageH.value / 2
-      const nextX = focalX * (1 - ratio) + savedTx.value * ratio
-      const nextY = focalY * (1 - ratio) + savedTy.value * ratio
-      const next = clampToFrame(nextScale, nextX, nextY, savedFine.value)
-      scale.value = next.scale
-      tx.value = next.x
-      ty.value = next.y
-    })
-    .onEnd(() => {
-      const next = clampToFrame(scale.value, tx.value, ty.value, savedFine.value)
-      scale.value = next.scale
-      tx.value = next.x
-      ty.value = next.y
-      savedScale.value = next.scale
-      savedTx.value = next.x
-      savedTy.value = next.y
-    })
+  const pan = useMemo(
+    () =>
+      Gesture.Pan()
+        .maxPointers(1)
+        .minDistance(0)
+        .onBegin(() => {
+          cancelAnimation(scale)
+          cancelAnimation(tx)
+          cancelAnimation(ty)
+          originTx.set(tx.get())
+          originTy.set(ty.get())
+          scheduleOnRN(markAdjusted)
+        })
+        .onUpdate((event) => {
+          const degrees = savedFine.get()
+          const displayWidth = displayWSv.get()
+          const displayHeight = displayHSv.get()
+          const frameWidth = frameWSv.get()
+          const frameHeight = frameHSv.get()
+          const edge = panExtent(scale.get(), degrees, displayWidth, displayHeight, frameWidth, frameHeight)
+          tx.set(rubberbandAxis(originTx.get() + event.translationX, edge.maxX, frameWidth))
+          ty.set(rubberbandAxis(originTy.get() + event.translationY, edge.maxY, frameHeight))
+        })
+        .onEnd((event) => {
+          const projectedX = tx.get() + project(event.velocityX)
+          const projectedY = ty.get() + project(event.velocityY)
+          settleTransform({
+            scale,
+            tx,
+            ty,
+            nextScale: scale.get(),
+            nextX: projectedX,
+            nextY: projectedY,
+            degrees: savedFine.get(),
+            displayW: displayWSv.get(),
+            displayH: displayHSv.get(),
+            frameW: frameWSv.get(),
+            frameH: frameHSv.get(),
+            velocityScale: 0,
+            velocityX: event.velocityX,
+            velocityY: event.velocityY,
+          })
+        }),
+    [displayHSv, displayWSv, frameHSv, frameWSv, markAdjusted, originTx, originTy, savedFine, scale, tx, ty],
+  )
 
-  const pan = Gesture.Pan()
-    .maxPointers(1)
-    .onBegin(() => {
-      runOnJS(markAdjusted)()
-    })
-    .onUpdate((event) => {
-      const next = clampToFrame(scale.value, savedTx.value + event.translationX, savedTy.value + event.translationY, savedFine.value)
-      tx.value = next.x
-      ty.value = next.y
-    })
-    .onEnd(() => {
-      savedTx.value = tx.value
-      savedTy.value = ty.value
-    })
+  const dial = useMemo(
+    () =>
+      Gesture.Pan()
+        .onBegin(() => {
+          scheduleOnRN(markAdjusted)
+        })
+        .onUpdate((event) => {
+          const nextFine = Math.min(45, Math.max(-45, savedFine.get() - event.translationX / PIXELS_PER_DEGREE))
+          rotation.set((nextFine * Math.PI) / 180)
+          const next = clampTransform(
+            scale.get(),
+            tx.get(),
+            ty.get(),
+            nextFine,
+            displayWSv.get(),
+            displayHSv.get(),
+            frameWSv.get(),
+            frameHSv.get(),
+          )
+          scale.set(next.scale)
+          tx.set(next.x)
+          ty.set(next.y)
+        })
+        .onEnd((event) => {
+          const nextFine = Math.min(45, Math.max(-45, savedFine.get() - event.translationX / PIXELS_PER_DEGREE))
+          savedFine.set(nextFine)
+          rotation.set((nextFine * Math.PI) / 180)
+          settleTransform({
+            scale,
+            tx,
+            ty,
+            nextScale: scale.get(),
+            nextX: tx.get(),
+            nextY: ty.get(),
+            degrees: nextFine,
+            displayW: displayWSv.get(),
+            displayH: displayHSv.get(),
+            frameW: frameWSv.get(),
+            frameH: frameHSv.get(),
+            velocityScale: 0,
+            velocityX: 0,
+            velocityY: 0,
+          })
+        }),
+    [displayHSv, displayWSv, frameHSv, frameWSv, markAdjusted, rotation, savedFine, scale, tx, ty],
+  )
 
-  const dial = Gesture.Pan()
-    .onBegin(() => {
-      runOnJS(markAdjusted)()
-    })
-    .onUpdate((event) => {
-      const nextFine = Math.min(45, Math.max(-45, savedFine.value - event.translationX / PIXELS_PER_DEGREE))
-      rotation.value = (nextFine * Math.PI) / 180
-      const next = clampToFrame(Math.max(scale.value, savedScale.value), tx.value, ty.value, nextFine)
-      scale.value = next.scale
-      tx.value = next.x
-      ty.value = next.y
-    })
-    .onEnd((event) => {
-      const nextFine = Math.min(45, Math.max(-45, savedFine.value - event.translationX / PIXELS_PER_DEGREE))
-      savedFine.value = nextFine
-      rotation.value = (nextFine * Math.PI) / 180
-      const next = clampToFrame(scale.value, tx.value, ty.value, nextFine)
-      scale.value = next.scale
-      savedScale.value = next.scale
-      tx.value = next.x
-      ty.value = next.y
-      savedTx.value = next.x
-      savedTy.value = next.y
-    })
+  const cropGesture = useMemo(() => Gesture.Simultaneous(pinch, pan), [pan, pinch])
 
   const imageStyle = useAnimatedStyle(() => ({
     transform: [
-      { translateX: tx.value },
-      { translateY: ty.value },
-      { scale: scale.value },
-      { rotate: `${rotation.value}rad` },
+      { translateX: tx.get() },
+      { translateY: ty.get() },
+      { scale: scale.get() },
+      { rotate: `${rotation.get()}rad` },
     ],
   }))
 
   const rulerStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: -((rotation.value * 180) / Math.PI) * PIXELS_PER_DEGREE }],
+    transform: [{ translateX: -((rotation.get() * 180) / Math.PI) * PIXELS_PER_DEGREE }],
   }))
 
   async function rotateQuarter() {
@@ -238,10 +319,10 @@ export function SellPhotoEditor({
         displayWidth: displayW,
         frameWidth: frameW,
         frameHeight: frameH,
-        scale: scale.value,
-        translateX: tx.value,
-        translateY: ty.value,
-        rotationDeg: (rotation.value * 180) / Math.PI,
+        scale: scale.get(),
+        translateX: tx.get(),
+        translateY: ty.get(),
+        rotationDeg: (rotation.get() * 180) / Math.PI,
       })
       const actions = Math.abs(crop.rotate) > 0.01 ? [{ rotate: crop.rotate } as const] : []
       const result = await manipulateAsync(
@@ -275,12 +356,12 @@ export function SellPhotoEditor({
         <View
           style={styles.stage}
           onLayout={(event) => {
-            stageW.value = event.nativeEvent.layout.width
-            stageH.value = event.nativeEvent.layout.height
+            stageW.set(event.nativeEvent.layout.width)
+            stageH.set(event.nativeEvent.layout.height)
             setStage({ width: event.nativeEvent.layout.width, height: event.nativeEvent.layout.height })
           }}
         >
-          <GestureDetector gesture={Gesture.Simultaneous(pinch, pan)}>
+          <GestureDetector gesture={cropGesture}>
             <View style={styles.gestureFill}>
               {pixel && stage.width > 0 ? (
                 <Animated.View
@@ -335,23 +416,127 @@ export function SellPhotoEditor({
               <Text style={[styles.barLabel, { fontFamily: fontFamily.text }]}>Reset</Text>
             </Pressable>
           </View>
-          <View style={styles.aspects}>
-            {ASPECTS.map((option) => {
-              const selected = option.id === aspect
-              return (
-                <Pressable key={option.id} accessibilityRole="button" onPress={() => setAspect(option.id)} style={styles.aspect}>
-                  <Text style={[styles.aspectLabel, { fontFamily: fontFamily.text, color: selected ? "#FFFFFF" : "#A1A1AA" }]}>
-                    {option.label}
-                  </Text>
-                </Pressable>
-              )
-            })}
-          </View>
           {error ? <Text style={[styles.error, { fontFamily: fontFamily.text }]}>{error}</Text> : null}
         </View>
       </View>
     </Modal>
   )
+}
+
+function coverSize(imageRatio: number, frameW: number, frameH: number) {
+  const frameRatio = frameW / frameH
+  if (imageRatio > frameRatio) {
+    return { width: frameH * imageRatio, height: frameH }
+  }
+  return { width: frameW, height: frameW / imageRatio }
+}
+
+function minCoverScale(degrees: number, displayW: number, displayH: number, frameW: number, frameH: number) {
+  "worklet"
+  const rad = (degrees * Math.PI) / 180
+  const c = Math.abs(Math.cos(rad))
+  const s = Math.abs(Math.sin(rad))
+  const boundW = displayW * c + displayH * s
+  const boundH = displayW * s + displayH * c
+  if (boundW <= 0 || boundH <= 0) return 1
+  return Math.max(frameW / boundW, frameH / boundH)
+}
+
+function panExtent(
+  nextScale: number,
+  degrees: number,
+  displayW: number,
+  displayH: number,
+  frameW: number,
+  frameH: number,
+) {
+  "worklet"
+  const rad = (degrees * Math.PI) / 180
+  const c = Math.abs(Math.cos(rad))
+  const s = Math.abs(Math.sin(rad))
+  return {
+    maxX: Math.max(0, (displayW * nextScale * c + displayH * nextScale * s - frameW) / 2),
+    maxY: Math.max(0, (displayW * nextScale * s + displayH * nextScale * c - frameH) / 2),
+  }
+}
+
+function clampTransform(
+  nextScale: number,
+  nextX: number,
+  nextY: number,
+  degrees: number,
+  displayW: number,
+  displayH: number,
+  frameW: number,
+  frameH: number,
+) {
+  "worklet"
+  const min = minCoverScale(degrees, displayW, displayH, frameW, frameH)
+  const max = Math.max(min, MAX_ZOOM)
+  const clampedScale = Math.min(max, Math.max(min, nextScale))
+  const edge = panExtent(clampedScale, degrees, displayW, displayH, frameW, frameH)
+  return {
+    scale: clampedScale,
+    x: Math.min(edge.maxX, Math.max(-edge.maxX, nextX)),
+    y: Math.min(edge.maxY, Math.max(-edge.maxY, nextY)),
+  }
+}
+
+function settleTransform(input: {
+  scale: { set: (value: number) => void }
+  tx: { set: (value: number) => void }
+  ty: { set: (value: number) => void }
+  nextScale: number
+  nextX: number
+  nextY: number
+  degrees: number
+  displayW: number
+  displayH: number
+  frameW: number
+  frameH: number
+  velocityScale: number
+  velocityX: number
+  velocityY: number
+}) {
+  "worklet"
+  const next = clampTransform(
+    input.nextScale,
+    input.nextX,
+    input.nextY,
+    input.degrees,
+    input.displayW,
+    input.displayH,
+    input.frameW,
+    input.frameH,
+  )
+  input.scale.set(withSpring(next.scale, { ...SETTLE, velocity: input.velocityScale }))
+  input.tx.set(withSpring(next.x, { ...SETTLE, velocity: input.velocityX }))
+  input.ty.set(withSpring(next.y, { ...SETTLE, velocity: input.velocityY }))
+}
+
+function project(velocity: number, decelerationRate = 0.998) {
+  "worklet"
+  return ((velocity / 1000) * decelerationRate) / (1 - decelerationRate)
+}
+
+function rubberband(overshoot: number, dimension: number, constant = 0.55) {
+  "worklet"
+  const size = Math.max(1, dimension)
+  return (overshoot * size * constant) / (size + constant * Math.abs(overshoot))
+}
+
+function rubberbandScale(nextScale: number, min: number, max: number) {
+  "worklet"
+  if (nextScale > max) return max + rubberband(nextScale - max, max)
+  if (nextScale < min) return min - rubberband(min - nextScale, min)
+  return nextScale
+}
+
+function rubberbandAxis(value: number, max: number, dimension: number) {
+  "worklet"
+  if (value > max) return max + rubberband(value - max, dimension)
+  if (value < -max) return -max - rubberband(-max - value, dimension)
+  return value
 }
 
 function cropInRotatedImage(input: {
@@ -430,8 +615,5 @@ const styles = StyleSheet.create({
     height: 28,
     backgroundColor: "#FFD60A",
   },
-  aspects: { flexDirection: "row", justifyContent: "center", gap: 28 },
-  aspect: { minHeight: 32, justifyContent: "center" },
-  aspectLabel: { fontSize: 15, fontWeight: "600" },
   error: { color: "#FCA5A5", fontSize: 13, textAlign: "center" },
 })
