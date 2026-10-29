@@ -43,7 +43,6 @@ import {
   isEligibleForShippingDeadlineAutoCancel,
   SHIPPING_DEADLINE_DAYS,
 } from "@/lib/shipping-deadline"
-import { formatCarrierDisplayName } from "@/lib/shipping/resolve-carrier-code"
 import {
   fetchOptionalOrderTrackingDetailJson,
   parseOrderTrackingDetail,
@@ -278,9 +277,6 @@ export function buildMobilePurchaseDetail(
   const sellerName = sellerDisplayName(order.seller_name, order.seller_id)
   const isRefunded = orderStatusIsRefunded(order.status)
   const fulfillmentLocked = orderStatusLocksDuringRefund(order.status)
-  const carrierName = order.tracking_carrier?.trim()
-    ? formatCarrierDisplayName(order.tracking_carrier, null)
-    : null
   const actualDeliveryAt = trackingDetail?.actual_delivery_date ?? order.carrier_delivered_at ?? null
   const statusDisplay = resolveSaleCardStatusDisplay({
     orderStatus: order.status,
@@ -377,7 +373,7 @@ export function buildMobilePurchaseDetail(
       deliveryStatus: order.delivery_status ?? "pending",
       orderStatus: order.status,
       hasTrackingNumber: Boolean(order.tracking_number?.trim()),
-      carrierName: carrierName === "Carrier" ? null : carrierName,
+      carrierStatusCode: trackingDetail?.status_code,
       events: trackingDetail?.events ?? [],
       actualDeliveryAt,
       refundedAt: order.refunded_at,
