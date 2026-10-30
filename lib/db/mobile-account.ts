@@ -60,6 +60,7 @@ export type MobileMessageRow = {
   sender_id: string
   created_at: string
   metadata?: unknown
+  offer_id?: string | null
 }
 
 type QueryResult<T> = { ok: true; rows: T } | { ok: false; message: string }
@@ -481,7 +482,7 @@ export async function listMobileMessageRows(
 ): Promise<QueryResult<MobileMessageRow[]>> {
   const { data, error } = await supabase
     .from("messages")
-    .select("id, content, sender_id, created_at, metadata")
+    .select("id, content, sender_id, created_at, metadata, offer_id")
     .eq("conversation_id", conversationId)
     .order("created_at", { ascending: false })
     .limit(50)
@@ -499,7 +500,7 @@ export async function listMobileMessageRowsAfter(
 ): Promise<QueryResult<MobileMessageRow[]>> {
   const { data, error } = await supabase
     .from("messages")
-    .select("id, content, sender_id, created_at, metadata")
+    .select("id, content, sender_id, created_at, metadata, offer_id")
     .eq("conversation_id", conversationId)
     .gte("created_at", after)
     .order("created_at", { ascending: true })

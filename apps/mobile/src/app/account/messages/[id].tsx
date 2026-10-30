@@ -18,6 +18,7 @@ import {
 } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import type { MobileConversationDetail, MobileMessage } from "@reswell/api-contract"
+import { OfferMessageCard, OfferThreadFallbackCard } from "@/components/offers/offer-message-card"
 import { MessageComposerBar } from "@/components/message-composer-bar"
 import { ProfileCircle } from "@/components/profile-circle"
 import { ScreenSearchHeader } from "@/components/screen-search-header"
@@ -27,6 +28,7 @@ import { uploadConversationImageAttachment } from "@/lib/message-media-upload"
 import { useAuth } from "@/lib/auth-context"
 import { setActiveMarketplaceConversation, subscribeMarketplaceThread } from "@/lib/marketplace-live"
 import { useInboxUnreadReload } from "@/lib/inbox-unread-count"
+import { isOfferThreadBody, offerThreadFallbackTitle, parseOfferThreadAmount } from "@/lib/offer-display"
 import { useAccountResource } from "@/lib/use-account-resource"
 import { fontFamily, useReswellColors } from "@/theme"
 
@@ -235,6 +237,7 @@ export default function ConversationScreen() {
                   avatarUrl={data.other_avatar_url}
                   name={data.other_name}
                   viewerIsSeller={data.viewer_is_seller}
+                  onReload={() => reload({ silent: true })}
                   onOpenOrder={(orderId) => {
                     if (data.viewer_is_seller) {
                       router.push({ pathname: "/account/sales/[id]", params: { id: orderId } })
@@ -466,6 +469,7 @@ function MessageRow({
   avatarUrl,
   name,
   viewerIsSeller,
+  onReload,
   onOpenOrder,
 }: {
   message: MobileMessage
@@ -473,10 +477,35 @@ function MessageRow({
   avatarUrl: string | null
   name: string
   viewerIsSeller: boolean
+  onReload: () => void
   onOpenOrder: (orderId: string) => void
 }) {
   const colors = useReswellColors()
   const time = timeLabel(message.created_at)
+  if (message.offer) {
+    return (
+      <View style={[styles.orderWrap, message.mine ? styles.mine : styles.theirs]}>
+        <OfferMessageCard
+          offer={message.offer}
+          messageBody={message.body}
+          createdAt={time}
+          onReload={onReload}
+        />
+      </View>
+    )
+  }
+  if (isOfferThreadBody(message.body)) {
+    return (
+      <View style={[styles.orderWrap, message.mine ? styles.mine : styles.theirs]}>
+        <OfferThreadFallbackCard
+          body={message.body}
+          title={offerThreadFallbackTitle(message.body)}
+          amount={parseOfferThreadAmount(message.body)}
+          createdAt={time}
+        />
+      </View>
+    )
+  }
   if (message.order) {
     const order = message.order
     return (

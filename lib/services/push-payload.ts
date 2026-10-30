@@ -66,6 +66,7 @@ export function pushDeliveriesFromPlanned(rows: PlannedDelivery[]): PushDelivery
         type: item.row.type,
         href: item.row.href,
         listing_id: item.row.listingId,
+        offer_id: offerIdFromPushMetadata(item.row.metadata),
       }),
     })
   }
@@ -153,6 +154,11 @@ export function chunkExpoPushMessages(messages: ExpoPushMessage[]): ExpoPushMess
     chunks.push(messages.slice(i, i + EXPO_PUSH_CHUNK_SIZE))
   }
   return chunks
+}
+
+function offerIdFromPushMetadata(metadata: Record<string, unknown> | undefined): string | null {
+  const raw = metadata?.offerId
+  return typeof raw === "string" && raw.trim() ? raw.trim() : null
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

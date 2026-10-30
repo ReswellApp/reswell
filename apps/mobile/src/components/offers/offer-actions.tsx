@@ -6,7 +6,15 @@ import { useAuth } from "@/lib/auth-context"
 import { isOfferPastExpiry, offerNeedsAction } from "@/lib/offer-display"
 import { fontFamily, useReswellColors } from "@/theme"
 
-export function OfferActions({ offer, onDone }: { offer: MobileOffer; onDone: () => void }) {
+export function OfferActions({
+  offer,
+  onDone,
+  compact = false,
+}: {
+  offer: MobileOffer
+  onDone: () => void
+  compact?: boolean
+}) {
   const colors = useReswellColors()
   const { session } = useAuth()
   const [counter, setCounter] = useState("")
@@ -75,7 +83,7 @@ export function OfferActions({ offer, onDone }: { offer: MobileOffer; onDone: ()
           </Text>
         </Pressable>
       ) : null}
-      {sellerBid ? (
+      {sellerBid && !compact ? (
         <View style={styles.row}>
           <TextInput
             value={counter}

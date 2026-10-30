@@ -53,6 +53,7 @@ import {
   mobileConversationOpenResultSchema,
   mobileMessageResultSchema,
   mobileOfferActionResultSchema,
+  mobileOfferDetailSchema,
   mobileOffersSchema,
   mobilePurchaseDetailSchema,
   mobilePurchasesSchema,
@@ -149,6 +150,7 @@ import {
   type MobileOffer,
   type MobileOfferActionBody,
   type MobileOfferActionResult,
+  type MobileOfferDetail,
   type MobilePurchaseDetail,
   type MobilePurchases,
   type MobileProfile,
@@ -1079,6 +1081,14 @@ export function finalizeCheckout(accessToken: string, paymentIntentId: string): 
 
 export function fetchOffers(accessToken: string): Promise<{ offers: MobileOffer[] }> {
   return read("/api/mobile/v1/me/offers", (data) => mobileOffersSchema.parse(data), accessToken)
+}
+
+export function fetchOffer(accessToken: string, offerId: string): Promise<MobileOfferDetail> {
+  return read(
+    `/api/mobile/v1/me/offers/${encodeURIComponent(offerId)}`,
+    (data) => mobileOfferDetailSchema.parse(data),
+    accessToken,
+  )
 }
 
 export function fetchPurchases(accessToken: string): Promise<MobilePurchases> {

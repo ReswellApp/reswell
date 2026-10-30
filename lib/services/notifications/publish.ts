@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { loadNotificationPlanSnapshot, writePlannedNotifications } from "@/lib/db/notifications"
 import { listingDetailHref } from "@/lib/listing-href"
+import { dashboardOfferFocusPath } from "@/lib/utils/offers-dashboard-display"
 import {
   NOTIFICATION_POLICIES,
   PAYOUT_INFO_HREF,
@@ -116,7 +117,7 @@ export async function publishOfferNotification(
         listingId: input.listingId,
         title: offerNotificationTitle(input.type),
         body: input.message,
-        href: listingDetailHref({ id: input.listingId }),
+        href: dashboardOfferFocusPath(input.offerId),
         dedupeKey: offerDedupeKey(input.type, input.offerId, input.amountUsd),
         subjectKey: input.offerId,
         metadata: {

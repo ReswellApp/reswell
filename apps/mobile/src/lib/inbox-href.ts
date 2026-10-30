@@ -7,6 +7,7 @@ export type InboxNavigationItem = {
   support_case_id?: string | null
   listing_id?: string | null
   href?: string | null
+  offer_id?: string | null
 }
 
 /** Map website inbox hrefs onto native account screens. Unknown paths return null. */
@@ -16,12 +17,12 @@ export function inboxHrefToNative(href: string | null | undefined): Href | null 
 }
 
 const NOTIFICATION_ITEM_PREFIX = "notification:"
-const notificationIdSchema = z.string().uuid()
+const uuidSchema = z.string().uuid()
 
 /** UUID for a stored inbox notification. Synthetic support rows are not stored on `notifications`. */
 export function inboxItemNotificationId(itemId: string): string | null {
   if (!itemId.startsWith(NOTIFICATION_ITEM_PREFIX)) return null
-  const parsed = notificationIdSchema.safeParse(itemId.slice(NOTIFICATION_ITEM_PREFIX.length))
+  const parsed = uuidSchema.safeParse(itemId.slice(NOTIFICATION_ITEM_PREFIX.length))
   return parsed.success ? parsed.data : null
 }
 
@@ -33,6 +34,10 @@ export function inboxItemToNative(item: InboxNavigationItem): Href {
   const supportCaseId = item.support_case_id?.trim()
   if (supportCaseId) {
     return { pathname: "/account/support/[id]", params: { id: supportCaseId } }
+  }
+  const offerId = item.offer_id?.trim()
+  if (offerId && uuidSchema.safeParse(offerId).success) {
+    return { pathname: "/account/offers/[id]", params: { id: offerId } }
   }
   const fromHref = inboxHrefToNative(item.href)
   if (fromHref) return fromHref

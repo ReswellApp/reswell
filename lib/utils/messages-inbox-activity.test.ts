@@ -66,4 +66,41 @@ describe("inboxActivityNotificationHref", () => {
   it("still opens the listing for saves", () => {
     assert.equal(inboxActivityNotificationHref(note()), "/l/patagonia-surfboard")
   })
+
+  it("opens the offer screen for offer activity, not the listing", () => {
+    assert.equal(
+      inboxActivityNotificationHref(
+        note({
+          type: "offer_received",
+          href: "/l/patagonia-surfboard",
+          metadata: { offerId: ORDER_ID },
+        }),
+      ),
+      `/dashboard/offers?offer=${ORDER_ID}`,
+    )
+  })
+
+  it("reads the offer id from a dashboard href when metadata is missing", () => {
+    assert.equal(
+      inboxActivityNotificationHref(
+        note({
+          type: "offer_accepted",
+          href: `/dashboard/offers?offer=${ORDER_ID}`,
+        }),
+      ),
+      `/dashboard/offers?offer=${ORDER_ID}`,
+    )
+  })
+
+  it("falls back to the offers list when the offer id is missing", () => {
+    assert.equal(
+      inboxActivityNotificationHref(
+        note({
+          type: "offer_countered",
+          href: "/l/patagonia-surfboard",
+        }),
+      ),
+      "/dashboard/offers",
+    )
+  })
 })
