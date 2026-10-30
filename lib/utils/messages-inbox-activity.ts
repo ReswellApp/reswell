@@ -1,4 +1,5 @@
 import { listingDetailHref } from "@/lib/listing-href"
+import { dashboardOfferFocusPath, parseOfferFocusId } from "@/lib/utils/offers-dashboard-display"
 import type { MessagesInboxNotification } from "@/lib/db/messagesInbox"
 import {
   isLikelyOrderUuid,
@@ -53,12 +54,25 @@ export function filterInboxActivityNotifications(
   return notifications.filter((n) => !isOfferActivityType(n.type))
 }
 
+export function offerIdFromInboxNotification(n: MessagesInboxNotification): string | null {
+  const meta = n.metadata
+  if (meta && typeof meta === "object" && !Array.isArray(meta)) {
+    const fromMeta = parseOfferFocusId(typeof meta.offerId === "string" ? meta.offerId : undefined)
+    if (fromMeta) return fromMeta
+  }
+  const href = n.href?.trim() ?? ""
+  if (!href.startsWith("/") || href.startsWith("//")) return null
+  const query = href.includes("?") ? href.slice(href.indexOf("?") + 1).split("#")[0] ?? "" : ""
+  return parseOfferFocusId(new URLSearchParams(query).get("offer") ?? undefined)
+}
+
 export function inboxActivityNotificationHref(n: MessagesInboxNotification): string {
   if (n.support_case_id) return supportCaseResponseHref(n.support_case_id)
   if (isSupportActivityType(n.type) && n.id.startsWith("support:")) {
     return supportCaseResponseHref(n.id.slice("support:".length))
   }
   const type = (n.type || "").toLowerCase()
+  if (isOfferActivityType(type)) return dashboardOfferFocusPath(offerIdFromInboxNotification(n))
   if (type === "order_delivered_payout") return orderDeliveredHref(n, "seller")
   if (type === "order_delivered") return orderDeliveredHref(n, "buyer")
   const href = n.href?.trim()

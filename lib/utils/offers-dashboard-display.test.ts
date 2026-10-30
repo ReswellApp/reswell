@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 import type { DashboardOfferRow } from "@/lib/types/offers-dashboard"
 import {
+  dashboardOfferFocusPath,
   dashboardOffersPath,
   isOfferSentByUser,
   offerAwaitsUser,
@@ -63,6 +64,17 @@ describe("parseOfferFocusId", () => {
     assert.equal(parseOfferFocusId(""), null)
     assert.equal(parseOfferFocusId("not-an-id"), null)
     assert.equal(parseOfferFocusId("cpSPkVMXg5b0wK2CxQ2SFxXlOnGd0VHYbA52zmA1AWA"), null)
+  })
+})
+
+describe("dashboardOfferFocusPath", () => {
+  it("opens the dashboard on that offer", () => {
+    assert.equal(dashboardOfferFocusPath(OFFER_ID), `/dashboard/offers?offer=${OFFER_ID}`)
+  })
+
+  it("falls back to the offers list when the id is missing", () => {
+    assert.equal(dashboardOfferFocusPath(null), "/dashboard/offers")
+    assert.equal(dashboardOfferFocusPath("not-an-id"), "/dashboard/offers")
   })
 })
 

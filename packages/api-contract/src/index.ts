@@ -1908,6 +1908,10 @@ export const mobileOffersSchema = z.object({
   offers: z.array(mobileOfferSchema),
 })
 
+export const mobileOfferDetailSchema = z.object({
+  offer: mobileOfferSchema,
+})
+
 export const mobileOrderSchema = z.object({
   id: z.string().uuid(),
   order_number: z.string(),
@@ -2338,6 +2342,8 @@ export const mobileInboxItemSchema = z.object({
   support_case_id: z.string().uuid().nullable(),
   /** Website path. App maps `/dashboard/sales` and `/dashboard/purchases` to native account screens. */
   href: z.string().nullable().optional(),
+  /** Present on offer activity so the app opens that offer instead of the listing. */
+  offer_id: z.string().uuid().nullable().optional(),
 })
 
 export const mobileInboxSchema = z.object({
@@ -2395,6 +2401,8 @@ export const mobileMessageSchema = z.object({
   mine: z.boolean(),
   order: mobileMessageOrderSchema.nullable(),
   attachment: mobileMessageAttachmentSchema.nullable().optional(),
+  /** Structured offer for thread cards. Omit on ordinary chat lines. */
+  offer: mobileOfferSchema.nullable().optional(),
 })
 
 /** Messages inserted after `after`, for a thread the viewer already has open. */
@@ -2544,6 +2552,7 @@ export type MobileCheckoutQuote = z.infer<typeof mobileCheckoutQuoteSchema>
 export type MobileCheckoutPayment = z.infer<typeof mobileCheckoutPaymentSchema>
 export type MobileCheckoutFinalize = z.infer<typeof mobileCheckoutFinalizeSchema>
 export type MobileOffer = z.infer<typeof mobileOfferSchema>
+export type MobileOfferDetail = z.infer<typeof mobileOfferDetailSchema>
 export type MobileOrder = z.infer<typeof mobileOrderSchema>
 export type MobilePurchaseListItem = z.infer<typeof mobilePurchaseListItemSchema>
 export type MobilePurchases = z.infer<typeof mobilePurchasesSchema>

@@ -30,6 +30,12 @@ export function dashboardOffersPath(input: {
   return `/dashboard/offers?${params.toString()}`
 }
 
+/** In-app and push destination for one offer. The focused row picks the tab. */
+export function dashboardOfferFocusPath(offerId: string | null | undefined): string {
+  const id = parseOfferFocusId(offerId ?? undefined)
+  return id ? `/dashboard/offers?offer=${id}` : "/dashboard/offers"
+}
+
 export function offersPageLoginRedirect(
   basePath: string,
   search: { tab?: string; offer?: string },

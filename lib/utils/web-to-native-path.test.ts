@@ -27,6 +27,11 @@ describe("webHrefToNativePath", () => {
       webHrefToNativePath("https://www.reswell.app/messages/conv-1"),
       "/account/messages/conv-1",
     )
+    assert.equal(webHrefToNativePath("/dashboard/offers"), "/account/offers")
+    assert.equal(
+      webHrefToNativePath("/dashboard/offers?tab=received&offer=44444444-4444-4444-8444-444444444444"),
+      "/account/offers/44444444-4444-4444-8444-444444444444",
+    )
     assert.equal(webHrefToNativePath("/checkout?listing=board"), "/account/checkout?listing=board")
     assert.equal(webHrefToNativePath("reswell://l/lost-puddle-jumper"), "/listing/lost-puddle-jumper")
     assert.equal(

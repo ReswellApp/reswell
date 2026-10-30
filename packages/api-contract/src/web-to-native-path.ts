@@ -151,7 +151,6 @@ function mapPathname(pathname: string): string | null {
 
   if (pathname === "/dashboard/listings") return "/account/listings"
   if (pathname === "/dashboard/earnings") return "/account/earnings"
-  if (pathname === "/dashboard/offers") return "/account/offers"
 
   const thread = pathname.match(/^\/messages\/([^/]+)$/)
   if (thread?.[1]) return `/account/messages/${decodeSegment(thread[1])}`
@@ -203,6 +202,11 @@ export function webHrefToNativePath(href: string | null | undefined): string | n
   if (!href?.trim()) return null
   const { pathname, search } = hrefPathAndSearch(href)
   if (!pathname.startsWith("/") || pathname.startsWith("//")) return null
+  if (pathname === "/dashboard/offers") {
+    const offer = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search).get("offer")
+    if (offer && ORDER_ID_RE.test(offer)) return `/account/offers/${decodeSegment(offer)}`
+    return "/account/offers"
+  }
   const mapped = mapPathname(pathname)
   if (!mapped) return null
   return `${mapped}${search}`

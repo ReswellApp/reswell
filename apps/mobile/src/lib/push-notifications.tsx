@@ -45,6 +45,7 @@ function openPushResponse(response: Notifications.NotificationResponse): void {
       support_case_id: stringField(data?.support_case_id),
       listing_id: stringField(data?.listing_id),
       href: stringField(data?.href),
+      offer_id: stringField(data?.offer_id),
     }),
   )
 }

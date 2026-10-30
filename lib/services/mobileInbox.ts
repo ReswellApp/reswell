@@ -9,7 +9,10 @@ import {
 } from "@/lib/services/messagesInbox"
 import { inboxTickerCount } from "@/lib/utils/inbox-ticker-count"
 import { conversationLastActivityIso } from "@/lib/utils/messages-inbox-grouping"
-import { inboxActivityNotificationHref } from "@/lib/utils/messages-inbox-activity"
+import {
+  inboxActivityNotificationHref,
+  offerIdFromInboxNotification,
+} from "@/lib/utils/messages-inbox-activity"
 import { absoluteProxiedProfileMediaUrl } from "@/lib/public-media-display-src"
 import { absolutePublicMediaUrl } from "@/lib/site-metadata"
 import { getPublicSellerDisplayName } from "@/lib/listing-labels"
@@ -82,6 +85,7 @@ export async function getMobileInboxService(userId: string): Promise<MobileApiRe
       listing_id: notification.listing_id,
       support_case_id: notification.support_case_id ?? null,
       href: inboxActivityNotificationHref(notification),
+      offer_id: offerIdFromInboxNotification(notification),
     }
   })
   const items = [...messages, ...notifications].sort(

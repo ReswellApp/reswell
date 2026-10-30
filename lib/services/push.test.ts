@@ -78,6 +78,31 @@ describe("pushDeliveriesFromPlanned", () => {
     })
   })
 
+  it("includes the offer id so the app can open that offer", () => {
+    const deliveries = pushDeliveriesFromPlanned([
+      delivery({
+        row: {
+          userId: "user-1",
+          type: "offer_received",
+          actorId: "user-2",
+          listingId: "listing-1",
+          title: "New offer",
+          body: "Alex offered $400",
+          href: "/dashboard/offers?offer=offer-1",
+          dedupeKey: "offer_received:1",
+          metadata: { offerId: "offer-1" },
+        },
+      }),
+    ])
+    assert.deepEqual(deliveries[0]?.data, {
+      kind: "notification",
+      type: "offer_received",
+      href: "/dashboard/offers?offer=offer-1",
+      listing_id: "listing-1",
+      offer_id: "offer-1",
+    })
+  })
+
   it("sends a first digest", () => {
     const planned = [
       delivery({

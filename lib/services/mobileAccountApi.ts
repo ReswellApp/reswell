@@ -7,6 +7,7 @@ import {
   mobileFavoritesSchema,
   mobileFollowersSchema,
   mobileFollowingSchema,
+  mobileOfferDetailSchema,
   mobileOffersSchema,
   mobileReviewsPageSchema,
   type MobileCart,
@@ -18,6 +19,7 @@ import {
   type MobileFavorite,
   type MobileFollowing,
   type MobileOffer,
+  type MobileOfferDetail,
   type MobileReview,
   type MobileReviewsPage,
 } from "@reswell/api-contract"
@@ -40,7 +42,16 @@ import {
   type MobileFollowedSellerRow,
 } from "@/lib/db/mobile-account"
 import { listMobileListingRows, type MobileListingRow } from "@/lib/db/mobile-listings"
-import { fetchDashboardOffersPartitioned } from "@/lib/db/offers-dashboard"
+import {
+  fetchDashboardOfferByIdForUser,
+  fetchDashboardOffersForParties,
+  fetchDashboardOffersPartitioned,
+} from "@/lib/db/offers-dashboard"
+import type { DashboardOfferRow, DashboardProfileLite } from "@/lib/types/offers-dashboard"
+import {
+  parseOfferNegotiationMessage,
+  resolveNegotiationOffer,
+} from "@/lib/utils/parse-offer-negotiation-message"
 import { getSellerReviewSummary } from "@/lib/db/seller-reviews"
 import { getPublicSellerDisplayName } from "@/lib/listing-labels"
 import { absolutePublicMediaUrl } from "@/lib/site-metadata"
@@ -318,6 +329,20 @@ export async function listMobileOffersService(
   return { ok: true, data: parsed.data }
 }
 
+export async function getMobileOfferService(
+  supabase: SupabaseClient,
+  userId: string,
+  offerId: string,
+): Promise<MobileApiResult<MobileOfferDetail>> {
+  const loaded = await fetchDashboardOfferByIdForUser(supabase, userId, offerId)
+  if (!loaded) return { ok: false, status: 404, error: "Offer not found" }
+  const offer = toMobileOfferForUser(loaded.offer, userId, loaded.sellersById, loaded.buyersById)
+  if (!offer) return { ok: false, status: 404, error: "Offer not found" }
+  const parsed = mobileOfferDetailSchema.safeParse({ offer })
+  if (!parsed.success) return { ok: false, status: 500, error: "Unable to load this offer right now" }
+  return { ok: true, data: parsed.data }
+}
+
 export { listMobilePurchasesService } from "@/lib/services/mobilePurchases"
 export {
   getMobileSaleDetailService,
@@ -387,9 +412,10 @@ export async function getMobileConversationService(
   }
   const viewerIsSeller = header.seller_id === userId
   const otherId = viewerIsSeller ? header.buyer_id : header.seller_id
-  const [listed, reviews] = await Promise.all([
+  const [listed, reviews, conversationOffers] = await Promise.all([
     listMobileMessageRows(supabase, conversationId),
     getSellerReviewSummary(supabase, otherId),
+    fetchDashboardOffersForParties(supabase, header.buyer_id, header.seller_id),
   ])
   if (!listed.ok) return { ok: false, status: 500, error: "Unable to load messages right now" }
 
@@ -397,7 +423,22 @@ export async function getMobileConversationService(
   const listing = Array.isArray(header.listing) ? header.listing[0] : header.listing
   const avatar = text(other?.avatar_url)
   const listingImage = text(listing?.primary_thumbnail_url) ?? text(listing?.primary_image_url)
-  const messages = toMobileMessages(listed.rows, userId, viewerIsSeller)
+  const offersById = mobileOffersByIdForConversation(
+    conversationOffers,
+    userId,
+    header.buyer_id,
+    header.seller_id,
+    oneProfile(header.buyer),
+    oneProfile(header.seller),
+  )
+  const messages = toMobileMessages(
+    listed.rows,
+    userId,
+    viewerIsSeller,
+    offersById,
+    conversationOffers,
+    header.listing_id,
+  )
 
   const parsed = mobileConversationDetailSchema.safeParse({
     id: header.id,
@@ -429,7 +470,7 @@ export async function listMobileConversationMessagesSinceService(
 
   const { data: conversation, error } = await supabase
     .from("conversations")
-    .select("buyer_id, seller_id")
+    .select("buyer_id, seller_id, listing_id")
     .eq("id", conversationId)
     .maybeSingle()
   if (error || !conversation) return { ok: false, status: 404, error: "Conversation not found" }
@@ -438,7 +479,10 @@ export async function listMobileConversationMessagesSinceService(
     console.warn("[mobile conversation] mark read skipped", readError)
     return { ok: false as const, error: "Failed to mark read" }
   })
-  const listed = await listMobileMessageRowsAfter(supabase, conversationId, after)
+  const [listed, conversationOffers] = await Promise.all([
+    listMobileMessageRowsAfter(supabase, conversationId, after),
+    fetchDashboardOffersForParties(supabase, conversation.buyer_id, conversation.seller_id),
+  ])
   const marked = await readPromise
   if (marked.ok) {
     revalidateMessagesInboxForParticipants(marked.buyerId, marked.sellerId)
@@ -446,17 +490,87 @@ export async function listMobileConversationMessagesSinceService(
   if (!listed.ok) return { ok: false, status: 500, error: "Unable to load messages right now" }
 
   const viewerIsSeller = conversation.seller_id === userId
+  const offersById = mobileOffersByIdForConversation(
+    conversationOffers,
+    userId,
+    conversation.buyer_id,
+    conversation.seller_id,
+    null,
+    null,
+  )
   const parsed = mobileMessagesDeltaSchema.safeParse({
-    messages: toMobileMessages(listed.rows, userId, viewerIsSeller),
+    messages: toMobileMessages(
+      listed.rows,
+      userId,
+      viewerIsSeller,
+      offersById,
+      conversationOffers,
+      typeof conversation.listing_id === "string" ? conversation.listing_id : null,
+    ),
   })
   if (!parsed.success) return { ok: false, status: 500, error: "Unable to load messages right now" }
   return { ok: true, data: parsed.data }
 }
 
+function profileLite(
+  id: string,
+  profile: ThreadProfile | null,
+): DashboardProfileLite {
+  return {
+    id,
+    display_name: profile?.display_name ?? null,
+    avatar_url: profile?.avatar_url ?? null,
+    shop_name: null,
+    is_shop: null,
+  }
+}
+
+function mobileOffersByIdForConversation(
+  rows: DashboardOfferRow[],
+  userId: string,
+  buyerId: string,
+  sellerId: string,
+  buyer: ThreadProfile | null,
+  seller: ThreadProfile | null,
+): Record<string, MobileOffer> {
+  const sellersById = { [sellerId]: profileLite(sellerId, seller) }
+  const buyersById = { [buyerId]: profileLite(buyerId, buyer) }
+  const byId: Record<string, MobileOffer> = {}
+  for (const row of rows) {
+    const offer = toMobileOfferForUser(row, userId, sellersById, buyersById)
+    if (offer) byId[offer.id] = offer
+  }
+  return byId
+}
+
+function offerForMobileMessage(
+  row: { offer_id?: string | null; content: string | null },
+  offersById: Record<string, MobileOffer>,
+  conversationOffers: DashboardOfferRow[],
+  listingId: string | null,
+): MobileOffer | null {
+  if (row.offer_id && offersById[row.offer_id]) return offersById[row.offer_id]
+  const content = row.content?.trim() ?? ""
+  if (!content) return null
+  if (!parseOfferNegotiationMessage(content) && !content.startsWith("Offer:")) return null
+  const matched = resolveNegotiationOffer(conversationOffers, content, listingId)
+  return matched ? offersById[matched.id] ?? null : null
+}
+
 function toMobileMessages(
-  rows: Array<{ id: string; content: string | null; sender_id: string; created_at: string; metadata?: unknown }>,
+  rows: Array<{
+    id: string
+    content: string | null
+    sender_id: string
+    created_at: string
+    metadata?: unknown
+    offer_id?: string | null
+  }>,
   userId: string,
   viewerIsSeller: boolean,
+  offersById: Record<string, MobileOffer> = {},
+  conversationOffers: DashboardOfferRow[] = [],
+  listingId: string | null = null,
 ): MobileMessage[] {
   return rows.map((row) => {
     const redacted = redactShippingLabelArtifactsFromMessage(row)
@@ -464,6 +578,7 @@ function toMobileMessages(
     const imageAtt = parseMarketplaceMessageImageAttachment(row.metadata)
     const videoAtt = parseMarketplaceMessageVideoAttachment(row.metadata)
     const attachment = imageAtt ? ({ kind: "image" as const }) : videoAtt ? ({ kind: "video" as const }) : null
+    const offer = order ? null : offerForMobileMessage(row, offersById, conversationOffers, listingId)
     const rawBody = order ? "" : text(typeof redacted.content === "string" ? redacted.content : row.content) ?? ""
     const placeholder =
       attachment?.kind === "image"
@@ -479,6 +594,7 @@ function toMobileMessages(
       mine: row.sender_id === userId,
       order,
       attachment,
+      offer,
     }
   })
 }

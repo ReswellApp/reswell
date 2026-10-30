@@ -114,6 +114,71 @@ export function offerPriorAmountLine(item: MobileOffer): string | null {
     : `Buyer offer ${item.initial_amount_label}`
 }
 
+export function offerThreadHeadline(item: MobileOffer): string {
+  switch (item.status) {
+    case "PENDING":
+      return item.side === "seller" ? "New offer from buyer" : "Your offer"
+    case "COUNTERED":
+      if (item.seller_initiated) {
+        return item.side === "seller" ? "Your offer to buyer" : "Offer from seller"
+      }
+      return item.side === "seller" ? "Your counteroffer" : "Seller counteroffer"
+    case "ACCEPTED":
+      return "Offer accepted"
+    case "DECLINED":
+      return "Offer declined"
+    case "EXPIRED":
+      return "Offer expired"
+    case "WITHDRAWN":
+      return "Offer withdrawn"
+    case "COMPLETED":
+      return "Purchase completed"
+    default:
+      return "Offer update"
+  }
+}
+
+export function isOfferThreadBody(body: string): boolean {
+  const t = body.trim()
+  return (
+    t.startsWith("Offer:") ||
+    t.startsWith("Offer from seller:") ||
+    t.startsWith("Counteroffer:") ||
+    t.startsWith("Offer accepted") ||
+    t.startsWith("Counteroffer accepted") ||
+    t.startsWith("Offer declined") ||
+    t.startsWith("Counteroffer declined") ||
+    t.startsWith("Offer withdrawn") ||
+    t.startsWith("Offer expired")
+  )
+}
+
+export function parseOfferThreadAmount(body: string): string | null {
+  const match = body.trim().match(/\$[\d,]+(?:\.\d{2})?/)
+  return match?.[0] ?? null
+}
+
+export function offerThreadFallbackTitle(body: string): string {
+  const t = body.trim()
+  if (t.startsWith("Offer from seller:")) return "Offer from seller"
+  if (t.startsWith("Counteroffer:")) return "Seller counteroffer"
+  if (t.startsWith("Offer accepted") || t.startsWith("Counteroffer accepted")) return "Offer accepted"
+  if (t.startsWith("Offer declined") || t.startsWith("Counteroffer declined")) return "Offer declined"
+  if (t.startsWith("Offer withdrawn")) return "Offer withdrawn"
+  if (t.startsWith("Offer expired")) return "Offer expired"
+  if (t.startsWith("Offer:")) return "Offer"
+  return "Offer"
+}
+
+export function offerThreadNote(item: MobileOffer, messageBody: string): string | null {
+  if (item.note?.trim()) return item.note.trim()
+  const t = messageBody.trim()
+  const dash = t.search(/[—–-]\s+/)
+  if (dash === -1) return null
+  const note = t.slice(dash).replace(/^[—–-]\s+/, "").trim()
+  return note || null
+}
+
 export function offerHint(item: MobileOffer, nowMs = Date.now()): string | null {
   if (isOfferPastExpiry(item, nowMs) || item.status === "COMPLETED") return null
   if (
