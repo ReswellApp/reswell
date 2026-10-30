@@ -90,6 +90,36 @@ export const mobileProfileSignInActionSchema = z.object({
   ok: z.literal(true),
 })
 
+/** Same fields as the website email sign-up form. */
+export const mobileSignUpBodySchema = z.object({
+  email: z.string().trim().email().max(320),
+  password: z.string().min(1).max(72),
+  first_name: z.string().trim().min(1).max(80),
+  last_name: z.string().trim().min(1).max(80),
+  username: z.string().trim().max(50).default(""),
+  marketing_opt_in: z.boolean(),
+  accepted_terms: z.boolean().refine((value) => value, {
+    message: "Please accept Reswell's Terms of Use and Privacy Policy to continue.",
+  }),
+})
+
+export const mobileSignUpResultSchema = z.object({
+  status: z.enum(["signed_in", "confirm_email"]),
+  access_token: z.string().nullable(),
+  refresh_token: z.string().nullable(),
+})
+
+/** Native Google ID token plus the sign-up checkboxes. The API exchanges the token. */
+export const mobileGoogleSignUpBodySchema = z.object({
+  id_token: z.string().min(1),
+  access_token: z.string().min(1).optional(),
+  nonce: z.string().min(1).optional(),
+  marketing_opt_in: z.boolean(),
+  accepted_terms: z.boolean().refine((value) => value, {
+    message: "Please accept Reswell's Terms of Use and Privacy Policy to continue.",
+  }),
+})
+
 export const mobileMeSchema = z.object({
   id: z.string().uuid(),
   email: z.string().nullable(),
@@ -888,6 +918,9 @@ export const mobileSellDropoffLocationsSchema = z.object({
 
 export type MobileSellDropoffLocations = z.infer<typeof mobileSellDropoffLocationsSchema>
 
+/** Same cap as website sell (`Maximum 12 photos allowed`). */
+export const MOBILE_SELL_MAX_PHOTOS = 12
+
 export const mobileSellPhotoSchema = z.object({
   url: z.string().url(),
   thumbnail_url: z.string().url(),
@@ -929,8 +962,9 @@ export const mobileSellPublishBodySchema = z.object({
   price: z.number().positive().max(999_999.99),
   city: z.string().trim().min(1).max(80),
   state: z.string().trim().min(1).max(40),
-  location_lat: z.number().gte(-90).lte(90),
-  location_lng: z.number().gte(-180).lte(180),
+  /** Null on legacy listings that only stored city/state. */
+  location_lat: z.number().gte(-90).lte(90).nullable(),
+  location_lng: z.number().gte(-180).lte(180).nullable(),
   local_pickup: z.boolean(),
   shipping: z.boolean(),
   shipping_mode: z.enum(["reswell", "free", "flat"]),
@@ -951,7 +985,7 @@ export const mobileSellPublishBodySchema = z.object({
     fins_included: z.string().max(40).optional(),
     construction: z.string().max(40).optional(),
   }),
-  images: z.array(mobileSellPhotoSchema).min(1).max(8),
+  images: z.array(mobileSellPhotoSchema).min(1).max(MOBILE_SELL_MAX_PHOTOS),
   /** Omitted by older app builds — leave existing videos alone. `[]` removes the clip. */
   videos: z.array(mobileSellVideoSchema).max(1, "You can add up to 1 video").optional(),
   draft_id: z.string().uuid().nullable(),
@@ -994,7 +1028,7 @@ export const mobileSellDraftSchema = z.object({
     fins_included: z.string().max(40).optional(),
     construction: z.string().max(40).optional(),
   }),
-  images: z.array(mobileSellPhotoSchema).max(8),
+  images: z.array(mobileSellPhotoSchema).max(MOBILE_SELL_MAX_PHOTOS),
   videos: z.array(mobileSellVideoSchema).max(1, "You can add up to 1 video").optional(),
 })
 
@@ -1015,13 +1049,15 @@ export const mobileSellEditLoadSchema = mobileSellDraftSchema
     status: z.string(),
     slug: z.string().nullable(),
     location_label: z.string().nullable(),
-    images: z.array(mobileSellEditImageSchema).max(8),
+    images: z.array(mobileSellEditImageSchema).max(MOBILE_SELL_MAX_PHOTOS),
     videos: z.array(mobileSellVideoSchema).max(1).optional().default([]),
   })
 
 export const mobileSellUpdateSchema = mobileSellPublishRefinements(
-  mobileSellPublishBodySchema.omit({ draft_id: true }).extend({
+  mobileSellPublishBodySchema.omit({ draft_id: true, images: true }).extend({
     listing_id: z.string().uuid(),
+    /** Keep `image_id` so existing rows are updated in place instead of recreated. */
+    images: z.array(mobileSellEditImageSchema).min(1).max(MOBILE_SELL_MAX_PHOTOS),
   }),
 )
 
@@ -1271,6 +1307,9 @@ export type MobileProfileBannerResult = z.infer<typeof mobileProfileBannerResult
 export type MobileProfilePassword = z.infer<typeof mobileProfilePasswordSchema>
 export type MobileProfileEmail = z.infer<typeof mobileProfileEmailSchema>
 export type MobileProfileSignInAction = z.infer<typeof mobileProfileSignInActionSchema>
+export type MobileSignUpBody = z.infer<typeof mobileSignUpBodySchema>
+export type MobileSignUpResult = z.infer<typeof mobileSignUpResultSchema>
+export type MobileGoogleSignUpBody = z.infer<typeof mobileGoogleSignUpBodySchema>
 export type MobileMe = z.infer<typeof mobileMeSchema>
 export type MobileListingCardSeller = z.infer<typeof mobileListingCardSellerSchema>
 
@@ -2358,6 +2397,11 @@ export const mobileMessageSchema = z.object({
   attachment: mobileMessageAttachmentSchema.nullable().optional(),
 })
 
+/** Messages inserted after `after`, for a thread the viewer already has open. */
+export const mobileMessagesDeltaSchema = z.object({
+  messages: z.array(mobileMessageSchema),
+})
+
 export const mobileConversationDetailSchema = z.object({
   id: z.string().uuid(),
   listing_id: z.string().uuid().nullable(),
@@ -2511,12 +2555,23 @@ export type MobilePurchaseStatusTone = z.infer<typeof mobilePurchaseStatusToneSc
 export type MobileSale = z.infer<typeof mobileSaleSchema>
 export type MobileConversationPreview = z.infer<typeof mobileConversationPreviewSchema>
 export type MobileMessage = z.infer<typeof mobileMessageSchema>
+export type MobileMessagesDelta = z.infer<typeof mobileMessagesDeltaSchema>
 export type MobileConversationDetail = z.infer<typeof mobileConversationDetailSchema>
 
 export {
   listingFulfillmentPdpCopy,
   type ListingFulfillmentPdpCopy,
 } from "./listing-fulfillment-pdp"
+
+export {
+  MARKETPLACE_THREAD_MESSAGE_EVENT,
+  MARKETPLACE_THREAD_REFRESH_EVENT,
+  marketplaceInboxChannel,
+  marketplaceThreadBroadcastMessageSchema,
+  marketplaceThreadChannel,
+  marketplaceThreadRefreshSchema,
+  type MarketplaceThreadBroadcastMessage,
+} from "./marketplace-realtime"
 
 export {
   APP_LINK_HOST,

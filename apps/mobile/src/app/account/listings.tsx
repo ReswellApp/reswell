@@ -280,7 +280,7 @@ function ListingsDesk({
           onOpen={() => {
             if (item.slug) router.push({ pathname: "/listing/[id]", params: { id: item.slug } })
           }}
-          onEdit={() => router.push({ pathname: "/listing/edit/[id]", params: { id: item.id } })}
+          onEdit={() => router.push(`/sell/edit/${item.id}`)}
           onVacation={() =>
             void run(item.id, (token) =>
               setListingVacation(token, { listing_id: item.id, enabled: !item.on_vacation }),

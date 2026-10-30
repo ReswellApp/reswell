@@ -92,7 +92,7 @@ export function ListingOwnerActions({
             accessibilityRole="button"
             accessibilityLabel="Edit listing"
             disabled={busy}
-            onPress={() => router.push({ pathname: "/listing/edit/[id]", params: { id: listing.id } })}
+            onPress={() => router.push(`/sell/edit/${listing.id}`)}
             style={[styles.bubble, { backgroundColor: colors.primary }]}
           >
             <Text style={[styles.bubbleLabel, { color: colors.primaryForeground, fontFamily: fontFamily.text }]}>Edit</Text>

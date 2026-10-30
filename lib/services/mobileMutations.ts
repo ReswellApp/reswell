@@ -10,6 +10,7 @@ import type {
 } from "@reswell/api-contract"
 import { revalidateSellerProfileAndDirectoryCatalog } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { revalidateMessagesInboxForParticipants } from "@/lib/cache/revalidate-messages-inbox"
+import { broadcastInsertedMarketplaceMessage } from "@/lib/services/broadcastMarketplaceThreadMessage"
 import {
   ensureConversationBetweenBuyerAndSeller,
   ensureConversationForBuyerSellerListing,
@@ -297,10 +298,11 @@ async function deliverMessage(
   const { data: inserted, error } = await supabase
     .from("messages")
     .insert({ conversation_id: conversation.id, sender_id: user.id, content: body })
-    .select("id, content, created_at")
+    .select("id, content, sender_id, created_at, is_read, offer_id, metadata")
     .single()
   if (error || !inserted) return failure(500, "Could not send that message.")
 
+  await broadcastInsertedMarketplaceMessage(inserted, conversation.id)
   await supabase.from("conversations").update({ last_message_at: new Date().toISOString() }).eq("id", conversation.id)
   revalidateMessagesInboxForParticipants(conversation.buyer_id, conversation.seller_id)
 

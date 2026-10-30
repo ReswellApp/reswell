@@ -1,8 +1,12 @@
 import type { MobileSellDraft } from "@reswell/api-contract"
-import { MOBILE_LISTING_CATEGORIES } from "@reswell/api-contract"
+import { MOBILE_LISTING_CATEGORIES, MOBILE_SELL_MAX_PHOTOS } from "@reswell/api-contract"
 import type { OwnedListingForEditRow } from "@/lib/db/listingEdit"
 import { surfboardSellFormDimensionsFromListingRow } from "@/lib/listing-dimensions-storage"
 import { reswellPackageFormFromDbRow } from "@/lib/sell-listing-fulfillment-flags"
+import {
+  parseSurfboardShippingPackBandId,
+  surfboardShippingPackBandFixedParcel,
+} from "@/lib/surfboard-shipping-pack-bands"
 import { boardTypeFromCategoryId } from "@/lib/utils/board-type-from-category-id"
 
 const CATEGORY_SET = new Set<string>(MOBILE_LISTING_CATEGORIES)
@@ -64,7 +68,9 @@ type EditImage = MobileSellDraft["images"][number] & { image_id?: string }
 type EditVideo = NonNullable<MobileSellDraft["videos"]>[number]
 
 function listingImages(row: OwnedListingForEditRow): EditImage[] {
-  const rows = [...(row.listing_images ?? [])].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+  const rows = [...(row.listing_images ?? [])]
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+    .slice(0, MOBILE_SELL_MAX_PHOTOS)
   return rows.flatMap((image) => {
     const url = text(image.url)
     if (!url) return []
@@ -126,7 +132,21 @@ export function ownedListingRowToMobileSellEdit(row: OwnedListingForEditRow):
       })
     : null
 
-  const packed = reswellPackageFormFromDbRow(row)
+  const packedFromRow = reswellPackageFormFromDbRow(row)
+  const packBand =
+    surfboard && !packedFromRow.reswellPackageLengthIn
+      ? parseSurfboardShippingPackBandId(row.shipping_package_band)
+      : null
+  const packBandParcel = packBand ? surfboardShippingPackBandFixedParcel(packBand) : null
+  const packed = packBandParcel
+    ? {
+        reswellPackageLengthIn: String(packBandParcel.lengthIn),
+        reswellPackageWidthIn: String(packBandParcel.widthIn),
+        reswellPackageHeightIn: String(packBandParcel.heightIn),
+        reswellPackageWeightLb: String(packBandParcel.weightLb),
+        reswellPackageWeightOz: "",
+      }
+    : packedFromRow
   const shipping = shippingState(row)
 
   const specs: MobileSellDraft["specs"] = {}

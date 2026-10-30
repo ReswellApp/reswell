@@ -62,9 +62,21 @@ function nativeGoogleSignInEnabled(): boolean {
   return true
 }
 
-async function signInWithGoogleNativeSdk(supabase: SupabaseClient): Promise<string | null> {
+export type GoogleIdCredential = {
+  idToken: string
+  accessToken?: string
+  /** Raw nonce. Supabase compares its hash to the ID token claim. */
+  nonce?: string
+}
+
+export type GoogleCredentialResult =
+  | { ok: true; credential: GoogleIdCredential }
+  | { ok: false; message: string | null }
+
+/** Native Google account picker. `message` is null when the person cancels. */
+export async function obtainGoogleIdCredential(): Promise<GoogleCredentialResult> {
   const configError = configureNativeGoogleSignIn()
-  if (configError) return configError
+  if (configError) return { ok: false, message: configError }
 
   try {
     if (Platform.OS === "android") {
@@ -77,7 +89,7 @@ async function signInWithGoogleNativeSdk(supabase: SupabaseClient): Promise<stri
       ? ({ nonce: noncePair.hashedNonce } as SignInParams)
       : undefined
     const response = await GoogleSignin.signIn(signInOptions)
-    if (!isSuccessResponse(response)) return null
+    if (!isSuccessResponse(response)) return { ok: false, message: null }
 
     let idToken = response.data.idToken
     let accessToken: string | undefined
@@ -93,27 +105,45 @@ async function signInWithGoogleNativeSdk(supabase: SupabaseClient): Promise<stri
       }
     }
 
-    if (!idToken) return "Google did not return a sign-in token."
+    if (!idToken) return { ok: false, message: "Google did not return a sign-in token." }
 
-    const { error } = await supabase.auth.signInWithIdToken({
-      provider: "google",
-      token: idToken,
-      access_token: accessToken,
-      // Only the interactive sign-in token was minted with this nonce.
-      // A refreshed token from getTokens() would not match.
-      ...(noncePair && response.data.idToken ? { nonce: noncePair.rawNonce } : {}),
-    })
-    return error?.message ?? null
+    return {
+      ok: true,
+      credential: {
+        idToken,
+        ...(accessToken ? { accessToken } : {}),
+        // Only the interactive sign-in token was minted with this nonce.
+        ...(noncePair && response.data.idToken ? { nonce: noncePair.rawNonce } : {}),
+      },
+    }
   } catch (error) {
     if (isErrorWithCode(error)) {
-      if (error.code === statusCodes.SIGN_IN_CANCELLED) return null
-      if (error.code === statusCodes.IN_PROGRESS) return "Google sign-in is already in progress."
+      if (error.code === statusCodes.SIGN_IN_CANCELLED) return { ok: false, message: null }
+      if (error.code === statusCodes.IN_PROGRESS) {
+        return { ok: false, message: "Google sign-in is already in progress." }
+      }
       if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-        return "Google Play Services is not available on this device."
+        return { ok: false, message: "Google Play Services is not available on this device." }
       }
     }
-    return error instanceof Error ? error.message : "Google sign-in failed."
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : "Google sign-in failed.",
+    }
   }
+}
+
+async function signInWithGoogleNativeSdk(supabase: SupabaseClient): Promise<string | null> {
+  const result = await obtainGoogleIdCredential()
+  if (!result.ok) return result.message
+
+  const { error } = await supabase.auth.signInWithIdToken({
+    provider: "google",
+    token: result.credential.idToken,
+    access_token: result.credential.accessToken,
+    ...(result.credential.nonce ? { nonce: result.credential.nonce } : {}),
+  })
+  return error?.message ?? null
 }
 
 async function signInWithGoogleOAuthWeb(supabase: SupabaseClient): Promise<string | null> {

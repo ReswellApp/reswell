@@ -1,9 +1,10 @@
+import { createServiceRoleClient } from "@/lib/supabase/service-role"
 import {
-  MARKETPLACE_THREAD_MESSAGE_EVENT,
-  MARKETPLACE_THREAD_REFRESH_EVENT,
-  marketplaceThreadBroadcastHttpRequest,
+  marketplaceInsertedMessageBroadcasts,
+  marketplaceRealtimeBroadcastHttpRequest,
   marketplaceThreadMessageFromRow,
-  type MarketplaceThreadBroadcastMessage,
+  marketplaceThreadRefreshBroadcasts,
+  type MarketplaceRealtimeBroadcast,
 } from "@/lib/messages/thread-broadcast"
 
 const BROADCAST_TIMEOUT_MS = 2_000
@@ -21,22 +22,39 @@ export async function broadcastInsertedMarketplaceMessage(
     console.error("[broadcastMarketplaceThread] skipped unusable row", { conversationId })
     return
   }
-  await publishMarketplaceThreadEvent(message.conversation_id, MARKETPLACE_THREAD_MESSAGE_EVENT, message)
+  const participantIds = await conversationParticipantIds(message.conversation_id)
+  await publishMarketplaceBroadcasts(marketplaceInsertedMessageBroadcasts(message, participantIds))
 }
 
 /** Offer rewrites and other in-place edits: the open thread reloads once. */
 export async function broadcastMarketplaceThreadRefresh(conversationId: string): Promise<void> {
   if (!conversationId) return
-  await publishMarketplaceThreadEvent(conversationId, MARKETPLACE_THREAD_REFRESH_EVENT, {
-    conversation_id: conversationId,
-  })
+  const participantIds = await conversationParticipantIds(conversationId)
+  await publishMarketplaceBroadcasts(marketplaceThreadRefreshBroadcasts(conversationId, participantIds))
 }
 
-async function publishMarketplaceThreadEvent(
-  conversationId: string,
-  event: typeof MARKETPLACE_THREAD_MESSAGE_EVENT | typeof MARKETPLACE_THREAD_REFRESH_EVENT,
-  payload: MarketplaceThreadBroadcastMessage | { conversation_id: string },
-): Promise<void> {
+async function conversationParticipantIds(conversationId: string): Promise<string[]> {
+  try {
+    const service = createServiceRoleClient()
+    const { data, error } = await service
+      .from("conversations")
+      .select("buyer_id, seller_id")
+      .eq("id", conversationId)
+      .maybeSingle()
+    if (error || !data) return []
+    return [data.buyer_id, data.seller_id].filter(
+      (id): id is string => typeof id === "string" && id.length > 0,
+    )
+  } catch (error) {
+    console.error("[broadcastMarketplaceThread] participants", { conversationId, error })
+    return []
+  }
+}
+
+async function publishMarketplaceBroadcasts(messages: MarketplaceRealtimeBroadcast[]): Promise<void> {
+  if (messages.length === 0) return
+  const conversationId =
+    "conversation_id" in messages[0].payload ? messages[0].payload.conversation_id : ""
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!supabaseUrl || !serviceKey) {
@@ -44,11 +62,9 @@ async function publishMarketplaceThreadEvent(
     return
   }
 
-  const request = marketplaceThreadBroadcastHttpRequest({
+  const request = marketplaceRealtimeBroadcastHttpRequest({
     supabaseUrl,
-    conversationId,
-    event,
-    payload,
+    messages,
   })
 
   try {
@@ -66,12 +82,11 @@ async function publishMarketplaceThreadEvent(
       const detail = await res.text().catch(() => "")
       console.error("[broadcastMarketplaceThread] http", {
         conversationId,
-        event,
         status: res.status,
         detail: detail.slice(0, 300),
       })
     }
   } catch (error) {
-    console.error("[broadcastMarketplaceThread]", { conversationId, event, error })
+    console.error("[broadcastMarketplaceThread]", { conversationId, error })
   }
 }

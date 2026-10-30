@@ -105,12 +105,19 @@ export function SellListingFlow({
   }, [initial, isEdit])
 
   useEffect(() => {
-    if (!editListingId?.trim()) return
+    const listingId = editListingId?.trim() ?? ""
+    if (!listingId) {
+      if (isEdit) {
+        setEditLoading(false)
+        setEditError("Invalid listing")
+      }
+      return
+    }
     let cancelled = false
     const load = (accessToken: string) => {
       setEditLoading(true)
       setEditError(null)
-      fetchSellListingEdit(accessToken, editListingId)
+      fetchSellListingEdit(accessToken, listingId)
         .then((payload) => {
           if (!cancelled) setDraft(sellDraftFromMobileEdit(payload))
         })
@@ -132,7 +139,7 @@ export function SellListingFlow({
     return () => {
       cancelled = true
     }
-  }, [editListingId, requestAuth, session?.access_token])
+  }, [editListingId, isEdit, requestAuth, session?.access_token])
 
   useEffect(() => {
     if (!needsBoardSpecs) return
@@ -383,6 +390,11 @@ export function SellListingFlow({
         </Section>
         {notice ? (
           <Text style={[styles.notice, { color: colors.muted, fontFamily: fontFamily.text }]}>{notice}</Text>
+        ) : null}
+        {isEdit && !ready ? (
+          <Text style={[styles.notice, { color: colors.muted, fontFamily: fontFamily.text }]}>
+            Complete the required fields above to save your changes.
+          </Text>
         ) : null}
       </ScrollView>
       <View style={[styles.footer, { borderTopColor: colors.foreground, paddingBottom: Math.max(insets.bottom, 12) }]}>

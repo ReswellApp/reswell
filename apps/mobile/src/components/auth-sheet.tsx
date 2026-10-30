@@ -15,7 +15,8 @@ import {
   View,
 } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
-import { useAuth } from "@/lib/auth-context"
+import { useAuth, type GoogleSignUpInput, type SignUpInput } from "@/lib/auth-context"
+import { AuthSignUpForm } from "@/components/auth-sign-up-form"
 import { fontFamily, useReswellColors } from "@/theme"
 
 const APP_ICON = require("../../assets/images/icon.png")
@@ -34,36 +35,27 @@ export function AuthSheet({
   const colors = useReswellColors()
   const scheme = useColorScheme()
   const insets = useSafeAreaInsets()
-  const { configured, signIn, signUp, signInWithGoogle } = useAuth()
+  const { configured, signIn, signUp, signUpWithGoogle, signInWithGoogle } = useAuth()
   const [step, setStep] = useState<Step>("start")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [firstName, setFirstName] = useState("")
-  const [lastName, setLastName] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [confirmEmail, setConfirmEmail] = useState(false)
 
   useEffect(() => {
     if (presented) return
     setStep("start")
     setEmail("")
     setPassword("")
-    setFirstName("")
-    setLastName("")
     setError(null)
     setBusy(false)
+    setConfirmEmail(false)
   }, [presented])
 
   const emailReady = EMAIL_PATTERN.test(email.trim())
   const canContinue = emailReady && !busy
   const canSignIn = emailReady && password.length > 0 && !busy
-  const canSubmitCreate =
-    step === "create" &&
-    emailReady &&
-    firstName.trim().length > 0 &&
-    lastName.trim().length > 0 &&
-    password.length > 0 &&
-    !busy
 
   async function run(task: () => Promise<string | null>) {
     if (!configured) {
@@ -77,8 +69,39 @@ export function AuthSheet({
     setBusy(false)
   }
 
-  const title =
-    step === "create" ? "Create your account" : step === "password" ? "Sign in" : "Log in or sign up"
+  async function submitSignUp(input: SignUpInput) {
+    if (!configured) {
+      setError("Sign-in is not configured in this build.")
+      return
+    }
+    setBusy(true)
+    setError(null)
+    const result = await signUp(input)
+    if (result.status === "error") setError(result.message)
+    if (result.status === "confirm_email") setConfirmEmail(true)
+    setBusy(false)
+  }
+
+  async function submitGoogleSignUp(input: GoogleSignUpInput) {
+    setBusy(true)
+    setError(null)
+    if (!configured) {
+      setError("Sign-in is not configured in this build.")
+      setBusy(false)
+      return
+    }
+    const result = await signUpWithGoogle(input)
+    if (result.status === "error") setError(result.message)
+    setBusy(false)
+  }
+
+  const title = confirmEmail
+    ? "Check your email"
+    : step === "create"
+      ? "Create an account"
+      : step === "password"
+        ? "Sign in"
+        : "Log in or sign up"
 
   return (
     <Modal visible={presented} animationType="slide" presentationStyle="pageSheet" onRequestClose={onDismiss}>
@@ -101,6 +124,12 @@ export function AuthSheet({
                   accessibilityLabel="Back"
                   onPress={() => {
                     setError(null)
+                    if (confirmEmail) {
+                      setConfirmEmail(false)
+                      setPassword("")
+                      setStep(email.trim() ? "password" : "start")
+                      return
+                    }
                     setPassword("")
                     setStep("start")
                   }}
@@ -120,12 +149,27 @@ export function AuthSheet({
               </Pressable>
             </View>
 
-            <ScrollView keyboardShouldPersistTaps="handled" bounces={false} contentContainerStyle={styles.scrollBody}>
-              <View style={styles.brand}>
-                <Image source={APP_ICON} style={styles.brandIcon} contentFit="cover" accessibilityLabel="Reswell" />
-              </View>
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              bounces={false}
+              style={styles.scroll}
+              contentContainerStyle={styles.scrollBody}
+            >
+              {step === "create" && !confirmEmail ? null : (
+                <View style={styles.brand}>
+                  <Image source={APP_ICON} style={styles.brandIcon} contentFit="cover" accessibilityLabel="Reswell" />
+                </View>
+              )}
 
-              <Text style={[styles.title, { color: colors.foreground, fontFamily: fontFamily.headline }]}>{title}</Text>
+              <Text
+                style={[
+                  styles.title,
+                  step === "create" && !confirmEmail ? styles.titleCompact : null,
+                  { color: colors.foreground, fontFamily: fontFamily.headline },
+                ]}
+              >
+                {title}
+              </Text>
 
               {step === "start" ? (
                 <View style={styles.stack}>
@@ -175,6 +219,19 @@ export function AuthSheet({
                       ]}
                     >
                       Continue
+                    </Text>
+                  </Pressable>
+
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => {
+                      setError(null)
+                      setConfirmEmail(false)
+                      setStep("create")
+                    }}
+                  >
+                    <Text style={[styles.secondaryLink, { color: colors.muted, fontFamily: fontFamily.text }]}>
+                      New to Reswell? Create an account
                     </Text>
                   </Pressable>
                 </View>
@@ -229,72 +286,39 @@ export function AuthSheet({
                     </Text>
                   </Pressable>
                 </View>
-              ) : (
+              ) : confirmEmail ? (
                 <View style={styles.stack}>
-                  <TextInput
-                    autoCapitalize="none"
-                    autoComplete="email"
-                    autoCorrect={false}
-                    keyboardType="email-address"
-                    placeholder="Email"
-                    placeholderTextColor="#A3A3A3"
-                    value={email}
-                    onChangeText={setEmail}
-                    style={[styles.input, { color: colors.foreground, borderColor: "#E6E6E6", fontFamily: fontFamily.text }]}
-                  />
-                  <TextInput
-                    autoComplete="given-name"
-                    placeholder="First name"
-                    placeholderTextColor="#A3A3A3"
-                    value={firstName}
-                    onChangeText={setFirstName}
-                    style={[styles.input, { color: colors.foreground, borderColor: "#E6E6E6", fontFamily: fontFamily.text }]}
-                  />
-                  <TextInput
-                    autoComplete="family-name"
-                    placeholder="Last name"
-                    placeholderTextColor="#A3A3A3"
-                    value={lastName}
-                    onChangeText={setLastName}
-                    style={[styles.input, { color: colors.foreground, borderColor: "#E6E6E6", fontFamily: fontFamily.text }]}
-                  />
-                  <TextInput
-                    autoCapitalize="none"
-                    autoComplete="new-password"
-                    secureTextEntry
-                    placeholder="Password"
-                    placeholderTextColor="#A3A3A3"
-                    value={password}
-                    onChangeText={setPassword}
-                    style={[styles.input, { color: colors.foreground, borderColor: "#E6E6E6", fontFamily: fontFamily.text }]}
-                  />
-
-                  {error ? (
-                    <Text style={[styles.error, { color: colors.destructive, fontFamily: fontFamily.text }]}>{error}</Text>
-                  ) : null}
-
+                  <Text style={[styles.emailEcho, { color: colors.muted, fontFamily: fontFamily.text }]}>
+                    We sent a confirmation link to {email.trim()}. Open it to finish creating your account, then sign in.
+                  </Text>
                   <Pressable
                     accessibilityRole="button"
-                    disabled={!canSubmitCreate}
                     onPress={() => {
-                      const problem = passwordProblem(password)
-                      if (problem) {
-                        setError(problem)
-                        return
-                      }
-                      void run(() => signUp({ email, password, firstName, lastName }))
+                      setError(null)
+                      setConfirmEmail(false)
+                      setPassword("")
+                      setStep("password")
                     }}
-                    style={[styles.primary, { backgroundColor: canSubmitCreate ? colors.foreground : "#ECECEF" }]}
+                    style={[styles.primary, { backgroundColor: colors.foreground }]}
                   >
-                    {busy ? (
-                      <ActivityIndicator color={colors.background} />
-                    ) : (
-                      <Text style={[styles.primaryLabel, { color: colors.background, fontFamily: fontFamily.text }]}>
-                        Create account
-                      </Text>
-                    )}
+                    <Text style={[styles.primaryLabel, { color: colors.background, fontFamily: fontFamily.text }]}>
+                      Back to sign in
+                    </Text>
                   </Pressable>
                 </View>
+              ) : (
+                <AuthSignUpForm
+                  email={email}
+                  onEmailChange={setEmail}
+                  busy={busy}
+                  error={error}
+                  onSubmit={(input) => void submitSignUp(input)}
+                  onGoogle={(input) => void submitGoogleSignUp(input)}
+                  onSignIn={() => {
+                    setError(null)
+                    setStep(email.trim() ? "password" : "start")
+                  }}
+                />
               )}
             </ScrollView>
       </KeyboardAvoidingView>
@@ -335,15 +359,6 @@ function GoogleMark() {
   )
 }
 
-function passwordProblem(password: string): string | null {
-  if (password.length < 12) return "Password must be at least 12 characters."
-  if (!/[A-Z]/.test(password)) return "Password must include an uppercase letter."
-  if (!/[a-z]/.test(password)) return "Password must include a lowercase letter."
-  if (!/[0-9]/.test(password)) return "Password must include a number."
-  if (!/[^A-Za-z0-9]/.test(password)) return "Password must include a special character."
-  return null
-}
-
 const styles = StyleSheet.create({
   sheet: {
     flex: 1,
@@ -372,8 +387,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  scroll: { flex: 1 },
   scrollBody: {
-    flexGrow: 0,
     paddingBottom: 8,
   },
   brand: {
@@ -391,6 +406,9 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
     marginBottom: 20,
     textAlign: "center",
+  },
+  titleCompact: {
+    marginBottom: 8,
   },
   stack: { gap: 12 },
   social: {

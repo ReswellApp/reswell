@@ -7,6 +7,8 @@ import { useRouter } from "next/navigation"
 import { formatDistanceToNow } from "date-fns"
 import { ArrowLeft } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
+import { authorizeRealtime } from "@/lib/supabase/realtime-auth"
+import { CONVERSATION_INBOX_ACTIVITY_EVENT } from "@/lib/utils/unread-message-count-events"
 import { Button } from "@/components/ui/button"
 import { VerifiedBadge } from "@/components/verified-badge"
 import { capitalizeWords } from "@/lib/listing-labels"
@@ -114,13 +116,19 @@ export function CounterpartyThreadsClient({
             filter: `${column}=eq.${currentUserId}`,
           },
           scheduleRefresh,
-        )
-        .subscribe(),
+        ),
     )
+
+    window.addEventListener(CONVERSATION_INBOX_ACTIVITY_EVENT, scheduleRefresh)
+    void authorizeRealtime(supabase).then((ok) => {
+      if (cancelled || !ok) return
+      for (const channel of channels) channel.subscribe()
+    })
 
     return () => {
       cancelled = true
       if (refreshTimer) clearTimeout(refreshTimer)
+      window.removeEventListener(CONVERSATION_INBOX_ACTIVITY_EVENT, scheduleRefresh)
       for (const channel of channels) void supabase.removeChannel(channel)
     }
   }, [supabase, currentUserId, otherUserId])

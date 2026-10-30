@@ -1,7 +1,8 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react"
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import { AppState } from "react-native"
 import { fetchInbox } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
+import { getActiveMarketplaceConversation, startMarketplaceInboxLive } from "@/lib/marketplace-live"
 
 type InboxUnreadValue = {
   count: number
@@ -11,6 +12,25 @@ type InboxUnreadValue = {
 }
 
 const InboxUnreadContext = createContext<InboxUnreadValue | null>(null)
+
+const inboxListListeners = new Set<() => void>()
+
+function emitInboxListLive(): void {
+  for (const listener of inboxListListeners) listener()
+}
+
+/** Inbox screen refreshes its rows when a message arrives on any other screen. */
+export function useInboxListLive(onLive: () => void): void {
+  const onLiveRef = useRef(onLive)
+  onLiveRef.current = onLive
+  useEffect(() => {
+    const listener = () => onLiveRef.current()
+    inboxListListeners.add(listener)
+    return () => {
+      inboxListListeners.delete(listener)
+    }
+  }, [])
+}
 
 /** Header inbox badge from GET /api/mobile/v1/me/inbox `unread_count` (website ticker). */
 export function InboxUnreadProvider({ children }: { children: ReactNode }) {
@@ -39,6 +59,27 @@ export function InboxUnreadProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     reload()
   }, [reload])
+
+  useEffect(() => {
+    const userId = session?.user?.id
+    if (!token || !userId) return
+    let tickerTimer: ReturnType<typeof setTimeout> | null = null
+    const stop = startMarketplaceInboxLive(userId, token, (conversationId) => {
+      emitInboxListLive()
+      const openThreadId = getActiveMarketplaceConversation()
+      if (conversationId && conversationId === openThreadId) return
+      if (tickerTimer) clearTimeout(tickerTimer)
+      const delay = openThreadId && conversationId == null ? 800 : 0
+      tickerTimer = setTimeout(() => {
+        tickerTimer = null
+        reload()
+      }, delay)
+    })
+    return () => {
+      if (tickerTimer) clearTimeout(tickerTimer)
+      stop()
+    }
+  }, [reload, session?.user?.id, token])
 
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (state) => {

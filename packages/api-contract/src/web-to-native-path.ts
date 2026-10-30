@@ -141,10 +141,13 @@ function mapPathname(pathname: string): string | null {
   }
 
   const listingEdit = pathname.match(/^\/dashboard\/listings\/([^/]+)\/edit$/)
-  if (listingEdit?.[1]) return `/listing/edit/${decodeSegment(listingEdit[1])}`
+  if (listingEdit?.[1]) return `/sell/edit/${decodeSegment(listingEdit[1])}`
 
   const listingManage = pathname.match(/^\/dashboard\/listings\/([^/]+)$/)
-  if (listingManage?.[1]) return `/listing/edit/${decodeSegment(listingManage[1])}`
+  if (listingManage?.[1]) return `/sell/edit/${decodeSegment(listingManage[1])}`
+
+  const sellEdit = pathname.match(/^\/sell\/edit\/([^/]+)$/)
+  if (sellEdit?.[1]) return `/sell/edit/${decodeSegment(sellEdit[1])}`
 
   if (pathname === "/dashboard/listings") return "/account/listings"
   if (pathname === "/dashboard/earnings") return "/account/earnings"
@@ -183,7 +186,8 @@ function mapPathname(pathname: string): string | null {
   if (pathname === "/seller-resources/how-to-ship") return "/seller-resources/how-to-ship"
   if (pathname === "/map") return "/seller-resources/sales-map"
   if (pathname === "/auth/login" || pathname === "/auth/sign-up") return "/sign-in"
-  if (pathname === "/sell" || pathname.startsWith("/sell/")) return "/sell/new"
+  if (pathname === "/sell" || pathname === "/sell/new") return "/sell/new"
+  if (pathname.startsWith("/sell/")) return "/sell/new"
   if (pathname === "/support" || pathname === "/dashboard/support") return "/account/support"
   if (pathname === "/account/support" || pathname.startsWith("/account/support/")) return pathname
   if (pathname.startsWith("/seller-resources/")) return pathname

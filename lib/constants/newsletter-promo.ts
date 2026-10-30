@@ -14,6 +14,9 @@ export const NEWSLETTER_PROMO_EXPIRATION_NUDGE_DAYS_BEFORE = 3
  */
 export const NEWSLETTER_PROMO_EXPIRATION_BUMP_PERCENT = 15
 
+/** Visitor entry popup. Off until we want the 10% offer shown on landing again. */
+export const NEWSLETTER_POPUP_ENABLED = false
+
 /** Delay before showing the visitor popup after landing. */
 export const NEWSLETTER_POPUP_DELAY_MS = 4_000
 

@@ -18,6 +18,7 @@ import {
   mobileCheckoutPaymentSchema,
   mobileCheckoutQuoteSchema,
   mobileConversationDetailSchema,
+  mobileMessagesDeltaSchema,
   mobileConversationsSchema,
   mobileFavoriteResultSchema,
   mobileFavoritesSchema,
@@ -60,6 +61,7 @@ import {
   mobileProfileSchema,
   mobileProfileShopFiltersSchema,
   mobileProfileSignInActionSchema,
+  mobileSignUpResultSchema,
   mobileProfileSettingsSchema,
   mobilePushTestResultSchema,
   mobilePushTokenResultSchema,
@@ -157,6 +159,9 @@ import {
   type MobileProfilePassword,
   type MobileProfileSettings,
   type MobileProfileSignInAction,
+  type MobileGoogleSignUpBody,
+  type MobileSignUpBody,
+  type MobileSignUpResult,
   type MobileProfileSettingsPatch,
   type MobilePushTestResult,
   type MobilePushTokenBody,
@@ -311,6 +316,16 @@ async function postMultipartFileField(
   }
 }
 
+async function readResponseJson(response: Response): Promise<unknown> {
+  const text = await response.text()
+  if (!text.trim()) return null
+  try {
+    return JSON.parse(text) as unknown
+  } catch {
+    throw new Error(response.ok ? "Unexpected response" : "Unable to reach the server")
+  }
+}
+
 async function putJson(path: string, accessToken: string, payload: unknown): Promise<unknown> {
   const response = await fetch(`${apiOrigin()}${path}`, {
     method: "PUT",
@@ -321,7 +336,7 @@ async function putJson(path: string, accessToken: string, payload: unknown): Pro
     },
     body: JSON.stringify(payload),
   })
-  const body: unknown = await response.json()
+  const body = await readResponseJson(response)
   if (!response.ok) {
     const message =
       body && typeof body === "object" && "error" in body && typeof body.error === "string"
@@ -374,7 +389,7 @@ async function getJson(
     headers,
     body: payload === undefined ? undefined : JSON.stringify(payload),
   })
-  const body: unknown = await response.json()
+  const body = await readResponseJson(response)
   if (!response.ok) {
     const message = responseErrorMessage(body, "Request failed")
     if (response.status === 401 && accessToken && attempt === 0 && message === "Sign in required") {
@@ -828,6 +843,21 @@ export function fetchProfileSettings(accessToken: string): Promise<MobileProfile
 
 export function saveProfileSettings(accessToken: string, body: MobileProfileSettingsPatch): Promise<MobileProfileSettings> {
   return read("/api/mobile/v1/me/profile", (data) => mobileProfileSettingsSchema.parse(data), accessToken, body)
+}
+
+/** Website email sign-up. Returns a session, or asks the person to confirm their email. */
+export function registerEmailAccount(body: MobileSignUpBody): Promise<MobileSignUpResult> {
+  return read("/api/mobile/v1/auth/sign-up", (data) => mobileSignUpResultSchema.parse(data), null, body)
+}
+
+/** Website Google sign-up. Exchanges the native ID token and returns a session. */
+export function registerGoogleAccount(body: MobileGoogleSignUpBody): Promise<MobileSignUpResult> {
+  return read(
+    "/api/mobile/v1/auth/google/sign-up",
+    (data) => mobileSignUpResultSchema.parse(data),
+    null,
+    body,
+  )
 }
 
 export function registerPushToken(accessToken: string, body: MobilePushTokenBody): Promise<{ ok: true }> {
@@ -1393,6 +1423,11 @@ export async function uploadSellVideoIfNeeded(
 export async function uploadSellPhotos(accessToken: string, photos: SellPhoto[]): Promise<SellPhoto[]> {
   const uploaded: SellPhoto[] = []
   for (const photo of photos) {
+    // Existing listing rows keep their storage URLs — don't re-upload when HEAD probes fail.
+    if (photo.serverImageId && photo.url && photo.thumbnailUrl) {
+      uploaded.push(photo)
+      continue
+    }
     if (photo.url && photo.thumbnailUrl) {
       const stored =
         (await sellPhotoStorageUrlReachable(photo.url)) &&
@@ -1426,7 +1461,11 @@ export function fetchSellListingEdit(accessToken: string, listingId: string) {
   )
 }
 
-function editSellListingBody(draft: SellDraft, images: MobileSellPhoto[], listingId: string) {
+function editSellListingBody(
+  draft: SellDraft,
+  images: Array<MobileSellPhoto & { image_id?: string }>,
+  listingId: string,
+) {
   const body = sellListingBody(draft, images, false) as Record<string, unknown>
   delete body.id
   delete body.draft_id
@@ -1439,7 +1478,15 @@ export function updateSellListing(
   draft: SellDraft,
 ): Promise<MobileSellPublishResult> {
   const images = draft.photos.flatMap((photo) =>
-    photo.url && photo.thumbnailUrl ? [{ url: photo.url, thumbnail_url: photo.thumbnailUrl }] : [],
+    photo.url && photo.thumbnailUrl
+      ? [
+          {
+            url: photo.url,
+            thumbnail_url: photo.thumbnailUrl,
+            ...(photo.serverImageId ? { image_id: photo.serverImageId } : {}),
+          },
+        ]
+      : [],
   )
   return putJson(
     `/api/mobile/v1/me/listings/${encodeURIComponent(listingId)}/edit`,
@@ -1457,6 +1504,16 @@ export function publishSellListing(accessToken: string, draft: SellDraft): Promi
     (data) => mobileSellPublishResultSchema.parse(data),
     accessToken,
     sellListingBody(draft, images, true),
+  )
+}
+
+/** Rows at or after `after` while the viewer is sitting in the thread. */
+export function fetchConversationMessagesSince(id: string, accessToken: string, after: string) {
+  const query = new URLSearchParams({ after })
+  return read(
+    `/api/mobile/v1/conversations/${encodeURIComponent(id)}/messages?${query.toString()}`,
+    (data) => mobileMessagesDeltaSchema.parse(data),
+    accessToken,
   )
 }
 

@@ -42,6 +42,7 @@ export type OwnedListingForEditRow = {
   shipping_packed_height_in?: number | string | null
   shipping_packed_weight_oz?: number | string | null
   shipping_package_tier?: string | null
+  /** Shortboard pack band id when the seller used a fixed Reswell carton. */
   shipping_package_band?: string | null
   dropoff_location_id?: string | null
   brand?: string | null

@@ -1,6 +1,7 @@
 import {
   mobileCartSchema,
   mobileConversationDetailSchema,
+  mobileMessagesDeltaSchema,
   mobileDashboardSchema,
   mobileFavoriteSchema,
   mobileFavoritesSchema,
@@ -10,6 +11,8 @@ import {
   mobileReviewsPageSchema,
   type MobileCart,
   type MobileConversationDetail,
+  type MobileMessage,
+  type MobileMessagesDelta,
   type MobileDashboard,
   type MobileConversationPreview,
   type MobileFavorite,
@@ -32,6 +35,7 @@ import {
   listMobileFollowedSellers,
   listMobileFollowers,
   listMobileMessageRows,
+  listMobileMessageRowsAfter,
   listMobileReviewRows,
   type MobileFollowedSellerRow,
 } from "@/lib/db/mobile-account"
@@ -393,29 +397,7 @@ export async function getMobileConversationService(
   const listing = Array.isArray(header.listing) ? header.listing[0] : header.listing
   const avatar = text(other?.avatar_url)
   const listingImage = text(listing?.primary_thumbnail_url) ?? text(listing?.primary_image_url)
-  const messages = listed.rows.map((row) => {
-    const redacted = redactShippingLabelArtifactsFromMessage(row)
-    const order = orderCard(row.metadata, viewerIsSeller)
-    const imageAtt = parseMarketplaceMessageImageAttachment(row.metadata)
-    const videoAtt = parseMarketplaceMessageVideoAttachment(row.metadata)
-    const attachment = imageAtt ? ({ kind: "image" as const } ) : videoAtt ? ({ kind: "video" as const }) : null
-    const rawBody = order ? "" : text(typeof redacted.content === "string" ? redacted.content : row.content) ?? ""
-    const placeholder =
-      attachment?.kind === "image"
-        ? composeMediaAttachmentMessageBody("image")
-        : attachment?.kind === "video"
-          ? composeMediaAttachmentMessageBody("video")
-          : null
-    const body = attachment && rawBody === placeholder ? "" : rawBody
-    return {
-      id: row.id,
-      body,
-      created_at: row.created_at,
-      mine: row.sender_id === userId,
-      order,
-      attachment,
-    }
-  })
+  const messages = toMobileMessages(listed.rows, userId, viewerIsSeller)
 
   const parsed = mobileConversationDetailSchema.safeParse({
     id: header.id,
@@ -433,6 +415,72 @@ export async function getMobileConversationService(
   })
   if (!parsed.success) return { ok: false, status: 500, error: "Unable to load messages right now" }
   return { ok: true, data: parsed.data }
+}
+
+/** New rows for a thread the viewer already has open. Marks the thread read. */
+export async function listMobileConversationMessagesSinceService(
+  supabase: SupabaseClient,
+  userId: string,
+  conversationId: string,
+  after: string,
+): Promise<MobileApiResult<MobileMessagesDelta>> {
+  const allowed = await userParticipatesInConversation(supabase, userId, conversationId)
+  if (!allowed) return { ok: false, status: 404, error: "Conversation not found" }
+
+  const { data: conversation, error } = await supabase
+    .from("conversations")
+    .select("buyer_id, seller_id")
+    .eq("id", conversationId)
+    .maybeSingle()
+  if (error || !conversation) return { ok: false, status: 404, error: "Conversation not found" }
+
+  const readPromise = markMarketplaceConversationRead(userId, conversationId).catch((readError: unknown) => {
+    console.warn("[mobile conversation] mark read skipped", readError)
+    return { ok: false as const, error: "Failed to mark read" }
+  })
+  const listed = await listMobileMessageRowsAfter(supabase, conversationId, after)
+  const marked = await readPromise
+  if (marked.ok) {
+    revalidateMessagesInboxForParticipants(marked.buyerId, marked.sellerId)
+  }
+  if (!listed.ok) return { ok: false, status: 500, error: "Unable to load messages right now" }
+
+  const viewerIsSeller = conversation.seller_id === userId
+  const parsed = mobileMessagesDeltaSchema.safeParse({
+    messages: toMobileMessages(listed.rows, userId, viewerIsSeller),
+  })
+  if (!parsed.success) return { ok: false, status: 500, error: "Unable to load messages right now" }
+  return { ok: true, data: parsed.data }
+}
+
+function toMobileMessages(
+  rows: Array<{ id: string; content: string | null; sender_id: string; created_at: string; metadata?: unknown }>,
+  userId: string,
+  viewerIsSeller: boolean,
+): MobileMessage[] {
+  return rows.map((row) => {
+    const redacted = redactShippingLabelArtifactsFromMessage(row)
+    const order = orderCard(row.metadata, viewerIsSeller)
+    const imageAtt = parseMarketplaceMessageImageAttachment(row.metadata)
+    const videoAtt = parseMarketplaceMessageVideoAttachment(row.metadata)
+    const attachment = imageAtt ? ({ kind: "image" as const }) : videoAtt ? ({ kind: "video" as const }) : null
+    const rawBody = order ? "" : text(typeof redacted.content === "string" ? redacted.content : row.content) ?? ""
+    const placeholder =
+      attachment?.kind === "image"
+        ? composeMediaAttachmentMessageBody("image")
+        : attachment?.kind === "video"
+          ? composeMediaAttachmentMessageBody("video")
+          : null
+    const body = attachment && rawBody === placeholder ? "" : rawBody
+    return {
+      id: row.id,
+      body,
+      created_at: row.created_at,
+      mine: row.sender_id === userId,
+      order,
+      attachment,
+    }
+  })
 }
 
 type ThreadProfile = {

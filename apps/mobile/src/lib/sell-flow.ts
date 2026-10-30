@@ -22,7 +22,8 @@ export const SELL_STEP_TITLES: Record<SellStep, string> = {
   review: "Review",
 }
 
-export const MAX_SELL_PHOTOS = 8
+/** Same cap as website sell / `MOBILE_SELL_MAX_PHOTOS`. */
+export const MAX_SELL_PHOTOS = 12
 
 const PRICE_MIN = 0.01
 const PRICE_MAX = 999_999.99
@@ -260,7 +261,8 @@ function packageIsReady(draft: SellDraft): boolean {
 /** Place step matches the category's website shipping section. */
 export function placeStepIsReady(draft: SellDraft, fulfillment: MobileSellFulfillment | undefined): boolean {
   if (!fulfillment) return false
-  if (!draft.city.trim() || !draft.state.trim() || draft.locationLat == null || draft.locationLng == null) return false
+  // City/state are required. Coords are optional so legacy listings (city/state only) stay editable.
+  if (!draft.city.trim() || !draft.state.trim()) return false
 
   const shippingOn = fulfillment.shipping_toggle ? draft.shipping : true
   const pickupOn = fulfillment.local_pickup ? draft.localPickup : false

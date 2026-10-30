@@ -490,3 +490,21 @@ export async function listMobileMessageRows(
   const rows = ((data ?? []) as MobileMessageRow[]).slice().reverse()
   return { ok: true, rows }
 }
+
+/** Messages at or after `after`, oldest first. The client drops ids it already shows. */
+export async function listMobileMessageRowsAfter(
+  supabase: SupabaseClient,
+  conversationId: string,
+  after: string,
+): Promise<QueryResult<MobileMessageRow[]>> {
+  const { data, error } = await supabase
+    .from("messages")
+    .select("id, content, sender_id, created_at, metadata")
+    .eq("conversation_id", conversationId)
+    .gte("created_at", after)
+    .order("created_at", { ascending: true })
+    .limit(50)
+
+  if (error) return { ok: false, message: error.message }
+  return { ok: true, rows: (data ?? []) as MobileMessageRow[] }
+}

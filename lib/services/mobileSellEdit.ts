@@ -17,15 +17,20 @@ import {
   assertMobileSellVideos,
   replaceListingVideos,
 } from "@/lib/services/mobileSellVideos"
+import { isOwnedListingStorageUrl } from "@/lib/services/ownedListingStorageUrl"
 import { verifyListingImageObjectsExist } from "@/lib/services/verifyListingImageStorage"
-import { listingObjectPublicUrl } from "@/lib/supabase/storage-upload-xhr"
 
 const EDITABLE_STATUSES = new Set(["active", "pending_sale", "draft", "delinquent"])
 
-function ownedListingImage(url: string, userId: string): boolean {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""
-  if (!supabaseUrl) return false
-  return url.startsWith(listingObjectPublicUrl(supabaseUrl, `${userId}/`))
+function editImageAllowed(
+  url: string,
+  userId: string,
+  existing: { ids: Set<string>; urls: Set<string> },
+  imageId?: string,
+): boolean {
+  if (imageId && existing.ids.has(imageId)) return true
+  if (existing.urls.has(url)) return true
+  return isOwnedListingStorageUrl(url, userId)
 }
 
 export async function getMobileListingEditService(
@@ -56,6 +61,11 @@ export async function getMobileListingEditService(
     console.error("[mobile-api] sell edit load shape failed", {
       listingId,
       timestamp: new Date().toISOString(),
+      issues: parsed.error.issues.map((issue) => ({
+        path: issue.path.join("."),
+        code: issue.code,
+        message: issue.message,
+      })),
     })
     return { ok: false, status: 500, error: "Unable to load listing for edit" }
   }
@@ -87,28 +97,48 @@ export async function updateMobileListingEditService(
     return { ok: false, status: 400, error: "This listing cannot be edited" }
   }
 
-  const publishInput: MobileSellPublish = { ...parsed.data, draft_id: null }
+  const publishInput: MobileSellPublish = {
+    ...parsed.data,
+    images: parsed.data.images.map(({ url, thumbnail_url }) => ({ url, thumbnail_url })),
+    draft_id: null,
+  }
   const built = mobileSellListingFields(publishInput)
   if (!built.ok) return { ok: false, status: 400, error: built.error }
 
-  if (publishInput.images.length < 1) {
+  if (parsed.data.images.length < 1) {
     return { ok: false, status: 400, error: "Add at least one photo" }
   }
-  if (publishInput.images.some((image) => !image.url || !image.thumbnail_url)) {
+  if (parsed.data.images.some((image) => !image.url || !image.thumbnail_url)) {
     return { ok: false, status: 400, error: "Upload the listing photos again" }
   }
+
+  const existingImages = await supabase
+    .from("listing_images")
+    .select("id, url, thumbnail_url")
+    .eq("listing_id", listingId)
+  const knownImages = {
+    ids: new Set((existingImages.data ?? []).map((row) => String(row.id))),
+    urls: new Set(
+      (existingImages.data ?? []).flatMap((row) =>
+        [row.url, row.thumbnail_url].filter((value): value is string => typeof value === "string" && value.length > 0),
+      ),
+    ),
+  }
+
   if (
-    publishInput.images.some(
-      (image) => !ownedListingImage(image.url, userId) || !ownedListingImage(image.thumbnail_url, userId),
+    parsed.data.images.some(
+      (image) =>
+        !editImageAllowed(image.url, userId, knownImages, image.image_id) ||
+        !editImageAllowed(image.thumbnail_url, userId, knownImages, image.image_id),
     )
   ) {
     return { ok: false, status: 400, error: "Upload the listing photos again" }
   }
-  for (const image of publishInput.images) {
+  for (const image of parsed.data.images) {
     const ok = await verifyListingImageObjectsExist(image.url, image.thumbnail_url)
     if (!ok) return { ok: false, status: 400, error: "Upload the listing photos again" }
   }
-  const videoError = await assertMobileSellVideos(publishInput.videos, userId)
+  const videoError = await assertMobileSellVideos(parsed.data.videos, userId)
   if (videoError) return { ok: false, status: 400, error: videoError }
 
   const updated = await supabase
@@ -120,10 +150,10 @@ export async function updateMobileListingEditService(
     return { ok: false, status: 400, error: "Couldn't save this listing" }
   }
 
-  const imageError = await replaceListingImages(supabase, listingId, publishInput.images)
+  const imageError = await replaceListingImages(supabase, listingId, parsed.data.images)
   if (imageError) return { ok: false, status: 400, error: imageError }
-  if (publishInput.videos !== undefined) {
-    const listingVideoError = await replaceListingVideos(supabase, listingId, publishInput.videos)
+  if (parsed.data.videos !== undefined) {
+    const listingVideoError = await replaceListingVideos(supabase, listingId, parsed.data.videos)
     if (listingVideoError) return { ok: false, status: 400, error: listingVideoError }
   }
 

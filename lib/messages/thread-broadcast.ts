@@ -1,31 +1,92 @@
-import { z } from "zod"
+import {
+  MARKETPLACE_THREAD_MESSAGE_EVENT,
+  MARKETPLACE_THREAD_REFRESH_EVENT,
+  marketplaceInboxChannel,
+  marketplaceThreadBroadcastMessageSchema,
+  marketplaceThreadChannel,
+  type MarketplaceThreadBroadcastMessage,
+} from "@reswell/api-contract"
 
-/** Channel name shared by the open thread and the server broadcast. */
-export function marketplaceThreadChannel(conversationId: string): string {
-  return `marketplace-thread:${conversationId}`
+export {
+  MARKETPLACE_THREAD_MESSAGE_EVENT,
+  MARKETPLACE_THREAD_REFRESH_EVENT,
+  marketplaceInboxChannel,
+  marketplaceThreadBroadcastMessageSchema,
+  marketplaceThreadChannel,
+  marketplaceThreadRefreshSchema,
+  type MarketplaceThreadBroadcastMessage,
+} from "@reswell/api-contract"
+
+export type MarketplaceRealtimeBroadcast = {
+  topic: string
+  event: string
+  payload: MarketplaceThreadBroadcastMessage | { conversation_id: string }
 }
 
-export const MARKETPLACE_THREAD_MESSAGE_EVENT = "message"
-export const MARKETPLACE_THREAD_REFRESH_EVENT = "refresh"
+function uniqueParticipantIds(participantIds: readonly string[]): string[] {
+  return [...new Set(participantIds.filter((id) => id.length > 0))]
+}
 
-export const marketplaceThreadBroadcastMessageSchema = z.object({
-  id: z.string().uuid(),
-  conversation_id: z.string().uuid(),
-  sender_id: z.string().uuid(),
-  content: z.string(),
-  created_at: z.string().min(1),
-  is_read: z.boolean().nullable().optional(),
-  offer_id: z.string().uuid().nullable().optional(),
-  metadata: z.unknown().optional(),
-})
+/** Open-thread bubble plus one inbox event per participant, so badges move without a postgres change. */
+export function marketplaceInsertedMessageBroadcasts(
+  message: MarketplaceThreadBroadcastMessage,
+  participantIds: readonly string[],
+): MarketplaceRealtimeBroadcast[] {
+  const thread: MarketplaceRealtimeBroadcast = {
+    topic: marketplaceThreadChannel(message.conversation_id),
+    event: MARKETPLACE_THREAD_MESSAGE_EVENT,
+    payload: message,
+  }
+  const inboxes = uniqueParticipantIds(participantIds).map((userId) => ({
+    topic: marketplaceInboxChannel(userId),
+    event: MARKETPLACE_THREAD_MESSAGE_EVENT,
+    payload: message,
+  }))
+  return [thread, ...inboxes]
+}
 
-export type MarketplaceThreadBroadcastMessage = z.infer<
-  typeof marketplaceThreadBroadcastMessageSchema
->
+/** Offer rewrites: the open thread and each inbox reload once. */
+export function marketplaceThreadRefreshBroadcasts(
+  conversationId: string,
+  participantIds: readonly string[],
+): MarketplaceRealtimeBroadcast[] {
+  const payload = { conversation_id: conversationId }
+  const thread: MarketplaceRealtimeBroadcast = {
+    topic: marketplaceThreadChannel(conversationId),
+    event: MARKETPLACE_THREAD_REFRESH_EVENT,
+    payload,
+  }
+  const inboxes = uniqueParticipantIds(participantIds).map((userId) => ({
+    topic: marketplaceInboxChannel(userId),
+    event: MARKETPLACE_THREAD_REFRESH_EVENT,
+    payload,
+  }))
+  return [thread, ...inboxes]
+}
 
-export const marketplaceThreadRefreshSchema = z.object({
-  conversation_id: z.string().uuid(),
-})
+/**
+ * One Realtime REST broadcast. `private: true` so only subscribers who pass
+ * the realtime.messages policy receive the payload.
+ */
+export function marketplaceRealtimeBroadcastHttpRequest(args: {
+  supabaseUrl: string
+  messages: readonly MarketplaceRealtimeBroadcast[]
+}): {
+  url: string
+  body: {
+    messages: Array<MarketplaceRealtimeBroadcast & { private: true }>
+  }
+} {
+  return {
+    url: `${args.supabaseUrl.replace(/\/$/, "")}/realtime/v1/api/broadcast`,
+    body: {
+      messages: args.messages.map((message) => ({
+        ...message,
+        private: true as const,
+      })),
+    },
+  }
+}
 
 /**
  * One Realtime REST broadcast. `private: true` so only participants who pass

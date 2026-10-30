@@ -1,22 +1,39 @@
 import type { Session } from "@supabase/supabase-js"
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react"
-import { signInWithGoogleNative, signOutGoogleNative } from "@/lib/google-sign-in"
+import { Platform } from "react-native"
+import { registerEmailAccount, registerGoogleAccount } from "@/lib/api"
+import { obtainGoogleIdCredential, signInWithGoogleNative, signOutGoogleNative } from "@/lib/google-sign-in"
 import { unregisterPushToken } from "@/lib/push-token"
 import { getSupabase } from "@/lib/supabase"
 
-type SignUpInput = {
+export type SignUpInput = {
   email: string
   password: string
   firstName: string
   lastName: string
+  username: string
+  marketingOptIn: boolean
+  acceptedTerms: boolean
 }
+
+export type GoogleSignUpInput = {
+  marketingOptIn: boolean
+  acceptedTerms: boolean
+}
+
+export type SignUpResult =
+  | { status: "signed_in" }
+  | { status: "confirm_email" }
+  | { status: "cancelled" }
+  | { status: "error"; message: string }
 
 type AuthContextValue = {
   ready: boolean
   configured: boolean
   session: Session | null
   signIn: (email: string, password: string) => Promise<string | null>
-  signUp: (input: SignUpInput) => Promise<string | null>
+  signUp: (input: SignUpInput) => Promise<SignUpResult>
+  signUpWithGoogle: (input: GoogleSignUpInput) => Promise<SignUpResult>
   signInWithGoogle: () => Promise<string | null>
   signOut: () => Promise<void>
 }
@@ -58,24 +75,68 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         })
         return error?.message ?? null
       },
-      async signUp({ email, password, firstName, lastName }) {
-        if (!supabase) return "Supabase is not configured in this build."
-        const trimmedFirst = firstName.trim()
-        const trimmedLast = lastName.trim()
-        const { data, error } = await supabase.auth.signUp({
-          email: email.trim(),
-          password,
-          options: {
-            data: {
-              display_name: signUpDisplayName(trimmedFirst, trimmedLast),
-              first_name: trimmedFirst,
-              last_name: trimmedLast,
-            },
-          },
-        })
-        if (error) return error.message
-        if (!data.session) return "Check your email to finish creating your account."
-        return null
+      async signUp(input) {
+        if (!supabase) return { status: "error", message: "Supabase is not configured in this build." }
+        try {
+          const result = await registerEmailAccount({
+            email: input.email.trim(),
+            password: input.password,
+            first_name: input.firstName.trim(),
+            last_name: input.lastName.trim(),
+            username: input.username.trim(),
+            marketing_opt_in: input.marketingOptIn,
+            accepted_terms: input.acceptedTerms,
+          })
+          if (result.status === "confirm_email") return { status: "confirm_email" }
+          if (!result.access_token || !result.refresh_token) {
+            return { status: "error", message: "Couldn't create your account." }
+          }
+          const { error } = await supabase.auth.setSession({
+            access_token: result.access_token,
+            refresh_token: result.refresh_token,
+          })
+          if (error) return { status: "error", message: error.message }
+          return { status: "signed_in" }
+        } catch (cause) {
+          const message = cause instanceof Error ? cause.message : "Couldn't create your account."
+          return { status: "error", message }
+        }
+      },
+      async signUpWithGoogle(input) {
+        if (!supabase) return { status: "error", message: "Supabase is not configured in this build." }
+        try {
+          if (Platform.OS === "web") {
+            const message = await signInWithGoogleNative(supabase)
+            if (message) return { status: "error", message }
+            return { status: "signed_in" }
+          }
+
+          const credential = await obtainGoogleIdCredential()
+          if (!credential.ok) {
+            if (!credential.message) return { status: "cancelled" }
+            return { status: "error", message: credential.message }
+          }
+
+          const result = await registerGoogleAccount({
+            id_token: credential.credential.idToken,
+            ...(credential.credential.accessToken ? { access_token: credential.credential.accessToken } : {}),
+            ...(credential.credential.nonce ? { nonce: credential.credential.nonce } : {}),
+            marketing_opt_in: input.marketingOptIn,
+            accepted_terms: input.acceptedTerms,
+          })
+          if (!result.access_token || !result.refresh_token) {
+            return { status: "error", message: "Couldn't create your account." }
+          }
+          const { error } = await supabase.auth.setSession({
+            access_token: result.access_token,
+            refresh_token: result.refresh_token,
+          })
+          if (error) return { status: "error", message: error.message }
+          return { status: "signed_in" }
+        } catch (cause) {
+          const message = cause instanceof Error ? cause.message : "Couldn't create your account."
+          return { status: "error", message }
+        }
       },
       async signInWithGoogle() {
         if (!supabase) return "Supabase is not configured in this build."
@@ -99,13 +160,4 @@ export function useAuth(): AuthContextValue {
   const value = useContext(AuthContext)
   if (!value) throw new Error("useAuth must be used within AuthProvider")
   return value
-}
-
-function signUpDisplayName(firstName: string, lastName: string): string {
-  const lastInitial = [...lastName][0]?.toUpperCase() ?? ""
-  const primary = `${lastInitial}${firstName}`
-  if (primary.length >= 5) return primary
-  const compact = `${firstName}${lastName}`.replace(/\s+/g, "")
-  if (compact.length >= 5) return compact
-  return `${firstName} ${lastName}`.trim()
 }

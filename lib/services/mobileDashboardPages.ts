@@ -17,7 +17,7 @@ export function mobileDashboardPages(access: MobileDashboardPageAccess): MobileD
     { id: "overview", label: "Overview" },
     { id: "profile", label: "Profile" },
     { id: "earnings", label: "Earnings" },
-    { id: "listings", label: "My Listings" },
+    { id: "listings", label: "Listings" },
     { id: "offers", label: "Offers" },
     { id: "messages", label: "Messages" },
     { id: "support", label: "Reswell help" },

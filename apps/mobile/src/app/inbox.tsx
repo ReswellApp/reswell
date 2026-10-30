@@ -12,7 +12,7 @@ import { useAuth } from "@/lib/auth-context"
 import { useAuthGate } from "@/lib/auth-gate"
 import { inboxItemNotificationId, inboxItemToNative } from "@/lib/inbox-href"
 import { requestPushPermissionAndRegister } from "@/lib/push-token"
-import { useSyncInboxUnreadCount } from "@/lib/inbox-unread-count"
+import { useInboxListLive, useSyncInboxUnreadCount } from "@/lib/inbox-unread-count"
 import { useAccountResource } from "@/lib/use-account-resource"
 import { fontFamily, useReswellColors } from "@/theme"
 
@@ -73,6 +73,9 @@ function InboxList() {
     [syncInboxUnread],
   )
   const { data, error, loading, reload } = useAccountResource(load)
+  useInboxListLive(() => {
+    reload({ silent: true })
+  })
   const params = useLocalSearchParams<{ filter?: string }>()
   const [filter, setFilter] = useState<Filter>(() => inboxFilterFromParam(params.filter))
 

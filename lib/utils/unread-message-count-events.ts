@@ -7,6 +7,19 @@ export const CONVERSATION_THREAD_OPENED_EVENT = "conversationThreadOpened"
 export const MESSAGES_INBOX_REFRESH_EVENT = "messagesInboxRefresh"
 /** A sent or received message should move its thread to the top of the inbox immediately. */
 export const CONVERSATION_INBOX_ACTIVITY_EVENT = "conversationInboxActivity"
+/** Saved marketplace message, already authorized for this viewer. Open threads append it. */
+export const MARKETPLACE_LIVE_MESSAGE_EVENT = "marketplaceLiveMessage"
+
+export type MarketplaceLiveMessageDetail = {
+  id: string
+  conversation_id: string
+  sender_id: string
+  content: string
+  created_at: string
+  is_read?: boolean | null
+  offer_id?: string | null
+  metadata?: unknown
+}
 
 export type UnreadMessageCountAdjustDetail = {
   delta: number
@@ -38,6 +51,16 @@ export function dispatchUnreadCountRefresh(): void {
 export function dispatchMessagesInboxRefresh(): void {
   if (typeof window === "undefined") return
   window.dispatchEvent(new CustomEvent(MESSAGES_INBOX_REFRESH_EVENT))
+}
+
+/** Append one saved message in any open thread that matches `conversation_id`. */
+export function dispatchMarketplaceLiveMessage(message: MarketplaceLiveMessageDetail): void {
+  if (typeof window === "undefined" || !message.conversation_id || !message.id) return
+  window.dispatchEvent(
+    new CustomEvent<MarketplaceLiveMessageDetail>(MARKETPLACE_LIVE_MESSAGE_EVENT, {
+      detail: message,
+    }),
+  )
 }
 
 /** Move a marketplace thread to the top of the inbox as soon as its latest message changes. */

@@ -71,6 +71,7 @@ export default function AccountSupportScreen() {
         contentContainerStyle={styles.page}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={reload} tintColor={colors.foreground} />}
       >
+        <HelpCenterLink onPress={() => router.push("/help")} />
         {hasOpenCase ? (
           <OpenSupportThreads
             cases={openCases}
@@ -98,6 +99,44 @@ export default function AccountSupportScreen() {
         ) : null}
       </ScrollView>
     </AccountState>
+  )
+}
+
+function HelpCenterLink({ onPress }: { onPress: () => void }) {
+  const colors = useReswellColors()
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Help Center"
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.helpCenter,
+        { borderColor: colors.border, backgroundColor: colors.background },
+        pressed ? { opacity: 0.88 } : null,
+      ]}
+    >
+      <View style={[styles.helpCenterIcon, { backgroundColor: colors.secondary }]}>
+        <SymbolView
+          name={{ ios: "questionmark.circle", android: "help", web: "help" }}
+          size={18}
+          tintColor={colors.foreground}
+        />
+      </View>
+      <View style={styles.helpCenterCopy}>
+        <Text style={[styles.helpCenterTitle, { color: colors.foreground, fontFamily: fontFamily.text }]}>
+          Help Center
+        </Text>
+        <Text style={[styles.helpCenterHint, { color: colors.muted, fontFamily: fontFamily.text }]}>
+          Search articles and guides
+        </Text>
+      </View>
+      <SymbolView
+        name={{ ios: "chevron.right", android: "chevron_right", web: "chevron_right" }}
+        size={16}
+        tintColor={colors.muted}
+      />
+    </Pressable>
   )
 }
 
@@ -367,6 +406,25 @@ function SupportCaseRow({ item, onPress }: { item: MobileSupportCase; onPress: (
 
 const styles = StyleSheet.create({
   page: { padding: 16, paddingBottom: 32, gap: 20 },
+  helpCenter: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+  },
+  helpCenterIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  helpCenterCopy: { flex: 1, gap: 2, minWidth: 0 },
+  helpCenterTitle: { fontSize: 16, fontWeight: "700" },
+  helpCenterHint: { fontSize: 14, lineHeight: 18 },
   openBlock: { gap: 12 },
   openThreadCard: {
     flexDirection: "row",

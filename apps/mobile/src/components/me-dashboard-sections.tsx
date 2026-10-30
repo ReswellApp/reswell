@@ -57,7 +57,23 @@ export function MeDashboardSections({
       <DashboardSection title="Selling" pages={selling} onOpen={openPage} />
       <DashboardSection title="Buying" pages={buying} onOpen={openPage} />
       {account.length > 0 ? <DashboardSection title="Account" pages={account} onOpen={openPage} /> : null}
-      <Pressable accessibilityRole="button" onPress={onSignOut} style={styles.signOut}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Sign out"
+        onPress={onSignOut}
+        style={({ pressed }) => [
+          styles.signOut,
+          {
+            borderColor: colors.border,
+            backgroundColor: pressed ? colors.secondary : colors.background,
+          },
+        ]}
+      >
+        <SymbolView
+          name={{ ios: "rectangle.portrait.and.arrow.right", android: "logout", web: "logout" }}
+          size={18}
+          tintColor={colors.destructive}
+        />
         <Text style={[styles.signOutLabel, { color: colors.destructive, fontFamily: fontFamily.text }]}>Sign out</Text>
       </Pressable>
     </View>
@@ -128,6 +144,16 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   menuLabel: { flex: 1, fontSize: 16, fontWeight: "600" },
-  signOut: { paddingHorizontal: 16, paddingTop: 20, paddingBottom: 8 },
-  signOutLabel: { fontSize: 17, fontWeight: "700" },
+  signOut: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    marginHorizontal: 16,
+    marginTop: 12,
+    minHeight: 48,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  signOutLabel: { fontSize: 16, fontWeight: "700" },
 })

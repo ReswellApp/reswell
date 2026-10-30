@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { authorizeRealtime } from "@/lib/supabase/realtime-auth"
 import type { MessagesInboxNotification } from "@/lib/db/messagesInbox"
 import { refreshMessagesInbox } from "@/app/actions/messages"
 import {
@@ -93,6 +94,7 @@ export function MessagesInboxProvider({
   useEffect(() => {
     if (!userId) return
 
+    let active = true
     let refreshTimer: ReturnType<typeof setTimeout> | null = null
 
     const scheduleRefresh = () => {
@@ -148,8 +150,7 @@ export function MessagesInboxProvider({
             filter: `${column}=eq.${userId}`,
           },
           scheduleRefresh,
-        )
-        .subscribe(),
+        ),
     )
 
     const messagesChannel = supabase
@@ -159,9 +160,15 @@ export function MessagesInboxProvider({
         { event: "*", schema: "public", table: "messages" },
         onMessageChange,
       )
-      .subscribe()
+
+    void authorizeRealtime(supabase).then((ok) => {
+      if (!active || !ok) return
+      for (const channel of channels) channel.subscribe()
+      messagesChannel.subscribe()
+    })
 
     return () => {
+      active = false
       if (refreshTimer) clearTimeout(refreshTimer)
       window.removeEventListener(CONVERSATION_THREAD_OPENED_EVENT, onThreadOpened)
       window.removeEventListener(MESSAGES_INBOX_REFRESH_EVENT, onInboxRefresh)

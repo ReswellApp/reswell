@@ -1,8 +1,8 @@
 import * as ImagePicker from "expo-image-picker"
 import { Image } from "expo-image"
-import { Stack, useLocalSearchParams, useRouter } from "expo-router"
+import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from "expo-router"
 import { SymbolView } from "expo-symbols"
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import {
   ActivityIndicator,
   FlatList,
@@ -22,14 +22,24 @@ import { MessageComposerBar } from "@/components/message-composer-bar"
 import { ProfileCircle } from "@/components/profile-circle"
 import { ScreenSearchHeader } from "@/components/screen-search-header"
 import { SellUploadMenu } from "@/components/sell/sell-upload-menu"
-import { fetchConversation, messageAttachmentUrl, sendConversationMediaMessage, sendConversationMessage } from "@/lib/api"
+import { fetchConversation, fetchConversationMessagesSince, messageAttachmentUrl, sendConversationMediaMessage, sendConversationMessage } from "@/lib/api"
 import { uploadConversationImageAttachment } from "@/lib/message-media-upload"
 import { useAuth } from "@/lib/auth-context"
+import { setActiveMarketplaceConversation, subscribeMarketplaceThread } from "@/lib/marketplace-live"
 import { useInboxUnreadReload } from "@/lib/inbox-unread-count"
 import { useAccountResource } from "@/lib/use-account-resource"
 import { fontFamily, useReswellColors } from "@/theme"
 
 type ThreadRow = { kind: "day"; id: string; label: string } | { kind: "message"; message: MobileMessage }
+
+function mergeMobileMessages(current: MobileMessage[], incoming: MobileMessage[]): MobileMessage[] {
+  if (incoming.length === 0) return current
+  const byId = new Map(current.map((message) => [message.id, message]))
+  for (const message of incoming) byId.set(message.id, message)
+  return [...byId.values()].sort(
+    (a, b) => Date.parse(a.created_at) - Date.parse(b.created_at) || a.id.localeCompare(b.id),
+  )
+}
 
 export default function ConversationScreen() {
   const colors = useReswellColors()
@@ -52,6 +62,16 @@ export default function ConversationScreen() {
     [id],
   )
   const { data, error, loading, reload } = useAccountResource(load)
+  const [pendingMessages, setPendingMessages] = useState<MobileMessage[]>([])
+  const shownMessages = useMemo(
+    () => (data ? mergeMobileMessages(data.messages, pendingMessages) : pendingMessages),
+    [data, pendingMessages],
+  )
+  const latestCreatedAtRef = useRef<string | null>(null)
+  const shownMessagesRef = useRef(shownMessages)
+  shownMessagesRef.current = shownMessages
+  latestCreatedAtRef.current =
+    shownMessages.length > 0 ? shownMessages[shownMessages.length - 1]?.created_at ?? null : null
   const reloadUnread = useInboxUnreadReload()
   const listRef = useRef<FlatList<ThreadRow>>(null)
   const listViewportHeightRef = useRef(0)
@@ -74,13 +94,14 @@ export default function ConversationScreen() {
 
   useLayoutEffect(() => {
     stickToBottomRef.current = true
+    setPendingMessages([])
   }, [id])
 
   useLayoutEffect(() => {
     if (!data) return
     if (!stickToBottomRef.current) return
     scrollThreadToBottom(false)
-  }, [id, data, scrollThreadToBottom])
+  }, [id, data, shownMessages, scrollThreadToBottom])
 
   const onListLayout = useCallback(
     (event: LayoutChangeEvent) => {
@@ -119,8 +140,37 @@ export default function ConversationScreen() {
 
   useEffect(() => {
     if (!data) return
+    setPendingMessages((current) => {
+      const next = current.filter((message) => !data.messages.some((row) => row.id === message.id))
+      return next.length === current.length ? current : next
+    })
     reloadUnread()
   }, [data, reloadUnread])
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!accessToken || !id) return undefined
+      setActiveMarketplaceConversation(id)
+      const unsubscribe = subscribeMarketplaceThread(id, accessToken, () => {
+        const after = latestCreatedAtRef.current ?? "1970-01-01T00:00:00.000Z"
+        void fetchConversationMessagesSince(id, accessToken, after)
+          .then((delta) => {
+            const known = new Set(shownMessagesRef.current.map((message) => message.id))
+            const fresh = delta.messages.filter((message) => !known.has(message.id))
+            if (fresh.length > 0) {
+              stickToBottomRef.current = true
+              setPendingMessages((current) => mergeMobileMessages(current, fresh))
+            }
+            reloadUnread()
+          })
+          .catch(() => undefined)
+      })
+      return () => {
+        setActiveMarketplaceConversation(null)
+        unsubscribe()
+      }
+    }, [accessToken, id, reloadUnread]),
+  )
 
   return (
     <>
@@ -164,7 +214,7 @@ export default function ConversationScreen() {
           <FlatList
             ref={listRef}
             style={styles.listFlex}
-            data={threadRows(data.messages)}
+            data={threadRows(shownMessages)}
             keyExtractor={(item) => (item.kind === "day" ? item.id : item.message.id)}
             contentContainerStyle={styles.listContent}
             refreshing={loading}
@@ -226,9 +276,21 @@ export default function ConversationScreen() {
               setSending(true)
               setSendError(null)
               sendConversationMessage(token, id, body)
-                .then(() => {
+                .then((result) => {
                   setDraft("")
-                  reload()
+                  stickToBottomRef.current = true
+                  setPendingMessages((current) =>
+                    mergeMobileMessages(current, [
+                      {
+                        id: result.id,
+                        body: result.body,
+                        created_at: result.created_at,
+                        mine: true,
+                        order: null,
+                        attachment: null,
+                      },
+                    ]),
+                  )
                 })
                 .catch((cause: unknown) => {
                   setSendError(cause instanceof Error ? cause.message : "Could not send that message")

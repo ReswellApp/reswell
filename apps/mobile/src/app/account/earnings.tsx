@@ -171,7 +171,7 @@ function AvailableBalance({ data, onTransfer }: { data: MobileEarnings; onTransf
       {empty ? (
         <EarningsEmpty
           title="No available earnings"
-          body="When you make your first sale and the earnings are released, they will appear here."
+          body="When you make a sale and the earnings are released, they will appear here."
         />
       ) : null}
       {!empty ? <EarningsLineList items={data.ready_items} /> : null}

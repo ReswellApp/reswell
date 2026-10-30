@@ -37,6 +37,44 @@ function row(overrides: Partial<OwnedListingForEditRow> = {}): OwnedListingForEd
   }
 }
 
+describe("ownedListingRowToMobileSellEdit", () => {
+  it("keeps city/state when latitude and longitude are missing", () => {
+    const mapped = ownedListingRowToMobileSellEdit(
+      row({
+        latitude: null,
+        longitude: null,
+        city: "Santa Barbara",
+        state: "CA",
+      }),
+    )
+    assert.equal(mapped.ok, true)
+    if (!mapped.ok) return
+    assert.equal(mapped.draft.city, "Santa Barbara")
+    assert.equal(mapped.draft.state, "CA")
+    assert.equal(mapped.draft.location_lat, null)
+    assert.equal(mapped.draft.location_lng, null)
+    assert.equal(mapped.locationLabel, "Santa Barbara, CA")
+  })
+
+  it("caps listing images at the website sell max of twelve", () => {
+    const mapped = ownedListingRowToMobileSellEdit(
+      row({
+        listing_images: Array.from({ length: 14 }, (_, index) => ({
+          id: `44444444-4444-4444-8444-${String(index).padStart(12, "0")}`,
+          url: `https://cdn.example.com/${index}.jpg`,
+          thumbnail_url: `https://cdn.example.com/${index}-t.jpg`,
+          sort_order: index,
+        })),
+      }),
+    )
+    assert.equal(mapped.ok, true)
+    if (!mapped.ok) return
+    assert.equal(mapped.draft.images.length, 12)
+    assert.equal(mapped.draft.images[0]?.url, "https://cdn.example.com/0.jpg")
+    assert.equal(mapped.draft.images[11]?.url, "https://cdn.example.com/11.jpg")
+  })
+})
+
 describe("ownedListingRowToMobileSellEdit videos", () => {
   it("maps the first listing video onto the sell payload", () => {
     const mapped = ownedListingRowToMobileSellEdit(

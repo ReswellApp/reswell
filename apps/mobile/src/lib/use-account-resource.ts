@@ -9,8 +9,9 @@ export function useAccountResource<T>(load: (accessToken: string) => Promise<T>)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
-  const reload = useCallback(() => {
+  const reload = useCallback((options?: { silent?: boolean }) => {
     let cancelled = false
+    const silent = options?.silent === true
     if (!token) {
       setData(null)
       setError("Sign in required")
@@ -19,7 +20,7 @@ export function useAccountResource<T>(load: (accessToken: string) => Promise<T>)
         cancelled = true
       }
     }
-    setLoading(true)
+    if (!silent) setLoading(true)
     load(token)
       .then((next) => {
         if (!cancelled) {
@@ -28,19 +29,20 @@ export function useAccountResource<T>(load: (accessToken: string) => Promise<T>)
         }
       })
       .catch((cause: unknown) => {
-        if (!cancelled) {
-          setData(null)
-          setError(cause instanceof Error ? cause.message : "Unable to load")
-        }
+        if (cancelled || silent) return
+        setData(null)
+        setError(cause instanceof Error ? cause.message : "Unable to load")
       })
       .finally(() => {
-        if (!cancelled) setLoading(false)
+        if (!cancelled && !silent) setLoading(false)
       })
     return () => {
       cancelled = true
     }
   }, [load, token])
 
-  useFocusEffect(reload)
+  useFocusEffect(
+    useCallback(() => reload(), [reload]),
+  )
   return { data, error, loading, reload }
 }

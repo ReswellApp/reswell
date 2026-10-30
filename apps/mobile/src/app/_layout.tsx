@@ -65,6 +65,8 @@ function AppShell({ titleFont }: { titleFont: string | undefined }) {
       >
         <Stack.Screen name="index" options={{ headerLargeTitle: false }} />
         <Stack.Screen name="listing/[id]" options={{ title: "" }} />
+        <Stack.Screen name="sell/edit/[id]" options={{ headerShown: false }} />
+        <Stack.Screen name="listing/edit/[id]" options={{ headerShown: false }} />
         <Stack.Screen name="track/[id]/index" options={{ title: "Track package" }} />
         <Stack.Screen name="track/[id]/map" options={{ title: "Shipment map" }} />
         <Stack.Screen name="account/sales/[id]/label" options={{ title: "Shipping label" }} />

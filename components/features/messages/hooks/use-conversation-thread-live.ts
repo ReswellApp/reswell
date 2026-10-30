@@ -1,8 +1,8 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import type { SupabaseClient } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
+import { getActiveMarketplaceThread, setActiveMarketplaceThread } from "@/lib/messages/active-thread"
 import {
   MARKETPLACE_THREAD_MESSAGE_EVENT,
   MARKETPLACE_THREAD_REFRESH_EVENT,
@@ -10,6 +10,11 @@ import {
   marketplaceThreadChannel,
   marketplaceThreadRefreshSchema,
 } from "@/lib/messages/thread-broadcast"
+import { authorizeRealtime } from "@/lib/supabase/realtime-auth"
+import {
+  MARKETPLACE_LIVE_MESSAGE_EVENT,
+  type MarketplaceLiveMessageDetail,
+} from "@/lib/utils/unread-message-count-events"
 
 const RELOAD_DEBOUNCE_MS = 200
 
@@ -65,11 +70,7 @@ export function useConversationThreadLive({
       onMessageInsertRef.current(message)
     }
 
-    const channel = supabase.channel(marketplaceThreadChannel(conversationId), {
-      config: { private: true },
-    })
-
-    channel.on("broadcast", { event: MARKETPLACE_THREAD_MESSAGE_EVENT }, ({ payload }) => {
+    const appendBroadcast = (payload: unknown) => {
       const parsed = marketplaceThreadBroadcastMessageSchema.safeParse(payload)
       if (!parsed.success || parsed.data.conversation_id !== conversationId) return
       appendMessage({
@@ -81,6 +82,14 @@ export function useConversationThreadLive({
         offer_id: parsed.data.offer_id ?? null,
         metadata: parsed.data.metadata,
       })
+    }
+
+    const channel = supabase.channel(marketplaceThreadChannel(conversationId), {
+      config: { private: true },
+    })
+
+    channel.on("broadcast", { event: MARKETPLACE_THREAD_MESSAGE_EVENT }, ({ payload }) => {
+      appendBroadcast(payload)
     })
 
     channel.on("broadcast", { event: MARKETPLACE_THREAD_REFRESH_EVENT }, ({ payload }) => {
@@ -106,12 +115,43 @@ export function useConversationThreadLive({
         appendMessage(message)
       },
     )
-    fallback.subscribe()
 
-    void attachRealtimeAuth(supabase).finally(() => {
-      if (!active) return
-      channel.subscribe()
-    })
+    const onInboxLiveMessage = (event: Event) => {
+      const detail = (event as CustomEvent<MarketplaceLiveMessageDetail>).detail
+      if (!detail) return
+      appendBroadcast(detail)
+    }
+    window.addEventListener(MARKETPLACE_LIVE_MESSAGE_EVENT, onInboxLiveMessage)
+
+    setActiveMarketplaceThread(conversationId)
+
+    let subscribed = false
+    let starting = false
+    let retry = false
+    const subscribe = () => {
+      if (!active || subscribed) return
+      if (starting) {
+        retry = true
+        return
+      }
+      starting = true
+      void authorizeRealtime(supabase).then((ok) => {
+        starting = false
+        if (!active || subscribed) return
+        if (!ok) {
+          if (retry) {
+            retry = false
+            subscribe()
+          }
+          return
+        }
+        retry = false
+        subscribed = true
+        fallback.subscribe()
+        channel.subscribe()
+      })
+    }
+    subscribe()
 
     // The client router keeps this page for several minutes. Pull history once
     // on open. Later messages append; they do not run this again.
@@ -122,28 +162,22 @@ export function useConversationThreadLive({
     } = supabase.auth.onAuthStateChange((_event, session) => {
       const token = session?.access_token
       if (!token) return
-      void supabase.realtime.setAuth(token)
+      void supabase.realtime.setAuth(token).then(() => {
+        if (!active) return
+        subscribe()
+      })
     })
 
     return () => {
       active = false
       if (reloadTimer) clearTimeout(reloadTimer)
+      if (getActiveMarketplaceThread() === conversationId) setActiveMarketplaceThread(null)
+      window.removeEventListener(MARKETPLACE_LIVE_MESSAGE_EVENT, onInboxLiveMessage)
       subscription.unsubscribe()
       void supabase.removeChannel(channel)
       void supabase.removeChannel(fallback)
     }
   }, [conversationId, supabase])
-}
-
-async function attachRealtimeAuth(supabase: SupabaseClient): Promise<void> {
-  try {
-    const { data } = await supabase.auth.getSession()
-    const token = data.session?.access_token
-    if (!token) return
-    await supabase.realtime.setAuth(token)
-  } catch {
-    // The database insert listener can still append a bubble.
-  }
 }
 
 export function realtimeThreadMessage(value: unknown): RealtimeThreadMessage | null {

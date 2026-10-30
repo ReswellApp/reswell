@@ -72,6 +72,8 @@ import {
   UNREAD_MESSAGE_COUNT_ADJUST_EVENT,
   type UnreadMessageCountAdjustDetail,
 } from "@/lib/utils/unread-message-count-events"
+import { useMarketplaceInboxLive } from "@/components/features/messages/hooks/use-marketplace-inbox-live"
+import { authorizeRealtime } from "@/lib/supabase/realtime-auth"
 import { walletTotalBalanceUsd } from "@/lib/auth/header-wallet-sync"
 import { getOAuthAvatarUrl } from "@/lib/auth/profile-completion"
 import { getAuthUserWithRetry } from "@/lib/auth/get-user-with-retry"
@@ -1119,9 +1121,12 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     return () => window.removeEventListener("pageshow", onPageShow)
   }, [applyGuestHeader, supabase])
 
+  useMarketplaceInboxLive(authSessionReady ? user?.id ?? null : null)
+
   /** Messaging profile and conversations — one Realtime channel per signed-in tab. */
   useEffect(() => {
     if (!user?.id || !authSessionReady) return
+    let active = true
     const applyUnreadFromProfileRow = (row: unknown) => {
       if (!row || typeof row !== "object") return false
       const raw = (row as { unread_message_count?: unknown }).unread_message_count
@@ -1189,9 +1194,14 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         },
         scheduleUnreadRefresh,
       )
-      .subscribe()
+
+    void authorizeRealtime(supabase).then((ok) => {
+      if (!active || !ok) return
+      channel.subscribe()
+    })
 
     return () => {
+      active = false
       if (unreadRefreshTimer) clearTimeout(unreadRefreshTimer)
       void supabase.removeChannel(channel)
     }

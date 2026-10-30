@@ -138,7 +138,7 @@ export function SellPhotosStep({
     <View style={styles.stack}>
       <View style={styles.photosHeader}>
         <Text style={[styles.photosTitle, { color: colors.foreground, fontFamily: fontFamily.headline }]}>
-          Add photos (up to 8)
+          Add photos (up to {MAX_SELL_PHOTOS})
         </Text>
         <Pressable accessibilityRole="button" onPress={() => setGuideOpen(true)} hitSlop={8}>
           <Text style={[styles.tipsLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}>View photo guide</Text>
