@@ -128,13 +128,13 @@ export function ProfileReviewsSheet({
           <View style={styles.sheetTop}>
             <View style={styles.handle} />
             <Pressable
+              accessibilityRole="button"
               accessibilityLabel="Close reviews"
               onPress={close}
-              hitSlop={12}
+              hitSlop={8}
               style={styles.close}
-              pointerEvents="auto"
             >
-              <SymbolView name={{ ios: "xmark", android: "close", web: "close" }} size={16} tintColor={colors.foreground} />
+              <SymbolView name={{ ios: "xmark", android: "close", web: "close" }} size={22} tintColor={colors.foreground} />
             </Pressable>
           </View>
           <Text style={[styles.title, { color: colors.foreground, fontFamily: fontFamily.headline }]}>{title}</Text>
@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
   },
-  sheetTop: { alignItems: "center", paddingTop: 8, paddingHorizontal: 16 },
+  sheetTop: { alignItems: "center", minHeight: 52, paddingTop: 8, paddingHorizontal: 16, zIndex: 2 },
   handle: {
     width: 36,
     height: 5,
@@ -259,13 +259,13 @@ const styles = StyleSheet.create({
   close: {
     position: "absolute",
     top: 4,
-    right: 12,
-    width: 32,
-    height: 32,
+    right: 8,
+    width: 44,
+    height: 44,
     alignItems: "center",
     justifyContent: "center",
   },
-  title: { fontSize: 18, fontWeight: "700", textAlign: "center", paddingHorizontal: 40, marginBottom: 8 },
+  title: { fontSize: 18, fontWeight: "700", textAlign: "center", paddingHorizontal: 56, marginBottom: 8 },
   summary: {
     flexDirection: "row",
     alignItems: "center",

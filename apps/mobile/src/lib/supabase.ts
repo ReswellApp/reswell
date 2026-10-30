@@ -1,6 +1,6 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js"
 import * as SecureStore from "expo-secure-store"
-import { Platform } from "react-native"
+import { AppState, Platform } from "react-native"
 import { publicSupabaseAnonKey, publicSupabaseUrl } from "@/lib/public-env"
 
 const CHUNK = 1800
@@ -92,5 +92,15 @@ export function getSupabase(): SupabaseClient | null {
       flowType: "pkce",
     },
   })
+  // React Native has no document visibility events, so the access token
+  // otherwise stays in memory after it expires or the app returns from background.
+  if (Platform.OS !== "web") {
+    AppState.addEventListener("change", (state) => {
+      if (!client) return
+      if (state === "active") void client.auth.startAutoRefresh()
+      else void client.auth.stopAutoRefresh()
+    })
+    void client.auth.startAutoRefresh()
+  }
   return client
 }

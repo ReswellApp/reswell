@@ -55,7 +55,7 @@ export function PushNotificationsProvider({ children }: { children: ReactNode })
 
   useEffect(() => {
     if (Platform.OS === "web" || !accessToken) return
-    void registerPushTokenIfPermitted(accessToken)
+    void registerPushTokenIfPermitted(accessToken).catch(() => undefined)
   }, [accessToken])
 
   useEffect(() => {

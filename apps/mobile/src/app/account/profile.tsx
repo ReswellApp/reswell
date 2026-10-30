@@ -14,7 +14,6 @@ import {
   changeProfilePassword,
   fetchMyListings,
   fetchProfileSettings,
-  sendPushTest,
   removeProfileAvatar,
   removeProfileBanner,
   removeProfileTileBanner,
@@ -720,9 +719,6 @@ function NotificationsTab({ settings, onSaved }: { settings: MobileProfileSettin
   const [smsEnabled, setSmsEnabled] = useState(settings.message_sms_opt_in)
   const [topics, setTopics] = useState(pushTopicsFromSettings(settings))
   const [message, setMessage] = useState<string | null>(null)
-  const [messageOk, setMessageOk] = useState(false)
-  const [testBusy, setTestBusy] = useState(false)
-  const pushEnabled = Object.values(topics).some(Boolean)
 
   useEffect(() => {
     setTopics(pushTopicsFromSettings(settings))
@@ -750,7 +746,6 @@ function NotificationsTab({ settings, onSaved }: { settings: MobileProfileSettin
               const turningFirstOn = next && !Object.values(topics).some(Boolean)
               setTopics((current) => ({ ...current, [row.key]: next }))
               setMessage(null)
-              setMessageOk(false)
               const save = async () => {
                 if (turningFirstOn) {
                   const permission = await requestPushPermissionAndRegister(token)
@@ -767,32 +762,6 @@ function NotificationsTab({ settings, onSaved }: { settings: MobileProfileSettin
           />
         </View>
       ))}
-      {pushEnabled ? (
-        <Pressable
-          onPress={() => {
-            const token = session?.access_token
-            if (!token || testBusy) return
-            setTestBusy(true)
-            setMessage(null)
-            setMessageOk(false)
-            sendPushTest(token)
-              .then(() => {
-                setMessageOk(true)
-                setMessage("Test alert sent. Check this iPhone.")
-              })
-              .catch((cause: unknown) => {
-                setMessageOk(false)
-                setMessage(cause instanceof Error ? cause.message : "Unable to send a test alert")
-              })
-              .finally(() => setTestBusy(false))
-          }}
-          style={[styles.outline, { borderColor: colors.border, marginTop: 8 }]}
-        >
-          <Text style={[styles.link, { color: colors.foreground, fontFamily: fontFamily.text }]}>
-            {testBusy ? "Sending…" : "Send a test alert"}
-          </Text>
-        </Pressable>
-      ) : null}
       <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: fontFamily.text }]}>Messages</Text>
       <View style={[styles.card, styles.notifyRow, { borderColor: colors.border }]}>
         <View style={styles.notifyCopy}>
@@ -806,7 +775,6 @@ function NotificationsTab({ settings, onSaved }: { settings: MobileProfileSettin
             if (!token) return
             setSmsEnabled(next)
             setMessage(null)
-            setMessageOk(false)
             saveProfileSettings(token, { display_name: settings.display_name, message_sms_opt_in: next })
               .then(() => onSaved())
               .catch((cause: unknown) => {
@@ -817,7 +785,7 @@ function NotificationsTab({ settings, onSaved }: { settings: MobileProfileSettin
           />
         </View>
       {message ? (
-        <Text style={[styles.message, { color: messageOk ? colors.foreground : colors.destructive, fontFamily: fontFamily.text }]}>
+        <Text style={[styles.message, { color: colors.destructive, fontFamily: fontFamily.text }]}>
           {message}
         </Text>
       ) : null}

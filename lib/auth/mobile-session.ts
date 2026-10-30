@@ -29,8 +29,12 @@ export async function readMobileSession(request: Request): Promise<MobileSession
 
   try {
     const supabase = createUserJwtSupabaseClient(accessToken)
-    const { data, error } = await supabase.auth.getUser()
+    const { data, error } = await supabase.auth.getUser(accessToken)
     if (error || !data.user) {
+      console.error("[mobile-api] bearer rejected", {
+        timestamp: new Date().toISOString(),
+        message: error?.message ?? "no user",
+      })
       return { ok: false, status: 401, error: "Sign in required" }
     }
     return { ok: true, user: data.user, supabase }

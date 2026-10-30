@@ -3,6 +3,7 @@ import { isDevice } from "expo-device"
 import { Platform } from "react-native"
 import { notifyCartChanged } from "@/lib/cart-count-events"
 import { publicApiUrl } from "@/lib/public-env"
+import { getSupabase } from "@/lib/supabase"
 import type { SellDraft, SellPhoto, SellVideo } from "@/lib/sell-flow"
 import {
   mobileCartResultSchema,
@@ -334,7 +335,37 @@ async function putJson(path: string, accessToken: string, payload: unknown): Pro
   return body.data
 }
 
-async function getJson(path: string, accessToken?: string | null, payload?: unknown): Promise<unknown> {
+function responseErrorMessage(body: unknown, fallback: string): string {
+  return body && typeof body === "object" && "error" in body && typeof body.error === "string"
+    ? body.error
+    : fallback
+}
+
+let refreshInFlight: Promise<string | null> | null = null
+
+/** One shared refresh so parallel 401s do not rotate the refresh token twice. */
+function refreshedAccessToken(stale: string): Promise<string | null> {
+  if (!refreshInFlight) {
+    refreshInFlight = (async () => {
+      const supabase = getSupabase()
+      if (!supabase) return null
+      const { data, error } = await supabase.auth.refreshSession()
+      const next = data.session?.access_token ?? null
+      if (error || !next || next === stale) return null
+      return next
+    })().finally(() => {
+      refreshInFlight = null
+    })
+  }
+  return refreshInFlight
+}
+
+async function getJson(
+  path: string,
+  accessToken?: string | null,
+  payload?: unknown,
+  attempt = 0,
+): Promise<unknown> {
   const headers: Record<string, string> = { Accept: "application/json" }
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`
   if (payload !== undefined) headers["Content-Type"] = "application/json"
@@ -345,10 +376,11 @@ async function getJson(path: string, accessToken?: string | null, payload?: unkn
   })
   const body: unknown = await response.json()
   if (!response.ok) {
-    const message =
-      body && typeof body === "object" && "error" in body && typeof body.error === "string"
-        ? body.error
-        : "Request failed"
+    const message = responseErrorMessage(body, "Request failed")
+    if (response.status === 401 && accessToken && attempt === 0 && message === "Sign in required") {
+      const next = await refreshedAccessToken(accessToken)
+      if (next) return getJson(path, next, payload, 1)
+    }
     throw new Error(message)
   }
   if (!body || typeof body !== "object" || !("data" in body)) {
