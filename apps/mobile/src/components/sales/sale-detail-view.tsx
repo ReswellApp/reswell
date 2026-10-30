@@ -4,7 +4,6 @@ import { SymbolView } from "expo-symbols"
 import { useState, type ComponentProps } from "react"
 import {
   ActivityIndicator,
-  Linking,
   Pressable,
   Share,
   StyleSheet,
@@ -13,9 +12,12 @@ import {
   View,
 } from "react-native"
 import type { MobilePurchaseStatusTone, MobileSaleDetail } from "@reswell/api-contract"
-import { fetchSaleLabel, verifySalePickup } from "@/lib/api"
+import { PartyProfileStrip } from "@/components/party-profile-strip"
+import { verifySalePickup } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
 import { formatPurchaseDate } from "@/lib/purchase-display"
+import { saleLabelHref } from "@/lib/sale-label"
+import { trackPackageHref } from "@/lib/track-package"
 import { fontFamily, useReswellColors } from "@/theme"
 
 const STATUS_BANNER: Record<MobilePurchaseStatusTone, { backgroundColor: string; color: string }> = {
@@ -25,7 +27,7 @@ const STATUS_BANNER: Record<MobilePurchaseStatusTone, { backgroundColor: string;
   neutral: { backgroundColor: "#F8FAFC", color: "#1E293B" },
 }
 
-function ActionRow({
+function ActionBlock({
   symbol,
   label,
   onPress,
@@ -36,11 +38,16 @@ function ActionRow({
 }) {
   const colors = useReswellColors()
   return (
-    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label} style={styles.action}>
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      style={[styles.track, { backgroundColor: "rgba(127, 157, 213, 0.15)" }]}
+    >
       <View style={[styles.actionIcon, { backgroundColor: colors.primary }]}>
-        <SymbolView name={symbol} size={14} tintColor={colors.primaryForeground} />
+        <SymbolView name={symbol} size={16} tintColor={colors.primaryForeground} />
       </View>
-      <Text style={[styles.actionLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}>{label}</Text>
+      <Text style={[styles.trackLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}>{label}</Text>
       <SymbolView name={{ ios: "chevron.right", android: "chevron_right", web: "chevron_right" }} size={16} tintColor={colors.muted} />
     </Pressable>
   )
@@ -57,9 +64,6 @@ export function SaleDetailView({ sale, onVerified }: { sale: MobileSaleDetail; o
   const [code, setCode] = useState("")
   const [verifying, setVerifying] = useState(false)
   const [verifyError, setVerifyError] = useState<string | null>(null)
-  const [labelError, setLabelError] = useState<string | null>(null)
-  const [openingLabel, setOpeningLabel] = useState(false)
-
   const openListing = (listingId: string | null, listingSlug: string | null) => {
     const id = listingSlug || listingId
     if (!id) return
@@ -88,16 +92,8 @@ export function SaleDetailView({ sale, onVerified }: { sale: MobileSaleDetail; o
   }
 
   const openLabel = () => {
-    const token = session?.access_token
-    if (!token || openingLabel) return
-    setOpeningLabel(true)
-    setLabelError(null)
-    void fetchSaleLabel(token, sale.id)
-      .then((label) => Linking.openURL(label.url))
-      .catch((cause: unknown) => {
-        setLabelError(cause instanceof Error ? cause.message : "Unable to open the shipping label")
-      })
-      .finally(() => setOpeningLabel(false))
+    const href = saleLabelHref(sale.id)
+    if (href) router.push(href)
   }
 
   return (
@@ -250,18 +246,14 @@ export function SaleDetailView({ sale, onVerified }: { sale: MobileSaleDetail; o
       ) : null}
 
       {sale.track_url ? (
-        <Pressable
-          onPress={() => void Linking.openURL(sale.track_url ?? "")}
-          accessibilityRole="link"
-          accessibilityLabel="Track your order"
-          style={[styles.track, { backgroundColor: "rgba(127, 157, 213, 0.15)" }]}
-        >
-          <View style={[styles.actionIcon, { backgroundColor: colors.primary }]}>
-            <SymbolView name={{ ios: "truck.box", android: "local_shipping", web: "local_shipping" }} size={16} tintColor={colors.primaryForeground} />
-          </View>
-          <Text style={[styles.trackLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}>Track your order</Text>
-          <SymbolView name={{ ios: "chevron.right", android: "chevron_right", web: "chevron_right" }} size={16} tintColor={colors.muted} />
-        </Pressable>
+        <ActionBlock
+          symbol={{ ios: "truck.box", android: "local_shipping", web: "local_shipping" }}
+          label="Track your order"
+          onPress={() => {
+            const href = trackPackageHref(sale.id)
+            if (href) router.push(href)
+          }}
+        />
       ) : null}
 
       {sale.can_verify_pickup ? (
@@ -321,14 +313,11 @@ export function SaleDetailView({ sale, onVerified }: { sale: MobileSaleDetail; o
       ) : null}
 
       {sale.label_available ? (
-        <ActionRow
+        <ActionBlock
           symbol={{ ios: "doc.text", android: "description", web: "description" }}
-          label={openingLabel ? "Opening label…" : "View shipping label"}
+          label="View shipping label"
           onPress={openLabel}
         />
-      ) : null}
-      {labelError ? (
-        <Text style={[styles.refund, { color: colors.destructive, fontFamily: fontFamily.text }]}>{labelError}</Text>
       ) : null}
 
       {sale.can_request_support ? (
@@ -345,14 +334,19 @@ export function SaleDetailView({ sale, onVerified }: { sale: MobileSaleDetail; o
 
       <View style={styles.block}>
         <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: fontFamily.headline }]}>Buyer</Text>
-        <Text style={[styles.buyerName, { color: colors.foreground, fontFamily: fontFamily.text }]}>{sale.buyer_name}</Text>
-        {sale.conversation_id ? (
-          <ActionRow
-            symbol={{ ios: "bubble.left", android: "chat_bubble", web: "chat_bubble" }}
-            label="Message buyer"
-            onPress={() => router.push({ pathname: "/account/messages/[id]", params: { id: sale.conversation_id ?? "" } })}
+        {sale.buyer ? (
+          <PartyProfileStrip
+            party={sale.buyer}
+            messageLabel="Message buyer"
+            onMessage={
+              sale.conversation_id
+                ? () => router.push({ pathname: "/account/messages/[id]", params: { id: sale.conversation_id ?? "" } })
+                : undefined
+            }
           />
-        ) : null}
+        ) : (
+          <Text style={[styles.buyerName, { color: colors.foreground, fontFamily: fontFamily.text }]}>{sale.buyer_name}</Text>
+        )}
         {sale.is_pickup && sale.address_lines.length === 0 ? (
           <Text style={[styles.verifyHint, { color: colors.muted, fontFamily: fontFamily.text }]}>
             Local pickup. Coordinate a time and place with the buyer in messages.
@@ -438,7 +432,5 @@ const styles = StyleSheet.create({
   helpLabel: { fontSize: 14, fontWeight: "600" },
   block: { gap: 8, paddingTop: 4 },
   buyerName: { fontSize: 16, fontWeight: "700" },
-  action: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10 },
   actionIcon: { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  actionLabel: { flex: 1, fontSize: 14, fontWeight: "600" },
 })

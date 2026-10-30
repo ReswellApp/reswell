@@ -1,6 +1,5 @@
 import type { Session } from "@supabase/supabase-js"
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react"
-import { signInWithAppleNative } from "@/lib/apple-sign-in"
 import { signInWithGoogleNative, signOutGoogleNative } from "@/lib/google-sign-in"
 import { unregisterPushToken } from "@/lib/push-token"
 import { getSupabase } from "@/lib/supabase"
@@ -19,7 +18,6 @@ type AuthContextValue = {
   signIn: (email: string, password: string) => Promise<string | null>
   signUp: (input: SignUpInput) => Promise<string | null>
   signInWithGoogle: () => Promise<string | null>
-  signInWithApple: () => Promise<string | null>
   signOut: () => Promise<void>
 }
 
@@ -82,11 +80,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       async signInWithGoogle() {
         if (!supabase) return "Supabase is not configured in this build."
         const message = await signInWithGoogleNative(supabase)
-        return message || null
-      },
-      async signInWithApple() {
-        if (!supabase) return "Supabase is not configured in this build."
-        const message = await signInWithAppleNative(supabase)
         return message || null
       },
       async signOut() {

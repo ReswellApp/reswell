@@ -49,7 +49,7 @@ export function ThreadEventCard({
   return (
     <article
       className={cn(
-        "w-full max-w-[min(100%,20rem)] overflow-hidden rounded-2xl border border-border/50 bg-card text-foreground sm:max-w-[min(100%,22rem)]",
+        "w-full max-w-[min(100%,20rem)] overflow-hidden rounded-2xl border-2 border-foreground bg-card text-foreground sm:max-w-[min(100%,22rem)]",
         className,
       )}
     >

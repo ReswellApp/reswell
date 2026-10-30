@@ -167,9 +167,15 @@ function tabBarHidden(pathname: string): boolean {
   if (!isAccountTabRoot(pathname) && pathname.startsWith("/account/")) return true
   return (
     pathname.startsWith("/listing") ||
+    pathname.startsWith("/track") ||
     pathname.startsWith("/profile") ||
     pathname.startsWith("/seller-resources") ||
     pathname.startsWith("/sellers") ||
+    pathname.startsWith("/help") ||
+    pathname === "/safety" ||
+    pathname === "/protection-policy" ||
+    pathname === "/shipping-estimator" ||
+    pathname.startsWith("/dropoff") ||
     pathname === "/sell" ||
     pathname.startsWith("/sell/") ||
     pathname === "/sign-in"
@@ -183,9 +189,13 @@ function tabBarHiddenForRouteName(name: string): boolean {
   if (name === "account/index") return false
   if (name.startsWith("account/")) return true
   if (name.startsWith("listing")) return true
+  if (name.startsWith("track")) return true
   if (name.startsWith("profile")) return true
   if (name.startsWith("seller-resources")) return true
   if (name.startsWith("sellers")) return true
+  if (name.startsWith("help")) return true
+  if (name === "safety" || name === "protection-policy" || name === "shipping-estimator") return true
+  if (name.startsWith("dropoff")) return true
   return false
 }
 

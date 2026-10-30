@@ -45,6 +45,13 @@ describe("pushTapRoute", () => {
     assert.deepEqual(pushTapRoute({ href: "/messages/conv-9" }), { kind: "messages", id: "conv-9" })
   })
 
+  it("opens the native tracker from a /track href", () => {
+    assert.deepEqual(
+      pushTapRoute({ href: "/track/44444444-4444-4444-8444-444444444444" }),
+      { kind: "track", id: "44444444-4444-4444-8444-444444444444" },
+    )
+  })
+
   it("opens the listing from an offer alert", () => {
     const [push] = pushDeliveriesFromPlanned([offerDelivery()])
     assert.ok(push)

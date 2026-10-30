@@ -3,7 +3,6 @@ import { Stack, useRouter } from "expo-router"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import {
   ActivityIndicator,
-  Linking,
   Pressable,
   StyleSheet,
   Text,
@@ -19,7 +18,7 @@ import {
 } from "@/components/screen-shell"
 import { useAuth } from "@/lib/auth-context"
 import { fetchSellerResource } from "@/lib/api"
-import { publicSiteUrl } from "@/lib/public-env"
+import { pushInAppHref } from "@/lib/in-app-href"
 import { fontFamily, useReswellColors } from "@/theme"
 
 type Props = {
@@ -38,12 +37,6 @@ function listingIdFromHref(href: string | null | undefined): string | null {
   if (!href) return null
   const match = href.match(/^\/(?:listings?|l)\/([^/?#]+)/)
   return match?.[1] ? decodeURIComponent(match[1]) : null
-}
-
-function absoluteWebUrl(href: string): string {
-  if (href.startsWith("http://") || href.startsWith("https://")) return href
-  const base = publicSiteUrl().replace(/\/$/, "")
-  return `${base}${href.startsWith("/") ? href : `/${href}`}`
 }
 
 function heroBlock(page: MobileSellerResource): { title: string; lead: string } {
@@ -111,7 +104,7 @@ export function SellerResourceDocument({ slug }: Props) {
         router.push("/sell/new")
         return
       }
-      void Linking.openURL(absoluteWebUrl(href))
+      pushInAppHref(router, href)
     },
     [router],
   )

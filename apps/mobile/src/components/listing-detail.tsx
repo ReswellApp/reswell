@@ -1,13 +1,13 @@
 import { useRouter } from "expo-router"
 import { SymbolView } from "expo-symbols"
-import { Linking, StyleSheet, Text, View } from "react-native"
+import { StyleSheet, Text, View } from "react-native"
 import type { MobileListingDetail } from "@reswell/api-contract"
 import { ListingDeliveryCaption } from "@/components/listing-delivery-caption"
 import { ListingFulfillment } from "@/components/listing-fulfillment"
 import { ListingSellerPanel } from "@/components/listing-seller-panel"
 import { setCartItem } from "@/lib/api"
 import { useAuthGate } from "@/lib/auth-gate"
-import { publicApiUrl } from "@/lib/public-env"
+import { helpArticleHref } from "@/lib/in-app-href"
 import { fontFamily, useReswellColors } from "@/theme"
 
 export function ListingDetail({ listing }: { listing: MobileListingDetail }) {
@@ -99,7 +99,7 @@ function KlarnaLine({ listingId }: { listingId: string }) {
         Klarna
       </Text>
       .{" "}
-      <Text style={styles.link} onPress={() => void Linking.openURL(`${publicApiUrl()}/help/buying/how-do-i-pay`)}>
+      <Text style={styles.link} onPress={() => router.push(helpArticleHref("buying", "how-do-i-pay"))}>
         Learn more
       </Text>
     </Text>

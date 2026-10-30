@@ -118,6 +118,9 @@ describe("mobile purchases", () => {
     assert.equal(detail.address_name, "Hayden Garfield")
     assert.ok(detail.address_lines.some((line) => line.includes("915 DE LA VINA ST")))
     assert.equal(detail.seller_handle, "terramar-surf")
+    assert.equal(detail.seller.name, "TERRAMAR SURF")
+    assert.equal(detail.seller.seller_slug, "terramar-surf")
+    assert.equal(detail.seller.review_count, 0)
     assert.equal(detail.can_review, false)
     assert.equal(
       detail.track_url,

@@ -65,6 +65,16 @@ function AppShell({ titleFont }: { titleFont: string | undefined }) {
       >
         <Stack.Screen name="index" options={{ headerLargeTitle: false }} />
         <Stack.Screen name="listing/[id]" options={{ title: "" }} />
+        <Stack.Screen name="track/[id]/index" options={{ title: "Track package" }} />
+        <Stack.Screen name="track/[id]/map" options={{ title: "Shipment map" }} />
+        <Stack.Screen name="account/sales/[id]/label" options={{ title: "Shipping label" }} />
+        <Stack.Screen name="help/index" options={{ title: "Help Center" }} />
+        <Stack.Screen name="help/[topic]/index" options={{ title: "Help" }} />
+        <Stack.Screen name="help/[topic]/[slug]" options={{ title: "Help" }} />
+        <Stack.Screen name="safety" options={{ title: "Safety tips" }} />
+        <Stack.Screen name="protection-policy" options={{ title: "Purchase Protection" }} />
+        <Stack.Screen name="shipping-estimator" options={{ title: "Shipping estimator" }} />
+        <Stack.Screen name="dropoff/santa-barbara" options={{ title: "Santa Barbara drop-off" }} />
         <Stack.Screen name="category/[slug]" options={{ title: "" }} />
         <Stack.Screen name="profile/[slug]" options={{ title: "" }} />
         <Stack.Screen name="sign-in" options={{ title: "Sign in", presentation: "modal" }} />

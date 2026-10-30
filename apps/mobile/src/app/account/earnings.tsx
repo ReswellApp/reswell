@@ -2,12 +2,12 @@ import { Image } from "expo-image"
 import { useRouter } from "expo-router"
 import { SymbolView } from "expo-symbols"
 import { useCallback, useState, type ReactNode } from "react"
-import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import type { MobileEarnings } from "@reswell/api-contract"
 import { DashboardPageGate } from "@/components/dashboard-page-gate"
 import { EarningsTransfer } from "@/components/earnings-transfer"
 import { fetchEarnings } from "@/lib/api"
-import { publicSiteUrl } from "@/lib/public-env"
+import { helpTopicHref } from "@/lib/in-app-href"
 import { useAccountResource } from "@/lib/use-account-resource"
 import { fontFamily, useReswellColors } from "@/theme"
 
@@ -66,7 +66,7 @@ export default function AccountEarningsScreen() {
 
 function EarningsMenu({ data, onOpen }: { data: MobileEarnings; onOpen: (pane: EarningsPane) => void }) {
   const colors = useReswellColors()
-  const faqUrl = `${publicSiteUrl().replace(/\/$/, "")}/help/selling`
+  const router = useRouter()
 
   return (
     <View>
@@ -94,7 +94,7 @@ function EarningsMenu({ data, onOpen }: { data: MobileEarnings; onOpen: (pane: E
       <EarningsLink
         icon={<SymbolView name={{ ios: "dollarsign", android: "attach_money", web: "attach_money" }} size={16} tintColor={colors.background} />}
         title="Earnings FAQ"
-        onPress={() => void Linking.openURL(faqUrl)}
+        onPress={() => router.push(helpTopicHref("selling"))}
       />
       <View style={[styles.rule, { backgroundColor: colors.border }]} />
     </View>

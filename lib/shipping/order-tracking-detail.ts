@@ -1,6 +1,23 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { z } from "zod"
 
+const latitudeSchema = z
+  .number()
+  .finite()
+  .gte(-90)
+  .lte(90)
+  .nullable()
+  .optional()
+  .catch(undefined)
+const longitudeSchema = z
+  .number()
+  .finite()
+  .gte(-180)
+  .lte(180)
+  .nullable()
+  .optional()
+  .catch(undefined)
+
 const trackingEventSchema = z.object({
   occurred_at: z.string().optional(),
   description: z.string().nullable().optional(),
@@ -8,6 +25,8 @@ const trackingEventSchema = z.object({
   state_province: z.string().nullable().optional(),
   postal_code: z.string().nullable().optional(),
   country_code: z.string().nullable().optional(),
+  latitude: latitudeSchema,
+  longitude: longitudeSchema,
 })
 
 const MAX_TRACKING_EVENTS = 25
@@ -26,7 +45,15 @@ export type ShipEngineTrackingDataInput = {
     state_province?: string | null
     postal_code?: string | null
     country_code?: string | null
+    latitude?: number | null
+    longitude?: number | null
   }>
+}
+
+function parseCoord(value: unknown, min: number, max: number): number | null {
+  const n = typeof value === "number" ? value : typeof value === "string" && value.trim() ? Number(value) : NaN
+  if (!Number.isFinite(n) || n < min || n > max) return null
+  return n
 }
 
 export const orderTrackingDetailSchema = z.object({
@@ -59,6 +86,8 @@ export function buildOrderTrackingDetailFromShipEngineData(
     state_province: e.state_province ?? null,
     postal_code: e.postal_code ?? null,
     country_code: e.country_code ?? null,
+    latitude: parseCoord(e.latitude, -90, 90),
+    longitude: parseCoord(e.longitude, -180, 180),
   }))
 
   return {

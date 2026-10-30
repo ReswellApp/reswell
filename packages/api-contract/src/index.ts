@@ -1273,6 +1273,14 @@ export type MobileProfileEmail = z.infer<typeof mobileProfileEmailSchema>
 export type MobileProfileSignInAction = z.infer<typeof mobileProfileSignInActionSchema>
 export type MobileMe = z.infer<typeof mobileMeSchema>
 export type MobileListingCardSeller = z.infer<typeof mobileListingCardSellerSchema>
+
+/** Buyer or seller on a sale/purchase. Same identity strip as listing “Meet the seller”. */
+export const mobileOrderPartySchema = mobileListingCardSellerSchema.extend({
+  rating_average: z.number().min(0).max(5),
+  review_count: z.number().int().nonnegative(),
+})
+
+export type MobileOrderParty = z.infer<typeof mobileOrderPartySchema>
 export type MobileListingCard = z.infer<typeof mobileListingCardSchema>
 export type MobileListingVideo = z.infer<typeof mobileListingVideoSchema>
 export type MobileListingDetail = z.infer<typeof mobileListingDetailSchema>
@@ -1967,6 +1975,7 @@ export const mobilePurchaseDetailSchema = z.object({
   hide_review_prompt: z.boolean(),
   existing_review: mobilePurchaseReviewSchema.nullable(),
   review_from_seller: mobilePurchaseReviewSchema.nullable(),
+  seller: mobileOrderPartySchema,
 })
 
 export const mobileSaleSchema = mobileOrderSchema.extend({
@@ -2048,6 +2057,7 @@ export const mobileSaleDetailSchema = mobileSaleSchema.extend({
   delivery_badge_label: z.string().nullable(),
   payout_badge_label: z.string().nullable(),
   can_request_support: z.boolean(),
+  buyer: mobileOrderPartySchema.nullable(),
 })
 
 export const mobileSaleVerifyPickupBodySchema = z.object({
@@ -2062,11 +2072,174 @@ export const mobileSaleLabelSchema = z.object({
   url: z.string().url(),
 })
 
+export const mobileTrackPackageParamSchema = z.object({
+  id: z.string().uuid(),
+})
+
+export const mobileTrackEventSchema = z.object({
+  occurred_at: z.string().nullable(),
+  description: z.string(),
+  location: z.string().nullable(),
+})
+
+export const mobileTrackMapSchema = z.object({
+  image_url: z.string().nullable(),
+  open_url: z.string().nullable(),
+  summary: z.string().nullable(),
+})
+
+/** Public tracker (`/track/{orderId}`). UUID is the access key; scans only. */
+export const mobileTrackPackageSchema = z.object({
+  order_id: z.string().uuid(),
+  order_number: z.string(),
+  listing_title: z.string(),
+  tracking_number: z.string(),
+  carrier_label: z.string(),
+  status_label: z.string(),
+  status_tone: mobilePurchaseStatusToneSchema,
+  status_description: z.string().nullable(),
+  exception_description: z.string().nullable(),
+  estimated_delivery_at: z.string().nullable(),
+  delivered_at: z.string().nullable(),
+  updated_at: z.string().nullable(),
+  live: z.boolean(),
+  map: mobileTrackMapSchema.nullable(),
+  events: z.array(mobileTrackEventSchema),
+})
+
 export type MobileSaleDetail = z.infer<typeof mobileSaleDetailSchema>
 export type MobileSaleDetailItem = z.infer<typeof mobileSaleDetailItemSchema>
 export type MobileSaleListItem = z.infer<typeof mobileSaleListItemSchema>
 export type MobileSales = z.infer<typeof mobileSalesSchema>
 export type MobileSaleVerifyPickup = z.infer<typeof mobileSaleVerifyPickupSchema>
+export type MobileTrackEvent = z.infer<typeof mobileTrackEventSchema>
+export type MobileTrackMap = z.infer<typeof mobileTrackMapSchema>
+export type MobileTrackPackage = z.infer<typeof mobileTrackPackageSchema>
+
+/** Same topic ids as the website Help Center. */
+export const MOBILE_HELP_TOPIC_IDS = ["buying", "selling", "accounts"] as const
+export type MobileHelpTopicId = (typeof MOBILE_HELP_TOPIC_IDS)[number]
+
+export const mobileHelpArticleRefSchema = z.object({
+  topic_id: z.enum(MOBILE_HELP_TOPIC_IDS),
+  slug: z.string().min(1),
+  title: z.string(),
+  description: z.string().nullable(),
+})
+
+export const mobileHelpTopicSummarySchema = z.object({
+  id: z.enum(MOBILE_HELP_TOPIC_IDS),
+  label: z.string(),
+  description: z.string(),
+  article_count: z.number().int().nonnegative(),
+})
+
+/** Help Center hub — `/help`. Optional `q` filters `results`. */
+export const mobileHelpHubSchema = z.object({
+  title: z.string(),
+  description: z.string(),
+  topics: z.array(mobileHelpTopicSummarySchema),
+  featured: z.array(mobileHelpArticleRefSchema),
+  results: z.array(mobileHelpArticleRefSchema),
+})
+
+export const mobileHelpTopicGroupSchema = z.object({
+  title: z.string(),
+  articles: z.array(mobileHelpArticleRefSchema),
+})
+
+export const mobileHelpTopicSectionSchema = z.object({
+  title: z.string(),
+  groups: z.array(mobileHelpTopicGroupSchema),
+})
+
+export const mobileHelpTopicSchema = z.object({
+  id: z.enum(MOBILE_HELP_TOPIC_IDS),
+  label: z.string(),
+  description: z.string(),
+  sections: z.array(mobileHelpTopicSectionSchema),
+})
+
+export const mobileHelpArticleSchema = z.object({
+  topic_id: z.enum(MOBILE_HELP_TOPIC_IDS),
+  slug: z.string().min(1),
+  title: z.string(),
+  description: z.string(),
+  quick_answer: z.string(),
+  sections: z.array(z.object({ heading: z.string().nullable(), text: z.string() })),
+  related: z.array(mobileHelpArticleRefSchema),
+})
+
+export type MobileHelpArticleRef = z.infer<typeof mobileHelpArticleRefSchema>
+export type MobileHelpHub = z.infer<typeof mobileHelpHubSchema>
+export type MobileHelpTopic = z.infer<typeof mobileHelpTopicSchema>
+export type MobileHelpArticle = z.infer<typeof mobileHelpArticleSchema>
+
+export const MOBILE_INFO_PAGE_SLUGS = ["safety", "protection-policy", "dropoff-santa-barbara"] as const
+export type MobileInfoPageSlug = (typeof MOBILE_INFO_PAGE_SLUGS)[number]
+
+/** Static policy / landing pages — same section kinds as seller resources. */
+export const mobileInfoPageSchema = z.object({
+  slug: z.enum(MOBILE_INFO_PAGE_SLUGS),
+  title: z.string(),
+  description: z.string(),
+  cta_label: z.string().nullable(),
+  cta_href: z.string().nullable(),
+  sections: z.array(mobileSellerResourceSectionSchema),
+})
+
+export type MobileInfoPage = z.infer<typeof mobileInfoPageSchema>
+
+export const mobileShippingEstimatorPresetSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  summary: z.string(),
+  weight_lb: z.number().positive(),
+  length_in: z.number().positive(),
+  width_in: z.number().positive(),
+  height_in: z.number().positive(),
+})
+
+export const mobileShippingEstimatorSchema = z.object({
+  title: z.string(),
+  description: z.string(),
+  presets: z.array(mobileShippingEstimatorPresetSchema),
+})
+
+export const mobileShippingZipSchema = z.object({
+  postal_code: z.string(),
+  city_locality: z.string(),
+  state_province: z.string(),
+  address_line1: z.string(),
+})
+
+export const mobileShippingEstimateBodySchema = z.object({
+  origin_zip: z.string().trim().regex(/^\d{5}$/, "Enter a 5-digit US ZIP"),
+  destination_zip: z.string().trim().regex(/^\d{5}$/, "Enter a 5-digit US ZIP"),
+  weight_lb: z.number().positive().max(60),
+  length_in: z.number().positive().max(130),
+  width_in: z.number().positive().max(40),
+  height_in: z.number().positive().max(40),
+})
+
+export const mobileShippingRateSchema = z.object({
+  total_amount: z.number(),
+  total_label: z.string(),
+  currency: z.string(),
+  carrier_name: z.string(),
+  service_name: z.string(),
+  delivery_days: z.number().int().nullable(),
+})
+
+export const mobileShippingEstimateSchema = z.object({
+  route_label: z.string(),
+  rates: z.array(mobileShippingRateSchema),
+})
+
+export type MobileShippingEstimator = z.infer<typeof mobileShippingEstimatorSchema>
+export type MobileShippingZip = z.infer<typeof mobileShippingZipSchema>
+export type MobileShippingEstimateBody = z.infer<typeof mobileShippingEstimateBodySchema>
+export type MobileShippingEstimate = z.infer<typeof mobileShippingEstimateSchema>
 
 export const mobileMyListingSchema = z.object({
   id: z.string().uuid(),

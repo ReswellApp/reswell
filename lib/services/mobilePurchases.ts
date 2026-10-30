@@ -2,6 +2,7 @@ import {
   mobilePurchaseDetailSchema,
   mobilePurchaseListItemSchema,
   mobilePurchasesSchema,
+  type MobileOrderParty,
   type MobilePurchaseDetail,
   type MobilePurchaseListItem,
   type MobilePurchaseReview,
@@ -36,6 +37,7 @@ import {
 import { resolveSaleCardStatusDisplay, type OrderReturnSummaryForStatus } from "@/lib/sale-card-status"
 import { canSubmitSellerReview } from "@/lib/services/orderSellerReview"
 import type { MobileApiResult } from "@/lib/services/mobileApi"
+import { loadMobileOrderParty, toMobileOrderParty } from "@/lib/services/mobileOrderParty"
 import {
   daysUntilShippingDeadline,
   getShippingDeadlineDate,
@@ -215,7 +217,7 @@ export async function getMobilePurchaseDetailService(
 
   const order = loaded.rows
   const listingId = order.listing_id.trim() || null
-  const [trackingDetailRaw, conversation, buyerReview, sellerReview] = await Promise.all([
+  const [trackingDetailRaw, conversation, buyerReview, sellerReview, seller] = await Promise.all([
     fetchOptionalOrderTrackingDetailJson(supabase, {
       orderId,
       role: "buyer",
@@ -224,11 +226,16 @@ export async function getMobilePurchaseDetailService(
     getConversationForBuyerSellerListing(supabase, userId, order.seller_id, listingId),
     loadReview(supabase, orderId, userId),
     loadReview(supabase, orderId, order.seller_id),
+    loadMobileOrderParty(supabase, order.seller_id, {
+      viewerId: userId,
+      fallbackName: order.seller_name,
+    }),
   ])
   const detail = buildMobilePurchaseDetail(order, parseOrderTrackingDetail(trackingDetailRaw), {
     conversationId: conversation?.id ?? null,
     buyerReview,
     sellerReview,
+    seller,
     trackUrl: order.tracking_number?.trim()
       ? absoluteTrackUrl(
           packageTrackHref({
@@ -259,6 +266,7 @@ export function buildMobilePurchaseDetail(
     conversationId: string | null
     buyerReview: MobilePurchaseReview | null
     sellerReview: MobilePurchaseReview | null
+    seller?: MobileOrderParty | null
     trackUrl: string | null
   },
 ): MobilePurchaseDetail | null {
@@ -399,6 +407,17 @@ export function buildMobilePurchaseDetail(
     hide_review_prompt: fulfillmentLocked,
     existing_review: extras.buyerReview,
     review_from_seller: extras.sellerReview,
+    seller:
+      extras.seller ??
+      toMobileOrderParty(
+        {
+          id: order.seller_id,
+          display_name: order.seller_name,
+          seller_slug: order.seller_slug,
+          avatar_url: order.seller_avatar_url,
+        },
+        { userId: order.seller_id, fallbackName: sellerName },
+      ),
   }
   const parsed = mobilePurchaseDetailSchema.safeParse(payload)
   return parsed.success ? parsed.data : null

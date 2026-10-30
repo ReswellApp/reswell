@@ -23,7 +23,7 @@ describe("buildAppleAppSiteAssociation", () => {
     assert.deepEqual(recent.appIDs, [`${TEAM_ID}.app.reswell.reswell`])
     assert.ok(recent.components.some((component) => component["/"] === "/l/*"))
     assert.ok(recent.components.some((component) => component["/"] === "/dashboard/purchases/*"))
-    assert.ok(!recent.components.some((component) => component["/"].startsWith("/track")))
+    assert.ok(recent.components.some((component) => component["/"] === "/track/*"))
     assert.ok(APP_LINK_AASA_PATHS.includes("/messages/*"))
   })
 

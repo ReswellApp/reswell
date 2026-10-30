@@ -7,6 +7,7 @@ export const APP_LINK_HOST = "www.reswell.app"
  */
 export const APP_LINK_ANDROID_PATH_PREFIXES = [
   "/l",
+  "/track",
   "/dashboard/purchases",
   "/dashboard/sales",
   "/dashboard/listings",
@@ -20,11 +21,17 @@ export const APP_LINK_ANDROID_PATH_PREFIXES = [
   "/sellers",
   "/checkout",
   "/cart",
+  "/help",
+  "/safety",
+  "/protection-policy",
+  "/shipping-estimator",
+  "/dropoff",
 ] as const
 
-/** AASA `components` entries (iOS 13+). `/track` stays on the website. */
+/** AASA `components` entries (iOS 13+). */
 export const APP_LINK_AASA_COMPONENTS: ReadonlyArray<{ "/": string; comment: string }> = [
   { "/": "/l/*", comment: "Listing PDP" },
+  { "/": "/track/*", comment: "Package tracking" },
   { "/": "/dashboard/purchases", comment: "Purchases list" },
   { "/": "/dashboard/purchases/*", comment: "Purchase detail" },
   { "/": "/dashboard/sales", comment: "Sales list" },
@@ -44,6 +51,12 @@ export const APP_LINK_AASA_COMPONENTS: ReadonlyArray<{ "/": string; comment: str
   { "/": "/sellers/*", comment: "Seller profile" },
   { "/": "/checkout", comment: "Checkout" },
   { "/": "/cart", comment: "Cart" },
+  { "/": "/help", comment: "Help Center" },
+  { "/": "/help/*", comment: "Help topics and articles" },
+  { "/": "/safety", comment: "Safety tips" },
+  { "/": "/protection-policy", comment: "Purchase Protection" },
+  { "/": "/shipping-estimator", comment: "Shipping estimator" },
+  { "/": "/dropoff/*", comment: "Drop-off landings" },
 ]
 
 /** AASA `paths` entries for iOS 12 and earlier. */
@@ -94,9 +107,21 @@ function decodeSegment(value: string): string {
   }
 }
 
+const ORDER_ID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+const HELP_TOPIC_IDS = new Set(["buying", "selling", "accounts"])
+
 function mapPathname(pathname: string): string | null {
   const listing = pathname.match(/^\/l\/([^/]+)$/)
   if (listing?.[1]) return `/listing/${decodeSegment(listing[1])}`
+
+  const track = pathname.match(/^\/track\/([^/]+)$/)
+  if (track?.[1]) {
+    const orderId = decodeSegment(track[1])
+    if (ORDER_ID_RE.test(orderId)) return `/track/${orderId}`
+    return null
+  }
 
   const sale = pathname.match(/^\/dashboard\/sales(?:\/([^/]+))?$/)
   if (sale) {
@@ -137,6 +162,31 @@ function mapPathname(pathname: string): string | null {
 
   if (pathname === "/checkout") return "/account/checkout"
   if (pathname === "/cart") return "/account/cart"
+
+  if (pathname === "/help") return "/help"
+  const helpArticle = pathname.match(/^\/help\/([^/]+)\/([^/]+)$/)
+  if (helpArticle?.[1] && helpArticle[2] && HELP_TOPIC_IDS.has(helpArticle[1])) {
+    return `/help/${helpArticle[1]}/${decodeSegment(helpArticle[2])}`
+  }
+  const helpTopic = pathname.match(/^\/help\/([^/]+)$/)
+  if (helpTopic?.[1] && HELP_TOPIC_IDS.has(helpTopic[1])) {
+    return `/help/${helpTopic[1]}`
+  }
+
+  if (pathname === "/safety") return "/safety"
+  if (pathname === "/protection-policy") return "/protection-policy"
+  if (pathname === "/shipping-estimator") return "/shipping-estimator"
+  if (pathname === "/dropoff/santa-barbara") return "/dropoff/santa-barbara"
+  if (pathname === "/for-surf-shops") return "/seller-resources/for-surf-shops"
+  if (pathname === "/seller-resources") return "/seller-resources/seller-resources"
+  if (pathname === "/seller-resources/how-to-sell") return "/seller-resources/how-to-sell"
+  if (pathname === "/seller-resources/how-to-ship") return "/seller-resources/how-to-ship"
+  if (pathname === "/map") return "/seller-resources/sales-map"
+  if (pathname === "/auth/login" || pathname === "/auth/sign-up") return "/sign-in"
+  if (pathname === "/sell" || pathname.startsWith("/sell/")) return "/sell/new"
+  if (pathname === "/support" || pathname === "/dashboard/support") return "/account/support"
+  if (pathname === "/account/support" || pathname.startsWith("/account/support/")) return pathname
+  if (pathname.startsWith("/seller-resources/")) return pathname
 
   return null
 }

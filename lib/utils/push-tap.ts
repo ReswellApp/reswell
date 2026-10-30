@@ -9,6 +9,7 @@ export type PushTapRoute =
   | { kind: "messages"; id: string }
   | { kind: "support"; id: string }
   | { kind: "listing"; id: string }
+  | { kind: "track"; id: string }
   | { kind: "sales"; id: string | null }
   | { kind: "purchases"; id: string | null }
   | { kind: "listings" }
@@ -34,6 +35,9 @@ export function pushTapRoute(data: PushTapData): PushTapRoute {
   const path = firstPath(data.href)
   const listing = path.match(/^\/l\/([^/]+)$/)
   if (listing?.[1]) return { kind: "listing", id: listing[1] }
+
+  const track = path.match(/^\/track\/([^/]+)$/)
+  if (track?.[1]) return { kind: "track", id: track[1] }
 
   const sale = path.match(/^\/dashboard\/sales(?:\/([^/]+))?$/)
   if (sale) return { kind: "sales", id: sale[1] ?? null }

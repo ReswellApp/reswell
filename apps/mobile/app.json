@@ -31,6 +31,7 @@
           "category": ["BROWSABLE", "DEFAULT"],
           "data": [
             { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/l" },
+            { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/track" },
             { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/dashboard/purchases" },
             { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/dashboard/sales" },
             { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/dashboard/listings" },
@@ -43,7 +44,12 @@
             { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/favorites" },
             { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/sellers" },
             { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/checkout" },
-            { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/cart" }
+            { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/cart" },
+            { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/help" },
+            { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/safety" },
+            { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/protection-policy" },
+            { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/shipping-estimator" },
+            { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/dropoff" }
           ]
         }
       ]

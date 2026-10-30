@@ -29,13 +29,25 @@ describe("webHrefToNativePath", () => {
     )
     assert.equal(webHrefToNativePath("/checkout?listing=board"), "/account/checkout?listing=board")
     assert.equal(webHrefToNativePath("reswell://l/lost-puddle-jumper"), "/listing/lost-puddle-jumper")
+    assert.equal(
+      webHrefToNativePath("https://www.reswell.app/track/44444444-4444-4444-8444-444444444444"),
+      "/track/44444444-4444-4444-8444-444444444444",
+    )
   })
 
-  it("leaves tracking and other website pages on the web", () => {
-    assert.equal(webHrefToNativePath("/track/44444444-4444-4444-8444-444444444444"), null)
-    assert.equal(webHrefToNativePath("https://www.reswell.app/help"), null)
-    assert.equal(webHrefToNativePath("/auth/login"), null)
-    assert.ok(!APP_LINK_AASA_PATHS.some((path) => path.startsWith("/track")))
+  it("maps help, safety, protection, and leftover seller-resource pages onto native screens", () => {
+    assert.equal(webHrefToNativePath("https://www.reswell.app/help"), "/help")
+    assert.equal(webHrefToNativePath("/help/selling"), "/help/selling")
+    assert.equal(webHrefToNativePath("/help/buying/how-do-i-pay"), "/help/buying/how-do-i-pay")
+    assert.equal(webHrefToNativePath("/safety"), "/safety")
+    assert.equal(webHrefToNativePath("/protection-policy"), "/protection-policy")
+    assert.equal(webHrefToNativePath("/shipping-estimator"), "/shipping-estimator")
+    assert.equal(webHrefToNativePath("/dropoff/santa-barbara"), "/dropoff/santa-barbara")
+    assert.equal(webHrefToNativePath("/for-surf-shops"), "/seller-resources/for-surf-shops")
+    assert.equal(webHrefToNativePath("/auth/sign-up"), "/sign-in")
+    assert.equal(webHrefToNativePath("/sell/boards?new=1"), "/sell/new?new=1")
+    assert.equal(webHrefToNativePath("/track/abc"), null)
+    assert.ok(APP_LINK_AASA_PATHS.includes("/help/*"))
   })
 })
 
@@ -46,6 +58,10 @@ describe("nativeIntentPath", () => {
       "/account/purchases",
     )
     assert.equal(nativeIntentPath("https://www.reswell.app/track/abc"), "/")
+    assert.equal(
+      nativeIntentPath("https://www.reswell.app/track/44444444-4444-4444-8444-444444444444"),
+      "/track/44444444-4444-4444-8444-444444444444",
+    )
     assert.equal(nativeIntentPath("/listing/board"), "/listing/board")
   })
 

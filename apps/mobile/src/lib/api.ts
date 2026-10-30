@@ -27,8 +27,16 @@ import {
   mobileBrowseRailSchema,
   mobileMarketplaceSalesMapSchema,
   mobileSellerResourceSchema,
+  mobileShippingEstimateBodySchema,
+  mobileShippingEstimateSchema,
+  mobileShippingEstimatorSchema,
+  mobileShippingZipSchema,
   mobileCategorySchema,
+  mobileHelpArticleSchema,
+  mobileHelpHubSchema,
+  mobileHelpTopicSchema,
   mobileHomeSchema,
+  mobileInfoPageSchema,
   mobileInboxReadResultSchema,
   mobileInboxSchema,
   mobileMarketplaceFeedSchema,
@@ -66,6 +74,7 @@ import {
   mobileSaleLabelSchema,
   mobileSaleVerifyPickupSchema,
   mobileSalesSchema,
+  mobileTrackPackageSchema,
   mobileShipperActionResultSchema,
   mobileShipperSchema,
   mobileShopifyActionResultSchema,
@@ -94,6 +103,10 @@ import {
   type MobileSellersPage,
   type MobileMarketplaceSalesMap,
   type MobileSellerResource,
+  type MobileShippingEstimate,
+  type MobileShippingEstimateBody,
+  type MobileShippingEstimator,
+  type MobileShippingZip,
   type MobileCategory,
   type MobileCategoryListingsQuery,
   type MobileCart,
@@ -112,7 +125,11 @@ import {
   type MobileFavoriteResult,
   type MobileFollowResult,
   type MobileFollowing,
+  type MobileHelpArticle,
+  type MobileHelpHub,
+  type MobileHelpTopic,
   type MobileHome,
+  type MobileInfoPage,
   type MobileInbox,
   type MobileInboxReadResult,
   type MobileListingDetail,
@@ -151,6 +168,7 @@ import {
   type MobileSaleDetail,
   type MobileSales,
   type MobileSaleVerifyPickup,
+  type MobileTrackPackage,
   type MobileShipper,
   type MobileShipperActionBody,
   type MobileShipperActionResult,
@@ -390,6 +408,51 @@ export function fetchSellerResource(
     `/api/mobile/v1/seller-resources/${encodeURIComponent(slug)}`,
     (data) => mobileSellerResourceSchema.parse(data),
     accessToken,
+  )
+}
+
+/** Help Center hub. Same articles as `/help`. */
+export function fetchHelpHub(query?: string): Promise<MobileHelpHub> {
+  const search = query?.trim() ? `?q=${encodeURIComponent(query.trim())}` : ""
+  return read(`/api/mobile/v1/help${search}`, (data) => mobileHelpHubSchema.parse(data))
+}
+
+export function fetchHelpTopic(topic: string): Promise<MobileHelpTopic> {
+  return read(`/api/mobile/v1/help/${encodeURIComponent(topic)}`, (data) => mobileHelpTopicSchema.parse(data))
+}
+
+export function fetchHelpArticle(topic: string, slug: string): Promise<MobileHelpArticle> {
+  return read(
+    `/api/mobile/v1/help/${encodeURIComponent(topic)}/${encodeURIComponent(slug)}`,
+    (data) => mobileHelpArticleSchema.parse(data),
+  )
+}
+
+/** Safety, Purchase Protection, and Santa Barbara drop-off. */
+export function fetchInfoPage(slug: string): Promise<MobileInfoPage> {
+  return read(`/api/mobile/v1/info/${encodeURIComponent(slug)}`, (data) => mobileInfoPageSchema.parse(data))
+}
+
+export function fetchShippingEstimator(): Promise<MobileShippingEstimator> {
+  return read("/api/mobile/v1/shipping/estimator", (data) => mobileShippingEstimatorSchema.parse(data))
+}
+
+export function fetchShippingZip(zip: string): Promise<MobileShippingZip> {
+  return read(
+    `/api/mobile/v1/shipping/zip?zip=${encodeURIComponent(zip)}`,
+    (data) => mobileShippingZipSchema.parse(data),
+  )
+}
+
+export function estimateShipping(
+  accessToken: string,
+  body: MobileShippingEstimateBody,
+): Promise<MobileShippingEstimate> {
+  return read(
+    "/api/mobile/v1/shipping/estimate",
+    (data) => mobileShippingEstimateSchema.parse(data),
+    accessToken,
+    mobileShippingEstimateBodySchema.parse(body),
   )
 }
 
@@ -968,6 +1031,14 @@ export function fetchPurchase(accessToken: string, orderId: string): Promise<Mob
   )
 }
 
+/** Public Reswell tracker. UUID is the access key; no session required. */
+export function fetchTrackPackage(orderId: string): Promise<MobileTrackPackage> {
+  return read(
+    `/api/mobile/v1/track/${encodeURIComponent(orderId)}`,
+    (data) => mobileTrackPackageSchema.parse(data),
+  )
+}
+
 export function fetchSales(accessToken: string): Promise<MobileSales> {
   return read("/api/mobile/v1/me/sales", (data) => mobileSalesSchema.parse(data), accessToken)
 }
@@ -982,6 +1053,11 @@ export function fetchSaleLabel(accessToken: string, orderId: string): Promise<{ 
     (data) => mobileSaleLabelSchema.parse(data),
     accessToken,
   )
+}
+
+/** Authenticated PNG preview of a sale shipping label. */
+export function saleLabelImageUrl(orderId: string): string {
+  return `${apiOrigin()}/api/mobile/v1/me/sales/${encodeURIComponent(orderId)}/label/image`
 }
 
 export function verifySalePickup(

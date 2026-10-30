@@ -2,13 +2,13 @@ import { Image } from "expo-image"
 import { useRouter } from "expo-router"
 import { SymbolView } from "expo-symbols"
 import { useState, type ComponentProps } from "react"
-import { Linking, Pressable, Share, StyleSheet, Text, View } from "react-native"
+import { Pressable, Share, StyleSheet, Text, View } from "react-native"
 import type { MobilePurchaseDetail, MobilePurchaseStatusTone } from "@reswell/api-contract"
-import { ProfileCircle } from "@/components/profile-circle"
+import { PartyProfileStrip } from "@/components/party-profile-strip"
 import { openProfileConversation } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
 import { formatPurchaseDate, formatPurchaseDateTime } from "@/lib/purchase-display"
-import { publicSiteUrl } from "@/lib/public-env"
+import { trackPackageHref } from "@/lib/track-package"
 import { fontFamily, useReswellColors } from "@/theme"
 
 const STATUS_BANNER: Record<MobilePurchaseStatusTone, { backgroundColor: string; color: string }> = {
@@ -54,20 +54,6 @@ export function PurchaseDetailView({ purchase }: { purchase: MobilePurchaseDetai
     const id = listingSlug || listingId
     if (!id) return
     router.push({ pathname: "/listing/[id]", params: { id } })
-  }
-
-  const openSeller = () => {
-    if (purchase.seller_handle) {
-      router.push({ pathname: "/profile/[slug]", params: { slug: purchase.seller_handle } })
-    }
-  }
-
-  const openShopAgain = () => {
-    if (purchase.listing_slug || purchase.listing_id) {
-      openListing(purchase.listing_id, purchase.listing_slug)
-      return
-    }
-    openSeller()
   }
 
   const openSellerMessages = () => {
@@ -286,8 +272,11 @@ export function PurchaseDetailView({ purchase }: { purchase: MobilePurchaseDetai
 
       {purchase.track_url ? (
         <Pressable
-          onPress={() => void Linking.openURL(purchase.track_url ?? "")}
-          accessibilityRole="link"
+          onPress={() => {
+            const href = trackPackageHref(purchase.id)
+            if (href) router.push(href)
+          }}
+          accessibilityRole="button"
           accessibilityLabel="Track your order"
           style={[styles.track, { backgroundColor: "rgba(127, 157, 213, 0.15)" }]}
         >
@@ -301,24 +290,10 @@ export function PurchaseDetailView({ purchase }: { purchase: MobilePurchaseDetai
 
       <View style={styles.block}>
         <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: fontFamily.headline }]}>Seller</Text>
-        <Pressable onPress={openSeller} style={styles.seller} accessibilityRole="link" accessibilityLabel={purchase.seller_name}>
-          <ProfileCircle url={purchase.seller_avatar_url} size={40} />
-          <View>
-            <Text style={[styles.sellerName, { color: colors.foreground, fontFamily: fontFamily.text }]}>{purchase.seller_name}</Text>
-            {purchase.seller_handle ? (
-              <Text style={[styles.meta, { color: colors.muted, fontFamily: fontFamily.text }]}>@{purchase.seller_handle}</Text>
-            ) : null}
-          </View>
-        </Pressable>
-        <ActionRow
-          symbol={{ ios: "bubble.left", android: "chat_bubble", web: "chat_bubble" }}
-          label={openingMessage ? "Opening messages…" : "Message the seller"}
-          onPress={openSellerMessages}
-        />
-        <ActionRow
-          symbol={{ ios: "storefront", android: "storefront", web: "storefront" }}
-          label="Shop here again"
-          onPress={openShopAgain}
+        <PartyProfileStrip
+          party={purchase.seller}
+          messageLabel={openingMessage ? "Opening messages…" : "Message the seller"}
+          onMessage={openSellerMessages}
         />
         {purchase.review_from_seller ? (
           <Text style={[styles.meta, { color: colors.muted, fontFamily: fontFamily.text }]}>
@@ -336,7 +311,7 @@ export function PurchaseDetailView({ purchase }: { purchase: MobilePurchaseDetai
         <ActionRow
           symbol={{ ios: "questionmark.circle", android: "help", web: "help" }}
           label="Help center"
-          onPress={() => void Linking.openURL(`${publicSiteUrl().replace(/\/$/, "")}/help`)}
+          onPress={() => router.push("/help")}
         />
         <ActionRow
           symbol={{ ios: "bubble.left", android: "chat_bubble", web: "chat_bubble" }}
@@ -390,9 +365,7 @@ const styles = StyleSheet.create({
   addressLine: { fontSize: 14, lineHeight: 20 },
   track: { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 14, borderCurve: "continuous", paddingHorizontal: 16, paddingVertical: 12 },
   trackLabel: { flex: 1, fontSize: 14, fontWeight: "700" },
-  block: { gap: 4, paddingTop: 4 },
-  seller: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 8 },
-  sellerName: { fontSize: 16, fontWeight: "600" },
+  block: { gap: 8, paddingTop: 4 },
   action: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 10 },
   actionIcon: { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center" },
   actionLabel: { flex: 1, fontSize: 14, fontWeight: "600" },

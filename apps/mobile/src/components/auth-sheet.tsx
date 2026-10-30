@@ -34,7 +34,7 @@ export function AuthSheet({
   const colors = useReswellColors()
   const scheme = useColorScheme()
   const insets = useSafeAreaInsets()
-  const { configured, signIn, signUp, signInWithGoogle, signInWithApple } = useAuth()
+  const { configured, signIn, signUp, signInWithGoogle } = useAuth()
   const [step, setStep] = useState<Step>("start")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -135,20 +135,6 @@ export function AuthSheet({
                     onPress={() => void run(signInWithGoogle)}
                     icon={<GoogleMark />}
                   />
-                  {Platform.OS === "ios" ? (
-                    <SocialButton
-                      label="Continue with Apple"
-                      disabled={busy}
-                      onPress={() => void run(signInWithApple)}
-                      icon={
-                        <SymbolView
-                          name={{ ios: "apple.logo", android: "phone_iphone", web: "phone_iphone" }}
-                          size={18}
-                          tintColor={colors.foreground}
-                        />
-                      }
-                    />
-                  ) : null}
 
                   <View style={styles.divider}>
                     <View style={[styles.line, { backgroundColor: colors.border }]} />

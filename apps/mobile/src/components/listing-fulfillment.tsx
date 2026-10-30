@@ -1,11 +1,12 @@
+import { useRouter } from "expo-router"
 import { SymbolView } from "expo-symbols"
-import { Linking, Pressable, StyleSheet, Text, View } from "react-native"
+import { StyleSheet, Text, View } from "react-native"
 import { listingFulfillmentPdpCopy, type MobileListingDetail } from "@reswell/api-contract"
-import { publicApiUrl } from "@/lib/public-env"
 import { fontFamily, useReswellColors } from "@/theme"
 
 export function ListingFulfillment({ listing }: { listing: MobileListingDetail }) {
   const colors = useReswellColors()
+  const router = useRouter()
   const sold = listing.status === "sold"
   const fulfillment = listingFulfillmentPdpCopy({
     pickupOffered: listing.local_pickup,
@@ -39,7 +40,7 @@ export function ListingFulfillment({ listing }: { listing: MobileListingDetail }
             android="verified_user"
             title="Purchase Protection"
             detail="on eligible checkout"
-            onTitlePress={() => void Linking.openURL(`${publicApiUrl()}/protection-policy`)}
+            onTitlePress={() => router.push("/protection-policy")}
           />
         </>
       )}

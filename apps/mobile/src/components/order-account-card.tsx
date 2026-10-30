@@ -1,13 +1,9 @@
 import { Image } from "expo-image"
 import { useRouter } from "expo-router"
-import { Linking, Pressable, StyleSheet, Text, View } from "react-native"
+import { Pressable, StyleSheet, Text, View } from "react-native"
 import type { MobileOrder, MobileSale } from "@reswell/api-contract"
-import { publicSiteUrl } from "@/lib/public-env"
+import { trackPackageHref } from "@/lib/track-package"
 import { fontFamily, useReswellColors } from "@/theme"
-
-function trackingUrl(orderId: string): string {
-  return `${publicSiteUrl().replace(/\/$/, "")}/track/${orderId}`
-}
 
 export function OrderAccountCard({
   order,
@@ -54,7 +50,10 @@ export function OrderAccountCard({
         ) : null}
         {order.tracking_number ? (
           <Pressable
-            onPress={() => void Linking.openURL(trackingUrl(order.id))}
+            onPress={() => {
+              const href = trackPackageHref(order.id)
+              if (href) router.push(href)
+            }}
             style={[styles.button, { backgroundColor: colors.primary }]}
           >
             <Text style={[styles.buttonLabel, { color: colors.primaryForeground, fontFamily: fontFamily.text }]}>Track package</Text>

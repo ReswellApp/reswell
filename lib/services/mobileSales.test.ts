@@ -82,6 +82,7 @@ describe("mobile sales", () => {
       trackUrl: null,
       preparedLabel: false,
       returnSummary: null,
+      buyer: null,
     })
     if (!detail) throw new Error("expected sale details")
     assert.equal(detail.order_number, "YMCBKQ")
@@ -98,5 +99,41 @@ describe("mobile sales", () => {
     assert.equal(detail.delivery_badge_label, "Ready for pickup")
     assert.equal(detail.payout_badge_label, "Held — awaiting pickup")
     assert.equal(detail.can_request_support, true)
+    assert.equal(detail.buyer, null)
+  })
+
+  it("includes the buyer profile on sale details", () => {
+    const detailRow: MobileSaleDetailRow = {
+      ...LIST_ROW,
+      refunded_at: null,
+      tracking_carrier: null,
+      listing_id: LISTING_ID,
+      stripe_checkout_session_id: "cs_test_123",
+      order_items: [],
+      listing_slug: "simon-shapes",
+      payout_status: "held",
+      payout_hold_reason: "awaiting_pickup",
+    }
+    const detail = buildMobileSaleDetail(detailRow, {
+      conversationId: null,
+      labelAvailable: false,
+      trackUrl: null,
+      preparedLabel: false,
+      returnSummary: null,
+      buyer: {
+        id: BUYER_ID,
+        name: "Chrisheijn",
+        seller_slug: "chrisheijn",
+        avatar_url: "https://cdn.example.com/buyer.jpg",
+        verified: false,
+        following: false,
+        rating_average: 0,
+        review_count: 0,
+      },
+    })
+    if (!detail) throw new Error("expected sale details")
+    assert.equal(detail.buyer?.name, "Chrisheijn")
+    assert.equal(detail.buyer?.seller_slug, "chrisheijn")
+    assert.equal(detail.buyer?.following, false)
   })
 })

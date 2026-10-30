@@ -38,3 +38,17 @@ export function formatPurchaseDateTime(iso: string | null | undefined): string {
     minute: "2-digit",
   })
 }
+
+export function formatCompactDateTime(iso: string | null | undefined): string {
+  if (!iso) return ""
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return ""
+  const now = new Date()
+  return date.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: date.getFullYear() === now.getFullYear() ? undefined : "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  })
+}

@@ -3,7 +3,6 @@ import { Pressable, StyleSheet, Text, View } from "react-native"
 import { SymbolView } from "expo-symbols"
 import type { MobileBrandModelCard, MobileBrandPage } from "@reswell/api-contract"
 import { BrandLogoMark } from "@/components/brands/brand-logo-mark"
-import { BrandModelTile } from "@/components/brands/brand-model-tile"
 import { HorizontalRail, SCREEN_GUTTER } from "@/components/horizontal-rail"
 import { ProfileSegmentTabs } from "@/components/profile-segment-tabs"
 import { fontFamily, useReswellColors } from "@/theme"
@@ -97,15 +96,21 @@ export function BrandPageHeader({
           </View>
           <HorizontalRail>
             {brand.models.map((model) => (
-              <BrandModelTile
+              <Pressable
                 key={model.id}
-                name={model.name}
-                categoryLabel={model.category_label}
-                imageUrl={model.image_url}
-                brandName={brand.name}
-                brandLogoUrl={brand.logo_url}
+                accessibilityRole="button"
+                accessibilityLabel={model.name}
                 onPress={() => onOpenModel(model)}
-              />
+                style={({ pressed }) => [
+                  styles.modelChip,
+                  { backgroundColor: colors.secondary },
+                  pressed ? { opacity: 0.72 } : null,
+                ]}
+              >
+                <Text numberOfLines={1} style={[styles.modelName, { color: colors.foreground, fontFamily: fontFamily.text }]}>
+                  {model.name}
+                </Text>
+              </Pressable>
             ))}
           </HorizontalRail>
         </View>
@@ -143,6 +148,15 @@ const styles = StyleSheet.create({
   body: { fontSize: 15, lineHeight: 22 },
   more: { fontSize: 14, fontWeight: "700" },
   models: { gap: 12 },
+  modelChip: {
+    maxWidth: 220,
+    minHeight: 36,
+    justifyContent: "center",
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  modelName: { fontSize: 14, fontWeight: "600" },
   sectionHead: { paddingHorizontal: SCREEN_GUTTER, gap: 2 },
   section: { fontSize: 20, fontWeight: "700", letterSpacing: -0.3 },
   sectionMeta: { fontSize: 13, lineHeight: 18 },

@@ -16,13 +16,14 @@ import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { compareSalesForSellerList, type SaleFulfillmentFilterInput } from "@/lib/sale-fulfillment-filters"
 import { broadcastInsertedMarketplaceMessage } from "@/lib/services/broadcastMarketplaceThreadMessage"
 import type { MobileApiResult } from "@/lib/services/mobileApi"
+import { loadMobileOrderParty } from "@/lib/services/mobileOrderParty"
 import {
   absoluteTrackUrl,
   buildMobileSaleDetail,
   filterInputForRow,
-  saleUsesSantaBarbaraDropoff,
   toMobileSaleListItem,
 } from "@/lib/services/mobileSalesMap"
+import { mobileSaleHasLabel } from "@/lib/services/mobileSaleLabel"
 import { verifyOrderPickupForSeller } from "@/lib/services/orderPickupVerification"
 import { packageTrackHref } from "@/lib/utils/carrier-tracking-url"
 import type { OrderCompletedMessagePayload } from "@/lib/validations/order-completed-message-metadata"
@@ -89,15 +90,19 @@ export async function getMobileSaleDetailService(
 
   const order = loaded.rows
   const listingId = order.listing_id.trim() || order.listing?.id || null
-  const [conversation, preparedIds, returnSummaries] = await Promise.all([
+  const [conversation, preparedIds, returnSummaries, hasLabel, buyer] = await Promise.all([
     order.buyer_id
       ? getConversationForBuyerSellerListing(supabase, order.buyer_id, userId, listingId)
       : Promise.resolve(null),
     fetchOrderIdsWithPreparedShippingLabels(supabase, [orderId]),
     getOrderReturnSummariesByOrderIds(supabase, [orderId]),
+    mobileSaleHasLabel(supabase, userId, orderId, order.tracking_number),
+    loadMobileOrderParty(supabase, order.buyer_id, {
+      viewerId: userId,
+      fallbackName: order.buyer_name,
+    }),
   ])
-  const santaBarbara = saleUsesSantaBarbaraDropoff(order)
-  const labelAvailable = preparedIds.has(orderId) && !santaBarbara
+  const labelAvailable = hasLabel
 
   const detail = buildMobileSaleDetail(order, {
     conversationId: conversation?.id ?? null,
@@ -113,6 +118,7 @@ export async function getMobileSaleDetailService(
           }),
         )
       : null,
+    buyer,
   })
   if (!detail) return { ok: false, status: 500, error: "Unable to load this sale right now" }
   return { ok: true, data: detail }

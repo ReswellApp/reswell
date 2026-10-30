@@ -1,6 +1,7 @@
 import {
   mobileSaleDetailSchema,
   mobileSaleListItemSchema,
+  type MobileOrderParty,
   type MobileSaleDetail,
   type MobileSaleListItem,
 } from "@reswell/api-contract"
@@ -199,6 +200,7 @@ export function buildMobileSaleDetail(
     trackUrl: string | null
     preparedLabel: boolean
     returnSummary: OrderReturnSummaryForStatus | null
+    buyer: MobileOrderParty | null
   },
 ): MobileSaleDetail | null {
   const ship = asShippingAddress(order.shipping_address)
@@ -354,6 +356,7 @@ export function buildMobileSaleDetail(
       ? payoutStatusLabel(order.payout_status, order.payout_hold_reason)
       : null,
     can_request_support: order.status === "confirmed",
+    buyer: extras.buyer,
   }
   const parsed = mobileSaleDetailSchema.safeParse(payload)
   return parsed.success ? parsed.data : null

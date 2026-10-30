@@ -8,7 +8,6 @@ import {
   FlatList,
   KeyboardAvoidingView,
   LayoutChangeEvent,
-  Linking,
   NativeScrollEvent,
   NativeSyntheticEvent,
   Platform,
@@ -27,7 +26,6 @@ import { fetchConversation, messageAttachmentUrl, sendConversationMediaMessage, 
 import { uploadConversationImageAttachment } from "@/lib/message-media-upload"
 import { useAuth } from "@/lib/auth-context"
 import { useInboxUnreadReload } from "@/lib/inbox-unread-count"
-import { publicApiUrl } from "@/lib/public-env"
 import { useAccountResource } from "@/lib/use-account-resource"
 import { fontFamily, useReswellColors } from "@/theme"
 
@@ -204,7 +202,7 @@ export default function ConversationScreen() {
                 <SymbolView name={{ ios: "shield.fill", android: "shield", web: "shield" }} size={18} tintColor={colors.shipping} />
                 <Text style={[styles.safetyText, { color: colors.foreground, fontFamily: fontFamily.text }]}>
                   Keep it on Reswell. Only chat in the app and never share info like your email or phone number.{" "}
-                  <Text style={styles.safetyLink} onPress={() => void Linking.openURL(`${publicApiUrl()}/safety`)}>
+                  <Text style={styles.safetyLink} onPress={() => router.push("/safety")}>
                     Get safety tips
                   </Text>
                 </Text>
@@ -421,7 +419,7 @@ function MessageRow({
     const order = message.order
     return (
       <View style={[styles.orderWrap, message.mine ? styles.mine : styles.theirs]}>
-        <View style={[styles.orderCard, { borderColor: colors.border, backgroundColor: colors.background }]}>
+        <View style={[styles.orderCard, { borderColor: colors.foreground, backgroundColor: colors.background }]}>
           <View style={styles.orderHeader}>
             <View style={styles.orderHeaderText}>
               <Text style={[styles.orderKicker, { color: colors.foreground, fontFamily: fontFamily.text }]}>Order placed</Text>
@@ -535,7 +533,7 @@ const styles = StyleSheet.create({
   mine: { alignSelf: "flex-end" },
   theirs: { alignSelf: "flex-start" },
   orderWrap: { maxWidth: "86%", gap: 4 },
-  orderCard: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 16, padding: 14, gap: 6 },
+  orderCard: { borderWidth: 2, borderRadius: 16, padding: 14, gap: 6 },
   orderHeader: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 12 },
   orderHeaderText: { flex: 1, minWidth: 0, gap: 2 },
   orderKicker: { fontSize: 15, fontWeight: "600" },

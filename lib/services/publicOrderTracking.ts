@@ -5,6 +5,7 @@ import {
   parseOrderTrackingDetail,
   type OrderTrackingDetail,
 } from "@/lib/shipping/order-tracking-detail"
+import { withTrackingEventCoordinates } from "@/lib/shipping/tracking-map-points"
 
 export type PublicOrderTrackingPage = {
   orderId: string
@@ -28,6 +29,6 @@ export async function getPublicOrderTrackingPage(orderId: string): Promise<Publi
     trackingNumber: row.tracking_number,
     trackingCarrier: row.tracking_carrier,
     deliveryStatus: row.delivery_status,
-    detail: parseOrderTrackingDetail(row.tracking_detail),
+    detail: await withTrackingEventCoordinates(parseOrderTrackingDetail(row.tracking_detail)),
   }
 }
