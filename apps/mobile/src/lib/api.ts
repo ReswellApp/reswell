@@ -1315,6 +1315,14 @@ export function fetchSellCatalog(query: string): Promise<MobileSellCatalogSearch
   )
 }
 
+/** One brand's catalog models. Same source as website `/api/sell/catalog-search/brand-models`. */
+export function fetchSellBrandModels(brandId: string): Promise<MobileSellCatalogSearch> {
+  const params = new URLSearchParams({ brand_id: brandId.trim() })
+  return read(`/api/mobile/v1/sell/catalog-search/brand-models?${params.toString()}`, (data) =>
+    mobileSellCatalogSearchSchema.parse(data),
+  )
+}
+
 const DRAFT_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 function sellListingBody(draft: SellDraft, images: MobileSellPhoto[], includeDraftId: boolean) {

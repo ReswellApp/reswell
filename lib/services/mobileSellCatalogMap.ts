@@ -92,3 +92,16 @@ export function mapMobileSellCatalog(result: SellCatalogSearchResult): MobileSel
     }),
   })
 }
+
+/** Brand drill-in models — same rows as website `/api/sell/catalog-search/brand-models`. */
+export function mapMobileSellBrandModels(
+  rows: readonly SellCatalogSearchResultRow[],
+): MobileSellCatalogSearch {
+  const labels = new Map(getMobileSellTaxonomy().categories.map((category) => [category.slug, category.label]))
+  return mobileSellCatalogSearchSchema.parse({
+    results: rows.flatMap((row) => {
+      const mapped = mapRow(row, labels)
+      return mapped ? [mapped] : []
+    }),
+  })
+}

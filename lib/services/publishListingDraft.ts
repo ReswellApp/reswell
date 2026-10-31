@@ -13,6 +13,7 @@ import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import { recordListingVisibilityEvent } from "@/lib/services/listingVisibilityAudit"
 import { evaluateSellerCanSell } from "@/lib/services/sellerBan"
 import { qualifyPublishedListingForGiveaways } from "@/lib/services/giveawayEntry"
+import { ingestSurfboardListingIntoDimensionPhotoRefsBestEffort } from "@/lib/services/surfboardDimensionPhotoIngest"
 import { draftListingPriceBlockReason } from "@/lib/utils/sell-listing-price"
 
 type DraftListingRow = {
@@ -109,6 +110,14 @@ export async function applyPublishedListingSideEffects(
 
   try {
     await notifyFollowersNewListingKlaviyo(listingId)
+  } catch {
+    // best-effort
+  }
+
+  try {
+    // Surfboard image+dims join the dimension-photo corpus for LLM matching.
+    // Service-role, idempotent, skips non-boards / incomplete dims; never blocks publish.
+    await ingestSurfboardListingIntoDimensionPhotoRefsBestEffort(listingId)
   } catch {
     // best-effort
   }

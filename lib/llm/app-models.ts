@@ -16,6 +16,8 @@ export type AppLlmFeatureId =
   | "listing_brand_model_research"
   | "message_fraud_review"
   | "sell_photo_match"
+  | "surfboard_dimension_photo"
+  | "surfboard_dimension_photo_jev"
   | "email_studio"
 
 export interface AppLlmFeatureDefinition {
@@ -225,6 +227,51 @@ export const APP_LLM_FEATURES: readonly AppLlmFeatureDefinition[] = [
     sourceFiles: [
       "lib/services/sellPhotoMatch.ts",
       "app/api/sell/photo-match/route.ts",
+    ],
+  },
+  {
+    id: "surfboard_dimension_photo",
+    name: "Surfboard dimension photo match",
+    purpose:
+      "Finds the listing photo with the size stamp, reads L×W×T from that image only (never listings.dimensions). Admin Photo/Dims ratings inject contrastive few-shot images + text each call (not weight fine-tuning). Jev verifies the proposal afterward (volume clear, confidence, soft rating hints, optional few-shot retry on listing scans).",
+    gatewayFeatureTag: "feature:surfboard-dimension-photo",
+    transport: "vercel_ai_gateway",
+    defaultModel: "google/gemini-2.5-flash",
+    modelEnvVar: "SURFBOARD_DIMENSION_PHOTO_MODEL",
+    enabledEnvVar: "SURFBOARD_DIMENSION_PHOTO_ENABLED",
+    surfaces: [
+      "/admin/dimension-photo-match",
+      "POST /api/admin/dimension-photo-match/test",
+      "POST /api/sell/photo-match",
+    ],
+    sourceFiles: [
+      "lib/services/surfboardDimensionPhotoMatch.ts",
+      "lib/services/surfboardDimensionPhotoMemory.ts",
+      "lib/services/surfboardDimensionPhotoIngest.ts",
+      "lib/db/surfboardDimensionPhoto.ts",
+      "lib/llm/jev-dimension-photo-verify.ts",
+      "lib/services/publishListingDraft.ts",
+    ],
+  },
+  {
+    id: "surfboard_dimension_photo_jev",
+    name: "Dimension photo Jev verifier",
+    purpose:
+      "TypeSafe Jev evaluates the vision model's photo pick + dims read (text state only — no images). Clears invented volume, downgrades confidence, suggests Photo/Dims ratings for admin, and can retry listing scans once with contrastive few-shot images. Never invents L×W×T. On failure, vision results stand unchanged.",
+    gatewayFeatureTag: "feature:surfboard-dimension-photo-jev",
+    transport: "vercel_ai_gateway",
+    defaultModel: "typesafe-ai/jev",
+    modelEnvVar: "SURFBOARD_DIMENSION_PHOTO_JEV_MODEL",
+    enabledEnvVar: "SURFBOARD_DIMENSION_PHOTO_JEV_ENABLED",
+    surfaces: [
+      "/admin/dimension-photo-match",
+      "POST /api/admin/dimension-photo-match/test",
+      "listing dimension photo scan",
+    ],
+    sourceFiles: [
+      "lib/llm/jev-dimension-photo-verify.ts",
+      "lib/llm/dimension-photo-verify.ts",
+      "lib/services/surfboardDimensionPhotoMatch.ts",
     ],
   },
   {

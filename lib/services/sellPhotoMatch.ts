@@ -1,5 +1,6 @@
 import "server-only"
 
+import { after } from "next/server"
 import { generateText, Output } from "ai"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { z } from "zod"
@@ -10,6 +11,9 @@ import {
   resolveConfiguredModel,
 } from "@/lib/llm/app-models"
 import { searchSellCatalogForSell } from "@/lib/services/sellCatalogSearch"
+import { insertSurfboardDimensionPhotoMatch } from "@/lib/db/surfboardDimensionPhoto"
+import { surfboardDimensionPhotoMemoryPromptBlock } from "@/lib/services/surfboardDimensionPhotoMemory"
+import { listingObjectPublicUrl } from "@/lib/supabase/storage-upload-xhr"
 import {
   coerceSellPhotoObservation,
   sellPhotoMatchLookupQuery,
@@ -117,12 +121,16 @@ export async function matchSellPhoto(input: {
     return { ok: false, error: "Add the top, bottom, and dimensions photos.", status: 422 }
   }
 
+  const memoryBlock = await surfboardDimensionPhotoMemoryPromptBlock(input.supabase).catch(
+    () => "",
+  )
+
   let raw: unknown
   try {
     const { output } = await generateText({
       model: resolveConfiguredModel(photoMatchFeature()),
       output: Output.object({ schema: sellPhotoObservationModelSchema }),
-      system: SYSTEM_PROMPT,
+      system: SYSTEM_PROMPT + (memoryBlock ? `\n${memoryBlock}` : ""),
       messages: [
         {
           role: "user",
@@ -176,6 +184,67 @@ export async function matchSellPhoto(input: {
       status: 422,
     }
   }
+
+  // Capture sell-flow observations into the admin review corpus (no second LLM call).
+  const captureShots: Array<{
+    shot: string
+    bytes: Uint8Array
+    mediaType: SellPhotoMatchMime
+  }> = [
+    { shot: "top", bytes: input.shots.top.bytes, mediaType: input.shots.top.mediaType },
+    { shot: "bottom", bytes: input.shots.bottom.bytes, mediaType: input.shots.bottom.mediaType },
+    {
+      shot: "dimensions",
+      bytes: input.shots.dimensions.bytes,
+      mediaType: input.shots.dimensions.mediaType,
+    },
+  ]
+  after(() => {
+    void (async () => {
+      try {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
+        const folder = `dimension-photo-matches/${crypto.randomUUID()}`
+        const inputPreview: Array<{ shot: string; imageUrl: string }> = []
+        if (supabaseUrl) {
+          for (const shot of captureShots) {
+            const ext =
+              shot.mediaType === "image/png"
+                ? "png"
+                : shot.mediaType === "image/webp"
+                  ? "webp"
+                  : "jpg"
+            const path = `${folder}/${shot.shot}.${ext}`
+            const { error } = await input.supabase.storage
+              .from("listings")
+              .upload(path, shot.bytes, {
+                upsert: false,
+                contentType: shot.mediaType,
+                cacheControl: "31536000",
+              })
+            if (error) continue
+            inputPreview.push({
+              shot: shot.shot,
+              imageUrl: listingObjectPublicUrl(supabaseUrl, path),
+            })
+          }
+        }
+        await insertSurfboardDimensionPhotoMatch(input.supabase, {
+          surface: "sell_photo_match",
+          inputPreview,
+          predictedLength: observation.lengthText,
+          predictedWidth: observation.widthText,
+          predictedThickness: observation.thicknessText,
+          predictedConfidence: observation.confidence,
+          predictedSummary: observation.summary,
+        })
+      } catch (err) {
+        console.error(
+          "[sellPhotoMatch] dimension corpus capture failed:",
+          err instanceof Error ? err.message : err,
+        )
+      }
+    })()
+  })
 
   const categories = sellPhotoMatchSearchCategories()
   const primary = sellPhotoMatchLookupQuery(observation)

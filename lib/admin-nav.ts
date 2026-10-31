@@ -94,6 +94,11 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
       { href: '/admin/email-studio', label: 'Email studio', icon: 'mail' },
       { href: '/admin/llm-usage', label: 'LLM Usage', icon: 'sparkles' },
       { href: '/admin/search-quality', label: 'Search Quality', icon: 'sparkles' },
+      {
+        href: '/admin/dimension-photo-match',
+        label: 'Dimension photo match',
+        icon: 'waves',
+      },
       { href: '/admin/search-curation', label: 'Search Curation', icon: 'wrench' },
       { href: '/admin/price-guide', label: 'Price Guide', icon: 'bookOpen' },
       { href: '/admin/used-board-market-dashboard', label: 'Used Board Market Catalog', icon: 'waves' },

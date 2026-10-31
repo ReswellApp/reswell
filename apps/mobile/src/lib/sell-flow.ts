@@ -66,6 +66,15 @@ export type SellDraft = {
   title: string
   brand: string
   model: string
+  /**
+   * Directory brand id from catalog suggest / brand-models. Empty when the seller
+   * free-typed a brand (same idea as website `boardBrandId`).
+   */
+  brandId: string
+  /** Catalog `brand_models.id` when a model row was picked. Empty for free-typed model. */
+  brandModelId: string
+  /** Brand name locked when `brandId` was set — typing away from it clears the link. */
+  linkedBrandName: string
   /** Category slug from `GET /api/mobile/v1/sell/taxonomy`. */
   category: string
   /** Subcategory slug. Board style when the category is surfboards. */
@@ -112,6 +121,9 @@ export function emptySellDraft(): SellDraft {
     title: "",
     brand: "",
     model: "",
+    brandId: "",
+    brandModelId: "",
+    linkedBrandName: "",
     category: "",
     subcategory: "",
     condition: "",

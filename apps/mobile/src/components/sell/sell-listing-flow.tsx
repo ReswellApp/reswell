@@ -1,5 +1,5 @@
 import { Stack, useRouter } from "expo-router"
-import { useCallback, useEffect, useState, type ReactNode } from "react"
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { SymbolView } from "expo-symbols"
@@ -32,6 +32,7 @@ import {
   type SellDraft,
 } from "@/lib/sell-flow"
 import { sellDraftFromMobileEdit } from "@/lib/sell-edit"
+import { suggestedSellTitle } from "@/lib/sell-title"
 import type { MobileSellBoardSpecs, MobileSellTaxonomy } from "@reswell/api-contract"
 import { fontFamily, useReswellColors } from "@/theme"
 
@@ -156,6 +157,29 @@ export function SellListingFlow({
       cancelled = true
     }
   }, [needsBoardSpecs, boardSpecsAttempt])
+
+  /**
+   * Same as website sell: compose `6'0 Brand Model` and keep it in sync until the
+   * seller edits the title themselves. Skipped when editing a published listing.
+   */
+  const lastAutoTitleRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (isEdit) return
+    const suggestion = suggestedSellTitle({
+      category: draft.category,
+      brand: draft.brand,
+      model: draft.model,
+      boardLength: draft.specs.length ?? "",
+    })
+    if (!suggestion) return
+    const current = draft.title
+    const untouched =
+      current === lastAutoTitleRef.current ||
+      (current.trim() === "" && lastAutoTitleRef.current === null)
+    if (!untouched || current === suggestion) return
+    lastAutoTitleRef.current = suggestion
+    setDraft((existing) => ({ ...existing, title: suggestion }))
+  }, [isEdit, draft.category, draft.brand, draft.model, draft.specs.length, draft.title])
 
   function patch(next: Partial<SellDraft>) {
     setNotice(null)

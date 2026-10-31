@@ -14,6 +14,7 @@ import { trackKlaviyoListingCreated } from "@/lib/klaviyo/track-listing-created"
 import { trackFirstTimeSellerForListingIfNeeded } from "@/lib/services/klaviyoFirstTimeSeller"
 import { notifyBoardSavedSearchMatchesForListing } from "@/lib/services/notifyBoardSavedSearchMatches"
 import { notifyFollowersNewListingKlaviyo } from "@/lib/services/notifyFollowersNewListingKlaviyo"
+import { ingestSurfboardListingIntoDimensionPhotoRefsBestEffort } from "@/lib/services/surfboardDimensionPhotoIngest"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { persistableListingThumbnailUrl } from "@/lib/listing-media-proxy-url"
 import { insertListingImages } from "@/lib/db/listingImagesInsert"
@@ -170,6 +171,7 @@ export async function publishImportListing(opts: {
   })
   void notifyBoardSavedSearchMatchesForListing(listing.id)
   void notifyFollowersNewListingKlaviyo(listing.id)
+  void ingestSurfboardListingIntoDimensionPhotoRefsBestEffort(listing.id)
 
   revalidateBoardsBrowseCatalog()
   revalidateMarketplaceNewListingsFeed()

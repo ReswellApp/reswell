@@ -1,7 +1,11 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 import { MOBILE_SELL_CATALOG_CATEGORIES } from "@reswell/api-contract"
-import { boardTypeFromCatalogSlug, mapMobileSellCatalog } from "@/lib/services/mobileSellCatalogMap"
+import {
+  boardTypeFromCatalogSlug,
+  mapMobileSellBrandModels,
+  mapMobileSellCatalog,
+} from "@/lib/services/mobileSellCatalogMap"
 import { SELL_CATALOG_SEARCH_CATEGORIES, type SellCatalogSearchResult } from "@/lib/types/sell-catalog-search"
 
 describe("mobile sell catalog map", () => {
@@ -74,5 +78,28 @@ describe("mobile sell catalog map", () => {
     assert.equal(mapped.results[0]?.kind, "brand")
     assert.equal(mapped.results[0]?.category_label, "Fins")
     assert.equal(mapped.results[0]?.model_name, null)
+  })
+
+  it("maps brand-models drill-in rows the same way as search hits", () => {
+    const mapped = mapMobileSellBrandModels([
+      {
+        kind: "model",
+        id: "model-2",
+        name: "Sweet Spot",
+        brandId: "brand-2",
+        brandName: "Pyzel",
+        brandSlug: "pyzel",
+        brandLogoUrl: null,
+        imageUrl: null,
+        description: null,
+        category: "surfboards",
+        boardCategorySlug: "shortboard",
+      },
+    ])
+    assert.equal(mapped.results.length, 1)
+    assert.equal(mapped.results[0]?.kind, "model")
+    assert.equal(mapped.results[0]?.brand_name, "Pyzel")
+    assert.equal(mapped.results[0]?.model_name, "Sweet Spot")
+    assert.equal(mapped.results[0]?.board_type, "shortboard")
   })
 })

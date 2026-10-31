@@ -1112,6 +1112,11 @@ export const mobileSellCatalogQuerySchema = z.object({
   q: z.string().trim().min(1).max(200),
 })
 
+/** One brand's models — same drill-in as website `GET /api/sell/catalog-search/brand-models`. */
+export const mobileSellBrandModelsQuerySchema = z.object({
+  brand_id: z.string().trim().uuid(),
+})
+
 export const mobileSellCatalogRowSchema = z.object({
   kind: z.enum(["brand", "model", "variant"]),
   id: z.string().min(1),
@@ -1131,6 +1136,7 @@ export const mobileSellCatalogSearchSchema = z.object({
 
 export type MobileSellCatalogRow = z.infer<typeof mobileSellCatalogRowSchema>
 export type MobileSellCatalogSearch = z.infer<typeof mobileSellCatalogSearchSchema>
+export type MobileSellBrandModelsQuery = z.infer<typeof mobileSellBrandModelsQuerySchema>
 
 /**
  * Surfboard shape filters. Same slugs and labels as the website board-style facet
