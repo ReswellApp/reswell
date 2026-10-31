@@ -2,7 +2,7 @@ import { Image } from "expo-image"
 import * as ImagePicker from "expo-image-picker"
 import { useRouter } from "expo-router"
 import { useCallback, useEffect, useState } from "react"
-import { Pressable, StyleSheet, Switch, Text, TextInput, View } from "react-native"
+import { Alert, Pressable, StyleSheet, Switch, Text, TextInput, View } from "react-native"
 import { TextInput as GestureTextInput } from "react-native-gesture-handler"
 import { SymbolView } from "expo-symbols"
 import type { MobileProfileSettings } from "@reswell/api-contract"
@@ -12,6 +12,7 @@ import { ProfileCircle } from "@/components/profile-circle"
 import {
   changeProfileEmail,
   changeProfilePassword,
+  deleteAccount,
   fetchMyListings,
   fetchProfileSettings,
   removeProfileAvatar,
@@ -463,7 +464,7 @@ function SignInTab({ settings }: { settings: MobileProfileSettings }) {
   const [currentPassword, setCurrentPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
-  const [busy, setBusy] = useState<"email" | "password" | "reset" | null>(null)
+  const [busy, setBusy] = useState<"email" | "password" | "reset" | "delete" | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [messageTone, setMessageTone] = useState<"ok" | "error">("error")
 
@@ -540,7 +541,11 @@ function SignInTab({ settings }: { settings: MobileProfileSettings }) {
       <View style={[styles.card, { borderColor: colors.border }]}>
         <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: fontFamily.text }]}>{settings.email || "—"}</Text>
         <Text style={[styles.hint, { color: colors.muted, fontFamily: fontFamily.text }]}>
-          {settings.signed_in_with === "google" ? "You signed in with Google" : "You signed in with email"}
+          {settings.signed_in_with === "apple"
+            ? "You signed in with Apple"
+            : settings.signed_in_with === "google"
+              ? "You signed in with Google"
+              : "You signed in with email"}
         </Text>
         <Text style={[styles.cardTitle, styles.verified, { color: colors.foreground, fontFamily: fontFamily.text }]}>
           Email verification status
@@ -665,6 +670,49 @@ function SignInTab({ settings }: { settings: MobileProfileSettings }) {
           style={[styles.outline, { borderColor: colors.border }]}
         >
           <Text style={[styles.saveLabel, { color: colors.destructive, fontFamily: fontFamily.text }]}>Sign out</Text>
+        </Pressable>
+      </View>
+
+      <View style={[styles.card, { borderColor: colors.border }]}>
+        <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: fontFamily.text }]}>Delete account</Text>
+        <Text style={[styles.hint, { color: colors.muted, fontFamily: fontFamily.text }]}>
+          Permanently delete your Reswell account and personal profile data. Finish open orders and cash out earnings first.
+        </Text>
+        <Pressable
+          disabled={busy !== null}
+          onPress={() => {
+            Alert.alert(
+              "Delete your account?",
+              "This can’t be undone. Your listings will be removed and you won’t be able to sign in again.",
+              [
+                { text: "Cancel", style: "cancel" },
+                {
+                  text: "Delete account",
+                  style: "destructive",
+                  onPress: () => {
+                    const token = session?.access_token
+                    if (!token) return
+                    setBusy("delete")
+                    setMessage(null)
+                    void deleteAccount(token)
+                      .then(async () => {
+                        await signOut()
+                        router.replace("/account")
+                      })
+                      .catch((cause: unknown) => {
+                        note("error", cause instanceof Error ? cause.message : "Couldn't delete your account.")
+                      })
+                      .finally(() => setBusy(null))
+                  },
+                },
+              ],
+            )
+          }}
+          style={[styles.outline, { borderColor: colors.border, opacity: busy !== null ? 0.35 : 1 }]}
+        >
+          <Text style={[styles.saveLabel, { color: colors.destructive, fontFamily: fontFamily.text }]}>
+            {busy === "delete" ? "Deleting…" : "Delete account"}
+          </Text>
         </Pressable>
       </View>
     </View>

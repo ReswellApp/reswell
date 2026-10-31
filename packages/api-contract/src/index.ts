@@ -21,7 +21,7 @@ export const mobileProfileSettingsSchema = z.object({
   city: z.string().nullable(),
   shop_banner_url: z.string().nullable(),
   shop_tile_banner_url: z.string().nullable(),
-  signed_in_with: z.enum(["google", "email"]),
+  signed_in_with: z.enum(["google", "apple", "email"]),
   /** True when this account has an email-and-password login, same check as the website. */
   has_email_password: z.boolean(),
   message_sms_opt_in: z.boolean(),
@@ -118,6 +118,54 @@ export const mobileGoogleSignUpBodySchema = z.object({
   accepted_terms: z.boolean().refine((value) => value, {
     message: "Please accept Reswell's Terms of Use and Privacy Policy to continue.",
   }),
+})
+
+/** Native Sign in with Apple identity token plus the sign-up checkboxes. */
+export const mobileAppleSignUpBodySchema = z.object({
+  id_token: z.string().min(1),
+  nonce: z.string().min(1).optional(),
+  marketing_opt_in: z.boolean(),
+  accepted_terms: z.boolean().refine((value) => value, {
+    message: "Please accept Reswell's Terms of Use and Privacy Policy to continue.",
+  }),
+})
+
+export const mobileListingReportBodySchema = z.object({
+  reason: z.string().trim().min(3).max(120),
+  details: z.string().trim().max(2000).optional(),
+})
+
+export const mobileListingReportResultSchema = z.object({
+  id: z.string().uuid(),
+})
+
+export const mobileUserReportBodySchema = z.object({
+  reported_user_id: z.string().uuid(),
+  reason: z.string().trim().min(3).max(120),
+  details: z.string().trim().max(2000).optional(),
+  conversation_id: z.string().uuid().optional(),
+  block: z.boolean().optional(),
+})
+
+export const mobileUserReportResultSchema = z.object({
+  id: z.string().uuid(),
+  blocked: z.boolean(),
+})
+
+export const mobileBlockBodySchema = z.object({
+  user_id: z.string().uuid(),
+})
+
+export const mobileBlockResultSchema = z.object({
+  blocked: z.boolean(),
+})
+
+export const mobileBlockedUsersSchema = z.object({
+  user_ids: z.array(z.string().uuid()),
+})
+
+export const mobileAccountDeleteResultSchema = z.object({
+  deleted: z.literal(true),
 })
 
 export const mobileMeSchema = z.object({
@@ -1316,6 +1364,15 @@ export type MobileProfileSignInAction = z.infer<typeof mobileProfileSignInAction
 export type MobileSignUpBody = z.infer<typeof mobileSignUpBodySchema>
 export type MobileSignUpResult = z.infer<typeof mobileSignUpResultSchema>
 export type MobileGoogleSignUpBody = z.infer<typeof mobileGoogleSignUpBodySchema>
+export type MobileAppleSignUpBody = z.infer<typeof mobileAppleSignUpBodySchema>
+export type MobileListingReportBody = z.infer<typeof mobileListingReportBodySchema>
+export type MobileListingReportResult = z.infer<typeof mobileListingReportResultSchema>
+export type MobileUserReportBody = z.infer<typeof mobileUserReportBodySchema>
+export type MobileUserReportResult = z.infer<typeof mobileUserReportResultSchema>
+export type MobileBlockBody = z.infer<typeof mobileBlockBodySchema>
+export type MobileBlockResult = z.infer<typeof mobileBlockResultSchema>
+export type MobileBlockedUsers = z.infer<typeof mobileBlockedUsersSchema>
+export type MobileAccountDeleteResult = z.infer<typeof mobileAccountDeleteResultSchema>
 export type MobileMe = z.infer<typeof mobileMeSchema>
 export type MobileListingCardSeller = z.infer<typeof mobileListingCardSellerSchema>
 
@@ -2422,12 +2479,14 @@ export const mobileConversationDetailSchema = z.object({
   listing_slug: z.string().nullable(),
   listing_title: z.string().nullable(),
   listing_image_url: z.string().nullable(),
+  other_user_id: z.string().uuid(),
   other_name: z.string(),
   other_avatar_url: z.string().nullable(),
   other_joined_label: z.string().nullable(),
   other_review_count: z.number().int().nonnegative(),
   other_rating_average: z.number().min(0).max(5).nullable(),
   viewer_is_seller: z.boolean(),
+  other_blocked: z.boolean(),
   messages: z.array(mobileMessageSchema),
 })
 

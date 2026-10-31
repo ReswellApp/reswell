@@ -89,6 +89,11 @@ import {
   mobileSupportMediaResultSchema,
   mobileSupportReplyResultSchema,
   mobileSupportThreadSchema,
+  mobileAccountDeleteResultSchema,
+  mobileBlockResultSchema,
+  mobileBlockedUsersSchema,
+  mobileListingReportResultSchema,
+  mobileUserReportResultSchema,
   mobileSellBoardSpecsSchema,
   mobileSellPhotoGuideSchema,
   mobileSellCatalogSearchSchema,
@@ -162,6 +167,10 @@ import {
   type MobileProfileSettings,
   type MobileProfileSignInAction,
   type MobileGoogleSignUpBody,
+  type MobileAppleSignUpBody,
+  type MobileListingReportBody,
+  type MobileUserReportBody,
+  type MobileAccountDeleteResult,
   type MobileSignUpBody,
   type MobileSignUpResult,
   type MobileProfileSettingsPatch,
@@ -860,6 +869,90 @@ export function registerGoogleAccount(body: MobileGoogleSignUpBody): Promise<Mob
     null,
     body,
   )
+}
+
+/** Sign in with Apple sign-up. Exchanges the native identity token and returns a session. */
+export function registerAppleAccount(body: MobileAppleSignUpBody): Promise<MobileSignUpResult> {
+  return read(
+    "/api/mobile/v1/auth/apple/sign-up",
+    (data) => mobileSignUpResultSchema.parse(data),
+    null,
+    body,
+  )
+}
+
+export async function deleteAccount(accessToken: string): Promise<MobileAccountDeleteResult> {
+  const response = await fetch(`${apiOrigin()}/api/mobile/v1/me/account`, {
+    method: "DELETE",
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+  })
+  const parsed: unknown = await response.json()
+  if (!response.ok) {
+    throw new Error(responseErrorMessage(parsed, "Couldn't delete your account."))
+  }
+  if (!parsed || typeof parsed !== "object" || !("data" in parsed)) {
+    throw new Error("Unexpected response")
+  }
+  return mobileAccountDeleteResultSchema.parse(parsed.data)
+}
+
+export function reportListing(
+  accessToken: string,
+  listingId: string,
+  body: MobileListingReportBody,
+): Promise<{ id: string }> {
+  return read(
+    `/api/mobile/v1/listings/${encodeURIComponent(listingId)}/report`,
+    (data) => mobileListingReportResultSchema.parse(data),
+    accessToken,
+    body,
+  )
+}
+
+export function reportUser(
+  accessToken: string,
+  body: MobileUserReportBody,
+): Promise<{ id: string; blocked: boolean }> {
+  return read(
+    "/api/mobile/v1/me/reports/user",
+    (data) => mobileUserReportResultSchema.parse(data),
+    accessToken,
+    body,
+  )
+}
+
+export function blockUser(accessToken: string, userId: string): Promise<{ blocked: boolean }> {
+  return read(
+    "/api/mobile/v1/me/blocks",
+    (data) => mobileBlockResultSchema.parse(data),
+    accessToken,
+    { user_id: userId },
+  )
+}
+
+export async function unblockUser(accessToken: string, userId: string): Promise<{ blocked: boolean }> {
+  const response = await fetch(`${apiOrigin()}/api/mobile/v1/me/blocks/${encodeURIComponent(userId)}`, {
+    method: "DELETE",
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+  })
+  const parsed: unknown = await response.json()
+  if (!response.ok) {
+    throw new Error(responseErrorMessage(parsed, "Couldn't unblock that member."))
+  }
+  if (!parsed || typeof parsed !== "object" || !("data" in parsed)) {
+    throw new Error("Unexpected response")
+  }
+  return mobileBlockResultSchema.parse(parsed.data)
+}
+
+export function fetchBlockedUsers(accessToken: string): Promise<{ user_ids: string[] }> {
+  return read("/api/mobile/v1/me/blocks", (data) => mobileBlockedUsersSchema.parse(data), accessToken)
 }
 
 export function registerPushToken(accessToken: string, body: MobilePushTokenBody): Promise<{ ok: true }> {

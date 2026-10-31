@@ -31,6 +31,7 @@ import { listingBuyerQuantityCap, listingSupportsBuyerQuantity } from "@/lib/lis
 import { captureServerEvent } from "@/lib/posthog-server"
 import { evaluateUserMessageSend } from "@/lib/services/accountRestrictions"
 import { captureBlockedFraudMessage } from "@/lib/services/captureBlockedFraudMessage"
+import { rejectIfMessagingBlocked } from "@/lib/services/userBlocks"
 import { assertListingEligibleForCart, peerSurfboardAddCapError } from "@/lib/services/cartEligibility"
 import { notifyShopFollowKlaviyo } from "@/lib/services/notifyShopFollowKlaviyo"
 import { respondToCounterOfferService } from "@/lib/services/respondToCounterOffer"
@@ -265,6 +266,8 @@ async function deliverMessage(
     return failure(404, "Conversation not found")
   }
   const receiverId = user.id === conversation.buyer_id ? conversation.seller_id : conversation.buyer_id
+  const blocked = await rejectIfMessagingBlocked(supabase, user.id, receiverId)
+  if (blocked) return blocked
   const sendGuard = await evaluateUserMessageSend(supabase, user.id, receiverId)
   if (!sendGuard.ok) return failure(429, sendGuard.userMessage)
 
@@ -363,6 +366,10 @@ export async function sendMobileConversationMediaMessage(
   if (user.id !== conversation.buyer_id && user.id !== conversation.seller_id) {
     return failure(404, "Conversation not found")
   }
+  const mediaReceiverId =
+    user.id === conversation.buyer_id ? conversation.seller_id : conversation.buyer_id
+  const mediaBlocked = await rejectIfMessagingBlocked(supabase, user.id, mediaReceiverId)
+  if (mediaBlocked) return mediaBlocked
 
   const caption = input.caption?.trim() || undefined
   if (caption) {
@@ -401,6 +408,8 @@ export async function openMobileSellerConversation(
   sellerId: string,
 ): Promise<MobileApiResult<{ conversation_id: string }>> {
   if (user.id === sellerId) return failure(400, "You can't message yourself.")
+  const blocked = await rejectIfMessagingBlocked(supabase, user.id, sellerId)
+  if (blocked) return blocked
   const opened = await ensureConversationBetweenBuyerAndSeller(supabase, user.id, sellerId)
   if (!opened) return failure(500, "Could not open this conversation.")
   return { ok: true, data: { conversation_id: opened.id } }
@@ -419,6 +428,8 @@ export async function sendMobileListingMessage(
     .maybeSingle()
   if (error || !listing) return failure(404, "Listing not found")
   if (listing.user_id === user.id) return failure(400, "You can't message yourself about your own listing.")
+  const blocked = await rejectIfMessagingBlocked(supabase, user.id, listing.user_id)
+  if (blocked) return blocked
 
   const existing = await getConversationForBuyerSellerListing(supabase, user.id, listing.user_id, listingId)
   const conversationId =

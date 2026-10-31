@@ -5,6 +5,7 @@ import { SymbolView } from "expo-symbols"
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   KeyboardAvoidingView,
   LayoutChangeEvent,
@@ -21,9 +22,18 @@ import type { MobileConversationDetail, MobileMessage } from "@reswell/api-contr
 import { OfferMessageCard, OfferThreadFallbackCard } from "@/components/offers/offer-message-card"
 import { MessageComposerBar } from "@/components/message-composer-bar"
 import { ProfileCircle } from "@/components/profile-circle"
+import { ReportUserSheet } from "@/components/report-user-sheet"
 import { ScreenSearchHeader } from "@/components/screen-search-header"
 import { SellUploadMenu } from "@/components/sell/sell-upload-menu"
-import { fetchConversation, fetchConversationMessagesSince, messageAttachmentUrl, sendConversationMediaMessage, sendConversationMessage } from "@/lib/api"
+import {
+  blockUser,
+  fetchConversation,
+  fetchConversationMessagesSince,
+  messageAttachmentUrl,
+  sendConversationMediaMessage,
+  sendConversationMessage,
+  unblockUser,
+} from "@/lib/api"
 import { uploadConversationImageAttachment } from "@/lib/message-media-upload"
 import { useAuth } from "@/lib/auth-context"
 import { setActiveMarketplaceConversation, subscribeMarketplaceThread } from "@/lib/marketplace-live"
@@ -55,6 +65,8 @@ export default function ConversationScreen() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [photoMenuOpen, setPhotoMenuOpen] = useState(false)
   const [safetyOpen, setSafetyOpen] = useState(true)
+  const [reportOpen, setReportOpen] = useState(false)
+  const [blockBusy, setBlockBusy] = useState(false)
   const accessToken = session?.access_token ?? null
   const load = useCallback(
     (token: string) => {
@@ -188,7 +200,7 @@ export default function ConversationScreen() {
       ) : error && !data ? (
         <View style={styles.centered}>
           <Text style={{ color: colors.foreground, fontFamily: fontFamily.text }}>{error}</Text>
-          <Pressable onPress={reload}>
+          <Pressable onPress={() => reload()}>
             <Text style={[styles.retry, { color: colors.foreground, fontFamily: fontFamily.text }]}>Try again</Text>
           </Pressable>
         </View>
@@ -226,7 +238,36 @@ export default function ConversationScreen() {
             onScroll={onThreadScroll}
             scrollEventThrottle={16}
             keyboardShouldPersistTaps="handled"
-            ListHeaderComponent={<PersonSummary conversation={data} />}
+            ListHeaderComponent={
+              <PersonSummary
+                conversation={data}
+                blockBusy={blockBusy}
+                onReport={() => setReportOpen(true)}
+                onToggleBlock={() => {
+                  const token = accessToken
+                  if (!token || blockBusy) return
+                  setBlockBusy(true)
+                  const nextBlocked = !data.other_blocked
+                  const action = nextBlocked
+                    ? blockUser(token, data.other_user_id)
+                    : unblockUser(token, data.other_user_id)
+                  void action
+                    .then(() => {
+                      reload({ silent: true })
+                      if (nextBlocked) {
+                        Alert.alert("Member blocked", "You won’t see new messages from this member.")
+                      }
+                    })
+                    .catch((cause: unknown) => {
+                      Alert.alert(
+                        "Couldn’t update block",
+                        cause instanceof Error ? cause.message : "Try again in a moment.",
+                      )
+                    })
+                    .finally(() => setBlockBusy(false))
+                }}
+              />
+            }
             renderItem={({ item }) =>
               item.kind === "day" ? (
                 <Text style={[styles.day, { color: colors.muted, fontFamily: fontFamily.text }]}>{item.label}</Text>
@@ -264,6 +305,13 @@ export default function ConversationScreen() {
                 </Pressable>
               </View>
             ) : null}
+            {data.other_blocked ? (
+              <View style={[styles.blockedBanner, { borderColor: colors.border, paddingBottom: Math.max(insets.bottom, 12) }]}>
+                <Text style={[styles.blockedText, { color: colors.muted, fontFamily: fontFamily.text }]}>
+                  You blocked this member. Unblock them above to send messages again.
+                </Text>
+              </View>
+            ) : (
             <MessageComposerBar
             draft={draft}
             onChangeText={setDraft}
@@ -322,11 +370,22 @@ export default function ConversationScreen() {
               </Pressable>
             }
             />
+            )}
           </View>
         </>
       ) : null}
     </KeyboardAvoidingView>
     </View>
+    {data && accessToken && id ? (
+      <ReportUserSheet
+        presented={reportOpen}
+        onDismiss={() => setReportOpen(false)}
+        accessToken={accessToken}
+        reportedUserId={data.other_user_id}
+        conversationId={id}
+        onBlocked={() => reload({ silent: true })}
+      />
+    ) : null}
     {photoMenuOpen && id && accessToken ? (
       <SellUploadMenu
         onClose={() => setPhotoMenuOpen(false)}
@@ -389,7 +448,17 @@ function ThreadTitle({ name, avatarUrl, joined }: { name: string; avatarUrl: str
   )
 }
 
-function PersonSummary({ conversation }: { conversation: MobileConversationDetail }) {
+function PersonSummary({
+  conversation,
+  blockBusy,
+  onReport,
+  onToggleBlock,
+}: {
+  conversation: MobileConversationDetail
+  blockBusy: boolean
+  onReport: () => void
+  onToggleBlock: () => void
+}) {
   const colors = useReswellColors()
   const reviews =
     conversation.other_review_count === 0
@@ -405,6 +474,24 @@ function PersonSummary({ conversation }: { conversation: MobileConversationDetai
       <View style={styles.reviewLine}>
         <SymbolView name={{ ios: "star.fill", android: "star", web: "star" }} size={12} tintColor={colors.foreground} />
         <Text style={[styles.personMeta, { color: colors.muted, fontFamily: fontFamily.text }]}>{reviews}</Text>
+      </View>
+      <View style={styles.safetyActions}>
+        <Pressable onPress={onReport} accessibilityRole="button" style={styles.safetyAction}>
+          <Text style={[styles.safetyActionLabel, { color: colors.shipping, fontFamily: fontFamily.text }]}>
+            Report
+          </Text>
+        </Pressable>
+        <Text style={{ color: colors.border }}>·</Text>
+        <Pressable
+          onPress={onToggleBlock}
+          disabled={blockBusy}
+          accessibilityRole="button"
+          style={styles.safetyAction}
+        >
+          <Text style={[styles.safetyActionLabel, { color: colors.shipping, fontFamily: fontFamily.text }]}>
+            {blockBusy ? "Updating…" : conversation.other_blocked ? "Unblock" : "Block"}
+          </Text>
+        </Pressable>
       </View>
     </View>
   )
@@ -611,6 +698,15 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   person: { alignItems: "center", gap: 4, paddingTop: 12, paddingBottom: 20 },
+  safetyActions: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 8 },
+  safetyAction: { paddingVertical: 4 },
+  safetyActionLabel: { fontSize: 14, fontWeight: "600" },
+  blockedBanner: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+  },
+  blockedText: { fontSize: 13, lineHeight: 18 },
   personName: { marginTop: 8, fontSize: 18, fontWeight: "700" },
   personMeta: { fontSize: 14 },
   reviewLine: { flexDirection: "row", alignItems: "center", gap: 4 },

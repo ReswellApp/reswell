@@ -84,12 +84,13 @@ export function DimensionPhotoMatchAdminClient() {
   const zoomRef = useRef<ReactZoomPanPinchContentRef | null>(null)
 
   const load = useCallback(
-    async (silent: boolean) => {
+    async (silent: boolean, ratingOverride?: RatingFilter) => {
       if (!silent) setLoading(true)
+      const rating = ratingOverride ?? filter
       try {
         const params = new URLSearchParams({
           days: "90",
-          rating: filter,
+          rating,
           limit: "100",
         })
         const res = await fetch(`/api/admin/dimension-photo-match?${params}`)
@@ -147,14 +148,20 @@ export function DimensionPhotoMatchAdminClient() {
         return
       }
       if (body.data.scanned === 0) {
-        toast.message("No unscanned active/sold surfboards left in this batch")
+        toast.message(
+          "No unscanned active/sold surfboards left — rate existing rows, Rematch Bad/Close, or wait for new listings",
+        )
+      } else if (body.data.found === 0) {
+        toast.message(
+          `Scanned ${body.data.scanned} · no readable dims (${body.data.skipped} skipped). Check Unrated for pick-only rows.`,
+        )
       } else {
         toast.success(
           `Scanned ${body.data.scanned} listings · found dims on ${body.data.found}`,
         )
       }
       setFilter("unrated")
-      await load(false)
+      await load(false, "unrated")
     } catch {
       toast.error("Scan failed")
     } finally {
@@ -190,7 +197,7 @@ export function DimensionPhotoMatchAdminClient() {
         )
       }
       setFilter("unrated")
-      await load(false)
+      await load(false, "unrated")
     } catch {
       toast.error("Rematch failed")
     } finally {

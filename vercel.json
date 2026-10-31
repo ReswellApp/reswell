@@ -145,6 +145,10 @@
     {
       "path": "/api/cron/listing-image-storage-drift",
       "schedule": "15 14 * * *"
+    },
+    {
+      "path": "/api/cron/surfboard-dimension-photo-queue",
+      "schedule": "20 */4 * * *"
     }
   ]
 }

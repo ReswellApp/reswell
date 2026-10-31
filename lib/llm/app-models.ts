@@ -17,6 +17,7 @@ export type AppLlmFeatureId =
   | "message_fraud_review"
   | "sell_photo_match"
   | "surfboard_dimension_photo"
+  | "surfboard_dimension_photo_pick"
   | "surfboard_dimension_photo_jev"
   | "email_studio"
 
@@ -230,23 +231,46 @@ export const APP_LLM_FEATURES: readonly AppLlmFeatureDefinition[] = [
     ],
   },
   {
-    id: "surfboard_dimension_photo",
-    name: "Surfboard dimension photo match",
+    id: "surfboard_dimension_photo_pick",
+    name: "Dimension photo picker",
     purpose:
-      "Finds the listing photo with the size stamp, reads L×W×T from that image only (never listings.dimensions). Admin Photo/Dims ratings inject contrastive few-shot images + text each call (not weight fine-tuning). Jev verifies the proposal afterward (volume clear, confidence, soft rating hints, optional few-shot retry on listing scans).",
-    gatewayFeatureTag: "feature:surfboard-dimension-photo",
+      "Harness stage 1 only: choose which gallery photo is the size stamp (index). Multi-image classification with Good/Bad/Exclude few-shot. Never reads L×W×T. Gemini 3 Flash for speed + pick quality on large galleries; override with SURFBOARD_DIMENSION_PHOTO_PICK_MODEL.",
+    gatewayFeatureTag: "feature:surfboard-dimension-photo-pick",
     transport: "vercel_ai_gateway",
-    // Pro for stamp pick + faint handwriting OCR while accuracy is still climbing.
+    // Gemini 3 Flash: faster + stronger than 2.5 Flash for multi-image pick; structured index.
+    defaultModel: "google/gemini-3-flash",
+    modelEnvVar: "SURFBOARD_DIMENSION_PHOTO_PICK_MODEL",
+    enabledEnvVar: "SURFBOARD_DIMENSION_PHOTO_ENABLED",
+    surfaces: [
+      "/admin/dimension-photo-match",
+      "POST /api/admin/dimension-photo-match/test",
+      "GET /api/cron/surfboard-dimension-photo-queue",
+    ],
+    sourceFiles: [
+      "lib/services/surfboardDimensionPhotoMatch.ts",
+      "lib/services/surfboardDimensionPhotoCron.ts",
+    ],
+  },
+  {
+    id: "surfboard_dimension_photo",
+    name: "Dimension photo dims reader",
+    purpose:
+      "Harness stage 2 only: OCR L×W×T from the stamp photo chosen by the picker (original + enhance). Never brand/model/catalog. Never listings.dimensions. Pro for faint handwriting; override with SURFBOARD_DIMENSION_PHOTO_MODEL or SURFBOARD_DIMENSION_PHOTO_DIMS_MODEL.",
+    gatewayFeatureTag: "feature:surfboard-dimension-photo-dims",
+    transport: "vercel_ai_gateway",
+    // Pro: stamp OCR / handwriting while dims accuracy is still climbing.
     defaultModel: "google/gemini-2.5-pro",
-    modelEnvVar: "SURFBOARD_DIMENSION_PHOTO_MODEL",
+    modelEnvVar: "SURFBOARD_DIMENSION_PHOTO_DIMS_MODEL",
     enabledEnvVar: "SURFBOARD_DIMENSION_PHOTO_ENABLED",
     surfaces: [
       "/admin/dimension-photo-match",
       "POST /api/admin/dimension-photo-match/test",
       "POST /api/sell/photo-match",
+      "GET /api/cron/surfboard-dimension-photo-queue",
     ],
     sourceFiles: [
       "lib/services/surfboardDimensionPhotoMatch.ts",
+      "lib/services/surfboardDimensionPhotoCron.ts",
       "lib/services/surfboardDimensionPhotoMemory.ts",
       "lib/services/surfboardDimensionPhotoIngest.ts",
       "lib/db/surfboardDimensionPhoto.ts",
@@ -294,6 +318,11 @@ export function resolveConfiguredModel(feature: AppLlmFeatureDefinition): string
   if (feature.modelEnvVar) {
     const override = process.env[feature.modelEnvVar]?.trim()
     if (override) return override
+  }
+  // Back-compat: dims stage also honors the older single-model env.
+  if (feature.id === "surfboard_dimension_photo") {
+    const legacy = process.env.SURFBOARD_DIMENSION_PHOTO_MODEL?.trim()
+    if (legacy) return legacy
   }
   return feature.defaultModel
 }

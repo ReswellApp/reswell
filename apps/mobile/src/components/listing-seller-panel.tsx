@@ -5,6 +5,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 
 import type { MobileListingDetail } from "@reswell/api-contract"
 import { ListingSpecTable, listingSpecRows } from "@/components/listing-spec-table"
 import { ProfileCircle } from "@/components/profile-circle"
+import { ReportListingButton } from "@/components/report-listing-button"
 import { sendListingMessage, setFollow } from "@/lib/api"
 import { useAuthGate } from "@/lib/auth-gate"
 import { useAuth } from "@/lib/auth-context"
@@ -12,7 +13,9 @@ import { fontFamily, useReswellColors } from "@/theme"
 
 export function ListingSellerPanel({ listing }: { listing: MobileListingDetail }) {
   const colors = useReswellColors()
+  const { session } = useAuth()
   const seller = listing.seller
+  const ownListing = Boolean(session?.user?.id && seller.id === session.user.id)
   const [aboutOpen, setAboutOpen] = useState(Boolean(listing.description))
   const specRows = listingSpecRows(listing)
 
@@ -37,6 +40,7 @@ export function ListingSellerPanel({ listing }: { listing: MobileListingDetail }
       {aboutOpen && listing.description ? (
         <Text style={[styles.description, { color: colors.foreground, fontFamily: fontFamily.text }]}>{listing.description}</Text>
       ) : null}
+      {!ownListing && !listing.owner ? <ReportListingButton listingId={listing.id} /> : null}
     </View>
   )
 }

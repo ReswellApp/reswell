@@ -76,7 +76,12 @@ export async function getMobileProfileSettingsService(
   }
 
   const providers = user.app_metadata?.providers
-  const signedInWith = Array.isArray(providers) && providers.includes("google") ? "google" : "email"
+  const signedInWith =
+    Array.isArray(providers) && providers.includes("apple")
+      ? "apple"
+      : Array.isArray(providers) && providers.includes("google")
+        ? "google"
+        : "email"
   const hasEmailPassword = user.identities?.some((identity) => identity.provider === "email") === true
   const photo = profile.shop_logo_url || profile.avatar_url
   const parsed = mobileProfileSettingsSchema.safeParse({

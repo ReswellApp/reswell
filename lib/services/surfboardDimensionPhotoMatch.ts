@@ -46,9 +46,23 @@ import type { SurfboardDimensionPhotoSurface } from "@/lib/validations/surfboard
 /** Vision OCR needs stamp detail — allow larger originals than UI thumbs. */
 const VISION_IMAGE_MAX_BYTES = 8_000_000
 
-const observationSchema = z.object({
-  /** 0-based index of the photo that shows the printed dimensions. Null if none. */
-  dimensionPhotoIndex: z.number().int().nullable().optional(),
+/**
+ * Gemini 2.5 Pro spends budget on thinking before JSON. Tiny caps cause
+ * "No object generated: could not parse the response" and empty Unrated scans.
+ */
+const HARNESS_MAX_OUTPUT_TOKENS = 4096
+const PHOTO_PICK_TIMEOUT_MS = 90_000
+const DIMS_READ_TIMEOUT_MS = 60_000
+
+/** Stage 1 harness output — photo pick only. */
+const photoPickSchema = z.object({
+  dimensionPhotoIndex: z.coerce.number().int().nullable().optional(),
+  confidence: z.string().optional(),
+  summary: z.string().optional(),
+})
+
+/** Stage 2 harness output — dims read only. */
+const dimsReadSchema = z.object({
   lengthText: z.string().nullable().optional(),
   widthText: z.string().nullable().optional(),
   thicknessText: z.string().nullable().optional(),
@@ -74,14 +88,21 @@ export type DimensionPhotoMatchImage = {
   previewUrl?: string | null
 }
 
-function feature() {
+function pickFeature() {
+  const row = APP_LLM_FEATURES.find((item) => item.id === "surfboard_dimension_photo_pick")
+  if (!row) throw new Error("surfboard_dimension_photo_pick is missing from APP_LLM_FEATURES")
+  return row
+}
+
+function dimsFeature() {
   const row = APP_LLM_FEATURES.find((item) => item.id === "surfboard_dimension_photo")
   if (!row) throw new Error("surfboard_dimension_photo is missing from APP_LLM_FEATURES")
   return row
 }
 
 export function isSurfboardDimensionPhotoMatchEnabled(): boolean {
-  return isAppLlmFeatureEnabled(feature())
+  // Shared enable flag; both stages must be gateway-ready.
+  return isAppLlmFeatureEnabled(pickFeature()) && isAppLlmFeatureEnabled(dimsFeature())
 }
 
 function emptyToNull(raw: string | null | undefined): string | null {
@@ -95,26 +116,42 @@ function coerceConfidence(raw: string | undefined): "high" | "medium" | "low" {
   return "low"
 }
 
-function coerceObservation(
+function coercePhotoPick(
   raw: unknown,
   photoCount: number,
-): DimensionPhotoObservation | null {
-  const parsed = observationSchema.safeParse(raw)
+): { index: number | null; confidence: "high" | "medium" | "low"; summary: string } | null {
+  const parsed = photoPickSchema.safeParse(raw)
   if (!parsed.success) return null
-  const o = parsed.data
   let index =
-    typeof o.dimensionPhotoIndex === "number" && Number.isFinite(o.dimensionPhotoIndex)
-      ? Math.trunc(o.dimensionPhotoIndex)
+    typeof parsed.data.dimensionPhotoIndex === "number" &&
+    Number.isFinite(parsed.data.dimensionPhotoIndex)
+      ? Math.trunc(parsed.data.dimensionPhotoIndex)
       : null
   if (index != null && (index < 0 || index >= photoCount)) index = null
   return {
-    dimensionPhotoIndex: index,
-    lengthText: emptyToNull(o.lengthText)?.slice(0, 32) ?? null,
-    widthText: emptyToNull(o.widthText)?.slice(0, 32) ?? null,
-    thicknessText: emptyToNull(o.thicknessText)?.slice(0, 32) ?? null,
-    volumeText: emptyToNull(o.volumeText)?.slice(0, 32) ?? null,
-    confidence: coerceConfidence(o.confidence),
-    summary: emptyToNull(o.summary)?.slice(0, 400) ?? "No summary.",
+    index,
+    confidence: coerceConfidence(parsed.data.confidence),
+    summary: emptyToNull(parsed.data.summary)?.slice(0, 400) ?? "No pick summary.",
+  }
+}
+
+function coerceDimsRead(raw: unknown): {
+  lengthText: string | null
+  widthText: string | null
+  thicknessText: string | null
+  volumeText: string | null
+  confidence: "high" | "medium" | "low"
+  summary: string
+} | null {
+  const parsed = dimsReadSchema.safeParse(raw)
+  if (!parsed.success) return null
+  return {
+    lengthText: emptyToNull(parsed.data.lengthText)?.slice(0, 32) ?? null,
+    widthText: emptyToNull(parsed.data.widthText)?.slice(0, 32) ?? null,
+    thicknessText: emptyToNull(parsed.data.thicknessText)?.slice(0, 32) ?? null,
+    volumeText: emptyToNull(parsed.data.volumeText)?.slice(0, 32) ?? null,
+    confidence: coerceConfidence(parsed.data.confidence),
+    summary: emptyToNull(parsed.data.summary)?.slice(0, 400) ?? "No dims summary.",
   }
 }
 
@@ -204,38 +241,32 @@ async function persistShotPreviews(
   return out
 }
 
-const SYSTEM_PROMPT = `You read surfboard dimensions from photos for Reswell. Dimensions only — never brand or model.
+/**
+ * Dedicated two-stage harness. This model does ONLY:
+ *   (1) pick the stamp photo index
+ *   (2) read L×W×T from that photo
+ * Nothing else — no brand, model, condition, price, or catalog guesses.
+ */
+const PHOTO_PICK_SYSTEM = `You are Reswell's stamp-photo picker. ONE job only: choose which gallery photo shows printed surfboard dimensions.
 
-Your job (in order):
-1) PHOTO PICK — Find which gallery photo shows the printed dimensions.
-2) DIMS READ — Read length, width, thickness (and volume only if printed) from THAT photo only.
-3) Set dimensionPhotoIndex to the 0-based index of that photo.
+Output ONLY:
+- dimensionPhotoIndex: 0-based index of the stamp photo, or null if none / should be excluded
+- confidence: high | medium | low
+- summary: one short sentence about the pick
 
-What a CORRECT dimensions photo looks like:
-- Close-up of size stamp, stringer handwriting, tail block, or manufacturer label
-- Visible measurement text: feet/inches, often with × or x between L / W / T
-- Often centered on the wood stringer or a small label — not a distant full-board shot
+CORRECT pick: size stamp, stringer handwriting, tail block, or manufacturer label with readable L×W×T text.
+WRONG pick: beauty/lifestyle full-board, outline silhouette, logo-only, fins/rails without measurements.
+EXCLUDE-like galleries: leave dimensionPhotoIndex null — do not force a pick.
+Never read or invent dimensions in this stage. Never name brand or model.`
 
-What is NOT a dimensions photo (never pick these when a stamp exists):
-- Lifestyle / beach beauty shots of the whole board
-- Outline silhouettes or top-down shape with no readable numbers
-- Logo / brand / model name only
-- Fin boxes, leash plugs, or rail details without L×W×T text
+const DIMS_READ_SYSTEM = `You are Reswell's dimensions reader. ONE job only: read L×W×T (and volume only if printed) from the provided stamp photo(s).
 
-Rules:
-- Prefer the tightest readable stamp close-up over any full-board shot.
-- Gallery photos may include an OCR-enhanced twin (brightness / contrast / sharpen). Prefer reading L×W×T from the enhanced twin when the stamp is faint — but dimensionPhotoIndex must always be the original photo index (not a separate enhanced index).
-- Never invent dimensions. If you cannot read them, leave measurement fields null and confidence low.
-- Do not estimate size from board outline alone when a dimensions photo is present.
-- Do not use any catalog or listing metadata — only what is visible in the images.
-- Volume is optional. Most stamps show only L × W × T. If liters are not printed on the chosen photo, volumeText MUST be null — never estimate.
-
-lengthText: e.g. 6'2. Null when unknown.
-widthText: inches, e.g. 19 1/4. Null when unknown.
-thicknessText: inches, e.g. 2 1/2. Null when unknown.
-volumeText: liters number ONLY when clearly printed (e.g. 32L, 28.5). Otherwise null. Never invent.
-confidence: high when the stamp is clearly readable; medium when partially readable; low otherwise.
-summary: one sentence naming which photo index had the stamp and what you read.`
+Output ONLY measurement fields + confidence + a one-sentence summary.
+- lengthText e.g. 6'2. Null when unknown.
+- widthText inches e.g. 19 1/4. Null when unknown.
+- thicknessText inches e.g. 2 1/2. Null when unknown.
+- volumeText liters ONLY when clearly printed. Else null — never invent.
+Never pick photos. Never guess from outline. Never brand/model. Prefer precise fractions.`
 
 export type SurfboardDimensionPhotoMatchOutcome =
   | {
@@ -246,11 +277,11 @@ export type SurfboardDimensionPhotoMatchOutcome =
     }
   | { ok: false; error: string; status: 422 | 503 }
 
-async function runDimensionVision(input: {
-  supabase: SupabaseClient
-  shots: DimensionPhotoMatchImage[]
-  includeRefs: boolean
-}): Promise<
+type VisionContentPart =
+  | { type: "text"; text: string }
+  | { type: "file"; mediaType: string; data: Uint8Array }
+
+type DimensionHarnessResult =
   | {
       ok: true
       observation: DimensionPhotoObservation
@@ -258,7 +289,26 @@ async function runDimensionVision(input: {
       fewShotImagesIncluded: boolean
     }
   | { ok: false; error: string; status: 422 | 503 }
-> {
+
+function mergeHarnessConfidence(
+  pick: "high" | "medium" | "low",
+  dims: "high" | "medium" | "low",
+): "high" | "medium" | "low" {
+  const rank = { low: 0, medium: 1, high: 2 } as const
+  return rank[pick] <= rank[dims] ? pick : dims
+}
+
+/**
+ * Focused harness — two LLM calls, two jobs only:
+ *   Stage 1 (photo pick): gallery originals + Good/Bad/Exclude few-shot → index
+ *   Stage 2 (dims read): chosen stamp + OCR enhance (+ optional Good OCR refs) → L×W×T
+ * Enhance runs only on the picked photo (never the whole gallery).
+ */
+async function runDimensionVision(input: {
+  supabase: SupabaseClient
+  shots: DimensionPhotoMatchImage[]
+  includeRefs: boolean
+}): Promise<DimensionHarnessResult> {
   if (!isSurfboardDimensionPhotoMatchEnabled()) {
     return { ok: false, error: "Dimension photo matching is not configured.", status: 503 }
   }
@@ -266,8 +316,87 @@ async function runDimensionVision(input: {
     return { ok: false, error: "Add at least one surfboard photo.", status: 422 }
   }
 
-  // Text ratings + Good/Bad stamp images load on EVERY call (including light listing
-  // scans). Accepted refs stay optional — those are the expensive extras.
+  const pick = await runPhotoPickStage(input)
+  if (!pick.ok) return pick
+
+  if (pick.index == null) {
+    return {
+      ok: true,
+      observation: {
+        dimensionPhotoIndex: null,
+        lengthText: null,
+        widthText: null,
+        thicknessText: null,
+        volumeText: null,
+        confidence: pick.confidence,
+        summary: pick.summary,
+      },
+      usedRefs: pick.usedRefs,
+      fewShotImagesIncluded: pick.fewShotImagesIncluded,
+    }
+  }
+
+  const dims = await runDimsReadStage({
+    supabase: input.supabase,
+    shot: input.shots[pick.index]!,
+    index: pick.index,
+    includeRefs: input.includeRefs,
+  })
+  // Soft-fail dims: still save the pick so admin can rate Photo (and Rematch later).
+  if (!dims.ok) {
+    console.warn(
+      "[surfboardDimensionPhotoMatch] dims-read soft-failed after pick; saving pick-only row:",
+      dims.error,
+    )
+    return {
+      ok: true,
+      observation: {
+        dimensionPhotoIndex: pick.index,
+        lengthText: null,
+        widthText: null,
+        thicknessText: null,
+        volumeText: null,
+        confidence: pick.confidence === "high" ? "medium" : pick.confidence,
+        summary: `${pick.summary} Dims read failed — rate the photo pick; use Rematch for dims.`
+          .trim()
+          .slice(0, 400),
+      },
+      usedRefs: pick.usedRefs,
+      fewShotImagesIncluded: pick.fewShotImagesIncluded,
+    }
+  }
+
+  return {
+    ok: true,
+    observation: {
+      dimensionPhotoIndex: pick.index,
+      lengthText: dims.lengthText,
+      widthText: dims.widthText,
+      thicknessText: dims.thicknessText,
+      volumeText: dims.volumeText,
+      confidence: mergeHarnessConfidence(pick.confidence, dims.confidence),
+      summary: `${pick.summary} ${dims.summary}`.trim().slice(0, 400),
+    },
+    usedRefs: [...pick.usedRefs, ...dims.usedRefs],
+    fewShotImagesIncluded: pick.fewShotImagesIncluded || dims.fewShotImagesIncluded,
+  }
+}
+
+async function runPhotoPickStage(input: {
+  supabase: SupabaseClient
+  shots: DimensionPhotoMatchImage[]
+  includeRefs: boolean
+}): Promise<
+  | {
+      ok: true
+      index: number | null
+      confidence: "high" | "medium" | "low"
+      summary: string
+      usedRefs: SurfboardDimensionPhotoRefRow[]
+      fewShotImagesIncluded: boolean
+    }
+  | { ok: false; error: string; status: 422 | 503 }
+> {
   const [memoryBlock, pickExamples] = await Promise.all([
     surfboardDimensionPhotoMemoryPromptBlock(input.supabase),
     listDimensionPhotoPickTrainingExamples(input.supabase, {
@@ -277,17 +406,18 @@ async function runDimensionVision(input: {
     }),
   ])
 
-  const content: Array<
-    | { type: "text"; text: string }
-    | { type: "file"; mediaType: string; data: Uint8Array }
-  > = [
+  const content: VisionContentPart[] = [
     {
       type: "text",
-      text: "First pick the photo index that shows the printed size stamp, then read L × W × T from that photo only. Leave volumeText null unless liters are printed on that same photo. Study GOOD/BAD/EXCLUDE examples below — EXCLUDE means leave index null and do not force a match.",
+      text: "PHOTO PICK ONLY. Choose dimensionPhotoIndex for THIS gallery. Do not read or invent L×W×T. Study GOOD / BAD / EXCLUDE examples — EXCLUDE-like galleries → null index.",
     },
   ]
-
-  if (memoryBlock) content.push({ type: "text", text: memoryBlock })
+  if (memoryBlock) {
+    content.push({
+      type: "text",
+      text: `Admin photo-pick memory (use for pick quality only — ignore measurement numbers here):\n${memoryBlock}`,
+    })
+  }
 
   let excludeShown = 0
   for (const row of pickExamples.excluded) {
@@ -301,7 +431,6 @@ async function runDimensionVision(input: {
     if (excludeShown >= 3) break
   }
 
-  // Contrastive vision few-shot: always show recent admin-rated picks (fastest learning).
   let badPickShown = 0
   for (const row of pickExamples.bad) {
     const url = row.sourceImageUrl?.trim()
@@ -326,11 +455,10 @@ async function runDimensionVision(input: {
     if (goodPickShown >= 4) break
   }
 
-  let usedRefs: SurfboardDimensionPhotoRefRow[] = []
+  const usedRefs: SurfboardDimensionPhotoRefRow[] = []
   if (input.includeRefs) {
     const refs = await listSurfboardDimensionPhotoRefsForFewShot(input.supabase, { limit: 6 })
     for (const ref of refs) {
-      // Skip refs that duplicate a good-pick example we already attached.
       const fetched = await fetchBestListingVisionBytes({
         url: ref.imageUrl,
         thumbnailUrl: ref.thumbnailUrl,
@@ -346,7 +474,10 @@ async function runDimensionVision(input: {
         continue
       }
       usedRefs.push(ref)
-      content.push({ type: "text", text: formatRefFewShotCaption(ref, usedRefs.length - 1) })
+      content.push({
+        type: "text",
+        text: `${formatRefFewShotCaption(ref, usedRefs.length - 1)} (pick-stage: match this photo type only — do not copy its numbers.)`,
+      })
       content.push({ type: "file", mediaType: fetched.mediaType, data: fetched.bytes })
       if (usedRefs.length >= 3) break
     }
@@ -354,161 +485,162 @@ async function runDimensionVision(input: {
 
   content.push({
     type: "text",
-    text: `Now score THIS listing's photos (${input.shots.length}). Indices are 0-based. Pick dimensionPhotoIndex among the ORIGINAL indices only (0…${input.shots.length - 1}). When an OCR-enhanced twin is attached, use it to read faint stamps — do not invent a new index for it.`,
+    text: `Gallery to score (${input.shots.length} photos). Indices 0…${input.shots.length - 1}. Return only dimensionPhotoIndex + confidence + summary.`,
   })
   for (let index = 0; index < input.shots.length; index++) {
     const shot = input.shots[index]!
-    content.push({ type: "text", text: `Photo index ${index} (${shot.shot}) — original.` })
+    content.push({ type: "text", text: `Photo index ${index} (${shot.shot}).` })
     content.push({ type: "file", mediaType: shot.mediaType, data: shot.bytes })
-    const enhanced = await enhanceStampPhotoForVision(shot.bytes)
-    if (enhanced) {
-      content.push({
-        type: "text",
-        text: `OCR-enhanced twin of photo index ${index} (brightness + contrast + sharpen). Same photo — if the stamp is clearer here, still set dimensionPhotoIndex to ${index}.`,
-      })
-      content.push({
-        type: "file",
-        mediaType: enhanced.mediaType,
-        data: enhanced.bytes,
-      })
-    }
   }
 
   try {
     const { output } = await generateText({
-      model: resolveConfiguredModel(feature()),
-      output: Output.object({ schema: observationSchema }),
-      system: SYSTEM_PROMPT,
+      model: resolveConfiguredModel(pickFeature()),
+      output: Output.object({ schema: photoPickSchema }),
+      system: PHOTO_PICK_SYSTEM,
       messages: [{ role: "user", content }],
       temperature: 0,
-      maxOutputTokens: 700,
-      maxRetries: 1,
-      timeout: 55_000,
+      maxOutputTokens: HARNESS_MAX_OUTPUT_TOKENS,
+      maxRetries: 2,
+      timeout: PHOTO_PICK_TIMEOUT_MS,
       providerOptions: {
         gateway: {
-          tags: gatewayTagsForFeature("surfboard_dimension_photo"),
+          tags: [
+            ...gatewayTagsForFeature("surfboard_dimension_photo_pick"),
+            "stage:photo-pick",
+          ],
         },
       },
     })
-    let observation = coerceObservation(output, input.shots.length)
-    if (!observation) {
+    const coerced = coercePhotoPick(output, input.shots.length)
+    if (!coerced) {
       return {
         ok: false,
-        error: "Could not read those photos. Try a clearer dimensions close-up.",
+        error: "Could not pick a dimensions photo. Try a clearer stamp close-up.",
         status: 422,
       }
     }
-    // Hard-to-read stamp: one focused re-read on the enhanced pick only.
-    observation = await refineDimsFromEnhancedStamp(observation, input.shots)
     return {
       ok: true,
-      observation,
+      index: coerced.index,
+      confidence: coerced.confidence,
+      summary: coerced.summary,
       usedRefs,
-      fewShotImagesIncluded: badPickShown + goodPickShown + usedRefs.length > 0,
+      fewShotImagesIncluded: badPickShown + goodPickShown + excludeShown + usedRefs.length > 0,
     }
   } catch (err) {
     console.error(
-      "[surfboardDimensionPhotoMatch] vision failed:",
+      "[surfboardDimensionPhotoMatch] photo-pick stage failed:",
       err instanceof Error ? err.message : err,
     )
     return {
       ok: false,
-      error: "Could not read those photos. Try a clearer dimensions close-up.",
+      error: "Could not pick a dimensions photo. Try a clearer stamp close-up.",
       status: 422,
     }
   }
 }
 
-const dimsOnlyObservationSchema = z.object({
-  lengthText: z.string().nullable().optional(),
-  widthText: z.string().nullable().optional(),
-  thicknessText: z.string().nullable().optional(),
-  volumeText: z.string().nullable().optional(),
-  confidence: z.string().optional(),
-  summary: z.string().optional(),
-})
+async function runDimsReadStage(input: {
+  supabase: SupabaseClient
+  shot: DimensionPhotoMatchImage
+  index: number
+  includeRefs: boolean
+}): Promise<
+  | {
+      ok: true
+      lengthText: string | null
+      widthText: string | null
+      thicknessText: string | null
+      volumeText: string | null
+      confidence: "high" | "medium" | "low"
+      summary: string
+      usedRefs: SurfboardDimensionPhotoRefRow[]
+      fewShotImagesIncluded: boolean
+    }
+  | { ok: false; error: string; status: 422 | 503 }
+> {
+  const content: VisionContentPart[] = [
+    {
+      type: "text",
+      text: `DIMS READ ONLY for stamp photo index ${input.index} (${input.shot.shot}). Read L×W×T from the images below. volumeText null unless liters are printed. Do not pick photos.`,
+    },
+  ]
 
-/**
- * When the first pass is uncertain, re-read L×W×T from a sharpened twin of the
- * chosen stamp photo only (index stays the same).
- */
-async function refineDimsFromEnhancedStamp(
-  observation: DimensionPhotoObservation,
-  shots: DimensionPhotoMatchImage[],
-): Promise<DimensionPhotoObservation> {
-  const idx = observation.dimensionPhotoIndex
-  if (idx == null || idx < 0 || idx >= shots.length) return observation
-  if (observation.confidence === "high") {
-    const hasCore =
-      Boolean(observation.lengthText) &&
-      Boolean(observation.widthText) &&
-      Boolean(observation.thicknessText)
-    if (hasCore) return observation
+  const usedRefs: SurfboardDimensionPhotoRefRow[] = []
+  if (input.includeRefs) {
+    const refs = await listSurfboardDimensionPhotoRefsForFewShot(input.supabase, { limit: 4 })
+    for (const ref of refs) {
+      const fetched = await fetchBestListingVisionBytes({
+        url: ref.imageUrl,
+        thumbnailUrl: ref.thumbnailUrl,
+      })
+      if (!fetched) continue
+      usedRefs.push(ref)
+      content.push({
+        type: "text",
+        text: `OCR style example ${usedRefs.length}: accepted read ${[ref.boardLength, ref.boardWidthInches, ref.boardThicknessInches].filter(Boolean).join(" × ") || "unknown"}. Match this precision; do not invent.`,
+      })
+      content.push({ type: "file", mediaType: fetched.mediaType, data: fetched.bytes })
+      if (usedRefs.length >= 2) break
+    }
   }
 
-  const shot = shots[idx]!
-  const enhanced = await enhanceStampPhotoForVision(shot.bytes)
-  if (!enhanced) return observation
+  content.push({ type: "text", text: "Stamp photo — original." })
+  content.push({ type: "file", mediaType: input.shot.mediaType, data: input.shot.bytes })
+
+  const enhanced = await enhanceStampPhotoForVision(input.shot.bytes)
+  if (enhanced) {
+    content.push({
+      type: "text",
+      text: "Same stamp — OCR-enhanced (brightness + contrast + sharpen). Prefer this when the original is faint.",
+    })
+    content.push({ type: "file", mediaType: enhanced.mediaType, data: enhanced.bytes })
+  }
 
   try {
     const { output } = await generateText({
-      model: resolveConfiguredModel(feature()),
-      output: Output.object({ schema: dimsOnlyObservationSchema }),
-      system: `You read surfboard L×W×T from one OCR-enhanced size-stamp photo. Never invent. Volume null unless liters are printed. Prefer precise fractions.`,
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: `Re-read dimensions from this enhanced stamp photo (index ${idx}). Prior read was confidence=${observation.confidence}: ${[observation.lengthText, observation.widthText, observation.thicknessText].filter(Boolean).join(" × ") || "none"}. Improve the read if clearer; leave fields null when unreadable.`,
-            },
-            { type: "file", mediaType: enhanced.mediaType, data: enhanced.bytes },
-          ],
-        },
-      ],
+      model: resolveConfiguredModel(dimsFeature()),
+      output: Output.object({ schema: dimsReadSchema }),
+      system: DIMS_READ_SYSTEM,
+      messages: [{ role: "user", content }],
       temperature: 0,
-      maxOutputTokens: 400,
-      maxRetries: 1,
-      timeout: 35_000,
+      maxOutputTokens: HARNESS_MAX_OUTPUT_TOKENS,
+      maxRetries: 2,
+      timeout: DIMS_READ_TIMEOUT_MS,
       providerOptions: {
         gateway: {
-          tags: gatewayTagsForFeature("surfboard_dimension_photo"),
+          tags: [
+            ...gatewayTagsForFeature("surfboard_dimension_photo"),
+            "stage:dims-read",
+          ],
         },
       },
     })
-    const parsed = dimsOnlyObservationSchema.safeParse(output)
-    if (!parsed.success) return observation
-    const lengthText = emptyToNull(parsed.data.lengthText)?.slice(0, 32) ?? null
-    const widthText = emptyToNull(parsed.data.widthText)?.slice(0, 32) ?? null
-    const thicknessText = emptyToNull(parsed.data.thicknessText)?.slice(0, 32) ?? null
-    const volumeText = emptyToNull(parsed.data.volumeText)?.slice(0, 32) ?? null
-    // Only adopt refine when it fills gaps or upgrades confidence — never wipe a solid prior.
-    const refinedCore = [lengthText, widthText, thicknessText].filter(Boolean).length
-    const priorCore = [
-      observation.lengthText,
-      observation.widthText,
-      observation.thicknessText,
-    ].filter(Boolean).length
-    if (refinedCore < priorCore) return observation
-
+    const coerced = coerceDimsRead(output)
+    if (!coerced) {
+      return {
+        ok: false,
+        error: "Could not read dimensions from that stamp. Try a clearer close-up.",
+        status: 422,
+      }
+    }
     return {
-      ...observation,
-      lengthText: lengthText ?? observation.lengthText,
-      widthText: widthText ?? observation.widthText,
-      thicknessText: thicknessText ?? observation.thicknessText,
-      volumeText: volumeText,
-      confidence: coerceConfidence(parsed.data.confidence) || observation.confidence,
-      summary:
-        emptyToNull(parsed.data.summary)?.slice(0, 400) ??
-        `${observation.summary} (refined on enhanced stamp)`.slice(0, 400),
+      ok: true,
+      ...coerced,
+      usedRefs,
+      fewShotImagesIncluded: usedRefs.length > 0,
     }
   } catch (err) {
-    console.warn(
-      "[surfboardDimensionPhotoMatch] enhance refine failed:",
+    console.error(
+      "[surfboardDimensionPhotoMatch] dims-read stage failed:",
       err instanceof Error ? err.message : err,
     )
-    return observation
+    return {
+      ok: false,
+      error: "Could not read dimensions from that stamp. Try a clearer close-up.",
+      status: 422,
+    }
   }
 }
 

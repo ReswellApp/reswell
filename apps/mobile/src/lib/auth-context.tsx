@@ -1,7 +1,8 @@
 import type { Session } from "@supabase/supabase-js"
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react"
 import { Platform } from "react-native"
-import { registerEmailAccount, registerGoogleAccount } from "@/lib/api"
+import { registerAppleAccount, registerEmailAccount, registerGoogleAccount } from "@/lib/api"
+import { obtainAppleIdCredential, signInWithAppleNative } from "@/lib/apple-sign-in"
 import { obtainGoogleIdCredential, signInWithGoogleNative, signOutGoogleNative } from "@/lib/google-sign-in"
 import { unregisterPushToken } from "@/lib/push-token"
 import { getSupabase } from "@/lib/supabase"
@@ -21,6 +22,11 @@ export type GoogleSignUpInput = {
   acceptedTerms: boolean
 }
 
+export type AppleSignUpInput = {
+  marketingOptIn: boolean
+  acceptedTerms: boolean
+}
+
 export type SignUpResult =
   | { status: "signed_in" }
   | { status: "confirm_email" }
@@ -34,7 +40,9 @@ type AuthContextValue = {
   signIn: (email: string, password: string) => Promise<string | null>
   signUp: (input: SignUpInput) => Promise<SignUpResult>
   signUpWithGoogle: (input: GoogleSignUpInput) => Promise<SignUpResult>
+  signUpWithApple: (input: AppleSignUpInput) => Promise<SignUpResult>
   signInWithGoogle: () => Promise<string | null>
+  signInWithApple: () => Promise<string | null>
   signOut: () => Promise<void>
 }
 
@@ -138,9 +146,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return { status: "error", message }
         }
       },
+      async signUpWithApple(input) {
+        if (!supabase) return { status: "error", message: "Supabase is not configured in this build." }
+        try {
+          const credential = await obtainAppleIdCredential()
+          if (!credential.ok) {
+            if (!credential.message) return { status: "cancelled" }
+            return { status: "error", message: credential.message }
+          }
+
+          const result = await registerAppleAccount({
+            id_token: credential.credential.idToken,
+            nonce: credential.credential.nonce,
+            marketing_opt_in: input.marketingOptIn,
+            accepted_terms: input.acceptedTerms,
+          })
+          if (!result.access_token || !result.refresh_token) {
+            return { status: "error", message: "Couldn't create your account." }
+          }
+          const { error } = await supabase.auth.setSession({
+            access_token: result.access_token,
+            refresh_token: result.refresh_token,
+          })
+          if (error) return { status: "error", message: error.message }
+          return { status: "signed_in" }
+        } catch (cause) {
+          const message = cause instanceof Error ? cause.message : "Couldn't create your account."
+          return { status: "error", message }
+        }
+      },
       async signInWithGoogle() {
         if (!supabase) return "Supabase is not configured in this build."
         const message = await signInWithGoogleNative(supabase)
+        return message || null
+      },
+      async signInWithApple() {
+        if (!supabase) return "Supabase is not configured in this build."
+        const message = await signInWithAppleNative(supabase)
         return message || null
       },
       async signOut() {

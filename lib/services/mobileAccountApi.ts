@@ -24,6 +24,7 @@ import {
   type MobileReviewsPage,
 } from "@reswell/api-contract"
 import { userParticipatesInConversation } from "@/lib/db/conversations"
+import { areUsersBlockedEitherWay, listBlockedUserIds } from "@/lib/db/userBlocks"
 import {
   composeMediaAttachmentMessageBody,
   parseMarketplaceMessageImageAttachment,
@@ -60,6 +61,7 @@ import { isListingPubliclyVisible, isListingVisibleInSavedList } from "@/lib/lis
 import { redactShippingLabelArtifactsFromMessage } from "@/lib/messages/redact-seller-shipping-label"
 import { absoluteProfileCircleUrl } from "@/lib/profile-circle"
 import { getMessagesInboxForUser, markMarketplaceConversationRead } from "@/lib/services/messagesInbox"
+import { createServiceRoleClient } from "@/lib/supabase/server"
 import { revalidateMessagesInboxForParticipants } from "@/lib/cache/revalidate-messages-inbox"
 import { resolveProfileShopSectionFilter } from "@/lib/sellers/profile-shop-section-filter"
 import {
@@ -353,8 +355,16 @@ export async function listMobileConversationsService(
   userId: string,
 ): Promise<MobileApiResult<{ conversations: MobileConversationPreview[] }>> {
   const inbox = await getMessagesInboxForUser(userId)
+  let blockedIds = new Set<string>()
+  try {
+    blockedIds = new Set(await listBlockedUserIds(createServiceRoleClient(), userId))
+  } catch (error) {
+    console.warn("[mobile conversations] block filter skipped", error)
+  }
   const conversations: MobileConversationPreview[] = []
   for (const row of inbox.conversations) {
+    const otherId = row.buyer_id === userId ? row.seller_id : row.buyer_id
+    if (blockedIds.has(otherId)) continue
     const preview = toMobileConversationPreview(row, userId)
     if (preview) conversations.push(preview)
   }
@@ -440,18 +450,22 @@ export async function getMobileConversationService(
     header.listing_id,
   )
 
+  const otherBlocked = await areUsersBlockedEitherWay(createServiceRoleClient(), userId, otherId)
+
   const parsed = mobileConversationDetailSchema.safeParse({
     id: header.id,
     listing_id: header.listing_id,
     listing_slug: text(listing?.slug),
     listing_title: text(listing?.title),
     listing_image_url: listingImage ? absolutePublicMediaUrl(listingImage) ?? null : null,
+    other_user_id: otherId,
     other_name: getPublicSellerDisplayName(other),
     other_avatar_url: absoluteProfileCircleUrl(avatar),
     other_joined_label: joinedLabel(other?.created_at),
     other_review_count: reviews.data.reviewCount,
     other_rating_average: reviews.data.reviewCount > 0 ? reviews.data.avgRating : null,
     viewer_is_seller: viewerIsSeller,
+    other_blocked: otherBlocked,
     messages,
   })
   if (!parsed.success) return { ok: false, status: 500, error: "Unable to load messages right now" }

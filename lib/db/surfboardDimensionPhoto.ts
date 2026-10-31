@@ -652,6 +652,25 @@ export async function listDimensionPhotoRematchCandidates(
   return out
 }
 
+/** Unrated (photo or dims still null), not excluded — used by the queue cron. */
+export async function countUnratedSurfboardDimensionPhotoMatches(
+  service: SupabaseClient,
+  fromIso: string,
+): Promise<number> {
+  const { count, error } = await service
+    .from("surfboard_dimension_photo_matches")
+    .select("id", { count: "exact", head: true })
+    .gte("occurred_at", fromIso)
+    .is("excluded_at", null)
+    .or("photo_rating.is.null,dims_rating.is.null")
+
+  if (error) {
+    console.error("[surfboardDimensionPhoto] unrated count failed:", error.message)
+    return 0
+  }
+  return count ?? 0
+}
+
 export async function listSurfboardDimensionPhotoMatches(
   service: SupabaseClient,
   options: {
@@ -1187,8 +1206,9 @@ export async function listSurfboardListingsForDimensionPhotoScan(
   )
 
   // Page through recent active+sold until we fill the batch or exhaust the window.
-  const pageSize = 80
-  const maxPages = 8
+  // Deep enough that already-scanned recent listings don't hide older unscanned ones.
+  const pageSize = 100
+  const maxPages = 25
   const out: ListingScanCandidate[] = []
   let offset = 0
 

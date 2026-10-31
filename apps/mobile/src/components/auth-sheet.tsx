@@ -15,7 +15,8 @@ import {
   View,
 } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
-import { useAuth, type GoogleSignUpInput, type SignUpInput } from "@/lib/auth-context"
+import { useAuth, type AppleSignUpInput, type GoogleSignUpInput, type SignUpInput } from "@/lib/auth-context"
+import { appleSignInAvailable } from "@/lib/apple-sign-in"
 import { AuthSignUpForm } from "@/components/auth-sign-up-form"
 import { fontFamily, useReswellColors } from "@/theme"
 
@@ -35,13 +36,14 @@ export function AuthSheet({
   const colors = useReswellColors()
   const scheme = useColorScheme()
   const insets = useSafeAreaInsets()
-  const { configured, signIn, signUp, signUpWithGoogle, signInWithGoogle } = useAuth()
+  const { configured, signIn, signUp, signUpWithGoogle, signUpWithApple, signInWithGoogle, signInWithApple } = useAuth()
   const [step, setStep] = useState<Step>("start")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [confirmEmail, setConfirmEmail] = useState(false)
+  const [appleAvailable, setAppleAvailable] = useState(Platform.OS === "ios")
 
   useEffect(() => {
     if (presented) return
@@ -52,6 +54,14 @@ export function AuthSheet({
     setBusy(false)
     setConfirmEmail(false)
   }, [presented])
+
+  useEffect(() => {
+    if (Platform.OS !== "ios") {
+      setAppleAvailable(false)
+      return
+    }
+    void appleSignInAvailable().then(setAppleAvailable)
+  }, [])
 
   const emailReady = EMAIL_PATTERN.test(email.trim())
   const canContinue = emailReady && !busy
@@ -91,6 +101,19 @@ export function AuthSheet({
       return
     }
     const result = await signUpWithGoogle(input)
+    if (result.status === "error") setError(result.message)
+    setBusy(false)
+  }
+
+  async function submitAppleSignUp(input: AppleSignUpInput) {
+    setBusy(true)
+    setError(null)
+    if (!configured) {
+      setError("Sign-in is not configured in this build.")
+      setBusy(false)
+      return
+    }
+    const result = await signUpWithApple(input)
     if (result.status === "error") setError(result.message)
     setBusy(false)
   }
@@ -173,6 +196,14 @@ export function AuthSheet({
 
               {step === "start" ? (
                 <View style={styles.stack}>
+                  {appleAvailable ? (
+                    <SocialButton
+                      label="Continue with Apple"
+                      disabled={busy}
+                      onPress={() => void run(signInWithApple)}
+                      icon={<AppleMark />}
+                    />
+                  ) : null}
                   <SocialButton
                     label="Continue with Google"
                     disabled={busy}
@@ -314,6 +345,7 @@ export function AuthSheet({
                   error={error}
                   onSubmit={(input) => void submitSignUp(input)}
                   onGoogle={(input) => void submitGoogleSignUp(input)}
+                  onApple={appleAvailable ? (input) => void submitAppleSignUp(input) : undefined}
                   onSignIn={() => {
                     setError(null)
                     setStep(email.trim() ? "password" : "start")
@@ -356,6 +388,15 @@ function GoogleMark() {
     <View style={styles.googleWrap}>
       <Text style={[styles.googleLetter, { color: "#4285F4" }]}>G</Text>
     </View>
+  )
+}
+
+function AppleMark() {
+  const colors = useReswellColors()
+  return (
+    <Text style={{ color: colors.foreground, fontSize: 18, fontWeight: "700", width: 18, textAlign: "center" }}>
+      {"\uF8FF"}
+    </Text>
   )
 }
 

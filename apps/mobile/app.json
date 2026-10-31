@@ -9,6 +9,7 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "bundleIdentifier": "app.reswell.reswell",
+      "usesAppleSignIn": true,
       "associatedDomains": ["applinks:www.reswell.app"],
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,

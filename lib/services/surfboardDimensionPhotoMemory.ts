@@ -145,7 +145,7 @@ export async function surfboardDimensionPhotoMemoryPromptBlock(
 
 export function formatRefFewShotCaption(row: SurfboardDimensionPhotoRefRow, index: number): string {
   const dims = dimsLabel(row)
-  return `GOOD stamp example ${index + 1}: this image IS a dimensions photo. Accepted read ${dims}. When a gallery has a similar close-up, pick that index.`
+  return `GOOD stamp example ${index + 1}: this image IS a dimensions photo (accepted read ${dims}). When a gallery has a similar close-up, pick that index.`
 }
 
 export function formatGoodPickExampleCaption(index: number): string {
@@ -157,5 +157,5 @@ export function formatBadPickExampleCaption(index: number): string {
 }
 
 export function formatExcludeExampleCaption(index: number): string {
-  return `EXCLUDE example ${index + 1}: admin marked this case as not worth matching (no usable stamp, wrong board type, or unreadable forever). If a gallery looks like this, leave dimensionPhotoIndex null and measurement fields null — do not force a match.`
+  return `EXCLUDE example ${index + 1}: admin marked this case as not worth matching (no usable stamp, wrong board type, or unreadable forever). If a gallery looks like this, leave dimensionPhotoIndex null — do not force a pick.`
 }

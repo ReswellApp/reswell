@@ -142,12 +142,12 @@ export const accountsHelpArticles: HelpArticle[] = [
         body: (
           <>
             <p>
-              To delete your Reswell account, {helpLink("/contact", "contact support")} from the
-              email address registered on the account. Tell us you want the account deleted and
-              include any relevant details (active listings, open orders, wallet balance).
+              On the Reswell iOS app, go to Account → Profile → Sign-in → Delete account. Finish open
+              orders and cash out earnings first.
             </p>
             <p>
-              We verify ownership before processing deletion. Open orders or pending payouts may need
+              On the website, {helpLink("/contact", "contact support")} from the email address
+              registered on the account and ask for deletion. Open orders or pending payouts may need
               to resolve first.
             </p>
           </>

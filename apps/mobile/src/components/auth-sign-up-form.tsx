@@ -1,7 +1,7 @@
 import { SymbolView } from "expo-symbols"
 import { useEffect, useState, type ReactNode } from "react"
 import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, TextInput, View } from "react-native"
-import type { GoogleSignUpInput, SignUpInput } from "@/lib/auth-context"
+import type { AppleSignUpInput, GoogleSignUpInput, SignUpInput } from "@/lib/auth-context"
 import { publicSiteUrl } from "@/lib/public-env"
 import { fontFamily, useReswellColors } from "@/theme"
 
@@ -14,6 +14,7 @@ type AuthSignUpFormProps = {
   error: string | null
   onSubmit: (input: SignUpInput) => void
   onGoogle: (input: GoogleSignUpInput) => void
+  onApple?: (input: AppleSignUpInput) => void
   onSignIn: () => void
 }
 
@@ -24,6 +25,7 @@ export function AuthSignUpForm({
   error,
   onSubmit,
   onGoogle,
+  onApple,
   onSignIn,
 }: AuthSignUpFormProps) {
   const colors = useReswellColors()
@@ -36,10 +38,14 @@ export function AuthSignUpForm({
   const [acceptedTerms, setAcceptedTerms] = useState(true)
   const [localError, setLocalError] = useState<string | null>(null)
   const [googlePending, setGooglePending] = useState(false)
-  const [errorAnchor, setErrorAnchor] = useState<"google" | "form">("form")
+  const [applePending, setApplePending] = useState(false)
+  const [errorAnchor, setErrorAnchor] = useState<"google" | "apple" | "form">("form")
 
   useEffect(() => {
-    if (!busy) setGooglePending(false)
+    if (!busy) {
+      setGooglePending(false)
+      setApplePending(false)
+    }
   }, [busy])
 
   const emailReady = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
@@ -79,6 +85,42 @@ export function AuthSignUpForm({
           Sign in
         </Text>
       </Text>
+
+      {onApple ? (
+        <Pressable
+          accessibilityRole="button"
+          disabled={busy || applePending}
+          onPress={() => {
+            if (!acceptedTerms) {
+              setErrorAnchor("apple")
+              setLocalError("Please accept Reswell's Terms of Use and Privacy Policy to continue.")
+              return
+            }
+            setLocalError(null)
+            setErrorAnchor("apple")
+            setApplePending(true)
+            onApple({ marketingOptIn, acceptedTerms })
+          }}
+          style={[styles.social, { borderColor: "#E4E4E7", backgroundColor: colors.background }]}
+        >
+          {applePending ? (
+            <ActivityIndicator color={colors.foreground} />
+          ) : (
+            <>
+              <Text style={{ color: colors.foreground, fontSize: 18, fontWeight: "700", width: 18, textAlign: "center" }}>
+                {"\uF8FF"}
+              </Text>
+              <Text style={[styles.socialLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}>
+                Sign up with Apple
+              </Text>
+            </>
+          )}
+        </Pressable>
+      ) : null}
+
+      {errorAnchor === "apple" && shownError ? (
+        <Text style={[styles.error, { color: colors.destructive, fontFamily: fontFamily.text }]}>{shownError}</Text>
+      ) : null}
 
       <Pressable
         accessibilityRole="button"
