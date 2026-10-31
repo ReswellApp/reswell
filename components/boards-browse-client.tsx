@@ -185,19 +185,27 @@ export function BoardsBrowseClient({
         onRemove: () => state.setPriceRange(null, null),
       })
     }
-    if (showLocationFilter && state.location.trim()) {
+    if (showLocationFilter && state.homePreference && state.location.trim()) {
       out.push({
-        id: "location",
-        label: state.location.trim(),
+        id: "home",
+        label: `Near ${state.location.trim()}`,
         onRemove: () => state.setLocationQuery(""),
       })
-    }
-    if (showLocationFilter && state.radius !== "any") {
-      out.push({
-        id: "radius",
-        label: `${state.radius} mi`,
-        onRemove: () => state.setRadius(null),
-      })
+    } else {
+      if (showLocationFilter && state.location.trim()) {
+        out.push({
+          id: "location",
+          label: state.location.trim(),
+          onRemove: () => state.setLocationQuery(""),
+        })
+      }
+      if (showLocationFilter && state.radius !== "any") {
+        out.push({
+          id: "radius",
+          label: `${state.radius} mi`,
+          onRemove: () => state.setRadius(null),
+        })
+      }
     }
     if (state.shippingAvailable) {
       out.push({

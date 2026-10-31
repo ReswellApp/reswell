@@ -2,14 +2,14 @@ import {
   facetSelectionsFromParams,
   type BoardsBrowseFacetSelections,
 } from "@/lib/boards-browse-facets"
-import { normalizeBoardBrowseRadius } from "@/lib/boards-browse-location"
+import { boardsBrowseUsesHardRadius } from "@/lib/boards-browse-home"
 import {
   BOARDS_BROWSE_NEWEST_SORT,
+  BOARDS_BROWSE_TOP_PICKS_SORT,
   isBoardsBrowseLocalPickupAvailableParam,
   isBoardsBrowseShippingAvailableParam,
   type BoardsBrowseSearchParams,
 } from "@/lib/marketplace-slug-metadata"
-import { isBoardsBrowseTopPicksSort } from "@/lib/db/boards-browse-listings"
 
 type SidebarFilterParams = Partial<BoardsBrowseSearchParams> &
   Partial<Record<keyof BoardsBrowseFacetSelections, string | undefined>>
@@ -28,8 +28,11 @@ export function boardsBrowseSidebarFilterCount(sp: SidebarFilterParams): number 
   if (sp.brand?.trim() || sp.brandId?.trim()) n += 1
   if (sp.model?.trim() || sp.brandModelId?.trim()) n += 1
   if (sp.minPrice?.trim() || sp.maxPrice?.trim()) n += 1
-  if (sp.location?.trim()) n += 1
-  if (normalizeBoardBrowseRadius(sp.radius ?? null) !== "any") n += 1
+  // Home preference and location-without-radius are ranking, not sidebar filters.
+  if (boardsBrowseUsesHardRadius(sp)) {
+    if (sp.location?.trim()) n += 1
+    n += 1
+  }
   if (isBoardsBrowseShippingAvailableParam(sp.shipping)) n += 1
   if (isBoardsBrowseLocalPickupAvailableParam(sp.pickup)) n += 1
   return n
@@ -48,7 +51,7 @@ export function boardsBrowseEffectiveSort(
   hasSidebarFilters: boolean,
   hasKeywordQuery = false,
 ): string {
-  if (isBoardsBrowseTopPicksSort(sort) && (hasSidebarFilters || hasKeywordQuery)) {
+  if (sort === BOARDS_BROWSE_TOP_PICKS_SORT && (hasSidebarFilters || hasKeywordQuery)) {
     return BOARDS_BROWSE_NEWEST_SORT
   }
   return sort
