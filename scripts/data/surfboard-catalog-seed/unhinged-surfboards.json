@@ -1,0 +1,67 @@
+{
+  "generated_for": "Unhinged Surfboards official named standup catalog",
+  "source": "https://www.unhingedsurfboards.com (Squarespace /models pages — excludes tees, stickers, fins, one-off shop SKUs, and custom deposits)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "unhinged-surfboards",
+      "name": "Unhinged Surfboards",
+      "website_url": "https://www.unhingedsurfboards.com",
+      "location_label": "Los Angeles, California",
+      "founder_name": "Dane Peterson",
+      "lead_shaper_name": "Dane Peterson",
+      "short_description": "Hand-shaped longboards, noseriders, and gliders by Dane Peterson in Los Angeles — Malibu-rooted logs built as stock, semi-custom, and custom handshapes.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/unhinged-surfboards.png",
+      "models": [
+        {
+          "name": "Peto Pig",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/615e593333744f26a45999a1/0aa3e0e4-66db-4e46-86db-05687060f15b/PetoPig_Unhinged-Packshots-Boards_2697.png",
+          "description": "Initially influenced during my years living in Australia (2000 - 2013) riding a 67’ Peter Clarke surfboard shaped by Keith Paul. This shape has been a staple in my quiver since around 2006. I shaped a set of twin pigs for everyone’s favorite logger Mr. Alex Knost upon my return to California late in 2013; he went on to have great success riding the Pigs through about 2016. I was blown by the response the shape gained internationally at that time, also favored by other longboard aficionados, Kassia Meador, Lola Mignot, West Adler, Leah Dawson, and Colin Whitbread. The Peto Pig is a great all-around performing log designed for point waves and long walls in the waist-to-head high range. It is geared for advanced surfers but also works great for intermediate surfers looking to experience maximum lift while noseriding in the pocket, combined with a genuinely unique, pendulum-style turning aspect.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Aqueous",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/615e593333744f26a45999a1/a4fd9be1-eaf8-47f8-8ce1-c5739768bc04/Aqueous_Unhinged-Packshots-Boards_2697.png",
+          "description": "The \"AQUEOUS\" model is an all-around, user-friendly medium-weight log with all the recipes of a classic California cruiser with some added \"spunk.\" Kassia and I have developed The Aqueous to feature more responsiveness built into the shape. Providing access to a new level of control that a lot of female surfers have been missing due to purchasing oversized logs off the rack at shops. This new profile will be easier to maneuver in softer, mushy waves, like San-o, Cardiff, Kamakura, BK Reef, and small to fun-size beach breaks.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Chicken Phat",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/615e593333744f26a45999a1/0cdbb1d8-0fec-4908-afa2-86f607b07197/Modele_Packshots-Boards_CP+copy.png",
+          "description": "The \"CHICKEN PHAT\" is the successor to my original Noserider 1, initially developed for surfers seeking a nose rider that also affords the user added maneuverability. This model is shaped from a denser blank and features a low entry rocker, increased tail kick, a fuller outline across the entirety of the template (particularly in the nose), and a more pinched or knifed 60/40 rail. Due to these design aspects, I like to shape this model slightly thinner (1/16\") than your everyday board for customs. You may have met your maker if you seek a classic-style single-fin log with stability in trim, as well as enhanced nose-riding and turning capabilities.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Point n' Shoot (Glider)",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/615e593333744f26a45999a1/78966eb6-dc88-4c5a-879c-bc4793b1f663/GLIDER+copy.png",
+          "description": "The Point n’ Shoot (Glider) is the newest addition to the UNHINGED lineup, and is my way of deviating away from the more traditional gliders we’re all used to and aimed for folks in search of new feels. This design incorporates a highly foiled rail line and tucked edge out the tail, mild rocker, a subtly rolled nose entry, graduating into a flat panel through the midsection and front foot, then blending into an increased vee under the rear foot. Shaped as a single fin from a green density blank and features 2× 1/16” outside stringers, and a 1/4” center stringer as standard. If you're searching for a board to connect the dots from A to Z on your favorite point waves, glide and trim in the small stuff, and deliver unmatched speed in larger waves, I recommend stepping outside your comfort zone and giving this blade a run for its money.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Mind Bender",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/615e593333744f26a45999a1/5c177ede-b364-4290-8d81-b2c493d9664e/MindBender_Unhinged-Packshots-Boards_2697.png",
+          "description": "The Mind Bender is an ode to my two main influences growing up surfing the waves at Malibu, Surfrider Beach, Mr. Lance Carson, and Josh Farberow. The lessons learned under the tutelage of Josh and the countless hours studying the noseriding lines of Lance led me to a fusion of curves and a new aspect of my surfing that I hadn't experienced since my youth. This shape incorporates a mild continuous \"California Rocker\" with a rounder and more 50/50 rail than my other designs, a subtly rolled bottom deep spoon concave, and a denser green blank. If you're searching for a board to connect the dots from A to Z on your favorite point waves, with tons of drive through the turns and fast noseriding experience, this could become your new sweetheart.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Diamond 2.0",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/615e593333744f26a45999a1/b134163b-c2b3-497d-8d0a-cb48f909fe3b/Diamond2_Unhinged-Packshots-Boards_2697.png",
+          "description": "This model is the bigger brother to the Diamond_1. Featuring a denser blank with a t-band stringer, slightly more overall volume, a wider tail, straighter outline, lower rocker, and more subtle bottom contours than its sibling. This design is great for surfers of all levels and experience looking for an everyday rider that is a forgiving, stable, yet easy-to-maneuver, all-around medium-weight log.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Pig Pen",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/615e593333744f26a45999a1/37106be8-9420-4454-9c12-ce7f73993039/PigPen_Unhinged-Packshots-Boards_2697.png",
+          "description": "The PIG PEN is my version of a down-the-line, rounded pin tail trimmer. A straighter outline, with less hip than many of my other models, and a pulled-in round tail. Great for surfers of all levels, looking for down-the-line speed, trimming bliss, and longer, faster arcs through their turns, and retains excellent noseriding characteristics with it’s deep, blended nose concave.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Noserider_1",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/615e593333744f26a45999a1/1f3438d1-7651-4afe-a23c-8e0c67ff766b/Noserider_Unhinged-Packshots-Boards_2697.png",
+          "description": "The \"Noserider 1\" was initially developed for surfers seeking a \"Peto Pig\" with less octane. This model is shaped from a denser blank and features a flatter nose rocker and a fuller nose outline, with more volume carried across the deck line and through the rails than the Pig. Due to these design aspects, I recommend ordering this model 1/16\" - 1/8\" thinner than your everyday board; if you're a pirate, this design is a bit like walking the plank.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
