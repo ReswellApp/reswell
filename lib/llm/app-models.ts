@@ -236,7 +236,8 @@ export const APP_LLM_FEATURES: readonly AppLlmFeatureDefinition[] = [
       "Finds the listing photo with the size stamp, reads L×W×T from that image only (never listings.dimensions). Admin Photo/Dims ratings inject contrastive few-shot images + text each call (not weight fine-tuning). Jev verifies the proposal afterward (volume clear, confidence, soft rating hints, optional few-shot retry on listing scans).",
     gatewayFeatureTag: "feature:surfboard-dimension-photo",
     transport: "vercel_ai_gateway",
-    defaultModel: "google/gemini-2.5-flash",
+    // Pro for stamp pick + faint handwriting OCR while accuracy is still climbing.
+    defaultModel: "google/gemini-2.5-pro",
     modelEnvVar: "SURFBOARD_DIMENSION_PHOTO_MODEL",
     enabledEnvVar: "SURFBOARD_DIMENSION_PHOTO_ENABLED",
     surfaces: [

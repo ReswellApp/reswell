@@ -38,7 +38,7 @@ export type SurfboardDimensionPhotoJevReview = {
 export const surfboardDimensionPhotoMatchListQuerySchema = z.object({
   days: z.coerce.number().int().min(1).max(90).optional().default(30),
   rating: z
-    .enum(["unrated", "good", "close", "bad", "all"])
+    .enum(["unrated", "good", "close", "bad", "excluded", "all"])
     .optional()
     .default("unrated"),
   surface: z
@@ -73,6 +73,8 @@ export const rateSurfboardDimensionPhotoMatchSchema = z
     photoRating: ratingField,
     dimsRating: ratingField,
     note: z.string().trim().max(1000).nullable().optional(),
+    /** Skip this case forever for rematch/scan; stores exclude memory. */
+    excluded: z.boolean().optional(),
     promoteToRefs: z.boolean().optional().default(true),
   })
   .refine(
@@ -80,7 +82,8 @@ export const rateSurfboardDimensionPhotoMatchSchema = z
       v.matchRating !== undefined ||
       v.photoRating !== undefined ||
       v.dimsRating !== undefined ||
-      v.note !== undefined,
+      v.note !== undefined ||
+      v.excluded !== undefined,
     { message: "Nothing to update" },
   )
 
@@ -102,5 +105,10 @@ export const patchSurfboardDimensionPhotoRefSchema = z.object({
 
 export const seedSurfboardDimensionPhotoRefsSchema = z.object({
   /** Listings to vision-scan per Sync click (each listing = one Gateway call). */
+  limit: z.coerce.number().int().min(1).max(40).optional().default(12),
+})
+
+export const rematchSurfboardDimensionPhotoSchema = z.object({
+  /** Bad/Close matches to rematch per click (each = one new match row). */
   limit: z.coerce.number().int().min(1).max(40).optional().default(12),
 })

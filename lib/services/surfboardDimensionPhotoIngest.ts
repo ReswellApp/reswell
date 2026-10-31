@@ -26,6 +26,7 @@ export type IngestSurfboardDimensionPhotoResult =
         | "vision_disabled"
         | "vision_failed"
         | "already_scanned"
+        | "excluded"
     }
 
 async function fetchBytes(
@@ -140,6 +141,7 @@ export async function ingestSurfboardListingIntoDimensionPhotoRefsBestEffort(
     result.reason === "wrong_status" ||
     result.reason === "missing_image" ||
     result.reason === "already_scanned" ||
+    result.reason === "excluded" ||
     result.reason === "vision_disabled"
   ) {
     return

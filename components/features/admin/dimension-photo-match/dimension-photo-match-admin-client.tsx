@@ -24,7 +24,7 @@ import type {
 } from "@/lib/db/surfboardDimensionPhoto"
 import { Loader2, Minus, Plus, RefreshCw, RotateCcw, ZoomIn } from "lucide-react"
 
-type RatingFilter = "all" | "unrated" | "good" | "close" | "bad"
+type RatingFilter = "all" | "unrated" | "good" | "close" | "bad" | "excluded"
 type AspectRating = "good" | "close" | "bad"
 
 function deriveMatchRating(
@@ -75,6 +75,7 @@ export function DimensionPhotoMatchAdminClient() {
   const [stats, setStats] = useState<SurfboardDimensionPhotoMatchStats | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [scanning, setScanning] = useState(false)
+  const [rematching, setRematching] = useState(false)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [matching, setMatching] = useState(false)
   const [lightbox, setLightbox] = useState<SurfboardDimensionPhotoMatchRow | null>(null)
@@ -161,12 +162,91 @@ export function DimensionPhotoMatchAdminClient() {
     }
   }
 
+  async function rematchFailures() {
+    setRematching(true)
+    try {
+      const res = await fetch("/api/admin/dimension-photo-match/rematch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ limit: 12 }),
+      })
+      const body = (await res.json().catch(() => ({}))) as {
+        data?: { attempted: number; created: number; skipped: number }
+        error?: string
+      }
+      if (!res.ok || !body.data) {
+        toast.error(body.error || "Rematch failed")
+        return
+      }
+      if (body.data.created === 0) {
+        toast.message(
+          body.data.attempted === 0
+            ? "No Bad/Close matches left to rematch"
+            : `Tried ${body.data.attempted}, none created (${body.data.skipped} skipped)`,
+        )
+      } else {
+        toast.success(
+          `Rematched ${body.data.created} — prior Bad/Close kept; new rows are Unrated`,
+        )
+      }
+      setFilter("unrated")
+      await load(false)
+    } catch {
+      toast.error("Rematch failed")
+    } finally {
+      setRematching(false)
+    }
+  }
+
+  async function excludeMatch(row: SurfboardDimensionPhotoMatchRow) {
+    if (busyId) return
+    setBusyId(row.id)
+    setMatches((prev) =>
+      prev.map((m) =>
+        m.id === row.id
+          ? { ...m, excludedAt: new Date().toISOString(), ratedAt: new Date().toISOString() }
+          : m,
+      ),
+    )
+    try {
+      const res = await fetch(`/api/admin/dimension-photo-match/${row.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          excluded: true,
+          note: "Excluded — do not rematch or scan again",
+          promoteToRefs: false,
+        }),
+      })
+      const body = (await res.json().catch(() => ({}))) as {
+        data?: SurfboardDimensionPhotoMatchRow
+        error?: string
+      }
+      if (!res.ok || !body.data) {
+        toast.error(body.error || "Could not exclude")
+        void load(true)
+        return
+      }
+      toast.success("Excluded — won’t rematch; similar cases skipped in memory")
+      setLightbox((prev) => (prev?.id === body.data!.id ? null : prev))
+      if (filter === "unrated") {
+        setMatches((prev) => prev.filter((m) => m.id !== body.data!.id))
+      }
+      void load(true)
+    } catch {
+      toast.error("Could not exclude")
+      void load(true)
+    } finally {
+      setBusyId(null)
+    }
+  }
+
   async function rateAspect(
     row: SurfboardDimensionPhotoMatchRow,
     aspect: "photo" | "dims",
     value: AspectRating,
   ) {
-    if (busyId) return
+    if (busyId || row.excludedAt) return
     // Photo is binary; Close is dims-only.
     if (aspect === "photo" && value === "close") return
     setBusyId(row.id)
@@ -290,6 +370,7 @@ export function DimensionPhotoMatchAdminClient() {
     good: stats?.good ?? 0,
     close: stats?.close ?? 0,
     bad: stats?.bad ?? 0,
+    excluded: stats?.excluded ?? 0,
   }
 
   const lightboxSrc = lightbox ? sourcePhoto(lightbox) : null
@@ -329,11 +410,26 @@ export function DimensionPhotoMatchAdminClient() {
             type="button"
             size="sm"
             variant="outline"
-            disabled={scanning}
+            disabled={scanning || rematching}
             onClick={() => void syncListings()}
           >
             {scanning ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
             <span className="ml-2">{scanning ? "Scanning…" : "Scan listings"}</span>
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={scanning || rematching}
+            onClick={() => void rematchFailures()}
+            title="Re-run Bad and Close matches as new rows (keeps the old ones)"
+          >
+            {rematching ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <RotateCcw className="h-4 w-4" />
+            )}
+            <span className="ml-2">{rematching ? "Rematching…" : "Rematch bad/close"}</span>
           </Button>
           <Button
             type="button"
@@ -393,6 +489,7 @@ export function DimensionPhotoMatchAdminClient() {
             { key: "good", label: "Good" },
             { key: "close", label: "Close" },
             { key: "bad", label: "Bad" },
+            { key: "excluded", label: "Excluded" },
           ] as const
         ).map((tag) => {
           const active = filter === tag.key
@@ -406,6 +503,7 @@ export function DimensionPhotoMatchAdminClient() {
                 tag.key === "good" && active && "border-emerald-500 bg-emerald-600 text-white",
                 tag.key === "close" && active && "border-amber-500 bg-amber-500 text-white",
                 tag.key === "bad" && active && "border-rose-500 bg-rose-600 text-white",
+                tag.key === "excluded" && active && "border-slate-500 bg-slate-600 text-white",
                 (tag.key === "all" || tag.key === "unrated") &&
                   active &&
                   "border-slate-800 bg-slate-900 text-white",
@@ -418,6 +516,9 @@ export function DimensionPhotoMatchAdminClient() {
                 !active &&
                   tag.key === "bad" &&
                   "border-rose-200 bg-rose-50 text-rose-800 hover:border-rose-300",
+                !active &&
+                  tag.key === "excluded" &&
+                  "border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300",
                 !active &&
                   (tag.key === "all" || tag.key === "unrated") &&
                   "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50",
@@ -507,7 +608,7 @@ export function DimensionPhotoMatchAdminClient() {
                         tone="good"
                         selected={row.photoRating === "good"}
                         muted={Boolean(row.photoRating) && row.photoRating !== "good"}
-                        disabled={busy}
+                        disabled={busy || Boolean(row.excludedAt)}
                         onClick={() => void rateAspect(row, "photo", "good")}
                       />
                       <AspectTag
@@ -515,7 +616,7 @@ export function DimensionPhotoMatchAdminClient() {
                         tone="bad"
                         selected={row.photoRating === "bad"}
                         muted={Boolean(row.photoRating) && row.photoRating !== "bad"}
-                        disabled={busy}
+                        disabled={busy || Boolean(row.excludedAt)}
                         onClick={() => void rateAspect(row, "photo", "bad")}
                       />
                     </div>
@@ -527,6 +628,15 @@ export function DimensionPhotoMatchAdminClient() {
                   ) : null}
                 </div>
                 <div className="space-y-2 px-2.5 py-2">
+                  {row.excludedAt ? (
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-600">
+                      Excluded · skip forever
+                    </p>
+                  ) : row.priorMatchId ? (
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-sky-700">
+                      Rematch · prior kept
+                    </p>
+                  ) : null}
                   <p className="truncate text-xs font-medium tabular-nums text-foreground" title={dims}>
                     {dims}
                   </p>
@@ -555,7 +665,7 @@ export function DimensionPhotoMatchAdminClient() {
                         tone="good"
                         selected={row.dimsRating === "good"}
                         muted={Boolean(row.dimsRating) && row.dimsRating !== "good"}
-                        disabled={busy}
+                        disabled={busy || Boolean(row.excludedAt)}
                         onClick={() => void rateAspect(row, "dims", "good")}
                         solid
                       />
@@ -564,7 +674,7 @@ export function DimensionPhotoMatchAdminClient() {
                         tone="close"
                         selected={row.dimsRating === "close"}
                         muted={Boolean(row.dimsRating) && row.dimsRating !== "close"}
-                        disabled={busy}
+                        disabled={busy || Boolean(row.excludedAt)}
                         onClick={() => void rateAspect(row, "dims", "close")}
                         solid
                       />
@@ -573,12 +683,22 @@ export function DimensionPhotoMatchAdminClient() {
                         tone="bad"
                         selected={row.dimsRating === "bad"}
                         muted={Boolean(row.dimsRating) && row.dimsRating !== "bad"}
-                        disabled={busy}
+                        disabled={busy || Boolean(row.excludedAt)}
                         onClick={() => void rateAspect(row, "dims", "bad")}
                         solid
                       />
                     </div>
                   </div>
+                  {!row.excludedAt ? (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void excludeMatch(row)}
+                      className="w-full rounded-md border border-slate-200 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-600 hover:bg-slate-100 disabled:opacity-50"
+                    >
+                      Exclude
+                    </button>
+                  ) : null}
                 </div>
               </article>
             )
@@ -602,6 +722,9 @@ export function DimensionPhotoMatchAdminClient() {
               {lightbox ? predictedDimsLine(lightbox) : "Photo"}
             </DialogTitle>
             <DialogDescription>
+              {lightbox?.priorMatchId
+                ? "Rematch of a prior Bad/Close run — both attempts are saved. "
+                : null}
               Scroll to zoom, drag to pan, double-click to toggle. Rate whether the photo and the
               read dims are correct — that trains the model.
             </DialogDescription>
@@ -703,7 +826,7 @@ export function DimensionPhotoMatchAdminClient() {
                     tone="good"
                     selected={lightbox.photoRating === "good"}
                     muted={Boolean(lightbox.photoRating) && lightbox.photoRating !== "good"}
-                    disabled={busyId === lightbox.id}
+                    disabled={busyId === lightbox.id || Boolean(lightbox.excludedAt)}
                     onClick={() => void rateAspect(lightbox, "photo", "good")}
                     solid
                   />
@@ -712,7 +835,7 @@ export function DimensionPhotoMatchAdminClient() {
                     tone="bad"
                     selected={lightbox.photoRating === "bad"}
                     muted={Boolean(lightbox.photoRating) && lightbox.photoRating !== "bad"}
-                    disabled={busyId === lightbox.id}
+                    disabled={busyId === lightbox.id || Boolean(lightbox.excludedAt)}
                     onClick={() => void rateAspect(lightbox, "photo", "bad")}
                     solid
                   />
@@ -726,7 +849,7 @@ export function DimensionPhotoMatchAdminClient() {
                     tone="good"
                     selected={lightbox.dimsRating === "good"}
                     muted={Boolean(lightbox.dimsRating) && lightbox.dimsRating !== "good"}
-                    disabled={busyId === lightbox.id}
+                    disabled={busyId === lightbox.id || Boolean(lightbox.excludedAt)}
                     onClick={() => void rateAspect(lightbox, "dims", "good")}
                     solid
                   />
@@ -735,7 +858,7 @@ export function DimensionPhotoMatchAdminClient() {
                     tone="close"
                     selected={lightbox.dimsRating === "close"}
                     muted={Boolean(lightbox.dimsRating) && lightbox.dimsRating !== "close"}
-                    disabled={busyId === lightbox.id}
+                    disabled={busyId === lightbox.id || Boolean(lightbox.excludedAt)}
                     onClick={() => void rateAspect(lightbox, "dims", "close")}
                     solid
                   />
@@ -744,12 +867,27 @@ export function DimensionPhotoMatchAdminClient() {
                     tone="bad"
                     selected={lightbox.dimsRating === "bad"}
                     muted={Boolean(lightbox.dimsRating) && lightbox.dimsRating !== "bad"}
-                    disabled={busyId === lightbox.id}
+                    disabled={busyId === lightbox.id || Boolean(lightbox.excludedAt)}
                     onClick={() => void rateAspect(lightbox, "dims", "bad")}
                     solid
                   />
                 </div>
               </div>
+              {!lightbox.excludedAt ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={busyId === lightbox.id}
+                  onClick={() => void excludeMatch(lightbox)}
+                >
+                  Exclude — don’t match cases like this again
+                </Button>
+              ) : (
+                <p className="text-xs font-medium text-slate-600">
+                  Excluded — skipped on scan/rematch; similar images taught as skip.
+                </p>
+              )}
             </div>
           ) : null}
         </DialogContent>

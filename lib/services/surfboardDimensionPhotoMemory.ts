@@ -53,22 +53,45 @@ function formatRatedMemoryLine(row: SurfboardDimensionPhotoMatchRow): string {
 }
 
 function buildRatedMemorySections(rows: SurfboardDimensionPhotoMatchRow[]): string[] {
-  const photoGood = rows.filter((r) => (r.photoRating ?? r.matchRating) === "good")
-  const photoBad = rows.filter((r) => (r.photoRating ?? r.matchRating) === "bad")
+  const photoGood = rows.filter(
+    (r) => !r.excludedAt && (r.photoRating ?? r.matchRating) === "good",
+  )
+  const photoBad = rows.filter(
+    (r) => !r.excludedAt && (r.photoRating ?? r.matchRating) === "bad",
+  )
   const dimsFocus = rows.filter(
     (r) =>
-      r.dimsRating === "good" || r.dimsRating === "close" || r.dimsRating === "bad",
+      !r.excludedAt &&
+      (r.dimsRating === "good" || r.dimsRating === "close" || r.dimsRating === "bad"),
   )
+
+  const excluded = rows.filter((r) => Boolean(r.excludedAt))
 
   const sections: string[] = [
     "Admin feedback memory (in-context only — follow it for THIS call):",
     "PHOTO PICK: Good = stamp/stringer/tail-block close-up with readable L×W×T. Bad = lifestyle beauty shot, full-board outline, logo-only, or any frame without printed measurements.",
+    "EXCLUDE: admin said do not match cases like these — leave index/fields null rather than guessing.",
   ]
+
+  if (excluded.length > 0) {
+    sections.push(
+      "Recent EXCLUDED cases (skip similar — do not force a match):",
+      ...excluded.slice(0, 6).map((row) => {
+        const predicted = dimsLabel({
+          predictedLength: row.predictedLength,
+          predictedWidth: row.predictedWidth,
+          predictedThickness: row.predictedThickness,
+          predictedVolume: row.predictedVolume,
+        })
+        return `- EXCLUDE · ${predicted || "no dims"} · do not rematch`
+      }),
+    )
+  }
 
   if (photoBad.length > 0) {
     sections.push(
       "Recent BAD photo picks (do not choose frames like these):",
-      ...photoBad.slice(0, 8).map(formatRatedMemoryLine),
+      ...photoBad.filter((r) => !r.excludedAt).slice(0, 8).map(formatRatedMemoryLine),
     )
   }
   if (photoGood.length > 0) {
@@ -111,7 +134,7 @@ export async function surfboardDimensionPhotoMemoryPromptBlock(
   service: SupabaseClient,
 ): Promise<string> {
   try {
-    const rows = await listRatedSurfboardDimensionPhotoMemory(service, { limit: 20 })
+    const rows = await listRatedSurfboardDimensionPhotoMemory(service, { limit: 28 })
     if (rows.length === 0) return ""
     return `\n${buildRatedMemorySections(rows).join("\n")}\n`
   } catch (e) {
@@ -131,4 +154,8 @@ export function formatGoodPickExampleCaption(index: number): string {
 
 export function formatBadPickExampleCaption(index: number): string {
   return `BAD pick example ${index + 1}: admin rejected this as the dimensions photo. It is NOT a size stamp (likely beauty, outline, or logo). Never set dimensionPhotoIndex to a photo that looks like this when a stamp close-up exists.`
+}
+
+export function formatExcludeExampleCaption(index: number): string {
+  return `EXCLUDE example ${index + 1}: admin marked this case as not worth matching (no usable stamp, wrong board type, or unreadable forever). If a gallery looks like this, leave dimensionPhotoIndex null and measurement fields null — do not force a match.`
 }

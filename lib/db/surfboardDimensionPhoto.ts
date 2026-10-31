@@ -79,6 +79,11 @@ export type SurfboardDimensionPhotoMatchRow = {
   ratedAt: string | null
   promotedRefId: string | null
   listingId: string | null
+  /** Prior Bad/Close match this row rematched — both rows are kept. */
+  priorMatchId: string | null
+  /** When set, do not rematch/re-scan; used as exclude memory. */
+  excludedAt: string | null
+  excludedBy: string | null
   createdAt: string
 }
 
@@ -111,13 +116,14 @@ export type SurfboardDimensionPhotoMatchStats = {
   overallAccuracy: number | null
   overallRated: number
   overallGood: number
+  excluded: number
 }
 
 const REF_SELECT =
   "id, listing_id, image_url, thumbnail_url, board_length, board_width_inches, board_thickness_inches, board_volume_l, brand_text, model_text, brand_id, brand_model_id, dimensions_raw, source, active, created_at, updated_at"
 
 const MATCH_SELECT =
-  "id, occurred_at, surface, input_preview, source_image_url, predicted_length, predicted_width, predicted_thickness, predicted_volume, predicted_brand, predicted_model, predicted_confidence, predicted_summary, jev_review, reference_ids, references_preview, match_rating, photo_rating, dims_rating, corrected_length, corrected_width, corrected_thickness, corrected_volume, corrected_brand, corrected_model, rating_note, rated_by, rated_at, promoted_ref_id, listing_id, created_at"
+  "id, occurred_at, surface, input_preview, source_image_url, predicted_length, predicted_width, predicted_thickness, predicted_volume, predicted_brand, predicted_model, predicted_confidence, predicted_summary, jev_review, reference_ids, references_preview, match_rating, photo_rating, dims_rating, corrected_length, corrected_width, corrected_thickness, corrected_volume, corrected_brand, corrected_model, rating_note, rated_by, rated_at, promoted_ref_id, listing_id, prior_match_id, excluded_at, excluded_by, created_at"
 
 function parseJevReview(raw: unknown): SurfboardDimensionPhotoJevReview | null {
   if (!raw || typeof raw !== "object") return null
@@ -267,6 +273,9 @@ function mapMatch(raw: Record<string, unknown>): SurfboardDimensionPhotoMatchRow
     ratedAt: asString(raw.rated_at),
     promotedRefId: asString(raw.promoted_ref_id),
     listingId: asString(raw.listing_id),
+    priorMatchId: asString(raw.prior_match_id),
+    excludedAt: asString(raw.excluded_at),
+    excludedBy: asString(raw.excluded_by),
     createdAt: String(raw.created_at ?? ""),
   }
 }
@@ -502,6 +511,7 @@ export async function insertSurfboardDimensionPhotoMatch(
     referenceIds?: string[]
     referencesPreview?: SurfboardDimensionPhotoRefPreview[]
     listingId?: string | null
+    priorMatchId?: string | null
   },
 ): Promise<{ data: SurfboardDimensionPhotoMatchRow | null; error: Error | null }> {
   const { data, error } = await service
@@ -522,6 +532,7 @@ export async function insertSurfboardDimensionPhotoMatch(
       reference_ids: input.referenceIds ?? [],
       references_preview: input.referencesPreview ?? [],
       listing_id: input.listingId ?? null,
+      prior_match_id: input.priorMatchId ?? null,
     })
     .select(MATCH_SELECT)
     .maybeSingle()
@@ -530,11 +541,122 @@ export async function insertSurfboardDimensionPhotoMatch(
   return { data: data ? mapMatch(data as Record<string, unknown>) : null, error: null }
 }
 
+function matchNeedsRematch(row: {
+  photoRating: SurfboardDimensionPhotoRating | null
+  dimsRating: SurfboardDimensionPhotoRating | null
+}): boolean {
+  if (row.photoRating === "bad") return true
+  if (row.dimsRating === "bad" || row.dimsRating === "close") return true
+  return false
+}
+
+/**
+ * Latest Bad/Close matches that do not already have a newer rematch pending or succeeding.
+ * One candidate per listing_id (or per match id when listing_id is null).
+ */
+export async function listDimensionPhotoRematchCandidates(
+  service: SupabaseClient,
+  options: { limit?: number } = {},
+): Promise<SurfboardDimensionPhotoMatchRow[]> {
+  const limit = Math.min(Math.max(options.limit ?? 12, 1), 40)
+
+  const { data, error } = await service
+    .from("surfboard_dimension_photo_matches")
+    .select(MATCH_SELECT)
+    .not("rated_at", "is", null)
+    .is("excluded_at", null)
+    .or("photo_rating.eq.bad,dims_rating.eq.bad,dims_rating.eq.close")
+    .order("occurred_at", { ascending: false })
+    .limit(400)
+
+  if (error) {
+    console.error("[surfboardDimensionPhoto] rematch candidates failed:", error.message)
+    return []
+  }
+
+  const failures = ((data ?? []) as Record<string, unknown>[]).map(mapMatch)
+  if (failures.length === 0) return []
+
+  // Newer matches that already rematched a failure (or a fresher run for the same listing).
+  const priorIds = failures.map((f) => f.id)
+  const { data: children } = await service
+    .from("surfboard_dimension_photo_matches")
+    .select("prior_match_id, listing_id, occurred_at, photo_rating, dims_rating")
+    .in("prior_match_id", priorIds)
+
+  const rematchedPriors = new Set(
+    (children ?? [])
+      .map((r) => (r as { prior_match_id?: string | null }).prior_match_id)
+      .filter((id): id is string => typeof id === "string" && id.length > 0),
+  )
+
+  // Latest match per listing — if it's already unrated or fully good, don't queue again.
+  const { data: recentByListing } = await service
+    .from("surfboard_dimension_photo_matches")
+    .select("id, listing_id, occurred_at, photo_rating, dims_rating")
+    .not("listing_id", "is", null)
+    .order("occurred_at", { ascending: false })
+    .limit(800)
+
+  const latestByListing = new Map<
+    string,
+    {
+      id: string
+      occurredAt: string
+      photoRating: string | null
+      dimsRating: string | null
+    }
+  >()
+  for (const raw of recentByListing ?? []) {
+    const r = raw as {
+      id: string
+      listing_id: string | null
+      occurred_at: string
+      photo_rating: string | null
+      dims_rating: string | null
+    }
+    if (!r.listing_id || latestByListing.has(r.listing_id)) continue
+    latestByListing.set(r.listing_id, {
+      id: r.id,
+      occurredAt: r.occurred_at,
+      photoRating: r.photo_rating,
+      dimsRating: r.dims_rating,
+    })
+  }
+
+  const out: SurfboardDimensionPhotoMatchRow[] = []
+  const seenListings = new Set<string>()
+
+  for (const failure of failures) {
+    if (!matchNeedsRematch(failure)) continue
+    if (rematchedPriors.has(failure.id)) continue
+
+    if (failure.listingId) {
+      if (seenListings.has(failure.listingId)) continue
+      const latest = latestByListing.get(failure.listingId)
+      if (latest && latest.id !== failure.id) {
+        // Newer run exists for this listing.
+        const latestUnrated = latest.photoRating == null || latest.dimsRating == null
+        const latestGood = latest.photoRating === "good" && latest.dimsRating === "good"
+        if (latestUnrated || latestGood) continue
+        // Newer run is also bad/close but wasn't in failure list order — still skip duplicate listing.
+        if (latest.occurredAt > failure.occurredAt) continue
+      }
+      seenListings.add(failure.listingId)
+    }
+
+    out.push(failure)
+    if (out.length >= limit) break
+  }
+
+  return out
+}
+
 export async function listSurfboardDimensionPhotoMatches(
   service: SupabaseClient,
   options: {
     fromIso: string
-    rating?: "unrated" | "good" | "close" | "bad" | "all"
+    rating?: "unrated" | "good" | "close" | "bad" | "excluded" | "all"
     surface?: "all" | SurfboardDimensionPhotoSurface
     limit?: number
     offset?: number
@@ -551,6 +673,12 @@ export async function listSurfboardDimensionPhotoMatches(
 
   if (options.surface && options.surface !== "all") {
     query = query.eq("surface", options.surface)
+  }
+
+  if (options.rating === "excluded") {
+    query = query.not("excluded_at", "is", null)
+  } else if (options.rating !== "all") {
+    query = query.is("excluded_at", null)
   }
 
   if (options.rating === "unrated") {
@@ -608,6 +736,7 @@ export async function rateSurfboardDimensionPhotoMatch(
     photoRating?: SurfboardDimensionPhotoRating | null
     dimsRating?: SurfboardDimensionPhotoRating | null
     note?: string | null
+    excluded?: boolean
     correctedLength?: string | null
     correctedWidth?: string | null
     correctedThickness?: string | null
@@ -641,12 +770,21 @@ export async function rateSurfboardDimensionPhotoMatch(
             | null
             | undefined) ?? null
 
+  const nowIso = new Date().toISOString()
   const patch: Record<string, unknown> = {
     rated_by: ratedBy,
-    rated_at: new Date().toISOString(),
+    rated_at: nowIso,
     photo_rating: nextPhoto,
     dims_rating: nextDims,
     match_rating: deriveOverallMatchRating(nextPhoto, nextDims),
+  }
+  if (input.excluded === true) {
+    patch.excluded_at = nowIso
+    patch.excluded_by = ratedBy
+    // Excluded is not Bad for accuracy — leave photo/dims as-is unless also set.
+  } else if (input.excluded === false) {
+    patch.excluded_at = null
+    patch.excluded_by = null
   }
   if (input.note !== undefined) patch.rating_note = input.note
   if (input.correctedLength !== undefined) patch.corrected_length = input.correctedLength
@@ -674,7 +812,7 @@ export async function aggregateSurfboardDimensionPhotoMatchStats(
   const [{ data, error }, refCount] = await Promise.all([
     service
       .from("surfboard_dimension_photo_matches")
-      .select("match_rating, photo_rating, dims_rating")
+      .select("match_rating, photo_rating, dims_rating, excluded_at")
       .gte("occurred_at", fromIso),
     countActiveSurfboardDimensionPhotoRefs(service),
   ])
@@ -688,6 +826,7 @@ export async function aggregateSurfboardDimensionPhotoMatchStats(
   let good = 0
   let close = 0
   let bad = 0
+  let excluded = 0
   let photoGood = 0
   let photoBad = 0
   let dimsGood = 0
@@ -701,6 +840,11 @@ export async function aggregateSurfboardDimensionPhotoMatchStats(
       match_rating?: string | null
       photo_rating?: string | null
       dims_rating?: string | null
+      excluded_at?: string | null
+    }
+    if (r.excluded_at) {
+      excluded += 1
+      continue
     }
     const photo = r.photo_rating ?? null
     const dims = r.dims_rating ?? null
@@ -740,6 +884,7 @@ export async function aggregateSurfboardDimensionPhotoMatchStats(
     good,
     close,
     bad,
+    excluded,
     acceptableRate: rated > 0 ? (good + close) / rated : null,
     target: SURFBOARD_DIMENSION_PHOTO_MATCH_TARGET,
     refCount,
@@ -766,6 +911,7 @@ function emptyDimensionPhotoMatchStats(refCount: number): SurfboardDimensionPhot
     good: 0,
     close: 0,
     bad: 0,
+    excluded: 0,
     acceptableRate: null,
     target: SURFBOARD_DIMENSION_PHOTO_MATCH_TARGET,
     refCount,
@@ -789,12 +935,13 @@ export async function listRatedSurfboardDimensionPhotoMemory(
   service: SupabaseClient,
   options: { limit?: number } = {},
 ): Promise<SurfboardDimensionPhotoMatchRow[]> {
-  const limit = options.limit ?? 16
+  const limit = options.limit ?? 28
+  // Include excluded + rated; excluded rows teach "skip similar".
   const { data, error } = await service
     .from("surfboard_dimension_photo_matches")
     .select(MATCH_SELECT)
-    .not("rated_at", "is", null)
-    .order("rated_at", { ascending: false })
+    .or("rated_at.not.is.null,excluded_at.not.is.null")
+    .order("rated_at", { ascending: false, nullsFirst: false })
     .limit(limit)
   if (error) {
     console.error("[surfboardDimensionPhoto] memory list failed:", error.message)
@@ -809,16 +956,22 @@ export async function listRatedSurfboardDimensionPhotoMemory(
  */
 export async function listDimensionPhotoPickTrainingExamples(
   service: SupabaseClient,
-  options: { goodLimit?: number; badLimit?: number } = {},
-): Promise<{ good: SurfboardDimensionPhotoMatchRow[]; bad: SurfboardDimensionPhotoMatchRow[] }> {
+  options: { goodLimit?: number; badLimit?: number; excludeLimit?: number } = {},
+): Promise<{
+  good: SurfboardDimensionPhotoMatchRow[]
+  bad: SurfboardDimensionPhotoMatchRow[]
+  excluded: SurfboardDimensionPhotoMatchRow[]
+}> {
   const goodLimit = Math.min(Math.max(options.goodLimit ?? 3, 1), 6)
   const badLimit = Math.min(Math.max(options.badLimit ?? 3, 1), 6)
+  const excludeLimit = Math.min(Math.max(options.excludeLimit ?? 3, 1), 6)
 
-  const [goodRes, badRes] = await Promise.all([
+  const [goodRes, badRes, excludeRes] = await Promise.all([
     service
       .from("surfboard_dimension_photo_matches")
       .select(MATCH_SELECT)
       .eq("photo_rating", "good")
+      .is("excluded_at", null)
       .not("source_image_url", "is", null)
       .order("rated_at", { ascending: false })
       .limit(goodLimit * 3),
@@ -826,9 +979,17 @@ export async function listDimensionPhotoPickTrainingExamples(
       .from("surfboard_dimension_photo_matches")
       .select(MATCH_SELECT)
       .eq("photo_rating", "bad")
+      .is("excluded_at", null)
       .not("source_image_url", "is", null)
       .order("rated_at", { ascending: false })
       .limit(badLimit * 3),
+    service
+      .from("surfboard_dimension_photo_matches")
+      .select(MATCH_SELECT)
+      .not("excluded_at", "is", null)
+      .not("source_image_url", "is", null)
+      .order("excluded_at", { ascending: false })
+      .limit(excludeLimit * 3),
   ])
 
   if (goodRes.error) {
@@ -836,6 +997,12 @@ export async function listDimensionPhotoPickTrainingExamples(
   }
   if (badRes.error) {
     console.error("[surfboardDimensionPhoto] bad pick examples failed:", badRes.error.message)
+  }
+  if (excludeRes.error) {
+    console.error(
+      "[surfboardDimensionPhoto] exclude examples failed:",
+      excludeRes.error.message,
+    )
   }
 
   const withUrl = (rows: SurfboardDimensionPhotoMatchRow[]) =>
@@ -849,6 +1016,10 @@ export async function listDimensionPhotoPickTrainingExamples(
     bad: withUrl(((badRes.data ?? []) as Record<string, unknown>[]).map(mapMatch)).slice(
       0,
       badLimit,
+    ),
+    excluded: withUrl(((excludeRes.data ?? []) as Record<string, unknown>[]).map(mapMatch)).slice(
+      0,
+      excludeLimit,
     ),
   }
 }
@@ -894,6 +1065,7 @@ export type SurfboardDimensionPhotoScanSkipReason =
   | "wrong_status"
   | "missing_image"
   | "already_scanned"
+  | "excluded"
 
 /** Live + sold surfboards — sold boards are the richest stamp-photo corpus. */
 const SCAN_LISTING_STATUSES = ["active", "sold"] as const
@@ -966,6 +1138,16 @@ export async function getSurfboardListingScanCandidate(
     return { ok: false, reason: "query_failed" }
   }
   if (!data) return { ok: false, reason: "not_found" }
+
+  const { data: excluded } = await service
+    .from("surfboard_dimension_photo_matches")
+    .select("id")
+    .eq("listing_id", listingId)
+    .not("excluded_at", "is", null)
+    .limit(1)
+    .maybeSingle()
+  if (excluded?.id) return { ok: false, reason: "excluded" }
+
   return listingScanCandidateFromRow(data as ListingScanSourceRow)
 }
 
@@ -979,14 +1161,27 @@ export async function listSurfboardListingsForDimensionPhotoScan(
 ): Promise<ListingScanCandidate[]> {
   const limit = Math.min(Math.max(options.limit ?? 12, 1), 40)
 
-  const { data: scannedRows } = await service
-    .from("surfboard_dimension_photo_matches")
-    .select("listing_id")
-    .eq("surface", "listing_scan")
-    .not("listing_id", "is", null)
-    .limit(5000)
+  const [{ data: scannedRows }, { data: excludedRows }] = await Promise.all([
+    service
+      .from("surfboard_dimension_photo_matches")
+      .select("listing_id")
+      .eq("surface", "listing_scan")
+      .not("listing_id", "is", null)
+      .limit(5000),
+    service
+      .from("surfboard_dimension_photo_matches")
+      .select("listing_id")
+      .not("excluded_at", "is", null)
+      .not("listing_id", "is", null)
+      .limit(2000),
+  ])
   const scanned = new Set(
     (scannedRows ?? [])
+      .map((r) => (r as { listing_id?: string | null }).listing_id)
+      .filter((id): id is string => typeof id === "string" && id.length > 0),
+  )
+  const excludedListings = new Set(
+    (excludedRows ?? [])
       .map((r) => (r as { listing_id?: string | null }).listing_id)
       .filter((id): id is string => typeof id === "string" && id.length > 0),
   )
@@ -1017,6 +1212,7 @@ export async function listSurfboardListingsForDimensionPhotoScan(
       const mapped = listingScanCandidateFromRow(raw as ListingScanSourceRow)
       if (!mapped.ok) continue
       if (scanned.has(mapped.candidate.listingId)) continue
+      if (excludedListings.has(mapped.candidate.listingId)) continue
       out.push(mapped.candidate)
       if (out.length >= limit) break
     }

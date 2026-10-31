@@ -43,7 +43,8 @@ export async function PATCH(
     photoRating: parsed.data.photoRating,
     dimsRating: parsed.data.dimsRating,
     note: parsed.data.note,
-    promoteToRefs: parsed.data.promoteToRefs,
+    excluded: parsed.data.excluded,
+    promoteToRefs: parsed.data.excluded === true ? false : parsed.data.promoteToRefs,
   })
 
   if (error || !data) {
