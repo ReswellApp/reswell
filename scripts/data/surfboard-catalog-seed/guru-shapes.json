@@ -1,0 +1,79 @@
+{
+  "generated_for": "Guru Shapes official named standup catalog",
+  "source": "https://gurushapes.com (official Shopify shop and /pages/model-* overviews — excludes tees, used boards, and custom-order deposits)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "guru-shapes",
+      "name": "Guru Shapes",
+      "website_url": "https://gurushapes.com",
+      "location_label": "Oceanside, California",
+      "founder_name": "Oscar Guruceaga",
+      "lead_shaper_name": "Oscar Guruceaga",
+      "short_description": "Handcrafted surfboards by Oscar Guruceaga in Oceanside, California — performance shortboards, fish, mid-lengths, and longboards shaped one at a time.",
+      "logo_url": "https://gurushapes.com/cdn/shop/files/Grushapes-2026-Landing-Logo.png?v=1780554288",
+      "models": [
+        {
+          "name": "ABRACADABRAH",
+          "image_url": "https://cdn.shopify.com/s/files/1/0733/9284/9065/files/guru_abracadabrah_e9d169ca-4aa7-4313-bbeb-15122a119f11.png",
+          "description": "An alternative shortboard that does things the mainstream can't. Channels are optional. Built as a user-friendly, ultra-performance craft. Size range 5'2\"–6'2\". Fin setup: tri, quad, or five-box. Handcrafted by Oscar in Oceanside, CA.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Elegante",
+          "image_url": "https://cdn.shopify.com/s/files/1/0733/9284/9065/files/IMG_0105.heic?v=1787588588&format=jpg",
+          "description": "One California Board. Classic lines, modern performance. Built for style, powerful carves, point-wave trim, and everything in between. Size range 7'–9'+. Fin setup: 2+1 or single. Handcrafted by Oscar in Oceanside, CA.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Formula CT",
+          "image_url": "https://cdn.shopify.com/s/files/1/0733/9284/9065/files/17F9A79A-E65C-46B1-B23B-7A5B5D493FF8.jpg?v=1782977754",
+          "description": "Championship Tour DNA. Precision performance for advanced surfers who demand the most from their equipment. Size range 5'4\"–6'4\". Fin setup: tri. Handcrafted by Oscar in Oceanside, CA.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "KO",
+          "image_url": "https://cdn.shopify.com/s/files/1/0733/9284/9065/files/IMG_1318.jpg?v=1781129895",
+          "description": "Fast and responsive. A heavy-water log built for serious noserides and powerful trim lines — Oscar's go-to for California point breaks. Size range 9'–10'+. Fin setup: single. Handcrafted by Oscar in Oceanside, CA.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Kool Aid 2.0",
+          "image_url": "https://cdn.shopify.com/s/files/1/0733/9284/9065/files/EA3F7BEA-1755-4645-B8E3-7170FBA7FD8A_1_105_c.jpg?v=1781064349",
+          "description": "The KOOL-AID 2.0 is a cornerstone of the lineup, reimagined with a sleeker, more foiled nose and tail that keeps volume only where it counts. Complex bottom contours and low-apex rails deliver glide and rail-to-rail engagement; the Twinzer setup makes it an electrifying mid-length. Size range 6'6\"–8'. Fin setup: 2+1 or tri. Handcrafted by Oscar in Oceanside, CA.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Kool-Aid Jammer",
+          "image_url": "https://cdn.shopify.com/s/files/1/0733/9284/9065/files/guru-red-board-charcoal.png?v=1782783630",
+          "description": "The Kool-Aid taken further — shortboard sizes, less volume, more spice, same infectious feel. Size range 5'2\"–6'. Fin setup: tri or quad. Handcrafted by Oscar in Oceanside, CA.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Palo Santo",
+          "image_url": "https://cdn.shopify.com/s/files/1/0733/9284/9065/files/FF4C4C2C-9A3C-43C4-BD84-6559D8838ACF.jpg?v=1783383726",
+          "description": "A soulful longboard with smooth, flowing character. Built to glide, yet noserides like a champ — for longboarders who want something slick or shortboarders who want to slow down and stay connected. Size range 9'2\"–10\"+. Fin setup: single. Handcrafted by Oscar in Oceanside, CA.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Pisces",
+          "image_url": "https://cdn.shopify.com/s/files/1/0733/9284/9065/files/B04ED536-3AB6-44CF-A51F-748E71EF6F6B.jpg?v=1783056223",
+          "description": "Oscar's take on the new-age San Diego fish, blending classic roots with a refined, tapered nose and tail. A subtle tri-plane bottom, deep concave between the fins, and low-apex rails keep it fast and maneuverable. Designed for hybrid keels. Size range 5'–6'. Oscar's personal daily driver. Handcrafted in Oceanside, CA.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "REVO",
+          "image_url": "https://cdn.shopify.com/s/files/1/0733/9284/9065/files/464B4DA0-7B3E-4F77-87FE-371005226762_1_105_c.jpg?v=1781063964",
+          "description": "A high-performance shortboard on a longer rail line — more length and drive than a standard shortboard, with no loss of snap. Reverse vee bottom (traced to Maurice Cole) rolls rail to rail and holds through the pocket. Swallowtail with wings plus twin-plus-trailer blends a twin's speed with a thruster's hold. Size range 5'6\"–6'6\". Handcrafted by Oscar in Oceanside, CA.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Endless",
+          "image_url": "https://cdn.shopify.com/s/files/1/0733/9284/9065/files/99D4D3E8-598B-4A30-866E-03D34B731AE1.jpg?v=1783010060",
+          "description": "A Guru Shapes × Mike Hynson longboard drawn from a rare Hynson semi-gun shaped for Blacks Beach. Long and narrower, yet it turns and glides like a board half its size — fast, responsive, and fun from three feet to twelve-plus. Size range 9'–10'+. Fin setup: single or 2+1. Handcrafted by Oscar in Oceanside, CA.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
