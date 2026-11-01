@@ -16,6 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
 import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { cn } from "@/lib/utils"
 import type {
@@ -27,6 +28,27 @@ import { Loader2, Minus, Plus, RefreshCw, RotateCcw, ZoomIn } from "lucide-react
 type RatingFilter = "all" | "unrated" | "good" | "close" | "bad" | "excluded"
 type AspectRating = "good" | "close" | "bad"
 
+type CorrectionDraft = {
+  length: string
+  width: string
+  thickness: string
+  volume: string
+}
+
+function correctionDraftFromRow(row: SurfboardDimensionPhotoMatchRow): CorrectionDraft {
+  return {
+    length: row.correctedLength ?? row.predictedLength ?? "",
+    width: row.correctedWidth ?? row.predictedWidth ?? "",
+    thickness: row.correctedThickness ?? row.predictedThickness ?? "",
+    volume: row.correctedVolume ?? row.predictedVolume ?? "",
+  }
+}
+
+function emptyToNull(value: string): string | null {
+  const trimmed = value.trim()
+  return trimmed ? trimmed : null
+}
+
 function deriveMatchRating(
   photo: string | null | undefined,
   dims: string | null | undefined,
@@ -37,12 +59,35 @@ function deriveMatchRating(
   return null
 }
 
+function dimsLine(parts: {
+  length: string | null
+  width: string | null
+  thickness: string | null
+  volume: string | null
+}): string | null {
+  const core = [parts.length, parts.width, parts.thickness].filter(Boolean).join(" × ")
+  if (!core) return null
+  return parts.volume ? `${core} · ${parts.volume}L` : core
+}
+
 function predictedDimsLine(row: SurfboardDimensionPhotoMatchRow): string {
-  const core = [row.predictedLength, row.predictedWidth, row.predictedThickness]
-    .filter(Boolean)
-    .join(" × ")
-  if (!core) return "—"
-  return row.predictedVolume ? `${core} · ${row.predictedVolume}L` : core
+  return (
+    dimsLine({
+      length: row.predictedLength,
+      width: row.predictedWidth,
+      thickness: row.predictedThickness,
+      volume: row.predictedVolume,
+    }) ?? "—"
+  )
+}
+
+function correctedDimsLine(row: SurfboardDimensionPhotoMatchRow): string | null {
+  return dimsLine({
+    length: row.correctedLength,
+    width: row.correctedWidth,
+    thickness: row.correctedThickness,
+    volume: row.correctedVolume,
+  })
 }
 
 /** Prefer the photo the LLM said contains the dimensions stamp. */
@@ -79,9 +124,25 @@ export function DimensionPhotoMatchAdminClient() {
   const [busyId, setBusyId] = useState<string | null>(null)
   const [matching, setMatching] = useState(false)
   const [lightbox, setLightbox] = useState<SurfboardDimensionPhotoMatchRow | null>(null)
+  const [correction, setCorrection] = useState<CorrectionDraft>({
+    length: "",
+    width: "",
+    thickness: "",
+    volume: "",
+  })
   const [zoom, setZoom] = useState(1)
   const fileRef = useRef<HTMLInputElement>(null)
   const zoomRef = useRef<ReactZoomPanPinchContentRef | null>(null)
+  const lightboxId = lightbox?.id ?? null
+
+  useEffect(() => {
+    if (!lightboxId) return
+    const row = matches.find((m) => m.id === lightboxId) ?? lightbox
+    if (!row) return
+    setCorrection(correctionDraftFromRow(row))
+    // Only re-seed when opening a different match — keep in-progress typing.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: seed on id change only
+  }, [lightboxId])
 
   const load = useCallback(
     async (silent: boolean, ratingOverride?: RatingFilter) => {
@@ -302,11 +363,63 @@ export function DimensionPhotoMatchAdminClient() {
         return
       }
       setMatches((prev) => prev.map((m) => (m.id === body.data!.id ? body.data! : m)))
-      setLightbox((prev) => (prev?.id === body.data!.id ? body.data! : prev))
+      if (aspect === "dims" && (value === "bad" || value === "close")) {
+        setLightbox(body.data!)
+        setCorrection(correctionDraftFromRow(body.data!))
+      } else {
+        setLightbox((prev) => (prev?.id === body.data!.id ? body.data! : prev))
+      }
       void load(true)
     } catch {
       toast.error("Could not save")
       void load(true)
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  async function saveCorrectedDims(row: SurfboardDimensionPhotoMatchRow) {
+    if (busyId || row.excludedAt) return
+    const length = emptyToNull(correction.length)
+    const width = emptyToNull(correction.width)
+    const thickness = emptyToNull(correction.thickness)
+    if (!length || !width || !thickness) {
+      toast.error("Enter length, width, and thickness")
+      return
+    }
+    setBusyId(row.id)
+    try {
+      const res = await fetch(`/api/admin/dimension-photo-match/${row.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          dimsRating: row.dimsRating === "close" ? "close" : "bad",
+          correctedLength: length,
+          correctedWidth: width,
+          correctedThickness: thickness,
+          correctedVolume: emptyToNull(correction.volume),
+          promoteToRefs: true,
+        }),
+      })
+      const body = (await res.json().catch(() => ({}))) as {
+        data?: SurfboardDimensionPhotoMatchRow
+        error?: string
+      }
+      if (!res.ok || !body.data) {
+        toast.error(body.error || "Could not save correct dims")
+        return
+      }
+      setMatches((prev) => prev.map((m) => (m.id === body.data!.id ? body.data! : m)))
+      setLightbox(body.data!)
+      setCorrection(correctionDraftFromRow(body.data!))
+      toast.success(
+        body.data.promotedRefId
+          ? "Correct dims saved — OCR ref promoted"
+          : "Correct dims saved — model will learn this",
+      )
+      void load(true)
+    } catch {
+      toast.error("Could not save correct dims")
     } finally {
       setBusyId(null)
     }
@@ -578,6 +691,7 @@ export function DimensionPhotoMatchAdminClient() {
             const src = sourcePhoto(row)
             const busy = busyId === row.id
             const dims = predictedDimsLine(row)
+            const actualDims = correctedDimsLine(row)
             return (
               <article key={row.id} className="overflow-hidden rounded-xl border bg-white">
                 <div className="relative aspect-[3/4] bg-slate-100">
@@ -647,6 +761,16 @@ export function DimensionPhotoMatchAdminClient() {
                   <p className="truncate text-xs font-medium tabular-nums text-foreground" title={dims}>
                     {dims}
                   </p>
+                  {actualDims ? (
+                    <p
+                      className="truncate text-[10px] font-medium tabular-nums text-emerald-700"
+                      title={`Actual ${actualDims}`}
+                    >
+                      Actual {actualDims}
+                    </p>
+                  ) : row.dimsRating === "bad" || row.dimsRating === "close" ? (
+                    <p className="text-[10px] text-rose-700">Needs actual dims</p>
+                  ) : null}
                   {jevHintLine(row) ? (
                     <p
                       className={cn(
@@ -733,7 +857,8 @@ export function DimensionPhotoMatchAdminClient() {
                 ? "Rematch of a prior Bad/Close run — both attempts are saved. "
                 : null}
               Scroll to zoom, drag to pan, double-click to toggle. Rate whether the photo and the
-              read dims are correct — that trains the model.
+              read dims are correct — that trains the model. On Dims Bad/Close, type the actual
+              L×W×T so the next reads learn from ground truth.
             </DialogDescription>
           </DialogHeader>
           {lightboxSrc ? (
@@ -880,6 +1005,86 @@ export function DimensionPhotoMatchAdminClient() {
                   />
                 </div>
               </div>
+              {!lightbox.excludedAt &&
+              (lightbox.dimsRating === "bad" || lightbox.dimsRating === "close") ? (
+                <div className="space-y-2 rounded-lg border border-rose-200 bg-rose-50/60 px-3 py-2.5">
+                  <p className="text-xs font-medium text-rose-900">
+                    Actual dims on this stamp — used as ground truth for the next OCR reads
+                    {lightbox.photoRating === "good"
+                      ? " and promoted as an OCR reference when L×W×T are filled."
+                      : "."}
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    <label className="space-y-1">
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        Length
+                      </span>
+                      <Input
+                        value={correction.length}
+                        onChange={(e) =>
+                          setCorrection((prev) => ({ ...prev, length: e.target.value }))
+                        }
+                        placeholder={`5'8"`}
+                        className="h-9 bg-white font-mono text-sm"
+                        disabled={busyId === lightbox.id}
+                      />
+                    </label>
+                    <label className="space-y-1">
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        Width
+                      </span>
+                      <Input
+                        value={correction.width}
+                        onChange={(e) =>
+                          setCorrection((prev) => ({ ...prev, width: e.target.value }))
+                        }
+                        placeholder="17 7/8"
+                        className="h-9 bg-white font-mono text-sm"
+                        disabled={busyId === lightbox.id}
+                      />
+                    </label>
+                    <label className="space-y-1">
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        Thickness
+                      </span>
+                      <Input
+                        value={correction.thickness}
+                        onChange={(e) =>
+                          setCorrection((prev) => ({ ...prev, thickness: e.target.value }))
+                        }
+                        placeholder="2 5/16"
+                        className="h-9 bg-white font-mono text-sm"
+                        disabled={busyId === lightbox.id}
+                      />
+                    </label>
+                    <label className="space-y-1">
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        Volume L
+                      </span>
+                      <Input
+                        value={correction.volume}
+                        onChange={(e) =>
+                          setCorrection((prev) => ({ ...prev, volume: e.target.value }))
+                        }
+                        placeholder="25.6"
+                        className="h-9 bg-white font-mono text-sm"
+                        disabled={busyId === lightbox.id}
+                      />
+                    </label>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={busyId === lightbox.id}
+                    onClick={() => void saveCorrectedDims(lightbox)}
+                  >
+                    {busyId === lightbox.id ? (
+                      <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                    ) : null}
+                    Save correct dims
+                  </Button>
+                </div>
+              ) : null}
               {!lightbox.excludedAt ? (
                 <Button
                   type="button"

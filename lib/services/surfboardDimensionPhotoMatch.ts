@@ -992,13 +992,17 @@ export async function rateAndMaybePromoteDimensionPhotoMatch(input: {
   photoRating?: "good" | "close" | "bad" | null
   dimsRating?: "good" | "close" | "bad" | null
   note?: string | null
+  correctedLength?: string | null
+  correctedWidth?: string | null
+  correctedThickness?: string | null
+  correctedVolume?: string | null
   excluded?: boolean
   promoteToRefs?: boolean
 }): Promise<{ data: SurfboardDimensionPhotoMatchRow | null; error: Error | null }> {
   const existing = await input.supabase
     .from("surfboard_dimension_photo_matches")
     .select(
-      "id, listing_id, input_preview, source_image_url, predicted_length, predicted_width, predicted_thickness, predicted_volume, match_rating, photo_rating, dims_rating, promoted_ref_id",
+      "id, listing_id, input_preview, source_image_url, predicted_length, predicted_width, predicted_thickness, predicted_volume, match_rating, photo_rating, dims_rating, corrected_length, corrected_width, corrected_thickness, corrected_volume, promoted_ref_id",
     )
     .eq("id", input.matchId)
     .maybeSingle()
@@ -1017,6 +1021,10 @@ export async function rateAndMaybePromoteDimensionPhotoMatch(input: {
     predicted_volume: string | null
     photo_rating: string | null
     dims_rating: string | null
+    corrected_length: string | null
+    corrected_width: string | null
+    corrected_thickness: string | null
+    corrected_volume: string | null
     promoted_ref_id: string | null
   }
 
@@ -1033,19 +1041,52 @@ export async function rateAndMaybePromoteDimensionPhotoMatch(input: {
         ? input.matchRating
         : (row.dims_rating as "good" | "close" | "bad" | null)
 
+  const nextCorrectedLength =
+    input.correctedLength !== undefined
+      ? emptyToNull(input.correctedLength)
+      : emptyToNull(row.corrected_length)
+  const nextCorrectedWidth =
+    input.correctedWidth !== undefined
+      ? emptyToNull(input.correctedWidth)
+      : emptyToNull(row.corrected_width)
+  const nextCorrectedThickness =
+    input.correctedThickness !== undefined
+      ? emptyToNull(input.correctedThickness)
+      : emptyToNull(row.corrected_thickness)
+  const nextCorrectedVolume =
+    input.correctedVolume !== undefined
+      ? emptyToNull(input.correctedVolume)
+      : emptyToNull(row.corrected_volume)
+  const hasFullCorrection = Boolean(
+    nextCorrectedLength && nextCorrectedWidth && nextCorrectedThickness,
+  )
+
   let promotedRefId: string | null | undefined = undefined
-  // Excluded cases never promote. Photo Good + Dims Good → promote the model's own read.
+  // Photo Good + Dims Good → promote model read.
+  // Photo Good + Bad/Close dims + admin L×W×T → promote ground-truth OCR ref.
   const shouldPromote =
     input.excluded !== true &&
     input.promoteToRefs !== false &&
     nextPhoto === "good" &&
-    nextDims === "good" &&
-    !row.promoted_ref_id
+    !row.promoted_ref_id &&
+    (nextDims === "good" ||
+      ((nextDims === "bad" || nextDims === "close") && hasFullCorrection))
 
   if (shouldPromote) {
-    const length = emptyToNull(row.predicted_length)
-    const width = emptyToNull(row.predicted_width)
-    const thickness = emptyToNull(row.predicted_thickness)
+    const length =
+      nextDims === "good"
+        ? emptyToNull(row.predicted_length)
+        : nextCorrectedLength
+    const width =
+      nextDims === "good" ? emptyToNull(row.predicted_width) : nextCorrectedWidth
+    const thickness =
+      nextDims === "good"
+        ? emptyToNull(row.predicted_thickness)
+        : nextCorrectedThickness
+    const volume =
+      nextDims === "good"
+        ? emptyToNull(row.predicted_volume)
+        : nextCorrectedVolume
     const preview = Array.isArray(row.input_preview) ? row.input_preview : []
     const sourceFromPreview = preview.find(
       (item) =>
@@ -1068,7 +1109,7 @@ export async function rateAndMaybePromoteDimensionPhotoMatch(input: {
         boardLength: length,
         boardWidthInches: width,
         boardThicknessInches: thickness,
-        boardVolumeL: emptyToNull(row.predicted_volume),
+        boardVolumeL: volume,
         source: "match_accepted",
         active: true,
       })
@@ -1081,6 +1122,10 @@ export async function rateAndMaybePromoteDimensionPhotoMatch(input: {
     photoRating: input.photoRating,
     dimsRating: input.dimsRating,
     note: input.note,
+    correctedLength: input.correctedLength,
+    correctedWidth: input.correctedWidth,
+    correctedThickness: input.correctedThickness,
+    correctedVolume: input.correctedVolume,
     excluded: input.excluded,
     promotedRefId,
   })

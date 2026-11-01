@@ -35,10 +35,17 @@ function formatRatedMemoryLine(row: SurfboardDimensionPhotoMatchRow): string {
     predictedThickness: row.predictedThickness,
     predictedVolume: row.predictedVolume,
   })
+  const actual = dimsLabel({
+    predictedLength: row.correctedLength,
+    predictedWidth: row.correctedWidth,
+    predictedThickness: row.correctedThickness,
+    predictedVolume: row.correctedVolume,
+  })
   const parts = [
     `photo ${photo}`,
     `dims ${dims}`,
     predicted ? `read ${predicted}` : "read none",
+    actual ? `actual ${actual}` : null,
     photo === "BAD"
       ? "wrong photo type (beauty/outline/logo — not the size stamp)"
       : null,
@@ -46,7 +53,15 @@ function formatRatedMemoryLine(row: SurfboardDimensionPhotoMatchRow): string {
     dims === "GOOD" && !row.predictedVolume
       ? "no volume printed (leave volume null)"
       : null,
-    dims === "CLOSE" ? "dims nearly right — be more precise on digits/fractions" : null,
+    dims === "CLOSE" && !actual
+      ? "dims nearly right — be more precise on digits/fractions"
+      : null,
+    dims === "CLOSE" && actual
+      ? "dims nearly right — use actual values as ground truth"
+      : null,
+    dims === "BAD" && actual
+      ? "dims read was wrong — use actual values as ground truth"
+      : null,
     row.ratingNote?.trim() ? `admin: ${row.ratingNote.trim()}` : null,
   ].filter(Boolean)
   return `- ${parts.join(" · ")}`
@@ -102,7 +117,7 @@ function buildRatedMemorySections(rows: SurfboardDimensionPhotoMatchRow[]): stri
   }
   if (dimsFocus.length > 0) {
     sections.push(
-      "DIMS READ (after the right photo is chosen — Good keep, Close tighten, Bad avoid):",
+      "DIMS READ (after the right photo is chosen — Good keep, Close tighten, Bad avoid). When actual L×W×T is listed, that is ground truth — match those values on similar stamps:",
       ...dimsFocus.slice(0, 10).map(formatRatedMemoryLine),
     )
   }

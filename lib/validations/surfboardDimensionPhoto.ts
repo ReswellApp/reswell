@@ -66,6 +66,8 @@ export const surfboardDimensionPhotoRefListQuerySchema = z.object({
 
 const ratingField = z.enum(SURFBOARD_DIMENSION_PHOTO_RATINGS).nullable().optional()
 
+const correctedDimField = z.string().trim().max(32).nullable().optional()
+
 export const rateSurfboardDimensionPhotoMatchSchema = z
   .object({
     /** @deprecated Prefer photoRating + dimsRating. Kept for back-compat. */
@@ -73,6 +75,11 @@ export const rateSurfboardDimensionPhotoMatchSchema = z
     photoRating: ratingField,
     dimsRating: ratingField,
     note: z.string().trim().max(1000).nullable().optional(),
+    /** Ground truth when dims are Bad/Close — feeds few-shot memory + OCR refs. */
+    correctedLength: correctedDimField,
+    correctedWidth: correctedDimField,
+    correctedThickness: correctedDimField,
+    correctedVolume: correctedDimField,
     /** Skip this case forever for rematch/scan; stores exclude memory. */
     excluded: z.boolean().optional(),
     promoteToRefs: z.boolean().optional().default(true),
@@ -83,7 +90,11 @@ export const rateSurfboardDimensionPhotoMatchSchema = z
       v.photoRating !== undefined ||
       v.dimsRating !== undefined ||
       v.note !== undefined ||
-      v.excluded !== undefined,
+      v.excluded !== undefined ||
+      v.correctedLength !== undefined ||
+      v.correctedWidth !== undefined ||
+      v.correctedThickness !== undefined ||
+      v.correctedVolume !== undefined,
     { message: "Nothing to update" },
   )
 
