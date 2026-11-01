@@ -59,15 +59,26 @@ export function OfferMessageCard({
         </View>
         <View style={styles.headerCopy}>
           <View style={styles.titleRow}>
-            <Text style={[styles.title, { color: colors.foreground, fontFamily: fontFamily.text }]}>
+            <Text
+              numberOfLines={2}
+              style={[styles.title, { color: colors.foreground, fontFamily: fontFamily.text }]}
+            >
               {offerThreadHeadline(offer)}
             </Text>
-            <Text style={[styles.amount, { color: colors.foreground, fontFamily: fontFamily.headline }]}>
+            <Text
+              numberOfLines={1}
+              style={[styles.amount, { color: colors.foreground, fontFamily: fontFamily.headline }]}
+            >
               {offer.amount_label}
             </Text>
           </View>
           {subtitle ? (
-            <Text style={[styles.meta, { color: colors.muted, fontFamily: fontFamily.text }]}>{subtitle}</Text>
+            <Text
+              numberOfLines={2}
+              style={[styles.meta, { color: colors.muted, fontFamily: fontFamily.text }]}
+            >
+              {subtitle}
+            </Text>
           ) : null}
         </View>
       </View>
@@ -115,9 +126,17 @@ export function OfferThreadFallbackCard({
         </View>
         <View style={styles.headerCopy}>
           <View style={styles.titleRow}>
-            <Text style={[styles.title, { color: colors.foreground, fontFamily: fontFamily.text }]}>{title}</Text>
+            <Text
+              numberOfLines={2}
+              style={[styles.title, { color: colors.foreground, fontFamily: fontFamily.text }]}
+            >
+              {title}
+            </Text>
             {amount ? (
-              <Text style={[styles.amount, { color: colors.foreground, fontFamily: fontFamily.headline }]}>
+              <Text
+                numberOfLines={1}
+                style={[styles.amount, { color: colors.foreground, fontFamily: fontFamily.headline }]}
+              >
                 {amount}
               </Text>
             ) : null}
@@ -133,16 +152,43 @@ export function OfferThreadFallbackCard({
 }
 
 const styles = StyleSheet.create({
-  wrap: { borderWidth: 2, borderRadius: 16, padding: 14, gap: 8, maxWidth: 320 },
+  wrap: {
+    alignSelf: "stretch",
+    width: "100%",
+    borderWidth: 2,
+    borderRadius: 16,
+    padding: 14,
+    gap: 8,
+    overflow: "hidden",
+  },
   header: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
-  icon: { width: 32, height: 32, borderRadius: 8, alignItems: "center", justifyContent: "center" },
+  icon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
   headerCopy: { flex: 1, minWidth: 0, gap: 2 },
-  titleRow: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 12 },
-  title: { flex: 1, fontSize: 15, fontWeight: "700", lineHeight: 20 },
-  amount: { fontSize: 15, fontWeight: "600" },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  title: { flex: 1, minWidth: 0, fontSize: 15, fontWeight: "700", lineHeight: 20 },
+  amount: { flexShrink: 0, fontSize: 15, fontWeight: "600" },
   meta: { fontSize: 13, lineHeight: 18 },
   note: { fontSize: 13, lineHeight: 18 },
-  viewOffer: { borderWidth: 1.5, borderRadius: 12, alignItems: "center", justifyContent: "center", minHeight: 40 },
+  viewOffer: {
+    borderWidth: 1.5,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 40,
+    alignSelf: "stretch",
+  },
   viewOfferLabel: { fontSize: 14, fontWeight: "700" },
   time: { fontSize: 11 },
 })

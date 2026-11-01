@@ -1,3 +1,4 @@
+import { SymbolView } from "expo-symbols"
 import { useState } from "react"
 import { ActivityIndicator, Alert, Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native"
 import { reportUser } from "@/lib/api"
@@ -119,16 +120,30 @@ export function ReportUserSheet({
           ]}
         />
 
-        <Pressable onPress={() => setAlsoBlock((value) => !value)} style={styles.blockRow}>
+        <Pressable
+          onPress={() => setAlsoBlock((value) => !value)}
+          style={styles.blockRow}
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: alsoBlock }}
+          accessibilityLabel="Also block this member"
+        >
           <View
             style={[
               styles.checkbox,
               {
-                borderColor: colors.border,
+                borderColor: alsoBlock ? colors.foreground : colors.border,
                 backgroundColor: alsoBlock ? colors.foreground : colors.background,
               },
             ]}
-          />
+          >
+            {alsoBlock ? (
+              <SymbolView
+                name={{ ios: "checkmark", android: "check", web: "check" }}
+                size={12}
+                tintColor={colors.background}
+              />
+            ) : null}
+          </View>
           <Text style={[styles.blockLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}>
             Also block this member
           </Text>
@@ -182,7 +197,14 @@ const styles = StyleSheet.create({
     textAlignVertical: "top",
   },
   blockRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  checkbox: { width: 20, height: 20, borderRadius: 6, borderWidth: StyleSheet.hairlineWidth },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 6,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   blockLabel: { fontSize: 15, fontWeight: "600" },
   error: { fontSize: 14 },
   primary: {
