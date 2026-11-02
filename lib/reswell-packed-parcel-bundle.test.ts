@@ -3,7 +3,7 @@ import { describe, it } from "node:test"
 import {
   combineSmallParcelPackedWeightsOz,
   resolveCombinedPackedParcelFromListings,
-  SMALL_PARCEL_SHARED_PACKAGING_OZ,
+  softParcelExtraProductWeightOz,
 } from "./reswell-packed-parcel-from-listing.ts"
 
 function leash(id: string, weightOz: number, dims?: { lengthIn: number; widthIn: number; heightIn: number }) {
@@ -50,7 +50,7 @@ describe("small-parcel checkout bundles", () => {
     assert.equal(result.heightIn, 4)
   })
 
-  it("keeps five shop-small leashes at one mailer size — never a tall stack", () => {
+  it("keeps five shop-small leashes at one mailer size and ~4 lb, not a tall heavy stack", () => {
     const rows = ["a", "b", "c", "d", "e"].map((id) =>
       leash(id, 32, { lengthIn: 12, widthIn: 10, heightIn: 4 }),
     )
@@ -60,12 +60,14 @@ describe("small-parcel checkout bundles", () => {
     assert.equal(result.lengthIn, 12)
     assert.equal(result.widthIn, 10)
     assert.equal(result.heightIn, 4)
-    assert.equal(result.weightOz, 32 + 4 * (32 - SMALL_PARCEL_SHARED_PACKAGING_OZ))
+    // One 2 lb packed mailer + four product-only extras (8 oz each) = 4 lb.
+    assert.equal(result.weightOz, 32 + 4 * softParcelExtraProductWeightOz(32))
+    assert.equal(result.weightOz, 64)
     const uspsDimLb = (result.lengthIn * result.widthIn * result.heightIn) / 166
     assert.ok(uspsDimLb < 4)
   })
 
-  it("keeps five shop-medium leashes at the same 18×14×6 box", () => {
+  it("keeps five shop-medium leashes at the same 18×14×6 box near 6 lb packed", () => {
     const rows = ["a", "b", "c", "d", "e"].map((id) =>
       leash(id, 48, { lengthIn: 18, widthIn: 14, heightIn: 6 }),
     )
@@ -75,11 +77,9 @@ describe("small-parcel checkout bundles", () => {
     assert.equal(result.lengthIn, 18)
     assert.equal(result.widthIn, 14)
     assert.equal(result.heightIn, 6)
-    const billableLb = Math.max(
-      result.weightOz / 16,
-      (result.lengthIn * result.widthIn * result.heightIn) / 166,
-    )
-    assert.ok(billableLb < 15)
+    // One 3 lb packed mailer + four 12 oz product extras = 6 lb (not 15 lb raw).
+    assert.equal(result.weightOz, 48 + 4 * softParcelExtraProductWeightOz(48))
+    assert.equal(result.weightOz, 96)
   })
 })
 
@@ -88,10 +88,12 @@ describe("combineSmallParcelPackedWeightsOz", () => {
     assert.equal(combineSmallParcelPackedWeightsOz([6, 6, 6]), 18)
   })
 
-  it("drops shared packaging from carton-heavy extras only", () => {
+  it("keeps one full carton weight and adds product-only extras", () => {
+    assert.equal(softParcelExtraProductWeightOz(32), 8)
     assert.equal(
       combineSmallParcelPackedWeightsOz([32, 32, 32]),
-      32 + 2 * (32 - SMALL_PARCEL_SHARED_PACKAGING_OZ),
+      32 + 2 * softParcelExtraProductWeightOz(32),
     )
+    assert.equal(combineSmallParcelPackedWeightsOz([32, 32, 32]), 48)
   })
 })

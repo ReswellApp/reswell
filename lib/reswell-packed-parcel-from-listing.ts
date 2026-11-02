@@ -373,10 +373,11 @@ export function checkoutParcelLineQuantity(
 }
 
 /**
- * Packing materials already included in carton-heavy solo weights (≥ 16 oz).
- * Counted once when several soft parcels share one checkout box.
+ * Shop solo packed weights (e.g. 2 lb “small”) are mostly mailer + packing.
+ * Extra nested units only add this fraction as product weight (floored at
+ * {@link RESWELL_FALLBACK_SMALL_PARCEL_WEIGHT_OZ}).
  */
-export const SMALL_PARCEL_SHARED_PACKAGING_OZ = 8
+export const SMALL_PARCEL_EXTRA_PRODUCT_WEIGHT_FRACTION = 0.25
 
 /**
  * One mailer for soft goods. Solo listing dims are already a full outer carton;
@@ -405,10 +406,19 @@ function packSmallParcelBundle(
   }
 }
 
+/** Product-only add-on when nesting another carton-heavy soft item into a shared box. */
+export function softParcelExtraProductWeightOz(packedWeightOz: number): number {
+  return Math.max(
+    RESWELL_FALLBACK_SMALL_PARCEL_WEIGHT_OZ,
+    Math.round(packedWeightOz * SMALL_PARCEL_EXTRA_PRODUCT_WEIGHT_FRACTION * 100) / 100,
+  )
+}
+
 /**
  * Soft-parcel line weights include a solo mailer. Light lines (under 16 oz) are
- * treated as product-accurate and summed in full. When several carton-style lines
- * share one box, packaging is kept on the heaviest line only.
+ * treated as product-accurate and summed in full. Carton-heavy lines keep one full
+ * packed weight (mailer + item); each extra adds only estimated product weight so
+ * five 2 lb shop-small leashes rate near 4 lb, not 8–10 lb.
  */
 export function combineSmallParcelPackedWeightsOz(unitWeightsOz: number[]): number {
   if (unitWeightsOz.length === 0) return 0
@@ -425,7 +435,7 @@ export function combineSmallParcelPackedWeightsOz(unitWeightsOz: number[]): numb
   }
   let heavySum = heavy[0]!
   for (const weightOz of heavy.slice(1)) {
-    heavySum += weightOz - Math.min(SMALL_PARCEL_SHARED_PACKAGING_OZ, weightOz * 0.5)
+    heavySum += softParcelExtraProductWeightOz(weightOz)
   }
   return Math.round((lightSum + heavySum) * 100) / 100
 }
@@ -456,8 +466,8 @@ function expandSmallParcelUnitWeightsOz(
  * times its quantity.
  *
  * **Small parcels only:** one mailer sized to the largest solo carton (L×W×H
- * stay the same as one item — soft goods nest). Carton-heavy weights share
- * packaging once; light product weights still add by quantity.
+ * stay the same as one item — soft goods nest). Carton-heavy weights keep one
+ * full packed weight, then add product-only extras; light weights add in full.
  */
 export function resolveCombinedPackedParcelFromListings(
   rows: ListingPackedParcelSource[],
