@@ -30,9 +30,11 @@ import {
   shopifyGraphqlRequest,
   throwOnShopifyUserErrors,
 } from "@/lib/shopify/admin-graphql"
+import { ensureShopifySalesChannelConnection } from "@/lib/services/shopifyChannelConnection"
 import { saveShopifyDefaultPackageIfMissing } from "@/lib/services/shopifyDefaultPackage"
 import {
   SHOPIFY_MVP_SCOPES,
+  SHOPIFY_OAUTH_SCOPES,
   shopifyApiKey,
   shopifyApiSecret,
   shopifyOAuthRedirectUri,
@@ -212,7 +214,7 @@ export async function createShopifyInstallUrl(input: {
   // sent here. Keep this list identical to the released app version.
   const params = new URLSearchParams({
     client_id: shopifyApiKey(),
-    scope: SHOPIFY_MVP_SCOPES.join(","),
+    scope: SHOPIFY_OAUTH_SCOPES.join(","),
     redirect_uri: shopifyOAuthRedirectUri(),
     state: state.state,
   })
@@ -451,6 +453,10 @@ export async function completeShopifyOAuth(input: {
     if (isShopifyOrdersWebhookRejection(message)) {
       console.error("[shopify] orders webhook", error)
       await rememberShopifyOrderSync(input.serviceSupabase, connection.id, false)
+      await ensureShopifySalesChannelConnection({
+        serviceSupabase: input.serviceSupabase,
+        connection,
+      })
       return connection
     }
     await dbMarkShopifyConnectionStatus(input.serviceSupabase, connection.id, {
@@ -465,6 +471,10 @@ export async function completeShopifyOAuth(input: {
     connection.id,
     ordersCreateSubscribed,
   )
+  await ensureShopifySalesChannelConnection({
+    serviceSupabase: input.serviceSupabase,
+    connection,
+  })
   return connection
 }
 

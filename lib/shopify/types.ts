@@ -53,6 +53,10 @@ export interface ShopifyConnectionRow {
   token_refresh_locked_until: string | null
   token_refresh_lock_id: string | null
   scopes: string[]
+  /** Shopify Sales Channel GID from channelCreate, when configured. */
+  channel_gid: string | null
+  /** Shopify Channel handle for order attribution (`channel:<handle>`). */
+  channel_handle: string | null
   last_webhook_at: string | null
   last_reconciled_at: string | null
   last_error: string | null

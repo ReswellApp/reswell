@@ -36,7 +36,15 @@ export async function GET(request: NextRequest) {
   }
 
   if (await isShopifyStoreLinkedForLaunch(shopDomain, null)) {
-    return NextResponse.redirect(new URL("/dashboard/shopify", publicSiteOrigin()))
+    const home = new URL("/shopify/app", publicSiteOrigin())
+    home.searchParams.set("shop", shopDomain)
+    const host = request.nextUrl.searchParams.get("host")?.trim()
+    const timestamp = request.nextUrl.searchParams.get("timestamp")?.trim()
+    const hmac = request.nextUrl.searchParams.get("hmac")?.trim()
+    if (host) home.searchParams.set("host", host)
+    if (timestamp) home.searchParams.set("timestamp", timestamp)
+    if (hmac) home.searchParams.set("hmac", hmac)
+    return NextResponse.redirect(home)
   }
 
   try {
