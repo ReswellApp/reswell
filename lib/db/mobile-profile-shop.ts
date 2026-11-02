@@ -1,4 +1,5 @@
 import { PEER_LISTING_SECTIONS_FILTER } from "@/lib/peer-listing-sections"
+import { fetchSellerProfileSoldListingRefs } from "@/lib/db/seller-profile-sold-listings"
 import { getDb } from "@/lib/supabase/db"
 
 export type MobileProfileShopSectionCount = {
@@ -17,22 +18,46 @@ export async function fetchMobileProfileShopSectionCounts(
   { ok: true; rows: MobileProfileShopSectionCount[] } | { ok: false; message: string }
 > {
   const supabase = getDb({ consistency: "eventual", purpose: "catalog" })
-  let request = supabase
+
+  if (status === "sold") {
+    const { refs } = await fetchSellerProfileSoldListingRefs(supabase, sellerId, 300)
+    if (refs.length === 0) return { ok: true, rows: [] }
+
+    const { data, error } = await supabase
+      .from("listings")
+      .select("section")
+      .in(
+        "id",
+        refs.map((ref) => ref.listingId),
+      )
+      .eq("user_id", sellerId)
+      .in("section", PEER_LISTING_SECTIONS_FILTER)
+      .not("title", "ilike", "admin seed%")
+
+    if (error) return { ok: false, message: error.message }
+
+    const counts = new Map<string, number>()
+    for (const row of data ?? []) {
+      const section = typeof row.section === "string" ? row.section.trim() : ""
+      if (!section) continue
+      counts.set(section, (counts.get(section) ?? 0) + 1)
+    }
+    return {
+      ok: true,
+      rows: [...counts.entries()].map(([section, count]) => ({ section, count })),
+    }
+  }
+
+  const { data, error } = await supabase
     .from("listings")
     .select("section")
     .eq("user_id", sellerId)
     .in("section", PEER_LISTING_SECTIONS_FILTER)
+    .in("status", ["active", "pending_sale"])
+    .eq("hidden_from_site", false)
+    .is("archived_at", null)
+    .not("title", "ilike", "admin seed%")
 
-  if (status === "sold") {
-    request = request.eq("status", "sold")
-  } else {
-    request = request
-      .in("status", ["active", "pending_sale"])
-      .eq("hidden_from_site", false)
-      .is("archived_at", null)
-  }
-
-  const { data, error } = await request.not("title", "ilike", "admin seed%")
   if (error) return { ok: false, message: error.message }
 
   const counts = new Map<string, number>()

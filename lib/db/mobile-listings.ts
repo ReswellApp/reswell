@@ -1,6 +1,7 @@
 import { LISTING_SELLER_PROFILES_EMBED } from "@/lib/db/listing-seller-profile-embed"
 import { listingBoardTypeDbValuesForFilter } from "@/lib/board-type-canonical"
 import { PEER_LISTING_SECTIONS_FILTER } from "@/lib/peer-listing-sections"
+import { fetchSellerProfileSoldListingRefs } from "@/lib/db/seller-profile-sold-listings"
 import { getDb } from "@/lib/supabase/db"
 import { categoryIdForBrowseBoardType } from "@/lib/utils/board-type-from-category-id"
 import type { ListingImageForCard } from "@/lib/listing-image-display"
@@ -122,6 +123,24 @@ export async function listMobileListingRows(
 ): Promise<{ ok: true; rows: MobileListingRow[]; hasMore: boolean } | { ok: false; message: string }> {
   const supabase = getDb({ consistency: "eventual", purpose: "catalog" })
   const availability = query.availability ?? "active"
+
+  // Seller Sold tab: include in-stock brand-new quantity sales (same as web shop).
+  if (availability === "sold" && query.sellerId) {
+    const { refs } = await fetchSellerProfileSoldListingRefs(
+      supabase,
+      query.sellerId,
+      Math.max(query.offset + query.limit + 1, 150),
+    )
+    const listed = await listMobileListingRowsByIds(refs.map((ref) => ref.listingId))
+    if (!listed.ok) return listed
+    const filtered = query.section
+      ? listed.rows.filter((row) => row.section === query.section)
+      : listed.rows
+    const pageEnd = query.offset + query.limit
+    const page = filtered.slice(query.offset, pageEnd)
+    return { ok: true, rows: page, hasMore: filtered.length > pageEnd }
+  }
+
   let request = supabase.from("listings").select(MOBILE_LISTING_SELECT)
 
   if (availability === "sold") {
