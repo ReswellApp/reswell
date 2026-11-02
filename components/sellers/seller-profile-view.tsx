@@ -157,6 +157,7 @@ export function SellerProfileView({
             viewerId={viewer.userId}
             tileMeta={tileMeta}
             noActiveListingsNotice={showNoActiveNotice}
+            soldPresentation={showNoActiveNotice}
             onViewSoldTab={() => setActiveTab("sold")}
             emptyMessage={
               hasPastListings
@@ -263,6 +264,7 @@ export function SellerProfileView({
             viewerId={viewer.userId}
             tileMeta={tileMeta}
             showPromoCards={false}
+            soldPresentation
             emptyMessage="No sold or previous listings yet."
           />
         ) : null}
