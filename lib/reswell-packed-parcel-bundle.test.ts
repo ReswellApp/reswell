@@ -3,7 +3,6 @@ import { describe, it } from "node:test"
 import {
   combineSmallParcelPackedWeightsOz,
   resolveCombinedPackedParcelFromListings,
-  SMALL_PARCEL_NEST_VOLUME_FACTOR,
   SMALL_PARCEL_SHARED_PACKAGING_OZ,
 } from "./reswell-packed-parcel-from-listing.ts"
 
@@ -19,18 +18,17 @@ function leash(id: string, weightOz: number, dims?: { lengthIn: number; widthIn:
 }
 
 describe("small-parcel checkout bundles", () => {
-  it("keeps light product weights additive by quantity", () => {
+  it("keeps the same mailer size when quantity is more than one", () => {
     const result = resolveCombinedPackedParcelFromListings([leash("a", 6)], { a: 3 })
     assert.equal(result.ok, true)
     if (!result.ok) return
     assert.equal(result.weightOz, 18)
     assert.equal(result.lengthIn, 12)
     assert.equal(result.widthIn, 8)
-    // Nest extras into one mailer instead of stacking three 2″ cartons into a 6″ tower.
-    assert.equal(result.heightIn, 3)
+    assert.equal(result.heightIn, 2)
   })
 
-  it("combines different small parcels into one nested box", () => {
+  it("uses the largest solo carton when combining different small parcels", () => {
     const fin = {
       id: "fin",
       section: "fins",
@@ -49,11 +47,10 @@ describe("small-parcel checkout bundles", () => {
     assert.equal(result.weightOz, 28)
     assert.equal(result.lengthIn, 12)
     assert.equal(result.widthIn, 8)
-    assert.ok(result.heightIn > 2)
-    assert.ok(result.heightIn < 10)
+    assert.equal(result.heightIn, 4)
   })
 
-  it("does not stack five shop-small mailers into a DIM tower", () => {
+  it("keeps five shop-small leashes at one mailer size — never a tall stack", () => {
     const rows = ["a", "b", "c", "d", "e"].map((id) =>
       leash(id, 32, { lengthIn: 12, widthIn: 10, heightIn: 4 }),
     )
@@ -62,14 +59,13 @@ describe("small-parcel checkout bundles", () => {
     if (!result.ok) return
     assert.equal(result.lengthIn, 12)
     assert.equal(result.widthIn, 10)
-    // Old solid-volume stack was 20″ tall / ~14 lb USPS DIM. Nested mailer stays near one box.
-    assert.equal(result.heightIn, 8)
+    assert.equal(result.heightIn, 4)
     assert.equal(result.weightOz, 32 + 4 * (32 - SMALL_PARCEL_SHARED_PACKAGING_OZ))
     const uspsDimLb = (result.lengthIn * result.widthIn * result.heightIn) / 166
-    assert.ok(uspsDimLb < 8)
+    assert.ok(uspsDimLb < 4)
   })
 
-  it("nests medium shop cartons so five leashes stay under a 20 lb billable DIM", () => {
+  it("keeps five shop-medium leashes at the same 18×14×6 box", () => {
     const rows = ["a", "b", "c", "d", "e"].map((id) =>
       leash(id, 48, { lengthIn: 18, widthIn: 14, heightIn: 6 }),
     )
@@ -78,12 +74,12 @@ describe("small-parcel checkout bundles", () => {
     if (!result.ok) return
     assert.equal(result.lengthIn, 18)
     assert.equal(result.widthIn, 14)
-    assert.equal(result.heightIn, 12)
+    assert.equal(result.heightIn, 6)
     const billableLb = Math.max(
       result.weightOz / 16,
       (result.lengthIn * result.widthIn * result.heightIn) / 166,
     )
-    assert.ok(billableLb < 20)
+    assert.ok(billableLb < 15)
   })
 })
 
@@ -97,9 +93,5 @@ describe("combineSmallParcelPackedWeightsOz", () => {
       combineSmallParcelPackedWeightsOz([32, 32, 32]),
       32 + 2 * (32 - SMALL_PARCEL_SHARED_PACKAGING_OZ),
     )
-  })
-
-  it("uses the nest factor constant expected by packing", () => {
-    assert.equal(SMALL_PARCEL_NEST_VOLUME_FACTOR, 0.25)
   })
 })

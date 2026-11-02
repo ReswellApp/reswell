@@ -373,58 +373,35 @@ export function checkoutParcelLineQuantity(
 }
 
 /**
- * Solo soft-goods dims are a full outer carton. Extra units nest into that mailer,
- * so only a fraction of each extra carton volume is added (not a solid stack).
- */
-export const SMALL_PARCEL_NEST_VOLUME_FACTOR = 0.25
-
-/**
  * Packing materials already included in carton-heavy solo weights (≥ 16 oz).
  * Counted once when several soft parcels share one checkout box.
  */
 export const SMALL_PARCEL_SHARED_PACKAGING_OZ = 8
 
 /**
- * One mailer for soft goods. Footprint is the largest oriented item. The largest
- * unit keeps its full carton volume; each extra unit adds only a nest fraction so
- * five shop “small” mailers do not rate as a 20″ tower.
+ * One mailer for soft goods. Solo listing dims are already a full outer carton;
+ * leashes/fins/etc. nest into that same box. Use the largest oriented L×W×H and
+ * do **not** grow height with quantity — stacking carton volumes was rating five
+ * flat leashes as a 20″ tower.
  */
 function packSmallParcelBundle(
   items: Array<{ lengthIn: number; widthIn: number; heightIn: number; quantity: number }>,
 ): { lengthIn: number; widthIn: number; heightIn: number } {
-  const units: Array<{ lengthIn: number; widthIn: number; heightIn: number; volume: number }> = []
   let maxLength = 0
   let maxWidth = 0
   let maxHeight = 0
   for (const item of items) {
+    if (item.quantity < 1) continue
     const sides = [item.lengthIn, item.widthIn, item.heightIn].sort((a, b) => b - a)
-    const lengthIn = sides[0] ?? 0
-    const widthIn = sides[1] ?? 0
-    const heightIn = sides[2] ?? 0
-    const quantity = item.quantity
-    maxLength = Math.max(maxLength, lengthIn)
-    maxWidth = Math.max(maxWidth, widthIn)
-    maxHeight = Math.max(maxHeight, heightIn)
-    const volume = lengthIn * widthIn * heightIn
-    for (let i = 0; i < quantity; i += 1) {
-      units.push({ lengthIn, widthIn, heightIn, volume })
-    }
+    maxLength = Math.max(maxLength, sides[0] ?? 0)
+    maxWidth = Math.max(maxWidth, sides[1] ?? 0)
+    maxHeight = Math.max(maxHeight, sides[2] ?? 0)
   }
-  if (units.length === 0) {
-    return { lengthIn: 0, widthIn: 0, heightIn: 0 }
-  }
-  units.sort((a, b) => b.volume - a.volume)
-  let volume = units[0]!.volume
-  for (const unit of units.slice(1)) {
-    volume += unit.volume * SMALL_PARCEL_NEST_VOLUME_FACTOR
-  }
-  const footprint = maxLength * maxWidth
-  const filledHeight = footprint > 0 ? volume / footprint : maxHeight
   const round2 = (value: number) => Math.round(value * 100) / 100
   return {
     lengthIn: round2(maxLength),
     widthIn: round2(maxWidth),
-    heightIn: round2(Math.max(maxHeight, filledHeight)),
+    heightIn: round2(maxHeight),
   }
 }
 
@@ -478,8 +455,9 @@ function expandSmallParcelUnitWeightsOz(
  * **One surfboard plus small goods:** the board carton, plus each item's weight
  * times its quantity.
  *
- * **Small parcels only:** one mailer. Extra units nest into the largest carton
- * (volume is not stacked solid). Carton-heavy weights share packaging once.
+ * **Small parcels only:** one mailer sized to the largest solo carton (L×W×H
+ * stay the same as one item — soft goods nest). Carton-heavy weights share
+ * packaging once; light product weights still add by quantity.
  */
 export function resolveCombinedPackedParcelFromListings(
   rows: ListingPackedParcelSource[],
