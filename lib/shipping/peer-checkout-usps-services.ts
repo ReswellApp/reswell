@@ -394,7 +394,7 @@ export function peerCheckoutSmallParcelBundleCopy(input: {
   }
   return {
     label: "One box at checkout",
-    note: "These ship together in one shared box. Checkout nests the items into one mailer, then lets you choose USPS Ground or Priority.",
+    note: "These ship together in one shared box the size of the largest item. Checkout then lets you choose USPS Ground or Priority.",
   }
 }
 
