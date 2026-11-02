@@ -7,15 +7,16 @@
 
 name = "Reswell"
 client_id = "REPLACE_WITH_SHOPIFY_API_KEY"
-application_url = "https://www.reswell.app/api/integrations/shopify/install"
-embedded = false
+# Embedded Sales Channel home (App Bridge). OAuth install still starts from here.
+application_url = "https://www.reswell.app/shopify/app"
+embedded = true
 
 [build]
 automatically_update_urls_on_dev = false
 
 [access_scopes]
 # Keep in sync with SHOPIFY_OAUTH_SCOPES in lib/shopify/config.ts
-scopes = "read_products,write_products,read_inventory,write_inventory,read_locations,read_orders,write_orders,read_product_listings"
+scopes = "read_products,write_products,read_inventory,write_inventory,read_locations,read_orders,write_orders,read_product_listings,write_resource_feedbacks"
 
 [auth]
 redirect_urls = [

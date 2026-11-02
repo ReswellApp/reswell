@@ -55,6 +55,8 @@ export interface ShopifyConnectionRow {
   scopes: string[]
   /** Shopify Sales Channel GID from channelCreate, when configured. */
   channel_gid: string | null
+  /** Shopify Channel handle for order attribution (`channel:<handle>`). */
+  channel_handle: string | null
   last_webhook_at: string | null
   last_reconciled_at: string | null
   last_error: string | null

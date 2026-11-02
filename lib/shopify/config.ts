@@ -14,7 +14,10 @@ export const SHOPIFY_MVP_SCOPES = [
 ] as const
 
 /** Requested on new OAuth installs; not required to treat an existing link as healthy. */
-export const SHOPIFY_SALES_CHANNEL_SCOPES = ["read_product_listings"] as const
+export const SHOPIFY_SALES_CHANNEL_SCOPES = [
+  "read_product_listings",
+  "write_resource_feedbacks",
+] as const
 
 export const SHOPIFY_OAUTH_SCOPES = [
   ...SHOPIFY_MVP_SCOPES,

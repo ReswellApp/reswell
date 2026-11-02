@@ -18,6 +18,7 @@ import {
   SHOPIFY_ORDER_TAG,
   RESWELL_ORDER_ATTRIBUTE,
 } from "@/lib/shopify/billing"
+import { shopifyOrderAttributionSourceName } from "@/lib/shopify/resource-feedback"
 import type {
   ShopifyConnectionRow,
   ShopifySaleCollectVia,
@@ -27,6 +28,7 @@ import {
   createShopifyUsageRecord,
   ShopifyBillingRequiredError,
 } from "@/lib/services/shopifyBilling"
+import { ensureShopifySalesChannelConnection } from "@/lib/services/shopifyChannelConnection"
 import { getShopifyAccessToken } from "@/lib/services/shopifyOAuth"
 
 type SaleLine = {
@@ -111,11 +113,13 @@ async function createPaidShopifyOrder(input: {
   accessToken: string
   orderId: string
   lines: SaleLine[]
+  channelHandle?: string | null
 }): Promise<string> {
   const total = input.lines.reduce(
     (sum, line) => sum + line.unitPrice * line.quantity,
     0,
   )
+  const sourceName = shopifyOrderAttributionSourceName(input.channelHandle)
   const data = await shopifyGraphqlRequest<{
     orderCreate: {
       order?: { id?: string | null } | null
@@ -140,6 +144,7 @@ async function createPaidShopifyOrder(input: {
         tags: [SHOPIFY_ORDER_TAG],
         note: `Reswell order ${input.orderId}`,
         sourceIdentifier: input.orderId,
+        ...(sourceName ? { sourceName } : {}),
         customAttributes: [
           { key: RESWELL_ORDER_ATTRIBUTE, value: input.orderId },
         ],
@@ -290,6 +295,14 @@ export async function pushReswellSaleToShopify(input: {
   )
   let status = record.status
   let orderGid = record.shopify_order_gid
+  let channelHandle = input.connection.channel_handle
+  if (record.source_of_truth === "shopify" && !channelHandle) {
+    const channel = await ensureShopifySalesChannelConnection({
+      serviceSupabase: input.serviceSupabase,
+      connection: input.connection,
+    })
+    channelHandle = channel?.handle ?? null
+  }
 
   if (record.source_of_truth === "shopify" && !orderGid) {
     orderGid = await createPaidShopifyOrder({
@@ -297,6 +310,7 @@ export async function pushReswellSaleToShopify(input: {
       accessToken,
       orderId: input.orderId,
       lines,
+      channelHandle,
     })
     status = "ordered"
     await dbUpdateShopifySaleRecord(input.serviceSupabase, input.orderId, {

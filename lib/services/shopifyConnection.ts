@@ -27,8 +27,14 @@ import {
   unpublishSelectedShopifyProduct,
 } from "@/lib/services/shopifyCatalog"
 import { sweepDeletedShopifyListings } from "@/lib/services/shopifyDeletionSweep"
+import {
+  reportShopifyProductFeedback,
+  shopifyPublishBlockingMessages,
+} from "@/lib/services/shopifyResourceFeedback"
+import { fetchShopifyProduct } from "@/lib/shopify/catalog"
 import { shopifyCatalogSyncAllowed } from "@/lib/shopify/billing"
 import { isShopifyOrdersWebhookRejection } from "@/lib/shopify/orders-webhook"
+import { getShopifyAccessToken } from "@/lib/services/shopifyOAuth"
 
 export type ServiceResult<T> =
   | { ok: true; data: T }
@@ -158,6 +164,36 @@ export async function selectMerchantShopifyProduct(input: {
     if ("error" in loaded) {
       return { ok: false, status: loaded.status, error: loaded.error }
     }
+
+    const accessToken = await getShopifyAccessToken(
+      loaded.service,
+      loaded.connection,
+    )
+    const product = await fetchShopifyProduct({
+      shopDomain: loaded.connection.shop_domain,
+      accessToken,
+      productId: input.productId,
+    })
+    if (!product) {
+      return {
+        ok: false,
+        status: 404,
+        error: "That product no longer exists in Shopify",
+      }
+    }
+
+    const blocking = shopifyPublishBlockingMessages(product)
+    if (blocking.length > 0) {
+      await reportShopifyProductFeedback({
+        serviceSupabase: loaded.service,
+        connection: loaded.connection,
+        product,
+        state: "REQUIRES_ACTION",
+        messages: blocking,
+      })
+      return { ok: false, status: 422, error: blocking[0] ?? "Product needs updates" }
+    }
+
     const synced = await syncSelectedShopifyProduct({
       serviceSupabase: loaded.service,
       connection: loaded.connection,
@@ -171,6 +207,12 @@ export async function selectMerchantShopifyProduct(input: {
         error: "That product no longer exists in Shopify",
       }
     }
+    await reportShopifyProductFeedback({
+      serviceSupabase: loaded.service,
+      connection: loaded.connection,
+      product,
+      state: "ACCEPTED",
+    })
     return { ok: true, data: { listingIds: synced.listingIds } }
   } catch (error) {
     console.error("[shopify] select product", {

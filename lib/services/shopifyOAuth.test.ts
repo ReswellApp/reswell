@@ -90,7 +90,7 @@ test("authorize URL requests the legacy install flow scopes", async () => {
   )
   assert.equal(
     url.searchParams.get("scope"),
-    "read_products,write_products,read_inventory,write_inventory,read_locations,read_orders,write_orders",
+    "read_products,write_products,read_inventory,write_inventory,read_locations,read_orders,write_orders,read_product_listings,write_resource_feedbacks",
   )
   assert.equal(url.searchParams.get("client_id"), "shopify-client-id")
   assert.equal(

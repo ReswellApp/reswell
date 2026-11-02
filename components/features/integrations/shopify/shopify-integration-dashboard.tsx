@@ -2,6 +2,8 @@
 
 import { useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ShopifyAccountConnectionPanel } from "@/components/features/integrations/shopify/shopify-account-connection-panel"
+import { ShopifyAccountStatusBanners } from "@/components/features/integrations/shopify/shopify-account-status-banners"
 import { ShopifyCatalogNotice } from "@/components/features/integrations/shopify/shopify-catalog-notice"
 import { ShopifyConnectionCard } from "@/components/features/integrations/shopify/shopify-connection-card"
 import { ShopifyDashboardAlerts } from "@/components/features/integrations/shopify/shopify-dashboard-alerts"
@@ -104,6 +106,17 @@ export function ShopifyIntegrationDashboard({
         configured={initialData.configured}
         error={callbackError ?? initialData.loadError}
       />
+
+      {runtimeReady && connection && connection.status !== "disconnected" ? (
+        <>
+          <ShopifyAccountStatusBanners connection={connection} />
+          <ShopifyAccountConnectionPanel
+            connection={connection}
+            busy={integration.connectionBusy}
+            onDisconnect={() => void integration.disconnect()}
+          />
+        </>
+      ) : null}
 
       {runtimeReady && (!connection || connection.status === "disconnected") ? (
         <ShopifyConnectionCard

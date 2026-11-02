@@ -22,6 +22,16 @@ type ChannelsListResult = {
   }
 }
 
+export type ShopifyChannelRef = {
+  id: string
+  handle: string
+}
+
+function channelHandleForAccount(userId: string): string {
+  const compact = userId.replace(/[^a-zA-Z0-9]/g, "").slice(0, 16).toLowerCase()
+  return `reswell-us-${compact || "merchant"}`
+}
+
 /**
  * Ensures a Shopify Sales Channel connection exists for this Reswell account.
  * Best-effort: logs and returns null when the Partner app is not yet a sales
@@ -30,10 +40,13 @@ type ChannelsListResult = {
 export async function ensureShopifySalesChannelConnection(input: {
   serviceSupabase: SupabaseClient
   connection: ShopifyConnectionRow
-}): Promise<string | null> {
+}): Promise<ShopifyChannelRef | null> {
   const { connection, serviceSupabase } = input
-  if (connection.channel_gid?.trim()) {
-    return connection.channel_gid.trim()
+  if (connection.channel_gid?.trim() && connection.channel_handle?.trim()) {
+    return {
+      id: connection.channel_gid.trim(),
+      handle: connection.channel_handle.trim(),
+    }
   }
 
   let accessToken: string
@@ -67,9 +80,12 @@ export async function ensureShopifySalesChannelConnection(input: {
         node.accountId === connection.user_id ||
         node.handle.includes("reswell"),
     )
-    if (match?.id) {
-      await persistChannelGid(serviceSupabase, connection.id, match.id)
-      return match.id
+    if (match?.id && match.handle) {
+      await persistChannelRef(serviceSupabase, connection.id, {
+        id: match.id,
+        handle: match.handle,
+      })
+      return { id: match.id, handle: match.handle }
     }
   } catch (error) {
     // App may not be a sales channel yet — fall through to create.
@@ -80,6 +96,7 @@ export async function ensureShopifySalesChannelConnection(input: {
     const accountName =
       connection.shop_name?.trim() ||
       connection.shop_domain.replace(/\.myshopify\.com$/i, "")
+    const handle = channelHandleForAccount(connection.user_id)
     const data = await shopifyGraphqlRequest<ChannelCreateResult>({
       shopDomain: connection.shop_domain,
       accessToken,
@@ -100,6 +117,7 @@ export async function ensureShopifySalesChannelConnection(input: {
       `,
       variables: {
         input: {
+          handle,
           specificationHandle: RESWELL_CHANNEL_SPECIFICATION_HANDLE,
           accountId: connection.user_id,
           accountName: `Reswell · ${accountName}`,
@@ -116,9 +134,12 @@ export async function ensureShopifySalesChannelConnection(input: {
       return null
     }
     const channelId = data.channelCreate.channel?.id?.trim()
+    const channelHandle =
+      data.channelCreate.channel?.handle?.trim() || handle
     if (!channelId) return null
-    await persistChannelGid(serviceSupabase, connection.id, channelId)
-    return channelId
+    const ref = { id: channelId, handle: channelHandle }
+    await persistChannelRef(serviceSupabase, connection.id, ref)
+    return ref
   } catch (error) {
     console.warn("[shopify] channelCreate", {
       shopDomain: connection.shop_domain,
@@ -128,19 +149,20 @@ export async function ensureShopifySalesChannelConnection(input: {
   }
 }
 
-async function persistChannelGid(
+async function persistChannelRef(
   supabase: SupabaseClient,
   connectionId: string,
-  channelGid: string,
+  channel: ShopifyChannelRef,
 ): Promise<void> {
   const { error } = await supabase
     .from("shopify_connections")
     .update({
-      channel_gid: channelGid,
+      channel_gid: channel.id,
+      channel_handle: channel.handle,
       updated_at: new Date().toISOString(),
     })
     .eq("id", connectionId)
   if (error) {
-    console.error("[shopify] persist channel_gid", { connectionId, error })
+    console.error("[shopify] persist channel ref", { connectionId, error })
   }
 }
