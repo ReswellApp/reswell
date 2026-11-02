@@ -101,6 +101,7 @@ export async function markSellerListingSoldOffPlatform(
     sold_off_platform_channel: SoldOffPlatformChannel | null
     sold_off_platform_detail: string | null
     sold_off_platform_at: string
+    last_sold_at: string
     updated_at: string
     sold_reswell_helped_find_buyer?: boolean
     stock_quantity: number
@@ -111,6 +112,7 @@ export async function markSellerListingSoldOffPlatform(
     sold_off_platform_channel: channel ?? null,
     sold_off_platform_detail: channelDetail,
     sold_off_platform_at: soldAt,
+    last_sold_at: soldAt,
     updated_at: soldAt,
   }
   if (typeof reswellHelpedFindBuyer === "boolean") {
