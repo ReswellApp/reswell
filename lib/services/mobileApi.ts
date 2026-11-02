@@ -16,6 +16,7 @@ import {
   fetchMobileProfileBySlug,
   type MobileProfileRow,
 } from "@/lib/db/mobile-profiles"
+import { fetchSellerProfileSoldListingRefs } from "@/lib/db/seller-profile-sold-listings"
 import { resolveProfileBannerFocal } from "@/lib/utils/profile-banner-focal"
 import { listingCanBePermanentlyDeleted } from "@/lib/db/listingDeleteEligibility"
 import {
@@ -457,6 +458,8 @@ export function toMobileProfile(
     reviewCount: number
     following?: boolean
     followingCount?: number
+    /** Sold-tab listing count when it exceeds profiles.sales_count (quantity sales). */
+    salesCount?: number
   },
 ): MobileProfile | null {
   const slug = nullableText(row.seller_slug)
@@ -488,7 +491,7 @@ export function toMobileProfile(
     verified: isShop && Boolean(row.shop_verified),
     website_url: publicHttpUrl(row.shop_website),
     phone: nullableText(row.shop_phone),
-    sales_count: countOrZero(row.sales_count),
+    sales_count: Math.max(countOrZero(row.sales_count), countOrZero(stats.salesCount)),
     follower_count: countOrZero(row.follower_count),
     listing_count: countOrZero(stats.listingCount),
     rating_average: Math.min(5, Math.max(0, stats.ratingAverage)),
@@ -539,9 +542,10 @@ export async function getMobileProfileService(
   const row = loaded.data
 
   const supabase = getDb({ consistency: "eventual", purpose: "catalog" })
-  const [reviews, listings] = await Promise.all([
+  const [reviews, listings, soldRefs] = await Promise.all([
     getSellerReviewSummary(supabase, row.id),
     countMobileProfileListings(row.id),
+    fetchSellerProfileSoldListingRefs(supabase, row.id, 300),
   ])
   if (!listings.ok) {
     console.error("[mobile-api] profile listings failed", {
@@ -579,6 +583,7 @@ export async function getMobileProfileService(
     reviewCount: reviews.data.reviewCount,
     following,
     followingCount,
+    salesCount: soldRefs.refs.length,
   })
   if (!profile) {
     return { ok: false, status: 500, error: "Unable to load profile right now" }

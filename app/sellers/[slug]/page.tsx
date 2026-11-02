@@ -244,7 +244,9 @@ export default async function SellerProfilePage({
 
   const isShop = shop.is_shop
   const displayName = isShop ? shop.shop_name || shop.display_name : shop.display_name
-  const soldCount = shop.sales_count ?? 0
+  // Prefer the Sold-tab listing count so brand-new quantity sales (still active
+  // while stock remains) are reflected even when profiles.sales_count lags.
+  const soldCount = Math.max(shop.sales_count ?? 0, pastListings.length)
 
   function mapReview(
     review: ReviewRow,
