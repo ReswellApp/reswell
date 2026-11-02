@@ -373,9 +373,16 @@ export function checkoutParcelLineQuantity(
 }
 
 /**
- * One mailer for soft goods. Footprint is the largest item. Height grows only
- * when the combined volume no longer fits that footprint, so three flat leashes
- * do not rate as a tower and still weigh three times as much.
+ * Packing materials already included in carton-heavy solo weights (≥ 16 oz).
+ * Counted once when several soft parcels share one checkout box.
+ */
+export const SMALL_PARCEL_SHARED_PACKAGING_OZ = 8
+
+/**
+ * One mailer for soft goods. Solo listing dims are already a full outer carton;
+ * leashes/fins/etc. nest into that same box. Use the largest oriented L×W×H and
+ * do **not** grow height with quantity — stacking carton volumes was rating five
+ * flat leashes as a 20″ tower.
  */
 function packSmallParcelBundle(
   items: Array<{ lengthIn: number; widthIn: number; heightIn: number; quantity: number }>,
@@ -383,26 +390,60 @@ function packSmallParcelBundle(
   let maxLength = 0
   let maxWidth = 0
   let maxHeight = 0
-  let volume = 0
   for (const item of items) {
+    if (item.quantity < 1) continue
     const sides = [item.lengthIn, item.widthIn, item.heightIn].sort((a, b) => b - a)
-    const lengthIn = sides[0] ?? 0
-    const widthIn = sides[1] ?? 0
-    const heightIn = sides[2] ?? 0
-    const quantity = item.quantity
-    maxLength = Math.max(maxLength, lengthIn)
-    maxWidth = Math.max(maxWidth, widthIn)
-    maxHeight = Math.max(maxHeight, heightIn)
-    volume += lengthIn * widthIn * heightIn * quantity
+    maxLength = Math.max(maxLength, sides[0] ?? 0)
+    maxWidth = Math.max(maxWidth, sides[1] ?? 0)
+    maxHeight = Math.max(maxHeight, sides[2] ?? 0)
   }
-  const footprint = maxLength * maxWidth
-  const filledHeight = footprint > 0 ? volume / footprint : maxHeight
   const round2 = (value: number) => Math.round(value * 100) / 100
   return {
     lengthIn: round2(maxLength),
     widthIn: round2(maxWidth),
-    heightIn: round2(Math.max(maxHeight, filledHeight)),
+    heightIn: round2(maxHeight),
   }
+}
+
+/**
+ * Soft-parcel line weights include a solo mailer. Light lines (under 16 oz) are
+ * treated as product-accurate and summed in full. When several carton-style lines
+ * share one box, packaging is kept on the heaviest line only.
+ */
+export function combineSmallParcelPackedWeightsOz(unitWeightsOz: number[]): number {
+  if (unitWeightsOz.length === 0) return 0
+  if (unitWeightsOz.length === 1) {
+    return Math.round(unitWeightsOz[0]! * 100) / 100
+  }
+  const light = unitWeightsOz.filter((weightOz) => weightOz < 16)
+  const heavy = unitWeightsOz
+    .filter((weightOz) => weightOz >= 16)
+    .sort((a, b) => b - a)
+  const lightSum = light.reduce((sum, weightOz) => sum + weightOz, 0)
+  if (heavy.length === 0) {
+    return Math.round(lightSum * 100) / 100
+  }
+  let heavySum = heavy[0]!
+  for (const weightOz of heavy.slice(1)) {
+    heavySum += weightOz - Math.min(SMALL_PARCEL_SHARED_PACKAGING_OZ, weightOz * 0.5)
+  }
+  return Math.round((lightSum + heavySum) * 100) / 100
+}
+
+function expandSmallParcelUnitWeightsOz(
+  parcels: ResolvedPackedParcel[],
+  rows: ListingPackedParcelSource[],
+  quantities?: Record<string, number> | null,
+): number[] {
+  const weights: number[] = []
+  for (let index = 0; index < parcels.length; index += 1) {
+    const qty = checkoutParcelLineQuantity(rows[index]!, quantities)
+    const weightOz = parcels[index]!.weightOz
+    for (let i = 0; i < qty; i += 1) {
+      weights.push(weightOz)
+    }
+  }
+  return weights
 }
 
 /**
@@ -414,8 +455,9 @@ function packSmallParcelBundle(
  * **One surfboard plus small goods:** the board carton, plus each item's weight
  * times its quantity.
  *
- * **Small parcels only:** one mailer. Weight is summed times quantity. The box
- * uses the largest footprint and grows in height to fit the combined volume.
+ * **Small parcels only:** one mailer sized to the largest solo carton (L×W×H
+ * stay the same as one item — soft goods nest). Carton-heavy weights share
+ * packaging once; light product weights still add by quantity.
  */
 export function resolveCombinedPackedParcelFromListings(
   rows: ListingPackedParcelSource[],
@@ -440,7 +482,7 @@ export function resolveCombinedPackedParcelFromListings(
     parcels.push(resolved)
   }
 
-  const totalWeightOz =
+  const rawTotalWeightOz =
     Math.round(
       parcels.reduce((sum, parcel, index) => {
         const qty = checkoutParcelLineQuantity(rows[index]!, quantities)
@@ -486,7 +528,10 @@ export function resolveCombinedPackedParcelFromListings(
         quantity: checkoutParcelLineQuantity(rows[index]!, quantities),
       })),
     )
-    return finishResolvedParcel("heuristic", packed, totalWeightOz, null)
+    const weightOz = combineSmallParcelPackedWeightsOz(
+      expandSmallParcelUnitWeightsOz(parcels, rows, quantities),
+    )
+    return finishResolvedParcel("heuristic", packed, weightOz, null)
   }
 
   let biggest = parcels[0]!
@@ -502,7 +547,7 @@ export function resolveCombinedPackedParcelFromListings(
   return {
     ok: true,
     source: biggest.source,
-    weightOz: totalWeightOz,
+    weightOz: rawTotalWeightOz,
     lengthIn: biggest.lengthIn,
     widthIn: biggest.widthIn,
     heightIn: biggest.heightIn,
