@@ -316,7 +316,10 @@ export async function computePeerMultiCheckoutUsd(params: {
   if (isMultiLine && fulfillment === "shipping" && !shipSeparately) {
     const bundleShipping = preverifiedShipping
       ? (() => {
-          const parcelCheck = resolveCombinedPackedParcelFromListings(listingsOrdered)
+          const parcelCheck = resolveCombinedPackedParcelFromListings(
+            listingsOrdered,
+            quantityByListingId,
+          )
           if (!parcelCheck.ok) {
             return parcelCheck
           }

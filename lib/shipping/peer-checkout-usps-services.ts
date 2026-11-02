@@ -375,7 +375,7 @@ export function peerCheckoutRateChoiceIntro(
   if (family === "ups_fedex_surfboard" || peerCheckoutUsesUpsSurfboardChoice(section)) {
     return "Choose UPS or FedEx shipping. The amount you select is included in your total."
   }
-  return "Choose USPS Ground or Priority. Everything in this order ships in one box, and the price includes the combined weight."
+  return "Choose USPS Ground or Priority. Everything in this order ships together in one shared box."
 }
 
 /** Cart summary when a seller group is entirely calculated small-parcel shipping. */
@@ -389,12 +389,12 @@ export function peerCheckoutSmallParcelBundleCopy(input: {
   if (input.unitCount === 1) {
     return {
       label: "USPS at checkout",
-      note: "Choose USPS Ground or Priority at checkout. The rate uses this item's weight.",
+      note: "Choose USPS Ground or Priority at checkout. The rate uses this item's packed size and weight.",
     }
   }
   return {
     label: "One box at checkout",
-    note: "These ship together in one box. Checkout adds the weights, including quantity, then lets you choose USPS Ground or Priority.",
+    note: "These ship together in one shared box. Checkout nests the items into one mailer, then lets you choose USPS Ground or Priority.",
   }
 }
 
