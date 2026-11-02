@@ -360,6 +360,7 @@ export async function relistSellerMarkedSoldListing(
       sold_off_platform_detail: null,
       sold_off_platform_at: null,
       sold_reswell_helped_find_buyer: null,
+      last_sold_at: null,
       updated_at: nowIso,
     })
     .eq("id", listingId)

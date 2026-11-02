@@ -2,6 +2,7 @@
 export function listingSoldViaCheckoutUpdate(at = new Date().toISOString()) {
   return {
     status: "sold" as const,
+    last_sold_at: at,
     sold_off_platform: false,
     sold_off_platform_channel: null,
     sold_off_platform_detail: null,
