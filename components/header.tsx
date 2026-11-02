@@ -19,7 +19,7 @@ import {
   hasSupabaseAuthCookiesClient,
 } from "@/lib/auth/has-supabase-auth-cookies"
 import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
-import { Button, iconButtonHoverClassName } from "@/components/ui/button"
+import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -126,16 +126,16 @@ const listYourBoardNavButtonClassName = cn(
   "shrink-0 whitespace-nowrap rounded-full border-foreground/20 px-5 text-[14px] font-medium",
 )
 
-/** Desktop header icon cluster. 8px at md+ keeps hover fills off neighboring icons/badges. */
-const headerActionsClusterClassName = "flex items-center gap-1 sm:gap-1.5 md:gap-2"
+/**
+ * Header icon row. Hover fill is the ghost button itself, so gap sits between
+ * control boxes — never pack these tighter than the button size allows.
+ */
+const headerActionsClusterClassName = "flex items-center gap-2"
 
 /** Mobile header actions: compact Reverb-like targets (32px / 20px icons). */
 const mobileActionStrokeWidth = 1.5
 const mobileActionIconClassName = "h-5 w-5"
-const mobileActionIconButtonClassName = cn(
-  "h-8 w-8 text-foreground [&_svg]:size-5",
-  iconButtonHoverClassName,
-)
+const mobileActionIconButtonClassName = "h-8 w-8 text-foreground [&_svg]:size-5"
 const mobileActionRowClassName = "flex shrink-0 items-center justify-end gap-1.5"
 const mobileSellButtonClassName =
   "h-8 shrink-0 whitespace-nowrap rounded-full border border-foreground px-3 py-0 text-[13px] font-medium leading-none text-foreground shadow-none hover:bg-muted/50 md:h-9 md:px-3.5 md:text-[14px]"
@@ -1568,8 +1568,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                   variant="ghost"
                   size="icon"
                   className={cn(
-                    "flex h-10 w-10 text-foreground",
-                    iconButtonHoverClassName,
+                    "flex h-10 w-10 shrink-0 text-foreground",
                     !headerRowCompact && "md:hidden",
                   )}
                   aria-label="Search"
@@ -1626,7 +1625,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                   ? "/favorites"
                   : `/auth/login?redirect=${encodeURIComponent("/favorites")}`
               }
-              className="hidden lg:inline-flex"
+              className="hidden shrink-0 lg:inline-flex"
               onClick={
                 user
                   ? undefined
@@ -1637,11 +1636,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                     }
               }
             >
-              <Button
-                variant="ghost"
-                size="icon"
-                className={cn("text-foreground", iconButtonHoverClassName)}
-              >
+              <Button variant="ghost" size="icon" className="text-foreground">
                 <Heart className="h-6 w-6" />
                 <span className="sr-only">Favorites</span>
               </Button>
@@ -1654,7 +1649,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
             />
 
             {user ? (
-              <div className={cn("shrink-0", headerActionsClusterClassName)}>
+              <>
                 <CartHeaderLink authResolved={authLoaded} userId={user.id} />
                 <NavMessagesDropdown
                   userId={user.id}
@@ -1665,7 +1660,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                 <div className="ml-2 shrink-0 sm:ml-3 md:ml-4 max-[360px]:hidden">
                   {accountMenu}
                 </div>
-              </div>
+              </>
             ) : (
               <div className="flex items-center gap-0">
                 <HeaderSellButton className="hidden sm:inline-flex lg:hidden" />
