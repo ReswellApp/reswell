@@ -4,9 +4,10 @@ const ALLOWED = [
   "View your products, prices, photos, and variants",
   "View inventory levels and locations",
   "Keep Reswell listings in sync when products change",
+  "Create a paid Shopify order when a published product sells on Reswell",
 ] as const
 
-const DENIED = "Never see your customers, payments, or refunds" as const
+const DENIED = "Never take Shopify Payments or change your Shopify checkout" as const
 
 export function ShopifyConsentPermissions() {
   return (

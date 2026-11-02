@@ -38,6 +38,7 @@ const CONNECTION_SELECT = [
   "token_refresh_locked_until",
   "token_refresh_lock_id",
   "scopes",
+  "channel_gid",
   "last_webhook_at",
   "last_reconciled_at",
   "last_error",

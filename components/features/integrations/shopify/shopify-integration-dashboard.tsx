@@ -10,6 +10,7 @@ import { ShopifyLinkedListingsPanel } from "@/components/features/integrations/s
 import { ShopifyPageHeader } from "@/components/features/integrations/shopify/shopify-page-header"
 import { ShopifyProductPicker } from "@/components/features/integrations/shopify/shopify-product-picker"
 import { ShopifyReswellPublishPanel } from "@/components/features/integrations/shopify/shopify-reswell-publish-panel"
+import { ShopifySalesChannelPanel } from "@/components/features/integrations/shopify/shopify-sales-channel-panel"
 import { ShopifySetupPanel } from "@/components/features/integrations/shopify/shopify-setup-panel"
 import { ShopifyShippingReadinessCard } from "@/components/features/integrations/shopify/shopify-shipping-readiness-card"
 import {
@@ -129,6 +130,10 @@ export function ShopifyIntegrationDashboard({
             </TabsTrigger>
           </TabsList>
           <TabsContent value="listings" className="mt-4 space-y-3 focus-visible:ring-0">
+            <ShopifySalesChannelPanel
+              shopDomain={connection.shop_domain}
+              publishedCount={catalog.summary.total}
+            />
             <ShopifyCatalogNotice
               shopDomain={connection.shop_domain}
               catalog={catalog}

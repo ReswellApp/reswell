@@ -1,0 +1,26 @@
+# Shopify app config for the Reswell Sales Channel.
+# Link to the Partner app before deploy: `shopify app config link`
+# Then set client_id to the app's API key and run `shopify app deploy`.
+#
+# Application URL / redirect URLs must match Partner Dashboard and production
+# env (SHOPIFY_APP_INSTALL_URL points at /api/integrations/shopify/install).
+
+name = "Reswell"
+client_id = "REPLACE_WITH_SHOPIFY_API_KEY"
+application_url = "https://www.reswell.app/api/integrations/shopify/install"
+embedded = false
+
+[build]
+automatically_update_urls_on_dev = false
+
+[access_scopes]
+# Keep in sync with SHOPIFY_OAUTH_SCOPES in lib/shopify/config.ts
+scopes = "read_products,write_products,read_inventory,write_inventory,read_locations,read_orders,write_orders,read_product_listings"
+
+[auth]
+redirect_urls = [
+  "https://www.reswell.app/api/integrations/shopify/callback"
+]
+
+[webhooks]
+api_version = "2026-10"

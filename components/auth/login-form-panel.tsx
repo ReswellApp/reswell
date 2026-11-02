@@ -27,6 +27,12 @@ import { cn } from "@/lib/utils"
 /** If the session probe stalls, show the form anyway. Signing in must stay possible. */
 const LOGIN_SESSION_PROBE_MS = 1500
 
+/**
+ * Hard ceiling after a successful sign-in. Soft navigation + hung session probes
+ * previously left Shopify App Review on an infinite spinner for 5+ minutes.
+ */
+const LOGIN_REDIRECT_SAFETY_MS = 12_000
+
 function RequiredMark() {
   return (
     <span className="text-destructive" aria-hidden="true">
@@ -130,6 +136,15 @@ export function LoginFormPanel({
       window.clearTimeout(probeTimer)
     }
   }, [onLoggedIn, redirectTo, router, signedOut, variant])
+
+  useEffect(() => {
+    if (gate !== "redirecting") return
+    const dest = safeRedirectPath(redirectTo)
+    const safetyTimer = window.setTimeout(() => {
+      window.location.assign(dest)
+    }, LOGIN_REDIRECT_SAFETY_MS)
+    return () => window.clearTimeout(safetyTimer)
+  }, [gate, redirectTo])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()

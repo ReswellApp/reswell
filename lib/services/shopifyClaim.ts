@@ -22,6 +22,7 @@ import type {
 } from "@/lib/shopify/types"
 import { applyShopifyListingSideEffects } from "@/lib/services/shopifyCatalog"
 import { settleShopifyBilling } from "@/lib/services/shopifyBilling"
+import { ensureShopifySalesChannelConnection } from "@/lib/services/shopifyChannelConnection"
 import { saveShopifyDefaultPackageIfMissing } from "@/lib/services/shopifyDefaultPackage"
 import {
   getShopifyAccessToken,
@@ -112,6 +113,12 @@ export async function claimShopifyPendingInstallation(input: {
       await restoreLinkedShopifyConnection(serviceSupabase, connection)
     }
     await settleShopifyBilling(serviceSupabase, connection)
+    // Sales Channel (4.5.1): bind this Reswell account after OAuth claim.
+    // Best-effort until channel_config is deployed in Partner Dashboard.
+    await ensureShopifySalesChannelConnection({
+      serviceSupabase,
+      connection,
+    })
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     if (isShopifyOrdersWebhookRejection(message)) {
