@@ -4,6 +4,10 @@ import { cva, type VariantProps } from 'class-variance-authority'
 
 import { cn } from '@/lib/utils'
 
+/** Inset hover fill for 40px header icon buttons so the bubble does not cover neighbors. */
+export const iconButtonHoverClassName =
+  'relative hover:bg-transparent before:pointer-events-none before:absolute before:inset-1 before:z-0 before:rounded-md before:bg-muted before:opacity-0 before:transition-opacity hover:before:opacity-100 [&_svg]:relative [&_svg]:z-[1]'
+
 const buttonVariants = cva(
   'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-normal tracking-[-0.02em] ring-offset-background transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
   {

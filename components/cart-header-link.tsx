@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { ShoppingCart } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Button, iconButtonHoverClassName } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
@@ -113,7 +113,12 @@ export function CartHeaderLink({
       asChild
       variant="ghost"
       size="icon"
-      className={cn("relative h-10 w-10 text-foreground hover:bg-pacific/5", visibility, className)}
+      className={cn(
+        "h-10 w-10 text-foreground",
+        iconButtonHoverClassName,
+        visibility,
+        className,
+      )}
     >
       <Link href="/cart">
         <ShoppingCart
@@ -121,7 +126,7 @@ export function CartHeaderLink({
           strokeWidth={iconStrokeWidth}
         />
         {count > 0 && (
-          <Badge className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full border-0 bg-foreground px-1 text-[10px] leading-none text-background md:h-5 md:min-w-5 md:text-xs">
+          <Badge className="absolute -right-1 -top-1 z-[1] flex h-4 min-w-4 items-center justify-center rounded-full border-0 bg-foreground px-1 text-[10px] leading-none text-background md:h-5 md:min-w-5 md:text-xs">
             {count > 9 ? "9+" : count}
           </Badge>
         )}
