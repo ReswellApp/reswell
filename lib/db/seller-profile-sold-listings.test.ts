@@ -1,27 +1,27 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 
-import { isSellerProfileSoldListingRpcMissing } from "@/lib/db/seller-profile-sold-listings"
+import { isListingLastSoldAtColumnMissing } from "@/lib/db/seller-profile-sold-listings"
 
-describe("seller profile sold listing RPC", () => {
-  it("detects a missing seller_profile_sold_listing_ids overload", () => {
+describe("seller profile sold listing denorm", () => {
+  it("detects a missing listings.last_sold_at column", () => {
     assert.equal(
-      isSellerProfileSoldListingRpcMissing({
-        code: "PGRST202",
-        message: "Could not find the function",
+      isListingLastSoldAtColumnMissing({
+        code: "PGRST204",
+        message: "Could not find the 'last_sold_at' column of 'listings' in the schema cache",
       }),
       true,
     )
     assert.equal(
-      isSellerProfileSoldListingRpcMissing({
-        message:
-          "Could not find the function public.seller_profile_sold_listing_ids(uuid, text[], integer) in the schema cache",
+      isListingLastSoldAtColumnMissing({
+        code: "42703",
+        message: 'column listings.last_sold_at does not exist',
       }),
       true,
     )
     assert.equal(
-      isSellerProfileSoldListingRpcMissing({
-        message: "permission denied for function seller_profile_sold_listing_ids",
+      isListingLastSoldAtColumnMissing({
+        message: "permission denied for table listings",
       }),
       false,
     )

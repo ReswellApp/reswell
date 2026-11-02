@@ -117,7 +117,7 @@ function mapListing(
  *
  * Vacation / site-hidden inventory is excluded for everyone (including the owner);
  * owners manage those from My Listings. Sold history remains public and includes
- * in-stock brand-new quantity sales (same eligibility as `/sold`).
+ * in-stock brand-new quantity sales via `listings.last_sold_at` denorm.
  */
 export async function fetchSellerProfileListings(
   supabase: SupabaseClient,
