@@ -4,6 +4,8 @@ import { isAnonymousSupabaseUser } from "@/lib/auth/is-anonymous-user"
 import { isBlockedOwnListingPurchase } from "@/lib/cart-eligibility"
 import { readAdAttributionFromCookies } from "@/lib/ads/read-request-attribution"
 import { stripeAdAttributionMetadata } from "@/lib/ads/attribution"
+import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
+import { stripeBuyerEmailMetadata } from "@/lib/meta/stripe-buyer-email-metadata"
 import {
   OFFER_AUTHORIZATION_MIN_CENTS,
   OFFER_BINDING_METADATA_KEY,
@@ -342,6 +344,8 @@ export async function createOfferAuthorizationPaymentIntent(
     const stripe = getStripe()
     const adAttribution = await readAdAttributionFromCookies()
     const title = (totals.listing.title ?? "listing").trim() || "listing"
+    const buyerEmailForMeta =
+      (await getAuthEmailForUserId(user.id)) ?? user.email?.trim() ?? null
 
     const paymentIntent = await stripe.paymentIntents.create({
       amount: totals.amountCents,
@@ -359,6 +363,7 @@ export async function createOfferAuthorizationPaymentIntent(
         amount_cents: String(totals.amountCents),
         offer_amount_cents: String(offerAmountCents),
         bundle_line_count: "1",
+        ...stripeBuyerEmailMetadata(buyerEmailForMeta),
         ...stripeAdAttributionMetadata(adAttribution),
         ...(addressId ? { address_id: addressId } : {}),
         ...(totals.anyUsedReswellQuote

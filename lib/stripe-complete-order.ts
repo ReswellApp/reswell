@@ -67,6 +67,10 @@ import type { KlaviyoBuyerOrderLineItem } from "@/lib/klaviyo/track-buyer-order-
 import { fetchPrimaryListingImageUrlsForKlaviyo } from "@/lib/klaviyo/fetch-primary-listing-image-urls"
 import { reemitPurchaseSuccessfulForOrder } from "@/lib/klaviyo/reemit-purchase-successful-for-order"
 import { trackMetaPurchaseServerEvent } from "@/lib/meta/track-purchase-server-event"
+import {
+  buyerEmailFromPaymentIntentMetadata,
+  firstNonEmptyEmail,
+} from "@/lib/meta/stripe-buyer-email-metadata"
 import { postPurchaseThreadNotification } from "@/lib/purchase-thread-notification"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import {
@@ -679,12 +683,14 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     return { ok: false, error: "Invalid payment metadata", status: 400 }
   }
 
-  let buyerEmail: string | null = null
-  if (isAdminTerminalSale && terminalCustomer?.email) {
-    buyerEmail = terminalCustomer.email
-  } else if (buyerId) {
-    buyerEmail = await getAuthEmailForUserId(buyerId)
-  }
+  // Prefer email captured on the PaymentIntent at checkout so webhook completions still send
+  // hashed `em` on Meta Purchase (Event Match Quality) even if Auth lookup is slow/empty.
+  const authEmail = buyerId ? await getAuthEmailForUserId(buyerId) : null
+  let buyerEmail = firstNonEmptyEmail(
+    isAdminTerminalSale ? terminalCustomer?.email : null,
+    buyerEmailFromPaymentIntentMetadata(pi.metadata),
+    authEmail,
+  )
 
   const { data: listingRows, error: listingsFetchErr } = await serviceSupabase
     .from("listings")
@@ -1088,6 +1094,15 @@ export async function completeMarketplaceOrderFromPaymentIntent(
   shippingAddressJson = isTerminalGuestSale
     ? applyTerminalCustomerToOrderShippingJson(pi, shippingAddressJson)
     : shippingAddressJson
+
+  if (!buyerEmail && shippingAddressJson && typeof shippingAddressJson.email === "string") {
+    buyerEmail = firstNonEmptyEmail(shippingAddressJson.email)
+  }
+
+  const buyerPhone =
+    (isAdminTerminalSale ? terminalCustomer?.phone?.trim() : null) ||
+    (typeof shippingAddressJson?.phone === "string" ? shippingAddressJson.phone.trim() : "") ||
+    null
 
   const isPickup = fulfillmentMethod === "pickup"
   const deliveryStatus = isAdminTerminalSale
@@ -1512,6 +1527,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     orderId: purchase.id,
     buyerUserId: buyerId,
     buyerEmail,
+    buyerPhone,
     value: chargedUsd,
     contentIds: listingIdsOrdered,
   })

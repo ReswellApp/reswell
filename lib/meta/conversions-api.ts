@@ -16,6 +16,7 @@ import "server-only"
 
 import { createHash } from "node:crypto"
 
+import { normalizeMetaEmail } from "@/lib/meta/normalize-customer-info"
 import { getMetaPixelId } from "@/lib/meta/pixel-config"
 
 const DEFAULT_GRAPH_API_VERSION = "v21.0"
@@ -54,7 +55,7 @@ function sha256(value: string): string {
 }
 
 function hashEmail(email: string): string | null {
-  const normalized = email.trim().toLowerCase()
+  const normalized = normalizeMetaEmail(email)
   return normalized ? sha256(normalized) : null
 }
 
