@@ -1521,12 +1521,16 @@ export default function SellFinsFlow({
                     onSellerPurchasedOnChange={(value) => setField("sellerPurchasedOn", value)}
                     purchaseAccordionTitle="What you paid for the fins"
                     purchaseAccordionDescription="Keep track of what you paid versus what they sell for. This info is for your benefit only."
-                    priceGuidance={{
-                      categorySlug: "fins",
-                      brandId: form.brandId,
-                      brandModelId: form.brandModelId,
-                      condition: form.condition.trim() || null,
-                    }}
+                    priceGuidance={
+                      actorIsAdmin === true
+                        ? {
+                            categorySlug: "fins",
+                            brandId: form.brandId,
+                            brandModelId: form.brandModelId,
+                            condition: form.condition.trim() || null,
+                          }
+                        : null
+                    }
                     afterListingPrice={
                       <div className="rounded-xl border border-border bg-card p-5 shadow-sm sm:p-6">
                         <div className="flex gap-3">

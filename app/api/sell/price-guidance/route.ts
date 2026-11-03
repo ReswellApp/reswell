@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from "next/server"
+import { requireAdmin } from "@/lib/brands/admin-server"
 import { getCachedSellPriceGuidance } from "@/lib/cache/sell-price-guidance"
 import { sellPriceGuidanceQuerySchema } from "@/lib/validations/sell-price-guidance"
 
 /**
- * Public sell-flow pricing suggestion for a catalog brand + model (+ optional condition).
+ * Admin-only sell-flow pricing suggestion for a catalog brand + model (+ optional condition).
  * Backed by `price_guide_entries` editorial overlay + marketplace sold/ask stats.
  */
 export async function GET(req: NextRequest) {
+  const gate = await requireAdmin()
+  if (!gate.ok) return gate.response
+
   const parsed = sellPriceGuidanceQuerySchema.safeParse({
     category_slug: req.nextUrl.searchParams.get("category_slug") ?? "",
     brand_id: req.nextUrl.searchParams.get("brand_id") ?? "",
