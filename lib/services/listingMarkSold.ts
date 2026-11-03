@@ -5,6 +5,7 @@ import { revalidateListingDetailPage } from "@/lib/cache/revalidate-listing-publ
 import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { trackKlaviyoMarkedAsSold } from "@/lib/klaviyo/track-marked-as-sold"
 import { deleteAllCartRowsForListing } from "@/lib/db/cart-items-server"
+import { isListingLastSoldAtColumnMissing } from "@/lib/db/seller-profile-sold-listings"
 import { removeListingFromGoogleMerchantFeed } from "@/lib/services/googleMerchantSync"
 import { revalidateMarketplaceSoldFeedCatalog } from "@/lib/cache/revalidate-marketplace-sold-feed"
 import { createServiceRoleClient } from "@/lib/supabase/server"
@@ -119,11 +120,23 @@ export async function markSellerListingSoldOffPlatform(
     listingUpdate.sold_reswell_helped_find_buyer = reswellHelpedFindBuyer
   }
 
-  const { error } = await supabase
+  let { error } = await supabase
     .from("listings")
     .update(listingUpdate)
     .eq("id", listingId)
     .eq("user_id", sellerUserId)
+
+  if (error && isListingLastSoldAtColumnMissing(error)) {
+    console.warn(
+      "[listingMarkSold] listings.last_sold_at missing; marking sold without denorm column",
+    )
+    const { last_sold_at: _omit, ...fallbackUpdate } = listingUpdate
+    ;({ error } = await supabase
+      .from("listings")
+      .update(fallbackUpdate)
+      .eq("id", listingId)
+      .eq("user_id", sellerUserId))
+  }
 
   if (error) {
     return { ok: false, status: 500, error: "Failed to mark listing as sold" }

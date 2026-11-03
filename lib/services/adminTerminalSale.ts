@@ -11,7 +11,7 @@ import {
   PEER_SURFBOARD_CHECKOUT_LISTING_SELECT,
   type PeerSurfboardCheckoutListingRow,
 } from "@/lib/services/peerListingShippingQuote"
-import { listingSoldViaCheckoutUpdate } from "@/lib/listing-sold-state"
+import { dbMarkListingsSoldViaCheckout } from "@/lib/db/listingSoldViaCheckout"
 import { peerBrandNewStockQuantity } from "@/lib/listing-stock-quantity"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { fetchSellerFeeWaived } from "@/lib/db/profileSellerFee"
@@ -816,13 +816,9 @@ export async function completeAdminTerminalCashSale(
       return { ok: false, error: "Could not update listing inventory", status: 409 }
     }
   } else {
-    const { error: listingErr } = await service
-      .from("listings")
-      .update(listingSoldViaCheckoutUpdate())
-      .eq("id", listing.id)
-
-    if (listingErr) {
-      console.error("[adminTerminalSale] cash listing update:", listingErr)
+    const markedSold = await dbMarkListingsSoldViaCheckout(service, [listing.id])
+    if (!markedSold.ok) {
+      console.error("[adminTerminalSale] cash listing update:", markedSold.error)
       return { ok: false, error: "Could not mark listing sold", status: 500 }
     }
   }
