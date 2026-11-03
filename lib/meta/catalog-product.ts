@@ -59,7 +59,7 @@ export type MetaCatalogFeedItem = {
   google_product_category: string
   additional_image_link?: string
   identifier_exists: "no"
-  /** Product-set filter for Meta Ads — e.g. HaydenGarfield / OutSurfing / Brownstone shop only. */
+  /** Product-set filter for Meta Ads — e.g. HaydenGarfield / OutSurfing / Brownstone / Jyeejr shop only. */
   custom_label_0?: string
   /** City product-set filter — e.g. SantaBarbara / Ventura. */
   custom_label_1?: string
@@ -77,6 +77,7 @@ export type MetaCatalogFeedContext = {
   haydenShopUserId: string | null
   outSurfingShopUserId: string | null
   brownstoneShopUserId: string | null
+  jyeejrShopUserId: string | null
   /** Override city label when building a dedicated city catalog page. */
   cityCustomLabel?: string
 }
@@ -240,6 +241,12 @@ export const META_CATALOG_DEFAULT_BROWNSTONE_SHOP_CUSTOM_LABEL = "Brownstone"
 /** Profile email for Brownstone’s seller shop (fallback when USER_ID env unset). */
 export const META_CATALOG_BROWNSTONE_SHOP_SELLER_EMAIL = "eric@questavolta.com"
 
+/** Default `custom_label_0` for jyeejr’s shop (Meta product-set / ads filter). */
+export const META_CATALOG_DEFAULT_JYEEJR_SHOP_CUSTOM_LABEL = "Jyeejr"
+
+/** Profile email for jyeejr’s seller shop (fallback when USER_ID env unset). */
+export const META_CATALOG_JYEEJR_SHOP_SELLER_EMAIL = "jyeejr@googlemail.com"
+
 /** Default `custom_label_2` for surfboards that offer shipping (Meta product-set / ads filter). */
 export const META_CATALOG_DEFAULT_SHIPPING_CUSTOM_LABEL = "Shipping"
 
@@ -280,6 +287,17 @@ export function getMetaCatalogBrownstoneShopCustomLabel(): string {
 }
 
 /**
+ * Meta Commerce `custom_label_0` for jyeejr shop listings.
+ * Override with `META_CATALOG_JYEEJR_SHOP_CUSTOM_LABEL`.
+ */
+export function getMetaCatalogJyeejrShopCustomLabel(): string {
+  return (
+    process.env.META_CATALOG_JYEEJR_SHOP_CUSTOM_LABEL?.trim() ||
+    META_CATALOG_DEFAULT_JYEEJR_SHOP_CUSTOM_LABEL
+  )
+}
+
+/**
  * Meta Commerce `custom_label_2` for surfboards that offer shipping.
  * Override with `META_CATALOG_SHIPPING_CUSTOM_LABEL`.
  */
@@ -303,7 +321,8 @@ export function getMetaCatalogGearCustomLabel(): string {
 
 /**
  * `custom_label_0` for a listing — shop label when `user_id` matches a known seller, else omitted.
- * Use in Meta Ads: Catalog → Product sets → filter Custom Label 0 = HaydenGarfield | OutSurfing | Brownstone.
+ * Use in Meta Ads: Catalog → Product sets → filter Custom Label 0 =
+ * HaydenGarfield | OutSurfing | Brownstone | Jyeejr.
  */
 export function getMetaCatalogCustomLabel0ForListing(
   listing: Pick<MetaListingProductSource, "user_id">,
@@ -320,6 +339,9 @@ export function getMetaCatalogCustomLabel0ForListing(
 
   const brownstoneId = context.brownstoneShopUserId?.trim()
   if (brownstoneId && ownerId === brownstoneId) return getMetaCatalogBrownstoneShopCustomLabel()
+
+  const jyeejrId = context.jyeejrShopUserId?.trim()
+  if (jyeejrId && ownerId === jyeejrId) return getMetaCatalogJyeejrShopCustomLabel()
 
   return undefined
 }

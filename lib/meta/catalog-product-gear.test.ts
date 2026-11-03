@@ -8,6 +8,7 @@ import {
   getMetaCatalogShippingCustomLabel,
   getMetaCatalogGoogleProductCategoryForSection,
   getMetaCatalogHaydenShopCustomLabel,
+  getMetaCatalogJyeejrShopCustomLabel,
   getMetaCatalogLeashesGoogleProductCategory,
   getMetaCatalogSurfpacksGoogleProductCategory,
   getMetaCatalogTractionGoogleProductCategory,
@@ -21,6 +22,7 @@ const SHOP_CONTEXT: MetaCatalogFeedContext = {
   haydenShopUserId: "user-hayden",
   outSurfingShopUserId: "user-outsurfing",
   brownstoneShopUserId: "user-brownstone",
+  jyeejrShopUserId: "user-jyeejr",
 }
 
 function gearListing(
@@ -62,6 +64,16 @@ describe("gear rows on the main catalog feed", () => {
     assert.equal(item.custom_label_1, "SantaBarbara")
     assert.equal(item.custom_label_2, getMetaCatalogGearCustomLabel())
     assert.equal(item.google_product_category, getMetaCatalogFinsGoogleProductCategory())
+  })
+
+  it("labels jyeejr shop listings on custom_label_0", () => {
+    const item = listingToMetaCatalogFeedItem(
+      gearListing({ section: "fins", user_id: "user-jyeejr", title: "Twin set" }),
+      SHOP_CONTEXT,
+    )
+    assert.ok(item)
+    assert.equal(item.custom_label_0, getMetaCatalogJyeejrShopCustomLabel())
+    assert.equal(item.custom_label_2, getMetaCatalogGearCustomLabel())
   })
 
   it("maps each gear section to its Google category", () => {
