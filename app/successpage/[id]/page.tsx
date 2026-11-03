@@ -10,6 +10,7 @@ import { StripPurchaseConversionParam } from "@/components/google-ads/strip-purc
 import { GooglePurchaseEventScript } from "@/components/google-analytics/google-purchase-event-script"
 import { MetaPurchaseEventScript } from "@/components/meta/meta-purchase-event-script"
 import { OpenAiAdsPurchaseEventScript } from "@/components/openai-ads/openai-purchase-event-script"
+import { trackMetaPurchaseServerEvent } from "@/lib/meta/track-purchase-server-event"
 import { getPostHogServerClient } from "@/lib/posthog-server"
 import {
   buildOrderSuccessPath,
@@ -62,6 +63,10 @@ export default async function PurchaseSuccessPage(props: PageProps) {
 
   const firePurchasePixels = fromCheckout && payload.reportAdPurchaseConversion
 
+  const contentIds = payload.orderLines
+    .map((line) => line.listingId)
+    .filter((listingId): listingId is string => Boolean(listingId))
+
   if (firePurchasePixels) {
     const posthog = getPostHogServerClient()
     if (posthog) {
@@ -75,12 +80,23 @@ export default async function PurchaseSuccessPage(props: PageProps) {
           shipping_cost: payload.shippingCost,
           fulfillment_method: payload.fulfillmentMethod,
           item_count: payload.orderLines.length,
-          listing_ids: payload.orderLines.map((l) => l.listingId).filter(Boolean),
+          listing_ids: contentIds,
           categories: [...new Set(payload.orderLines.map((l) => l.categoryLabel).filter(Boolean))],
         },
       })
       await posthog.flush()
     }
+
+    // Enrich Meta Purchase attribution: same event_id as the browser pixel (deduped), with
+    // hashed email + the buyer's `_fbp`/`_fbc`/IP/UA from this request.
+    void trackMetaPurchaseServerEvent({
+      orderId: payload.orderId,
+      buyerUserId: user.id,
+      buyerEmail: user.email ?? payload.buyerEmail ?? payload.shipping?.email ?? null,
+      value: payload.total,
+      contentIds,
+      includeBrowserSignals: true,
+    })
   }
 
   const conversionTracking = firePurchasePixels ? (
@@ -102,9 +118,7 @@ export default async function PurchaseSuccessPage(props: PageProps) {
       <MetaPurchaseEventScript
         orderId={payload.orderId}
         value={payload.total}
-        contentIds={payload.orderLines
-          .map((line) => line.listingId)
-          .filter((id): id is string => Boolean(id))}
+        contentIds={contentIds}
       />
       <OpenAiAdsPurchaseEventScript
         orderId={payload.orderId}

@@ -36,6 +36,7 @@ import {
 import { evaluateUserPurchase } from "@/lib/services/accountRestrictions"
 import { assertBuyerMayPurchaseListingExclusiveWindow } from "@/lib/services/listingBuyerExclusiveWindow"
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
+import { stripeBuyerEmailMetadata } from "@/lib/meta/stripe-buyer-email-metadata"
 import {
   releaseAndReserveCheckoutPromoForPaymentIntent,
   validateCheckoutPromoForCheckout,
@@ -626,6 +627,9 @@ export async function createPaymentIntentForUser(
     }
 
     const adAttribution = await readAdAttributionFromCookies()
+    // Stash hashed-match email for Meta CAPI Purchase on the webhook path (no session).
+    const buyerEmailForMeta =
+      (await getAuthEmailForUserId(user.id)) ?? user.email?.trim() ?? null
 
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amountCents,
@@ -643,6 +647,7 @@ export async function createPaymentIntentForUser(
         ...(listingPriceSnapshot.length <= 450
           ? { listing_price_cents: listingPriceSnapshot }
           : {}),
+        ...stripeBuyerEmailMetadata(buyerEmailForMeta),
         ...stripeAdAttributionMetadata(adAttribution),
         ...(validatedOfferId ? { offer_id: validatedOfferId } : {}),
         ...(addressId ? { address_id: addressId } : {}),
