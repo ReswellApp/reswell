@@ -10,6 +10,7 @@ import {
   listingToMetaCatalogFeedItem,
   META_CATALOG_BROWNSTONE_SHOP_SELLER_EMAIL,
   META_CATALOG_HAYDEN_SHOP_SELLER_EMAIL,
+  META_CATALOG_JYEEJR_SHOP_SELLER_EMAIL,
   META_CATALOG_OUTSURFING_SHOP_SELLER_EMAIL,
   type MetaCatalogFeedContext,
   type MetaCatalogFeedItem,
@@ -109,6 +110,21 @@ export async function resolveMetaCatalogBrownstoneShopUserId(
   })
 }
 
+/**
+ * Resolves jyeejr’s seller profile id for Meta `custom_label_0`.
+ * Prefer `META_CATALOG_JYEEJR_SHOP_USER_ID`, else email
+ * (`META_CATALOG_JYEEJR_SHOP_SELLER_EMAIL` or jyeejr@googlemail.com).
+ */
+export async function resolveMetaCatalogJyeejrShopUserId(
+  supabase: SupabaseClient,
+): Promise<string | null> {
+  return resolveShopUserIdByEnvOrEmail(supabase, {
+    userIdEnv: "META_CATALOG_JYEEJR_SHOP_USER_ID",
+    emailEnv: "META_CATALOG_JYEEJR_SHOP_SELLER_EMAIL",
+    defaultEmail: META_CATALOG_JYEEJR_SHOP_SELLER_EMAIL,
+  })
+}
+
 function catalogFeedMaxItems(): number {
   const raw = process.env.META_CATALOG_FEED_MAX_ITEMS?.trim()
   if (!raw) return DEFAULT_MAX_ITEMS
@@ -161,12 +177,14 @@ export async function buildMetaCatalogFeed(
 async function resolveMetaCatalogShopContext(
   supabase: SupabaseClient,
 ): Promise<MetaCatalogFeedContext> {
-  const [haydenShopUserId, outSurfingShopUserId, brownstoneShopUserId] = await Promise.all([
-    resolveMetaCatalogHaydenShopUserId(supabase),
-    resolveMetaCatalogOutSurfingShopUserId(supabase),
-    resolveMetaCatalogBrownstoneShopUserId(supabase),
-  ])
-  return { haydenShopUserId, outSurfingShopUserId, brownstoneShopUserId }
+  const [haydenShopUserId, outSurfingShopUserId, brownstoneShopUserId, jyeejrShopUserId] =
+    await Promise.all([
+      resolveMetaCatalogHaydenShopUserId(supabase),
+      resolveMetaCatalogOutSurfingShopUserId(supabase),
+      resolveMetaCatalogBrownstoneShopUserId(supabase),
+      resolveMetaCatalogJyeejrShopUserId(supabase),
+    ])
+  return { haydenShopUserId, outSurfingShopUserId, brownstoneShopUserId, jyeejrShopUserId }
 }
 
 /**
