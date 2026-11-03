@@ -89,9 +89,8 @@ export async function saveListingSurfboardShipped(
       return { error: "Listing not found." }
     }
 
-    if (listing.row.userId !== gate.ctx.user.id) {
-      return { error: "You can only enable Surfboard Shipped on your own listings." }
-    }
+    // requireAdmin() is enough: admins may opt any surfboard in (own or another
+    // seller's). Pickup addresses stay on the listing owner's profile below.
 
     if (!input.enabled) {
       const cleared = await setListingSurfboardShipped(db, input.listingId, {
@@ -156,7 +155,6 @@ export async function getListingSurfboardShippedChoice(listingId: string): Promi
     const db = createServiceRoleClient()
     const listing = await fetchListingSurfboardShipped(db, listingId)
     if (listing.error || !listing.row) return { enabled: false, address: null }
-    if (listing.row.userId !== gate.ctx.user.id) return null
 
     if (!listing.row.optedIn || !listing.row.pickupAddressId) {
       return { enabled: false, address: null }
