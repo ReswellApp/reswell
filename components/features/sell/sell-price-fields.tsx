@@ -50,8 +50,9 @@ export interface SellPriceFieldsProps {
   showPriceMarkdown?: boolean
   onShowPriceMarkdownChange?: (value: boolean) => void
   /**
-   * Optional Reswell price guidance (surfboards + fins). When brand + model are set,
-   * shows clickable low / best / high suggestions from the price guide + market comps.
+   * Admin-only Reswell price guidance (surfboards + fins). Callers should pass this
+   * only when `profiles.is_admin` is true. When brand + model are set, shows clickable
+   * low / best / high suggestions from the price guide + market comps.
    */
   priceGuidance?: Omit<
     SellPriceGuidancePickerProps,

@@ -4977,12 +4977,16 @@ function SellPageContentInner({
                     onShowPriceMarkdownChange={(value) =>
                       setFormData((fd) => ({ ...fd, showPriceMarkdown: value }))
                     }
-                    priceGuidance={{
-                      categorySlug: "surfboards",
-                      brandId: formData.boardBrandId.trim() || null,
-                      brandModelId: formData.boardBrandModelId.trim() || null,
-                      condition: formData.condition.trim() || null,
-                    }}
+                    priceGuidance={
+                      actorIsAdmin === true
+                        ? {
+                            categorySlug: "surfboards",
+                            brandId: formData.boardBrandId.trim() || null,
+                            brandModelId: formData.boardBrandModelId.trim() || null,
+                            condition: formData.condition.trim() || null,
+                          }
+                        : null
+                    }
                     afterListingPrice={
                       <div className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-sm">
                         <div className="flex gap-3">
