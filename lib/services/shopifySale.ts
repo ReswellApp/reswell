@@ -6,7 +6,7 @@ import {
   dbUpdateShopifySaleRecord,
   type ShopifySaleRecord,
 } from "@/lib/db/shopifySales"
-import { listingSoldViaCheckoutUpdate } from "@/lib/listing-sold-state"
+import { dbMarkListingsSoldViaCheckout } from "@/lib/db/listingSoldViaCheckout"
 import {
   shopifyGraphqlRequest,
   throwOnShopifyUserErrors,
@@ -423,12 +423,19 @@ export async function applyShopifyOriginatedSale(input: {
     if (error) throw new Error(error.message)
     if (!data) continue
     if (input.connection.source_of_truth === "reswell") {
-      const { error: listingError } = await input.serviceSupabase
+      // Source-of-truth Reswell rows only — match the prior inventory_source filter.
+      const { data: reswellListing, error: reswellLookupError } = await input.serviceSupabase
         .from("listings")
-        .update(listingSoldViaCheckoutUpdate())
+        .select("id")
         .eq("id", data.listing_id)
         .eq("inventory_source", "reswell")
-      if (listingError) throw new Error(listingError.message)
+        .maybeSingle()
+      if (reswellLookupError) throw new Error(reswellLookupError.message)
+      if (!reswellListing?.id) continue
+      const markedSold = await dbMarkListingsSoldViaCheckout(input.serviceSupabase, [
+        data.listing_id,
+      ])
+      if (!markedSold.ok) throw new Error(markedSold.error)
       continue
     }
     await dbEnqueueShopifyJob(input.serviceSupabase, {

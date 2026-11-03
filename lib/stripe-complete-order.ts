@@ -27,7 +27,10 @@ import {
 } from "@/lib/services/applyAcceptedOfferToPeerCheckoutListings"
 import { validateAcceptedOfferForPaymentIntent } from "@/lib/services/acceptedOfferCheckout"
 import { pendingSaleFeeClause } from "@/lib/seller-fees"
-import { listingSoldViaCheckoutUpdate } from "@/lib/listing-sold-state"
+import {
+  dbMarkListingsSoldViaCheckout,
+  dbRepairPeerListingsSoldViaCheckout,
+} from "@/lib/db/listingSoldViaCheckout"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { formatPeerItemCountPhrase } from "@/lib/peer-listing-item-nouns"
 import { isReswellShopListing } from "@/lib/reswell-shop"
@@ -616,6 +619,9 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       .maybeSingle()
 
     if (pendingLedger?.id || (Number.isFinite(existingSellerEarnings) && existingSellerEarnings <= 0)) {
+      // Order row can exist while mark-sold failed (e.g. undeployed last_sold_at).
+      // Repair before acknowledging alreadyProcessed so the listing cannot be bought again.
+      await dbRepairPeerListingsSoldViaCheckout(serviceSupabase, recoveryListingIds)
       await emitPurchaseSuccessfulKlaviyoForOrderId(serviceSupabase, existing.id)
       if (!isAdminTerminalSale) {
         void sendPostPurchaseReviewInvite(existing.id)
@@ -634,6 +640,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     if (!recovered.ok) {
       return recovered
     }
+    await dbRepairPeerListingsSoldViaCheckout(serviceSupabase, recoveryListingIds)
     await emitPurchaseSuccessfulKlaviyoForOrderId(serviceSupabase, existing.id)
     if (!isAdminTerminalSale) {
       void sendPostPurchaseReviewInvite(existing.id)
@@ -1365,13 +1372,9 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     )
     .map((l) => l.id)
   if (peerListingIds.length > 0) {
-    const { error: listingErr } = await serviceSupabase
-      .from("listings")
-      .update(listingSoldViaCheckoutUpdate())
-      .in("id", peerListingIds)
-
-    if (listingErr) {
-      console.error("[stripe-complete-order] listing update:", listingErr)
+    const markedSold = await dbMarkListingsSoldViaCheckout(serviceSupabase, peerListingIds)
+    if (!markedSold.ok) {
+      console.error("[stripe-complete-order] listing update:", markedSold.error)
       return { ok: false, error: "Could not mark listing sold", status: 500 }
     }
   }
