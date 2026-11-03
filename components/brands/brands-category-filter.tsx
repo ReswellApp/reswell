@@ -9,7 +9,7 @@ import {
 } from "@/lib/brand-product-categories"
 import { cn } from "@/lib/utils"
 
-export function BrandsCategoryFilter() {
+export function BrandsCategoryFilter({ compact = false }: { compact?: boolean }) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -47,20 +47,22 @@ export function BrandsCategoryFilter() {
   }
 
   return (
-    <div className="space-y-3">
+    <div className={cn(compact ? "space-y-2" : "space-y-3")}>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm font-medium text-foreground">Filter by product type</p>
+        <p className={cn("font-medium text-foreground", compact ? "text-xs" : "text-sm")}>
+          {compact ? "Product type" : "Filter by product type"}
+        </p>
         {selected.length > 0 ? (
           <button
             type="button"
             onClick={clearCategories}
             className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
           >
-            Clear filters
+            Clear
           </button>
         ) : null}
       </div>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-1.5 sm:gap-2">
         {BRANDS_DIRECTORY_FILTER_CATEGORY_OPTIONS.map((option) => {
           const active = selected.includes(option.slug)
           return (
@@ -70,10 +72,10 @@ export function BrandsCategoryFilter() {
               aria-pressed={active}
               onClick={() => toggleCategory(option.slug)}
               className={cn(
-                "rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
+                "rounded-full border px-2.5 py-1 text-xs font-medium transition-colors sm:px-3 sm:py-1.5 sm:text-sm",
                 active
-                  ? "border-foreground bg-foreground text-background"
-                  : "border-border bg-background text-foreground hover:border-foreground/30 hover:bg-muted/60",
+                  ? "border-[#355185] bg-[#355185] text-white"
+                  : "border-transparent bg-white/80 text-foreground hover:bg-white",
               )}
             >
               {option.label}

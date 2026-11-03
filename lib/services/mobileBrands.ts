@@ -157,7 +157,8 @@ export async function getMobileBrandPageService(slug: string): Promise<MobileApi
           id: model.id,
           slug: modelSlug,
           name: model.name,
-          image_url: publicImage(model.image_url),
+          // Public discovery uses marketplace photos only; never manufacturer scrapes.
+          image_url: null,
           category_label: categoryLabel(model.product_category_slug),
         },
       ]
@@ -188,7 +189,7 @@ export async function getMobileModelPageService(
     name: page.model.name,
     description: page.model.description?.trim() || null,
     category_label: categoryLabel(page.model.product_category_slug),
-    hero_image_url: publicImage(page.listingImageUrl) ?? publicImage(page.model.image_url),
+    hero_image_url: publicImage(page.listingImageUrl),
     variants: page.variants.slice(0, 24).map((variant) => ({
       id: variant.id,
       label: variantLabel(variant),

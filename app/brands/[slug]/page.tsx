@@ -5,7 +5,13 @@ import { getDb } from "@/lib/supabase/db"
 import { createClient } from "@/lib/supabase/server"
 import { getBrandBySlug } from "@/lib/brands/server"
 import { parseBrandPageTab } from "@/lib/brands/routes"
-import { listActiveListingsForBrand, listRecentlySoldListingsForBrand } from "@/lib/db/brand-listings"
+import {
+  countActiveListingsByBrandIds,
+  countPublicSoldListingsByBrandIds,
+  listActiveListingsForBrand,
+  listRecentlySoldListingsForBrand,
+  mapBrandModelMarketplaceCovers,
+} from "@/lib/db/brand-listings"
 import { listBrandModelsForPublicPageByBrandId } from "@/lib/db/brand-models"
 import { toBrandPageModelCards } from "@/lib/brands/model-cards"
 import { brandStoryParagraphs } from "@/lib/brands/page-content"
@@ -84,16 +90,34 @@ export default async function BrandPage({ params, searchParams }: Props) {
   }
 
   const brandRef = { id: brand.id, name: brand.name }
-  const [catalogModelRows, brandListings, brandSoldListings] = await Promise.all([
-    listBrandModelsForPublicPageByBrandId(supabase, brand.id),
-    listActiveListingsForBrand(supabase, brandRef, { limit: BRAND_PAGE_LISTING_LIMIT }),
-    listRecentlySoldListingsForBrand(supabase, brandRef, { limit: BRAND_PAGE_LISTING_LIMIT }),
-  ])
-  const catalogModels = toBrandPageModelCards(catalogModelRows)
-
+  const catalogModelRows = await listBrandModelsForPublicPageByBrandId(supabase, brand.id)
   const {
     data: { user },
   } = await supabase.auth.getUser()
+
+  const [
+    brandListings,
+    brandSoldListings,
+    listingCovers,
+    initialSavedSearchId,
+    activeListingCounts,
+    soldListingCounts,
+  ] = await Promise.all([
+    listActiveListingsForBrand(supabase, brandRef, { limit: BRAND_PAGE_LISTING_LIMIT }),
+    listRecentlySoldListingsForBrand(supabase, brandRef, { limit: BRAND_PAGE_LISTING_LIMIT }),
+    mapBrandModelMarketplaceCovers(
+      supabase,
+      brand.id,
+      catalogModelRows.map((model) => model.id),
+    ),
+    viewerSavedSearchIdForBrand(supabase, user?.id, brand.id),
+    countActiveListingsByBrandIds(supabase, [brand.id]),
+    countPublicSoldListingsByBrandIds(supabase, [brand.id]),
+  ])
+  const catalogModels = toBrandPageModelCards(catalogModelRows, listingCovers)
+  const activeListingCount = activeListingCounts.get(brand.id) ?? 0
+  const soldListingCount = soldListingCounts.get(brand.id) ?? 0
+
   let favoritedListingIds: string[] = []
   if (user) {
     const ids = [...new Set([...brandListings, ...brandSoldListings].map((l) => l.id))]
@@ -112,7 +136,6 @@ export default async function BrandPage({ params, searchParams }: Props) {
     brandId: brand.id,
     brandSlug: brand.slug,
   })
-  const initialSavedSearchId = await viewerSavedSearchIdForBrand(supabase, user?.id, brand.id)
 
   return (
     <BrandProfileView
@@ -128,6 +151,8 @@ export default async function BrandPage({ params, searchParams }: Props) {
       favoritedListingIds={favoritedListingIds}
       isLoggedIn={!!user}
       viewerUserId={user?.id ?? null}
+      activeListingCount={activeListingCount}
+      soldListingCount={soldListingCount}
     />
   )
 }

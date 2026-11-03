@@ -4,6 +4,7 @@ import { boardLengthLabelFromDimensionsColumn } from "@/lib/listing-dimensions-s
 import {
   coalesceListingImagesForCard,
   listingCoverImageForCard,
+  listingTitleThumbnailSrc,
 } from "@/lib/listing-image-display"
 import { brandTextAliasesForSearch } from "@/lib/utils/marketplace-brand-synonyms"
 import { brandLegacyRecallTokens } from "@/lib/utils/marketplace-brand-query"
@@ -748,4 +749,116 @@ export async function listActiveListingIdsByBrandModelIds(
   return ((data ?? []) as { id: string }[])
     .map((row) => row.id)
     .filter((id) => id.length > 0)
+}
+
+export type BrandModelMarketplaceCover = {
+  /** Marketplace listing thumb only — never manufacturer catalog scrapes. */
+  imageUrl: string | null
+  activeCount: number
+  soldCount: number
+}
+
+type BrandModelCoverRow = {
+  brand_model_id: string | null
+  status?: string | null
+  title?: string | null
+  hidden_from_site?: boolean | null
+  archived_at?: string | null
+  primary_image_url?: string | null
+  primary_thumbnail_url?: string | null
+  tile_gallery_images?: unknown
+  created_at?: string | null
+  updated_at?: string | null
+}
+
+function listingThumbFromCoverRow(row: BrandModelCoverRow): string | null {
+  const images = coalesceListingImagesForCard(row)
+  const src = listingTitleThumbnailSrc(images).trim()
+  return src || null
+}
+
+const BRAND_MODEL_COVER_PAGE = 1000
+
+/**
+ * Active listing counts + one marketplace cover photo per catalog model for a brand.
+ * Prefers a live listing photo; falls back to a visible sold listing. Catalog scrapes
+ * are never returned.
+ */
+export async function mapBrandModelMarketplaceCovers(
+  supabase: SupabaseClient,
+  brandId: string,
+  modelIds: readonly string[],
+): Promise<Map<string, BrandModelMarketplaceCover>> {
+  const ids = [...new Set(modelIds.map((id) => id.trim()).filter(Boolean))]
+  const out = new Map<string, BrandModelMarketplaceCover>()
+  for (const id of ids) {
+    out.set(id, { imageUrl: null, activeCount: 0, soldCount: 0 })
+  }
+  if (!brandId.trim() || ids.length === 0) return out
+
+  const wanted = new Set(ids)
+  const activeImageByModel = new Map<string, string>()
+  const soldImageByModel = new Map<string, string>()
+
+  let from = 0
+  for (;;) {
+    const { data, error } = await supabase
+      .from("listings")
+      .select(
+        "brand_model_id, status, title, hidden_from_site, archived_at, primary_image_url, primary_thumbnail_url, tile_gallery_images, created_at, updated_at",
+      )
+      .eq("brand_id", brandId)
+      .not("brand_model_id", "is", null)
+      .in("status", ["active", "sold"])
+      .in("section", PEER_LISTING_SECTIONS_FILTER)
+      .order("created_at", { ascending: false })
+      .range(from, from + BRAND_MODEL_COVER_PAGE - 1)
+
+    if (error) {
+      console.error("[mapBrandModelMarketplaceCovers]", error.message)
+      break
+    }
+
+    const rows = (data ?? []) as BrandModelCoverRow[]
+    for (const row of rows) {
+      const modelId = row.brand_model_id?.trim() ?? ""
+      if (!modelId || !wanted.has(modelId)) continue
+
+      const current = out.get(modelId) ?? { imageUrl: null, activeCount: 0, soldCount: 0 }
+      const isActive = row.status === "active" && row.hidden_from_site === false
+      const isSold = isListingVisibleInPublicSoldFeed({
+        status: row.status ?? "sold",
+        title: row.title,
+        hidden_from_site: row.hidden_from_site,
+        archived_at: row.archived_at,
+      })
+
+      if (isActive) {
+        current.activeCount += 1
+        if (!activeImageByModel.has(modelId)) {
+          const thumb = listingThumbFromCoverRow(row)
+          if (thumb) activeImageByModel.set(modelId, thumb)
+        }
+      } else if (isSold) {
+        current.soldCount += 1
+        if (!soldImageByModel.has(modelId)) {
+          const thumb = listingThumbFromCoverRow(row)
+          if (thumb) soldImageByModel.set(modelId, thumb)
+        }
+      }
+
+      out.set(modelId, current)
+    }
+
+    if (rows.length < BRAND_MODEL_COVER_PAGE) break
+    from += BRAND_MODEL_COVER_PAGE
+  }
+
+  for (const id of ids) {
+    const current = out.get(id) ?? { imageUrl: null, activeCount: 0, soldCount: 0 }
+    current.imageUrl = activeImageByModel.get(id) ?? soldImageByModel.get(id) ?? null
+    out.set(id, current)
+  }
+
+  return out
 }

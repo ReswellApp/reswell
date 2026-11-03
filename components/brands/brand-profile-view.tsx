@@ -25,6 +25,8 @@ export function BrandProfileView({
   favoritedListingIds,
   isLoggedIn,
   viewerUserId,
+  activeListingCount,
+  soldListingCount,
 }: {
   brand: BrandRow
   criteria: BoardSavedSearchCriteria
@@ -38,6 +40,8 @@ export function BrandProfileView({
   favoritedListingIds: string[]
   isLoggedIn: boolean
   viewerUserId: string | null
+  activeListingCount: number
+  soldListingCount: number
 }) {
   return (
     <main className="flex-1">
@@ -53,13 +57,15 @@ export function BrandProfileView({
             criteria={criteria}
             initialSavedSearchId={initialSavedSearchId}
             isLoggedIn={isLoggedIn}
+            activeListingCount={activeListingCount}
+            soldListingCount={soldListingCount}
+            modelCount={catalogModels.length}
           />
         </div>
 
         <BrandPageModelsGrid
           brandSlug={brand.slug}
           brandName={brand.name}
-          brandLogoUrl={brand.logo_url}
           models={catalogModels}
         />
 
