@@ -4,11 +4,13 @@ import { useState } from "react"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { HEADER_AUTH_REFRESH_EVENT } from "@/lib/auth/header-auth-refresh"
+import {
+  SIGN_UP_PASSWORD_HINT,
+  validateSignUpPassword,
+} from "@/lib/auth/sign-up-password-validation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-
-const MIN_PASSWORD_LENGTH = 6
 
 export function UpdatePasswordFormFields({
   onSuccess,
@@ -28,8 +30,9 @@ export function UpdatePasswordFormFields({
     setIsLoading(true)
     setError(null)
 
-    if (password.length < MIN_PASSWORD_LENGTH) {
-      setError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`)
+    const passwordCheck = validateSignUpPassword(password)
+    if (!passwordCheck.valid) {
+      setError(passwordCheck.error)
       setIsLoading(false)
       return
     }
@@ -63,14 +66,14 @@ export function UpdatePasswordFormFields({
           id="new-password"
           type="password"
           required
-          minLength={MIN_PASSWORD_LENGTH}
+          minLength={12}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           autoComplete="new-password"
           autoFocus
         />
-        <p className="text-xs text-muted-foreground">
-          At least {MIN_PASSWORD_LENGTH} characters.
+        <p className="text-xs leading-snug text-muted-foreground">
+          {SIGN_UP_PASSWORD_HINT}
         </p>
       </div>
       <div className="grid gap-2">
@@ -79,7 +82,7 @@ export function UpdatePasswordFormFields({
           id="confirm-new-password"
           type="password"
           required
-          minLength={MIN_PASSWORD_LENGTH}
+          minLength={12}
           value={repeatPassword}
           onChange={(e) => setRepeatPassword(e.target.value)}
           autoComplete="new-password"

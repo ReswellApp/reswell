@@ -26,7 +26,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ProfileCircleFallback } from "@/components/profile-circle"
+import { ProfileCircleSlotFallback } from "@/components/profile-circle"
 import { Avatar, AvatarImage } from "@/components/ui/avatar"
 import { NavMessagesDropdown } from "@/components/features/messages/nav-messages-dropdown"
 import {
@@ -1819,7 +1819,9 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                         }}
                       />
                     ) : null}
-                    <ProfileCircleFallback />
+                    <ProfileCircleSlotFallback
+                      hasPhoto={Boolean(profileAvatarUrl && !avatarImageFailed)}
+                    />
                   </Avatar>
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-semibold text-foreground">

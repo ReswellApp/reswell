@@ -28,7 +28,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ProfileCircleFallback } from "@/components/profile-circle"
+import { ProfileCircleSlotFallback } from "@/components/profile-circle"
 import { Avatar, AvatarImage } from "@/components/ui/avatar"
 import { dashboardNavSections } from "@/lib/dashboard-nav-links"
 import { forceReleaseBodyScrollLock } from "@/hooks/use-body-scroll-lock"
@@ -62,18 +62,20 @@ function ProfileAvatar({
   onAvatarImageFailed: () => void
   imageAlt: string
 }) {
+  const photoSrc =
+    profileAvatarUrl && !avatarImageFailed ? profileAvatarUrl : null
   return (
     <Avatar className="h-10 w-10 shrink-0 border border-border">
-      {profileAvatarUrl && !avatarImageFailed ? (
+      {photoSrc ? (
         <AvatarImage
-          src={profileAvatarUrl}
+          src={photoSrc}
           alt={imageAlt}
           onLoadingStatusChange={(status) => {
             if (status === "error") onAvatarImageFailed()
           }}
         />
       ) : null}
-      <ProfileCircleFallback />
+      <ProfileCircleSlotFallback hasPhoto={Boolean(photoSrc)} />
     </Avatar>
   )
 }
@@ -158,7 +160,9 @@ function HeaderAccountMenuInner({
                 }}
               />
             ) : null}
-            <ProfileCircleFallback />
+            <ProfileCircleSlotFallback
+              hasPhoto={Boolean(profileAvatarUrl && !avatarImageFailed)}
+            />
           </Avatar>
         </Button>
       </DropdownMenuTrigger>

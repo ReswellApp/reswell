@@ -1,4 +1,8 @@
-import { buildAuthCompletingUrl } from "@/lib/auth/build-auth-completing-url"
+import {
+  buildAuthCompletingPath,
+  buildAuthCompletingUrl,
+} from "@/lib/auth/build-auth-completing-url"
+import { copySupabaseAuthCookies } from "@/lib/auth/copy-supabase-auth-cookies"
 import { passwordResetLandingPath } from "@/lib/auth/password-reset-landing-flag"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 import { buildEmailSignUpSuccessPath } from "@/lib/google-ads/sign-up-success-path"
@@ -68,6 +72,15 @@ export async function GET(request: NextRequest) {
             console.error("[auth/confirm] Klaviyo new-account failed:", e)
           }
         })
+      }
+      // Match `/auth/recovery`: sync httpOnly cookies before the update-password gate.
+      if (type === "recovery") {
+        const finalResponse = NextResponse.redirect(
+          `${origin}${buildAuthCompletingPath(redirectPath)}`,
+        )
+        copySupabaseAuthCookies(redirectResponse, finalResponse)
+        finalResponse.headers.set("Cache-Control", "private, no-store")
+        return finalResponse
       }
       redirectResponse.headers.set("Cache-Control", "private, no-store")
       return redirectResponse

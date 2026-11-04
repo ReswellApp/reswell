@@ -1,8 +1,7 @@
 import Image from "next/image"
 import { ProfileAvatarImage } from "@/components/features/dashboard/profile-avatar-image"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
-  profileCircleSrc,
   standardProfileAvatarSrc,
   userProfilePhotoDisplaySrc,
 } from "@/lib/profile-circle"
@@ -30,6 +29,25 @@ export function ProfileCircleFallback({ className }: { className?: string }) {
   )
 }
 
+/**
+ * Radix AvatarFallback for profile circles.
+ * When a user photo URL is present, use a neutral fill while it loads so the
+ * Reswell default mark does not flash before the real image.
+ * When there is no photo (or load failed), show the standard mark.
+ */
+export function ProfileCircleSlotFallback({
+  hasPhoto,
+  className,
+}: {
+  hasPhoto: boolean
+  className?: string
+}) {
+  if (!hasPhoto) {
+    return <ProfileCircleFallback className={className} />
+  }
+  return <AvatarFallback className={cn("bg-[#E8F0FA]", className)} />
+}
+
 /** Same circle as the seller profile: photo with focal crop, or the default avatar. */
 export function ProfileCircle({
   avatarUrl,
@@ -45,7 +63,6 @@ export function ProfileCircle({
   className?: string
 }) {
   const userPhoto = userProfilePhotoDisplaySrc(avatarUrl)
-  const src = profileCircleSrc(avatarUrl)
 
   return (
     <Avatar
@@ -56,10 +73,8 @@ export function ProfileCircle({
     >
       {userPhoto ? (
         <ProfileAvatarImage avatarUrl={avatarUrl} focalX={focalX} focalY={focalY} alt={alt} />
-      ) : (
-        <AvatarImage src={src} alt={alt} className="object-cover" />
-      )}
-      <ProfileCircleFallback />
+      ) : null}
+      <ProfileCircleSlotFallback hasPhoto={Boolean(userPhoto)} />
     </Avatar>
   )
 }

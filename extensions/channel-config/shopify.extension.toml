@@ -4,6 +4,7 @@
 [[extensions]]
 name = "Reswell channel config"
 type = "channel_config"
+name = "Reswell channel config"
 handle = "channel-config"
 # Keep legacy auto-channel until channelCreate is proven on every install path.
 create_legacy_channel_on_app_install = true

@@ -11,7 +11,7 @@ import {
   UpdatePasswordInvalidSessionActions,
 } from "@/components/auth/update-password-form-fields"
 import { createClient } from "@/lib/supabase/client"
-import { waitForClientSession } from "@/lib/auth/wait-for-client-session"
+import { resolveClientSessionForMutation } from "@/lib/auth/resolve-client-session-for-mutation"
 import {
   Card,
   CardContent,
@@ -22,6 +22,12 @@ import {
 import { Button } from "@/components/ui/button"
 
 type Phase = "checking" | "ready" | "success"
+
+/**
+ * Hard ceiling for the recovery session gate. Hung `getUser()` / auth-lock waits
+ * previously left reset links on an infinite spinner (same class of bug as login).
+ */
+const UPDATE_PASSWORD_SESSION_PROBE_MS = 4_000
 
 export function UpdatePasswordFormPanel() {
   const router = useRouter()
@@ -39,13 +45,34 @@ export function UpdatePasswordFormPanel() {
     const supabase = createClient()
     let cancelled = false
 
-    void (async () => {
-      let session = (await supabase.auth.getSession()).data.session
-      if (!session?.access_token) {
-        session = await waitForClientSession({ supabase, maxAttempts: 40, msBetween: 75 })
+    const revealWithoutSession = () => {
+      if (!cancelled) {
+        setSessionValid(false)
+        setPhase("ready")
       }
-      if (cancelled) return
-      evaluateSession(session?.access_token ?? null)
+    }
+    const probeTimer = window.setTimeout(
+      revealWithoutSession,
+      UPDATE_PASSWORD_SESSION_PROBE_MS,
+    )
+
+    void (async () => {
+      try {
+        // Resolves httpOnly SSR cookies via `/api/auth/session-ready` when
+        // `document.cookie` cannot see them (private Safari, post-recovery redirect).
+        const session = await resolveClientSessionForMutation(supabase)
+        if (cancelled) return
+        if (session?.access_token) {
+          window.clearTimeout(probeTimer)
+          evaluateSession(session.access_token)
+          return
+        }
+        revealWithoutSession()
+      } catch {
+        revealWithoutSession()
+      } finally {
+        window.clearTimeout(probeTimer)
+      }
     })()
 
     const { data } = supabase.auth.onAuthStateChange((event, session) => {
@@ -55,7 +82,10 @@ export function UpdatePasswordFormPanel() {
         event === "INITIAL_SESSION" ||
         event === "TOKEN_REFRESHED"
       ) {
-        evaluateSession(session?.access_token ?? null)
+        if (session?.access_token) {
+          window.clearTimeout(probeTimer)
+          evaluateSession(session.access_token)
+        }
       }
       if (event === "SIGNED_OUT") {
         setSessionValid(false)
@@ -65,6 +95,7 @@ export function UpdatePasswordFormPanel() {
 
     return () => {
       cancelled = true
+      window.clearTimeout(probeTimer)
       data.subscription.unsubscribe()
     }
   }, [evaluateSession])

@@ -3,8 +3,9 @@
 import Link from "next/link"
 import { useEffect, useState } from "react"
 import { Check, ExternalLink, Loader2, Pencil } from "lucide-react"
-import { ProfileCircleFallback } from "@/components/profile-circle"
+import { ProfileCircleSlotFallback } from "@/components/profile-circle"
 import { Avatar } from "@/components/ui/avatar"
+import { userProfilePhotoDisplaySrc } from "@/lib/profile-circle"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -140,6 +141,9 @@ export function ProfileShopTab({
 }: ProfileShopTabProps) {
   const username = profile.seller_slug?.trim() || "—"
   const profilePhotoUrl = profile.shop_logo_url || profile.avatar_url
+  const hasAvatarPhoto = Boolean(
+    avatarPreviewUrl?.trim() || userProfilePhotoDisplaySrc(profilePhotoUrl),
+  )
   const [avatarCropOpen, setAvatarCropOpen] = useState(false)
   const [bannerCropOpen, setBannerCropOpen] = useState(false)
   const [tileBannerCropOpen, setTileBannerCropOpen] = useState(false)
@@ -208,7 +212,7 @@ export function ProfileShopTab({
               previewSrc={avatarPreviewUrl}
               alt={profile.display_name}
             />
-            <ProfileCircleFallback />
+            <ProfileCircleSlotFallback hasPhoto={hasAvatarPhoto} />
           </Avatar>
           <label
             htmlFor="shop-avatar-upload"

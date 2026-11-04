@@ -1,7 +1,7 @@
-import { ProfileCircleFallback } from "@/components/profile-circle"
+import { ProfileCircleSlotFallback } from "@/components/profile-circle"
 import { Avatar, AvatarImage } from "@/components/ui/avatar"
 import type { ForumThreadParticipant } from "@/lib/services/forumThreads"
-import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
+import { userProfilePhotoDisplaySrc } from "@/lib/profile-circle"
 import { cn } from "@/lib/utils"
 
 type ThreadsParticipantStackProps = {
@@ -28,14 +28,15 @@ export function ThreadsParticipantStack({
   return (
     <div className={cn("flex -space-x-2", className)} aria-hidden>
       {shown.map((p) => {
+        const photoSrc = userProfilePhotoDisplaySrc(p.avatarUrl)
         return (
           <Avatar
             key={p.userId}
             className={cn(SIZE[size], "border-2 border-background ring-1 ring-border/40")}
             title={p.displayName}
           >
-            <AvatarImage src={profileMediaDisplaySrc(p.avatarUrl || "")} alt="" />
-            <ProfileCircleFallback />
+            {photoSrc ? <AvatarImage src={photoSrc} alt="" /> : null}
+            <ProfileCircleSlotFallback hasPhoto={Boolean(photoSrc)} />
           </Avatar>
         )
       })}
