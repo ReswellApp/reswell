@@ -4,6 +4,7 @@ import {
   dbGetMcpOAuthClient,
   dbGetMcpTokenByRefreshHash,
   dbGetProfileEmail,
+  dbGetProfileStaffFlags,
   dbInsertMcpAuthorizationCode,
   dbInsertMcpOAuthClient,
   dbInsertMcpOAuthToken,
@@ -21,8 +22,10 @@ import {
   isMcpRedirectUriAllowed,
   mcpAllowlistEmails,
   mcpResourceMatches,
-  mcpResourceUrl,
   parseMcpScopes,
+  parseShopperMcpScopes,
+  parseStaffMcpScopes,
+  resolveMcpResourceKind,
 } from "@/lib/services/mcpConfig"
 import { mcpHashSecret, mcpPkceChallengeFromVerifier, mcpRandomToken, mcpSafeEqualHex } from "@/lib/services/mcpCrypto"
 import type { McpConnectionSummary, McpOAuthClientRow, McpScope } from "@/lib/types/mcp"
@@ -146,26 +149,57 @@ export async function assertUserMayAuthorizeMcp(
   }
 }
 
+/** Staff MCP: allowlist (if set) plus admin or employee profile flag. */
+export async function assertUserMayAuthorizeStaffMcp(
+  userId: string,
+  emailFromSession: string | null | undefined,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const allow = await assertUserMayAuthorizeMcp(userId, emailFromSession)
+  if (!allow.ok) return allow
+
+  const flags = await dbGetProfileStaffFlags(oauthDb(), userId)
+  if (!flags || (!flags.isAdmin && !flags.isEmployee)) {
+    return {
+      ok: false,
+      error: "Staff MCP is limited to Reswell admin and employee accounts.",
+    }
+  }
+  return { ok: true }
+}
+
 export function validateAuthorizeRequest(input: {
   client: McpOAuthClientRow
   redirectUri: string
   scopeRaw: string
   resource: string
-}): { ok: true; scopes: McpScope[] } | { ok: false; error: string } {
+}): { ok: true; scopes: McpScope[]; kind: "shopper" | "staff" } | { ok: false; error: string } {
   if (!input.client.redirect_uris.includes(input.redirectUri)) {
     return { ok: false, error: "redirect_uri is not registered for this client" }
   }
   if (!isMcpRedirectUriAllowed(input.redirectUri)) {
     return { ok: false, error: "redirect_uri is not allowed" }
   }
-  if (!mcpResourceMatches(input.resource, mcpResourceUrl())) {
-    return { ok: false, error: "resource must be the Reswell MCP URL" }
+  const kind = resolveMcpResourceKind(input.resource)
+  if (!kind) {
+    return {
+      ok: false,
+      error: "resource must be the Reswell shopper MCP or staff MCP URL",
+    }
   }
-  const scopes = parseMcpScopes(input.scopeRaw)
+  const scopes: McpScope[] =
+    kind === "staff"
+      ? [...parseStaffMcpScopes(input.scopeRaw)]
+      : [...parseShopperMcpScopes(input.scopeRaw)]
   if (scopes.length === 0) {
-    return { ok: false, error: "scope must include at least one supported value" }
+    return {
+      ok: false,
+      error:
+        kind === "staff"
+          ? "scope must include at least one staff permission (catalog or blog)"
+          : "scope must include at least one supported value",
+    }
   }
-  return { ok: true, scopes }
+  return { ok: true, scopes, kind }
 }
 
 export async function issueMcpAuthorizationCodeService(input: {

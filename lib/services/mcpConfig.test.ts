@@ -4,7 +4,9 @@ import {
   isMcpRedirectUriAllowed,
   mcpResourceMatches,
   parseMcpScopes,
+  parseStaffMcpScopes,
   formatMcpScopes,
+  resolveMcpResourceKind,
 } from "@/lib/services/mcpConfig"
 import { mcpHashSecret, mcpPkceChallengeFromVerifier, mcpSafeEqualHex } from "@/lib/services/mcpCrypto"
 
@@ -14,7 +16,41 @@ test("parseMcpScopes keeps only supported scopes in stable order", () => {
     "cart:write",
     "checkout",
   ])
+  assert.deepEqual(parseMcpScopes("blog:write catalog:read bogus search"), [
+    "search",
+    "catalog:read",
+    "blog:write",
+  ])
   assert.equal(formatMcpScopes(["search", "checkout"]), "search checkout")
+})
+
+test("staff and shopper resource URLs do not match each other", () => {
+  assert.equal(
+    mcpResourceMatches(
+      "https://www.reswell.app/api/mcp",
+      "https://www.reswell.app/api/staff-mcp",
+    ),
+    false,
+  )
+})
+
+test("parseStaffMcpScopes drops shopper scopes", () => {
+  assert.deepEqual(parseStaffMcpScopes("search catalog:write blog:read checkout"), [
+    "catalog:write",
+    "blog:read",
+  ])
+})
+
+test("resolveMcpResourceKind distinguishes shopper and staff paths", () => {
+  assert.equal(
+    resolveMcpResourceKind("https://www.reswell.app/api/mcp"),
+    "shopper",
+  )
+  assert.equal(
+    resolveMcpResourceKind("https://www.reswell.app/api/staff-mcp"),
+    "staff",
+  )
+  assert.equal(resolveMcpResourceKind("https://www.reswell.app/api/other"), null)
 })
 
 test("redirect URIs allow https and localhost http only", () => {

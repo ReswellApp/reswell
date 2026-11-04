@@ -21,14 +21,24 @@ test("protected resource metadata points at Reswell MCP and site issuer", async 
   delete process.env.NEXT_PUBLIC_APP_URL
   delete process.env.VERCEL_URL
 
-  const { buildMcpProtectedResourceMetadata, buildMcpAuthorizationServerMetadata } =
-    await import("@/lib/services/mcpMetadata")
+  const {
+    buildMcpProtectedResourceMetadata,
+    buildMcpAuthorizationServerMetadata,
+    buildStaffMcpProtectedResourceMetadata,
+  } = await import("@/lib/services/mcpMetadata")
 
   const prm = buildMcpProtectedResourceMetadata()
   assert.equal(prm.resource, "https://www.reswell.app/api/mcp")
   assert.deepEqual(prm.authorization_servers, ["https://www.reswell.app"])
   assert.ok(prm.scopes_supported.includes("search"))
   assert.ok(prm.scopes_supported.includes("checkout"))
+  assert.ok(!(prm.scopes_supported as readonly string[]).includes("catalog:write"))
+
+  const staffPrm = buildStaffMcpProtectedResourceMetadata()
+  assert.equal(staffPrm.resource, "https://www.reswell.app/api/staff-mcp")
+  assert.ok(staffPrm.scopes_supported.includes("catalog:read"))
+  assert.ok(staffPrm.scopes_supported.includes("blog:write"))
+  assert.ok(!(staffPrm.scopes_supported as readonly string[]).includes("checkout"))
 
   const asMeta = buildMcpAuthorizationServerMetadata()
   assert.equal(asMeta.issuer, "https://www.reswell.app")
@@ -36,4 +46,6 @@ test("protected resource metadata points at Reswell MCP and site issuer", async 
   assert.equal(asMeta.token_endpoint, "https://www.reswell.app/api/oauth/token")
   assert.equal(asMeta.registration_endpoint, "https://www.reswell.app/api/oauth/register")
   assert.deepEqual(asMeta.code_challenge_methods_supported, ["S256"])
+  assert.ok(asMeta.scopes_supported.includes("catalog:write"))
+  assert.ok(asMeta.scopes_supported.includes("search"))
 })

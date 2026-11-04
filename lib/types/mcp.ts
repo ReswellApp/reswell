@@ -1,11 +1,26 @@
-export const MCP_SCOPES = [
+/** Shopper MCP scopes (`/api/mcp`). */
+export const MCP_SHOPPER_SCOPES = [
   "search",
   "cart:read",
   "cart:write",
   "checkout",
 ] as const
 
+/** Staff MCP scopes (`/api/staff-mcp`) — brands, models, blog CMS. */
+export const MCP_STAFF_SCOPES = [
+  "catalog:read",
+  "catalog:write",
+  "blog:read",
+  "blog:write",
+] as const
+
+export const MCP_SCOPES = [...MCP_SHOPPER_SCOPES, ...MCP_STAFF_SCOPES] as const
+
+export type McpShopperScope = (typeof MCP_SHOPPER_SCOPES)[number]
+export type McpStaffScope = (typeof MCP_STAFF_SCOPES)[number]
 export type McpScope = (typeof MCP_SCOPES)[number]
+
+export type McpResourceKind = "shopper" | "staff"
 
 export const MCP_SCOPE_META: Record<
   McpScope,
@@ -27,6 +42,23 @@ export const MCP_SCOPE_META: Record<
     title: "Start checkout",
     description:
       "Create a checkout link for you to open. The assistant cannot charge your card. You pay on Reswell.",
+  },
+  "catalog:read": {
+    title: "Read brand catalog",
+    description: "List and inspect brands and board models in the Reswell catalog.",
+  },
+  "catalog:write": {
+    title: "Edit brand catalog",
+    description: "Create and update brands and models. Changes go live on the site.",
+  },
+  "blog:read": {
+    title: "Read blog posts",
+    description: "List and inspect Reswell blog drafts and published posts.",
+  },
+  "blog:write": {
+    title: "Edit and publish blog",
+    description:
+      "Create, update, publish, and hide blog posts. Published posts go live without a deploy.",
   },
 }
 
