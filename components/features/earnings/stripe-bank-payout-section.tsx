@@ -1,7 +1,13 @@
 "use client"
 
 import Link from "next/link"
-import { useCallback, useMemo, useState } from "react"
+import {
+  forwardRef,
+  useCallback,
+  useImperativeHandle,
+  useMemo,
+  useState,
+} from "react"
 import {
   instantBankPayoutFeeUsd,
   netUsdAfterInstantBankFee,
@@ -36,6 +42,11 @@ import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { bankTransferBadge } from "@/lib/utils/stripe-connect-transfer-status"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+
+/** Imperative API so Overview (and other surfaces) can open the cash-out dialog without duplicating it. */
+export interface StripeBankPayoutSectionHandle {
+  openCashOut: () => void
+}
 
 /** Mirrors Stripe Connect external bank accounts returned by `/api/stripe/connect/status`. */
 export interface StripeConnectBankAccountRow {
@@ -140,14 +151,20 @@ function TransferStatusBadge({
   )
 }
 
-export function StripeBankPayoutSection({
-  availableBalance,
-  stripeConfigured,
-  connectStatus,
-  transferHistory,
-  onRefresh,
-  onCashOutSettled,
-}: StripeBankPayoutSectionProps) {
+export const StripeBankPayoutSection = forwardRef<
+  StripeBankPayoutSectionHandle,
+  StripeBankPayoutSectionProps
+>(function StripeBankPayoutSection(
+  {
+    availableBalance,
+    stripeConfigured,
+    connectStatus,
+    transferHistory,
+    onRefresh,
+    onCashOutSettled,
+  },
+  ref,
+) {
   const [setupOpen, setSetupOpen] = useState(false)
   const [preferManagementSetup, setPreferManagementSetup] = useState(false)
   const [cashOpen, setCashOpen] = useState(false)
@@ -211,6 +228,14 @@ export function StripeBankPayoutSection({
     setCashOutDestinationId(defaultPick?.id ?? "")
     setCashOpen(true)
   }, [availableBalance, banksWithStripeIds])
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      openCashOut,
+    }),
+    [openCashOut],
+  )
 
   const parsedAmount = useMemo(() => {
     const n = parseFloat(amountStr)
@@ -1028,4 +1053,4 @@ export function StripeBankPayoutSection({
       </AlertDialog>
     </>
   )
-}
+})
