@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
 import {
   assertUserMayAuthorizeMcp,
+  assertUserMayAuthorizeStaffMcp,
   getMcpOAuthClientService,
   issueMcpAuthorizationCodeService,
   revokeMcpConnectionService,
@@ -12,6 +13,7 @@ import {
 } from "@/lib/services/mcpOAuth"
 import { mcpConsentActionSchema } from "@/lib/validations/mcp"
 import { parseMcpScopes } from "@/lib/services/mcpConfig"
+import type { McpScope } from "@/lib/types/mcp"
 
 function buildRedirect(base: string, params: Record<string, string | undefined>): string {
   const url = new URL(base)
@@ -72,7 +74,10 @@ export async function decideMcpOAuthConsentAction(formData: FormData) {
     return { error: "Sign in required" }
   }
 
-  const allow = await assertUserMayAuthorizeMcp(user.id, user.email)
+  const allow =
+    validated.kind === "staff"
+      ? await assertUserMayAuthorizeStaffMcp(user.id, user.email)
+      : await assertUserMayAuthorizeMcp(user.id, user.email)
   if (!allow.ok) {
     return { error: allow.error }
   }
@@ -84,10 +89,17 @@ export async function decideMcpOAuthConsentAction(formData: FormData) {
   }
 
   // checkout implies cart read/write for a coherent shopping flow when requested
-  const scopes = [...parseMcpScopes(approved.join(" "))]
+  const scopes: McpScope[] = [...parseMcpScopes(approved.join(" "))]
   if (scopes.includes("checkout")) {
     if (requested.has("cart:read") && !scopes.includes("cart:read")) scopes.push("cart:read")
     if (requested.has("cart:write") && !scopes.includes("cart:write")) scopes.push("cart:write")
+  }
+  // write implies read for staff catalog / blog tools
+  if (scopes.includes("catalog:write") && !scopes.includes("catalog:read")) {
+    scopes.push("catalog:read")
+  }
+  if (scopes.includes("blog:write") && !scopes.includes("blog:read")) {
+    scopes.push("blog:read")
   }
 
   const issued = await issueMcpAuthorizationCodeService({

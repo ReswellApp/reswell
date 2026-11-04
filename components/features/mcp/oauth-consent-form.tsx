@@ -65,7 +65,9 @@ export function OAuthConsentForm({
       <div className="space-y-6 border border-border bg-background p-6 sm:p-8">
         <div className="space-y-2">
           <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
-            Sign in with Reswell
+            {requestedScopes.some((s) => s.startsWith("catalog:") || s.startsWith("blog:"))
+              ? "Staff MCP"
+              : "Sign in with Reswell"}
           </p>
           <h1 className="text-2xl font-medium tracking-tight text-foreground">
             Connect {clientName}
@@ -74,6 +76,9 @@ export function OAuthConsentForm({
             <span className="text-foreground">{clientName}</span> wants to use your
             Reswell account ({userEmail}). You can disconnect it later. The sign-in
             code will be sent back to the assistant.
+            {requestedScopes.some((s) => s === "catalog:write" || s === "blog:write")
+              ? " Write permissions change live site data."
+              : null}
           </p>
         </div>
 
