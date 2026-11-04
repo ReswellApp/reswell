@@ -185,20 +185,17 @@ export async function fetchMobileDashboardAccess(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<QueryResult<MobileDashboardAccess>> {
-  const [profile, shipper, shopifyLink] = await Promise.all([
+  const { accountHasShopifyNavLink } = await import(
+    "@/lib/services/shopifyNavAccess"
+  )
+  const [profile, shipper, hasShopifyAccess] = await Promise.all([
     supabase
       .from("profiles")
       .select("is_admin, is_shop")
       .eq("id", userId)
       .maybeSingle(),
     supabase.from("coastal_shippers").select("id").eq("user_id", userId).maybeSingle(),
-    supabase
-      .from("shopify_connections")
-      .select("id")
-      .eq("user_id", userId)
-      .neq("status", "disconnected")
-      .limit(1)
-      .maybeSingle(),
+    accountHasShopifyNavLink(userId),
   ])
   if (profile.error) return { ok: false, message: profile.error.message }
 
@@ -209,7 +206,7 @@ export async function fetchMobileDashboardAccess(
     rows: {
       isAdmin: row?.is_admin === true,
       isShipper: !shipper.error && typeof shipperId === "string" && shipperId.length > 0,
-      hasShopifyAccess: !shopifyLink.error && Boolean(shopifyLink.data?.id),
+      hasShopifyAccess,
       hasSellerProfile: row?.is_shop === true,
     },
   }
