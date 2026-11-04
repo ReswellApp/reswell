@@ -5,6 +5,7 @@ import { DashboardAppFrame } from "@/components/features/dashboard/dashboard-app
 import { coastalShipperMembership } from "@/lib/services/coastalShipperAccess"
 import { dropoffLocationMembership } from "@/lib/services/dropoffLocationAccess"
 import { getShopAccountContext } from "@/lib/services/accountAccess"
+import { accountHasShopifyNavLink } from "@/lib/services/shopifyNavAccess"
 
 export default async function DashboardLayout({
   children,
@@ -34,6 +35,7 @@ export default async function DashboardLayout({
   })
   const shopHref =
     shop.isShop && shop.sellerSlug ? sellerProfileHref({ seller_slug: shop.sellerSlug }) : null
+  const hasShopifyAccess = await accountHasShopifyNavLink(shop.accountId)
 
   return (
     <DashboardAppFrame
@@ -41,7 +43,7 @@ export default async function DashboardLayout({
       isAdmin={shop.platformAdmin}
       isShipper={isShipper}
       isDropoffLocation={isDropoffLocation}
-      hasShopifyAccess={shop.shopifyConnectEnabled}
+      hasShopifyAccess={hasShopifyAccess}
       showEarnings={shop.permissions.has("payouts.read")}
       actingAsShop={shop.actingAsShop}
       shopLabel={shop.shopLabel}

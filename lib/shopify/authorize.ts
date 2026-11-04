@@ -27,10 +27,9 @@ export async function requireShopifyMerchant() {
   try {
     const access = await checkShopifyMerchantAccess(supabase, shop.accountId)
     if (!access.allowed) {
-      const status = access.reason === "not_approved" ? 403 : 503
       return {
         ok: false as const,
-        response: NextResponse.json({ error: access.message }, { status }),
+        response: NextResponse.json({ error: access.message }, { status: 503 }),
       }
     }
     return {

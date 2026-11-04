@@ -29,9 +29,9 @@ export async function claimShopifyInstallAction(): Promise<
     return { error: "This Shopify install session has expired. Install again from Shopify." }
   }
 
-  // A signed install proves store ownership; the claim approves the account.
+  // A signed App Store install proves store ownership. Any seller account may claim.
   const access = await checkShopifyMerchantAccess(supabase, managed.seller.sellerId)
-  if (!access.allowed && access.reason !== "not_approved") {
+  if (!access.allowed) {
     return { error: access.message }
   }
 

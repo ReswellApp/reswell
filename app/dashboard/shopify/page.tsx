@@ -40,16 +40,18 @@ export default async function ShopifyIntegrationPage({
   if (shop && !shop.permissions.has("listings.read")) notFound()
   const accountId = shop?.accountId ?? user.id
   const access = await checkShopifyMerchantAccess(supabase, accountId)
-  if (!access.allowed && access.reason === "not_approved") notFound()
 
   const status = access.allowed
     ? await getShopifyConnectionStatus(accountId)
     : null
+  const connection = status?.ok ? status.data : null
+  // Only App Store–linked accounts should land here. Cold visits stay undiscoverable.
+  if (!connection || connection.status === "disconnected") notFound()
+
   const shippingReadiness = await getShopifyShippingReadiness(
     supabase,
     accountId,
   )
-  const connection = status?.ok ? status.data : null
   let products: ShopifyDashboardData["products"] = []
   let productPageInfo: ShopifyDashboardData["productPageInfo"] = {
     hasNextPage: false,

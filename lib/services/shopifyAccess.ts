@@ -1,5 +1,4 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { dbShopifyUserIsEligible } from "@/lib/db/shopifyConnections"
 import {
   isShopifyConfigured,
   isShopifyIntegrationEnabled,
@@ -12,22 +11,19 @@ export type ShopifyMerchantAccess =
   | { allowed: true }
   | {
       allowed: false
-      reason: "disabled" | "not_configured" | "not_approved"
+      reason: "disabled" | "not_configured"
       message: string
     }
 
+/**
+ * Runtime gate for Shopify APIs/dashboard.
+ * Any signed-in seller can connect after installing from the App Store —
+ * do not require profiles.shopify_connect_enabled (that blocked reviewers).
+ */
 export async function checkShopifyMerchantAccess(
-  supabase: SupabaseClient,
-  userId: string,
+  _supabase: SupabaseClient,
+  _userId: string,
 ): Promise<ShopifyMerchantAccess> {
-  const eligible = await dbShopifyUserIsEligible(supabase, userId)
-  if (!eligible) {
-    return {
-      allowed: false,
-      reason: "not_approved",
-      message: "Your account is not approved for Shopify yet.",
-    }
-  }
   if (!isShopifyIntegrationEnabled()) {
     return {
       allowed: false,

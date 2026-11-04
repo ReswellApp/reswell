@@ -17,7 +17,6 @@ describe("header shop access", () => {
       actor: {
         active_shop_account_id: SHOP,
         display_name: "Christian",
-        shopify_connect_enabled: false,
       },
       memberships: [{ account_id: SHOP, role: "staff" }],
       profiles: [
@@ -25,9 +24,9 @@ describe("header shop access", () => {
           id: SHOP,
           shop_name: "Hayden Garfields Shop",
           display_name: "Ignored",
-          shopify_connect_enabled: true,
         },
       ],
+      linkedShopifyAccountIds: new Set([SHOP]),
     })
 
     assert.equal(access.actingAsShop, true)
@@ -118,5 +117,21 @@ describe("header shop access", () => {
     assert.equal(back.showEarnings, true)
     assert.equal(back.hasShopifyAccess, false)
     assert.equal(headerShopAccessWithActiveAccount(personal, "other"), personal)
+  })
+
+  it("hides Shopify nav when no App Store link exists even if approval was granted", () => {
+    const access = headerShopAccessFromRows({
+      userId: USER,
+      email: "seller@reswell.app",
+      actor: {
+        active_shop_account_id: null,
+        display_name: "Seller",
+        shopify_connect_enabled: true,
+      },
+      memberships: [],
+      profiles: [],
+      linkedShopifyAccountIds: new Set(),
+    })
+    assert.equal(access.hasShopifyAccess, false)
   })
 })
