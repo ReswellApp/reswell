@@ -94,10 +94,8 @@ import {
   writeHeaderChromeSnapshot,
 } from "@/lib/auth/header-chrome-snapshot"
 import type { HeaderShopAccess } from "@/lib/auth/header-site-bootstrap"
-import {
-  headerShopAccessWithActiveAccount,
-  loadHeaderShopAccess,
-} from "@/lib/auth/header-shop-access"
+import { headerShopAccessWithActiveAccount } from "@/lib/auth/header-shop-access"
+import { loadHeaderShopAccessAction } from "@/lib/actions/headerShopAccess"
 import { HeaderKnownAuthPreview } from "@/components/header-known-auth-preview"
 import type { SiteChromeAuthPayload } from "@/lib/auth/get-site-chrome-auth"
 import { CartHeaderLink } from "@/components/cart-header-link"
@@ -851,7 +849,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
           .single(),
         supabase.from("coastal_shippers").select("id").eq("user_id", resolvedUser.id).maybeSingle(),
         supabase.from("dropoff_location_grants").select("id").eq("user_id", resolvedUser.id).maybeSingle(),
-        loadHeaderShopAccess(supabase, resolvedUser.id, resolvedUser.email ?? null),
+        loadHeaderShopAccessAction(resolvedUser.id, resolvedUser.email ?? null),
       ])
       if (headerChromeSignOutActive()) return
       if (shopGeneration === shopAccessRequestRef.current && shopLoad.ok) {
