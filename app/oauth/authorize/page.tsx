@@ -3,16 +3,18 @@ import { createClient } from "@/lib/supabase/server"
 import { OAuthConsentForm } from "@/components/features/mcp/oauth-consent-form"
 import {
   assertUserMayAuthorizeMcp,
+  assertUserMayAuthorizeStaffMcp,
   getMcpOAuthClientService,
   validateAuthorizeRequest,
 } from "@/lib/services/mcpOAuth"
 import { mcpAuthorizeQuerySchema } from "@/lib/validations/mcp"
 import { privatePageMetadata } from "@/lib/site-metadata"
-import { mcpResourceUrl } from "@/lib/services/mcpConfig"
+import { mcpResourceUrl, staffMcpResourceUrl } from "@/lib/services/mcpConfig"
 
 export const metadata = privatePageMetadata({
   title: "Sign in with Reswell",
-  description: "Approve an AI assistant to shop on Reswell with your account.",
+  description:
+    "Approve an AI assistant to use your Reswell account (shopper or staff tools).",
   path: "/oauth/authorize",
 })
 
@@ -44,7 +46,7 @@ export default async function McpOAuthAuthorizePage({ searchParams }: PageProps)
         <h1 className="text-xl font-medium">Invalid authorization request</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           The assistant sent an incomplete OAuth request. Ask it to reconnect to{" "}
-          {mcpResourceUrl()}.
+          {mcpResourceUrl()} or {staffMcpResourceUrl()}.
         </p>
       </main>
     )
@@ -97,7 +99,10 @@ export default async function McpOAuthAuthorizePage({ searchParams }: PageProps)
     redirect(`/auth/login?redirect=${encodeURIComponent(returnTo)}`)
   }
 
-  const allow = await assertUserMayAuthorizeMcp(user.id, user.email)
+  const allow =
+    validated.kind === "staff"
+      ? await assertUserMayAuthorizeStaffMcp(user.id, user.email)
+      : await assertUserMayAuthorizeMcp(user.id, user.email)
   if (!allow.ok) {
     return (
       <main className="mx-auto max-w-lg px-4 py-16">

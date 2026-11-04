@@ -279,3 +279,19 @@ export async function dbGetProfileEmail(
   const email = (data as { email?: string | null }).email
   return typeof email === "string" && email.trim() ? email.trim().toLowerCase() : null
 }
+
+export async function dbGetProfileStaffFlags(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<{ isAdmin: boolean; isEmployee: boolean } | null> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("is_admin, is_employee")
+    .eq("id", userId)
+    .maybeSingle()
+  if (error || !data) return null
+  return {
+    isAdmin: data.is_admin === true,
+    isEmployee: data.is_employee === true,
+  }
+}
