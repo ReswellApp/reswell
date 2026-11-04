@@ -86,8 +86,9 @@ export function BrandsExplorer({
     listRef,
     columnsForWidth: brandDirectoryColumnsForWidth,
     fallbackItemHeight: 84,
-    fallbackPageSize: 15,
-    minPageSize: 5,
+    fallbackPageSize: 20,
+    minRows: 4,
+    minPageSize: 4,
     maxPageSize: 40,
     enabled: brands.length > 0,
   })

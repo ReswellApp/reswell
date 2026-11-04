@@ -29,6 +29,7 @@ export function useViewportFitPageSize({
   columnsForWidth,
   fallbackItemHeight,
   fallbackPageSize,
+  minRows = 1,
   minPageSize = 4,
   maxPageSize = 40,
   pagerReservePx = 80,
@@ -39,6 +40,8 @@ export function useViewportFitPageSize({
   columnsForWidth: (width: number) => number
   fallbackItemHeight: number
   fallbackPageSize: number
+  /** Floor on grid rows even when the list starts mid-viewport. */
+  minRows?: number
   minPageSize?: number
   maxPageSize?: number
   pagerReservePx?: number
@@ -72,6 +75,7 @@ export function useViewportFitPageSize({
         columns,
         pagerReservePx,
         bottomPadPx,
+        minRows,
         minPageSize,
         maxPageSize,
       })
@@ -119,6 +123,7 @@ export function useViewportFitPageSize({
     listRef,
     maxPageSize,
     minPageSize,
+    minRows,
     pagerReservePx,
   ])
 

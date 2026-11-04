@@ -57,7 +57,7 @@ export function BrandPageIntro({
           {/* Spacer reserves logo width so the title never sits under the mark. */}
           <div className="flex items-start gap-3.5 sm:gap-4">
             <div className="h-20 w-20 shrink-0 sm:h-24 sm:w-24" aria-hidden />
-            <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-5">
+            <div className="flex min-w-0 flex-1 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between lg:gap-6">
               <div className="min-w-0 pt-0.5">
                 <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl lg:text-4xl">
                   {brand.name}
@@ -70,7 +70,19 @@ export function BrandPageIntro({
                 ) : null}
               </div>
 
-              <div className="shrink-0">
+              <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
+                <dl className="grid grid-cols-3 gap-3 sm:gap-4">
+                  {stats.map((stat) => (
+                    <div key={stat.label} className="min-w-[4.25rem] text-left sm:min-w-[4.75rem]">
+                      <dt className="sr-only">{stat.label}</dt>
+                      <dd className="text-lg font-bold tabular-nums tracking-tight text-white sm:text-xl">
+                        {stat.value}
+                      </dd>
+                      <p className="text-[11px] text-white/75 sm:text-xs">{stat.label}</p>
+                    </div>
+                  ))}
+                </dl>
+
                 <SaveEntitySearchButton
                   criteria={criteria}
                   label="Save this brand"
@@ -80,7 +92,7 @@ export function BrandPageIntro({
                   successDescription={`We'll email you when new ${brand.name} gear is listed on Reswell.`}
                   isLoggedIn={isLoggedIn}
                   initialSavedSearchId={initialSavedSearchId}
-                  className="border-white/35 bg-white/15 text-white hover:bg-white/25 hover:text-white"
+                  className="w-fit border-white/35 bg-white/15 text-white hover:bg-white/25 hover:text-white"
                 />
               </div>
             </div>
@@ -99,22 +111,10 @@ export function BrandPageIntro({
         </div>
       </div>
 
-      {/* Stats sit beside the overlapping logo instead of far below it. */}
-      <div className="flex min-h-10 items-center gap-3.5 px-4 pt-2.5 sm:min-h-12 sm:gap-4 sm:px-0 sm:pt-3">
-        <div className="w-20 shrink-0 sm:w-24" aria-hidden />
-        <div className="grid min-w-0 flex-1 grid-cols-3 gap-3 sm:max-w-md sm:gap-5">
-          {stats.map((stat) => (
-            <div key={stat.label} className="min-w-0 text-left">
-              <p className="text-lg font-bold tabular-nums tracking-tight text-[#355185] sm:text-xl">
-                {stat.value}
-              </p>
-              <p className="text-[11px] text-muted-foreground sm:text-xs">{stat.label}</p>
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* Clearance for the overlapping logo */}
+      <div className="h-10 sm:h-12" aria-hidden />
 
-      <div className="mt-4 space-y-2.5 px-4 sm:mt-5 sm:space-y-3 sm:px-0">
+      <div className="space-y-2.5 px-4 sm:space-y-3 sm:px-0">
         {people.length > 0 ? (
           <ul className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
             {people.map((entry) => (

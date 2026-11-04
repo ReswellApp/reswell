@@ -9,6 +9,7 @@ export function clampPageSize(size: number, minPageSize: number, maxPageSize: nu
 /**
  * How many grid items fit between `listTop` and the bottom of the viewport,
  * leaving room for the pager so Next/Back stay on screen.
+ * `minRows` guarantees a denser first page even when the list starts mid-viewport.
  */
 export function viewportFitPageSize(input: {
   viewportHeight: number
@@ -17,21 +18,21 @@ export function viewportFitPageSize(input: {
   columns: number
   pagerReservePx: number
   bottomPadPx?: number
+  minRows?: number
   minPageSize?: number
   maxPageSize?: number
 }): number {
   const minPageSize = input.minPageSize ?? 4
   const maxPageSize = input.maxPageSize ?? 40
   const bottomPadPx = input.bottomPadPx ?? 24
+  const minRows = Math.max(1, Math.floor(input.minRows ?? 1))
   const columns = Math.max(1, Math.floor(input.columns))
   const rowStride = Math.max(1, input.rowStridePx)
 
   const available = input.viewportHeight - input.listTop - input.pagerReservePx - bottomPadPx
-  if (available < rowStride) {
-    return clampPageSize(columns, minPageSize, maxPageSize)
-  }
-
-  const rows = Math.max(1, Math.floor(available / rowStride))
+  const fittedRows =
+    available < rowStride ? 1 : Math.max(1, Math.floor(available / rowStride))
+  const rows = Math.max(minRows, fittedRows)
   return clampPageSize(rows * columns, minPageSize, maxPageSize)
 }
 

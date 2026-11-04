@@ -313,7 +313,7 @@ export function BrandsDirectorySearch({ brands, className }: BrandsDirectorySear
 
   return (
     <div className={cn("w-full max-w-xl", className)}>
-      <p className="mb-2 text-center text-sm font-medium text-foreground">Search the brand directory</p>
+      <p className="mb-2 text-sm font-medium text-foreground">Search brands</p>
       <div ref={containerRef}>
         <form onSubmit={handleSubmit}>
           <SiteSearchShell

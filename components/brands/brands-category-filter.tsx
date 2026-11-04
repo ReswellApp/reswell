@@ -7,9 +7,18 @@ import {
   type BrandsDirectoryFilterCategorySlug,
   parseBrandsDirectoryFilterCategorySlugsFromSearchParam,
 } from "@/lib/brand-product-categories"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 
-export function BrandsCategoryFilter({ compact = false }: { compact?: boolean }) {
+const ALL_VALUE = "all"
+
+export function BrandsCategoryFilter({ className }: { className?: string }) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -18,28 +27,18 @@ export function BrandsCategoryFilter({ compact = false }: { compact?: boolean })
   const selected = parseBrandsDirectoryFilterCategorySlugsFromSearchParam(
     searchParams.getAll("category"),
   )
+  // Dropdown is single-select; keep the first active category if several were set.
+  const value = selected[0] ?? ALL_VALUE
 
-  function toggleCategory(slug: BrandsDirectoryFilterCategorySlug) {
-    const next = new Set(selected)
-    if (next.has(slug)) next.delete(slug)
-    else next.add(slug)
-
+  function setCategory(next: string) {
     const params = new URLSearchParams(searchParams.toString())
     params.delete("category")
-    const ordered = BRANDS_DIRECTORY_FILTER_CATEGORY_OPTIONS.map((option) => option.slug).filter(
-      (s) => next.has(s),
-    )
-    if (ordered.length > 0) params.set("category", ordered.join(","))
-
-    const qs = params.toString()
-    startTransition(() => {
-      router.replace(`${pathname}${qs ? `?${qs}` : ""}`, { scroll: false })
-    })
-  }
-
-  function clearCategories() {
-    const params = new URLSearchParams(searchParams.toString())
-    params.delete("category")
+    if (next !== ALL_VALUE) {
+      const slug = next as BrandsDirectoryFilterCategorySlug
+      if (BRANDS_DIRECTORY_FILTER_CATEGORY_OPTIONS.some((option) => option.slug === slug)) {
+        params.set("category", slug)
+      }
+    }
     const qs = params.toString()
     startTransition(() => {
       router.replace(`${pathname}${qs ? `?${qs}` : ""}`, { scroll: false })
@@ -47,42 +46,24 @@ export function BrandsCategoryFilter({ compact = false }: { compact?: boolean })
   }
 
   return (
-    <div className={cn(compact ? "space-y-2" : "space-y-3")}>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className={cn("font-medium text-foreground", compact ? "text-xs" : "text-sm")}>
-          {compact ? "Product type" : "Filter by product type"}
-        </p>
-        {selected.length > 0 ? (
-          <button
-            type="button"
-            onClick={clearCategories}
-            className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-          >
-            Clear
-          </button>
-        ) : null}
-      </div>
-      <div className="flex flex-wrap gap-1.5 sm:gap-2">
-        {BRANDS_DIRECTORY_FILTER_CATEGORY_OPTIONS.map((option) => {
-          const active = selected.includes(option.slug)
-          return (
-            <button
-              key={option.slug}
-              type="button"
-              aria-pressed={active}
-              onClick={() => toggleCategory(option.slug)}
-              className={cn(
-                "rounded-full border px-2.5 py-1 text-xs font-medium transition-colors sm:px-3 sm:py-1.5 sm:text-sm",
-                active
-                  ? "border-[#355185] bg-[#355185] text-white"
-                  : "border-transparent bg-white/80 text-foreground hover:bg-white",
-              )}
-            >
+    <div className={cn("w-full sm:w-56", className)}>
+      <p className="mb-2 text-sm font-medium text-foreground">Product type</p>
+      <Select value={value} onValueChange={setCategory}>
+        <SelectTrigger
+          aria-label="Filter brands by product type"
+          className="h-12 w-full rounded-2xl border-border/80 bg-white px-4 text-sm font-medium shadow-sm sm:h-[3.25rem]"
+        >
+          <SelectValue placeholder="All product types" />
+        </SelectTrigger>
+        <SelectContent align="end" className="rounded-xl">
+          <SelectItem value={ALL_VALUE}>All product types</SelectItem>
+          {BRANDS_DIRECTORY_FILTER_CATEGORY_OPTIONS.map((option) => (
+            <SelectItem key={option.slug} value={option.slug}>
               {option.label}
-            </button>
-          )
-        })}
-      </div>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   )
 }

@@ -38,6 +38,21 @@ describe("viewportFitPageSize", () => {
     )
   })
 
+  it("honors minRows even when the list starts mid-viewport", () => {
+    assert.equal(
+      viewportFitPageSize({
+        viewportHeight: 900,
+        listTop: 700,
+        rowStridePx: 84,
+        columns: 5,
+        pagerReservePx: 72,
+        minRows: 4,
+        minPageSize: 4,
+      }),
+      20,
+    )
+  })
+
   it("clamps to min/max", () => {
     assert.equal(clampPageSize(2, 4, 20), 4)
     assert.equal(clampPageSize(50, 4, 20), 20)

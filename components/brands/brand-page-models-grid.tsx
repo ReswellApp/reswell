@@ -88,8 +88,9 @@ export function BrandPageModelsGrid({
     listRef,
     columnsForWidth: brandModelColumnsForWidth,
     fallbackItemHeight: 96,
-    fallbackPageSize: 9,
-    minPageSize: 3,
+    fallbackPageSize: 12,
+    minRows: 4,
+    minPageSize: 4,
     maxPageSize: 30,
     enabled: visibleModels.length > 0,
   })

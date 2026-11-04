@@ -67,15 +67,20 @@ export default async function BrandsPage({
             </p>
           </div>
 
-          <div className="mt-8 flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-5">
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-3">
             <div className="min-w-0 flex-1">
-              <BrandsDirectorySearch brands={rankedBrands} />
+              <BrandsDirectorySearch brands={rankedBrands} className="max-w-none" />
             </div>
-            <div className="lg:max-w-md lg:shrink-0">
-              <Suspense fallback={null}>
-                <BrandsCategoryFilter compact />
-              </Suspense>
-            </div>
+            <Suspense
+              fallback={
+                <div
+                  className="h-12 w-full rounded-2xl border border-border/80 bg-white/80 sm:h-[3.25rem] sm:w-56"
+                  aria-hidden
+                />
+              }
+            >
+              <BrandsCategoryFilter />
+            </Suspense>
           </div>
         </div>
       </section>
