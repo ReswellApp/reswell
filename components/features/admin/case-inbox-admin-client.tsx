@@ -483,7 +483,28 @@ export function CaseInboxAdminClient({
       setThreadCaseId(res.case.id)
       setThreadMessages((prev) => {
         if (res.messages.length === 0 && prev.length > 0) return prev
-        return res.messages
+        // Keep optimistic local agent/note bubbles until the server payload includes them.
+        // Otherwise a failed/partial thread reload makes a just-sent reply disappear.
+        const serverAgentBodies = new Set(
+          res.messages
+            .filter((message) => message.author_role === "agent" && !message.is_internal)
+            .map((message) => message.body.replace(/\s+/g, " ").trim()),
+        )
+        const serverNoteBodies = new Set(
+          res.messages
+            .filter((message) => message.is_internal)
+            .map((message) => message.body.replace(/\s+/g, " ").trim()),
+        )
+        const pendingLocal = prev.filter((message) => {
+          if (!message.id.startsWith("local-")) return false
+          const body = message.body.replace(/\s+/g, " ").trim()
+          if (message.is_internal) return !serverNoteBodies.has(body)
+          return message.author_role === "agent" && !serverAgentBodies.has(body)
+        })
+        if (pendingLocal.length === 0) return res.messages
+        return [...res.messages, ...pendingLocal].sort(
+          (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+        )
       })
       setThreadEvents(res.events)
     })
