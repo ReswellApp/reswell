@@ -4,6 +4,7 @@ import { describe, it } from "node:test"
 import type { SupportCaseMessageRow } from "@/lib/db/supportCases"
 import { formatSupportTicketOpeningMessage } from "@/lib/services/supportTicketThreadNotifications"
 import {
+  resolveSupportCaseOpeningBody,
   restoreSupportThreadHistory,
   supportThreadHasReadableHistory,
 } from "./support-case-thread-history.ts"
@@ -150,5 +151,98 @@ describe("restoreSupportThreadHistory", () => {
     })
 
     assert.equal(restored.filter((row) => row.author_role === "customer").length, 1)
+  })
+
+  it("keeps a canonical agent reply when leftover mis-tags the same body as customer", () => {
+    const reply = "Hi — we are working on refunding that accidental second order now."
+    const restored = restoreSupportThreadHistory({
+      existing: [
+        message({
+          id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+          author_role: "agent",
+          body: reply,
+          author_user_id: STAFF_ID,
+          created_at: "2026-10-01T14:00:00.000Z",
+        }),
+      ],
+      leftover: [
+        {
+          id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+          sender_id: MEMBER_ID,
+          content: reply,
+          created_at: "2026-10-01T14:00:00.000Z",
+        },
+      ],
+      requesterUserId: MEMBER_ID,
+      caseId: CASE_ID,
+      openingBody: reply,
+      createdAt: "2026-10-01T12:00:00.000Z",
+    })
+
+    assert.equal(restored.length, 1)
+    assert.equal(restored[0]?.author_role, "agent")
+    assert.equal(restored[0]?.body, reply)
+  })
+
+  it("does not seed the latest staff preview as a fake customer opening", () => {
+    const reply = "Thanks for reaching out — Reswell Team"
+    const restored = restoreSupportThreadHistory({
+      existing: [
+        message({
+          id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+          author_role: "agent",
+          body: reply,
+          author_user_id: STAFF_ID,
+        }),
+      ],
+      leftover: [],
+      requesterUserId: MEMBER_ID,
+      caseId: CASE_ID,
+      openingBody: reply,
+      createdAt: "2026-10-01T12:00:00.000Z",
+    })
+
+    assert.equal(restored.length, 1)
+    assert.equal(restored[0]?.author_role, "agent")
+    assert.equal(
+      restored.some((row) => row.author_role === "customer"),
+      false,
+    )
+  })
+})
+
+describe("resolveSupportCaseOpeningBody", () => {
+  it("prefers the contact/order request over the live case preview", () => {
+    assert.equal(
+      resolveSupportCaseOpeningBody({
+        preview: "Thanks — we refunded that order. Reswell Team",
+        contactMessage: "I accidentally placed a second order",
+      }),
+      "I accidentally placed a second order",
+    )
+    assert.equal(
+      resolveSupportCaseOpeningBody({
+        preview: "Staff reply preview",
+        orderBody: "Board dinged in transit",
+      }),
+      "Board dinged in transit",
+    )
+  })
+
+  it("skips preview when it already matches a staff reply in the thread", () => {
+    const reply = "Thanks for reaching out — Reswell Team"
+    assert.equal(
+      resolveSupportCaseOpeningBody({
+        preview: reply,
+        existing: [
+          {
+            author_role: "agent",
+            body: reply,
+            is_internal: false,
+          },
+        ],
+      }),
+      "",
+    )
   })
 })

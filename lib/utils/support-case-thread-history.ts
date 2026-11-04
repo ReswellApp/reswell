@@ -12,12 +12,24 @@ export type LeftoverSupportDmMessage = {
   created_at: string
 }
 
-function normalizedBody(body: string): string {
+export function normalizedSupportMessageBody(body: string): string {
   return body.replace(/\s+/g, " ").trim()
 }
 
+/**
+ * Public customer/agent chat lines dedupe by body only so a leftover DM with the
+ * wrong author_role cannot re-introduce the same reply on the opposite side.
+ * Canonical `existing` rows are pushed first and win.
+ */
 function historyKey(message: Pick<SupportCaseMessageRow, "author_role" | "body" | "is_internal">): string {
-  return `${message.is_internal ? "internal" : "public"}:${message.author_role}:${normalizedBody(message.body)}`
+  const body = normalizedSupportMessageBody(message.body)
+  if (
+    !message.is_internal &&
+    (message.author_role === "customer" || message.author_role === "agent")
+  ) {
+    return `public:chat:${body}`
+  }
+  return `${message.is_internal ? "internal" : "public"}:${message.author_role}:${body}`
 }
 
 export function supportThreadHasReadableHistory(
@@ -27,7 +39,7 @@ export function supportThreadHasReadableHistory(
     (message) =>
       !message.is_internal &&
       (message.author_role === "customer" || message.author_role === "agent") &&
-      normalizedBody(message.body).length > 0 &&
+      normalizedSupportMessageBody(message.body).length > 0 &&
       !isSupportStatusUpdateMessage(message.body),
   )
 }
@@ -102,6 +114,38 @@ export function seedOpeningSupportCaseMessage(args: {
 }
 
 /**
+ * Prefer the immutable contact/order request body. `support_cases.preview` tracks
+ * the latest snippet and becomes the staff reply after an admin sends — never use
+ * that as the customer opening when a sidecar body exists, and skip it when it
+ * already matches a staff reply in the thread.
+ */
+export function resolveSupportCaseOpeningBody(args: {
+  preview: string | null | undefined
+  contactMessage?: string | null
+  orderBody?: string | null
+  existing?: Array<Pick<SupportCaseMessageRow, "author_role" | "body" | "is_internal">>
+}): string {
+  const fromContact = normalizedSupportMessageBody(args.contactMessage ?? "")
+  if (fromContact) return fromContact
+
+  const fromOrder = normalizedSupportMessageBody(args.orderBody ?? "")
+  if (fromOrder) return fromOrder
+
+  const preview = normalizedSupportMessageBody(args.preview ?? "")
+  if (!preview) return ""
+
+  const matchesAgent = (args.existing ?? []).some(
+    (message) =>
+      message.author_role === "agent" &&
+      !message.is_internal &&
+      normalizedSupportMessageBody(message.body) === preview,
+  )
+  if (matchesAgent) return ""
+
+  return preview
+}
+
+/**
  * Keep resolved / migrated help threads readable. Canonical rows stay first;
  * leftover dual-written support DMs fill gaps, and the original request is
  * seeded when nothing else remains.
@@ -118,7 +162,7 @@ export function restoreSupportThreadHistory(args: {
   const seen = new Set<string>()
 
   const push = (message: SupportCaseMessageRow | null) => {
-    if (!message || !normalizedBody(message.body)) return
+    if (!message || !normalizedSupportMessageBody(message.body)) return
     const key = historyKey(message)
     if (seen.has(key)) return
     seen.add(key)
@@ -137,14 +181,23 @@ export function restoreSupportThreadHistory(args: {
   }
 
   if (!supportThreadHasReadableHistory(merged)) {
-    push(
-      seedOpeningSupportCaseMessage({
-        caseId: args.caseId,
-        requesterUserId: args.requesterUserId,
-        body: args.openingBody ?? "",
-        createdAt: args.createdAt,
-      }),
+    const opening = normalizedSupportMessageBody(args.openingBody ?? "")
+    const openingMatchesAgent = merged.some(
+      (message) =>
+        message.author_role === "agent" &&
+        !message.is_internal &&
+        normalizedSupportMessageBody(message.body) === opening,
     )
+    if (opening && !openingMatchesAgent) {
+      push(
+        seedOpeningSupportCaseMessage({
+          caseId: args.caseId,
+          requesterUserId: args.requesterUserId,
+          body: opening,
+          createdAt: args.createdAt,
+        }),
+      )
+    }
   }
 
   return merged.sort(
