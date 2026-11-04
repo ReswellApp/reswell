@@ -11,6 +11,7 @@ import {
 import type { SupportCaseThreadMessage } from "@/lib/services/supportCaseThread"
 import { isSupportStatusUpdateMessage } from "@/lib/messages/parse-support-thread-message"
 import { displaySupportCaseSystemBody, SUPPORT_DESK_NAME } from "@/lib/utils/support-case-display"
+import { normalizedSupportMessageBody } from "@/lib/utils/support-case-thread-history"
 import { MessageComposerBar } from "@/components/features/messages/message-composer-bar"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -27,6 +28,8 @@ type SupportCaseThreadProps = {
   seedMode?: "fill-empty" | "replace"
   originalRequest?: { body: string; createdAt: string; name: string } | null
   staffNames?: Record<string, string>
+  /** Case requester — used so staff-authored rows stay on the agent side. */
+  requesterUserId?: string | null
   counterpartLabel?: string
 }
 
@@ -36,10 +39,35 @@ function deskTime(value: string): string {
     .replace(/ seconds?/, " sec")
 }
 
-function bubbleAlign(authorRole: SupportCaseThreadMessage["author_role"], viewer: "member" | "staff") {
-  if (authorRole === "system") return "center"
-  if (viewer === "member") return authorRole === "customer" ? "end" : "start"
-  return authorRole === "agent" ? "end" : "start"
+/** Staff/agent replies → right for staff viewers; customer → left. */
+function messageIsFromAgent(
+  message: SupportCaseThreadMessage,
+  staffNames?: Record<string, string>,
+  requesterUserId?: string | null,
+): boolean {
+  if (message.author_role === "agent") return true
+  if (message.author_role === "system" || message.is_internal) return false
+  // Mis-tagged staff rows still belong on the agent side.
+  if (
+    message.author_user_id &&
+    staffNames?.[message.author_user_id] &&
+    message.author_user_id !== requesterUserId
+  ) {
+    return true
+  }
+  return false
+}
+
+function bubbleAlign(
+  message: SupportCaseThreadMessage,
+  viewer: "member" | "staff",
+  staffNames?: Record<string, string>,
+  requesterUserId?: string | null,
+) {
+  if (message.author_role === "system") return "center"
+  const fromAgent = messageIsFromAgent(message, staffNames, requesterUserId)
+  if (viewer === "member") return fromAgent ? "start" : "end"
+  return fromAgent ? "end" : "start"
 }
 
 function authorLabel(
@@ -47,14 +75,17 @@ function authorLabel(
   viewer: "member" | "staff",
   staffNames?: Record<string, string>,
   counterpartLabel = "Member",
+  requesterUserId?: string | null,
 ): string {
   if (message.is_internal) return "Internal note"
   if (message.author_role === "system") return "System"
-  if (message.author_role === "customer") return viewer === "member" ? "You" : counterpartLabel
-  if (message.author_user_id && staffNames?.[message.author_user_id]) {
-    return staffNames[message.author_user_id] ?? "Support"
+  if (messageIsFromAgent(message, staffNames, requesterUserId)) {
+    if (message.author_user_id && staffNames?.[message.author_user_id]) {
+      return staffNames[message.author_user_id] ?? "Support"
+    }
+    return viewer === "staff" ? "You" : "Support"
   }
-  return viewer === "staff" ? "You" : "Support"
+  return viewer === "member" ? "You" : counterpartLabel
 }
 
 export function SupportCaseThread({
@@ -67,6 +98,7 @@ export function SupportCaseThread({
   seedMode = "replace",
   originalRequest = null,
   staffNames,
+  requesterUserId = null,
   counterpartLabel = "Member",
 }: SupportCaseThreadProps) {
   const [localMessages, setLocalMessages] = useState(initial)
@@ -100,8 +132,19 @@ export function SupportCaseThread({
       role === "staff"
         ? withoutWorkflowEvents
         : withoutWorkflowEvents.filter((message) => !message.is_internal)
-    const hasCustomer = visible.some((message) => message.author_role === "customer" && !message.is_internal)
-    if (hasCustomer || !originalRequest?.body.trim()) return visible
+    const hasCustomer = visible.some(
+      (message) =>
+        !message.is_internal &&
+        !messageIsFromAgent(message, staffNames, requesterUserId) &&
+        message.author_role !== "system",
+    )
+    const opening = normalizedSupportMessageBody(originalRequest?.body ?? "")
+    const openingMatchesAgent = visible.some(
+      (message) =>
+        messageIsFromAgent(message, staffNames, requesterUserId) &&
+        normalizedSupportMessageBody(message.body) === opening,
+    )
+    if (hasCustomer || !opening || openingMatchesAgent || !originalRequest) return visible
     return [
       {
         id: `original-${caseId}`,
@@ -114,7 +157,7 @@ export function SupportCaseThread({
       },
       ...visible,
     ]
-  }, [messages, role, originalRequest, caseId])
+  }, [messages, role, originalRequest, caseId, staffNames, requesterUserId])
 
   useEffect(() => {
     const el = listRef.current
@@ -190,10 +233,10 @@ export function SupportCaseThread({
               )
             }
 
-            const align = bubbleAlign(message.author_role, role)
+            const align = bubbleAlign(message, role, staffNames, requesterUserId)
             const mine = align === "end"
             const note = message.is_internal
-            const fromSupport = message.author_role === "agent"
+            const fromSupport = messageIsFromAgent(message, staffNames, requesterUserId)
 
             return (
               <div
@@ -230,7 +273,13 @@ export function SupportCaseThread({
                   >
                     {member && fromSupport
                       ? SUPPORT_DESK_NAME
-                      : authorLabel(message, role, staffNames, counterpartLabel)}
+                      : authorLabel(
+                          message,
+                          role,
+                          staffNames,
+                          counterpartLabel,
+                          requesterUserId,
+                        )}
                     {" · "}
                     {deskTime(message.created_at)}
                   </p>

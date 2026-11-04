@@ -28,7 +28,10 @@ import { markSupportCaseReadForMember } from "@/lib/services/supportUnread"
 import { recordSentSupportReplyExample, scheduleSupportReplyDraft } from "@/lib/services/supportReplyDraft"
 import { isLiveChatSupportChannel } from "@/lib/utils/support-ticket-display"
 import { humanizeSupportCasePreview } from "@/lib/utils/humanize-support-case-preview"
-import { restoreSupportThreadHistory } from "@/lib/utils/support-case-thread-history"
+import {
+  resolveSupportCaseOpeningBody,
+  restoreSupportThreadHistory,
+} from "@/lib/utils/support-case-thread-history"
 
 export type SupportCaseThreadMessage = SupportCaseMessageRow
 
@@ -102,26 +105,30 @@ async function messagesForSupportCaseThread(
 ): Promise<SupportCaseThreadMessage[]> {
   const existing = await listSupportCaseMessages(reader, row.id, opts)
   let leftoverConversationId: string | null = null
-  let openingBody = humanizeSupportCasePreview(row.preview, 12000)
+  let contactMessage: string | null = null
+  let orderBody: string | null = null
 
   if (row.contact_message_id) {
     const ticket = await getContactMessageRowById(reader, row.contact_message_id)
     leftoverConversationId = ticket?.support_conversation_id ?? leftoverConversationId
-    if (!openingBody) {
-      openingBody = humanizeSupportCasePreview(ticket?.message ?? "", 12000)
-    }
+    contactMessage = ticket?.message ?? null
   }
   if (row.order_support_request_id) {
     const order = await getOrderSupportRequestById(reader, row.order_support_request_id)
     leftoverConversationId = leftoverConversationId ?? order?.support_conversation_id ?? null
-    if (!openingBody) {
-      openingBody = humanizeSupportCasePreview(order?.body ?? "", 12000)
-    }
+    orderBody = order?.body ?? null
   }
 
   const leftover = leftoverConversationId
     ? await listConversationMessageHistory(reader, leftoverConversationId)
     : []
+
+  const openingBody = resolveSupportCaseOpeningBody({
+    preview: humanizeSupportCasePreview(row.preview, 12000),
+    contactMessage: contactMessage ? humanizeSupportCasePreview(contactMessage, 12000) : null,
+    orderBody: orderBody ? humanizeSupportCasePreview(orderBody, 12000) : null,
+    existing,
+  })
 
   return restoreSupportThreadHistory({
     existing,

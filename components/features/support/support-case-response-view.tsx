@@ -41,7 +41,15 @@ export function SupportCaseResponseView({
 }: SupportCaseResponseViewProps) {
   const { title } = splitSupportCaseSubject(subject)
   const open = isSupportCaseOpen(status)
-  const openingBody = humanizeSupportCasePreview(preview, 12000)
+  const customerOpening =
+    messages.find((message) => message.author_role === "customer" && !message.is_internal)
+      ?.body ?? ""
+  // Case preview tracks the latest snippet (often the staff reply) — only use it
+  // before any customer message exists in the thread.
+  const openingBody = humanizeSupportCasePreview(
+    customerOpening || (messages.some((message) => message.author_role === "agent") ? "" : preview),
+    12000,
+  )
   const subtitleParts = [
     title,
     formatSupportCaseReference(caseId),

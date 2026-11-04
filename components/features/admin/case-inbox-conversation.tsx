@@ -230,12 +230,21 @@ export function CaseInboxConversation({
             role="staff"
             closed={!item.isOpen}
             staffNames={staffNames}
+            requesterUserId={item.userId}
             counterpartLabel={item.fromName}
             originalRequest={
               item.openedBy === "staff"
                 ? null
                 : {
-                    body: firstNonEmptyText(item.order?.body, item.contact?.message, item.preview),
+                    // Never fall back to item.preview — it becomes the staff reply after send.
+                    body: firstNonEmptyText(
+                      item.order?.body,
+                      item.contact?.message,
+                      messages.find(
+                        (message) =>
+                          message.author_role === "customer" && !message.is_internal,
+                      )?.body,
+                    ),
                     createdAt: item.createdAt,
                     name: item.fromName,
                   }
