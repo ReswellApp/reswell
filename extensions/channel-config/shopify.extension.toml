@@ -2,6 +2,7 @@
 # Deploy with: shopify app deploy
 # After first deploy, Shopify CLI may write a uid — commit that change.
 [[extensions]]
+name = "Reswell channel config"
 type = "channel_config"
 handle = "channel-config"
 # Keep legacy auto-channel until channelCreate is proven on every install path.

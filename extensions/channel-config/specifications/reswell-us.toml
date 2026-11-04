@@ -1,4 +1,5 @@
 handle = "reswell-us"
+name = "Reswell"
 label = "Reswell"
 icon = "reswell-channel-icon.svg"
 productFeedManagement = "automatic"
