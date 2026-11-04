@@ -3,6 +3,7 @@ import type { AccountRole } from "@/lib/account-access/permissions"
 import { coastalShipperMembership } from "@/lib/services/coastalShipperAccess"
 import { getShopAccountContext } from "@/lib/services/accountAccess"
 import { dropoffLocationMembership } from "@/lib/services/dropoffLocationAccess"
+import { accountHasShopifyNavLink } from "@/lib/services/shopifyNavAccess"
 import { reconcileWalletAggregates, walletAggregateStrings } from "@/lib/wallet-reconcile"
 import {
   persistWalletAggregatesIfNeeded,
@@ -24,7 +25,7 @@ export interface HeaderShopAccessOption {
   accountId: string
   label: string
   role: AccountRole
-  /** Set when the header loaded this row in the browser. Drives the Shopify link after a switch. */
+  /** Linked Shopify store for this account — drives the Shopify nav link after a switch. */
   shopifyConnectEnabled?: boolean
 }
 
@@ -97,6 +98,9 @@ export async function fetchHeaderSiteBootstrap(
       }
     }
   }
+  const hasShopifyAccess = shop
+    ? await accountHasShopifyNavLink(shop.accountId)
+    : false
   return {
     profile,
     unreadMessages: Number(profile?.unread_message_count ?? 0),
@@ -119,7 +123,7 @@ export async function fetchHeaderSiteBootstrap(
           role: shop.role,
           actorEmail: shop.actorEmail,
           showEarnings: shop.permissions.has("payouts.read"),
-          hasShopifyAccess: shop.shopifyConnectEnabled,
+          hasShopifyAccess,
           options: shop.options.map((option) => ({
             accountId: option.accountId,
             label: option.label,

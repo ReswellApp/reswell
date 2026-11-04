@@ -15,7 +15,6 @@ export type ShopifyConnectInstallDecision =
   | { action: "continue_claim" }
   | { action: "reject_install" }
   | { action: "sign_in"; returnPath: string; shopDomain: string }
-  | { action: "request_access"; shopDomain: string }
   | { action: "install_unavailable" }
   | { action: "start_public_install"; shopDomain: string }
 
@@ -92,12 +91,13 @@ export function shopifyLinkSkipsReinstall(
 export function decideShopifyConnectInstall(input: {
   launch: ShopifyInstallLaunch
   signedIn: boolean
-  shopifyConnectEnabled: boolean
   publicInstallAvailable: boolean
 }): ShopifyConnectInstallDecision {
   if (input.launch.kind === "absent") return { action: "continue_claim" }
   if (input.launch.kind === "rejected") return { action: "reject_install" }
 
+  // Any Reswell account can finish an App Store install. Do not gate on
+  // profiles.shopify_connect_enabled — that blocked Shopify app review.
   if (input.publicInstallAvailable) {
     return {
       action: "start_public_install",
@@ -111,7 +111,5 @@ export function decideShopifyConnectInstall(input: {
       shopDomain: input.launch.shopDomain,
     }
   }
-  return input.shopifyConnectEnabled
-    ? { action: "install_unavailable" }
-    : { action: "request_access", shopDomain: input.launch.shopDomain }
+  return { action: "install_unavailable" }
 }

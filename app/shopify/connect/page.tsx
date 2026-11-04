@@ -15,7 +15,6 @@ import {
   decideShopifyConnectInstall,
   assessShopifyInstallLaunch,
 } from "@/lib/shopify/install-launch"
-import { getShopifyAccessRequestState } from "@/lib/services/shopifyAccessRequest"
 import { previewShopifyPendingClaim } from "@/lib/services/shopifyClaim"
 import {
   isShopifyStoreLinkedForLaunch,
@@ -80,11 +79,9 @@ export default async function ShopifyConnectPage({
 
   if (launch.kind === "verified") {
     const { user } = await getCachedDashboardSession()
-    const access = user ? await getShopifyAccessRequestState(user.id) : null
     const decision = decideShopifyConnectInstall({
       launch,
       signedIn: Boolean(user),
-      shopifyConnectEnabled: access?.shopifyConnectEnabled === true,
       publicInstallAvailable:
         isShopifyPublicOAuthEnabled() && isShopifyPublicOAuthConfigured(),
     })
@@ -123,21 +120,6 @@ export default async function ShopifyConnectPage({
       )
     }
 
-    if (decision.action === "request_access" && user) {
-      return (
-        <ShopifyConsentShell>
-          <ShopifyClaimPanel
-            preview={null}
-            userEmail={user.email ?? null}
-            shopifyConnectEnabled={false}
-            accessRequested={Boolean(access?.requestedAt)}
-            callbackError={false}
-            installLaunchShop={decision.shopDomain}
-          />
-        </ShopifyConsentShell>
-      )
-    }
-
     return (
       <InstallProblem
         title="Shopify install is unavailable"
@@ -164,15 +146,11 @@ export default async function ShopifyConnectPage({
     )
   }
 
-  const access = await getShopifyAccessRequestState(user.id)
-
   return (
     <ShopifyConsentShell>
       <ShopifyClaimPanel
         preview={preview}
         userEmail={user.email ?? null}
-        shopifyConnectEnabled={access.shopifyConnectEnabled}
-        accessRequested={Boolean(access.requestedAt)}
         callbackError={params.get("error") === "connection_failed"}
       />
     </ShopifyConsentShell>

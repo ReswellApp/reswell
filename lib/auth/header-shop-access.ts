@@ -55,6 +55,7 @@ interface MembershipInput {
   accountId: string
   role: "manager" | "staff"
   label: string
+  /** Linked Shopify store — drives nav, not the old approval flag. */
   shopifyConnectEnabled: boolean
 }
 
@@ -67,6 +68,7 @@ export function buildHeaderShopAccess(input: {
   email: string | null
   actorLabel: string
   activeShopAccountId: string | null
+  /** True when the personal account has a linked Shopify store. */
   actorShopifyConnectEnabled: boolean
   memberships: MembershipInput[]
 }): HeaderShopAccess {
@@ -160,15 +162,15 @@ export function headerShopAccessFromRows(input: {
   actor: Record<string, unknown> | null
   memberships: unknown
   profiles: unknown
+  /** Account ids with a claimed App Store Shopify link. */
+  linkedShopifyAccountIds?: ReadonlySet<string>
 }): HeaderShopAccess {
-  const labels = new Map<string, { label: string; shopifyConnectEnabled: boolean }>()
+  const linked = input.linkedShopifyAccountIds ?? new Set<string>()
+  const labels = new Map<string, string>()
   for (const row of asRows(input.profiles)) {
     const id = readString(row.id)
     if (!id) continue
-    labels.set(id, {
-      label: profileLabel(row),
-      shopifyConnectEnabled: row.shopify_connect_enabled === true,
-    })
+    labels.set(id, profileLabel(row))
   }
 
   const memberships: MembershipInput[] = []
@@ -176,12 +178,11 @@ export function headerShopAccessFromRows(input: {
     const accountId = readString(row.account_id)
     const role = readRole(row.role)
     if (!accountId || !role) continue
-    const known = labels.get(accountId)
     memberships.push({
       accountId,
       role,
-      label: known?.label ?? "Shop",
-      shopifyConnectEnabled: known?.shopifyConnectEnabled === true,
+      label: labels.get(accountId) ?? "Shop",
+      shopifyConnectEnabled: linked.has(accountId),
     })
   }
 
@@ -190,7 +191,7 @@ export function headerShopAccessFromRows(input: {
     email: input.email,
     actorLabel: readString(input.actor?.display_name) ?? "Personal",
     activeShopAccountId: readString(input.actor?.active_shop_account_id ?? null),
-    actorShopifyConnectEnabled: input.actor?.shopify_connect_enabled === true,
+    actorShopifyConnectEnabled: linked.has(input.userId),
     memberships,
   })
 }
@@ -207,7 +208,7 @@ export async function loadHeaderShopAccess(
   const [actorRes, memberRes] = await Promise.all([
     supabase
       .from("profiles")
-      .select("active_shop_account_id, shop_name, display_name, email, shopify_connect_enabled")
+      .select("active_shop_account_id, shop_name, display_name, email")
       .eq("id", userId)
       .maybeSingle(),
     supabase
@@ -238,7 +239,7 @@ export async function loadHeaderShopAccess(
   if (accountIds.length > 0) {
     const labelRes = await supabase
       .from("profiles")
-      .select("id, shop_name, display_name, email, shopify_connect_enabled")
+      .select("id, shop_name, display_name, email")
       .in("id", accountIds)
     if (labelRes.error) {
       console.warn("[header] shop labels failed", labelRes.error.message)
@@ -252,6 +253,15 @@ export async function loadHeaderShopAccess(
       ? (actorRes.data as Record<string, unknown>)
       : null
 
+  // Dynamic import keeps pure header builders free of Next/server deps in unit tests.
+  const { accountIdsWithShopifyNavLink } = await import(
+    "@/lib/services/shopifyNavAccess"
+  )
+  const linkedShopifyAccountIds = await accountIdsWithShopifyNavLink([
+    userId,
+    ...accountIds,
+  ])
+
   return {
     ok: true,
     access: headerShopAccessFromRows({
@@ -260,6 +270,7 @@ export async function loadHeaderShopAccess(
       actor,
       memberships: memberRes.data,
       profiles,
+      linkedShopifyAccountIds,
     }),
   }
 }

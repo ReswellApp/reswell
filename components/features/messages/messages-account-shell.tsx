@@ -11,6 +11,8 @@ import { cn } from "@/lib/utils"
 import { MessagesAccountShellClient } from "@/components/features/messages/messages-account-shell-client"
 import { coastalShipperMembership } from "@/lib/services/coastalShipperAccess"
 import { dropoffLocationMembership } from "@/lib/services/dropoffLocationAccess"
+import { getShopAccountContext } from "@/lib/services/accountAccess"
+import { accountHasShopifyNavLink } from "@/lib/services/shopifyNavAccess"
 
 export async function MessagesAccountShell({ children }: { children: React.ReactNode }) {
   const { supabase, user } = await getCachedDashboardSession()
@@ -21,11 +23,12 @@ export async function MessagesAccountShell({ children }: { children: React.React
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("is_shop, is_admin, seller_slug, shopify_connect_enabled")
+    .select("is_shop, is_admin, seller_slug")
     .eq("id", user.id)
     .single()
 
   const shopHref = profile?.is_shop ? sellerProfileHref(profile) : null
+  const shop = await getShopAccountContext()
   const [{ data: shipperRow, error: shipperError }, { data: dropoffRow, error: dropoffError }] =
     await Promise.all([
       supabase.from("coastal_shippers").select("id").eq("user_id", user.id).maybeSingle(),
@@ -36,7 +39,7 @@ export async function MessagesAccountShell({ children }: { children: React.React
     rowId: dropoffRow?.id,
     queryFailed: Boolean(dropoffError),
   })
-  const hasShopifyAccess = profile?.shopify_connect_enabled === true
+  const hasShopifyAccess = await accountHasShopifyNavLink(shop?.accountId ?? user.id)
 
   return (
     <MessagesAccountShellClient

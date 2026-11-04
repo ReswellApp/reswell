@@ -62,6 +62,35 @@ export async function dbShopifyUserIsEligible(
   return data?.shopify_connect_enabled === true
 }
 
+/** True when this account has a linked Shopify store (nav + deep-link eligibility). */
+export async function dbUserHasLinkedShopifyStore(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<boolean> {
+  const linked = await dbAccountIdsWithLinkedShopifyStore(supabase, [userId])
+  return linked.has(userId)
+}
+
+/** Account ids that still have a non-disconnected Shopify connection. */
+export async function dbAccountIdsWithLinkedShopifyStore(
+  supabase: SupabaseClient,
+  accountIds: string[],
+): Promise<Set<string>> {
+  const ids = [...new Set(accountIds.filter(Boolean))]
+  if (ids.length === 0) return new Set()
+  const { data, error } = await supabase
+    .from("shopify_connections")
+    .select("user_id")
+    .in("user_id", ids)
+    .neq("status", "disconnected")
+  if (error) throw new Error(error.message)
+  const linked = new Set<string>()
+  for (const row of data ?? []) {
+    if (typeof row.user_id === "string" && row.user_id) linked.add(row.user_id)
+  }
+  return linked
+}
+
 export async function dbPeekShopifyOAuthState(
   supabase: SupabaseClient,
   stateHash: string,

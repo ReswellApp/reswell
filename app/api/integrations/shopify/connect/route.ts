@@ -24,9 +24,7 @@ export async function GET(request: NextRequest) {
       )
       return NextResponse.redirect(signInUrl)
     }
-    return dashboardError(
-      auth.response.status === 403 ? "not_approved" : "unavailable",
-    )
+    return dashboardError("unavailable")
   }
 
   const parsed = shopifyConnectQuerySchema.safeParse({
@@ -37,7 +35,7 @@ export async function GET(request: NextRequest) {
     : null
   if (!shopDomain) return dashboardError("invalid_shop")
 
-  if (!auth.canManageConnection) return dashboardError("not_approved")
+  if (!auth.canManageConnection) return dashboardError("unavailable")
 
   try {
     const url = await startShopifyOAuth({

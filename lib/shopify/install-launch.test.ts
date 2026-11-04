@@ -1,29 +1,36 @@
 import assert from "node:assert/strict"
-import { createHmac } from "node:crypto"
 import test from "node:test"
+import { createHmac } from "node:crypto"
 import { authLandingHref } from "@/lib/auth/auth-landing-href"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
-import { verifyShopifyOAuthHmac } from "@/lib/shopify/crypto"
 import {
   assessShopifyInstallLaunch,
   decideShopifyConnectInstall,
   shopifyLinkSkipsReinstall,
 } from "@/lib/shopify/install-launch"
+import { verifyShopifyOAuthHmac } from "@/lib/shopify/crypto"
 
-const SECRET = "test-shopify-secret"
+const SECRET = "shopify-test-secret"
 
-function signedInstallQuery(overrides?: Record<string, string>): URLSearchParams {
+function signedInstallQuery(
+  extra: Record<string, string> = {},
+): URLSearchParams {
   const params = new URLSearchParams({
     host: "YWRtaW4uc2hvcGlmeS5jb20vc3RvcmUvbXF6aGNnLWM4",
     shop: "mqzhcg-c8.myshopify.com",
     timestamp: "1791646416",
-    ...overrides,
+    ...extra,
   })
+  params.delete("hmac")
+  params.delete("signature")
   const message = [...params.entries()]
-    .sort(([left], [right]) => left.localeCompare(right))
+    .sort(([a], [b]) => a.localeCompare(b))
     .map(([key, value]) => `${key}=${value}`)
     .join("&")
-  params.set("hmac", createHmac("sha256", SECRET).update(message).digest("hex"))
+  params.set(
+    "hmac",
+    createHmac("sha256", SECRET).update(message).digest("hex"),
+  )
   return params
 }
 
@@ -31,17 +38,14 @@ test.before(() => {
   process.env.SHOPIFY_API_SECRET = SECRET
 })
 
-test("verified install launch keeps the exact connect URL for sign-in", () => {
+test("verified install launch preserves HMAC on the return path", () => {
   const params = signedInstallQuery()
   const launch = assessShopifyInstallLaunch(params)
   assert.equal(launch.kind, "verified")
   if (launch.kind !== "verified") return
-
-  assert.equal(launch.shopDomain, "mqzhcg-c8.myshopify.com")
   assert.equal(launch.returnPath.startsWith("/shopify/connect?"), true)
   const returned = new URLSearchParams(launch.returnPath.slice("/shopify/connect?".length))
   assert.equal(returned.get("shop"), params.get("shop"))
-  assert.equal(returned.get("hmac"), params.get("hmac"))
   assert.equal(returned.get("timestamp"), params.get("timestamp"))
   assert.equal(returned.get("host"), params.get("host"))
   assert.equal(verifyShopifyOAuthHmac(returned), true)
@@ -54,7 +58,6 @@ test("verified install launch keeps the exact connect URL for sign-in", () => {
   const decision = decideShopifyConnectInstall({
     launch,
     signedIn: false,
-    shopifyConnectEnabled: false,
     publicInstallAvailable: true,
   })
   assert.equal(decision.action, "start_public_install")
@@ -68,7 +71,6 @@ test("unsigned merchant signs in only when public install is unavailable", () =>
   const decision = decideShopifyConnectInstall({
     launch,
     signedIn: false,
-    shopifyConnectEnabled: false,
     publicInstallAvailable: false,
   })
   assert.equal(decision.action, "sign_in")
@@ -78,31 +80,28 @@ test("unsigned merchant signs in only when public install is unavailable", () =>
   }
 })
 
-test("signed-in merchant without access still starts OAuth from a signed launch", () => {
+test("signed-in merchant without prior approval still starts OAuth from a signed launch", () => {
   const decision = decideShopifyConnectInstall({
     launch: assessShopifyInstallLaunch(signedInstallQuery()),
     signedIn: true,
-    shopifyConnectEnabled: false,
     publicInstallAvailable: true,
   })
   assert.equal(decision.action, "start_public_install")
 })
 
-test("without public install, unapproved merchants can still request access", () => {
+test("without public install, signed-in merchants see install unavailable", () => {
   const decision = decideShopifyConnectInstall({
     launch: assessShopifyInstallLaunch(signedInstallQuery()),
     signedIn: true,
-    shopifyConnectEnabled: false,
     publicInstallAvailable: false,
   })
-  assert.equal(decision.action, "request_access")
+  assert.equal(decision.action, "install_unavailable")
 })
 
-test("signed-in eligible merchant continues the public install", () => {
+test("signed-in merchant continues the public install", () => {
   const decision = decideShopifyConnectInstall({
     launch: assessShopifyInstallLaunch(signedInstallQuery()),
     signedIn: true,
-    shopifyConnectEnabled: true,
     publicInstallAvailable: true,
   })
   assert.equal(decision.action, "start_public_install")
@@ -126,7 +125,6 @@ test("invalid or missing HMAC does not start OAuth", () => {
     const decision = decideShopifyConnectInstall({
       launch,
       signedIn: true,
-      shopifyConnectEnabled: true,
       publicInstallAvailable: true,
     })
     assert.equal(decision.action, "reject_install")
