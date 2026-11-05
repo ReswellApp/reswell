@@ -68,6 +68,28 @@ function compactPayoutStatusLine(
   return null
 }
 
+type CashOutNextAction =
+  | "finish_verification"
+  | "manage_banks"
+  | "wait_review"
+  | "contact_support"
+  | "use_standard"
+
+function cashOutNextActionLabel(nextAction: CashOutNextAction): string {
+  switch (nextAction) {
+    case "finish_verification":
+      return "Finish verification"
+    case "manage_banks":
+      return "Manage banks"
+    case "wait_review":
+      return "Got it"
+    case "contact_support":
+      return "Contact support"
+    case "use_standard":
+      return "Use standard"
+  }
+}
+
 interface StripeTransferHistoryRow {
   id: string
   amount: string | number
@@ -159,11 +181,13 @@ export function StripeBankPayoutSection({
   const [defaultBusyId, setDefaultBusyId] = useState<string | null>(null)
   /** Selected Stripe `ba_` id for the cash-out dialog (must match a linked bank when sent to the API). */
   const [cashOutDestinationId, setCashOutDestinationId] = useState("")
-  /** Full-screen layer inside the cash-out dialog for readable payout errors (replaces easy-to-miss toasts). */
+  /** Full-screen layer inside the cash-out dialog for readable payout errors (pairs with actionable toasts). */
   const [cashOutError, setCashOutError] = useState<{
     title: string
     detail: string
     errorCode?: string
+    nextAction?: CashOutNextAction
+    requirementsChecklist?: string[]
   } | null>(null)
 
   const bankRows: StripeConnectBankAccountRow[] = useMemo(() => {
@@ -227,77 +251,6 @@ export function StripeBankPayoutSection({
     return netUsdAfterInstantBankFee(parsedAmount)
   }, [payoutSpeed, parsedAmount])
 
-  const submitCashOut = useCallback(async () => {
-    const amount = parseFloat(amountStr)
-    if (!Number.isFinite(amount) || amount < 10) {
-      toast.error("Enter at least $10.00")
-      return
-    }
-    setSubmitting(true)
-    try {
-      const payload: { amount: number; speed: typeof payoutSpeed; externalAccountId?: string } = {
-        amount,
-        speed: payoutSpeed,
-      }
-      if (cashOutDestinationId.trim().startsWith("ba_")) {
-        payload.externalAccountId = cashOutDestinationId.trim()
-      }
-
-      const res = await fetch("/api/payouts/stripe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      })
-      const data = (await res.json()) as {
-        error?: string
-        errorDetail?: string
-        errorCode?: string
-        message?: string
-        amountUsd?: number
-        availableBalanceAfter?: number
-        lifetimeCashedOutAfter?: number
-        speed?: "standard" | "instant"
-      }
-      if (!res.ok) {
-        const err = data.error ?? "Payout failed"
-        const detail = data.errorDetail?.trim()
-        if (detail) {
-          setCashOutError({
-            title: err,
-            detail,
-            errorCode: data.errorCode,
-          })
-        } else {
-          toast.error(err, { duration: 20_000 })
-        }
-        await onRefresh()
-        return
-      }
-      const amountUsd = Number(data.amountUsd)
-      const availableBalanceAfter = Number(data.availableBalanceAfter)
-      const lifetimeCashedOutAfter = Number(data.lifetimeCashedOutAfter)
-      if (
-        Number.isFinite(amountUsd) &&
-        Number.isFinite(availableBalanceAfter) &&
-        Number.isFinite(lifetimeCashedOutAfter)
-      ) {
-        onCashOutSettled?.({
-          amountUsd,
-          availableBalanceAfter,
-          lifetimeCashedOutAfter,
-          speed: data.speed ?? "standard",
-        })
-      }
-      setCashOpen(false)
-      await onRefresh()
-    } catch {
-      toast.error("Something went wrong. Try again.", { duration: 20_000 })
-      await onRefresh()
-    } finally {
-      setSubmitting(false)
-    }
-  }, [amountStr, payoutSpeed, cashOutDestinationId, onRefresh, onCashOutSettled])
-
   const setDefaultBank = useCallback(
     async (externalAccountId: string) => {
       setDefaultBusyId(externalAccountId)
@@ -333,6 +286,126 @@ export function StripeBankPayoutSection({
   const openPayoutManagement = useCallback(() => {
     openPayoutSetup(true)
   }, [openPayoutSetup])
+
+  const runCashOutNextAction = useCallback(
+    (nextAction: CashOutNextAction) => {
+      if (nextAction === "use_standard") {
+        setPayoutSpeed("standard")
+        setCashOutError(null)
+        return
+      }
+      if (nextAction === "wait_review") {
+        setCashOutError(null)
+        return
+      }
+      if (nextAction === "contact_support") {
+        setCashOpen(false)
+        setCashOutError(null)
+        window.location.assign("/contact")
+        return
+      }
+      setCashOpen(false)
+      setCashOutError(null)
+      if (nextAction === "manage_banks") {
+        openPayoutSetup(true)
+        return
+      }
+      openPayoutSetup(false)
+    },
+    [openPayoutSetup],
+  )
+
+  const submitCashOut = useCallback(async () => {
+    const amount = parseFloat(amountStr)
+    if (!Number.isFinite(amount) || amount < 10) {
+      toast.error("Enter at least $10.00")
+      return
+    }
+    setSubmitting(true)
+    try {
+      const payload: { amount: number; speed: typeof payoutSpeed; externalAccountId?: string } = {
+        amount,
+        speed: payoutSpeed,
+      }
+      if (cashOutDestinationId.trim().startsWith("ba_")) {
+        payload.externalAccountId = cashOutDestinationId.trim()
+      }
+
+      const res = await fetch("/api/payouts/stripe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+      const data = (await res.json()) as {
+        error?: string
+        errorDetail?: string
+        errorCode?: string
+        nextAction?: CashOutNextAction
+        requirementsChecklist?: string[]
+        message?: string
+        amountUsd?: number
+        availableBalanceAfter?: number
+        lifetimeCashedOutAfter?: number
+        speed?: "standard" | "instant"
+      }
+      if (!res.ok) {
+        const err = data.error ?? "Payout failed"
+        const detail = data.errorDetail?.trim()
+        const nextAction = data.nextAction
+        const requirements = data.requirementsChecklist?.filter(Boolean) ?? []
+        const description =
+          detail ||
+          (requirements.length > 0 ? `Still needed: ${requirements.join(", ")}.` : undefined)
+
+        if (detail || nextAction) {
+          setCashOutError({
+            title: err,
+            detail: detail || err,
+            errorCode: data.errorCode,
+            nextAction,
+            requirementsChecklist: requirements,
+          })
+        }
+
+        toast.error(err, {
+          description,
+          duration: 20_000,
+          ...(nextAction
+            ? {
+                action: {
+                  label: cashOutNextActionLabel(nextAction),
+                  onClick: () => runCashOutNextAction(nextAction),
+                },
+              }
+            : {}),
+        })
+        await onRefresh()
+        return
+      }
+      const amountUsd = Number(data.amountUsd)
+      const availableBalanceAfter = Number(data.availableBalanceAfter)
+      const lifetimeCashedOutAfter = Number(data.lifetimeCashedOutAfter)
+      if (
+        Number.isFinite(amountUsd) &&
+        Number.isFinite(availableBalanceAfter) &&
+        Number.isFinite(lifetimeCashedOutAfter)
+      ) {
+        onCashOutSettled?.({
+          amountUsd,
+          availableBalanceAfter,
+          lifetimeCashedOutAfter,
+          speed: data.speed ?? "standard",
+        })
+      }
+      setCashOpen(false)
+      await onRefresh()
+    } catch {
+      toast.error("Something went wrong. Try again.", { duration: 20_000 })
+      await onRefresh()
+    } finally {
+      setSubmitting(false)
+    }
+  }, [amountStr, payoutSpeed, cashOutDestinationId, onRefresh, onCashOutSettled, runCashOutNextAction])
 
   const refreshConnectStatusAfterSetup = useCallback(async () => {
     let lastStatus: StripeConnectStatusPayload | null = null
@@ -371,9 +444,13 @@ export function StripeBankPayoutSection({
       lastStatus?.cashOutReady &&
       (lastStatus.upcomingRequirementsChecklist?.length ?? 0) > 0
     ) {
-      toast.message("Stripe still needs a few details", {
-        description: `${lastStatus.upcomingRequirementsChecklist.join(", ")}. Open Update info to finish before payouts are restricted.`,
-        duration: 14_000,
+      toast.error("Stripe still needs a few details", {
+        description: `${lastStatus.upcomingRequirementsChecklist.join(", ")}. Finish these before payouts are restricted.`,
+        duration: 16_000,
+        action: {
+          label: "Update info",
+          onClick: () => openPayoutSetup(false),
+        },
       })
     } else if (lastStatus?.cashOutReady) {
       toast.success("Payout verification complete — you can cash out now.")
@@ -383,20 +460,37 @@ export function StripeBankPayoutSection({
         duration: 12_000,
       })
     } else if (lastStatus?.setupStatus === "restricted") {
-      toast.message("Stripe paused payouts on this account", {
-        description: "There is nothing left to submit. Contact support if this continues.",
-        duration: 12_000,
+      toast.error("Stripe paused payouts on this account", {
+        description: "There is nothing left to submit in Stripe. Contact support if this continues.",
+        duration: 16_000,
+        action: {
+          label: "Contact support",
+          onClick: () => window.location.assign("/contact"),
+        },
       })
     } else if (
       lastStatus?.setupStatus === "action_required" &&
       (lastStatus.requirementsChecklist?.length ?? 0) > 0
     ) {
-      toast.message("Stripe still needs a few details", {
-        description: `${lastStatus.requirementsChecklist.join(", ")}. Open Finish verification again to continue.`,
-        duration: 14_000,
+      toast.error("Stripe still needs a few details", {
+        description: `${lastStatus.requirementsChecklist.join(", ")}. Finish verification to unlock cash out.`,
+        duration: 16_000,
+        action: {
+          label: "Finish verification",
+          onClick: () => openPayoutSetup(false),
+        },
+      })
+    } else if (lastStatus?.setupStatus === "action_required") {
+      toast.error("Finish Stripe verification to cash out", {
+        description: lastStatus.verificationMessage ?? "Open Finish verification and complete any remaining steps.",
+        duration: 16_000,
+        action: {
+          label: "Finish verification",
+          onClick: () => openPayoutSetup(false),
+        },
       })
     }
-  }, [onRefresh])
+  }, [onRefresh, openPayoutSetup])
 
   const confirmRemoveBank = useCallback(async () => {
     const target = removeTarget
@@ -745,9 +839,17 @@ export function StripeBankPayoutSection({
           className="sm:max-w-md gap-0 overflow-hidden p-0"
           showCloseButton={!cashOutError}
         >
-          <div className="relative p-6">
+          {/*
+            Keep DialogContent overflow-hidden so the error overlay can cover the form.
+            Scroll lives on an inner pane — without it, Instant / multi-bank choices grow
+            past the viewport on short Android screens and Confirm transfer is unreachable.
+          */}
+          <div className="relative max-h-[min(85vh,calc(100dvh-1.5rem))]">
             <div
-              className={cn(cashOutError && "pointer-events-none select-none")}
+              className={cn(
+                "max-h-[min(85vh,calc(100dvh-1.5rem))] overflow-y-auto overscroll-contain p-6",
+                cashOutError && "pointer-events-none select-none",
+              )}
               inert={cashOutError ? true : undefined}
             >
               <DialogHeader>
@@ -768,156 +870,156 @@ export function StripeBankPayoutSection({
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 pt-2">
-              {banksWithStripeIds.length > 1 ? (
-                <div className="space-y-3">
-                  <Label className="text-sm font-medium">Pay out to</Label>
-                  <RadioGroup
-                    value={cashOutDestinationId}
-                    onValueChange={setCashOutDestinationId}
-                    className="grid gap-2"
-                  >
-                    {banksWithStripeIds.map((b) => (
-                      <label
-                        key={b.id}
-                        htmlFor={`cash-dest-${b.id}`}
-                        className={cn(
-                          "flex items-start gap-3 rounded-xl border border-border/80 p-3 cursor-pointer",
-                          cashOutDestinationId === b.id && "ring-2 ring-primary/30 bg-muted/20",
-                        )}
-                      >
-                        <RadioGroupItem value={b.id} id={`cash-dest-${b.id}`} className="mt-0.5" />
-                        <div className="min-w-0 flex-1">
-                          <span className="font-medium text-sm leading-tight block truncate">
-                            {b.bankName ?? "Bank account"}{" "}
-                            <span className="text-muted-foreground font-normal">
-                              ····{b.last4 ?? "••••"}
+                {banksWithStripeIds.length > 1 ? (
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium">Pay out to</Label>
+                    <RadioGroup
+                      value={cashOutDestinationId}
+                      onValueChange={setCashOutDestinationId}
+                      className="grid gap-2"
+                    >
+                      {banksWithStripeIds.map((b) => (
+                        <label
+                          key={b.id}
+                          htmlFor={`cash-dest-${b.id}`}
+                          className={cn(
+                            "flex items-start gap-3 rounded-xl border border-border/80 p-3 cursor-pointer",
+                            cashOutDestinationId === b.id && "ring-2 ring-primary/30 bg-muted/20",
+                          )}
+                        >
+                          <RadioGroupItem value={b.id} id={`cash-dest-${b.id}`} className="mt-0.5" />
+                          <div className="min-w-0 flex-1">
+                            <span className="font-medium text-sm leading-tight block truncate">
+                              {b.bankName ?? "Bank account"}{" "}
+                              <span className="text-muted-foreground font-normal">
+                                ····{b.last4 ?? "••••"}
+                              </span>
+                              {b.defaultForCurrency ? (
+                                <Badge
+                                  variant="secondary"
+                                  className="ml-2 align-middle text-[10px] uppercase tracking-wide"
+                                >
+                                  Default
+                                </Badge>
+                              ) : null}
                             </span>
-                            {b.defaultForCurrency ? (
-                              <Badge
-                                variant="secondary"
-                                className="ml-2 align-middle text-[10px] uppercase tracking-wide"
-                              >
-                                Default
-                              </Badge>
-                            ) : null}
-                          </span>
-                        </div>
-                      </label>
-                    ))}
-                  </RadioGroup>
-                  <p className="text-[11px] text-muted-foreground leading-snug">
-                    The account you pick becomes your default for future bank cash-outs until you change it in the
-                    list above or in Stripe.
+                          </div>
+                        </label>
+                      ))}
+                    </RadioGroup>
+                    <p className="text-[11px] text-muted-foreground leading-snug">
+                      The account you pick becomes your default for future bank cash-outs until you change it in the
+                      list above or in Stripe.
+                    </p>
+                  </div>
+                ) : null}
+
+                <div className="space-y-2">
+                  <Label htmlFor="stripe-cash-amount">Amount</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                      $
+                    </span>
+                    <Input
+                      id="stripe-cash-amount"
+                      inputMode="decimal"
+                      className="pl-7 tabular-nums"
+                      value={amountStr}
+                      onChange={(e) => setAmountStr(e.target.value)}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Available: ${availableBalance.toFixed(2)} · Minimum $10.00
+                  </p>
+                  <p className="text-xs text-muted-foreground leading-snug">
+                    Bank transfers use buyer payments that have fully finished processing. Your balance can update
+                    before every dollar is ready to send—if a transfer is declined, try again after recent sales have
+                    settled (often a few business days).
                   </p>
                 </div>
-              ) : null}
 
-              <div className="space-y-2">
-              <Label htmlFor="stripe-cash-amount">Amount</Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-                  $
-                </span>
-                <Input
-                  id="stripe-cash-amount"
-                  inputMode="decimal"
-                  className="pl-7 tabular-nums"
-                  value={amountStr}
-                  onChange={(e) => setAmountStr(e.target.value)}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Available: ${availableBalance.toFixed(2)} · Minimum $10.00
-              </p>
-              <p className="text-xs text-muted-foreground leading-snug">
-                Bank transfers use buyer payments that have fully finished processing. Your balance can update
-                before every dollar is ready to send—if a transfer is declined, try again after recent sales have
-                settled (often a few business days).
-              </p>
-            </div>
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium">Speed</Label>
+                  <RadioGroup
+                    value={payoutSpeed}
+                    onValueChange={(v) => setPayoutSpeed(v as "standard" | "instant")}
+                    className="grid gap-3"
+                  >
+                    <label
+                      htmlFor="payout-standard"
+                      className={cn(
+                        "flex items-start gap-3 rounded-xl border border-border/80 p-3 cursor-pointer",
+                        payoutSpeed === "standard" && "ring-2 ring-primary/30 bg-muted/20",
+                      )}
+                    >
+                      <RadioGroupItem value="standard" id="payout-standard" className="mt-0.5" />
+                      <div className="min-w-0 flex-1">
+                        <span className="font-medium leading-tight block">Standard (free)</span>
+                        <p className="text-xs text-muted-foreground mt-1 leading-snug">
+                          ACH — typically 2–3 business days. No extra fee.
+                        </p>
+                      </div>
+                    </label>
+                    <label
+                      htmlFor="payout-instant"
+                      className={cn(
+                        "flex items-start gap-3 rounded-xl border border-border/80 p-3 cursor-pointer",
+                        payoutSpeed === "instant" && "ring-2 ring-primary/30 bg-muted/20",
+                      )}
+                    >
+                      <RadioGroupItem value="instant" id="payout-instant" className="mt-0.5" />
+                      <div className="min-w-0 flex-1">
+                        <span className="font-medium leading-tight inline-flex items-center gap-1.5">
+                          <Zap className="h-3.5 w-3.5" aria-hidden />
+                          Instant
+                        </span>
+                        <p className="text-xs text-muted-foreground mt-1 leading-snug">
+                          {(STRIPE_INSTANT_BANK_PAYOUT_FEE_RATE * 100).toFixed(1)}% fee — funds usually arrive within
+                          minutes when Stripe supports instant payout to your linked account.
+                        </p>
+                      </div>
+                    </label>
+                  </RadioGroup>
+                </div>
 
-            <div className="space-y-3">
-              <Label className="text-sm font-medium">Speed</Label>
-              <RadioGroup
-                value={payoutSpeed}
-                onValueChange={(v) => setPayoutSpeed(v as "standard" | "instant")}
-                className="grid gap-3"
-              >
-                <label
-                  htmlFor="payout-standard"
-                  className={cn(
-                    "flex items-start gap-3 rounded-xl border border-border/80 p-3 cursor-pointer",
-                    payoutSpeed === "standard" && "ring-2 ring-primary/30 bg-muted/20",
-                  )}
-                >
-                  <RadioGroupItem value="standard" id="payout-standard" className="mt-0.5" />
-                  <div className="min-w-0 flex-1">
-                    <span className="font-medium leading-tight block">Standard (free)</span>
-                    <p className="text-xs text-muted-foreground mt-1 leading-snug">
-                      ACH — typically 2–3 business days. No extra fee.
+                {payoutSpeed === "instant" &&
+                instantFeePreview != null &&
+                netAfterInstantPreview != null &&
+                Number.isFinite(parsedAmount) ? (
+                  <div className="rounded-lg border border-border/60 bg-muted/20 px-3 py-2 text-xs text-muted-foreground space-y-1">
+                    <div className="flex justify-between gap-2">
+                      <span>Instant fee ({(STRIPE_INSTANT_BANK_PAYOUT_FEE_RATE * 100).toFixed(1)}%)</span>
+                      <span className="tabular-nums text-foreground">${instantFeePreview.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between gap-2 font-medium text-foreground">
+                      <span>Estimated to your bank</span>
+                      <span className="tabular-nums">${netAfterInstantPreview.toFixed(2)}</span>
+                    </div>
+                    <p className="text-[11px] leading-snug pt-1 border-t border-border/50">
+                      The fee is deducted from your cash-out amount; your wallet is debited the full amount
+                      entered above.
                     </p>
                   </div>
-                </label>
-                <label
-                  htmlFor="payout-instant"
-                  className={cn(
-                    "flex items-start gap-3 rounded-xl border border-border/80 p-3 cursor-pointer",
-                    payoutSpeed === "instant" && "ring-2 ring-primary/30 bg-muted/20",
-                  )}
+                ) : null}
+
+                <Button
+                  type="button"
+                  className="w-full rounded-full"
+                  disabled={submitting}
+                  onClick={() => void submitCashOut()}
                 >
-                  <RadioGroupItem value="instant" id="payout-instant" className="mt-0.5" />
-                  <div className="min-w-0 flex-1">
-                    <span className="font-medium leading-tight inline-flex items-center gap-1.5">
-                      <Zap className="h-3.5 w-3.5" aria-hidden />
-                      Instant
-                    </span>
-                    <p className="text-xs text-muted-foreground mt-1 leading-snug">
-                      {(STRIPE_INSTANT_BANK_PAYOUT_FEE_RATE * 100).toFixed(1)}% fee — funds usually arrive within
-                      minutes when Stripe supports instant payout to your linked account.
-                    </p>
-                  </div>
-                </label>
-              </RadioGroup>
-            </div>
-
-            {payoutSpeed === "instant" &&
-            instantFeePreview != null &&
-            netAfterInstantPreview != null &&
-            Number.isFinite(parsedAmount) ? (
-              <div className="rounded-lg border border-border/60 bg-muted/20 px-3 py-2 text-xs text-muted-foreground space-y-1">
-                <div className="flex justify-between gap-2">
-                  <span>Instant fee ({(STRIPE_INSTANT_BANK_PAYOUT_FEE_RATE * 100).toFixed(1)}%)</span>
-                  <span className="tabular-nums text-foreground">${instantFeePreview.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between gap-2 font-medium text-foreground">
-                  <span>Estimated to your bank</span>
-                  <span className="tabular-nums">${netAfterInstantPreview.toFixed(2)}</span>
-                </div>
-                <p className="text-[11px] leading-snug pt-1 border-t border-border/50">
-                  The fee is deducted from your cash-out amount; your wallet is debited the full amount
-                  entered above.
-                </p>
-              </div>
-            ) : null}
-
-            <Button
-              type="button"
-              className="w-full rounded-full"
-              disabled={submitting}
-              onClick={() => void submitCashOut()}
-            >
-              {submitting ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Sending…
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
-                  Confirm transfer
-                </>
-              )}
-            </Button>
+                  {submitting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Sending…
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="h-4 w-4 mr-2" />
+                      Confirm transfer
+                    </>
+                  )}
+                </Button>
               </div>
             </div>
 
@@ -928,7 +1030,7 @@ export function StripeBankPayoutSection({
                 aria-labelledby="stripe-cashout-error-title"
                 aria-describedby="stripe-cashout-error-desc"
               >
-                <div className="flex min-h-0 flex-1 flex-col gap-4">
+                <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain">
                   <div className="flex gap-3">
                     <AlertCircle
                       className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-500"
@@ -950,25 +1052,62 @@ export function StripeBankPayoutSection({
                     </div>
                   </div>
                   <div className="flex w-full shrink-0 flex-col gap-2">
-                    {cashOutError.errorCode === "instant_payouts_limit_exceeded" ? (
+                    {cashOutError.requirementsChecklist &&
+                    cashOutError.requirementsChecklist.length > 0 ? (
+                      <PayoutRequirementsChecklist
+                        items={cashOutError.requirementsChecklist}
+                        title="Still needed in Stripe"
+                      />
+                    ) : null}
+                    {cashOutError.nextAction === "use_standard" ||
+                    cashOutError.errorCode === "instant_payouts_limit_exceeded" ? (
                       <Button
                         type="button"
                         className="w-full rounded-full"
                         autoFocus
-                        onClick={() => {
-                          setPayoutSpeed("standard")
-                          setCashOutError(null)
-                        }}
+                        onClick={() => runCashOutNextAction("use_standard")}
                       >
                         Use standard delivery (2–3 business days)
+                      </Button>
+                    ) : null}
+                    {cashOutError.nextAction === "finish_verification" ? (
+                      <Button
+                        type="button"
+                        className="w-full rounded-full"
+                        autoFocus
+                        onClick={() => runCashOutNextAction("finish_verification")}
+                      >
+                        Finish verification in Stripe
+                      </Button>
+                    ) : null}
+                    {cashOutError.nextAction === "manage_banks" ? (
+                      <Button
+                        type="button"
+                        className="w-full rounded-full"
+                        autoFocus
+                        onClick={() => runCashOutNextAction("manage_banks")}
+                      >
+                        Manage banks
+                      </Button>
+                    ) : null}
+                    {cashOutError.nextAction === "contact_support" ? (
+                      <Button
+                        type="button"
+                        className="w-full rounded-full"
+                        autoFocus
+                        onClick={() => runCashOutNextAction("contact_support")}
+                      >
+                        Contact support
                       </Button>
                     ) : null}
                     <Button
                       type="button"
                       className="w-full rounded-full"
-                      autoFocus={cashOutError.errorCode !== "instant_payouts_limit_exceeded"}
+                      autoFocus={
+                        !cashOutError.nextAction || cashOutError.nextAction === "wait_review"
+                      }
                       variant={
-                        cashOutError.errorCode === "instant_payouts_limit_exceeded"
+                        cashOutError.nextAction && cashOutError.nextAction !== "wait_review"
                           ? "outline"
                           : "default"
                       }
@@ -976,16 +1115,20 @@ export function StripeBankPayoutSection({
                     >
                       {cashOutError.errorCode === "instant_payouts_limit_exceeded"
                         ? "Stay on instant — try again later"
-                        : "Back to cash out"}
+                        : cashOutError.nextAction === "wait_review"
+                          ? "Got it — I’ll try again later"
+                          : "Back to cash out"}
                     </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full rounded-full"
-                      asChild
-                    >
-                      <Link href="/contact">Contact support</Link>
-                    </Button>
+                    {cashOutError.nextAction !== "contact_support" ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full rounded-full"
+                        asChild
+                      >
+                        <Link href="/contact">Contact support</Link>
+                      </Button>
+                    ) : null}
                   </div>
                 </div>
               </div>
