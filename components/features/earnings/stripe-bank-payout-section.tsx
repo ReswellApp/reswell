@@ -68,6 +68,28 @@ function compactPayoutStatusLine(
   return null
 }
 
+type CashOutNextAction =
+  | "finish_verification"
+  | "manage_banks"
+  | "wait_review"
+  | "contact_support"
+  | "use_standard"
+
+function cashOutNextActionLabel(nextAction: CashOutNextAction): string {
+  switch (nextAction) {
+    case "finish_verification":
+      return "Finish verification"
+    case "manage_banks":
+      return "Manage banks"
+    case "wait_review":
+      return "Got it"
+    case "contact_support":
+      return "Contact support"
+    case "use_standard":
+      return "Use standard"
+  }
+}
+
 interface StripeTransferHistoryRow {
   id: string
   amount: string | number
@@ -159,11 +181,13 @@ export function StripeBankPayoutSection({
   const [defaultBusyId, setDefaultBusyId] = useState<string | null>(null)
   /** Selected Stripe `ba_` id for the cash-out dialog (must match a linked bank when sent to the API). */
   const [cashOutDestinationId, setCashOutDestinationId] = useState("")
-  /** Full-screen layer inside the cash-out dialog for readable payout errors (replaces easy-to-miss toasts). */
+  /** Full-screen layer inside the cash-out dialog for readable payout errors (pairs with actionable toasts). */
   const [cashOutError, setCashOutError] = useState<{
     title: string
     detail: string
     errorCode?: string
+    nextAction?: CashOutNextAction
+    requirementsChecklist?: string[]
   } | null>(null)
 
   const bankRows: StripeConnectBankAccountRow[] = useMemo(() => {
@@ -227,77 +251,6 @@ export function StripeBankPayoutSection({
     return netUsdAfterInstantBankFee(parsedAmount)
   }, [payoutSpeed, parsedAmount])
 
-  const submitCashOut = useCallback(async () => {
-    const amount = parseFloat(amountStr)
-    if (!Number.isFinite(amount) || amount < 10) {
-      toast.error("Enter at least $10.00")
-      return
-    }
-    setSubmitting(true)
-    try {
-      const payload: { amount: number; speed: typeof payoutSpeed; externalAccountId?: string } = {
-        amount,
-        speed: payoutSpeed,
-      }
-      if (cashOutDestinationId.trim().startsWith("ba_")) {
-        payload.externalAccountId = cashOutDestinationId.trim()
-      }
-
-      const res = await fetch("/api/payouts/stripe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      })
-      const data = (await res.json()) as {
-        error?: string
-        errorDetail?: string
-        errorCode?: string
-        message?: string
-        amountUsd?: number
-        availableBalanceAfter?: number
-        lifetimeCashedOutAfter?: number
-        speed?: "standard" | "instant"
-      }
-      if (!res.ok) {
-        const err = data.error ?? "Payout failed"
-        const detail = data.errorDetail?.trim()
-        if (detail) {
-          setCashOutError({
-            title: err,
-            detail,
-            errorCode: data.errorCode,
-          })
-        } else {
-          toast.error(err, { duration: 20_000 })
-        }
-        await onRefresh()
-        return
-      }
-      const amountUsd = Number(data.amountUsd)
-      const availableBalanceAfter = Number(data.availableBalanceAfter)
-      const lifetimeCashedOutAfter = Number(data.lifetimeCashedOutAfter)
-      if (
-        Number.isFinite(amountUsd) &&
-        Number.isFinite(availableBalanceAfter) &&
-        Number.isFinite(lifetimeCashedOutAfter)
-      ) {
-        onCashOutSettled?.({
-          amountUsd,
-          availableBalanceAfter,
-          lifetimeCashedOutAfter,
-          speed: data.speed ?? "standard",
-        })
-      }
-      setCashOpen(false)
-      await onRefresh()
-    } catch {
-      toast.error("Something went wrong. Try again.", { duration: 20_000 })
-      await onRefresh()
-    } finally {
-      setSubmitting(false)
-    }
-  }, [amountStr, payoutSpeed, cashOutDestinationId, onRefresh, onCashOutSettled])
-
   const setDefaultBank = useCallback(
     async (externalAccountId: string) => {
       setDefaultBusyId(externalAccountId)
@@ -333,6 +286,126 @@ export function StripeBankPayoutSection({
   const openPayoutManagement = useCallback(() => {
     openPayoutSetup(true)
   }, [openPayoutSetup])
+
+  const runCashOutNextAction = useCallback(
+    (nextAction: CashOutNextAction) => {
+      if (nextAction === "use_standard") {
+        setPayoutSpeed("standard")
+        setCashOutError(null)
+        return
+      }
+      if (nextAction === "wait_review") {
+        setCashOutError(null)
+        return
+      }
+      if (nextAction === "contact_support") {
+        setCashOpen(false)
+        setCashOutError(null)
+        window.location.assign("/contact")
+        return
+      }
+      setCashOpen(false)
+      setCashOutError(null)
+      if (nextAction === "manage_banks") {
+        openPayoutSetup(true)
+        return
+      }
+      openPayoutSetup(false)
+    },
+    [openPayoutSetup],
+  )
+
+  const submitCashOut = useCallback(async () => {
+    const amount = parseFloat(amountStr)
+    if (!Number.isFinite(amount) || amount < 10) {
+      toast.error("Enter at least $10.00")
+      return
+    }
+    setSubmitting(true)
+    try {
+      const payload: { amount: number; speed: typeof payoutSpeed; externalAccountId?: string } = {
+        amount,
+        speed: payoutSpeed,
+      }
+      if (cashOutDestinationId.trim().startsWith("ba_")) {
+        payload.externalAccountId = cashOutDestinationId.trim()
+      }
+
+      const res = await fetch("/api/payouts/stripe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+      const data = (await res.json()) as {
+        error?: string
+        errorDetail?: string
+        errorCode?: string
+        nextAction?: CashOutNextAction
+        requirementsChecklist?: string[]
+        message?: string
+        amountUsd?: number
+        availableBalanceAfter?: number
+        lifetimeCashedOutAfter?: number
+        speed?: "standard" | "instant"
+      }
+      if (!res.ok) {
+        const err = data.error ?? "Payout failed"
+        const detail = data.errorDetail?.trim()
+        const nextAction = data.nextAction
+        const requirements = data.requirementsChecklist?.filter(Boolean) ?? []
+        const description =
+          detail ||
+          (requirements.length > 0 ? `Still needed: ${requirements.join(", ")}.` : undefined)
+
+        if (detail || nextAction) {
+          setCashOutError({
+            title: err,
+            detail: detail || err,
+            errorCode: data.errorCode,
+            nextAction,
+            requirementsChecklist: requirements,
+          })
+        }
+
+        toast.error(err, {
+          description,
+          duration: 20_000,
+          ...(nextAction
+            ? {
+                action: {
+                  label: cashOutNextActionLabel(nextAction),
+                  onClick: () => runCashOutNextAction(nextAction),
+                },
+              }
+            : {}),
+        })
+        await onRefresh()
+        return
+      }
+      const amountUsd = Number(data.amountUsd)
+      const availableBalanceAfter = Number(data.availableBalanceAfter)
+      const lifetimeCashedOutAfter = Number(data.lifetimeCashedOutAfter)
+      if (
+        Number.isFinite(amountUsd) &&
+        Number.isFinite(availableBalanceAfter) &&
+        Number.isFinite(lifetimeCashedOutAfter)
+      ) {
+        onCashOutSettled?.({
+          amountUsd,
+          availableBalanceAfter,
+          lifetimeCashedOutAfter,
+          speed: data.speed ?? "standard",
+        })
+      }
+      setCashOpen(false)
+      await onRefresh()
+    } catch {
+      toast.error("Something went wrong. Try again.", { duration: 20_000 })
+      await onRefresh()
+    } finally {
+      setSubmitting(false)
+    }
+  }, [amountStr, payoutSpeed, cashOutDestinationId, onRefresh, onCashOutSettled, runCashOutNextAction])
 
   const refreshConnectStatusAfterSetup = useCallback(async () => {
     let lastStatus: StripeConnectStatusPayload | null = null
@@ -371,9 +444,13 @@ export function StripeBankPayoutSection({
       lastStatus?.cashOutReady &&
       (lastStatus.upcomingRequirementsChecklist?.length ?? 0) > 0
     ) {
-      toast.message("Stripe still needs a few details", {
-        description: `${lastStatus.upcomingRequirementsChecklist.join(", ")}. Open Update info to finish before payouts are restricted.`,
-        duration: 14_000,
+      toast.error("Stripe still needs a few details", {
+        description: `${lastStatus.upcomingRequirementsChecklist.join(", ")}. Finish these before payouts are restricted.`,
+        duration: 16_000,
+        action: {
+          label: "Update info",
+          onClick: () => openPayoutSetup(false),
+        },
       })
     } else if (lastStatus?.cashOutReady) {
       toast.success("Payout verification complete — you can cash out now.")
@@ -383,20 +460,37 @@ export function StripeBankPayoutSection({
         duration: 12_000,
       })
     } else if (lastStatus?.setupStatus === "restricted") {
-      toast.message("Stripe paused payouts on this account", {
-        description: "There is nothing left to submit. Contact support if this continues.",
-        duration: 12_000,
+      toast.error("Stripe paused payouts on this account", {
+        description: "There is nothing left to submit in Stripe. Contact support if this continues.",
+        duration: 16_000,
+        action: {
+          label: "Contact support",
+          onClick: () => window.location.assign("/contact"),
+        },
       })
     } else if (
       lastStatus?.setupStatus === "action_required" &&
       (lastStatus.requirementsChecklist?.length ?? 0) > 0
     ) {
-      toast.message("Stripe still needs a few details", {
-        description: `${lastStatus.requirementsChecklist.join(", ")}. Open Finish verification again to continue.`,
-        duration: 14_000,
+      toast.error("Stripe still needs a few details", {
+        description: `${lastStatus.requirementsChecklist.join(", ")}. Finish verification to unlock cash out.`,
+        duration: 16_000,
+        action: {
+          label: "Finish verification",
+          onClick: () => openPayoutSetup(false),
+        },
+      })
+    } else if (lastStatus?.setupStatus === "action_required") {
+      toast.error("Finish Stripe verification to cash out", {
+        description: lastStatus.verificationMessage ?? "Open Finish verification and complete any remaining steps.",
+        duration: 16_000,
+        action: {
+          label: "Finish verification",
+          onClick: () => openPayoutSetup(false),
+        },
       })
     }
-  }, [onRefresh])
+  }, [onRefresh, openPayoutSetup])
 
   const confirmRemoveBank = useCallback(async () => {
     const target = removeTarget
@@ -958,25 +1052,62 @@ export function StripeBankPayoutSection({
                     </div>
                   </div>
                   <div className="flex w-full shrink-0 flex-col gap-2">
-                    {cashOutError.errorCode === "instant_payouts_limit_exceeded" ? (
+                    {cashOutError.requirementsChecklist &&
+                    cashOutError.requirementsChecklist.length > 0 ? (
+                      <PayoutRequirementsChecklist
+                        items={cashOutError.requirementsChecklist}
+                        title="Still needed in Stripe"
+                      />
+                    ) : null}
+                    {cashOutError.nextAction === "use_standard" ||
+                    cashOutError.errorCode === "instant_payouts_limit_exceeded" ? (
                       <Button
                         type="button"
                         className="w-full rounded-full"
                         autoFocus
-                        onClick={() => {
-                          setPayoutSpeed("standard")
-                          setCashOutError(null)
-                        }}
+                        onClick={() => runCashOutNextAction("use_standard")}
                       >
                         Use standard delivery (2–3 business days)
+                      </Button>
+                    ) : null}
+                    {cashOutError.nextAction === "finish_verification" ? (
+                      <Button
+                        type="button"
+                        className="w-full rounded-full"
+                        autoFocus
+                        onClick={() => runCashOutNextAction("finish_verification")}
+                      >
+                        Finish verification in Stripe
+                      </Button>
+                    ) : null}
+                    {cashOutError.nextAction === "manage_banks" ? (
+                      <Button
+                        type="button"
+                        className="w-full rounded-full"
+                        autoFocus
+                        onClick={() => runCashOutNextAction("manage_banks")}
+                      >
+                        Manage banks
+                      </Button>
+                    ) : null}
+                    {cashOutError.nextAction === "contact_support" ? (
+                      <Button
+                        type="button"
+                        className="w-full rounded-full"
+                        autoFocus
+                        onClick={() => runCashOutNextAction("contact_support")}
+                      >
+                        Contact support
                       </Button>
                     ) : null}
                     <Button
                       type="button"
                       className="w-full rounded-full"
-                      autoFocus={cashOutError.errorCode !== "instant_payouts_limit_exceeded"}
+                      autoFocus={
+                        !cashOutError.nextAction || cashOutError.nextAction === "wait_review"
+                      }
                       variant={
-                        cashOutError.errorCode === "instant_payouts_limit_exceeded"
+                        cashOutError.nextAction && cashOutError.nextAction !== "wait_review"
                           ? "outline"
                           : "default"
                       }
@@ -984,16 +1115,20 @@ export function StripeBankPayoutSection({
                     >
                       {cashOutError.errorCode === "instant_payouts_limit_exceeded"
                         ? "Stay on instant — try again later"
-                        : "Back to cash out"}
+                        : cashOutError.nextAction === "wait_review"
+                          ? "Got it — I’ll try again later"
+                          : "Back to cash out"}
                     </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full rounded-full"
-                      asChild
-                    >
-                      <Link href="/contact">Contact support</Link>
-                    </Button>
+                    {cashOutError.nextAction !== "contact_support" ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full rounded-full"
+                        asChild
+                      >
+                        <Link href="/contact">Contact support</Link>
+                      </Button>
+                    ) : null}
                   </div>
                 </div>
               </div>
