@@ -1,0 +1,47 @@
+{
+  "generated_for": "J.splee Surfboards Hawaii official named standup catalog",
+  "source": "https://jspleesurfboardshawaii.com/collections/model plus first-party /products.json (official Shopify standup list — excludes custom deposits, one-off inquiry SKUs, merch, and retailer-only titles)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "j-splee-surfboards",
+      "name": "J.splee Surfboards",
+      "website_url": "https://jspleesurfboardshawaii.com",
+      "location_label": "Waialua, Oahu, Hawaii",
+      "short_description": "Custom surfboards shaped and glassed at the historic Waialua Sugar Mill on Oahu — named fish, mid-length, and longboard models from J.splee Surfboards Hawaii.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/j-splee-surfboards.png",
+      "models": [
+        {
+          "name": "BoogieFish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0751/9830/0458/files/BoogieFishamanda1.png?v=1697096906&format=png&width=1600",
+          "description": "This is the board I always have in my car. Not just because of its small size but also because of its versatility in almost all conditions. This design really shines in knee to shoulder high surf but based on skill level can definitely be pushed further. A pretty flat rocker paired with some Spiral V makes rail to rail transitions effortless and conquers flat sections like no other. Don't be afraid of the size, this is the board missing from your quiver. Intended for Intermediate to expert surfers. 5'0 stock dims are recommended, if not order absolutely as short as possible. Bottom: Flat to subtle Spiral \"V\". Rails: Full Step rails. Rocker: Flat and Fast. Waves: Designed for Knee to Shoulder High but take it out when its bigger if you can handle the speed. Fins: Twin (Future K2s recommended for the most balanced ride). Tail: Double bump wing Swallow. Dims to order: Ride this board as short as you can. If you are anywhere between 130-200 lbs and below 6ft I invite you to give the 5'0 stock dims a try.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Hammah Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0751/9830/0458/files/HammahFishQuad1.png?v=1697094688&format=png&width=1600",
+          "description": "The Hammah Fish is for when the waves are getting above \"Fish Range\" but you are too stubborn/lazy to get on your thruster. Last year I found myself feeling under-gunned on certain days riding my BoogieFish and wanted a fish to bridge that gap between small wave fish and step-up. The Hammah Fish is just that! Step Deck for extra paddle, lower rail apex, a dramatic spiral \"V\" with concaves deepest just inside of the fins and a bladier rail all equate to a board with heaps of hold, drive and shreddablility. Bottom: Flat nose fading to Spiral \"V\" accentuated in the fin cluster. Rails: Low apex step-deck. Rocker: Low. Fins: Twin or Quad. Waves: Waist to Head high but can be pushed further. Dims to order: Order in your normal Fish dims but an 1\" or 2\" shorter.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Tanto",
+          "image_url": "https://cdn.shopify.com/s/files/1/0751/9830/0458/products/tantoproductcovernew.jpg?v=1697098650&format=jpg&width=1600",
+          "description": "The Tanto is one of my most versatile designs when it comes to both wave conditions and tail type / fin configuration. Thumb tail, swallow, squash, twin, thruster, quad, single fin it all goes. The Tanto has a pretty fishy rocker paired with modern rails and foam flow taking elements from both past and present to make a board that paddles and glides through flat sections like a fish but can still lay it down when the waves provide the opportunity. Order 2-3\" shorter and 1/2 - 1 1/2\" wider than your standard shortboard and you'll have a board you can ride on any day waist high to overhead. Bottom: Flat to V out the tail. Rails: Medium Step rail. Rocker: Medium/Low entry to lower out the tail. Waves: Waist to Overhead. Fins: Single, Twin, Twin+trailer, Thruster, Quad, Five fin everything. Tail: Round pin, squash, swallow.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Aurora",
+          "image_url": "https://cdn.shopify.com/s/files/1/0751/9830/0458/files/AuroraSurfboardproductphotolot.jpg?v=1683011922&format=jpg&width=1600",
+          "description": "The Aurora mid length is the answer to bringing up your wave count without sacrificing maneuverability. Turned up rails in the front half with full forgiving rails out the back make for an easy predictable ride for all skill levels. The Aurora can be quite the quiver killer handling anything from knee high to double over head surf (Based on skill level). Twin fin set up has been the favorite for most riders but is also great as a single fin or 2+1. Available in sizes 6'6 - 8'0 with round or squash tail. Bottom: Rolled Entry to flat to V and back to flat at the end of the tail. Rails: High Apex in the nose slowly fading to a medium rounded rail in the tail. Rocker: Low entry to flat with a bit of curve out the back behind the fins. Waves: all the waves. Fins: Twin, 2+1, Single, Quad. Tail: Round Pin, Squash.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Puhi",
+          "image_url": "https://cdn.shopify.com/s/files/1/0751/9830/0458/files/PuhiAkira1_a91fe731-f054-4f1a-803a-753a0b8b2878.png?v=1697096850&format=png&width=1600",
+          "description": "The Puhi is your all around Hawaiian longboard design. Nice and forgiving for nose rides but can still lay down some serious turns. The front end has turned up rails for easier nose rides and the tail and rails of a High performance longboard out the back. Great for riders of all skill levels. The perfect family board to always have in the garage. Available in 9'0 - 10'0. Bottom: Flat to V out the tail. Rails: Medium forgiving rails. Rocker: Relaxed rocker with enough curve in the nose to prevent pearling. Waves: Tiny to as big as you are willing to take a longboard out. Tail: Round pin, Squash. Dims to Order: Order in your normal longboard dims.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
