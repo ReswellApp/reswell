@@ -338,7 +338,36 @@ export async function cashOutMobileEarningsService(
   )
   if (!result.ok) {
     const detail = result.errorDetail?.trim()
-    return { ok: false, status: result.status ?? 400, error: detail ? `${result.error} ${detail}` : result.error }
+    const needed = result.requirementsChecklist?.filter(Boolean) ?? []
+    const body = detail ? `${result.error} ${detail}` : result.error
+    const needsNeededLine =
+      needed.length > 0 && !/still needed:/i.test(body)
+    const neededLine = needsNeededLine ? ` Still needed: ${needed.join(", ")}.` : ""
+    const nextStep =
+      result.nextAction === "finish_verification"
+        ? body.toLowerCase().includes("finish verification")
+          ? ""
+          : " Open Connect bank / Finish verification in Earnings, complete Stripe’s steps, then try again."
+        : result.nextAction === "manage_banks"
+          ? " Open Manage banks (or Add a bank) in Earnings, then try again."
+          : result.nextAction === "wait_review"
+            ? body.toLowerCase().includes("few minutes")
+              ? ""
+              : " Wait a few minutes for Stripe to finish reviewing, then try again."
+            : result.nextAction === "contact_support"
+              ? body.toLowerCase().includes("contact")
+                ? ""
+                : " Contact Reswell support if this continues."
+              : result.nextAction === "use_standard"
+                ? body.toLowerCase().includes("standard")
+                  ? ""
+                  : " Switch to Standard delivery, or open Manage banks if Instant isn’t supported for this account."
+                : ""
+    return {
+      ok: false,
+      status: result.status ?? 400,
+      error: `${body}${neededLine}${nextStep}`.trim(),
+    }
   }
 
   void trackKlaviyoPayout({

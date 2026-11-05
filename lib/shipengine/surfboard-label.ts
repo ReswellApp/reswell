@@ -116,6 +116,11 @@ export async function fetchShipEngineRatesForSurfboard(params: {
   listingSection?: string | null
   /** Admin-only picker option for urgent member shipments. */
   includeSameAndNextDayRates?: boolean
+  /**
+   * Admin tools: return every distinct USPS / UPS / FedEx service (Ground,
+   * Priority, air, overnight), not only the cheapest Ground/Priority quotes.
+   */
+  includeAllDistinctServices?: boolean
 }): Promise<
   | { ok: true; rates: ShipEngineRateOption[] }
   | { ok: false; error: string; status: number }
@@ -189,16 +194,21 @@ export async function fetchShipEngineRatesForSurfboard(params: {
   }
 
   const rawRates = extractRatesFromApiEnvelope(data)
+  const includeAllDistinct = params.includeAllDistinctServices === true
   const rates = curateLabelPurchaseRates(
     normalizeShipEngineRatesForUi(rawRates),
     params.listingSection,
-    { includeSameAndNextDay: params.includeSameAndNextDayRates === true },
+    {
+      includeSameAndNextDay: params.includeSameAndNextDayRates === true,
+      includeAllDistinctServices: includeAllDistinct,
+    },
   )
   if (!rates.length) {
     return {
       ok: false,
-      error:
-        "No USPS, UPS, or FedEx Ground or Priority rates for this shipment. Check addresses and parcel size.",
+      error: includeAllDistinct
+        ? "No USPS, UPS, or FedEx rates for this shipment. Check addresses and parcel size."
+        : "No USPS, UPS, or FedEx Ground or Priority rates for this shipment. Check addresses and parcel size.",
       status: 422,
     }
   }

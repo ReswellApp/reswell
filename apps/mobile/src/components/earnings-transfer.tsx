@@ -243,7 +243,7 @@ function SpeedChoice({
 }
 
 const styles = StyleSheet.create({
-  page: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 24, gap: 10 },
+  page: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 40, gap: 10 },
   eyebrow: { fontSize: 12, fontWeight: "700", letterSpacing: 0.8, textTransform: "uppercase" },
   title: { fontSize: 28, fontWeight: "700", letterSpacing: -0.4 },
   amount: { fontSize: 40, fontWeight: "700", letterSpacing: -1 },

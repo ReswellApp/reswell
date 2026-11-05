@@ -103,6 +103,10 @@ export async function POST(req: Request) {
         error: result.error,
         ...(result.errorDetail ? { errorDetail: result.errorDetail } : {}),
         ...(result.errorCode ? { errorCode: result.errorCode } : {}),
+        ...(result.nextAction ? { nextAction: result.nextAction } : {}),
+        ...(result.requirementsChecklist?.length
+          ? { requirementsChecklist: result.requirementsChecklist }
+          : {}),
       },
       { status: result.status ?? 400 },
     )

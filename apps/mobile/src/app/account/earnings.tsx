@@ -2,7 +2,7 @@ import { Image } from "expo-image"
 import { useRouter } from "expo-router"
 import { SymbolView } from "expo-symbols"
 import { useCallback, useState, type ReactNode } from "react"
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
 import type { MobileEarnings } from "@reswell/api-contract"
 import { DashboardPageGate } from "@/components/dashboard-page-gate"
 import { EarningsTransfer } from "@/components/earnings-transfer"
@@ -36,29 +36,41 @@ export default function AccountEarningsScreen() {
       onBack={pane === "menu" ? undefined : pane === "transfer" ? () => setPane("available") : () => setPane("menu")}
     >
       {() => (
-        <ScrollView style={styles.screen} contentInsetAdjustmentBehavior="never">
-          {earnings.loading && !earnings.data ? (
-            <Text style={[styles.loading, { color: colors.muted, fontFamily: fontFamily.text }]}>Loading earnings…</Text>
-          ) : earnings.error && !earnings.data ? (
-            <Text style={[styles.loading, { color: colors.foreground, fontFamily: fontFamily.text }]}>{earnings.error}</Text>
-          ) : earnings.data ? (
-            pane === "pending" ? (
-              <PendingRelease data={earnings.data} />
-            ) : pane === "available" ? (
-              <AvailableBalance data={earnings.data} onTransfer={() => setPane("transfer")} />
-            ) : pane === "activity" ? (
-              <ActivityHistory items={earnings.data.activity} />
-            ) : pane === "transfer" ? (
-              <EarningsTransfer
-                data={earnings.data}
-                onReload={earnings.reload}
-                onDone={() => setPane("available")}
-              />
-            ) : (
-              <EarningsMenu data={earnings.data} onOpen={setPane} />
-            )
-          ) : null}
-        </ScrollView>
+        <KeyboardAvoidingView
+          style={styles.screen}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}
+        >
+          <ScrollView
+            style={styles.screen}
+            contentContainerStyle={styles.scrollContent}
+            contentInsetAdjustmentBehavior="never"
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+          >
+            {earnings.loading && !earnings.data ? (
+              <Text style={[styles.loading, { color: colors.muted, fontFamily: fontFamily.text }]}>Loading earnings…</Text>
+            ) : earnings.error && !earnings.data ? (
+              <Text style={[styles.loading, { color: colors.foreground, fontFamily: fontFamily.text }]}>{earnings.error}</Text>
+            ) : earnings.data ? (
+              pane === "pending" ? (
+                <PendingRelease data={earnings.data} />
+              ) : pane === "available" ? (
+                <AvailableBalance data={earnings.data} onTransfer={() => setPane("transfer")} />
+              ) : pane === "activity" ? (
+                <ActivityHistory items={earnings.data.activity} />
+              ) : pane === "transfer" ? (
+                <EarningsTransfer
+                  data={earnings.data}
+                  onReload={earnings.reload}
+                  onDone={() => setPane("available")}
+                />
+              ) : (
+                <EarningsMenu data={earnings.data} onOpen={setPane} />
+              )
+            ) : null}
+          </ScrollView>
+        </KeyboardAvoidingView>
       )}
     </DashboardPageGate>
   )
@@ -294,6 +306,7 @@ function activityDate(value: string): string {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
+  scrollContent: { flexGrow: 1, paddingBottom: 48 },
   loading: { fontSize: 15, paddingVertical: 12, paddingHorizontal: 16 },
   pageTitle: { fontSize: 32, fontWeight: "700", letterSpacing: -0.6, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 18 },
   link: {
