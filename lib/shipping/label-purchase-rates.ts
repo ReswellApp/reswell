@@ -18,6 +18,12 @@ type ExpeditedServiceFamily = "same-day" | "next-day"
 
 export type LabelPurchaseRateOptions = {
   includeSameAndNextDay?: boolean
+  /**
+   * Admin tools: keep every distinct USPS / UPS / FedEx service (cheapest quote
+   * per carrier + service), including air — Ground, Priority, 2nd Day, Next Day,
+   * Overnight, etc. Skips the standard Ground/Priority top-N filter.
+   */
+  includeAllDistinctServices?: boolean
 }
 
 function blob(...parts: Array<string | null | undefined>): string {
@@ -97,10 +103,22 @@ function allowsMediaMail(listingSection: string | null | undefined): boolean {
   return listingSection === "magazines"
 }
 
+function withDisplayCarrierLabel<T extends LabelPurchaseRate>(
+  rate: T,
+  carrier: CarrierFamily,
+): T {
+  return {
+    ...rate,
+    carrierLabel: formatCarrierDisplayName(rate.carrierLabel, rate.carrierCode ?? carrier),
+  }
+}
+
 /**
  * Label-purchase picker: USPS / UPS / FedEx Ground and Priority only,
  * Media Mail only for magazines, cheapest unique option per carrier+service, top 4.
- * Admin flows may additionally retain every distinct same-day and next-day service.
+ * Admin flows may additionally retain every distinct same-day and next-day service,
+ * or every distinct service when {@link LabelPurchaseRateOptions.includeAllDistinctServices}
+ * is set.
  */
 export function curateLabelPurchaseRates<T extends LabelPurchaseRate>(
   rates: T[],
@@ -108,6 +126,30 @@ export function curateLabelPurchaseRates<T extends LabelPurchaseRate>(
   options: LabelPurchaseRateOptions = {},
 ): T[] {
   const allowMedia = allowsMediaMail(listingSection)
+
+  if (options.includeAllDistinctServices) {
+    const cheapestByService = new Map<string, T>()
+    for (const rate of rates) {
+      if (!(rate.amount > 0) || !rate.rate_id) continue
+      const carrier = carrierFamily(rate.carrierCode, rate.carrierLabel)
+      if (!carrier) continue
+      const serviceIdentity = blob(rate.serviceCode, rate.serviceName)
+      if (!serviceIdentity) continue
+      if (
+        (serviceIdentity.includes("media_mail") || serviceIdentity.includes("media mail")) &&
+        !allowMedia
+      ) {
+        continue
+      }
+      const key = `${carrier}:${serviceIdentity}`
+      const existing = cheapestByService.get(key)
+      if (!existing || rate.amount < existing.amount) {
+        cheapestByService.set(key, withDisplayCarrierLabel(rate, carrier))
+      }
+    }
+    return [...cheapestByService.values()].sort((a, b) => a.amount - b.amount)
+  }
+
   const cheapestStandardByFamily = new Map<string, T>()
   const cheapestExpeditedByService = new Map<string, T>()
 
@@ -121,10 +163,7 @@ export function curateLabelPurchaseRates<T extends LabelPurchaseRate>(
       const key = `${carrier}:${expedited}:${serviceIdentity}`
       const existing = cheapestExpeditedByService.get(key)
       if (!existing || rate.amount < existing.amount) {
-        cheapestExpeditedByService.set(key, {
-          ...rate,
-          carrierLabel: formatCarrierDisplayName(rate.carrierLabel, rate.carrierCode ?? carrier),
-        })
+        cheapestExpeditedByService.set(key, withDisplayCarrierLabel(rate, carrier))
       }
       continue
     }
@@ -136,10 +175,7 @@ export function curateLabelPurchaseRates<T extends LabelPurchaseRate>(
     const key = `${carrier}:${service}`
     const existing = cheapestStandardByFamily.get(key)
     if (!existing || rate.amount < existing.amount) {
-      cheapestStandardByFamily.set(key, {
-        ...rate,
-        carrierLabel: formatCarrierDisplayName(rate.carrierLabel, rate.carrierCode ?? carrier),
-      })
+      cheapestStandardByFamily.set(key, withDisplayCarrierLabel(rate, carrier))
     }
   }
 

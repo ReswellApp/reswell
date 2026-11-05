@@ -470,6 +470,9 @@ export async function quoteAdminExactParcelUpsRatesForOrder(params: {
     adminCustomCarton: true,
     listingSection:
       typeof loaded.listing.section === "string" ? loaded.listing.section : null,
+    // Admin exact-box replace: show every UPS service (Ground, air, overnight), not
+    // only the cheapest Ground/Priority quote.
+    includeAllDistinctServices: true,
   })
   if (!ratesResult.ok) {
     return { ok: false, error: ratesResult.error, status: ratesResult.status }
