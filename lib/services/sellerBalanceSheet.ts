@@ -9,7 +9,9 @@ import type { PeerListingSection } from "@/lib/peer-listing-sections"
 import type { SellerBalanceSheetPage } from "@/lib/types/sellerBalanceSheet"
 import type { UpdateListingAcquisitionInput } from "@/lib/validations/listing-acquisition"
 import type {
+  BalanceSheetPeriod,
   BalanceSheetSort,
+  BalanceSheetView,
   RemoveBalanceSheetItemInput,
 } from "@/lib/validations/seller-balance-sheet"
 
@@ -25,6 +27,8 @@ export async function getAdminSellerBalanceSheet(
   pageSize: number,
   listingSection: PeerListingSection | null,
   sort: BalanceSheetSort,
+  view: BalanceSheetView = "all",
+  period: BalanceSheetPeriod = "all",
 ): Promise<SellerBalanceSheetPage> {
   const supabase = await createClient()
   const {
@@ -64,6 +68,8 @@ export async function getAdminSellerBalanceSheet(
       pageSize,
       listingSection,
       sort,
+      view,
+      period,
     )
   } catch (error) {
     console.error("[sellerBalanceSheet] balance sheet query failed", {
@@ -72,6 +78,8 @@ export async function getAdminSellerBalanceSheet(
       pageSize,
       listingSection,
       sort,
+      view,
+      period,
       error,
       timestamp: new Date().toISOString(),
     })
