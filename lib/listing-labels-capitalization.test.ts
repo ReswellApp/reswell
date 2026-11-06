@@ -41,6 +41,26 @@ describe("normalizeExcessiveCapitalization", () => {
   it("preserves alphanumeric model codes", () => {
     assert.equal(normalizeExcessiveCapitalization("CI XF2 FISH"), "CI XF2 Fish")
     assert.equal(normalizeExcessiveCapitalization("G10 twin"), "G10 twin")
+    assert.equal(normalizeExcessiveCapitalization("FCS 5FIN SET"), "FCS 5FIN Set")
+  })
+
+  it("title-cases contractions and possessives without mangling the suffix", () => {
+    assert.equal(
+      normalizeExcessiveCapitalization("GREAT BOARD THAT CAN'T MISS"),
+      "Great Board That Can't Miss",
+    )
+    assert.equal(
+      normalizeExcessiveCapitalization("THE BOARD'S RAIL HAS DINGS"),
+      "The Board's Rail Has Dings",
+    )
+    assert.equal(
+      normalizeExcessiveCapitalization("I'VE USED THIS BOARD TWICE"),
+      "I've Used This Board Twice",
+    )
+    assert.equal(
+      normalizeExcessiveCapitalization("O'NEILL PSYCHO TECH"),
+      "O'Neill Psycho Tech",
+    )
   })
 
   it("leaves mixed-case and already-normal text alone", () => {
@@ -64,5 +84,7 @@ describe("capitalizeWords", () => {
     assert.equal(capitalizeWords("channel islands twin pin"), "Channel Islands Twin Pin")
     assert.equal(capitalizeWords("CHANNEL ISLANDS TWIN PIN"), "Channel Islands Twin Pin")
     assert.equal(capitalizeWords("  FCS II THRUSTER SET  "), "FCS II Thruster Set")
+    assert.equal(capitalizeWords("BOARD'S RAIL HAS DINGS"), "Board's Rail Has Dings")
+    assert.equal(capitalizeWords("FCS 5FIN SET"), "FCS 5FIN Set")
   })
 })

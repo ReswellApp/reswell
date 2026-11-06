@@ -65,8 +65,17 @@ function isAllCapsLetters(token: string): boolean {
   return letters === letters.toUpperCase() && /[A-Z]/.test(letters)
 }
 
+function followsApostrophe(text: string, offset: number): boolean {
+  if (offset <= 0) return false
+  const prev = text[offset - 1]
+  return prev === "'" || prev === "’"
+}
+
 function titleCaseToken(token: string): string {
-  return token.replace(/[A-Za-z]+/g, (chunk) => {
+  return token.replace(/[A-Za-z]+/g, (chunk, offset: number) => {
+    // Contractions/possessives stay lowercase after the apostrophe (Can't, Board's, I've).
+    // Longer parts are still title-cased (O'Neill).
+    if (followsApostrophe(token, offset) && chunk.length <= 2) return chunk.toLowerCase()
     if (chunk.length === 1) return chunk.toUpperCase()
     return chunk.charAt(0).toUpperCase() + chunk.slice(1).toLowerCase()
   })
@@ -106,7 +115,7 @@ export function normalizeExcessiveCapitalization(text: string | null | undefined
 
   const shouting = hasExcessiveCapitalization(trimmed)
 
-  return trimmed.replace(/[A-Za-z][A-Za-z0-9'’.-]*/g, (token) => {
+  return trimmed.replace(/[A-Za-z0-9][A-Za-z0-9'’.-]*/g, (token) => {
     if (!isAllCapsLetters(token)) return token
     if (shouldPreserveAllCapsToken(token, shouting)) return token
     return titleCaseToken(token)
@@ -116,7 +125,10 @@ export function normalizeExcessiveCapitalization(text: string | null | undefined
 /** Capitalize the first letter of each word for listing titles and other display text. */
 export function capitalizeWords(text: string | null | undefined): string {
   if (!text || typeof text !== "string") return ""
-  return normalizeExcessiveCapitalization(text.trim()).replace(/\b\w/g, (c) => c.toUpperCase())
+  return normalizeExcessiveCapitalization(text.trim()).replace(/\b\w/g, (c, offset: number, str: string) => {
+    if (followsApostrophe(str, offset)) return c
+    return c.toUpperCase()
+  })
 }
 
 /** Short labels for tiles, filters, chips, and `formatCondition`. */
