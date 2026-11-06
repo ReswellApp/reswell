@@ -21,7 +21,23 @@ export const SURFBOARD_DIMENSION_PHOTO_REF_SOURCES = [
 export type SurfboardDimensionPhotoRefSource =
   (typeof SURFBOARD_DIMENSION_PHOTO_REF_SOURCES)[number]
 
-export const SURFBOARD_DIMENSION_PHOTO_MATCH_TARGET = 0.9
+/** Photo pick and dims read must each hit this rated accuracy before we treat the harness as ready. */
+export const SURFBOARD_DIMENSION_PHOTO_MATCH_TARGET = 0.95
+
+/** Both Photo and Dims accuracy must clear the target (Overall alone is not enough). */
+export function surfboardDimensionPhotoMatchMeetsTarget(stats: {
+  photoAccuracy: number | null
+  dimsAccuracy: number | null
+  target?: number
+}): boolean {
+  const target = stats.target ?? SURFBOARD_DIMENSION_PHOTO_MATCH_TARGET
+  return (
+    stats.photoAccuracy != null &&
+    stats.dimsAccuracy != null &&
+    stats.photoAccuracy >= target &&
+    stats.dimsAccuracy >= target
+  )
+}
 
 /** Soft Jev post-vision verify payload persisted on match rows. */
 export type SurfboardDimensionPhotoJevReview = {

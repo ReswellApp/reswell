@@ -23,6 +23,7 @@ import type {
   SurfboardDimensionPhotoMatchRow,
   SurfboardDimensionPhotoMatchStats,
 } from "@/lib/db/surfboardDimensionPhoto"
+import { surfboardDimensionPhotoMatchMeetsTarget } from "@/lib/validations/surfboardDimensionPhoto"
 import { Loader2, Minus, Plus, RefreshCw, RotateCcw, ZoomIn } from "lucide-react"
 
 type RatingFilter = "all" | "unrated" | "good" | "close" | "bad" | "excluded"
@@ -507,8 +508,10 @@ export function DimensionPhotoMatchAdminClient() {
             Rate <span className="text-foreground">Photo</span> and{" "}
             <span className="text-foreground">Dims</span>. Each rating is injected into the next
             scan as examples (Good/Bad stamp photos + text) — keep marking Photo Bad on wrong
-            picks; that trains picking fastest. Jev checks the vision result afterward (volume,
-            confidence, soft hints) — it never auto-rates for you.
+            picks; that trains picking fastest. Target:{" "}
+            <span className="text-foreground">95%</span> on both Photo and Dims before we trust
+            the LLM for sell autofill. Jev checks the vision result afterward (volume, confidence,
+            soft hints) — it never auto-rates for you.
             {stats?.refCount ? (
               <span className="text-foreground/80"> {stats.refCount} pairs in memory.</span>
             ) : null}
@@ -564,40 +567,54 @@ export function DimensionPhotoMatchAdminClient() {
       </div>
 
       {stats ? (
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-          <AccuracyCard
-            title="Photo"
-            subtitle="Did it pick the stamp photo?"
-            accuracy={stats.photoAccuracy}
-            summary={
-              stats.photoRated > 0
-                ? `Right on ${stats.photoGood} of ${stats.photoRated} you rated`
-                : "Rate some photos to see this"
-            }
-            target={stats.target}
-          />
-          <AccuracyCard
-            title="Dims"
-            subtitle="Did it read L × W × T correctly?"
-            accuracy={stats.dimsAccuracy}
-            summary={
-              stats.dimsRated > 0
-                ? `Right on ${stats.dimsGood}, close on ${stats.dimsClose}, wrong on ${stats.dimsBad}`
-                : "Rate some dims to see this"
-            }
-            target={stats.target}
-          />
-          <AccuracyCard
-            title="Overall"
-            subtitle="Photo and dims both right?"
-            accuracy={stats.overallAccuracy}
-            summary={
-              stats.overallRated > 0
-                ? `Fully right on ${stats.overallGood} of ${stats.overallRated}`
-                : "Needs both Photo and Dims rated"
-            }
-            target={stats.target}
-          />
+        <div className="space-y-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <AccuracyCard
+              title="Photo"
+              subtitle="Did it pick the stamp photo?"
+              accuracy={stats.photoAccuracy}
+              summary={
+                stats.photoRated > 0
+                  ? `Right on ${stats.photoGood} of ${stats.photoRated} you rated`
+                  : "Rate some photos to see this"
+              }
+              target={stats.target}
+            />
+            <AccuracyCard
+              title="Dims"
+              subtitle="Did it read L × W × T correctly?"
+              accuracy={stats.dimsAccuracy}
+              summary={
+                stats.dimsRated > 0
+                  ? `Right on ${stats.dimsGood}, close on ${stats.dimsClose}, wrong on ${stats.dimsBad}`
+                  : "Rate some dims to see this"
+              }
+              target={stats.target}
+            />
+            <AccuracyCard
+              title="Overall"
+              subtitle="Photo and dims both right?"
+              accuracy={stats.overallAccuracy}
+              summary={
+                stats.overallRated > 0
+                  ? `Fully right on ${stats.overallGood} of ${stats.overallRated}`
+                  : "Needs both Photo and Dims rated"
+              }
+              target={stats.target}
+            />
+          </div>
+          <p
+            className={cn(
+              "text-xs",
+              surfboardDimensionPhotoMatchMeetsTarget(stats)
+                ? "text-emerald-700"
+                : "text-muted-foreground",
+            )}
+          >
+            {surfboardDimensionPhotoMatchMeetsTarget(stats)
+              ? "Photo and Dims both at 95% — sell autofill can use LLM dimensions."
+              : "Sell autofill withholds LLM dimensions until Photo and Dims both hit 95%."}
+          </p>
         </div>
       ) : null}
 
@@ -1144,6 +1161,10 @@ function AccuracyCard({
         {formatAccuracyPct(accuracy)}
       </p>
       <p className="mt-1 text-xs text-muted-foreground">{summary}</p>
+      <p className="mt-0.5 text-[11px] text-muted-foreground">
+        Target {formatAccuracyPct(target)}
+        {onTarget ? " · met" : null}
+      </p>
       {accuracy != null ? (
         <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-slate-100">
           <div

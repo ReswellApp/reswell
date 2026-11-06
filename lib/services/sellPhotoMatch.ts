@@ -11,8 +11,13 @@ import {
   resolveConfiguredModel,
 } from "@/lib/llm/app-models"
 import { searchSellCatalogForSell } from "@/lib/services/sellCatalogSearch"
-import { insertSurfboardDimensionPhotoMatch } from "@/lib/db/surfboardDimensionPhoto"
+import {
+  aggregateSurfboardDimensionPhotoMatchStats,
+  insertSurfboardDimensionPhotoMatch,
+} from "@/lib/db/surfboardDimensionPhoto"
 import { surfboardDimensionPhotoMemoryPromptBlock } from "@/lib/services/surfboardDimensionPhotoMemory"
+import { surfboardDimensionPhotoMatchMeetsTarget } from "@/lib/validations/surfboardDimensionPhoto"
+import type { SellPhotoObservation } from "@/lib/validations/sellPhotoMatch"
 import { listingObjectPublicUrl } from "@/lib/supabase/storage-upload-xhr"
 import {
   coerceSellPhotoObservation,
@@ -37,6 +42,8 @@ const sellPhotoObservationModelSchema = z.object({
 })
 
 const MAX_ROWS = 8
+/** Same default window as /admin/dimension-photo-match stats. */
+const ACCURACY_WINDOW_MS = 30 * 24 * 60 * 60 * 1000
 
 function photoMatchFeature() {
   const feature = APP_LLM_FEATURES.find((item) => item.id === "sell_photo_match")
@@ -67,6 +74,32 @@ Do not invent a brand from the outline, color, or template of the board.`
 
 export function isSellPhotoMatchEnabled(): boolean {
   return isAppLlmFeatureEnabled(photoMatchFeature())
+}
+
+/**
+ * Sell autofill only gets L×W×T once Photo and Dims rated accuracy both clear the
+ * 95% target. Corpus capture still stores the raw read for admin training.
+ */
+export async function observationForSellAutofill(
+  supabase: SupabaseClient,
+  observation: SellPhotoObservation,
+): Promise<SellPhotoObservation> {
+  const fromIso = new Date(Date.now() - ACCURACY_WINDOW_MS).toISOString()
+  try {
+    const stats = await aggregateSurfboardDimensionPhotoMatchStats(supabase, fromIso)
+    if (surfboardDimensionPhotoMatchMeetsTarget(stats)) return observation
+  } catch (err) {
+    console.error(
+      "[sellPhotoMatch] accuracy gate failed; withholding dims:",
+      err instanceof Error ? err.message : err,
+    )
+  }
+  return {
+    ...observation,
+    lengthText: null,
+    widthText: null,
+    thicknessText: null,
+  }
 }
 
 export type SellPhotoMatchOutcome =
@@ -246,12 +279,14 @@ export async function matchSellPhoto(input: {
     })()
   })
 
+  const clientObservation = await observationForSellAutofill(input.supabase, observation)
+
   const categories = sellPhotoMatchSearchCategories()
-  const primary = sellPhotoMatchLookupQuery(observation)
+  const primary = sellPhotoMatchLookupQuery(clientObservation)
   if (!primary) {
     return {
       ok: true,
-      data: { observation, lookupQuery: null, matchTier: "none", rows: [] },
+      data: { observation: clientObservation, lookupQuery: null, matchTier: "none", rows: [] },
     }
   }
 
@@ -259,19 +294,24 @@ export async function matchSellPhoto(input: {
   if (first.rows.length > 0) {
     return {
       ok: true,
-      data: { observation, lookupQuery: primary, matchTier: first.matchTier, rows: first.rows },
+      data: {
+        observation: clientObservation,
+        lookupQuery: primary,
+        matchTier: first.matchTier,
+        rows: first.rows,
+      },
     }
   }
 
-  const brandOnly = observation.brandText?.trim() ?? ""
-  const modelOnly = observation.modelText?.trim() ?? ""
+  const brandOnly = clientObservation.brandText?.trim() ?? ""
+  const modelOnly = clientObservation.modelText?.trim() ?? ""
   if (brandOnly.length >= 2 && modelOnly.length >= 2) {
     const brandSearch = await searchCatalog(input.supabase, brandOnly, categories)
     if (brandSearch.rows.length > 0) {
       return {
         ok: true,
         data: {
-          observation,
+          observation: clientObservation,
           lookupQuery: brandOnly,
           matchTier: brandSearch.matchTier,
           rows: brandSearch.rows,
@@ -286,7 +326,7 @@ export async function matchSellPhoto(input: {
       return {
         ok: true,
         data: {
-          observation,
+          observation: clientObservation,
           lookupQuery: modelOnly,
           matchTier: modelSearch.matchTier,
           rows: modelSearch.rows,
@@ -297,6 +337,11 @@ export async function matchSellPhoto(input: {
 
   return {
     ok: true,
-    data: { observation, lookupQuery: primary, matchTier: "none", rows: [] },
+    data: {
+      observation: clientObservation,
+      lookupQuery: primary,
+      matchTier: "none",
+      rows: [],
+    },
   }
 }
