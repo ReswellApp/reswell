@@ -4,6 +4,10 @@
 
 import { withMetaCatalogTracking } from "@/lib/ads/tracking-urls"
 import { listingDetailHref } from "@/lib/listing-href"
+import {
+  capitalizeWords,
+  normalizeExcessiveCapitalization,
+} from "@/lib/listing-labels"
 import { primaryListingImageUrl } from "@/lib/listing-metadata"
 import { metaCityCustomLabelForListing } from "@/lib/meta/city-catalog-feed"
 import {
@@ -387,7 +391,8 @@ export function parseMetaListingPrice(
 
 function listingTitle(listing: MetaListingProductSource): string {
   const title = typeof listing.title === "string" ? listing.title.trim() : ""
-  return title || "Untitled listing"
+  if (!title) return "Untitled listing"
+  return capitalizeWords(title)
 }
 
 function mapCondition(condition: string | null | undefined): "new" | "used" | "refurbished" {
@@ -486,7 +491,7 @@ function primaryVideoLink(listing: MetaListingProductSource): string | undefined
 function catalogDescription(listing: MetaListingProductSource): string {
   const raw =
     typeof listing.description === "string" ? listing.description.trim() : ""
-  const stripped = stripHtml(raw)
+  const stripped = normalizeExcessiveCapitalization(stripHtml(raw))
   if (stripped) {
     return stripped.length > MAX_DESCRIPTION_LENGTH
       ? `${stripped.slice(0, MAX_DESCRIPTION_LENGTH - 1)}…`
@@ -522,7 +527,8 @@ export function listingToMetaCatalogFeedItem(
   const imageLink = primaryImageLink(listing)
   if (!imageLink) return null
 
-  const brand = typeof listing.brand === "string" ? listing.brand.trim() : ""
+  const brandRaw = typeof listing.brand === "string" ? listing.brand.trim() : ""
+  const brand = brandRaw ? normalizeExcessiveCapitalization(brandRaw) : ""
   const customLabel0 = getMetaCatalogCustomLabel0ForListing(listing, context)
   const customLabel1 = getMetaCatalogCustomLabel1ForListing(listing, context)
   const customLabel2 = getMetaCatalogCustomLabel2ForListing(listing)
