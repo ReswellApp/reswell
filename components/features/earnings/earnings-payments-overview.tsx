@@ -94,6 +94,7 @@ export function EarningsPaymentsOverview({
   connectStatus,
   statusFetchFailed,
   activityHasMore,
+  onCashOut,
 }: {
   wallet: EarningsWalletSnapshot | null
   transactions: EarningsTransaction[]
@@ -106,6 +107,8 @@ export function EarningsPaymentsOverview({
   connectStatus: StripeConnectStatusPayload | null
   statusFetchFailed: boolean
   activityHasMore: boolean
+  /** Opens the bank cash-out dialog (wired to Bank transfers below). */
+  onCashOut?: () => void
 }) {
   const [periodValue, setPeriodValue] = useState<string>(PERIOD_OPTIONS[0].value)
   const periodDays =
@@ -303,28 +306,54 @@ export function EarningsPaymentsOverview({
                   of the page, or finish setup in <span className="font-medium">Bank transfers</span> below.
                 </p>
               ) : cashOutReady ? (
-                <div className="flex gap-2.5">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-300 shrink-0 mt-0.5" aria-hidden />
-                  <div className="space-y-1.5">
-                    <p className="text-primary-foreground/90 leading-relaxed">
-                      <span className="font-medium">Payout details on file.</span>{" "}
-                      {connectStatus?.bankLast4 ? (
-                        <>
-                          Linked account ending in <span className="font-mono tabular-nums">{connectStatus.bankLast4}</span>
-                          . Cash out in Bank transfers below.
-                        </>
-                      ) : (
-                        <>You can cash out in Bank transfers below.</>
-                      )}
-                    </p>
-                    {(connectStatus?.upcomingRequirementsChecklist?.length ?? 0) > 0 ? (
+                <div className="space-y-3">
+                  <div className="flex gap-2.5">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-300 shrink-0 mt-0.5" aria-hidden />
+                    <div className="space-y-1.5">
                       <p className="text-primary-foreground/90 leading-relaxed">
-                        Stripe still needs {connectStatus?.upcomingRequirementsChecklist.join(" and ")}. Use{" "}
-                        <span className="font-medium">Update info</span> in Bank transfers before payouts are
-                        restricted.
+                        <span className="font-medium">Payout details on file.</span>{" "}
+                        {connectStatus?.bankLast4 ? (
+                          <>
+                            Linked account ending in{" "}
+                            <span className="font-mono tabular-nums">{connectStatus.bankLast4}</span>.
+                          </>
+                        ) : (
+                          <>Your bank is ready for payouts.</>
+                        )}
                       </p>
-                    ) : null}
+                      {(connectStatus?.upcomingRequirementsChecklist?.length ?? 0) > 0 ? (
+                        <p className="text-primary-foreground/90 leading-relaxed">
+                          Stripe still needs {connectStatus?.upcomingRequirementsChecklist.join(" and ")}. Use{" "}
+                          <span className="font-medium">Update info</span> in Bank transfers before payouts are
+                          restricted.
+                        </p>
+                      ) : null}
+                    </div>
                   </div>
+                  {onCashOut ? (
+                    <div className="space-y-1.5">
+                      <Button
+                        type="button"
+                        className={cn(
+                          "w-full sm:w-auto rounded-full font-medium",
+                          "bg-primary-foreground text-[hsl(222_36%_30%)] hover:bg-primary-foreground/90",
+                          "dark:text-primary",
+                        )}
+                        disabled={displayAvailable < 10}
+                        onClick={onCashOut}
+                      >
+                        Cash out{displayAvailable >= 10 ? ` — $${displayAvailable.toFixed(2)}` : ""}
+                      </Button>
+                      {displayAvailable < 10 ? (
+                        <p className="text-xs text-primary-foreground/75 leading-snug">
+                          Minimum bank cash out is $10.00.
+                          {displayAvailable > 0
+                            ? ` You have $${displayAvailable.toFixed(2)} ready.`
+                            : " Ready balance appears here after pending sales clear."}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </div>
               ) : (
                 <p className="text-primary-foreground/90 leading-relaxed">

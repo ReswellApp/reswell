@@ -10,7 +10,10 @@ import { EarningsLifetimeStats } from "@/components/features/earnings/earnings-l
 import { EarningsActivity } from "@/components/features/earnings/earnings-activity"
 import { EarningsBalanceListings } from "@/components/features/earnings/earnings-balance-listings"
 import type { EarningsBalanceListingRow } from "@/lib/earnings-balance-listings"
-import { EarningsStripePayoutCard } from "@/components/features/earnings/earnings-stripe-payout-card"
+import {
+  EarningsStripePayoutCard,
+  type StripeBankPayoutSectionHandle,
+} from "@/components/features/earnings/earnings-stripe-payout-card"
 import { EarningsPaymentsOverview } from "@/components/features/earnings/earnings-payments-overview"
 import { DashboardPageHeader } from "@/components/features/dashboard/dashboard-page-header"
 import type { StripeConnectStatusPayload } from "@/lib/utils/stripe-connect-status"
@@ -61,6 +64,7 @@ export default function EarningsPage() {
     lifetime_cashed_out: string
     expires: number
   } | null>(null)
+  const bankPayoutSectionRef = useRef<StripeBankPayoutSectionHandle>(null)
 
   const fetchGenerationRef = useRef(0)
   const earningsResyncDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -365,6 +369,11 @@ export default function EarningsPage() {
             connectStatus={stripeConnectStatus}
             statusFetchFailed={stripeStatusFailed}
             activityHasMore={activityHasMore}
+            onCashOut={
+              stripePayoutsEnabled && !stripeBlockLoading
+                ? () => bankPayoutSectionRef.current?.openCashOut()
+                : undefined
+            }
           />
         </section>
 
@@ -388,6 +397,7 @@ export default function EarningsPage() {
           <section id="earnings-bank-payout" className="scroll-mt-28 space-y-3">
             <h2 className="text-base font-semibold text-foreground">Bank transfers</h2>
             <EarningsStripePayoutCard
+              ref={bankPayoutSectionRef}
               enabled={stripePayoutsEnabled}
               isLoading={stripeBlockLoading}
               statusFetchFailed={stripeStatusFailed}
