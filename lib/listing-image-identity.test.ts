@@ -3,6 +3,7 @@ import { describe, it } from "node:test"
 import {
   assignListingImageIdsFromExistingUrls,
   isListingImageUniqueViolation,
+  listingImageUrlKey,
   listingImageUrlsEquivalent,
 } from "./listing-image-identity.ts"
 
@@ -13,6 +14,20 @@ describe("listingImageUrlsEquivalent", () => {
     assert.equal(
       listingImageUrlsEquivalent(STORAGE, "/media/listings/user/photo-full.webp"),
       true,
+    )
+  })
+
+  it("treats an absolute site media URL as the same photo", () => {
+    assert.equal(
+      listingImageUrlsEquivalent(
+        STORAGE,
+        "https://www.reswell.app/media/listings/user/photo-full.webp",
+      ),
+      true,
+    )
+    assert.equal(
+      listingImageUrlKey("https://www.reswell.app/media/listings/user/photo-full.webp"),
+      "user/photo-full.webp",
     )
   })
 
