@@ -23,7 +23,10 @@ import type {
   SurfboardDimensionPhotoMatchRow,
   SurfboardDimensionPhotoMatchStats,
 } from "@/lib/db/surfboardDimensionPhoto"
-import { surfboardDimensionPhotoMatchMeetsTarget } from "@/lib/validations/surfboardDimensionPhoto"
+import {
+  SURFBOARD_DIMENSION_PHOTO_MATCH_STATS_DAYS,
+  surfboardDimensionPhotoMatchMeetsTarget,
+} from "@/lib/validations/surfboardDimensionPhoto"
 import { Loader2, Minus, Plus, RefreshCw, RotateCcw, ZoomIn } from "lucide-react"
 
 type RatingFilter = "all" | "unrated" | "good" | "close" | "bad" | "excluded"
@@ -151,7 +154,7 @@ export function DimensionPhotoMatchAdminClient() {
       const rating = ratingOverride ?? filter
       try {
         const params = new URLSearchParams({
-          days: "90",
+          days: String(SURFBOARD_DIMENSION_PHOTO_MATCH_STATS_DAYS),
           rating,
           limit: "100",
         })

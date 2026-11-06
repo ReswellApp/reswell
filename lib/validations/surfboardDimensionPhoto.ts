@@ -24,6 +24,9 @@ export type SurfboardDimensionPhotoRefSource =
 /** Photo pick and dims read must each hit this rated accuracy before we treat the harness as ready. */
 export const SURFBOARD_DIMENSION_PHOTO_MATCH_TARGET = 0.95
 
+/** Trailing window for Photo/Dims accuracy (sell autofill gate + admin stats). */
+export const SURFBOARD_DIMENSION_PHOTO_MATCH_STATS_DAYS = 30
+
 /** Both Photo and Dims accuracy must clear the target (Overall alone is not enough). */
 export function surfboardDimensionPhotoMatchMeetsTarget(stats: {
   photoAccuracy: number | null
@@ -52,7 +55,9 @@ export type SurfboardDimensionPhotoJevReview = {
 }
 
 export const surfboardDimensionPhotoMatchListQuerySchema = z.object({
-  days: z.coerce.number().int().min(1).max(90).optional().default(30),
+  days: z.coerce.number().int().min(1).max(90).optional().default(
+    SURFBOARD_DIMENSION_PHOTO_MATCH_STATS_DAYS,
+  ),
   rating: z
     .enum(["unrated", "good", "close", "bad", "excluded", "all"])
     .optional()

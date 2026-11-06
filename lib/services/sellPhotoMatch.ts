@@ -16,8 +16,12 @@ import {
   insertSurfboardDimensionPhotoMatch,
 } from "@/lib/db/surfboardDimensionPhoto"
 import { surfboardDimensionPhotoMemoryPromptBlock } from "@/lib/services/surfboardDimensionPhotoMemory"
-import { surfboardDimensionPhotoMatchMeetsTarget } from "@/lib/validations/surfboardDimensionPhoto"
+import {
+  SURFBOARD_DIMENSION_PHOTO_MATCH_STATS_DAYS,
+  surfboardDimensionPhotoMatchMeetsTarget,
+} from "@/lib/validations/surfboardDimensionPhoto"
 import type { SellPhotoObservation } from "@/lib/validations/sellPhotoMatch"
+import { createServiceRoleClient } from "@/lib/supabase/server"
 import { listingObjectPublicUrl } from "@/lib/supabase/storage-upload-xhr"
 import {
   coerceSellPhotoObservation,
@@ -43,7 +47,8 @@ const sellPhotoObservationModelSchema = z.object({
 
 const MAX_ROWS = 8
 /** Same default window as /admin/dimension-photo-match stats. */
-const ACCURACY_WINDOW_MS = 30 * 24 * 60 * 60 * 1000
+const ACCURACY_WINDOW_MS =
+  SURFBOARD_DIMENSION_PHOTO_MATCH_STATS_DAYS * 24 * 60 * 60 * 1000
 
 function photoMatchFeature() {
   const feature = APP_LLM_FEATURES.find((item) => item.id === "sell_photo_match")
@@ -81,12 +86,16 @@ export function isSellPhotoMatchEnabled(): boolean {
  * 95% target. Corpus capture still stores the raw read for admin training.
  */
 export async function observationForSellAutofill(
-  supabase: SupabaseClient,
   observation: SellPhotoObservation,
 ): Promise<SellPhotoObservation> {
   const fromIso = new Date(Date.now() - ACCURACY_WINDOW_MS).toISOString()
   try {
-    const stats = await aggregateSurfboardDimensionPhotoMatchStats(supabase, fromIso)
+    // Matches are staff-only under RLS; the catalog anon client used for search
+    // cannot see ratings, so the gate must read with the service role.
+    const stats = await aggregateSurfboardDimensionPhotoMatchStats(
+      createServiceRoleClient(),
+      fromIso,
+    )
     if (surfboardDimensionPhotoMatchMeetsTarget(stats)) return observation
   } catch (err) {
     console.error(
@@ -279,7 +288,7 @@ export async function matchSellPhoto(input: {
     })()
   })
 
-  const clientObservation = await observationForSellAutofill(input.supabase, observation)
+  const clientObservation = await observationForSellAutofill(observation)
 
   const categories = sellPhotoMatchSearchCategories()
   const primary = sellPhotoMatchLookupQuery(clientObservation)
