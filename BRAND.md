@@ -50,42 +50,58 @@ First-party attribution (`lib/ads/attribution.ts`) classifies: `google_ads`, `me
 - Ad efficiency targets: not specified — ask user
 
 ## Current Performance Snapshot
-**Public lifetime GMS (as of audit pull via `GET /api/feed/sold-stats` on www.reswell.app):**
+**As of 2026-11-06 (America/Los_Angeles).** Official lifetime from `GET /api/feed/sold-stats`. Monthly / trailing from public sold-feed sale lines (`soldPrice` × sale; 395 lines — $118,542 sum; methodology differs slightly from official RPC).
 
 | Metric | Value | Notes |
 |--------|-------|-------|
-| Lifetime GMS | **$111,874.63** | Headline marketplace GMS |
-| Lifetime items sold | **396** | Confirmed + tipped sales per RPC |
-| Lifetime blended AOV | **$282.51** | `$111,874.63 / 396` |
-| Active listings | **~190+** | About page live count |
-| Monthly GMS | **Unavailable** | Needs admin insights or DB |
+| Lifetime GMS (official) | **$111,874.63** | 396 items sold |
+| Lifetime blended AOV (official) | **$282.51** | `$111,875 / 396` |
+| Sold-feed GMS (trend source) | **$118,541.98** | 395 sale lines; surfboard AOV **$484.15** |
+| Live inventory | **190+** | About page |
+| Unique selling shops (lifetime feed) | **48** | Top shop **65.3%** of feed GMS |
+| L30d GMS | **$27,625** | 101 orders · run-rate ≈ current month pace |
+| L60d / L90d run-rate | **~$28.2k / ~$27.0k** | Growth **plateaued** since Sep |
+| Peak calendar month | **Oct 2026 ~$29.4k** | Sep ~$28.6k · Aug ~$22.6k |
 | Ad spend / CTR / CPA / ROAS | **Unavailable** | Adspirer MCP not registered in this cloud agent |
 
-| Platform | Campaigns | Monthly Spend | CTR | CPA | ROAS |
-|----------|-----------|---------------|-----|-----|------|
-| Google Ads | — | — | — | — | — |
-| Meta Ads | — | — | — | — | — |
-| ChatGPT Ads | — | — | — | — | — |
+### Monthly GMS (sold feed, PT calendar months)
+
+| Month | GMS | Orders | AOV | Surfboard GMS | Surfboard orders |
+|-------|-----|--------|-----|---------------|------------------|
+| 2026-05 | $8,390 | 14 | $599 | $8,390 | 14 |
+| 2026-06 | $9,686 | 29 | $334 | $8,921 | 16 |
+| 2026-07 | $14,209 | 44 | $323 | $13,110 | 26 |
+| 2026-08 | $22,637 | 88 | $257 | $20,420 | 47 |
+| 2026-09 | $28,555 | 101 | $283 | $26,145 | 64 |
+| 2026-10 | $29,427 | 97 | $303 | $26,145 | 47 |
+| 2026-11 (partial through Nov 6) | $4,313 | 19 | $227 | $3,510 | 6 |
+
+### Category mix (lifetime sold feed)
+- Surfboards: **$107,966** (91% of feed GMS) · 223 orders · AOV $484
+- Fins: **$9,359** · 137 orders · AOV $68
+- All other gear: **<$1.3k** combined
 
 ## Key Findings from Existing Campaigns
 - In-repo Meta giveaway creatives (`marketing/meta-ads/`) — brand/hook/how-to-enter assets; no performance CSV in repo.
 - Dropoff Meta carousel assets under `public/images/dropoff/meta-ads/`.
 - Admin surfaces exist for first-party + GA4 ad-attributed sales (`/admin/ad-sales`) and Google/Meta Ads Manager (`/admin/ads`) — live numbers require production credentials.
-- Tracking stack is mature in code (Google purchase conversion with `transaction_id`, Meta pixel+CAPI dedup via `event_id`, OpenAI `order_created`, first-party `order_ad_attribution`). Live health (pixels firing correctly in Events Manager / Google Ads) **not audited** — `audit_conversion_tracking` requires Adspirer.
+- Tracking stack is mature in code (Google purchase conversion with `transaction_id`, Meta pixel+CAPI dedup via `event_id`, OpenAI `order_created`, first-party `order_ad_attribution`). Live health **not audited** — `audit_conversion_tracking` requires Adspirer.
+- **Growth constraint:** Sep→Oct GMS flat (~$28–29k). Path to $100k is **~3.6×** current run-rate, not a small optimization.
 
 ## Competitors
 - Facebook Marketplace, Craigslist, Boardal (explicit in About copy)
 - Broader: local shop trade-ins, Facebook groups, OfferUp / eBay (not named in About)
 
 ## Seasonality
-Not documented. Surf retail is typically seasonal by region/hemisphere; treat as gap until admin monthly GMS series is pulled.
+Not documented. Sold-feed months show spring ramp (May) through summer/fall peak; treat regional surf seasonality as a gap until admin monthly series + ad seasonality are pulled.
 
 ## Notes
-- Gaps: no brand voice guide; no budget; no monthly GMS in public API; Adspirer MCP server not available in this Cursor cloud agent (`MCP server does not exist: adspirer`).
+- Gaps: no brand voice guide; no budget; Adspirer MCP server not available in this Cursor cloud agent (`MCP server does not exist: adspirer`).
 - Known constraints:
   - Conversion action primary/secondary setup is configured manually in Google Ads UI (not via Adspirer MCP). Repo `.env.example` already warns: keep purchase as primary EVENT conversion; demote page_view / ATC / begin_checkout / auto-created to Secondary.
   - Live purchase conversion label (`SbbZCJjTirUcEJXB4KRD`) differs from `.env.example` (`FsjrCPnlwbAcEJXB4KRD`) — confirm which is intentional.
   - Canonical host is `www.reswell.app` (apex redirects).
+  - Sold-feed GMS ≠ official sold-stats GMS (price/qty methodology); use sold-stats for headline, sold-feed for trend shape.
 
 ## Strategy
 Active strategy directives are maintained in `STRATEGY.md`. All skills and agents read that file before campaign creation, keyword research, and ad copy generation.
