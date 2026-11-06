@@ -90,6 +90,12 @@ export type BoardsBrowseSearchParams = {
   lat?: string
   lng?: string
   /**
+   * Home-area preference on `/boards`.
+   * `1` — nearby ranking from the saved home area (not a hard radius lock).
+   * `off` — user dismissed home geo for this session; do not re-apply it.
+   */
+  home?: string
+  /**
    * When `1` / `true`, only listings with `shipping_available` (seller offers shipping).
    * Omitted when the filter is off.
    */

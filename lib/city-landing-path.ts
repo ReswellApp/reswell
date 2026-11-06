@@ -43,7 +43,7 @@ export function boardsBrowseLocationHref(label: string): string {
   return `/boards?location=${encodeURIComponent(label)}`
 }
 
-const CITY_LANDING_STRIP_PARAMS = ["location", "lat", "lng", "radius", "page"] as const
+const CITY_LANDING_STRIP_PARAMS = ["location", "lat", "lng", "radius", "home", "page"] as const
 
 /** City landing URL, keeping boards facet params and dropping location/radius. */
 export function cityLandingHrefWithBrowseParams(

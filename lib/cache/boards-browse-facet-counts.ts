@@ -16,6 +16,7 @@ import {
   isBoardsBrowseShippingAvailableParam,
   type BoardsBrowseSearchParams,
 } from "@/lib/marketplace-slug-metadata"
+import { boardsBrowseHasLatLng } from "@/lib/utils/boards-browse-geocode"
 import {
   computeBoardsBrowseFacetCounts,
   facetCountsByParamKey,
@@ -44,7 +45,9 @@ function facetCountContextFromSearchParams(
     brandModelId: searchParams.brandModelId,
     minPrice: searchParams.minPrice ? Number(searchParams.minPrice) : undefined,
     maxPrice: searchParams.maxPrice ? Number(searchParams.maxPrice) : undefined,
-    location: searchParams.location,
+    location: boardsBrowseHasLatLng(searchParams.lat, searchParams.lng)
+      ? undefined
+      : searchParams.location,
     shippingAvailable: isBoardsBrowseShippingAvailableParam(searchParams.shipping)
       ? true
       : undefined,

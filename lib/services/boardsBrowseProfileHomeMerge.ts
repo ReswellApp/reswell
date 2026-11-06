@@ -1,6 +1,12 @@
 import type { ProfileBrowseHome } from "@/lib/db/profileBrowseHome"
 import { normalizeBoardBrowseRadius } from "@/lib/boards-browse-location"
 import {
+  BOARDS_BROWSE_HOME_ON,
+  boardsBrowseHomeCoordsMatch,
+  isBoardsBrowseHomeDismissed,
+  isBoardsBrowseHomePreference,
+} from "@/lib/boards-browse-home"
+import {
   boardsBrowseHasLatLng,
   boardsBrowsePathWithSearchParams,
   boardsBrowseSearchParamsToURLSearchParams,
@@ -13,7 +19,7 @@ import {
 
 export type BoardsBrowseEffectiveFilters = {
   searchParams: BoardsBrowseSearchParams
-  /** True when profile home area adjusted browse params. */
+  /** True when profile home area is active and the user has not dismissed it. */
   homeFromProfile: boolean
   /** True when geo anchor came from profile (URL had no lat/lng). */
   geoFromProfile: boolean
@@ -29,16 +35,35 @@ function homeGeoComplete(home: ProfileBrowseHome): boolean {
   )
 }
 
+function urlGeoMatchesHomeRadius(
+  searchParams: BoardsBrowseSearchParams,
+  home: ProfileBrowseHome,
+): boolean {
+  if (!home.radiusMi) return false
+  return normalizeBoardBrowseRadius(searchParams.radius ?? null) === home.radiusMi
+}
+
 /**
  * Applies the signed-in user's saved home area onto browse params when
- * `browse_home_apply_on_boards` is true. Geo fills in only when the URL has
- * no coordinates. Optional local-pickup-only adds `pickup=1`.
+ * `browse_home_apply_on_boards` is true and the user has not dismissed it
+ * (`home=off`). Geo fills in only when the URL has no coordinates. Matching
+ * legacy URLs (same coords + radius, no `home` flag) are upgraded to `home=1`
+ * so the area ranks nearby boards instead of locking a hard radius. Optional
+ * local-pickup-only adds `pickup=1`.
  */
 export function mergeProfileBrowseHomeIntoBrowseParams(
   searchParams: BoardsBrowseSearchParams,
   home: ProfileBrowseHome | null | undefined,
 ): BoardsBrowseEffectiveFilters {
   if (!home?.applyOnBoards) {
+    return {
+      searchParams,
+      homeFromProfile: false,
+      geoFromProfile: false,
+    }
+  }
+
+  if (isBoardsBrowseHomeDismissed(searchParams.home)) {
     return {
       searchParams,
       homeFromProfile: false,
@@ -57,10 +82,14 @@ export function mergeProfileBrowseHomeIntoBrowseParams(
       next.lat = String(home.lat)
       next.lng = String(home.lng)
       next.radius = home.radiusMi ?? undefined
-    } else if (!next.radius?.trim() && home.radiusMi) {
-      next.radius = home.radiusMi
-    } else if (!next.location?.trim() && home.location.trim()) {
-      next.location = home.location.trim()
+      next.home = BOARDS_BROWSE_HOME_ON
+    } else if (
+      !isBoardsBrowseHomePreference(next.home) &&
+      boardsBrowseHomeCoordsMatch(searchParams.lat, searchParams.lng, home) &&
+      urlGeoMatchesHomeRadius(searchParams, home)
+    ) {
+      // Previously injected home URLs had no opt-out flag and used a hard radius.
+      next.home = BOARDS_BROWSE_HOME_ON
     }
   }
 
