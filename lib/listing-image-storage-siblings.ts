@@ -4,6 +4,8 @@
  * `listing_images`. Cleanup has to name the other two itself.
  */
 
+import { listingImageUrlKey } from "@/lib/listing-image-identity"
+
 const LISTING_IMAGE_ROLE_RE =
   /-(full|thumb|card2|film2|card|film)\.(webp|jpe?g)$/i
 
@@ -51,16 +53,35 @@ export function listingImageSiblingPublicUrls(
   return out
 }
 
+/** Object-path identity for every sibling of the given listing photo URLs. */
+export function listingImageSiblingObjectKeys(
+  urls: Iterable<string | null | undefined>,
+): Set<string> {
+  const keys = new Set<string>()
+  for (const url of listingImageSiblingPublicUrls(urls)) {
+    const key = listingImageUrlKey(url)
+    if (key) keys.add(key)
+  }
+  return keys
+}
+
 /**
  * Storage URLs to delete for removed photos, minus any object a photo that is
  * still on the listing still needs (including its card and film siblings).
+ *
+ * Keep matching is by storage object path, so a Supabase public URL and a
+ * `/media/listings/...` proxy for the same file both protect that file.
  */
 export function listingStorageUrlsToRemove(
   removedUrls: Iterable<string | null | undefined>,
   keepUrls?: Iterable<string | null | undefined>,
 ): string[] {
-  const keep = new Set(listingImageSiblingPublicUrls(keepUrls ?? []))
-  return listingImageSiblingPublicUrls(removedUrls).filter((url) => !keep.has(url))
+  const keepKeys = listingImageSiblingObjectKeys(keepUrls ?? [])
+  return listingImageSiblingPublicUrls(removedUrls).filter((url) => {
+    const key = listingImageUrlKey(url)
+    if (!key) return true
+    return !keepKeys.has(key)
+  })
 }
 
 /**

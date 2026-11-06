@@ -22,6 +22,17 @@ export function listingImageUrlKey(url: string | null | undefined): string {
     if (path && !path.includes("..")) return path
   }
 
+  // Absolute site URLs such as https://www.reswell.app/media/listings/...
+  try {
+    const parsed = new URL(trimmed)
+    if (parsed.pathname.startsWith(LISTING_MEDIA_PROXY_PATH_PREFIX)) {
+      const path = parsed.pathname.slice(LISTING_MEDIA_PROXY_PATH_PREFIX.length)
+      if (path && !path.includes("..")) return path
+    }
+  } catch {
+    /* not an absolute URL */
+  }
+
   return trimmed
 }
 
