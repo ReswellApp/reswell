@@ -57,6 +57,25 @@ test("balanceSheetPeriodStart returns UTC month start and rolling 3 months", () 
   )
 })
 
+test("balanceSheetPeriodStart clamps 3-month window to last valid UTC day", () => {
+  assert.equal(
+    balanceSheetPeriodStart("3m", new Date("2026-05-31T15:30:00.000Z"))?.toISOString(),
+    "2026-02-28T15:30:00.000Z",
+  )
+  assert.equal(
+    balanceSheetPeriodStart("3m", new Date("2026-07-31T15:30:00.000Z"))?.toISOString(),
+    "2026-04-30T15:30:00.000Z",
+  )
+  assert.equal(
+    balanceSheetPeriodStart("3m", new Date("2026-12-31T15:30:00.000Z"))?.toISOString(),
+    "2026-09-30T15:30:00.000Z",
+  )
+  assert.equal(
+    balanceSheetPeriodStart("3m", new Date("2028-05-31T15:30:00.000Z"))?.toISOString(),
+    "2028-02-29T15:30:00.000Z",
+  )
+})
+
 test("balanceSheetPeriodLabel names each P&L window", () => {
   assert.equal(balanceSheetPeriodLabel("month"), "This month")
   assert.equal(balanceSheetPeriodLabel("3m"), "Last 3 months")

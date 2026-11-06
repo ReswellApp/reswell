@@ -38,9 +38,21 @@ export function balanceSheetPeriodStart(
     return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1))
   }
 
-  const start = new Date(now.getTime())
-  start.setUTCMonth(start.getUTCMonth() - 3)
-  return start
+  // Clamp to the last valid day, matching PostgreSQL `timestamp - interval '3 months'`.
+  const year = now.getUTCFullYear()
+  const month = now.getUTCMonth() - 3
+  const lastDay = new Date(Date.UTC(year, month + 1, 0)).getUTCDate()
+  return new Date(
+    Date.UTC(
+      year,
+      month,
+      Math.min(now.getUTCDate(), lastDay),
+      now.getUTCHours(),
+      now.getUTCMinutes(),
+      now.getUTCSeconds(),
+      now.getUTCMilliseconds(),
+    ),
+  )
 }
 
 export function balanceSheetPeriodLabel(period: BalanceSheetPeriod): string {
