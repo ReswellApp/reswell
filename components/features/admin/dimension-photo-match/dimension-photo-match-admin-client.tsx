@@ -190,7 +190,8 @@ export function DimensionPhotoMatchAdminClient() {
 
   useEffect(() => {
     setZoom(1)
-    zoomRef.current?.resetTransform(0)
+    // Short ease so the board settles instead of snapping.
+    zoomRef.current?.resetTransform(180, "easeOut")
   }, [lightbox?.id])
 
   async function syncListings() {
@@ -862,57 +863,70 @@ export function DimensionPhotoMatchAdminClient() {
 
       <Dialog open={Boolean(lightbox)} onOpenChange={(open) => !open && setLightbox(null)}>
         <DialogContent
-          className="flex max-h-[94dvh] w-[min(98vw,64rem)] max-w-5xl flex-col gap-0 overflow-hidden p-0"
+          className={cn(
+            "grid h-[min(94dvh,920px)] w-[min(98vw,64rem)] max-w-5xl grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0",
+            "duration-300 ease-out",
+            "data-[state=open]:zoom-in-100 data-[state=closed]:zoom-out-100",
+            "data-[state=open]:slide-in-from-top-0 data-[state=closed]:slide-out-to-top-0",
+            "data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0",
+          )}
           showCloseButton
         >
-          <DialogHeader className="shrink-0 space-y-1 border-b px-4 py-3 pr-12 text-left">
-            <DialogTitle className="text-base">
+          <DialogHeader className="space-y-1 border-b px-4 py-3 pr-12 text-left">
+            <DialogTitle className="text-base tabular-nums">
               {lightbox ? predictedDimsLine(lightbox) : "Photo"}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-pretty leading-relaxed">
               {lightbox?.priorMatchId
                 ? "Rematch of a prior Bad/Close run — both attempts are saved. "
                 : null}
-              Scroll to zoom, drag to pan, double-click to toggle. Rate whether the photo and the
-              read dims are correct — that trains the model. On Dims Bad/Close, type the actual
-              L×W×T so the next reads learn from ground truth.
+              Scroll to zoom, drag to pan, double-click to toggle. Rate Photo and Dims to train the
+              model. On Dims Bad/Close, enter the actual L×W×T as ground truth.
             </DialogDescription>
           </DialogHeader>
           {lightboxSrc ? (
-            <div className="relative min-h-0 flex-1 bg-slate-950">
+            <div className="relative min-h-0 overflow-hidden bg-slate-950">
               <TransformWrapper
+                key={lightbox?.id ?? "photo"}
                 ref={zoomRef}
                 initialScale={1}
                 minScale={1}
                 maxScale={8}
                 centerOnInit
                 centerZoomedOut
-                limitToBounds={false}
+                limitToBounds
                 smooth
-                wheel={{ step: 0.14 }}
+                wheel={{ step: 0.12 }}
                 panning={{
                   disabled: zoom <= 1.02,
                   allowLeftClickPan: zoom > 1.02,
                   velocityDisabled: false,
                 }}
                 pinch={{ step: 3.2, allowPanning: true }}
-                doubleClick={{ mode: "toggle", step: 2.5 }}
-                onTransform={(_ctx, state) => setZoom(state.scale)}
+                doubleClick={{ mode: "toggle", step: 2.2, animationTime: 220, animationType: "easeOut" }}
+                zoomAnimation={{ animationTime: 220, animationType: "easeOut" }}
+                autoAlignment={{ sizeX: 0, sizeY: 0, animationTime: 200 }}
+                velocityAnimation={{ animationTime: 260 }}
+                onTransform={(_ctx, state) => {
+                  // Only re-render when the badge percent changes — keeps pan/zoom smooth.
+                  const next = Math.round(state.scale * 100) / 100
+                  setZoom((prev) => (Math.abs(prev - next) < 0.005 ? prev : next))
+                }}
               >
                 <TransformComponent
-                  wrapperClass="!h-[min(58dvh,32rem)] !w-full !cursor-grab active:!cursor-grabbing"
+                  wrapperClass="!h-full !w-full !overflow-hidden !cursor-grab active:!cursor-grabbing"
                   contentClass="!flex !h-full !w-full !items-center !justify-center"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={lightboxSrc}
                     alt="Dimensions photo"
-                    className="max-h-[min(58dvh,32rem)] max-w-full select-none object-contain"
+                    className="max-h-full max-w-full select-none object-contain"
                     draggable={false}
                   />
                 </TransformComponent>
               </TransformWrapper>
-              <div className="pointer-events-none absolute bottom-3 left-3 rounded-md bg-black/60 px-2 py-1 text-[11px] font-medium tabular-nums text-white">
+              <div className="pointer-events-none absolute bottom-3 left-3 rounded-md bg-black/60 px-2 py-1 text-[11px] font-medium tabular-nums text-white backdrop-blur-[2px]">
                 {Math.round(zoom * 100)}%
               </div>
               <div className="absolute bottom-3 right-3 flex gap-1">
@@ -920,9 +934,9 @@ export function DimensionPhotoMatchAdminClient() {
                   type="button"
                   size="icon"
                   variant="secondary"
-                  className="h-8 w-8"
+                  className="h-8 w-8 shadow-sm"
                   disabled={zoom <= 1.02}
-                  onClick={() => zoomRef.current?.zoomOut(0.35)}
+                  onClick={() => zoomRef.current?.zoomOut(0.35, 200, "easeOut")}
                 >
                   <Minus className="h-4 w-4" />
                 </Button>
@@ -930,9 +944,9 @@ export function DimensionPhotoMatchAdminClient() {
                   type="button"
                   size="icon"
                   variant="secondary"
-                  className="h-8 w-8"
+                  className="h-8 w-8 shadow-sm"
                   disabled={zoom >= 7.9}
-                  onClick={() => zoomRef.current?.zoomIn(0.35)}
+                  onClick={() => zoomRef.current?.zoomIn(0.35, 200, "easeOut")}
                 >
                   <Plus className="h-4 w-4" />
                 </Button>
@@ -940,32 +954,39 @@ export function DimensionPhotoMatchAdminClient() {
                   type="button"
                   size="icon"
                   variant="secondary"
-                  className="h-8 w-8"
+                  className="h-8 w-8 shadow-sm"
                   disabled={zoom <= 1.02}
-                  onClick={() => zoomRef.current?.resetTransform()}
+                  onClick={() => zoomRef.current?.resetTransform(200, "easeOut")}
                   title="Reset zoom"
                 >
                   <RotateCcw className="h-3.5 w-3.5" />
                 </Button>
               </div>
             </div>
-          ) : null}
+          ) : (
+            <div className="min-h-0 bg-slate-950" />
+          )}
           {lightbox ? (
-            <div className="shrink-0 space-y-3 border-t bg-background px-4 py-3">
-              <p className="text-sm font-medium tabular-nums text-foreground">
-                {predictedDimsLine(lightbox)}
-                {!lightbox.predictedVolume ? (
-                  <span className="ml-2 text-xs font-normal text-muted-foreground">no volume</span>
-                ) : null}
-              </p>
-              {jevHintLine(lightbox) ? (
-                <p className="text-xs text-muted-foreground" title={lightbox.jevReview?.reason ?? undefined}>
-                  {jevHintLine(lightbox)}
-                  {lightbox.predictedConfidence === "low" ? " · low confidence" : null}
-                  {" — soft hint only; still rate Photo + Dims."}
+            <div className="flex max-h-[min(42dvh,22rem)] flex-col gap-3 overflow-y-auto overscroll-contain border-t bg-background px-4 py-3">
+              <div className="space-y-1">
+                <p className="text-sm font-medium tabular-nums text-foreground">
+                  {predictedDimsLine(lightbox)}
+                  {!lightbox.predictedVolume ? (
+                    <span className="ml-2 text-xs font-normal text-muted-foreground">no volume</span>
+                  ) : null}
                 </p>
-              ) : null}
-              <div className="flex flex-wrap items-center justify-between gap-2">
+                {jevHintLine(lightbox) ? (
+                  <p
+                    className="text-pretty text-xs leading-relaxed text-muted-foreground"
+                    title={lightbox.jevReview?.reason ?? undefined}
+                  >
+                    {jevHintLine(lightbox)}
+                    {lightbox.predictedConfidence === "low" ? " · low confidence" : null}
+                    {" — soft hint only; still rate Photo + Dims."}
+                  </p>
+                ) : null}
+              </div>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                 <div className="flex gap-1">
                   <span className="mr-1 self-center text-[10px] font-semibold uppercase text-muted-foreground">
                     Photo
@@ -1022,91 +1043,101 @@ export function DimensionPhotoMatchAdminClient() {
                   />
                 </div>
               </div>
-              {!lightbox.excludedAt &&
-              (lightbox.dimsRating === "bad" || lightbox.dimsRating === "close") ? (
-                <div className="space-y-2 rounded-lg border border-rose-200 bg-rose-50/60 px-3 py-2.5">
-                  <p className="text-xs font-medium text-rose-900">
-                    Actual dims on this stamp — used as ground truth for the next OCR reads
-                    {lightbox.photoRating === "good"
-                      ? " and promoted as an OCR reference when L×W×T are filled."
-                      : "."}
-                  </p>
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                    <label className="space-y-1">
-                      <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                        Length
-                      </span>
-                      <Input
-                        value={correction.length}
-                        onChange={(e) =>
-                          setCorrection((prev) => ({ ...prev, length: e.target.value }))
-                        }
-                        placeholder={`5'8"`}
-                        className="h-9 bg-white font-mono text-sm"
-                        disabled={busyId === lightbox.id}
-                      />
-                    </label>
-                    <label className="space-y-1">
-                      <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                        Width
-                      </span>
-                      <Input
-                        value={correction.width}
-                        onChange={(e) =>
-                          setCorrection((prev) => ({ ...prev, width: e.target.value }))
-                        }
-                        placeholder="17 7/8"
-                        className="h-9 bg-white font-mono text-sm"
-                        disabled={busyId === lightbox.id}
-                      />
-                    </label>
-                    <label className="space-y-1">
-                      <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                        Thickness
-                      </span>
-                      <Input
-                        value={correction.thickness}
-                        onChange={(e) =>
-                          setCorrection((prev) => ({ ...prev, thickness: e.target.value }))
-                        }
-                        placeholder="2 5/16"
-                        className="h-9 bg-white font-mono text-sm"
-                        disabled={busyId === lightbox.id}
-                      />
-                    </label>
-                    <label className="space-y-1">
-                      <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                        Volume L
-                      </span>
-                      <Input
-                        value={correction.volume}
-                        onChange={(e) =>
-                          setCorrection((prev) => ({ ...prev, volume: e.target.value }))
-                        }
-                        placeholder="25.6"
-                        className="h-9 bg-white font-mono text-sm"
-                        disabled={busyId === lightbox.id}
-                      />
-                    </label>
+              <div
+                className={cn(
+                  "grid transition-[grid-template-rows] duration-300 ease-out",
+                  !lightbox.excludedAt &&
+                    (lightbox.dimsRating === "bad" || lightbox.dimsRating === "close")
+                    ? "grid-rows-[1fr]"
+                    : "grid-rows-[0fr]",
+                )}
+              >
+                <div className="min-h-0 overflow-hidden">
+                  <div className="space-y-2 rounded-lg border border-rose-200 bg-rose-50/60 px-3 py-2.5">
+                    <p className="text-pretty text-xs font-medium leading-relaxed text-rose-900">
+                      Actual dims on this stamp — used as ground truth for the next OCR reads
+                      {lightbox.photoRating === "good"
+                        ? " and promoted as an OCR reference when L×W×T are filled."
+                        : "."}
+                    </p>
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                      <label className="space-y-1">
+                        <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                          Length
+                        </span>
+                        <Input
+                          value={correction.length}
+                          onChange={(e) =>
+                            setCorrection((prev) => ({ ...prev, length: e.target.value }))
+                          }
+                          placeholder={`5'8"`}
+                          className="h-9 bg-white font-mono text-sm"
+                          disabled={busyId === lightbox.id}
+                        />
+                      </label>
+                      <label className="space-y-1">
+                        <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                          Width
+                        </span>
+                        <Input
+                          value={correction.width}
+                          onChange={(e) =>
+                            setCorrection((prev) => ({ ...prev, width: e.target.value }))
+                          }
+                          placeholder="17 7/8"
+                          className="h-9 bg-white font-mono text-sm"
+                          disabled={busyId === lightbox.id}
+                        />
+                      </label>
+                      <label className="space-y-1">
+                        <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                          Thickness
+                        </span>
+                        <Input
+                          value={correction.thickness}
+                          onChange={(e) =>
+                            setCorrection((prev) => ({ ...prev, thickness: e.target.value }))
+                          }
+                          placeholder="2 5/16"
+                          className="h-9 bg-white font-mono text-sm"
+                          disabled={busyId === lightbox.id}
+                        />
+                      </label>
+                      <label className="space-y-1">
+                        <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                          Volume L
+                        </span>
+                        <Input
+                          value={correction.volume}
+                          onChange={(e) =>
+                            setCorrection((prev) => ({ ...prev, volume: e.target.value }))
+                          }
+                          placeholder="25.6"
+                          className="h-9 bg-white font-mono text-sm"
+                          disabled={busyId === lightbox.id}
+                        />
+                      </label>
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={busyId === lightbox.id}
+                      onClick={() => void saveCorrectedDims(lightbox)}
+                    >
+                      {busyId === lightbox.id ? (
+                        <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                      ) : null}
+                      Save correct dims
+                    </Button>
                   </div>
-                  <Button
-                    type="button"
-                    size="sm"
-                    disabled={busyId === lightbox.id}
-                    onClick={() => void saveCorrectedDims(lightbox)}
-                  >
-                    {busyId === lightbox.id ? (
-                      <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                    ) : null}
-                    Save correct dims
-                  </Button>
                 </div>
-              ) : null}
+              </div>
               {!lightbox.excludedAt ? (
                 <Button
                   type="button"
                   size="sm"
                   variant="outline"
+                  className="self-start"
                   disabled={busyId === lightbox.id}
                   onClick={() => void excludeMatch(lightbox)}
                 >
