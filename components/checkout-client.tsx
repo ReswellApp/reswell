@@ -235,6 +235,16 @@ export function CheckoutClient({
 
   const listingIds = useMemo(() => listings.map((l) => l.id), [listings])
   const listingIdsKey = listingIds.join(",")
+  const checkoutQuantities = useMemo(
+    () =>
+      Object.fromEntries(
+        listings.map((listing) => [
+          listing.id,
+          Math.max(1, Math.floor(listing.quantity ?? 1)),
+        ]),
+      ),
+    [listings],
+  )
 
   const [shipQuote, setShipQuote] = useState<{
     shippingUsd: number
@@ -1005,12 +1015,7 @@ export function CheckoutClient({
               <div className="rounded-[8px] border border-neutral-200 bg-white p-4 sm:p-5">
                 <PurchaseOptions
                   listingIds={listingIds}
-                  quantities={Object.fromEntries(
-                    listings.map((listing) => [
-                      listing.id,
-                      Math.max(1, Math.floor(listing.quantity ?? 1)),
-                    ]),
-                  )}
+                  quantities={checkoutQuantities}
                   listingTitle={listingSummaryTitle}
                   price={payableTotal}
                   fulfillment={fulfillmentForApi ?? null}

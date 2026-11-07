@@ -33,6 +33,9 @@ import {
   encodeListingQuantitiesMeta,
   resolveMixedCheckoutSellerId,
 } from "@/lib/mixed-checkout"
+import { dbFindRecentDuplicateBuyerCheckoutOrder } from "@/lib/db/recentBuyerCheckoutOrder"
+import { ALREADY_PURCHASED_CHECKOUT_CODE } from "@/lib/stripe/checkout-payment-recovery"
+import { checkoutPaymentIntentIdempotencyKey } from "@/lib/stripe/checkout-payment-intent-idempotency"
 import { evaluateUserPurchase } from "@/lib/services/accountRestrictions"
 import { assertBuyerMayPurchaseListingExclusiveWindow } from "@/lib/services/listingBuyerExclusiveWindow"
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
@@ -626,12 +629,39 @@ export async function createPaymentIntentForUser(
       }
     }
 
+    let duplicateLookupSupabase = promoServiceSupabase
+    if (!duplicateLookupSupabase) {
+      try {
+        duplicateLookupSupabase = createServiceRoleClient()
+      } catch {
+        duplicateLookupSupabase = supabase
+      }
+    }
+    const recentDuplicate = await dbFindRecentDuplicateBuyerCheckoutOrder(
+      duplicateLookupSupabase,
+      {
+        buyerId: user.id,
+        listingIds: listingIdsOrdered,
+      },
+    )
+    if (recentDuplicate) {
+      return NextResponse.json(
+        {
+          error: "You already purchased this item. Open your order instead of paying again.",
+          code: ALREADY_PURCHASED_CHECKOUT_CODE,
+          orderId: recentDuplicate.orderId,
+        },
+        { status: 409, headers: JSON_NO_STORE_HEADERS },
+      )
+    }
+
     const adAttribution = await readAdAttributionFromCookies()
     // Stash hashed-match email for Meta CAPI Purchase on the webhook path (no session).
     const buyerEmailForMeta =
       (await getAuthEmailForUserId(user.id)) ?? user.email?.trim() ?? null
 
-    const paymentIntent = await stripe.paymentIntents.create({
+    const paymentIntent = await stripe.paymentIntents.create(
+      {
       amount: amountCents,
       currency: "usd",
       automatic_payment_methods: { enabled: true },
@@ -700,7 +730,31 @@ export async function createPaymentIntentForUser(
           : {}),
       },
       description: stripeDescription.slice(0, 1000),
-    })
+      },
+      {
+        idempotencyKey: checkoutPaymentIntentIdempotencyKey({
+          buyerId: user.id,
+          listingIds: listingIdsOrdered,
+          quantities: quantityByListingId,
+          amountCents,
+          addressId,
+          fulfillment: impliedFulfillment,
+          promoCodeId,
+        }),
+      },
+    )
+
+    if (paymentIntent.status === "succeeded") {
+      return NextResponse.json(
+        {
+          alreadyPaid: true,
+          paymentIntentId: paymentIntent.id,
+          shippingUsd: bundle.totalShippingUsd,
+          totalUsd: chargedTotalUsd,
+        },
+        { headers: JSON_NO_STORE_HEADERS },
+      )
+    }
 
     if (promoCodeId && promoRef) {
       if (!promoServiceSupabase) {
