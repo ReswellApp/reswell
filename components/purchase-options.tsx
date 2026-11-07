@@ -54,7 +54,9 @@ interface PurchaseOptionsProps {
   buyerEmail?: string | null
   /** Flat Surfboard Shipped checkout. Skips the carrier quote. */
   surfboardShipped?: boolean
-  /** Admin pilot. Null hides Reswell Bucks checkout. */
+  /** Start a new paid attempt for an in-stock quantity listing. */
+  forceNewSession?: boolean
+  /** Admin pilot. Null hides Pay with Reswell Bucks. */
   reswellBucks?: { spendableUsd: number } | null
 }
 
@@ -83,6 +85,7 @@ export function PurchaseOptions({
   hideStripeFooter = false,
   buyerEmail,
   surfboardShipped = false,
+  forceNewSession = false,
   reswellBucks = null,
 }: PurchaseOptionsProps) {
   const showCard = stripeCardCheckoutEnabled()
@@ -143,6 +146,7 @@ export function PurchaseOptions({
             purchaseDetailsReady
             needsShipping={needsShipping}
             surfboardShipped={surfboardShipped}
+            forceNewSession={forceNewSession}
             submitButtonLabel={submitButtonLabel}
             submitButtonClassName={submitButtonClassName}
             buyerEmail={buyerEmail}

@@ -87,6 +87,8 @@ interface CheckoutClientProps {
   surfboardShippedSeed?: SurfboardShippedCheckoutSeed | null
   /** Admin pilot. Null hides Pay with Reswell Bucks. */
   reswellBucksCheckout?: { spendableUsd: number } | null
+  /** Explicit second purchase of an in-stock quantity listing. */
+  forceNewSession?: boolean
 }
 
 function CheckoutShippingArrival({ rate }: { rate: PeerCheckoutShippingRateOption }) {
@@ -119,6 +121,7 @@ export function CheckoutClient({
   acceptedOfferListingIds,
   surfboardShippedSeed = null,
   reswellBucksCheckout = null,
+  forceNewSession = false,
 }: CheckoutClientProps) {
   const isBundle = listings.length > 1
   const offerSuggestedFulfillment = normalizeOfferFulfillment(suggestedFulfillment)
@@ -1031,6 +1034,7 @@ export function CheckoutClient({
                   hideStripeFooter
                   buyerEmail={buyerEmail ?? null}
                   surfboardShipped={surfboardShippedSelected}
+                  forceNewSession={forceNewSession}
                   reswellBucks={surfboardShippedSelected ? null : reswellBucksCheckout}
                 />
                 <p className="mt-3 text-center text-[12px] text-neutral-500">

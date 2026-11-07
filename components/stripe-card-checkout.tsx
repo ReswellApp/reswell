@@ -24,6 +24,12 @@ import {
   paidPaymentIntentIdFromConfirmResult,
   stripePaymentIntentLooksPaid,
 } from "@/lib/stripe/checkout-payment-recovery"
+import {
+  clearStoredCheckoutSessionId,
+  checkoutSessionStorageKey,
+  readStoredCheckoutSessionId,
+  writeStoredCheckoutSessionId,
+} from "@/lib/stripe/checkout-session-storage"
 import { finalizeMarketplaceOrderClient } from "@/lib/stripe/finalize-marketplace-order-client"
 import { cn } from "@/lib/utils"
 
@@ -220,6 +226,11 @@ function CheckoutForm({
     [stripe, elements, confirmAndComplete],
   )
 
+  useEffect(() => {
+    if (!elements) return
+    void elements.fetchUpdates()
+  }, [elements, amountLabel])
+
   const billingEmail = buyerEmail?.trim() || undefined
 
   return (
@@ -330,6 +341,7 @@ export function StripeCardCheckout({
   purchaseDetailsReady = true,
   needsShipping = false,
   surfboardShipped = false,
+  forceNewSession = false,
   submitButtonLabel,
   submitButtonClassName,
   buyerEmail,
@@ -347,6 +359,8 @@ export function StripeCardCheckout({
   purchaseDetailsReady?: boolean
   needsShipping?: boolean
   surfboardShipped?: boolean
+  /** Start a new paid attempt for an in-stock quantity listing. */
+  forceNewSession?: boolean
   /** When set, replaces the default “Pay — $x” label. */
   submitButtonLabel?: string
   submitButtonClassName?: string
@@ -360,11 +374,18 @@ export function StripeCardCheckout({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const paymentLockedRef = useRef(false)
+  const forceNewConsumedRef = useRef(false)
+  const checkoutSessionIdRef = useRef<string | null>(null)
 
   const stripePromise = getStripeBrowser()
 
   const listingIdsKey = [...listingIds].sort().join("|")
   const quantitiesKey = listingQuantitiesKey(quantities)
+  const sessionStorageKey = checkoutSessionStorageKey({
+    listingIdsKey,
+    quantitiesKey,
+    offerId: offerId ?? null,
+  })
 
   const lockPaymentForm = useCallback((locked: boolean) => {
     paymentLockedRef.current = locked
@@ -379,21 +400,18 @@ export function StripeCardCheckout({
     }
 
     if (!purchaseDetailsReady) {
-      setClientSecret(null)
       setError(null)
       setLoading(false)
       return
     }
 
     if (!listingIds.length) {
-      setClientSecret(null)
       setError(null)
       setLoading(false)
       return
     }
 
     if (needsShipping && !shippingAddressId) {
-      setClientSecret(null)
       setError(null)
       setLoading(false)
       return
@@ -401,10 +419,12 @@ export function StripeCardCheckout({
 
     let cancelled = false
     let navigatingAway = false
-    setClientSecret(null)
-    setChargedTotalUsd(null)
     setError(null)
     setLoading(true)
+
+    const storedSessionId = readStoredCheckoutSessionId(sessionStorageKey)
+    const resumeSessionId = checkoutSessionIdRef.current ?? storedSessionId
+    const shouldForceNew = forceNewSession && !forceNewConsumedRef.current
 
     ;(async () => {
       try {
@@ -423,6 +443,8 @@ export function StripeCardCheckout({
             ...(shippingQuoteToken ? { quote_token: shippingQuoteToken } : {}),
             ...(packagingMode ? { packaging_mode: packagingMode } : {}),
             ...(surfboardShipped ? { surfboard_shipped: true } : {}),
+            ...(resumeSessionId && !shouldForceNew ? { checkout_session_id: resumeSessionId } : {}),
+            ...(shouldForceNew ? { force_new_session: true } : {}),
           }),
         })
         const data = (await res.json()) as {
@@ -432,16 +454,38 @@ export function StripeCardCheckout({
           orderId?: string
           alreadyPaid?: boolean
           paymentIntentId?: string
+          checkoutSessionId?: string
           shippingUsd?: number
           totalUsd?: number
         }
         if (cancelled || paymentLockedRef.current) return
+        if (data.checkoutSessionId?.trim()) {
+          const nextSessionId = data.checkoutSessionId.trim()
+          checkoutSessionIdRef.current = nextSessionId
+          writeStoredCheckoutSessionId(sessionStorageKey, nextSessionId)
+        }
+        if (
+          shouldForceNew &&
+          (Boolean(data.checkoutSessionId?.trim()) ||
+            data.alreadyPaid === true ||
+            data.code === ALREADY_PURCHASED_CHECKOUT_CODE)
+        ) {
+          forceNewConsumedRef.current = true
+        }
         if (
           res.status === 409 &&
           data.code === ALREADY_PURCHASED_CHECKOUT_CODE &&
           data.orderId?.trim()
         ) {
           navigatingAway = true
+          clearStoredCheckoutSessionId(sessionStorageKey)
+          router.replace(buildOrderSuccessPath(data.orderId.trim(), { reportPurchase: true }))
+          return
+        }
+        if (res.ok && data.alreadyPaid && data.orderId?.trim()) {
+          paymentLockedRef.current = true
+          navigatingAway = true
+          clearStoredCheckoutSessionId(sessionStorageKey)
           router.replace(buildOrderSuccessPath(data.orderId.trim(), { reportPurchase: true }))
           return
         }
@@ -450,6 +494,7 @@ export function StripeCardCheckout({
           navigatingAway = true
           const finalized = await finalizeMarketplaceOrderClient(data.paymentIntentId.trim())
           if (cancelled) return
+          clearStoredCheckoutSessionId(sessionStorageKey)
           if (finalized.ok) {
             router.replace(buildOrderSuccessPath(finalized.orderId, { reportPurchase: true }))
             return
@@ -469,7 +514,9 @@ export function StripeCardCheckout({
           return
         }
         if (data.clientSecret) {
-          setClientSecret(data.clientSecret)
+          setClientSecret((current) =>
+            current === data.clientSecret ? current : data.clientSecret ?? null,
+          )
           if (typeof data.totalUsd === "number" && Number.isFinite(data.totalUsd) && data.totalUsd > 0) {
             setChargedTotalUsd(data.totalUsd)
           }
@@ -500,6 +547,8 @@ export function StripeCardCheckout({
     purchaseDetailsReady,
     needsShipping,
     surfboardShipped,
+    forceNewSession,
+    sessionStorageKey,
     stripePromise,
     router,
   ])
@@ -524,7 +573,7 @@ export function StripeCardCheckout({
     return null
   }
 
-  if (loading) {
+  if (loading && !clientSecret) {
     return (
       <div className="flex min-h-[320px] flex-col items-center justify-center gap-2 rounded-lg border bg-card text-sm text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin" />
@@ -533,7 +582,7 @@ export function StripeCardCheckout({
     )
   }
 
-  if (error) {
+  if (error && !clientSecret) {
     return (
       <div className="flex min-h-[100px] flex-col items-start justify-center">
         <p className="text-sm text-destructive">{error}</p>
@@ -561,16 +610,19 @@ export function StripeCardCheckout({
         }
 
   return (
-    <Elements key={clientSecret} stripe={stripePromise} options={{ clientSecret, appearance }}>
-      <CheckoutForm
-        clientSecret={clientSecret}
-        amountLabel={`$${(chargedTotalUsd ?? price).toFixed(2)}`}
-        disabled={false}
-        submitButtonLabel={submitButtonLabel}
-        submitButtonClassName={submitButtonClassName}
-        buyerEmail={buyerEmail}
-        onConfirmLockChange={lockPaymentForm}
-      />
-    </Elements>
+    <div className="space-y-3">
+      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      <Elements key={clientSecret} stripe={stripePromise} options={{ clientSecret, appearance }}>
+        <CheckoutForm
+          clientSecret={clientSecret}
+          amountLabel={`$${(chargedTotalUsd ?? price).toFixed(2)}`}
+          disabled={loading}
+          submitButtonLabel={submitButtonLabel}
+          submitButtonClassName={submitButtonClassName}
+          buyerEmail={buyerEmail}
+          onConfirmLockChange={lockPaymentForm}
+        />
+      </Elements>
+    </div>
   )
 }

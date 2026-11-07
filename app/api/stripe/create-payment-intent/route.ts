@@ -36,6 +36,7 @@ import {
 import { dbFindRecentDuplicateBuyerCheckoutOrder } from "@/lib/db/recentBuyerCheckoutOrder"
 import { ALREADY_PURCHASED_CHECKOUT_CODE } from "@/lib/stripe/checkout-payment-recovery"
 import { checkoutPaymentIntentIdempotencyKey } from "@/lib/stripe/checkout-payment-intent-idempotency"
+import { bindCheckoutSessionPaymentIntent } from "@/lib/services/checkoutSessionPayment"
 import { evaluateUserPurchase } from "@/lib/services/accountRestrictions"
 import { assertBuyerMayPurchaseListingExclusiveWindow } from "@/lib/services/listingBuyerExclusiveWindow"
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
@@ -150,6 +151,8 @@ export async function createPaymentIntentForUser(
     quote_token?: string | null
     packaging_mode?: string | null
     quantities?: unknown
+    checkout_session_id?: string | null
+    force_new_session?: boolean
   }
 
   const fromArray = Array.isArray(body.listing_ids)
@@ -629,30 +632,13 @@ export async function createPaymentIntentForUser(
       }
     }
 
-    let duplicateLookupSupabase = promoServiceSupabase
-    if (!duplicateLookupSupabase) {
+    let sessionSupabase: ReturnType<typeof createServiceRoleClient> | null = promoServiceSupabase
+    if (!sessionSupabase) {
       try {
-        duplicateLookupSupabase = createServiceRoleClient()
+        sessionSupabase = createServiceRoleClient()
       } catch {
-        duplicateLookupSupabase = supabase
+        sessionSupabase = null
       }
-    }
-    const recentDuplicate = await dbFindRecentDuplicateBuyerCheckoutOrder(
-      duplicateLookupSupabase,
-      {
-        buyerId: user.id,
-        listingIds: listingIdsOrdered,
-      },
-    )
-    if (recentDuplicate) {
-      return NextResponse.json(
-        {
-          error: "You already purchased this item. Open your order instead of paying again.",
-          code: ALREADY_PURCHASED_CHECKOUT_CODE,
-          orderId: recentDuplicate.orderId,
-        },
-        { status: 409, headers: JSON_NO_STORE_HEADERS },
-      )
     }
 
     const adAttribution = await readAdAttributionFromCookies()
@@ -660,8 +646,7 @@ export async function createPaymentIntentForUser(
     const buyerEmailForMeta =
       (await getAuthEmailForUserId(user.id)) ?? user.email?.trim() ?? null
 
-    const paymentIntent = await stripe.paymentIntents.create(
-      {
+    const createParams: Stripe.PaymentIntentCreateParams = {
       amount: amountCents,
       currency: "usd",
       automatic_payment_methods: { enabled: true },
@@ -722,16 +707,87 @@ export async function createPaymentIntentForUser(
           ? {
               surfboard_shipped: "1",
               surfboard_shipped_cents: String(surfboardCharge.feeCents),
-              surfboard_shipped_shipper_id: surfboardCharge.shipperId,
               surfboard_shipped_run_id: surfboardCharge.runId,
+              surfboard_shipped_shipper_id: surfboardCharge.shipperId,
               surfboard_shipped_window_start: surfboardCharge.windowStart,
               surfboard_shipped_window_end: surfboardCharge.windowEnd,
             }
           : {}),
       },
       description: stripeDescription.slice(0, 1000),
-      },
-      {
+    }
+
+    let paymentIntent: Stripe.PaymentIntent | undefined
+    let checkoutSessionId: string | null = null
+    let useLegacyPaymentIntent = sessionSupabase == null
+
+    if (sessionSupabase) {
+      const bound = await bindCheckoutSessionPaymentIntent({
+        supabase: sessionSupabase,
+        stripe,
+        buyerId: user.id,
+        listingIds: listingIdsOrdered,
+        quantities: quantityByListingId,
+        listings: listingsOrdered,
+        amountCents,
+        fulfillment: impliedFulfillment,
+        addressId: addressId ?? null,
+        promoCodeId,
+        offerId: validatedOfferId,
+        resumeSessionId: typeof body.checkout_session_id === "string" ? body.checkout_session_id : null,
+        forceNewSession: body.force_new_session === true,
+        createParams,
+      })
+
+      if (bound.ok) {
+        paymentIntent = bound.paymentIntent
+        checkoutSessionId = bound.sessionId
+        if (bound.alreadyPaid) {
+          return NextResponse.json(
+            {
+              alreadyPaid: true,
+              paymentIntentId: paymentIntent.id,
+              checkoutSessionId,
+              ...(bound.orderId ? { orderId: bound.orderId } : {}),
+              shippingUsd: bundle.totalShippingUsd,
+              totalUsd: chargedTotalUsd,
+            },
+            { headers: JSON_NO_STORE_HEADERS },
+          )
+        }
+      } else if (bound.missingTable) {
+        useLegacyPaymentIntent = true
+      } else {
+        return NextResponse.json(
+          {
+            error: bound.error,
+            ...(bound.code ? { code: bound.code } : {}),
+            ...(bound.orderId ? { orderId: bound.orderId } : {}),
+          },
+          { status: bound.status, headers: JSON_NO_STORE_HEADERS },
+        )
+      }
+    }
+
+    if (useLegacyPaymentIntent) {
+      const recentDuplicate = await dbFindRecentDuplicateBuyerCheckoutOrder(
+        sessionSupabase ?? supabase,
+        {
+          buyerId: user.id,
+          listingIds: listingIdsOrdered,
+        },
+      )
+      if (recentDuplicate) {
+        return NextResponse.json(
+          {
+            error: "You already purchased this item. Open your order instead of paying again.",
+            code: ALREADY_PURCHASED_CHECKOUT_CODE,
+            orderId: recentDuplicate.orderId,
+          },
+          { status: 409, headers: JSON_NO_STORE_HEADERS },
+        )
+      }
+      paymentIntent = await stripe.paymentIntents.create(createParams, {
         idempotencyKey: checkoutPaymentIntentIdempotencyKey({
           buyerId: user.id,
           listingIds: listingIdsOrdered,
@@ -741,14 +797,22 @@ export async function createPaymentIntentForUser(
           fulfillment: impliedFulfillment,
           promoCodeId,
         }),
-      },
-    )
+      })
+    }
+
+    if (!paymentIntent) {
+      return NextResponse.json(
+        { error: "Could not start checkout" },
+        { status: 500, headers: JSON_NO_STORE_HEADERS },
+      )
+    }
 
     if (paymentIntent.status === "succeeded") {
       return NextResponse.json(
         {
           alreadyPaid: true,
           paymentIntentId: paymentIntent.id,
+          ...(checkoutSessionId ? { checkoutSessionId } : {}),
           shippingUsd: bundle.totalShippingUsd,
           totalUsd: chargedTotalUsd,
         },
@@ -789,6 +853,7 @@ export async function createPaymentIntentForUser(
         clientSecret: paymentIntent.client_secret,
         shippingUsd: bundle.totalShippingUsd,
         totalUsd: chargedTotalUsd,
+        ...(checkoutSessionId ? { checkoutSessionId } : {}),
       },
       { headers: JSON_NO_STORE_HEADERS },
     )

@@ -109,11 +109,13 @@ export default async function CheckoutPage(props: {
     seller_id?: string
     offer?: string
     qty?: string
+    buy_again?: string
   }>
 }) {
   const searchParams = await props.searchParams
   const fromCart = searchParams.from_cart === "1"
   const offerParam = searchParams.offer?.trim()
+  const forceNewSession = searchParams.buy_again === "1"
 
   const supabase = await createClient()
 
@@ -212,6 +214,7 @@ export default async function CheckoutPage(props: {
             suggestedFulfillment={loaded.fulfillment}
             surfboardShippedSeed={await surfboardShippedSeedForCheckout(user.id, checkoutListings)}
             reswellBucksCheckout={reswellBucksCheckout}
+            forceNewSession={forceNewSession}
           />
         </div>
       </main>
@@ -368,6 +371,7 @@ export default async function CheckoutPage(props: {
                 : null
             }
             surfboardShippedSeed={await surfboardShippedSeedForCheckout(user.id, checkoutListings)}
+            forceNewSession={forceNewSession}
           />
         </div>
       </main>
@@ -656,6 +660,7 @@ export default async function CheckoutPage(props: {
           suggestedFulfillment={matchedOfferFulfillment}
           surfboardShippedSeed={surfboardShippedSeed}
           reswellBucksCheckout={reswellBucksCheckout}
+          forceNewSession={forceNewSession}
         />
       </div>
     </main>
