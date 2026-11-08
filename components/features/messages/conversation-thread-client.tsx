@@ -41,12 +41,14 @@ import {
   dispatchUnreadCountRefresh,
   dispatchUnreadMessageCountAdjust,
 } from '@/lib/utils/unread-message-count-events'
-import { getPolicyBlockFromSendResult, isPolicyBlockedSendResult } from '@/lib/messages/policy-block-client'
+import { getPolicyBlockFromSendResult } from '@/lib/messages/policy-block-client'
+import { isMessageSendRestrictionResult } from '@/lib/messages/send-restriction-errors'
 import {
   createLocalPolicyBlockMessage,
   mergeServerMessagesPreservingLocalPolicyBlocks,
   parseLocalPolicyBlockMetadata,
   PENDING_THREAD_MESSAGE_ID_PREFIX,
+  replaceMatchingPendingThreadMessage,
 } from '@/lib/messages/local-phone-policy-block-message'
 import {
   useConversationThreadLive,
@@ -104,7 +106,7 @@ import { type ListingThreadOption } from '@/components/features/messages/convers
 import { getOtherUserIdFromConversation } from '@/lib/utils/messages-inbox-grouping'
 import { offerMessageAnchorId } from '@/lib/utils/offer-messages-href'
 import { resolveThreadPrimaryListingId } from '@/lib/utils/message-thread-active-listing'
-import { PromiseDeadlineError, raceWithDeadline } from '@/lib/utils/race-with-deadline'
+import { raceWithDeadline } from '@/lib/utils/race-with-deadline'
 import { isAbortError } from '@/lib/utils/is-abort-error'
 import { useComposerUnlock } from '@/hooks/use-composer-unlock'
 import { COMPOSER_UNLOCK_DENIED_ERROR } from '@/lib/messages/composer-unlock-errors'
@@ -119,6 +121,7 @@ interface Message {
   created_at: string
   offer_id?: string | null
   metadata?: unknown | null
+  sendStatus?: 'sending' | 'failed'
 }
 
 interface Conversation {
@@ -209,7 +212,9 @@ export function ConversationThreadClient({
     () => (initialData.listingThreads as ListingThreadOption[]) ?? [],
   )
   const [newMessage, setNewMessage] = useState('')
-  const [sending, setSending] = useState(false)
+  const newMessageRef = useRef('')
+  newMessageRef.current = newMessage
+  const inFlightSendIdsRef = useRef(new Set<string>())
   const composerUnlock = useComposerUnlock({ scope: 'marketplace' })
   const [currentUserId, setCurrentUserId] = useState<string | null>(
     () => initialData.currentUserId ?? null,
@@ -597,18 +602,7 @@ export function ConversationThreadClient({
         void loadThread(isCurrentThread)
       } else {
         stickToBottomRef.current = true
-        setMessages((prev) => {
-          if (prev.some((m) => m.id === msg.id)) return prev
-          const withoutPending = prev.filter(
-            (m) =>
-              !(
-                m.id.startsWith(PENDING_THREAD_MESSAGE_ID_PREFIX) &&
-                m.content === msg.content &&
-                m.sender_id === msg.sender_id
-              ),
-          )
-          return [...withoutPending, msg]
-        })
+        setMessages((prev) => replaceMatchingPendingThreadMessage(prev, msg))
         if (msg.offer_id) {
           fetchOfferForMessage(msg.offer_id, isCurrentThread)
         }
@@ -665,97 +659,134 @@ export function ConversationThreadClient({
     onThreadChanged: syncOpenThread,
   })
 
-  const handleSend = async () => {
-    const trimmed = newMessage.trim()
-    if (!trimmed) return
-    if (!currentUserId || !conversation) {
-      toast.error('Still loading — try again in a moment.')
-      return
-    }
+  const restoreComposerIfEmpty = useCallback((content: string) => {
+    if (newMessageRef.current.trim()) return
+    newMessageRef.current = content
+    setNewMessage(content)
+  }, [])
 
-    const unlockToken = await composerUnlock.ensure()
-    if (!unlockToken) {
-      toast.error(COMPOSER_UNLOCK_DENIED_ERROR)
-      return
-    }
+  const sendThreadText = useCallback(
+    async (content: string, existingTempId?: string) => {
+      if (!currentUserId) {
+        toast.error('Still loading — try again in a moment.')
+        return
+      }
+      if (existingTempId && inFlightSendIdsRef.current.has(existingTempId)) return
 
-    const content = trimmed
-    setNewMessage('')
-    setSending(true)
-    stickToBottomRef.current = true
+      const unlockToken = await composerUnlock.ensure()
+      if (!unlockToken) {
+        toast.error(COMPOSER_UNLOCK_DENIED_ERROR)
+        if (!existingTempId) restoreComposerIfEmpty(content)
+        return
+      }
 
-    const tempId = `${PENDING_THREAD_MESSAGE_ID_PREFIX}${Date.now()}`
-    const optimisticMessage: Message = {
-      id: tempId,
-      content,
-      sender_id: currentUserId,
-      is_read: false,
-      created_at: new Date().toISOString(),
-    }
-    setMessages((prev) => [...prev, optimisticMessage])
+      const tempId = existingTempId ?? `${PENDING_THREAD_MESSAGE_ID_PREFIX}${crypto.randomUUID()}`
+      inFlightSendIdsRef.current.add(tempId)
+      stickToBottomRef.current = true
 
-    try {
-      const result = await raceWithDeadline(
-        sendConversationReply({
-          conversation_id: id,
-          content,
-          composer_unlock_token: unlockToken,
-        }),
-        SEND_SERVER_ACTION_MS,
-      )
+      if (existingTempId) {
+        setMessages((prev) =>
+          prev.map((message) =>
+            message.id === tempId ? { ...message, sendStatus: 'sending' } : message,
+          ),
+        )
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: tempId,
+            content,
+            sender_id: currentUserId,
+            is_read: false,
+            created_at: new Date().toISOString(),
+            sendStatus: 'sending',
+          },
+        ])
+      }
 
-      if ('error' in result) {
-        setMessages((prev) => {
-          const withoutPending = prev.filter((m) => m.id !== tempId)
+      try {
+        const result = await raceWithDeadline(
+          sendConversationReply({
+            conversation_id: id,
+            content,
+            composer_unlock_token: unlockToken,
+          }),
+          SEND_SERVER_ACTION_MS,
+        )
+
+        if ('error' in result) {
           const policyReason = getPolicyBlockFromSendResult(result)
           if (policyReason) {
-            return [
-              ...withoutPending,
+            setMessages((prev) => [
+              ...prev.filter((message) => message.id !== tempId),
               createLocalPolicyBlockMessage({
                 senderId: currentUserId,
                 originalContent: content,
                 reasonCode: policyReason,
               }),
-            ]
+            ])
+            return
           }
-          return withoutPending
-        })
-        if (!isPolicyBlockedSendResult(result)) {
-          setNewMessage(content)
-          const messageText =
-            result.error === 'Unauthorized'
-              ? 'Sign in again to send messages.'
-              : result.error
-          toast.error(messageText)
+          if (
+            isMessageSendRestrictionResult(result) ||
+            result.error === 'Unauthorized' ||
+            result.error === 'Forbidden'
+          ) {
+            setMessages((prev) => prev.filter((message) => message.id !== tempId))
+            restoreComposerIfEmpty(content)
+            toast.error(
+              result.error === 'Unauthorized' ? 'Sign in again to send messages.' : result.error,
+            )
+            return
+          }
+          setMessages((prev) =>
+            prev.map((message) =>
+              message.id === tempId ? { ...message, sendStatus: 'failed' } : message,
+            ),
+          )
+          return
         }
-        return
-      }
 
-      const inserted = result.message as Message
-      setMessages((prev) => prev.map((m) => (m.id === tempId ? inserted : m)))
-      dispatchConversationInboxActivity({
-        conversationId: id,
-        at: inserted.created_at,
-        message: {
-          id: inserted.id,
-          content: inserted.content,
-          sender_id: inserted.sender_id,
-          created_at: inserted.created_at,
-          is_read: true,
-          metadata: inserted.metadata,
-        },
-      })
-    } catch (e) {
-      setMessages((prev) => prev.filter((m) => m.id !== tempId))
-      setNewMessage(content)
-      toast.error(
-        e instanceof PromiseDeadlineError
-          ? 'Message took too long. Check your connection and try again.'
-          : 'Failed to send message',
-      )
-    } finally {
-      setSending(false)
+        const inserted = result.message as Message
+        knownMessageIdsRef.current.add(inserted.id)
+        setMessages((prev) =>
+          prev.map((message) => (message.id === tempId ? inserted : message)),
+        )
+        dispatchConversationInboxActivity({
+          conversationId: id,
+          at: inserted.created_at,
+          message: {
+            id: inserted.id,
+            content: inserted.content,
+            sender_id: inserted.sender_id,
+            created_at: inserted.created_at,
+            is_read: true,
+            metadata: inserted.metadata,
+          },
+        })
+      } catch {
+        setMessages((prev) =>
+          prev.map((message) =>
+            message.id === tempId ? { ...message, sendStatus: 'failed' } : message,
+          ),
+        )
+      } finally {
+        inFlightSendIdsRef.current.delete(tempId)
+      }
+    },
+    [composerUnlock.ensure, currentUserId, id, restoreComposerIfEmpty],
+  )
+
+  const handleSend = () => {
+    const trimmed = newMessageRef.current.trim()
+    if (!trimmed) return
+    if (!currentUserId || !conversation) {
+      toast.error('Still loading — try again in a moment.')
+      return
     }
+    newMessageRef.current = ''
+    setNewMessage('')
+    void sendThreadText(trimmed)
   }
 
   const handleMediaSent = useCallback(
@@ -787,11 +818,14 @@ export function ConversationThreadClient({
   const lastThreadMessage = orderedMessages.at(-1)
   const lastOwnReceipt =
     lastThreadMessage && currentUserId && lastThreadMessage.sender_id === currentUserId
-      ? lastThreadMessage.id.startsWith(PENDING_THREAD_MESSAGE_ID_PREFIX)
-        ? 'Sending'
-        : lastThreadMessage.is_read
-          ? 'Read'
-          : 'Delivered'
+      ? lastThreadMessage.sendStatus === 'failed'
+        ? null
+        : lastThreadMessage.sendStatus === 'sending' ||
+            lastThreadMessage.id.startsWith(PENDING_THREAD_MESSAGE_ID_PREFIX)
+          ? 'Sending'
+          : lastThreadMessage.is_read
+            ? 'Read'
+            : 'Delivered'
       : null
 
   // True only for ordinary text bubbles — every special card (offer, order,
@@ -1273,8 +1307,8 @@ export function ConversationThreadClient({
                     return (
                       <div
                         className={cn(
-                          'flex w-full',
-                          isOwn ? 'justify-end' : 'justify-start',
+                          'flex w-full flex-col',
+                          isOwn ? 'items-end' : 'items-start',
                           rowMargin,
                         )}
                       >
@@ -1283,7 +1317,17 @@ export function ConversationThreadClient({
                           isOwn={isOwn}
                           group={group}
                           title={formatMessageTooltipTimestamp(message.created_at)}
+                          className={message.sendStatus === 'failed' ? 'opacity-80' : undefined}
                         />
+                        {isOwn && message.sendStatus === 'failed' ? (
+                          <button
+                            type="button"
+                            className="mt-0.5 pr-1 text-[11px] font-medium text-red-500"
+                            onClick={() => void sendThreadText(message.content, message.id)}
+                          >
+                            Not Delivered — Tap to Retry
+                          </button>
+                        ) : null}
                       </div>
                     )
                   })()
@@ -1315,7 +1359,6 @@ export function ConversationThreadClient({
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             onSubmit={handleSend}
-            sending={sending}
             unlock={composerUnlock}
             composerUnlockToken={composerUnlock.token}
             leadingActions={
@@ -1328,7 +1371,6 @@ export function ConversationThreadClient({
                   listingTitle={sellerOfferListing?.title ?? listingTitleForOffers}
                   listPrice={listPriceNum}
                   primaryImageUrl={threadListingThumbSrc || null}
-                  disabled={sending}
                   onOfferSent={refreshThread}
                 />
               ) : null
