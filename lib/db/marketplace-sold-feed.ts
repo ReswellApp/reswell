@@ -1,5 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { MARKETPLACE_SOLD_FEED_SECTIONS } from "@/lib/db/home-recently-sold-strip"
+import { RESWELL_SHOP_SECTION } from "@/lib/reswell-shop"
+
+/** `/sold` includes shop retail and peer marketplace. Condition is not a gate. */
+export const MARKETPLACE_SOLD_FEED_ALL_SECTIONS = [
+  RESWELL_SHOP_SECTION,
+  ...MARKETPLACE_SOLD_FEED_SECTIONS,
+] as const
 
 export const MARKETPLACE_SOLD_FEED_PAGE_SIZE = 40
 
@@ -92,7 +99,7 @@ async function rpcMarketplaceSoldListingPage(
   return supabase.rpc("marketplace_sold_listing_page", legacyArgs)
 }
 
-/** Confirmed checkout lines for `/sold`, newest first. Eligibility lives in SQL. */
+/** Confirmed checkout lines for `/sold`, newest first. One tile per sale, any condition. */
 export async function fetchMarketplaceSoldFeedOrderPage(
   supabase: SupabaseClient,
   options: {
@@ -102,9 +109,7 @@ export async function fetchMarketplaceSoldFeedOrderPage(
   },
 ): Promise<MarketplaceSoldFeedOrderPage> {
   const pageSize = options.pageSize ?? MARKETPLACE_SOLD_FEED_PAGE_SIZE
-  const sections = options.brand
-    ? ["new", ...MARKETPLACE_SOLD_FEED_SECTIONS]
-    : [...MARKETPLACE_SOLD_FEED_SECTIONS]
+  const sections = [...MARKETPLACE_SOLD_FEED_ALL_SECTIONS]
   const rpcArgs: SoldFeedPageRpcArgs = {
     p_limit: pageSize + 1,
     p_sections: sections,

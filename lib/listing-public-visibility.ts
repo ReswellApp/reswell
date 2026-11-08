@@ -1,4 +1,3 @@
-import { isBrandNewListingCondition } from "@/lib/listing-stock-quantity"
 import { isAdminSeedListingTitle } from "@/lib/utils/admin-seed-listing"
 
 /** Fields needed to decide whether a listing is visible or purchasable on the public site. */
@@ -9,6 +8,7 @@ export type ListingPublicVisibilityFields = {
   archived_at?: string | null
   /** Confirmed admin-terminal checkout — show on /sold even when hidden_from_site. */
   soldViaAdminTerminal?: boolean
+  stock_quantity?: number | null
 }
 
 const PURCHASABLE_STATUSES = new Set(["active", "pending_sale"])
@@ -65,31 +65,37 @@ export function canShowPeerListingPurchaseActions(params: {
 /**
  * Public sold feed / recently sold strips.
  * Seller-archived sold listings stay visible; admin hide-from-site (no archive) does not.
+ * Quantity leftover stock stays `active` — that is still a public sale.
  */
 export function isListingVisibleInPublicSoldFeed(listing: ListingPublicVisibilityFields): boolean {
   if (isAdminSeedListingTitle(listing.title)) return false
-  if (listing.status !== "sold") return false
-  if (listing.hidden_from_site && !listing.archived_at && !listing.soldViaAdminTerminal) return false
-  return true
+  if (listing.hidden_from_site && !listing.archived_at && !listing.soldViaAdminTerminal) {
+    return false
+  }
+  if (listing.status === "sold") return true
+  return isInStockQuantitySale(listing)
 }
 
 /**
- * Brand-new inventory still for sale after a checkout (`active`, stock > 0).
- * Sold-feed eligibility is decided in `marketplace_sold_listing_page`; this
- * helper remains for tests and other call sites outside `/sold`.
+ * Listing still has units after a checkout (`active`, stock > 0).
+ * Condition does not matter — shop and peer quantity SKUs share this path.
  */
+export function isInStockQuantitySale(listing: ListingPublicVisibilityFields): boolean {
+  if (isAdminSeedListingTitle(listing.title)) return false
+  if (listing.status !== "active") return false
+  if (listing.hidden_from_site) return false
+  if (listing.archived_at) return false
+  return Math.floor(Number(listing.stock_quantity) || 0) > 0
+}
+
+/** @deprecated Use isInStockQuantitySale. Condition is not a sold-feed gate. */
 export function isInStockBrandNewUnitSale(
   listing: ListingPublicVisibilityFields & {
     condition?: string | null
     stock_quantity?: number | null
   },
 ): boolean {
-  if (isAdminSeedListingTitle(listing.title)) return false
-  if (listing.status !== "active") return false
-  if (listing.hidden_from_site) return false
-  if (listing.archived_at) return false
-  if (!isBrandNewListingCondition(listing.condition)) return false
-  return Math.floor(Number(listing.stock_quantity) || 0) > 0
+  return isInStockQuantitySale(listing)
 }
 
 /** Saved favorites: keep sold boards with overlay; drop archived, removed, hidden, and drafts. */

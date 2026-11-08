@@ -1,6 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { SoldFeedListing } from "@/app/sold/sold-page-client"
-import { MARKETPLACE_SOLD_FEED_SECTIONS } from "@/lib/db/home-recently-sold-strip"
 import { fetchShippedSurfboardSaleOrdering } from "@/lib/db/soldSurfboardShippingFulfillment"
 import { filterListingIdsMatchingBrand } from "@/lib/db/brand-listings"
 import { getBrandBySlug } from "@/lib/brands/server"
@@ -15,6 +14,7 @@ import {
 } from "@/lib/listing-image-display"
 import {
   fetchMarketplaceSoldFeedOrderPage,
+  MARKETPLACE_SOLD_FEED_ALL_SECTIONS,
   type MarketplaceSoldFeedCursor,
   type MarketplaceSoldFeedSale,
 } from "@/lib/db/marketplace-sold-feed"
@@ -238,7 +238,7 @@ export async function loadMarketplaceSoldFeed(
 
   const [page, stats] = await Promise.all([
     loadMarketplaceSoldFeedPage(supabase, brandSlug, null),
-    getSoldFeedStats([...MARKETPLACE_SOLD_FEED_SECTIONS]),
+    getSoldFeedStats([...MARKETPLACE_SOLD_FEED_ALL_SECTIONS]),
   ])
   return {
     ...page,
