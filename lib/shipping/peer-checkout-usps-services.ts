@@ -10,8 +10,9 @@ const USPS_GROUND_PRIORITY_CODES = [
 ] as const
 
 /**
- * Small parcels share one USPS Ground / Priority checkout.
- * Surfboards stay on UPS/FedEx. Magazines stay on Media Mail when they ship alone.
+ * Small parcels (fins, leashes, and the rest) share one checkout: USPS Ground /
+ * Priority plus UPS Ground on street addresses. Surfboards stay on UPS/FedEx.
+ * Magazines stay on Media Mail when they ship alone.
  */
 const USPS_SMALL_PARCEL_SECTIONS = PEER_LISTING_SECTIONS.filter(
   (section) => section !== "surfboards" && section !== "magazines",
@@ -29,7 +30,8 @@ export const PEER_CHECKOUT_USPS_SERVICE_CODES: Partial<
 
 /**
  * How a checkout picks carrier services. Mixed small-parcel categories
- * (a leash plus fins) stay on one USPS choice. Any surfboard keeps the board menu.
+ * (a leash plus fins) stay on one USPS + UPS Ground choice. Any surfboard
+ * keeps the board menu.
  */
 export type PeerCheckoutRateFamily = "usps_ground_priority" | "usps_media_mail" | "ups_fedex_surfboard"
 
@@ -407,17 +409,16 @@ export function peerCheckoutRateChoiceIntro(
     return "Choose UPS or FedEx shipping. The amount you select is included in your total."
   }
   if (family === "usps_ground_priority" && options?.length) {
-    const hasUsps = options.some(
-      (option) =>
-        smallParcelUspsBucket(option.serviceCode) != null ||
-        isUspsCarrierRow({ carrierCode: option.serviceCode, carrierName: option.serviceName }),
-    )
+    const hasUsps = options.some((option) => smallParcelUspsBucket(option.serviceCode) != null)
     const hasUps = options.some((option) => {
       const blob = `${option.serviceCode} ${option.serviceName} ${option.displayName}`.toLowerCase()
       return blob.includes("ups") && !blob.includes("usps")
     })
     if (!hasUsps && hasUps) {
       return "USPS isn't available for this address. UPS shipping is included in your total."
+    }
+    if (hasUsps && hasUps) {
+      return "Choose USPS Ground, USPS Priority, or UPS. Everything in this order ships together in one shared box."
     }
   }
   return "Choose USPS Ground or Priority. Everything in this order ships together in one shared box."
@@ -433,13 +434,13 @@ export function peerCheckoutSmallParcelBundleCopy(input: {
   if (peerCheckoutRateFamilyForSections(input.sections) !== "usps_ground_priority") return null
   if (input.unitCount === 1) {
     return {
-      label: "USPS at checkout",
-      note: "Choose USPS Ground or Priority at checkout. The rate uses this item's packed size and weight.",
+      label: "USPS or UPS at checkout",
+      note: "Choose USPS Ground, USPS Priority, or UPS at checkout. The rate uses this item's packed size and weight.",
     }
   }
   return {
     label: "One box at checkout",
-    note: "These ship together in one shared box the size of the largest item. Checkout then lets you choose USPS Ground or Priority.",
+    note: "These ship together in one shared box the size of the largest item. Checkout then lets you choose USPS Ground, USPS Priority, or UPS.",
   }
 }
 
@@ -484,9 +485,16 @@ export function filterReswellRatesForPeerSection(
       isSmallParcelUspsPriorityServiceCode(serviceCode)
     )
   })
-  if (usps.length > 0) return usps
-  if (addressRowLooksLikeUsPoBox(shipTo)) return []
+  const ups = smallParcelUpsRates(rates, shipTo)
+  return [...usps, ...ups]
+}
 
+/** Street-address UPS Ground (continental) or HI/AK air. Never for PO Boxes. */
+function smallParcelUpsRates(
+  rates: ReswellListingRateRow[],
+  shipTo?: PeerCheckoutShipTo | null,
+): ReswellListingRateRow[] {
+  if (addressRowLooksLikeUsPoBox(shipTo)) return []
   const hawaiiAlaska = isNonContiguousUsShipTo(shipTo)
   return rates.filter((row) => {
     if (!row.rate_id) return false
@@ -565,22 +573,22 @@ export function toPeerCheckoutShippingRateOptions(
     const uspsOptions = [...byBucket.values()].sort(
       (a, b) => finServiceSortKey(a.serviceCode) - finServiceSortKey(b.serviceCode),
     )
-    if (uspsOptions.length > 0) return uspsOptions
 
-    const byFallback = new Map<SurfboardCheckoutBucket, PeerCheckoutShippingRateOption>()
+    const byUps = new Map<SurfboardCheckoutBucket, PeerCheckoutShippingRateOption>()
     for (const option of options) {
+      if (smallParcelUspsBucket(option.serviceCode)) continue
       const source = filtered.find((row) => row.rate_id === option.rateId)
       const bucket = source ? rowSurfboardCheckoutBucket(source, shipTo) : null
       if (!bucket) continue
-      const existing = byFallback.get(bucket)
+      const existing = byUps.get(bucket)
       if (!existing || option.totalAmount < existing.totalAmount) {
-        byFallback.set(bucket, {
+        byUps.set(bucket, {
           ...option,
           displayName: SURFBOARD_CHECKOUT_DISPLAY_NAMES[bucket],
         })
       }
     }
-    return [...byFallback.values()].sort((a, b) => {
+    const upsOptions = [...byUps.values()].sort((a, b) => {
       const aSource = filtered.find((row) => row.rate_id === a.rateId)
       const bSource = filtered.find((row) => row.rate_id === b.rateId)
       const aBucket = aSource ? rowSurfboardCheckoutBucket(aSource, shipTo) : null
@@ -588,6 +596,7 @@ export function toPeerCheckoutShippingRateOptions(
       if (!aBucket || !bBucket) return a.totalAmount - b.totalAmount
       return surfboardServiceSortKey(aBucket) - surfboardServiceSortKey(bBucket)
     })
+    return [...uspsOptions, ...upsOptions]
   } else {
     options.sort((a, b) => a.totalAmount - b.totalAmount)
   }

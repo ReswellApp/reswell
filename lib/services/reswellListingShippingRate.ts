@@ -445,7 +445,7 @@ export async function getCheapestReswellRateForListings(input: {
   sellerShipFromAddress?: ProfileAddressRow | null
   /** Units per listing id. Small-parcel weight and box volume scale by this. */
   quantities?: Record<string, number> | null
-  /** Mixed small-parcel carts share one USPS choice even when sections differ. */
+  /** Mixed small-parcel carts share one USPS + UPS Ground choice even when sections differ. */
   rateFamily?: PeerCheckoutRateFamily | null
 }): Promise<ReswellListingRateResult> {
   if (!isShipEngineConfigured()) {
