@@ -37,6 +37,7 @@ import {
   type PeerCheckoutShipTo,
   toPeerCheckoutShippingRateOptions,
 } from "@/lib/shipping/peer-checkout-usps-services"
+import { buyerFacingCheckoutShippingError } from "@/lib/shipping/buyer-shipping-error"
 import { buyerResidentialIndicator } from "@/lib/shipping/buyer-address-validation"
 import { normalizeUsStateProvinceForShipping } from "@/lib/us-state-name-to-code"
 import { logPackBandQuoteTelemetry } from "@/lib/shipping/pack-band-telemetry"
@@ -559,6 +560,22 @@ export async function getCheapestReswellRateForListings(input: {
     }),
   }
 
+  const section =
+    input.section?.trim() ||
+    (listings[0] as { section?: string | null } | undefined)?.section?.trim() ||
+    null
+  const rateFamily =
+    input.rateFamily ??
+    peerCheckoutRateFamilyForSections(
+      listings.map((listing) => (listing as { section?: string | null }).section),
+    )
+  const shipToCheckout: PeerCheckoutShipTo = {
+    stateProvince: input.shipTo.state_province,
+    postalCode: input.shipTo.postal_code,
+    line1: input.shipTo.address_line1,
+    line2: input.shipTo.address_line2,
+  }
+
   if (isDebugEnabled()) {
     console.info(
       "[reswellListingShippingRate] /rates payload:",
@@ -577,10 +594,20 @@ export async function getCheapestReswellRateForListings(input: {
     return { ok: false, error: "Could not reach the shipping rate service." }
   }
   const raw = await parseJsonSafe(res)
+  const invalidRates = extractInvalidRatesFromApiEnvelope(raw)
   if (!res.ok) {
     const hint = formatShipEngineApiError(raw)
     console.error("[reswellListingShippingRate] /rates HTTP:", res.status, raw)
-    return { ok: false, error: hint.trim() || "ShipEngine did not return rates for this package." }
+    return {
+      ok: false,
+      error: buyerFacingCheckoutShippingError({
+        section,
+        shipTo: shipToCheckout,
+        rateFamily,
+        invalidRates,
+        apiError: hint,
+      }),
+    }
   }
 
   const rates = extractRatesFromApiEnvelope(raw)
@@ -590,32 +617,25 @@ export async function getCheapestReswellRateForListings(input: {
 
   if (decorated.length === 0) {
     const emptyHint = formatShipEngineApiError(raw)
-    console.error("[reswellListingShippingRate] /rates empty:", { hint: emptyHint, raw })
+    console.error("[reswellListingShippingRate] /rates empty:", {
+      hint: emptyHint,
+      invalidRates,
+      raw,
+    })
     return {
       ok: false,
-      error: emptyHint.trim() || "No carrier rates returned for this shipment.",
+      error: buyerFacingCheckoutShippingError({
+        section,
+        shipTo: shipToCheckout,
+        rateFamily,
+        invalidRates,
+        apiError: emptyHint,
+      }),
     }
   }
 
   decorated.sort((a, b) => a.totalAmount - b.totalAmount)
 
-  const section =
-    input.section?.trim() ||
-    (listings[0] as { section?: string | null } | undefined)?.section?.trim() ||
-    null
-
-  const rateFamily =
-    input.rateFamily ??
-    peerCheckoutRateFamilyForSections(
-      listings.map((listing) => (listing as { section?: string | null }).section),
-    )
-
-  const shipToCheckout: PeerCheckoutShipTo = {
-    stateProvince: input.shipTo.state_province,
-    postalCode: input.shipTo.postal_code,
-    line1: input.shipTo.address_line1,
-    line2: input.shipTo.address_line2,
-  }
   const resolved = resolveSelectedCheckoutRate(
     decorated,
     section,
@@ -635,10 +655,18 @@ export async function getCheapestReswellRateForListings(input: {
         service: row.serviceCode,
         name: row.serviceName,
       })),
-      invalidRates: extractInvalidRatesFromApiEnvelope(raw),
+      invalidRates,
       error: resolved.error,
     })
-    return resolved
+    return {
+      ok: false,
+      error: buyerFacingCheckoutShippingError({
+        section,
+        shipTo: shipToCheckout,
+        rateFamily,
+        invalidRates,
+      }),
+    }
   }
   if (rateFamily === "usps_ground_priority") {
     const usedUsps = resolved.checkoutRateOptions.some(
@@ -655,7 +683,7 @@ export async function getCheapestReswellRateForListings(input: {
           service: option.serviceCode,
           name: option.displayName,
         })),
-        invalidRates: extractInvalidRatesFromApiEnvelope(raw),
+        invalidRates,
       })
     }
   }

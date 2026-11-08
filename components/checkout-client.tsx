@@ -37,6 +37,7 @@ import {
   type PeerCheckoutShippingRateOption,
 } from "@/lib/shipping/peer-checkout-usps-services"
 import { LocalDateOnly } from "@/components/ui/local-datetime"
+import { toast } from "sonner"
 import { Truck, MapPin } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -524,6 +525,14 @@ export function CheckoutClient({
     surfboardShippedSelected,
     surfboardPreview,
   ])
+
+  useEffect(() => {
+    if (!quoteError) {
+      toast.dismiss("checkout-shipping-quote")
+      return
+    }
+    toast.error(quoteError, { id: "checkout-shipping-quote", duration: 10_000 })
+  }, [quoteError])
 
   const handlePurchaseDetailsChange = useCallback((state: PurchaseDetailsState) => {
     setPurchaseDetails(state)
