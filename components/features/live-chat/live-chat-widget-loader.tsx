@@ -35,6 +35,8 @@ function shouldShowLiveChatWidget(pathname: string | null): boolean {
   if (!pathname) return true
   if (pathname.startsWith("/admin")) return false
   if (pathname.startsWith("/embed")) return false
+  // Marketplace Messages is its own chat. Don't stack the support launcher on it.
+  if (pathname === "/messages" || pathname.startsWith("/messages/")) return false
   return true
 }
 

@@ -1,6 +1,5 @@
 "use client"
 
-import Link from "next/link"
 import { MessageCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { messageThreadCanvasClassName } from "@/components/features/messages/message-text-bubble"
@@ -47,14 +46,7 @@ export function MessagesEmptyPane({ variant = "pane", className }: MessagesEmpty
         No conversation selected
       </p>
       <p className="mt-2 max-w-sm text-[15px] leading-relaxed text-muted-foreground">
-        Choose a marketplace chat from the list to send a message. For help from Reswell, open{" "}
-        <Link
-          href="/dashboard/support"
-          className="font-medium text-listingHeart underline-offset-2 hover:underline"
-        >
-          Support
-        </Link>
-        .
+        Choose a chat from the list to send a message.
       </p>
     </div>
   )
