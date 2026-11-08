@@ -99,7 +99,10 @@ async function rpcMarketplaceSoldListingPage(
   return supabase.rpc("marketplace_sold_listing_page", legacyArgs)
 }
 
-/** Confirmed checkout lines for `/sold`, newest first. One tile per sale, any condition. */
+/**
+ * Confirmed checkout lines for `/sold`, newest first. One tile per sale, any condition.
+ * SQL walks newest confirmed orders with a LIMIT — not a rebuild of every sale.
+ */
 export async function fetchMarketplaceSoldFeedOrderPage(
   supabase: SupabaseClient,
   options: {
