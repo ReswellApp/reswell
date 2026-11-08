@@ -665,6 +665,7 @@ export async function getCheapestReswellRateForListings(input: {
         shipTo: shipToCheckout,
         rateFamily,
         invalidRates,
+        apiError: resolved.error,
       }),
     }
   }

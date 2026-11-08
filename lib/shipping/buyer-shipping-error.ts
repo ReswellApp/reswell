@@ -105,6 +105,8 @@ export function buyerFacingCheckoutShippingError(input: {
   const fallback =
     peerCheckoutShippingServiceError(input.section, input.shipTo, input.rateFamily) ||
     CHECKOUT_FALLBACK_ERROR
+  const api = input.apiError?.trim()
+  if (api && /choose another rate/i.test(api)) return api
   if (/PO Box/.test(fallback)) return fallback
   return publicFacingShippingFailure({
     invalidRates: input.invalidRates,

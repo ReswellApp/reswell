@@ -49,6 +49,25 @@ describe("buyerFacingCheckoutShippingError", () => {
     })
     assert.match(message, /PO Box/)
   })
+
+  it("keeps a leftover-rate selection error instead of mapping invalid_rates", () => {
+    const message = buyerFacingCheckoutShippingError({
+      section: "fins",
+      shipTo: { stateProvince: "VA", postalCode: "23451", line1: "408 Terrace Ave" },
+      rateFamily: "usps_ground_priority",
+      invalidRates: [
+        {
+          serviceCode: "usps_ground_advantage",
+          serviceName: "USPS Ground Advantage",
+          message: "Recipient address is not valid for this service.",
+        },
+      ],
+      apiError: "Selected shipping option is no longer available — choose another rate.",
+    })
+    assert.match(message, /choose another rate/)
+    assert.doesNotMatch(message, /street, city, and ZIP/)
+    assert.doesNotMatch(message, /No shipping rates/)
+  })
 })
 
 describe("publicFacingShippingFailure", () => {
