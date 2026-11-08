@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import Image from "next/image"
-import { formatDistanceToNow } from "date-fns"
+import { RelativeTime, formatDistanceToNowLabel } from "@/components/ui/relative-time"
 import { Clock, Timer } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { capitalizeWords } from "@/lib/listing-labels"
@@ -308,14 +308,16 @@ export function OfferRow({
           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
             <span className="inline-flex items-center gap-1">
               <Clock className="h-3 w-3 shrink-0 opacity-65" aria-hidden />
-              Updated {formatDistanceToNow(new Date(offer.updated_at), { addSuffix: true })}
+              Updated{" "}
+              <RelativeTime iso={offer.updated_at} formatLabel={formatDistanceToNowLabel} />
             </span>
             {!isSold && offer.status !== "COMPLETED" && (
               <>
                 <span className="hidden h-2.5 w-px bg-border sm:block" aria-hidden />
                 <span className="inline-flex items-center gap-1">
                   <Timer className="h-3 w-3 shrink-0 opacity-65" aria-hidden />
-                  Expires {formatDistanceToNow(new Date(offer.expires_at), { addSuffix: true })}
+                  Expires{" "}
+                  <RelativeTime iso={offer.expires_at} formatLabel={formatDistanceToNowLabel} />
                 </span>
               </>
             )}
