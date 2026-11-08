@@ -140,8 +140,41 @@ const SUPPORT_CASE_MESSAGE_SELECT_WITH_META =
 const SUPPORT_CASE_MESSAGE_SELECT_BASE =
   "id, case_id, author_user_id, author_role, body, is_internal, created_at"
 
+/** Skip unmigrated metadata this long after the first 42703 / schema-cache miss. */
+const SUPPORT_CASE_MESSAGE_METADATA_MISS_TTL_MS = 10 * 60 * 1000
+
+let messageMetadataUnavailableUntilMs = 0
+let loggedMessageMetadataMiss = false
+
 function isMissingSupportCaseMessageMetadataColumn(message: string): boolean {
   return /column support_case_messages\.metadata does not exist/i.test(message)
+}
+
+export function resetSupportCaseMessageMetadataCircuit(nowMs = 0): void {
+  messageMetadataUnavailableUntilMs = nowMs
+  loggedMessageMetadataMiss = false
+}
+
+function markSupportCaseMessageMetadataUnavailable(nowMs = Date.now()): void {
+  messageMetadataUnavailableUntilMs = nowMs + SUPPORT_CASE_MESSAGE_METADATA_MISS_TTL_MS
+  if (!loggedMessageMetadataMiss) {
+    loggedMessageMetadataMiss = true
+    console.warn(
+      "[support_case_messages] metadata not in schema; using legacy columns for 10m. Apply 20271104120000_support_case_message_metadata.sql.",
+    )
+  }
+}
+
+function supportCaseMessageSelect(nowMs = Date.now()): string {
+  return nowMs < messageMetadataUnavailableUntilMs
+    ? SUPPORT_CASE_MESSAGE_SELECT_BASE
+    : SUPPORT_CASE_MESSAGE_SELECT_WITH_META
+}
+
+function noteSupportCaseMessageMetadataError(message: string): boolean {
+  if (!isMissingSupportCaseMessageMetadataColumn(message)) return false
+  markSupportCaseMessageMetadataUnavailable()
+  return true
 }
 
 function mapSupportCaseMessageRows(
@@ -505,14 +538,14 @@ export async function listSupportCaseMessages(
     return query
   }
 
-  const first = await run(SUPPORT_CASE_MESSAGE_SELECT_WITH_META)
+  const first = await run(supportCaseMessageSelect())
   if (!first.error) {
     return mapSupportCaseMessageRows((first.data ?? []) as Array<Record<string, unknown>>)
   }
 
-  // Production may lag the metadata migration; still load the thread so admin
-  // replies do not vanish after send when the list query would otherwise fail.
-  if (isMissingSupportCaseMessageMetadataColumn(first.error.message)) {
+  // Production may lag the metadata migration; latch the miss so later ticket
+  // opens use legacy columns instead of re-issuing the failing select.
+  if (noteSupportCaseMessageMetadataError(first.error.message)) {
     const fallback = await run(SUPPORT_CASE_MESSAGE_SELECT_BASE)
     if (!fallback.error) {
       return mapSupportCaseMessageRows((fallback.data ?? []) as Array<Record<string, unknown>>)
