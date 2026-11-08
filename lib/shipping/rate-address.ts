@@ -3,6 +3,7 @@ import { normalizeUsStateProvinceForShipping } from "@/lib/us-state-name-to-code
 import { normalizeCountryCodeForShipping } from "@/lib/shipping/normalize-country-code"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import { buyerResidentialIndicator } from "@/lib/shipping/buyer-address-validation"
+import { expandUspsAbbreviatedCityName } from "@/lib/shipping/usps-city-name"
 import {
   residentialDeliveryLabelMessages,
   SHIPENGINE_PLACEHOLDER_US_PHONE,
@@ -102,7 +103,7 @@ export function addressToShipEnginePayload(a: RateQuoteAddressFields, role: "fro
     company_name: a.company_name.trim() || undefined,
     address_line1: a.address_line1.trim(),
     address_line2: a.address_line2.trim() || undefined,
-    city_locality: a.city_locality.trim(),
+    city_locality: expandUspsAbbreviatedCityName(a.city_locality) || a.city_locality.trim(),
     state_province: normalizeUsStateProvinceForShipping(country, a.state_province),
     postal_code: a.postal_code.trim(),
     country_code: country,

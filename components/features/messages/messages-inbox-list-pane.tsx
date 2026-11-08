@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { formatDistanceToNow } from "date-fns"
+import { RelativeTime } from "@/components/ui/relative-time"
 import { MessageCircle, Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { VerifiedBadge } from "@/components/verified-badge"
@@ -16,6 +16,7 @@ import {
   groupConversationsByCounterparty,
 } from "@/lib/utils/messages-inbox-grouping"
 import { formatInboxChatPreviewText } from "@/lib/utils/messages-inbox-preview"
+import { formatInboxTimestamp } from "@/lib/utils/message-display-time"
 import { cn } from "@/lib/utils"
 
 interface MessagesInboxListPaneProps {
@@ -61,7 +62,7 @@ export function MessagesInboxListPane({
     <div className={cn("flex flex-col", flatMobileInbox ? "flex-none" : "min-h-0 flex-1", className)}>
       <div
         className={cn(
-          "relative shrink-0 border-b border-border/60 py-3",
+          "relative shrink-0 py-2",
           flatMobileInbox ? "px-0" : "px-3",
         )}
       >
@@ -74,24 +75,21 @@ export function MessagesInboxListPane({
         />
         <Input
           type="search"
-          placeholder="Search chats"
+          placeholder="Search"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className={cn(
-            "h-10 rounded-xl border-border/80 bg-muted/70 text-[15px] shadow-none",
-            flatMobileInbox ? "pl-10" : "pl-10",
-          )}
+          className="h-9 rounded-full border-0 bg-muted text-[16px] shadow-none placeholder:text-muted-foreground/80 pl-10"
         />
       </div>
 
       <p
         className={cn(
-          "shrink-0 border-b border-border/40 py-2 text-[12px] leading-snug text-muted-foreground lg:hidden",
-          flatMobileInbox ? "px-0" : "px-3",
+          "shrink-0 py-2 text-[12px] leading-snug text-muted-foreground lg:hidden",
+          flatMobileInbox ? "px-0" : "px-4",
         )}
       >
         Marketplace chats only. Support tickets are in{" "}
-        <Link href="/dashboard/support" className="text-primary underline underline-offset-2">
+        <Link href="/dashboard/support" className="font-medium text-listingHeart">
           Support
         </Link>
         .
@@ -124,7 +122,7 @@ export function MessagesInboxListPane({
                   Support tickets are in{" "}
                   <Link
                     href="/dashboard/support"
-                    className="text-primary underline underline-offset-2"
+                    className="font-medium text-listingHeart"
                   >
                     Support
                   </Link>
@@ -134,7 +132,7 @@ export function MessagesInboxListPane({
             )}
           </div>
         ) : (
-          <ul className="divide-y divide-border/40">
+          <ul className={cn("py-1", flatMobileInbox ? "px-0" : "px-2")}>
             {filteredGroups.map((group) => {
               const otherUser = group.otherUser
               const unreadCount = group.totalUnread
@@ -151,16 +149,15 @@ export function MessagesInboxListPane({
                   <Link
                     href={href}
                     className={cn(
-                      "flex items-center gap-3 py-3 transition-colors hover:bg-muted/40",
-                      flatMobileInbox ? "px-0" : "px-3",
-                      active && "bg-muted/60",
+                      "flex items-center gap-3 rounded-xl px-2 py-2.5 transition-colors",
+                      active ? "bg-muted" : "hover:bg-muted/60",
                     )}
                   >
                     <MessageProfileAvatar
                       avatarUrl={otherUser?.avatar_url}
                       displayName={otherUser?.display_name}
                       pending={!otherUser}
-                      size="md"
+                      size="inbox"
                       className="ring-0"
                     />
                     <div className="min-w-0 flex-1">
@@ -168,7 +165,7 @@ export function MessagesInboxListPane({
                         <div className="flex min-w-0 items-center gap-1">
                           <span
                             className={cn(
-                              "truncate text-[15px] text-foreground",
+                              "truncate text-[16px] text-foreground",
                               unreadCount > 0 ? "font-semibold" : "font-medium",
                             )}
                           >
@@ -179,27 +176,27 @@ export function MessagesInboxListPane({
                           ) : null}
                         </div>
                         {group.latestActivityMs > 0 ? (
-                          <time
-                            className="shrink-0 text-[11px] tabular-nums text-muted-foreground"
-                            dateTime={new Date(group.latestActivityMs).toISOString()}
-                          >
-                            {formatDistanceToNow(new Date(group.latestActivityMs), {
-                              addSuffix: true,
-                            })}
-                          </time>
+                          <RelativeTime
+                            iso={new Date(group.latestActivityMs).toISOString()}
+                            formatLabel={formatInboxTimestamp}
+                            className={cn(
+                              "shrink-0 text-[12px]",
+                              unreadCount > 0 ? "font-medium text-listingHeart" : "text-muted-foreground",
+                            )}
+                          />
                         ) : null}
                       </div>
                       <div className="mt-0.5 flex items-start justify-between gap-2">
                         <p
                           className={cn(
-                            "min-w-0 flex-1 truncate text-[13px] text-muted-foreground",
-                            unreadCount > 0 && "font-medium text-foreground",
+                            "min-w-0 flex-1 truncate text-[14px] leading-snug",
+                            unreadCount > 0 ? "font-medium text-foreground" : "text-muted-foreground",
                           )}
                         >
                           {previewText}
                         </p>
                         {unreadCount > 0 ? (
-                          <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-foreground px-1 text-[10px] font-bold tabular-nums text-background">
+                          <span className="flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full bg-listingHeart px-1 text-[11px] font-semibold tabular-nums text-white">
                             {unreadCount > 99 ? "99+" : unreadCount}
                           </span>
                         ) : null}

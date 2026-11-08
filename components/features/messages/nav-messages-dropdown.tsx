@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { formatDistanceToNow } from "date-fns"
+import { RelativeTime, formatDistanceToNowLabel } from "@/components/ui/relative-time"
 import { Bell, ChevronDown, Heart, LifeBuoy, MessageSquare, X } from "lucide-react"
 import { Button, iconButtonHoverClassName } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -248,12 +248,11 @@ function NavMessagesPanelBody({
                               {n.message || "Someone saved your item"}
                             </span>
                           </p>
-                          <time
-                            className="shrink-0 text-[11px] tabular-nums text-muted-foreground"
-                            dateTime={n.created_at}
-                          >
-                            {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
-                          </time>
+                          <RelativeTime
+                            iso={n.created_at}
+                            formatLabel={formatDistanceToNowLabel}
+                            className="shrink-0 text-[11px] text-muted-foreground"
+                          />
                         </div>
                       </div>
                     </button>
@@ -299,14 +298,11 @@ function NavMessagesPanelBody({
                           {otherUser?.display_name || "Unknown User"}
                         </span>
                         {group.latestActivityMs > 0 ? (
-                          <time
-                            className="shrink-0 text-[11px] tabular-nums text-muted-foreground"
-                            dateTime={new Date(group.latestActivityMs).toISOString()}
-                          >
-                            {formatDistanceToNow(new Date(group.latestActivityMs), {
-                              addSuffix: true,
-                            })}
-                          </time>
+                          <RelativeTime
+                            iso={new Date(group.latestActivityMs).toISOString()}
+                            formatLabel={formatDistanceToNowLabel}
+                            className="shrink-0 text-[11px] text-muted-foreground"
+                          />
                         ) : null}
                       </div>
                       <p

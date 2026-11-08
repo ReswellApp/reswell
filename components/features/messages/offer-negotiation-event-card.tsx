@@ -1,10 +1,11 @@
 "use client"
 
+import type { ReactNode } from "react"
 import Link from "next/link"
 import { Handshake } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { acceptedOfferCheckoutHref } from "@/lib/listing-href"
-import { formatDistanceToNow } from "date-fns"
+import { RelativeTime, formatDistanceToNowLabel } from "@/components/ui/relative-time"
 import {
   parseCounterofferNoteFromThread,
   parseNegotiationAmountFromContent,
@@ -50,9 +51,13 @@ function footerHint(
   hasBuyerActions: boolean,
   hasCheckout: boolean,
   expiresAt: string | null | undefined,
-): string | null {
+): ReactNode {
   if (hasBuyerActions && expiresAt) {
-    return `Accept or decline ${formatDistanceToNow(new Date(expiresAt), { addSuffix: true })}.`
+    return (
+      <>
+        Accept or decline <RelativeTime iso={expiresAt} formatLabel={formatDistanceToNowLabel} />.
+      </>
+    )
   }
   if (kind === "seller_offer" && isOwn) {
     return "Waiting for the buyer to respond to your offer."

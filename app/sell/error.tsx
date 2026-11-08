@@ -1,11 +1,12 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import Link from "next/link"
 import { RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useChunkLoadRecovery } from "@/lib/client/use-chunk-load-recovery"
 import { isBenignClientFetchError } from "@/lib/utils/is-abort-error"
-import { isChunkLoadError, recoverFromChunkLoadError } from "@/lib/utils/is-chunk-load-error"
+import { isChunkLoadError } from "@/lib/utils/is-chunk-load-error"
 import { isStaleFileNotFoundError } from "@/lib/utils/is-stale-file-not-found-error"
 
 /**
@@ -23,16 +24,10 @@ export default function SellError({
   error: Error & { digest?: string }
   reset: () => void
 }) {
-  const [recovering, setRecovering] = useState(false)
+  const recovering = useChunkLoadRecovery(error)
 
   useEffect(() => {
-    if (isChunkLoadError(error)) {
-      const reloaded = recoverFromChunkLoadError()
-      if (reloaded) {
-        setRecovering(true)
-        return
-      }
-    }
+    if (isChunkLoadError(error)) return
     if (isStaleFileNotFoundError(error)) return
     if (isBenignClientFetchError(error)) return
     console.error("[sell] page error:", error)
@@ -61,7 +56,16 @@ export default function SellError({
           and pick up right where you left off.
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
-          <Button onClick={() => reset()} className="rounded-full">
+          <Button
+            onClick={() => {
+              if (isChunkLoadError(error)) {
+                window.location.reload()
+                return
+              }
+              reset()
+            }}
+            className="rounded-full"
+          >
             Try again
           </Button>
           <Button

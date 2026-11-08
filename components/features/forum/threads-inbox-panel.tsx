@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { formatDistanceToNow } from "date-fns"
+import { RelativeTime, formatDistanceToNowLabel } from "@/components/ui/relative-time"
 import { Flame, MessageSquare, X } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -314,14 +314,11 @@ export function ThreadsInboxPanel({
                               {notification.message || "New activity on Threads"}
                             </span>
                           </div>
-                          <time
-                            className="shrink-0 text-[11px] tabular-nums text-muted-foreground"
-                            dateTime={notification.created_at}
-                          >
-                            {formatDistanceToNow(new Date(notification.created_at), {
-                              addSuffix: true,
-                            })}
-                          </time>
+                          <RelativeTime
+                            iso={notification.created_at}
+                            formatLabel={formatDistanceToNowLabel}
+                            className="shrink-0 text-[11px] text-muted-foreground"
+                          />
                         </div>
                       </div>
                     </button>
@@ -357,14 +354,11 @@ export function ThreadsInboxPanel({
                         <p className="truncate text-[13px] font-semibold text-foreground">
                           {group.threadTitle}
                         </p>
-                        <time
-                          className="shrink-0 text-[11px] tabular-nums text-muted-foreground"
-                          dateTime={group.latestNotification.created_at}
-                        >
-                          {formatDistanceToNow(new Date(group.latestNotification.created_at), {
-                            addSuffix: true,
-                          })}
-                        </time>
+                        <RelativeTime
+                          iso={group.latestNotification.created_at}
+                          formatLabel={formatDistanceToNowLabel}
+                          className="shrink-0 text-[11px] text-muted-foreground"
+                        />
                       </div>
                       <p className="mt-0.5 line-clamp-2 text-[13px] leading-snug text-muted-foreground">
                         <span className="font-medium text-foreground">{actor}</span>
