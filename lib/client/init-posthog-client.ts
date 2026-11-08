@@ -2,6 +2,7 @@ import { isPostHogBenignClientFetchError } from "@/lib/utils/is-abort-error"
 import { isPostHogAndroidWebViewBridgeNoise } from "@/lib/utils/is-android-webview-bridge-noise"
 import { isPostHogChunkLoadError } from "@/lib/utils/is-chunk-load-error"
 import { isPostHogStaleFileNotFoundError } from "@/lib/utils/is-stale-file-not-found-error"
+import { isPostHogStripeJsCdnLoadError } from "@/lib/utils/is-stripe-js-cdn-error"
 
 type PostHogClient = (typeof import("posthog-js"))["default"]
 
@@ -40,6 +41,7 @@ export function ensurePostHogClient(): Promise<PostHogClient | null> {
           if (isPostHogBenignClientFetchError(event)) return null
           if (isPostHogStaleFileNotFoundError(event)) return null
           if (isPostHogChunkLoadError(event)) return null
+          if (isPostHogStripeJsCdnLoadError(event)) return null
           return event
         },
       })

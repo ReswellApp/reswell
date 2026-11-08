@@ -1,7 +1,6 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
-import { loadStripe } from "@stripe/stripe-js"
 import {
   Elements,
   ExpressCheckoutElement,
@@ -15,8 +14,9 @@ import { useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
+import { StripeJsUnavailable } from "@/components/stripe-js-unavailable"
 import { BRAND_CTA_BLUE } from "@/lib/brand-colors"
-import { stripePublishableKey } from "@/lib/stripe/client-checkout-enabled"
+import { useStripeBrowser } from "@/lib/stripe/use-stripe-browser"
 import { buildOrderSuccessPath } from "@/lib/google-ads/purchase-success-path"
 import { listingQuantitiesKey } from "@/lib/stripe/checkout-quantities-key"
 import {
@@ -33,7 +33,7 @@ import {
 import { finalizeMarketplaceOrderClient } from "@/lib/stripe/finalize-marketplace-order-client"
 import { cn } from "@/lib/utils"
 
-const publishableKey = stripePublishableKey()
+export { prefetchStripeJs } from "@/lib/stripe/load-stripe-browser"
 
 /** Stripe.js errors sometimes omit enumerable fields; devtools then show `{}` for plain object logs. */
 function formatStripeConfirmError(error: unknown): string {
@@ -47,18 +47,6 @@ function formatStripeConfirmError(error: unknown): string {
   } catch {
     return Object.prototype.toString.call(error)
   }
-}
-
-let stripePromise: ReturnType<typeof loadStripe> | null = null
-function getStripeBrowser() {
-  if (!publishableKey) return null
-  stripePromise ??= loadStripe(publishableKey)
-  return stripePromise
-}
-
-/** Start loading Stripe.js from the CDN before the payment form mounts. */
-export function prefetchStripeJs(): void {
-  void getStripeBrowser()
 }
 
 /**
@@ -377,7 +365,7 @@ export function StripeCardCheckout({
   const forceNewConsumedRef = useRef(false)
   const checkoutSessionIdRef = useRef<string | null>(null)
 
-  const stripePromise = getStripeBrowser()
+  const { stripePromise, unavailable, retry } = useStripeBrowser()
 
   const listingIdsKey = [...listingIds].sort().join("|")
   const quantitiesKey = listingQuantitiesKey(quantities)
@@ -571,6 +559,10 @@ export function StripeCardCheckout({
 
   if (!stripePromise) {
     return null
+  }
+
+  if (unavailable) {
+    return <StripeJsUnavailable onRetry={retry} />
   }
 
   if (loading && !clientSecret) {

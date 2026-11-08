@@ -1,19 +1,13 @@
 "use client"
 
-import { format, isToday, isYesterday } from "date-fns"
 import { CheckCircle2, LifeBuoy, MessageSquareText } from "lucide-react"
+import { RelativeTime } from "@/components/ui/relative-time"
+import { formatLocalThreadTime } from "@/lib/utils/format-local-thread-time"
 import { cn } from "@/lib/utils"
 import type {
   ParsedSupportCaseOpenedMessage,
   ParsedSupportCaseStatusMessage,
 } from "@/lib/messages/parse-support-thread-message"
-
-function formatThreadTime(dateStr: string) {
-  const date = new Date(dateStr)
-  if (isToday(date)) return format(date, "h:mm a")
-  if (isYesterday(date)) return `Yesterday ${format(date, "h:mm a")}`
-  return format(date, "MMM d, h:mm a")
-}
 
 export function SupportCaseOpenedCard({
   parsed,
@@ -49,7 +43,7 @@ export function SupportCaseOpenedCard({
             </p>
           </div>
           <p className="text-[11px] tabular-nums text-muted-foreground/80">
-            {formatThreadTime(createdAt)}
+            <RelativeTime iso={createdAt} formatLabel={formatLocalThreadTime} />
           </p>
         </div>
       </div>
@@ -76,7 +70,7 @@ export function SupportCaseStatusCard({
           </p>
           <p className="text-sm leading-relaxed text-foreground">{parsed.line}</p>
           <p className="text-[11px] tabular-nums text-muted-foreground/80">
-            {formatThreadTime(createdAt)}
+            <RelativeTime iso={createdAt} formatLabel={formatLocalThreadTime} />
           </p>
         </div>
       </div>
