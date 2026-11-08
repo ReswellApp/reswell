@@ -1,16 +1,16 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { loadStripe } from "@stripe/stripe-js"
 import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js"
 import type { Appearance } from "@stripe/stripe-js"
 import { useTheme } from "next-themes"
 import { Loader2, Printer } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
+import { StripeJsUnavailable } from "@/components/stripe-js-unavailable"
 import { BRAND_CTA_BLUE } from "@/lib/brand-colors"
-import { stripePublishableKey } from "@/lib/stripe/client-checkout-enabled"
 import { computeSellerLabelPrepaidAllowanceBreakdown } from "@/lib/shipping/seller-label-payment-breakdown"
+import { useStripeBrowser } from "@/lib/stripe/use-stripe-browser"
 
 function formatStripeConfirmError(error: unknown): string {
   if (error == null) return String(error)
@@ -23,14 +23,6 @@ function formatStripeConfirmError(error: unknown): string {
   } catch {
     return Object.prototype.toString.call(error)
   }
-}
-
-let stripePromise: ReturnType<typeof loadStripe> | null = null
-function getStripeBrowser() {
-  const key = stripePublishableKey()
-  if (!key) return null
-  stripePromise ??= loadStripe(key)
-  return stripePromise
 }
 
 type LabelCheckoutPayload = {
@@ -193,7 +185,7 @@ export function SellerShippingLabelCheckout({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [walletBusy, setWalletBusy] = useState(false)
-  const stripe = getStripeBrowser()
+  const { stripePromise: stripe, unavailable, retry } = useStripeBrowser()
 
   const prepaidBreakdown = useMemo(
     () =>
@@ -359,6 +351,15 @@ export function SellerShippingLabelCheckout({
       <p className="text-sm text-muted-foreground">
         Card payments are not configured. Contact support if you need to purchase a label.
       </p>
+    )
+  }
+
+  if (unavailable && needsCard) {
+    return (
+      <div className="space-y-4">
+        {storedValueSection}
+        <StripeJsUnavailable onRetry={retry} />
+      </div>
     )
   }
 

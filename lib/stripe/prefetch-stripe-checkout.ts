@@ -13,9 +13,12 @@ export function prefetchStripeCheckout(options?: { immediate?: boolean }): Promi
 
   if (!prefetchPromise) {
     const run = () =>
-      import("@/components/stripe-card-checkout").then((mod) => {
-        mod.prefetchStripeJs()
-      })
+      Promise.all([
+        import("@/lib/stripe/load-stripe-browser").then((mod) => {
+          mod.prefetchStripeJs()
+        }),
+        import("@/components/stripe-card-checkout"),
+      ]).then(() => undefined)
 
     prefetchPromise = options?.immediate
       ? run()
