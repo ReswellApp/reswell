@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { isBenignClientFetchError } from "@/lib/utils/is-abort-error"
 import { isChunkLoadError, recoverFromChunkLoadError } from "@/lib/utils/is-chunk-load-error"
 import { isStaleFileNotFoundError } from "@/lib/utils/is-stale-file-not-found-error"
 
@@ -33,6 +34,7 @@ export default function SellError({
       }
     }
     if (isStaleFileNotFoundError(error)) return
+    if (isBenignClientFetchError(error)) return
     console.error("[sell] page error:", error)
   }, [error])
 

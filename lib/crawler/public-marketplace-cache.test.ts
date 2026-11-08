@@ -28,6 +28,7 @@ describe("public marketplace document cache", () => {
     assert.equal(isCacheablePublicMarketplaceRequest("GET", true), false)
     const proxy = readFileSync(new URL("../../proxy.ts", import.meta.url), "utf8")
     assert.match(proxy, /isCacheablePublicMarketplaceRequest/)
+    assert.match(proxy, /isServerActionRequest/)
   })
 
   it("keeps cookies() off the anonymous shell", () => {
