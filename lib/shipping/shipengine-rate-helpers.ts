@@ -6,6 +6,7 @@
 import { shipEngineShipmentInsurance } from "@/lib/shipengine/insurance"
 import { normalizeUsStateProvinceForShipping } from "@/lib/us-state-name-to-code"
 import { normalizeCountryCodeForShipping } from "@/lib/shipping/normalize-country-code"
+import { expandUspsAbbreviatedCityName } from "@/lib/shipping/usps-city-name"
 
 export type ShippingAddressInput = {
   name: string
@@ -52,7 +53,7 @@ export function addressToPayload(a: ShippingAddressInput, role: "from" | "to") {
     company_name: a.company_name.trim() || undefined,
     address_line1: a.address_line1.trim(),
     address_line2: a.address_line2.trim() || undefined,
-    city_locality: a.city_locality.trim(),
+    city_locality: expandUspsAbbreviatedCityName(a.city_locality) || a.city_locality.trim(),
     state_province: normalizeUsStateProvinceForShipping(country, a.state_province),
     postal_code: a.postal_code.trim(),
     country_code: country,
@@ -108,6 +109,62 @@ export function extractRatesFromApiEnvelope(envelope: unknown): Record<string, u
   const rr = asRecord(se?.rate_response) ?? asRecord(se)
   const rates = rr?.rates
   return Array.isArray(rates) ? (rates as Record<string, unknown>[]) : []
+}
+
+export type ShipEngineInvalidRateSummary = {
+  serviceCode: string | null
+  serviceName: string | null
+  message: string | null
+}
+
+/** USPS/UPS often put declined services here instead of `rates`. */
+export function extractInvalidRatesFromApiEnvelope(envelope: unknown): ShipEngineInvalidRateSummary[] {
+  const root = asRecord(envelope)
+  const inner = root?.data !== undefined && root?.data !== null ? root.data : envelope
+  const se = asRecord(inner)
+  const rr = asRecord(se?.rate_response) ?? asRecord(se)
+  const invalid = rr?.invalid_rates
+  if (!Array.isArray(invalid)) return []
+  const out: ShipEngineInvalidRateSummary[] = []
+  for (const entry of invalid) {
+    const rec = asRecord(entry)
+    if (!rec) continue
+    const serviceCode = typeof rec.service_code === "string" ? rec.service_code.trim() : null
+    const serviceName =
+      typeof rec.service_type === "string"
+        ? rec.service_type.trim()
+        : typeof rec.service_name === "string"
+          ? rec.service_name.trim()
+          : null
+    let message: string | null = null
+    const errors = rec.error_messages
+    if (Array.isArray(errors)) {
+      for (const err of errors) {
+        if (typeof err === "string" && err.trim()) {
+          message = err.trim()
+          break
+        }
+        const er = asRecord(err)
+        const msg = er && typeof er.message === "string" ? er.message.trim() : ""
+        if (msg) {
+          message = msg
+          break
+        }
+      }
+    } else if (typeof rec.error_message === "string" && rec.error_message.trim()) {
+      message = rec.error_message.trim()
+    } else if (typeof rec.message === "string" && rec.message.trim()) {
+      message = rec.message.trim()
+    }
+    if (serviceCode || serviceName || message) {
+      out.push({
+        serviceCode: serviceCode || null,
+        serviceName: serviceName || null,
+        message,
+      })
+    }
+  }
+  return out
 }
 
 /**

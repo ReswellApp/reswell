@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { formatDistanceToNow } from "date-fns"
+import { RelativeTime, formatDistanceToNowLabel } from "@/components/ui/relative-time"
 import { ChevronRight, LifeBuoy } from "lucide-react"
 import type { ContactMessageUserRow } from "@/lib/db/contactMessages"
 import {
@@ -124,7 +124,7 @@ export function SupportTicketsList({ tickets, activeFilter, openCount }: Support
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                         <span title={ticket.updated_at}>
                           Updated{" "}
-                          {formatDistanceToNow(new Date(ticket.updated_at), { addSuffix: true })}
+                          <RelativeTime iso={ticket.updated_at} formatLabel={formatDistanceToNowLabel} />
                         </span>
                         <span className="hidden sm:inline" aria-hidden>
                           ·

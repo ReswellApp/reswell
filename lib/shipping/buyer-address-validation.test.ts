@@ -90,6 +90,22 @@ describe("matchedAddressToBuyerFields", () => {
       residential: "no",
     })
   })
+
+  it("expands USPS city abbreviations so rating APIs see the full name", () => {
+    const fields = matchedAddressToBuyerFields({
+      name: "Ryan",
+      phone: "7574500613",
+      company_name: "",
+      address_line1: "408 TERRACE AVE",
+      address_line2: "",
+      city_locality: "VIRGINIA BCH",
+      state_province: "VA",
+      postal_code: "23451-3629",
+      country_code: "US",
+      residential: "yes",
+    })
+    assert.equal(fields.city, "Virginia Beach")
+  })
 })
 
 describe("normalizeUsPostalCodeForShipping", () => {

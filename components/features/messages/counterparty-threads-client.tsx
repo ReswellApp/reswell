@@ -4,6 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { RelativeTime } from "@/components/ui/relative-time"
 import { ArrowLeft } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { authorizeRealtime } from "@/lib/supabase/realtime-auth"
@@ -239,12 +240,11 @@ export function CounterpartyThreadsClient({
                         {title}
                       </p>
                       {activityMs > 0 ? (
-                        <time
-                          className="shrink-0 text-[12px] tabular-nums text-muted-foreground"
-                          dateTime={new Date(activityMs).toISOString()}
-                        >
-                          {formatInboxTimestamp(new Date(activityMs).toISOString())}
-                        </time>
+                        <RelativeTime
+                          iso={new Date(activityMs).toISOString()}
+                          formatLabel={formatInboxTimestamp}
+                          className="shrink-0 text-[12px] text-muted-foreground"
+                        />
                       ) : null}
                     </div>
                     <div className="mt-1 flex items-start justify-between gap-2">

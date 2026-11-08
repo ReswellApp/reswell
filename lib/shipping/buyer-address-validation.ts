@@ -14,6 +14,7 @@ import {
   UPS_FEDEX_PO_BOX_ERROR,
 } from "./peer-checkout-usps-services.ts"
 import { addressRowLooksLikeUsPoBox } from "./us-po-box.ts"
+import { expandUspsAbbreviatedCityName } from "./usps-city-name.ts"
 
 export const BUYER_ADDRESS_VALIDATION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000
 
@@ -53,7 +54,7 @@ export function matchedAddressToBuyerFields(
   return {
     line1: matched.address_line1,
     line2: matched.address_line2 || null,
-    city: matched.city_locality,
+    city: expandUspsAbbreviatedCityName(matched.city_locality) || matched.city_locality,
     state: matched.state_province || null,
     postal_code: matched.postal_code,
     country: matched.country_code || "US",

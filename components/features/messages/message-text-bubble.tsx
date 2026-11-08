@@ -61,7 +61,11 @@ export function MessageTextBubble({
   children,
 }: MessageTextBubbleProps) {
   return (
-    <div title={title} className={cn(messageTextBubbleClassName({ isOwn, group }), className)}>
+    <div
+      title={title}
+      suppressHydrationWarning
+      className={cn(messageTextBubbleClassName({ isOwn, group }), className)}
+    >
       {children ?? (
         <p className="whitespace-pre-wrap break-words text-[17px] leading-[1.35] tracking-[-0.01em]">
           {content}

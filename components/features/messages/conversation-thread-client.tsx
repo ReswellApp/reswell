@@ -22,6 +22,7 @@ import {
 } from '@/lib/utils/message-thread-grouping'
 import { MessageTextBubble, messageThreadCanvasClassName } from '@/components/features/messages/message-text-bubble'
 import { helpHubHref } from '@/lib/help/help-hub-intents'
+import { RelativeTime } from '@/components/ui/relative-time'
 import { toast } from 'sonner'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { listingDetailPath } from '@/lib/listing-query'
@@ -813,7 +814,9 @@ export function ConversationThreadClient({
     [id],
   )
 
-  const formatMessageDate = (dateStr: string) => formatThreadGroupTimestamp(dateStr)
+  const threadTime = (iso: string) => (
+    <RelativeTime iso={iso} formatLabel={formatThreadGroupTimestamp} />
+  )
 
   const lastThreadMessage = orderedMessages.at(-1)
   const lastOwnReceipt =
@@ -1009,7 +1012,7 @@ export function ConversationThreadClient({
                           <LocalPhonePolicyBlockBubble
                             originalContent={policyBlock.originalContent}
                             reasonCode={policyBlock.reasonCode}
-                            formattedTime={formatMessageDate(message.created_at)}
+                            formattedTime={threadTime(message.created_at)}
                             relatedConversationId={id}
                           />
                         </div>
@@ -1165,7 +1168,7 @@ export function ConversationThreadClient({
                         <div className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start', cardMargin)}>
                           <MessageLocationCard
                             payload={locationPin}
-                            formattedTime={formatMessageDate(message.created_at)}
+                            formattedTime={threadTime(message.created_at)}
                             listingThumbnailSrc={locationThumbSrc}
                             listingImageAlt={locationThumbAlt}
                             listingThumbnailPending={listingChromeLoading}
@@ -1183,7 +1186,7 @@ export function ConversationThreadClient({
                             metadata={message.metadata}
                             content={message.content}
                             isOwn={isOwn}
-                            formattedTime={formatMessageDate(message.created_at)}
+                            formattedTime={threadTime(message.created_at)}
                             showTime={false}
                             onOpenImage={openThreadImage}
                           />
@@ -1337,7 +1340,7 @@ export function ConversationThreadClient({
                       {separatorBefore ? (
                         <div className="flex justify-center pb-2 pt-3 first:pt-1">
                           <span className="text-[12px] font-medium tabular-nums text-muted-foreground/80">
-                            {formatMessageDate(message.created_at)}
+                            {threadTime(message.created_at)}
                           </span>
                         </div>
                       ) : null}

@@ -1,7 +1,6 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
-import { loadStripe } from "@stripe/stripe-js"
 import {
   Elements,
   ExpressCheckoutElement,
@@ -13,17 +12,9 @@ import type { Appearance, StripeExpressCheckoutElementConfirmEvent } from "@stri
 import { useTheme } from "next-themes"
 import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { stripePublishableKey } from "@/lib/stripe/client-checkout-enabled"
+import { StripeJsUnavailable } from "@/components/stripe-js-unavailable"
+import { useStripeBrowser } from "@/lib/stripe/use-stripe-browser"
 import { cn } from "@/lib/utils"
-
-const publishableKey = stripePublishableKey()
-
-let stripePromise: ReturnType<typeof loadStripe> | null = null
-function getStripeBrowser() {
-  if (!publishableKey) return null
-  stripePromise ??= loadStripe(publishableKey)
-  return stripePromise
-}
 
 function formatStripeConfirmError(error: unknown): string {
   if (error == null) return "Payment could not be reserved."
@@ -203,7 +194,7 @@ export function OfferPaymentStep({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const stripeBrowser = getStripeBrowser()
+  const { stripePromise: stripeBrowser, unavailable, retry } = useStripeBrowser()
 
   useEffect(() => {
     if (!stripeBrowser) {
@@ -260,6 +251,14 @@ export function OfferPaymentStep({
       cancelled = true
     }
   }, [addressId, amount, fulfillment, listingId, quoteToken, stripeBrowser])
+
+  if (!stripeBrowser) {
+    return <p className="text-sm text-destructive">Card payments are not configured.</p>
+  }
+
+  if (unavailable) {
+    return <StripeJsUnavailable onRetry={retry} />
+  }
 
   if (loading) {
     return (
