@@ -1,5 +1,9 @@
 import { boardsBrowseBoardTypeLabel } from "@/lib/marketplace-slug-metadata"
-import { formatCondition, capitalizeWords } from "@/lib/listing-labels"
+import {
+  formatCondition,
+  capitalizeWords,
+  normalizeExcessiveCapitalization,
+} from "@/lib/listing-labels"
 import { finSetupLabel, finSystemLabel, finSizeLabel } from "@/lib/fin-listing-config"
 import { apparelKindLabel, apparelSizeLabel } from "@/lib/apparel-listing-config"
 import { wetsuitSizeLabel } from "@/lib/wetsuit-listing-config"
@@ -115,6 +119,8 @@ function finSpecSentences(listing: GoogleMerchantListingDescriptionInput): strin
 function magazineSpecSentences(listing: GoogleMerchantListingDescriptionInput): string[] {
   const sentences: string[] = []
   const brand = listing.brand?.trim()
+    ? normalizeExcessiveCapitalization(listing.brand.trim())
+    : ""
   if (brand) sentences.push(`Publisher: ${brand}.`)
   if (
     listing.magazine_year != null &&
@@ -161,7 +167,11 @@ function fulfillmentSentence(listing: GoogleMerchantListingDescriptionInput): st
 function introParagraph(listing: GoogleMerchantListingDescriptionInput): string {
   const title = capitalizeWords(listing.title.trim())
   const brand = listing.brand?.trim()
+    ? normalizeExcessiveCapitalization(listing.brand.trim())
+    : ""
   const model = listing.model?.trim()
+    ? normalizeExcessiveCapitalization(listing.model.trim())
+    : ""
   const category = productCategoryLabel(listing.section)
 
   const nameParts = [brand, model].filter(Boolean)
@@ -216,7 +226,9 @@ const APPAREL_VISUAL_DETAIL_TAIL =
 export function buildGoogleMerchantProductDescription(
   listing: GoogleMerchantListingDescriptionInput,
 ): string {
-  const sellerNotes = stripHtml(listing.description?.trim() ?? "")
+  const sellerNotes = normalizeExcessiveCapitalization(
+    stripHtml(listing.description?.trim() ?? ""),
+  )
   const blocks: string[] = [introParagraph(listing)]
 
   const condition = conditionPhrase(listing.condition)
@@ -251,7 +263,12 @@ export function buildGoogleMerchantProductDescription(
 
   if (description.length < GOOGLE_MERCHANT_MIN_DESCRIPTION_LENGTH) {
     const brandModel =
-      [listing.brand?.trim(), listing.model?.trim()].filter(Boolean).join(" ") || listing.title.trim()
+      [
+        listing.brand?.trim() ? normalizeExcessiveCapitalization(listing.brand.trim()) : "",
+        listing.model?.trim() ? normalizeExcessiveCapitalization(listing.model.trim()) : "",
+      ]
+        .filter(Boolean)
+        .join(" ") || capitalizeWords(listing.title.trim())
     description = `${description} ${ensureEndsWithPunctuation(
       `Additional details for this ${productCategoryLabel(listing.section)}: ${brandModel} listed at ${formatUsd(listing.price)} on Reswell.`,
     )}`
