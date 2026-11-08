@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
-import { ImagePlus, Loader2 } from "lucide-react"
+import { Loader2, Plus } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -432,16 +432,16 @@ export function MessageMediaSendButton({
         size="icon"
         disabled={disabled || busy}
         className={cn(
-          "h-10 w-10 shrink-0 rounded-full border-0 bg-transparent text-muted-foreground shadow-none hover:bg-transparent hover:text-foreground",
+          "h-8 w-8 shrink-0 rounded-full bg-[#E9E9EB] text-foreground shadow-none hover:bg-[#dedee0] dark:bg-[#3A3A3C] dark:hover:bg-[#4a4a4c]",
           className,
         )}
         aria-label="Send photo or video"
         onClick={() => inputRef.current?.click()}
       >
         {busy ? (
-          <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
+          <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
         ) : (
-          <ImagePlus className="h-5 w-5" strokeWidth={2} aria-hidden />
+          <Plus className="h-4 w-4" strokeWidth={2.5} aria-hidden />
         )}
       </Button>
     </>

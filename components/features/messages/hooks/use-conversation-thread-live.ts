@@ -31,6 +31,8 @@ export interface RealtimeThreadMessage {
 interface UseConversationThreadLiveOptions {
   conversationId: string
   onMessageInsert: (message: RealtimeThreadMessage) => void
+  /** Read receipts and other in-place field changes on an existing bubble. */
+  onMessageUpdate?: (message: RealtimeThreadMessage) => void
   /** An existing bubble was rewritten, such as an offer. A new chat message does not use this. */
   onThreadChanged: () => void
 }
@@ -44,12 +46,15 @@ interface UseConversationThreadLiveOptions {
 export function useConversationThreadLive({
   conversationId,
   onMessageInsert,
+  onMessageUpdate,
   onThreadChanged,
 }: UseConversationThreadLiveOptions): void {
   const supabase = createClient()
   const onMessageInsertRef = useRef(onMessageInsert)
+  const onMessageUpdateRef = useRef(onMessageUpdate)
   const onThreadChangedRef = useRef(onThreadChanged)
   onMessageInsertRef.current = onMessageInsert
+  onMessageUpdateRef.current = onMessageUpdate
   onThreadChangedRef.current = onThreadChanged
 
   useEffect(() => {
@@ -113,6 +118,20 @@ export function useConversationThreadLive({
         const message = realtimeThreadMessage(payload.new)
         if (!message) return
         appendMessage(message)
+      },
+    )
+    fallback.on(
+      "postgres_changes",
+      {
+        event: "UPDATE",
+        schema: "public",
+        table: "messages",
+        filter: `conversation_id=eq.${conversationId}`,
+      },
+      (payload) => {
+        const message = realtimeThreadMessage(payload.new)
+        if (!message) return
+        onMessageUpdateRef.current?.(message)
       },
     )
 

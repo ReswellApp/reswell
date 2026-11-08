@@ -13,5 +13,14 @@ export function MessageThreadMobileComposerDock({
   className,
   children,
 }: MessageThreadMobileComposerDockProps) {
-  return <div className={cn("relative z-10 shrink-0", className)}>{children}</div>
+  return (
+    <div
+      className={cn(
+        "relative z-10 shrink-0 bg-background/90 px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur-md supports-[backdrop-filter]:bg-background/75",
+        className,
+      )}
+    >
+      {children}
+    </div>
+  )
 }

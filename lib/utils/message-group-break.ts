@@ -1,4 +1,4 @@
-const MESSAGE_GROUP_GAP_MS = 45 * 60 * 1000
+export const MESSAGE_GROUP_GAP_MS = 45 * 60 * 1000
 
 /** UTC calendar day — matches on the server and in every browser timezone. */
 export function isSameUtcCalendarDay(a: Date, b: Date): boolean {

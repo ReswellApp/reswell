@@ -16,6 +16,7 @@ import {
   parseMarketplaceMessagePdfAttachment,
   parseMarketplaceMessageVideoAttachment,
 } from "@/lib/validations/marketplace-message-attachment"
+import { MessageTextBubble } from "@/components/features/messages/message-text-bubble"
 
 const messageMediaShellClass =
   "max-w-[min(100%,12.5rem)] sm:max-w-[min(100%,14rem)] md:max-w-[min(100%,17rem)]"
@@ -154,35 +155,13 @@ function MessageMediaAttachmentVideo({
   )
 }
 
-function MessageTextBubble({
-  content,
-  isOwn,
-}: {
-  content: string
-  isOwn: boolean
-}) {
-  return (
-    <div
-      className={cn(
-        "max-w-[min(100%,18.5rem)] rounded-[20px] px-3.5 py-2 sm:max-w-[min(100%,20rem)] sm:px-4 sm:py-2.5 md:max-w-[min(100%,28rem)]",
-        isOwn
-          ? "rounded-br-[6px] bg-listingHeart text-white shadow-[0_1px_2px_rgba(53,81,133,0.22)]"
-          : "rounded-bl-[6px] border border-border/45 bg-card text-foreground shadow-sm",
-      )}
-    >
-      <p className="whitespace-pre-wrap break-words text-[17px] leading-[1.35] tracking-[-0.01em]">
-        {content}
-      </p>
-    </div>
-  )
-}
-
 export function MessageMediaAttachmentCard({
   messageId,
   metadata,
   content,
   isOwn,
   formattedTime,
+  showTime = true,
   onOpenImage,
 }: {
   messageId: string
@@ -190,6 +169,8 @@ export function MessageMediaAttachmentCard({
   content: string
   isOwn: boolean
   formattedTime: ReactNode
+  /** Per-item timestamps clutter an iMessage-style thread; group labels cover this. */
+  showTime?: boolean
   /** Opens a parent-owned image gallery (swipe across thread photos). */
   onOpenImage?: (messageId: string) => void
 }) {
@@ -226,27 +207,22 @@ export function MessageMediaAttachmentCard({
         {!redundantCaption && content.trim() ? (
           <MessageTextBubble content={content} isOwn={isOwn} />
         ) : null}
-        <p
-          className={cn(
-            "px-0.5 text-[11px] tabular-nums leading-none text-muted-foreground",
-            isOwn && "text-right",
-          )}
-        >
-          {formattedTime}
-        </p>
+        {showTime ? (
+          <p
+            className={cn(
+              "px-0.5 text-[11px] tabular-nums leading-none text-muted-foreground",
+              isOwn && "text-right",
+            )}
+          >
+            {formattedTime}
+          </p>
+        ) : null}
       </div>
     )
   }
 
   return (
-    <div
-      className={cn(
-        "max-w-[min(100%,18.5rem)] rounded-[20px] px-3.5 py-2 sm:max-w-[min(100%,20rem)] sm:px-4 sm:py-2.5 md:max-w-[min(100%,28rem)]",
-        isOwn
-          ? "rounded-br-[6px] bg-listingHeart text-white shadow-[0_1px_2px_rgba(53,81,133,0.22)]"
-          : "rounded-bl-[6px] border border-border/45 bg-card text-foreground shadow-sm",
-      )}
-    >
+    <MessageTextBubble content={content} isOwn={isOwn} className="sm:py-2.5">
       {pdfAtt ? (
         <OpenMarketplacePdfButton
           messageId={messageId}
@@ -263,14 +239,16 @@ export function MessageMediaAttachmentCard({
           {content}
         </p>
       ) : null}
-      <p
-        className={cn(
-          "mt-1 text-[11px] tabular-nums leading-none",
-          isOwn ? "text-white/55" : "text-muted-foreground",
-        )}
-      >
-        {formattedTime}
-      </p>
-    </div>
+      {showTime ? (
+        <p
+          className={cn(
+            "mt-1 text-[11px] tabular-nums leading-none",
+            isOwn ? "text-white/55" : "text-muted-foreground",
+          )}
+        >
+          {formattedTime}
+        </p>
+      ) : null}
+    </MessageTextBubble>
   )
 }
