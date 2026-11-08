@@ -89,10 +89,11 @@ export function ListingDetailPeerPurchaseActions({
   const router = useRouter()
   const pathname = usePathname()
   const here = pathname || "/"
-  const checkoutHref = peerListingCheckoutHref(section, checkoutListingParam)
+  const checkoutHref = peerListingCheckoutHref(section, checkoutListingParam, {
+    quantity: canChooseQuantity ? quantity : 1,
+  })
   const viewOfferHref = sentOfferHref ?? openOfferHref
-  const checkoutHrefForQuantity =
-    canChooseQuantity && quantity > 1 ? `${checkoutHref}&qty=${quantity}` : checkoutHref
+  const checkoutHrefForQuantity = checkoutHref
 
   useEffect(() => {
     if (!loggedIn) return

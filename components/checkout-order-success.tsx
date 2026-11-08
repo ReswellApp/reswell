@@ -32,6 +32,8 @@ export type CheckoutOrderSuccessPayload = {
   sellerId: string | null
   /** Primary listing id for Messages deep-links (`order_lines[0]`). */
   listingId: string | null
+  /** Quantity listings still in stock after this order. */
+  buyAgainHref?: string | null
   /** One entry per purchased listing (multi-item checkout). */
   orderLines: Array<{
     listingId: string | null
@@ -317,9 +319,15 @@ export function CheckoutOrderSuccess({ data }: { data: CheckoutOrderSuccessPaylo
               </Link>
             )}
           </Button>
-          <Button size="lg" variant="outline" asChild>
-            <Link href="/boards">Continue shopping</Link>
-          </Button>
+          {data.buyAgainHref ? (
+            <Button size="lg" variant="outline" asChild>
+              <Link href={data.buyAgainHref}>Buy again</Link>
+            </Button>
+          ) : (
+            <Button size="lg" variant="outline" asChild>
+              <Link href="/boards">Continue shopping</Link>
+            </Button>
+          )}
         </motion.div>
 
         <motion.div

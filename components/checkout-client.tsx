@@ -87,6 +87,8 @@ interface CheckoutClientProps {
   surfboardShippedSeed?: SurfboardShippedCheckoutSeed | null
   /** Admin pilot. Null hides Pay with Reswell Bucks. */
   reswellBucksCheckout?: { spendableUsd: number } | null
+  /** Explicit second purchase of an in-stock quantity listing. */
+  forceNewSession?: boolean
 }
 
 function CheckoutShippingArrival({ rate }: { rate: PeerCheckoutShippingRateOption }) {
@@ -119,6 +121,7 @@ export function CheckoutClient({
   acceptedOfferListingIds,
   surfboardShippedSeed = null,
   reswellBucksCheckout = null,
+  forceNewSession = false,
 }: CheckoutClientProps) {
   const isBundle = listings.length > 1
   const offerSuggestedFulfillment = normalizeOfferFulfillment(suggestedFulfillment)
@@ -235,6 +238,16 @@ export function CheckoutClient({
 
   const listingIds = useMemo(() => listings.map((l) => l.id), [listings])
   const listingIdsKey = listingIds.join(",")
+  const checkoutQuantities = useMemo(
+    () =>
+      Object.fromEntries(
+        listings.map((listing) => [
+          listing.id,
+          Math.max(1, Math.floor(listing.quantity ?? 1)),
+        ]),
+      ),
+    [listings],
+  )
 
   const [shipQuote, setShipQuote] = useState<{
     shippingUsd: number
@@ -1005,12 +1018,7 @@ export function CheckoutClient({
               <div className="rounded-[8px] border border-neutral-200 bg-white p-4 sm:p-5">
                 <PurchaseOptions
                   listingIds={listingIds}
-                  quantities={Object.fromEntries(
-                    listings.map((listing) => [
-                      listing.id,
-                      Math.max(1, Math.floor(listing.quantity ?? 1)),
-                    ]),
-                  )}
+                  quantities={checkoutQuantities}
                   listingTitle={listingSummaryTitle}
                   price={payableTotal}
                   fulfillment={fulfillmentForApi ?? null}
@@ -1026,6 +1034,7 @@ export function CheckoutClient({
                   hideStripeFooter
                   buyerEmail={buyerEmail ?? null}
                   surfboardShipped={surfboardShippedSelected}
+                  forceNewSession={forceNewSession}
                   reswellBucks={surfboardShippedSelected ? null : reswellBucksCheckout}
                 />
                 <p className="mt-3 text-center text-[12px] text-neutral-500">

@@ -1,9 +1,18 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 
-import { isSoldFeedSaleLineRpcMissing } from "@/lib/db/marketplace-sold-feed"
+import {
+  isSoldFeedSaleLineRpcMissing,
+  MARKETPLACE_SOLD_FEED_ALL_SECTIONS,
+} from "@/lib/db/marketplace-sold-feed"
 
 describe("marketplace sold feed RPC", () => {
+  it("includes shop retail with peer sections", () => {
+    assert.equal(MARKETPLACE_SOLD_FEED_ALL_SECTIONS[0], "new")
+    assert.ok(MARKETPLACE_SOLD_FEED_ALL_SECTIONS.includes("fins"))
+    assert.ok(MARKETPLACE_SOLD_FEED_ALL_SECTIONS.includes("surfboards"))
+  })
+
   it("detects a missing sale-line overload", () => {
     assert.equal(
       isSoldFeedSaleLineRpcMissing({

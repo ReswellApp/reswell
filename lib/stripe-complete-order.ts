@@ -107,6 +107,7 @@ import {
 } from "@/lib/services/adminTerminalSale"
 import { syncAdminTerminalGuestToCrm } from "@/lib/services/crmAdminTerminalGuest"
 import { isSellerSaleTipPaymentIntent } from "@/lib/stripe/seller-sale-tip-intent"
+import { completeCheckoutSessionForPaymentIntent } from "@/lib/services/checkoutSessionPayment"
 
 export type StripeCompleteOrderResult =
   | { ok: true; orderId: string; alreadyProcessed?: boolean }
@@ -622,6 +623,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       // Order row can exist while mark-sold failed (e.g. undeployed last_sold_at).
       // Repair before acknowledging alreadyProcessed so the listing cannot be bought again.
       await dbRepairPeerListingsSoldViaCheckout(serviceSupabase, recoveryListingIds)
+      await completeCheckoutSessionForPaymentIntent(serviceSupabase, pi, existing.id)
       await emitPurchaseSuccessfulKlaviyoForOrderId(serviceSupabase, existing.id)
       if (!isAdminTerminalSale) {
         void sendPostPurchaseReviewInvite(existing.id)
@@ -641,6 +643,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       return recovered
     }
     await dbRepairPeerListingsSoldViaCheckout(serviceSupabase, recoveryListingIds)
+    await completeCheckoutSessionForPaymentIntent(serviceSupabase, pi, existing.id)
     await emitPurchaseSuccessfulKlaviyoForOrderId(serviceSupabase, existing.id)
     if (!isAdminTerminalSale) {
       void sendPostPurchaseReviewInvite(existing.id)
@@ -1398,6 +1401,8 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       }
     }
   }
+
+  await completeCheckoutSessionForPaymentIntent(serviceSupabase, pi, purchase.id)
 
   for (const line of bundle.lines) {
     const listing = listingsOrdered.find((row) => row.id === line.listingId)

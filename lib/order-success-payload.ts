@@ -3,6 +3,8 @@ import { resolvePayableAmount } from "@/lib/purchase-amount"
 import { capitalizeWords, formatCategory, formatCondition } from "@/lib/listing-labels"
 import type { CheckoutOrderSuccessPayload } from "@/components/checkout-order-success"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
+import { peerListingCheckoutHref } from "@/lib/listing-href"
+import { listingSupportsBuyerQuantity } from "@/lib/listing-stock-quantity"
 
 type ShippingAddressJson = {
   name?: string | null
@@ -38,6 +40,8 @@ type SuccessListingEmbed = {
   slug?: string | null
   section: string
   condition?: string | null
+  stock_quantity?: number | null
+  inventory_source?: string | null
   price: string | number
   shipping_available: boolean | null
   local_pickup: boolean | null
@@ -178,6 +182,34 @@ function mapOrderRowToCheckoutPayload(
   )
   const listingIdForLinks = pricedOrderLines[0]?.listingId ?? fallbackListing?.id ?? null
 
+  let buyAgainHref: string | null = null
+  const reorderListings = [
+    ...itemRows.map((row) => ({
+      listing: listingFromRelation(row.listings),
+      quantity: Math.max(1, Math.floor(Number(row.quantity) || 1)),
+    })),
+    ...(fallbackListing ? [{ listing: fallbackListing, quantity: 1 }] : []),
+  ]
+  for (const row of reorderListings) {
+    const listing = row.listing
+    if (!listing) continue
+    if (
+      !listingSupportsBuyerQuantity({
+        section: listing.section,
+        condition: listing.condition,
+        stock_quantity: listing.stock_quantity,
+        inventory_source: listing.inventory_source,
+      })
+    ) {
+      continue
+    }
+    buyAgainHref = peerListingCheckoutHref(listing.section, listing.slug?.trim() || listing.id, {
+      quantity: row.quantity,
+      buyAgain: true,
+    })
+    break
+  }
+
   const status = (order.status ?? "").trim().toLowerCase()
   const reportAdPurchaseConversion =
     Number.isFinite(total) &&
@@ -206,6 +238,7 @@ function mapOrderRowToCheckoutPayload(
     pickupCode,
     sellerId: order.seller_id?.trim() ? order.seller_id : null,
     listingId: listingIdForLinks,
+    buyAgainHref,
     orderLines: pricedOrderLines,
     shipping: ship
       ? {
@@ -256,6 +289,7 @@ export async function fetchBuyerOrderSuccessPayload(
         slug,
         section,
         condition,
+        stock_quantity,
         price,
         shipping_available,
         local_pickup,
@@ -272,6 +306,7 @@ export async function fetchBuyerOrderSuccessPayload(
           slug,
           section,
           condition,
+          stock_quantity,
           price,
           shipping_available,
           local_pickup,

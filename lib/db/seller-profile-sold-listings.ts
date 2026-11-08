@@ -96,7 +96,7 @@ async function serviceOrFallback(supabase: SupabaseClient): Promise<SupabaseClie
 
 /**
  * When `last_sold_at` and the interim RPC are both unavailable, rebuild Sold-tab
- * eligibility from confirmed checkouts (service role) so brand-new quantity sales
+ * eligibility from confirmed checkouts (service role) so leftover-stock sales
  * still appear — same rules as the dropped RPC.
  */
 async function fetchSoldRefsFromOrdersFallback(
@@ -108,7 +108,7 @@ async function fetchSoldRefsFromOrdersFallback(
 
   const { data: sellerListings, error: listingsError } = await client
     .from("listings")
-    .select("id, status, condition, stock_quantity, hidden_from_site, archived_at, updated_at, created_at")
+    .select("id, status, hidden_from_site, archived_at, updated_at, created_at")
     .eq("user_id", sellerId)
     .in("section", PEER_LISTING_SECTIONS_FILTER)
     .not("title", "ilike", "Admin seed%")
@@ -187,22 +187,15 @@ async function fetchSoldRefsFromOrdersFallback(
 
   for (const [listingId, row] of listingById) {
     const status = String((row as { status?: string | null }).status ?? "")
-    const condition = String((row as { condition?: string | null }).condition ?? "")
-    const stock = Math.max(0, Math.floor(Number((row as { stock_quantity?: number | null }).stock_quantity) || 0))
     const hidden = Boolean((row as { hidden_from_site?: boolean | null }).hidden_from_site)
     const archivedAt = (row as { archived_at?: string | null }).archived_at
     const saleAt = lastSoldAtByListing.get(listingId) ?? null
 
     const isFullySold = status === "sold"
-    const isQuantitySale =
-      status === "active" &&
-      (condition === "brand_new" || condition === "new") &&
-      stock > 0 &&
-      !hidden &&
-      archivedAt == null &&
-      saleAt != null
+    const isOpenQuantitySale =
+      status === "active" && !hidden && archivedAt == null && saleAt != null
 
-    if (!isFullySold && !isQuantitySale) continue
+    if (!isFullySold && !isOpenQuantitySale) continue
 
     refs.push({
       listingId,
@@ -286,7 +279,7 @@ async function fetchStatusSoldOnlyFallback(
 
 /**
  * Seller shop Sold history — indexed listings read via `last_sold_at`.
- * Fully sold rows plus in-stock brand-new quantity sales.
+ * Fully sold rows plus leftover-stock quantity sales.
  *
  * Fallbacks (migration lag): interim RPC → order rebuild → status=sold only.
  */
@@ -312,8 +305,6 @@ export async function fetchSellerProfileSoldListingRefs(
     .eq("user_id", sellerId)
     .in("section", PEER_LISTING_SECTIONS_FILTER)
     .eq("status", "active")
-    .in("condition", ["brand_new", "new"])
-    .gt("stock_quantity", 0)
     .not("last_sold_at", "is", null)
     .eq("hidden_from_site", false)
     .is("archived_at", null)

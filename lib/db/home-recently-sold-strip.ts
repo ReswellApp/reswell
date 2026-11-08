@@ -49,9 +49,9 @@ export async function filterListingIdsStillSoldOnMarketplace(
 
   const primary = await supabase
     .from("listings")
-    .select("id, title, status, hidden_from_site, archived_at, sold_off_platform")
+    .select("id, title, status, hidden_from_site, archived_at, sold_off_platform, stock_quantity")
     .in("id", [...orderedListingIds])
-    .eq("status", "sold")
+    .in("status", ["sold", "active"])
     .eq("sold_off_platform", false)
     .in("section", [...sections])
 
@@ -66,9 +66,9 @@ export async function filterListingIdsStillSoldOnMarketplace(
     )
     const fallback = await supabase
       .from("listings")
-      .select("id, title, status, hidden_from_site, archived_at")
+      .select("id, title, status, hidden_from_site, archived_at, stock_quantity")
       .in("id", [...orderedListingIds])
-      .eq("status", "sold")
+      .in("status", ["sold", "active"])
       .in("section", [...sections])
     data = (fallback.data ?? []) as Record<string, unknown>[]
     error = fallback.error
@@ -89,6 +89,7 @@ export async function filterListingIdsStillSoldOnMarketplace(
           status: String((row as { status?: string | null }).status ?? "sold"),
           hidden_from_site: (row as { hidden_from_site?: boolean | null }).hidden_from_site,
           archived_at: (row as { archived_at?: string | null }).archived_at,
+          stock_quantity: (row as { stock_quantity?: number | null }).stock_quantity,
           soldViaAdminTerminal: adminTerminalSoldIds.has(String((row as { id?: string | null }).id)),
         }),
       )
@@ -118,9 +119,9 @@ async function resolveVisibleSoldListingOrder(
 
   const { data, error } = await supabase
     .from("listings")
-    .select("id, title, status, hidden_from_site, archived_at")
+    .select("id, title, status, hidden_from_site, archived_at, stock_quantity")
     .in("id", [...rpcOrderedListingIds])
-    .eq("status", "sold")
+    .in("status", ["sold", "active"])
     .in("section", [...sections])
 
   if (error) {
@@ -137,6 +138,7 @@ async function resolveVisibleSoldListingOrder(
           status: String((row as { status?: string | null }).status ?? "sold"),
           hidden_from_site: (row as { hidden_from_site?: boolean | null }).hidden_from_site,
           archived_at: (row as { archived_at?: string | null }).archived_at,
+          stock_quantity: (row as { stock_quantity?: number | null }).stock_quantity,
           soldViaAdminTerminal: adminTerminalSoldIds.has(String((row as { id?: string | null }).id)),
         }),
       )
@@ -280,10 +282,10 @@ async function fetchRecentlySoldListingSaleTimesFallback(
 
   const { data: listings, error: listingsError } = await supabase
     .from("listings")
-    .select("id, title, status, hidden_from_site, archived_at, sold_off_platform")
+    .select("id, title, status, hidden_from_site, archived_at, sold_off_platform, stock_quantity")
     .in("id", candidateIds)
     .in("section", [...sections])
-    .eq("status", "sold")
+    .in("status", ["sold", "active"])
     .eq("sold_off_platform", false)
 
   if (listingsError) {
@@ -301,6 +303,7 @@ async function fetchRecentlySoldListingSaleTimesFallback(
           status: String((row as { status?: string | null }).status ?? "sold"),
           hidden_from_site: (row as { hidden_from_site?: boolean | null }).hidden_from_site,
           archived_at: (row as { archived_at?: string | null }).archived_at,
+          stock_quantity: (row as { stock_quantity?: number | null }).stock_quantity,
           soldViaAdminTerminal: adminTerminalSoldIds.has(String((row as { id?: string | null }).id)),
         }),
       )
@@ -377,9 +380,9 @@ export async function fetchHomeRecentlySoldSurfboardRows(
 
   const { data, error } = await supabase
     .from("listings")
-    .select(`${HOME_PEER_LISTING_WITH_PROFILE_SELECT}, hidden_from_site, archived_at`)
+    .select(`${HOME_PEER_LISTING_WITH_PROFILE_SELECT}, hidden_from_site, archived_at, stock_quantity`)
     .in("id", orderedListingIds)
-    .eq("status", "sold")
+    .in("status", ["sold", "active"])
 
   if (error) {
     console.error("fetchHomeRecentlySoldSurfboardRows:", error.message)
@@ -400,6 +403,7 @@ export async function fetchHomeRecentlySoldSurfboardRows(
         status: String(row.status ?? "sold"),
         hidden_from_site: row.hidden_from_site as boolean | null | undefined,
         archived_at: row.archived_at as string | null | undefined,
+        stock_quantity: row.stock_quantity as number | null | undefined,
         soldViaAdminTerminal: adminTerminalSoldIds.has(id),
       })
     ) {
