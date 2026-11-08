@@ -7,6 +7,10 @@ import { stripePublishableKey } from "@/lib/stripe/client-checkout-enabled"
  * registers `window.Stripe` — ad blockers, flaky mobile radio, or a dropped
  * CDN request. Checkout was caching that rejected promise (`??= loadStripe()`),
  * so one failure blocked payment for the rest of the session.
+ *
+ * Do not load Stripe.js on every page to "cache it." This error is the script
+ * tag `error` listener (`onErrorListener`), not a race with checkout render.
+ * Site-wide injection would only replay the same miss for ad-blocked sessions.
  */
 export const STRIPE_JS_LOAD_ERROR = "Failed to load Stripe.js"
 
@@ -94,7 +98,6 @@ function ensureStripePreconnect(): void {
   const link = document.createElement("link")
   link.rel = "preconnect"
   link.href = "https://js.stripe.com"
-  link.crossOrigin = "anonymous"
   link.setAttribute("data-reswell-stripe-preconnect", "")
   document.head.appendChild(link)
 }

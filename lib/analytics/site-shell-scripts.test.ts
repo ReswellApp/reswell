@@ -11,6 +11,8 @@ describe("public site shell script loading", () => {
   it("keeps Klaviyo, PostHog identify, page-view trackers, and Vercel Analytics out of the root layout", () => {
     const layout = readRepoFile("app/layout.tsx")
     assert.match(layout, /DeferredMarketingRuntime/)
+    assert.match(layout, /rel="preconnect"/)
+    assert.match(layout, /https:\/\/js\.stripe\.com/)
     assert.doesNotMatch(layout, /KlaviyoOnsite/)
     assert.doesNotMatch(layout, /KlaviyoPageViewTracker/)
     assert.doesNotMatch(layout, /MetaPixelPageViewTracker/)
