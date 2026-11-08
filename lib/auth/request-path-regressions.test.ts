@@ -6,14 +6,30 @@ const proxySource = readFileSync(
   new URL("../supabase/proxy.ts", import.meta.url),
   "utf8",
 )
+const rootProxySource = readFileSync(
+  new URL("../../proxy.ts", import.meta.url),
+  "utf8",
+)
 const headerSource = readFileSync(
   new URL("../../components/header.tsx", import.meta.url),
+  "utf8",
+)
+const seoRedirectSource = readFileSync(
+  new URL("../seo/edge-redirects.ts", import.meta.url),
   "utf8",
 )
 
 describe("request-path regressions", () => {
   it("limits middleware getUser attempts to two", () => {
     assert.match(proxySource, /const getUserAttempts = 2\b/)
+  })
+
+  it("does not HTML-redirect Server Action posts", () => {
+    assert.match(proxySource, /passServerActionOrRedirect/)
+    assert.match(proxySource, /isServerActionRequest/)
+    assert.match(rootProxySource, /isServerActionRequest/)
+    assert.match(rootProxySource, /HTML 302s break Server Actions/)
+    assert.match(seoRedirectSource, /isServerActionRequest\(request\)\) return null/)
   })
 
   it("keeps messaging Realtime without wallet table bindings", () => {

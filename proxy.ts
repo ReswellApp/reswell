@@ -13,6 +13,7 @@ import {
   publicMarketplaceCdnCacheControl,
   shouldAttachDeviceCookieOnDocument,
 } from '@/lib/crawler/public-marketplace-paths'
+import { isServerActionRequest } from '@/lib/utils/is-server-action-request'
 
 function applyPublicMarketplaceCacheHints(
   request: NextRequest,
@@ -22,7 +23,7 @@ function applyPublicMarketplaceCacheHints(
   if (
     !isCacheablePublicMarketplaceRequest(
       request.method,
-      request.headers.has('next-action'),
+      isServerActionRequest(request),
     )
   ) {
     return response
@@ -42,8 +43,10 @@ function applyPublicMarketplaceCacheHints(
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
+  const isServerAction = isServerActionRequest(request)
+
   const catalogAccess = evaluateAdCatalogCrawlerAccess(request)
-  if (!catalogAccess.allowed) {
+  if (!catalogAccess.allowed && !isServerAction) {
     return new NextResponse(catalogAccess.message, {
       status: catalogAccess.status,
       headers: {
@@ -53,12 +56,18 @@ export async function proxy(request: NextRequest) {
     })
   }
 
-  // Admin-managed 301/302 redirects short-circuit before any session work.
-  const redirect = await resolveSeoRedirect(request)
-  if (redirect) return redirect
+  // HTML 302s break Server Actions (client requires text/x-component).
+  if (!isServerAction) {
+    const redirect = await resolveSeoRedirect(request)
+    if (redirect) return redirect
+  }
 
   try {
-    if (isSignupPath(pathname) && (await isNextRequestAccessBanned(request))) {
+    if (
+      !isServerAction &&
+      isSignupPath(pathname) &&
+      (await isNextRequestAccessBanned(request))
+    ) {
       const url = request.nextUrl.clone()
       url.pathname = '/auth/login'
       url.searchParams.set('error', ACCOUNT_BANNED_ERROR)
