@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { formatDistanceToNow } from "date-fns"
+import { RelativeTime, formatDistanceToNowLabel } from "@/components/ui/relative-time"
 import { MessageCircle, Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { VerifiedBadge } from "@/components/verified-badge"
@@ -179,14 +179,11 @@ export function MessagesInboxListPane({
                           ) : null}
                         </div>
                         {group.latestActivityMs > 0 ? (
-                          <time
-                            className="shrink-0 text-[11px] tabular-nums text-muted-foreground"
-                            dateTime={new Date(group.latestActivityMs).toISOString()}
-                          >
-                            {formatDistanceToNow(new Date(group.latestActivityMs), {
-                              addSuffix: true,
-                            })}
-                          </time>
+                          <RelativeTime
+                            iso={new Date(group.latestActivityMs).toISOString()}
+                            formatLabel={formatDistanceToNowLabel}
+                            className="shrink-0 text-[11px] text-muted-foreground"
+                          />
                         ) : null}
                       </div>
                       <div className="mt-0.5 flex items-start justify-between gap-2">

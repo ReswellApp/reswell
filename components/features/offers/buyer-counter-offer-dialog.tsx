@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { respondToCounterOfferAction } from "@/lib/actions/offerCounterRespond"
 import { capitalizeWords } from "@/lib/listing-labels"
-import { formatDistanceToNow } from "date-fns"
+import { RelativeTime, formatDistanceToNowLabel } from "@/components/ui/relative-time"
 import { parseOfferLineItems } from "@/lib/types/offer-line-item"
 
 export type BuyerCounterOfferRow = {
@@ -101,7 +101,8 @@ export function BuyerCounterOfferDialog({
           </p>
           {offer.expires_at ? (
             <p className="text-left text-[13px] leading-snug text-muted-foreground">
-              Respond {formatDistanceToNow(new Date(offer.expires_at), { addSuffix: true })}.
+              Respond{" "}
+              <RelativeTime iso={offer.expires_at} formatLabel={formatDistanceToNowLabel} />.
             </p>
           ) : null}
         </DialogHeader>

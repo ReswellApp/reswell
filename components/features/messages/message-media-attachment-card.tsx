@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, type ReactNode } from "react"
 import Image from "next/image"
 import { Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -189,7 +189,7 @@ export function MessageMediaAttachmentCard({
   metadata: unknown
   content: string
   isOwn: boolean
-  formattedTime: string
+  formattedTime: ReactNode
   /** Opens a parent-owned image gallery (swipe across thread photos). */
   onOpenImage?: (messageId: string) => void
 }) {

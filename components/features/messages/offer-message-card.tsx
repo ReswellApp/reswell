@@ -23,7 +23,7 @@ import {
   type ThreadEventTone,
 } from "@/components/features/messages/thread-event-card"
 import { SellerOfferResponseDialog, type OfferRowLite } from "./seller-offer-response-dialog"
-import { formatDistanceToNow } from "date-fns"
+import { RelativeTime, formatDistanceToNowLabel } from "@/components/ui/relative-time"
 
 function offerTone(status: string): ThreadEventTone {
   if (status === "ACCEPTED" || status === "COMPLETED") return "success"
@@ -153,7 +153,8 @@ export function OfferMessageCard({
 
         {!isSeller && countered && !counterExpired && offer.expires_at ? (
           <ThreadEventHint>
-            Accept or decline {formatDistanceToNow(new Date(offer.expires_at), { addSuffix: true })}.
+            Accept or decline{" "}
+            <RelativeTime iso={offer.expires_at} formatLabel={formatDistanceToNowLabel} />.
           </ThreadEventHint>
         ) : null}
 

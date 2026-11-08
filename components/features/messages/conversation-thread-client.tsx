@@ -12,7 +12,9 @@ import { MessageThreadMobileComposerDock } from '@/components/features/messages/
 import { ConversationPartyProfile } from '@/components/features/messages/conversation-party-profile'
 import { ConversationThreadHeaderChip } from '@/components/features/messages/conversation-thread-header-chip'
 import { type OtherPartyProfileSummary } from '@/lib/messages/profile-reviews-loader'
-import { format, isToday, isYesterday } from 'date-fns'
+import { RelativeTime } from '@/components/ui/relative-time'
+import { formatLocalThreadTime } from '@/lib/utils/format-local-thread-time'
+import { shouldBreakMessageGroup } from '@/lib/utils/message-group-break'
 import { toast } from 'sonner'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { listingDetailPath } from '@/lib/listing-query'
@@ -152,28 +154,6 @@ function buildListingMap(
     if (row?.id) map[row.id] = row
   }
   return map
-}
-
-/**
- * App-style threading: a new run of bubbles (and a centered time/day label)
- * starts when the calendar day changes or messages are more than this far apart.
- */
-const MESSAGE_GROUP_GAP_MS = 45 * 60 * 1000
-
-function isSameCalendarDay(a: Date, b: Date): boolean {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  )
-}
-
-function shouldBreakMessageGroup(prevIso: string | null, currentIso: string): boolean {
-  if (!prevIso) return true
-  const prev = new Date(prevIso)
-  const current = new Date(currentIso)
-  if (!isSameCalendarDay(prev, current)) return true
-  return current.getTime() - prev.getTime() > MESSAGE_GROUP_GAP_MS
 }
 
 function buildOffersMap(data: ConversationThreadData): Record<string, OfferRowLite> {
@@ -779,12 +759,9 @@ export function ConversationThreadClient({
     [id],
   )
 
-  const formatMessageDate = (dateStr: string) => {
-    const date = new Date(dateStr)
-    if (isToday(date)) return format(date, 'h:mm a')
-    if (isYesterday(date)) return `Yesterday ${format(date, 'h:mm a')}`
-    return format(date, 'MMM d, h:mm a')
-  }
+  const threadTime = (iso: string) => (
+    <RelativeTime iso={iso} formatLabel={formatLocalThreadTime} />
+  )
 
   // True only for ordinary text bubbles — every special card (offer, order,
   // review, location, media, negotiation, policy block) breaks a bubble run so
@@ -1067,7 +1044,7 @@ export function ConversationThreadClient({
                           <LocalPhonePolicyBlockBubble
                             originalContent={policyBlock.originalContent}
                             reasonCode={policyBlock.reasonCode}
-                            formattedTime={formatMessageDate(message.created_at)}
+                            formattedTime={threadTime(message.created_at)}
                             relatedConversationId={id}
                           />
                         </div>
@@ -1223,7 +1200,7 @@ export function ConversationThreadClient({
                         <div className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start', cardMargin)}>
                           <MessageLocationCard
                             payload={locationPin}
-                            formattedTime={formatMessageDate(message.created_at)}
+                            formattedTime={threadTime(message.created_at)}
                             listingThumbnailSrc={locationThumbSrc}
                             listingImageAlt={locationThumbAlt}
                             listingThumbnailPending={listingChromeLoading}
@@ -1241,7 +1218,7 @@ export function ConversationThreadClient({
                             metadata={message.metadata}
                             content={message.content}
                             isOwn={isOwn}
-                            formattedTime={formatMessageDate(message.created_at)}
+                            formattedTime={threadTime(message.created_at)}
                             onOpenImage={openThreadImage}
                           />
                         </div>
@@ -1370,7 +1347,8 @@ export function ConversationThreadClient({
                         )}
                       >
                         <div
-                          title={format(new Date(message.created_at), 'EEEE, MMM d • h:mm a')}
+                          title={formatLocalThreadTime(message.created_at)}
+                          suppressHydrationWarning
                           className={cn(
                             'max-w-[min(100%,18.5rem)] rounded-[20px] px-3.5 py-[7px] sm:max-w-[min(100%,20rem)] sm:px-4 sm:py-2 md:max-w-[min(100%,28rem)]',
                             isOwn
@@ -1399,7 +1377,7 @@ export function ConversationThreadClient({
                       {separatorBefore ? (
                         <div className="flex justify-center pb-1.5 pt-3 first:pt-1">
                           <span className="text-[11px] font-medium tabular-nums text-muted-foreground/70">
-                            {formatMessageDate(message.created_at)}
+                            {threadTime(message.created_at)}
                           </span>
                         </div>
                       ) : null}
