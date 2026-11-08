@@ -8,6 +8,7 @@ import {
   evaluateAdCatalogCrawlerAccess,
 } from '@/lib/crawler/ad-catalog-crawler'
 import {
+  BROWSER_HTML_CACHE_CONTROL,
   isCacheablePublicMarketplaceRequest,
   publicMarketplaceCdnCacheControl,
   shouldAttachDeviceCookieOnDocument,
@@ -32,6 +33,9 @@ function applyPublicMarketplaceCacheHints(
   )
   if (!cacheControl) return response
   response.headers.set('CDN-Cache-Control', cacheControl)
+  // CDN-Cache-Control wins at the edge. Cache-Control is what the browser keeps,
+  // and it must not hold HTML across deploys (stale HTML → ChunkLoadError).
+  response.headers.set('Cache-Control', BROWSER_HTML_CACHE_CONTROL)
   return response
 }
 

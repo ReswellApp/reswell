@@ -1,5 +1,6 @@
 import {
   isChunkLoadError,
+  isNextStaticAssetLoadFailure,
   recoverFromChunkLoadError,
 } from "@/lib/utils/is-chunk-load-error"
 
@@ -19,15 +20,22 @@ export function installChunkLoadRecovery(): void {
   if (window.__reswellChunkRecoveryInstalled) return
   window.__reswellChunkRecoveryInstalled = true
 
-  function maybeRecover(reason: unknown): void {
-    if (!isChunkLoadError(reason)) return
+  function maybeRecover(reason: unknown, event?: Event): boolean {
+    const shouldRecover =
+      isChunkLoadError(reason) || (event != null && isNextStaticAssetLoadFailure(event))
+    if (!shouldRecover) return false
+    if (event && "preventDefault" in event) {
+      event.preventDefault()
+      event.stopImmediatePropagation()
+    }
     recoverFromChunkLoadError()
+    return true
   }
 
   window.addEventListener(
     "error",
     (event) => {
-      maybeRecover(event.error ?? event.message)
+      maybeRecover(event.error ?? event.message, event)
     },
     { capture: true },
   )
@@ -35,8 +43,19 @@ export function installChunkLoadRecovery(): void {
   window.addEventListener(
     "unhandledrejection",
     (event) => {
-      maybeRecover(event.reason)
+      maybeRecover(event.reason, event)
     },
     { capture: true },
   )
+
+  const reportError = window.reportError?.bind(window)
+  if (reportError) {
+    window.reportError = (error: unknown) => {
+      if (isChunkLoadError(error)) {
+        recoverFromChunkLoadError()
+        return
+      }
+      reportError(error)
+    }
+  }
 }

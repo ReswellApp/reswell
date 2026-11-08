@@ -1,7 +1,8 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { isChunkLoadError, recoverFromChunkLoadError } from "@/lib/utils/is-chunk-load-error"
+import { useEffect } from "react"
+import { useChunkLoadRecovery } from "@/lib/client/use-chunk-load-recovery"
+import { isChunkLoadError } from "@/lib/utils/is-chunk-load-error"
 
 /**
  * Last-resort boundary: catches errors thrown by the root layout itself, so it must render
@@ -17,18 +18,13 @@ export default function GlobalError({
   error: Error & { digest?: string }
   reset: () => void
 }) {
-  const [recovering, setRecovering] = useState(false)
+  const recovering = useChunkLoadRecovery(error)
+  const chunkError = isChunkLoadError(error)
 
   useEffect(() => {
-    if (isChunkLoadError(error)) {
-      const reloaded = recoverFromChunkLoadError()
-      if (reloaded) {
-        setRecovering(true)
-        return
-      }
-    }
+    if (chunkError) return
     console.error("[app] global error:", error)
-  }, [error])
+  }, [chunkError, error])
 
   return (
     <html lang="en">
@@ -50,7 +46,13 @@ export default function GlobalError({
                 <div className="mt-6 flex flex-wrap justify-center gap-2">
                   <button
                     type="button"
-                    onClick={() => reset()}
+                    onClick={() => {
+                      if (chunkError) {
+                        window.location.reload()
+                        return
+                      }
+                      reset()
+                    }}
                     className="inline-flex h-11 items-center justify-center rounded-full bg-neutral-900 px-5 text-sm font-medium text-white transition-colors hover:bg-neutral-800"
                   >
                     Reload

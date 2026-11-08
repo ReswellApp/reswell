@@ -13,10 +13,15 @@ const CHUNK_ERROR_PATTERNS = [
   "chunkloaderror",
   "loading chunk",
   "loading css chunk",
+  "failed to load chunk",
+  "failed to load css chunk",
+  "unable to preload css",
   "failed to fetch dynamically imported module",
   "error loading dynamically imported module",
   "importing a module script failed",
 ]
+
+const NEXT_STATIC_PATH = "/_next/static/"
 
 /** True when `error` looks like a stale/missing build asset rather than a real app bug. */
 export function isChunkLoadError(error: unknown, depth = 0): boolean {
@@ -50,6 +55,72 @@ function messageLooksLikeChunkError(value: string): boolean {
   return CHUNK_ERROR_PATTERNS.some((pattern) => message.includes(pattern))
 }
 
+/** True when a URL points at a hashed Next.js build asset. */
+export function isNextStaticAssetUrl(url: string | null | undefined): boolean {
+  if (!url) return false
+  try {
+    return new URL(url, "https://reswell.app").pathname.includes(NEXT_STATIC_PATH)
+  } catch {
+    return url.includes(NEXT_STATIC_PATH)
+  }
+}
+
+type EventTargetLike = {
+  tagName?: unknown
+  src?: unknown
+  href?: unknown
+}
+
+/**
+ * Script / stylesheet / modulepreload failures for `/_next/static/*` fire as
+ * `ErrorEvent`s whose `error` is often null (especially in in-app browsers).
+ * Match the element so recovery still runs.
+ */
+export function isNextStaticAssetLoadFailure(event: Event): boolean {
+  const target = event.target
+  if (!target || typeof target !== "object") return false
+  const el = target as EventTargetLike
+  const tag = typeof el.tagName === "string" ? el.tagName.toUpperCase() : ""
+  if (tag === "SCRIPT" && typeof el.src === "string") return isNextStaticAssetUrl(el.src)
+  if (tag === "LINK" && typeof el.href === "string") return isNextStaticAssetUrl(el.href)
+  return false
+}
+
+type PostHogEventLike = {
+  event?: string
+  properties?: Record<string, unknown> | null
+} | null | undefined
+
+function collectExceptionText(properties: Record<string, unknown> | null | undefined): string {
+  if (!properties) return ""
+  const parts: string[] = []
+
+  for (const key of ["$exception_type", "$exception_message"] as const) {
+    const value = properties[key]
+    if (typeof value === "string") parts.push(value)
+  }
+
+  const list = properties.$exception_list
+  if (!Array.isArray(list)) return parts.join("\n")
+
+  for (const item of list) {
+    if (!item || typeof item !== "object") continue
+    const rec = item as Record<string, unknown>
+    for (const key of ["type", "value", "$exception_type", "$exception_message"] as const) {
+      const value = rec[key]
+      if (typeof value === "string") parts.push(value)
+    }
+  }
+
+  return parts.join("\n")
+}
+
+/** Drop `$exception` events that are stale-chunk failures, not application bugs. */
+export function isPostHogChunkLoadError(event: PostHogEventLike): boolean {
+  if (!event || event.event !== "$exception") return false
+  return isChunkLoadError(collectExceptionText(event.properties))
+}
+
 /** sessionStorage key guarding against an infinite reload loop. */
 const RELOAD_GUARD_KEY = "rw_chunk_reload_at"
 /** Within this window a second chunk failure won't auto-reload again (avoids loops). */
@@ -80,6 +151,12 @@ export function recoverFromChunkLoadError(): boolean {
     /* ignore: still attempt the reload */
   }
 
-  window.location.reload()
+  // `reload()` uses the spec "reload" cache mode so HTML revalidates. Assigning
+  // href is a fallback for in-app browsers that treat reload as a no-op.
+  try {
+    window.location.reload()
+  } catch {
+    window.location.href = window.location.href
+  }
   return true
 }
