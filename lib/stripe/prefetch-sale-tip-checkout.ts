@@ -8,11 +8,12 @@ export function prefetchSaleTipCheckout(): Promise<void> {
     return Promise.resolve()
   }
 
-  prefetchPromise ??= import("@/components/features/listings/mark-sold-tip-checkout").then(
-    (mod) => {
-      mod.prefetchSaleTipStripeJs()
-    },
-  )
+  prefetchPromise ??= Promise.all([
+    import("@/lib/stripe/load-stripe-browser").then((mod) => {
+      mod.prefetchStripeJs()
+    }),
+    import("@/components/features/listings/mark-sold-tip-checkout"),
+  ]).then(() => undefined)
 
   return prefetchPromise
 }

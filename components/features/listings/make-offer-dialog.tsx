@@ -40,7 +40,7 @@ import { cn } from "@/lib/utils"
 import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { peerListingItemNounForm } from "@/lib/peer-listing-item-nouns"
-import { prefetchStripeJs } from "@/components/stripe-card-checkout"
+import { prefetchStripeCheckout } from "@/lib/stripe/prefetch-stripe-checkout"
 import { dashboardOffersPath } from "@/lib/utils/offers-dashboard-display"
 
 function roundMoney(n: number): number {
@@ -166,7 +166,7 @@ export function MakeOfferDialog({
 
   useEffect(() => {
     if (!open) resetDialog()
-    else if (isLoggedIn) prefetchStripeJs()
+    else if (isLoggedIn) void prefetchStripeCheckout({ immediate: true })
   }, [open, resetDialog, isLoggedIn])
 
   const offerAmount = useMemo(() => parseAmountInput(amountInput), [amountInput])
