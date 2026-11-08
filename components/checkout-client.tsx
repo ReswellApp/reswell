@@ -957,7 +957,7 @@ export function CheckoutClient({
                 ) : offersShippingRateChoice && shipQuote?.availableShippingRates?.length ? (
                   <div className="space-y-3 rounded-[8px] border border-neutral-200 bg-white px-4 py-4">
                     <p className="text-[13px] leading-relaxed text-neutral-600">
-                      {peerCheckoutRateChoiceIntro(null, rateFamily)}
+                      {peerCheckoutRateChoiceIntro(null, rateFamily, shipQuote.availableShippingRates)}
                     </p>
                     <RadioGroup
                       value={
