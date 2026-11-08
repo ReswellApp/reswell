@@ -1,7 +1,7 @@
 'use client'
 
-import { useCallback, useState, type ReactNode } from 'react'
-import { Loader2 } from 'lucide-react'
+import { useCallback, useState, type KeyboardEvent, type ReactNode } from 'react'
+import { ArrowUp, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { MessageComposerTextarea } from '@/components/features/messages/message-composer-textarea'
 import { MessageMediaSendButton } from '@/components/features/messages/message-media-send-button'
@@ -51,7 +51,7 @@ export function MessageComposerBar({
   onSubmit,
   sending = false,
   className,
-  placeholder = 'Send a message',
+  placeholder = 'Message',
   textareaDisabled = false,
   showMedia = true,
   leadingActions,
@@ -70,6 +70,14 @@ export function MessageComposerBar({
   const handleDraftUiChange = useCallback((node: ReactNode) => {
     setMediaDraftUi(node)
   }, [])
+  const canSend = !disabled && Boolean(value.trim())
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key !== 'Enter' || event.shiftKey || event.nativeEvent.isComposing) return
+    event.preventDefault()
+    if (!canSend) return
+    void onSubmit()
+  }
 
   return (
     <div className={cn('flex w-full min-w-0 flex-col gap-2', className)}>
@@ -98,19 +106,25 @@ export function MessageComposerBar({
           <MessageComposerTextarea
             value={value}
             onChange={onChange}
+            onKeyDown={handleKeyDown}
             placeholder={resolvedPlaceholder}
             disabled={disabled}
             autoComplete="off"
+            enterKeyHint="send"
             aria-label="Message text"
           />
           <Button
             type="submit"
             variant="ghost"
-            disabled={disabled || !value.trim()}
+            disabled={!canSend}
             className={messageComposerSendButtonClass}
             aria-label="Send message"
           >
-            {sending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : 'Send'}
+            {sending ? (
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+            ) : (
+              <ArrowUp className="h-4 w-4" strokeWidth={2.5} aria-hidden />
+            )}
           </Button>
         </div>
       </form>
