@@ -1,13 +1,14 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import Link from "next/link"
 import { RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useChunkLoadRecovery } from "@/lib/client/use-chunk-load-recovery"
 import { isAndroidWebViewBridgeNoise } from "@/lib/utils/is-android-webview-bridge-noise"
 import { isBenignClientFetchError } from "@/lib/utils/is-abort-error"
+import { isChunkLoadError } from "@/lib/utils/is-chunk-load-error"
 import { isStaleFileNotFoundError } from "@/lib/utils/is-stale-file-not-found-error"
-import { isChunkLoadError, recoverFromChunkLoadError } from "@/lib/utils/is-chunk-load-error"
 import posthog from "posthog-js"
 
 /**
@@ -24,16 +25,10 @@ export default function RootError({
   error: Error & { digest?: string }
   reset: () => void
 }) {
-  const [recovering, setRecovering] = useState(false)
+  const recovering = useChunkLoadRecovery(error)
 
   useEffect(() => {
-    if (isChunkLoadError(error)) {
-      const reloaded = recoverFromChunkLoadError()
-      if (reloaded) {
-        setRecovering(true)
-        return
-      }
-    }
+    if (isChunkLoadError(error)) return
     if (isAndroidWebViewBridgeNoise(error)) return
     if (isBenignClientFetchError(error)) return
     if (isStaleFileNotFoundError(error)) return
@@ -64,8 +59,17 @@ export default function RootError({
           contact support.
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
-          <Button onClick={() => reset()} className="rounded-full">
-            Try again
+          <Button
+            onClick={() => {
+              if (isChunkLoadError(error)) {
+                window.location.reload()
+                return
+              }
+              reset()
+            }}
+            className="rounded-full"
+          >
+            {isChunkLoadError(error) ? "Reload page" : "Try again"}
           </Button>
           <Button variant="outline" asChild className="rounded-full">
             <Link href="/">Go home</Link>

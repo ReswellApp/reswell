@@ -3,6 +3,8 @@
 import { useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { useChunkLoadRecovery } from "@/lib/client/use-chunk-load-recovery"
+import { isChunkLoadError } from "@/lib/utils/is-chunk-load-error"
 
 export default function DashboardOffersError({
   error,
@@ -11,9 +13,22 @@ export default function DashboardOffersError({
   error: Error & { digest?: string }
   reset: () => void
 }) {
+  const recovering = useChunkLoadRecovery(error)
+
   useEffect(() => {
+    if (isChunkLoadError(error)) return
     console.error("[dashboard/offers]", error)
   }, [error])
+
+  if (recovering) {
+    return (
+      <div
+        className="flex min-h-[40vh] items-center justify-center"
+        role="status"
+        aria-label="Loading page"
+      />
+    )
+  }
 
   return (
     <div className="mx-auto max-w-lg space-y-4 rounded-xl border border-destructive/30 bg-destructive/5 px-6 py-8 text-center">
@@ -32,8 +47,18 @@ export default function DashboardOffersError({
         )}
       </p>
       <div className="flex flex-wrap justify-center gap-2">
-        <Button type="button" variant="default" onClick={() => reset()}>
-          Try again
+        <Button
+          type="button"
+          variant="default"
+          onClick={() => {
+            if (isChunkLoadError(error)) {
+              window.location.reload()
+              return
+            }
+            reset()
+          }}
+        >
+          {isChunkLoadError(error) ? "Reload page" : "Try again"}
         </Button>
         <Button type="button" variant="outline" asChild>
           <Link href="/dashboard/listings">Back to listings</Link>
