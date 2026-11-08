@@ -5,8 +5,10 @@ import {
   filterReswellRatesForPeerSection,
   findPeerCheckoutRateOptionByServiceCode,
   isNonContiguousUsShipTo,
+  isSmallParcelUspsGroundServiceCode,
   peerCheckoutAllowsPoBoxDestination,
   peerCheckoutOffersShippingRateChoice,
+  peerCheckoutRateChoiceIntro,
   peerCheckoutRateFamilyForSections,
   peerCheckoutShippingServiceError,
   surfboardCheckoutBucket,
@@ -246,6 +248,46 @@ describe("small parcel USPS choice", () => {
       options.map((option) => option.serviceCode),
       ["usps_ground_advantage", "usps_priority_mail"],
     )
+  })
+
+  it("treats USPS Ground Advantage cubic as Ground", () => {
+    assert.equal(isSmallParcelUspsGroundServiceCode("usps_ground_advantage_cubic"), true)
+    const cubic = rate({
+      rate_id: "usps-cubic",
+      carrierCode: "stamps_com",
+      carrierName: "Stamps.com",
+      serviceCode: "usps_ground_advantage_cubic",
+      serviceName: "USPS Ground Advantage Cubic",
+      totalAmount: 5.1,
+    })
+    const options = toPeerCheckoutShippingRateOptions([cubic, UPS_GROUND], "fins", CA)
+    assert.deepEqual(
+      options.map((option) => option.displayName),
+      ["USPS Ground"],
+    )
+  })
+
+  it("falls back to UPS Ground when USPS Ground and Priority are missing", () => {
+    const kept = filterReswellRatesForPeerSection(ALL_RATES, "fins", CA).map((row) => row.rate_id)
+    assert.deepEqual(kept, ["ups-ground"])
+    const options = toPeerCheckoutShippingRateOptions(ALL_RATES, "fins", CA)
+    assert.deepEqual(
+      options.map((option) => option.displayName),
+      ["UPS Ground"],
+    )
+    assert.match(peerCheckoutRateChoiceIntro("fins", "usps_ground_priority", options), /UPS shipping/)
+  })
+
+  it("does not fall back to UPS for a PO Box", () => {
+    const poBox = { ...CA, line1: "PO Box 123" }
+    const kept = filterReswellRatesForPeerSection(ALL_RATES, "fins", poBox)
+    assert.deepEqual(kept, [])
+    assert.match(peerCheckoutShippingServiceError("fins", poBox), /PO Box/)
+  })
+
+  it("falls back to Hawaii-capable air rates when USPS is missing", () => {
+    const kept = filterReswellRatesForPeerSection(ALL_RATES, "fins", HI).map((row) => row.rate_id)
+    assert.deepEqual(kept, ["ups-2nd", "ups-next", "fx-2day", "fx-ovn"])
   })
 })
 

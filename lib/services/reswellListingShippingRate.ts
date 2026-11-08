@@ -26,12 +26,15 @@ import {
 import {
   filterReswellRatesForPeerSection,
   findPeerCheckoutRateOptionByServiceCode,
+  isSmallParcelUspsGroundServiceCode,
+  isSmallParcelUspsPriorityServiceCode,
   normalizeCarrierEstimatedDeliveryIso,
   peerCheckoutRateFamilyForSections,
   peerCheckoutSectionRestrictsUspsServices,
   peerCheckoutShippingServiceError,
   type PeerCheckoutRateFamily,
   type PeerCheckoutShippingRateOption,
+  type PeerCheckoutShipTo,
   toPeerCheckoutShippingRateOptions,
 } from "@/lib/shipping/peer-checkout-usps-services"
 import { buyerResidentialIndicator } from "@/lib/shipping/buyer-address-validation"
@@ -44,6 +47,7 @@ import { formatShipEngineApiError } from "@/lib/shipengine/errors"
 import {
   buildShipmentBody,
   extractCarrierIdsFromCarriersResponse,
+  extractInvalidRatesFromApiEnvelope,
   extractRatesFromApiEnvelope,
   rateMoneyTotal,
   type ShippingAddressInput,
@@ -366,7 +370,7 @@ function resolveSelectedCheckoutRate(
   section: string | null | undefined,
   selectedRateId: string | null | undefined,
   selectedServiceCode?: string | null,
-  shipTo?: { stateProvince?: string | null; postalCode?: string | null } | null,
+  shipTo?: PeerCheckoutShipTo | null,
   rateFamily?: PeerCheckoutRateFamily | null,
 ): { ok: true; selected: ReswellListingRateRow; checkoutRateOptions: PeerCheckoutShippingRateOption[] } | { ok: false; error: string } {
   const filtered = filterReswellRatesForPeerSection(decorated, section, shipTo, rateFamily)
@@ -606,19 +610,54 @@ export async function getCheapestReswellRateForListings(input: {
       listings.map((listing) => (listing as { section?: string | null }).section),
     )
 
+  const shipToCheckout: PeerCheckoutShipTo = {
+    stateProvince: input.shipTo.state_province,
+    postalCode: input.shipTo.postal_code,
+    line1: input.shipTo.address_line1,
+    line2: input.shipTo.address_line2,
+  }
   const resolved = resolveSelectedCheckoutRate(
     decorated,
     section,
     input.selectedRateId,
     input.selectedServiceCode,
-    {
-      stateProvince: input.shipTo.state_province,
-      postalCode: input.shipTo.postal_code,
-    },
+    shipToCheckout,
     rateFamily,
   )
   if (!resolved.ok) {
+    console.error("[reswellListingShippingRate] checkout rates filtered empty", {
+      tag: input.diagnosticTag ?? null,
+      section,
+      rateFamily,
+      shipTo: shipToCheckout,
+      services: decorated.map((row) => ({
+        carrier: row.carrierCode,
+        service: row.serviceCode,
+        name: row.serviceName,
+      })),
+      invalidRates: extractInvalidRatesFromApiEnvelope(raw),
+      error: resolved.error,
+    })
     return resolved
+  }
+  if (rateFamily === "usps_ground_priority") {
+    const usedUsps = resolved.checkoutRateOptions.some(
+      (option) =>
+        isSmallParcelUspsGroundServiceCode(option.serviceCode) ||
+        isSmallParcelUspsPriorityServiceCode(option.serviceCode),
+    )
+    if (!usedUsps) {
+      console.info("[reswellListingShippingRate] USPS Ground/Priority missing; using carrier fallback", {
+        tag: input.diagnosticTag ?? null,
+        section,
+        shipTo: shipToCheckout,
+        fallback: resolved.checkoutRateOptions.map((option) => ({
+          service: option.serviceCode,
+          name: option.displayName,
+        })),
+        invalidRates: extractInvalidRatesFromApiEnvelope(raw),
+      })
+    }
   }
 
   const cheapest = resolved.selected
