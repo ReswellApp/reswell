@@ -70,6 +70,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { toast } from "sonner"
+import { mergeThreadMessagesWithPendingLocal } from "@/lib/admin/case-inbox-thread-merge"
 import { inboxCaseKey } from "@/lib/utils/support-case-paths"
 import { cn } from "@/lib/utils"
 
@@ -481,10 +482,7 @@ export function CaseInboxAdminClient({
         return
       }
       setThreadCaseId(res.case.id)
-      setThreadMessages((prev) => {
-        if (res.messages.length === 0 && prev.length > 0) return prev
-        return res.messages
-      })
+      setThreadMessages((prev) => mergeThreadMessagesWithPendingLocal(prev, res.messages))
       setThreadEvents(res.events)
     })
     return () => {
@@ -645,8 +643,10 @@ export function CaseInboxAdminClient({
       return
     }
     startReply(async () => {
+      // Prefer the resolved support_cases id from the thread load (after backfill).
+      const caseId = threadCaseId ?? current.id
       const res = await sendSupportCaseAdminReplyAction({
-        case_id: current.id,
+        case_id: caseId,
         content: body,
         is_internal: composerMode === "note",
       })
