@@ -140,8 +140,55 @@ const SUPPORT_CASE_MESSAGE_SELECT_WITH_META =
 const SUPPORT_CASE_MESSAGE_SELECT_BASE =
   "id, case_id, author_user_id, author_role, body, is_internal, created_at"
 
-function isMissingSupportCaseMessageMetadataColumn(message: string): boolean {
-  return /column support_case_messages\.metadata does not exist/i.test(message)
+/** Skip unmigrated columns this long after the first 42703 / schema-cache miss. */
+const SUPPORT_CASE_MESSAGE_METADATA_MISS_TTL_MS = 10 * 60 * 1000
+
+let metadataColumnUnavailableUntilMs = 0
+let loggedMetadataColumnMiss = false
+
+export function isMissingSupportCaseMessageMetadataColumn(
+  error: { code?: string; message?: string } | string | null | undefined,
+): boolean {
+  if (!error) return false
+  const message = typeof error === "string" ? error : error.message ?? ""
+  const code = typeof error === "string" ? undefined : error.code
+  const lower = message.toLowerCase()
+  if (!lower.includes("metadata") || !lower.includes("support_case_messages")) return false
+  return (
+    code === "42703" ||
+    code === "PGRST204" ||
+    lower.includes("does not exist") ||
+    lower.includes("schema cache")
+  )
+}
+
+export function resetSupportCaseMessageMetadataCircuit(nowMs = 0): void {
+  metadataColumnUnavailableUntilMs = nowMs
+  loggedMetadataColumnMiss = false
+}
+
+function markMetadataColumnUnavailable(nowMs = Date.now()): void {
+  metadataColumnUnavailableUntilMs = nowMs + SUPPORT_CASE_MESSAGE_METADATA_MISS_TTL_MS
+  if (!loggedMetadataColumnMiss) {
+    loggedMetadataColumnMiss = true
+    console.warn(
+      "[support_case_messages] metadata not in schema; using legacy columns for 10m. Apply 20271104120000_support_case_message_metadata.sql.",
+    )
+  }
+}
+
+function supportCaseMessageSelect(nowMs = Date.now()): string {
+  return nowMs < metadataColumnUnavailableUntilMs
+    ? SUPPORT_CASE_MESSAGE_SELECT_BASE
+    : SUPPORT_CASE_MESSAGE_SELECT_WITH_META
+}
+
+function noteMissingMetadataColumn(
+  error: { code?: string; message?: string } | string | null | undefined,
+): boolean {
+  if (!isMissingSupportCaseMessageMetadataColumn(error)) return false
+  markMetadataColumnUnavailable()
+  return true
 }
 
 function mapSupportCaseMessageRows(
@@ -192,11 +239,7 @@ export async function insertSupportCaseMessage(
     supabase.from("support_case_messages").insert(payload).select("id").single()
 
   let { data, error } = await attemptInsert(insert)
-  if (
-    error &&
-    insert.metadata != null &&
-    isMissingSupportCaseMessageMetadataColumn(error.message)
-  ) {
+  if (error && insert.metadata != null && noteMissingMetadataColumn(error)) {
     const { metadata: _metadata, ...withoutMeta } = insert
     ;({ data, error } = await attemptInsert(withoutMeta))
   }
@@ -505,14 +548,15 @@ export async function listSupportCaseMessages(
     return query
   }
 
-  const first = await run(SUPPORT_CASE_MESSAGE_SELECT_WITH_META)
+  const first = await run(supportCaseMessageSelect())
   if (!first.error) {
     return mapSupportCaseMessageRows((first.data ?? []) as Array<Record<string, unknown>>)
   }
 
   // Production may lag the metadata migration; still load the thread so admin
   // replies do not vanish after send when the list query would otherwise fail.
-  if (isMissingSupportCaseMessageMetadataColumn(first.error.message)) {
+  // Latch the miss so later ticket opens / live-chat turns skip the 42703 select.
+  if (noteMissingMetadataColumn(first.error)) {
     const fallback = await run(SUPPORT_CASE_MESSAGE_SELECT_BASE)
     if (!fallback.error) {
       return mapSupportCaseMessageRows((fallback.data ?? []) as Array<Record<string, unknown>>)
