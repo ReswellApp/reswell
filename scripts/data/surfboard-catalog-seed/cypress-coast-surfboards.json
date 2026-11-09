@@ -1,0 +1,73 @@
+{
+  "generated_for": "Cypress Coast Surfboards official named standup catalog",
+  "source": "https://www.cypress-coast.com/models.html (Weebly named model lineup only — excludes generic Standard/Modern/Step Up/Big Board/Bonzer categories, Cabezon with no first-party copy, alternative one-offs without mapped product-fronts, merch, and ding repair)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "cypress-coast-surfboards",
+      "name": "Cypress Coast Surfboards",
+      "website_url": "https://www.cypress-coast.com",
+      "location_label": "Eugene, Oregon",
+      "founder_name": "Adrian Broz",
+      "lead_shaper_name": "Adrian Broz",
+      "short_description": "100% handshaped surfboards made in Eugene, Oregon. Cypress Coast Surfboards was born in 2010 in Monterey, California, relocated to San Luis Obispo, and moved to Eugene in 2017.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/cypress-coast-surfboards.jpg",
+      "models": [
+        {
+          "name": "Isotope",
+          "image_url": "https://www.cypress-coast.com/uploads/1/1/9/1/11917804/b791600a-c833-4c9c-a2d5-9c5d37baaca7_orig.jpg",
+          "description": "Channel bottom twin-fin mid-length. From fun to firing — fast and loose, with modern flair on a historically successful shape. One board to rule them all, from 6'8 to 8'4.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Gabbro Grinder",
+          "image_url": "https://www.cypress-coast.com/uploads/1/1/9/1/11917804/published/3427676.jpg",
+          "description": "Wider modern step up shape but pulled in where it really matters. Paddle power and prime pig dogger. High entry rocker. Gloss black rails. As shown: 6'6 x 19 x 2 3/8.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Elephant Seal",
+          "image_url": "https://www.cypress-coast.com/uploads/1/1/9/1/11917804/published/elephant-seal.jpg",
+          "description": "Designed for a variety of wave conditions. Wide and thick over your front foot and chest for paddle and planing power in smaller surf, with a tight rounded pin for quick, effortless turns and stability plus speed in larger or barreling waves.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Little Nug",
+          "image_url": "https://www.cypress-coast.com/uploads/1/1/9/1/11917804/2054104.jpg",
+          "description": "The little nug is a Simmons-inspired small wave machine. Twin or quad fin setup. From 4'10 to 5'11. Pancake rocker except 2\" flip in nose and tail.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Little Nug II",
+          "image_url": "https://www.cypress-coast.com/uploads/1/1/9/1/11917804/4998001.jpg",
+          "description": "Shorter and flatter than Little Nug I. Twin fin setup with wide placement create a slide threshold — on longer, more drawn out turns, put a little more pressure on the tail in the apex of your turn and the board will slide, then re-engage with ease.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Tardigrade",
+          "image_url": "https://www.cypress-coast.com/uploads/1/1/9/1/11917804/editor/tardigrade-kendall.jpg",
+          "description": "Little Nug template with a parallel outline for speed generation and retention. More performance-oriented than Little Nug with flip-in-the-nose entry rocker and a tardigrade tail for increased traction in steeper waves. Excels as a twin or quad, and is also available in a five-fin setup.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Rock Rider",
+          "image_url": "https://www.cypress-coast.com/uploads/1/1/9/1/11917804/4024521.jpg",
+          "description": "A compromising shape which blends planing power, speed retention and performance. From 5'2 to 6'4. Wider template and low entry rocker. 1\" wing into rounded thumb tail retains volume into the tail while allowing for increased maneuverability. Works well to skirt over low tide reefs.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Calcareous Creature",
+          "image_url": "https://www.cypress-coast.com/uploads/1/1/9/1/11917804/published/4973045.jpg",
+          "description": "From 6'0 to 7'6. Swallow, rounded pin or pintail. Medium-heavy glass (6+6/4) to protect your investment.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Cielo Vista",
+          "image_url": "https://www.cypress-coast.com/uploads/1/1/9/1/11917804/1890294.jpg",
+          "description": "Longboard from 6'10 to 11'0. Heavy glass. Single, bonzer, twin, or any combination of fins.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
