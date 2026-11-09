@@ -30,11 +30,11 @@ import { listingTitleThumbnailSrc, type ListingImageForCard } from "@/lib/listin
 import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import {
-  sendConversationReply,
   loadConversationThread,
   markConversationThreadRead,
   type ConversationThreadData,
 } from '@/app/actions/messages'
+import { postMarketplaceThreadReply } from '@/lib/messages/post-marketplace-thread-reply'
 import {
   dispatchConversationInboxActivity,
   dispatchConversationThreadOpened,
@@ -715,10 +715,11 @@ export function ConversationThreadClient({
 
       try {
         const result = await raceWithDeadline(
-          sendConversationReply({
-            conversation_id: id,
+          postMarketplaceThreadReply({
+            conversationId: id,
             content,
-            composer_unlock_token: unlockToken,
+            composerUnlockToken: unlockToken,
+            clientId: tempId,
           }),
           SEND_SERVER_ACTION_MS,
         )
@@ -773,7 +774,8 @@ export function ConversationThreadClient({
             metadata: inserted.metadata,
           },
         })
-      } catch {
+      } catch (error) {
+        if (isAbortError(error)) return
         setMessages((prev) =>
           prev.map((message) =>
             message.id === tempId ? { ...message, sendStatus: 'failed' } : message,
