@@ -108,27 +108,65 @@ export async function dbUpdateShopifySaleRecord(
   if (error) throw new Error(error.message)
 }
 
+/**
+ * `shopify_product_mappings` and `shopify_connections` are revoked from the
+ * signed-in role. Checkout still calls this on every card payment, so the
+ * read has to use the service role. A denied or missing table must not abort
+ * PaymentIntent creation — those listings keep the normal marketplace fee.
+ */
+async function shopifyBillingReadClient(fallback: SupabaseClient): Promise<SupabaseClient> {
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()) return fallback
+  try {
+    const { createServiceRoleClient } = await import("@/lib/supabase/service-role")
+    return createServiceRoleClient()
+  } catch (e) {
+    console.error("[shopify sales] service role unavailable for billing lookup", e)
+    return fallback
+  }
+}
+
+function isShopifyBillingReadUnavailable(message: string): boolean {
+  return (
+    message.includes("permission denied") ||
+    message.includes("does not exist") ||
+    message.includes("schema cache")
+  )
+}
+
 export async function dbListShopifyBilledListingIds(
   supabase: SupabaseClient,
   listingIds: string[],
 ): Promise<string[]> {
   if (listingIds.length === 0) return []
-  const { data: mappings, error } = await supabase
+  const reader = await shopifyBillingReadClient(supabase)
+  const { data: mappings, error } = await reader
     .from("shopify_product_mappings")
     .select("listing_id, connection_id")
     .in("listing_id", listingIds)
     .eq("selected", true)
-  if (error) throw new Error(error.message)
+  if (error) {
+    if (isShopifyBillingReadUnavailable(error.message)) {
+      console.error("[shopify sales] billed listing lookup skipped", error.message)
+      return []
+    }
+    throw new Error(error.message)
+  }
   const rows = mappings ?? []
   const connectionIds = [...new Set(rows.map((row) => String(row.connection_id)))]
   if (connectionIds.length === 0) return []
-  const { data: connections, error: connectionError } = await supabase
+  const { data: connections, error: connectionError } = await reader
     .from("shopify_connections")
     .select("id")
     .in("id", connectionIds)
     .eq("status", "active")
     .eq("billing_status", "active")
-  if (connectionError) throw new Error(connectionError.message)
+  if (connectionError) {
+    if (isShopifyBillingReadUnavailable(connectionError.message)) {
+      console.error("[shopify sales] billed connection lookup skipped", connectionError.message)
+      return []
+    }
+    throw new Error(connectionError.message)
+  }
   const billed = new Set((connections ?? []).map((row) => String(row.id)))
   return rows
     .filter((row) => billed.has(String(row.connection_id)))
