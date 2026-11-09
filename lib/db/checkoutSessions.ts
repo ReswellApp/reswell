@@ -54,6 +54,24 @@ export async function dbListExpirableOpenCheckoutSessions(
   return (data ?? []) as Array<{ id: string; stripe_payment_intent_id: string | null }>
 }
 
+export const CHECKOUT_ITEM_UNAVAILABLE_ERROR = "This item is no longer available"
+export const CHECKOUT_ITEM_RESERVED_ERROR =
+  "This item is reserved in another checkout. Try again in a few minutes."
+
+/** Maps reserve_checkout_session_stock exceptions to buyer-facing copy. */
+export function checkoutStockReserveUserError(message: string): string {
+  const text = message.toLowerCase()
+  if (text.includes("already reserved")) return CHECKOUT_ITEM_RESERVED_ERROR
+  if (
+    text.includes("insufficient stock") ||
+    text.includes("is not available") ||
+    (text.includes("listing") && text.includes("not found"))
+  ) {
+    return CHECKOUT_ITEM_UNAVAILABLE_ERROR
+  }
+  return message
+}
+
 export async function dbListOpenCheckoutSessionsForBuyer(
   supabase: SupabaseClient,
   buyerId: string,
@@ -78,12 +96,110 @@ export async function dbListOpenCheckoutSessionsForBuyer(
   }>
 }
 
+export async function dbListOpenCheckoutSessionsHoldingListings(
+  supabase: SupabaseClient,
+  listingIds: string[],
+): Promise<Array<{ id: string; buyer_id: string; stripe_payment_intent_id: string | null }>> {
+  const ids = [...new Set(listingIds.map((id) => id.trim()).filter(Boolean))]
+  if (ids.length === 0) return []
+
+  const { data: holds, error: holdsError } = await supabase
+    .from("checkout_stock_holds")
+    .select("session_id")
+    .in("listing_id", ids)
+    .eq("status", "held")
+    .limit(80)
+
+  if (holdsError) {
+    if (!isMissingCheckoutSessionsRelation(holdsError)) {
+      console.warn("[checkout-session] list holds:", holdsError.message)
+    }
+    return []
+  }
+
+  const sessionIds = [
+    ...new Set(
+      (holds ?? [])
+        .map((row) => String((row as { session_id?: string }).session_id ?? "").trim())
+        .filter(Boolean),
+    ),
+  ]
+  if (sessionIds.length === 0) return []
+
+  const { data, error } = await supabase
+    .from("checkout_sessions")
+    .select("id, buyer_id, stripe_payment_intent_id")
+    .in("id", sessionIds)
+    .eq("status", CHECKOUT_SESSION_OPEN)
+    .limit(40)
+
+  if (error) {
+    if (!isMissingCheckoutSessionsRelation(error)) {
+      console.warn("[checkout-session] list holding sessions:", error.message)
+    }
+    return []
+  }
+  return (data ?? []) as Array<{
+    id: string
+    buyer_id: string
+    stripe_payment_intent_id: string | null
+  }>
+}
+
 export async function dbExpireStaleCheckoutSessions(
   supabase: SupabaseClient,
 ): Promise<void> {
   const { error } = await supabase.rpc("expire_stale_checkout_sessions")
   if (error && !isMissingCheckoutSessionsRelation(error)) {
     console.warn("[checkout-session] expire stale:", error.message)
+  }
+}
+
+/** Releases unique holds whose checkout session is no longer open (JS fallback before SQL lands). */
+export async function dbReleaseOrphanedCheckoutStockHolds(
+  supabase: SupabaseClient,
+): Promise<void> {
+  const { data: holds, error: holdsError } = await supabase
+    .from("checkout_stock_holds")
+    .select("id, session_id")
+    .eq("status", "held")
+    .limit(200)
+
+  if (holdsError) {
+    if (!isMissingCheckoutSessionsRelation(holdsError)) {
+      console.warn("[checkout-session] list held stock:", holdsError.message)
+    }
+    return
+  }
+
+  const rows = (holds ?? []) as Array<{ id: string; session_id: string }>
+  if (rows.length === 0) return
+
+  const sessionIds = [...new Set(rows.map((row) => row.session_id).filter(Boolean))]
+  const { data: openRows, error: openError } = await supabase
+    .from("checkout_sessions")
+    .select("id")
+    .in("id", sessionIds)
+    .eq("status", CHECKOUT_SESSION_OPEN)
+
+  if (openError) {
+    if (!isMissingCheckoutSessionsRelation(openError)) {
+      console.warn("[checkout-session] list open hold sessions:", openError.message)
+    }
+    return
+  }
+
+  const openIds = new Set((openRows ?? []).map((row) => String((row as { id?: string }).id ?? "")))
+  const orphanIds = rows.filter((row) => !openIds.has(row.session_id)).map((row) => row.id)
+  if (orphanIds.length === 0) return
+
+  const { error } = await supabase
+    .from("checkout_stock_holds")
+    .update({ status: "released" })
+    .in("id", orphanIds)
+    .eq("status", "held")
+  if (error && !isMissingCheckoutSessionsRelation(error)) {
+    console.warn("[checkout-session] release orphaned holds:", error.message)
   }
 }
 
@@ -260,11 +376,9 @@ export async function dbReserveCheckoutSessionStock(
   })
   if (!error) return { ok: true }
   const message = error.message ?? "Could not reserve inventory"
-  const insufficient =
-    message.includes("insufficient stock") || message.includes("already reserved")
   return {
     ok: false,
-    error: insufficient ? "This item is no longer available" : message,
+    error: checkoutStockReserveUserError(message),
     code: error.code,
   }
 }
@@ -316,6 +430,9 @@ export async function dbExpireOpenCheckoutSession(
   supabase: SupabaseClient,
   sessionId: string,
 ): Promise<void> {
-  await supabase.rpc("release_checkout_session_stock", { p_session_id: sessionId })
+  const { error } = await supabase.rpc("release_checkout_session_stock", { p_session_id: sessionId })
+  if (error && !isMissingCheckoutSessionsRelation(error)) {
+    console.error("[checkout-session] release stock:", error.message)
+  }
   await dbUpdateCheckoutSession(supabase, sessionId, { status: "expired" })
 }

@@ -108,6 +108,18 @@ function finListingUsesDefaultPackedParcel(row: ListingPackedParcelSource): bool
   return row.section?.trim() === FINS_SECTION
 }
 
+/**
+ * Surfboard carton / board-length heuristics are only for surfboard rows.
+ * Fins and other gear that inherited `shipping_package_tier`, leftover
+ * `dimensions`, or a 78″ packed box were rated as boards — USPS refused the
+ * parcel (“can't deliver”) and UPS Ground came back around $300.
+ */
+function shouldUseSurfboardPackedParcelPath(row: ListingPackedParcelSource): boolean {
+  const section = row.section?.trim()
+  if (!section) return true
+  return isSurfboardListingSection(section)
+}
+
 function finDefaultPackedParcelResult(): {
   ok: true
   source: ResolvedPackedParcelSource
@@ -350,7 +362,9 @@ export type ResolvedPackedParcelSource =
  * otherwise from the standard shortboard / midlength / longboard tier derived from board length
  * in `listings.dimensions`. Weight prefers saved `shipping_packed_weight_oz`, then the tier default.
  *
- * **Fins and other small parcels:** seller-entered or default packed dims apply.
+ * **Fins and other small parcels:** seller-entered or default packed dims apply. A leaked
+ * surfboard tier, leftover board `dimensions`, or 78″ carton on these rows is ignored so
+ * checkout does not quote board-sized UPS Ground (hundreds of dollars) for a fin set.
  */
 export type ResolvedPackedParcel = {
   source: ResolvedPackedParcelSource
@@ -594,6 +608,50 @@ export function suggestPackedBoxInchesFromListing(
   }
 }
 
+function resolveSmallPackedParcelFromListing(row: ListingPackedParcelSource):
+  | {
+      ok: true
+      source: ResolvedPackedParcelSource
+      weightOz: number
+      lengthIn: number
+      widthIn: number
+      heightIn: number
+    }
+  | { ok: false; error: string } {
+  const Woz = num(row.shipping_packed_weight_oz)
+  const Ls = num(row.shipping_packed_length_in)
+  const Ws = num(row.shipping_packed_width_in)
+  const Hs = num(row.shipping_packed_height_in)
+  if (Ls && Ws && Hs && storedPackedSmallParcelDimsLookUsable(Ls, Ws, Hs)) {
+    const weightOz = finFallbackSmallParcelWeightOz(row, Woz)
+    return finishResolvedParcel(
+      "heuristic",
+      { lengthIn: Ls, widthIn: Ws, heightIn: Hs },
+      weightOz,
+      null,
+    )
+  }
+  if (finListingUsesDefaultPackedParcel(row)) {
+    const finParcel = finPackedParcelResultFromStoredRow(row) ?? finDefaultPackedParcelResult()
+    const limitCheck = validateResolvedParcelForCarrier(
+      {
+        lengthIn: finParcel.lengthIn,
+        widthIn: finParcel.widthIn,
+        heightIn: finParcel.heightIn,
+        weightOz: finParcel.weightOz,
+      },
+      null,
+    )
+    if (!limitCheck.ok) return limitCheck
+    return finParcel
+  }
+  return {
+    ok: false,
+    error:
+      "This listing is missing packed shipping dimensions. Ask the seller to update Reswell shipping.",
+  }
+}
+
 export function resolvePackedParcelFromListing(row: ListingPackedParcelSource):
   | {
       ok: true
@@ -604,6 +662,10 @@ export function resolvePackedParcelFromListing(row: ListingPackedParcelSource):
       heightIn: number
     }
   | { ok: false; error: string } {
+  if (!shouldUseSurfboardPackedParcelPath(row)) {
+    return resolveSmallPackedParcelFromListing(row)
+  }
+
   const boardLength = boardLengthFormFromListing(row)
   const parsedDims = row.dimensions?.trim() ? parseListingDimensionsColumn(row.dimensions) : null
   const widthStr = parsedDims?.boardWidthInches?.trim() ?? ""
@@ -693,7 +755,7 @@ export function resolvePackedParcelFromListing(row: ListingPackedParcelSource):
     )
   }
 
-  /** No board dims — seller-entered packed box (fins, legacy surfboard rows). */
+  /** No board dims — seller-entered packed box (legacy surfboard rows). */
   const Ls = num(row.shipping_packed_length_in)
   const Ws = num(row.shipping_packed_width_in)
   const Hs = num(row.shipping_packed_height_in)
@@ -706,34 +768,5 @@ export function resolvePackedParcelFromListing(row: ListingPackedParcelSource):
       cartonOpts,
     )
   }
-  if (Ls && Ws && Hs && storedPackedSmallParcelDimsLookUsable(Ls, Ws, Hs)) {
-    const weightOz = finFallbackSmallParcelWeightOz(row, Woz)
-    const finished = finishResolvedParcel(
-      "heuristic",
-      { lengthIn: Ls, widthIn: Ws, heightIn: Hs },
-      weightOz,
-      null,
-    )
-    if (!finished.ok) return finished
-    return finished
-  }
-  if (finListingUsesDefaultPackedParcel(row)) {
-    const finParcel = finPackedParcelResultFromStoredRow(row) ?? finDefaultPackedParcelResult()
-    const limitCheck = validateResolvedParcelForCarrier(
-      {
-        lengthIn: finParcel.lengthIn,
-        widthIn: finParcel.widthIn,
-        heightIn: finParcel.heightIn,
-        weightOz: finParcel.weightOz,
-      },
-      null,
-    )
-    if (!limitCheck.ok) return limitCheck
-    return finParcel
-  }
-  return {
-    ok: false,
-    error:
-      "This listing is missing packed shipping dimensions. Ask the seller to update Reswell shipping.",
-  }
+  return resolveSmallPackedParcelFromListing(row)
 }

@@ -2,6 +2,8 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import type Stripe from "stripe"
 
 import {
+  CHECKOUT_ITEM_RESERVED_ERROR,
+  CHECKOUT_ITEM_UNAVAILABLE_ERROR,
   dbCaptureCheckoutSessionStock,
   dbExpireOpenCheckoutSession,
   dbExpireStaleCheckoutSessions,
@@ -11,7 +13,9 @@ import {
   dbInsertCheckoutSession,
   dbListExpirableOpenCheckoutSessions,
   dbListOpenCheckoutSessionsForBuyer,
+  dbListOpenCheckoutSessionsHoldingListings,
   dbMarkCheckoutSessionPaid,
+  dbReleaseOrphanedCheckoutStockHolds,
   dbReplaceCheckoutSessionItems,
   dbReserveCheckoutSessionStock,
   dbUpdateCheckoutSession,
@@ -99,10 +103,14 @@ async function attachItemsAndReserve(input: {
   }
   const reserved = await dbReserveCheckoutSessionStock(input.supabase, input.sessionId)
   if (!reserved.ok) {
+    const conflict =
+      reserved.error === CHECKOUT_ITEM_RESERVED_ERROR ||
+      reserved.error === CHECKOUT_ITEM_UNAVAILABLE_ERROR ||
+      reserved.error.includes("no longer available")
     return {
       ok: false,
       error: reserved.error,
-      status: reserved.error.includes("no longer available") ? 409 : 500,
+      status: conflict ? 409 : 500,
     }
   }
   return { ok: true }
@@ -155,10 +163,22 @@ async function expireOverlappingOpenSessions(input: {
   listingIds: string[]
   keepSessionId: string
 }): Promise<void> {
-  const overlapping = await dbListOpenCheckoutSessionsForBuyer(input.supabase, input.buyerId)
+  const [overlapping, holding] = await Promise.all([
+    dbListOpenCheckoutSessionsForBuyer(input.supabase, input.buyerId),
+    dbListOpenCheckoutSessionsHoldingListings(input.supabase, input.listingIds),
+  ])
+  const toExpire = new Map<string, { id: string; stripe_payment_intent_id: string | null }>()
   for (const row of overlapping) {
     if (row.id === input.keepSessionId) continue
     if (!checkoutListingSetsOverlap(row.listing_ids ?? [], input.listingIds)) continue
+    toExpire.set(row.id, row)
+  }
+  for (const row of holding) {
+    if (row.id === input.keepSessionId) continue
+    if (row.buyer_id !== input.buyerId) continue
+    toExpire.set(row.id, row)
+  }
+  for (const row of toExpire.values()) {
     await expireOpenSessionWithPaymentIntent({
       supabase: input.supabase,
       stripe: input.stripe,
@@ -166,6 +186,48 @@ async function expireOverlappingOpenSessions(input: {
       paymentIntentId: row.stripe_payment_intent_id,
     })
   }
+}
+
+async function expireOwnOverlapsAndReserve(input: {
+  supabase: SupabaseClient
+  stripe: Stripe
+  buyerId: string
+  listingIds: string[]
+  keepSessionId: string
+  quantities: Record<string, number>
+  listings: CheckoutSessionListing[]
+}): Promise<{ ok: true } | { ok: false; error: string; status: number }> {
+  await expireOverlappingOpenSessions({
+    supabase: input.supabase,
+    stripe: input.stripe,
+    buyerId: input.buyerId,
+    listingIds: input.listingIds,
+    keepSessionId: input.keepSessionId,
+  })
+  let reserved = await attachItemsAndReserve({
+    supabase: input.supabase,
+    sessionId: input.keepSessionId,
+    listingIds: input.listingIds,
+    quantities: input.quantities,
+    listings: input.listings,
+  })
+  if (!reserved.ok && reserved.error === CHECKOUT_ITEM_RESERVED_ERROR) {
+    await expireOverlappingOpenSessions({
+      supabase: input.supabase,
+      stripe: input.stripe,
+      buyerId: input.buyerId,
+      listingIds: input.listingIds,
+      keepSessionId: input.keepSessionId,
+    })
+    reserved = await attachItemsAndReserve({
+      supabase: input.supabase,
+      sessionId: input.keepSessionId,
+      listingIds: input.listingIds,
+      quantities: input.quantities,
+      listings: input.listings,
+    })
+  }
+  return reserved
 }
 
 export async function bindCheckoutSessionPaymentIntent(input: {
@@ -189,6 +251,7 @@ export async function bindCheckoutSessionPaymentIntent(input: {
     await cancelReusablePaymentIntent(input.stripe, row.stripe_payment_intent_id)
   }
   await dbExpireStaleCheckoutSessions(input.supabase)
+  await dbReleaseOrphanedCheckoutStockHolds(input.supabase)
 
   const fingerprint = checkoutSessionFingerprint({
     listingIds: input.listingIds,
@@ -299,17 +362,12 @@ export async function bindCheckoutSessionPaymentIntent(input: {
           fulfillment: input.fulfillment,
           promo_code_id: input.promoCodeId,
         })
-        await expireOverlappingOpenSessions({
+        const reserved = await expireOwnOverlapsAndReserve({
           supabase: input.supabase,
           stripe: input.stripe,
           buyerId: input.buyerId,
           listingIds: input.listingIds,
           keepSessionId: session.id,
-        })
-        const reserved = await attachItemsAndReserve({
-          supabase: input.supabase,
-          sessionId: session.id,
-          listingIds: input.listingIds,
           quantities: input.quantities,
           listings: input.listings,
         })
@@ -363,18 +421,12 @@ export async function bindCheckoutSessionPaymentIntent(input: {
     }
   }
 
-  await expireOverlappingOpenSessions({
+  const reserved = await expireOwnOverlapsAndReserve({
     supabase: input.supabase,
     stripe: input.stripe,
     buyerId: input.buyerId,
     listingIds: input.listingIds,
     keepSessionId: session.id,
-  })
-
-  const reserved = await attachItemsAndReserve({
-    supabase: input.supabase,
-    sessionId: session.id,
-    listingIds: input.listingIds,
     quantities: input.quantities,
     listings: input.listings,
   })

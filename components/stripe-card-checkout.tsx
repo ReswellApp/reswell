@@ -361,6 +361,7 @@ export function StripeCardCheckout({
   const [chargedTotalUsd, setChargedTotalUsd] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [retryNonce, setRetryNonce] = useState(0)
   const paymentLockedRef = useRef(false)
   const forceNewConsumedRef = useRef(false)
   const checkoutSessionIdRef = useRef<string | null>(null)
@@ -539,6 +540,7 @@ export function StripeCardCheckout({
     sessionStorageKey,
     stripePromise,
     router,
+    retryNonce,
   ])
 
   if (!purchaseDetailsReady) {
@@ -576,8 +578,19 @@ export function StripeCardCheckout({
 
   if (error && !clientSecret) {
     return (
-      <div className="flex min-h-[100px] flex-col items-start justify-center">
+      <div className="flex min-h-[100px] flex-col items-start justify-center gap-3">
         <p className="text-sm text-destructive">{error}</p>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setError(null)
+            setRetryNonce((value) => value + 1)
+          }}
+        >
+          Try again
+        </Button>
       </div>
     )
   }
