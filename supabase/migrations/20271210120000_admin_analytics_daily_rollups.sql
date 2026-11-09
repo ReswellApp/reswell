@@ -9,7 +9,7 @@
 -- Rollback: disable the rollup cron before restoring the prior dashboard RPCs. Keep
 -- these rollup/coverage tables for reconciliation; retention may have removed older raw rows.
 
-CREATE TABLE public.admin_analytics_rollup_coverage (
+CREATE TABLE IF NOT EXISTS public.admin_analytics_rollup_coverage (
   source text NOT NULL CHECK (source IN ('site_traffic', 'klaviyo_event_log')),
   rollup_date date NOT NULL,
   source_rows bigint NOT NULL CHECK (source_rows >= 0),
@@ -17,19 +17,19 @@ CREATE TABLE public.admin_analytics_rollup_coverage (
   PRIMARY KEY (source, rollup_date)
 );
 
-CREATE TABLE public.site_traffic_daily (
+CREATE TABLE IF NOT EXISTS public.site_traffic_daily (
   rollup_date date PRIMARY KEY,
   page_views bigint NOT NULL CHECK (page_views >= 0),
   refreshed_at timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE TABLE public.site_traffic_daily_visitors (
+CREATE TABLE IF NOT EXISTS public.site_traffic_daily_visitors (
   rollup_date date NOT NULL,
   visitor_key text NOT NULL,
   PRIMARY KEY (rollup_date, visitor_key)
 );
 
-CREATE TABLE public.klaviyo_event_log_daily (
+CREATE TABLE IF NOT EXISTS public.klaviyo_event_log_daily (
   rollup_date date NOT NULL,
   metric_name text NOT NULL,
   status text NOT NULL CHECK (status IN ('sent', 'skipped', 'failed')),
@@ -39,7 +39,7 @@ CREATE TABLE public.klaviyo_event_log_daily (
   PRIMARY KEY (rollup_date, metric_name, status, skip_reason)
 );
 
-CREATE TABLE public.klaviyo_event_log_daily_recipients (
+CREATE TABLE IF NOT EXISTS public.klaviyo_event_log_daily_recipients (
   rollup_date date NOT NULL,
   recipient_key text NOT NULL,
   profile_email text,
@@ -50,11 +50,11 @@ CREATE TABLE public.klaviyo_event_log_daily_recipients (
   PRIMARY KEY (rollup_date, recipient_key, metric_name, status)
 );
 
-CREATE INDEX klaviyo_event_log_daily_date_idx
+CREATE INDEX IF NOT EXISTS klaviyo_event_log_daily_date_idx
   ON public.klaviyo_event_log_daily (rollup_date);
-CREATE INDEX klaviyo_event_log_daily_recipients_date_idx
+CREATE INDEX IF NOT EXISTS klaviyo_event_log_daily_recipients_date_idx
   ON public.klaviyo_event_log_daily_recipients (rollup_date);
-CREATE INDEX klaviyo_event_log_daily_recipients_key_idx
+CREATE INDEX IF NOT EXISTS klaviyo_event_log_daily_recipients_key_idx
   ON public.klaviyo_event_log_daily_recipients (recipient_key, rollup_date);
 
 ALTER TABLE public.admin_analytics_rollup_coverage ENABLE ROW LEVEL SECURITY;
@@ -590,3 +590,5 @@ COMMENT ON FUNCTION public.admin_site_traffic_dashboard(integer) IS
   'Exact UTC traffic windows from covered daily rollups plus bounded raw boundary dates.';
 COMMENT ON FUNCTION public.klaviyo_event_log_analytics(timestamptz, text, timestamptz, text[], boolean) IS
   'Staff analytics from covered UTC daily rollups plus bounded raw boundary dates; hourly windows remain raw.';
+
+NOTIFY pgrst, 'reload schema';

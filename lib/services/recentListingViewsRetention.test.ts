@@ -1,4 +1,5 @@
 import assert from "node:assert/strict"
+import { readFile } from "node:fs/promises"
 import { describe, it } from "node:test"
 
 import {
@@ -54,5 +55,28 @@ describe("runRecentListingViewsRetention", () => {
     )
     assert.equal(summary.batches, RECENT_LISTING_VIEWS_MAX_BATCHES)
     assert.equal(summary.limitReached, true)
+  })
+
+  it("keeps the async trim RPC bounded and service-role only", async () => {
+    const migration = await readFile(
+      new URL(
+        "../../supabase/migrations/20271007120000_async_recently_viewed_retention.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    )
+
+    assert.match(
+      migration,
+      /CREATE OR REPLACE FUNCTION public\.trim_user_recently_viewed_listings/,
+    )
+    assert.match(migration, /LIMIT p_delete_limit/)
+    assert.match(migration, /p_delete_limit must be between 1 and 5000/)
+    assert.match(
+      migration,
+      /GRANT EXECUTE ON FUNCTION public\.trim_user_recently_viewed_listings\(integer, integer\)\s+TO service_role/,
+    )
+    assert.match(migration, /NOTIFY pgrst, 'reload schema'/)
+    assert.doesNotMatch(migration, /DELETE FROM public\.user_recently_viewed_listings[\s\S]*auth\.uid/)
   })
 })
