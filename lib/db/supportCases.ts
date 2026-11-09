@@ -424,14 +424,20 @@ export async function listSupportCasesForRequester(
   supabase: SupabaseClient,
   userId: string,
   filter: "all" | "open" | "resolved" = "all",
+  options?: { limit?: number },
 ): Promise<SupportCaseRow[]> {
+  const limit =
+    typeof options?.limit === "number" && Number.isFinite(options.limit) && options.limit > 0
+      ? Math.min(200, Math.floor(options.limit))
+      : 200
+
   let query = supabase
     .from("support_cases")
     .select(CASE_SELECT)
     .eq("requester_user_id", userId)
     .neq("source_channel", "live_chat")
     .order("updated_at", { ascending: false })
-    .limit(200)
+    .limit(limit)
 
   if (filter === "open") query = query.neq("status", "resolved")
   if (filter === "resolved") query = query.eq("status", "resolved")

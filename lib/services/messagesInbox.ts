@@ -55,21 +55,26 @@ export async function getMessagesInboxForUser(
   options?: MessagesInboxLoadOptions,
 ): Promise<MessagesInboxPayload> {
   const supabase = createServiceRoleClient()
+  const preview = options?.preview === true
   const [payload, supportResolved, supportActivity] = await Promise.all([
     loadMessagesInboxForUser(userId, options),
     resolveSupportRecipientUserId(),
-    loadSupportInboxActivityNotifications(supabase, userId).catch((err) => {
+    loadSupportInboxActivityNotifications(supabase, userId, {
+      caseLimit: preview ? 8 : 30,
+    }).catch((err) => {
       console.warn("[messagesInbox] support activity skipped", err)
       return [] as MessagesInboxPayload["notifications"]
     }),
   ])
   const supportUserId = supportResolved.ok ? supportResolved.userId : null
 
-  const sellerLabelOrderIds = payload.conversations
-    .filter((conversation) => conversation.seller_id === userId)
-    .flatMap((conversation) => conversation.messages)
-    .map((message) => shippingLabelOrderIdFromMessage(message))
-    .filter((orderId): orderId is string => Boolean(orderId))
+  const sellerLabelOrderIds = preview
+    ? []
+    : payload.conversations
+        .filter((conversation) => conversation.seller_id === userId)
+        .flatMap((conversation) => conversation.messages)
+        .map((message) => shippingLabelOrderIdFromMessage(message))
+        .filter((orderId): orderId is string => Boolean(orderId))
 
   const [hiddenShippingLabelOrderIds, conversations] = await Promise.all([
     sellerLabelOrderIds.length === 0

@@ -9,6 +9,7 @@ import { Bell, ChevronDown, Heart, LifeBuoy, MessageSquare, X } from "lucide-rea
 import { Button, iconButtonHoverClassName } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
+import { Skeleton } from "@/components/ui/skeleton"
 import { NavUnreadCountBadge } from "@/components/nav-unread-count-badge"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { MessageProfileAvatar } from "@/components/features/messages/message-profile-avatar"
@@ -37,8 +38,12 @@ import {
 import { formatInboxChatPreviewText } from "@/lib/utils/messages-inbox-preview"
 import {
   isNavMessagesPreviewCacheStale,
+  loadNavMessagesPreview,
+  NAV_MESSAGES_PREVIEW_CONVERSATION_LIMIT,
   readNavMessagesPreviewCache,
+  subscribeNavMessagesPreviewCache,
   writeNavMessagesPreviewCache,
+  type NavMessagesPreviewCacheEntry,
 } from "@/lib/utils/nav-messages-preview-cache"
 import { cn } from "@/lib/utils"
 import {
@@ -52,8 +57,43 @@ import { useLiveUnreadSupportCount } from "@/components/features/support/use-liv
 import { inboxTickerCount } from "@/lib/utils/inbox-ticker-count"
 
 const NAV_PREVIEW_LIMIT = 8
-/** Enough recent threads for an 8-row counterparty preview after support filtering. */
-const NAV_CONVERSATION_FETCH_LIMIT = 48
+/** Hide the blocking skeleton if the preview action hangs. Rows still appear when it lands. */
+const NAV_LOADING_GRACE_MS = 8_000
+
+function applyPreviewCacheEntry(
+  entry: NavMessagesPreviewCacheEntry | null,
+  setters: {
+    setConversations: (next: InboxConversationRow[]) => void
+    setNotifications: (next: MessagesInboxNotification[]) => void
+    setHasLoaded: (next: boolean) => void
+  },
+) {
+  if (!entry) {
+    setters.setConversations([])
+    setters.setNotifications([])
+    setters.setHasLoaded(false)
+    return
+  }
+  setters.setConversations(entry.conversations)
+  setters.setNotifications(entry.notifications)
+  setters.setHasLoaded(true)
+}
+
+function NavMessagesPreviewSkeleton() {
+  return (
+    <ul className="divide-y divide-border/50" aria-hidden>
+      {Array.from({ length: 5 }, (_, index) => (
+        <li key={index} className="flex items-center gap-3 px-3 py-3">
+          <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
+          <div className="min-w-0 flex-1 space-y-2">
+            <Skeleton className="h-3.5 w-1/3" />
+            <Skeleton className="h-3 w-2/3" />
+          </div>
+        </li>
+      ))}
+    </ul>
+  )
+}
 
 type NavMessagesTab = "activity" | "messages"
 
@@ -187,8 +227,8 @@ function NavMessagesPanelBody({
 
       <div className={cn("min-h-0 overflow-y-auto px-1 py-2", scrollClassName)}>
         {loading ? (
-          <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
-            Loading…
+          <div role="status" aria-live="polite" aria-label="Loading messages">
+            <NavMessagesPreviewSkeleton />
           </div>
         ) : tab === "activity" ? (
           previewActivity.length === 0 ? (
@@ -381,7 +421,6 @@ export function NavMessagesDropdown({
   const [notifications, setNotifications] = useState<MessagesInboxNotification[]>(
     () => readNavMessagesPreviewCache(userId)?.notifications ?? [],
   )
-  const loadGenerationRef = useRef(0)
   const openRef = useRef(open)
   const userIdRef = useRef(userId)
   const conversationsRef = useRef(conversations)
@@ -391,18 +430,26 @@ export function NavMessagesDropdown({
   conversationsRef.current = conversations
   notificationsRef.current = notifications
 
-  // Shop-switch / remount: rehydrate from the module cache for this inbox user.
+  // Keep every mounted header instance (mobile/desktop swap) in sync with the
+  // shared preview cache, including sessionStorage rehydrates and in-flight loads.
   useEffect(() => {
-    const cached = readNavMessagesPreviewCache(userId)
-    if (cached) {
-      setConversations(cached.conversations)
-      setNotifications(cached.notifications)
-      setHasLoaded(true)
-      return
-    }
-    setConversations([])
-    setNotifications([])
-    setHasLoaded(false)
+    return subscribeNavMessagesPreviewCache((inboxUserId, entry) => {
+      if (inboxUserId !== userIdRef.current) return
+      applyPreviewCacheEntry(entry, {
+        setConversations,
+        setNotifications,
+        setHasLoaded,
+      })
+    })
+  }, [])
+
+  // Shop-switch / remount: rehydrate from the module + session cache.
+  useEffect(() => {
+    applyPreviewCacheEntry(readNavMessagesPreviewCache(userId), {
+      setConversations,
+      setNotifications,
+      setHasLoaded,
+    })
   }, [userId])
 
   const activityNotifications = useMemo(
@@ -432,37 +479,33 @@ export function NavMessagesDropdown({
         conversations: nextConversations,
         notifications: nextNotifications,
       })
-      setConversations(nextConversations)
-      setNotifications(nextNotifications)
-      setHasLoaded(true)
     },
     [],
   )
 
   const loadInbox = useCallback(async () => {
-    const generation = ++loadGenerationRef.current
     const inboxUserId = userIdRef.current
     setLoading(true)
     try {
-      const fresh = await refreshMessagesInbox({
-        conversationLimit: NAV_CONVERSATION_FETCH_LIMIT,
+      await loadNavMessagesPreview(inboxUserId, async () => {
+        const fresh = await refreshMessagesInbox({
+          conversationLimit: NAV_MESSAGES_PREVIEW_CONVERSATION_LIMIT,
+          preview: true,
+        })
+        if ("error" in fresh) return null
+        const prior =
+          inboxUserId === userIdRef.current ? conversationsRef.current : fresh.conversations
+        return {
+          conversations: mergeInboxConversationSnapshots(prior, fresh.conversations),
+          notifications: fresh.notifications,
+        }
       })
-      if (generation !== loadGenerationRef.current) return
-      if ("error" in fresh) return
-      // Drop the response if the signed-in inbox user changed mid-flight.
-      if (inboxUserId !== userIdRef.current) return
-
-      const merged = mergeInboxConversationSnapshots(
-        conversationsRef.current,
-        fresh.conversations,
-      )
-      persistPreview(merged, fresh.notifications, inboxUserId)
     } finally {
-      if (generation === loadGenerationRef.current) {
+      if (inboxUserId === userIdRef.current) {
         setLoading(false)
       }
     }
-  }, [persistPreview])
+  }, [])
 
   const prefetchInboxIfStale = useCallback(() => {
     if (!isNavMessagesPreviewCacheStale(readNavMessagesPreviewCache(userIdRef.current))) {
@@ -472,9 +515,19 @@ export function NavMessagesDropdown({
   }, [loadInbox])
 
   useEffect(() => {
+    prefetchInboxIfStale()
+  }, [prefetchInboxIfStale, userId])
+
+  useEffect(() => {
     if (!open) return
     void loadInbox()
   }, [open, loadInbox])
+
+  useEffect(() => {
+    if (!loading) return
+    const timeout = window.setTimeout(() => setLoading(false), NAV_LOADING_GRACE_MS)
+    return () => window.clearTimeout(timeout)
+  }, [loading])
 
   useEffect(() => {
     function onInboxRefresh() {

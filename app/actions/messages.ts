@@ -948,6 +948,7 @@ export async function sendSellerReviewRequest(input: unknown) {
 const refreshMessagesInboxOptionsSchema = z
   .object({
     conversationLimit: z.number().int().positive().max(100).optional(),
+    preview: z.boolean().optional(),
   })
   .optional()
 
@@ -956,11 +957,11 @@ const refreshMessagesInboxOptionsSchema = z
  * conversation change can pull the current preview/unread state without a full
  * route refresh. Scoped to the signed-in user via the verified session.
  *
- * Pass `conversationLimit` for the header dropdown preview so it does not scan
- * the member's full conversation history.
+ * Pass `conversationLimit` + `preview` for the header dropdown so it does not
+ * scan the member's full conversation history or listing-image payloads.
  */
 export async function refreshMessagesInbox(
-  options?: { conversationLimit?: number },
+  options?: { conversationLimit?: number; preview?: boolean },
 ): Promise<{ error: string } | MessagesInboxPayload> {
   const parsed = refreshMessagesInboxOptionsSchema.safeParse(options)
   if (!parsed.success) {
