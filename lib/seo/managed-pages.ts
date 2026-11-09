@@ -472,6 +472,20 @@ export const MANAGED_PAGES: ManagedPage[] = [
   }),
 
   // ---- Marketing & growth ----
+  page("name-the-break", "marketing", "Name the Break game", {
+    title: "Name the Break — Surf Spot Quiz | Reswell",
+    description:
+      "Look at the photo and name the surf break. A short Reswell quiz of iconic spots worldwide — Pipeline, Teahupo'o, Mavericks, and more.",
+    path: "/name-the-break",
+    keywords: [
+      "surf break quiz",
+      "name the surf break",
+      "surf spot game",
+      "Pipeline",
+      "Teahupoo",
+      "Mavericks",
+    ],
+  }, { note: "Shareable photo quiz at /name-the-break." }),
   page("we-buy", "marketing", "We’ll buy your surfboard", {
     title: "We’ll Buy Your Surfboard | Reswell",
     description:
