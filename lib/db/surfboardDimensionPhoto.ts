@@ -147,14 +147,20 @@ function parseJevReview(raw: unknown): SurfboardDimensionPhotoJevReview | null {
     typeof row.volumeNullProbability === "number" && Number.isFinite(row.volumeNullProbability)
       ? row.volumeNullProbability
       : null
+  const matchReadyProbability =
+    typeof row.matchReadyProbability === "number" && Number.isFinite(row.matchReadyProbability)
+      ? row.matchReadyProbability
+      : null
   return {
     source,
     photoVerdict,
     dimsVerdict,
     volumeNullProbability,
+    matchReadyProbability,
     volumeCleared: Boolean(row.volumeCleared),
     nextAction,
     retriedWithExamples: Boolean(row.retriedWithExamples),
+    withheldFromReview: Boolean(row.withheldFromReview),
     reason: asString(row.reason) ?? "",
   }
 }
@@ -652,7 +658,7 @@ export async function listDimensionPhotoRematchCandidates(
   return out
 }
 
-/** Unrated (photo or dims still null), not excluded — used by the queue cron. */
+/** Unrated (photo or dims still null), not excluded / not confidence-withheld — queue cron. */
 export async function countUnratedSurfboardDimensionPhotoMatches(
   service: SupabaseClient,
   fromIso: string,
@@ -663,6 +669,8 @@ export async function countUnratedSurfboardDimensionPhotoMatches(
     .gte("occurred_at", fromIso)
     .is("excluded_at", null)
     .or("photo_rating.is.null,dims_rating.is.null")
+    // Hide rows the pipeline withheld (<90% match_ready / rejected).
+    .or("jev_review.is.null,jev_review->>withheldFromReview.is.null,jev_review->>withheldFromReview.neq.true")
 
   if (error) {
     console.error("[surfboardDimensionPhoto] unrated count failed:", error.message)
@@ -698,6 +706,10 @@ export async function listSurfboardDimensionPhotoMatches(
     query = query.not("excluded_at", "is", null)
   } else if (options.rating !== "all") {
     query = query.is("excluded_at", null)
+    // Confidence gate: do not show withheld scan markers in the review grid.
+    query = query.or(
+      "jev_review.is.null,jev_review->>withheldFromReview.is.null,jev_review->>withheldFromReview.neq.true",
+    )
   }
 
   if (options.rating === "unrated") {
@@ -831,7 +843,7 @@ export async function aggregateSurfboardDimensionPhotoMatchStats(
   const [{ data, error }, refCount] = await Promise.all([
     service
       .from("surfboard_dimension_photo_matches")
-      .select("match_rating, photo_rating, dims_rating, excluded_at")
+      .select("match_rating, photo_rating, dims_rating, excluded_at, jev_review")
       .gte("occurred_at", fromIso),
     countActiveSurfboardDimensionPhotoRefs(service),
   ])
@@ -853,6 +865,7 @@ export async function aggregateSurfboardDimensionPhotoMatchStats(
   let dimsBad = 0
   let overallGood = 0
   let overallRated = 0
+  let visible = 0
 
   for (const row of data ?? []) {
     const r = row as {
@@ -860,11 +873,16 @@ export async function aggregateSurfboardDimensionPhotoMatchStats(
       photo_rating?: string | null
       dims_rating?: string | null
       excluded_at?: string | null
+      jev_review?: unknown
     }
     if (r.excluded_at) {
       excluded += 1
       continue
     }
+    const jev = parseJevReview(r.jev_review)
+    if (jev?.withheldFromReview) continue
+
+    visible += 1
     const photo = r.photo_rating ?? null
     const dims = r.dims_rating ?? null
 
@@ -890,7 +908,7 @@ export async function aggregateSurfboardDimensionPhotoMatchStats(
     }
   }
 
-  const total = (data ?? []).length
+  const total = visible + excluded
   const rated = good + close + bad
   const photoRated = photoGood + photoBad
   const dimsRated = dimsGood + dimsClose + dimsBad
@@ -981,8 +999,8 @@ export async function listDimensionPhotoPickTrainingExamples(
   bad: SurfboardDimensionPhotoMatchRow[]
   excluded: SurfboardDimensionPhotoMatchRow[]
 }> {
-  const goodLimit = Math.min(Math.max(options.goodLimit ?? 3, 1), 6)
-  const badLimit = Math.min(Math.max(options.badLimit ?? 3, 1), 6)
+  const goodLimit = Math.min(Math.max(options.goodLimit ?? 3, 1), 8)
+  const badLimit = Math.min(Math.max(options.badLimit ?? 3, 1), 8)
   const excludeLimit = Math.min(Math.max(options.excludeLimit ?? 3, 1), 6)
 
   const [goodRes, badRes, excludeRes] = await Promise.all([

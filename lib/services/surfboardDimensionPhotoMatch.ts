@@ -257,6 +257,7 @@ Output ONLY:
 CORRECT pick: size stamp, stringer handwriting, tail block, or manufacturer label with readable L×W×T text.
 WRONG pick: beauty/lifestyle full-board, outline silhouette, logo-only, fins/rails without measurements.
 EXCLUDE-like galleries: leave dimensionPhotoIndex null — do not force a pick.
+confidence=high ONLY when the stamp digits are clearly readable in the chosen frame. If unsure, return dimensionPhotoIndex null with confidence=low — never guess a beauty/outline/logo shot.
 Never read or invent dimensions in this stage. Never name brand or model.`
 
 const DIMS_READ_SYSTEM = `You are Reswell's dimensions reader. ONE job only: read L×W×T (and volume only if printed) from the provided stamp photo(s).
@@ -266,6 +267,7 @@ Output ONLY measurement fields + confidence + a one-sentence summary.
 - widthText inches e.g. 19 1/4. Null when unknown.
 - thicknessText inches e.g. 2 1/2. Null when unknown.
 - volumeText liters ONLY when clearly printed. Else null — never invent.
+confidence=high ONLY when L, W, and T are all clearly printed and readable. If any core field is guessed or fuzzy, use medium/low and prefer null over inventing.
 Never pick photos. Never guess from outline. Never brand/model. Prefer precise fractions.`
 
 export type SurfboardDimensionPhotoMatchOutcome =
@@ -319,7 +321,9 @@ async function runDimensionVision(input: {
   const pick = await runPhotoPickStage(input)
   if (!pick.ok) return pick
 
-  if (pick.index == null) {
+  // Conservative: only OCR dims when the picker is high-confidence on a stamp.
+  // Medium/low picks are treated as "no match" so uncertain frames never surface.
+  if (pick.index == null || pick.confidence !== "high") {
     return {
       ok: true,
       observation: {
@@ -328,8 +332,13 @@ async function runDimensionVision(input: {
         widthText: null,
         thicknessText: null,
         volumeText: null,
-        confidence: pick.confidence,
-        summary: pick.summary,
+        confidence: pick.index == null ? pick.confidence : "low",
+        summary:
+          pick.index == null
+            ? pick.summary
+            : `${pick.summary} Pick confidence ${pick.confidence} — withheld (need high).`
+                .trim()
+                .slice(0, 400),
       },
       usedRefs: pick.usedRefs,
       fewShotImagesIncluded: pick.fewShotImagesIncluded,
@@ -400,9 +409,9 @@ async function runPhotoPickStage(input: {
   const [memoryBlock, pickExamples] = await Promise.all([
     surfboardDimensionPhotoMemoryPromptBlock(input.supabase),
     listDimensionPhotoPickTrainingExamples(input.supabase, {
-      goodLimit: 4,
-      badLimit: 4,
-      excludeLimit: 3,
+      goodLimit: 5,
+      badLimit: 6,
+      excludeLimit: 4,
     }),
   ])
 
@@ -428,7 +437,7 @@ async function runPhotoPickStage(input: {
     content.push({ type: "text", text: formatExcludeExampleCaption(excludeShown) })
     content.push({ type: "file", mediaType: fetched.mediaType, data: fetched.bytes })
     excludeShown += 1
-    if (excludeShown >= 3) break
+    if (excludeShown >= 4) break
   }
 
   let badPickShown = 0
@@ -440,7 +449,7 @@ async function runPhotoPickStage(input: {
     content.push({ type: "text", text: formatBadPickExampleCaption(badPickShown) })
     content.push({ type: "file", mediaType: fetched.mediaType, data: fetched.bytes })
     badPickShown += 1
-    if (badPickShown >= 4) break
+    if (badPickShown >= 6) break
   }
 
   let goodPickShown = 0
@@ -452,7 +461,7 @@ async function runPhotoPickStage(input: {
     content.push({ type: "text", text: formatGoodPickExampleCaption(goodPickShown) })
     content.push({ type: "file", mediaType: fetched.mediaType, data: fetched.bytes })
     goodPickShown += 1
-    if (goodPickShown >= 4) break
+    if (goodPickShown >= 5) break
   }
 
   const usedRefs: SurfboardDimensionPhotoRefRow[] = []
@@ -648,8 +657,6 @@ async function verifyAndMaybeRetryDimensionVision(input: {
   supabase: SupabaseClient
   shots: DimensionPhotoMatchImage[]
   includeRefs: boolean
-  /** Listing scans start light; Jev may request one few-shot retry. */
-  lightFirst: boolean
 }): Promise<
   | {
       ok: true
@@ -659,11 +666,12 @@ async function verifyAndMaybeRetryDimensionVision(input: {
     }
   | { ok: false; error: string; status: 422 | 503 }
 > {
-  const firstIncludeRefs = input.lightFirst ? false : input.includeRefs
+  // Always inject Good/Bad/Exclude few-shot on the first pass when includeRefs
+  // is on — faster learning than a light first pass + optional Jev retry.
   let vision = await runDimensionVision({
     supabase: input.supabase,
     shots: input.shots,
-    includeRefs: firstIncludeRefs,
+    includeRefs: input.includeRefs,
   })
   if (!vision.ok) return vision
 
@@ -679,7 +687,7 @@ async function verifyAndMaybeRetryDimensionVision(input: {
   })
 
   if (
-    input.lightFirst &&
+    !vision.fewShotImagesIncluded &&
     input.includeRefs &&
     shouldRetryDimensionPhotoWithExamples(jevReview)
   ) {
@@ -739,15 +747,11 @@ export async function matchSurfboardDimensionPhotos(input: {
   priorMatchId?: string | null
 }): Promise<SurfboardDimensionPhotoMatchOutcome> {
   const includeRefs = input.includeRefs !== false
-  // Listing scans: cheap first pass, Jev may request one few-shot retry.
-  // Admin uploads / rematches already benefit from few-shot on the first call.
-  const lightFirst = input.surface === "listing_scan" && !input.priorMatchId
 
   const vision = await verifyAndMaybeRetryDimensionVision({
     supabase: input.supabase,
     shots: input.shots,
     includeRefs,
-    lightFirst,
   })
   if (!vision.ok) return vision
 
@@ -858,7 +862,7 @@ export async function scanSurfboardListingsForDimensionPhotos(
       surface: "listing_scan",
       shots,
       listingId: candidate.listingId,
-      // Listing scans learn from scratch; few-shot refs only after Good ratings exist.
+      // Always include Good/Bad/Exclude few-shot when available — faster learning.
       includeRefs: true,
     })
 
