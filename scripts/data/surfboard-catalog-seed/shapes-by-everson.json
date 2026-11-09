@@ -1,0 +1,55 @@
+{
+  "generated_for": "Shapes By Everson official named standup catalog",
+  "source": "http://shapesbyeverson.com/ (official homepage model lineup — excludes shirts, stickers, board caddies, and Instagram-only Halligan mentions)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "shapes-by-everson",
+      "name": "Shapes By Everson",
+      "website_url": "http://shapesbyeverson.com/",
+      "location_label": "Virginia Beach, Virginia",
+      "founder_name": "Andrew Everson",
+      "lead_shaper_name": "Andrew Everson",
+      "short_description": "Firefighter-owned custom surfboards shaped by Andrew Everson in Virginia Beach for East Coast beach-break surf.",
+      "logo_url": "http://shapesbyeverson.com/wp-content/uploads/2021/05/Everson_-logo-800.jpg",
+      "models": [
+        {
+          "name": "264",
+          "image_url": "http://shapesbyeverson.com/wp-content/uploads/2025/01/20250103_143643.jpg",
+          "description": "The small wave performance board designed to tackle the average surf day. This model was built for the contest grind to still rip, but handle a wide range of conditions. The foam forward paired with the wide point forward give you extra paddle power and glide on those smaller days. Make no mistake, this board can handle head high surf as well, by rolling off that fuller rail and clean single concave. This is that one board quiver you've been looking for.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "464",
+          "image_url": "http://shapesbyeverson.com/wp-content/uploads/2023/12/464-2.jpg",
+          "description": "The standard performance board for when you want to get out there and bring the heat. Made for a wave with a little bit more punch, this board will hold rail and drive through your turns. Single to double for speed and responsiveness. A hip at the fins to help you square off in the pocket, but push a mushy section when you need to.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "664",
+          "image_url": "http://shapesbyeverson.com/wp-content/uploads/2024/12/IMG_20211102_181101_203.jpg",
+          "description": "The true performance board built for when its go time! This board excels in bigger and more hollow surf with the longer rail line to give you that stick and drive on the face. Heavy rocker throughout the board paired with the single to double exiting with vee, will keep you feeling like you're on rails. Having the wide point back behind the front foot and narrower rounded outline will give you that turn on a dime feeling you crave.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Destructo",
+          "image_url": "http://shapesbyeverson.com/wp-content/uploads/2025/01/20250103_145736.jpg",
+          "description": "The fish, but revved up for more. The classic fish you know in subtle ways, but designed to take you more vertical on the wave. A tip of the hat with a fishy outline, down rails, and beaked nose, but modern tweaks to squeeze more out of every wave. Although floaty, this board has no trouble ripping a wave face. The single to tri-hull and hip at the fins allow you to push this fish much harder than any standard fish. Comes standard as a quad fin.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Reaper",
+          "image_url": "http://shapesbyeverson.com/wp-content/uploads/2025/01/20250103_142916.jpg",
+          "description": "The ultimate grovel board built to rip even on the mushy small stuff. A flat overall balanced board that will generate speed the second you pop up. A single to double concave with a rounded diamond keep you up on top of the water where you want to be when you need to make your own speed. The low rail helps with performance since the board is wider throughout.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "The Repo",
+          "image_url": "http://shapesbyeverson.com/wp-content/uploads/2025/01/20250103_144617.jpg",
+          "description": "The hybrid performance board for a wide variety of smaller surf conditions. Built to grovel and rip due to the unique rail and bottom contours. This board keeps that performance dome deck, but the volume you want in the rail allowing you to volume down. The rounded tail with the bump help you keep on rail and stick the turns. The blend of the reaper and destructo making more versatility and an out of this world vibe.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
