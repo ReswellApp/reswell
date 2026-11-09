@@ -49,6 +49,10 @@ export async function maybeAwardBuyerReswellCredit(params: {
     })
     return { awarded: result.ok && !result.replayed, amountCents: result.amount_cents ?? amountCents }
   } catch (e) {
+    const message = e instanceof Error ? e.message : String(e)
+    if (message.includes("admin_only")) {
+      return { awarded: false, amountCents: 0, reason: "not_pilot" }
+    }
     console.error("[reswell-credit] award buyer", e)
     return { awarded: false, amountCents: 0, reason: "rpc_error" }
   }
@@ -95,6 +99,10 @@ export async function maybeAwardSellerReswellCredit(params: {
     })
     return { awarded: result.ok && !result.replayed, amountCents: result.amount_cents ?? amountCents }
   } catch (e) {
+    const message = e instanceof Error ? e.message : String(e)
+    if (message.includes("admin_only")) {
+      return { awarded: false, amountCents: 0, reason: "not_pilot" }
+    }
     console.error("[reswell-credit] award seller", e)
     return { awarded: false, amountCents: 0, reason: "rpc_error" }
   }
@@ -130,6 +138,10 @@ export async function grantAdminPilotReswellCredit(params: {
       balanceCents: result.balance_cents ?? 0,
     }
   } catch (e) {
+    const message = e instanceof Error ? e.message : String(e)
+    if (message.includes("admin_only")) {
+      return { ok: false, error: "Reswell Credit pilot is limited to Reswell admins." }
+    }
     console.error("[reswell-credit] grant", e)
     return { ok: false, error: "Could not grant Reswell Credit." }
   }

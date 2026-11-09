@@ -114,6 +114,14 @@ BEGIN
     RAISE EXCEPTION 'reference_required';
   END IF;
 
+  -- Admin pilot: never credit non-admin accounts (DB hard gate).
+  IF NOT EXISTS (
+    SELECT 1 FROM public.profiles p
+    WHERE p.id = p_user_id AND p.is_admin IS TRUE
+  ) THEN
+    RAISE EXCEPTION 'admin_only';
+  END IF;
+
   SELECT * INTO existing
   FROM public.reswell_credit_transactions
   WHERE reference_type = p_reference_type
@@ -195,6 +203,14 @@ BEGIN
   END IF;
   IF p_payment_intent_id IS NULL OR length(trim(p_payment_intent_id)) = 0 THEN
     RAISE EXCEPTION 'payment_intent_required';
+  END IF;
+
+  -- Admin pilot: only admins may spend Reswell Credit.
+  IF NOT EXISTS (
+    SELECT 1 FROM public.profiles p
+    WHERE p.id = p_user_id AND p.is_admin IS TRUE
+  ) THEN
+    RAISE EXCEPTION 'admin_only';
   END IF;
 
   SELECT * INTO existing
