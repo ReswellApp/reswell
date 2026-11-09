@@ -1,17 +1,22 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
-import { Minus, Plus, ShoppingCart, Check, Loader2 } from "lucide-react"
+import { Minus, Plus, ShoppingCart, Loader2 } from "lucide-react"
 import { addCartItem } from "@/app/actions/cart"
 import { getInventoryProductById } from "@/app/actions/marketplace"
 import { trackMetaAddToCart } from "@/lib/meta/pixel-events"
 import { collectMetaClientBrowserSignals } from "@/lib/meta/collect-client-browser-signals"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
-import { useHydratedIsLoggedIn } from "@/components/features/listings/listing-viewer-provider"
+import {
+  useHydratedIsLoggedIn,
+  useListingInCart,
+} from "@/components/features/listings/listing-viewer-provider"
 import { useReportAddedToCart } from "@/components/features/cart/added-to-cart-context"
+import { listingDetailCartButtonLabel } from "@/lib/utils/added-to-cart"
 import { useClientSearchParams } from "@/hooks/use-client-search-params"
 
 interface QuantitySelectorProps {
@@ -42,10 +47,10 @@ export function QuantitySelector({
 }: QuantitySelectorProps) {
   const [quantity, setQuantity] = useState(1)
   const [loading, setLoading] = useState(false)
-  const [added, setAdded] = useState(false)
   const [product, setProduct] = useState<InventoryItem | null>(itemProp ?? null)
   const requireSignIn = useSignInGate()
   const reportAddedToCart = useReportAddedToCart()
+  const { inCart, markInCart } = useListingInCart()
   const pathname = usePathname()
   const searchParams = useClientSearchParams()
   const here = `${pathname}${searchParams.toString() ? `?${searchParams}` : ""}`
@@ -112,15 +117,23 @@ export function QuantitySelector({
         contentName: r.contentName,
         eventId: r.metaEventId,
       })
-      setAdded(true)
+      markInCart(true)
       reportAddedToCart(r)
-      setTimeout(() => {
-        setAdded(false)
-        setQuantity(1)
-      }, 2000)
+      setQuantity(1)
     } finally {
       setLoading(false)
     }
+  }
+
+  if (inCart) {
+    return (
+      <Button size="lg" className="h-12 w-full rounded-xl text-base font-semibold shadow-sm" asChild>
+        <Link href="/cart">
+          <ShoppingCart className="mr-2 h-5 w-5" />
+          {listingDetailCartButtonLabel(true)}
+        </Link>
+      </Button>
+    )
   }
 
   return (
@@ -155,18 +168,13 @@ export function QuantitySelector({
         size="lg"
         onClick={addToCart}
         disabled={loading || maxQuantity <= 0}
-        className={`w-full h-12 rounded-xl text-base font-semibold shadow-sm ${added ? "bg-black hover:bg-neutral-800" : ""}`}
+        className="h-12 w-full rounded-xl text-base font-semibold shadow-sm"
       >
         {loading ? (
           <Loader2 className="h-5 w-5 animate-spin" />
-        ) : added ? (
-          <>
-            <Check className="h-5 w-5 mr-2" />
-            Added to Cart
-          </>
         ) : (
           <>
-            <ShoppingCart className="h-5 w-5 mr-2" />
+            <ShoppingCart className="mr-2 h-5 w-5" />
             Add to Cart - ${((product?.price || 0) * quantity).toFixed(2)}
           </>
         )}
