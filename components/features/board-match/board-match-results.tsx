@@ -2,7 +2,6 @@ import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
 import type { BoardMatchCareerStats, BoardMatchRoundSummary } from "@/lib/types/boardMatch"
 
 export function BoardMatchResults({
@@ -18,11 +17,6 @@ export function BoardMatchResults({
   featuredLabel: string | null
   onPlayAgain: () => void
 }) {
-  const accuracy =
-    summary.questionCount > 0
-      ? Math.round((summary.correctCount / summary.questionCount) * 100)
-      : 0
-
   return (
     <div className="mx-auto max-w-xl text-center">
       <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
@@ -32,8 +26,8 @@ export function BoardMatchResults({
         {summary.totalPoints} points
       </h2>
       <p className="mt-3 text-muted-foreground">
-        {summary.correctCount}/{summary.questionCount} correct · {accuracy}% · best streak{" "}
-        {summary.bestStreak}
+        {summary.brandCorrectCount}/{summary.questionCount} brands · {summary.modelCorrectCount}{" "}
+        model bonuses · best streak {summary.bestStreak}
       </p>
 
       <dl className="mx-auto mt-8 grid max-w-md grid-cols-2 gap-3 text-center">
@@ -60,8 +54,8 @@ export function BoardMatchResults({
           Play again
         </Button>
         <Button type="button" size="lg" variant="outline" asChild>
-          <Link href={shopHref} prefetch={boardsBrowseLinkPrefetch(shopHref)}>
-            {featuredLabel ? `Browse ${featuredLabel}` : "Browse boards"}
+          <Link href={shopHref}>
+            {featuredLabel ? `Browse ${featuredLabel}` : "Browse brands"}
             <ArrowRight className="h-4 w-4" aria-hidden />
           </Link>
         </Button>

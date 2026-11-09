@@ -1,35 +1,52 @@
 "use client"
 
+import Image from "next/image"
+
 import { Button } from "@/components/ui/button"
+import { isConfiguredNextImageSrc } from "@/lib/brands/logo-mark"
+import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { cn } from "@/lib/utils"
-import type { BoardMatchAnswerResult, BoardMatchPhase, BoardMatchScenario } from "@/lib/types/boardMatch"
-import type { SurfboardSellCategoryKey } from "@/lib/surfboard-sell-categories"
-import { SURFBOARD_SELL_CATEGORY_LABELS } from "@/lib/surfboard-sell-categories"
+import type {
+  BoardMatchAnswerResult,
+  BoardMatchCard,
+  BoardMatchPhase,
+  BoardMatchPlayStep,
+} from "@/lib/types/boardMatch"
 
 export function BoardMatchPlay({
-  scenario,
+  card,
   index,
   total,
   roundPoints,
   streak,
   phase,
-  selected,
+  playStep,
+  selectedBrandId,
+  selectedModelId,
   lastResult,
-  onPick,
+  onPickBrand,
+  onPickModel,
   onContinue,
 }: {
-  scenario: BoardMatchScenario
+  card: BoardMatchCard
   index: number
   total: number
   roundPoints: number
   streak: number
   phase: BoardMatchPhase
-  selected: SurfboardSellCategoryKey | null
+  playStep: BoardMatchPlayStep
+  selectedBrandId: string | null
+  selectedModelId: string | null
   lastResult: BoardMatchAnswerResult | null
-  onPick: (choice: SurfboardSellCategoryKey) => void
+  onPickBrand: (brandId: string) => void
+  onPickModel: (modelId: string) => void
   onContinue: () => void
 }) {
   const revealed = phase === "revealed"
+  const imageSrc = isConfiguredNextImageSrc(card.imageUrl) ? card.imageUrl : null
+  const choosingModel = playStep === "model" && !revealed
+  const showBrandChoices = playStep === "brand" || (revealed && !lastResult?.brandCorrect)
+  const showModelChoices = playStep === "model" || (revealed && !!lastResult?.brandCorrect)
 
   return (
     <div>
@@ -63,48 +80,112 @@ export function BoardMatchPlay({
         />
       </div>
 
-      <div className="mt-8">
-        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-          Scenario
-        </p>
-        <h2 className="mt-2 font-headline text-3xl font-bold tracking-[-0.05em] text-foreground sm:text-4xl">
-          {scenario.headline}
-        </h2>
-        <p className="mt-4 text-pretty text-base text-foreground/90">{scenario.session}</p>
-        <p className="mt-2 text-pretty text-sm text-muted-foreground">{scenario.rider}</p>
+      <div className="relative mt-6 aspect-[4/3] overflow-hidden rounded-2xl bg-muted/40 ring-1 ring-border/60">
+        {imageSrc ? (
+          <Image
+            src={imageSrc}
+            alt="Surfboard from the Reswell catalog"
+            fill
+            priority={index === 0}
+            sizes="(max-width: 672px) 100vw, 42rem"
+            className="object-cover"
+            unoptimized={listingImageShouldBypassOptimization(imageSrc)}
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+            Photo unavailable
+          </div>
+        )}
       </div>
 
-      <fieldset className="mt-8" disabled={revealed}>
-        <legend className="sr-only">Choose a board type</legend>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {scenario.choices.map((choice) => {
-            const isSelected = selected === choice
-            const isCorrect = choice === scenario.correct
-            const showCorrect = revealed && isCorrect
-            const showWrong = revealed && isSelected && !isCorrect
+      <div className="mt-6">
+        <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          {choosingModel ? "Bonus · name the model" : "Which brand is this?"}
+        </p>
+        <h2 className="mt-2 font-headline text-2xl font-bold tracking-[-0.05em] text-foreground sm:text-3xl">
+          {choosingModel
+            ? `Brand locked: ${card.brand.name}`
+            : revealed
+              ? `${card.brand.name} · ${card.model.name}`
+              : "Match the brand"}
+        </h2>
+      </div>
 
-            return (
-              <button
-                key={choice}
-                type="button"
-                onClick={() => onPick(choice)}
-                className={cn(
-                  "min-h-touch rounded-xl border px-4 py-4 text-left transition-colors duration-200",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                  !revealed && "border-border bg-background hover:border-foreground/30 hover:bg-muted/40",
-                  showCorrect && "border-foreground bg-foreground text-primary-foreground",
-                  showWrong && "border-destructive/50 bg-destructive/5 text-foreground",
-                  revealed && !showCorrect && !showWrong && "border-border/60 bg-muted/30 text-muted-foreground",
-                )}
-              >
-                <span className="font-headline text-lg font-semibold tracking-tight">
-                  {SURFBOARD_SELL_CATEGORY_LABELS[choice]}
-                </span>
-              </button>
-            )
-          })}
-        </div>
-      </fieldset>
+      {showBrandChoices ? (
+        <fieldset className="mt-6" disabled={revealed}>
+          <legend className="sr-only">Choose a brand</legend>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {card.brandChoices.map((choice) => {
+              const isSelected = selectedBrandId === choice.id
+              const isCorrect = choice.id === card.brand.id
+              const showCorrect = revealed && isCorrect
+              const showWrong = revealed && isSelected && !isCorrect
+
+              return (
+                <button
+                  key={choice.id}
+                  type="button"
+                  onClick={() => onPickBrand(choice.id)}
+                  className={cn(
+                    "min-h-touch rounded-xl border px-4 py-4 text-left transition-colors duration-200",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                    !revealed &&
+                      "border-border bg-background hover:border-foreground/30 hover:bg-muted/40",
+                    showCorrect && "border-foreground bg-foreground text-primary-foreground",
+                    showWrong && "border-destructive/50 bg-destructive/5 text-foreground",
+                    revealed &&
+                      !showCorrect &&
+                      !showWrong &&
+                      "border-border/60 bg-muted/30 text-muted-foreground",
+                  )}
+                >
+                  <span className="font-headline text-lg font-semibold tracking-tight">
+                    {choice.name}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        </fieldset>
+      ) : null}
+
+      {showModelChoices ? (
+        <fieldset className="mt-6" disabled={revealed}>
+          <legend className="sr-only">Choose a model name</legend>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {card.modelChoices.map((choice) => {
+              const isSelected = selectedModelId === choice.id
+              const isCorrect = choice.id === card.model.id
+              const showCorrect = revealed && isCorrect
+              const showWrong = revealed && isSelected && !isCorrect
+
+              return (
+                <button
+                  key={choice.id}
+                  type="button"
+                  onClick={() => onPickModel(choice.id)}
+                  className={cn(
+                    "min-h-touch rounded-xl border px-4 py-4 text-left transition-colors duration-200",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                    !revealed &&
+                      "border-border bg-background hover:border-foreground/30 hover:bg-muted/40",
+                    showCorrect && "border-foreground bg-foreground text-primary-foreground",
+                    showWrong && "border-destructive/50 bg-destructive/5 text-foreground",
+                    revealed &&
+                      !showCorrect &&
+                      !showWrong &&
+                      "border-border/60 bg-muted/30 text-muted-foreground",
+                  )}
+                >
+                  <span className="font-headline text-lg font-semibold tracking-tight">
+                    {choice.name}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        </fieldset>
+      ) : null}
 
       {revealed && lastResult ? (
         <div
@@ -113,12 +194,21 @@ export function BoardMatchPlay({
           aria-live="polite"
         >
           <p className="font-headline text-xl font-bold tracking-tight">
-            {lastResult.correct ? "Nice match" : "Not quite"}
+            {!lastResult.brandCorrect
+              ? "Brand miss"
+              : lastResult.modelCorrect
+                ? "Brand + model"
+                : "Brand locked · model miss"}
           </p>
-          <p className="mt-2 text-pretty text-sm text-muted-foreground">{scenario.why}</p>
-          {lastResult.correct ? (
+          <p className="mt-2 text-pretty text-sm text-muted-foreground">
+            {card.brand.name} · {card.model.name}
+          </p>
+          {lastResult.pointsEarned > 0 ? (
             <p className="mt-3 text-sm tabular-nums text-foreground">
               +{lastResult.pointsEarned} points
+              {lastResult.modelBonus > 0 ? (
+                <span className="text-muted-foreground"> · {lastResult.modelBonus} model</span>
+              ) : null}
               {lastResult.speedBonus > 0 ? (
                 <span className="text-muted-foreground"> · {lastResult.speedBonus} speed</span>
               ) : null}
@@ -127,12 +217,10 @@ export function BoardMatchPlay({
               ) : null}
             </p>
           ) : (
-            <p className="mt-3 text-sm text-muted-foreground">
-              Answer: {SURFBOARD_SELL_CATEGORY_LABELS[scenario.correct]}
-            </p>
+            <p className="mt-3 text-sm text-muted-foreground">No points this board</p>
           )}
           <Button type="button" className="mt-5" onClick={onContinue}>
-            {index + 1 >= total ? "See results" : "Next scenario"}
+            {index + 1 >= total ? "See results" : "Next board"}
           </Button>
         </div>
       ) : null}
