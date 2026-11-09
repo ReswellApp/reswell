@@ -18,6 +18,7 @@ import { getPolicyBlockFromSendResult } from "@/lib/messages/policy-block-client
 import { PENDING_THREAD_MESSAGE_ID_PREFIX } from "@/lib/messages/local-phone-policy-block-message"
 import type { MessagePolicyReasonCode } from "@/lib/messages/fraud-reason-codes"
 import { PromiseDeadlineError, raceWithDeadline } from "@/lib/utils/race-with-deadline"
+import { retryOnceOnAbort } from "@/lib/utils/retry-on-abort"
 import { friendlyMessageMediaErrorMessage } from "@/lib/utils/friendly-message-media-error"
 import { isAbortError } from "@/lib/utils/is-abort-error"
 import {
@@ -37,18 +38,24 @@ async function postConversationMediaReply(body: {
   caption?: string
   composer_unlock_token: string
 }): Promise<unknown> {
-  const res = await fetch("/api/messages/send-media", {
-    method: "POST",
-    credentials: "include",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-    },
-    keepalive: true,
-    body: JSON.stringify(body),
-  })
-  const json: unknown = await res.json().catch(() => null)
-  if (json && typeof json === "object") return json
+  try {
+    const res = await retryOnceOnAbort(() =>
+      fetch("/api/messages/send-media", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        keepalive: true,
+        body: JSON.stringify(body),
+      }),
+    )
+    const json: unknown = await res.json().catch(() => null)
+    if (json && typeof json === "object") return json
+  } catch {
+    /* navigation abort after the retry still failed */
+  }
   return { error: "Could not send message" as const }
 }
 

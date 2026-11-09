@@ -568,6 +568,7 @@ export async function sendConversationReply(input: {
   conversation_id: string
   content: string
   composer_unlock_token: string
+  client_id?: string
 }) {
   const supabase = await createClient()
   const {
@@ -620,6 +621,21 @@ export async function sendConversationReply(input: {
   }
 
   const receiverId = viewer.viewerId === conv.buyer_id ? conv.seller_id : conv.buyer_id
+  const writeDb = viewer.useServiceRole ? createServiceRoleClient() : supabase
+  const clientId = input.client_id?.trim() || null
+
+  if (clientId) {
+    const { data: existing } = await writeDb
+      .from("messages")
+      .select("id, content, sender_id, created_at, is_read, metadata")
+      .eq("conversation_id", conv.id)
+      .eq("sender_id", viewer.senderId)
+      .contains("metadata", { client_id: clientId })
+      .maybeSingle()
+    if (existing) {
+      return { success: true as const, message: existing }
+    }
+  }
 
   const [sendGuard, policyDecision] = await Promise.all([
     evaluateUserMessageSend(supabase, user.id, receiverId),
@@ -643,15 +659,15 @@ export async function sendConversationReply(input: {
     if (blocked) return blocked
   }
 
-  const writeDb = viewer.useServiceRole ? createServiceRoleClient() : supabase
   const { data: inserted, error: msgError } = await writeDb
     .from("messages")
     .insert({
       conversation_id: conv.id,
       sender_id: viewer.senderId,
       content: body,
+      ...(clientId ? { metadata: { client_id: clientId } } : {}),
     })
-    .select("id, content, sender_id, created_at, is_read")
+    .select("id, content, sender_id, created_at, is_read, metadata")
     .single()
 
   if (msgError || !inserted) {

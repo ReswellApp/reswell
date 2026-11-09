@@ -36,6 +36,17 @@ import {
 } from '@/app/actions/messages'
 import { postMarketplaceThreadReply } from '@/lib/messages/post-marketplace-thread-reply'
 import {
+  confirmMarketplaceThreadSend,
+  forgetMarketplaceThreadSend,
+  getMarketplaceThreadSends,
+  mergeCachedMarketplaceThreadSends,
+  patchMarketplaceThreadSend,
+  patchMarketplaceThreadSendProgress,
+  pruneMarketplaceThreadSends,
+  rememberMarketplaceThreadSend,
+  subscribeMarketplaceThreadSends,
+} from '@/lib/messages/marketplace-thread-send-cache'
+import {
   dispatchConversationInboxActivity,
   dispatchConversationThreadOpened,
   dispatchMessagesInboxRefresh,
@@ -204,7 +215,11 @@ export function ConversationThreadClient({
   const [otherPartyProfile, setOtherPartyProfile] =
     useState<OtherPartyProfileSummary | null>(() => initialData.otherPartyProfile)
   const [messages, setMessages] = useState<Message[]>(
-    () => (initialData.messages as unknown as Message[]) ?? [],
+    () =>
+      mergeCachedMarketplaceThreadSends(
+        (initialData.messages as unknown as Message[]) ?? [],
+        getMarketplaceThreadSends(id),
+      ),
   )
   const [hiddenShippingLabelOrderIds, setHiddenShippingLabelOrderIds] = useState(
     () => new Set(initialData.hiddenShippingLabelOrderIds ?? []),
@@ -495,6 +510,7 @@ export function ConversationThreadClient({
       }
 
       const rows = result.messages as unknown as Message[]
+      pruneMarketplaceThreadSends(id, rows.map((row) => row.id))
 
       setHiddenShippingLabelOrderIds(new Set(result.hiddenShippingLabelOrderIds ?? []))
       setOtherPartyProfile(result.otherPartyProfile)
@@ -504,7 +520,12 @@ export function ConversationThreadClient({
       if (Object.keys(nextThreadListingsPatch).length > 0) {
         setThreadListingsById((prev) => ({ ...prev, ...nextThreadListingsPatch }))
       }
-      setMessages((prev) => mergeServerMessagesPreservingLocalPolicyBlocks(prev, rows))
+      setMessages((prev) =>
+        mergeCachedMarketplaceThreadSends(
+          mergeServerMessagesPreservingLocalPolicyBlocks(prev, rows),
+          getMarketplaceThreadSends(id),
+        ),
+      )
       if (Object.keys(nextOffersById).length > 0) {
         setOffersById((prev) => ({ ...prev, ...nextOffersById }))
       }
@@ -563,6 +584,16 @@ export function ConversationThreadClient({
     }
   }, [id])
 
+  useEffect(() => {
+    const applyCachedSends = () => {
+      setMessages((prev) =>
+        mergeCachedMarketplaceThreadSends(prev, getMarketplaceThreadSends(id)),
+      )
+    }
+    applyCachedSends()
+    return subscribeMarketplaceThreadSends(id, applyCachedSends)
+  }, [id])
+
   const syncOpenThread = useCallback(() => {
     const generation = threadGenerationRef.current
     void loadThread(() => threadGenerationRef.current === generation).then((rows) => {
@@ -611,7 +642,13 @@ export function ConversationThreadClient({
         void loadThread(isCurrentThread)
       } else {
         stickToBottomRef.current = true
-        setMessages((prev) => replaceMatchingPendingThreadMessage(prev, msg))
+        setMessages((prev) =>
+          mergeCachedMarketplaceThreadSends(
+            replaceMatchingPendingThreadMessage(prev, msg),
+            getMarketplaceThreadSends(id),
+          ),
+        )
+        pruneMarketplaceThreadSends(id, [msg.id])
         if (msg.offer_id) {
           fetchOfferForMessage(msg.offer_id, isCurrentThread)
         }
@@ -682,35 +719,40 @@ export function ConversationThreadClient({
       }
       if (existingTempId && inFlightSendIdsRef.current.has(existingTempId)) return
 
-      const unlockToken = await composerUnlock.ensure()
-      if (!unlockToken) {
-        toast.error(COMPOSER_UNLOCK_DENIED_ERROR)
-        if (!existingTempId) restoreComposerIfEmpty(content)
-        return
-      }
-
       const tempId = existingTempId ?? `${PENDING_THREAD_MESSAGE_ID_PREFIX}${crypto.randomUUID()}`
+      const createdAt =
+        getMarketplaceThreadSends(id).find((send) => send.id === tempId)?.createdAt ??
+        new Date().toISOString()
       inFlightSendIdsRef.current.add(tempId)
       stickToBottomRef.current = true
 
-      if (existingTempId) {
-        setMessages((prev) =>
-          prev.map((message) =>
-            message.id === tempId ? { ...message, sendStatus: 'sending' } : message,
-          ),
-        )
-      } else {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: tempId,
-            content,
-            sender_id: currentUserId,
-            is_read: false,
-            created_at: new Date().toISOString(),
-            sendStatus: 'sending',
-          },
-        ])
+      rememberMarketplaceThreadSend({
+        conversationId: id,
+        id: tempId,
+        content,
+        senderId: currentUserId,
+        createdAt,
+        sendStatus: 'sending',
+      })
+      dispatchConversationInboxActivity({
+        conversationId: id,
+        at: createdAt,
+        message: {
+          id: tempId,
+          content,
+          sender_id: currentUserId,
+          created_at: createdAt,
+          is_read: true,
+        },
+      })
+
+      const unlockToken = await composerUnlock.ensure()
+      if (!unlockToken) {
+        patchMarketplaceThreadSend(tempId, { sendStatus: 'failed' })
+        toast.error(COMPOSER_UNLOCK_DENIED_ERROR)
+        if (!existingTempId) restoreComposerIfEmpty(content)
+        inFlightSendIdsRef.current.delete(tempId)
+        return
       }
 
       try {
@@ -727,14 +769,21 @@ export function ConversationThreadClient({
         if ('error' in result) {
           const policyReason = getPolicyBlockFromSendResult(result)
           if (policyReason) {
-            setMessages((prev) => [
-              ...prev.filter((message) => message.id !== tempId),
-              createLocalPolicyBlockMessage({
-                senderId: currentUserId,
-                originalContent: content,
-                reasonCode: policyReason,
-              }),
-            ])
+            forgetMarketplaceThreadSend(tempId)
+            const blocked = createLocalPolicyBlockMessage({
+              senderId: currentUserId,
+              originalContent: content,
+              reasonCode: policyReason,
+            })
+            rememberMarketplaceThreadSend({
+              conversationId: id,
+              id: blocked.id,
+              content: blocked.content,
+              senderId: blocked.sender_id,
+              createdAt: blocked.created_at,
+              sendStatus: 'failed',
+              metadata: blocked.metadata,
+            })
             return
           }
           if (
@@ -742,6 +791,7 @@ export function ConversationThreadClient({
             result.error === 'Unauthorized' ||
             result.error === 'Forbidden'
           ) {
+            forgetMarketplaceThreadSend(tempId)
             setMessages((prev) => prev.filter((message) => message.id !== tempId))
             restoreComposerIfEmpty(content)
             toast.error(
@@ -749,19 +799,20 @@ export function ConversationThreadClient({
             )
             return
           }
-          setMessages((prev) =>
-            prev.map((message) =>
-              message.id === tempId ? { ...message, sendStatus: 'failed' } : message,
-            ),
-          )
+          patchMarketplaceThreadSend(tempId, { sendStatus: 'failed' })
           return
         }
 
         const inserted = result.message as Message
         knownMessageIdsRef.current.add(inserted.id)
-        setMessages((prev) =>
-          prev.map((message) => (message.id === tempId ? inserted : message)),
-        )
+        confirmMarketplaceThreadSend(tempId, {
+          id: inserted.id,
+          content: inserted.content,
+          sender_id: inserted.sender_id,
+          created_at: inserted.created_at,
+          is_read: inserted.is_read,
+          metadata: inserted.metadata,
+        })
         dispatchConversationInboxActivity({
           conversationId: id,
           at: inserted.created_at,
@@ -774,13 +825,8 @@ export function ConversationThreadClient({
             metadata: inserted.metadata,
           },
         })
-      } catch (error) {
-        if (isAbortError(error)) return
-        setMessages((prev) =>
-          prev.map((message) =>
-            message.id === tempId ? { ...message, sendStatus: 'failed' } : message,
-          ),
-        )
+      } catch {
+        patchMarketplaceThreadSend(tempId, { sendStatus: 'failed' })
       } finally {
         inFlightSendIdsRef.current.delete(tempId)
       }
@@ -813,49 +859,45 @@ export function ConversationThreadClient({
       stickToBottomRef.current = true
       setNewMessage('')
       newMessageRef.current = ''
-      setMessages((prev) => [
-        ...prev.filter((message) => message.id !== draft.id),
-        {
+      const createdAt = new Date().toISOString()
+      rememberMarketplaceThreadSend({
+        conversationId: id,
+        id: draft.id,
+        content: draft.content,
+        senderId: currentUserId,
+        createdAt,
+        sendStatus: 'sending',
+        localPreview: {
+          url: draft.previewUrl,
+          kind: draft.kind,
+          progress: 5,
+        },
+      })
+      dispatchConversationInboxActivity({
+        conversationId: id,
+        at: createdAt,
+        message: {
           id: draft.id,
           content: draft.content,
           sender_id: currentUserId,
-          is_read: false,
-          created_at: new Date().toISOString(),
-          sendStatus: 'sending',
-          localPreview: {
-            url: draft.previewUrl,
-            kind: draft.kind,
-            progress: 5,
-          },
+          created_at: createdAt,
+          is_read: true,
         },
-      ])
+      })
     },
-    [currentUserId],
+    [currentUserId, id],
   )
 
   const handleMediaProgress = useCallback((draftId: string, progress: number) => {
-    setMessages((prev) =>
-      prev.map((message) =>
-        message.id === draftId && message.localPreview
-          ? {
-              ...message,
-              sendStatus: 'sending',
-              localPreview: { ...message.localPreview, progress },
-            }
-          : message,
-      ),
-    )
+    patchMarketplaceThreadSendProgress(draftId, progress)
   }, [])
 
   const handleMediaFailed = useCallback((draftId: string) => {
-    setMessages((prev) =>
-      prev.map((message) =>
-        message.id === draftId ? { ...message, sendStatus: 'failed' } : message,
-      ),
-    )
+    patchMarketplaceThreadSend(draftId, { sendStatus: 'failed' })
   }, [])
 
   const handleMediaDismiss = useCallback((draftId: string) => {
+    forgetMarketplaceThreadSend(draftId)
     setMessages((prev) => prev.filter((message) => message.id !== draftId))
   }, [])
 
@@ -868,11 +910,13 @@ export function ConversationThreadClient({
       stickToBottomRef.current = true
       setNewMessage('')
       knownMessageIdsRef.current.add(inserted.id)
-      setMessages((prev) => {
-        const without = prev.filter(
-          (message) => message.id !== inserted.id && message.id !== draftId,
-        )
-        return [...without, inserted]
+      confirmMarketplaceThreadSend(draftId, {
+        id: inserted.id,
+        content: inserted.content,
+        sender_id: inserted.sender_id,
+        created_at: inserted.created_at,
+        is_read: inserted.is_read,
+        metadata: inserted.metadata,
       })
       dispatchConversationInboxActivity({
         conversationId: id,
