@@ -1,9 +1,8 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { getEarningsWalletData, loadMoreEarningsActivity } from "@/app/actions/wallet"
-import { getReswellCreditEarningsData } from "@/app/actions/reswell-credit"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
   EarningsActivityPane,
@@ -13,12 +12,22 @@ import {
 } from "@/components/features/earnings/earnings-panes"
 import { EarningsHub, EarningsHubSkeleton } from "@/components/features/earnings/earnings-hub"
 import { EarningsStripePayoutCard } from "@/components/features/earnings/earnings-stripe-payout-card"
-import type { EarningsTransaction, EarningsWalletSnapshot } from "@/components/features/earnings/earnings-types"
+import type {
+  EarningsHubInitialData,
+  EarningsTransaction,
+  EarningsWalletSnapshot,
+} from "@/components/features/earnings/earnings-types"
 import type { EarningsBalanceListingRow } from "@/lib/earnings-balance-listings"
 import { EARNINGS_ACTIVITY_PAGE_SIZE } from "@/lib/earnings-activity-page-size"
-import { earningsHref, parseEarningsView } from "@/lib/earnings-view"
+import {
+  earningsHref,
+  earningsViewNeedsLedger,
+  parseEarningsView,
+  type EarningsView,
+} from "@/lib/earnings-view"
 import { dispatchHeaderWalletSync } from "@/lib/auth/header-wallet-sync"
 import type { SellerEarningsDashboardTotals } from "@/lib/db/sellerEarningsTotals"
+import { useClientSearchParams } from "@/hooks/use-client-search-params"
 import { formatUsd } from "@/lib/utils/format-usd"
 import type { StripeConnectStatusPayload } from "@/lib/utils/stripe-connect-status"
 
@@ -40,10 +49,21 @@ function parseUsd(value: string | number | null | undefined): number {
   return Number.isFinite(amount) ? amount : 0
 }
 
-export function EarningsPageClient() {
+function walletErrorMessage(error: string | null | undefined): string {
+  if (error === "Unauthorized") return "Sign in to view earnings."
+  return "Could not load your wallet."
+}
+
+export function EarningsPageClient({
+  initialHub,
+  initialView,
+}: {
+  initialHub: EarningsHubInitialData
+  initialView: EarningsView | null
+}) {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const view = parseEarningsView(searchParams.get("view"))
+  const searchParams = useClientSearchParams()
+  const view = parseEarningsView(searchParams.get("view")) ?? initialView
 
   useEffect(() => {
     if (view) return
@@ -51,14 +71,17 @@ export function EarningsPageClient() {
     router.replace("/dashboard/earnings?view=available#earnings-bank-payout")
   }, [router, view])
 
-  const [wallet, setWallet] = useState<EarningsWalletSnapshot | null>(null)
-  const [walletLoading, setWalletLoading] = useState(true)
-  const [walletError, setWalletError] = useState<string | null>(null)
+  const [wallet, setWallet] = useState<EarningsWalletSnapshot | null>(initialHub.wallet)
+  const [walletLoading, setWalletLoading] = useState(!initialHub.wallet && !initialHub.error)
+  const [walletError, setWalletError] = useState<string | null>(
+    initialHub.error ? walletErrorMessage(initialHub.error) : null,
+  )
 
   const [transactions, setTransactions] = useState<EarningsTransaction[]>([])
   const [pendingBalanceListings, setPendingBalanceListings] = useState<EarningsBalanceListingRow[]>([])
   const [readyBalanceListings, setReadyBalanceListings] = useState<EarningsBalanceListingRow[]>([])
   const [activityLoading, setActivityLoading] = useState(true)
+  const [listingsReady, setListingsReady] = useState(false)
   const [activityHasMore, setActivityHasMore] = useState(false)
   const [activityLoadMoreError, setActivityLoadMoreError] = useState<string | null>(null)
   const [loadingMoreActivity, setLoadingMoreActivity] = useState(false)
@@ -72,9 +95,11 @@ export function EarningsPageClient() {
   const [stripeStatusFailed, setStripeStatusFailed] = useState(false)
   const [stripeHistoryFailed, setStripeHistoryFailed] = useState(false)
 
-  const [sellerEarningsTotals, setSellerEarningsTotals] = useState<SellerEarningsDashboardTotals | null>(null)
-  const [creditBalanceUsd, setCreditBalanceUsd] = useState(0)
-  const [creditVisible, setCreditVisible] = useState(false)
+  const [sellerEarningsTotals, setSellerEarningsTotals] = useState<SellerEarningsDashboardTotals | null>(
+    initialHub.sellerEarningsTotals,
+  )
+  const [creditBalanceUsd, setCreditBalanceUsd] = useState(initialHub.creditBalanceUsd)
+  const [creditVisible, setCreditVisible] = useState(initialHub.creditVisible)
 
   const stripeCashOutWalletTrustRef = useRef<{
     balance: string
@@ -83,28 +108,22 @@ export function EarningsPageClient() {
   } | null>(null)
 
   const fetchGenerationRef = useRef(0)
-  const initialWalletActivityPaintRef = useRef(true)
+  const hasWalletRef = useRef(Boolean(initialHub.wallet))
 
   const stripePayoutsEnabled =
     typeof process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY === "string" &&
     process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY.trim().length > 0
 
   const fetchWalletBundle = useCallback(async (gen: number) => {
-    const showSkeleton = initialWalletActivityPaintRef.current
-    if (showSkeleton) {
+    const showHubSkeleton = !hasWalletRef.current
+    if (showHubSkeleton) {
       setWalletLoading(true)
-      setActivityLoading(true)
     }
+    setActivityLoading(true)
     setWalletError(null)
     try {
-      const [earningsData, creditData] = await Promise.all([
-        getEarningsWalletData({ activityLimit: EARNINGS_ACTIVITY_PAGE_SIZE }),
-        getReswellCreditEarningsData().catch(() => ({ error: "failed" as const, pilot: null })),
-      ])
+      const earningsData = await getEarningsWalletData({ activityLimit: EARNINGS_ACTIVITY_PAGE_SIZE })
       if (gen !== fetchGenerationRef.current) return
-
-      setCreditVisible(Boolean(creditData.pilot))
-      setCreditBalanceUsd(creditData.pilot?.wallet.balanceUsd ?? 0)
 
       if (!earningsData.error && earningsData.wallet) {
         let nextWallet = earningsData.wallet as EarningsWalletSnapshot
@@ -125,6 +144,7 @@ export function EarningsPageClient() {
             stripeCashOutWalletTrustRef.current = null
           }
         }
+        hasWalletRef.current = true
         setWallet(nextWallet)
         dispatchHeaderWalletSync(nextWallet)
         setTransactions(earningsData.transactions as EarningsTransaction[])
@@ -133,13 +153,9 @@ export function EarningsPageClient() {
         setReversedOrderIds(new Set(earningsData.reversedOrderIds ?? []))
         setActivityHasMore(Boolean(earningsData.activityHasMore))
         setSellerEarningsTotals(earningsData.sellerEarningsTotals ?? null)
-      } else {
+      } else if (!hasWalletRef.current) {
         setWallet(null)
-        setWalletError(
-          earningsData.error === "Unauthorized"
-            ? "Sign in to view earnings."
-            : "Could not load your wallet.",
-        )
+        setWalletError(walletErrorMessage(earningsData.error))
         setTransactions([])
         setPendingBalanceListings([])
         setReadyBalanceListings([])
@@ -149,20 +165,22 @@ export function EarningsPageClient() {
       }
     } catch {
       if (gen !== fetchGenerationRef.current) return
-      setWalletError("Could not load your wallet.")
-      setWallet(null)
-      setTransactions([])
-      setPendingBalanceListings([])
-      setReadyBalanceListings([])
-      setActivityHasMore(false)
-      setSellerEarningsTotals(null)
-      setCreditVisible(false)
-      setCreditBalanceUsd(0)
+      if (!hasWalletRef.current) {
+        setWalletError("Could not load your wallet.")
+        setWallet(null)
+        setTransactions([])
+        setPendingBalanceListings([])
+        setReadyBalanceListings([])
+        setActivityHasMore(false)
+        setSellerEarningsTotals(null)
+        setCreditVisible(false)
+        setCreditBalanceUsd(0)
+      }
     } finally {
-      if (gen === fetchGenerationRef.current && showSkeleton) {
+      if (gen === fetchGenerationRef.current) {
         setWalletLoading(false)
         setActivityLoading(false)
-        initialWalletActivityPaintRef.current = false
+        setListingsReady(true)
       }
     }
   }, [])
@@ -223,8 +241,9 @@ export function EarningsPageClient() {
   }, [fetchWalletBundle, fetchStripeData])
 
   useEffect(() => {
+    if (!earningsViewNeedsLedger(view)) return
     void fetchData()
-  }, [fetchData])
+  }, [fetchData, view])
 
   useEffect(() => {
     if (view !== "credit") return
@@ -337,7 +356,13 @@ export function EarningsPageClient() {
   }
 
   if (view === "pending") {
-    return <EarningsPendingPane amountLabel={formatUsd(displayPending)} rows={pendingBalanceListings} />
+    return (
+      <EarningsPendingPane
+        amountLabel={formatUsd(displayPending)}
+        rows={pendingBalanceListings}
+        isLoading={!listingsReady}
+      />
+    )
   }
 
   if (view === "available") {
@@ -345,6 +370,7 @@ export function EarningsPageClient() {
       <EarningsAvailablePane
         amountLabel={formatUsd(displayAvailable)}
         rows={readyBalanceListings}
+        isLoading={!listingsReady}
         showTransfer={stripePayoutsEnabled}
         payout={
           stripePayoutsEnabled ? (
@@ -375,7 +401,7 @@ export function EarningsPageClient() {
         transactions={transactions}
         reversedOrderIds={reversedOrderIds}
         hasMore={activityHasMore}
-        isLoading={activityLoading}
+        isLoading={activityLoading && !listingsReady}
         isLoadingMore={loadingMoreActivity}
         loadError={walletError}
         loadMoreError={activityLoadMoreError}
