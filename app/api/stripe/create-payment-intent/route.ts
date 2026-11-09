@@ -65,6 +65,11 @@ import {
   prepareSurfboardShippedCharge,
   type SurfboardShippedCharge,
 } from "@/lib/services/surfboardShippedOffer"
+import {
+  holdReswellCreditAfterPaymentIntentCreated,
+  releaseReswellCreditHoldForPaymentIntent,
+  resolveAdminReswellCreditForPaymentIntent,
+} from "@/lib/services/reswellCreditCheckout"
 
 const JSON_NO_STORE_HEADERS = {
   "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
@@ -153,6 +158,7 @@ export async function createPaymentIntentForUser(
     quantities?: unknown
     checkout_session_id?: string | null
     force_new_session?: boolean
+    apply_reswell_credit?: boolean
   }
 
   const fromArray = Array.isArray(body.listing_ids)
@@ -596,7 +602,28 @@ export async function createPaymentIntentForUser(
         : { kind: "admin_issued", promo: promoCheck.promo }
   }
 
-  const chargedTotalUsd = promoRef ? promoCheckTotalUsd : bundle.totalUsd
+  const totalBeforeCreditUsd = promoRef ? promoCheckTotalUsd : bundle.totalUsd
+
+  const creditResolution = await resolveAdminReswellCreditForPaymentIntent({
+    supabase,
+    userId: user.id,
+    apply: body.apply_reswell_credit === true,
+    itemSubtotalUsd: bundle.totalItemPriceUsd,
+    shippingUsd: bundle.totalShippingUsd,
+    promoDiscountUsd,
+  })
+  if ("error" in creditResolution) {
+    return NextResponse.json(
+      { error: creditResolution.error },
+      { status: creditResolution.status, headers: JSON_NO_STORE_HEADERS },
+    )
+  }
+  const reswellCreditCents = creditResolution.creditCents
+  const reswellCreditUsd = creditResolution.creditUsd
+  const chargedTotalUsd = Math.max(
+    0.5,
+    Math.round((totalBeforeCreditUsd - reswellCreditUsd) * 100) / 100,
+  )
 
   const amountCents = Math.round(chargedTotalUsd * 100)
   if (amountCents < 50) {
@@ -674,6 +701,9 @@ export async function createPaymentIntentForUser(
               promo_discount_cents: String(Math.round(promoDiscountUsd * 100)),
               promo_discount_percent: String(promoDiscountPercent),
             }
+          : {}),
+        ...(reswellCreditCents > 0
+          ? { reswell_credit_cents: String(reswellCreditCents) }
           : {}),
         ...(bundle.anyUsedReswellQuote
           ? {
@@ -826,6 +856,7 @@ export async function createPaymentIntentForUser(
           promoServiceSupabase = createServiceRoleClient()
         } catch {
           await stripe.paymentIntents.cancel(paymentIntent.id)
+          await releaseReswellCreditHoldForPaymentIntent(paymentIntent.id)
           return NextResponse.json(
             { error: "Could not reserve promo code." },
             { status: 503, headers: JSON_NO_STORE_HEADERS },
@@ -841,8 +872,24 @@ export async function createPaymentIntentForUser(
       )
       if (!reserved.ok) {
         await stripe.paymentIntents.cancel(paymentIntent.id)
+        await releaseReswellCreditHoldForPaymentIntent(paymentIntent.id)
         return NextResponse.json(
           { error: reserved.error ?? "This promo code is no longer available." },
+          { status: 409, headers: JSON_NO_STORE_HEADERS },
+        )
+      }
+    }
+
+    if (reswellCreditCents > 0) {
+      const held = await holdReswellCreditAfterPaymentIntentCreated({
+        userId: user.id,
+        paymentIntentId: paymentIntent.id,
+        creditCents: reswellCreditCents,
+      })
+      if (!held.ok) {
+        await stripe.paymentIntents.cancel(paymentIntent.id)
+        return NextResponse.json(
+          { error: held.error },
           { status: 409, headers: JSON_NO_STORE_HEADERS },
         )
       }
@@ -853,6 +900,7 @@ export async function createPaymentIntentForUser(
         clientSecret: paymentIntent.client_secret,
         shippingUsd: bundle.totalShippingUsd,
         totalUsd: chargedTotalUsd,
+        reswellCreditUsd,
         ...(checkoutSessionId ? { checkoutSessionId } : {}),
       },
       { headers: JSON_NO_STORE_HEADERS },

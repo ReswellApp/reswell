@@ -331,6 +331,7 @@ export function StripeCardCheckout({
   needsShipping = false,
   surfboardShipped = false,
   forceNewSession = false,
+  applyReswellCredit = false,
   submitButtonLabel,
   submitButtonClassName,
   buyerEmail,
@@ -350,6 +351,8 @@ export function StripeCardCheckout({
   surfboardShipped?: boolean
   /** Start a new paid attempt for an in-stock quantity listing. */
   forceNewSession?: boolean
+  /** Admin pilot: apply Reswell Credit toward the card charge. */
+  applyReswellCredit?: boolean
   /** When set, replaces the default “Pay — $x” label. */
   submitButtonLabel?: string
   submitButtonClassName?: string
@@ -432,6 +435,7 @@ export function StripeCardCheckout({
             ...(shippingQuoteToken ? { quote_token: shippingQuoteToken } : {}),
             ...(packagingMode ? { packaging_mode: packagingMode } : {}),
             ...(surfboardShipped ? { surfboard_shipped: true } : {}),
+            ...(applyReswellCredit ? { apply_reswell_credit: true } : {}),
             ...(resumeSessionId && !shouldForceNew ? { checkout_session_id: resumeSessionId } : {}),
             ...(shouldForceNew ? { force_new_session: true } : {}),
           }),
@@ -446,6 +450,7 @@ export function StripeCardCheckout({
           checkoutSessionId?: string
           shippingUsd?: number
           totalUsd?: number
+          reswellCreditUsd?: number
         }
         if (cancelled || paymentLockedRef.current) return
         if (data.checkoutSessionId?.trim()) {
@@ -537,6 +542,7 @@ export function StripeCardCheckout({
     needsShipping,
     surfboardShipped,
     forceNewSession,
+    applyReswellCredit,
     sessionStorageKey,
     stripePromise,
     router,

@@ -6,6 +6,7 @@ import {
   trackKlaviyoSellerOrderConfirmed,
   type KlaviyoSellerOrderConfirmedPayload,
 } from "@/lib/klaviyo/track-seller-order-confirmed"
+import { maybeAwardSellerReswellCredit } from "@/lib/services/reswellCreditAwards"
 
 /**
  * After buyer confirms delivery or seller verifies pickup: credit seller wallet balance
@@ -86,6 +87,16 @@ export async function releaseOrderSellerEarningsAfterFulfillment(
         trackKlaviyoSellerOrderConfirmed(klaviyoPayload),
         trackKlaviyoEarningsAvailable(klaviyoPayload),
       ])
+    }
+
+    if (order?.seller_id) {
+      const sellerEarningsUsd = Number(order.seller_earnings)
+      void maybeAwardSellerReswellCredit({
+        supabase,
+        sellerId: String(order.seller_id),
+        orderId,
+        sellerEarningsUsd: Number.isFinite(sellerEarningsUsd) ? sellerEarningsUsd : 0,
+      })
     }
   }
 

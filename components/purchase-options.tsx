@@ -1,10 +1,12 @@
 "use client"
 
+import { useMemo, useState } from "react"
 import dynamic from "next/dynamic"
 import Link from "next/link"
 import { CheckoutPaymentFormSkeleton } from "@/components/features/checkout/checkout-skeletons"
 import { stripeCardCheckoutEnabled } from "@/lib/stripe/client-checkout-enabled"
 import { ReswellBucksPayButton } from "@/components/features/checkout/reswell-bucks-pay-button"
+import { RESWELL_CREDIT_MAX_CHECKOUT_FRACTION } from "@/lib/reswell-credit-rates"
 
 const StripeCardCheckout = dynamic(
   () =>
@@ -58,6 +60,10 @@ interface PurchaseOptionsProps {
   forceNewSession?: boolean
   /** Admin pilot. Null hides Pay with Reswell Bucks. */
   reswellBucks?: { spendableUsd: number } | null
+  /** Admin pilot. Null hides Apply Reswell Credit. */
+  reswellCredit?: { spendableUsd: number } | null
+  /** Item subtotal only — Credit caps at 50% of this, not shipping. */
+  itemSubtotalUsd?: number
 }
 
 function purchaseDetailsPlaceholder(needsShipping: boolean): string {
@@ -88,8 +94,22 @@ export function PurchaseOptions({
   surfboardShipped = false,
   forceNewSession = false,
   reswellBucks = null,
+  reswellCredit = null,
+  itemSubtotalUsd,
 }: PurchaseOptionsProps) {
   const showCard = stripeCardCheckoutEnabled()
+  const [applyReswellCredit, setApplyReswellCredit] = useState(false)
+  const [creditToggleEpoch, setCreditToggleEpoch] = useState(0)
+
+  const estimatedCreditUsd = useMemo(() => {
+    if (!reswellCredit || reswellCredit.spendableUsd <= 0) return 0
+    const itemBase =
+      typeof itemSubtotalUsd === "number" && Number.isFinite(itemSubtotalUsd)
+        ? Math.max(0, itemSubtotalUsd)
+        : Math.max(0, price)
+    const cap = itemBase * RESWELL_CREDIT_MAX_CHECKOUT_FRACTION
+    return Math.min(reswellCredit.spendableUsd, Math.round(cap * 100) / 100)
+  }, [reswellCredit, itemSubtotalUsd, price])
 
   const canMountStripe =
     purchaseDetailsReady && (!needsShipping || Boolean(shippingAddressId?.trim()))
@@ -137,7 +157,29 @@ export function PurchaseOptions({
               <p className="text-center text-[12px] text-neutral-400">or pay with card</p>
             </>
           ) : null}
+          {reswellCredit && estimatedCreditUsd > 0 ? (
+            <label className="flex items-start gap-2.5 rounded-md border border-teal-700/25 bg-teal-950/[0.04] px-3 py-2.5 text-sm">
+              <input
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 rounded border-neutral-300"
+                checked={applyReswellCredit}
+                onChange={(e) => {
+                  setApplyReswellCredit(e.target.checked)
+                  setCreditToggleEpoch((n) => n + 1)
+                }}
+              />
+              <span className="min-w-0 leading-snug">
+                <span className="font-medium text-foreground">Apply Reswell Credit</span>
+                <span className="block text-[12px] text-muted-foreground mt-0.5">
+                  Up to ${estimatedCreditUsd.toFixed(2)} off (max{" "}
+                  {Math.round(RESWELL_CREDIT_MAX_CHECKOUT_FRACTION * 100)}% of items). Not Reswell Bucks — never
+                  cashable.
+                </span>
+              </span>
+            </label>
+          ) : null}
           <StripeCardCheckout
+            key={`credit-${creditToggleEpoch}-${applyReswellCredit ? "on" : "off"}`}
             listingIds={listingIds}
             quantities={quantities}
             listingTitle={listingTitle}
@@ -151,7 +193,8 @@ export function PurchaseOptions({
             purchaseDetailsReady
             needsShipping={needsShipping}
             surfboardShipped={surfboardShipped}
-            forceNewSession={forceNewSession}
+            forceNewSession={forceNewSession || creditToggleEpoch > 0}
+            applyReswellCredit={applyReswellCredit}
             submitButtonLabel={submitButtonLabel}
             submitButtonClassName={submitButtonClassName}
             buyerEmail={buyerEmail}

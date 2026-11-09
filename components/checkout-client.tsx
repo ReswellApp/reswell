@@ -89,6 +89,8 @@ interface CheckoutClientProps {
   surfboardShippedSeed?: SurfboardShippedCheckoutSeed | null
   /** Admin pilot. Null hides Pay with Reswell Bucks. */
   reswellBucksCheckout?: { spendableUsd: number } | null
+  /** Admin pilot. Null hides Apply Reswell Credit. */
+  reswellCreditCheckout?: { spendableUsd: number } | null
   /** Explicit second purchase of an in-stock quantity listing. */
   forceNewSession?: boolean
 }
@@ -123,6 +125,7 @@ export function CheckoutClient({
   acceptedOfferListingIds,
   surfboardShippedSeed = null,
   reswellBucksCheckout = null,
+  reswellCreditCheckout = null,
   forceNewSession = false,
 }: CheckoutClientProps) {
   const isBundle = listings.length > 1
@@ -1047,6 +1050,8 @@ export function CheckoutClient({
                   surfboardShipped={surfboardShippedSelected}
                   forceNewSession={forceNewSession}
                   reswellBucks={surfboardShippedSelected ? null : reswellBucksCheckout}
+                  reswellCredit={surfboardShippedSelected ? null : reswellCreditCheckout}
+                  itemSubtotalUsd={displayTotals.itemPrice}
                 />
                 <p className="mt-3 text-center text-[12px] text-neutral-500">
                   Secure payment processed by{" "}
