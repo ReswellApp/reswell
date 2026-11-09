@@ -155,7 +155,7 @@ export async function dbExpireStaleCheckoutSessions(
   }
 }
 
-/** Releases unique holds whose checkout session is no longer open (JS fallback before SQL lands). */
+/** Releases unique holds for expired/canceled sessions (JS fallback before SQL lands). Paid sessions keep holds. */
 export async function dbReleaseOrphanedCheckoutStockHolds(
   supabase: SupabaseClient,
 ): Promise<void> {
@@ -176,21 +176,21 @@ export async function dbReleaseOrphanedCheckoutStockHolds(
   if (rows.length === 0) return
 
   const sessionIds = [...new Set(rows.map((row) => row.session_id).filter(Boolean))]
-  const { data: openRows, error: openError } = await supabase
+  const { data: keepRows, error: keepError } = await supabase
     .from("checkout_sessions")
     .select("id")
     .in("id", sessionIds)
-    .eq("status", CHECKOUT_SESSION_OPEN)
+    .in("status", [CHECKOUT_SESSION_OPEN, CHECKOUT_SESSION_PAID])
 
-  if (openError) {
-    if (!isMissingCheckoutSessionsRelation(openError)) {
-      console.warn("[checkout-session] list open hold sessions:", openError.message)
+  if (keepError) {
+    if (!isMissingCheckoutSessionsRelation(keepError)) {
+      console.warn("[checkout-session] list open hold sessions:", keepError.message)
     }
     return
   }
 
-  const openIds = new Set((openRows ?? []).map((row) => String((row as { id?: string }).id ?? "")))
-  const orphanIds = rows.filter((row) => !openIds.has(row.session_id)).map((row) => row.id)
+  const keepIds = new Set((keepRows ?? []).map((row) => String((row as { id?: string }).id ?? "")))
+  const orphanIds = rows.filter((row) => !keepIds.has(row.session_id)).map((row) => row.id)
   if (orphanIds.length === 0) return
 
   const { error } = await supabase

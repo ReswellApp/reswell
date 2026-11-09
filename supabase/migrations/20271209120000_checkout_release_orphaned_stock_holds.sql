@@ -1,6 +1,8 @@
 -- Unique checkout holds from expired/canceled sessions were still blocking
--- a new PaymentIntent with "This item is no longer available". Release any
--- hold whose session is not open, and ignore those rows when reserving.
+-- a new PaymentIntent with "This item is no longer available". Release holds
+-- whose session is expired or canceled, and ignore those rows when reserving.
+-- Paid sessions keep their holds: capture can fail after payment, and releasing
+-- would let another buyer reserve the same unique listing.
 
 CREATE OR REPLACE FUNCTION public.expire_stale_checkout_sessions()
 RETURNS integer
@@ -20,7 +22,7 @@ BEGIN
         SELECT 1
         FROM public.checkout_sessions s
         WHERE s.id = h.session_id
-          AND s.status = 'open'
+          AND s.status IN ('open', 'paid')
       )
     );
 
@@ -39,7 +41,7 @@ BEGIN
       SELECT 1
       FROM public.checkout_sessions s
       WHERE s.id = h.session_id
-        AND s.status = 'open'
+        AND s.status IN ('open', 'paid')
     );
 
   DELETE FROM public.checkout_stock_holds
@@ -51,7 +53,7 @@ END;
 $$;
 
 COMMENT ON FUNCTION public.expire_stale_checkout_sessions() IS
-  'Expires open sessions past TTL, releases holds for non-open sessions, and deletes terminal stock holds older than 14 days.';
+  'Expires open sessions past TTL, releases holds for expired/canceled sessions, and deletes terminal stock holds older than 14 days.';
 
 CREATE OR REPLACE FUNCTION public.reserve_checkout_session_stock(p_session_id uuid)
 RETURNS void
@@ -79,7 +81,8 @@ BEGIN
   PERFORM public.release_checkout_session_stock(p_session_id);
 
   -- Unique index is on every held unique row, including holds whose session
-  -- was expired without a matching release. Clear those before we re-hold.
+  -- was expired/canceled without a matching release. Clear those before we
+  -- re-hold. Paid sessions keep holds until capture or TTL.
   UPDATE public.checkout_stock_holds h
   SET status = 'released'
   WHERE h.status = 'held'
@@ -87,7 +90,7 @@ BEGIN
       SELECT 1
       FROM public.checkout_sessions s
       WHERE s.id = h.session_id
-        AND s.status = 'open'
+        AND s.status IN ('open', 'paid')
         AND s.expires_at > now()
     );
 
@@ -114,7 +117,7 @@ BEGIN
           AND h.status = 'held'
           AND h.unique_item = true
           AND h.expires_at > now()
-          AND s.status = 'open'
+          AND s.status IN ('open', 'paid')
           AND s.expires_at > now()
       ) THEN
         RAISE EXCEPTION 'reserve_checkout_session_stock: listing % already reserved', v_item.listing_id
@@ -131,7 +134,7 @@ BEGIN
       WHERE h.listing_id = v_item.listing_id
         AND h.status = 'held'
         AND h.expires_at > now()
-        AND s.status = 'open'
+        AND s.status IN ('open', 'paid')
         AND s.expires_at > now();
 
       v_available := GREATEST(0, COALESCE(v_listing.stock_quantity, 0) - v_held);
