@@ -57,7 +57,7 @@ type SoldFeedPageRpcArgs = {
   p_before_listing_id: string | null
   p_brand_id: string | null
   p_brand_name: string | null
-  p_before_sale_line_id?: string
+  p_before_sale_line_id: string | null
 }
 
 /** PostgREST: 7-arg sale-line overload is not in the schema cache yet. */
@@ -77,24 +77,22 @@ async function rpcMarketplaceSoldListingPage(
   supabase: SupabaseClient,
   args: SoldFeedPageRpcArgs,
 ): Promise<{ data: SoldFeedOrderRow[] | null; error: { code?: string; message?: string } | null }> {
-  const withSaleLine = args.p_before_sale_line_id
-    ? await supabase.rpc("marketplace_sold_listing_page", args)
-    : null
+  // Always send p_before_sale_line_id (null on the first page) so PostgREST
+  // matches the 7-arg sale-line function instead of a leftover 6-arg overload.
+  const withSaleLine = await supabase.rpc("marketplace_sold_listing_page", args)
 
-  if (withSaleLine && !withSaleLine.error) {
+  if (!withSaleLine.error) {
     return withSaleLine
   }
 
-  if (withSaleLine?.error && !isSoldFeedSaleLineRpcMissing(withSaleLine.error)) {
+  if (!isSoldFeedSaleLineRpcMissing(withSaleLine.error)) {
     return withSaleLine
   }
 
   const { p_before_sale_line_id: _saleLineId, ...legacyArgs } = args
-  if (withSaleLine?.error) {
-    console.warn(
-      "[fetchMarketplaceSoldFeedOrderPage] sale-line RPC missing; retrying without p_before_sale_line_id",
-    )
-  }
+  console.warn(
+    "[fetchMarketplaceSoldFeedOrderPage] sale-line RPC missing; retrying without p_before_sale_line_id",
+  )
 
   return supabase.rpc("marketplace_sold_listing_page", legacyArgs)
 }
@@ -120,9 +118,7 @@ export async function fetchMarketplaceSoldFeedOrderPage(
     p_before_listing_id: options.cursor?.listingId ?? null,
     p_brand_id: options.brand?.id ?? null,
     p_brand_name: options.brand?.name ?? null,
-  }
-  if (options.cursor?.saleLineId) {
-    rpcArgs.p_before_sale_line_id = options.cursor.saleLineId
+    p_before_sale_line_id: options.cursor?.saleLineId ?? null,
   }
 
   const { data, error } = await rpcMarketplaceSoldListingPage(supabase, rpcArgs)
