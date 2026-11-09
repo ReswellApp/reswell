@@ -1,0 +1,127 @@
+{
+  "generated_for": "ESP Surfboards official named standup catalog",
+  "source": "https://espsurfboards.com official WordPress model pages (Performance, Hybrid, Fish, Retro, Mid Length, Mals). Excludes Willis Hybrid/Fish (another label), El Dorado (placeholder copy), ding repair, merch, and tail/size variants.",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "esp-surfboards",
+      "name": "ESP Surfboards",
+      "website_url": "https://espsurfboards.com",
+      "location_label": "Byron Bay, New South Wales, Australia",
+      "founder_name": "Ed Sinnott Jr.",
+      "lead_shaper_name": "Ed Sinnott Jr.",
+      "short_description": "Byron Bay custom surfboards hand-shaped by Ed Sinnott Jr. since the 1970s — performance shortboards, fishes, mid-lengths, retro shapes, and mals built in Australia.",
+      "logo_url": "https://espsurfboards.com/wp-content/uploads/2024/08/ESP-Surfboards-Logo-White.svg",
+      "models": [
+        {
+          "name": "Dragster",
+          "image_url": "https://espsurfboards.com/wp-content/uploads/2024/09/ESP-Dragster-Pin-DECK.png",
+          "description": "The ESP Dragstar is a versatile performance model that can be ridden by all surfers as a step up, shorter high performer, or as a twin depending on your requirements. The team is still loving this model in small to head-high waves and as a step up in bigger surf. The Dragstar features a single to double concave with razor edges on the tail. Available in pins, squares, and swallows.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Dragster Punisher",
+          "image_url": "https://espsurfboards.com/wp-content/uploads/2024/09/ESP-Dragster-Swallow-Punisher-Model-with-curved-channels-DECK-1.png",
+          "description": "The Dragstar Punisher is also available as a pin and square tail, a team favourite and is perfect for the high-performer surfer. It has hard edges in the tail and a single to double concave that is fast, drives like a Jaguar, and carves in the pocket.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Drivepoint",
+          "image_url": "https://espsurfboards.com/wp-content/uploads/2024/09/Drivepoint-DECK.png",
+          "description": "This sensational all-rounder is one of the best sellers we have ever had. Its lower entry rocker allows fast rail transitions and ballistic speed through sections. The Drivepoint contains a single to double concave with razor tail edges. Ride as a thruster or five-fin option. Available in pins, squares, and swallows.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Grom",
+          "image_url": "https://espsurfboards.com/wp-content/uploads/2024/09/ESP-Grom-DECK.png",
+          "description": "The ESP Grom Model starts around 4'5\" up to 5'8\". Our younger team love this board — it has a great track record, and Ed has developed the rocker and measurements over the last forty years for younger surfers. It is a high performer with single to double concaves that is fast, drives, and allows explosive manoeuvres on the face.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Yowie",
+          "image_url": "https://espsurfboards.com/wp-content/uploads/2024/10/Yowie-Deck.png",
+          "description": "The Yowie model is an 80s-inspired thruster design by Indigenous surfer Rex Frail, who Ed has been making boards with since they met at Aussie Pipe 30 years ago. Rex surfs Crescent and surrounding areas, and as an older surfer they added volume and width. These boards are above 6 foot long up to 7'4 and can be ordered any size if you want a smaller version.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Twin Pin",
+          "image_url": "https://espsurfboards.com/wp-content/uploads/2024/09/ESP-Twin-Pin-DECK.png",
+          "description": "The Twin Pin is available as a high-performer shortboard and also as a bigger board in the mid-length range. It features tail channels and your choice of boxes. It is glassed to last and is fast and manoeuvrable.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "80s Bean Machine",
+          "image_url": "https://espsurfboards.com/wp-content/uploads/2024/09/80s-Bean-Machine-DECK.png",
+          "description": "This hybrid was developed by the Cuneen brothers from the Byron reggae band Drop Legs and Josh Sleep. Flatter rocker, deep concaves, and a fuller rail give it a retro 80s feel. You can ride it smaller than your everyday model or turn it into your all-round go-to by increasing the size. Customise the tail into a swallow, square, or round tail.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Electrofish",
+          "image_url": "https://espsurfboards.com/wp-content/uploads/2024/09/Electrofish-DECK-1.png",
+          "description": "If there is one board every surfer must have in their quiver, it needs to be a fish of some sort. Ed has been making the Electrofish for decades — they work for glide, speed, and manoeuvrability. ESP glasses them to last and tints them to your colour choice. Available as a straight twin or with a stabiliser, and you can add channels if you desire.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Electrofish 2",
+          "image_url": "https://espsurfboards.com/wp-content/uploads/2024/09/Electrofish-2-DECK.png",
+          "description": "If there is one board every surfer must have in their quiver, it needs to be a fish of some sort. Ed has been making the Electrofish for decades — they work for glide, speed, and manoeuvrability. ESP glasses them to last and tints them to your colour choice. Available as a straight twin or with a stabiliser, and you can add channels if you desire.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Mud Devil II",
+          "image_url": "https://espsurfboards.com/wp-content/uploads/2024/10/Mud-Devil-Deck.png",
+          "description": "The Mud Devil II is designed for extracting maximum fun with minimum effort. Its flatter entry allows for fast fun surfing in small or average waves. With plenty of volume, it is easy to paddle and goes great in small to waist-high waves. This fast, easy-surfing option will increase your wave count. Available in swallows, rounded squares, diamonds, or pins.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Dream Machine",
+          "image_url": "https://espsurfboards.com/wp-content/uploads/2024/09/ESP-Dream-Machine-DECK.png",
+          "description": "The Dream Machine is a mid-length that does exactly what its name suggests. It is easy to paddle and easy to surf in big and small waves. It features a rolled vee bottom with twin concaves running from the tail to the front foot with hard edges on the bottom rail in the tail. The rocker and entry are standard curves that will not nose dive but are super fast and stable. Ride as a thruster, a twin, five-fin, or single fin with side bites. Also available with tail channels.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Ventura",
+          "image_url": "https://espsurfboards.com/wp-content/uploads/2024/09/ESP-Ventura.png",
+          "description": "The Ventura mid-length is a high-performance all-rounder, also suited to a larger surfer. It is available from 6'8\" to 8'2\" and can be ordered as a diamond tail or swallow. The rocker is a medium curve with slight concaves to a double concave spiral vee with hard edges in the tail. The rails are 60/40 tucked-under edges for speed and drive.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Purple Haze",
+          "image_url": "https://espsurfboards.com/wp-content/uploads/2024/10/ESP-Purple-Haze-DECK.png",
+          "description": "The Purple Haze model starts at around 6'8\" up to 8'. Official examples are around 6'9\" x 21 1/4\" x 2 3/4\" with Futures twin boxes. Team feedback is that it is a paddling machine that still allows high performance. It has a slight concave to a spiral vee panel split by twin exhaust concaves to get the water through fast.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Cadillac",
+          "image_url": "https://espsurfboards.com/wp-content/uploads/2024/10/The-Cadillac.png",
+          "description": "The Cadillac is a high-performance mid-length all-rounder available from 6'8\" to 8'4\". Easy to paddle, with heaps of speed and drive and the ability to surf small and big waves. Looser than a longboard for older surfers, or order a bigger version if you are beginning. Made as tri-finners, quads, or thrusters.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Crystal Slider",
+          "image_url": "https://espsurfboards.com/wp-content/uploads/2024/10/Crystal-Slider-DECK.png",
+          "description": "The Crystal Slider comes from an era where trim, style, and nose riding were the standard. This retro has classic traditional lines with a defined nose concave, soft rails, and a single fin with or without side bites. Its classic template features 50/50 parallel rails, wider through the nose and tail, and a very flat rocker. The tail is flipped and very thin to ensure long stable nose rides, and it glides through flat sections on the smallest of waves.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Soul Rider",
+          "image_url": "https://espsurfboards.com/wp-content/uploads/2024/09/Soul-Rider.png",
+          "description": "This ten-footer is part of the ESP glider range and is available with a five-fin set-up to ride as a single, tri-fin, twin, or quad. That versatility expands the design spectrum of the board itself. Tested in all conditions, it goes in small and overhead waves. Built to last, and you can colour it with your favourite tint.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "66 Revolution",
+          "image_url": "https://espsurfboards.com/wp-content/uploads/2024/09/Revolution.png",
+          "description": "The 66 Revolution is styled on boards from the 1960s. A sensational nose rider, this model is easy to surf and very stable on the nose. It has a very thin tail for long hang tens, a dish concave under the nose, and a split twin vee concave. With a square or pin and a fuller nose, it has great drive through the turning arc and plenty of planing power on the nose. It rips in small to mid-size waves.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Firehawk",
+          "image_url": "https://espsurfboards.com/wp-content/uploads/2024/10/Firehawk.png",
+          "description": "The Firehawk is a high-performance mal heavily tested by Ed Sinnott, Steve Mills, and Robbie Page — Page won the Aussie titles on one in serious waves at Bonny Hills. It performs in big and small waves equally well. It features a single nose concave running through to a deep double barrel concave under your feet, with hard edges on the back one third. Usually surfed with a 7-inch fin and GX side bites or as a thruster with G9 fins, and you can ride it as a single or add quads.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
