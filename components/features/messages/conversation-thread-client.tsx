@@ -102,6 +102,7 @@ import {
   parseMarketplaceMessageImageAttachment,
 } from '@/lib/validations/marketplace-message-attachment'
 import { isPeerListingSection } from '@/lib/peer-listing-sections'
+import { listingStatusAcceptsOffers } from '@/lib/utils/listing-offer-eligibility'
 import { effectiveMinimumOfferPct } from '@/lib/utils/offers-minimum-pct'
 import { type ListingThreadOption } from '@/components/features/messages/conversation-listing-switcher'
 import { getOtherUserIdFromConversation } from '@/lib/utils/messages-inbox-grouping'
@@ -139,6 +140,7 @@ interface Conversation {
     id: string
     title: string
     price: number
+    status?: string | null
     section: string
     slug?: string | null
     listing_images: ListingImageForCard[]
@@ -422,7 +424,7 @@ export function ConversationThreadClient({
     ;(async () => {
       const { data, error } = await supabase
         .from('listings')
-        .select('id, title, price, section, slug, listing_images(url, thumbnail_url, is_primary), minimum_offer_pct')
+        .select('id, title, price, status, section, slug, listing_images(url, thumbnail_url, is_primary), minimum_offer_pct')
         .eq('id', threadPrimaryListingId)
         .maybeSingle()
       if (cancelled || error || !data) return
@@ -453,7 +455,7 @@ export function ConversationThreadClient({
           void supabase
             .from('listings')
             .select(
-              'id, title, price, section, slug, listing_images(url, thumbnail_url, is_primary), minimum_offer_pct',
+              'id, title, price, status, section, slug, listing_images(url, thumbnail_url, is_primary), minimum_offer_pct',
             )
             .eq('id', lid)
             .maybeSingle()
@@ -537,7 +539,7 @@ export function ConversationThreadClient({
             void Promise.resolve(
               supabase
                 .from('listings')
-                .select('id, title, price, section, slug, listing_images(url, thumbnail_url, is_primary), minimum_offer_pct')
+                .select('id, title, price, status, section, slug, listing_images(url, thumbnail_url, is_primary), minimum_offer_pct')
                 .eq('id', lid)
                 .maybeSingle(),
             )
@@ -961,9 +963,13 @@ export function ConversationThreadClient({
   const isSellerViewer = !!currentUserId && currentUserId === conversation.seller_id
   const sellerOfferListing = displayListing ?? conversation.listing
   const sellerOfferListingId = sellerOfferListing?.id ?? conversation.listing_id
+  const sellerOfferListingStatusOk =
+    sellerOfferListing?.status == null ||
+    listingStatusAcceptsOffers(sellerOfferListing.status)
   const canMakeSellerOffer =
     isSellerViewer &&
     !!sellerOfferListingId &&
+    sellerOfferListingStatusOk &&
     (!sellerOfferListing?.section || isPeerListingSection(sellerOfferListing.section))
 
   return (

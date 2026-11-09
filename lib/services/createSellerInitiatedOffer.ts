@@ -27,6 +27,7 @@ import {
 } from "@/lib/validations/seller-initiated-offer"
 import { randomUUID } from "node:crypto"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
+import { listingStatusAcceptsOffers } from "@/lib/utils/listing-offer-eligibility"
 
 function roundMoney(n: number): number {
   return Math.round(n * 100) / 100
@@ -50,7 +51,7 @@ function validateListingForSellerOffer(
   if (!isPeerListingSection(listing.section)) {
     return { ok: false, error: "Offers are not available for one or more listing types." }
   }
-  if (listing.status !== "active" && listing.status !== "pending_sale") {
+  if (!listingStatusAcceptsOffers(listing.status)) {
     return { ok: false, error: "One or more listings are not accepting offers." }
   }
 

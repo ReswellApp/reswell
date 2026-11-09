@@ -1125,7 +1125,7 @@ export async function markInboxNotificationsRead(): Promise<
 
 const CONVERSATION_THREAD_SELECT = `
   *,
-  listing:listings(id, title, price, section, slug, listing_images(url, thumbnail_url, is_primary), minimum_offer_pct),
+  listing:listings(id, title, price, status, section, slug, listing_images(url, thumbnail_url, is_primary), minimum_offer_pct),
   buyer:profiles!conversations_buyer_id_fkey(id, display_name, avatar_url, shop_verified),
   seller:profiles!conversations_seller_id_fkey(id, display_name, avatar_url, shop_verified)
 `
@@ -1144,7 +1144,7 @@ const CONVERSATION_THREAD_OFFER_SELECT =
   "id, status, current_amount, initial_amount, buyer_id, seller_id, listing_id, seller_initiated, expires_at, offer_timeline, fulfillment, shipping_amount, line_items, payment_intent_id"
 
 const CONVERSATION_THREAD_LISTING_SELECT =
-  "id, title, price, section, slug, listing_images(url, thumbnail_url, is_primary), minimum_offer_pct"
+  "id, title, price, status, section, slug, listing_images(url, thumbnail_url, is_primary), minimum_offer_pct"
 
 export type ConversationThreadListingOption = {
   conversationId: string
