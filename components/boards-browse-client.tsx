@@ -17,6 +17,7 @@ import {
 } from "@/components/features/browse/browse-filters-hover-bar"
 import { BoardsBrowseFacetControls } from "@/components/boards-browse-facet-controls"
 import { useBoardsFilterState } from "@/components/boards-browse-filter-state"
+import { BoardsBrowseLocationFilterButton } from "@/components/boards-browse-location-filter-button"
 import { BoardsSaveSearchPanel } from "@/components/boards-save-search-panel"
 import {
   BoardsGiveawayEnterControls,
@@ -342,6 +343,12 @@ export function BoardsBrowseClient({
             opening the sidebar narrows them with the board grid. */}
         <div className="min-w-0 flex-1 overflow-x-clip">
           {afterHeader}
+
+          {showLocationFilter && title ? (
+            <div className="mb-3 flex justify-end">
+              <BoardsBrowseLocationFilterButton state={state} />
+            </div>
+          ) : null}
 
           <div
             ref={scrollListingsIntoViewOnFilter ? listingsAnchorRef : undefined}
