@@ -4,8 +4,11 @@ import { Skeleton } from "@/components/ui/skeleton"
 /** Filter toolbar + results skeleton while facet counts load on `/boards`. */
 export function BoardsBrowseFiltersSectionSkeleton({
   showTitle = true,
+  showLocationToolbar = false,
 }: {
   showTitle?: boolean
+  /** Location pin sits under the hero on `/boards` only — not other category browse. */
+  showLocationToolbar?: boolean
 }) {
   return (
     <>
@@ -24,7 +27,7 @@ export function BoardsBrowseFiltersSectionSkeleton({
         )}
       </div>
       <div className="mt-5">
-        {showTitle ? (
+        {showLocationToolbar ? (
           <div className="mb-3 flex justify-end">
             <Skeleton className="h-5 w-36" />
           </div>
@@ -38,8 +41,10 @@ export function BoardsBrowseFiltersSectionSkeleton({
 /** Route-level skeleton for category browse — breadcrumb, header, and listing grid placeholders. */
 export function BoardsBrowsePageSkeleton({
   ariaLabel = "Loading surfboards",
+  showLocationToolbar = false,
 }: {
   ariaLabel?: string
+  showLocationToolbar?: boolean
 } = {}) {
   return (
     <main className="flex-1" role="status" aria-busy="true" aria-label={ariaLabel}>
@@ -53,7 +58,7 @@ export function BoardsBrowsePageSkeleton({
 
       <section className="min-w-0 bg-offwhite pt-4 pb-4 sm:pt-5">
         <div className="container mx-auto min-w-0">
-          <BoardsBrowseFiltersSectionSkeleton />
+          <BoardsBrowseFiltersSectionSkeleton showLocationToolbar={showLocationToolbar} />
         </div>
       </section>
     </main>

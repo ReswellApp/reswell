@@ -61,6 +61,7 @@ export function RootRouteLoading() {
     return (
       <BoardsBrowsePageSkeleton
         ariaLabel={pathname === "/boards" ? "Loading surfboards" : "Loading category"}
+        showLocationToolbar={pathname === "/boards"}
       />
     )
   }
