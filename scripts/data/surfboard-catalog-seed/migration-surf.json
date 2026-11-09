@@ -1,0 +1,97 @@
+{
+  "generated_for": "Migration Surf official named standup catalog",
+  "source": "https://www.migrationsurf.com/our-surfcraft and official shop product pages at https://www.migrationsupply.com/surfboards (Squarespace). Skips fins, apparel, and merch.",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "migration-surf",
+      "name": "Migration Surf",
+      "website_url": "https://www.migrationsurf.com",
+      "location_label": "Holland, Michigan",
+      "founder_name": "Tim Folkert",
+      "lead_shaper_name": "Tim Folkert",
+      "short_description": "Hand-built surfboards by Tim Folkert in Holland, Michigan — Great Lakes and ocean standup models named for migratory birds, shaped and glassed in-house from start to finish.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/migration-surf.webp",
+      "models": [
+        {
+          "name": "Albatross",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/67e58b5c3cac8c339754e675/b078850f-1b41-4526-8e5a-2843a3ef8487/Albatross-Square.png",
+          "description": "Among the largest of the seabirds, albatross are known for their huge wingspans, beautiful courtship displays, and their incredible ability to glide over great distances of open ocean. As the largest of our noseriders, the Albatross model imitates these magnificent birds in their capacity to trim and glide, allowing for maximum tip time. Features: Deep teardrop nose concave, ample tail rocker, soft down rails, singlefin. Recommended size range: 9'4\" - 10'4\".",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Grebe",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/67e58b5c3cac8c339754e675/a9875f01-a3e3-4233-9c00-075dba469724/Grebe-Square.png",
+          "description": "Grebes (pronounced: greeb) are widely distributed waterfowl often known for their elaborate breeding displays and gregarious nature. Some species even \"race\" on the surface of the water in an effort to defend a territory or gain a mate. As a noserider, our Grebe model is well suited for dynamic (and often gregarious) surfing conditions at your local break. A great go-to longboard for displaying your best while racing to the nose. Features: Singlefin, blended nose concave, soft down rails, moderate tail rocker. Narrower than the Albatross. Available as a pintail, squaretail, or diamondtail. Recommended size range: 9'2\" - 10'2\".",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Crane",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/67e58b5c3cac8c339754e675/cf986a6a-561a-490a-b7fe-e7483defd3b6/Crane-Square.png",
+          "description": "With their long necks and legs, Cranes are graceful and elegant birds known for their long migrations and their complex courtship dances. Our Crane model mirrors these traits with a beautiful classic profile similar to surfboards from the 60s, but with modern rocker, rails, and bottom contours designed for stylish cross-stepping. Features: Wide point behind center, teardrop nose concave, soft down rails, moderate tail rocker, square tail, singlefin. Recommended size range: 9'4\" - 10'0\".",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Spoonbill",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/58be231b86e6c05548fe08e8/1490756518034-VQ0D53NRNV83SGXPJO0O/image-asset.jpeg",
+          "description": "A completely unique bird with their long spoon-shaped beak, Spoonbills are as eccentric as they are eye catching. Inhabiting coastal marshes and wetlands, these long-legged birds feed by sweeping their spoon from side to side in the shallow water or mud. Our Spoonbill model is also a bit of an eccentric board drawing inspiration from pig boards of the 60s with a prominent step deck. The pinched rails, pintail, narrower profile, and reduced swing weight of the step deck combine to create fast trim with smooth, sweeping turns. A great board for noseriding in steeper beach breaks or long point breaks. Footwork highly encouraged. Features: Step deck, wide point well behind center, pinched rails, pintail, singlefin. Recommended size range: 9'4\" - 10'6\".",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Heron",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/67e58b5c3cac8c339754e675/fb16f9d8-7785-4246-9a73-937997064c94/Heron-Square.png",
+          "description": "With their tall, slender body and mesmerizing flight, spotting a Heron is always a moment of surprise and intrigue. While hunting, their slow and deliberate stalking stands in sharp contrast with their lightning fast and precise attack. As a true glider, our Heron model is the longest surfboard in our flock. Featuring a sleek and slender outline with intriguing bottom contours, the Heron is designed for creating a unique gliding sensation on the smallest of days. Though not necessarily an intuitive board, those who spend the time to understand the complexity of the design are rewarded with a mesmerizing surfing experience. Features: Rolled entry, wide point forward, long deep double concaves through the tail, pronounced V through the tail, singlefin. Recommended size range: 10'6\" and up.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Harrier",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/67e58b5c3cac8c339754e675/34d2e848-b09a-4566-ae77-d1a8fab03ec1/Harrier-Square.png",
+          "description": "The Harrier is a medium sized raptor known for its slow and smooth hunting style over coastal marshes and grasslands. While hunting, Harriers will stall mid-flight and suspend themselves in the air before aggressively diving for their prey. Our Harrier model also enjoys a slow and smooth style, but can be aggressive when the situation requires. Designed as a shorter glider alternative to the Heron, the Harrier performs well when surfed like a classic log, where cross-stepping and drop-knee turns are encouraged but not necessary. A perfect board for mellow days spent cruising the coast. Features: Relaxed rocker, pinched rails, widepoint center, square tail, panel V through the fin, hard edge beginning around the fin box, singlefin. Recommended size range: 8'0\" - 10'0\".",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Cormorant",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/67e58b5c3cac8c339754e675/5db9ee3d-c1d0-4ec6-b268-bc14c93e6414/Cormorant-Square.png",
+          "description": "While Cormorants are not known for their graceful flight, they are sleek, aggressive, and quick while hunting underwater. Their adaptability has made them widespread across the waterways of North America and around the world. As a performance style longboard, our Cormorant model is also sleek and widely adaptable to most any conditions you may encounter, especially when you need more speed and edge than a traditional noserider can offer. Features: Subtle blended nose concave, double barrel V through the tail, customizable as a square, diamond, or rounded pintail, singlefin or 2+1 fin setup. Recommended size range: 8'10\" - 10'0\".",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Loon",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/67e58b5c3cac8c339754e675/24d252bd-7fa8-44a6-b3e6-4c5bf2e389d9/Loon-Square.png",
+          "description": "Loons are beautiful birds. Smooth and graceful through the water with an unforgettable haunting call that eerily resonates across quiet shorelines. Our Loon model reflects the same grace and beauty as these magnificent birds. The clean outline and round pintail translates into smooth carves and perfect trim that will resonate in your mind long after your session is over. Features: Flatter rocker, rounded pintail, wide point center, double barrel V through the tail. Available as a singlefin or 2+1 fin setup. Recommended size range: 7'0\" - 8'0\".",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Northern Pintail",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/67e58b5c3cac8c339754e675/31e468d8-5b20-40ec-83f6-6f43f4328ccf/Northern-Pintail-Square.png",
+          "description": "Sleek and slender with a long neck and tail, the Northern Pintail is a duck that is sometimes referred to as the greyhound of the sky. Speed is the name of the game, and our Northern Pintail model loves to fly. While similar to our Loon model, the Northern Pintail is pulled in everywhere to perform in bigger, steeper waves. A great board for lined up point breaks. Features: Flatter rocker, pintail, modern rails, wide point center, subtle double barrel V through the tail, singlefin. Recommended size range: 6'6\" - 8'6\".",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Whimbrel",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/58be231b86e6c05548fe08e8/1535420402496-V8JEBYLIX152EHZHWHUR/image-asset.jpeg",
+          "description": "Whimbrels are large shorebirds that are widely distributed throughout the world and known for their long migration from the Arctic to as far south as Chile and Australia. Inspired by their strong and smooth flight, our Whimbrel model is designed for drawn out bottom turns and down-the-line speed on long, lined up waves. Though designed as a mid-length, the Whimbrel template can easily accommodate nearly any length for exploring the glide of this unique board. Features: Widepoint forward, relaxed rocker, rolled belly entry transitioning into panel V through the tail, rounded arc tail or round tail, 2+1 or singlefin setup. Recommended size range: 5'10\" - 10'6\".",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Skua",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/58be231b86e6c05548fe08e8/1490757356962-7WP7ATCQW7OI532RMYD7/image-asset.jpeg",
+          "description": "Similar to gulls, but stockier and much more aggressive, these long distance migrants are known for attacking and stealing food from other birds. With its high volume, stocky profile, and aggressive bottom contours, our Skua model will allow you to snatch waves on even the small days. We just don't recommend stealing waves from your fellow migrators, even if you're able to. Features: Wide point forward, diamond tail, 5-fin setup for versatility, moderately deep double barrel V through the fin cluster. Recommended size range: 5'6\" - 8'0\".",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Swallow",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/67e58b5c3cac8c339754e675/4a76eee7-f922-4093-b1c5-6d5057c06ec5/Swallow-Square.png",
+          "description": "Swooping and darting over open waters, marshes, and fields while foraging for insects, the Swallow is a master at maneuvering through the air. Some species of swallows are even known for migrating the farthest distances among the passerines. Mimicking the forked tails and fast, agile flight, the Swallow model is our take on the classic twin fin fish. While the Swallow is capable of groveling in mushy surf, it shines in clean, punchy waves up to a foot or two overhead where speed and agility are assets. A good option for slimming your quiver while migrating over long distances. Features: Twin fin, wide point forward, beak nose, single concave through the tail. Glass-on fins recommended. Single foiled or double foiled fins available. Recommended size range: 5'3\" - 6'3\".",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Plover",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/67e58b5c3cac8c339754e675/04c03026-05a8-4cfd-b2bb-61f829f013bb/Plover-Square.png",
+          "description": "While the short, plump, and round stature of most plover species might lead one to doubt their flying ability, do not be deceived. Plovers are fast and agile through the air. Likewise, our short, plump, and round Plover model speeds through sections that lesser boards get caught behind, all while being surprisingly nimble. A great board for waves up to head high, or slightly bigger. We recommend riding this board as short as you possibly can go. Features: Quad fin setup, rolled belly entry transitioning to panel V through the tail, fins set closer to the tail. Available in baby swallowtail or arctail. Recommended size range: 4'11\" - 5'11\".",
+          "board_category_slug": "groveler"
+        }
+      ]
+    }
+  ]
+}
