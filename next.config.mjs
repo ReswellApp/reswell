@@ -136,6 +136,18 @@ const nextConfig = {
         hostname: 'images.unsplash.com',
         pathname: '/**',
       },
+      // Name the Break game — Wikimedia Commons photos (copyright-free)
+      {
+        protocol: 'https',
+        hostname: 'upload.wikimedia.org',
+        pathname: '/wikipedia/commons/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'thumb.wikimedia.org',
+        pathname: '/wikipedia/commons/**',
+      },
+
       // Maps Static API previews (conversation location pins — same GCP key as Places)
       {
         protocol: 'https',
