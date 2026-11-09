@@ -16,7 +16,7 @@ import { EarningsStripePayoutCard } from "@/components/features/earnings/earning
 import type { EarningsTransaction, EarningsWalletSnapshot } from "@/components/features/earnings/earnings-types"
 import type { EarningsBalanceListingRow } from "@/lib/earnings-balance-listings"
 import { EARNINGS_ACTIVITY_PAGE_SIZE } from "@/lib/earnings-activity-page-size"
-import { parseEarningsView } from "@/lib/earnings-view"
+import { earningsHref, parseEarningsView } from "@/lib/earnings-view"
 import { dispatchHeaderWalletSync } from "@/lib/auth/header-wallet-sync"
 import type { SellerEarningsDashboardTotals } from "@/lib/db/sellerEarningsTotals"
 import { formatUsd } from "@/lib/utils/format-usd"
@@ -74,6 +74,7 @@ export function EarningsPageClient() {
 
   const [sellerEarningsTotals, setSellerEarningsTotals] = useState<SellerEarningsDashboardTotals | null>(null)
   const [creditBalanceUsd, setCreditBalanceUsd] = useState(0)
+  const [creditVisible, setCreditVisible] = useState(false)
 
   const stripeCashOutWalletTrustRef = useRef<{
     balance: string
@@ -102,6 +103,7 @@ export function EarningsPageClient() {
       ])
       if (gen !== fetchGenerationRef.current) return
 
+      setCreditVisible(Boolean(creditData.pilot))
       setCreditBalanceUsd(creditData.pilot?.wallet.balanceUsd ?? 0)
 
       if (!earningsData.error && earningsData.wallet) {
@@ -154,6 +156,8 @@ export function EarningsPageClient() {
       setReadyBalanceListings([])
       setActivityHasMore(false)
       setSellerEarningsTotals(null)
+      setCreditVisible(false)
+      setCreditBalanceUsd(0)
     } finally {
       if (gen === fetchGenerationRef.current && showSkeleton) {
         setWalletLoading(false)
@@ -221,6 +225,13 @@ export function EarningsPageClient() {
   useEffect(() => {
     void fetchData()
   }, [fetchData])
+
+  useEffect(() => {
+    if (view !== "credit") return
+    if (walletLoading) return
+    if (creditVisible) return
+    router.replace(earningsHref())
+  }, [creditVisible, router, view, walletLoading])
 
   const handleStripeBankCashOutSettled = useCallback(
     (detail: {
@@ -362,7 +373,7 @@ export function EarningsPageClient() {
     )
   }
 
-  if (view === "credit") {
+  if (view === "credit" && creditVisible) {
     return <EarningsCreditPane />
   }
 
@@ -374,6 +385,7 @@ export function EarningsPageClient() {
       pendingLabel={formatUsd(displayPending)}
       readyLabel={formatUsd(displayAvailable)}
       creditLabel={formatUsd(creditBalanceUsd)}
+      showCredit={creditVisible}
     />
   )
 }

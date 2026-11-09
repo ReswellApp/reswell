@@ -72,7 +72,7 @@ export default function AccountEarningsScreen() {
                   onReload={earnings.reload}
                   onDone={() => setPane("available")}
                 />
-              ) : pane === "credit" ? (
+              ) : pane === "credit" && earnings.data.credit_visible ? (
                 <CreditBalance data={earnings.data} />
               ) : (
                 <EarningsMenu data={earnings.data} onOpen={setPane} />
@@ -124,36 +124,40 @@ function EarningsMenu({ data, onOpen }: { data: MobileEarnings; onOpen: (pane: E
         title="Earnings FAQ"
         onPress={() => router.push(helpTopicHref("selling"))}
       />
-      <View style={[styles.rule, { backgroundColor: colors.border }]} />
-      <Text style={[styles.rewardsTitle, { color: colors.foreground, fontFamily: fontFamily.headline }]}>Rewards</Text>
-      <EarningsLink
-        icon={<SymbolView name={{ ios: "gift.fill", android: "redeem", web: "redeem" }} size={16} tintColor={colors.background} />}
-        title="Reswell Credit"
-        amount={data.credit_label}
-        onPress={() => onOpen("credit")}
-      />
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => router.push(helpTopicHref("buying"))}
-        style={[styles.promo, { backgroundColor: "#D9F0D3" }]}
-      >
-        <View style={[styles.promoMark, { backgroundColor: "#3B7D3A" }]}>
-          <SymbolView name={{ ios: "star.fill", android: "star", web: "star" }} size={16} tintColor="#FFFFFF" />
-        </View>
-        <View style={styles.promoCopy}>
-          <Text style={[styles.promoTitle, { color: "#1F5B28", fontFamily: fontFamily.headline }]}>
-            Earn extra Reswell Credit
-          </Text>
-          <Text style={[styles.promoBody, { color: "#1F5B28", fontFamily: fontFamily.text }]}>
-            Get credit on purchases, and you can pay with available earnings at checkout.
-          </Text>
-        </View>
-        <SymbolView
-          name={{ ios: "chevron.right", android: "chevron_right", web: "chevron_right" }}
-          size={16}
-          tintColor="#1F5B28"
-        />
-      </Pressable>
+      {data.credit_visible ? (
+        <>
+          <View style={[styles.rule, { backgroundColor: colors.border }]} />
+          <Text style={[styles.rewardsTitle, { color: colors.foreground, fontFamily: fontFamily.headline }]}>Rewards</Text>
+          <EarningsLink
+            icon={<SymbolView name={{ ios: "gift.fill", android: "redeem", web: "redeem" }} size={16} tintColor={colors.background} />}
+            title="Reswell Credit"
+            amount={data.credit_label}
+            onPress={() => onOpen("credit")}
+          />
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push(helpTopicHref("buying"))}
+            style={[styles.promo, { backgroundColor: "#D9F0D3" }]}
+          >
+            <View style={[styles.promoMark, { backgroundColor: "#3B7D3A" }]}>
+              <SymbolView name={{ ios: "star.fill", android: "star", web: "star" }} size={16} tintColor="#FFFFFF" />
+            </View>
+            <View style={styles.promoCopy}>
+              <Text style={[styles.promoTitle, { color: "#1F5B28", fontFamily: fontFamily.headline }]}>
+                Earn extra Reswell Credit
+              </Text>
+              <Text style={[styles.promoBody, { color: "#1F5B28", fontFamily: fontFamily.text }]}>
+                Get credit on purchases, and you can pay with available earnings at checkout.
+              </Text>
+            </View>
+            <SymbolView
+              name={{ ios: "chevron.right", android: "chevron_right", web: "chevron_right" }}
+              size={16}
+              tintColor="#1F5B28"
+            />
+          </Pressable>
+        </>
+      ) : null}
     </View>
   )
 }

@@ -52,6 +52,7 @@ export function EarningsHub({
   pendingLabel,
   readyLabel,
   creditLabel,
+  showCredit,
 }: {
   lifetimeLabel: string
   last30Label: string
@@ -59,6 +60,8 @@ export function EarningsHub({
   pendingLabel: string
   readyLabel: string
   creditLabel: string
+  /** Admin-only Reswell Credit pilot. */
+  showCredit: boolean
 }) {
   return (
     <div className={hubCardClass}>
@@ -87,31 +90,35 @@ export function EarningsHub({
         <EarningsMenuLink href={helpTopicPath("selling")} icon={DollarSign} title="Earnings FAQ" />
       </div>
 
-      <h2 className="mt-8 text-2xl font-bold tracking-tight text-foreground">Rewards</h2>
-      <EarningsMenuLink
-        href={earningsHref("credit")}
-        icon={Gift}
-        title="Reswell Credit"
-        amount={creditLabel}
-      />
+      {showCredit ? (
+        <>
+          <h2 className="mt-8 text-2xl font-bold tracking-tight text-foreground">Rewards</h2>
+          <EarningsMenuLink
+            href={earningsHref("credit")}
+            icon={Gift}
+            title="Reswell Credit"
+            amount={creditLabel}
+          />
 
-      <Link
-        href={helpTopicPath("buying")}
-        className="mt-3 flex items-center gap-3 rounded-xl bg-emerald-100 px-3.5 py-3.5 text-left transition-colors hover:bg-emerald-100/80 dark:bg-emerald-950/40 dark:hover:bg-emerald-950/55"
-      >
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white dark:bg-emerald-500">
-          <Star className="h-4 w-4 fill-current" aria-hidden />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block text-sm font-bold text-emerald-900 dark:text-emerald-100">
-            Earn extra Reswell Credit
-          </span>
-          <span className="mt-0.5 block text-sm leading-snug text-emerald-800/90 dark:text-emerald-200/90">
-            Get credit on purchases, and you can pay with available earnings at checkout.
-          </span>
-        </span>
-        <ChevronRight className="h-4 w-4 shrink-0 text-emerald-800 dark:text-emerald-200" aria-hidden />
-      </Link>
+          <Link
+            href={helpTopicPath("buying")}
+            className="mt-3 flex items-center gap-3 rounded-xl bg-emerald-100 px-3.5 py-3.5 text-left transition-colors hover:bg-emerald-100/80 dark:bg-emerald-950/40 dark:hover:bg-emerald-950/55"
+          >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white dark:bg-emerald-500">
+              <Star className="h-4 w-4 fill-current" aria-hidden />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-bold text-emerald-900 dark:text-emerald-100">
+                Earn extra Reswell Credit
+              </span>
+              <span className="mt-0.5 block text-sm leading-snug text-emerald-800/90 dark:text-emerald-200/90">
+                Get credit on purchases, and you can pay with available earnings at checkout.
+              </span>
+            </span>
+            <ChevronRight className="h-4 w-4 shrink-0 text-emerald-800 dark:text-emerald-200" aria-hidden />
+          </Link>
+        </>
+      ) : null}
     </div>
   )
 }
