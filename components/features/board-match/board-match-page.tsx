@@ -11,96 +11,166 @@ import {
   recordBoardMatchRound,
 } from "@/lib/board-match/points-storage"
 import { scoreBoardMatchAnswer, summarizeBoardMatchRound } from "@/lib/board-match/scoring"
-import { boardMatchShopHref, buildBoardMatchRound } from "@/lib/board-match/session"
+import { boardMatchBrandHref } from "@/lib/services/boardMatch"
 import type {
   BoardMatchAnswerResult,
+  BoardMatchCard,
   BoardMatchCareerStats,
   BoardMatchPhase,
+  BoardMatchPlayStep,
   BoardMatchRoundSummary,
-  BoardMatchScenario,
 } from "@/lib/types/boardMatch"
-import type { SurfboardSellCategoryKey } from "@/lib/surfboard-sell-categories"
-import { SURFBOARD_SELL_CATEGORY_LABELS } from "@/lib/surfboard-sell-categories"
 
-export function BoardMatchPage() {
+function shuffleCards(cards: BoardMatchCard[]): BoardMatchCard[] {
+  const next = [...cards]
+  for (let i = next.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    const tmp = next[i]!
+    next[i] = next[j]!
+    next[j] = tmp
+  }
+  return next
+}
+
+export function BoardMatchPage({
+  initialCards,
+  unavailable,
+}: {
+  initialCards: BoardMatchCard[]
+  unavailable: boolean
+}) {
   const [phase, setPhase] = useState<BoardMatchPhase>("intro")
-  const [scenarios, setScenarios] = useState<BoardMatchScenario[]>([])
+  const [playStep, setPlayStep] = useState<BoardMatchPlayStep>("brand")
+  const [cards, setCards] = useState<BoardMatchCard[]>([])
   const [index, setIndex] = useState(0)
   const [streak, setStreak] = useState(0)
   const [roundPoints, setRoundPoints] = useState(0)
-  const [choices, setChoices] = useState<(SurfboardSellCategoryKey | null)[]>([])
+  const [brandChoiceIds, setBrandChoiceIds] = useState<(string | null)[]>([])
+  const [modelChoiceIds, setModelChoiceIds] = useState<(string | null)[]>([])
   const [pointsPerQuestion, setPointsPerQuestion] = useState<number[]>([])
   const [streaksAfterEach, setStreaksAfterEach] = useState<number[]>([])
   const [lastResult, setLastResult] = useState<BoardMatchAnswerResult | null>(null)
-  const [selected, setSelected] = useState<SurfboardSellCategoryKey | null>(null)
+  const [selectedBrandId, setSelectedBrandId] = useState<string | null>(null)
+  const [selectedModelId, setSelectedModelId] = useState<string | null>(null)
   const [summary, setSummary] = useState<BoardMatchRoundSummary | null>(null)
   const [career, setCareer] = useState<BoardMatchCareerStats>({
     totalPoints: 0,
     bestRound: 0,
     gamesPlayed: 0,
   })
-  const questionStartedAt = useRef<number>(0)
+  const brandStartedAt = useRef<number>(0)
+  const pendingBrandId = useRef<string | null>(null)
+  const brandElapsedMsRef = useRef<number>(0)
 
   useEffect(() => {
     setCareer(readBoardMatchCareerStats())
   }, [])
 
+  const deckReady = !unavailable && initialCards.length > 0
+
   function startRound() {
-    const round = buildBoardMatchRound()
-    setScenarios(round)
+    if (!deckReady) return
+    const round = shuffleCards(initialCards)
+    setCards(round)
     setIndex(0)
     setStreak(0)
     setRoundPoints(0)
-    setChoices(Array.from({ length: round.length }, () => null))
+    setBrandChoiceIds(Array.from({ length: round.length }, () => null))
+    setModelChoiceIds(Array.from({ length: round.length }, () => null))
     setPointsPerQuestion(Array.from({ length: round.length }, () => 0))
     setStreaksAfterEach(Array.from({ length: round.length }, () => 0))
     setLastResult(null)
-    setSelected(null)
+    setSelectedBrandId(null)
+    setSelectedModelId(null)
     setSummary(null)
+    setPlayStep("brand")
     setPhase("playing")
-    questionStartedAt.current = Date.now()
+    pendingBrandId.current = null
+    brandElapsedMsRef.current = 0
+    brandStartedAt.current = Date.now()
   }
 
-  function onPick(choice: SurfboardSellCategoryKey) {
-    if (phase !== "playing") return
-    const scenario = scenarios[index]
-    if (!scenario) return
+  function finalizeCard(input: {
+    brandChoiceId: string
+    modelChoiceId: string | null
+    brandElapsedMs: number
+  }) {
+    const card = cards[index]
+    if (!card) return
 
-    const elapsedMs = Date.now() - questionStartedAt.current
     const result = scoreBoardMatchAnswer({
-      scenario,
-      choice,
-      elapsedMs,
+      card,
+      brandChoiceId: input.brandChoiceId,
+      modelChoiceId: input.modelChoiceId,
+      brandElapsedMs: input.brandElapsedMs,
       priorStreak: streak,
     })
 
-    const nextChoices = [...choices]
-    nextChoices[index] = choice
+    const nextBrandIds = [...brandChoiceIds]
+    nextBrandIds[index] = input.brandChoiceId
+    const nextModelIds = [...modelChoiceIds]
+    nextModelIds[index] = input.modelChoiceId
     const nextPoints = [...pointsPerQuestion]
     nextPoints[index] = result.pointsEarned
     const nextStreaks = [...streaksAfterEach]
     nextStreaks[index] = result.streak
 
-    setChoices(nextChoices)
+    setBrandChoiceIds(nextBrandIds)
+    setModelChoiceIds(nextModelIds)
     setPointsPerQuestion(nextPoints)
     setStreaksAfterEach(nextStreaks)
-    setSelected(choice)
+    setSelectedBrandId(input.brandChoiceId)
+    setSelectedModelId(input.modelChoiceId)
     setLastResult(result)
     setStreak(result.streak)
     setRoundPoints((prev) => prev + result.pointsEarned)
     setPhase("revealed")
   }
 
+  function onPickBrand(brandId: string) {
+    if (phase !== "playing" || playStep !== "brand") return
+    const card = cards[index]
+    if (!card) return
+
+    const elapsedMs = Date.now() - brandStartedAt.current
+    brandElapsedMsRef.current = elapsedMs
+    pendingBrandId.current = brandId
+    setSelectedBrandId(brandId)
+
+    if (brandId !== card.brand.id) {
+      finalizeCard({
+        brandChoiceId: brandId,
+        modelChoiceId: null,
+        brandElapsedMs: elapsedMs,
+      })
+      return
+    }
+
+    // Brand correct — unlock model bonus step.
+    setPlayStep("model")
+  }
+
+  function onPickModel(modelId: string) {
+    if (phase !== "playing" || playStep !== "model") return
+    const brandId = pendingBrandId.current ?? selectedBrandId
+    if (!brandId) return
+    finalizeCard({
+      brandChoiceId: brandId,
+      modelChoiceId: modelId,
+      brandElapsedMs: brandElapsedMsRef.current,
+    })
+  }
+
   function onContinue() {
     const nextIndex = index + 1
-    if (nextIndex >= scenarios.length) {
+    if (nextIndex >= cards.length) {
       const roundSummary = summarizeBoardMatchRound({
-        scenarios,
-        choices,
+        cards,
+        brandChoiceIds,
+        modelChoiceIds,
         pointsPerQuestion,
         streaksAfterEach,
       })
-      // Prefer the live round total in case of any array/state drift.
       const finalized = { ...roundSummary, totalPoints: roundPoints }
       setSummary(finalized)
       setCareer(recordBoardMatchRound(finalized.totalPoints))
@@ -108,17 +178,19 @@ export function BoardMatchPage() {
       return
     }
     setIndex(nextIndex)
-    setSelected(null)
+    setSelectedBrandId(null)
+    setSelectedModelId(null)
     setLastResult(null)
+    setPlayStep("brand")
     setPhase("playing")
-    questionStartedAt.current = Date.now()
+    pendingBrandId.current = null
+    brandElapsedMsRef.current = 0
+    brandStartedAt.current = Date.now()
   }
 
-  const scenario = scenarios[index] ?? null
-  const shopHref = boardMatchShopHref(summary?.featuredBoardType ?? null)
-  const featuredLabel = summary?.featuredBoardType
-    ? SURFBOARD_SELL_CATEGORY_LABELS[summary.featuredBoardType]
-    : null
+  const card = cards[index] ?? null
+  const shopHref = boardMatchBrandHref(summary?.featuredBrand ?? null)
+  const featuredLabel = summary?.featuredBrand?.name ?? null
 
   return (
     <main className="flex-1">
@@ -129,20 +201,28 @@ export function BoardMatchPage() {
         />
         <div className="relative container mx-auto max-w-2xl px-4 py-10 sm:px-6 sm:py-14">
           {phase === "intro" ? (
-            <BoardMatchIntro career={career} onStart={startRound} />
+            <BoardMatchIntro
+              career={career}
+              onStart={startRound}
+              unavailable={!deckReady}
+              cardCount={initialCards.length}
+            />
           ) : null}
 
-          {(phase === "playing" || phase === "revealed") && scenario ? (
+          {(phase === "playing" || phase === "revealed") && card ? (
             <BoardMatchPlay
-              scenario={scenario}
+              card={card}
               index={index}
-              total={scenarios.length}
+              total={cards.length}
               roundPoints={roundPoints}
               streak={streak}
               phase={phase}
-              selected={selected}
+              playStep={playStep}
+              selectedBrandId={selectedBrandId}
+              selectedModelId={selectedModelId}
               lastResult={lastResult}
-              onPick={onPick}
+              onPickBrand={onPickBrand}
+              onPickModel={onPickModel}
               onContinue={onContinue}
             />
           ) : null}
@@ -162,10 +242,13 @@ export function BoardMatchPage() {
       <section className="border-b border-border/60 bg-background">
         <div className="container mx-auto max-w-2xl px-4 py-8 sm:px-6">
           <p className="text-sm text-muted-foreground">
-            Board Match teaches shape-to-conditions matching. Points stay on this device for
-            now — account sync and redeem come next.{" "}
-            <Link href="/boards" className="font-medium text-foreground underline-offset-4 hover:underline">
-              Browse boards
+            Photos come from real Reswell listings linked to catalog brands and models. Points
+            stay on this device for now.{" "}
+            <Link
+              href="/brands"
+              className="font-medium text-foreground underline-offset-4 hover:underline"
+            >
+              Browse brands
             </Link>
             .
           </p>

@@ -4,9 +4,13 @@ import type { BoardMatchCareerStats } from "@/lib/types/boardMatch"
 export function BoardMatchIntro({
   career,
   onStart,
+  unavailable,
+  cardCount,
 }: {
   career: BoardMatchCareerStats
   onStart: () => void
+  unavailable: boolean
+  cardCount: number
 }) {
   return (
     <div className="mx-auto max-w-xl text-center">
@@ -17,8 +21,8 @@ export function BoardMatchIntro({
         Board Match
       </h1>
       <p className="mx-auto mt-4 max-w-md text-pretty text-base text-muted-foreground sm:text-lg">
-        Read the session. Pick the board type that fits. Score points for accuracy, speed, and
-        streaks.
+        See a real board from the Reswell catalog. Name the brand for points — nail the model
+        name for a bonus.
       </p>
 
       <dl className="mx-auto mt-8 grid max-w-md grid-cols-3 gap-3 text-center">
@@ -49,10 +53,21 @@ export function BoardMatchIntro({
       </dl>
 
       <div className="mt-8 flex flex-col items-center gap-3">
-        <Button type="button" size="lg" onClick={onStart} className="min-w-[12rem]">
-          Start round
-        </Button>
-        <p className="text-xs text-muted-foreground">8 scenarios · ~2 minutes</p>
+        {unavailable ? (
+          <p className="max-w-sm text-sm text-muted-foreground">
+            Not enough catalog boards with photos are ready for a round right now. Check back
+            soon.
+          </p>
+        ) : (
+          <>
+            <Button type="button" size="lg" onClick={onStart} className="min-w-[12rem]">
+              Start round
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              {cardCount} boards · brand match + model bonus
+            </p>
+          </>
+        )}
       </div>
     </div>
   )

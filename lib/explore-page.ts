@@ -82,7 +82,7 @@ export const exploreDestinations: readonly ExploreDestination[] = [
   {
     label: "Board Match",
     href: "/board-match",
-    description: "Play a quick quiz — match board shapes to conditions and earn points.",
+    description: "See a catalog board, name the brand for points, and bonus for the model.",
   },
   {
     label: "Recently sold",
