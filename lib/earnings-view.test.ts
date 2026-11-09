@@ -1,6 +1,6 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
-import { earningsHref, parseEarningsView } from "./earnings-view.ts"
+import { earningsBankPayoutHref, earningsHref, parseEarningsView } from "./earnings-view.ts"
 
 describe("earnings view", () => {
   it("accepts hub destinations from the mobile earnings menu", () => {
@@ -21,5 +21,9 @@ describe("earnings view", () => {
     assert.equal(earningsHref(), "/dashboard/earnings")
     assert.equal(earningsHref(null), "/dashboard/earnings")
     assert.equal(earningsHref("available"), "/dashboard/earnings?view=available")
+    assert.equal(
+      earningsBankPayoutHref(),
+      "/dashboard/earnings?view=available#earnings-bank-payout",
+    )
   })
 })

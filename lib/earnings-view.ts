@@ -13,3 +13,8 @@ export function earningsHref(view?: EarningsView | null): string {
   if (!view) return "/dashboard/earnings"
   return `/dashboard/earnings?view=${view}`
 }
+
+/** Available pane, scrolled to the Stripe bank cash-out card. */
+export function earningsBankPayoutHref(): string {
+  return `${earningsHref("available")}#earnings-bank-payout`
+}
