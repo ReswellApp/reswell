@@ -811,8 +811,7 @@ export function CaseInboxAdminClient({
           <p className="truncate text-[11px] text-muted-foreground">
             <span className="md:hidden">{counts.open} open</span>
             <span className="hidden md:inline">
-              {counts.open} open · {counts.unassigned} unassigned · {counts.waiting} waiting
-              {counts.overdue > 0 ? ` · ${counts.overdue} overdue` : ""}
+              {counts.open} open conversation{counts.open === 1 ? "" : "s"}
             </span>
           </p>
         </div>

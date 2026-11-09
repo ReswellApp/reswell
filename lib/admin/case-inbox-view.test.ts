@@ -1,21 +1,43 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
-import { inboxViewFromSearchParams, isCaseInboxView } from "./case-inbox.ts"
+import { inboxViewFromSearchParams } from "./case-inbox.ts"
 
 describe("inboxViewFromSearchParams", () => {
-  it("accepts every Intercom-style folder view", () => {
-    for (const view of [
+  it("only exposes open and resolved for the solo desk", () => {
+    assert.equal(
+      inboxViewFromSearchParams({
+        view: null,
+        status: null,
+        type: null,
+        assignee: null,
+        tab: null,
+      }).view,
       "open",
-      "mine",
-      "unassigned",
-      "new",
-      "waiting",
-      "claims",
-      "overdue",
+    )
+    assert.equal(
+      inboxViewFromSearchParams({
+        view: "resolved",
+        status: null,
+        type: null,
+        assignee: null,
+        tab: null,
+      }).view,
       "resolved",
-      "all",
-    ] as const) {
-      assert.equal(isCaseInboxView(view), true)
+    )
+    assert.equal(
+      inboxViewFromSearchParams({
+        view: null,
+        status: "resolved",
+        type: "order",
+        assignee: null,
+        tab: null,
+      }).view,
+      "resolved",
+    )
+  })
+
+  it("ignores multi-agent folder deep links", () => {
+    for (const view of ["mine", "unassigned", "new", "waiting", "claims", "overdue", "all"]) {
       assert.equal(
         inboxViewFromSearchParams({
           view,
@@ -24,54 +46,8 @@ describe("inboxViewFromSearchParams", () => {
           assignee: null,
           tab: null,
         }).view,
-        view,
+        "open",
       )
     }
-  })
-
-  it("keeps legacy status and assignee query params working", () => {
-    assert.equal(
-      inboxViewFromSearchParams({
-        view: null,
-        status: "waiting",
-        type: null,
-        assignee: null,
-        tab: null,
-      }).view,
-      "waiting",
-    )
-    assert.equal(
-      inboxViewFromSearchParams({
-        view: null,
-        status: null,
-        type: null,
-        assignee: "mine",
-        tab: null,
-      }).view,
-      "mine",
-    )
-    assert.equal(
-      inboxViewFromSearchParams({
-        view: null,
-        status: null,
-        type: "claims",
-        assignee: null,
-        tab: null,
-      }).view,
-      "claims",
-    )
-  })
-
-  it("defaults unknown views to open", () => {
-    assert.equal(
-      inboxViewFromSearchParams({
-        view: "mentions",
-        status: null,
-        type: "order",
-        assignee: null,
-        tab: null,
-      }).view,
-      "open",
-    )
   })
 })
