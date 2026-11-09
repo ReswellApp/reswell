@@ -8,6 +8,7 @@ import { EarningsListingThumb } from "@/components/features/earnings/earnings-li
 import { EarningsReswellCreditSection } from "@/components/features/earnings/earnings-reswell-credit-section"
 import type { EarningsTransaction } from "@/components/features/earnings/earnings-types"
 import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
 import type { EarningsBalanceListingRow } from "@/lib/earnings-balance-listings"
 import { earningsHref } from "@/lib/earnings-view"
 import { formatUsd } from "@/lib/utils/format-usd"
@@ -46,12 +47,31 @@ export function EarningsEmpty({ title, body }: { title: string; body: string }) 
   )
 }
 
+export function EarningsBalanceRowsSkeleton() {
+  return (
+    <div className="divide-y divide-border/70" role="status" aria-label="Loading">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <div key={i} className="flex items-center gap-3 py-3.5">
+          <Skeleton className="h-[52px] w-[52px] rounded-lg" />
+          <div className="min-w-0 flex-1 space-y-2">
+            <Skeleton className="h-4 w-2/3" />
+            <Skeleton className="h-3 w-24" />
+          </div>
+          <Skeleton className="h-4 w-14" />
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export function EarningsPendingPane({
   amountLabel,
   rows,
+  isLoading = false,
 }: {
   amountLabel: string
   rows: EarningsBalanceListingRow[]
+  isLoading?: boolean
 }) {
   return (
     <EarningsDetailShell title="Pending Release">
@@ -59,7 +79,9 @@ export function EarningsPendingPane({
         <p className="text-xs font-bold uppercase tracking-wider text-listingHeart">Total pending</p>
         <p className="mt-1 text-4xl font-bold tracking-tight text-foreground">{amountLabel}</p>
       </div>
-      {rows.length === 0 ? (
+      {isLoading ? (
+        <EarningsBalanceRowsSkeleton />
+      ) : rows.length === 0 ? (
         <EarningsEmpty
           title="No earnings pending"
           body="When you sell a board and the buyer pays, your pending earnings will appear here."
@@ -76,11 +98,13 @@ export function EarningsAvailablePane({
   rows,
   showTransfer,
   payout,
+  isLoading = false,
 }: {
   amountLabel: string
   rows: EarningsBalanceListingRow[]
   showTransfer: boolean
   payout?: ReactNode
+  isLoading?: boolean
 }) {
   return (
     <EarningsDetailShell title="Available">
@@ -96,7 +120,9 @@ export function EarningsAvailablePane({
           </Button>
         ) : null}
       </div>
-      {rows.length === 0 ? (
+      {isLoading ? (
+        <EarningsBalanceRowsSkeleton />
+      ) : rows.length === 0 ? (
         <EarningsEmpty
           title="No available earnings"
           body="When you make a sale and the earnings are released, they will appear here."

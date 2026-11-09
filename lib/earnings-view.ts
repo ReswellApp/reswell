@@ -9,6 +9,11 @@ export function parseEarningsView(value: string | null | undefined): EarningsVie
   return null
 }
 
+/** Pending / available / activity panes need ledger listings; the hub does not. */
+export function earningsViewNeedsLedger(view: EarningsView | null): boolean {
+  return view === "pending" || view === "available" || view === "activity"
+}
+
 export function earningsHref(view?: EarningsView | null): string {
   if (!view) return "/dashboard/earnings"
   return `/dashboard/earnings?view=${view}`

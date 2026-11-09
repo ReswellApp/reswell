@@ -69,6 +69,17 @@ function activityFromTx(tx: ReswellCreditTransactionRow): ReswellCreditActivityI
   }
 }
 
+/** Hub menu row only — activity txs load on the Credit pane, not the earnings landing. */
+export async function getAdminReswellCreditHubSummary(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<{ visible: boolean; balanceUsd: number }> {
+  const allowed = await isReswellCreditPilotUser(supabase, userId)
+  if (!allowed) return { visible: false, balanceUsd: 0 }
+  const wallet = await fetchReswellCreditWalletForUser(supabase, userId)
+  return { visible: true, balanceUsd: creditCentsToUsd(wallet?.balance_cents ?? 0) }
+}
+
 /** Null when the user is outside the admin pilot. */
 export async function getAdminReswellCreditPilotBundle(
   supabase: SupabaseClient,
