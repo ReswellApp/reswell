@@ -16,6 +16,7 @@ import { loadListingPrivateChrome } from "@/lib/actions/listing-private-chrome"
 import type { ListingPrivateChrome } from "@/lib/listing-private-chrome"
 import { listingViewerIsOwner } from "@/lib/listing-owner-view"
 import { createClient } from "@/lib/supabase/client"
+import { resolveHydratedIsLoggedIn } from "@/lib/auth/hydrated-is-logged-in"
 import { LISTING_BUYER_OPEN_OFFER_STATUSES } from "@/lib/utils/offer-messages-href"
 import { dashboardOffersPath } from "@/lib/utils/offers-dashboard-display"
 
@@ -247,7 +248,7 @@ export function useHydratedIsLoggedIn(serverIsLoggedIn: boolean): boolean {
   const [clientLoggedIn, setClientLoggedIn] = useState(serverIsLoggedIn)
 
   useEffect(() => {
-    if (serverIsLoggedIn || viewer) return
+    if (serverIsLoggedIn || viewer?.userId) return
     if (!hasSupabaseAuthCookiesClient()) return
     let cancelled = false
     void browserHasSession().then((loggedIn) => {
@@ -256,9 +257,11 @@ export function useHydratedIsLoggedIn(serverIsLoggedIn: boolean): boolean {
     return () => {
       cancelled = true
     }
-  }, [serverIsLoggedIn, viewer])
+  }, [serverIsLoggedIn, viewer?.userId])
 
-  if (serverIsLoggedIn) return true
-  if (viewer) return Boolean(viewer.userId)
-  return clientLoggedIn
+  return resolveHydratedIsLoggedIn({
+    serverIsLoggedIn,
+    viewerUserId: viewer?.userId,
+    clientLoggedIn,
+  })
 }

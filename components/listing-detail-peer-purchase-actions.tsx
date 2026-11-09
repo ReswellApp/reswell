@@ -15,7 +15,7 @@ import { listingDetailCartButtonLabel } from "@/lib/utils/added-to-cart"
 import { prefetchStripeCheckout } from "@/lib/stripe/prefetch-stripe-checkout"
 import type { PeerListingSection } from "@/lib/peer-listing-sections"
 import { peerListingItemNounForm } from "@/lib/peer-listing-item-nouns"
-import { useOptionalAuthModal } from "@/components/auth/auth-modal-context"
+import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import {
   useHydratedIsLoggedIn,
   useListingInCart,
@@ -23,7 +23,6 @@ import {
   useListingViewer,
 } from "@/components/features/listings/listing-viewer-provider"
 import { useReportAddedToCart } from "@/components/features/cart/added-to-cart-context"
-import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 import { toast } from "sonner"
 import {
   MakeOfferDialog,
@@ -83,7 +82,7 @@ export function ListingDetailPeerPurchaseActions({
   const [quantity, setQuantity] = useState(1)
   const [loading, setLoading] = useState(false)
   const [offerOpen, setOfferOpen] = useState(false)
-  const authModal = useOptionalAuthModal()
+  const requireSignIn = useSignInGate()
   const viewer = useListingViewer()
   const loggedIn = useHydratedIsLoggedIn(isLoggedIn)
   const { inCart, markInCart } = useListingInCart()
@@ -103,12 +102,9 @@ export function ListingDetailPeerPurchaseActions({
     void prefetchStripeCheckout()
   }, [loggedIn])
 
-  function openLoginGate(redirect: string = here) {
-    if (authModal) {
-      authModal.openLogin(redirect)
-    } else {
-      router.push(`/auth/login?redirect=${encodeURIComponent(safeRedirectPath(redirect))}`)
-    }
+  async function ensureSignedIn(redirect: string = here): Promise<boolean> {
+    if (loggedIn) return true
+    return requireSignIn(redirect)
   }
 
   async function addSelectedQuantityToCart(): Promise<boolean> {
@@ -139,11 +135,19 @@ export function ListingDetailPeerPurchaseActions({
   }
 
   async function handleBuyNow(e: React.MouseEvent) {
-    if (!canChooseQuantity || quantity <= 1) return
-    e.preventDefault()
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
     if (!loggedIn) {
-      openLoginGate(checkoutHrefForQuantity)
+      e.preventDefault()
+      const ok = await ensureSignedIn(checkoutHrefForQuantity)
+      if (!ok) return
+      if (!canChooseQuantity || quantity <= 1) {
+        router.push(checkoutHrefForQuantity)
+        return
+      }
+    } else if (!canChooseQuantity || quantity <= 1) {
       return
+    } else {
+      e.preventDefault()
     }
     setLoading(true)
     try {
@@ -158,12 +162,10 @@ export function ListingDetailPeerPurchaseActions({
 
   async function handleAddToCart(e: React.MouseEvent) {
     e.preventDefault()
-    if (!loggedIn) {
-      openLoginGate(here)
-      return
-    }
+    if (loading) return
     setLoading(true)
     try {
+      if (!(await ensureSignedIn(here))) return
       const added = await addSelectedQuantityToCart()
       if (!added) return
       markInCart(true)
@@ -172,11 +174,8 @@ export function ListingDetailPeerPurchaseActions({
     }
   }
 
-  function openMakeOffer() {
-    if (!loggedIn) {
-      openLoginGate(here)
-      return
-    }
+  async function openMakeOffer() {
+    if (!(await ensureSignedIn(here))) return
     setOfferOpen(true)
   }
 
@@ -247,27 +246,16 @@ export function ListingDetailPeerPurchaseActions({
             </div>
           </div>
         ) : null}
-        {loggedIn ? (
-          <Button
-            size="lg"
-            className="min-h-[52px] w-full justify-center rounded-xl border-0 bg-[#5574AD] px-6 text-[15px] font-semibold text-white shadow-none hover:bg-[#5574AD]/90 hover:text-white dark:bg-[#5574AD] dark:hover:bg-[#5574AD]/90"
-            asChild
-          >
-            <Link href={checkoutHrefForQuantity} prefetch onClick={handleBuyNow}>
-              Buy it now
-            </Link>
-          </Button>
-        ) : (
-          <Button
-            type="button"
-            size="lg"
-            className="min-h-[52px] w-full justify-center rounded-xl border-0 bg-[#5574AD] px-6 text-[15px] font-semibold text-white shadow-none hover:bg-[#5574AD]/90 hover:text-white dark:bg-[#5574AD] dark:hover:bg-[#5574AD]/90"
-            onClick={() => openLoginGate(checkoutHrefForQuantity)}
-          >
+        <Button
+          size="lg"
+          className="min-h-[52px] w-full justify-center rounded-xl border-0 bg-[#5574AD] px-6 text-[15px] font-semibold text-white shadow-none hover:bg-[#5574AD]/90 hover:text-white dark:bg-[#5574AD] dark:hover:bg-[#5574AD]/90"
+          asChild
+        >
+          <Link href={checkoutHrefForQuantity} prefetch onClick={handleBuyNow}>
             Buy it now
-          </Button>
-        )}
-        {loggedIn && inCart ? (
+          </Link>
+        </Button>
+        {inCart ? (
           <Button
             variant="secondary"
             size="lg"
@@ -279,7 +267,7 @@ export function ListingDetailPeerPurchaseActions({
               {listingDetailCartButtonLabel(true)}
             </Link>
           </Button>
-        ) : loggedIn ? (
+        ) : (
           <Button
             type="button"
             variant="secondary"
@@ -294,27 +282,6 @@ export function ListingDetailPeerPurchaseActions({
               <ShoppingCart className="h-5 w-5 shrink-0" aria-hidden />
             )}
             {listingDetailCartButtonLabel(false)}
-          </Button>
-        ) : (
-          <Button
-            variant="secondary"
-            size="lg"
-            className="min-h-[52px] w-full justify-center rounded-xl border-0 bg-[#f2f3f5] text-[15px] font-semibold text-foreground shadow-none hover:bg-[#e8e9ec] dark:bg-secondary dark:hover:bg-secondary/80"
-            asChild
-          >
-            <Link
-              href={`/auth/login?redirect=${encodeURIComponent(safeRedirectPath(here))}`}
-              prefetch={false}
-              onClick={(e) => {
-                if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
-                if (!authModal) return
-                e.preventDefault()
-                openLoginGate(here)
-              }}
-            >
-              <ShoppingCart className="h-5 w-5 shrink-0" aria-hidden />
-              {listingDetailCartButtonLabel(false)}
-            </Link>
           </Button>
         )}
       </div>

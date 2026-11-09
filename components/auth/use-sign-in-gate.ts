@@ -19,6 +19,11 @@ type SignInGateOptions = {
 /**
  * Opens the login popup when {@link AuthModalProvider} wraps the shell; otherwise redirects to full-page login.
  * Use this instead of signing toasts for gated actions.
+ *
+ * Resolves `true` when a session already exists so callers can continue the
+ * original action. Cached public pages pass `isLoggedIn=false` even for
+ * signed-in shoppers; probing first avoids flashing the auth wall and then
+ * auto-closing it without adding to cart.
  */
 export function useSignInGate() {
   const authModal = useOptionalAuthModal()
@@ -26,7 +31,7 @@ export function useSignInGate() {
   const pathname = usePathname()
 
   return useCallback(
-    (redirectOverride?: string | null, options?: SignInGateOptions) => {
+    async (redirectOverride?: string | null, options?: SignInGateOptions): Promise<boolean> => {
       const resolveRedirect = (): string => {
         const raw = redirectOverride != null ? String(redirectOverride).trim() : ""
         if (raw !== "") return sellPostAuthReturnPath(safeRedirectPath(raw))
@@ -52,15 +57,14 @@ export function useSignInGate() {
 
       if (options?.skipSessionProbe) {
         openGate()
-        return
+        return false
       }
 
-      void (async () => {
-        const supabase = createClient()
-        const user = await resolveSellEditUser(supabase)
-        if (user) return
-        openGate()
-      })()
+      const supabase = createClient()
+      const user = await resolveSellEditUser(supabase)
+      if (user) return true
+      openGate()
+      return false
     },
     [authModal, router, pathname],
   )

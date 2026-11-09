@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { Minus, Plus, ShoppingCart, Loader2 } from "lucide-react"
@@ -10,14 +10,13 @@ import { addCartItem } from "@/app/actions/cart"
 import { getInventoryProductById } from "@/app/actions/marketplace"
 import { trackMetaAddToCart } from "@/lib/meta/pixel-events"
 import { collectMetaClientBrowserSignals } from "@/lib/meta/collect-client-browser-signals"
-import { useOptionalAuthModal } from "@/components/auth/auth-modal-context"
+import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import {
   useHydratedIsLoggedIn,
   useListingInCart,
 } from "@/components/features/listings/listing-viewer-provider"
 import { useReportAddedToCart } from "@/components/features/cart/added-to-cart-context"
 import { listingDetailCartButtonLabel } from "@/lib/utils/added-to-cart"
-import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 import { useClientSearchParams } from "@/hooks/use-client-search-params"
 
 interface QuantitySelectorProps {
@@ -49,10 +48,9 @@ export function QuantitySelector({
   const [quantity, setQuantity] = useState(1)
   const [loading, setLoading] = useState(false)
   const [product, setProduct] = useState<InventoryItem | null>(itemProp ?? null)
-  const authModal = useOptionalAuthModal()
+  const requireSignIn = useSignInGate()
   const reportAddedToCart = useReportAddedToCart()
   const { inCart, markInCart } = useListingInCart()
-  const router = useRouter()
   const pathname = usePathname()
   const searchParams = useClientSearchParams()
   const here = `${pathname}${searchParams.toString() ? `?${searchParams}` : ""}`
@@ -93,17 +91,10 @@ export function QuantitySelector({
       toast.error("Out of stock")
       return
     }
-    if (!loggedIn) {
-      const safe = safeRedirectPath(here)
-      if (authModal) {
-        authModal.openLogin(here)
-      } else {
-        router.push(`/auth/login?redirect=${encodeURIComponent(safe)}`)
-      }
-      return
-    }
+    if (loading) return
     setLoading(true)
     try {
+      if (!loggedIn && !(await requireSignIn(here))) return
       const browserSignals = await collectMetaClientBrowserSignals().catch(() => ({
         fbc: null,
         fbp: null,
