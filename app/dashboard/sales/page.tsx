@@ -17,7 +17,6 @@ import { getOrderReturnSummariesByOrderIds } from "@/lib/db/orderReturnStatusSum
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
-import { OrdersListRealtimeRefresh } from "@/components/order-realtime-refresh"
 import { SalesOrderList } from "@/components/features/sales/sales-order-list"
 import {
   PrintShippingLabelsModule,
@@ -463,7 +462,6 @@ export default async function SalesPage({
 
   return (
     <div>
-      <OrdersListRealtimeRefresh role="seller" />
       <header className="hidden border-b border-border/80 pb-5 lg:block">
         <h1 className="font-headline text-2xl font-bold tracking-tight text-foreground sm:text-[28px]">
           Your Sales

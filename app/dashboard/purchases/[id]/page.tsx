@@ -12,7 +12,6 @@ import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-
 import { BuyerConfirmDelivery, BuyerPickupCode } from "@/components/order-actions"
 import { ReswellTrackingSection } from "@/components/features/orders/reswell-tracking-section"
 import { OrderReturnsSection } from "@/components/features/orders/order-returns-section"
-import { OrderDetailRealtimeRefresh } from "@/components/order-realtime-refresh"
 import { PurchaseDetailView } from "@/components/features/purchases/purchase-detail-view"
 import { OrderMessageThread, type OrderThreadMessage } from "@/components/order-message-thread"
 import { canSubmitSellerReview } from "@/lib/services/orderSellerReview"
@@ -332,8 +331,7 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
 
   return (
     <div className="space-y-8">
-      <OrderDetailRealtimeRefresh orderId={id} />
-      <PurchaseDetailView
+      <PurchaseDetailView>
         orderId={order.id}
         orderNumber={formatOrderNumForCustomer(order.order_num, order.id)}
         items={
