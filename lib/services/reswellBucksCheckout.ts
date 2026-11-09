@@ -27,6 +27,7 @@ import {
   type PeerSurfboardCheckoutListingRow,
 } from "@/lib/services/peerListingShippingQuote"
 import { runReswellBucksCheckoutSideEffects } from "@/lib/services/reswellBucksCheckoutSideEffects"
+import { maybeAwardBuyerReswellCredit } from "@/lib/services/reswellCreditAwards"
 import {
   buildReswellBucksSettlement,
   ReswellBucksSettlementError,
@@ -481,6 +482,13 @@ export async function checkoutWithAdminReswellBucks(params: {
     } catch (err) {
       console.error("[reswell-bucks] side effects", { orderId, err })
     }
+
+    void maybeAwardBuyerReswellCredit({
+      supabase: serviceSupabase,
+      buyerId: user.id,
+      orderId,
+      itemSubtotalUsd: (settlement.sellerEarningsCents + settlement.platformFeeCents) / 100,
+    })
   }
 
   return { ok: true, orderId, orderNum, replayed, newBalanceUsd }

@@ -12,6 +12,7 @@ import { EarningsBalanceListings } from "@/components/features/earnings/earnings
 import type { EarningsBalanceListingRow } from "@/lib/earnings-balance-listings"
 import { EarningsStripePayoutCard } from "@/components/features/earnings/earnings-stripe-payout-card"
 import { EarningsPaymentsOverview } from "@/components/features/earnings/earnings-payments-overview"
+import { EarningsReswellCreditSection } from "@/components/features/earnings/earnings-reswell-credit-section"
 import { DashboardPageHeader } from "@/components/features/dashboard/dashboard-page-header"
 import type { StripeConnectStatusPayload } from "@/lib/utils/stripe-connect-status"
 import type { EarningsTransaction, EarningsWalletSnapshot } from "@/components/features/earnings/earnings-types"
@@ -331,7 +332,7 @@ export default function EarningsPage() {
     <div className="space-y-6">
       <DashboardPageHeader
         title="Earnings"
-        description="Your marketplace wallet and payouts."
+        description="Reswell Bucks (cashable) and payouts — Reswell Credit stays separate."
         actions={
           <Button
             type="button"
@@ -377,6 +378,8 @@ export default function EarningsPage() {
           readyTotalUsd={Number.isFinite(displayAvailable) ? displayAvailable : 0}
           isLoading={activityLoading}
         />
+
+        <EarningsReswellCreditSection />
 
         <EarningsLifetimeStats
           wallet={wallet}
