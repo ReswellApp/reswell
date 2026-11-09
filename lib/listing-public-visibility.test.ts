@@ -31,6 +31,21 @@ describe("isInStockQuantitySale", () => {
       }),
       true,
     )
+    assert.equal(
+      isListingVisibleInPublicSoldFeed({
+        status: "pending_sale",
+        title: "6'0 JS Monsta",
+      }),
+      true,
+    )
+    assert.equal(
+      isListingVisibleInPublicSoldFeed({
+        status: "sold",
+        hidden_from_site: true,
+        title: "In-store Channel Islands",
+      }),
+      true,
+    )
   })
 
   it("does not treat a relisted unique listing as leftover stock", () => {
