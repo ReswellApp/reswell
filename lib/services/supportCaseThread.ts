@@ -144,15 +144,17 @@ export async function getSupportCaseThreadForMember(
   userId: string,
   caseId: string,
   session?: SupabaseClient,
-): Promise<{ case: SupportCaseRow; messages: SupportCaseThreadMessage[] } | { error: string }> {
+): Promise<
+  { case: SupportCaseRow; messages: SupportCaseThreadMessage[]; unreadCount: number } | { error: string }
+> {
   const supabase = session ?? (await createClient())
   const row = await resolveOrBackfillForMember(supabase, userId, caseId)
   if (!row || row.requester_user_id !== userId || isLiveChatSupportChannel(row.source_channel)) {
     return { error: "Case not found." }
   }
   const messages = await messagesForSupportCaseThread(serviceRoleOrSession(supabase), row)
-  await markSupportCaseReadForMember(supabase, userId, row.id)
-  return { case: row, messages }
+  const unreadCount = await markSupportCaseReadForMember(supabase, userId, row.id)
+  return { case: row, messages, unreadCount }
 }
 
 export async function getSupportCaseThreadForStaff(
