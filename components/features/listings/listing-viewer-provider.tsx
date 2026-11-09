@@ -1,6 +1,15 @@
 "use client"
 
-import { createContext, useContext, useEffect, useLayoutEffect, useState, type ReactNode } from "react"
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react"
 import { hasSupabaseAuthCookiesClient } from "@/lib/auth/has-supabase-auth-cookies"
 import { readSupabaseBrowserUserId } from "@/lib/auth/supabase-browser-user-id"
 import { loadListingPrivateChrome } from "@/lib/actions/listing-private-chrome"
@@ -15,6 +24,8 @@ type ListingViewerValue = {
   listingId: string | null
   /** Owner or admin payload. Null in the shared document and for other shoppers. */
   privateChrome: ListingPrivateChrome | null
+  listingInCart: boolean
+  markListingInCart: (inCart: boolean) => void
 }
 
 const ListingViewerContext = createContext<ListingViewerValue | null>(null)
@@ -30,6 +41,17 @@ function browserHasSession(): Promise<boolean> {
       .catch(() => false)
   }
   return browserSessionLoggedIn
+}
+
+function loadListingInBuyerCart(userId: string, listingId: string): Promise<boolean> {
+  return createClient()
+    .from("cart_items")
+    .select("id")
+    .eq("profile_id", userId)
+    .eq("listing_id", listingId)
+    .maybeSingle()
+    .then(({ data }) => Boolean(data))
+    .catch(() => false)
 }
 
 /**
@@ -49,6 +71,12 @@ export function ListingViewerProvider({
   const [userId, setUserId] = useState<string | null>(null)
   const [ready, setReady] = useState(false)
   const [privateChrome, setPrivateChrome] = useState<ListingPrivateChrome | null>(null)
+  const [listingInCart, setListingInCart] = useState(false)
+  const cartQuerySeq = useRef(0)
+  const markListingInCart = useCallback((inCart: boolean) => {
+    cartQuerySeq.current += 1
+    setListingInCart(inCart)
+  }, [])
 
   // Cookie read happens after hydration so the shared HTML stays the buyer page,
   // and before paint so the owner does not see that buyer page first.
@@ -88,8 +116,46 @@ export function ListingViewerProvider({
     }
   }, [listingId])
 
+  useEffect(() => {
+    // Cached /l HTML is anonymous. After the session hydrates, the PDP cart
+    // button becomes View cart when this listing is already in the buyer's cart.
+    if (!userId || !listingId || listingViewerIsOwner(userId, sellerUserId)) {
+      cartQuerySeq.current += 1
+      setListingInCart(false)
+      return
+    }
+    const buyerId = userId
+    const id = listingId
+    let cancelled = false
+    setListingInCart(false)
+    async function load() {
+      const seq = ++cartQuerySeq.current
+      const inCart = await loadListingInBuyerCart(buyerId, id)
+      if (!cancelled && seq === cartQuerySeq.current) setListingInCart(inCart)
+    }
+    void load()
+    function onCartUpdated() {
+      void load()
+    }
+    window.addEventListener("cartUpdated", onCartUpdated)
+    return () => {
+      cancelled = true
+      window.removeEventListener("cartUpdated", onCartUpdated)
+    }
+  }, [userId, listingId, sellerUserId])
+
   return (
-    <ListingViewerContext.Provider value={{ userId, ready, sellerUserId, listingId, privateChrome }}>
+    <ListingViewerContext.Provider
+      value={{
+        userId,
+        ready,
+        sellerUserId,
+        listingId,
+        privateChrome,
+        listingInCart,
+        markListingInCart,
+      }}
+    >
       {children}
     </ListingViewerContext.Provider>
   )
@@ -97,6 +163,22 @@ export function ListingViewerProvider({
 
 export function useListingViewer(): ListingViewerValue | null {
   return useContext(ListingViewerContext)
+}
+
+/** Whether this listing is already in the signed-in buyer's cart. */
+export function useListingInCart(): {
+  inCart: boolean
+  markInCart: (value: boolean) => void
+} {
+  const viewer = useListingViewer()
+  const [fallback, setFallback] = useState(false)
+  const markFallback = useCallback((value: boolean) => {
+    setFallback(value)
+  }, [])
+  if (!viewer) {
+    return { inCart: fallback, markInCart: markFallback }
+  }
+  return { inCart: viewer.listingInCart, markInCart: viewer.markListingInCart }
 }
 
 export function useListingOwner(): boolean {

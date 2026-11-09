@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { Check, Loader2, Minus, Plus, ShoppingCart } from "lucide-react"
+import { Loader2, Minus, Plus, ShoppingCart } from "lucide-react"
 import type * as React from "react"
 
 import { Button } from "@/components/ui/button"
@@ -11,12 +11,14 @@ import { addCartItem } from "@/app/actions/cart"
 import { trackMetaAddToCart } from "@/lib/meta/pixel-events"
 import { collectMetaClientBrowserSignals } from "@/lib/meta/collect-client-browser-signals"
 import { peerListingCheckoutHref } from "@/lib/listing-href"
+import { listingDetailCartButtonLabel } from "@/lib/utils/added-to-cart"
 import { prefetchStripeCheckout } from "@/lib/stripe/prefetch-stripe-checkout"
 import type { PeerListingSection } from "@/lib/peer-listing-sections"
 import { peerListingItemNounForm } from "@/lib/peer-listing-item-nouns"
 import { useOptionalAuthModal } from "@/components/auth/auth-modal-context"
 import {
   useHydratedIsLoggedIn,
+  useListingInCart,
   useListingViewer,
 } from "@/components/features/listings/listing-viewer-provider"
 import { useReportAddedToCart } from "@/components/features/cart/added-to-cart-context"
@@ -79,12 +81,12 @@ export function ListingDetailPeerPurchaseActions({
   const canChooseQuantity = stock > 1
   const [quantity, setQuantity] = useState(1)
   const [loading, setLoading] = useState(false)
-  const [cartAdded, setCartAdded] = useState(false)
   const [offerOpen, setOfferOpen] = useState(false)
   const [sentOfferHref, setSentOfferHref] = useState<string | null>(null)
   const authModal = useOptionalAuthModal()
   const viewer = useListingViewer()
   const loggedIn = useHydratedIsLoggedIn(isLoggedIn)
+  const { inCart, markInCart } = useListingInCart()
   const reportAddedToCart = useReportAddedToCart()
   const router = useRouter()
   const pathname = usePathname()
@@ -146,6 +148,7 @@ export function ListingDetailPeerPurchaseActions({
     try {
       const added = await addSelectedQuantityToCart()
       if (!added) return
+      markInCart(true)
       router.push(checkoutHrefForQuantity)
     } finally {
       setLoading(false)
@@ -162,8 +165,7 @@ export function ListingDetailPeerPurchaseActions({
     try {
       const added = await addSelectedQuantityToCart()
       if (!added) return
-      setCartAdded(true)
-      window.setTimeout(() => setCartAdded(false), 2000)
+      markInCart(true)
     } finally {
       setLoading(false)
     }
@@ -213,7 +215,7 @@ export function ListingDetailPeerPurchaseActions({
       ) : null}
       {!purchaseBlocked ? (
       <div className="flex flex-col gap-[10px]">
-        {canChooseQuantity ? (
+        {canChooseQuantity && !inCart ? (
           <div className="flex items-center justify-between gap-3 rounded-xl bg-[#f2f3f5] px-3 py-2 dark:bg-secondary">
             <div>
               <p className="text-[13px] font-medium text-foreground">Quantity</p>
@@ -264,7 +266,19 @@ export function ListingDetailPeerPurchaseActions({
             Buy it now
           </Button>
         )}
-        {loggedIn ? (
+        {loggedIn && inCart ? (
+          <Button
+            variant="secondary"
+            size="lg"
+            className="min-h-[52px] w-full justify-center rounded-xl border-0 bg-[#f2f3f5] text-[15px] font-semibold text-foreground shadow-none hover:bg-[#e8e9ec] dark:bg-secondary dark:hover:bg-secondary/80"
+            asChild
+          >
+            <Link href="/cart">
+              <ShoppingCart className="h-5 w-5 shrink-0" aria-hidden />
+              {listingDetailCartButtonLabel(true)}
+            </Link>
+          </Button>
+        ) : loggedIn ? (
           <Button
             type="button"
             variant="secondary"
@@ -275,12 +289,10 @@ export function ListingDetailPeerPurchaseActions({
           >
             {loading ? (
               <Loader2 className="h-5 w-5 shrink-0 animate-spin" aria-hidden />
-            ) : cartAdded ? (
-              <Check className="h-5 w-5 shrink-0" aria-hidden />
             ) : (
               <ShoppingCart className="h-5 w-5 shrink-0" aria-hidden />
             )}
-            {cartAdded ? "Added" : "Add to cart"}
+            {listingDetailCartButtonLabel(false)}
           </Button>
         ) : (
           <Button
@@ -300,7 +312,7 @@ export function ListingDetailPeerPurchaseActions({
               }}
             >
               <ShoppingCart className="h-5 w-5 shrink-0" aria-hidden />
-              Add to cart
+              {listingDetailCartButtonLabel(false)}
             </Link>
           </Button>
         )}
