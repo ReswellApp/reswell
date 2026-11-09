@@ -1,0 +1,42 @@
+{
+  "generated_for": "Beau Young Surfboards official named standup catalog gap fill",
+  "source": "https://www.beauyounghandshaped.com/surfboards (official model pages — excludes fins, colour palette, custom deposits, merch)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "beau-young-surfboards",
+      "name": "Beau Young Surfboards",
+      "website_url": "https://www.beauyounghandshaped.com/",
+      "location_label": "Western Australia, Australia",
+      "founder_name": "Beau Young",
+      "lead_shaper_name": "Beau Young",
+      "short_description": "Handcrafted surfboards by Beau Young. Official homepage copy says each board is a unique work of art, and no two are exactly the same.",
+      "models": [
+        {
+          "name": "The Fly Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e9234f5a62f9c5a8f047377/1588326846983-7QF0EKVHPJEB3LBAPQFC/Untitled+design-7.png?format=1500w",
+          "description": "The Fly Fish pays homage to the original innovators in this particular design being Steve Lis closely followed by Skip Frye. Wide curvatious outline, flat deck with a down rail and wide swallow shaped tail this board is a revelation. Created as an alternative to the single fins ridden during early to mid 1970's this shape opened doors to full speed trim (the fastest board ever made in my opinion) and loose acceleration through your turns. However this shape also works in incredibly hollow and large wave conditions. A fantastic surfboard option for those not wanting to ride a longboard or not wanting to struggle catching waves on a standard shortboard. The fish is definitely the most versatile surf craft ever made. This board is designed for waves from 1 foot through to 12 feet.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Noserider",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e9234f5a62f9c5a8f047377/1599215151546-FND30T0RMR881VGDB1AI/Untitled-1.png?format=1500w",
+          "description": "I doesn't mater if your just learning to ride a longboard or if you can hang ten forever, getting to the nose of the board is the pinacle of longboard riding. The Noserider model is designed with the soul purpose of you becoming more adept at spending time on the tip of the board. A generous concave under the nose of the board combined with a beveled rail edge sees this board suck onto the waves face in the steepest of sections. This hold allows incredible balance and hold while balancing on the nose of the board. The roll bottom in this board allows for smooth casual turns and the tail lift also benefits the levitation while noseriding. If you are looking for a beautiful board designed to last and surf incredibly look no further than the 'Noserider' model. FIN SETUP: The pendulum 10.75' fin is recommended for this board model.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Boo",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e9234f5a62f9c5a8f047377/1588328196380-2AVY4TJY2SR41DT4W4Z6/Untitled+design-8.png?format=1500w",
+          "description": "The Boo is my daughters nickname and definitely the greatest thing I have ever created. This board goes incredibly and is very special so it has been given the name \"The Boo\". There are different names for this style of shape, some call it a midlength others an egg but for me it has to be called a funboard! Nice medium entry rocker and a good amount of foam makes this board a wave catching machine! Medium concave under your chest gives this board speed and lift when planning. Subtle vee through the tail has the board driving and flowing through its turns. Round and forgiving rails. This board suits surfers from beginner to advance in waves from 1 to ten feet high. If you are after a board that catches waves easily and can carve and arc turns with speed and flow, look no further than \"The Boo\". The 8.25\" centre fin and small sides fins makes for the perfect combination for this board.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Peace Train",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e9234f5a62f9c5a8f047377/1588324742068-W5ZIA8XANQY7GXQ3E9F2/Untitled+design-3.png?format=1500w",
+          "description": "With a fantastic overall outline, bottom curve and rail shape the \"Peace Train\" is a truly incredible allrounder. The wide roundtail, wide point forward and pinched yet forgiving rail make this board the perfect balance for both turning and riding the nose. With concave under the nose for lift and a nice medium vee shape through the remainder of the board the \"Peace Train\" works in a large variety of conditions from ankle high through to slightly overhead surf. My favourite longboard in the quiver by far. Complementing the shape you can't go past the \"Kamehameha\" 11 inch single fin.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
