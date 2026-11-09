@@ -16,6 +16,8 @@ import { loadListingPrivateChrome } from "@/lib/actions/listing-private-chrome"
 import type { ListingPrivateChrome } from "@/lib/listing-private-chrome"
 import { listingViewerIsOwner } from "@/lib/listing-owner-view"
 import { createClient } from "@/lib/supabase/client"
+import { LISTING_BUYER_OPEN_OFFER_STATUSES } from "@/lib/utils/offer-messages-href"
+import { dashboardOffersPath } from "@/lib/utils/offers-dashboard-display"
 
 type ListingViewerValue = {
   userId: string | null
@@ -26,6 +28,8 @@ type ListingViewerValue = {
   privateChrome: ListingPrivateChrome | null
   listingInCart: boolean
   markListingInCart: (inCart: boolean) => void
+  openOfferHref: string | null
+  markOpenOfferHref: (href: string | null) => void
 }
 
 const ListingViewerContext = createContext<ListingViewerValue | null>(null)
@@ -54,6 +58,23 @@ function loadListingInBuyerCart(userId: string, listingId: string): Promise<bool
     .catch(() => false)
 }
 
+function loadListingOpenOfferHref(userId: string, listingId: string): Promise<string | null> {
+  return createClient()
+    .from("offers")
+    .select("id")
+    .eq("listing_id", listingId)
+    .eq("buyer_id", userId)
+    .in("status", [...LISTING_BUYER_OPEN_OFFER_STATUSES])
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle()
+    .then(({ data }) => {
+      const offerId = data && typeof data.id === "string" ? data.id : null
+      return offerId ? dashboardOffersPath({ role: "buyer", offerId }) : null
+    })
+    .catch(() => null)
+}
+
 /**
  * Signed-in identity for a cached listing page. The server render stays
  * anonymous. A layout effect reads the browser session before paint so the
@@ -72,10 +93,16 @@ export function ListingViewerProvider({
   const [ready, setReady] = useState(false)
   const [privateChrome, setPrivateChrome] = useState<ListingPrivateChrome | null>(null)
   const [listingInCart, setListingInCart] = useState(false)
+  const [openOfferHref, setOpenOfferHref] = useState<string | null>(null)
   const cartQuerySeq = useRef(0)
+  const offerQuerySeq = useRef(0)
   const markListingInCart = useCallback((inCart: boolean) => {
     cartQuerySeq.current += 1
     setListingInCart(inCart)
+  }, [])
+  const markOpenOfferHref = useCallback((href: string | null) => {
+    offerQuerySeq.current += 1
+    setOpenOfferHref(href)
   }, [])
 
   // Cookie read happens after hydration so the shared HTML stays the buyer page,
@@ -118,24 +145,34 @@ export function ListingViewerProvider({
 
   useEffect(() => {
     // Cached /l HTML is anonymous. After the session hydrates, the PDP cart
-    // button becomes View cart when this listing is already in the buyer's cart.
+    // and offer buttons reflect whether this listing is already in the buyer's
+    // cart or they have an open offer.
     if (!userId || !listingId || listingViewerIsOwner(userId, sellerUserId)) {
       cartQuerySeq.current += 1
+      offerQuerySeq.current += 1
       setListingInCart(false)
+      setOpenOfferHref(null)
       return
     }
     const buyerId = userId
     const id = listingId
     let cancelled = false
     setListingInCart(false)
-    async function load() {
+    setOpenOfferHref(null)
+    async function loadCart() {
       const seq = ++cartQuerySeq.current
       const inCart = await loadListingInBuyerCart(buyerId, id)
       if (!cancelled && seq === cartQuerySeq.current) setListingInCart(inCart)
     }
-    void load()
+    async function loadOffer() {
+      const seq = ++offerQuerySeq.current
+      const href = await loadListingOpenOfferHref(buyerId, id)
+      if (!cancelled && seq === offerQuerySeq.current) setOpenOfferHref(href)
+    }
+    void loadCart()
+    void loadOffer()
     function onCartUpdated() {
-      void load()
+      void loadCart()
     }
     window.addEventListener("cartUpdated", onCartUpdated)
     return () => {
@@ -154,6 +191,8 @@ export function ListingViewerProvider({
         privateChrome,
         listingInCart,
         markListingInCart,
+        openOfferHref,
+        markOpenOfferHref,
       }}
     >
       {children}
@@ -179,6 +218,22 @@ export function useListingInCart(): {
     return { inCart: fallback, markInCart: markFallback }
   }
   return { inCart: viewer.listingInCart, markInCart: viewer.markListingInCart }
+}
+
+/** Open buyer offer on this listing, if the signed-in viewer has one. */
+export function useListingOpenOffer(): {
+  href: string | null
+  markHref: (href: string | null) => void
+} {
+  const viewer = useListingViewer()
+  const [fallback, setFallback] = useState<string | null>(null)
+  const markFallback = useCallback((href: string | null) => {
+    setFallback(href)
+  }, [])
+  if (!viewer) {
+    return { href: fallback, markHref: markFallback }
+  }
+  return { href: viewer.openOfferHref, markHref: viewer.markOpenOfferHref }
 }
 
 export function useListingOwner(): boolean {

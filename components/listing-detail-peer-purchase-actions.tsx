@@ -19,6 +19,7 @@ import { useOptionalAuthModal } from "@/components/auth/auth-modal-context"
 import {
   useHydratedIsLoggedIn,
   useListingInCart,
+  useListingOpenOffer,
   useListingViewer,
 } from "@/components/features/listings/listing-viewer-provider"
 import { useReportAddedToCart } from "@/components/features/cart/added-to-cart-context"
@@ -82,11 +83,11 @@ export function ListingDetailPeerPurchaseActions({
   const [quantity, setQuantity] = useState(1)
   const [loading, setLoading] = useState(false)
   const [offerOpen, setOfferOpen] = useState(false)
-  const [sentOfferHref, setSentOfferHref] = useState<string | null>(null)
   const authModal = useOptionalAuthModal()
   const viewer = useListingViewer()
   const loggedIn = useHydratedIsLoggedIn(isLoggedIn)
   const { inCart, markInCart } = useListingInCart()
+  const { href: hydratedOpenOfferHref, markHref: markOpenOfferHref } = useListingOpenOffer()
   const reportAddedToCart = useReportAddedToCart()
   const router = useRouter()
   const pathname = usePathname()
@@ -94,7 +95,7 @@ export function ListingDetailPeerPurchaseActions({
   const checkoutHref = peerListingCheckoutHref(section, checkoutListingParam, {
     quantity: canChooseQuantity ? quantity : 1,
   })
-  const viewOfferHref = sentOfferHref ?? openOfferHref
+  const viewOfferHref = hydratedOpenOfferHref ?? openOfferHref
   const checkoutHrefForQuantity = checkoutHref
 
   useEffect(() => {
@@ -352,7 +353,7 @@ export function ListingDetailPeerPurchaseActions({
           onOpenChange={setOfferOpen}
           hideMinimumUntilViolated={makeOffer.hideMinimumUntilViolated}
           onOfferCreated={(offerId) => {
-            setSentOfferHref(dashboardOffersPath({ role: "buyer", offerId }))
+            markOpenOfferHref(dashboardOffersPath({ role: "buyer", offerId }))
           }}
         />
       ) : null}
