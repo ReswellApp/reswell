@@ -28,8 +28,8 @@ export const runtime = "nodejs"
 
 /**
  * Stripe → Developers → Webhooks → Add endpoint: `https://<your-domain>/api/webhooks/stripe`
- * Events: `payment_intent.succeeded`, `payment_intent.payment_failed`, `charge.failed`,
- * `refund.created`, `refund.updated`, `charge.refunded`,
+ * Events: `payment_intent.succeeded`, `payment_intent.payment_failed`, `payment_intent.canceled`,
+ * `charge.failed`, `refund.created`, `refund.updated`, `charge.refunded`,
  * `account.updated`, `transfer.reversed`, `payout.created`, `payout.updated`, `payout.paid`,
  * `payout.failed`, `payout.canceled` (Connect — the endpoint must listen to events on
  * connected accounts, not only the platform). `payout.paid` is what moves a free ACH
@@ -93,10 +93,17 @@ export async function POST(request: Request) {
           })()
     if (failedPaymentIntentId) {
       await revertBindingOfferIfLatestChargeDeclined(failedPaymentIntentId)
+    }
+    return NextResponse.json({ received: true })
+  }
+
+  if (event.type === "payment_intent.canceled") {
+    const canceledPaymentIntentId = (event.data.object as Stripe.PaymentIntent).id
+    if (canceledPaymentIntentId) {
       const { releaseReswellCreditHoldForPaymentIntent } = await import(
         "@/lib/services/reswellCreditCheckout"
       )
-      await releaseReswellCreditHoldForPaymentIntent(failedPaymentIntentId)
+      await releaseReswellCreditHoldForPaymentIntent(canceledPaymentIntentId)
     }
     return NextResponse.json({ received: true })
   }

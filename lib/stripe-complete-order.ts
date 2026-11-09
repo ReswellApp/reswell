@@ -480,6 +480,78 @@ async function emitPurchaseSuccessfulKlaviyoForOrderId(
   await reemitPurchaseSuccessfulForOrder(serviceSupabase, orderId)
 }
 
+function reswellCreditCentsFromPaymentIntent(pi: Stripe.PaymentIntent): number {
+  const raw = pi.metadata?.reswell_credit_cents?.trim()
+  if (!raw || !/^\d+$/.test(raw)) return 0
+  const n = parseInt(raw, 10)
+  return Number.isFinite(n) && n > 0 ? n : 0
+}
+
+async function settleReswellCreditAfterMarketplaceOrder(params: {
+  serviceSupabase: ReturnType<typeof createServiceRoleClient>
+  paymentIntent: Stripe.PaymentIntent
+  orderId: string
+  expectedCreditCents: number
+  buyerId: string | null
+  itemSubtotalUsd: number
+}): Promise<{ ok: true } | { ok: false; error: string; status: number }> {
+  if (params.expectedCreditCents > 0) {
+    const finalized = await finalizeReswellCreditHoldForOrder({
+      paymentIntentId: params.paymentIntent.id,
+      orderId: params.orderId,
+      expectedCreditCents: params.expectedCreditCents,
+    })
+    if (!finalized.ok) {
+      console.error("[stripe-complete-order] reswell credit finalize", finalized.error, {
+        orderId: params.orderId,
+        pi: params.paymentIntent.id,
+      })
+      return { ok: false, error: finalized.error, status: 500 }
+    }
+  }
+
+  if (params.buyerId) {
+    void maybeAwardBuyerReswellCredit({
+      supabase: params.serviceSupabase,
+      buyerId: params.buyerId,
+      orderId: params.orderId,
+      itemSubtotalUsd: params.itemSubtotalUsd,
+    })
+  }
+
+  return { ok: true }
+}
+
+async function settleReswellCreditForExistingMarketplaceOrder(
+  serviceSupabase: ReturnType<typeof createServiceRoleClient>,
+  pi: Stripe.PaymentIntent,
+  orderId: string,
+): Promise<{ ok: true } | { ok: false; error: string; status: number }> {
+  const buyerId = pi.metadata.buyer_id?.trim() || null
+  let itemSubtotalUsd = 0
+  if (buyerId) {
+    const { data: items } = await serviceSupabase
+      .from("order_items")
+      .select("item_price, quantity")
+      .eq("order_id", orderId)
+    if (items?.length) {
+      itemSubtotalUsd = items.reduce((sum, row) => {
+        const price = parseFloat(String(row.item_price ?? 0))
+        const qty = Math.max(1, Math.floor(Number(row.quantity) || 1))
+        return Number.isFinite(price) && price >= 0 ? sum + price * qty : sum
+      }, 0)
+    }
+  }
+  return settleReswellCreditAfterMarketplaceOrder({
+    serviceSupabase,
+    paymentIntent: pi,
+    orderId,
+    expectedCreditCents: reswellCreditCentsFromPaymentIntent(pi),
+    buyerId,
+    itemSubtotalUsd,
+  })
+}
+
 /**
  * Creates the marketplace order and side effects for a succeeded PaymentIntent.
  * Idempotent: safe to call from the client finalize route and from Stripe webhooks.
@@ -634,6 +706,12 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       }
       void maybeSyncAdminTerminalGuestToCrm(serviceSupabase, pi, existing.id)
       revalidateSoldFeedAfterSale()
+      const creditSettle = await settleReswellCreditForExistingMarketplaceOrder(
+        serviceSupabase,
+        pi,
+        existing.id,
+      )
+      if (!creditSettle.ok) return creditSettle
       return { ok: true, orderId: existing.id, alreadyProcessed: true }
     }
 
@@ -654,6 +732,12 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     }
     void maybeSyncAdminTerminalGuestToCrm(serviceSupabase, pi, existing.id)
     revalidateSoldFeedAfterSale()
+    const creditSettle = await settleReswellCreditForExistingMarketplaceOrder(
+      serviceSupabase,
+      pi,
+      existing.id,
+    )
+    if (!creditSettle.ok) return creditSettle
     return { ok: true, orderId: existing.id, alreadyProcessed: true }
   }
 
@@ -1573,28 +1657,15 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     void sendPostPurchaseReviewInvite(purchase.id)
   }
 
-  if (reswellCreditCents > 0) {
-    const finalized = await finalizeReswellCreditHoldForOrder({
-      paymentIntentId: piId,
-      orderId: purchase.id,
-      expectedCreditCents: reswellCreditCents,
-    })
-    if (!finalized.ok) {
-      console.error("[stripe-complete-order] reswell credit finalize", finalized.error, {
-        orderId: purchase.id,
-        pi: piId,
-      })
-    }
-  }
-
-  if (buyerId) {
-    void maybeAwardBuyerReswellCredit({
-      supabase: serviceSupabase,
-      buyerId,
-      orderId: purchase.id,
-      itemSubtotalUsd: bundle.totalItemPriceUsd,
-    })
-  }
+  const creditSettle = await settleReswellCreditAfterMarketplaceOrder({
+    serviceSupabase,
+    paymentIntent: pi,
+    orderId: purchase.id,
+    expectedCreditCents: reswellCreditCents,
+    buyerId,
+    itemSubtotalUsd: bundle.totalItemPriceUsd,
+  })
+  if (!creditSettle.ok) return creditSettle
 
   if (isAdminTerminalSale) {
     void releaseOrderSellerEarningsAfterFulfillment(purchase.id)

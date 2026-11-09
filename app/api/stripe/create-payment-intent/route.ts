@@ -888,6 +888,7 @@ export async function createPaymentIntentForUser(
       })
       if (!held.ok) {
         await stripe.paymentIntents.cancel(paymentIntent.id)
+        await releaseReswellCreditHoldForPaymentIntent(paymentIntent.id)
         return NextResponse.json(
           { error: held.error },
           { status: 409, headers: JSON_NO_STORE_HEADERS },

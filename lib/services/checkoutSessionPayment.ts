@@ -131,8 +131,14 @@ async function cancelReusablePaymentIntent(
   if (!id) return
   try {
     const existing = await stripe.paymentIntents.retrieve(id)
-    if (!PI_REUSABLE_STATUSES.has(existing.status)) return
-    await stripe.paymentIntents.cancel(existing.id)
+    if (existing.status !== "canceled" && !PI_REUSABLE_STATUSES.has(existing.status)) return
+    if (existing.status !== "canceled") {
+      await stripe.paymentIntents.cancel(existing.id)
+    }
+    const { releaseReswellCreditHoldForPaymentIntent } = await import(
+      "@/lib/services/reswellCreditCheckout"
+    )
+    await releaseReswellCreditHoldForPaymentIntent(id)
   } catch (error) {
     console.warn("[checkout-session] cancel PI:", error)
   }
