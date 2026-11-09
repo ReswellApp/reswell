@@ -24,6 +24,14 @@ describe("inbox counterpart copy", () => {
     )
     assert.equal(
       staffWorkflowStatusLabel("waiting_on_you", { requesterRole: "seller", openedBy: "staff" }),
+      "Waiting on seller",
+    )
+    assert.equal(
+      staffWorkflowStatusLabel("in_review", { requesterRole: "seller", openedBy: "staff" }),
+      "In review",
+    )
+    assert.equal(
+      staffWorkflowStatusLabel("in_progress", { requesterRole: "seller", openedBy: "staff" }),
       "Open",
     )
     assert.equal(

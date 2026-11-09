@@ -136,8 +136,10 @@ export function CaseInboxAdminClient({
   const [staff, setStaff] = useState<StaffAssigneeRow[]>([])
   const [currentStaffId, setCurrentStaffId] = useState<string | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
-  const [detailsOpen, setDetailsOpen] = useState(false)
+  // Desktop defaults to Intercom-style three panes; mobile stays conversation-first.
+  const [detailsOpen, setDetailsOpen] = useState(true)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
+  const desktopDetailsPref = useRef(true)
 
   const [osOutcome, setOsOutcome] = useState("none")
   const [pinnedNote, setPinnedNote] = useState("")
@@ -299,6 +301,46 @@ export function CaseInboxAdminClient({
       setIsAdmin(res.isAdmin === true)
     })
   }, [])
+
+  useEffect(() => {
+    const media = window.matchMedia("(min-width: 768px)")
+    const syncDetailsForViewport = () => {
+      if (media.matches) {
+        setDetailsOpen(desktopDetailsPref.current)
+      } else {
+        setDetailsOpen(false)
+      }
+    }
+    syncDetailsForViewport()
+    media.addEventListener("change", syncDetailsForViewport)
+    return () => media.removeEventListener("change", syncDetailsForViewport)
+  }, [])
+
+  // Keep the inbox feeling live without a websocket rewrite.
+  useEffect(() => {
+    const tick = () => {
+      if (document.visibilityState !== "visible") return
+      void load({
+        mode: "refresh",
+        offset: 0,
+        search: debouncedSearch,
+        view,
+        type: typeOverlay,
+        sort,
+        selectedKey: selectedKeyRef.current,
+      })
+      if (selectedKeyRef.current) {
+        setThreadReloadToken((n) => n + 1)
+      }
+    }
+    const interval = window.setInterval(tick, 30_000)
+    const onFocus = () => tick()
+    window.addEventListener("focus", onFocus)
+    return () => {
+      window.clearInterval(interval)
+      window.removeEventListener("focus", onFocus)
+    }
+  }, [debouncedSearch, view, typeOverlay, sort, load])
 
   const viewFilters = viewToFilters(view)
   const effectiveType: CaseInboxTypeFilter =
@@ -764,17 +806,12 @@ export function CaseInboxAdminClient({
       >
         <div className="min-w-0 flex-1">
           <h1 className="hidden text-sm font-semibold tracking-tight text-foreground md:block">
-            Support operations
+            Inbox
           </h1>
           <p className="truncate text-[11px] text-muted-foreground">
             <span className="md:hidden">{counts.open} open</span>
             <span className="hidden md:inline">
-              Admin only ·{" "}
-              <Link href="/help" className="underline-offset-2 hover:underline">
-                Help / FAQ
-              </Link>
-              {" · "}
-              {counts.open} open conversations
+              {counts.open} open conversation{counts.open === 1 ? "" : "s"}
             </span>
           </p>
         </div>
@@ -782,7 +819,11 @@ export function CaseInboxAdminClient({
           <AdminCreateSupportCaseDialog
             onCreated={(caseId) => {
               const key = inboxCaseKey(caseId)
-              setDetailsOpen(false)
+              if (window.matchMedia("(min-width: 768px)").matches) {
+                setDetailsOpen(desktopDetailsPref.current)
+              } else {
+                setDetailsOpen(false)
+              }
               setSelectedKey(key)
               void load({
                 mode: "refresh",
@@ -801,7 +842,15 @@ export function CaseInboxAdminClient({
               variant="ghost"
               size="icon"
               className={cn("h-8 w-8", detailsOpen && "bg-muted")}
-              onClick={() => setDetailsOpen((open) => !open)}
+              onClick={() => {
+                setDetailsOpen((open) => {
+                  const next = !open
+                  if (window.matchMedia("(min-width: 768px)").matches) {
+                    desktopDetailsPref.current = next
+                  }
+                  return next
+                })
+              }}
               aria-label={detailsOpen ? "Hide conversation details" : "Show conversation details"}
               aria-pressed={detailsOpen}
             >
@@ -834,17 +883,17 @@ export function CaseInboxAdminClient({
       </header>
 
       <div className="flex min-h-0 flex-1 overflow-hidden">
-        <aside className="hidden h-full w-[168px] shrink-0 flex-col overflow-y-auto border-r border-border/60 2xl:flex">
+        <aside className="hidden h-full w-[196px] shrink-0 flex-col overflow-y-auto border-r border-border/60 xl:flex">
           <CaseInboxViews active={view} counts={counts} onChange={setView} />
         </aside>
 
         <section
           className={cn(
-            "h-full min-h-0 flex-col overflow-hidden border-border/60 md:flex md:w-[260px] md:shrink-0 md:border-r xl:w-[280px]",
+            "h-full min-h-0 flex-col overflow-hidden border-border/60 md:flex md:w-[280px] md:shrink-0 md:border-r xl:w-[300px]",
             selectedKey ? "hidden md:flex" : "flex w-full",
           )}
         >
-          <div className="shrink-0 border-b border-border/40 px-2 py-2 2xl:hidden">
+          <div className="shrink-0 border-b border-border/40 px-2 py-2 xl:hidden">
             <CaseInboxViews compact active={view} counts={counts} onChange={setView} />
           </div>
           <CaseInboxListPane
@@ -869,7 +918,11 @@ export function CaseInboxAdminClient({
             onSort={setSort}
             onTypeFilter={setTypeOverlay}
             onSelect={(key) => {
-              setDetailsOpen(false)
+              if (window.matchMedia("(min-width: 768px)").matches) {
+                setDetailsOpen(desktopDetailsPref.current)
+              } else {
+                setDetailsOpen(false)
+              }
               setSelectedKey(key)
             }}
             onLoadMore={() =>
@@ -893,10 +946,13 @@ export function CaseInboxAdminClient({
           )}
         >
           {!selected ? (
-            <div className="flex flex-1 flex-col items-center justify-center gap-2 text-muted-foreground">
+            <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center text-muted-foreground">
               <Inbox className="h-10 w-10 opacity-30" />
-              <p className="text-sm">Select a conversation</p>
-              <p className="text-xs">Press ? for keyboard shortcuts</p>
+              <p className="text-sm font-medium text-foreground">Select a conversation</p>
+              <p className="max-w-xs text-xs leading-relaxed">
+                Triage from the left, reply in the center, and keep customer context open on the
+                right. Press ? for keyboard shortcuts.
+              </p>
             </div>
           ) : (
             <div className="flex min-h-0 flex-1 overflow-hidden">
@@ -919,6 +975,7 @@ export function CaseInboxAdminClient({
                     setThreadReloadToken((n) => n + 1)
                   }}
                   orderContext={orderContext}
+                  orderExtras={orderExtras}
                   composerRef={composerRef}
                   mode={composerMode}
                   draft={draft}
@@ -928,7 +985,19 @@ export function CaseInboxAdminClient({
                     setDetailsOpen(false)
                     setSelectedKey(null)
                   }}
-                  onOpenDetails={() => setDetailsOpen(true)}
+                  detailsOpen={detailsOpen}
+                  onOpenDetails={() => {
+                    setDetailsOpen((open) => {
+                      const next = !open
+                      if (window.matchMedia("(min-width: 768px)").matches) {
+                        desktopDetailsPref.current = next
+                      } else {
+                        // Mobile always opens the customer pane from this control.
+                        return true
+                      }
+                      return next
+                    })
+                  }}
                   onTake={takeSelected}
                   onAssigned={(id) => {
                     applyAssignee(selected.key, id)

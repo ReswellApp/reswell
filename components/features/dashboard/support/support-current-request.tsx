@@ -41,13 +41,13 @@ export function SupportCurrentRequest({ item }: { item: UserSupportCaseListItem 
       <Link
         href={item.href}
         className={cn(
-          "mt-0 block rounded-2xl border p-5 shadow-sm transition-colors",
+          "mt-0 block rounded-2xl border p-5 transition-colors",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-listingHeart focus-visible:ring-offset-2",
           unread
-            ? "border-listingHeart/50 bg-listingHeart/[0.14] hover:border-listingHeart/70 hover:bg-listingHeart/[0.18]"
+            ? "border-listingHeart/50 bg-listingHeart/[0.14] shadow-sm hover:border-listingHeart/70 hover:bg-listingHeart/[0.18]"
             : waiting
-              ? "border-amber-300/80 bg-amber-50 hover:border-amber-400 hover:bg-amber-50/80 dark:border-amber-800/70 dark:bg-amber-950/40 dark:hover:bg-amber-950/55"
-              : "border-listingHeart/30 bg-listingHeart/[0.08] hover:border-listingHeart/45 hover:bg-listingHeart/[0.12]",
+              ? "border-amber-300/80 bg-amber-50 shadow-sm hover:border-amber-400 hover:bg-amber-50/80 dark:border-amber-800/70 dark:bg-amber-950/40 dark:hover:bg-amber-950/55"
+              : "border-border/70 bg-background hover:border-listingHeart/35 hover:bg-listingHeart/[0.04]",
         )}
       >
         <div className="flex items-start justify-between gap-3">
@@ -60,7 +60,7 @@ export function SupportCurrentRequest({ item }: { item: UserSupportCaseListItem 
                   ? "text-listingHeart"
                   : waiting
                     ? "text-amber-800 dark:text-amber-200"
-                    : "text-listingHeart",
+                    : "text-muted-foreground",
               )}
             >
               <span

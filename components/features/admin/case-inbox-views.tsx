@@ -58,10 +58,12 @@ export function CaseInboxViews({
             onClick={() => onChange(view.id)}
             className={cn(
               "flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] transition-colors",
-              compact && "shrink-0 py-1 text-[12px]",
+              compact && "shrink-0 rounded-full px-2.5 py-1 text-[12px] font-medium",
               selected
                 ? "bg-foreground text-background"
-                : "text-foreground hover:bg-muted/70",
+                : compact
+                  ? "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  : "text-foreground hover:bg-muted/70",
             )}
           >
             {compact ? null : <Icon className="h-3.5 w-3.5 shrink-0 opacity-80" aria-hidden />}

@@ -2,9 +2,10 @@
 
 import type { Ref } from "react"
 import Link from "next/link"
-import { CheckCircle2, ExternalLink, Package, User } from "lucide-react"
+import { CheckCircle2, ExternalLink, Package, PanelRight, User } from "lucide-react"
 import {
   firstNonEmptyText,
+  inboxInitials,
   type CaseInboxItem,
   type CaseInboxPriority,
 } from "@/lib/admin/case-inbox"
@@ -12,6 +13,8 @@ import type { SupportCaseStatus } from "@/lib/types/supportCase"
 import type { SupportCaseThreadMessage } from "@/lib/services/supportCaseThread"
 import type { StaffAssigneeRow } from "@/lib/db/searchInsightActions"
 import type { AdminOrderDetail } from "@/lib/db/adminOrders"
+import type { CaseOrderLabelContext } from "@/lib/admin/admin-order-capabilities"
+import { CaseInboxBriefing } from "@/components/features/admin/case-inbox-briefing"
 import { CaseInboxCommandBar } from "@/components/features/admin/case-inbox-command-bar"
 import { CaseInboxWalletCredit } from "@/components/features/admin/case-inbox-wallet-credit"
 import { SupportCaseThread } from "@/components/features/support/support-case-thread"
@@ -33,9 +36,11 @@ import { supportCaseResponseHref } from "@/lib/utils/support-case-paths"
 import {
   inboxCounterpartLabel,
   staffReplyPlaceholder,
+  staffWorkflowStatusLabel,
 } from "@/lib/admin/case-inbox-counterpart"
 import { supportMacroVarsFromOrder } from "@/lib/utils/support-macro-order-vars"
 import { useSupportMacroOrder } from "@/components/features/admin/support-macros/use-support-macro-order"
+import { cn } from "@/lib/utils"
 
 interface CaseInboxConversationProps {
   item: CaseInboxItem
@@ -52,6 +57,7 @@ interface CaseInboxConversationProps {
   savePending: boolean
   onBack: () => void
   onOpenDetails?: () => void
+  detailsOpen?: boolean
   onTake: () => void
   onAssigned: (id: string | null) => void
   onStatus: (status: SupportCaseStatus) => void
@@ -65,6 +71,7 @@ interface CaseInboxConversationProps {
   onSend: (disposition: ComposerDisposition) => void
   onWalletCredited?: () => void
   orderContext?: AdminOrderDetail | null
+  orderExtras?: CaseOrderLabelContext | null
   aiLoading?: boolean
   aiActive?: boolean
   aiError?: string | null
@@ -93,6 +100,7 @@ export function CaseInboxConversation({
   savePending,
   onBack,
   onOpenDetails,
+  detailsOpen = false,
   onTake,
   onAssigned,
   onStatus,
@@ -106,6 +114,7 @@ export function CaseInboxConversation({
   onSend,
   onWalletCredited,
   orderContext = null,
+  orderExtras = null,
   aiLoading,
   aiActive,
   aiError,
@@ -128,11 +137,12 @@ export function CaseInboxConversation({
     order_ref: item.orderRef,
     order: macroOrder,
   })
+  const statusLabel = staffWorkflowStatusLabel(item.status, item)
 
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background">
-      <header className="shrink-0 px-3 pt-3 md:px-5 md:pt-4">
-        <div className="mb-1 flex items-center justify-between gap-2 md:hidden">
+      <header className="shrink-0 border-b border-border/50 px-3 pb-3 pt-3 md:px-5 md:pt-4">
+        <div className="mb-2 flex items-center justify-between gap-2 md:hidden">
           <button
             type="button"
             className="inline-flex min-h-9 items-center text-sm font-medium text-muted-foreground"
@@ -151,17 +161,43 @@ export function CaseInboxConversation({
           ) : null}
         </div>
         <div className="flex items-start justify-between gap-2 md:gap-3">
-          <div className="min-w-0">
-            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-              Ticket {formatSupportCaseReference(item.id)}
-            </p>
-            <h2 className="mt-1 line-clamp-2 text-base font-semibold tracking-tight text-foreground md:truncate md:text-lg">
-              {item.subject}
-            </h2>
-            <p className="mt-0.5 truncate text-sm text-muted-foreground">
-              {item.fromName}
-              {item.fromEmail ? ` · ${item.fromEmail}` : null}
-            </p>
+          <div className="flex min-w-0 items-start gap-3">
+            <span
+              className={cn(
+                "mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[12px] font-semibold",
+                item.isNew
+                  ? "bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-100"
+                  : "bg-muted text-muted-foreground",
+              )}
+              aria-hidden
+            >
+              {inboxInitials(item.fromName)}
+            </span>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <h2 className="truncate text-base font-semibold tracking-tight text-foreground md:text-[17px]">
+                  {item.fromName}
+                </h2>
+                <span
+                  className={cn(
+                    "rounded-full px-2 py-0.5 text-[11px] font-medium",
+                    item.isOpen
+                      ? item.status === "waiting_on_you"
+                        ? "bg-amber-500/10 text-amber-800 dark:text-amber-200"
+                        : "bg-emerald-500/10 text-emerald-800 dark:text-emerald-200"
+                      : "bg-muted text-muted-foreground",
+                  )}
+                >
+                  {statusLabel}
+                </span>
+              </div>
+              <p className="mt-0.5 line-clamp-1 text-sm text-foreground/85">{item.subject}</p>
+              <p className="mt-0.5 truncate text-[12px] text-muted-foreground">
+                {formatSupportCaseReference(item.id)}
+                {item.fromEmail ? ` · ${item.fromEmail}` : null}
+                {item.orderRef ? ` · Order ${item.orderRef}` : null}
+              </p>
+            </div>
           </div>
           <div className="flex shrink-0 items-center gap-0.5 md:gap-1">
             {canCreditWallet && item.userId ? (
@@ -197,6 +233,19 @@ export function CaseInboxConversation({
                 <ExternalLink className="h-4 w-4" />
               </Link>
             </Button>
+            {onOpenDetails ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className={cn("hidden h-8 px-2 md:inline-flex", detailsOpen && "bg-muted")}
+                onClick={onOpenDetails}
+                aria-label={detailsOpen ? "Hide customer details" : "Show customer details"}
+                aria-pressed={detailsOpen}
+              >
+                <PanelRight className="h-4 w-4" />
+              </Button>
+            ) : null}
           </div>
         </div>
       </header>
@@ -213,13 +262,20 @@ export function CaseInboxConversation({
       />
 
       {item.isOpen ? (
-        <div className="shrink-0 px-3 pb-2 md:px-5 md:pb-3">
+        <div className="shrink-0 px-3 pb-2 pt-2 md:px-5">
           <Button type="button" className="h-9 w-full" disabled={savePending} onClick={onResolve}>
             <CheckCircle2 className="mr-1.5 h-4 w-4" />
             Resolve conversation
           </Button>
         </div>
       ) : null}
+
+      <CaseInboxBriefing
+        item={item}
+        messages={messages}
+        order={linkedOrder}
+        extras={orderExtras}
+      />
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-3 md:px-4">
