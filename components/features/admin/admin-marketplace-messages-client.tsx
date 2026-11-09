@@ -22,6 +22,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { cn } from "@/lib/utils"
 
 const PAGE_SIZE = 50
@@ -135,7 +136,7 @@ export function AdminMarketplaceMessagesClient() {
         </p>
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-center gap-2">
         <form onSubmit={handleSearch} className="flex min-w-0 w-full items-center gap-2 sm:max-w-md">
           <div className="relative min-w-0 flex-1">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -227,7 +228,7 @@ export function AdminMarketplaceMessagesClient() {
                             src={proxiedListingImageSrc(thumb)}
                             alt={listingTitle || "Listing"}
                             fill
-                            className="object-cover"
+                            className={listingPhotoFillClassName}
                             unoptimized
                           />
                         ) : (
@@ -321,7 +322,7 @@ export function AdminMarketplaceMessagesClient() {
       ) : null}
 
       {total > PAGE_SIZE && (
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-muted-foreground">
             Showing {offset + 1}–{Math.min(offset + PAGE_SIZE, total)} of {total}
           </p>

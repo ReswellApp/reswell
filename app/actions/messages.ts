@@ -1,7 +1,16 @@
 "use server"
 
 import { z } from "zod"
-import { revalidateMessagesInboxForParticipants } from "@/lib/cache/revalidate-messages-inbox"
+import {
+  revalidateMessagesInboxForParticipants,
+  revalidateMessagesInboxForUser,
+} from "@/lib/cache/revalidate-messages-inbox"
+import { resolveOperableOrderSellerId } from "@/lib/account-access/order-operator-session"
+import { getShopAccountContext, viewerForConversation } from "@/lib/services/accountAccess"
+import {
+  markInboxNotificationsReadForUser,
+  markMarketplaceConversationRead,
+} from "@/lib/services/messagesInbox"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { findMessagesSupportTicketMetaByConversationId } from "@/lib/db/contactMessages"
 import { getSupportCaseByContactMessageId } from "@/lib/db/supportCases"
@@ -9,7 +18,6 @@ import { getConversationForBuyerSellerListing, ensureConversationForBuyerSellerL
 import { evaluateMessagePolicyForSend } from "@/lib/messages/message-policy-enforcement"
 import { captureBlockedFraudMessage } from "@/lib/services/captureBlockedFraudMessage"
 import { trackKlaviyoSupportTicketResponse } from "@/lib/klaviyo/track-support-ticket-response"
-import { trackKlaviyoMessageSent } from "@/lib/klaviyo/track-message-sent"
 import { MESSAGE_BLOCKED_POLICY_ERROR } from "@/lib/messages/policy-errors"
 import {
   messagePolicyBlocksDelivery,
@@ -28,6 +36,7 @@ import { composerUnlockTokenSchema } from "@/lib/validations/composer-unlock"
 import { verifyMarketplaceComposerUnlock } from "@/lib/services/composerUnlock"
 import { marketplaceComposerUnlockDenied } from "@/lib/messages/composer-unlock-errors"
 import { sendMarketplaceMediaMessage } from "@/lib/services/sendMarketplaceMediaMessage"
+import { scheduleMarketplaceMessageSendSideEffects } from "@/lib/services/marketplaceMessageSendSideEffects"
 import { discardUnsentMessageAttachment } from "@/lib/services/discardUnsentMessageAttachment"
 import { captureServerEvent } from "@/lib/posthog-server"
 import {
@@ -393,17 +402,13 @@ export async function sendMarketplaceListingMessage(input: unknown) {
 
   const receiverId = user.id === ctx.buyerId ? ctx.sellerId : ctx.buyerId
 
-  const sendGuard = await evaluateUserMessageSend(supabase, user.id, receiverId)
+  const [sendGuard, policyDecision] = await Promise.all([
+    evaluateUserMessageSend(supabase, user.id, receiverId),
+    evaluateMessagePolicyForSend(supabase, user.id, conversation.id, body),
+  ])
   if (!sendGuard.ok) {
     return sendRestrictionBlockedResult(sendGuard)
   }
-
-  const policyDecision = await evaluateMessagePolicyForSend(
-    supabase,
-    user.id,
-    conversation.id,
-    body,
-  )
   if (policyDecision) {
     const blocked = await captureAndMaybeBlockPolicyViolation({
       conversationId: conversation.id,
@@ -434,31 +439,15 @@ export async function sendMarketplaceListingMessage(input: unknown) {
     return { error: "Failed to send message" as const }
   }
 
-  await supabase
-    .from("conversations")
-    .update({ last_message_at: new Date().toISOString() })
-    .eq("id", conversation.id)
-
-  revalidateMessagesInboxForParticipants(ctx.buyerId, ctx.sellerId)
-
-  const { data: senderProfile } = await supabase
-    .from("profiles")
-    .select("display_name, shop_name, is_shop")
-    .eq("id", user.id)
-    .maybeSingle()
-
-  void trackKlaviyoMessageSent({
-    senderUserId: user.id,
-    receiverUserId: receiverId,
-    message: body,
+  scheduleMarketplaceMessageSendSideEffects({
+    inserted,
     conversationId: conversation.id,
+    buyerId: ctx.buyerId,
+    sellerId: ctx.sellerId,
+    receiverId,
     listingId: listing_id,
-    messageId: inserted.id,
-    sentAt: inserted.created_at,
-    sessionSender: {
-      email: user.email ?? null,
-      profile: senderProfile,
-    },
+    writeDb: supabase,
+    senderEmail: user.email ?? null,
   })
 
   await captureServerEvent(user.id, "message_sent", {
@@ -524,17 +513,13 @@ export async function sendListingMessage(input: {
     conversation = ensured
   }
 
-  const sendGuard = await evaluateUserMessageSend(supabase, user.id, seller_id)
+  const [sendGuard, policyDecision] = await Promise.all([
+    evaluateUserMessageSend(supabase, user.id, seller_id),
+    evaluateMessagePolicyForSend(supabase, user.id, conversation.id, body),
+  ])
   if (!sendGuard.ok) {
     return sendRestrictionBlockedResult(sendGuard)
   }
-
-  const policyDecision = await evaluateMessagePolicyForSend(
-    supabase,
-    user.id,
-    conversation.id,
-    body,
-  )
   if (policyDecision) {
     const blocked = await captureAndMaybeBlockPolicyViolation({
       conversationId: conversation.id,
@@ -565,31 +550,15 @@ export async function sendListingMessage(input: {
     return { error: "Failed to send message" as const }
   }
 
-  await supabase
-    .from("conversations")
-    .update({ last_message_at: new Date().toISOString() })
-    .eq("id", conversation.id)
-
-  revalidateMessagesInboxForParticipants(user.id, seller_id)
-
-  const { data: senderProfile } = await supabase
-    .from("profiles")
-    .select("display_name, shop_name, is_shop")
-    .eq("id", user.id)
-    .maybeSingle()
-
-  void trackKlaviyoMessageSent({
-    senderUserId: user.id,
-    receiverUserId: seller_id,
-    message: body,
+  scheduleMarketplaceMessageSendSideEffects({
+    inserted: { ...inserted, content: body, sender_id: user.id },
     conversationId: conversation.id,
+    buyerId: user.id,
+    sellerId: seller_id,
+    receiverId: seller_id,
     listingId: listing_id ?? null,
-    messageId: inserted.id,
-    sentAt: inserted.created_at,
-    sessionSender: {
-      email: user.email ?? null,
-      profile: senderProfile,
-    },
+    writeDb: supabase,
+    senderEmail: user.email ?? null,
   })
 
   return { success: true as const, conversation_id: conversation.id }
@@ -599,6 +568,7 @@ export async function sendConversationReply(input: {
   conversation_id: string
   content: string
   composer_unlock_token: string
+  client_id?: string
 }) {
   const supabase = await createClient()
   const {
@@ -620,33 +590,60 @@ export async function sendConversationReply(input: {
     return { error: "Empty message" as const }
   }
 
-  const { data: conv, error: convErr } = await supabase
+  let { data: conv, error: convErr } = await supabase
     .from("conversations")
     .select("id, buyer_id, seller_id, listing_id")
     .eq("id", input.conversation_id)
-    .single()
+    .maybeSingle()
+
+  if (!conv) {
+    try {
+      const service = createServiceRoleClient()
+      const retry = await service
+        .from("conversations")
+        .select("id, buyer_id, seller_id, listing_id")
+        .eq("id", input.conversation_id)
+        .maybeSingle()
+      conv = retry.data
+      convErr = retry.error
+    } catch {
+      conv = null
+    }
+  }
 
   if (convErr || !conv) {
     return { error: "Conversation not found" as const }
   }
 
-  if (user.id !== conv.buyer_id && user.id !== conv.seller_id) {
+  const viewer = await viewerForConversation(user.id, conv.buyer_id, conv.seller_id)
+  if (!viewer.allowed || (viewer.senderId !== user.id && !viewer.useServiceRole)) {
     return { error: "Forbidden" as const }
   }
 
-  const receiverId = user.id === conv.buyer_id ? conv.seller_id : conv.buyer_id
+  const receiverId = viewer.viewerId === conv.buyer_id ? conv.seller_id : conv.buyer_id
+  const writeDb = viewer.useServiceRole ? createServiceRoleClient() : supabase
+  const clientId = input.client_id?.trim() || null
 
-  const sendGuard = await evaluateUserMessageSend(supabase, user.id, receiverId)
+  if (clientId) {
+    const { data: existing } = await writeDb
+      .from("messages")
+      .select("id, content, sender_id, created_at, is_read, metadata")
+      .eq("conversation_id", conv.id)
+      .eq("sender_id", viewer.senderId)
+      .contains("metadata", { client_id: clientId })
+      .maybeSingle()
+    if (existing) {
+      return { success: true as const, message: existing }
+    }
+  }
+
+  const [sendGuard, policyDecision] = await Promise.all([
+    evaluateUserMessageSend(supabase, user.id, receiverId),
+    evaluateMessagePolicyForSend(supabase, user.id, conv.id, body),
+  ])
   if (!sendGuard.ok) {
     return sendRestrictionBlockedResult(sendGuard)
   }
-
-  const policyDecision = await evaluateMessagePolicyForSend(
-    supabase,
-    user.id,
-    conv.id,
-    body,
-  )
   if (policyDecision) {
     const blocked = await captureAndMaybeBlockPolicyViolation({
       conversationId: conv.id,
@@ -662,14 +659,15 @@ export async function sendConversationReply(input: {
     if (blocked) return blocked
   }
 
-  const { data: inserted, error: msgError } = await supabase
+  const { data: inserted, error: msgError } = await writeDb
     .from("messages")
     .insert({
       conversation_id: conv.id,
-      sender_id: user.id,
+      sender_id: viewer.senderId,
       content: body,
+      ...(clientId ? { metadata: { client_id: clientId } } : {}),
     })
-    .select("id, content, sender_id, created_at, is_read")
+    .select("id, content, sender_id, created_at, is_read, metadata")
     .single()
 
   if (msgError || !inserted) {
@@ -677,54 +675,40 @@ export async function sendConversationReply(input: {
     return { error: "Failed to send message" as const }
   }
 
-  await supabase
-    .from("conversations")
-    .update({ last_message_at: new Date().toISOString() })
-    .eq("id", conv.id)
-
-  revalidateMessagesInboxForParticipants(conv.buyer_id, conv.seller_id)
-
-  const { data: senderProfile } = await supabase
-    .from("profiles")
-    .select("display_name, shop_name, is_shop")
-    .eq("id", user.id)
-    .maybeSingle()
-
-  void trackKlaviyoMessageSent({
-    senderUserId: user.id,
-    receiverUserId: receiverId,
-    message: body,
+  scheduleMarketplaceMessageSendSideEffects({
+    inserted,
     conversationId: conv.id,
+    buyerId: conv.buyer_id,
+    sellerId: conv.seller_id,
+    receiverId,
     listingId: conv.listing_id,
-    messageId: inserted.id,
-    sentAt: inserted.created_at,
-    sessionSender: {
-      email: user.email ?? null,
-      profile: senderProfile,
+    writeDb,
+    senderEmail: user.email ?? null,
+    afterPersist: async () => {
+      try {
+        const service = createServiceRoleClient()
+        const ticketMeta = await findMessagesSupportTicketMetaByConversationId(service, conv.id)
+        /** Support teammate is always `seller_id` in member↔support threads opened from Messages. */
+        const supportStaffReply =
+          viewer.senderId === conv.seller_id && ticketMeta != null && ticketMeta.email.trim() !== ""
+
+        if (supportStaffReply) {
+          const shadow = await getSupportCaseByContactMessageId(service, ticketMeta.id)
+          void trackKlaviyoSupportTicketResponse({
+            supportTicketId: ticketMeta.id,
+            supportCaseId: shadow?.id,
+            email: ticketMeta.email.trim(),
+            externalId: ticketMeta.user_id,
+            response: body,
+            responseType: "support_dm_reply",
+            uniqueId: `support-ticket-response-dm-${inserted.id}`,
+          })
+        }
+      } catch {
+        // Missing service role locally — Response metric skipped for support DM attribution.
+      }
     },
   })
-
-  try {
-    const service = createServiceRoleClient()
-    const ticketMeta = await findMessagesSupportTicketMetaByConversationId(service, conv.id)
-    /** Support teammate is always `seller_id` in member↔support threads opened from Messages. */
-    const supportStaffReply = user.id === conv.seller_id && ticketMeta != null && ticketMeta.email.trim() !== ""
-
-    if (supportStaffReply) {
-      const shadow = await getSupportCaseByContactMessageId(service, ticketMeta.id)
-      void trackKlaviyoSupportTicketResponse({
-        supportTicketId: ticketMeta.id,
-        supportCaseId: shadow?.id,
-        email: ticketMeta.email.trim(),
-        externalId: ticketMeta.user_id,
-        response: body,
-        responseType: "support_dm_reply",
-        uniqueId: `support-ticket-response-dm-${inserted.id}`,
-      })
-    }
-  } catch {
-    // Missing service role locally — Response metric skipped for support DM attribution.
-  }
 
   return { success: true as const, message: inserted }
 }
@@ -750,9 +734,22 @@ export async function sendConversationMediaReply(input: unknown) {
   )
   if (unlockDenied) return unlockDenied
 
+  const { data: conv, error: convErr } = await supabase
+    .from("conversations")
+    .select("buyer_id, seller_id")
+    .eq("id", parsed.data.conversation_id)
+    .maybeSingle()
+  if (convErr || !conv) {
+    return { error: "Conversation not found" as const }
+  }
+  const viewer = await viewerForConversation(user.id, conv.buyer_id, conv.seller_id)
+  if (!viewer.allowed || (viewer.senderId !== user.id && !viewer.useServiceRole)) {
+    return { error: "Forbidden" as const }
+  }
+
   const result = await sendMarketplaceMediaMessage({
     conversationId: parsed.data.conversation_id,
-    senderId: user.id,
+    senderId: viewer.senderId,
     attachment: parsed.data.attachment,
     caption: parsed.data.caption,
   })
@@ -783,9 +780,19 @@ export async function discardConversationMediaUpload(input: unknown) {
     return { error: "Unauthorized" as const }
   }
 
+  const { data: conv } = await supabase
+    .from("conversations")
+    .select("buyer_id, seller_id")
+    .eq("id", parsed.data.conversation_id)
+    .maybeSingle()
+  const viewer = conv
+    ? await viewerForConversation(user.id, conv.buyer_id, conv.seller_id)
+    : null
+  const senderId = viewer?.allowed ? viewer.senderId : user.id
+
   const result = await discardUnsentMessageAttachment({
     conversationId: parsed.data.conversation_id,
-    senderId: user.id,
+    senderId,
     path: parsed.data.path,
   })
 
@@ -832,23 +839,20 @@ export async function sendConversationLocationReply(input: unknown) {
     return { error: "Conversation not found" as const }
   }
 
-  if (user.id !== conv.buyer_id && user.id !== conv.seller_id) {
+  const viewer = await viewerForConversation(user.id, conv.buyer_id, conv.seller_id)
+  if (!viewer.allowed || (viewer.senderId !== user.id && !viewer.useServiceRole)) {
     return { error: "Forbidden" as const }
   }
 
-  const receiverId = user.id === conv.buyer_id ? conv.seller_id : conv.buyer_id
+  const receiverId = viewer.viewerId === conv.buyer_id ? conv.seller_id : conv.buyer_id
 
-  const sendGuard = await evaluateUserMessageSend(supabase, user.id, receiverId)
+  const [sendGuard, policyDecision] = await Promise.all([
+    evaluateUserMessageSend(supabase, user.id, receiverId),
+    evaluateMessagePolicyForSend(supabase, user.id, conv.id, formattedAddress),
+  ])
   if (!sendGuard.ok) {
     return sendRestrictionBlockedResult(sendGuard)
   }
-
-  const policyDecision = await evaluateMessagePolicyForSend(
-    supabase,
-    user.id,
-    conv.id,
-    formattedAddress,
-  )
   if (policyDecision) {
     const blocked = await captureAndMaybeBlockPolicyViolation({
       conversationId: conv.id,
@@ -874,11 +878,12 @@ export async function sendConversationLocationReply(input: unknown) {
 
   const body = composeLocationShareMessageBody(formattedAddress)
 
-  const { data: inserted, error: msgError } = await supabase
+  const writeDb = viewer.useServiceRole ? createServiceRoleClient() : supabase
+  const { data: inserted, error: msgError } = await writeDb
     .from("messages")
     .insert({
       conversation_id: conv.id,
-      sender_id: user.id,
+      sender_id: viewer.senderId,
       content: body,
       metadata: metadataPayload,
     })
@@ -890,53 +895,39 @@ export async function sendConversationLocationReply(input: unknown) {
     return { error: "Failed to send message" as const }
   }
 
-  await supabase
-    .from("conversations")
-    .update({ last_message_at: new Date().toISOString() })
-    .eq("id", conv.id)
-
-  revalidateMessagesInboxForParticipants(conv.buyer_id, conv.seller_id)
-
-  const { data: senderProfile } = await supabase
-    .from("profiles")
-    .select("display_name, shop_name, is_shop")
-    .eq("id", user.id)
-    .maybeSingle()
-
-  void trackKlaviyoMessageSent({
-    senderUserId: user.id,
-    receiverUserId: receiverId,
-    message: body,
+  scheduleMarketplaceMessageSendSideEffects({
+    inserted,
     conversationId: conv.id,
+    buyerId: conv.buyer_id,
+    sellerId: conv.seller_id,
+    receiverId,
     listingId: conv.listing_id,
-    messageId: inserted.id,
-    sentAt: inserted.created_at,
-    sessionSender: {
-      email: user.email ?? null,
-      profile: senderProfile,
+    writeDb,
+    senderEmail: user.email ?? null,
+    afterPersist: async () => {
+      try {
+        const service = createServiceRoleClient()
+        const ticketMeta = await findMessagesSupportTicketMetaByConversationId(service, conv.id)
+        const supportStaffReply =
+          viewer.senderId === conv.seller_id && ticketMeta != null && ticketMeta.email.trim() !== ""
+
+        if (supportStaffReply) {
+          const shadow = await getSupportCaseByContactMessageId(service, ticketMeta.id)
+          void trackKlaviyoSupportTicketResponse({
+            supportTicketId: ticketMeta.id,
+            supportCaseId: shadow?.id,
+            email: ticketMeta.email.trim(),
+            externalId: ticketMeta.user_id,
+            response: body,
+            responseType: "support_dm_reply",
+            uniqueId: `support-ticket-response-dm-${inserted.id}`,
+          })
+        }
+      } catch {
+        // Missing service role locally — Response metric skipped for support DM attribution.
+      }
     },
   })
-
-  try {
-    const service = createServiceRoleClient()
-    const ticketMeta = await findMessagesSupportTicketMetaByConversationId(service, conv.id)
-    const supportStaffReply = user.id === conv.seller_id && ticketMeta != null && ticketMeta.email.trim() !== ""
-
-    if (supportStaffReply) {
-      const shadow = await getSupportCaseByContactMessageId(service, ticketMeta.id)
-      void trackKlaviyoSupportTicketResponse({
-        supportTicketId: ticketMeta.id,
-        supportCaseId: shadow?.id,
-        email: ticketMeta.email.trim(),
-        externalId: ticketMeta.user_id,
-        response: body,
-        responseType: "support_dm_reply",
-        uniqueId: `support-ticket-response-dm-${inserted.id}`,
-      })
-    }
-  } catch {
-    // Missing service role locally — Response metric skipped for support DM attribution.
-  }
 
   return { success: true as const, message: inserted }
 }
@@ -956,7 +947,10 @@ export async function sendSellerReviewRequest(input: unknown) {
     return { error: "Unauthorized" as const }
   }
 
-  const result = await sendSellerReviewRequestForOrder(supabase, user.id, parsed.data.order_id, {
+  const seller = await resolveOperableOrderSellerId(supabase, parsed.data.order_id)
+  if (!seller.ok) return { error: seller.error }
+
+  const result = await sendSellerReviewRequestForOrder(supabase, seller.sellerId, parsed.data.order_id, {
     email: user.email ?? null,
   })
 
@@ -967,14 +961,29 @@ export async function sendSellerReviewRequest(input: unknown) {
   return { success: true as const, conversation_id: result.conversationId }
 }
 
+const refreshMessagesInboxOptionsSchema = z
+  .object({
+    conversationLimit: z.number().int().positive().max(100).optional(),
+    preview: z.boolean().optional(),
+  })
+  .optional()
+
 /**
  * Fresh inbox read for live updates. Bypasses the tag cache so a realtime
  * conversation change can pull the current preview/unread state without a full
  * route refresh. Scoped to the signed-in user via the verified session.
+ *
+ * Pass `conversationLimit` + `preview` for the header dropdown so it does not
+ * scan the member's full conversation history or listing-image payloads.
  */
-export async function refreshMessagesInbox(): Promise<
-  { error: string } | MessagesInboxPayload
-> {
+export async function refreshMessagesInbox(
+  options?: { conversationLimit?: number; preview?: boolean },
+): Promise<{ error: string } | MessagesInboxPayload> {
+  const parsed = refreshMessagesInboxOptionsSchema.safeParse(options)
+  if (!parsed.success) {
+    return { error: "Invalid request" }
+  }
+
   const supabase = await createClient()
   const {
     data: { user },
@@ -984,7 +993,10 @@ export async function refreshMessagesInbox(): Promise<
     return { error: "Unauthorized" }
   }
 
-  return getMessagesInboxForUser(user.id)
+  const shop = await getShopAccountContext()
+  const inboxUserId =
+    shop?.actingAsShop && shop.permissions.has("messages.read") ? shop.accountId : user.id
+  return getMessagesInboxForUser(inboxUserId, parsed.data)
 }
 
 export type CounterpartyThreadProfile = {
@@ -1035,6 +1047,9 @@ export async function loadCounterpartyThreads(
   }
 
   const service = createServiceRoleClient()
+  const shop = await getShopAccountContext()
+  const viewerId =
+    shop?.actingAsShop && shop.permissions.has("messages.read") ? shop.accountId : user.id
 
   const [{ data: profile }, { data: convData }] = await Promise.all([
     service
@@ -1046,7 +1061,7 @@ export async function loadCounterpartyThreads(
       .from("conversations")
       .select(COUNTERPARTY_CONVERSATIONS_SELECT)
       .or(
-        `and(buyer_id.eq.${user.id},seller_id.eq.${otherUserId}),and(buyer_id.eq.${otherUserId},seller_id.eq.${user.id})`,
+        `and(buyer_id.eq.${viewerId},seller_id.eq.${otherUserId}),and(buyer_id.eq.${otherUserId},seller_id.eq.${viewerId})`,
       )
       .order("last_message_at", { ascending: false })
       .order("created_at", { ascending: false, referencedTable: "messages" })
@@ -1071,7 +1086,7 @@ export async function loadCounterpartyThreads(
       .select("id, content, is_read, sender_id, created_at, metadata, conversation_id")
       .in("conversation_id", conversationIds)
       .eq("is_read", false)
-      .neq("sender_id", user.id)
+      .neq("sender_id", viewerId)
 
     const unreadByConversation = new Map<string, InboxConversationRow["messages"]>()
     for (const row of (unreadData ?? []) as Array<
@@ -1093,7 +1108,7 @@ export async function loadCounterpartyThreads(
     }
   }
 
-  const sellerThreads = threads.filter((thread) => thread.seller_id === user.id)
+  const sellerThreads = threads.filter((thread) => thread.seller_id === viewerId)
   if (sellerThreads.length > 0) {
     const combined = sellerThreads.flatMap((thread) => thread.messages)
     const redacted = await redactSantaBarbaraDropoffShippingLabels(service, combined)
@@ -1107,7 +1122,7 @@ export async function loadCounterpartyThreads(
   }
 
   return {
-    currentUserId: user.id,
+    currentUserId: viewerId,
     otherUser: (profile as CounterpartyThreadProfile | null) ?? {
       id: otherUserId,
       display_name: "Member",
@@ -1133,23 +1148,15 @@ export async function markInboxNotificationsRead(): Promise<
     return { error: "Unauthorized" }
   }
 
-  const service = createServiceRoleClient()
-  const { error } = await service
-    .from("notifications")
-    .update({ is_read: true })
-    .eq("user_id", user.id)
-    .eq("is_read", false)
-
-  if (error) {
-    return { error: "Failed to update notifications" }
-  }
-
+  const result = await markInboxNotificationsReadForUser(user.id)
+  if (!result.ok) return { error: result.error }
+  revalidateMessagesInboxForUser(user.id)
   return { ok: true }
 }
 
 const CONVERSATION_THREAD_SELECT = `
   *,
-  listing:listings(id, title, price, section, slug, listing_images(url, thumbnail_url, is_primary), minimum_offer_pct),
+  listing:listings(id, title, price, status, section, slug, listing_images(url, thumbnail_url, is_primary), minimum_offer_pct),
   buyer:profiles!conversations_buyer_id_fkey(id, display_name, avatar_url, shop_verified),
   seller:profiles!conversations_seller_id_fkey(id, display_name, avatar_url, shop_verified)
 `
@@ -1168,7 +1175,7 @@ const CONVERSATION_THREAD_OFFER_SELECT =
   "id, status, current_amount, initial_amount, buyer_id, seller_id, listing_id, seller_initiated, expires_at, offer_timeline, fulfillment, shipping_amount, line_items, payment_intent_id"
 
 const CONVERSATION_THREAD_LISTING_SELECT =
-  "id, title, price, section, slug, listing_images(url, thumbnail_url, is_primary), minimum_offer_pct"
+  "id, title, price, status, section, slug, listing_images(url, thumbnail_url, is_primary), minimum_offer_pct"
 
 export type ConversationThreadListingOption = {
   conversationId: string
@@ -1235,11 +1242,12 @@ export async function loadConversationThread(
   const buyerId = conv.buyer_id as string
   const sellerId = conv.seller_id as string
 
-  if (user.id !== buyerId && user.id !== sellerId) {
+  const viewer = await viewerForConversation(user.id, buyerId, sellerId)
+  if (!viewer.allowed) {
     return { error: "Conversation not found" }
   }
 
-  const otherUserId = user.id === buyerId ? sellerId : buyerId
+  const otherUserId = viewer.viewerId === buyerId ? sellerId : buyerId
 
   const [{ data: siblingRows }, { data: msgData }, { count: unreadInboundCount }, otherPartyProfile] =
     await Promise.all([
@@ -1261,7 +1269,7 @@ export async function loadConversationThread(
         .from("messages")
         .select("id", { count: "exact", head: true })
         .eq("conversation_id", conversationId)
-        .neq("sender_id", user.id)
+        .neq("sender_id", viewer.viewerId)
         .eq("is_read", false),
       loadOtherPartyProfile(service, otherUserId).catch(() => null),
     ])
@@ -1287,7 +1295,7 @@ export async function loadConversationThread(
   // renders oldest-first, so restore ascending order here.
   let messages = ((msgData ?? []) as Record<string, unknown>[]).slice().reverse()
   let hiddenShippingLabelOrderIds: string[] = []
-  if (user.id === sellerId) {
+  if (viewer.viewerId === sellerId) {
     const redacted = await redactSantaBarbaraDropoffShippingLabels(service, messages)
     messages = redacted.messages
     hiddenShippingLabelOrderIds = redacted.hiddenOrderIds
@@ -1329,7 +1337,7 @@ export async function loadConversationThread(
   }
 
   return {
-    currentUserId: user.id,
+    currentUserId: viewer.viewerId,
     conversation: conv,
     listingThreads,
     messages,
@@ -1378,29 +1386,23 @@ export async function markConversationThreadRead(
   const buyerId = convData.buyer_id as string
   const sellerId = convData.seller_id as string
 
-  if (user.id !== buyerId && user.id !== sellerId) {
+  const viewer = await viewerForConversation(user.id, buyerId, sellerId)
+  if (!viewer.allowed) {
     return { error: "Conversation not found" }
   }
 
-  const [{ error: msgErr }] = await Promise.all([
-    service
-      .from("messages")
-      .update({ is_read: true })
-      .eq("conversation_id", conversationId)
-      .neq("sender_id", user.id)
-      .eq("is_read", false),
-    service
-      .from("notifications")
-      .update({ is_read: true })
-      .eq("user_id", user.id)
-      .eq("is_read", false),
-  ])
-
-  if (msgErr) {
-    return { error: "Failed to mark read" }
+  const marked = await markMarketplaceConversationRead(viewer.viewerId, conversationId)
+  if (!marked.ok) {
+    return { error: marked.error }
   }
 
-  revalidateMessagesInboxForParticipants(buyerId, sellerId)
+  await service
+    .from("notifications")
+    .update({ is_read: true })
+    .eq("user_id", user.id)
+    .eq("is_read", false)
+
+  revalidateMessagesInboxForParticipants(marked.buyerId, marked.sellerId)
 
   return { ok: true }
 }

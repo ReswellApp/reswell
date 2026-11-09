@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import { platformAccessForSignedInUser } from '@/lib/account-access/platform-access'
 import { privatePageMetadata } from '@/lib/site-metadata'
 import { AdminShippingClient } from './shipping-admin-client'
 import { createClient } from '@/lib/supabase/server'
@@ -21,11 +22,12 @@ export default async function AdminShippingPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('is_admin')
+    .select('is_admin, is_employee')
     .eq('id', user.id)
     .maybeSingle()
 
-  if (!profile?.is_admin) {
+  const access = platformAccessForSignedInUser({ profile })
+  if (!access.isAdmin && !access.isEmployee) {
     redirect('/')
   }
 

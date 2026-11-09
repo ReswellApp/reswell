@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { listingDetailHref } from "@/lib/listing-href"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { createClient } from "@/lib/supabase/client"
@@ -448,7 +449,7 @@ export function AdminShopClient() {
                       key={url}
                       className="relative h-24 w-24 overflow-hidden rounded-lg border border-border bg-muted"
                     >
-                      <Image src={src} alt="" fill className="object-cover" sizes="96px" />
+                      <Image src={src} alt="" fill className={listingPhotoFillClassName} sizes="96px" />
                       {isRotating ? (
                         <div className="absolute inset-0 z-[2] flex items-center justify-center bg-black/40">
                           <Loader2 className="h-5 w-5 animate-spin text-white" />
@@ -531,7 +532,7 @@ export function AdminShopClient() {
               <li key={p.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
                 <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-muted">
                   {thumb ? (
-                    <Image src={thumb} alt="" fill className="object-cover" sizes="64px" />
+                    <Image src={thumb} alt="" fill className={listingPhotoFillClassName} sizes="64px" />
                   ) : (
                     <div className="flex h-full items-center justify-center text-muted-foreground">
                       <Trash2 className="h-4 w-4 opacity-40" />

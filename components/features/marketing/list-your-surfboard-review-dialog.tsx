@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { MessageProfileAvatar } from "@/components/features/messages/message-profile-avatar"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { SellerRatingStarRow } from "@/components/seller-rating-stars"
 import { Badge } from "@/components/ui/badge"
 import type {
@@ -64,7 +65,7 @@ export function ListYourSurfboardReviewDialog({
                 src={review.listingImageSrc}
                 alt={listingImageAlt}
                 fill
-                className="object-cover"
+                className={listingPhotoFillClassName}
                 sizes="(max-width: 640px) calc(100vw - 2rem), 512px"
                 placeholder="blur"
                 blurDataURL={portraitShimmer}

@@ -5,6 +5,13 @@ import type { OrderTrackingDetail } from "./order-tracking-detail.ts"
 const PRE_SCAN_EVENT =
   /label created|shipping label created|electronic shipping|shipment information sent|pre-?shipment|information received|not yet in system|awaiting item|waiting for (the )?package|label printed|shipper created/i
 
+/** True when this carrier message is label paperwork, not a handoff scan. */
+export function carrierEventIsPreScan(description: string | null | undefined): boolean {
+  const text = description?.trim() ?? ""
+  if (!text) return false
+  return PRE_SCAN_EVENT.test(text)
+}
+
 /** Carrier messages that mean a physical scan happened. */
 const POSSESSION_EVENT =
   /accepted|picked up|pickup scan|possession|arrived at|departed|in transit|out for delivery|delivered|processed through|origin scan|destination scan|package received/i
@@ -21,7 +28,7 @@ export function shipEngineTrackingIndicatesPhysicalScan(
 
   for (const event of detail.events ?? []) {
     const text = event.description?.trim() ?? ""
-    if (!text || PRE_SCAN_EVENT.test(text)) continue
+    if (!text || carrierEventIsPreScan(text)) continue
     if (POSSESSION_EVENT.test(text)) return true
   }
   return false

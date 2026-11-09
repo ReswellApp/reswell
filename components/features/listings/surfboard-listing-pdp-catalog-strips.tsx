@@ -3,15 +3,12 @@ import { ListingPdpRecentSections } from "@/components/features/listings/listing
 import { HomePeerListingScrollTile, HomeListingScrollRow, type HomePeerScrollListing } from "@/components/features/home"
 import { ListingDetailBottomStripSkeleton } from "@/components/listing-detail-page-loading"
 import { fetchSimilarSurfboardsForListingPdp } from "@/lib/db/listing-detail-similar-surfboards"
-import {
-  HOME_PEER_LISTING_WITH_PROFILE_SELECT,
-  hydrateHomePeerListingRows,
-} from "@/lib/db/home-peer-listing-feed"
+import { fetchMoreFromSellerListings, PDP_SELLER_LISTING_LIMIT } from "@/lib/db/listing-pdp-seller-listings"
+import { hydrateHomePeerListingRows } from "@/lib/db/home-peer-listing-feed"
+import { sellerListingRailTitle, similarListingRailTitle } from "@/lib/listing-pdp-rail-titles"
 import { fetchSignedInPdpRecentlyViewedSurfboards } from "@/lib/services/pdp-recent-strip-listings"
 import { getDb } from "@/lib/supabase/db"
 import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
-
-const SELLER_BOARDS_PDP_LIMIT = 12
 
 export function SurfboardListingPdpCatalogStripsFallback() {
   return (
@@ -41,7 +38,7 @@ export async function SurfboardListingPdpCatalogStrips({
     typeof board.price === "number" ? board.price : Number.parseFloat(String(board.price)) || 0
 
   let similarBoardsRaw: Awaited<ReturnType<typeof fetchSimilarSurfboardsForListingPdp>> = []
-  let sellerBoardsRes: { data: Record<string, unknown>[] | null } = { data: [] }
+  let sellerBoardsRes: Awaited<ReturnType<typeof fetchMoreFromSellerListings>> = []
   let dbRecentListings: Awaited<
     ReturnType<typeof fetchSignedInPdpRecentlyViewedSurfboards>
   > | undefined
@@ -53,16 +50,12 @@ export async function SurfboardListingPdpCatalogStrips({
         boardType: board.board_type,
         priceUsd: listPriceNum,
       }),
-      catalog
-        .from("listings")
-        .select(HOME_PEER_LISTING_WITH_PROFILE_SELECT)
-        .eq("user_id", board.user_id)
-        .eq("status", "active")
-        .eq("section", "surfboards")
-        .eq("hidden_from_site", false)
-        .neq("id", board.id)
-        .order("created_at", { ascending: false })
-        .limit(SELLER_BOARDS_PDP_LIMIT),
+      fetchMoreFromSellerListings(catalog, {
+        sellerId: board.user_id,
+        section: "surfboards",
+        excludeListingId: board.id,
+        limit: PDP_SELLER_LISTING_LIMIT,
+      }),
       user
         ? fetchSignedInPdpRecentlyViewedSurfboards(supabase, user.id, board.id)
         : Promise.resolve(undefined),
@@ -71,7 +64,7 @@ export async function SurfboardListingPdpCatalogStrips({
     console.error("[surfboard-pdp] catalog strips failed", error)
   }
 
-  const sellerBoards = hydrateHomePeerListingRows((sellerBoardsRes.data ?? []) as Record<string, unknown>[])
+  const sellerBoards = sellerBoardsRes
   const similarBoards = hydrateHomePeerListingRows(similarBoardsRaw)
   const stripIds = [
     ...sellerBoards.map((item) => item.id),
@@ -96,7 +89,7 @@ export async function SurfboardListingPdpCatalogStrips({
     <>
       {similarBoards.length > 0 ? (
         <section className="mt-10 border-t border-neutral-200/90 pt-8 dark:border-neutral-700/70">
-          <h2 className="mb-8 text-2xl font-bold text-foreground">Similar boards</h2>
+          <h2 className="mb-8 text-2xl font-bold text-foreground">{similarListingRailTitle("surfboards")}</h2>
           <HomeListingScrollRow uniformCardHeights>
             {similarBoards.map((row) => (
               <HomePeerListingScrollTile
@@ -113,7 +106,7 @@ export async function SurfboardListingPdpCatalogStrips({
       {sellerBoards.length > 0 ? (
         <section className="mt-16 min-w-0 w-full border-t border-neutral-200/90 pt-12 dark:border-neutral-700/70">
           <h2 className="mb-8 text-2xl font-bold text-foreground">
-            More boards from this seller
+            {sellerListingRailTitle("surfboards")}
           </h2>
           <HomeListingScrollRow uniformCardHeights>
             {sellerBoards.map((item) => (

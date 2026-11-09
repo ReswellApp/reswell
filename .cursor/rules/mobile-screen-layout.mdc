@@ -1,0 +1,26 @@
+---
+description: Reswell Expo mobile — standard screen layout, scroll insets, and horizontal rails.
+globs: apps/mobile/**/*.tsx
+alwaysApply: false
+---
+
+# Mobile screen layout
+
+Use `ScreenShell`, `ScreenScroll`, and `ScreenFooter` from `@/components/screen-shell` for new full-screen routes.
+
+## Pattern
+
+- **`ScreenShell`** — `flex: 1` root; measures sticky footer height for scroll inset.
+- **`ScreenScroll`** — vertical page scroll with tab-bar inset (tab routes) and/or footer inset (`reserveFooter`).
+- **`ScreenFooter`** — absolute bottom bar; children handle safe-area `paddingBottom` (e.g. `useSafeAreaInsets()`).
+- **`HorizontalRail`** — nested horizontal scroll; use `horizontalRailContentStyle()` for gutter + gap.
+
+## Defaults
+
+- Horizontal gutter: `SCREEN_GUTTER` (16).
+- Custom top chrome (e.g. `ScreenSearchHeader`): pass `contentInsetAdjustmentBehavior="never"` on `ScreenScroll`.
+- Do not hardcode large `paddingBottom` (e.g. 140) for footers — use `ScreenFooter` + `reserveFooter`.
+
+## Tab screens
+
+`ScreenScroll` already applies floating tab bar inset via `useFloatingTabBarContentInset`. No footer unless the screen has its own sticky actions.

@@ -47,6 +47,7 @@ import {
   listBrandProductCategoriesByBrandIds,
   syncBrandProductCategories,
 } from "@/lib/db/brand-product-categories"
+import { isPublicCatalogModelName } from "@/lib/brands/public-catalog-model"
 import { isValidBrandSlug, slugifyBrandName } from "@/lib/brands/slug"
 import { syncBrandToIndex } from "@/lib/elasticsearch/brands-index"
 import { syncSellCatalogBrandToIndex } from "@/lib/elasticsearch/sell-catalog-index"
@@ -156,7 +157,7 @@ function loadSeedFile(path: string): {
             description: m.description ?? null,
             board_category_slug: parseBoardCategorySlug(m.board_category_slug),
           }))
-          .filter((m) => m.name.length > 0),
+          .filter((m) => isPublicCatalogModelName(m.name)),
       }))
       .filter((b) => b.name.length > 0 && isValidBrandSlug(b.slug)),
   }
@@ -191,7 +192,7 @@ function loadBackfillFile(path: string): Map<string, SeedModel[]> {
             description: m.description ?? null,
             board_category_slug: parseBoardCategorySlug(m.board_category_slug),
           }))
-          .filter((m) => m.name.length > 0),
+          .filter((m) => isPublicCatalogModelName(m.name)),
       )
     }
     return out

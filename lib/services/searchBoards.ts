@@ -515,23 +515,4 @@ export async function resolveBoardsSearchQuery(
   }
 }
 
-/** Build a `/boards` href from a free-text query (nav submit / NL search landing). */
-export function boardsSearchHrefFromQuery(
-  rawQuery: string,
-  options?: {
-    brandModelId?: string | null
-    brandId?: string | null
-    lengthToken?: string | null
-    navSubmitted?: boolean
-  },
-): string {
-  const params = new URLSearchParams()
-  const q = rawQuery.trim()
-  if (q) params.set("q", q)
-  if (options?.navSubmitted) params.set("nq", "1")
-  if (options?.brandModelId) params.set("brandModelId", options.brandModelId)
-  else if (options?.brandId) params.set("brandId", options.brandId)
-  if (options?.lengthToken) params.set("dimLength", options.lengthToken)
-  const qs = params.toString()
-  return qs ? `/boards?${qs}` : "/boards"
-}
+export { boardsSearchHrefFromQuery } from "@/lib/utils/search-results-filter-href"

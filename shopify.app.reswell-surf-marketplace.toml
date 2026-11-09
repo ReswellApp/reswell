@@ -1,0 +1,22 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "15ca8076e0c17c467987c2eceed6d96f"
+name = "Reswell: Surf Marketplace"
+application_url = "https://www.reswell.app/api/integrations/shopify/install"
+embedded = false
+
+[webhooks]
+api_version = "2026-10"
+
+  [[webhooks.subscriptions]]
+  uri = "https://www.reswell.app/api/webhooks/shopify"
+  compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "write_inventory,read_inventory,read_locations,read_orders,write_orders,read_products,write_products"
+optional_scopes = [ ]
+use_legacy_install_flow = true
+
+[auth]
+redirect_urls = [ "https://www.reswell.app/api/integrations/shopify/callback" ]

@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
-import { ImagePlus, Loader2 } from "lucide-react"
+import { Plus } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -13,22 +13,51 @@ import {
   assertAcceptedMessageMediaFile,
   isAcceptedMessageVideoFile,
 } from "@/lib/message-media-pipeline"
-import {
-  discardConversationMediaUpload,
-  sendConversationMediaReply,
-} from "@/app/actions/messages"
+import { discardConversationMediaUpload } from "@/app/actions/messages"
 import { getPolicyBlockFromSendResult } from "@/lib/messages/policy-block-client"
+import { PENDING_THREAD_MESSAGE_ID_PREFIX } from "@/lib/messages/local-phone-policy-block-message"
 import type { MessagePolicyReasonCode } from "@/lib/messages/fraud-reason-codes"
 import { PromiseDeadlineError, raceWithDeadline } from "@/lib/utils/race-with-deadline"
+import { retryOnceOnAbort } from "@/lib/utils/retry-on-abort"
 import { friendlyMessageMediaErrorMessage } from "@/lib/utils/friendly-message-media-error"
 import { isAbortError } from "@/lib/utils/is-abort-error"
-import type { MarketplaceMessageAttachment } from "@/lib/validations/marketplace-message-attachment"
+import {
+  composeMediaAttachmentMessageBody,
+  type MarketplaceMessageAttachment,
+} from "@/lib/validations/marketplace-message-attachment"
 import {
   MessageMediaDraftPreview,
   type MessageMediaDraft,
 } from "@/components/features/messages/message-media-draft-preview"
 
 const MEDIA_SEND_SERVER_ACTION_MS = 45_000
+
+async function postConversationMediaReply(body: {
+  conversation_id: string
+  attachment: Omit<MarketplaceMessageAttachment, "bucket">
+  caption?: string
+  composer_unlock_token: string
+}): Promise<unknown> {
+  try {
+    const res = await retryOnceOnAbort(() =>
+      fetch("/api/messages/send-media", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        keepalive: true,
+        body: JSON.stringify(body),
+      }),
+    )
+    const json: unknown = await res.json().catch(() => null)
+    if (json && typeof json === "object") return json
+  } catch {
+    /* navigation abort after the retry still failed */
+  }
+  return { error: "Could not send message" as const }
+}
 
 type SentMediaMessage = {
   id: string
@@ -55,6 +84,15 @@ function overallProgress(phase: MessageMediaDraft["phase"], prepareRatio: number
   return 0
 }
 
+export type OptimisticMediaDraft = {
+  id: string
+  kind: "image" | "video"
+  previewUrl: string
+  fileName: string
+  caption: string
+  content: string
+}
+
 export function MessageMediaSendButton({
   conversationId,
   disabled,
@@ -65,18 +103,34 @@ export function MessageMediaSendButton({
   ensureConversationId,
   onDraftUiChange,
   composerUnlockToken,
+  onOptimistic,
+  onProgress,
+  onFailed,
+  onDismiss,
+  registerRetry,
 }: {
   conversationId: string | null
   disabled?: boolean
   caption?: string
   composerUnlockToken?: string | null
-  onSent: (message: SentMediaMessage) => void
-  onBlockedPolicy?: (originalContent: string, reasonCode: MessagePolicyReasonCode) => void
+  onSent: (message: SentMediaMessage, draftId: string) => void
+  onBlockedPolicy?: (
+    originalContent: string,
+    reasonCode: MessagePolicyReasonCode,
+    draftId?: string,
+  ) => void
   className?: string
   /** Creates the conversation on demand when media is the first message. */
   ensureConversationId?: () => Promise<string | null>
   /** Renders the draft preview outside the icon button (composer column). */
   onDraftUiChange?: (node: ReactNode) => void
+  /** Put the photo in the thread immediately (iMessage-style). */
+  onOptimistic?: (draft: OptimisticMediaDraft) => void
+  onProgress?: (draftId: string, progress: number) => void
+  onFailed?: (draftId: string) => void
+  /** Drop a previous optimistic bubble when the user picks a different file. */
+  onDismiss?: (draftId: string) => void
+  registerRetry?: (retry: (draftId: string) => void) => void
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const composerUnlockTokenRef = useRef(composerUnlockToken)
@@ -133,6 +187,7 @@ export function MessageMediaSendButton({
       const signal = abort.signal
 
       const patchDraft = (patch: Partial<MessageMediaDraft>) => {
+        if (typeof patch.progress === "number") onProgress?.(draftId, patch.progress)
         setDraft((prev) => {
           if (!prev || prev.id !== draftId) return prev
           return { ...prev, ...patch }
@@ -183,7 +238,7 @@ export function MessageMediaSendButton({
         patchDraft({ phase: "sending", progress: 95 })
 
         const result = await raceWithDeadline(
-          sendConversationMediaReply({
+          postConversationMediaReply({
             conversation_id: job.conversationId,
             attachment: uploaded.attachment,
             caption: job.caption,
@@ -207,7 +262,7 @@ export function MessageMediaSendButton({
               clearDraftPreviewUrl(prev?.previewUrl)
               return null
             })
-            onBlockedPolicy?.(job.caption?.trim() || "", policyReason)
+            onBlockedPolicy?.(job.caption?.trim() || "", policyReason, draftId)
             return
           }
 
@@ -222,16 +277,18 @@ export function MessageMediaSendButton({
             progress: 0,
             errorMessage: message || "Couldn't send this. Tap Retry.",
           })
+          onFailed?.(draftId)
           return
         }
 
         job.uploadedPath = null
         jobRef.current = null
+        onSent(result.message as SentMediaMessage, draftId)
         setDraft((prev) => {
-          clearDraftPreviewUrl(prev?.previewUrl)
+          const url = prev?.previewUrl
+          if (url) window.setTimeout(() => clearDraftPreviewUrl(url), 1500)
           return null
         })
-        onSent(result.message)
       } catch (error) {
         if (isAbortError(error) || signal.aborted) {
           return
@@ -245,6 +302,7 @@ export function MessageMediaSendButton({
             progress: 0,
             errorMessage: friendlyMessageMediaErrorMessage(error),
           })
+          onFailed?.(draftId)
           return
         }
 
@@ -259,12 +317,15 @@ export function MessageMediaSendButton({
           progress: 0,
           errorMessage: friendly || "Couldn't send this. Tap Retry.",
         })
+        onFailed?.(draftId)
       }
     },
     [
       clearDraftPreviewUrl,
       discardUploadedPath,
       onBlockedPolicy,
+      onFailed,
+      onProgress,
       onSent,
       supabase,
       supabaseAnonKey,
@@ -281,6 +342,8 @@ export function MessageMediaSendButton({
         return
       }
 
+      const previousDraftId = draftRef.current?.id
+      if (previousDraftId) onDismiss?.(previousDraftId)
       await resetJob({ discardUpload: true })
 
       let targetConversationId = conversationId
@@ -292,7 +355,7 @@ export function MessageMediaSendButton({
         return
       }
 
-      const draftId = crypto.randomUUID()
+      const draftId = `${PENDING_THREAD_MESSAGE_ID_PREFIX}${crypto.randomUUID()}`
       const previewUrl = URL.createObjectURL(file)
       const kind = isAcceptedMessageVideoFile(file) ? "video" : "image"
       const nextDraft: MessageMediaDraft = {
@@ -314,9 +377,18 @@ export function MessageMediaSendButton({
       }
       jobRef.current = job
       setDraft(nextDraft)
+      const captionText = caption?.trim() || ""
+      onOptimistic?.({
+        id: draftId,
+        kind,
+        previewUrl,
+        fileName: nextDraft.fileName,
+        caption: captionText,
+        content: captionText || composeMediaAttachmentMessageBody(kind),
+      })
       void runSendPipeline(job)
     },
-    [caption, conversationId, ensureConversationId, resetJob, runSendPipeline],
+    [caption, conversationId, ensureConversationId, onDismiss, onOptimistic, resetJob, runSendPipeline],
   )
 
   const handleCancel = useCallback(() => {
@@ -353,7 +425,7 @@ export function MessageMediaSendButton({
       draftId: current.id,
       file,
       conversationId: conversationForRetry,
-      caption: caption?.trim() || undefined,
+      caption: job?.caption ?? (caption?.trim() || undefined),
       abort: new AbortController(),
       uploadedPath: null,
     }
@@ -363,13 +435,14 @@ export function MessageMediaSendButton({
         ? {
             ...prev,
             phase: "preparing",
-            progress: 0,
+            progress: 5,
             errorMessage: undefined,
           }
         : prev,
     )
+    onProgress?.(current.id, 5)
     void runSendPipeline(nextJob)
-  }, [caption, conversationId, discardUploadedPath, resetJob, runSendPipeline])
+  }, [caption, conversationId, discardUploadedPath, onProgress, resetJob, runSendPipeline])
 
   const handleCancelRef = useRef(handleCancel)
   handleCancelRef.current = handleCancel
@@ -377,6 +450,7 @@ export function MessageMediaSendButton({
   handleRetryRef.current = handleRetry
 
   useEffect(() => {
+    if (onOptimistic) return
     if (!onDraftUiChange) return
     onDraftUiChange(
       draft ? (
@@ -388,21 +462,21 @@ export function MessageMediaSendButton({
       ) : null,
     )
     return () => onDraftUiChange(null)
-  }, [draft, onDraftUiChange])
+  }, [draft, onDraftUiChange, onOptimistic])
+
+  useEffect(() => {
+    registerRetry?.((draftId) => {
+      if (draftRef.current?.id !== draftId) return
+      handleRetryRef.current()
+    })
+  }, [registerRetry])
 
   useEffect(() => {
     return () => {
-      const job = jobRef.current
-      const phase = draftRef.current?.phase
+      // Leave the upload running so leaving the thread does not cancel the send.
       jobRef.current = null
-      job?.abort.abort()
-      // Avoid deleting while the send action may still be committing the message.
-      if (job?.uploadedPath && phase !== "sending") {
-        void discardUploadedPath(job.conversationId, job.uploadedPath)
-      }
-      clearDraftPreviewUrl(draftRef.current?.previewUrl)
     }
-  }, [clearDraftPreviewUrl, discardUploadedPath])
+  }, [])
 
   const busy = !!draft && draft.phase !== "error"
 
@@ -432,23 +506,19 @@ export function MessageMediaSendButton({
         size="icon"
         disabled={disabled || busy}
         className={cn(
-          "h-10 w-10 shrink-0 rounded-full border-0 bg-transparent text-muted-foreground shadow-none hover:bg-transparent hover:text-foreground",
+          "h-8 w-8 shrink-0 rounded-full bg-[#E9E9EB] text-foreground shadow-none hover:bg-[#dedee0] dark:bg-[#3A3A3C] dark:hover:bg-[#4a4a4c]",
           className,
         )}
         aria-label="Send photo or video"
         onClick={() => inputRef.current?.click()}
       >
-        {busy ? (
-          <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
-        ) : (
-          <ImagePlus className="h-5 w-5" strokeWidth={2} aria-hidden />
-        )}
+        <Plus className="h-4 w-4" strokeWidth={2.5} aria-hidden />
       </Button>
     </>
   )
 
-  // When the parent hosts the draft UI, only render the trigger control.
-  if (onDraftUiChange) {
+  // Parent hosts the filename card, or the thread shows the photo bubble.
+  if (onDraftUiChange || onOptimistic) {
     return trigger
   }
 

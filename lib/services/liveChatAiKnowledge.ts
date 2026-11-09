@@ -23,7 +23,7 @@ Buying
 
 Selling
 - Listing is free. After a sale, open /dashboard/sales to add tracking, buy a label, or verify pickup.
-- Ship within ${SHIPPING_DEADLINE_DAYS} days on shipped orders. Earnings stay pending until the item is delivered (tracked shipping) or pickup is verified, then they move to the wallet at /dashboard/earnings.
+- Ship within ${SHIPPING_DEADLINE_DAYS} days on shipped orders. Shipped-order earnings move to the wallet at /dashboard/earnings 4 days after carrier-confirmed delivery. Local-pickup earnings move when pickup is verified.
 - Marketplace fee is ${MARKETPLACE_FEE_PERCENT}% of the item price. The seller keeps ${SELLER_SHARE_PERCENT}%. Shipping is collected from the buyer and is not part of seller earnings. Card processing is not deducted from the seller.
 
 Support

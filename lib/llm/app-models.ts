@@ -9,7 +9,6 @@ export type AppLlmFeatureId =
   | "marketplace_nl_search"
   | "sell_catalog_nl_search"
   | "listing_description"
-  | "business_intelligence"
   | "search_daily_report"
   | "support_reply_draft"
   | "live_chat_cs"
@@ -17,6 +16,9 @@ export type AppLlmFeatureId =
   | "listing_brand_model_research"
   | "message_fraud_review"
   | "sell_photo_match"
+  | "surfboard_dimension_photo"
+  | "surfboard_dimension_photo_pick"
+  | "surfboard_dimension_photo_jev"
   | "email_studio"
 
 export interface AppLlmFeatureDefinition {
@@ -106,26 +108,6 @@ export const APP_LLM_FEATURES: readonly AppLlmFeatureDefinition[] = [
       "lib/services/searchDailyReportSynonyms.ts",
       "app/api/cron/search-daily-report/route.ts",
       "app/api/cron/search-period-report/route.ts",
-    ],
-  },
-  {
-    id: "business_intelligence",
-    name: "Business intelligence briefings",
-    purpose:
-      "Turns admin marketplace, traffic, and growth snapshots into saved daily/weekly/monthly operating reports with projections and recommendations.",
-    gatewayFeatureTag: "feature:business-intelligence",
-    transport: "vercel_ai_gateway",
-    defaultModel: "google/gemini-2.5-pro",
-    modelEnvVar: "BUSINESS_INTELLIGENCE_MODEL",
-    enabledEnvVar: "BUSINESS_INTELLIGENCE_ENABLED",
-    surfaces: [
-      "/admin/intelligence",
-      "POST /api/admin/intelligence/reports",
-    ],
-    sourceFiles: [
-      "lib/services/businessIntelligence.ts",
-      "lib/services/businessIntelligenceLlm.ts",
-      "lib/services/businessIntelligenceSnapshot.ts",
     ],
   },
   {
@@ -249,6 +231,75 @@ export const APP_LLM_FEATURES: readonly AppLlmFeatureDefinition[] = [
     ],
   },
   {
+    id: "surfboard_dimension_photo_pick",
+    name: "Dimension photo picker",
+    purpose:
+      "Harness stage 1 only: choose which gallery photo is the size stamp (index). Multi-image classification with Good/Bad/Exclude few-shot. Never reads L×W×T. Gemini 3 Flash for speed + pick quality on large galleries; override with SURFBOARD_DIMENSION_PHOTO_PICK_MODEL.",
+    gatewayFeatureTag: "feature:surfboard-dimension-photo-pick",
+    transport: "vercel_ai_gateway",
+    // Gemini 3 Flash: faster + stronger than 2.5 Flash for multi-image pick; structured index.
+    defaultModel: "google/gemini-3-flash",
+    modelEnvVar: "SURFBOARD_DIMENSION_PHOTO_PICK_MODEL",
+    enabledEnvVar: "SURFBOARD_DIMENSION_PHOTO_ENABLED",
+    surfaces: [
+      "/admin/dimension-photo-match",
+      "POST /api/admin/dimension-photo-match/test",
+      "GET /api/cron/surfboard-dimension-photo-queue",
+    ],
+    sourceFiles: [
+      "lib/services/surfboardDimensionPhotoMatch.ts",
+      "lib/services/surfboardDimensionPhotoCron.ts",
+    ],
+  },
+  {
+    id: "surfboard_dimension_photo",
+    name: "Dimension photo dims reader",
+    purpose:
+      "Harness stage 2 only: OCR L×W×T from the stamp photo chosen by the picker (original + enhance). Never brand/model/catalog. Never listings.dimensions. Pro for faint handwriting; override with SURFBOARD_DIMENSION_PHOTO_MODEL or SURFBOARD_DIMENSION_PHOTO_DIMS_MODEL.",
+    gatewayFeatureTag: "feature:surfboard-dimension-photo-dims",
+    transport: "vercel_ai_gateway",
+    // Pro: stamp OCR / handwriting while dims accuracy is still climbing.
+    defaultModel: "google/gemini-2.5-pro",
+    modelEnvVar: "SURFBOARD_DIMENSION_PHOTO_DIMS_MODEL",
+    enabledEnvVar: "SURFBOARD_DIMENSION_PHOTO_ENABLED",
+    surfaces: [
+      "/admin/dimension-photo-match",
+      "POST /api/admin/dimension-photo-match/test",
+      "POST /api/sell/photo-match",
+      "GET /api/cron/surfboard-dimension-photo-queue",
+    ],
+    sourceFiles: [
+      "lib/services/surfboardDimensionPhotoMatch.ts",
+      "lib/services/surfboardDimensionPhotoCron.ts",
+      "lib/services/surfboardDimensionPhotoMemory.ts",
+      "lib/services/surfboardDimensionPhotoIngest.ts",
+      "lib/db/surfboardDimensionPhoto.ts",
+      "lib/llm/jev-dimension-photo-verify.ts",
+      "lib/services/publishListingDraft.ts",
+    ],
+  },
+  {
+    id: "surfboard_dimension_photo_jev",
+    name: "Dimension photo Jev verifier",
+    purpose:
+      "TypeSafe Jev evaluates the vision model's photo pick + dims read (text state only — no images). Clears invented volume, downgrades confidence, suggests Photo/Dims ratings for admin, and can retry listing scans once with contrastive few-shot images. Never invents L×W×T. On failure, vision results stand unchanged.",
+    gatewayFeatureTag: "feature:surfboard-dimension-photo-jev",
+    transport: "vercel_ai_gateway",
+    defaultModel: "typesafe-ai/jev",
+    modelEnvVar: "SURFBOARD_DIMENSION_PHOTO_JEV_MODEL",
+    enabledEnvVar: "SURFBOARD_DIMENSION_PHOTO_JEV_ENABLED",
+    surfaces: [
+      "/admin/dimension-photo-match",
+      "POST /api/admin/dimension-photo-match/test",
+      "listing dimension photo scan",
+    ],
+    sourceFiles: [
+      "lib/llm/jev-dimension-photo-verify.ts",
+      "lib/llm/dimension-photo-verify.ts",
+      "lib/services/surfboardDimensionPhotoMatch.ts",
+    ],
+  },
+  {
     id: "email_studio",
     name: "Email studio assistant",
     purpose:
@@ -267,6 +318,11 @@ export function resolveConfiguredModel(feature: AppLlmFeatureDefinition): string
   if (feature.modelEnvVar) {
     const override = process.env[feature.modelEnvVar]?.trim()
     if (override) return override
+  }
+  // Back-compat: dims stage also honors the older single-model env.
+  if (feature.id === "surfboard_dimension_photo") {
+    const legacy = process.env.SURFBOARD_DIMENSION_PHOTO_MODEL?.trim()
+    if (legacy) return legacy
   }
   return feature.defaultModel
 }

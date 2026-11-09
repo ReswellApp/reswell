@@ -4,6 +4,7 @@ import {
   type OrderShipmentDeliveryStatus,
   type OrderShipmentRow,
 } from "@/lib/db/orderShipments"
+import { publishOrderDeliveredNotifications } from "@/lib/services/notifications/publishOrderDelivered"
 
 export type OrderDeliveryRollup = {
   deliveryStatus: "pending" | "shipped" | "delivered"
@@ -130,10 +131,19 @@ export async function rollupOrderDeliveryFromShipments(
     patch.tracking_carrier = rollup.primaryTrackingCarrier
   }
 
+  const markingDelivered =
+    patch.delivery_status === "delivered" && current?.delivery_status !== "delivered"
+
   if (Object.keys(patch).length > 1) {
     const { error } = await supabase.from("orders").update(patch).eq("id", orderId)
     if (error) {
       console.error("[rollupOrderDeliveryFromShipments]", orderId, error.message)
+    } else if (markingDelivered) {
+      void publishOrderDeliveredNotifications({
+        orderId,
+        buyerEvent: "delivered",
+        sellerPayout: "soon",
+      })
     }
   }
 

@@ -6,16 +6,16 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { ProfileCircle } from "@/components/profile-circle"
 import { FollowButton } from "@/components/follows/follow-button"
 import { MapPin, Users, Loader2, Package } from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { getFollowingFeedPage } from "@/app/actions/follows"
 import { listingDetailHref } from "@/lib/listing-href"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
-import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
-
+import { cn } from "@/lib/utils"
 type Listing = {
   id: string
   title: string
@@ -164,12 +164,7 @@ export function FollowingFeedClient({
               <div key={group.sellerId} className="space-y-3">
                 {/* Seller header */}
                 <div className="flex items-center gap-3">
-                  <Avatar className="h-9 w-9 shrink-0">
-                    <AvatarImage src={group.avatarUrl || ""} alt={group.sellerName} />
-                    <AvatarFallback className="text-sm font-semibold bg-primary text-primary-foreground">
-                      {group.sellerName.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
+                  <ProfileCircle avatarUrl={group.avatarUrl} alt={group.sellerName} className="h-9 w-9" />
                   <div className="flex-1 min-w-0">
                     <Link
                       href={sellerProfileHref({
@@ -208,7 +203,10 @@ export function FollowingFeedClient({
                                 src={proxiedListingImageSrc(img.url)}
                                 alt={listing.title}
                                 fill
-                                className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                className={cn(
+                                  listingPhotoFillClassName,
+                                  "transition-transform duration-300 group-hover:scale-105",
+                                )}
                                 sizes="(max-width: 640px) 50vw, 33vw"
                                 unoptimized
                               />
@@ -308,17 +306,13 @@ function EmptyState({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {suggestedSellers.map((seller) => {
               const name = seller.shop_name || seller.display_name || "Seller"
-              const avatar = profileMediaDisplaySrc(
-                seller.shop_logo_url || seller.avatar_url || "",
-              )
               return (
                 <Card key={seller.id} className="p-4 flex items-center gap-3">
-                  <Avatar className="h-11 w-11 shrink-0">
-                    <AvatarImage src={avatar} alt={name} />
-                    <AvatarFallback className="font-semibold bg-primary text-primary-foreground">
-                      {name.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
+                  <ProfileCircle
+                    avatarUrl={seller.shop_logo_url || seller.avatar_url}
+                    alt={name}
+                    className="h-11 w-11"
+                  />
                   <div className="flex-1 min-w-0">
                     <Link
                       href={sellerProfileHref(seller)}

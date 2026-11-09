@@ -1,3 +1,4 @@
+import { peerBrandNewStockQuantity } from "@/lib/listing-stock-quantity"
 import type { ComponentProps } from "react"
 import { notFound } from "next/navigation"
 import Link from "next/link"
@@ -24,7 +25,9 @@ import {
 } from "@/lib/listing-detail-page-load"
 import { renderListingDetailWithGuestFallback } from "@/lib/listing-detail-page-safe-render"
 import { ShareButton } from "@/components/share-button"
-import { ListingOwnerManageActions } from "@/components/features/listings/listing-owner-manage-actions"
+import { ListingBuyerOnly } from "@/components/features/listings/listing-buyer-only"
+import { ListingOwnerHydratedManageActions } from "@/components/features/listings/listing-owner-hydrated-manage-actions"
+import { ListingProtectionRibbonSlot } from "@/components/features/listings/listing-protection-ribbon-slot"
 import { ListingPhotosPendingBanner } from "@/components/listing-photos-pending-banner"
 import { ImageGallery } from "@/components/image-gallery"
 import { primaryListingVideo } from "@/lib/primary-listing-video"
@@ -34,19 +37,15 @@ import { ContactSellerForm } from "@/components/contact-seller-form"
 import { ListingBoardSpecTable } from "@/components/features/listings/listing-board-spec-table"
 import { ListingCatalogIdentity } from "@/components/features/listings/listing-catalog-identity"
 import { ListingPdpDeliveryCaption } from "@/components/features/listings/listing-pdp-delivery-caption"
-import { listingConditionSpecRow } from "@/lib/utils/listing-board-spec-rows"
+import { listingAvailableQuantitySpecRow, listingConditionSpecRow } from "@/lib/utils/listing-board-spec-rows"
 import { fetchSimilarPeerListingsForListingPdp } from "@/lib/db/listing-detail-similar-peer"
 import { FavoriteButton } from "@/components/favorite-button"
 import { cn } from "@/lib/utils"
-import {
-  ListingSoldDetailNotice,
-  ListingSoldOwnerNotice,
-} from "@/components/listing-sold-detail-notice"
+import { ListingSoldDetailNotice } from "@/components/listing-sold-detail-notice"
 import { TranslateableDescription } from "@/components/translateable-description"
 import {
   ListingAboutSellerSection,
   ListingBuyerProtectionTrustRibbon,
-  ListingProtectionTrustRibbon,
 } from "@/components/features/listings/listing-about-seller-section"
 import { ListingFulfillmentAccordionItem } from "@/components/features/listings/listing-fulfillment-accordion-item"
 import { BRANDS_BASE } from "@/lib/brands/routes"
@@ -74,10 +73,9 @@ import {
   HomeListingScrollRow,
   type HomePeerScrollListing,
 } from "@/components/features/home"
-import {
-  HOME_PEER_LISTING_WITH_PROFILE_SELECT,
-  hydrateHomePeerListingRows,
-} from "@/lib/db/home-peer-listing-feed"
+import { hydrateHomePeerListingRows } from "@/lib/db/home-peer-listing-feed"
+import { fetchMoreFromSellerListings } from "@/lib/db/listing-pdp-seller-listings"
+import { sellerListingRailTitle, similarListingRailTitle } from "@/lib/listing-pdp-rail-titles"
 import {
   getCachedReswellPlatformReviewSummary,
   getCachedSellerReviewSummary,
@@ -114,7 +112,7 @@ async function renderApparelListingDetailPage({
   prefetchedListing,
   viewerUser,
 }: ListingDetailPageSharedProps) {
-  const { supabase, user, listing: apparelRaw, canSellerRelist } = await loadListingDetailPageContext({
+  const { supabase, user, listing: apparelRaw } = await loadListingDetailPageContext({
     listingParam,
     prefetchedListing,
     viewerUser,
@@ -168,16 +166,12 @@ async function renderApparelListingDetailPage({
     getCachedSellerReviewSummary(sellerId),
     listSellerReviewPreviews(supabase, sellerId),
     getCachedReswellPlatformReviewSummary(),
-    supabase
-      .from("listings")
-      .select(HOME_PEER_LISTING_WITH_PROFILE_SELECT)
-      .eq("user_id", sellerId)
-      .eq("status", "active")
-      .eq("section", APPAREL_SECTION)
-      .eq("hidden_from_site", false)
-      .neq("id", apparel.id)
-      .order("created_at", { ascending: false })
-      .limit(SELLER_APPAREL_PDP_LIMIT),
+    fetchMoreFromSellerListings(supabase, {
+      sellerId,
+      section: APPAREL_SECTION,
+      excludeListingId: apparel.id as string,
+      limit: SELLER_APPAREL_PDP_LIMIT,
+    }),
     brandId ? getBrandById(supabase, brandId) : Promise.resolve(null),
     fetchSimilarPeerListingsForListingPdp(supabase, {
       excludeListingId: apparel.id as string,
@@ -195,7 +189,7 @@ async function renderApparelListingDetailPage({
     sellerReviewSummaryRes
   const sellerReviewPreviews = sellerReviewPreviewRes.data ?? []
   const reswellPlatformReviewSummary = reswellPlatformReviewSummaryRes
-  const sellerApparel = hydrateHomePeerListingRows((sellerApparelRes.data ?? []) as Record<string, unknown>[])
+  const sellerApparel = sellerApparelRes
   const similarApparel = hydrateHomePeerListingRows(similarApparelRaw)
 
   const sellerApparelIds = (sellerApparel ?? []).map((f) => f.id)
@@ -334,15 +328,18 @@ async function renderApparelListingDetailPage({
     }
   }
 
-  const softPanelClass =
-    "rounded-2xl border border-border/50 bg-muted/30 px-4 py-4 dark:border-border dark:bg-muted/15"
-
   const favoriteNextToOffer = !!(canPeerPurchase && makeOfferConfig)
   const showShareOnGalleryOverlay = isOwnListing || !favoriteNextToOffer
   const showFavoriteOnGalleryOverlay = !isOwnListing
 
   const specRows = [
     listingConditionSpecRow(apparel.condition as string | null),
+    listingAvailableQuantitySpecRow({
+      section: apparel.section,
+      condition: apparel.condition as string | null,
+      stock_quantity: (apparel as { stock_quantity?: number | null }).stock_quantity,
+      inventory_source: (apparel as { inventory_source?: string | null }).inventory_source,
+    }),
     kindLabel ? { label: "Category", value: kindLabel } : null,
     sizeLabel ? { label: "Size", value: sizeLabel } : null,
   ].filter(Boolean) as { label: string; value: string; href?: string | null }[]
@@ -484,6 +481,12 @@ async function renderApparelListingDetailPage({
                   listingId={apparel.id}
                   checkoutListingParam={apparel.slug ?? apparel.id}
                   section="apparel"
+                  availableQuantity={peerBrandNewStockQuantity({
+                    section: "apparel",
+                    condition: apparel.condition as string | null,
+                    stock_quantity: (apparel as { stock_quantity?: number | null }).stock_quantity,
+                    inventory_source: (apparel as { inventory_source?: string | null }).inventory_source,
+                  })}
                   isLoggedIn={!!user}
                   makeOffer={makeOfferConfig}
                   agreedCheckoutItemUsd={buyerAgreedPriceUsd}
@@ -574,6 +577,12 @@ async function renderApparelListingDetailPage({
                     listingId={apparel.id}
                     checkoutListingParam={apparel.slug ?? apparel.id}
                     section="apparel"
+                    availableQuantity={peerBrandNewStockQuantity({
+                      section: "apparel",
+                      condition: apparel.condition as string | null,
+                      stock_quantity: (apparel as { stock_quantity?: number | null }).stock_quantity,
+                    inventory_source: (apparel as { inventory_source?: string | null }).inventory_source,
+                    })}
                     isLoggedIn={!!user}
                     makeOffer={makeOfferConfig}
                     agreedCheckoutItemUsd={buyerAgreedPriceUsd}
@@ -618,22 +627,18 @@ async function renderApparelListingDetailPage({
             <div className="mt-5 hidden lg:block">{aboutSellerSection}</div>
 
             {!isOwnListing ? (
-              <ListingBuyerProtectionTrustRibbon className="mt-5 border-b border-neutral-200/90 pb-5 dark:border-neutral-700/70 lg:hidden" />
+              <ListingBuyerOnly>
+                <ListingBuyerProtectionTrustRibbon className="mt-5 border-b border-neutral-200/90 pb-5 dark:border-neutral-700/70 lg:hidden" />
+              </ListingBuyerOnly>
             ) : null}
 
-            <ListingProtectionTrustRibbon
-              viewerRole={isOwnListing ? "seller" : "buyer"}
-              className={
-                isOwnListing
-                  ? "mt-5 border-b border-neutral-200/90 pb-5 dark:border-neutral-700/70"
-                  : "mt-5 hidden border-b border-neutral-200/90 pb-5 dark:border-neutral-700/70 lg:block"
-              }
-            />
+            <ListingProtectionRibbonSlot />
 
             <ReswellPlatformRatingWidget summary={reswellPlatformReviewSummary} className="mt-5" />
 
             {!isOwnListing ? (
-              <div className="border-b border-neutral-200/90 pb-4 dark:border-neutral-700/70">
+              <ListingBuyerOnly>
+                <div className="border-b border-neutral-200/90 pb-4 dark:border-neutral-700/70">
                 <Link
                   href={`/contact?topic=listing-report&listing=${encodeURIComponent(apparel.id)}`}
                   className="inline-flex items-center gap-2 text-[14px] font-medium text-muted-foreground transition-colors hover:text-foreground"
@@ -642,21 +647,10 @@ async function renderApparelListingDetailPage({
                   Report listing to Reswell
                 </Link>
               </div>
+              </ListingBuyerOnly>
             ) : null}
 
-            {isOwnListing && isSold && (
-              <div className={softPanelClass}>
-                <ListingSoldOwnerNotice
-                  dashboardListingsHref="/dashboard/listings"
-                  sectionLabel="listing"
-                  listingId={apparel.id as string}
-                  canRelist={canSellerRelist}
-                />
-              </div>
-            )}
-
-            {isOwnListing ? (
-              <ListingOwnerManageActions
+            <ListingOwnerHydratedManageActions
                 listingId={apparel.id}
                 section="apparel"
                 currentPriceUsd={listPriceNum}
@@ -664,7 +658,6 @@ async function renderApparelListingDetailPage({
                 listingStatus={String(apparel.status ?? "")}
                 hiddenFromSite={apparel.hidden_from_site === true}
               />
-            ) : null}
           </div>
 
           <div className="col-span-full min-w-0 max-w-full max-lg:order-3 lg:col-span-1 lg:[grid-area:about] lg:order-none lg:border-t lg:border-neutral-200/90 lg:pt-5 dark:lg:border-neutral-700/70 xl:pt-6">
@@ -693,7 +686,8 @@ async function renderApparelListingDetailPage({
               />
 
               {!isOwnListing && !isSold ? (
-                <AccordionItem value="contact" className="border-border/55">
+                <ListingBuyerOnly>
+                  <AccordionItem value="contact" className="border-border/55">
                   <AccordionTrigger className="py-4 text-[16px] font-medium text-foreground hover:no-underline">
                     Contact seller
                   </AccordionTrigger>
@@ -710,19 +704,22 @@ async function renderApparelListingDetailPage({
                     />
                   </AccordionContent>
                 </AccordionItem>
+                </ListingBuyerOnly>
               ) : null}
             </Accordion>
             {!isOwnListing ? (
-              <div className="mt-10 hidden w-full min-w-0 border-t border-neutral-200/90 pt-8 dark:border-neutral-700/70 lg:block">
+              <ListingBuyerOnly>
+                <div className="mt-10 hidden w-full min-w-0 border-t border-neutral-200/90 pt-8 dark:border-neutral-700/70 lg:block">
                 <ListingBuyerProtectionTrustRibbon />
               </div>
+              </ListingBuyerOnly>
             ) : null}
           </div>
 
             {similarApparel.length > 0 ? (
               <div className="col-span-full min-w-0 max-w-full max-lg:order-5 lg:[grid-area:similar] lg:order-none">
                 <section className="mt-10 border-t border-neutral-200/90 pt-8 dark:border-neutral-700/70">
-                  <h2 className="mb-8 text-2xl font-bold text-foreground">Similar apparel</h2>
+                  <h2 className="mb-8 text-2xl font-bold text-foreground">{similarListingRailTitle(APPAREL_SECTION)}</h2>
                   <HomeListingScrollRow uniformCardHeights>
                     {similarApparel.map((row) => (
                       <HomePeerListingScrollTile
@@ -740,7 +737,7 @@ async function renderApparelListingDetailPage({
 
         {sellerApparel && sellerApparel.length > 0 && (
           <section className="mt-16 min-w-0 w-full border-t border-neutral-200/90 pt-12 dark:border-neutral-700/70">
-            <h2 className="mb-8 text-2xl font-bold text-foreground">More apparel from this seller</h2>
+            <h2 className="mb-8 text-2xl font-bold text-foreground">{sellerListingRailTitle(APPAREL_SECTION)}</h2>
             <HomeListingScrollRow uniformCardHeights>
               {sellerApparel.map((item) => (
                 <HomePeerListingScrollTile

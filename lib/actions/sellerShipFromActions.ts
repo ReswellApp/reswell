@@ -7,17 +7,27 @@ import { resolveAddressShippingIdentity } from "@/lib/db/addressShippingIdentity
 import { fetchProfileAddresses, preferredProfileAddress } from "@/lib/db/profile-addresses"
 import { updateProfileDefaultListingLocality } from "@/lib/db/profileDefaultListingLocality"
 import { getProfilePersonalInfo, updateProfilePersonalInfo } from "@/lib/db/profilePersonalInfo"
+import { sellerHasSoldSurfboardsOrFins } from "@/lib/db/sellerSoldListings"
+import { fetchSellerShippingLocality } from "@/lib/db/sellerShippingLocality"
 import { googleForwardGeocode } from "@/lib/maps/google-geocoding-server"
 import {
   listingLocalityFromAddress,
   type ListingLocalityFromAddress,
 } from "@/lib/sell-flow/listing-locality-from-address"
-import { createClient } from "@/lib/supabase/server"
+import {
+  decideSignInShipFromPrompt,
+  type SignInShipFromPromptResult,
+} from "@/lib/services/signInShipFromPrompt"
+import type { SupabaseClient } from "@supabase/supabase-js"
+import { resolveManagedSeller } from "@/lib/account-access/managed-seller"
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { toE164UsPhone } from "@/lib/utils/phone-e164-us"
 
 const saveSellerShipFromSchema = shippingAddressFormSchema.extend({
   full_name: z.string().trim().min(1).max(200).optional(),
   phone: z.string().trim().max(40).optional(),
+  /** Update this saved row instead of inserting another address. */
+  address_id: z.string().uuid().optional(),
 })
 
 export type SellerShipFromSetup = {
@@ -67,23 +77,22 @@ async function localityForPreferredAddress(
 
 export async function getSellerShipFromSetup(): Promise<SellerShipFromSetup> {
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const managed = await resolveManagedSeller("profile.manage")
 
-  if (!user) {
+  if (!managed.ok) {
     return {
       hasShipFrom: false,
       needsFullName: true,
       needsPhone: true,
-      signedIn: false,
+      signedIn: managed.status !== 401,
       locality: null,
     }
   }
+  const profileId = managed.seller.sellerId
 
   const [addressesResult, personal] = await Promise.all([
-    fetchProfileAddresses(supabase, user.id),
-    getProfilePersonalInfo(supabase, user.id),
+    fetchProfileAddresses(supabase, profileId),
+    getProfilePersonalInfo(supabase, profileId),
   ])
 
   const preferred = preferredProfileAddress(addressesResult.addresses)
@@ -103,20 +112,52 @@ export async function getSellerShipFromSetup(): Promise<SellerShipFromSetup> {
   }
 }
 
+/** Signed-in seller prompt. Buyers and sellers with a complete ship-from get nothing to show. */
+export async function getSignInShipFromPrompt(): Promise<SignInShipFromPromptResult> {
+  const supabase = await createClient()
+  const managed = await resolveManagedSeller("profile.manage")
+
+  if (!managed.ok) return { shouldPrompt: false }
+  const profileId = managed.seller.sellerId
+
+  const [addressesResult, personal, locality, hasSold] = await Promise.all([
+    fetchProfileAddresses(supabase, profileId),
+    getProfilePersonalInfo(supabase, profileId),
+    fetchSellerShippingLocality(supabase, profileId),
+    sellerHasSoldSurfboardsOrFins(supabase, profileId),
+  ])
+
+  if (addressesResult.error) return { shouldPrompt: false }
+
+  return decideSignInShipFromPrompt({
+    offersShipping: locality.offersShipping || hasSold,
+    addresses: addressesResult.addresses,
+    personal,
+    listingCity: locality.city,
+    listingState: locality.state,
+  })
+}
+
 export async function saveSellerShipFromAddress(
   raw: unknown,
 ): Promise<{
   locality: ListingLocalityFromAddress | null
   error: string | null
 }> {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  let supabase: SupabaseClient = await createClient()
+  const managed = await resolveManagedSeller("profile.manage")
 
-  if (!user) {
-    return { locality: null, error: "Sign in to save your ship-from address." }
+  if (!managed.ok) {
+    return { locality: null, error: managed.error }
   }
+  if (managed.seller.actingAsShop) {
+    try {
+      supabase = createServiceRoleClient()
+    } catch {
+      return { locality: null, error: "Could not update this shop right now." }
+    }
+  }
+  const profileId = managed.seller.sellerId
 
   const parsed = saveSellerShipFromSchema.safeParse(raw)
   if (!parsed.success) {
@@ -124,14 +165,14 @@ export async function saveSellerShipFromAddress(
   }
 
   const input = parsed.data
-  const personal = await getProfilePersonalInfo(supabase, user.id)
+  const personal = await getProfilePersonalInfo(supabase, profileId)
 
   if (!hasLegalName(personal)) {
     if (!input.full_name?.trim()) {
       return { locality: null, error: "Enter the name to print on shipping labels." }
     }
     const names = splitPersonName(input.full_name)
-    const nameUpdate = await updateProfilePersonalInfo(supabase, user.id, names)
+    const nameUpdate = await updateProfilePersonalInfo(supabase, profileId, names)
     if (!nameUpdate.ok) {
       return { locality: null, error: nameUpdate.error }
     }
@@ -145,7 +186,7 @@ export async function saveSellerShipFromAddress(
     if (!toE164UsPhone(phone)) {
       return { locality: null, error: "Enter a valid US phone number." }
     }
-    const phoneUpdate = await updateProfilePersonalInfo(supabase, user.id, { phone })
+    const phoneUpdate = await updateProfilePersonalInfo(supabase, profileId, { phone })
     if (!phoneUpdate.ok) {
       return { locality: null, error: phoneUpdate.error }
     }
@@ -154,10 +195,10 @@ export async function saveSellerShipFromAddress(
   const { data: profileRow } = await supabase
     .from("profiles")
     .select("display_name")
-    .eq("id", user.id)
+    .eq("id", profileId)
     .maybeSingle()
 
-  const identity = await resolveAddressShippingIdentity(supabase, user.id, {
+  const identity = await resolveAddressShippingIdentity(supabase, profileId, {
     full_name: input.full_name,
     phone: input.phone,
     display_name: profileRow?.display_name,
@@ -170,10 +211,7 @@ export async function saveSellerShipFromAddress(
     return { locality: null, error: "Enter a phone number for the carrier." }
   }
 
-  await supabase.from("addresses").update({ is_default: false }).eq("profile_id", user.id)
-
-  const { error } = await supabase.from("addresses").insert({
-    profile_id: user.id,
+  const row = {
     full_name: identity.full_name,
     phone: identity.phone,
     line1: input.line1,
@@ -184,7 +222,25 @@ export async function saveSellerShipFromAddress(
     country: input.country || "US",
     label: input.label?.trim() || "Ship from",
     is_default: true,
-  })
+  }
+
+  if (input.address_id) {
+    const { data: existing, error: existingError } = await supabase
+      .from("addresses")
+      .select("id")
+      .eq("id", input.address_id)
+      .eq("profile_id", profileId)
+      .maybeSingle()
+    if (existingError || !existing) {
+      return { locality: null, error: "Address not found." }
+    }
+  }
+
+  await supabase.from("addresses").update({ is_default: false }).eq("profile_id", profileId)
+
+  const { error } = input.address_id
+    ? await supabase.from("addresses").update(row).eq("id", input.address_id).eq("profile_id", profileId)
+    : await supabase.from("addresses").insert({ profile_id: profileId, ...row })
 
   if (error) {
     return { locality: null, error: error.message }
@@ -193,7 +249,7 @@ export async function saveSellerShipFromAddress(
   const locality = await localityForPreferredAddress(input.city, input.state ?? null)
 
   if (locality) {
-    await updateProfileDefaultListingLocality(supabase, user.id, {
+    await updateProfileDefaultListingLocality(supabase, profileId, {
       city: locality.city,
       state: locality.state || null,
       lat: locality.lat,

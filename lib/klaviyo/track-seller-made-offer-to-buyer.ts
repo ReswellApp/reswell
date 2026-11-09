@@ -3,12 +3,14 @@
  *
  * **Metric name in Klaviyo:** `Seller Made Offer` — profile is the **buyer** so flows can email them.
  * Seller details live under `offer_from` (nested) to avoid Klaviyo mis-attaching scalar email props.
+ * `{{ event.offers_url }}` opens Buying on that offer.
  */
 
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
 import { listingDetailHref } from "@/lib/listing-href"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
+import { dashboardOffersPath } from "@/lib/utils/offers-dashboard-display"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
 
 function displayNameFromProfileRow(data: {
@@ -101,6 +103,10 @@ export async function trackKlaviyoSellerMadeOfferToBuyer(
       list_price: Number.isFinite(listPriceNum) ? listPriceNum : payload.listPrice,
       Title: payload.listingTitle,
       listing_url: listingUrl,
+      offers_url: `${origin}${dashboardOffersPath({
+        role: "buyer",
+        offerId: payload.offerId,
+      })}`,
       counter_note: note,
       offer_from: {
         user_id: payload.sellerUserId,

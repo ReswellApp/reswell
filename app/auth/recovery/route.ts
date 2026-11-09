@@ -1,4 +1,5 @@
-import { buildAuthCompletingUrl } from "@/lib/auth/build-auth-completing-url"
+import { buildAuthCompletingPath } from "@/lib/auth/build-auth-completing-url"
+import { copySupabaseAuthCookies } from "@/lib/auth/copy-supabase-auth-cookies"
 import { exchangeAuthCodeWithRetry } from "@/lib/auth/exchange-auth-code-with-retry"
 import { isRecoverableOAuthCodeExchangeError } from "@/lib/auth/is-recoverable-oauth-code-exchange-error"
 import { passwordResetLandingPath } from "@/lib/auth/password-reset-landing-flag"
@@ -10,6 +11,11 @@ import { type NextRequest, NextResponse } from "next/server"
  * Single-purpose OAuth-style callback URL for Supabase reset-password emails (`redirect_to`).
  * Use this exact path (no query string) so Supabase URL allowlists cannot reject wildcard
  * rules that treat `…/callback?next=…` differently from `…/callback`.
+ *
+ * Successful exchanges redirect through `/auth/completing` (same as OAuth) so private /
+ * incognito browsers sync httpOnly session cookies before `/auth/update-password` mounts.
+ * Skipping that step left the update-password client gate on a spinner forever when
+ * `getSession()` / `getUser()` could not see cookies yet.
  */
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
@@ -19,12 +25,11 @@ export async function GET(request: NextRequest) {
   const landing = passwordResetLandingPath()
 
   if (code) {
-    const redirectResponse = NextResponse.redirect(`${origin}${landing}`)
-    const supabase = createRouteHandlerSupabaseClient(request, redirectResponse)
+    const cookieJar = NextResponse.redirect(`${origin}${landing}`)
+    const supabase = createRouteHandlerSupabaseClient(request, cookieJar)
     const { data, error } = await exchangeAuthCodeWithRetry(supabase, code)
     if (!error && data.session) {
-      redirectResponse.headers.set("Cache-Control", "private, no-store")
-      return redirectResponse
+      return redirectRecoveryThroughCompleting(origin, landing, cookieJar)
     }
 
     const pollAttempts =
@@ -34,25 +39,38 @@ export async function GET(request: NextRequest) {
       baseDelayMs: 100,
     })
     if (existingUser) {
-      redirectResponse.headers.set("Cache-Control", "private, no-store")
-      return redirectResponse
+      return redirectRecoveryThroughCompleting(origin, landing, cookieJar)
     }
   }
 
   if (token_hash && type === "recovery") {
-    const redirectResponse = NextResponse.redirect(`${origin}${landing}`)
-    const supabase = createRouteHandlerSupabaseClient(request, redirectResponse)
+    const cookieJar = NextResponse.redirect(`${origin}${landing}`)
+    const supabase = createRouteHandlerSupabaseClient(request, cookieJar)
     const { error } = await supabase.auth.verifyOtp({
       token_hash,
       type: "recovery",
     })
     if (!error) {
-      redirectResponse.headers.set("Cache-Control", "private, no-store")
-      return redirectResponse
+      return redirectRecoveryThroughCompleting(origin, landing, cookieJar)
     }
   }
 
-  return NextResponse.redirect(
-    buildAuthCompletingUrl(origin, "/auth/forgot-password"),
+  // Invalid / expired link — land on the update form so the client can show
+  // "Link expired" immediately instead of the OAuth "Completing sign in" spinner.
+  const expired = NextResponse.redirect(`${origin}${landing}`)
+  expired.headers.set("Cache-Control", "private, no-store")
+  return expired
+}
+
+function redirectRecoveryThroughCompleting(
+  origin: string,
+  landing: string,
+  cookieSource: NextResponse,
+): NextResponse {
+  const response = NextResponse.redirect(
+    `${origin}${buildAuthCompletingPath(landing)}`,
   )
+  copySupabaseAuthCookies(cookieSource, response)
+  response.headers.set("Cache-Control", "private, no-store")
+  return response
 }

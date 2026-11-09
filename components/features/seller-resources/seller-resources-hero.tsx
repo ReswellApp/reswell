@@ -9,19 +9,23 @@ export type SellerResourcesHeroCta = {
 }
 
 export function SellerResourcesHero({
+  eyebrow = "Seller Resources",
   title,
   description,
   primaryCta,
   secondaryCta,
   aside,
   compact = false,
+  note,
 }: {
+  eyebrow?: string
   title: string
   description: string
   primaryCta?: SellerResourcesHeroCta
   secondaryCta?: SellerResourcesHeroCta
   aside?: ReactNode
   compact?: boolean
+  note?: ReactNode
 }) {
   return (
     <section className="bg-[#F4F7FB]">
@@ -34,7 +38,7 @@ export function SellerResourcesHero({
       >
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#5574AD]">
-            Seller Resources
+            {eyebrow}
           </p>
           <h1 className="mt-3 font-headline text-4xl font-bold tracking-tight text-[#001A4A] sm:text-5xl sm:leading-[1.05]">
             {title}
@@ -63,6 +67,7 @@ export function SellerResourcesHero({
               ) : null}
             </div>
           ) : null}
+          {note ? <div className="mt-4 text-sm text-[#5c6b89]">{note}</div> : null}
         </div>
         {aside}
       </div>

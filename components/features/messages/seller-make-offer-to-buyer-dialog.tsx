@@ -26,6 +26,7 @@ import {
 } from "@/lib/offer-listing-shipping"
 import { effectiveBoardShippingMode } from "@/lib/services/peerListingShippingQuote"
 import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import type { SellerOfferListing } from "@/lib/types/seller-offer-listing"
 
 function roundMoney(n: number): number {
@@ -49,32 +50,6 @@ type OpenSellerOfferPreview = {
   lineItems: { listingId: string; amount: number }[]
 }
 
-function fallbackSellerListingRow({
-  listingId,
-  listingTitle,
-  listPrice,
-  primaryImageUrl,
-}: {
-  listingId: string
-  listingTitle?: string
-  listPrice?: number
-  primaryImageUrl?: string | null
-}): SellerListingRow | null {
-  if (listPrice == null || listPrice <= 0) return null
-  return {
-    id: listingId,
-    title: listingTitle?.trim() || "Listing",
-    section: null,
-    price: roundMoney(listPrice),
-    minimum_offer_pct: null,
-    shipping_available: null,
-    local_pickup: true,
-    shipping_price: null,
-    board_shipping_cost_mode: null,
-    listing_images: primaryImageUrl ? [{ url: primaryImageUrl, is_primary: true }] : null,
-  }
-}
-
 function ListingThumb({
   src,
   size = "md",
@@ -95,7 +70,7 @@ function ListingThumb({
           src={proxiedListingImageSrc(src) || src}
           alt=""
           fill
-          className="object-cover"
+          className={listingPhotoFillClassName}
           sizes={size === "sm" ? "44px" : "56px"}
           unoptimized
         />
@@ -240,7 +215,7 @@ export type SellerMakeOfferToBuyerDialogProps = {
   listingId: string
   buyerUserId: string
   sellerUserId: string
-  /** When set, stay on thread after send instead of navigating away. */
+  /** Kept for callers that already have a thread open. Sending never leaves the current page. */
   conversationId?: string | null
   listingTitle?: string
   listPrice?: number
@@ -262,25 +237,14 @@ export function SellerMakeOfferToBuyerDialog({
   onOpenChange,
   listingId,
   buyerUserId,
-  conversationId,
-  listingTitle,
-  listPrice,
-  primaryImageUrl,
   embedded = false,
   allowAdditionalListings = true,
   onOfferSent,
 }: SellerMakeOfferToBuyerDialogProps) {
   const router = useRouter()
-  const [listings, setListings] = useState<SellerListingRow[]>(() => {
-    const fallback = fallbackSellerListingRow({
-      listingId,
-      listingTitle,
-      listPrice,
-      primaryImageUrl,
-    })
-    return fallback ? [fallback] : []
-  })
+  const [listings, setListings] = useState<SellerListingRow[]>([])
   const [loadingListings, setLoadingListings] = useState(false)
+  const [listingsUnavailable, setListingsUnavailable] = useState<string | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set([listingId]))
   /** Selected listing order — thread listing pinned first; newly added appear next. */
   const [selectedOrder, setSelectedOrder] = useState<string[]>([listingId])
@@ -290,17 +254,9 @@ export function SellerMakeOfferToBuyerDialog({
   const [submitting, setSubmitting] = useState(false)
   const [updatingOffer, setUpdatingOffer] = useState(false)
 
-  const seedFallbackListing = useCallback((): SellerListingRow | null => {
-    return fallbackSellerListingRow({
-      listingId,
-      listingTitle,
-      listPrice,
-      primaryImageUrl,
-    })
-  }, [listingId, listingTitle, listPrice, primaryImageUrl])
-
   const loadSellerListings = useCallback(async () => {
     setLoadingListings(true)
+    setListingsUnavailable(null)
     try {
       const params = new URLSearchParams()
       if (!allowAdditionalListings) params.set("anchorOnly", "1")
@@ -310,6 +266,13 @@ export function SellerMakeOfferToBuyerDialog({
         credentials: "include",
       })
       const json: unknown = await res.json().catch(() => ({}))
+      const apiError =
+        typeof json === "object" &&
+        json !== null &&
+        "error" in json &&
+        typeof (json as { error: unknown }).error === "string"
+          ? (json as { error: string }).error
+          : null
       const payload =
         typeof json === "object" && json !== null && "data" in json
           ? (json as { data?: { listings?: SellerOfferListing[]; openOffer?: OpenSellerOfferPreview | null } })
@@ -321,26 +284,23 @@ export function SellerMakeOfferToBuyerDialog({
         : loaded.filter((row) => row.id === listingId)
 
       if (!res.ok || rows.length === 0) {
-        const fallback = seedFallbackListing()
-        if (fallback) {
-          setListings([fallback])
-          return
-        }
-        if (!res.ok) {
-          const err =
-            typeof json === "object" &&
-            json !== null &&
-            "error" in json &&
-            typeof (json as { error: unknown }).error === "string"
-              ? (json as { error: string }).error
-              : "Could not load your listings."
-          toast.error(err)
-        }
+        // Never fall back to thread listing props — those stay available after sold /
+        // removed, which previously let sellers compose offers on inactive listings.
+        const unavailable =
+          apiError ??
+          (res.status === 404
+            ? "This listing is sold or no longer active, so you can’t send an offer."
+            : "This listing is not available for an offer right now.")
         setListings([])
+        setListingsUnavailable(unavailable)
+        if (res.status >= 500) {
+          toast.error(apiError ?? "Could not load your listings.")
+        }
         return
       }
 
       setListings(rows)
+      setListingsUnavailable(null)
 
       const openOffer = payload?.openOffer
       if (openOffer && openOffer.lineItems.length > 0) {
@@ -360,17 +320,13 @@ export function SellerMakeOfferToBuyerDialog({
         setUpdatingOffer(false)
       }
     } catch {
-      const fallback = seedFallbackListing()
-      if (fallback) {
-        setListings([fallback])
-      } else {
-        toast.error("Could not load your listings.")
-        setListings([])
-      }
+      setListings([])
+      setListingsUnavailable("Could not load your listings. Try again in a moment.")
+      toast.error("Could not load your listings.")
     } finally {
       setLoadingListings(false)
     }
-  }, [allowAdditionalListings, buyerUserId, listingId, seedFallbackListing])
+  }, [allowAdditionalListings, buyerUserId, listingId])
 
   useEffect(() => {
     if (!open) return
@@ -381,6 +337,8 @@ export function SellerMakeOfferToBuyerDialog({
     setMessage("")
     setSubmitting(false)
     setUpdatingOffer(false)
+    setListings([])
+    setListingsUnavailable(null)
     void loadSellerListings()
   }, [open, listingId, loadSellerListings])
 
@@ -521,6 +479,10 @@ export function SellerMakeOfferToBuyerDialog({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (listingsUnavailable) {
+      toast.error(listingsUnavailable)
+      return
+    }
     if (!allAmountsValid || orderedSelectedListings.length === 0) {
       toast.error("Check each item price and fulfillment option.")
       return
@@ -576,14 +538,6 @@ export function SellerMakeOfferToBuyerDialog({
 
       onOpenChange(false)
       toast.success(data?.updated ? "Offer updated." : "Offer sent.")
-
-      if (conversationId) {
-        router.refresh()
-      } else if (returnedConversationId) {
-        router.push(`/messages/${returnedConversationId}`)
-      } else {
-        router.push("/messages/offers")
-      }
       router.refresh()
     } finally {
       setSubmitting(false)
@@ -601,27 +555,42 @@ export function SellerMakeOfferToBuyerDialog({
     <>
         <DialogHeader className="shrink-0 space-y-1 border-b border-border/60 px-5 pb-4 pt-5 sm:px-6">
           <DialogTitle className="text-left text-xl font-semibold">
-            {updatingOffer ? "Update your offer" : "Make them an offer"}
+            {listingsUnavailable
+              ? "Offer unavailable"
+              : updatingOffer
+                ? "Update your offer"
+                : "Make them an offer"}
           </DialogTitle>
           <p className="text-left text-[15px] leading-snug text-muted-foreground">
-            {updatingOffer
-              ? "Change the price or terms. This replaces the offer they already have."
-              : allowAdditionalListings
-                ? "Set your price for each listing. Add more listings to bundle into one offer."
-                : "Set your price for this listing."}
+            {listingsUnavailable
+              ? "This conversation’s listing can’t receive a new offer."
+              : updatingOffer
+                ? "Change the price or terms. This replaces the offer they already have."
+                : allowAdditionalListings
+                  ? "Set your price for each listing. Add more listings to bundle into one offer."
+                  : "Set your price for this listing."}
           </p>
         </DialogHeader>
 
         <form onSubmit={(e) => void handleSubmit(e)} className="flex min-h-0 flex-1 flex-col">
           <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4 sm:px-6">
+            {listingsUnavailable && !loadingListings ? (
+              <p className="rounded-xl border border-border/60 bg-muted/30 px-3.5 py-3 text-sm leading-snug text-muted-foreground">
+                {listingsUnavailable}
+              </p>
+            ) : null}
+
             <div className="space-y-2">
-              {allowAdditionalListings ? (
+              {allowAdditionalListings && !listingsUnavailable ? (
                 <Label className="text-sm font-semibold">
                   In this offer ({orderedSelectedListings.length})
                 </Label>
               ) : null}
 
-              {allowAdditionalListings && orderedSelectedListings.length > 0 && !loadingListings ? (
+              {allowAdditionalListings &&
+              orderedSelectedListings.length > 0 &&
+              !loadingListings &&
+              !listingsUnavailable ? (
                 <div className="rounded-xl border border-border/60 bg-muted/30 px-3.5 py-3">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
@@ -658,12 +627,12 @@ export function SellerMakeOfferToBuyerDialog({
                 </div>
               ) : null}
 
-              {orderedSelectedListings.length === 0 && loadingListings ? (
+              {loadingListings ? (
                 <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
                   Loading your listings…
                 </div>
-              ) : orderedSelectedListings.length === 0 ? (
+              ) : listingsUnavailable ? null : orderedSelectedListings.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No listings selected.</p>
               ) : (
                 <ul className="space-y-2.5">
@@ -687,7 +656,10 @@ export function SellerMakeOfferToBuyerDialog({
               )}
             </div>
 
-            {allowAdditionalListings && !loadingListings && unselectedListings.length > 0 ? (
+            {allowAdditionalListings &&
+            !loadingListings &&
+            !listingsUnavailable &&
+            unselectedListings.length > 0 ? (
               <div className="space-y-2 border-t border-border/50 pt-4">
                 <Label className="text-sm font-semibold">Add another listing</Label>
                 <p className="text-xs text-muted-foreground">
@@ -701,160 +673,167 @@ export function SellerMakeOfferToBuyerDialog({
               </div>
             ) : null}
 
-            {!loadingListings && listings.length === 0 ? (
+            {!loadingListings && !listingsUnavailable && listings.length === 0 ? (
               <p className="text-sm text-muted-foreground">No eligible listings found.</p>
             ) : null}
 
-            <div className="space-y-2 border-t border-border/50 pt-4">
-              <Label className="text-sm font-semibold">Delivery method</Label>
-              {bundleFulfillmentMode === "none" && orderedSelectedListings.length > 0 ? (
-                <p className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2.5 text-sm text-muted-foreground">
-                  These listings don&apos;t share a delivery method. Offer items that all allow
-                  pickup, all allow shipping, or both.
-                </p>
-              ) : (
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    disabled={!canPick}
-                    onClick={() => setFulfillment("pickup")}
-                    className={cn(
-                      "flex flex-col items-start gap-1 rounded-xl border px-3 py-2.5 text-left text-sm transition-colors",
-                      fulfillment === "pickup"
-                        ? "border-listingHeart bg-listingHeart/[0.06] text-foreground"
-                        : "border-border/60 bg-card text-muted-foreground hover:bg-muted/30",
-                      !canPick && "cursor-not-allowed opacity-50",
-                    )}
-                  >
-                    <Package className="h-4 w-4" aria-hidden />
-                    <span className="font-medium text-foreground">Local pickup</span>
-                  </button>
-                  <button
-                    type="button"
-                    disabled={!canShip}
-                    onClick={() => setFulfillment("shipping")}
-                    className={cn(
-                      "flex flex-col items-start gap-1 rounded-xl border px-3 py-2.5 text-left text-sm transition-colors",
-                      fulfillment === "shipping"
-                        ? "border-listingHeart bg-listingHeart/[0.06] text-foreground"
-                        : "border-border/60 bg-card text-muted-foreground hover:bg-muted/30",
-                      !canShip && "cursor-not-allowed opacity-50",
-                    )}
-                  >
-                    <Truck className="h-4 w-4" aria-hidden />
-                    <span className="font-medium text-foreground">Shipping</span>
-                  </button>
-                </div>
-              )}
-              {canPick && canShip ? (
-                <p className="text-xs text-muted-foreground">
-                  The buyer can still choose local pickup or shipping at checkout.
-                </p>
-              ) : null}
-            </div>
-
-            {fulfillment === "shipping" && singleListing ? (
-              <div className="space-y-1.5">
-                <Label className="text-sm font-semibold">Shipping from listing</Label>
-                <p className="text-sm font-medium tabular-nums">{shippingLabel}</p>
-                <p className="text-xs text-muted-foreground">
-                  {offerShippingCostHint(shippingMode, listingFlatRate)}
-                </p>
-              </div>
-            ) : fulfillment === "shipping" && isBundle ? (
-              <div className="space-y-1.5">
-                <Label className="text-sm font-semibold">Shipping</Label>
-                <p className="text-sm font-medium">Calculated at checkout</p>
-                <p className="text-xs text-muted-foreground">
-                  Items ship together in one box. The buyer pays the quoted rate at checkout — not
-                  negotiated.
-                </p>
-              </div>
-            ) : null}
-
-            {totalPreview != null ? (
-              <div className="rounded-xl border border-border/60 bg-muted/25 px-4 py-3">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  Offer total
-                </p>
-                <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                  <p className="text-2xl font-semibold tabular-nums tracking-tight">
-                    ${totalPreview.toFixed(2)}
-                  </p>
-                  {itemsSubtotal != null && listSubtotal > itemsSubtotal ? (
-                    <p className="text-sm tabular-nums text-muted-foreground line-through">
-                      List ${listSubtotal.toFixed(2)}
+            {!listingsUnavailable ? (
+              <>
+                <div className="space-y-2 border-t border-border/50 pt-4">
+                  <Label className="text-sm font-semibold">Delivery method</Label>
+                  {bundleFulfillmentMode === "none" && orderedSelectedListings.length > 0 ? (
+                    <p className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2.5 text-sm text-muted-foreground">
+                      These listings don&apos;t share a delivery method. Offer items that all allow
+                      pickup, all allow shipping, or both.
+                    </p>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        disabled={!canPick}
+                        onClick={() => setFulfillment("pickup")}
+                        className={cn(
+                          "flex flex-col items-start gap-1 rounded-xl border px-3 py-2.5 text-left text-sm transition-colors",
+                          fulfillment === "pickup"
+                            ? "border-listingHeart bg-listingHeart/[0.06] text-foreground"
+                            : "border-border/60 bg-card text-muted-foreground hover:bg-muted/30",
+                          !canPick && "cursor-not-allowed opacity-50",
+                        )}
+                      >
+                        <Package className="h-4 w-4" aria-hidden />
+                        <span className="font-medium text-foreground">Local pickup</span>
+                      </button>
+                      <button
+                        type="button"
+                        disabled={!canShip}
+                        onClick={() => setFulfillment("shipping")}
+                        className={cn(
+                          "flex flex-col items-start gap-1 rounded-xl border px-3 py-2.5 text-left text-sm transition-colors",
+                          fulfillment === "shipping"
+                            ? "border-listingHeart bg-listingHeart/[0.06] text-foreground"
+                            : "border-border/60 bg-card text-muted-foreground hover:bg-muted/30",
+                          !canShip && "cursor-not-allowed opacity-50",
+                        )}
+                      >
+                        <Truck className="h-4 w-4" aria-hidden />
+                        <span className="font-medium text-foreground">Shipping</span>
+                      </button>
+                    </div>
+                  )}
+                  {canPick && canShip ? (
+                    <p className="text-xs text-muted-foreground">
+                      The buyer can still choose local pickup or shipping at checkout.
                     </p>
                   ) : null}
                 </div>
-                {fulfillment === "shipping" && itemsSubtotal != null ? (
-                  shippingAmount != null ? (
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      ${itemsSubtotal.toFixed(2)} items + ${shippingAmount.toFixed(2)} shipping
-                    </p>
-                  ) : (
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      ${itemsSubtotal.toFixed(2)} items + shipping at checkout
-                    </p>
-                  )
-                ) : isBundle && itemsSubtotal != null ? (
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    ${itemsSubtotal.toFixed(2)} for {orderedSelectedListings.length} items (list $
-                    {listSubtotal.toFixed(2)})
-                  </p>
-                ) : null}
-              </div>
-            ) : null}
 
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-2">
-                <Label className="text-sm font-semibold">Message</Label>
-                <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                  Optional
-                </span>
-              </div>
-              <Textarea
-                rows={3}
-                maxLength={200}
-                placeholder={
-                  allowAdditionalListings
-                    ? "e.g. Happy to meet locally this weekend, or bundle both items."
-                    : "e.g. Happy to meet locally this weekend."
-                }
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                className="resize-none"
-              />
-            </div>
+                {fulfillment === "shipping" && singleListing ? (
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-semibold">Shipping from listing</Label>
+                    <p className="text-sm font-medium tabular-nums">{shippingLabel}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {offerShippingCostHint(shippingMode, listingFlatRate)}
+                    </p>
+                  </div>
+                ) : fulfillment === "shipping" && isBundle ? (
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-semibold">Shipping</Label>
+                    <p className="text-sm font-medium">Calculated at checkout</p>
+                    <p className="text-xs text-muted-foreground">
+                      Items ship together in one box. The buyer pays the quoted rate at checkout — not
+                      negotiated.
+                    </p>
+                  </div>
+                ) : null}
+
+                {totalPreview != null ? (
+                  <div className="rounded-xl border border-border/60 bg-muted/25 px-4 py-3">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      Offer total
+                    </p>
+                    <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                      <p className="text-2xl font-semibold tabular-nums tracking-tight">
+                        ${totalPreview.toFixed(2)}
+                      </p>
+                      {itemsSubtotal != null && listSubtotal > itemsSubtotal ? (
+                        <p className="text-sm tabular-nums text-muted-foreground line-through">
+                          List ${listSubtotal.toFixed(2)}
+                        </p>
+                      ) : null}
+                    </div>
+                    {fulfillment === "shipping" && itemsSubtotal != null ? (
+                      shippingAmount != null ? (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          ${itemsSubtotal.toFixed(2)} items + ${shippingAmount.toFixed(2)} shipping
+                        </p>
+                      ) : (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          ${itemsSubtotal.toFixed(2)} items + shipping at checkout
+                        </p>
+                      )
+                    ) : isBundle && itemsSubtotal != null ? (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        ${itemsSubtotal.toFixed(2)} for {orderedSelectedListings.length} items (list $
+                        {listSubtotal.toFixed(2)})
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
+
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <Label className="text-sm font-semibold">Message</Label>
+                    <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                      Optional
+                    </span>
+                  </div>
+                  <Textarea
+                    rows={3}
+                    maxLength={200}
+                    placeholder={
+                      allowAdditionalListings
+                        ? "e.g. Happy to meet locally this weekend, or bundle both items."
+                        : "e.g. Happy to meet locally this weekend."
+                    }
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    className="resize-none"
+                  />
+                </div>
+              </>
+            ) : null}
           </div>
 
           <DialogFooter className="shrink-0 gap-2 border-t border-border/60 px-5 py-4 sm:px-6">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
-              Cancel
+              {listingsUnavailable ? "Close" : "Cancel"}
             </Button>
-            <Button
-              type="submit"
-              disabled={
-                submitting ||
-                loadingListings ||
-                orderedSelectedListings.length === 0 ||
-                !allAmountsValid ||
-                bundleFulfillmentMode === "none" ||
-                (fulfillment === "pickup" && !canPick) ||
-                (fulfillment === "shipping" && !canShip)
-              }
-            >
-              {submitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
-                  Sending…
-                </>
-              ) : updatingOffer ? (
-                "Update offer"
-              ) : (
-                "Send offer"
-              )}
-            </Button>
+            {!listingsUnavailable ? (
+              <Button
+                type="submit"
+                disabled={
+                  submitting ||
+                  loadingListings ||
+                  !!listingsUnavailable ||
+                  orderedSelectedListings.length === 0 ||
+                  !allAmountsValid ||
+                  bundleFulfillmentMode === "none" ||
+                  (fulfillment === "pickup" && !canPick) ||
+                  (fulfillment === "shipping" && !canShip)
+                }
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+                    Sending…
+                  </>
+                ) : updatingOffer ? (
+                  "Update offer"
+                ) : (
+                  "Send offer"
+                )}
+              </Button>
+            ) : null}
           </DialogFooter>
         </form>
     </>

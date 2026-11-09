@@ -218,7 +218,7 @@ export function GiveawaysHub({
               </h2>
               <p className="mt-2 text-pretty text-muted-foreground">
                 Free to enter. Publishing a surfboard is your ticket — no sale
-                required.
+                required. The deadline to enter is {featured.deadlineLabel}.
               </p>
               <Button
                 size="lg"

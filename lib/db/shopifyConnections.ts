@@ -1,0 +1,615 @@
+import type { SupabaseClient } from "@supabase/supabase-js"
+import type {
+  PublicShopifyConnection,
+  ShopifyBillingStatus,
+  ShopifyConnectionRow,
+  ShopifySourceOfTruth,
+} from "@/lib/shopify/types"
+
+const CONNECTION_SELECT = [
+  "id",
+  "user_id",
+  "shop_domain",
+  "shop_gid",
+  "shop_name",
+  "status",
+  "sync_enabled",
+  "credential_provider",
+  "active_credential_id",
+  "catalog_read_enabled",
+  "sales_enabled",
+  "orders_sync_enabled",
+  "inventory_write_enabled",
+  "source_of_truth",
+  "billing_status",
+  "billing_subscription_gid",
+  "billing_line_item_gid",
+  "billing_capped_amount",
+  "billing_approved_at",
+  "access_token_ciphertext",
+  "access_token_iv",
+  "access_token_tag",
+  "refresh_token_ciphertext",
+  "refresh_token_iv",
+  "refresh_token_tag",
+  "encryption_key_version",
+  "token_expires_at",
+  "refresh_token_expires_at",
+  "token_refresh_locked_until",
+  "token_refresh_lock_id",
+  "scopes",
+  "channel_gid",
+  "channel_handle",
+  "last_webhook_at",
+  "last_reconciled_at",
+  "last_error",
+  "connected_at",
+  "disconnected_at",
+  "created_at",
+  "updated_at",
+].join(",")
+
+export async function dbShopifyUserIsEligible(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("shopify_connect_enabled")
+    .eq("id", userId)
+    .maybeSingle()
+  if (error) throw new Error(error.message)
+  return data?.shopify_connect_enabled === true
+}
+
+/** True when this account has a linked Shopify store (nav + deep-link eligibility). */
+export async function dbUserHasLinkedShopifyStore(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<boolean> {
+  const linked = await dbAccountIdsWithLinkedShopifyStore(supabase, [userId])
+  return linked.has(userId)
+}
+
+/** Account ids that still have a non-disconnected Shopify connection. */
+export async function dbAccountIdsWithLinkedShopifyStore(
+  supabase: SupabaseClient,
+  accountIds: string[],
+): Promise<Set<string>> {
+  const ids = [...new Set(accountIds.filter(Boolean))]
+  if (ids.length === 0) return new Set()
+  const { data, error } = await supabase
+    .from("shopify_connections")
+    .select("user_id")
+    .in("user_id", ids)
+    .neq("status", "disconnected")
+  if (error) throw new Error(error.message)
+  const linked = new Set<string>()
+  for (const row of data ?? []) {
+    if (typeof row.user_id === "string" && row.user_id) linked.add(row.user_id)
+  }
+  return linked
+}
+
+export async function dbPeekShopifyOAuthState(
+  supabase: SupabaseClient,
+  stateHash: string,
+): Promise<{
+  flowType: "account_oauth" | "public_install"
+  userId: string | null
+  shopDomain: string
+} | null> {
+  const now = new Date().toISOString()
+  const { data, error } = await supabase
+    .from("shopify_oauth_states")
+    .select("flow_type, user_id, shop_domain")
+    .eq("state_hash", stateHash)
+    .is("consumed_at", null)
+    .gt("expires_at", now)
+    .maybeSingle()
+  if (error) throw new Error(error.message)
+  if (!data) return null
+  const flowType = data.flow_type as "account_oauth" | "public_install"
+  return {
+    flowType,
+    userId: (data.user_id as string | null) ?? null,
+    shopDomain: data.shop_domain as string,
+  }
+}
+
+export async function dbInsertShopifyOAuthState(
+  supabase: SupabaseClient,
+  input: {
+    stateHash: string
+    userId: string | null
+    shopDomain: string
+    expiresAt: string
+    flowType?: "account_oauth" | "public_install"
+    connectionId?: string | null
+  },
+): Promise<void> {
+  const { error } = await supabase.from("shopify_oauth_states").insert({
+    state_hash: input.stateHash,
+    user_id: input.userId,
+    shop_domain: input.shopDomain,
+    expires_at: input.expiresAt,
+    flow_type: input.flowType ?? "account_oauth",
+    connection_id: input.connectionId ?? null,
+  })
+  if (error) throw new Error(error.message)
+}
+
+export async function dbConsumeShopifyOAuthState(
+  supabase: SupabaseClient,
+  input: {
+    stateHash: string
+    userId: string
+    shopDomain: string
+  },
+): Promise<boolean> {
+  const now = new Date().toISOString()
+  const { data, error } = await supabase
+    .from("shopify_oauth_states")
+    .update({ consumed_at: now })
+    .eq("state_hash", input.stateHash)
+    .eq("user_id", input.userId)
+    .eq("shop_domain", input.shopDomain)
+    .is("consumed_at", null)
+    .gt("expires_at", now)
+    .select("state_hash")
+    .maybeSingle()
+  if (error) throw new Error(error.message)
+  return Boolean(data)
+}
+
+export async function dbConsumePublicShopifyOAuthState(
+  supabase: SupabaseClient,
+  input: { stateHash: string; shopDomain: string },
+): Promise<boolean> {
+  const now = new Date().toISOString()
+  const { data, error } = await supabase
+    .from("shopify_oauth_states")
+    .update({ consumed_at: now })
+    .eq("state_hash", input.stateHash)
+    .eq("shop_domain", input.shopDomain)
+    .eq("flow_type", "public_install")
+    .is("user_id", null)
+    .is("consumed_at", null)
+    .gt("expires_at", now)
+    .select("state_hash")
+    .maybeSingle()
+  if (error) throw new Error(error.message)
+  return Boolean(data)
+}
+
+export async function dbDeleteExpiredShopifyOAuthStates(
+  supabase: SupabaseClient,
+): Promise<void> {
+  await supabase
+    .from("shopify_oauth_states")
+    .delete()
+    .lt("expires_at", new Date().toISOString())
+}
+
+export async function dbGetShopifyConnectionForUser(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<ShopifyConnectionRow | null> {
+  const { data, error } = await supabase
+    .from("shopify_connections")
+    .select(CONNECTION_SELECT)
+    .eq("user_id", userId)
+    .maybeSingle()
+  if (error) throw new Error(error.message)
+  return (data as unknown as ShopifyConnectionRow | null) ?? null
+}
+
+export async function dbGetShopifyConnectionById(
+  supabase: SupabaseClient,
+  connectionId: string,
+): Promise<ShopifyConnectionRow | null> {
+  const { data, error } = await supabase
+    .from("shopify_connections")
+    .select(CONNECTION_SELECT)
+    .eq("id", connectionId)
+    .maybeSingle()
+  if (error) throw new Error(error.message)
+  return (data as unknown as ShopifyConnectionRow | null) ?? null
+}
+
+export async function dbGetShopifyConnectionByDomain(
+  supabase: SupabaseClient,
+  shopDomain: string,
+): Promise<ShopifyConnectionRow | null> {
+  const { data, error } = await supabase
+    .from("shopify_connections")
+    .select(CONNECTION_SELECT)
+    .eq("shop_domain", shopDomain)
+    .maybeSingle()
+  if (error) throw new Error(error.message)
+  return (data as unknown as ShopifyConnectionRow | null) ?? null
+}
+
+export async function dbUpsertShopifyConnection(
+  supabase: SupabaseClient,
+  input: {
+    userId: string
+    shopDomain: string
+    shopName: string | null
+    shopGid?: string | null
+    accessTokenCiphertext: string
+    accessTokenIv: string
+    accessTokenTag: string
+    refreshTokenCiphertext: string | null
+    refreshTokenIv: string | null
+    refreshTokenTag: string | null
+    encryptionKeyVersion: number
+    tokenExpiresAt: string | null
+    refreshTokenExpiresAt: string | null
+    scopes: string[]
+    credentialProvider?: "public_oauth" | "merchant_custom"
+    catalogReadEnabled?: boolean
+    salesEnabled?: boolean
+    inventoryWriteEnabled?: boolean
+  },
+): Promise<ShopifyConnectionRow> {
+  const now = new Date().toISOString()
+  const { data, error } = await supabase
+    .from("shopify_connections")
+    .upsert(
+      {
+        user_id: input.userId,
+        shop_domain: input.shopDomain,
+        shop_gid: input.shopGid ?? null,
+        shop_name: input.shopName,
+        status: "active",
+        sync_enabled: false,
+        access_token_ciphertext: input.accessTokenCiphertext,
+        access_token_iv: input.accessTokenIv,
+        access_token_tag: input.accessTokenTag,
+        refresh_token_ciphertext: input.refreshTokenCiphertext,
+        refresh_token_iv: input.refreshTokenIv,
+        refresh_token_tag: input.refreshTokenTag,
+        encryption_key_version: input.encryptionKeyVersion,
+        token_expires_at: input.tokenExpiresAt,
+        refresh_token_expires_at: input.refreshTokenExpiresAt,
+        token_refresh_locked_until: null,
+        token_refresh_lock_id: null,
+        scopes: input.scopes,
+        credential_provider: input.credentialProvider ?? "public_oauth",
+        catalog_read_enabled: input.catalogReadEnabled ?? true,
+        sales_enabled: input.salesEnabled ?? false,
+        inventory_write_enabled: input.inventoryWriteEnabled ?? true,
+        last_error: null,
+        connected_at: now,
+        disconnected_at: null,
+        updated_at: now,
+      },
+      { onConflict: "user_id" },
+    )
+    .select(CONNECTION_SELECT)
+    .single()
+  if (error || !data) {
+    throw new Error(error?.message ?? "Could not save Shopify connection")
+  }
+  return data as unknown as ShopifyConnectionRow
+}
+
+export async function dbMirrorShopifyConnectionTokens(
+  supabase: SupabaseClient,
+  connectionId: string,
+  input: {
+    accessTokenCiphertext: string
+    accessTokenIv: string
+    accessTokenTag: string
+    refreshTokenCiphertext: string | null
+    refreshTokenIv: string | null
+    refreshTokenTag: string | null
+    encryptionKeyVersion: number
+    tokenExpiresAt: string | null
+    refreshTokenExpiresAt: string | null
+  },
+): Promise<void> {
+  const { error } = await supabase
+    .from("shopify_connections")
+    .update({
+      access_token_ciphertext: input.accessTokenCiphertext,
+      access_token_iv: input.accessTokenIv,
+      access_token_tag: input.accessTokenTag,
+      refresh_token_ciphertext: input.refreshTokenCiphertext,
+      refresh_token_iv: input.refreshTokenIv,
+      refresh_token_tag: input.refreshTokenTag,
+      encryption_key_version: input.encryptionKeyVersion,
+      token_expires_at: input.tokenExpiresAt,
+      refresh_token_expires_at: input.refreshTokenExpiresAt,
+      status: "active",
+      last_error: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", connectionId)
+  if (error) throw new Error(error.message)
+}
+
+export async function dbUpdateShopifyConnectionTokens(
+  supabase: SupabaseClient,
+  connectionId: string,
+  lockId: string,
+  input: {
+    accessTokenCiphertext: string
+    accessTokenIv: string
+    accessTokenTag: string
+    refreshTokenCiphertext: string | null
+    refreshTokenIv: string | null
+    refreshTokenTag: string | null
+    encryptionKeyVersion: number
+    tokenExpiresAt: string | null
+    refreshTokenExpiresAt: string | null
+  },
+): Promise<void> {
+  const { data, error } = await supabase
+    .from("shopify_connections")
+    .update({
+      access_token_ciphertext: input.accessTokenCiphertext,
+      access_token_iv: input.accessTokenIv,
+      access_token_tag: input.accessTokenTag,
+      refresh_token_ciphertext: input.refreshTokenCiphertext,
+      refresh_token_iv: input.refreshTokenIv,
+      refresh_token_tag: input.refreshTokenTag,
+      encryption_key_version: input.encryptionKeyVersion,
+      token_expires_at: input.tokenExpiresAt,
+      refresh_token_expires_at: input.refreshTokenExpiresAt,
+      token_refresh_locked_until: null,
+      token_refresh_lock_id: null,
+      status: "active",
+      last_error: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", connectionId)
+    .eq("token_refresh_lock_id", lockId)
+    .select("id")
+    .maybeSingle()
+  if (error) throw new Error(error.message)
+  if (!data) throw new Error("Shopify credential refresh lock was lost")
+}
+
+export async function dbClaimShopifyTokenRefresh(
+  supabase: SupabaseClient,
+  connectionId: string,
+  lockId: string,
+): Promise<boolean> {
+  const now = new Date()
+  const expiredBefore = now.toISOString()
+  const lockedUntil = new Date(now.getTime() + 60_000).toISOString()
+  const { data, error } = await supabase
+    .from("shopify_connections")
+    .update({
+      token_refresh_locked_until: lockedUntil,
+      token_refresh_lock_id: lockId,
+      updated_at: expiredBefore,
+    })
+    .eq("id", connectionId)
+    .or(
+      `token_refresh_locked_until.is.null,token_refresh_locked_until.lt.${expiredBefore}`,
+    )
+    .select("id")
+    .maybeSingle()
+  if (error) throw new Error(error.message)
+  return Boolean(data)
+}
+
+export async function dbReleaseShopifyTokenRefresh(
+  supabase: SupabaseClient,
+  connectionId: string,
+  lockId: string,
+  errorMessage?: string,
+): Promise<void> {
+  await supabase
+    .from("shopify_connections")
+    .update({
+      token_refresh_locked_until: null,
+      token_refresh_lock_id: null,
+      ...(errorMessage ? { last_error: errorMessage.slice(0, 1000) } : {}),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", connectionId)
+    .eq("token_refresh_lock_id", lockId)
+}
+
+export async function dbSetShopifyOrdersSyncEnabled(
+  supabase: SupabaseClient,
+  connectionId: string,
+  ordersSyncEnabled: boolean,
+): Promise<void> {
+  const { error } = await supabase
+    .from("shopify_connections")
+    .update({
+      orders_sync_enabled: ordersSyncEnabled,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", connectionId)
+  if (error) throw new Error(error.message)
+}
+
+export async function dbMarkShopifyConnectionStatus(
+  supabase: SupabaseClient,
+  connectionId: string,
+  input: {
+    status: ShopifyConnectionRow["status"]
+    syncEnabled?: boolean
+    error?: string | null
+  },
+): Promise<void> {
+  const disconnected = input.status === "disconnected"
+  const { error } = await supabase
+    .from("shopify_connections")
+    .update({
+      status: input.status,
+      ...(input.syncEnabled == null
+        ? {}
+        : { sync_enabled: input.syncEnabled }),
+      last_error: input.error?.slice(0, 1000) ?? null,
+      disconnected_at: disconnected ? new Date().toISOString() : null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", connectionId)
+  if (error) throw new Error(error.message)
+}
+
+export async function dbUpdateShopifyBilling(
+  supabase: SupabaseClient,
+  connectionId: string,
+  input: {
+    billingStatus: ShopifyBillingStatus
+    subscriptionGid: string | null
+    lineItemGid: string | null
+    cappedAmount: number | null
+    approvedAt: string | null
+    syncEnabled: boolean
+  },
+): Promise<void> {
+  const { error } = await supabase
+    .from("shopify_connections")
+    .update({
+      billing_status: input.billingStatus,
+      billing_subscription_gid: input.subscriptionGid,
+      billing_line_item_gid: input.lineItemGid,
+      billing_capped_amount: input.cappedAmount,
+      billing_approved_at: input.approvedAt,
+      sync_enabled: input.syncEnabled,
+      sales_enabled: input.billingStatus === "active",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", connectionId)
+  if (error) throw new Error(error.message)
+}
+
+export async function dbUpdateShopifySourceOfTruth(
+  supabase: SupabaseClient,
+  connectionId: string,
+  sourceOfTruth: ShopifySourceOfTruth,
+): Promise<void> {
+  const { error } = await supabase
+    .from("shopify_connections")
+    .update({
+      source_of_truth: sourceOfTruth,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", connectionId)
+  if (error) throw new Error(error.message)
+}
+
+export async function dbTouchShopifyWebhook(
+  supabase: SupabaseClient,
+  connectionId: string,
+): Promise<void> {
+  await supabase
+    .from("shopify_connections")
+    .update({
+      last_webhook_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", connectionId)
+}
+
+export async function dbTouchShopifyReconciled(
+  supabase: SupabaseClient,
+  connectionId: string,
+): Promise<void> {
+  const now = new Date().toISOString()
+  await supabase
+    .from("shopify_connections")
+    .update({
+      last_reconciled_at: now,
+      last_error: null,
+      updated_at: now,
+    })
+    .eq("id", connectionId)
+}
+
+export async function dbListShopifyConnectionsDueForReconcile(
+  supabase: SupabaseClient,
+  staleBefore: string,
+  limit = 100,
+): Promise<ShopifyConnectionRow[]> {
+  const { data, error } = await supabase
+    .from("shopify_connections")
+    .select(CONNECTION_SELECT)
+    .eq("status", "active")
+    .eq("sync_enabled", true)
+    .or(`last_reconciled_at.is.null,last_reconciled_at.lt.${staleBefore}`)
+    .limit(limit)
+  if (error) throw new Error(error.message)
+  return (data ?? []) as unknown as ShopifyConnectionRow[]
+}
+
+export function toPublicShopifyConnection(
+  connection: ShopifyConnectionRow,
+): PublicShopifyConnection {
+  return {
+    id: connection.id,
+    shop_domain: connection.shop_domain,
+    shop_gid: connection.shop_gid,
+    shop_name: connection.shop_name,
+    status: connection.status,
+    sync_enabled: connection.sync_enabled,
+    credential_provider: connection.credential_provider,
+    catalog_read_enabled: connection.catalog_read_enabled,
+    sales_enabled: connection.sales_enabled,
+    orders_sync_enabled: connection.orders_sync_enabled,
+    inventory_write_enabled: connection.inventory_write_enabled,
+    source_of_truth: connection.source_of_truth,
+    billing_status: connection.billing_status,
+    scopes: connection.scopes,
+    last_webhook_at: connection.last_webhook_at,
+    last_reconciled_at: connection.last_reconciled_at,
+    last_error: connection.last_error,
+    connected_at: connection.connected_at,
+  }
+}
+
+export async function dbRedactShopifyConnection(
+  supabase: SupabaseClient,
+  connectionId: string,
+  shopDomain: string,
+): Promise<string[]> {
+  const { data: mappings, error: mappingsError } = await supabase
+    .from("shopify_product_mappings")
+    .select("listing_id")
+    .eq("connection_id", connectionId)
+  if (mappingsError) throw new Error(mappingsError.message)
+  const listingIds = (mappings ?? []).map((row) => row.listing_id)
+
+  if (listingIds.length > 0) {
+    const { error: imageError } = await supabase
+      .from("listing_images")
+      .delete()
+      .in("listing_id", listingIds)
+    if (imageError) throw new Error(imageError.message)
+    const { error: listingError } = await supabase
+      .from("listings")
+      .update({
+        title: "Removed Shopify product",
+        description: "This Shopify-sourced product is no longer available.",
+        brand: null,
+        model: null,
+        stock_quantity: 0,
+        status: "removed",
+        inventory_source: "reswell",
+        updated_at: new Date().toISOString(),
+      })
+      .in("id", listingIds)
+    if (listingError) throw new Error(listingError.message)
+  }
+
+  const { error: eventError } = await supabase
+    .from("shopify_webhook_events")
+    .delete()
+    .eq("shop_domain", shopDomain)
+  if (eventError) throw new Error(eventError.message)
+  const { error: connectionError } = await supabase
+    .from("shopify_connections")
+    .delete()
+    .eq("id", connectionId)
+  if (connectionError) throw new Error(connectionError.message)
+  return listingIds
+}

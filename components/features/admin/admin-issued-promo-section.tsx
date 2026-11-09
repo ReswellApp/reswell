@@ -19,6 +19,7 @@ import { toast } from "sonner"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -43,6 +44,11 @@ import {
   ADMIN_ISSUED_PROMO_MIN_PERCENT,
   ADMIN_ISSUED_PROMO_VALIDITY_DAYS,
 } from "@/lib/constants/admin-issued-promo"
+import type { PeerListingSection } from "@/lib/peer-listing-sections"
+import {
+  ADMIN_PROMO_PRODUCT_TYPE_OPTIONS,
+  promoDiscountScopePhrase,
+} from "@/lib/utils/promo-product-type"
 import type {
   AdminIssuedPromoCodeListRow,
   AdminIssuedPromoCodeSortKey,
@@ -131,6 +137,7 @@ export function AdminIssuedPromoSection() {
 
   const [discountPercent, setDiscountPercent] = useState("10")
   const [note, setNote] = useState("")
+  const [eligibleSections, setEligibleSections] = useState<PeerListingSection[]>([])
   const [generating, setGenerating] = useState(false)
   const [generated, setGenerated] = useState<AdminIssuedPromoGenerateResult | null>(null)
 
@@ -221,6 +228,7 @@ export function AdminIssuedPromoSection() {
         body: JSON.stringify({
           discount_percent: parsed,
           ...(note.trim() ? { note: note.trim() } : {}),
+          ...(eligibleSections.length > 0 ? { eligible_sections: eligibleSections } : {}),
         }),
       })
       const body = (await res.json()) as { data?: AdminIssuedPromoGenerateResult; error?: string }
@@ -284,8 +292,9 @@ export function AdminIssuedPromoSection() {
           </span>
         </div>
         <p className="text-sm text-muted-foreground">
-          One-time codes for any signed-in buyer — set the discount, share the code, and track redemption.
-          Codes expire after {ADMIN_ISSUED_PROMO_VALIDITY_DAYS} days.
+          One-time codes for any signed-in buyer — set the discount, optionally limit it to a product
+          type, share the code, and track redemption. Codes expire after {ADMIN_ISSUED_PROMO_VALIDITY_DAYS}{" "}
+          days.
         </p>
       </div>
 
@@ -329,6 +338,40 @@ export function AdminIssuedPromoSection() {
               Generate
             </Button>
           </div>
+          <fieldset className="space-y-2">
+            <legend className="text-sm font-medium text-foreground">Product type</legend>
+            <p className="text-xs text-muted-foreground">
+              Leave every type unchecked and the code works on the whole cart. Check Fins and it
+              discounts only fins.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {ADMIN_PROMO_PRODUCT_TYPE_OPTIONS.map((option) => {
+                const checked = eligibleSections.includes(option.section)
+                return (
+                  <label
+                    key={option.section}
+                    className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-1.5 text-sm text-foreground"
+                  >
+                    <Checkbox
+                      checked={checked}
+                      disabled={generating}
+                      onCheckedChange={(value) => {
+                        setEligibleSections((current) => {
+                          if (value === true) {
+                            return current.includes(option.section)
+                              ? current
+                              : [...current, option.section]
+                          }
+                          return current.filter((section) => section !== option.section)
+                        })
+                      }}
+                    />
+                    {option.label}
+                  </label>
+                )
+              })}
+            </div>
+          </fieldset>
         </form>
 
         {generated ? (
@@ -338,7 +381,9 @@ export function AdminIssuedPromoSection() {
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-3">
               <span className="font-mono text-lg font-bold tracking-wide text-foreground">{generated.code}</span>
-              <Badge variant="outline">{generated.discountPercent}% off items</Badge>
+              <Badge variant="outline">
+                {generated.discountPercent}% off {promoDiscountScopePhrase(generated.eligibleSections)}
+              </Badge>
               <Button type="button" size="sm" variant="outline" onClick={() => void copyCode(generated.code)}>
                 <Copy className="mr-2 h-3.5 w-3.5" />
                 Copy
@@ -442,6 +487,7 @@ export function AdminIssuedPromoSection() {
                 <TableHead className="text-right">
                   <SortHeader label="Discount" sortKey="discount_percent" className="justify-end" />
                 </TableHead>
+                <TableHead>Applies to</TableHead>
                 <TableHead>
                   <SortHeader label="Created" sortKey="created_at" />
                 </TableHead>
@@ -482,6 +528,7 @@ export function AdminIssuedPromoSection() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right tabular-nums">{row.discountPercent}%</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{row.appliesToLabel}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">{formatDate(row.createdAt)}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">{formatDate(row.expiresAt)}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">

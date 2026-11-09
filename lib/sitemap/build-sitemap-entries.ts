@@ -24,6 +24,10 @@ import { getNoindexManagedPaths } from "@/lib/seo/resolve-page-seo"
 import { getAllHelpRetrievalDocuments } from "@/lib/help-center/retrieval-docs"
 import { helpTopicIndexes } from "@/lib/help-center/topics"
 import { helpTopicPath } from "@/lib/help-center/paths"
+import {
+  buildModelPageSitemapEntries,
+  buildModelPricingSitemapEntries,
+} from "@/lib/sitemap/model-page-entries"
 import type { SitemapUrlEntry } from "@/lib/sitemap/types"
 
 export type { SitemapUrlEntry } from "@/lib/sitemap/types"
@@ -125,6 +129,7 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
   const staticPages: SitemapUrlEntry[] = [
     { url: `${BASE}/`, lastModified: now, changeFrequency: "daily", priority: 1.0 },
     { url: `${BASE}/boards`, lastModified: now, changeFrequency: "daily", priority: 1.0 },
+    { url: `${BASE}/explore`, lastModified: now, changeFrequency: "daily", priority: 0.7 },
     { url: `${BASE}/fins`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
     { url: `${BASE}/wetsuits`, lastModified: now, changeFrequency: "daily", priority: 0.75 },
     { url: `${BASE}/boardbags`, lastModified: now, changeFrequency: "daily", priority: 0.75 },
@@ -151,10 +156,11 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
     { url: `${BASE}/sellers`, lastModified: now, changeFrequency: "weekly", priority: 0.4 },
     { url: `${BASE}/cities/top`, lastModified: now, changeFrequency: "daily", priority: 0.55 },
     { url: `${BASE}/surf-shops`, lastModified: now, changeFrequency: "weekly", priority: 0.5 },
+    { url: `${BASE}/for-surf-shops`, lastModified: now, changeFrequency: "weekly", priority: 0.6 },
     { url: `${BASE}/priceguide`, lastModified: now, changeFrequency: "daily", priority: 0.7 },
     { url: `${BASE}/board-finder`, lastModified: now, changeFrequency: "weekly", priority: 0.6 },
-    { url: `${BASE}/giveaways`, lastModified: now, changeFrequency: "weekly", priority: 0.55 },
     { url: `${BASE}/we-buy`, lastModified: now, changeFrequency: "weekly", priority: 0.65 },
+    { url: `${BASE}/name-the-break`, lastModified: now, changeFrequency: "weekly", priority: 0.55 },
     { url: `${BASE}/blog`, lastModified: now, changeFrequency: "weekly", priority: 0.45 },
     { url: `${BASE}/faq`, lastModified: now, changeFrequency: "weekly", priority: 0.5 },
     { url: `${BASE}/help`, lastModified: now, changeFrequency: "weekly", priority: 0.55 },
@@ -173,6 +179,7 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
       priority: 0.45,
     })),
     { url: `${BASE}/public-api`, lastModified: now, changeFrequency: "monthly", priority: 0.4 },
+    { url: `${BASE}/connect`, lastModified: now, changeFrequency: "monthly", priority: 0.4 },
     { url: `${BASE}/llms.txt`, lastModified: now, changeFrequency: "monthly", priority: 0.35 },
     { url: `${BASE}/openapi.json`, lastModified: now, changeFrequency: "monthly", priority: 0.4 },
     { url: `${BASE}/contact`, lastModified: now, changeFrequency: "monthly", priority: 0.35 },
@@ -210,6 +217,12 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
       changeFrequency: "monthly",
       priority: 0.35,
     },
+    {
+      url: `${BASE}/volume-calculator`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.4,
+    },
     { url: `${BASE}/safety`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
     // Policy/legal pages stay indexable via footer links — omit from sitemap to save crawl budget.
   ]
@@ -221,12 +234,8 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
     priority: 0.55,
   }))
 
-  const modelPages: SitemapUrlEntry[] = modelRows.map((row) => ({
-    url: `${BASE}/${row.brandSlug}/${row.modelSlug}`,
-    lastModified: now,
-    changeFrequency: "daily",
-    priority: 0.65,
-  }))
+  const modelPages = buildModelPageSitemapEntries(modelRows, BASE, now)
+  const modelPricingPages = buildModelPricingSitemapEntries(modelRows, BASE, now)
 
   const cityPages: SitemapUrlEntry[] = cityDirectory.cities.map((city) => ({
     url: `${BASE}${cityLandingHref(city.slug)}`,
@@ -291,6 +300,7 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
     ...boardFilterPages(now),
     ...brandPages,
     ...modelPages,
+    ...modelPricingPages,
     ...cityPages,
     ...surfShopPages,
     ...sellerPages,

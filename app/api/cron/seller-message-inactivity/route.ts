@@ -3,9 +3,10 @@ import { processSellerMessageInactivity } from "@/lib/services/sellerMessageInac
 import { NextResponse } from "next/server"
 
 /**
- * Daily job: unanswered buyer listing messages older than 7 days → vacation mode +
- * Klaviyo **Listing Auto Vacation** (listing hidden) and **Inactive Seller**
- * (missed messages) to the seller.
+ * Daily job for unanswered buyer listing messages:
+ * day 3 — in-app notice + Klaviyo **Seller Still Here**
+ * day 6 — in-app hide warning + Klaviyo **Seller Listing Hide Warning**
+ * day 7 — vacation mode, in-app notice, Klaviyo **Listing Auto Vacation** and **Inactive Seller**
  *
  * Protected with CRON_SECRET (same pattern as other cron routes).
  */

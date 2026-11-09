@@ -442,7 +442,7 @@ export function HelpHubClient({
 
   const heading =
     phase === "intents"
-      ? "Customer support"
+      ? "Reswell help"
       : phase === "freeform" && directChat
         ? "Talk to the team"
         : phase === "order_form" && formCopy
@@ -466,9 +466,9 @@ export function HelpHubClient({
   const subtitle =
     phase === "intents"
       ? hasUnreadSupport
-        ? `${SUPPORT_DESK_NAME} replied — open your request to read it.`
+        ? `${SUPPORT_DESK_NAME} replied — open your help thread to read it.`
         : hasOpenCase
-          ? "Continue your open request, or start another below."
+          ? "Continue your open help thread, or start another below."
           : "Choose a topic — we’ll ask a few questions, then you can add details. Or skip that and talk to the team now."
       : phase === "order_pick"
         ? roleFilter === "seller"
@@ -487,8 +487,8 @@ export function HelpHubClient({
               : phase === "freeform"
                 ? signedIn
                   ? directChat
-                    ? "Tell us what’s going on. We’ll open a support chat with the team."
-                    : "Tell us what happened. We’ll open a case under Support."
+                    ? "Tell us what’s going on. We’ll open a help thread with the team."
+                    : "Tell us what happened. We’ll add it to your help threads."
                   : "Sign in to send this to the Reswell team."
                 : phase === "sign_in"
                   ? "Orders and sales are on your account. Sign in to choose one."

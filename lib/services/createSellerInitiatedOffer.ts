@@ -18,6 +18,7 @@ import {
 } from "@/lib/utils/seller-offer-revision"
 import { appendOfferTimelineEntry } from "@/lib/services/appendOfferTimeline"
 import { parseOfferTimeline } from "@/lib/utils/offer-timeline"
+import { publishOfferNotification } from "@/lib/services/notifications/publish"
 import { formatSellerOfferThreadContent } from "@/lib/utils/format-offer-thread-content"
 import type { OfferLineItem } from "@/lib/types/offer-line-item"
 import {
@@ -26,6 +27,7 @@ import {
 } from "@/lib/validations/seller-initiated-offer"
 import { randomUUID } from "node:crypto"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
+import { listingStatusAcceptsOffers } from "@/lib/utils/listing-offer-eligibility"
 
 function roundMoney(n: number): number {
   return Math.round(n * 100) / 100
@@ -49,7 +51,7 @@ function validateListingForSellerOffer(
   if (!isPeerListingSection(listing.section)) {
     return { ok: false, error: "Offers are not available for one or more listing types." }
   }
-  if (listing.status !== "active" && listing.status !== "pending_sale") {
+  if (!listingStatusAcceptsOffers(listing.status)) {
     return { ok: false, error: "One or more listings are not accepting offers." }
   }
 
@@ -348,11 +350,13 @@ export async function createSellerInitiatedOffer(
       ? itemsSubtotal + shippingAmount
       : itemsSubtotal
 
-  const { error: notifErr } = await service.from("notifications").insert({
-    user_id: buyerUserId,
+  await publishOfferNotification(service, {
+    recipientId: buyerUserId,
+    actorId: sellerUserId,
+    listingId: primaryListingId,
+    offerId,
     type: "offer_countered",
-    listing_id: primaryListingId,
-    actor_id: sellerUserId,
+    amountUsd: notifAmount,
     message: updated
       ? isBundle
         ? `${title}: the seller updated their bundle offer to $${notifAmount.toFixed(2)}.`
@@ -361,10 +365,6 @@ export async function createSellerInitiatedOffer(
         ? `${title}: the seller offered a bundle for $${notifAmount.toFixed(2)}.`
         : `${title}: the seller offered $${notifAmount.toFixed(2)}.`,
   })
-
-  if (notifErr) {
-    console.error("[createSellerInitiatedOffer] notification:", notifErr)
-  }
 
   void trackKlaviyoSellerMadeOfferToBuyer({
     offerId,

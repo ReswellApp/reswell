@@ -537,7 +537,7 @@ def products_to_models(
             continue
         # Skip obvious custom deposits / gift cards / accessories that slipped through
         if re.search(
-            r"\b(gift\s*card|deposit|custom order|voucher|leash|fin set|\bfins?\b|handplane|faq)\b",
+            r"\b(gift\s*card|deposit|custom order|voucher|leash|fin set|\bfins?\b|handplane|faq|used)\b",
             name,
             re.I,
         ):

@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
     .eq("id", user.id)
     .single()
 
-  if (!profile?.is_admin && !profile?.is_employee) {
+  if (profile?.is_admin !== true) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 

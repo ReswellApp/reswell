@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { resizeListingImageBufferToStoredThumb } from "@/lib/media/listing-tile-variant-resize"
 import { listingObjectPublicUrl } from "@/lib/supabase/storage-upload-xhr"
+import { verifyStorageObjectExists } from "@/lib/supabase/storage-object-exists"
 import { isAbortError } from "@/lib/utils/is-abort-error"
 
 const IMAGE_FETCH_HEADERS = {

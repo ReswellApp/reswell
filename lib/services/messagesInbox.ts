@@ -1,7 +1,12 @@
+import { z } from "zod"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { listConversationIdsLinkedToSupportTickets } from "@/lib/db/contactMessages"
 import { listConversationIdsLinkedToOrderSupport } from "@/lib/db/order-support"
-import { loadMessagesInboxForUser, type MessagesInboxPayload } from "@/lib/db/messagesInbox"
+import {
+  loadMessagesInboxForUser,
+  type MessagesInboxLoadOptions,
+  type MessagesInboxPayload,
+} from "@/lib/db/messagesInbox"
 import {
   redactShippingLabelArtifactsFromMessage,
   shippingLabelOrderIdFromMessage,
@@ -11,15 +16,15 @@ import { resolveSupportRecipientUserId } from "@/lib/services/resolveSupportReci
 import { loadSupportInboxActivityNotifications } from "@/lib/services/supportInboxActivity"
 import { mergeInboxActivityNotifications } from "@/lib/utils/support-inbox-activity"
 import {
+  getConversationLastActivityMs,
   isSupportInboxConversation,
   type InboxConversationRow,
 } from "@/lib/utils/messages-inbox-grouping"
 
 /**
- * Marketplace `/messages` never shows Reswell Support threads.
- * Hide member↔support DMs (listing_id null, support user as seller) and any
- * conversation linked as a support_conversation_id — including order claims.
- * Staff-outbound marketplace DMs (staff as buyer) stay here.
+ * Marketplace `/messages` is conversations + messages only.
+ * Support chat lives on support_cases / support_case_messages.
+ * Hide leftover dual-written DMs so they cannot appear as marketplace threads.
  */
 export async function retainMarketplaceInboxConversations(
   conversations: InboxConversationRow[],
@@ -45,39 +50,41 @@ export async function retainMarketplaceInboxConversations(
  * Marketplace Messages inbox for a member. Excludes Reswell Support ticket DMs
  * so those only appear under `/dashboard/support`.
  */
-export async function getMessagesInboxForUser(userId: string): Promise<MessagesInboxPayload> {
-  const payload = await loadMessagesInboxForUser(userId)
-  const supportResolved = await resolveSupportRecipientUserId()
+export async function getMessagesInboxForUser(
+  userId: string,
+  options?: MessagesInboxLoadOptions,
+): Promise<MessagesInboxPayload> {
+  const supabase = createServiceRoleClient()
+  const preview = options?.preview === true
+  const [payload, supportResolved, supportActivity] = await Promise.all([
+    loadMessagesInboxForUser(userId, options),
+    resolveSupportRecipientUserId(),
+    loadSupportInboxActivityNotifications(supabase, userId, {
+      caseLimit: preview ? 8 : 30,
+    }).catch((err) => {
+      console.warn("[messagesInbox] support activity skipped", err)
+      return [] as MessagesInboxPayload["notifications"]
+    }),
+  ])
   const supportUserId = supportResolved.ok ? supportResolved.userId : null
 
-  let supportActivity: MessagesInboxPayload["notifications"] = []
-  let hiddenShippingLabelOrderIds = new Set<string>()
-  try {
-    const supabase = createServiceRoleClient()
-    try {
-      supportActivity = await loadSupportInboxActivityNotifications(supabase, userId)
-    } catch (err) {
-      console.warn("[messagesInbox] support activity skipped", err)
-    }
-    const sellerLabelOrderIds = payload.conversations
-      .filter((conversation) => conversation.seller_id === userId)
-      .flatMap((conversation) => conversation.messages)
-      .map((message) => shippingLabelOrderIdFromMessage(message))
-      .filter((orderId): orderId is string => Boolean(orderId))
-    if (sellerLabelOrderIds.length > 0) {
-      hiddenShippingLabelOrderIds = await fetchSantaBarbaraDropoffOrderIds(
-        supabase,
-        sellerLabelOrderIds,
-      )
-    }
-  } catch (err) {
-    console.warn("[messagesInbox] santa barbara label redaction skipped", err)
-  }
+  const sellerLabelOrderIds = preview
+    ? []
+    : payload.conversations
+        .filter((conversation) => conversation.seller_id === userId)
+        .flatMap((conversation) => conversation.messages)
+        .map((message) => shippingLabelOrderIdFromMessage(message))
+        .filter((orderId): orderId is string => Boolean(orderId))
 
-  const conversations = await retainMarketplaceInboxConversations(
-    payload.conversations,
-    supportUserId,
-  )
+  const [hiddenShippingLabelOrderIds, conversations] = await Promise.all([
+    sellerLabelOrderIds.length === 0
+      ? Promise.resolve(new Set<string>())
+      : fetchSantaBarbaraDropoffOrderIds(supabase, sellerLabelOrderIds).catch((err) => {
+          console.warn("[messagesInbox] santa barbara label redaction skipped", err)
+          return new Set<string>()
+        }),
+    retainMarketplaceInboxConversations(payload.conversations, supportUserId),
+  ])
   const redactedConversations =
     hiddenShippingLabelOrderIds.size === 0
       ? conversations
@@ -93,8 +100,91 @@ export async function getMessagesInboxForUser(userId: string): Promise<MessagesI
           }
         })
 
+  const conversationsByActivity = [...redactedConversations].sort(
+    (a, b) => getConversationLastActivityMs(b) - getConversationLastActivityMs(a),
+  )
+
   return {
-    conversations: redactedConversations,
+    conversations: conversationsByActivity,
     notifications: mergeInboxActivityNotifications(payload.notifications, supportActivity),
   }
+}
+
+/**
+ * Marks inbound messages in one marketplace thread read for the viewer.
+ * Opening a thread on web and mobile both go through this so the unread
+ * bubble clears from the same write.
+ */
+export async function markMarketplaceConversationRead(
+  viewerId: string,
+  conversationId: string,
+): Promise<{ ok: true; buyerId: string; sellerId: string } | { ok: false; error: string }> {
+  if (!z.string().uuid().safeParse(viewerId).success || !z.string().uuid().safeParse(conversationId).success) {
+    return { ok: false, error: "Invalid request" }
+  }
+
+  const service = createServiceRoleClient()
+  const { data: conv, error } = await service
+    .from("conversations")
+    .select("buyer_id, seller_id")
+    .eq("id", conversationId)
+    .maybeSingle()
+
+  if (error || !conv?.buyer_id || !conv.seller_id) {
+    return { ok: false, error: "Conversation not found" }
+  }
+
+  const buyerId = conv.buyer_id as string
+  const sellerId = conv.seller_id as string
+  if (viewerId !== buyerId && viewerId !== sellerId) {
+    return { ok: false, error: "Conversation not found" }
+  }
+
+  const { error: msgErr } = await service
+    .from("messages")
+    .update({ is_read: true })
+    .eq("conversation_id", conversationId)
+    .neq("sender_id", viewerId)
+    .eq("is_read", false)
+
+  if (msgErr) {
+    console.error("[markMarketplaceConversationRead]", msgErr)
+    return { ok: false, error: "Failed to mark read" }
+  }
+
+  return { ok: true, buyerId, sellerId }
+}
+
+/**
+ * Marks inbox notifications read for the viewer. Pass `notificationId` to mark
+ * one row; omit it to mark every unread notification (website Activity tab).
+ */
+export async function markInboxNotificationsReadForUser(
+  userId: string,
+  notificationId?: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!z.string().uuid().safeParse(userId).success) {
+    return { ok: false, error: "Invalid request" }
+  }
+  if (notificationId !== undefined && !z.string().uuid().safeParse(notificationId).success) {
+    return { ok: false, error: "Invalid request" }
+  }
+
+  const service = createServiceRoleClient()
+  let query = service
+    .from("notifications")
+    .update({ is_read: true })
+    .eq("user_id", userId)
+    .eq("is_read", false)
+  if (notificationId) {
+    query = query.eq("id", notificationId)
+  }
+
+  const { error } = await query
+  if (error) {
+    console.error("[markInboxNotificationsReadForUser]", error)
+    return { ok: false, error: "Failed to update notifications" }
+  }
+
+  return { ok: true }
 }

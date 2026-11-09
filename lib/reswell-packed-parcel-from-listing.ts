@@ -56,6 +56,7 @@ import {
 } from "@/lib/surfboard-multi-board-parcel"
 
 export type ListingPackedParcelSource = {
+  id?: string | null
   section?: string | null
   shipping_packed_length_in?: number | string | null
   shipping_packed_width_in?: number | string | null
@@ -359,16 +360,118 @@ export type ResolvedPackedParcel = {
   heightIn: number
 }
 
+/** Units of a listing in this box. Surfboard cartons stay one row = one board. */
+export function checkoutParcelLineQuantity(
+  row: ListingPackedParcelSource,
+  quantities?: Record<string, number> | null,
+): number {
+  if (isSurfboardListingSection(row.section)) return 1
+  const id = row.id?.trim()
+  if (!id || !quantities) return 1
+  const qty = Math.floor(quantities[id] ?? 1)
+  return Number.isFinite(qty) && qty >= 1 ? qty : 1
+}
+
+/**
+ * Shop solo packed weights (e.g. 2 lb “small”) are mostly mailer + packing.
+ * Extra nested units only add this fraction as product weight (floored at
+ * {@link RESWELL_FALLBACK_SMALL_PARCEL_WEIGHT_OZ}).
+ */
+export const SMALL_PARCEL_EXTRA_PRODUCT_WEIGHT_FRACTION = 0.25
+
+/**
+ * One mailer for soft goods. Solo listing dims are already a full outer carton;
+ * leashes/fins/etc. nest into that same box. Use the largest oriented L×W×H and
+ * do **not** grow height with quantity — stacking carton volumes was rating five
+ * flat leashes as a 20″ tower.
+ */
+function packSmallParcelBundle(
+  items: Array<{ lengthIn: number; widthIn: number; heightIn: number; quantity: number }>,
+): { lengthIn: number; widthIn: number; heightIn: number } {
+  let maxLength = 0
+  let maxWidth = 0
+  let maxHeight = 0
+  for (const item of items) {
+    if (item.quantity < 1) continue
+    const sides = [item.lengthIn, item.widthIn, item.heightIn].sort((a, b) => b - a)
+    maxLength = Math.max(maxLength, sides[0] ?? 0)
+    maxWidth = Math.max(maxWidth, sides[1] ?? 0)
+    maxHeight = Math.max(maxHeight, sides[2] ?? 0)
+  }
+  const round2 = (value: number) => Math.round(value * 100) / 100
+  return {
+    lengthIn: round2(maxLength),
+    widthIn: round2(maxWidth),
+    heightIn: round2(maxHeight),
+  }
+}
+
+/** Product-only add-on when nesting another carton-heavy soft item into a shared box. */
+export function softParcelExtraProductWeightOz(packedWeightOz: number): number {
+  return Math.max(
+    RESWELL_FALLBACK_SMALL_PARCEL_WEIGHT_OZ,
+    Math.round(packedWeightOz * SMALL_PARCEL_EXTRA_PRODUCT_WEIGHT_FRACTION * 100) / 100,
+  )
+}
+
+/**
+ * Soft-parcel line weights include a solo mailer. Light lines (under 16 oz) are
+ * treated as product-accurate and summed in full. Carton-heavy lines keep one full
+ * packed weight (mailer + item); each extra adds only estimated product weight so
+ * five 2 lb shop-small leashes rate near 4 lb, not 8–10 lb.
+ */
+export function combineSmallParcelPackedWeightsOz(unitWeightsOz: number[]): number {
+  if (unitWeightsOz.length === 0) return 0
+  if (unitWeightsOz.length === 1) {
+    return Math.round(unitWeightsOz[0]! * 100) / 100
+  }
+  const light = unitWeightsOz.filter((weightOz) => weightOz < 16)
+  const heavy = unitWeightsOz
+    .filter((weightOz) => weightOz >= 16)
+    .sort((a, b) => b - a)
+  const lightSum = light.reduce((sum, weightOz) => sum + weightOz, 0)
+  if (heavy.length === 0) {
+    return Math.round(lightSum * 100) / 100
+  }
+  let heavySum = heavy[0]!
+  for (const weightOz of heavy.slice(1)) {
+    heavySum += softParcelExtraProductWeightOz(weightOz)
+  }
+  return Math.round((lightSum + heavySum) * 100) / 100
+}
+
+function expandSmallParcelUnitWeightsOz(
+  parcels: ResolvedPackedParcel[],
+  rows: ListingPackedParcelSource[],
+  quantities?: Record<string, number> | null,
+): number[] {
+  const weights: number[] = []
+  for (let index = 0; index < parcels.length; index += 1) {
+    const qty = checkoutParcelLineQuantity(rows[index]!, quantities)
+    const weightOz = parcels[index]!.weightOz
+    for (let i = 0; i < qty; i += 1) {
+      weights.push(weightOz)
+    }
+  }
+  return weights
+}
+
 /**
  * Combined one-box parcel for multiple listings shipped together (same seller).
  *
  * **2–3 surfboards:** length = longest bare board + 4″, 2 boards 22″ × 5″,
  * 3 boards 27″ × 7″, weight = 22 lb. Single-board tier cartons are not used.
  *
- * **Otherwise:** largest-DIM item's carton + summed weights (fins/shop add-ons with one board).
+ * **One surfboard plus small goods:** the board carton, plus each item's weight
+ * times its quantity.
+ *
+ * **Small parcels only:** one mailer sized to the largest solo carton (L×W×H
+ * stay the same as one item — soft goods nest). Carton-heavy weights keep one
+ * full packed weight, then add product-only extras; light weights add in full.
  */
 export function resolveCombinedPackedParcelFromListings(
   rows: ListingPackedParcelSource[],
+  quantities?: Record<string, number> | null,
 ): { ok: true } & ResolvedPackedParcel | { ok: false; error: string } {
   if (rows.length === 0) {
     return { ok: false, error: "No listings to build a shipping parcel from." }
@@ -389,7 +492,13 @@ export function resolveCombinedPackedParcelFromListings(
     parcels.push(resolved)
   }
 
-  const totalWeightOz = Math.round(parcels.reduce((sum, p) => sum + p.weightOz, 0) * 100) / 100
+  const rawTotalWeightOz =
+    Math.round(
+      parcels.reduce((sum, parcel, index) => {
+        const qty = checkoutParcelLineQuantity(rows[index]!, quantities)
+        return sum + parcel.weightOz * qty
+      }, 0) * 100,
+    ) / 100
 
   if (surfboardCount >= 2) {
     let longestBoardIn = 0
@@ -420,6 +529,21 @@ export function resolveCombinedPackedParcelFromListings(
     }
   }
 
+  if (surfboardCount === 0) {
+    const packed = packSmallParcelBundle(
+      parcels.map((parcel, index) => ({
+        lengthIn: parcel.lengthIn,
+        widthIn: parcel.widthIn,
+        heightIn: parcel.heightIn,
+        quantity: checkoutParcelLineQuantity(rows[index]!, quantities),
+      })),
+    )
+    const weightOz = combineSmallParcelPackedWeightsOz(
+      expandSmallParcelUnitWeightsOz(parcels, rows, quantities),
+    )
+    return finishResolvedParcel("heuristic", packed, weightOz, null)
+  }
+
   let biggest = parcels[0]!
   let biggestDim = surfboardShippingDimIn(biggest.lengthIn, biggest.widthIn, biggest.heightIn)
   for (const p of parcels.slice(1)) {
@@ -433,7 +557,7 @@ export function resolveCombinedPackedParcelFromListings(
   return {
     ok: true,
     source: biggest.source,
-    weightOz: totalWeightOz,
+    weightOz: rawTotalWeightOz,
     lengthIn: biggest.lengthIn,
     widthIn: biggest.widthIn,
     heightIn: biggest.heightIn,

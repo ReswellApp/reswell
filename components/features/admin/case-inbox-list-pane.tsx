@@ -111,12 +111,12 @@ export function CaseInboxListPane({
               onChange={(e) => onSearch(e.target.value)}
               disabled={loading}
               placeholder="Search cases and history…"
-              className="h-8 border-border/60 bg-muted/20 pl-8 text-sm"
+              className="h-10 border-border/60 bg-muted/20 pl-8 text-sm md:h-8"
               aria-label="Search conversations"
             />
           </div>
           <Select value={sort} onValueChange={(value) => onSort(value as CaseInboxSort)} disabled={loading}>
-            <SelectTrigger className="h-8 w-[104px] shrink-0 bg-background text-xs" aria-label="Sort conversations">
+            <SelectTrigger className="h-10 w-[96px] shrink-0 bg-background text-xs md:h-8 md:w-[104px]" aria-label="Sort conversations">
               <ArrowUpDown className="mr-1 h-3 w-3" aria-hidden />
               <SelectValue />
             </SelectTrigger>
@@ -174,10 +174,16 @@ export function CaseInboxListPane({
                     type="button"
                     onClick={() => onSelect(item.key)}
                     className={cn(
-                      "flex w-full gap-2.5 px-3 py-2 text-left transition-colors",
-                      active ? "bg-muted" : "hover:bg-muted/40",
+                      "relative flex w-full gap-2.5 px-3 py-3 text-left transition-colors md:py-2.5",
+                      active ? "bg-sky-50/90 dark:bg-sky-950/30" : "hover:bg-muted/40",
                     )}
                   >
+                    {active ? (
+                      <span
+                        className="absolute inset-y-0 left-0 w-0.5 bg-sky-500"
+                        aria-hidden
+                      />
+                    ) : null}
                     <KindDot item={item} />
                     <span
                       className={cn(
@@ -199,11 +205,25 @@ export function CaseInboxListPane({
                         >
                           {item.fromName}
                         </span>
-                        <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
+                        <span
+                          className={cn(
+                            "shrink-0 text-[11px] tabular-nums",
+                            item.isNew
+                              ? "font-medium text-sky-700 dark:text-sky-300"
+                              : "text-muted-foreground",
+                          )}
+                        >
                           {formatDistanceToNow(new Date(item.updatedAt), { addSuffix: false })}
                         </span>
                       </span>
-                      <span className="line-clamp-1 text-[12px] text-foreground/80">{item.subject}</span>
+                      <span
+                        className={cn(
+                          "line-clamp-1 text-[12px]",
+                          item.isNew ? "font-medium text-foreground" : "text-foreground/80",
+                        )}
+                      >
+                        {item.subject}
+                      </span>
                       <span className="line-clamp-1 text-[12px] text-muted-foreground">
                         {inboxPreviewSnippet(item.preview)}
                       </span>

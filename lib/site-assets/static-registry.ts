@@ -65,14 +65,17 @@ export function listStaticSiteAssets(): SiteAssetEntry[] {
       status: "orphan",
       notes: "Present in /public but not referenced in application code.",
     }),
+    publicImage("reswell-wave-avatar.jpg", "Reswell wave mark", "brand", ["/shopify/connect"], {
+      notes: "Shopify connect consent avatar.",
+    }),
+    publicImage("reswell-profile-default.png", "Default profile circle", "brand", [], {
+      notes: "Default user avatar when no profile photo is set. Used on the site and in the mobile API.",
+    }),
     publicImage("og-image.jpg", "Listing / brand OG fallback", "brand", [], {
       notes: "Used in listing share cards and brand metadata — not visible in page body.",
     }),
 
-    publicImage("home/hero-backdrop-tahiti.jpg", "Homepage and giveaway hero backdrop", "home", [
-      "/",
-      "/giveaways",
-    ]),
+    publicImage("home/hero-backdrop-tahiti.jpg", "Homepage hero backdrop", "home", ["/"]),
     publicImage("home/hero-backdrop-mesa-v2.jpg", "Legacy homepage hero backdrop", "orphan", [], {
       status: "orphan",
     }),
@@ -181,6 +184,16 @@ export function listStaticSiteAssets(): SiteAssetEntry[] {
       ["/reswell/santa-barbara", "/surf-shops", "/surf-shops/beach-house-santa-barbara"],
     ),
     publicImage(
+      "cities/surf-shops/channel-islands-surfboards.png",
+      "Channel Islands Surfboards logo",
+      "marketing",
+      [
+        "/reswell/santa-barbara",
+        "/surf-shops",
+        "/surf-shops/channel-islands-surfboards",
+      ],
+    ),
+    publicImage(
       "cities/surf-shops/surf-country-goleta.jpg",
       "Surf Country Goleta logo",
       "marketing",
@@ -244,7 +257,13 @@ export function listStaticSiteAssets(): SiteAssetEntry[] {
       "cities/surf-shops/mollusk.png",
       "Mollusk Surf Shop logo",
       "marketing",
-      ["/reswell/san-francisco", "/surf-shops", "/surf-shops/mollusk-surf-shop"],
+      [
+        "/reswell/san-francisco",
+        "/reswell/santa-barbara",
+        "/surf-shops",
+        "/surf-shops/mollusk-surf-shop",
+        "/surf-shops/mollusk-santa-barbara",
+      ],
     ),
     publicImage(
       "cities/surf-shops/wavelengths.png",

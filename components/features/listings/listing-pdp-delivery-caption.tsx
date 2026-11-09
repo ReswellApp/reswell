@@ -1,4 +1,3 @@
-import { MapPin } from "lucide-react"
 import {
   LISTING_SHIPPING_EMPHASIS_CLASS,
   listingPickupCaption,
@@ -13,6 +12,7 @@ export function ListingPdpDeliveryCaption({
   shippingPriceCaption = null,
   locationLine = null,
   className,
+  compact = false,
 }: {
   isSold?: boolean
   shippingOffered: boolean
@@ -20,6 +20,8 @@ export function ListingPdpDeliveryCaption({
   shippingPriceCaption?: string | null
   locationLine?: string | null
   className?: string
+  /** Tighter type under list price on mobile PDP. */
+  compact?: boolean
 }) {
   if (isSold) return null
 
@@ -28,15 +30,18 @@ export function ListingPdpDeliveryCaption({
   if (!shippingLine && !pickupLine) return null
 
   return (
-    <div className={cn("mt-1.5 space-y-1 text-[15px] font-medium leading-normal", className)}>
+    <div
+      className={cn(
+        "mt-1.5 space-y-1 font-medium leading-normal",
+        compact ? "text-[13px] leading-snug" : "text-[15px]",
+        className,
+      )}
+    >
       {shippingLine ? (
         <p className={LISTING_SHIPPING_EMPHASIS_CLASS}>{shippingLine}</p>
       ) : null}
       {pickupLine ? (
-        <p className="flex items-center gap-1.5 text-muted-foreground">
-          <MapPin className="h-[1em] w-[1em] shrink-0" aria-hidden />
-          <span>{pickupLine}</span>
-        </p>
+        <p className="font-normal text-muted-foreground">{pickupLine}</p>
       ) : null}
     </div>
   )

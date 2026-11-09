@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
-import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
+import { requireAdmin } from "@/lib/brands/admin-server"
 import { deletePriceGuideCompService } from "@/lib/services/priceGuideAdmin"
 
 type RouteCtx = { params: Promise<{ compId: string }> }
 
 export async function DELETE(_req: NextRequest, ctx: RouteCtx) {
-  const gate = await requireAdminOrEmployee()
+  const gate = await requireAdmin()
   if (!gate.ok) return gate.response
 
   const { compId } = await ctx.params

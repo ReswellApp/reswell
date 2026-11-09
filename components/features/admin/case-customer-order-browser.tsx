@@ -77,11 +77,11 @@ export function CaseCustomerOrderBrowser({
           <p className="px-3 py-6 text-center text-xs text-muted-foreground">No matching orders.</p>
         ) : (
           orders.map((order) => (
-            <div key={order.id} className="flex items-center gap-2 px-3 py-2.5">
+            <div key={order.id} className="flex items-start gap-2 px-3 py-2.5">
               {order.role === "buyer" ? (
-                <ShoppingBag className="h-3.5 w-3.5 shrink-0 text-blue-600" aria-hidden />
+                <ShoppingBag className="mt-0.5 h-3.5 w-3.5 shrink-0 text-blue-600" aria-hidden />
               ) : (
-                <Store className="h-3.5 w-3.5 shrink-0 text-emerald-600" aria-hidden />
+                <Store className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" aria-hidden />
               )}
               <div className="min-w-0 flex-1">
                 <p className="truncate text-xs font-medium">{order.listingTitle ?? "Order item"}</p>
@@ -91,22 +91,24 @@ export function CaseCustomerOrderBrowser({
                   {formatCustomerUsd(order.merchandiseAmount)} · {orderStatusLabel(order.status)}
                 </p>
               </div>
-              <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" asChild>
-                <Link href={`/admin/orders/${order.id}`} aria-label="Open order">
-                  <ExternalLink className="h-3.5 w-3.5" />
-                </Link>
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant={linkedOrderId === order.id ? "secondary" : "outline"}
-                className="h-7 shrink-0 px-2 text-[10px]"
-                disabled={pending || linkedOrderId === order.id}
-                onClick={() => onConnect(order)}
-              >
-                <Link2 className="mr-1 h-3 w-3" />
-                {linkedOrderId === order.id ? "Connected" : "Connect"}
-              </Button>
+              <div className="flex shrink-0 flex-col items-stretch gap-1 sm:flex-row sm:items-center">
+                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 sm:h-7 sm:w-7" asChild>
+                  <Link href={`/admin/orders/${order.id}`} aria-label="Open order">
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </Link>
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={linkedOrderId === order.id ? "secondary" : "outline"}
+                  className="h-8 shrink-0 px-2 text-[10px] sm:h-7"
+                  disabled={pending || linkedOrderId === order.id}
+                  onClick={() => onConnect(order)}
+                >
+                  <Link2 className="mr-1 h-3 w-3" />
+                  {linkedOrderId === order.id ? "Connected" : "Connect"}
+                </Button>
+              </div>
             </div>
           ))
         )}

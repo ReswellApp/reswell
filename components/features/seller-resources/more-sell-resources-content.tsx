@@ -1,38 +1,30 @@
 import Link from "next/link"
-import { BookOpen, Map, Package } from "lucide-react"
+import { BookOpen, Map, Package, Store } from "lucide-react"
 import { helpArticlePath, helpTopicPath } from "@/lib/help-center/paths"
 import { HowToSellSection } from "@/components/features/seller-resources/how-to-sell-section"
 import { SellerResourcesCta } from "@/components/features/seller-resources/seller-resources-cta"
 import { SellerResourcesHero } from "@/components/features/seller-resources/seller-resources-hero"
+import { HOW_TO_SELL_HREF, sellerResourcesComingSoon } from "@/lib/seller-resources"
 import {
-  HOW_TO_SELL_HREF,
-  HOW_TO_SHIP_HREF,
-  SALES_MAP_HREF,
-  sellerResourcesComingSoon,
-} from "@/lib/seller-resources"
+  MORE_SELL_RESOURCES_DROPOFF,
+  MORE_SELL_RESOURCES_HERO,
+  MORE_SELL_RESOURCES_PRIMARY,
+} from "@/lib/seller-resource-copy"
 import { SANTA_BARBARA_DROPOFF_HREF } from "@/lib/dropoff-santa-barbara"
 import { SURFBOARD_SELL_BOARDS_CREATE_HREF } from "@/lib/sell-flow/surfboard-sell-paths"
 
-const PRIMARY = [
-  {
-    title: "How to Sell",
-    href: HOW_TO_SELL_HREF,
-    body: "Photo examples, the Sell walkthrough, box sizes, and how to build reviews.",
-    icon: BookOpen,
-  },
-  {
-    title: "How to Ship",
-    href: HOW_TO_SHIP_HREF,
-    body: "Offer shipping, pack a board, print a label, or meet for pickup.",
-    icon: Package,
-  },
-  {
-    title: "Sales Map",
-    href: SALES_MAP_HREF,
-    body: "See where confirmed Reswell orders travel from seller state to buyer state.",
-    icon: Map,
-  },
+const PRIMARY_ICONS = [Store, BookOpen, Package, Map] as const
+const PRIMARY_HREFS = [
+  "/for-surf-shops",
+  HOW_TO_SELL_HREF,
+  "/seller-resources/how-to-ship",
+  "/map",
 ] as const
+const PRIMARY = MORE_SELL_RESOURCES_PRIMARY.map((item, index) => ({
+  ...item,
+  href: PRIMARY_HREFS[index]!,
+  icon: PRIMARY_ICONS[index]!,
+}))
 
 const GUIDES = [
   { title: "Selling fees", href: helpArticlePath("selling", "marketplace-fees") },
@@ -48,8 +40,8 @@ export function MoreSellResourcesContent() {
   return (
     <main className="flex-1 bg-white">
       <SellerResourcesHero
-        title="Everything you need to sell"
-        description="Guides, tools, and the rest of the seller desk. Pricing Hub and the Sell-Out List will land here when we have the data."
+        title={MORE_SELL_RESOURCES_HERO.title}
+        description={MORE_SELL_RESOURCES_HERO.description}
         primaryCta={{ href: SURFBOARD_SELL_BOARDS_CREATE_HREF, label: "Start a listing" }}
         secondaryCta={{ href: HOW_TO_SELL_HREF, label: "How to Sell" }}
       />
@@ -57,9 +49,9 @@ export function MoreSellResourcesContent() {
       <HowToSellSection
         eyebrow="Guides"
         title="Start with the basics"
-        lead="How to list, how to ship, and where boards are actually selling."
+        lead="Open a shop account, then learn how to list, how to ship, and where boards are selling."
       >
-        <ul className="grid gap-5 md:grid-cols-3">
+        <ul className="grid gap-5 sm:grid-cols-2">
           {PRIMARY.map((item) => {
             const Icon = item.icon
             return (
@@ -81,7 +73,7 @@ export function MoreSellResourcesContent() {
       <HowToSellSection
         eyebrow="Santa Barbara"
         title="Drop off — we pack and ship"
-        lead="If a board has not sold locally, offering shipping from Santa Barbara reaches buyers nationwide. We send the location after it sells."
+        lead={MORE_SELL_RESOURCES_DROPOFF}
       >
         <div className="flex justify-center">
           <Link

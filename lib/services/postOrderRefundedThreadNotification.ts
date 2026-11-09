@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { revalidateMessagesInboxForParticipants } from "@/lib/cache/revalidate-messages-inbox"
 import { getConversationForBuyerSellerListing, ensureConversationForBuyerSellerListing } from "@/lib/db/conversations"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
+import { broadcastInsertedMarketplaceMessage } from "@/lib/services/broadcastMarketplaceThreadMessage"
 import {
   parseOrderRefundedMessageMetadata,
   type OrderRefundedMessagePayload,
@@ -173,6 +174,11 @@ export async function postOrderRefundedThreadNotification(
     console.error("[postOrderRefunded] message insert failed:", msgErr)
     return
   }
+
+  await broadcastInsertedMarketplaceMessage(
+    { ...inserted, sender_id: params.buyerId, content, metadata },
+    conv.id,
+  )
 
   await supabase
     .from("conversations")

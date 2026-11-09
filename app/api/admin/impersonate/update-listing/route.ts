@@ -1,6 +1,6 @@
 import { after, NextRequest, NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
-import { revalidateListingPublicDetailCatalog } from "@/lib/cache/revalidate-listing-public-detail"
+import { expirePublicListingSurfacesAfterEdit } from "@/lib/cache/revalidate-listing-after-edit"
 import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { IMPERSONATION_COOKIE, parseImpersonationCookie } from "@/lib/impersonation"
@@ -25,6 +25,10 @@ import { trackKlaviyoListingCreated } from "@/lib/klaviyo/track-listing-created"
 import { trackFirstTimeSellerForListingIfNeeded } from "@/lib/services/klaviyoFirstTimeSeller"
 import { recordListingVisibilityEvent } from "@/lib/services/listingVisibilityAudit"
 import { omitClientAutoPriceDropSchedule } from "@/lib/listing-auto-price-drop"
+import {
+  coerceSubmittedListingPrice,
+  listingPriceForDraftPublish,
+} from "@/lib/utils/sell-listing-price"
 import { overlayListingRowWithDropoffParcel } from "@/lib/services/listingDropoffParcel"
 
 /** Admin impersonation saves include photos + shipping columns; give the write time to finish. */
@@ -171,14 +175,15 @@ async function putImpersonatedListing(request: NextRequest) {
 
   const publishingFromDraft =
     existingListing.status === "draft" && publishFromDraft === true
+  const priceForPublish = listingPriceForDraftPublish(
+    coerceSubmittedListingPrice(listingFields),
+    existingListing.price,
+  )
 
   if (publishingFromDraft) {
     const mergedForValidation = {
       status: "draft" as const,
-      price:
-        typeof listingFields.price === "number"
-          ? listingFields.price
-          : existingListing.price,
+      price: priceForPublish,
       description:
         typeof listingFields.description === "string"
           ? listingFields.description
@@ -344,12 +349,14 @@ async function putImpersonatedListing(request: NextRequest) {
 
   const slug = slugTrim
 
+  try {
+    expirePublicListingSurfacesAfterEdit(listingId, slug)
+  } catch (error) {
+    console.error("[impersonate] listing path revalidate error:", error)
+  }
+
   after(() => {
     try {
-      if (slug.trim()) {
-        revalidatePath(`/l/${slug.trim()}`, "page")
-        revalidateListingPublicDetailCatalog()
-      }
       if (listingSection === "fins") {
         revalidatePath("/fins")
       }
@@ -368,11 +375,7 @@ async function putImpersonatedListing(request: NextRequest) {
         typeof listingFields.title === "string" && listingFields.title.trim()
           ? listingFields.title.trim()
           : String(existingListing.title ?? "Listing"),
-      price: Number(
-        typeof listingFields.price === "number"
-          ? listingFields.price
-          : existingListing.price ?? 0,
-      ),
+      price: priceForPublish ?? 0,
       photoUrl: primary?.url?.trim() ?? null,
       localPickup:
         typeof listingFields.local_pickup === "boolean"

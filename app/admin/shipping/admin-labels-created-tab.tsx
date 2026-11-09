@@ -37,6 +37,7 @@ type LabelsCreatedRow = {
   tracking_carrier: string | null
   shipengine_rate_id: string | null
   label_cost_usd: number | null
+  adjusted_fee_usd: number
   label_cost_currency: string | null
   created_at: string
   orderDisplayNum: string
@@ -852,6 +853,9 @@ export function AdminLabelsCreatedTab() {
                     <TableHead className="whitespace-nowrap text-right text-xs font-semibold uppercase tracking-wide">
                       Cost
                     </TableHead>
+                    <TableHead className="whitespace-nowrap text-right text-xs font-semibold uppercase tracking-wide">
+                      Adjusted fee
+                    </TableHead>
                     <TableHead className="text-right text-xs font-semibold uppercase tracking-wide">Admin</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -879,6 +883,15 @@ export function AdminLabelsCreatedTab() {
                         {r.label_cost_usd != null
                           ? `$${Number(r.label_cost_usd).toFixed(2)}`
                           : "—"}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums text-sm">
+                        {r.adjusted_fee_usd > 0 ? (
+                          <span className="font-semibold text-rose-700 dark:text-rose-400">
+                            +${r.adjusted_fee_usd.toFixed(2)}
+                          </span>
+                        ) : (
+                          "—"
+                        )}
                       </TableCell>
                       <TableCell className="text-right">
                         <Button variant="ghost" size="sm" className="rounded-full h-8 px-2 gap-1" asChild>

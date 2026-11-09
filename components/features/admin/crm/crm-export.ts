@@ -23,6 +23,8 @@ const CSV_HEADERS = [
   "Needs follow-up",
   "Last contacted",
   "Next follow-up",
+  "Facebook profile",
+  "Facebook thread",
   "Added",
 ] as const
 
@@ -41,6 +43,8 @@ export function buildContactsCsv(contacts: CrmContactWithProfile[]): string {
     contactNeedsFollowUp(contact) ? "Yes" : "No",
     contact.last_contacted_at ?? "",
     contact.next_follow_up_at ?? "",
+    contact.facebook_profile_url ?? "",
+    contact.facebook_thread_url ?? "",
     contact.created_at,
   ])
 

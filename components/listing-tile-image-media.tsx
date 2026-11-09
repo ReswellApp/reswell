@@ -1,11 +1,18 @@
 "use client"
 
 import { ListingMediaFillImage } from "@/components/listing-media-fill-image"
+import { useListingPhotoReady } from "@/components/features/listings/hooks/use-listing-photo-ready"
+import {
+  listingPhotoFillClassName,
+  listingPhotoFrameFillStyle,
+} from "@/lib/listing-photo-fill"
 import {
   Fragment,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
+  useRef,
   useState,
   type MouseEventHandler,
   type ReactNode,
@@ -32,7 +39,6 @@ function ListingTileCarouselSlide({
   imageFit,
   imageClassName,
   imagePriority,
-  onLoadedChange,
   onExhausted,
 }: {
   candidates: string[]
@@ -41,26 +47,20 @@ function ListingTileCarouselSlide({
   imageFit: "cover" | "contain"
   imageClassName?: string
   imagePriority?: boolean
-  onLoadedChange: (loaded: boolean) => void
   onExhausted: () => void
 }) {
   const [candidateIndex, setCandidateIndex] = useState(0)
-  const [loaded, setLoaded] = useState(false)
-
   const candidatesKey = candidates.join("|")
+  const candidatesKeyRef = useRef(candidatesKey)
+  let resolvedIndex = candidateIndex
+  if (candidatesKeyRef.current !== candidatesKey) {
+    candidatesKeyRef.current = candidatesKey
+    resolvedIndex = 0
+    if (candidateIndex !== 0) setCandidateIndex(0)
+  }
 
-  useEffect(() => {
-    setCandidateIndex(0)
-    setLoaded(false)
-  }, [candidatesKey])
-
-  useEffect(() => {
-    if (active) {
-      onLoadedChange(loaded)
-    }
-  }, [active, loaded, onLoadedChange])
-
-  const src = candidates[candidateIndex] ?? ""
+  const src = candidates[resolvedIndex] ?? ""
+  const photo = useListingPhotoReady(src)
 
   useEffect(() => {
     if (!src && candidates.length === 0) {
@@ -69,15 +69,14 @@ function ListingTileCarouselSlide({
   }, [src, candidates.length, onExhausted])
 
   const handleLoad = useCallback(
-    (_event: SyntheticEvent<HTMLImageElement>) => {
-      setLoaded(true)
+    (event: SyntheticEvent<HTMLImageElement>) => {
+      photo.onLoad(event.currentTarget)
     },
-    [],
+    [photo.onLoad],
   )
 
   const handleError = useCallback(
     (_event: SyntheticEvent<HTMLImageElement>) => {
-      setLoaded(false)
       if (candidateIndex + 1 < candidates.length) {
         setCandidateIndex((index) => index + 1)
         return
@@ -90,32 +89,41 @@ function ListingTileCarouselSlide({
   if (!src) return null
 
   return (
-    <ListingMediaFillImage
-      key={src}
-      src={src}
-      alt=""
-      sizes={imageSizes}
-      aria-hidden={!active}
-      loading={imagePriority && active ? "eager" : "lazy"}
-      className={cn(
-        // `scale-100` keeps a compositor layer so hover scale does not flash white.
-        "absolute inset-0 backface-hidden transform-gpu scale-100 ease-in-out",
-        "transition-[opacity,transform] duration-300",
-        active ? "z-[2] opacity-100" : "z-[1] opacity-0",
-        "group-hover:scale-105",
-        imageFit === "cover" && "object-cover",
-        imageFit === "contain" && "object-contain",
-        imageClassName,
-      )}
-      ref={(img) => {
-        if (img?.complete && img.naturalWidth > 0) {
-          setLoaded(true)
+    <>
+      <ListingMediaFillImage
+        key={src}
+        src={src}
+        alt=""
+        sizes={imageSizes}
+        aria-hidden={!active}
+        loading={imagePriority && active ? "eager" : "lazy"}
+        className={cn(
+          // `scale-100` keeps a compositor layer so hover scale does not flash white.
+          listingPhotoFillClassName,
+          "backface-hidden transform-gpu scale-100 ease-in-out",
+          "transition-transform duration-300",
+          active && photo.ready ? "z-[2] opacity-100" : "z-[1] opacity-0",
+          "group-hover:scale-105",
+          imageFit === "contain" && "object-contain",
+          imageClassName,
+        )}
+        style={
+          imageFit === "contain"
+            ? { ...listingPhotoFrameFillStyle, objectFit: "contain" }
+            : listingPhotoFrameFillStyle
         }
-      }}
-      onLoad={handleLoad}
-      onError={handleError}
-      priority={imagePriority && active}
-    />
+        ref={photo.ref}
+        onLoad={handleLoad}
+        onError={handleError}
+        priority={imagePriority && active}
+      />
+      {active && !photo.ready ? (
+        <div
+          className="listing-tile-shimmer absolute inset-0 z-[3]"
+          aria-hidden
+        />
+      ) : null}
+    </>
   )
 }
 
@@ -157,15 +165,16 @@ export function ListingTileImageMedia({
 }: ListingTileImageMediaProps) {
   const [index, setIndex] = useState(0)
   const [exhaustedSlides, setExhaustedSlides] = useState<Set<number>>(() => new Set())
-  const [activeLoaded, setActiveLoaded] = useState(false)
   const [prefetchNeighbors, setPrefetchNeighbors] = useState(false)
 
   const slidesKey = slideCandidates.map((candidates) => candidates.join("|")).join("||")
+  const slidesKeyRef = useRef(slidesKey)
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    if (slidesKeyRef.current === slidesKey) return
+    slidesKeyRef.current = slidesKey
     setIndex(0)
     setExhaustedSlides(new Set())
-    setActiveLoaded(false)
     setPrefetchNeighbors(false)
   }, [slidesKey])
 
@@ -200,10 +209,6 @@ export function ListingTileImageMedia({
     return [...indices].sort((a, b) => a - b)
   }, [count, index, prefetchNeighbors])
 
-  const handleActiveLoadedChange = useCallback((loaded: boolean) => {
-    setActiveLoaded(loaded)
-  }, [])
-
   const markSlideExhausted = useCallback((slideIndex: number) => {
     setExhaustedSlides((prev) => {
       if (prev.has(slideIndex)) return prev
@@ -220,7 +225,6 @@ export function ListingTileImageMedia({
       if (count <= 1) return
       setPrefetchNeighbors(true)
       setIndex((i) => (i === 0 ? count - 1 : i - 1))
-      setActiveLoaded(false)
     },
     [count],
   )
@@ -232,19 +236,17 @@ export function ListingTileImageMedia({
       if (count <= 1) return
       setPrefetchNeighbors(true)
       setIndex((i) => (i === count - 1 ? 0 : i + 1))
-      setActiveLoaded(false)
     },
     [count],
   )
 
   const hasImage = count > 0
-  const showImageShimmer = hasImage && !activeLoaded
 
   return (
     <div
       className={cn(
         aspectClass,
-        "relative w-full overflow-hidden bg-muted",
+        "listing-tile-frame relative w-full overflow-hidden bg-muted",
         imageAspect === "portrait" && linkLayoutUnified && "shrink-0 rounded-t-xl",
         imageAspect === "square" && linkLayoutUnified && "rounded-t-xl",
       )}
@@ -266,7 +268,6 @@ export function ListingTileImageMedia({
               imageFit={imageFit}
               imageClassName={imageClassName}
               imagePriority={imagePriority && visibleIndex === 0}
-              onLoadedChange={handleActiveLoadedChange}
               onExhausted={() => markSlideExhausted(slide.slideIndex)}
             />
           )
@@ -276,16 +277,6 @@ export function ListingTileImageMedia({
           No Image
         </div>
       )}
-
-      {hasImage ? (
-        <div
-          className={cn(
-            "listing-tile-shimmer listing-tile-shimmer-overlay absolute inset-0 z-[3]",
-            !showImageShimmer && "pointer-events-none opacity-0",
-          )}
-          aria-hidden
-        />
-      ) : null}
 
       {[
         overlayTopLeft != null ? (

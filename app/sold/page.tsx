@@ -20,8 +20,13 @@ import { ListingTileGridSkeleton } from "@/components/listing-tile-skeleton"
 import { Skeleton } from "@/components/ui/skeleton"
 import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
 
-/** ISR for `/sold` feeds — public listing data is also wrapped in `unstable_cache`. */
-export const revalidate = 3600
+/**
+ * Render on each request. `revalidate = 3600` stored an ISR document, and a sale's
+ * `revalidatePath` did not drop it, so the next view kept the previous grid for
+ * an hour. The feed payload is still cached until
+ * `revalidateMarketplaceSoldFeedCatalog` or `revalidateMarketplaceNewListingsFeed`.
+ */
+export const dynamic = "force-dynamic"
 
 export async function generateMetadata(): Promise<Metadata> {
   return resolvePageMetadata("sold")

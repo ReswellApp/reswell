@@ -57,12 +57,10 @@ export async function fetchAdminNavBadgeCounts(
             .select('*', { count: 'exact', head: true })
             .eq('status', 'pending')
         : Promise.resolve({ count: 0 as number | null, error: null }),
-      options.includeBrandRequests
-        ? supabase
-            .from('order_shipping_label_failures')
-            .select('*', { count: 'exact', head: true })
-            .eq('status', 'open')
-        : Promise.resolve({ count: 0 as number | null, error: null }),
+      supabase
+        .from('order_shipping_label_failures')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'open'),
       fetchHiddenActiveCheckoutBlockedCount(),
       countSubmittedBoardBuys(supabase),
       supabase
@@ -85,14 +83,12 @@ export async function fetchAdminNavBadgeCounts(
     '/admin/listings/hidden': hiddenActiveRes,
     '/admin/we-buy': buyQueue,
     '/admin/careers': take(careerNewRes),
+    '/admin/shipping': take(labelFailuresRes),
   }
 
   if (options.includeBrandRequests) {
     counts['/admin/listings/brand-requests'] = take(
       brandPendingRes as { count: number | null; error: unknown },
-    )
-    counts['/admin/shipping'] = take(
-      labelFailuresRes as { count: number | null; error: unknown },
     )
   }
 

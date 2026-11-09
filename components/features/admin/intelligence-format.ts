@@ -1,4 +1,3 @@
-import type { IntelligenceTrend } from "@/lib/types/businessIntelligence"
 import { formatCompactUsd } from "@/lib/utils/format-compact-usd"
 
 export function formatUsd(amount: number): string {
@@ -20,13 +19,6 @@ export function formatCount(value: number): string {
 
 export function formatPct(value: number, digits = 1): string {
   return `${value.toFixed(digits)}%`
-}
-
-export function formatDelta(trend: IntelligenceTrend): string | null {
-  if (trend.deltaPct === null) return trend.current > 0 ? "new" : null
-  const sign = trend.deltaPct > 0 ? "+" : "−"
-  const mag = Math.abs(trend.deltaPct)
-  return `${sign}${mag >= 10 ? mag.toFixed(0) : mag.toFixed(1)}%`
 }
 
 export function formatMonthKey(yearMonth: string): string {

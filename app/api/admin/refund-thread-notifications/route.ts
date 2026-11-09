@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
-import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
+import { requireAdmin } from "@/lib/brands/admin-server"
 import { listAdminRefundThreadNotifications } from "@/lib/services/adminRefundThreadNotifications"
 
 const querySchema = z.object({
@@ -12,7 +12,7 @@ const querySchema = z.object({
 
 /** GET /api/admin/refund-thread-notifications — paginated refund /messages notifications. */
 export async function GET(request: NextRequest) {
-  const gate = await requireAdminOrEmployee()
+  const gate = await requireAdmin()
   if (!gate.ok) {
     return gate.response
   }

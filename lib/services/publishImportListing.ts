@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
+import { revalidateMarketplaceNewListingsFeed } from "@/lib/cache/revalidate-marketplace-sold-feed"
 import { revalidateNavSearchSuggest } from "@/lib/cache/revalidate-nav-search-suggest"
 import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { syncListingToIndex } from "@/lib/elasticsearch/listings-index"
@@ -13,8 +14,10 @@ import { trackKlaviyoListingCreated } from "@/lib/klaviyo/track-listing-created"
 import { trackFirstTimeSellerForListingIfNeeded } from "@/lib/services/klaviyoFirstTimeSeller"
 import { notifyBoardSavedSearchMatchesForListing } from "@/lib/services/notifyBoardSavedSearchMatches"
 import { notifyFollowersNewListingKlaviyo } from "@/lib/services/notifyFollowersNewListingKlaviyo"
+import { ingestSurfboardListingIntoDimensionPhotoRefsBestEffort } from "@/lib/services/surfboardDimensionPhotoIngest"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { persistableListingThumbnailUrl } from "@/lib/listing-media-proxy-url"
+import { insertListingImages } from "@/lib/db/listingImagesInsert"
 import { mirrorExternalListingImagesToStorage } from "@/lib/services/importListingImages"
 import { slugify } from "@/lib/slugify"
 import type { z } from "zod"
@@ -137,8 +140,9 @@ export async function publishImportListing(opts: {
     sort_order: index,
   }))
 
-  const { error: imagesError } = await supabase.from("listing_images").insert(imageInserts)
-  if (imagesError) {
+  try {
+    await insertListingImages(supabase, imageInserts)
+  } catch (imagesError) {
     console.error("[publishImportListing] listing_images:", imagesError)
     return { ok: false, status: 500, error: "Listing was created but photos failed to save." }
   }
@@ -167,8 +171,10 @@ export async function publishImportListing(opts: {
   })
   void notifyBoardSavedSearchMatchesForListing(listing.id)
   void notifyFollowersNewListingKlaviyo(listing.id)
+  void ingestSurfboardListingIntoDimensionPhotoRefsBestEffort(listing.id)
 
   revalidateBoardsBrowseCatalog()
+  revalidateMarketplaceNewListingsFeed()
   await revalidateSellersAfterListingChange(supabase, userId)
   revalidateNavSearchSuggest()
 

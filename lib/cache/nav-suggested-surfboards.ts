@@ -13,13 +13,13 @@ export const NAV_SUGGESTED_SURFBOARDS_REVALIDATE_SECONDS = 60 * 60 * 6
 async function loadNavSuggestedSurfboardPool(
   mode: NavSuggestedSurfboardsMode,
 ): Promise<NavSuggestedSurfboardPoolRow[]> {
-  const supabase = getDb({ consistency: "eventual" })
+  const supabase = getDb({ consistency: "strong" })
   return fetchNavSuggestedSurfboardPool(supabase, mode)
 }
 
 const getCachedPopularNavSuggestedSurfboardPool = unstable_cache(
   () => loadNavSuggestedSurfboardPool("popular"),
-  ["nav-suggested-surfboards", "popular"],
+  ["nav-suggested-surfboards-v2", "popular"],
   {
     revalidate: NAV_SUGGESTED_SURFBOARDS_REVALIDATE_SECONDS,
     tags: [NAV_SUGGESTED_SURFBOARDS_CACHE_TAG],
@@ -28,7 +28,7 @@ const getCachedPopularNavSuggestedSurfboardPool = unstable_cache(
 
 const getCachedNewestNavSuggestedSurfboardPool = unstable_cache(
   () => loadNavSuggestedSurfboardPool("newest"),
-  ["nav-suggested-surfboards", "newest"],
+  ["nav-suggested-surfboards-v2", "newest"],
   {
     revalidate: NAV_SUGGESTED_SURFBOARDS_REVALIDATE_SECONDS,
     tags: [NAV_SUGGESTED_SURFBOARDS_CACHE_TAG],

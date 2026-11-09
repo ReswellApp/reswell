@@ -13,6 +13,7 @@ import {
   buildPayoutRequirementNotice,
   requirementSnapshotFromAccount,
 } from "@/lib/utils/stripe-connect-status"
+import { publishPayoutInfoRequired } from "@/lib/services/notifications/publish"
 import { getStripe } from "@/lib/stripe-server"
 import { roundMoney } from "@/lib/utils/stripe-connect-cashout"
 
@@ -101,15 +102,12 @@ async function notifySellerOfConnectRequirements(
   if (previous === next) return
 
   if (next && input.notice) {
-    const { error: insertError } = await supabase.from("notifications").insert({
-      user_id: input.userId,
-      type: "payout_info_required",
+    const sent = await publishPayoutInfoRequired(supabase, {
+      userId: input.userId,
+      fingerprint: next,
       message: input.notice.message,
     })
-    if (insertError) {
-      console.error("[stripe webhook] payout requirement notification failed", insertError)
-      return
-    }
+    if (!sent) return
   }
 
   const { error: updateError } = await supabase

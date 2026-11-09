@@ -32,17 +32,25 @@ export const siteHeaderPeerProductNavLinks: CategoryLink[] = [
   { label: "Traction", href: "/traction" },
 ]
 
-/** Peer gear shown in the desktop + mobile main category bar (others hidden until launch). */
+/**
+ * Peer gear on the desktop header and the mobile category strip.
+ * Order is the live category rail. The mobile browse-rail API reads this same list.
+ * Accessories stay off the rail.
+ */
 export const siteHeaderMainPeerProductNavLinks: CategoryLink[] = [
   { label: "Fins", href: "/fins" },
   { label: "Traction", href: "/traction" },
   { label: "Wetsuits", href: "/wetsuits" },
+  { label: "Boardbags", href: "/boardbags" },
+  { label: "Surfpacks", href: "/surfpacks" },
+  { label: "Leashes", href: "/leashes" },
   { label: "Apparel", href: "/apparel" },
   { label: "Magazines", href: "/magazines" },
 ]
 
 /**
- * Full category rail — desktop header (Surfboards root, then Fins, Traction, Wetsuits, Apparel, Magazines).
+ * Full category rail — desktop header and mobile pill strip.
+ * Surfboards root, then peer gear.
  * Shape browse links (`/boards?type=…`) stay in filters — not in the top rail.
  */
 export const siteHeaderDesktopCategoryNavLinks: CategoryLink[] = [
@@ -183,13 +191,13 @@ export function boardBrowseNavItemIsActive(
   return pathname === path
 }
 
-/** Desktop header right rail — Sellers, Sold. `/brands` stays live; hidden from nav for now. */
+/** Desktop header right rail — Sellers, Sold. `/explore` and `/brands` stay live; hidden from nav for now. */
 export const siteHeaderDesktopSecondaryNavLinks: CategoryLink[] = [
   { label: "Sellers", href: "/sellers" },
   { label: "Sold", href: "/sold" },
 ]
 
-/** Mobile pill strip + hamburger — Sellers, Sold. `/brands` stays live; hidden from nav for now. */
+/** Mobile pill strip + hamburger — Sellers, Sold. `/explore` and `/brands` stay live; hidden from nav for now. */
 export const siteHeaderMobileSecondaryNavLinks: CategoryLink[] = [
   { label: "Sellers", href: "/sellers" },
   { label: "Sold", href: "/sold" },

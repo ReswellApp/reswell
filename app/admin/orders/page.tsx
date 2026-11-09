@@ -58,6 +58,7 @@ import { listingImageShouldBypassOptimization } from '@/lib/listing-media-proxy-
 import { capitalizeWords } from '@/lib/listing-labels'
 import { profileMediaDisplaySrc } from '@/lib/public-media-display-src'
 import type { AdminOrdersDashboardPayload } from '@/lib/services/adminOrdersStats'
+import { listingPhotoCoverClassName } from '@/lib/listing-photo-fill'
 import { cn } from '@/lib/utils'
 
 type PartyLabel = { display_name: string | null; email: string | null; avatar_url: string | null }
@@ -67,6 +68,8 @@ type OrderRow = {
   order_num: string | null
   status: string
   amount: number | string
+  shipping_adjusted_fee: number
+  shipping_adjusted_fee_charged?: number
   payment_method: string
   fulfillment_method: string | null
   delivery_status: string | null
@@ -604,7 +607,6 @@ export default function AdminOrdersPage() {
                   setStatusFilter('all')
                   setOpenFilter('none')
                   setPaymentFilter('all')
-                  setTestFilter('all')
                   setDateFrom('')
                   setDateTo('')
                 }}
@@ -625,6 +627,7 @@ export default function AdminOrdersPage() {
                 <TableHead className="hidden sm:table-cell">
                   <SortHeader label="Amount" sortKey="amount" />
                 </TableHead>
+                <TableHead className="hidden lg:table-cell">Shipping adjustment</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Action</TableHead>
               </TableRow>
@@ -643,7 +646,7 @@ export default function AdminOrdersPage() {
                             width={40}
                             height={40}
                             unoptimized={listingImageShouldBypassOptimization(r.listing.imageUrl)}
-                            className="h-10 w-10 shrink-0 rounded-lg object-cover"
+                            className={cn(listingPhotoCoverClassName, 'h-10 w-10 shrink-0 rounded-lg')}
                           />
                         ) : (
                           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500 dark:bg-muted">
@@ -690,6 +693,22 @@ export default function AdminOrdersPage() {
                         )}
                         Paid by {paymentLabel(r.payment_method)}
                       </p>
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell">
+                      {r.shipping_adjusted_fee > 0 ? (
+                        <div>
+                          <p className="font-semibold tabular-nums text-rose-700 dark:text-rose-400">
+                            +{formatUsd(r.shipping_adjusted_fee)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {r.shipping_adjusted_fee_charged && r.shipping_adjusted_fee_charged > 0
+                              ? "Deducted from seller"
+                              : "On record only"}
+                          </p>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <AdminStatusPill

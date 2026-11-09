@@ -7,7 +7,7 @@ import type {
 } from "@/lib/types/admin-issued-promo-codes"
 
 const PROMO_SELECT =
-  "id, code, discount_percent, note, expires_at, created_by_profile_id, redeemed_at, redeemed_by_profile_id, redeemed_order_id, reserved_payment_intent_id, created_at"
+  "id, code, discount_percent, note, eligible_sections, expires_at, created_by_profile_id, redeemed_at, redeemed_by_profile_id, redeemed_order_id, reserved_payment_intent_id, created_at"
 
 export type AdminIssuedPromoOrderRow = {
   id: string

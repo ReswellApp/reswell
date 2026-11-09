@@ -13,6 +13,7 @@ import {
   readRecentSurfboardListingIds,
 } from "@/lib/utils/recent-viewed-surfboards-storage"
 import { Skeleton } from "@/components/ui/skeleton"
+import { RECENTLY_VIEWED_RAIL_TITLE } from "@/lib/listing-pdp-rail-titles"
 import { cn } from "@/lib/utils"
 
 function pdpRecentToHomePeerListing(
@@ -287,7 +288,7 @@ export function ListingPdpRecentSections({
             {padStripWithRecommendations ? (
               <>Recently Viewed &amp; More</>
             ) : (
-              "Recently viewed"
+              RECENTLY_VIEWED_RAIL_TITLE
             )}
           </h2>
           <HomeListingScrollRow uniformCardHeights>

@@ -28,6 +28,7 @@ import { capitalizeWords } from '@/lib/listing-labels'
 import { formatBusinessDate } from '@/lib/utils/business-timezone'
 import { adminListingStatusPill, formatAdminUsd } from '@/lib/admin/admin-user-detail-display'
 import type { AdminUserDetailListingRow } from '@/lib/services/adminUserDetail'
+import { listingPhotoFillClassName } from '@/lib/listing-photo-fill'
 import { cn } from '@/lib/utils'
 
 export type AdminUserListingFilter = 'all' | 'active' | 'sold' | 'draft' | 'hidden'
@@ -133,7 +134,7 @@ export function AdminUserDetailListings({
                           src={thumb}
                           alt=""
                           fill
-                          className="object-cover"
+                          className={listingPhotoFillClassName}
                           unoptimized={listingImageShouldBypassOptimization(thumb)}
                         />
                       </div>

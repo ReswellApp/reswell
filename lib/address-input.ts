@@ -18,6 +18,10 @@ export type ShippingAddressFormInput = z.infer<typeof shippingAddressFormSchema>
 export const profileAddressInputSchema = shippingAddressFormSchema.extend({
   full_name: z.string().trim().min(1).max(200).optional(),
   phone: z.string().trim().max(40).optional().nullable(),
+  google_place_id: z.string().trim().min(1).max(256).nullable().optional(),
+  latitude: z.number().finite().gte(-90).lte(90).nullable().optional(),
+  longitude: z.number().finite().gte(-180).lte(180).nullable().optional(),
+  formatted_address: z.string().trim().min(1).max(300).nullable().optional(),
 })
 
 export type ProfileAddressInput = z.infer<typeof profileAddressInputSchema>

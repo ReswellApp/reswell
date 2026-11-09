@@ -1,6 +1,7 @@
+import type { SupabaseClient } from "@supabase/supabase-js"
 import { revalidateListYourSurfboardShowcase } from "@/lib/cache/revalidate-list-your-surfboard-showcase"
 import { revalidateSellerProfileAndDirectoryCatalog } from "@/lib/cache/revalidate-sellers-directory-catalog"
-import { createClient } from "@/lib/supabase/server"
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
 import {
   insertMarketplaceReviewForOrder,
@@ -12,6 +13,7 @@ import { evaluateUserReview } from "@/lib/services/accountRestrictions"
 import { validateSellerReviewForOrder } from "@/lib/services/orderSellerReview"
 import { parseOrderTrackingDetail } from "@/lib/shipping/order-tracking-detail"
 import { orderSellerReviewBodySchema } from "@/lib/validations/order-seller-review"
+import { loadMarketplaceOrderAccess } from "@/lib/account-access/order-operator-session"
 
 export const dynamic = "force-dynamic"
 
@@ -53,6 +55,11 @@ export async function POST(
     return NextResponse.json({ error: "Invalid request", details: parsed.error.flatten() }, { status: 400 })
   }
 
+  const access = await loadMarketplaceOrderAccess(supabase, orderId)
+  if (!access.ok) {
+    return NextResponse.json({ error: access.error }, { status: access.status })
+  }
+
   const { data: order, error: orderErr } = await supabase
     .from("orders")
     .select("id, buyer_id, seller_id, listing_id, status, delivery_status, tracking_detail")
@@ -63,11 +70,8 @@ export async function POST(
     return NextResponse.json({ error: "Order not found" }, { status: 404 })
   }
 
-  const isBuyer = order.buyer_id === user.id
-  const isSeller = order.seller_id === user.id
-  if (!isBuyer && !isSeller) {
-    return NextResponse.json({ error: "Order not found" }, { status: 404 })
-  }
+  const isBuyer = access.role === "buyer"
+  const isSeller = access.role === "seller"
 
   const trackingDetail = parseOrderTrackingDetail(order.tracking_detail)
   const gate = validateSellerReviewForOrder(order, trackingDetail)
@@ -75,7 +79,12 @@ export async function POST(
     return NextResponse.json({ error: gate.error }, { status: 400 })
   }
 
-  const { data: existing } = await getMarketplaceReviewByOrderAndReviewer(supabase, orderId, user.id)
+  const reviewerId = isSeller ? String(order.seller_id ?? "") : user.id
+  if (!reviewerId) {
+    return NextResponse.json({ error: "Order not found" }, { status: 404 })
+  }
+
+  const { data: existing } = await getMarketplaceReviewByOrderAndReviewer(supabase, orderId, reviewerId)
   if (existing) {
     return NextResponse.json({ error: "You already submitted a review for this order." }, { status: 409 })
   }
@@ -94,9 +103,18 @@ export async function POST(
     return NextResponse.json({ error: attachmentMeta.error }, { status: 400 })
   }
 
-  const { data, error } = await insertMarketplaceReviewForOrder(supabase, {
+  let reviewClient: SupabaseClient = supabase
+  if (reviewerId !== user.id) {
+    try {
+      reviewClient = createServiceRoleClient()
+    } catch {
+      return NextResponse.json({ error: "Could not save your review" }, { status: 503 })
+    }
+  }
+
+  const { data, error } = await insertMarketplaceReviewForOrder(reviewClient, {
     order_id: orderId,
-    reviewer_id: user.id,
+    reviewer_id: reviewerId,
     reviewed_id: reviewedId,
     listing_id: order.listing_id,
     rating: parsed.data.rating,
@@ -120,7 +138,7 @@ export async function POST(
     void trackKlaviyoSellerReviewedBuyer({
       orderId,
       buyerUserId: order.buyer_id,
-      sellerUserId: user.id,
+      sellerUserId: order.seller_id,
       listingId: order.listing_id,
       rating: parsed.data.rating,
       comment: parsed.data.comment ?? null,

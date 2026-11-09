@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 
+import { resolveManagedSeller } from "@/lib/account-access/managed-seller"
 import { resolveServerAuth } from "@/lib/auth/get-safe-server-user"
 import { applyPublishedListingSideEffects } from "@/lib/services/publishListingDraft"
 
@@ -35,7 +36,11 @@ export async function POST(
   if (error || !listing) {
     return NextResponse.json({ error: "Listing not found" }, { status: 404 })
   }
-  if (listing.user_id !== user.id) {
+  const managed = await resolveManagedSeller("listings.write")
+  if (!managed.ok) {
+    return NextResponse.json({ error: managed.error }, { status: managed.status })
+  }
+  if (listing.user_id !== managed.seller.sellerId) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
   if (listing.status !== "active") {
@@ -43,7 +48,7 @@ export async function POST(
   }
 
   try {
-    await applyPublishedListingSideEffects(supabase, listingId, user.id)
+    await applyPublishedListingSideEffects(supabase, listingId, managed.seller.sellerId)
     return NextResponse.json({ data: { ok: true } }, { status: 200 })
   } catch (error) {
     console.error(

@@ -32,7 +32,7 @@ function canAccessAdminListings(
 ): boolean {
   if (!email) return false
   if (email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()) return true
-  return profile?.is_admin === true || profile?.is_employee === true
+  return profile?.is_admin === true
 }
 
 /**

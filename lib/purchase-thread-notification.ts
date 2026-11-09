@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { getConversationForBuyerSellerListing, ensureConversationForBuyerSellerListing } from "@/lib/db/conversations"
 import type { OrderPlacedMessagePayload } from "@/lib/validations/order-placed-message-metadata"
+import { broadcastInsertedMarketplaceMessage } from "@/lib/services/broadcastMarketplaceThreadMessage"
 
 function shippingLines(shipping: Record<string, unknown> | null): string[] {
   if (!shipping) return []
@@ -154,6 +155,11 @@ export async function postPurchaseThreadNotification(
     console.error("[purchase notification] message insert failed:", msgError)
     return
   }
+
+  await broadcastInsertedMarketplaceMessage(
+    { ...inserted, sender_id: buyerId, content, metadata },
+    conversation.id,
+  )
 
   await supabase
     .from("conversations")

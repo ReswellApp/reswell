@@ -217,7 +217,13 @@ export function HomeHydratedShopNewTile({
   )
 }
 
-export function HomeHydratedTrendingBrandsSection({ rows }: { rows: HomeTrendingBrandRow[] }) {
+export function HomeHydratedTrendingBrandsSection({
+  rows,
+  title,
+}: {
+  rows: HomeTrendingBrandRow[]
+  title: string
+}) {
   const { isAdmin } = useHomeViewer()
-  return <TrendingBrandsSection rows={rows} isAdmin={isAdmin} />
+  return <TrendingBrandsSection rows={rows} title={title} isAdmin={isAdmin} />
 }

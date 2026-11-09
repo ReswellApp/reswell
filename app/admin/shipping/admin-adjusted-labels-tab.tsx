@@ -33,6 +33,8 @@ type AdjustedLabelRow = {
   actual_width: number | null
   actual_height: number | null
   order_id: string | null
+  wallet_debited_at: string | null
+  charge_seller_wallet?: boolean
   created_at: string
   orderDisplayNum: string | null
 }
@@ -102,7 +104,14 @@ export function AdminAdjustedLabelsTab() {
         body: JSON.stringify({ force: false }),
       })
       const body = (await res.json()) as {
-        data?: { reportsIngested: number; increasedRows: number; skipped: number }
+        data?: {
+          reportsIngested: number
+          increasedRows: number
+          walletTransactionsSeen: number
+          walletAdjustmentsUpserted: number
+          walletDebits: number
+          skipped: number
+        }
         error?: string
       }
       if (!res.ok) {
@@ -111,10 +120,12 @@ export function AdminAdjustedLabelsTab() {
       }
       const ingested = body.data?.reportsIngested ?? 0
       const increased = body.data?.increasedRows ?? 0
+      const walletAdjustments = body.data?.walletAdjustmentsUpserted ?? 0
+      const debited = body.data?.walletDebits ?? 0
       const skipped = body.data?.skipped ?? 0
       toast.success(
-        ingested > 0
-          ? `Ingested ${ingested} report${ingested === 1 ? "" : "s"} · ${increased} price increase${increased === 1 ? "" : "s"}`
+        ingested > 0 || walletAdjustments > 0 || debited > 0
+          ? `Ingested ${ingested} report${ingested === 1 ? "" : "s"} · ${walletAdjustments} balance adjustment${walletAdjustments === 1 ? "" : "s"} · ${increased} price increase${increased === 1 ? "" : "s"} · ${debited} wallet debit${debited === 1 ? "" : "s"}`
           : skipped > 0
             ? "Already up to date"
             : "No new adjustment reports",
@@ -140,7 +151,7 @@ export function AdminAdjustedLabelsTab() {
             </CardTitle>
             <CardDescription className="text-sm">
               ShipEngine post-shipment fee increases — weight, dimensions, or service mismatches after
-              the label was bought. Nightly reports plus a daily cron keep this current.
+              the label was bought. Balance transactions and nightly reports plus a daily cron keep this current.
             </CardDescription>
           </div>
           <div className="flex shrink-0 flex-wrap gap-2">
@@ -187,6 +198,9 @@ export function AdminAdjustedLabelsTab() {
                 Order
               </TableHead>
               <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Wallet
+              </TableHead>
+              <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Reason
               </TableHead>
               <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -197,14 +211,14 @@ export function AdminAdjustedLabelsTab() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={6} className="py-10 text-center text-sm text-muted-foreground">
+                <TableCell colSpan={7} className="py-10 text-center text-sm text-muted-foreground">
                   <Loader2 className="mr-2 inline h-4 w-4 animate-spin" />
                   Loading adjusted labels…
                 </TableCell>
               </TableRow>
             ) : rows.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="py-10 text-center text-sm text-muted-foreground">
+                <TableCell colSpan={7} className="py-10 text-center text-sm text-muted-foreground">
                   No price-increase adjustments yet. Sync from ShipEngine after the nightly report
                   lands, or wait for the daily cron.
                 </TableCell>
@@ -232,6 +246,13 @@ export function AdminAdjustedLabelsTab() {
                     ) : (
                       <span className="text-xs text-muted-foreground">Unmatched</span>
                     )}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {row.wallet_debited_at
+                      ? "Debited"
+                      : row.charge_seller_wallet
+                        ? "Pending deduction"
+                        : "Not charged"}
                   </TableCell>
                   <TableCell className="max-w-[180px] truncate text-xs text-muted-foreground">
                     {[row.adjustment_type, row.reason_code].filter(Boolean).join(" · ") || "—"}

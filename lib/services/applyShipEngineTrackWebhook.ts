@@ -84,11 +84,14 @@ export async function applyShipEngineTrackWebhook(
       orderId,
       shipmentId,
       detail,
+      notifyScanUpdates: true,
     })
   }
 
   for (const orderId of orderIdsNeedingLegacy) {
-    await persistOrderCarrierTrackingSnapshot(supabase, orderId, detail)
+    await persistOrderCarrierTrackingSnapshot(supabase, orderId, detail, {
+      notifyScanUpdates: true,
+    })
   }
   for (const returnId of returnIds) {
     await persistOrderReturnCarrierTrackingSnapshot(supabase, returnId, detail)

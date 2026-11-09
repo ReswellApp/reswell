@@ -9,6 +9,8 @@ import {
 } from "@/lib/listing-private-chrome"
 import { listListingCartHoldersForAdmin } from "@/lib/services/listingCartHolders"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
+import { listingOwnerIsOperableAccount } from "@/lib/account-access/operates-listing"
+import { getShopAccountContext } from "@/lib/services/accountAccess"
 
 /**
  * Signed-in listing chrome. Called from the client after paint so the public
@@ -32,8 +34,13 @@ export async function loadListingPrivateChrome(
       .maybeSingle(),
   ])
 
+  const shop = await getShopAccountContext()
   const isAdmin = profile?.is_admin === true
-  const isOwner = listing?.user_id === user.id
+  const canWriteListing = shop?.permissions.has("listings.write") ?? false
+  const isOwner =
+    listing?.user_id === user.id ||
+    (canWriteListing &&
+      listingOwnerIsOperableAccount(user.id, listing?.user_id, shop?.accountId))
   if (!isAdmin && !isOwner) return null
 
   const status = typeof listing?.status === "string" ? listing.status : ""
@@ -54,7 +61,7 @@ export async function loadListingPrivateChrome(
       : Promise.resolve(false),
     canOfferToCart ? getListingCartHolderCount(supabase, id) : Promise.resolve(0),
     isOwner && listing?.user_id
-      ? sellerCanRelistListing(supabase, user.id, {
+      ? sellerCanRelistListing(supabase, String(listing.user_id), {
           id: listing.id,
           user_id: listing.user_id,
           status: listing.status,
@@ -68,7 +75,7 @@ export async function loadListingPrivateChrome(
     isAdmin,
     adminHolders,
     owner: isOwner
-      ? { userId: user.id, canDelete, cartHolderCount, canRelist }
+      ? { userId: String(listing?.user_id ?? user.id), canDelete, cartHolderCount, canRelist }
       : null,
   }
 }

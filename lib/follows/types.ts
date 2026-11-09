@@ -27,10 +27,14 @@ export interface FollowedSeller {
 export interface FollowNotification {
   id: string
   user_id: string
-  type: 'new_listing_from_followed' | 'price_drop_from_followed'
+  type:
+    | "new_listing_from_followed"
+    | "new_listing_from_followed_digest"
+    | "price_drop_from_followed"
   listing_id: string | null
   actor_id: string | null
   message: string | null
+  href?: string | null
   is_read: boolean
   created_at: string
   actor?: {

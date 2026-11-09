@@ -8,11 +8,13 @@ import {
 } from "@/lib/listing-offer-authorization"
 import type Stripe from "stripe"
 import { deleteBuyerCartRowsForListings } from "@/lib/db/cart-items-server"
+import { attachListingInventorySources } from "@/lib/db/listingInventorySource"
 import {
   PEER_SURFBOARD_CHECKOUT_LISTING_SELECT,
   type PeerSurfboardCheckoutListingRow,
 } from "@/lib/services/peerListingShippingQuote"
 import { computePeerMultiCheckoutUsd } from "@/lib/services/peerMultiCheckoutTotals"
+import { readSurfboardShippedPaymentMetadata } from "@/lib/services/surfboardShipped"
 import type { CheckoutShippingPackageRate } from "@/lib/services/checkoutShippingQuoteToken"
 import {
   DEFAULT_SHIPPING_PACKAGING_MODE,
@@ -25,10 +27,32 @@ import {
 } from "@/lib/services/applyAcceptedOfferToPeerCheckoutListings"
 import { validateAcceptedOfferForPaymentIntent } from "@/lib/services/acceptedOfferCheckout"
 import { pendingSaleFeeClause } from "@/lib/seller-fees"
-import { listingSoldViaCheckoutUpdate } from "@/lib/listing-sold-state"
+import { maybeAwardBuyerReswellCredit } from "@/lib/services/reswellCreditAwards"
+import { finalizeReswellCreditHoldForOrder } from "@/lib/services/reswellCreditCheckout"
+import { computeMaxReswellCreditApplyCents } from "@/lib/reswell-credit-rates"
+import {
+  dbMarkListingsSoldViaCheckout,
+  dbRepairPeerListingsSoldViaCheckout,
+} from "@/lib/db/listingSoldViaCheckout"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { formatPeerItemCountPhrase } from "@/lib/peer-listing-item-nouns"
 import { isReswellShopListing } from "@/lib/reswell-shop"
+import { peerBrandNewStockQuantity } from "@/lib/listing-stock-quantity"
+import {
+  dbListShopifyMappedListingIds,
+  dbOrderContainsListingItems,
+  dbOrderHasShopifySaleJobs,
+  dbRecordShopifyListingSale,
+} from "@/lib/db/shopifyCatalog"
+import {
+  dbGetShopifyInventoryCompensation,
+  dbMarkShopifyCompensatedOrderRefunded,
+} from "@/lib/db/shopifyCompensations"
+import { isShopifyManagedListing } from "@/lib/shopify/listing"
+import {
+  compensateShopifyInventoryConflict,
+  type ShopifyInventoryCompensationResult,
+} from "@/lib/services/shopifyInventoryCompensation"
 import {
   parseListingQuantitiesMeta,
   resolveMixedCheckoutSellerId,
@@ -49,6 +73,10 @@ import type { KlaviyoBuyerOrderLineItem } from "@/lib/klaviyo/track-buyer-order-
 import { fetchPrimaryListingImageUrlsForKlaviyo } from "@/lib/klaviyo/fetch-primary-listing-image-urls"
 import { reemitPurchaseSuccessfulForOrder } from "@/lib/klaviyo/reemit-purchase-successful-for-order"
 import { trackMetaPurchaseServerEvent } from "@/lib/meta/track-purchase-server-event"
+import {
+  buyerEmailFromPaymentIntentMetadata,
+  firstNonEmptyEmail,
+} from "@/lib/meta/stripe-buyer-email-metadata"
 import { postPurchaseThreadNotification } from "@/lib/purchase-thread-notification"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import {
@@ -59,7 +87,10 @@ import { insertOrderAdAttribution } from "@/lib/db/orderAdAttribution"
 import { markUserListingBoardModelDataSold } from "@/lib/db/user-listing-board-model-data"
 import { purchaseReswellShippingLabelAfterCheckout } from "@/lib/services/autoPurchaseReswellShippingLabelForOrder"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
-import { safeRevalidateAfterMarketplaceOrderCommit } from "@/lib/cache/safe-revalidate-after-order"
+import {
+  revalidateSoldFeedAfterSale,
+  safeRevalidateAfterMarketplaceOrderCommit,
+} from "@/lib/cache/safe-revalidate-after-order"
 import { completeAcceptedOfferOnPurchase } from "@/lib/services/completeOfferOnPurchase"
 import {
   fetchCheckoutPromoCodeById,
@@ -67,7 +98,8 @@ import {
   parseCheckoutPromoKind,
   redeemCheckoutPromoForOrder,
 } from "@/lib/services/checkoutPromo"
-import { computeCheckoutTotalWithNewsletterPromo } from "@/lib/services/newsletterPromo"
+import { eligibleItemSubtotalForAdminPromo } from "@/lib/services/promoProductType"
+import { computeRestrictedPromoCheckoutAmounts, promoCheckoutLinesFromPricedListings } from "@/lib/utils/promo-product-type"
 import { sendPostPurchaseReviewInvite } from "@/lib/services/orderReviewInvite"
 import { notifySellerOrderCheckoutKlaviyo } from "@/lib/services/notifySellerOrderCheckoutKlaviyo"
 import { releaseOrderSellerEarningsAfterFulfillment } from "@/lib/services/releaseOrderSellerEarnings"
@@ -78,15 +110,132 @@ import {
 } from "@/lib/services/adminTerminalSale"
 import { syncAdminTerminalGuestToCrm } from "@/lib/services/crmAdminTerminalGuest"
 import { isSellerSaleTipPaymentIntent } from "@/lib/stripe/seller-sale-tip-intent"
+import { completeCheckoutSessionForPaymentIntent } from "@/lib/services/checkoutSessionPayment"
 
 export type StripeCompleteOrderResult =
   | { ok: true; orderId: string; alreadyProcessed?: boolean }
   | { ok: false; error: string; status: number }
 
+async function ensureShopifySaleOutboxForOrder(
+  serviceSupabase: ReturnType<typeof createServiceRoleClient>,
+  orderId: string,
+  listingIds: string[],
+  quantityByListingId: Record<string, number>,
+): Promise<void> {
+  for (const listingId of listingIds) {
+    await dbRecordShopifyListingSale(serviceSupabase, {
+      orderId,
+      listingId,
+      quantity: quantityByListingId[listingId] ?? 1,
+    })
+  }
+}
+
+function isShopifyInventoryCommitError(error: {
+  message?: string | null
+}): boolean {
+  const message = error.message?.toLowerCase() ?? ""
+  return (
+    message.includes("shopify-managed listing") ||
+    message.includes("shopify inventory")
+  )
+}
+
+async function refundShopifyInventoryConflict(
+  serviceSupabase: ReturnType<typeof createServiceRoleClient>,
+  paymentIntentId: string,
+  orderId: string,
+): Promise<ShopifyInventoryCompensationResult> {
+  return compensateShopifyInventoryConflict({
+    serviceSupabase,
+    orderId,
+    paymentIntentId,
+  })
+}
+
 function isUniqueViolation(err: { code?: string; message?: string } | null): boolean {
   if (!err) return false
   if (err.code === "23505") return true
   return Boolean(err.message?.toLowerCase().includes("duplicate"))
+}
+
+const CONCURRENT_ORDER_COMPLETION_POLL_MS = 200
+const CONCURRENT_ORDER_COMPLETION_MAX_WAIT_MS = 20_000
+
+function sleepMs(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms)
+  })
+}
+
+function isConcurrentOrderCompletionBusy(result: StripeCompleteOrderResult): boolean {
+  return (
+    !result.ok &&
+    result.status === 503 &&
+    (result.error === "Order completion is already in progress" ||
+      result.error === "Order completion is still in progress")
+  )
+}
+
+async function isMarketplaceOrderCommitSettled(
+  serviceSupabase: ReturnType<typeof createServiceRoleClient>,
+  orderId: string,
+  expectedOrderItemLines: number,
+): Promise<boolean> {
+  const minLines = Math.max(1, expectedOrderItemLines)
+
+  const { count: itemCount, error: itemErr } = await serviceSupabase
+    .from("order_items")
+    .select("id", { count: "exact", head: true })
+    .eq("order_id", orderId)
+
+  if (!itemErr && (itemCount ?? 0) >= minLines) {
+    return true
+  }
+
+  const { data: pendingLedger } = await serviceSupabase
+    .from("wallet_transactions")
+    .select("id")
+    .eq("reference_type", "order_pending_earnings")
+    .eq("reference_id", orderId)
+    .maybeSingle()
+
+  return Boolean(pendingLedger?.id)
+}
+
+/**
+ * When the browser finalize route and the Stripe webhook race, one worker may still be
+ * writing order_items while another hits a unique constraint. Wait for the commit to settle,
+ * then re-run idempotent completion so the buyer gets a success response with orderId.
+ */
+async function resolveConcurrentOrderCompletion(
+  serviceSupabase: ReturnType<typeof createServiceRoleClient>,
+  pi: Stripe.PaymentIntent,
+  orderId: string,
+): Promise<StripeCompleteOrderResult> {
+  const expectedLines = marketplaceListingIdsFromPaymentIntent(pi).length
+  const deadline = Date.now() + CONCURRENT_ORDER_COMPLETION_MAX_WAIT_MS
+
+  while (Date.now() < deadline) {
+    if (await isMarketplaceOrderCommitSettled(serviceSupabase, orderId, expectedLines)) {
+      break
+    }
+    await sleepMs(CONCURRENT_ORDER_COMPLETION_POLL_MS)
+  }
+
+  while (Date.now() < deadline) {
+    const result = await completeMarketplaceOrderFromPaymentIntent(pi)
+    if (result.ok) return result
+    if (!isConcurrentOrderCompletionBusy(result)) return result
+    await sleepMs(CONCURRENT_ORDER_COMPLETION_POLL_MS)
+  }
+
+  return {
+    ok: false,
+    error:
+      "Your purchase is still processing. Open Purchases in a moment — your card was charged only once.",
+    status: 503,
+  }
 }
 
 function terminalCustomerContactFromPaymentIntent(
@@ -225,10 +374,14 @@ async function maybeSyncAdminTerminalGuestToCrm(
 }
 
 /** Keep wallet_transactions.description within typical DB limits (long listing titles). */
-function walletPendingSaleDescription(listingTitle: string, platformFeeUsd: number): string {
+function walletPendingSaleDescription(
+  listingTitle: string,
+  platformFeeUsd: number,
+  shopifyUsageFeeUsd = 0,
+): string {
   const safeTitle =
     listingTitle.length > 400 ? `${listingTitle.slice(0, 399)}…` : listingTitle
-  const raw = `Pending — Sold "${safeTitle}" (${pendingSaleFeeClause(platformFeeUsd)}, card — available after delivery)`
+  const raw = `Pending — Sold "${safeTitle}" (${pendingSaleFeeClause(platformFeeUsd, shopifyUsageFeeUsd)}, card — available after fulfillment hold)`
   return raw.length > 2000 ? `${raw.slice(0, 1999)}…` : raw
 }
 
@@ -317,7 +470,8 @@ async function recoverMissingOrderPendingLedger(
 
 /**
  * Re-send Purchase Successful for an order already stored (idempotent finalize / webhook).
- * Seller Sale Successful Klaviyo fires when earnings are released after fulfillment.
+ * Seller Sale Successful and Earnings Available Klaviyo events fire when earnings
+ * are released after fulfillment.
  */
 async function emitPurchaseSuccessfulKlaviyoForOrderId(
   serviceSupabase: ReturnType<typeof createServiceRoleClient>,
@@ -345,6 +499,11 @@ export async function completeMarketplaceOrderFromPaymentIntent(
 
   const piId = pi.id
   const isAdminTerminalSale = pi.metadata?.sales_channel === ADMIN_TERMINAL_SALES_CHANNEL
+  const recoveryListingIds = marketplaceListingIdsFromPaymentIntent(pi)
+  const recoveryQuantities = parseListingQuantitiesMeta(
+    pi.metadata.listing_qtys,
+    recoveryListingIds,
+  )
 
   let serviceSupabase
   try {
@@ -359,11 +518,102 @@ export async function completeMarketplaceOrderFromPaymentIntent(
 
   const { data: existing } = await serviceSupabase
     .from("orders")
-    .select("id, seller_earnings")
+    .select("id, seller_earnings, status, created_at")
     .eq("stripe_checkout_session_id", piId)
     .maybeSingle()
 
   if (existing?.id) {
+    const compensation = await dbGetShopifyInventoryCompensation(
+      serviceSupabase,
+      existing.id,
+    )
+    if (compensation?.status === "refunded") {
+      await dbMarkShopifyCompensatedOrderRefunded(
+        serviceSupabase,
+        existing.id,
+      )
+      return { ok: true, orderId: existing.id, alreadyProcessed: true }
+    }
+    if (compensation) {
+      const refundState = await refundShopifyInventoryConflict(
+        serviceSupabase,
+        piId,
+        existing.id,
+      )
+      return {
+        ok: false,
+        error:
+          refundState === "failed"
+            ? "This sold-out Shopify checkout needs a refund. Support has been notified."
+            : "This sold-out Shopify checkout is being refunded.",
+        status: refundState === "failed" ? 500 : 409,
+      }
+    }
+    if (existing.status === "refunded" || existing.status === "refunding") {
+      return { ok: true, orderId: existing.id, alreadyProcessed: true }
+    }
+
+    const mappedListingIds = await dbListShopifyMappedListingIds(
+      serviceSupabase,
+      recoveryListingIds,
+    )
+    if (mappedListingIds.length > 0) {
+      const [hasItems, hasSaleJobs] = await Promise.all([
+        dbOrderContainsListingItems(
+          serviceSupabase,
+          existing.id,
+          mappedListingIds,
+        ),
+        dbOrderHasShopifySaleJobs(
+          serviceSupabase,
+          existing.id,
+          mappedListingIds,
+        ),
+      ])
+      if (!hasItems) {
+        const orderAgeMs = Date.now() - Date.parse(existing.created_at)
+        if (Number.isFinite(orderAgeMs) && orderAgeMs < 5 * 60_000) {
+          return resolveConcurrentOrderCompletion(serviceSupabase, pi, existing.id)
+        }
+        const refundState = await refundShopifyInventoryConflict(
+          serviceSupabase,
+          piId,
+          existing.id,
+        )
+        return {
+          ok: false,
+          error:
+            refundState === "failed"
+              ? "This incomplete Shopify checkout needs a refund. Support has been notified."
+              : "This incomplete Shopify checkout is being refunded.",
+          status: refundState === "failed" ? 500 : 409,
+        }
+      }
+      if (!hasSaleJobs) {
+        try {
+          await ensureShopifySaleOutboxForOrder(
+            serviceSupabase,
+            existing.id,
+            mappedListingIds,
+            recoveryQuantities,
+          )
+        } catch {
+          const refundState = await refundShopifyInventoryConflict(
+            serviceSupabase,
+            piId,
+            existing.id,
+          )
+          return {
+            ok: false,
+            error:
+              refundState === "failed"
+                ? "This Shopify checkout needs a refund. Support has been notified."
+                : "This Shopify checkout is being refunded.",
+            status: refundState === "failed" ? 500 : 409,
+          }
+        }
+      }
+    }
     const existingSellerEarnings = parseFloat(String(existing.seller_earnings ?? 0))
     const { data: pendingLedger } = await serviceSupabase
       .from("wallet_transactions")
@@ -373,12 +623,17 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       .maybeSingle()
 
     if (pendingLedger?.id || (Number.isFinite(existingSellerEarnings) && existingSellerEarnings <= 0)) {
+      // Order row can exist while mark-sold failed (e.g. undeployed last_sold_at).
+      // Repair before acknowledging alreadyProcessed so the listing cannot be bought again.
+      await dbRepairPeerListingsSoldViaCheckout(serviceSupabase, recoveryListingIds)
+      await completeCheckoutSessionForPaymentIntent(serviceSupabase, pi, existing.id)
       await emitPurchaseSuccessfulKlaviyoForOrderId(serviceSupabase, existing.id)
       if (!isAdminTerminalSale) {
         void sendPostPurchaseReviewInvite(existing.id)
         await purchaseReswellShippingLabelAfterCheckout(serviceSupabase, existing.id)
       }
       void maybeSyncAdminTerminalGuestToCrm(serviceSupabase, pi, existing.id)
+      revalidateSoldFeedAfterSale()
       return { ok: true, orderId: existing.id, alreadyProcessed: true }
     }
 
@@ -390,12 +645,15 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     if (!recovered.ok) {
       return recovered
     }
+    await dbRepairPeerListingsSoldViaCheckout(serviceSupabase, recoveryListingIds)
+    await completeCheckoutSessionForPaymentIntent(serviceSupabase, pi, existing.id)
     await emitPurchaseSuccessfulKlaviyoForOrderId(serviceSupabase, existing.id)
     if (!isAdminTerminalSale) {
       void sendPostPurchaseReviewInvite(existing.id)
       await purchaseReswellShippingLabelAfterCheckout(serviceSupabase, existing.id)
     }
     void maybeSyncAdminTerminalGuestToCrm(serviceSupabase, pi, existing.id)
+    revalidateSoldFeedAfterSale()
     return { ok: true, orderId: existing.id, alreadyProcessed: true }
   }
 
@@ -438,12 +696,14 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     return { ok: false, error: "Invalid payment metadata", status: 400 }
   }
 
-  let buyerEmail: string | null = null
-  if (isAdminTerminalSale && terminalCustomer?.email) {
-    buyerEmail = terminalCustomer.email
-  } else if (buyerId) {
-    buyerEmail = await getAuthEmailForUserId(buyerId)
-  }
+  // Prefer email captured on the PaymentIntent at checkout so webhook completions still send
+  // hashed `em` on Meta Purchase (Event Match Quality) even if Auth lookup is slow/empty.
+  const authEmail = buyerId ? await getAuthEmailForUserId(buyerId) : null
+  let buyerEmail = firstNonEmptyEmail(
+    isAdminTerminalSale ? terminalCustomer?.email : null,
+    buyerEmailFromPaymentIntentMetadata(pi.metadata),
+    authEmail,
+  )
 
   const { data: listingRows, error: listingsFetchErr } = await serviceSupabase
     .from("listings")
@@ -467,6 +727,15 @@ export async function completeMarketplaceOrderFromPaymentIntent(
 
   if (listingsOrdered.length !== listingIdsOrdered.length) {
     return { ok: false, error: "Listing not found", status: 404 }
+  }
+
+  const sourcedListings = await attachListingInventorySources(serviceSupabase, listingsOrdered)
+  if (!sourcedListings.ok) {
+    return { ok: false, error: sourcedListings.error, status: 500 }
+  }
+  for (let index = 0; index < listingsOrdered.length; index += 1) {
+    const sourced = sourcedListings.listings[index]
+    if (sourced) listingsOrdered[index] = sourced
   }
 
   if (buyerId && listingsOrdered.some((l) => l.user_id === buyerId)) {
@@ -500,6 +769,25 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     }
   }
 
+  const listingPriceSnapshot = pi.metadata.listing_price_cents
+    ?.split(",")
+    .map((value) => Number(value))
+  if (
+    listingPriceSnapshot?.length === listingsForTotals.length &&
+    listingPriceSnapshot.every(
+      (value) => Number.isInteger(value) && value >= 0,
+    )
+  ) {
+    listingsForTotals = listingsForTotals.map((listing, index) =>
+      isShopifyManagedListing(listing)
+        ? {
+            ...listing,
+            price: listingPriceSnapshot[index]! / 100,
+          }
+        : listing,
+    )
+  }
+
   const mixedSeller = resolveMixedCheckoutSellerId(
     listingsForTotals.map((l) => ({
       id: l.id,
@@ -523,6 +811,26 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     return {
       ok: false,
       error: "This listing is no longer available. Contact support if you were charged.",
+      status: 409,
+    }
+  }
+  if (
+    listingsOrdered.some(
+      (listing) =>
+        isShopifyManagedListing(listing) &&
+        Math.max(
+          0,
+          Math.floor(
+            Number(
+              (listing as { stock_quantity?: number | null }).stock_quantity,
+            ) || 0,
+          ),
+        ) < 1,
+    )
+  ) {
+    return {
+      ok: false,
+      error: "This Shopify item is out of stock. Contact support if you were charged.",
       status: 409,
     }
   }
@@ -590,6 +898,11 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     }
   }
 
+  const surfboardShippedMeta = readSurfboardShippedPaymentMetadata(pi.metadata)
+  if (surfboardShippedMeta && !surfboardShippedMeta.ok) {
+    return { ok: false, error: surfboardShippedMeta.error, status: 400 }
+  }
+
   /** Must match `/api/stripe/create-payment-intent` (`Math.round(totalUsd * 100)`). */
   const metaAmountCentsRaw = pi.metadata.amount_cents?.trim()
   const hasMetaAmountCents =
@@ -630,6 +943,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
           totalItemPriceUsd: itemPrice,
           totalPlatformFee: platformFee,
           totalSellerEarnings: sellerEarnings,
+          totalShopifyUsageFee: 0,
           anyUsedReswellQuote: false,
         }
       })()
@@ -644,26 +958,29 @@ export async function completeMarketplaceOrderFromPaymentIntent(
           pi.metadata.shipping_packaging_mode,
           DEFAULT_SHIPPING_PACKAGING_MODE,
         ),
-        ...(pi.metadata.reswell_shipping_cents?.trim() &&
-        /^\d+$/.test(pi.metadata.reswell_shipping_cents.trim())
-          ? {
-              preverifiedShipping: {
-                shippingUsd: parseInt(pi.metadata.reswell_shipping_cents.trim(), 10) / 100,
-                usedReswellQuote: true,
-                rateId: pi.metadata.shipengine_rate_id?.trim() || null,
-                serviceCode: pi.metadata.shipengine_service_code?.trim() || null,
-                packageRates: parseShipenginePackageRatesMeta(pi.metadata.shipengine_package_rates),
-              },
-            }
-          : {}),
+        ...(surfboardShippedMeta?.ok
+          ? { fixedShippingUsd: surfboardShippedMeta.feeUsd }
+          : pi.metadata.reswell_shipping_cents?.trim() &&
+              /^\d+$/.test(pi.metadata.reswell_shipping_cents.trim())
+            ? {
+                preverifiedShipping: {
+                  shippingUsd: parseInt(pi.metadata.reswell_shipping_cents.trim(), 10) / 100,
+                  usedReswellQuote: true,
+                  rateId: pi.metadata.shipengine_rate_id?.trim() || null,
+                  serviceCode: pi.metadata.shipengine_service_code?.trim() || null,
+                  packageRates: parseShipenginePackageRatesMeta(pi.metadata.shipengine_package_rates),
+                },
+              }
+            : {}),
       })
   if (!bundle.ok) {
     return { ok: false, error: bundle.error, status: 400 }
   }
 
   const chargedShippingCentsRaw = pi.metadata.reswell_shipping_cents?.trim()
-  const shippingUsd =
-    chargedShippingCentsRaw && /^\d+$/.test(chargedShippingCentsRaw)
+  const shippingUsd = surfboardShippedMeta?.ok
+    ? surfboardShippedMeta.feeUsd
+    : chargedShippingCentsRaw && /^\d+$/.test(chargedShippingCentsRaw)
       ? parseInt(chargedShippingCentsRaw, 10) / 100
       : bundle.totalShippingUsd
 
@@ -671,11 +988,24 @@ export async function completeMarketplaceOrderFromPaymentIntent(
   const promoCodeFromMeta = pi.metadata.promo_code?.trim() || null
   const promoDiscountCentsRaw = pi.metadata.promo_discount_cents?.trim()
   const promoDiscountPercentRaw = pi.metadata.promo_discount_percent?.trim()
+  const reswellCreditCentsRaw = pi.metadata.reswell_credit_cents?.trim()
   const promoKind =
     parseCheckoutPromoKind(pi.metadata.promo_kind) ??
     (promoCodeId ? await inferCheckoutPromoKind(promoCodeId) : null)
   let promoDiscountUsd = 0
   let promoDiscountPercent = 0
+  let expectedPromoTotal = 0
+  let reswellCreditCents = 0
+
+  if (reswellCreditCentsRaw) {
+    if (!/^\d+$/.test(reswellCreditCentsRaw)) {
+      return { ok: false, error: "Invalid Reswell Credit metadata", status: 400 }
+    }
+    reswellCreditCents = parseInt(reswellCreditCentsRaw, 10)
+    if (!Number.isFinite(reswellCreditCents) || reswellCreditCents < 0) {
+      return { ok: false, error: "Invalid Reswell Credit metadata", status: 400 }
+    }
+  }
 
   if (promoCodeId) {
     if (!promoDiscountCentsRaw || !/^\d+$/.test(promoDiscountCentsRaw)) {
@@ -698,16 +1028,36 @@ export async function completeMarketplaceOrderFromPaymentIntent(
         : // Legacy PIs without promo_discount_percent metadata.
           Math.round((promoDiscountUsd / bundle.totalItemPriceUsd) * 100)
 
-    const { discountUsd: expectedDiscountUsd, totalUsd: expectedPromoTotal } =
-      computeCheckoutTotalWithNewsletterPromo({
+    let eligibleItemSubtotalUsd = bundle.totalItemPriceUsd
+    if (promoKind === "admin_issued") {
+      const eligible = await eligibleItemSubtotalForAdminPromo({
+        supabase: serviceSupabase,
+        promoId: promoCodeId,
+        lines: promoCheckoutLinesFromPricedListings({
+          listings: listingsForTotals,
+          pricedLines: bundle.lines,
+        }),
         itemSubtotalUsd: bundle.totalItemPriceUsd,
+      })
+      if (!eligible.ok) {
+        return { ok: false, error: eligible.error, status: 400 }
+      }
+      eligibleItemSubtotalUsd = eligible.eligibleItemSubtotalUsd
+    }
+
+    const amounts = computeRestrictedPromoCheckoutAmounts({
+        itemSubtotalUsd: bundle.totalItemPriceUsd,
+        eligibleItemSubtotalUsd,
         shippingUsd,
         discountPercent: promoDiscountPercent,
       })
+    const expectedDiscountUsd = amounts.discountUsd
+    expectedPromoTotal = amounts.totalUsd
 
     const expectedPromoCents = Math.round(expectedPromoTotal * 100)
-    const metaCents = hasMetaAmountCents ? parseInt(metaAmountCentsRaw!, 10) : expectedPromoCents
-    if (Math.abs(metaCents - expectedPromoCents) > 1) {
+    const expectedWithCreditCents = Math.max(50, expectedPromoCents - reswellCreditCents)
+    const metaCents = hasMetaAmountCents ? parseInt(metaAmountCentsRaw!, 10) : expectedWithCreditCents
+    if (Math.abs(metaCents - expectedWithCreditCents) > 1) {
       return { ok: false, error: "Promo discount does not match order", status: 400 }
     }
     if (Math.abs(Math.round(promoDiscountUsd * 100) - Math.round(expectedDiscountUsd * 100)) > 1) {
@@ -715,17 +1065,24 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     }
   }
 
+  if (reswellCreditCents > 0) {
+    const maxCredit = computeMaxReswellCreditApplyCents({
+      itemSubtotalUsd: bundle.totalItemPriceUsd,
+      shippingUsd,
+      promoDiscountUsd,
+      availableCreditCents: reswellCreditCents,
+    })
+    if (reswellCreditCents > maxCredit + 1) {
+      return { ok: false, error: "Reswell Credit exceeds checkout cap", status: 400 }
+    }
+  }
+
+  const baseExpectedCents = promoCodeId
+    ? Math.round(expectedPromoTotal * 100)
+    : Math.round((bundle.totalItemPriceUsd + shippingUsd) * 100)
   const expectedCents = hasMetaAmountCents
     ? parseInt(metaAmountCentsRaw!, 10)
-    : promoCodeId
-      ? Math.round(
-          computeCheckoutTotalWithNewsletterPromo({
-            itemSubtotalUsd: bundle.totalItemPriceUsd,
-            shippingUsd,
-            discountPercent: promoDiscountPercent,
-          }).totalUsd * 100,
-        )
-      : Math.round((bundle.totalItemPriceUsd + shippingUsd) * 100)
+    : Math.max(50, baseExpectedCents - reswellCreditCents)
 
   if (pi.amount !== expectedCents) {
     return { ok: false, error: "Payment amount does not match listing", status: 400 }
@@ -734,6 +1091,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
   const chargedUsd = pi.amount / 100
   const platformFee = bundle.totalPlatformFee
   const sellerEarnings = bundle.totalSellerEarnings
+  const shopifyUsageFee = bundle.totalShopifyUsageFee
 
   if (!Number.isFinite(sellerEarnings) || sellerEarnings < 0) {
     console.error("[stripe-complete-order] invalid seller_earnings", {
@@ -775,6 +1133,15 @@ export async function completeMarketplaceOrderFromPaymentIntent(
   shippingAddressJson = isTerminalGuestSale
     ? applyTerminalCustomerToOrderShippingJson(pi, shippingAddressJson)
     : shippingAddressJson
+
+  if (!buyerEmail && shippingAddressJson && typeof shippingAddressJson.email === "string") {
+    buyerEmail = firstNonEmptyEmail(shippingAddressJson.email)
+  }
+
+  const buyerPhone =
+    (isAdminTerminalSale ? terminalCustomer?.phone?.trim() : null) ||
+    (typeof shippingAddressJson?.phone === "string" ? shippingAddressJson.phone.trim() : "") ||
+    null
 
   const isPickup = fulfillmentMethod === "pickup"
   const deliveryStatus = isAdminTerminalSale
@@ -819,6 +1186,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       sales_channel: isAdminTerminalSale ? "admin_terminal" : "online",
       ...(packagingModeForOrder ? { shipping_packaging_mode: packagingModeForOrder } : {}),
       ...(shippingAddressJson ? { shipping_address: shippingAddressJson } : {}),
+      ...(surfboardShippedMeta?.ok ? surfboardShippedMeta.write : {}),
     })
     .select()
     .single()
@@ -831,8 +1199,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
         .eq("stripe_checkout_session_id", piId)
         .maybeSingle()
       if (raced?.id) {
-        void maybeSyncAdminTerminalGuestToCrm(serviceSupabase, pi, raced.id)
-        return { ok: true, orderId: raced.id, alreadyProcessed: true }
+        return resolveConcurrentOrderCompletion(serviceSupabase, pi, raced.id)
       }
     }
     console.error(
@@ -857,6 +1224,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       msg.includes("pickup_code") ||
       msg.includes("shipping_amount") ||
       msg.includes("shipping_packaging_mode") ||
+      msg.includes("surfboard_shipped") ||
       msg.includes("order_items") ||
       msg.includes("sales_channel") ||
       msg.includes("buyer_required") ||
@@ -897,6 +1265,23 @@ export async function completeMarketplaceOrderFromPaymentIntent(
 
   if (orderItemsErr) {
     console.error("[stripe-complete-order] order_items insert:", orderItemsErr)
+    if (isShopifyInventoryCommitError(orderItemsErr)) {
+      const refundState = await refundShopifyInventoryConflict(
+        serviceSupabase,
+        piId,
+        purchase.id,
+      )
+      return {
+        ok: false,
+        error:
+          refundState === "failed"
+            ? "This Shopify item sold out during checkout. Contact support for an immediate refund."
+            : refundState === "refunded"
+              ? "This Shopify item sold out during checkout. Your card payment was refunded automatically."
+              : "This Shopify item sold out during checkout. Your refund is processing.",
+        status: refundState === "failed" ? 500 : 409,
+      }
+    }
     const msg = orderItemsErr.message ?? ""
     const schemaStale =
       orderItemsErr.code === "PGRST204" || msg.includes("order_items") || msg.includes("schema cache")
@@ -911,7 +1296,12 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     return { ok: false, error: "Could not create order lines", status: 500 }
   }
 
-  if (fulfillmentMethod === "shipping" && insertedOrderItems && insertedOrderItems.length > 0) {
+  if (
+    fulfillmentMethod === "shipping" &&
+    !surfboardShippedMeta?.ok &&
+    insertedOrderItems &&
+    insertedOrderItems.length > 0
+  ) {
     const packageRates = parseShipenginePackageRatesMeta(pi.metadata.shipengine_package_rates)
     const rateByListing = new Map(
       (packageRates ?? []).map((r) => [r.listingId, r.rateId] as const),
@@ -994,31 +1384,39 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       userId: bundleSellerId,
       amountUsd: sellerEarnings,
       orderId: purchase.id,
-      description: walletPendingSaleDescription(walletTitleSummary, platformFee),
+      description: walletPendingSaleDescription(
+        walletTitleSummary,
+        platformFee,
+        shopifyUsageFee,
+      ),
       referenceType: "order_pending_earnings",
     })
     if (!sellerCredit.ok) return sellerCredit
   }
 
-  // Peer listings: mark sold. Shop inventory: atomically decrement stock (sold when 0).
+  // Unique peer listings: mark sold. Brand-new and shop inventory: decrement stock.
   const peerListingIds = listingsOrdered
-    .filter((l) => isPeerListingSection(l.section))
+    .filter(
+      (listing) =>
+        isPeerListingSection(listing.section) &&
+        !isShopifyManagedListing(listing) &&
+        peerBrandNewStockQuantity(listing) < 1,
+    )
     .map((l) => l.id)
   if (peerListingIds.length > 0) {
-    const { error: listingErr } = await serviceSupabase
-      .from("listings")
-      .update(listingSoldViaCheckoutUpdate())
-      .in("id", peerListingIds)
-
-    if (listingErr) {
-      console.error("[stripe-complete-order] listing update:", listingErr)
+    const markedSold = await dbMarkListingsSoldViaCheckout(serviceSupabase, peerListingIds)
+    if (!markedSold.ok) {
+      console.error("[stripe-complete-order] listing update:", markedSold.error)
       return { ok: false, error: "Could not mark listing sold", status: 500 }
     }
   }
 
   for (const line of bundle.lines) {
     const listing = listingsOrdered.find((l) => l.id === line.listingId)
-    if (!listing || !isReswellShopListing(listing.section)) continue
+    if (!listing) continue
+    const decrementStock =
+      isReswellShopListing(listing.section) || peerBrandNewStockQuantity(listing) >= 1
+    if (!decrementStock) continue
     const { error: stockErr } = await serviceSupabase.rpc("decrement_listing_stock", {
       p_listing_id: line.listingId,
       p_qty: line.quantity,
@@ -1027,8 +1425,29 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       console.error("[stripe-complete-order] stock decrement:", stockErr)
       return {
         ok: false,
-        error: "Could not update shop inventory. Contact support if you were charged.",
+        error: "Could not update listing inventory. Contact support if you were charged.",
         status: 409,
+      }
+    }
+  }
+
+  await completeCheckoutSessionForPaymentIntent(serviceSupabase, pi, purchase.id)
+
+  for (const line of bundle.lines) {
+    const listing = listingsOrdered.find((row) => row.id === line.listingId)
+    if (!listing || !isShopifyManagedListing(listing)) continue
+    try {
+      await dbRecordShopifyListingSale(serviceSupabase, {
+        orderId: purchase.id,
+        listingId: line.listingId,
+        quantity: line.quantity,
+      })
+    } catch (error) {
+      console.error("[stripe-complete-order] Shopify sale outbox:", error)
+      return {
+        ok: false,
+        error: "Could not queue Shopify inventory update. Contact support if you were charged.",
+        status: 500,
       }
     }
   }
@@ -1106,7 +1525,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     listingSlug: listing.slug ?? null,
     listingImageUrl: listingImageUrls.get(listing.id) ?? null,
     price: bundle.lines[idx]?.itemPrice ?? parseFloat(String(listing.price)),
-    quantity: 1,
+    quantity: bundle.lines[idx]?.quantity ?? 1,
   }))
 
   const promoCode =
@@ -1145,6 +1564,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     orderId: purchase.id,
     buyerUserId: buyerId,
     buyerEmail,
+    buyerPhone,
     value: chargedUsd,
     contentIds: listingIdsOrdered,
   })
@@ -1153,9 +1573,32 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     void sendPostPurchaseReviewInvite(purchase.id)
   }
 
+  if (reswellCreditCents > 0) {
+    const finalized = await finalizeReswellCreditHoldForOrder({
+      paymentIntentId: piId,
+      orderId: purchase.id,
+      expectedCreditCents: reswellCreditCents,
+    })
+    if (!finalized.ok) {
+      console.error("[stripe-complete-order] reswell credit finalize", finalized.error, {
+        orderId: purchase.id,
+        pi: piId,
+      })
+    }
+  }
+
+  if (buyerId) {
+    void maybeAwardBuyerReswellCredit({
+      supabase: serviceSupabase,
+      buyerId,
+      orderId: purchase.id,
+      itemSubtotalUsd: bundle.totalItemPriceUsd,
+    })
+  }
+
   if (isAdminTerminalSale) {
     void releaseOrderSellerEarningsAfterFulfillment(purchase.id)
-  } else if (!isPickup && fulfillmentMethod === "shipping") {
+  } else if (!isPickup && fulfillmentMethod === "shipping" && !surfboardShippedMeta?.ok) {
     await purchaseReswellShippingLabelAfterCheckout(serviceSupabase, purchase.id)
   }
 

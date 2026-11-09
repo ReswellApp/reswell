@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 
-import { resolveServerAuth } from "@/lib/auth/get-safe-server-user"
+import { resolveManagedProfileWriter } from "@/lib/account-access/managed-seller"
 import {
   removeProfileTileBanner,
   updateProfileTileBannerFocal,
@@ -17,10 +17,11 @@ function errMessage(err: unknown): string {
 }
 
 export async function POST(request: NextRequest) {
-  const { supabase, user } = await resolveServerAuth()
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  const writer = await resolveManagedProfileWriter()
+  if (!writer.ok) {
+    return NextResponse.json({ error: writer.error }, { status: writer.status })
   }
+  const { supabase } = writer
 
   try {
     const formData = await request.formData()
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
 
     const { bannerUrl, focalX, focalY } = await uploadProcessedProfileTileBanner({
       supabase,
-      userId: user.id,
+      userId: writer.userId,
       file: uploadFile,
     })
 
@@ -56,10 +57,11 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  const { supabase, user } = await resolveServerAuth()
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  const writer = await resolveManagedProfileWriter()
+  if (!writer.ok) {
+    return NextResponse.json({ error: writer.error }, { status: writer.status })
   }
+  const { supabase } = writer
 
   try {
     const body: unknown = await request.json()
@@ -71,7 +73,7 @@ export async function PATCH(request: NextRequest) {
     const { data: profileRow, error: profileError } = await supabase
       .from("profiles")
       .select("shop_tile_banner_url")
-      .eq("id", user.id)
+      .eq("id", writer.userId)
       .maybeSingle()
 
     if (profileError) throw profileError
@@ -81,7 +83,7 @@ export async function PATCH(request: NextRequest) {
 
     const { focalX, focalY } = await updateProfileTileBannerFocal({
       supabase,
-      userId: user.id,
+      userId: writer.userId,
       focal: { x: parsed.data.focalX, y: parsed.data.focalY },
     })
 
@@ -94,13 +96,14 @@ export async function PATCH(request: NextRequest) {
 }
 
 export async function DELETE() {
-  const { supabase, user } = await resolveServerAuth()
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  const writer = await resolveManagedProfileWriter()
+  if (!writer.ok) {
+    return NextResponse.json({ error: writer.error }, { status: writer.status })
   }
+  const { supabase } = writer
 
   try {
-    await removeProfileTileBanner({ supabase, userId: user.id })
+    await removeProfileTileBanner({ supabase, userId: writer.userId })
     return NextResponse.json({ data: { removed: true } }, { status: 200 })
   } catch (err: unknown) {
     const message = errMessage(err)

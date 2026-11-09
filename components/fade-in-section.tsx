@@ -65,9 +65,8 @@ export function FadeInSection({
 
     observer.observe(el)
 
-    // Soft-nav settle: `NavigationPageGate` may still be applying `page-enter` when this
-    // first runs, which can stall IntersectionObserver under a transformed ancestor.
-    // Recheck once that animation (260ms) has finished.
+    // Soft-nav settle: a transformed ancestor can stall IntersectionObserver.
+    // Recheck shortly after navigation in case the first observation ran too early.
     const settleTimer = window.setTimeout(() => {
       if (visible) return
       if (elementOverlapsViewport(el)) {

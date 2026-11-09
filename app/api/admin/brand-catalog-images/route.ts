@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
-import { requireAdmin } from "@/lib/brands/admin-server"
+import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
 import { listBrandCatalogImagesPickerService } from "@/lib/services/brandCatalogImages"
 import { adminBrandCatalogImagesQuerySchema } from "@/lib/validations/brand-catalog-images"
 
 export async function GET(req: NextRequest) {
-  const gate = await requireAdmin()
+  const gate = await requireAdminOrEmployee()
   if (!gate.ok) return gate.response
 
   const sp = req.nextUrl.searchParams

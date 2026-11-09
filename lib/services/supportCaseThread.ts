@@ -1,5 +1,6 @@
 import { z } from "zod"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
+import type { SupabaseClient } from "@supabase/supabase-js"
 import {
   getSupportCaseById,
   insertSupportCaseMessage,
@@ -11,6 +12,7 @@ import {
   type SupportCaseMessageRow,
   type SupportCaseRow,
 } from "@/lib/db/supportCases"
+import { listConversationMessageHistory } from "@/lib/db/conversations"
 import { getContactMessageForUser, getContactMessageRowById } from "@/lib/db/contactMessages"
 import { getOrderSupportRequestById, getOrderSupportRequestForUser } from "@/lib/db/order-support"
 import {
@@ -25,6 +27,11 @@ import { supportCaseResponseAbsoluteUrl } from "@/lib/utils/support-case-paths"
 import { markSupportCaseReadForMember } from "@/lib/services/supportUnread"
 import { recordSentSupportReplyExample, scheduleSupportReplyDraft } from "@/lib/services/supportReplyDraft"
 import { isLiveChatSupportChannel } from "@/lib/utils/support-ticket-display"
+import { humanizeSupportCasePreview } from "@/lib/utils/humanize-support-case-preview"
+import {
+  resolveSupportCaseOpeningBody,
+  restoreSupportThreadHistory,
+} from "@/lib/utils/support-case-thread-history"
 
 export type SupportCaseThreadMessage = SupportCaseMessageRow
 
@@ -41,17 +48,17 @@ async function requireStaff() {
     .eq("id", user.id)
     .maybeSingle()
 
-  if (!profile || (profile.is_admin !== true && profile.is_employee !== true)) {
+  if (profile?.is_admin !== true) {
     return { ok: false as const, error: "Forbidden" }
   }
   return { ok: true as const, supabase, userId: user.id }
 }
 
 async function resolveOrBackfillForMember(
+  supabase: SupabaseClient,
   userId: string,
   caseId: string,
 ): Promise<SupportCaseRow | null> {
-  const supabase = await createClient()
   const direct = await resolveSupportCaseByAnyId(supabase, caseId)
   if (direct && direct.requester_user_id === userId) return direct
 
@@ -83,16 +90,67 @@ async function resolveOrBackfillForMember(
   return direct && direct.requester_user_id === userId ? direct : null
 }
 
+function serviceRoleOrSession(session: SupabaseClient): SupabaseClient {
+  try {
+    return createServiceRoleClient()
+  } catch {
+    return session
+  }
+}
+
+async function messagesForSupportCaseThread(
+  reader: SupabaseClient,
+  row: SupportCaseRow,
+  opts?: { includeInternal?: boolean },
+): Promise<SupportCaseThreadMessage[]> {
+  const existing = await listSupportCaseMessages(reader, row.id, opts)
+  let leftoverConversationId: string | null = null
+  let contactMessage: string | null = null
+  let orderBody: string | null = null
+
+  if (row.contact_message_id) {
+    const ticket = await getContactMessageRowById(reader, row.contact_message_id)
+    leftoverConversationId = ticket?.support_conversation_id ?? leftoverConversationId
+    contactMessage = ticket?.message ?? null
+  }
+  if (row.order_support_request_id) {
+    const order = await getOrderSupportRequestById(reader, row.order_support_request_id)
+    leftoverConversationId = leftoverConversationId ?? order?.support_conversation_id ?? null
+    orderBody = order?.body ?? null
+  }
+
+  const leftover = leftoverConversationId
+    ? await listConversationMessageHistory(reader, leftoverConversationId)
+    : []
+
+  const openingBody = resolveSupportCaseOpeningBody({
+    preview: humanizeSupportCasePreview(row.preview, 12000),
+    contactMessage: contactMessage ? humanizeSupportCasePreview(contactMessage, 12000) : null,
+    orderBody: orderBody ? humanizeSupportCasePreview(orderBody, 12000) : null,
+    existing,
+  })
+
+  return restoreSupportThreadHistory({
+    existing,
+    leftover,
+    requesterUserId: row.requester_user_id,
+    caseId: row.id,
+    openingBody: openingBody || null,
+    createdAt: row.created_at,
+  })
+}
+
 export async function getSupportCaseThreadForMember(
   userId: string,
   caseId: string,
+  session?: SupabaseClient,
 ): Promise<{ case: SupportCaseRow; messages: SupportCaseThreadMessage[] } | { error: string }> {
-  const supabase = await createClient()
-  const row = await resolveOrBackfillForMember(userId, caseId)
+  const supabase = session ?? (await createClient())
+  const row = await resolveOrBackfillForMember(supabase, userId, caseId)
   if (!row || row.requester_user_id !== userId || isLiveChatSupportChannel(row.source_channel)) {
     return { error: "Case not found." }
   }
-  const messages = await listSupportCaseMessages(supabase, row.id)
+  const messages = await messagesForSupportCaseThread(serviceRoleOrSession(supabase), row)
   await markSupportCaseReadForMember(supabase, userId, row.id)
   return { case: row, messages }
 }
@@ -146,7 +204,7 @@ export async function getSupportCaseThreadForStaff(
   }
   if (!row) return { error: "Case not found." }
   const [messages, events] = await Promise.all([
-    listSupportCaseMessages(service, row.id, { includeInternal: true }),
+    messagesForSupportCaseThread(service, row, { includeInternal: true }),
     listSupportCaseEvents(service, row.id),
   ])
   return { case: row, messages, events }
@@ -163,19 +221,28 @@ export async function sendSupportCaseMemberReplyService(
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return { error: "Sign in to reply." }
+  return sendSupportCaseMemberReplyForSession(supabase, user.id, parsed.data.case_id, parsed.data.content)
+}
 
-  const row = await resolveSupportCaseByAnyId(supabase, parsed.data.case_id)
-  if (!row || row.requester_user_id !== user.id || isLiveChatSupportChannel(row.source_channel)) {
+export async function sendSupportCaseMemberReplyForSession(
+  supabase: SupabaseClient,
+  userId: string,
+  caseId: string,
+  content: string,
+): Promise<{ success: true; case_id: string } | { error: string }> {
+  const row = await resolveSupportCaseByAnyId(supabase, caseId)
+  if (!row || row.requester_user_id !== userId || isLiveChatSupportChannel(row.source_channel)) {
     return { error: "Case not found." }
   }
   if (row.status === "resolved") {
     return { error: "This case is closed. Open a new request if you still need help." }
   }
 
-  const body = parsed.data.content.trim()
+  const body = content.trim()
+  if (!body) return { error: "Write a message first." }
   const posted = await insertSupportCaseMessage(supabase, {
     case_id: row.id,
-    author_user_id: user.id,
+    author_user_id: userId,
     author_role: "customer",
     body,
   })

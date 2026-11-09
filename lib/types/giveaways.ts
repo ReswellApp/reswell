@@ -43,6 +43,8 @@ export type Giveaway = {
   startsAt: string
   endsAt: string
   winnerDrawnAt: string
+  /** Short close time shown on the giveaway page, e.g. "tonight at 11:59pm PT". */
+  deadlineLabel: string
   scheduleLabel: string
   status: GiveawayStatus
   requiresSurfboardListing: boolean

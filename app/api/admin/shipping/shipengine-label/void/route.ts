@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { requireAdmin } from "@/lib/brands/admin-server"
+import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
 import { voidShipEngineLabelForOrder } from "@/lib/services/voidShipEngineLabelForOrder"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { shipengineLabelVoidBodySchema } from "@/lib/validations/shipengine-label-void"
@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic"
  * Body: { order_id, label_id? } — when label_id is omitted, uses the order’s saved tracking to find the newest non-voided label.
  */
 export async function POST(request: NextRequest) {
-  const gate = await requireAdmin()
+  const gate = await requireAdminOrEmployee()
   if (!gate.ok) return gate.response
 
   let json: unknown

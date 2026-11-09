@@ -1,32 +1,12 @@
 "use client"
 
-import { useState, type ComponentType } from "react"
+import { useState } from "react"
 
-import {
-  SurfboardBottomIcon,
-  SurfboardDeckIcon,
-  SurfboardDingIcon,
-  SurfboardRailsIcon,
-  SurfboardScaleIcon,
-  SurfboardTailIcon,
-} from "@/components/features/sell/sell-photo-example-icons"
+import { ListingMediaFillImage } from "@/components/listing-media-fill-image"
+import { SELL_PHOTO_GUIDE_EXAMPLES } from "@/lib/sell-flow/sell-photo-guide"
 import { cn } from "@/lib/utils"
 
 const HIDE_STORAGE_KEY = "sell-photo-examples-hidden"
-
-interface PhotoExample {
-  label: string
-  Icon: ComponentType<{ className?: string }>
-}
-
-const SURFBOARD_PHOTO_EXAMPLES: readonly PhotoExample[] = [
-  { label: "Primary", Icon: SurfboardDeckIcon },
-  { label: "Bottom", Icon: SurfboardBottomIcon },
-  { label: "Rails", Icon: SurfboardRailsIcon },
-  { label: "Tail & fins", Icon: SurfboardTailIcon },
-  { label: "Size and scale", Icon: SurfboardScaleIcon },
-  { label: "Imperfections", Icon: SurfboardDingIcon },
-]
 
 function initiallyHidden(): boolean {
   if (typeof window === "undefined") return false
@@ -38,8 +18,9 @@ function initiallyHidden(): boolean {
 }
 
 /**
- * Photo shot examples under the uploader — one compact row on mobile,
- * wider tiles from `sm` up. Hideable; stays hidden per device.
+ * Shot checklist under the uploader. Each tile is a square so the row
+ * stays short on the wide sell form. Hideable; stays hidden per device.
+ * Photos are from Hayden's Quadratic Formula listing.
  */
 export function SellPhotoExamplesBanner({ className }: { className?: string }) {
   const [hidden, setHidden] = useState(initiallyHidden)
@@ -71,17 +52,15 @@ export function SellPhotoExamplesBanner({ className }: { className?: string }) {
         </button>
       </div>
       {!hidden ? (
-        <ul className="grid grid-cols-6 gap-1.5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-6">
-          {SURFBOARD_PHOTO_EXAMPLES.map(({ label, Icon }) => (
+        <ul className="grid w-full max-w-[34rem] grid-cols-6 gap-1.5 sm:gap-2">
+          {SELL_PHOTO_GUIDE_EXAMPLES.map((example) => (
             <li
-              key={label}
-              className="flex min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-white sm:rounded-xl"
+              key={example.id}
+              className="relative aspect-square min-w-0 overflow-hidden rounded-lg border border-border bg-white"
             >
-              <div className="flex aspect-square items-center justify-center bg-muted/40 p-1 sm:p-4">
-                <Icon className="h-7 w-7 text-midgray/65 sm:h-14 sm:w-14" />
-              </div>
-              <span className="px-0.5 py-1 text-center text-[9px] font-medium leading-tight text-foreground sm:px-2 sm:py-2.5 sm:text-sm sm:font-normal">
-                {label}
+              <ListingMediaFillImage src={example.path} alt={example.label} />
+              <span className="absolute inset-x-0 bottom-0 z-[1] bg-gradient-to-t from-black/75 to-transparent px-0.5 pb-1 pt-3 text-center text-[9px] font-medium leading-tight text-white sm:text-[11px]">
+                {example.label}
               </span>
             </li>
           ))}

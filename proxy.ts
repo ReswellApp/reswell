@@ -8,26 +8,45 @@ import {
   evaluateAdCatalogCrawlerAccess,
 } from '@/lib/crawler/ad-catalog-crawler'
 import {
+  BROWSER_HTML_CACHE_CONTROL,
+  isCacheablePublicMarketplaceRequest,
   publicMarketplaceCdnCacheControl,
   shouldAttachDeviceCookieOnDocument,
 } from '@/lib/crawler/public-marketplace-paths'
+import { isServerActionRequest } from '@/lib/utils/is-server-action-request'
 
-function applyPublicMarketplaceCacheHints(response: NextResponse, pathname: string): NextResponse {
+function applyPublicMarketplaceCacheHints(
+  request: NextRequest,
+  response: NextResponse,
+): NextResponse {
   if (response.status >= 300 && response.status < 400) return response
+  if (
+    !isCacheablePublicMarketplaceRequest(
+      request.method,
+      isServerActionRequest(request),
+    )
+  ) {
+    return response
+  }
   const cacheControl = publicMarketplaceCdnCacheControl(
-    pathname,
+    request.nextUrl.pathname,
     response.headers.has('set-cookie'),
   )
   if (!cacheControl) return response
   response.headers.set('CDN-Cache-Control', cacheControl)
+  // CDN-Cache-Control wins at the edge. Cache-Control is what the browser keeps,
+  // and it must not hold HTML across deploys (stale HTML → ChunkLoadError).
+  response.headers.set('Cache-Control', BROWSER_HTML_CACHE_CONTROL)
   return response
 }
 
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
+  const isServerAction = isServerActionRequest(request)
+
   const catalogAccess = evaluateAdCatalogCrawlerAccess(request)
-  if (!catalogAccess.allowed) {
+  if (!catalogAccess.allowed && !isServerAction) {
     return new NextResponse(catalogAccess.message, {
       status: catalogAccess.status,
       headers: {
@@ -37,12 +56,18 @@ export async function proxy(request: NextRequest) {
     })
   }
 
-  // Admin-managed 301/302 redirects short-circuit before any session work.
-  const redirect = await resolveSeoRedirect(request)
-  if (redirect) return redirect
+  // HTML 302s break Server Actions (client requires text/x-component).
+  if (!isServerAction) {
+    const redirect = await resolveSeoRedirect(request)
+    if (redirect) return redirect
+  }
 
   try {
-    if (isSignupPath(pathname) && (await isNextRequestAccessBanned(request))) {
+    if (
+      !isServerAction &&
+      isSignupPath(pathname) &&
+      (await isNextRequestAccessBanned(request))
+    ) {
       const url = request.nextUrl.clone()
       url.pathname = '/auth/login'
       url.searchParams.set('error', ACCOUNT_BANNED_ERROR)
@@ -54,7 +79,7 @@ export async function proxy(request: NextRequest) {
       ? attachDeviceCookie(request, response)
       : response
 
-    return applyPublicMarketplaceCacheHints(withDevice, pathname)
+    return applyPublicMarketplaceCacheHints(request, withDevice)
   } catch (error) {
     console.error('[middleware] proxy failed; passing through', {
       pathname,

@@ -2,37 +2,44 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { ModelPageView } from "@/components/features/models/model-page-view"
 import { getDb } from "@/lib/supabase/db"
-import { createClient } from "@/lib/supabase/server"
-import { fetchBrandModelSitemapEntries } from "@/lib/db/sitemap-models"
+import {
+  hasIndexableModelPriceGuide,
+  isModelPageIndexable,
+  modelHasIndexableProductDetail,
+} from "@/lib/models/model-page-indexable"
 import { isReservedModelPageBrandSegment } from "@/lib/models/routes"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { getModelPage } from "@/lib/services/modelPage"
-import { viewerSavedSearchIdForModel } from "@/lib/services/viewerSavedSearch"
 import { modelSavedSearchCriteria } from "@/lib/utils/saved-search-alert-kind"
 import { absolutePublicMediaUrl, absoluteUrl } from "@/lib/site-metadata"
 import { resolveDynamicSeo } from "@/lib/seo/resolve-dynamic-seo"
 
+/**
+ * Hourly ISR. This document is anonymous marketplace HTML, so the render stays
+ * on the replica anon client. A session read during the static fill throws
+ * DYNAMIC_SERVER_USAGE and Next serves "This page couldn't load".
+ * Favorites and "Save this model" hydrate in the browser after paint.
+ */
 export const revalidate = 3600
+export const dynamicParams = true
 
 type Props = {
   params: Promise<{ brand: string; model: string }>
 }
 
-export async function generateStaticParams() {
-  const supabase = getDb({ consistency: "eventual" })
-  const rows = await fetchBrandModelSitemapEntries(supabase)
-  return rows.map((row) => ({ brand: row.brandSlug, model: row.modelSlug }))
+export function generateStaticParams(): Array<{ brand: string; model: string }> {
+  return []
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { brand: brandSlug, model: modelSlug } = await params
   if (isReservedModelPageBrandSegment(brandSlug)) {
-    return { title: "Model — Reswell" }
+    return { title: "Model — Reswell", robots: { index: false, follow: false } }
   }
 
   const supabase = getDb({ consistency: "eventual" })
   const page = await getModelPage(supabase, brandSlug, modelSlug)
-  if (!page) return { title: "Model — Reswell" }
+  if (!page) return { title: "Model — Reswell", robots: { index: false, follow: false } }
 
   const titleName = `${page.brand.name} ${page.model.name}`
   const fallbackTitle = `${titleName} — Reswell`
@@ -46,10 +53,25 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   )
   const path = `/${page.brand.slug}/${page.modelSlug}`
   const shareImage = absolutePublicMediaUrl(page.listingImageUrl)
+  const indexable = isModelPageIndexable({
+    listingCount: page.listings.length,
+    soldListingCount: page.soldListings.length,
+    reviewCount: page.reviewStats.reviewCount,
+    hasProductDetail: modelHasIndexableProductDetail({
+      description: page.model.description,
+      variants: page.variants,
+    }),
+    hasPriceGuide: hasIndexableModelPriceGuide(page.priceGuide),
+  })
   return {
     title: seo.title,
     description: seo.description,
     alternates: { canonical: path },
+    robots: {
+      index: indexable,
+      follow: true,
+      googleBot: { index: indexable, follow: true },
+    },
     openGraph: {
       title: titleName,
       description: seo.description,
@@ -70,24 +92,9 @@ export default async function ModelPage({ params }: Props) {
   const { brand: brandSlug, model: modelSlug } = await params
   if (isReservedModelPageBrandSegment(brandSlug)) notFound()
 
-  const supabase = await createClient()
+  const supabase = getDb({ consistency: "eventual" })
   const page = await getModelPage(supabase, brandSlug, modelSlug)
   if (!page) notFound()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  let favoritedListingIds: string[] = []
-  const favoriteCandidateIds = [...page.listings, ...page.soldListings].map((listing) => listing.id)
-  if (user && favoriteCandidateIds.length > 0) {
-    const ids = favoriteCandidateIds
-    const { data: favs } = await supabase
-      .from("favorites")
-      .select("listing_id")
-      .eq("user_id", user.id)
-      .in("listing_id", ids)
-    favoritedListingIds = (favs ?? []).map((row) => row.listing_id)
-  }
 
   const criteria = modelSavedSearchCriteria({
     brandName: page.brand.name,
@@ -100,20 +107,15 @@ export default async function ModelPage({ params }: Props) {
       ? page.model.product_category_slug
       : "surfboards",
   })
-  const initialSavedSearchId = await viewerSavedSearchIdForModel(
-    supabase,
-    user?.id,
-    page.model.id,
-  )
 
   return (
     <ModelPageView
       page={page}
       criteria={criteria}
-      initialSavedSearchId={initialSavedSearchId}
-      favoritedListingIds={favoritedListingIds}
-      isLoggedIn={!!user}
-      viewerUserId={user?.id ?? null}
+      initialSavedSearchId={null}
+      favoritedListingIds={[]}
+      isLoggedIn={false}
+      viewerUserId={null}
     />
   )
 }

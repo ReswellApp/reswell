@@ -19,7 +19,7 @@ import {
 import { fetchUserRestrictionState } from "@/lib/db/accountRestrictions"
 import { fetchSellerBanState, isSellerBanActive } from "@/lib/db/sellerBan"
 import { isPermanentRestrictionUntil } from "@/lib/messages/account-ban-errors"
-import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
+import { requireAdmin } from "@/lib/brands/admin-server"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import {
   CUSTOMER_PANEL_PAGE_SIZE,
@@ -86,7 +86,7 @@ type StaffServiceContext =
   | { ok: false; error: string }
 
 async function requireStaffService(): Promise<StaffServiceContext> {
-  const gate = await requireAdminOrEmployee()
+  const gate = await requireAdmin()
   if (!gate.ok) return { ok: false, error: "Unauthorized" }
   try {
     return {

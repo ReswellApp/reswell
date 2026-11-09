@@ -1,7 +1,9 @@
 import Image from "next/image"
 import Link from "next/link"
 import { ArrowUpRight } from "lucide-react"
+import { listingPhotoCoverClassName } from "@/lib/listing-photo-fill"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
+import { cn } from "@/lib/utils"
 import type { BoardArchiveRow } from "@/lib/types/board-archive"
 
 function addedLabel(iso: string): string {
@@ -54,7 +56,7 @@ export function BoardArchiveTable({ rows }: { rows: BoardArchiveRow[] }) {
                         alt=""
                         width={40}
                         height={40}
-                        className="h-10 w-10 rounded-md object-cover"
+                        className={cn(listingPhotoCoverClassName, "h-10 w-10 rounded-md")}
                         unoptimized={listingImageShouldBypassOptimization(url)}
                       />
                     ))}

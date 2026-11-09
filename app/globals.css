@@ -1,6 +1,5 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@config "../tailwind.config.ts";
 
 /* ─── Cart badge (header): pulse when items change via localStorage `cartUpdated` ─ */
 @keyframes cart-badge-bump {
@@ -89,7 +88,10 @@
   border-radius: 0.5rem;
 }
 
-/* ─── Listing tile shimmer (PangoBooks-style wave on images + skeleton bars) ─ */
+/* ─── Listing tile shimmer (PangoBooks-style wave on images + skeleton bars) ─
+   Do not fade this veil with opacity. A transition replays the near-white
+   flat over listing photos that are already decoded when a tile remounts
+   (back from /l, or any other soft navigation). Hide it by not rendering it. */
 @keyframes listing-tile-shimmer {
   0% {
     background-position: 200% 0;
@@ -117,10 +119,6 @@
     rgb(75 85 99) 50%,
     rgb(55 65 81) 100%
   );
-}
-
-.listing-tile-shimmer-overlay {
-  transition: opacity 0.25s ease-in-out;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -284,12 +282,15 @@
     border-color: hsl(var(--border));
   }
   html {
+    overflow-x: hidden;
     overflow-x: clip;
     -webkit-text-size-adjust: 100%;
     -webkit-tap-highlight-color: transparent;
     /* Instant scroll — inherited `smooth` made nested panes feel laggy on touch/wheel. */
     scroll-behavior: auto;
     background-color: hsl(var(--background));
+    /* iOS Chrome / Google app synthesize a second weight and ghost glyphs. */
+    font-synthesis: none;
   }
   /* Nested scroll regions: explicit auto + iOS momentum (smooth is opt-in via `.scroll-smooth`). */
   .overflow-y-auto,
@@ -300,7 +301,9 @@
     -webkit-overflow-scrolling: touch;
   }
   body {
+    overflow-x: hidden;
     overflow-x: clip;
+    min-height: 100vh;
     min-height: 100dvh;
     background-color: hsl(var(--background));
     color: hsl(var(--muted-foreground));
@@ -311,6 +314,7 @@
     line-height: 1.3;
     font-optical-sizing: auto;
     font-style: normal;
+    font-synthesis: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -322,8 +326,11 @@
   }
   /* CLS-FIX: Next/Image manages its own layout via data-nimg + inline styles.
      For raw <img> and <video>, cap width and let height auto so aspect ratios
-     are preserved without the browser collapsing to 0 height before decode. */
-  img:not([data-nimg]),
+     are preserved without the browser collapsing to 0 height before decode.
+     Framed listing photos (`.listing-photo-fill`) opt out — height:auto on a
+     3:4 tile leaves a white band under any photo that is not already 3:4.
+     The /l hero and marketplace tiles cover that frame instead. */
+  img:not([data-nimg]):not(.listing-photo-fill),
   video {
     max-width: 100%;
     height: auto;
@@ -445,15 +452,22 @@
 
 /* Radix Dialog / Sheet / AlertDialog use react-remove-scroll (body[data-scroll-locked]).
    In some browsers the document scrolls on `html`; locking only `body` leaves background
-   scroll. Mirror the lock on `html` while any modal scroll lock is active. */
-html:has(body[data-scroll-locked]) {
-  overflow: hidden !important;
-  overscroll-behavior: none;
+   scroll on a trackpad. Mirror that lock on `html` for fine pointers only.
+   On a phone, `overflow: hidden` on `html` (with the body lock) makes WebKit drop taps
+   on `position: fixed` dialogs. The promo then cannot be dismissed and the page is stuck. */
+@media (pointer: fine) {
+  html:has(body[data-scroll-locked]),
+  html[data-reswell-scroll-lock] {
+    overflow: hidden !important;
+    overscroll-behavior: none;
+  }
 }
 
-html[data-reswell-scroll-lock] {
-  overflow: hidden !important;
-  overscroll-behavior: none;
+@media (pointer: coarse) {
+  html:has(body[data-scroll-locked]),
+  html[data-reswell-scroll-lock] {
+    overscroll-behavior: none;
+  }
 }
 
 html[data-reswell-scroll-lock] body {
@@ -751,4 +765,99 @@ html[data-reswell-scroll-lock] body {
 
 .admin-btn-primary:hover {
   background-color: hsl(var(--admin-teal-hover));
+}
+
+/*
+ * Listing PDP hero (`/l/*`) — same 3:4 portrait frame as marketplace tiles.
+ *
+ * Slash-form `aspect-ratio` (not a unitless custom property) so iOS Chrome
+ * and the Google app keep the box. Width is capped from the height budget so
+ * a short viewport shrinks the tile instead of squashing it. Photos cover
+ * the frame from the center; Fit crops still letterbox on purpose.
+ * `pan-y` on a hero that cannot itself scroll leaves a sideways swipe
+ * unclaimed. iOS then locks the tab, whether or not Embla calls
+ * preventDefault(). `manipulation` lets the page scroll vertically.
+ * Phones change photos with a passive flick; a mouse still drags.
+ */
+.listing-pdp-hero,
+.listing-pdp-mobile-hero {
+  width: 100%;
+  width: min(100%, calc(min(92vh, 56rem) * 3 / 4));
+  width: min(100%, calc(min(92dvh, 56rem) * 3 / 4));
+  width: min(100%, calc(min(92svh, 56rem) * 3 / 4));
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 3 / 4;
+  max-height: min(92vh, 56rem);
+  max-height: min(92dvh, 56rem);
+  max-height: min(92svh, 56rem);
+  margin-inline: auto;
+  touch-action: manipulation;
+}
+
+.listing-pdp-hero img:not(.listing-pdp-seller-crop),
+.listing-pdp-mobile-hero img:not(.listing-pdp-seller-crop),
+.listing-tile-frame img:not(.listing-pdp-seller-crop):not(.object-contain) {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  object-fit: cover !important;
+  object-position: center center !important;
+}
+
+/*
+ * Unloaded replaced images paint an opaque white box in WebKit. That box is
+ * the flat on `/l` while the PDP file is still decoding. The bitmap stays
+ * transparent until it has pixels; the card preview underneath shows through.
+ */
+img.listing-photo-fill {
+  background-color: transparent !important;
+  color: transparent;
+}
+
+.listing-pdp-hero img.listing-pdp-seller-crop,
+.listing-pdp-mobile-hero img.listing-pdp-seller-crop {
+  position: absolute;
+  max-width: none;
+  object-fit: var(--listing-pdp-object-fit, cover) !important;
+  object-position: var(--listing-pdp-object-position, center center);
+}
+
+/*
+ * Returning account chrome. Cached HTML is anonymous. A blocking boot script
+ * adds `rw-known-auth` before first paint only when a visible auth cookie is
+ * still present. The snapshot fills the photo in that case. React adds
+ * `rw-auth-hydrated` once the real header state is committed.
+ */
+[data-rw-auth-preview] {
+  display: none;
+}
+
+html.rw-known-auth:not(.rw-auth-hydrated) [data-rw-guest-auth] {
+  display: none !important;
+}
+
+html.rw-known-auth:not(.rw-auth-hydrated) [data-rw-auth-preview] {
+  display: flex !important;
+}
+
+.rw-header-preview-avatar {
+  background-color: hsl(var(--muted));
+}
+
+html.rw-known-auth.rw-header-has-avatar .rw-header-preview-avatar {
+  background-image: var(--rw-header-avatar);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+html.rw-known-auth.rw-header-has-initial:not(.rw-header-has-avatar) .rw-header-preview-avatar::before {
+  content: var(--rw-header-initial);
+  color: hsl(var(--foreground));
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1;
 }

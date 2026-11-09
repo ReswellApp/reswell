@@ -4,6 +4,7 @@ import {
   apparelKindSlugForDb,
   apparelSizeSlugForDb,
 } from "@/lib/apparel-listing-config"
+import { stockQuantityForSellCondition } from "@/lib/listing-stock-quantity"
 import { reswellPackageFieldsToDb } from "@/lib/sell-listing-fulfillment-flags"
 import type { ListingPersistShippingOptions } from "@/lib/sell-shipping-cost-mode"
 import type { CreateApparelListingInput } from "@/lib/validations/apparel-listing"
@@ -17,17 +18,9 @@ export function apparelListingShippingFieldsFor(
   shipping_price: number | null
   board_shipping_cost_mode: string | null
 } {
-  if (!input.shippingAvailable) {
-    return {
-      shipping_available: false,
-      local_pickup: true,
-      shipping_price: null,
-      board_shipping_cost_mode: null,
-    }
-  }
   return {
     shipping_available: true,
-    local_pickup: input.localPickup,
+    local_pickup: false,
     shipping_price: 0,
     board_shipping_cost_mode: "reswell",
   }
@@ -58,6 +51,7 @@ export function buildApparelListingPersistFields(
     description: input.description.trim(),
     price: input.price,
     condition: input.condition,
+    stock_quantity: stockQuantityForSellCondition(input.condition, input.stockQuantity),
     section: APPAREL_SECTION,
     category_id: USED_APPAREL_CATEGORY_ID,
     latitude: input.locationLat ?? null,

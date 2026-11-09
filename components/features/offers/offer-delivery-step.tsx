@@ -38,6 +38,7 @@ export function OfferDeliveryStep({
   const [buyerPhone, setBuyerPhone] = useState<string | null>(null)
   const [legalFullName, setLegalFullName] = useState("")
   const [addressId, setAddressId] = useState<string | null>(null)
+  const [addressVersion, setAddressVersion] = useState(0)
   const [detailsReady, setDetailsReady] = useState(false)
   const [quoteToken, setQuoteToken] = useState<string | null>(null)
   const [shippingUsd, setShippingUsd] = useState<number | null>(() => {
@@ -134,7 +135,15 @@ export function OfferDeliveryStep({
     return () => {
       cancelled = true
     }
-  }, [addressId, listingId, needsLiveQuote, needsShipping, shippingCostMode, shippingFlatRate])
+  }, [
+    addressId,
+    addressVersion,
+    listingId,
+    needsLiveQuote,
+    needsShipping,
+    shippingCostMode,
+    shippingFlatRate,
+  ])
 
   useEffect(() => {
     const quoteReady = !needsShipping || (!needsLiveQuote && shippingUsd != null) || Boolean(quoteToken)
@@ -176,6 +185,7 @@ export function OfferDeliveryStep({
         onStateChange={(state) => {
           setDetailsReady(state.readyToPay)
           setAddressId(state.shippingAddressId)
+          setAddressVersion(state.shippingAddressVersion)
         }}
       />
       {needsShipping ? (

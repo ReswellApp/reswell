@@ -2,8 +2,10 @@
 
 import Link from "next/link"
 import { useEffect, useState } from "react"
-import { Check, ExternalLink, Loader2, Pencil, User } from "lucide-react"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Check, ExternalLink, Loader2, Pencil } from "lucide-react"
+import { ProfileCircleSlotFallback } from "@/components/profile-circle"
+import { Avatar } from "@/components/ui/avatar"
+import { userProfilePhotoDisplaySrc } from "@/lib/profile-circle"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -15,7 +17,9 @@ import { ProfileBannerImage } from "@/components/features/dashboard/profile-bann
 import { SELLER_PROFILE_BANNER_DEFAULT } from "@/lib/brand-colors"
 import type { ProfileBannerFocal } from "@/lib/utils/profile-banner-focal"
 import { cn } from "@/lib/utils"
+import { ProfileBrowseHomeSection, type ProfileBrowseHomeSectionCopy } from "@/components/features/dashboard/profile-browse-home-section"
 import type { DashboardProfileRow } from "@/lib/db/dashboard-profile"
+import type { ProfileBrowseHome } from "@/lib/db/profileBrowseHome"
 import {
   profileInputClass,
   profileLabelClass,
@@ -24,6 +28,7 @@ import {
   profileSectionTitleClass,
   profileTextareaClass,
 } from "@/components/features/dashboard/profile-settings/profile-settings-styles"
+import { ShopVacationButton } from "@/components/features/dashboard/listings/shop-vacation-button"
 
 export type ProfileShopTabCopy = {
   displayName: string
@@ -74,6 +79,8 @@ export type ProfileShopTabCopy = {
 interface ProfileShopTabProps {
   profile: DashboardProfileRow
   copy: ProfileShopTabCopy
+  browseHomeCopy: ProfileBrowseHomeSectionCopy
+  initialBrowseHome: ProfileBrowseHome
   sellerStoreHref: string | null
   saving: boolean
   savedFlash: boolean
@@ -104,6 +111,8 @@ interface ProfileShopTabProps {
 export function ProfileShopTab({
   profile,
   copy,
+  browseHomeCopy,
+  initialBrowseHome,
   sellerStoreHref,
   saving,
   savedFlash,
@@ -132,6 +141,9 @@ export function ProfileShopTab({
 }: ProfileShopTabProps) {
   const username = profile.seller_slug?.trim() || "—"
   const profilePhotoUrl = profile.shop_logo_url || profile.avatar_url
+  const hasAvatarPhoto = Boolean(
+    avatarPreviewUrl?.trim() || userProfilePhotoDisplaySrc(profilePhotoUrl),
+  )
   const [avatarCropOpen, setAvatarCropOpen] = useState(false)
   const [bannerCropOpen, setBannerCropOpen] = useState(false)
   const [tileBannerCropOpen, setTileBannerCropOpen] = useState(false)
@@ -177,6 +189,19 @@ export function ProfileShopTab({
 
   return (
     <div className="mx-auto max-w-xl space-y-8 pt-2">
+      <section className="rounded-xl border border-border bg-muted/40 px-4 py-4 sm:px-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0 space-y-1">
+            <h3 className={profileSectionTitleClass}>Shop vacation</h3>
+            <p className={profileSectionHintClass}>
+              Temporarily hide all live listings from browse, search, and checkout. Drafts and sold
+              listings stay as they are.
+            </p>
+          </div>
+          <ShopVacationButton className="shrink-0 self-start sm:self-center" />
+        </div>
+      </section>
+
       <div className="flex flex-col items-center gap-3">
         <div className="relative">
           <Avatar className="h-24 w-24 border-2 border-neutral-200 bg-neutral-100">
@@ -187,9 +212,7 @@ export function ProfileShopTab({
               previewSrc={avatarPreviewUrl}
               alt={profile.display_name}
             />
-            <AvatarFallback className="bg-neutral-100">
-              <User className="h-10 w-10 text-primary/70" aria-hidden />
-            </AvatarFallback>
+            <ProfileCircleSlotFallback hasPhoto={hasAvatarPhoto} />
           </Avatar>
           <label
             htmlFor="shop-avatar-upload"
@@ -328,12 +351,14 @@ export function ProfileShopTab({
               placeholder={copy.cityPlaceholder}
             />
           </div>
+          </div>
         </div>
-      </div>
 
-      <div className="space-y-3 border-t border-neutral-200/80 pt-6">
-        <div>
-          <p className={profileSectionTitleClass}>{copy.sellerBannerTitle}</p>
+        <ProfileBrowseHomeSection initialHome={initialBrowseHome} copy={browseHomeCopy} />
+
+        <div className="space-y-3 border-t border-neutral-200/80 pt-6">
+          <div>
+            <p className={profileSectionTitleClass}>{copy.sellerBannerTitle}</p>
           <p className={cn(profileSectionHintClass, "mt-1")}>{copy.bannerHint}</p>
         </div>
         <div className="overflow-hidden rounded-xl">

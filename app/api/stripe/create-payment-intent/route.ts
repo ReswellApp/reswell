@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server"
+import type { SupabaseClient, User } from "@supabase/supabase-js"
 import { NextRequest, NextResponse } from "next/server"
 import Stripe from "stripe"
+import { z } from "zod"
 import { getStripe, getStripeCheckoutKeyConfigError } from "@/lib/stripe-server"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import {
@@ -8,10 +10,6 @@ import {
   type PeerSurfboardCheckoutListingRow,
 } from "@/lib/services/peerListingShippingQuote"
 import { computePeerMultiCheckoutUsd } from "@/lib/services/peerMultiCheckoutTotals"
-import {
-  countSurfboardListings,
-  peerCheckoutSurfboardCountError,
-} from "@/lib/surfboard-multi-board-parcel"
 import {
   applyAcceptedOfferToPeerCheckoutListings,
   priceListingsFromAcceptedOffer,
@@ -23,19 +21,32 @@ import { isBlockedOwnListingPurchase } from "@/lib/cart-eligibility"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { formatPeerItemCountPhrase } from "@/lib/peer-listing-item-nouns"
 import { isReswellShopListing } from "@/lib/reswell-shop"
+import { attachListingInventorySources } from "@/lib/db/listingInventorySource"
+import { isShopifyManagedListing } from "@/lib/shopify/listing"
+import { shopifyManagedCheckoutBilling } from "@/lib/services/shopifyBilling"
+import {
+  clampListingBuyerQuantity,
+  listingBuyerQuantityCap,
+  peerBrandNewStockQuantity,
+} from "@/lib/listing-stock-quantity"
 import {
   encodeListingQuantitiesMeta,
   resolveMixedCheckoutSellerId,
 } from "@/lib/mixed-checkout"
+import { dbFindRecentDuplicateBuyerCheckoutOrder } from "@/lib/db/recentBuyerCheckoutOrder"
+import { ALREADY_PURCHASED_CHECKOUT_CODE } from "@/lib/stripe/checkout-payment-recovery"
+import { checkoutPaymentIntentIdempotencyKey } from "@/lib/stripe/checkout-payment-intent-idempotency"
+import { bindCheckoutSessionPaymentIntent } from "@/lib/services/checkoutSessionPayment"
 import { evaluateUserPurchase } from "@/lib/services/accountRestrictions"
 import { assertBuyerMayPurchaseListingExclusiveWindow } from "@/lib/services/listingBuyerExclusiveWindow"
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
-import { computeCheckoutTotalWithNewsletterPromo } from "@/lib/services/newsletterPromo"
+import { stripeBuyerEmailMetadata } from "@/lib/meta/stripe-buyer-email-metadata"
 import {
   releaseAndReserveCheckoutPromoForPaymentIntent,
   validateCheckoutPromoForCheckout,
   type CheckoutPromoRef,
 } from "@/lib/services/checkoutPromo"
+import { promoCheckoutLinesFromPricedListings } from "@/lib/utils/promo-product-type"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { normalizeNewsletterPromoCodeInput } from "@/lib/utils/newsletter-promo-code"
 import { verifyCheckoutShippingQuoteToken } from "@/lib/services/checkoutShippingQuoteToken"
@@ -45,11 +56,20 @@ import { ensureCheckoutBuyerPhone } from "@/lib/services/checkoutBuyerPhone"
 import { readAdAttributionFromCookies } from "@/lib/ads/read-request-attribution"
 import { stripeAdAttributionMetadata } from "@/lib/ads/attribution"
 import {
-  checkoutOffersShippingPackagingChoice,
   DEFAULT_SHIPPING_PACKAGING_MODE,
+  resolveMultiItemPackagingMode,
   resolveShippingPackagingMode,
   type ShippingPackagingMode,
 } from "@/lib/shipping/packaging-mode"
+import {
+  prepareSurfboardShippedCharge,
+  type SurfboardShippedCharge,
+} from "@/lib/services/surfboardShippedOffer"
+import {
+  holdReswellCreditAfterPaymentIntentCreated,
+  releaseReswellCreditHoldForPaymentIntent,
+  resolveAdminReswellCreditForPaymentIntent,
+} from "@/lib/services/reswellCreditCheckout"
 
 const JSON_NO_STORE_HEADERS = {
   "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
@@ -84,6 +104,24 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  return createPaymentIntentForUser(supabase, user, rawBody)
+}
+
+/** Same card charge the website checkout creates. Reads cart quantities for this buyer. */
+export async function createPaymentIntentForUser(
+  supabase: SupabaseClient,
+  user: User,
+  rawBody: unknown,
+): Promise<NextResponse> {
+  if (!process.env.STRIPE_SECRET_KEY?.trim()) {
+    return NextResponse.json({ error: "Card payments are not configured" }, { status: 503 })
+  }
+
+  const keyConfigError = getStripeCheckoutKeyConfigError()
+  if (keyConfigError) {
+    return NextResponse.json({ error: keyConfigError }, { status: 503 })
+  }
+
   if (isAnonymousSupabaseUser(user)) {
     return NextResponse.json(
       { error: "Create a Reswell account or sign in with email or Google to complete payment." },
@@ -103,6 +141,11 @@ export async function POST(request: NextRequest) {
     )
   }
 
+  const surfboardFlag = z
+    .object({ surfboard_shipped: z.boolean().optional() })
+    .safeParse(rawBody)
+  const wantsSurfboardShipped = surfboardFlag.success && surfboardFlag.data.surfboard_shipped === true
+
   const body = rawBody as {
     listing_id?: string
     listing_ids?: unknown
@@ -112,6 +155,10 @@ export async function POST(request: NextRequest) {
     promo_code?: string | null
     quote_token?: string | null
     packaging_mode?: string | null
+    quantities?: unknown
+    checkout_session_id?: string | null
+    force_new_session?: boolean
+    apply_reswell_credit?: boolean
   }
 
   const fromArray = Array.isArray(body.listing_ids)
@@ -158,20 +205,33 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Listing not found or not available" }, { status: 404 })
   }
 
+  const sourcedListings = await attachListingInventorySources(supabase, listingsOrdered)
+  if (!sourcedListings.ok) {
+    return NextResponse.json({ error: sourcedListings.error }, { status: 500 })
+  }
+  for (let index = 0; index < listingsOrdered.length; index += 1) {
+    const sourced = sourcedListings.listings[index]
+    if (sourced) listingsOrdered[index] = sourced
+  }
+
   if (listingsOrdered.some((l) => isBlockedOwnListingPurchase(l, user.id))) {
     return NextResponse.json({ error: "Cannot purchase your own listing" }, { status: 400 })
   }
 
-  const surfboardCapError = peerCheckoutSurfboardCountError(countSurfboardListings(listingsOrdered))
-  if (surfboardCapError) {
-    return NextResponse.json({ error: surfboardCapError }, { status: 422 })
+  const shopifyBilling = await shopifyManagedCheckoutBilling(listingsOrdered)
+  if (!shopifyBilling.ok) {
+    return NextResponse.json({ error: shopifyBilling.error }, { status: 409 })
   }
 
   for (const listing of listingsOrdered) {
     if (!isPeerListingSection(listing.section) && !isReswellShopListing(listing.section)) {
       return NextResponse.json({ error: "This listing cannot be purchased here" }, { status: 400 })
     }
-    if (isReswellShopListing(listing.section)) {
+    if (
+      isReswellShopListing(listing.section) ||
+      isShopifyManagedListing(listing) ||
+      peerBrandNewStockQuantity(listing) >= 1
+    ) {
       const stock = Math.max(
         0,
         Math.floor(Number((listing as { stock_quantity?: number }).stock_quantity) || 0),
@@ -196,8 +256,15 @@ export async function POST(request: NextRequest) {
    * unless paying via an accepted offer bundle (`offer_id`). */
   const offerIdParam = body.offer_id?.trim() || null
   let validatedOfferId: string | null = null
+  const requestedQuantities = new Map<string, number>()
+  if (body.quantities && typeof body.quantities === "object") {
+    for (const [id, raw] of Object.entries(body.quantities as Record<string, unknown>)) {
+      const qty = Math.floor(Number(raw) || 0)
+      if (UUID_RE.test(id) && qty >= 1) requestedQuantities.set(id, qty)
+    }
+  }
   const quantityByListingId: Record<string, number> = {}
-  for (const id of listingIdsOrdered) quantityByListingId[id] = 1
+  for (const id of listingIdsOrdered) quantityByListingId[id] = requestedQuantities.get(id) ?? 1
 
   /** Price from the explicit offer id when present so promo math matches the UI. */
   let listingsForTotals = listingsOrdered
@@ -254,9 +321,12 @@ export async function POST(request: NextRequest) {
       listingsOrdered,
     )
   } else {
-    // Single shop line may still carry quantity from cart.
+    // Single stock-backed line uses the checkout quantity, then the cart.
     const onlyId = listingIdsOrdered[0]!
-    if (isReswellShopListing(listingsOrdered[0]!.section)) {
+    const onlyListing = listingsOrdered[0]!
+    const stockBacked =
+      isReswellShopListing(onlyListing.section) || peerBrandNewStockQuantity(onlyListing) >= 1
+    if (stockBacked && !requestedQuantities.has(onlyId)) {
       const { data: cartRow } = await supabase
         .from("cart_items")
         .select("quantity")
@@ -279,15 +349,28 @@ export async function POST(request: NextRequest) {
   }
 
   for (const listing of listingsOrdered) {
-    if (!isReswellShopListing(listing.section)) continue
-    const stock = Math.max(
-      0,
-      Math.floor(Number((listing as { stock_quantity?: number }).stock_quantity) || 0),
-    )
     const qty = quantityByListingId[listing.id] ?? 1
-    if (qty > stock) {
+    if (isShopifyManagedListing(listing)) {
+      if (qty !== 1) {
+        return NextResponse.json(
+          { error: "Shopify-synced listings are limited to one unit per checkout" },
+          { status: 400 },
+        )
+      }
+      quantityByListingId[listing.id] = 1
+      continue
+    }
+    const stockBacked =
+      isReswellShopListing(listing.section) || peerBrandNewStockQuantity(listing) >= 1
+    if (!stockBacked) {
+      quantityByListingId[listing.id] = 1
+      continue
+    }
+    const cap = listingBuyerQuantityCap(listing)
+    if (qty > cap) {
       return NextResponse.json({ error: "Not enough stock available" }, { status: 409 })
     }
+    quantityByListingId[listing.id] = clampListingBuyerQuantity(listing, qty)
   }
 
   const mixedSeller = resolveMixedCheckoutSellerId(
@@ -347,6 +430,16 @@ export async function POST(request: NextRequest) {
       lp && sa ? (fulfillment === "shipping" ? "shipping" : "pickup") : !lp && sa ? "shipping" : "pickup"
   }
 
+  if (wantsSurfboardShipped) {
+    if (listingIdsOrdered.length !== 1) {
+      return NextResponse.json(
+        { error: "Surfboard Shipped is one board per checkout." },
+        { status: 422, headers: JSON_NO_STORE_HEADERS },
+      )
+    }
+    impliedFulfillment = "shipping"
+  }
+
   const addressId = body.address_id?.trim() || null
   let buyerAddress: ProfileAddressRow | null = null
   if (impliedFulfillment === "shipping") {
@@ -383,6 +476,24 @@ export async function POST(request: NextRequest) {
     buyerAddress = preparedAddress.address
   }
 
+  let surfboardCharge: SurfboardShippedCharge | null = null
+  if (wantsSurfboardShipped) {
+    if (!buyerAddress) {
+      return NextResponse.json({ error: "Shipping address is required" }, { status: 400 })
+    }
+    const prepared = await prepareSurfboardShippedCharge({
+      listingId: listingIdsOrdered[0]!,
+      buyer: buyerAddress,
+    })
+    if (!prepared.ok) {
+      return NextResponse.json(
+        { error: prepared.error },
+        { status: prepared.status, headers: JSON_NO_STORE_HEADERS },
+      )
+    }
+    surfboardCharge = prepared.charge
+  }
+
   let preverifiedShipping:
     | {
         shippingUsd: number
@@ -392,22 +503,14 @@ export async function POST(request: NextRequest) {
         packageRates?: CheckoutShippingPackageRate[] | null
       }
     | undefined
-  let packagingMode: ShippingPackagingMode = DEFAULT_SHIPPING_PACKAGING_MODE
-  const packagingFromBody = resolveShippingPackagingMode(
-    body.packaging_mode,
-    DEFAULT_SHIPPING_PACKAGING_MODE,
-  )
-  if (
-    impliedFulfillment === "shipping" &&
-    listingIdsOrdered.length > 1 &&
-    checkoutOffersShippingPackagingChoice(listingsOrdered) &&
-    packagingFromBody === "separate"
-  ) {
-    packagingMode = "separate"
-  }
+  const packagingMode: ShippingPackagingMode = resolveMultiItemPackagingMode({
+    listings: listingsOrdered,
+    requested: body.packaging_mode,
+    fulfillment: impliedFulfillment,
+  })
 
   const quoteTokenRaw = body.quote_token?.trim()
-  if (impliedFulfillment === "shipping" && quoteTokenRaw && addressId) {
+  if (!surfboardCharge && impliedFulfillment === "shipping" && quoteTokenRaw && addressId) {
     const verified = verifyCheckoutShippingQuoteToken(quoteTokenRaw, {
       buyerId: user.id,
       listingIds: listingIdsOrdered,
@@ -447,6 +550,7 @@ export async function POST(request: NextRequest) {
     packagingMode,
     preverifiedShipping,
     quantityByListingId,
+    fixedShippingUsd: surfboardCharge?.feeUsd,
   })
 
   if (!bundle.ok) {
@@ -461,6 +565,7 @@ export async function POST(request: NextRequest) {
   let promoKind: CheckoutPromoRef["kind"] | null = null
   let promoDiscountPercent = 0
   let promoRef: CheckoutPromoRef | null = null
+  let promoCheckTotalUsd = bundle.totalUsd
 
   if (promoCodeNormalized) {
     const buyerEmail = (await getAuthEmailForUserId(user.id)) ?? user.email?.trim() ?? ""
@@ -476,6 +581,10 @@ export async function POST(request: NextRequest) {
       buyerEmail,
       itemSubtotalUsd: bundle.totalItemPriceUsd,
       shippingUsd: bundle.totalShippingUsd,
+      lines: promoCheckoutLinesFromPricedListings({
+        listings: listingsForTotals,
+        pricedLines: bundle.lines,
+      }),
     })
 
     if (!promoCheck.ok) {
@@ -483,6 +592,7 @@ export async function POST(request: NextRequest) {
     }
 
     promoDiscountUsd = promoCheck.discountUsd
+    promoCheckTotalUsd = promoCheck.totalUsd
     promoCodeId = promoCheck.promo.id
     promoKind = promoCheck.kind
     promoDiscountPercent = promoCheck.discountPercent
@@ -492,14 +602,28 @@ export async function POST(request: NextRequest) {
         : { kind: "admin_issued", promo: promoCheck.promo }
   }
 
-  const chargedTotalUsd =
-    promoDiscountUsd > 0
-      ? computeCheckoutTotalWithNewsletterPromo({
-          itemSubtotalUsd: bundle.totalItemPriceUsd,
-          shippingUsd: bundle.totalShippingUsd,
-          discountPercent: promoDiscountPercent,
-        }).totalUsd
-      : bundle.totalUsd
+  const totalBeforeCreditUsd = promoRef ? promoCheckTotalUsd : bundle.totalUsd
+
+  const creditResolution = await resolveAdminReswellCreditForPaymentIntent({
+    supabase,
+    userId: user.id,
+    apply: body.apply_reswell_credit === true,
+    itemSubtotalUsd: bundle.totalItemPriceUsd,
+    shippingUsd: bundle.totalShippingUsd,
+    promoDiscountUsd,
+  })
+  if ("error" in creditResolution) {
+    return NextResponse.json(
+      { error: creditResolution.error },
+      { status: creditResolution.status, headers: JSON_NO_STORE_HEADERS },
+    )
+  }
+  const reswellCreditCents = creditResolution.creditCents
+  const reswellCreditUsd = creditResolution.creditUsd
+  const chargedTotalUsd = Math.max(
+    0.5,
+    Math.round((totalBeforeCreditUsd - reswellCreditUsd) * 100) / 100,
+  )
 
   const amountCents = Math.round(chargedTotalUsd * 100)
   if (amountCents < 50) {
@@ -514,6 +638,11 @@ export async function POST(request: NextRequest) {
           listingsOrdered.map((l) => l.section),
         )} (${primaryTitle})`
       : `Reswell — ${primaryTitle}`
+  const listingPriceSnapshot = listingsForTotals
+    .map((listing) =>
+      String(Math.max(0, Math.round(Number(listing.price) * 100))),
+    )
+    .join(",")
 
   try {
     const stripe = getStripe()
@@ -530,9 +659,21 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const adAttribution = await readAdAttributionFromCookies()
+    let sessionSupabase: ReturnType<typeof createServiceRoleClient> | null = promoServiceSupabase
+    if (!sessionSupabase) {
+      try {
+        sessionSupabase = createServiceRoleClient()
+      } catch {
+        sessionSupabase = null
+      }
+    }
 
-    const paymentIntent = await stripe.paymentIntents.create({
+    const adAttribution = await readAdAttributionFromCookies()
+    // Stash hashed-match email for Meta CAPI Purchase on the webhook path (no session).
+    const buyerEmailForMeta =
+      (await getAuthEmailForUserId(user.id)) ?? user.email?.trim() ?? null
+
+    const createParams: Stripe.PaymentIntentCreateParams = {
       amount: amountCents,
       currency: "usd",
       automatic_payment_methods: { enabled: true },
@@ -545,6 +686,10 @@ export async function POST(request: NextRequest) {
         fulfillment: impliedFulfillment,
         amount_cents: String(amountCents),
         bundle_line_count: String(listingIdsOrdered.length),
+        ...(listingPriceSnapshot.length <= 450
+          ? { listing_price_cents: listingPriceSnapshot }
+          : {}),
+        ...stripeBuyerEmailMetadata(buyerEmailForMeta),
         ...stripeAdAttributionMetadata(adAttribution),
         ...(validatedOfferId ? { offer_id: validatedOfferId } : {}),
         ...(addressId ? { address_id: addressId } : {}),
@@ -556,6 +701,9 @@ export async function POST(request: NextRequest) {
               promo_discount_cents: String(Math.round(promoDiscountUsd * 100)),
               promo_discount_percent: String(promoDiscountPercent),
             }
+          : {}),
+        ...(reswellCreditCents > 0
+          ? { reswell_credit_cents: String(reswellCreditCents) }
           : {}),
         ...(bundle.anyUsedReswellQuote
           ? {
@@ -585,9 +733,122 @@ export async function POST(request: NextRequest) {
         ...(impliedFulfillment === "shipping" && listingIdsOrdered.length > 1
           ? { shipping_packaging_mode: packagingMode }
           : {}),
+        ...(surfboardCharge
+          ? {
+              surfboard_shipped: "1",
+              surfboard_shipped_cents: String(surfboardCharge.feeCents),
+              surfboard_shipped_run_id: surfboardCharge.runId,
+              surfboard_shipped_shipper_id: surfboardCharge.shipperId,
+              surfboard_shipped_window_start: surfboardCharge.windowStart,
+              surfboard_shipped_window_end: surfboardCharge.windowEnd,
+            }
+          : {}),
       },
       description: stripeDescription.slice(0, 1000),
-    })
+    }
+
+    let paymentIntent: Stripe.PaymentIntent | undefined
+    let checkoutSessionId: string | null = null
+    let useLegacyPaymentIntent = sessionSupabase == null
+
+    if (sessionSupabase) {
+      const bound = await bindCheckoutSessionPaymentIntent({
+        supabase: sessionSupabase,
+        stripe,
+        buyerId: user.id,
+        listingIds: listingIdsOrdered,
+        quantities: quantityByListingId,
+        listings: listingsOrdered,
+        amountCents,
+        fulfillment: impliedFulfillment,
+        addressId: addressId ?? null,
+        promoCodeId,
+        offerId: validatedOfferId,
+        resumeSessionId: typeof body.checkout_session_id === "string" ? body.checkout_session_id : null,
+        forceNewSession: body.force_new_session === true,
+        createParams,
+      })
+
+      if (bound.ok) {
+        paymentIntent = bound.paymentIntent
+        checkoutSessionId = bound.sessionId
+        if (bound.alreadyPaid) {
+          return NextResponse.json(
+            {
+              alreadyPaid: true,
+              paymentIntentId: paymentIntent.id,
+              checkoutSessionId,
+              ...(bound.orderId ? { orderId: bound.orderId } : {}),
+              shippingUsd: bundle.totalShippingUsd,
+              totalUsd: chargedTotalUsd,
+            },
+            { headers: JSON_NO_STORE_HEADERS },
+          )
+        }
+      } else if (bound.missingTable) {
+        useLegacyPaymentIntent = true
+      } else {
+        return NextResponse.json(
+          {
+            error: bound.error,
+            ...(bound.code ? { code: bound.code } : {}),
+            ...(bound.orderId ? { orderId: bound.orderId } : {}),
+          },
+          { status: bound.status, headers: JSON_NO_STORE_HEADERS },
+        )
+      }
+    }
+
+    if (useLegacyPaymentIntent) {
+      const recentDuplicate = await dbFindRecentDuplicateBuyerCheckoutOrder(
+        sessionSupabase ?? supabase,
+        {
+          buyerId: user.id,
+          listingIds: listingIdsOrdered,
+        },
+      )
+      if (recentDuplicate) {
+        return NextResponse.json(
+          {
+            error: "You already purchased this item. Open your order instead of paying again.",
+            code: ALREADY_PURCHASED_CHECKOUT_CODE,
+            orderId: recentDuplicate.orderId,
+          },
+          { status: 409, headers: JSON_NO_STORE_HEADERS },
+        )
+      }
+      paymentIntent = await stripe.paymentIntents.create(createParams, {
+        idempotencyKey: checkoutPaymentIntentIdempotencyKey({
+          buyerId: user.id,
+          listingIds: listingIdsOrdered,
+          quantities: quantityByListingId,
+          amountCents,
+          addressId,
+          fulfillment: impliedFulfillment,
+          promoCodeId,
+        }),
+      })
+    }
+
+    if (!paymentIntent) {
+      return NextResponse.json(
+        { error: "Could not start checkout" },
+        { status: 500, headers: JSON_NO_STORE_HEADERS },
+      )
+    }
+
+    if (paymentIntent.status === "succeeded") {
+      return NextResponse.json(
+        {
+          alreadyPaid: true,
+          paymentIntentId: paymentIntent.id,
+          ...(checkoutSessionId ? { checkoutSessionId } : {}),
+          shippingUsd: bundle.totalShippingUsd,
+          totalUsd: chargedTotalUsd,
+        },
+        { headers: JSON_NO_STORE_HEADERS },
+      )
+    }
 
     if (promoCodeId && promoRef) {
       if (!promoServiceSupabase) {
@@ -595,6 +856,7 @@ export async function POST(request: NextRequest) {
           promoServiceSupabase = createServiceRoleClient()
         } catch {
           await stripe.paymentIntents.cancel(paymentIntent.id)
+          await releaseReswellCreditHoldForPaymentIntent(paymentIntent.id)
           return NextResponse.json(
             { error: "Could not reserve promo code." },
             { status: 503, headers: JSON_NO_STORE_HEADERS },
@@ -610,8 +872,24 @@ export async function POST(request: NextRequest) {
       )
       if (!reserved.ok) {
         await stripe.paymentIntents.cancel(paymentIntent.id)
+        await releaseReswellCreditHoldForPaymentIntent(paymentIntent.id)
         return NextResponse.json(
           { error: reserved.error ?? "This promo code is no longer available." },
+          { status: 409, headers: JSON_NO_STORE_HEADERS },
+        )
+      }
+    }
+
+    if (reswellCreditCents > 0) {
+      const held = await holdReswellCreditAfterPaymentIntentCreated({
+        userId: user.id,
+        paymentIntentId: paymentIntent.id,
+        creditCents: reswellCreditCents,
+      })
+      if (!held.ok) {
+        await stripe.paymentIntents.cancel(paymentIntent.id)
+        return NextResponse.json(
+          { error: held.error },
           { status: 409, headers: JSON_NO_STORE_HEADERS },
         )
       }
@@ -622,6 +900,8 @@ export async function POST(request: NextRequest) {
         clientSecret: paymentIntent.client_secret,
         shippingUsd: bundle.totalShippingUsd,
         totalUsd: chargedTotalUsd,
+        reswellCreditUsd,
+        ...(checkoutSessionId ? { checkoutSessionId } : {}),
       },
       { headers: JSON_NO_STORE_HEADERS },
     )

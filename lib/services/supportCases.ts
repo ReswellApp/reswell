@@ -17,7 +17,17 @@ export async function listUserSupportCasesService(
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  await backfillUserLegacyCases(supabase, userId, user?.email ?? null)
+  return listUserSupportCasesForClient(supabase, userId, user?.email ?? null, filter)
+}
+
+/** Same inbox as the website Help Hub, using the caller's Supabase client. */
+export async function listUserSupportCasesForClient(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  email: string | null,
+  filter: UserSupportTicketFilter = "all",
+): Promise<UserSupportCaseListItem[]> {
+  await backfillUserLegacyCases(supabase, userId, email)
 
   const rows = await listSupportCasesForRequester(supabase, userId, filter)
   const visible = rows.filter((row) => !isLiveChatSupportChannel(row.source_channel))

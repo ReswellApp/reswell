@@ -16,6 +16,7 @@ import { completeMarketplaceOrderFromPaymentIntent } from "@/lib/stripe-complete
 import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
 import type { RespondToOfferInput } from "@/lib/validations/respond-to-offer"
 import { reconcileOfferFulfillmentWithListing } from "@/lib/offer-listing-shipping"
+import { publishOfferNotification } from "@/lib/services/notifications/publish"
 
 const MAX_COUNTERS = 3
 
@@ -53,7 +54,7 @@ export async function respondToOfferService(
   const { data: offer, error: offerErr } = await supabase
     .from("offers")
     .select(
-      "id, listing_id, buyer_id, seller_id, status, current_amount, counter_count, fulfillment, shipping_amount, payment_intent_id",
+      "id, listing_id, buyer_id, seller_id, status, current_amount, counter_count, fulfillment, shipping_amount, payment_intent_id, seller_initiated",
     )
     .eq("id", offerId)
     .maybeSingle()
@@ -64,6 +65,10 @@ export async function respondToOfferService(
 
   if (offer.seller_id !== sellerUserId) {
     return { ok: false, error: "Only the seller can respond to this offer." }
+  }
+
+  if (offer.seller_initiated === true) {
+    return { ok: false, error: "Wait for the buyer to respond to your offer." }
   }
 
   const paymentIntentId =
@@ -142,11 +147,12 @@ export async function respondToOfferService(
     )
 
     if (service) {
-      await service.from("notifications").insert({
-        user_id: offer.buyer_id,
+      await publishOfferNotification(service, {
+        recipientId: offer.buyer_id,
+        actorId: sellerUserId,
+        listingId: offer.listing_id,
+        offerId,
         type: "offer_declined",
-        listing_id: offer.listing_id,
-        actor_id: sellerUserId,
         message: `${title}: your offer was declined.`,
       })
     }
@@ -260,11 +266,13 @@ export async function respondToOfferService(
       )
 
       if (service) {
-        await service.from("notifications").insert({
-          user_id: offer.buyer_id,
+        await publishOfferNotification(service, {
+          recipientId: offer.buyer_id,
+          actorId: sellerUserId,
+          listingId: offer.listing_id,
+          offerId,
           type: "offer_accepted",
-          listing_id: offer.listing_id,
-          actor_id: sellerUserId,
+          amountUsd: current,
           message: paymentIntentId
             ? `${title}: your offer of $${current.toFixed(2)} was accepted and the order is complete.`
             : `${title}: your offer of $${current.toFixed(2)} was accepted.`,
@@ -375,11 +383,13 @@ export async function respondToOfferService(
   await appendNegotiationLine(supabase, offer, sellerUserId, counterText)
 
   if (service) {
-    await service.from("notifications").insert({
-      user_id: offer.buyer_id,
+    await publishOfferNotification(service, {
+      recipientId: offer.buyer_id,
+      actorId: sellerUserId,
+      listingId: offer.listing_id,
+      offerId,
       type: "offer_countered",
-      listing_id: offer.listing_id,
-      actor_id: sellerUserId,
+      amountUsd: amt,
       message: `${title}: new counter of $${amt.toFixed(2)}.`,
     })
   }

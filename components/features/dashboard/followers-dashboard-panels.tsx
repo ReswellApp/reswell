@@ -2,9 +2,10 @@ import { redirect } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { getCachedDashboardSession } from "@/lib/dashboard-session"
+import { getShopAccountContext } from "@/lib/services/accountAccess"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { ProfileCircle } from "@/components/profile-circle"
 import { MapPin, Users, TrendingUp, Heart } from "lucide-react"
 import { UnfollowButton } from "@/components/features/dashboard/unfollow-button"
 import { CommunityDashboardTabs } from "@/components/features/dashboard/community-dashboard-tabs"
@@ -12,11 +13,8 @@ import { DashboardPageHeader } from "@/components/features/dashboard/dashboard-p
 import { capitalizeWords } from "@/lib/listing-labels"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { listingDetailHref } from "@/lib/listing-href"
-import {
-  listingImageShouldBypassOptimization,
-  proxiedListingImageSrc,
-} from "@/lib/listing-media-proxy-url"
-import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
+import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { PEER_LISTING_SECTIONS_FILTER } from "@/lib/peer-listing-sections"
 
 function timeAgo(dateStr: string | null): string {
@@ -55,6 +53,9 @@ export async function FollowersDashboardPanels() {
   const loginRedirect = "/dashboard/following"
   if (!user) redirect(`/auth/login?redirect=${encodeURIComponent(loginRedirect)}`)
 
+  const shop = await getShopAccountContext()
+  const sellerId = shop?.accountId ?? user.id
+
   const [followsRes, profileRes, newThisMonthRes, myFollowersRes] = await Promise.all([
     supabase
       .from("seller_follows")
@@ -76,11 +77,11 @@ export async function FollowersDashboardPanels() {
     `)
       .eq("follower_id", user.id)
       .order("created_at", { ascending: false }),
-    supabase.from("profiles").select("follower_count").eq("id", user.id).single(),
+    supabase.from("profiles").select("follower_count").eq("id", sellerId).single(),
     supabase
       .from("seller_follows")
       .select("id", { count: "exact", head: true })
-      .eq("seller_id", user.id)
+      .eq("seller_id", sellerId)
       .gte("created_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()),
     supabase
       .from("seller_follows")
@@ -101,7 +102,7 @@ export async function FollowersDashboardPanels() {
         )
       `,
       )
-      .eq("seller_id", user.id)
+      .eq("seller_id", sellerId)
       .order("created_at", { ascending: false })
       .limit(200),
   ])
@@ -233,7 +234,6 @@ export async function FollowersDashboardPanels() {
             if (!f) return null
             const name = followerDisplayName(f)
             const avatarRaw = f.is_shop ? f.shop_logo_url || f.avatar_url : f.avatar_url
-            const avatar = avatarRaw ? profileMediaDisplaySrc(avatarRaw) : null
             const place = f.city || f.location
 
             return (
@@ -241,24 +241,8 @@ export async function FollowersDashboardPanels() {
                 <Card className="border-border/80 transition-shadow hover:shadow-sm">
                   <CardContent className="p-4">
                     <div className="flex items-start gap-3 sm:gap-4">
-                      <Link
-                        href={publicFollowerHref(f)}
-                        className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-muted"
-                      >
-                        {avatar ? (
-                          <Image
-                            src={avatar}
-                            alt=""
-                            width={48}
-                            height={48}
-                            className="h-full w-full object-cover"
-                            unoptimized={listingImageShouldBypassOptimization(avatar)}
-                          />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-muted-foreground">
-                            {name.charAt(0).toUpperCase()}
-                          </div>
-                        )}
+                      <Link href={publicFollowerHref(f)} className="shrink-0">
+                        <ProfileCircle avatarUrl={avatarRaw} alt="" className="h-12 w-12" />
                       </Link>
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-start justify-between gap-2">
@@ -344,7 +328,6 @@ export async function FollowersDashboardPanels() {
             } | null
             if (!s) return null
             const name = s.shop_name || s.display_name || "Seller"
-            const avatar = profileMediaDisplaySrc(s.shop_logo_url || s.avatar_url || "")
             const location = s.shop_address || s.city
             const stats = statsByUser[s.id] ?? { count: 0, lastAt: null, sample: null }
 
@@ -352,12 +335,11 @@ export async function FollowersDashboardPanels() {
               <Card key={follow.id} className="border-border/80 overflow-hidden">
                 <div className="p-4">
                   <div className="flex items-start gap-3 sm:gap-4">
-                    <Avatar className="h-12 w-12 shrink-0">
-                      <AvatarImage src={avatar} alt="" />
-                      <AvatarFallback className="font-semibold bg-primary text-primary-foreground">
-                        {name.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
+                    <ProfileCircle
+                      avatarUrl={s.shop_logo_url || s.avatar_url}
+                      alt=""
+                      className="h-12 w-12"
+                    />
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-start justify-between gap-2">
                         <div>
@@ -407,7 +389,7 @@ export async function FollowersDashboardPanels() {
                                       src={proxiedListingImageSrc(img.url)}
                                       alt=""
                                       fill
-                                      className="object-cover"
+                                      className={listingPhotoFillClassName}
                                       sizes="36px"
                                       unoptimized
                                     />

@@ -24,11 +24,15 @@
  */
 
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
-import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
+import {
+  sendKlaviyoServerEvent,
+  type SendKlaviyoServerEventResult,
+} from "@/lib/klaviyo/send-event"
 import {
   formatGiveawayEndDate,
   getGiveawayBySlug,
   getGiveawayPrizeBrand,
+  SURFBOARD_GIVEAWAY_CAMPAIGN_ENABLED,
 } from "@/lib/giveaways/catalog"
 import { GIVEAWAYS_INDEX_HREF, giveawaySellHref } from "@/lib/giveaways/paths"
 import { publicSiteOriginForEmail } from "@/lib/public-site-origin"
@@ -95,6 +99,16 @@ function giveawayEventProperties(params: {
   }
 }
 
+function giveawayEmailsOff(): SendKlaviyoServerEventResult {
+  return {
+    ok: true,
+    status: 0,
+    skipped: true,
+    skipReason: "Surfboard giveaway emails are off.",
+    detail: "",
+  }
+}
+
 export async function trackKlaviyoGiveawayEntered(params: {
   userId: string
   userEmail?: string | null
@@ -103,6 +117,7 @@ export async function trackKlaviyoGiveawayEntered(params: {
   status: GiveawayEntry["status"]
   listingId?: string | null
 }): Promise<void> {
+  if (!SURFBOARD_GIVEAWAY_CAMPAIGN_ENABLED) return
   const email = await resolveGiveawayEmail(params)
   await sendKlaviyoServerEvent({
     metricName: GIVEAWAY_ENTERED_METRIC,
@@ -127,6 +142,7 @@ export async function trackKlaviyoGiveawayQualified(params: {
   listingId: string
   preferredBrand: GiveawayPrizeBrandId | null
 }): Promise<void> {
+  if (!SURFBOARD_GIVEAWAY_CAMPAIGN_ENABLED) return
   const email = await resolveGiveawayEmail(params)
   await sendKlaviyoServerEvent({
     metricName: GIVEAWAY_QUALIFIED_METRIC,
@@ -151,7 +167,8 @@ export async function trackKlaviyoGiveawayListingReminder(params: {
   entryId: string
   preferredBrand: GiveawayPrizeBrandId | null
   enteredAt: string
-}): Promise<Awaited<ReturnType<typeof sendKlaviyoServerEvent>>> {
+}): Promise<SendKlaviyoServerEventResult> {
+  if (!SURFBOARD_GIVEAWAY_CAMPAIGN_ENABLED) return giveawayEmailsOff()
   const email = await resolveGiveawayEmail(params)
   const hoursSinceEntry = Math.max(
     0,

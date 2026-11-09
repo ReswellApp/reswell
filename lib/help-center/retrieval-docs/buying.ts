@@ -1,4 +1,5 @@
 import { SHIPPING_DEADLINE_DAYS } from "../../shipping-deadline.ts"
+import { BOARD_SAVED_SEARCHES_MAX } from "../../saved-search-limits.ts"
 import { retrievalDoc } from "./build.ts"
 
 export const buyingRetrievalDocs = [
@@ -117,7 +118,7 @@ export const buyingRetrievalDocs = [
     keywords: ["board finder", "alert", "saved search", "wishlist", "notify"],
     relatedIds: ["buying/how-to-search", "buying/how-do-favorites-work", "buying/how-do-i-buy-a-board"],
     quickAnswer:
-      "Go to Board Finder, set brand, model, size, condition, or price filters, and save the search. You can also save a model or brand from its page. We email you when a new listing matches. You can keep up to 5 saved searches per account.",
+      `Go to Board Finder, set brand, model, size, condition, or price filters, and save the search. You can also save a model or brand from its page. We email you when a new listing matches. You can keep up to ${BOARD_SAVED_SEARCHES_MAX} saved searches per account.`,
     sections: [
       {
         heading: "Create an alert",
@@ -125,7 +126,7 @@ export const buyingRetrievalDocs = [
       },
       {
         heading: "Limits and managing alerts",
-        text: "Each account can save up to 5 searches across marketplace categories. Manage or delete them on the Board Finder page. A match email links you to the listing so you can favorite it, message the seller, or buy.",
+        text: `Each account can save up to ${BOARD_SAVED_SEARCHES_MAX} searches across marketplace categories. Manage or delete them on the Board Finder page. A match email links you to the listing so you can favorite it, message the seller, or buy.`,
       },
       {
         heading: "Favorites vs Board Finder",
@@ -148,7 +149,7 @@ export const buyingRetrievalDocs = [
       "buying/how-board-finder-works",
     ],
     quickAnswer:
-      "Tap the heart on any listing to save it. Open Favorites from the profile menu or /dashboard/favorites. Sold listings stay on the list with a sold badge.",
+      "Tap the heart on any listing to save it. Open Favorites from the header heart or /favorites. Sold listings stay on the list with a sold badge.",
     sections: [
       {
         heading: "Saving a listing",
@@ -210,7 +211,7 @@ export const buyingRetrievalDocs = [
       },
       {
         heading: "What happens after you submit",
-        text: "The offer appears in Messages and on Offers under I made. The seller can accept, counter (up to three counters per thread), or decline. You are not charged until you pay at checkout.",
+        text: "The offer appears in Messages and on Offers under Buying. The seller can accept, counter (up to three counters per thread), or decline. You are not charged until you pay at checkout.",
       },
       {
         heading: "Paying after an offer is accepted",
@@ -354,7 +355,7 @@ export const buyingRetrievalDocs = [
     sections: [
       {
         heading: "What is wallet balance?",
-        text: "The wallet holds earnings from completed Reswell sales. After a sale clears Purchase Protection timelines, funds show in Earnings as ready. You can spend ready balance or cash out to your bank.",
+        text: "The wallet holds earnings from completed Reswell sales. Shipped-order earnings show as ready 4 days after carrier-confirmed delivery; local-pickup earnings become ready when pickup is verified. You can spend ready balance or cash out to your bank.",
       },
       {
         heading: "Using balance toward a purchase",

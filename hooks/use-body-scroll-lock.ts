@@ -44,6 +44,9 @@ function clearInlineScrollLockStyles(): number {
   body.style.width = ''
   body.style.paddingRight = ''
   body.style.marginRight = ''
+  // react-remove-scroll sets this inline. Leaving it after a dialog unmounts
+  // makes every tap on the page a no-op.
+  body.style.pointerEvents = ''
   body.removeAttribute('data-scroll-locked')
   html.removeAttribute(LOCK_ATTR)
 
@@ -68,8 +71,11 @@ function applyBodyScrollLock(): BodyScrollLockSnapshot {
 
   // Do not use `position: fixed` on `body` — it shifts the entire document (including
   // the sticky site header) above the viewport and leaves the page "frozen" if cleanup fails.
+  // Do not set `overflow: hidden` on `html` for touch screens. With the body lock, WebKit
+  // then ignores taps on fixed UI (menu, dialogs) and the phone is stuck.
+  const coarsePointer = window.matchMedia('(pointer: coarse)').matches
   html.setAttribute(LOCK_ATTR, '')
-  html.style.overflow = 'hidden'
+  if (!coarsePointer) html.style.overflow = 'hidden'
   html.style.overscrollBehavior = 'none'
   body.style.overflow = 'hidden'
   body.style.overscrollBehavior = 'none'

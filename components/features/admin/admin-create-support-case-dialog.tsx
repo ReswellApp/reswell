@@ -306,16 +306,16 @@ export function AdminCreateSupportCaseDialog({
       {trigger === null ? null : (
         <DialogTrigger asChild>
           {trigger ?? (
-            <Button type="button" size="sm" className="h-8 shrink-0 gap-1.5">
+            <Button type="button" size="sm" className="h-9 shrink-0 gap-1.5 px-2.5 md:h-8" aria-label="New ticket">
               <Plus className="h-3.5 w-3.5" aria-hidden />
-              New ticket
+              <span className="hidden sm:inline">New ticket</span>
             </Button>
           )}
         </DialogTrigger>
       )}
       <DialogContent
         ref={setDialogSurfaceEl}
-        className="sm:max-w-lg"
+        className="w-[calc(100vw-1rem)] max-w-lg p-4 sm:w-full sm:max-w-lg sm:p-6"
         onPointerDownOutside={(event) => {
           const target = event.target as HTMLElement | null
           if (target?.closest("[data-admin-member-picker]")) event.preventDefault()

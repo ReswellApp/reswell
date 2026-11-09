@@ -354,7 +354,8 @@ export function MessagesOffersTab({
       ) : (
         <div className={cn("space-y-3", shellClassName)}>
           {activeOffers.map((o) => {
-            const role = userParticipationRole(o, userId) ?? "buyer"
+            const role = userParticipationRole(o, userId)
+            if (!role) return null
             const conversationId =
               conversationIdByOfferKey[
                 offerConversationKey(o.listing_id, o.buyer_id, o.seller_id)

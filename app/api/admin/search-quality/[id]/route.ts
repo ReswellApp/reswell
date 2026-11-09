@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { revalidateTag } from "next/cache"
-import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
+import { requireAdmin } from "@/lib/brands/admin-server"
 import { rateSearchQualityEvent } from "@/lib/db/searchQuality"
 import { MARKETPLACE_NL_SEARCH_CACHE_TAG } from "@/lib/services/marketplaceQueryUnderstand"
 import { createServiceRoleClient } from "@/lib/supabase/server"
@@ -13,7 +13,7 @@ export async function PATCH(
   request: NextRequest,
   context: { params: Promise<{ id: string }> },
 ) {
-  const gate = await requireAdminOrEmployee()
+  const gate = await requireAdmin()
   if (!gate.ok) return gate.response
 
   const idParse = searchQualityEventIdParamSchema.safeParse(await context.params)

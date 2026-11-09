@@ -1,6 +1,6 @@
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
-import { requireAdmin } from "@/lib/brands/admin-server"
+import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { dbListIncreasedLabelAdjustments } from "@/lib/db/shipengineLabelAdjustments"
 import { syncShipEngineLabelAdjustments } from "@/lib/services/syncShipEngineLabelAdjustments"
@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic"
  * GET /api/admin/shipping/adjusted-labels — labels whose ShipEngine fee increased.
  */
 export async function GET(request: NextRequest) {
-  const gate = await requireAdmin()
+  const gate = await requireAdminOrEmployee()
   if (!gate.ok) {
     return gate.response
   }
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
  * POST /api/admin/shipping/adjusted-labels — pull the latest ShipEngine reports now.
  */
 export async function POST(request: NextRequest) {
-  const gate = await requireAdmin()
+  const gate = await requireAdminOrEmployee()
   if (!gate.ok) {
     return gate.response
   }

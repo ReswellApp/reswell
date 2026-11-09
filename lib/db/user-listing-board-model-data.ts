@@ -9,6 +9,7 @@ import {
   sellFormConditionValue,
 } from "@/lib/listing-labels"
 import type { BrandModelVariantCondition } from "@/lib/validations/brand-model-variants"
+import { parseSellListingPrice } from "@/lib/utils/sell-listing-price"
 
 export type UserListingBoardModelDataRow = {
   id: string
@@ -117,9 +118,8 @@ export async function upsertUserListingBoardModelDataFromSellForm(
   const dims: BoardCatalogDimensionLabels = buildBoardCatalogDimensionLabels(input.form)
   const brandId = input.form.boardBrandId.trim() || null
 
-  const priceRaw = input.form.price.trim().replace(/,/g, "")
-  const listingPrice = Number.parseFloat(priceRaw)
-  if (!Number.isFinite(listingPrice) || listingPrice < 0) {
+  const listingPrice = parseSellListingPrice(input.form.price)
+  if (listingPrice == null || listingPrice < 0) {
     return { ok: false, error: "invalid_listing_price" }
   }
 

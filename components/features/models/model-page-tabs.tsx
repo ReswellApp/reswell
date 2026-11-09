@@ -9,12 +9,12 @@ import {
 } from "@/lib/models/routes"
 import { cn } from "@/lib/utils"
 
-const TAB_ITEMS: { id: ModelPageTab; label: (reviewCount: number) => string }[] = [
-  { id: "listings", label: () => "Listings" },
-  { id: "details", label: () => "Specs" },
-  { id: "price-guide", label: () => "Price guide" },
-  { id: "reviews", label: (count) => (count > 0 ? `Reviews (${count})` : "Reviews") },
-]
+const TAB_LABEL: Record<ModelPageTab, (reviewCount: number) => string> = {
+  listings: () => "For sale",
+  details: () => "Details",
+  "price-guide": () => "Price",
+  reviews: (count) => (count > 0 ? `Reviews (${count})` : "Reviews"),
+}
 
 function headerOffsetPx(): number {
   const raw = getComputedStyle(document.documentElement)
@@ -40,7 +40,13 @@ function sectionAtOffset(offset: number): ModelPageTab {
   return current
 }
 
-export function ModelPageTabs({ reviewCount }: { reviewCount: number }) {
+export function ModelPageTabs({
+  tabs,
+  reviewCount,
+}: {
+  tabs: readonly ModelPageTab[]
+  reviewCount: number
+}) {
   const sentinelRef = useRef<HTMLDivElement>(null)
   const navRef = useRef<HTMLElement>(null)
   const [activeTab, setActiveTab] = useState<ModelPageTab>("listings")
@@ -94,8 +100,10 @@ export function ModelPageTabs({ reviewCount }: { reviewCount: number }) {
     }
   }, [])
 
+  if (tabs.length < 2) return null
+
   return (
-    <>
+    <div className="mt-8">
       <div ref={sentinelRef} aria-hidden className="h-px w-full" />
       {stuck ? <div aria-hidden style={{ height: navHeight }} /> : null}
       <nav
@@ -110,15 +118,15 @@ export function ModelPageTabs({ reviewCount }: { reviewCount: number }) {
         style={stuck ? { top: "var(--site-header-height, 4rem)" } : undefined}
       >
         <ul className={cn("flex flex-wrap gap-x-6 gap-y-1", stuck && "mx-auto max-w-6xl px-4 sm:px-6")}>
-          {TAB_ITEMS.map((tab) => {
-            const href = `#${modelPageSectionId(tab.id)}`
-            const active = tab.id === activeTab
+          {tabs.map((tab) => {
+            const href = `#${modelPageSectionId(tab)}`
+            const active = tab === activeTab
             return (
-              <li key={tab.id}>
+              <li key={tab}>
                 <a
                   href={href}
                   aria-current={active ? "location" : undefined}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => setActiveTab(tab)}
                   className={cn(
                     "-mb-px inline-flex border-b-2 py-3 text-sm font-medium transition-colors",
                     active
@@ -126,13 +134,13 @@ export function ModelPageTabs({ reviewCount }: { reviewCount: number }) {
                       : "border-transparent text-muted-foreground hover:text-foreground",
                   )}
                 >
-                  {tab.label(reviewCount)}
+                  {TAB_LABEL[tab](reviewCount)}
                 </a>
               </li>
             )
           })}
         </ul>
       </nav>
-    </>
+    </div>
   )
 }

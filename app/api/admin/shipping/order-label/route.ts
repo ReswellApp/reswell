@@ -1,6 +1,6 @@
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
-import { requireAdmin } from "@/lib/brands/admin-server"
+import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
 import { fetchSellerShipFromLabelName } from "@/lib/db/sellerShipFromLabel"
 import { getSellerBalance } from "@/lib/getSellerBalance"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
@@ -53,7 +53,7 @@ function num(v: string | number | null | undefined): number {
  * GET /api/admin/shipping/order-label?order_id=
  */
 export async function GET(request: NextRequest) {
-  const gate = await requireAdmin()
+  const gate = await requireAdminOrEmployee()
   if (!gate.ok) {
     return gate.response
   }
@@ -240,7 +240,7 @@ export async function GET(request: NextRequest) {
  * POST /api/admin/shipping/order-label
  */
 export async function POST(request: NextRequest) {
-  const gate = await requireAdmin()
+  const gate = await requireAdminOrEmployee()
   if (!gate.ok) {
     return gate.response
   }

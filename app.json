@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "66a87a07-00ee-4f66-8fc1-c3b7764811b2"
+      }
+    },
+    "ios": {
+      "bundleIdentifier": "com.reswellinc.myproject"
+    }
+  }
+}

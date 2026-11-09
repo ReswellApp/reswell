@@ -25,6 +25,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { cn } from "@/lib/utils"
 import type { AdminHomeRecentSectionParam } from "@/lib/validations/home-recent-section-listings"
 
@@ -505,7 +506,7 @@ function ListingPickRow({
             alt=""
             fill
             sizes="80px"
-            className="object-cover"
+            className={listingPhotoFillClassName}
             unoptimized={imageUrl.startsWith("/")}
           />
         ) : (

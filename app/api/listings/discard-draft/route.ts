@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { cookies } from "next/headers"
+import { resolveManagedSeller } from "@/lib/account-access/managed-seller"
 import { resolveServerAuth } from "@/lib/auth/get-safe-server-user"
 import { deleteSellerDraftListing } from "@/lib/services/listingEnd"
 import { deleteGuestDraftListing } from "@/lib/db/listingGuestDrafts"
@@ -19,9 +20,13 @@ export async function DELETE(request: NextRequest) {
     }
 
     if (user) {
+      const managed = await resolveManagedSeller("listings.write")
+      if (!managed.ok) {
+        return NextResponse.json({ error: managed.error }, { status: managed.status })
+      }
       const result = await deleteSellerDraftListing(supabase, {
         listingId: id,
-        sellerUserId: user.id,
+        sellerUserId: managed.seller.sellerId,
       })
 
       if (!result.ok) {

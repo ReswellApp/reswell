@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server"
 import { getConversationForBuyerSellerListing, ensureConversationForBuyerSellerListing } from "@/lib/db/conversations"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { verifyOrderPickupForSeller } from "@/lib/services/orderPickupVerification"
+import { broadcastInsertedMarketplaceMessage } from "@/lib/services/broadcastMarketplaceThreadMessage"
 import type { OrderCompletedMessagePayload } from "@/lib/validations/order-completed-message-metadata"
 import { NextRequest, NextResponse } from "next/server"
 
@@ -82,12 +83,23 @@ export async function POST(
   }
 
   if (conv) {
-    await supabase.from("messages").insert({
-      conversation_id: conv.id,
-      sender_id: user.id,
-      content: buildPickupCompleteThreadPlainText({ orderNum, listingTitle }),
-      metadata,
-    })
+    const pickupContent = buildPickupCompleteThreadPlainText({ orderNum, listingTitle })
+    const { data: inserted } = await supabase
+      .from("messages")
+      .insert({
+        conversation_id: conv.id,
+        sender_id: user.id,
+        content: pickupContent,
+        metadata,
+      })
+      .select("id, created_at")
+      .single()
+    if (inserted) {
+      await broadcastInsertedMarketplaceMessage(
+        { ...inserted, sender_id: user.id, content: pickupContent, metadata },
+        conv.id,
+      )
+    }
     await supabase
       .from("conversations")
       .update({ last_message_at: now })

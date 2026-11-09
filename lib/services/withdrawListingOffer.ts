@@ -4,6 +4,7 @@ import { getConversationForBuyerSellerListing } from "@/lib/db/conversations"
 import { appendConversationMessageWithClient } from "@/lib/services/conversationThread"
 import { appendOfferTimelineEntry } from "@/lib/services/appendOfferTimeline"
 import { deleteOfferRecord } from "@/lib/services/offerCleanup"
+import { publishOfferNotification } from "@/lib/services/notifications/publish"
 
 export type WithdrawListingOfferResult =
   | { ok: true; conversationId: string | null }
@@ -60,11 +61,12 @@ export async function withdrawListingOffer(
 
   try {
     const service = createServiceRoleClient()
-    await service.from("notifications").insert({
-      user_id: offer.seller_id,
+    await publishOfferNotification(service, {
+      recipientId: offer.seller_id,
+      actorId: buyerId,
+      listingId: offer.listing_id,
+      offerId,
       type: "offer_withdrawn",
-      listing_id: offer.listing_id,
-      actor_id: buyerId,
       message: "A buyer withdrew their offer.",
     })
     await deleteOfferRecord(service, offerId)

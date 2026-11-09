@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useState } from "react"
 import { LocateFixed, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -16,8 +16,6 @@ import type { BoardsFilterState } from "@/components/boards-browse-filter-state"
 import { boardRadiusOptions } from "@/lib/boards-browse-location"
 import { useToast } from "@/hooks/use-toast"
 
-const DEBOUNCE_MS = 380
-
 type Props = {
   state: BoardsFilterState
   listboxId: string
@@ -29,38 +27,10 @@ export function BoardsBrowseLocationFilter({ state, listboxId }: Props) {
   const { goToCityLanding, resolveCityLanding } = useBoardsLocationCityRedirect(state.searchParams)
   const [location, setLocation] = useState(state.location)
   const [locationLoading, setLocationLoading] = useState(false)
-  const skipLocDebounce = useRef(true)
 
   useEffect(() => {
     setLocation(state.location)
-    skipLocDebounce.current = true
   }, [state.location])
-
-  useEffect(() => {
-    if (skipLocDebounce.current) {
-      skipLocDebounce.current = false
-      return
-    }
-    const trimmed = location.trim()
-    if (trimmed === state.location.trim()) return
-
-    const ac = new AbortController()
-    const t = setTimeout(() => {
-      void (async () => {
-        const match = await resolveCityLanding({ label: trimmed }, ac.signal)
-        if (ac.signal.aborted) return
-        if (match) {
-          goToCityLanding(match)
-          return
-        }
-        state.setLocationQuery(location)
-      })()
-    }, DEBOUNCE_MS)
-    return () => {
-      clearTimeout(t)
-      ac.abort()
-    }
-  }, [goToCityLanding, location, resolveCityLanding, state.location, state.setLocationQuery])
 
   async function applyLocationOrCity(opts: {
     label: string
@@ -79,6 +49,28 @@ export function BoardsBrowseLocationFilter({ state, listboxId }: Props) {
       return
     }
     state.setLocationCoords(opts.label, opts.lat, opts.lng)
+  }
+
+  async function commitTypedLocation() {
+    const trimmed = location.trim()
+    if (trimmed === state.location.trim()) return
+    if (!trimmed) {
+      state.setLocationQuery("")
+      return
+    }
+    const match = await resolveCityLanding({ label: trimmed })
+    if (match) {
+      goToCityLanding(match)
+      return
+    }
+    state.setLocationQuery(trimmed)
+  }
+
+  function handleLocationTextChange(next: string) {
+    setLocation(next)
+    if (!next.trim() && state.location.trim()) {
+      state.setLocationQuery("")
+    }
   }
 
   async function handleUseMyLocation() {
@@ -105,7 +97,6 @@ export function BoardsBrowseLocationFilter({ state, listboxId }: Props) {
         } catch {
           /* keep default label */
         }
-        skipLocDebounce.current = true
         setLocation(displayName)
         setLocationLoading(false)
         await applyLocationOrCity({ label: displayName, lat, lng })
@@ -124,15 +115,14 @@ export function BoardsBrowseLocationFilter({ state, listboxId }: Props) {
 
   return (
     <div className="space-y-2 pt-1">
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-start gap-1.5">
         <LocationInputSuggest
-          name="location"
+          name="boards-location-q"
           placeholder="City or ZIP"
           aria-label="City or ZIP"
           value={location}
-          onChange={setLocation}
+          onChange={handleLocationTextChange}
           onPickSuggestion={(place) => {
-            skipLocDebounce.current = true
             setLocation(place.label)
             void applyLocationOrCity({
               label: place.label,
@@ -142,9 +132,13 @@ export function BoardsBrowseLocationFilter({ state, listboxId }: Props) {
               state: place.state,
             })
           }}
+          onEnterWhenPanelClosed={() => {
+            void commitTypedLocation()
+          }}
+          panelPlacement="inline"
           listboxId={listboxId}
           className="min-w-0 flex-1"
-          inputClassName="h-9 rounded-md text-sm"
+          inputClassName="h-9 rounded-md text-base md:text-sm"
         />
         <Button
           type="button"

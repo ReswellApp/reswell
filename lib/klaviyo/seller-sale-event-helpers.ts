@@ -149,14 +149,14 @@ export function sellerShippingLabelWorkflowInstructions(
       "Reswell is preparing your shipping label for this order.",
       "You'll receive another email when the label is ready to download and print from your sale page.",
       "Package the item securely, attach the label, and drop off with the carrier.",
-      "After drop-off, tracking updates automatically for the buyer. Earnings release 24 hours after delivery.",
+      "After drop-off, tracking updates automatically for the buyer. Earnings release 4 days after delivery.",
     ].join(" ")
   }
 
   return [
     "This order uses seller-provided shipping — purchase and print your own label with tracking.",
     "Add the tracking number on your sale page when the package ships.",
-    "Tracked shipping keeps the buyer covered under Purchase Protection and releases your earnings after delivery.",
+    "Tracked shipping keeps the buyer covered under Purchase Protection and releases your earnings 4 days after delivery.",
     "Need help buying a label? Open Shipping tools from your dashboard.",
   ].join(" ")
 }

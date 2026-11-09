@@ -19,7 +19,7 @@ async function requireStaff() {
     .eq("id", user.id)
     .single()
 
-  if (!profile?.is_admin && !profile?.is_employee) {
+  if (profile?.is_admin !== true) {
     return { supabase, user, forbidden: true }
   }
   return { supabase, user, forbidden: false }

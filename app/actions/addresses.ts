@@ -1,29 +1,49 @@
 "use server"
 
-import { createClient } from "@/lib/supabase/server"
+import type { SupabaseClient } from "@supabase/supabase-js"
+import { resolveManagedSeller } from "@/lib/account-access/managed-seller"
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { resolveAddressShippingIdentity } from "@/lib/db/addressShippingIdentity"
 import { profileAddressInputSchema, profileAddressPatchSchema } from "@/lib/address-input"
+import { googleAddressSnapshot, isMissingGoogleAddressColumn, withoutGoogleAddressColumns } from "@/lib/profile-address"
 import { fetchProfileAddresses } from "@/lib/db/profile-addresses"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import {
   buyerAddressInsertFromCarrierFields,
   normalizeBuyerAddressForCarriers,
 } from "@/lib/services/checkoutBuyerAddress"
+import {
+  addressFieldsFromVerifiedGoogleStreet,
+  verifyGoogleStreetAddress,
+} from "@/lib/services/addressGeocoding"
+
+async function loadAddressAccount(
+  access: "read" | "write",
+): Promise<{ supabase: SupabaseClient; profileId: string } | { error: string }> {
+  const managed = await resolveManagedSeller("profile.manage")
+  if (!managed.ok) return { error: managed.error }
+  if (access === "write" && managed.seller.actingAsShop) {
+    try {
+      return { supabase: createServiceRoleClient(), profileId: managed.seller.sellerId }
+    } catch {
+      return { error: "Could not update this shop right now." }
+    }
+  }
+  const supabase = await createClient()
+  return { supabase, profileId: managed.seller.sellerId }
+}
 
 export async function getProfileAddresses(): Promise<{
   addresses: ProfileAddressRow[]
   error: string | null
 }> {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    return { addresses: [], error: "Unauthorized" }
+  const account = await loadAddressAccount("read")
+  if ("error" in account) {
+    return { addresses: [], error: account.error }
   }
+  const { supabase, profileId } = account
 
-  const { addresses, error } = await fetchProfileAddresses(supabase, user.id)
+  const { addresses, error } = await fetchProfileAddresses(supabase, profileId)
 
   return { addresses, error: error ?? null }
 }
@@ -31,14 +51,11 @@ export async function getProfileAddresses(): Promise<{
 export async function createProfileAddress(
   raw: unknown,
 ): Promise<{ address: ProfileAddressRow | null; error: string | null }> {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    return { address: null, error: "Unauthorized" }
+  const account = await loadAddressAccount("write")
+  if ("error" in account) {
+    return { address: null, error: account.error }
   }
+  const { supabase, profileId } = account
 
   const parsed = profileAddressInputSchema.safeParse(raw)
   if (!parsed.success) {
@@ -51,10 +68,10 @@ export async function createProfileAddress(
   const { data: profileRow } = await supabase
     .from("profiles")
     .select("display_name")
-    .eq("id", user.id)
+    .eq("id", profileId)
     .maybeSingle()
 
-  const identity = await resolveAddressShippingIdentity(supabase, user.id, {
+  const identity = await resolveAddressShippingIdentity(supabase, profileId, {
     full_name: input.full_name,
     phone: input.phone,
     display_name: profileRow?.display_name,
@@ -74,58 +91,59 @@ export async function createProfileAddress(
     }
   }
 
-  const normalized = await normalizeBuyerAddressForCarriers({
+  const verifiedGoogle = await verifyGoogleStreetAddress(input)
+  const verifiedFields = verifiedGoogle
+    ? addressFieldsFromVerifiedGoogleStreet(verifiedGoogle)
+    : null
+  const addressForCarrier = {
     full_name: identity.full_name,
     phone: identity.phone,
-    line1: input.line1,
-    line2: input.line2 ?? null,
-    city: input.city,
-    state: input.state ?? null,
-    postal_code: input.postal_code,
-    country: input.country,
-  })
+    line1: verifiedFields?.line1 ?? input.line1,
+    line2: verifiedFields?.line2 ?? input.line2 ?? null,
+    city: verifiedFields?.city ?? input.city,
+    state: verifiedFields?.state ?? input.state ?? null,
+    postal_code: verifiedFields?.postal_code ?? input.postal_code,
+    country: verifiedFields?.country ?? input.country,
+    ...(verifiedFields ?? {}),
+  }
+  const normalized = await normalizeBuyerAddressForCarriers(addressForCarrier)
   if (!normalized.ok && normalized.fatal) {
     return { address: null, error: normalized.error }
   }
 
   const carrierFields = buyerAddressInsertFromCarrierFields(
     identity,
-    {
-      full_name: identity.full_name,
-      phone: identity.phone,
-      line1: input.line1,
-      line2: input.line2 ?? null,
-      city: input.city,
-      state: input.state ?? null,
-      postal_code: input.postal_code,
-      country: input.country,
-    },
+    addressForCarrier,
     normalized.ok ? normalized.fields : null,
   )
 
   if (isDefault) {
-    await supabase.from("addresses").update({ is_default: false }).eq("profile_id", user.id)
+    await supabase.from("addresses").update({ is_default: false }).eq("profile_id", profileId)
   }
 
-  const { data, error } = await supabase
-    .from("addresses")
-    .insert({
-      profile_id: user.id,
-      full_name: carrierFields.full_name,
-      phone: carrierFields.phone,
-      line1: carrierFields.line1,
-      line2: carrierFields.line2,
-      city: carrierFields.city,
-      state: carrierFields.state,
-      postal_code: carrierFields.postal_code,
-      country: carrierFields.country,
-      label: input.label?.trim() || null,
-      is_default: isDefault,
-      residential: carrierFields.residential ?? "unknown",
-      address_validated_at: carrierFields.address_validated_at ?? null,
-    })
-    .select()
-    .single()
+  const pin = googleAddressSnapshot(carrierFields)
+  const row = {
+    profile_id: profileId,
+    full_name: carrierFields.full_name,
+    phone: carrierFields.phone,
+    line1: carrierFields.line1,
+    line2: carrierFields.line2,
+    city: carrierFields.city,
+    state: carrierFields.state,
+    postal_code: carrierFields.postal_code,
+    country: carrierFields.country,
+    label: input.label?.trim() || null,
+    is_default: isDefault,
+    residential: carrierFields.residential ?? "unknown",
+    address_validated_at: carrierFields.address_validated_at ?? null,
+    ...pin,
+  }
+  let { data, error } = await supabase.from("addresses").insert(row).select().single()
+  if (error && Object.keys(pin).length > 0 && isMissingGoogleAddressColumn(error.message)) {
+    const retry = await supabase.from("addresses").insert(withoutGoogleAddressColumns(row)).select().single()
+    data = retry.data
+    error = retry.error
+  }
 
   if (error) {
     return { address: null, error: error.message }
@@ -143,20 +161,17 @@ export async function updateProfileAddress(
     return { address: null, error: "Missing address id" }
   }
 
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    return { address: null, error: "Unauthorized" }
+  const account = await loadAddressAccount("write")
+  if ("error" in account) {
+    return { address: null, error: account.error }
   }
+  const { supabase, profileId } = account
 
   const { data: existing, error: fetchError } = await supabase
     .from("addresses")
     .select("*")
     .eq("id", id)
-    .eq("profile_id", user.id)
+    .eq("profile_id", profileId)
     .maybeSingle()
 
   if (fetchError || !existing) {
@@ -171,7 +186,7 @@ export async function updateProfileAddress(
   const input = parsed.data
 
   if (input.is_default === true) {
-    await supabase.from("addresses").update({ is_default: false }).eq("profile_id", user.id).neq("id", id)
+    await supabase.from("addresses").update({ is_default: false }).eq("profile_id", profileId).neq("id", id)
   }
 
   const streetChanged =
@@ -181,6 +196,12 @@ export async function updateProfileAddress(
     input.state !== undefined ||
     input.postal_code !== undefined ||
     input.country !== undefined
+  const locationChanged =
+    streetChanged ||
+    input.google_place_id !== undefined ||
+    input.latitude !== undefined ||
+    input.longitude !== undefined ||
+    input.formatted_address !== undefined
 
   const update: Record<string, unknown> = {}
   if (input.line1 !== undefined) update.line1 = input.line1
@@ -196,10 +217,10 @@ export async function updateProfileAddress(
     const { data: profileRow } = await supabase
       .from("profiles")
       .select("display_name")
-      .eq("id", user.id)
+      .eq("id", profileId)
       .maybeSingle()
 
-    const identity = await resolveAddressShippingIdentity(supabase, user.id, {
+    const identity = await resolveAddressShippingIdentity(supabase, profileId, {
       full_name: input.full_name,
       phone: input.phone,
       display_name: profileRow?.display_name,
@@ -211,17 +232,17 @@ export async function updateProfileAddress(
     const { data: profileRow } = await supabase
       .from("profiles")
       .select("display_name")
-      .eq("id", user.id)
+      .eq("id", profileId)
       .maybeSingle()
 
-    const identity = await resolveAddressShippingIdentity(supabase, user.id, {
+    const identity = await resolveAddressShippingIdentity(supabase, profileId, {
       display_name: profileRow?.display_name,
     })
     update.full_name = identity.full_name
     update.phone = identity.phone
   }
 
-  if (streetChanged) {
+  if (locationChanged) {
     const existingRow = existing as ProfileAddressRow
     const merged = {
       full_name: String(update.full_name ?? existingRow.full_name),
@@ -237,8 +258,30 @@ export async function updateProfileAddress(
         null,
       postal_code: String(update.postal_code ?? existingRow.postal_code),
       country: String(update.country ?? existingRow.country),
+      google_place_id:
+        input.google_place_id === undefined
+          ? existingRow.google_place_id
+          : input.google_place_id,
     }
-    const normalized = await normalizeBuyerAddressForCarriers(merged)
+    const verifiedGoogle = await verifyGoogleStreetAddress(merged)
+    const verifiedFields = verifiedGoogle
+      ? addressFieldsFromVerifiedGoogleStreet(verifiedGoogle)
+      : null
+    const addressForCarrier = verifiedFields
+      ? { ...merged, ...verifiedFields }
+      : merged
+
+    if (verifiedFields) {
+      Object.assign(update, verifiedFields)
+    } else {
+      update.google_place_id = null
+      update.latitude = null
+      update.longitude = null
+      update.formatted_address = null
+      update.google_geocoded_at = null
+    }
+
+    const normalized = await normalizeBuyerAddressForCarriers(addressForCarrier)
     if (!normalized.ok && normalized.fatal) {
       return { address: null, error: normalized.error }
     }
@@ -257,13 +300,25 @@ export async function updateProfileAddress(
     }
   }
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from("addresses")
     .update(update)
     .eq("id", id)
-    .eq("profile_id", user.id)
+    .eq("profile_id", profileId)
     .select()
     .single()
+
+  if (error && locationChanged && isMissingGoogleAddressColumn(error.message)) {
+    const retry = await supabase
+      .from("addresses")
+      .update(withoutGoogleAddressColumns(update))
+      .eq("id", id)
+      .eq("profile_id", profileId)
+      .select()
+      .single()
+    data = retry.data
+    error = retry.error
+  }
 
   if (error) {
     return { address: null, error: error.message }
@@ -278,16 +333,13 @@ export async function deleteProfileAddress(addressId: string): Promise<{ ok: boo
     return { ok: false, error: "Missing address id" }
   }
 
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    return { ok: false, error: "Unauthorized" }
+  const account = await loadAddressAccount("write")
+  if ("error" in account) {
+    return { ok: false, error: account.error }
   }
+  const { supabase, profileId } = account
 
-  const { error } = await supabase.from("addresses").delete().eq("id", id).eq("profile_id", user.id)
+  const { error } = await supabase.from("addresses").delete().eq("id", id).eq("profile_id", profileId)
 
   if (error) {
     return { ok: false, error: error.message }

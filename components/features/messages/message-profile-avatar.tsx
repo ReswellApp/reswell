@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
+import { StandardProfileMark } from "@/components/profile-circle"
 import { Skeleton } from "@/components/ui/skeleton"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
-import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
+import { userProfilePhotoDisplaySrc } from "@/lib/profile-circle"
 import { cn } from "@/lib/utils"
 
 const sizeClasses = {
@@ -45,10 +46,8 @@ export function MessageProfileAvatar({
   const [imageFailed, setImageFailed] = useState(false)
   const mountedRef = useRef(true)
 
-  const rawUrl = avatarUrl?.trim() || null
-  const trimmedUrl = rawUrl ? profileMediaDisplaySrc(rawUrl) : null
+  const trimmedUrl = userProfilePhotoDisplaySrc(avatarUrl)
   const trimmedName = displayName?.trim() || ""
-  const initial = trimmedName[0]?.toUpperCase() ?? null
 
   useEffect(() => {
     mountedRef.current = true
@@ -60,9 +59,8 @@ export function MessageProfileAvatar({
   }, [trimmedUrl])
 
   const waitingForImage = !!trimmedUrl && !imageReady && !imageFailed
-  const showSkeleton = pending || waitingForImage || (!trimmedUrl && !initial && !pending)
-  const showInitial = !pending && !trimmedUrl && !!initial
-  const showInitialAfterImageError = !pending && imageFailed && !!initial
+  const showSkeleton = pending || waitingForImage
+  const showDefault = !pending && (!trimmedUrl || imageFailed)
 
   return (
     <div
@@ -96,11 +94,7 @@ export function MessageProfileAvatar({
         />
       ) : null}
 
-      {showInitial || showInitialAfterImageError ? (
-        <div className="flex h-full w-full items-center justify-center text-[15px] font-semibold text-foreground">
-          {initial}
-        </div>
-      ) : null}
+      {showDefault ? <StandardProfileMark className={imageClassName} /> : null}
     </div>
   )
 }

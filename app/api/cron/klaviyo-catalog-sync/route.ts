@@ -7,7 +7,8 @@ import { reconcileKlaviyoCatalogPublishedState } from "@/lib/services/klaviyoCat
  * updated in the last 6 hours. Listing mutations also sync immediately.
  *
  * GET /api/cron/klaviyo-catalog-sync
- * Protected with CRON_SECRET when set. Scheduled in vercel.json every 10 minutes.
+ * Protected with CRON_SECRET when set. Scheduled in vercel.json every 10 minutes
+ * at :06 (offset from the :00/:15 clusters).
  */
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization")

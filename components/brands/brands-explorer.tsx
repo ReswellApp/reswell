@@ -1,71 +1,60 @@
 "use client"
 
+import { useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
-import { ArrowUpRight, MapPin } from "lucide-react"
 import { BRANDS_BASE } from "@/lib/brands/routes"
 import type { BrandRow } from "@/lib/brands/types"
 import { BrandLogoMark } from "@/components/brands/brand-logo-mark"
-import { BrandProductCategoryBadges } from "@/components/brands/brand-product-category-badges"
+import { BrandsLocalPager } from "@/components/brands/brands-local-pager"
+import { BrandsPageTransition } from "@/components/brands/brands-page-transition"
+import { useViewportFitPageSize } from "@/components/brands/use-viewport-fit-page-size"
 import type { BrandProductCategorySlug } from "@/lib/brand-product-categories"
 import { brandProductCategoryLabel } from "@/lib/brand-product-categories"
+import { brandDirectoryColumnsForWidth } from "@/lib/brands/viewport-fit-page-size"
+
+function formatCount(n: number): string {
+  return n.toLocaleString("en-US")
+}
 
 function BrandDirectoryTile({
   entry,
   availableCount,
+  soldCount,
 }: {
   entry: BrandRow
   availableCount: number
+  soldCount: number
 }) {
-  const availableLabel =
-    availableCount === 1 ? "1 available" : `${availableCount} available`
+  const metric =
+    soldCount > 0
+      ? `${formatCount(soldCount)} sold`
+      : availableCount > 0
+        ? availableCount === 1
+          ? "1 available"
+          : `${formatCount(availableCount)} available`
+        : entry.model_count > 0
+          ? entry.model_count === 1
+            ? "1 model"
+            : `${formatCount(entry.model_count)} models`
+          : "Catalog"
 
   return (
     <Link
       href={`${BRANDS_BASE}/${entry.slug}`}
-      className="group flex h-full flex-col rounded-xl border border-border/80 bg-card p-3 shadow-soft transition-colors hover:border-foreground/20 hover:shadow-soft-hover sm:rounded-2xl sm:p-6"
+      className="group flex items-center gap-3 rounded-2xl bg-[#E8EEF6] px-3 py-3 transition-colors hover:bg-[#DCE5F2] sm:gap-3.5 sm:px-3.5 sm:py-3.5"
     >
-      <div className="flex flex-col items-center text-center sm:flex-row sm:items-start sm:gap-4 sm:text-left">
-        <BrandLogoMark
-          name={entry.name}
-          logoUrl={entry.logo_url}
-          className="h-14 w-14 rounded-lg text-lg sm:h-[72px] sm:w-[72px] sm:rounded-xl sm:text-2xl"
-          imageSizes="(max-width: 640px) 56px, 72px"
-        />
-        <div className="mt-2.5 min-w-0 flex-1 sm:mt-0 sm:pt-0.5">
-          <h3 className="line-clamp-2 text-sm font-semibold leading-snug tracking-tight text-foreground group-hover:underline sm:text-lg">
-            {entry.name}
-          </h3>
-          {entry.location_label ? (
-            <p className="mt-1 hidden items-center gap-1.5 text-sm text-muted-foreground sm:mt-1.5 sm:flex">
-              <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden />
-              <span className="line-clamp-2">{entry.location_label}</span>
-            </p>
-          ) : null}
-        </div>
-      </div>
-
-      {entry.short_description ? (
-        <p className="mt-4 hidden line-clamp-3 flex-1 text-sm leading-relaxed text-muted-foreground sm:block">
-          {entry.short_description}
-        </p>
-      ) : (
-        <p className="mt-4 hidden flex-1 text-sm text-muted-foreground/80 sm:block">Profile in catalog.</p>
-      )}
-
-      {entry.product_categories.length > 0 ? (
-        <BrandProductCategoryBadges
-          categories={entry.product_categories}
-          className="mt-3 hidden sm:mt-4 sm:flex"
-          size="sm"
-        />
-      ) : null}
-
-      <div className="mt-auto flex items-center justify-center gap-3 border-t border-border/60 pt-2.5 sm:mt-5 sm:justify-between sm:pt-4">
-        <span className="text-[11px] tabular-nums text-muted-foreground sm:text-xs">{availableLabel}</span>
-        <span className="hidden items-center gap-1 text-sm font-medium text-foreground sm:inline-flex">
-          View
-          <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-        </span>
+      <BrandLogoMark
+        name={entry.name}
+        logoUrl={entry.logo_url}
+        className="h-11 w-11 rounded-full border-0 p-1 text-sm sm:h-12 sm:w-12 sm:text-base"
+        imageSizes="48px"
+        decorative
+      />
+      <div className="min-w-0 flex-1">
+        <h3 className="truncate text-sm font-semibold leading-snug tracking-tight text-foreground group-hover:underline sm:text-[15px]">
+          {entry.name}
+        </h3>
+        <p className="mt-0.5 truncate text-xs tabular-nums text-foreground/70 sm:text-sm">{metric}</p>
       </div>
     </Link>
   )
@@ -75,41 +64,95 @@ export function BrandsExplorer({
   brands,
   categoryFilter = [],
   activeListingCountByBrandId = {},
+  soldListingCountByBrandId = {},
 }: {
   brands: BrandRow[]
   categoryFilter?: readonly BrandProductCategorySlug[]
   /** Active peer-marketplace listings linked via `listings.brand_id`. */
   activeListingCountByBrandId?: Readonly<Record<string, number>>
+  /** Public sold listings linked via `listings.brand_id`. */
+  soldListingCountByBrandId?: Readonly<Record<string, number>>
 }) {
   const filterLabel =
     categoryFilter.length > 0
       ? categoryFilter.map((slug) => brandProductCategoryLabel(slug)).join(", ")
       : null
 
+  const listRef = useRef<HTMLUListElement>(null)
+  const [page, setPage] = useState(1)
+  const filterKey = categoryFilter.join(",")
+
+  const pageSize = useViewportFitPageSize({
+    listRef,
+    columnsForWidth: brandDirectoryColumnsForWidth,
+    fallbackItemHeight: 84,
+    fallbackPageSize: 20,
+    minRows: 4,
+    minPageSize: 4,
+    maxPageSize: 40,
+    enabled: brands.length > 0,
+  })
+
+  useEffect(() => {
+    setPage(1)
+  }, [filterKey])
+
+  const totalPages = Math.max(1, Math.ceil(brands.length / pageSize))
+  const safePage = Math.min(page, totalPages)
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages)
+  }, [page, totalPages])
+
+  const pageBrands = useMemo(() => {
+    const start = (safePage - 1) * pageSize
+    return brands.slice(start, start + pageSize)
+  }, [brands, pageSize, safePage])
+
+  function goToPage(next: number) {
+    setPage(next)
+  }
+
   return (
     <section className="bg-background" aria-labelledby="brands-grid-heading">
-      <div className="container mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
+      <div className="container mx-auto max-w-6xl px-4 pb-14 pt-2 sm:px-6 sm:pb-20">
         <h2 id="brands-grid-heading" className="sr-only">
           All brands
         </h2>
 
         {filterLabel ? (
-          <p className="mb-6 text-sm text-muted-foreground">
+          <p className="mb-5 text-sm text-muted-foreground">
             Showing brands tagged with {filterLabel}.
           </p>
         ) : null}
 
         {brands.length > 0 ? (
-          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
-            {brands.map((entry) => (
-              <li key={entry.slug}>
-                <BrandDirectoryTile
-                  entry={entry}
-                  availableCount={activeListingCountByBrandId[entry.id] ?? 0}
-                />
-              </li>
-            ))}
-          </ul>
+          <>
+            <BrandsPageTransition page={safePage} heightKey={pageSize}>
+              <ul
+                ref={listRef}
+                className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+              >
+                {pageBrands.map((entry) => (
+                  <li key={entry.slug}>
+                    <BrandDirectoryTile
+                      entry={entry}
+                      availableCount={activeListingCountByBrandId[entry.id] ?? 0}
+                      soldCount={soldListingCountByBrandId[entry.id] ?? 0}
+                    />
+                  </li>
+                ))}
+              </ul>
+            </BrandsPageTransition>
+            <BrandsLocalPager
+              page={safePage}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              totalItems={brands.length}
+              onPageChange={goToPage}
+              label="Brand directory pages"
+            />
+          </>
         ) : (
           <div className="rounded-2xl border border-dashed border-border/80 bg-muted/20 px-6 py-16 text-center">
             <p className="text-sm text-muted-foreground">

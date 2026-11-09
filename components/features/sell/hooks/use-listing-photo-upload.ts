@@ -20,10 +20,20 @@ import {
 } from "@dnd-kit/core"
 import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable"
 import { prepareDecodableListingPhoto } from "@/lib/client-image-decode"
+import {
+  revealListingPhotoPreviewUrl,
+  swapListingPhotoPreviewToPreparedThumb,
+} from "@/lib/sell-flow/reveal-listing-photo-preview"
 import { resolveClientSessionForMutation } from "@/lib/auth/resolve-client-session-for-mutation"
 import { assertListingOriginalSize } from "@/lib/listing-image-pipeline"
 import { uploadListingImagePairToSupabase } from "@/lib/listing-image-storage"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
+import {
+  listingPhotoOrientationPrepareOptions,
+  listingPhotoQuarterTurnsAfterAdjust,
+  type ListingPhotoQuarterTurnDelta,
+} from "@/lib/sell-flow/listing-photo-orientation"
+import { orderListingPhotosByCaptureTime } from "@/lib/sell-flow/listing-photo-capture-time"
 import {
   filesFromDataTransfer,
   isOsFileDragEvent,
@@ -81,7 +91,7 @@ export type UseListingPhotoUploadResult = {
   handlePhotosDragEnd: (event: DragEndEvent) => void
   handlePhotoTileRemove: (clientId: string) => void
   handlePhotoTileRetry: (clientId: string) => void
-  handlePhotoTileRotate: (clientId: string) => void
+  handlePhotoTileRotate: (clientId: string, quarterTurns: ListingPhotoQuarterTurnDelta) => void
   idbRestoreOptimizeQueueRef: React.MutableRefObject<ListingPhotoSlot[] | null>
   hydrateExistingImages: (slots: ListingPhotoSlot[]) => void
 }
@@ -101,6 +111,11 @@ export function useListingPhotoUpload({
   const [photosFileDragActive, setPhotosFileDragActive] = useState(false)
   const photosFileDragDepthRef = useRef(0)
   const imagesRef = useRef<ListingPhotoSlot[]>([])
+  /**
+   * Slots already shown, or accepted from a drop that is still reading capture
+   * times. `imagesRef` lags a beat behind `setImages`.
+   */
+  const listingPhotoReservedCountRef = useRef(0)
   const latestListingPhotoPrepareSeqRef = useRef<Map<string, number>>(new Map())
   /** Same prepare generation already running — auth refresh must not start a second copy. */
   const listingPhotoInFlightSeqRef = useRef<Map<string, number>>(new Map())
@@ -112,6 +127,10 @@ export function useListingPhotoUpload({
   promptSignInOnUploadRef.current = promptSignInOnUpload
 
   imagesRef.current = images
+
+  useLayoutEffect(() => {
+    listingPhotoReservedCountRef.current = images.length
+  }, [images.length])
 
   useEffect(() => {
     return () => {
@@ -140,21 +159,50 @@ export function useListingPhotoUpload({
         if (!prepared) {
           const src = slot.sourceFile
           if (!src) return
-          prepared = await prepareDecodableListingPhoto(src, {
-            rotate180: Boolean(slot.userRotate180),
-          })
-          if (!listingPhotoPrepareSeqInSync(clientId, prepareSeq)) return
-          let nextPreviewUrl = previewUrl
-          if (previewUrl.startsWith("blob:")) {
-            URL.revokeObjectURL(previewUrl)
+          let paintedInstant = Boolean(slot.localPreviewReady)
+          if (!paintedInstant) {
+            const instantUrl = await revealListingPhotoPreviewUrl(
+              src,
+              listingPhotoOrientationPrepareOptions(slot),
+            )
+            if (!listingPhotoPrepareSeqInSync(clientId, prepareSeq)) {
+              if (instantUrl) URL.revokeObjectURL(instantUrl)
+              return
+            }
+            if (instantUrl) {
+              paintedInstant = true
+              const previous =
+                imagesRef.current.find((s) => s.clientId === clientId)?.previewUrl ?? previewUrl
+              if (previous.startsWith("blob:") && previous !== instantUrl) {
+                URL.revokeObjectURL(previous)
+              }
+              sellListingThumbLoadedSrcByClientId.delete(clientId)
+              setImages((prev) =>
+                prev.map((s) =>
+                  s.clientId === clientId
+                    ? { ...s, previewUrl: instantUrl, localPreviewReady: true }
+                    : s,
+                ),
+              )
+            }
           }
-          nextPreviewUrl = URL.createObjectURL(prepared.thumb)
+
+          prepared = await prepareDecodableListingPhoto(
+            src,
+            listingPhotoOrientationPrepareOptions(slot),
+          )
+          if (!listingPhotoPrepareSeqInSync(clientId, prepareSeq)) return
+          const swapped = swapListingPhotoPreviewToPreparedThumb(
+            paintedInstant,
+            previewUrl,
+            prepared.thumb,
+          )
           setImages((prev) =>
             prev.map((s) =>
               s.clientId === clientId
                 ? {
                     ...s,
-                    previewUrl: nextPreviewUrl,
+                    ...(swapped ?? {}),
                     optimizePhase: "done",
                     uploadPhase: s.uploadPhase === "error" ? "idle" : s.uploadPhase,
                     prepared,
@@ -341,8 +389,8 @@ export function useListingPhotoUpload({
     [optimizeAndUploadSlot],
   )
 
-  const rotateListingPhoto180 = useCallback(
-    (clientId: string) => {
+  const rotateListingPhoto = useCallback(
+    (clientId: string, quarterTurns: ListingPhotoQuarterTurnDelta) => {
       const live = imagesRef.current.find((s) => s.clientId === clientId)
       if (!live) return
       if (live.optimizePhase === "error" || live.uploadPhase === "error") return
@@ -359,9 +407,13 @@ export function useListingPhotoUpload({
             sellListingThumbLoadedSrcByClientId.delete(s.clientId)
             const nextSeq = (s.prepareSeq ?? 0) + 1
             latestListingPhotoPrepareSeqRef.current.set(clientId, nextSeq)
+            const orientation = listingPhotoQuarterTurnsAfterAdjust(s, quarterTurns)
             nextSlot = {
               ...s,
-              userRotate180: !s.userRotate180,
+              userQuarterTurns: orientation.userQuarterTurns,
+              sourceIsDerivative: orientation.sourceIsDerivative,
+              userRotate180: undefined,
+              dropSourceFileAfterUpload: false,
               prepareSeq: nextSeq,
               prepared: undefined,
               optimizePhase: "running",
@@ -371,6 +423,7 @@ export function useListingPhotoUpload({
               progressFull: 0,
               progressThumb: 0,
               previewUrl: URL.createObjectURL(src),
+              localPreviewReady: false,
               errorMessage: undefined,
             }
             return nextSlot
@@ -412,24 +465,28 @@ export function useListingPhotoUpload({
               if (s.clientId !== clientId) return s
               if (s.previewUrl.startsWith("blob:")) URL.revokeObjectURL(s.previewUrl)
               sellListingThumbLoadedSrcByClientId.delete(s.clientId)
-              const nextSeq = (s.prepareSeq ?? 0) + 1
-              latestListingPhotoPrepareSeqRef.current.set(clientId, nextSeq)
-              nextSlot = {
-                ...s,
-                userRotate180: !s.userRotate180,
-                prepareSeq: nextSeq,
-                prepared: undefined,
-                optimizePhase: "running",
-                uploadPhase: "idle",
-                url: undefined,
-                thumbnailUrl: undefined,
-                progressFull: 0,
-                progressThumb: 0,
-                previewUrl: URL.createObjectURL(file),
-                sourceFile: file,
-                dropSourceFileAfterUpload: true,
-                errorMessage: undefined,
-              }
+            const nextSeq = (s.prepareSeq ?? 0) + 1
+            latestListingPhotoPrepareSeqRef.current.set(clientId, nextSeq)
+            const orientation = listingPhotoQuarterTurnsAfterAdjust(s, quarterTurns)
+            nextSlot = {
+              ...s,
+              userQuarterTurns: orientation.userQuarterTurns,
+              sourceIsDerivative: orientation.sourceIsDerivative,
+              userRotate180: undefined,
+              prepareSeq: nextSeq,
+              prepared: undefined,
+              optimizePhase: "running",
+              uploadPhase: "idle",
+              url: undefined,
+              thumbnailUrl: undefined,
+              progressFull: 0,
+              progressThumb: 0,
+              previewUrl: URL.createObjectURL(file),
+              localPreviewReady: false,
+              sourceFile: file,
+              dropSourceFileAfterUpload: false,
+              errorMessage: undefined,
+            }
               return nextSlot
             }),
           )
@@ -463,14 +520,14 @@ export function useListingPhotoUpload({
   const photoTileActionsRef = useRef({
     remove: (_clientId: string) => {},
     retry: (_clientId: string) => {},
-    rotate: (_clientId: string) => {},
+    rotate: (_clientId: string, _quarterTurns: ListingPhotoQuarterTurnDelta) => {},
   })
   photoTileActionsRef.current.remove = (clientId: string) => {
     const idx = imagesRef.current.findIndex((s) => s.clientId === clientId)
     if (idx >= 0) removeImage(idx)
   }
   photoTileActionsRef.current.retry = retryListingPhotoUpload
-  photoTileActionsRef.current.rotate = rotateListingPhoto180
+  photoTileActionsRef.current.rotate = rotateListingPhoto
 
   const handlePhotoTileRemove = useCallback(
     (clientId: string) => photoTileActionsRef.current.remove(clientId),
@@ -481,7 +538,8 @@ export function useListingPhotoUpload({
     [],
   )
   const handlePhotoTileRotate = useCallback(
-    (clientId: string) => photoTileActionsRef.current.rotate(clientId),
+    (clientId: string, quarterTurns: ListingPhotoQuarterTurnDelta) =>
+      photoTileActionsRef.current.rotate(clientId, quarterTurns),
     [],
   )
 
@@ -493,7 +551,7 @@ export function useListingPhotoUpload({
         return
       }
 
-      const currentCount = imagesRef.current.length
+      const currentCount = Math.max(imagesRef.current.length, listingPhotoReservedCountRef.current)
       if (currentCount >= maxPhotos) {
         toast.error(`Maximum ${maxPhotos} photos allowed.`)
         return
@@ -528,6 +586,7 @@ export function useListingPhotoUpload({
 
       if (!newSlots.length) return
 
+      listingPhotoReservedCountRef.current = currentCount + newSlots.length
       setImages((prev) => [...prev, ...newSlots])
       for (const slot of newSlots) void optimizeAndUploadSlot(slot)
     },
@@ -573,7 +632,10 @@ export function useListingPhotoUpload({
       e.stopPropagation()
       photosFileDragDepthRef.current = 0
       setPhotosFileDragActive(false)
-      addListingPhotoFiles(filesFromDataTransfer(e.dataTransfer))
+      const dropped = filesFromDataTransfer(e.dataTransfer)
+      void orderListingPhotosByCaptureTime(dropped)
+        .catch(() => dropped)
+        .then((ordered) => addListingPhotoFiles(ordered))
     },
     [addListingPhotoFiles],
   )

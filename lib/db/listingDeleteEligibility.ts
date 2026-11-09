@@ -51,6 +51,20 @@ type OpenCheckoutLookupResult = {
   error: boolean
 }
 
+/** Split listing ids that still have a confirmed/refunding checkout (must stay sold). */
+export function partitionListingsByOpenMarketplaceCheckout(
+  listingIds: readonly string[],
+  openCheckoutListingIds: ReadonlySet<string>,
+): { allowed: string[]; blocked: string[] } {
+  const allowed: string[] = []
+  const blocked: string[] = []
+  for (const id of listingIds) {
+    if (openCheckoutListingIds.has(id)) blocked.push(id)
+    else allowed.push(id)
+  }
+  return { allowed, blocked }
+}
+
 /**
  * Listings with a live Reswell checkout (confirmed or still refunding).
  * Used to block seller Relist — only Mark as sold listings can be relisted.

@@ -5,6 +5,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { format, formatDistanceToNow } from "date-fns"
 import { toast } from "sonner"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import {
   AlertTriangle,
   ArrowLeft,
@@ -380,7 +381,7 @@ export function AdminHiddenListingsPanel() {
                               src={proxiedListingImageSrc(thumb)}
                               alt=""
                               fill
-                              className="object-cover"
+                              className={listingPhotoFillClassName}
                               sizes="48px"
                             />
                           ) : null}

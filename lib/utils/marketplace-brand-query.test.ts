@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 import {
   extractMarketplaceSectionIntent,
+  marketplaceSectionBrowseHref,
   marketplaceSectionIntentIsBrandNameToken,
 } from "./marketplace-brand-query.ts"
 
@@ -35,6 +36,15 @@ describe("marketplace section intent vs brand names", () => {
       marketplaceSectionIntentIsBrandNameToken("fins", "Lost Surfboards"),
       false,
     )
+  })
+
+  it("scopes boardbag, surfpack, and leash searches to their browse hubs", () => {
+    assert.equal(extractMarketplaceSectionIntent("boardbag"), "boardbags")
+    assert.equal(marketplaceSectionBrowseHref("boardbags"), "/boardbags")
+    assert.equal(extractMarketplaceSectionIntent("dakine surfpack"), "surfpacks")
+    assert.equal(marketplaceSectionBrowseHref("surfpacks"), "/surfpacks")
+    assert.equal(extractMarketplaceSectionIntent("used leashes"), "leashes")
+    assert.equal(marketplaceSectionBrowseHref("leashes"), "/leashes")
   })
 
   it("scopes traction keyword searches to the traction browse hub", () => {

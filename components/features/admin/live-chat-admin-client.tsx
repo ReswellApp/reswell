@@ -382,16 +382,16 @@ function ThreadPane({
 
   return (
     <div className="flex min-h-[min(72vh,720px)] flex-1 flex-col overflow-hidden rounded-xl border border-border/70 bg-card">
-      <div className="flex items-start justify-between gap-3 border-b border-border/60 px-4 py-3">
-        <div>
-          <p className="text-sm font-semibold text-foreground">{sessionLabel(session)}</p>
-          <p className="text-xs text-muted-foreground">
+      <div className="flex flex-col gap-3 border-b border-border/60 px-3 py-3 sm:flex-row sm:items-start sm:justify-between sm:px-4">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-foreground">{sessionLabel(session)}</p>
+          <p className="truncate text-xs text-muted-foreground">
             {sessionSubline(session)}
             {ticketLinked ? ` · Case linked` : ""}
           </p>
           {escalateError ? <p className="text-xs text-destructive">{escalateError}</p> : null}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Badge variant="outline" className="rounded-full capitalize">
             {session.status}
           </Badge>

@@ -4,8 +4,7 @@ import Link from "next/link"
 import { SellersBreadcrumbs } from "@/components/sellers/sellers-breadcrumbs"
 import { SellerProfileBannerEditor } from "@/components/sellers/seller-profile-banner-editor"
 import { Globe, MapPin, MessageSquare, Phone } from "lucide-react"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { ProfileAvatarImage } from "@/components/features/dashboard/profile-avatar-image"
+import { ProfileCircle } from "@/components/profile-circle"
 import { Button } from "@/components/ui/button"
 import { VerifiedBadge } from "@/components/verified-badge"
 import { FollowButton } from "@/components/follows/follow-button"
@@ -169,21 +168,13 @@ export function SellerProfileHero({
 
       <div className={cn(sellerProfileShellClassName, "pt-5 sm:pt-6")}>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-5 lg:gap-6">
-          <Avatar className="h-16 w-16 shrink-0 border border-border/80 shadow-sm sm:h-20 sm:w-20 lg:h-24 lg:w-24">
-            {profilePhotoUrl ? (
-              <ProfileAvatarImage
-                avatarUrl={profilePhotoUrl}
-                focalX={shop.avatar_focal_x_pct}
-                focalY={shop.avatar_focal_y_pct}
-                alt=""
-              />
-            ) : avatarSrc ? (
-              <AvatarImage src={avatarSrc} alt="" />
-            ) : null}
-            <AvatarFallback className="bg-muted text-lg font-semibold text-foreground sm:text-xl">
-              {displayName?.charAt(0).toUpperCase() || "S"}
-            </AvatarFallback>
-          </Avatar>
+          <ProfileCircle
+            avatarUrl={profilePhotoUrl || avatarSrc || null}
+            focalX={profilePhotoUrl ? shop.avatar_focal_x_pct : null}
+            focalY={profilePhotoUrl ? shop.avatar_focal_y_pct : null}
+            alt={displayName ?? ""}
+            className="h-16 w-16 border-border/80 shadow-sm sm:h-20 sm:w-20 lg:h-24 lg:w-24"
+          />
 
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-start justify-between gap-3">

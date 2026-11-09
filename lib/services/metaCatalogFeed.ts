@@ -3,12 +3,14 @@ import { z } from "zod"
 import {
   fetchMetaCatalogFeedPage,
   fetchMetaCatalogFeedPageForLocation,
+  type MetaCatalogFeedPageResult,
 } from "@/lib/db/metaCatalogFeed"
 import { isListingDiscoveryEligible } from "@/lib/listing-public-visibility"
 import {
   listingToMetaCatalogFeedItem,
   META_CATALOG_BROWNSTONE_SHOP_SELLER_EMAIL,
   META_CATALOG_HAYDEN_SHOP_SELLER_EMAIL,
+  META_CATALOG_JYEEJR_SHOP_SELLER_EMAIL,
   META_CATALOG_OUTSURFING_SHOP_SELLER_EMAIL,
   type MetaCatalogFeedContext,
   type MetaCatalogFeedItem,
@@ -108,6 +110,21 @@ export async function resolveMetaCatalogBrownstoneShopUserId(
   })
 }
 
+/**
+ * Resolves jyeejr’s seller profile id for Meta `custom_label_0`.
+ * Prefer `META_CATALOG_JYEEJR_SHOP_USER_ID`, else email
+ * (`META_CATALOG_JYEEJR_SHOP_SELLER_EMAIL` or jyeejr@googlemail.com).
+ */
+export async function resolveMetaCatalogJyeejrShopUserId(
+  supabase: SupabaseClient,
+): Promise<string | null> {
+  return resolveShopUserIdByEnvOrEmail(supabase, {
+    userIdEnv: "META_CATALOG_JYEEJR_SHOP_USER_ID",
+    emailEnv: "META_CATALOG_JYEEJR_SHOP_SELLER_EMAIL",
+    defaultEmail: META_CATALOG_JYEEJR_SHOP_SELLER_EMAIL,
+  })
+}
+
 function catalogFeedMaxItems(): number {
   const raw = process.env.META_CATALOG_FEED_MAX_ITEMS?.trim()
   if (!raw) return DEFAULT_MAX_ITEMS
@@ -123,16 +140,16 @@ function escapeCsvField(value: string): string {
   return value
 }
 
-export async function buildMetaCatalogFeed(
-  supabase: SupabaseClient,
+async function collectMetaCatalogFeedItems(
+  feedContext: MetaCatalogFeedContext,
+  fetchPage: (offset: number) => Promise<MetaCatalogFeedPageResult>,
 ): Promise<MetaCatalogFeedItem[]> {
   const maxItems = catalogFeedMaxItems()
-  const feedContext = await resolveMetaCatalogShopContext(supabase)
   const items: MetaCatalogFeedItem[] = []
   let offset = 0
 
   while (items.length < maxItems) {
-    const page = await fetchMetaCatalogFeedPage(supabase, offset)
+    const page = await fetchPage(offset)
     if (page.rows.length === 0) break
 
     for (const row of page.rows) {
@@ -148,15 +165,26 @@ export async function buildMetaCatalogFeed(
   return items
 }
 
+export async function buildMetaCatalogFeed(
+  supabase: SupabaseClient,
+): Promise<MetaCatalogFeedItem[]> {
+  const feedContext = await resolveMetaCatalogShopContext(supabase)
+  return collectMetaCatalogFeedItems(feedContext, (offset) =>
+    fetchMetaCatalogFeedPage(supabase, offset),
+  )
+}
+
 async function resolveMetaCatalogShopContext(
   supabase: SupabaseClient,
 ): Promise<MetaCatalogFeedContext> {
-  const [haydenShopUserId, outSurfingShopUserId, brownstoneShopUserId] = await Promise.all([
-    resolveMetaCatalogHaydenShopUserId(supabase),
-    resolveMetaCatalogOutSurfingShopUserId(supabase),
-    resolveMetaCatalogBrownstoneShopUserId(supabase),
-  ])
-  return { haydenShopUserId, outSurfingShopUserId, brownstoneShopUserId }
+  const [haydenShopUserId, outSurfingShopUserId, brownstoneShopUserId, jyeejrShopUserId] =
+    await Promise.all([
+      resolveMetaCatalogHaydenShopUserId(supabase),
+      resolveMetaCatalogOutSurfingShopUserId(supabase),
+      resolveMetaCatalogBrownstoneShopUserId(supabase),
+      resolveMetaCatalogJyeejrShopUserId(supabase),
+    ])
+  return { haydenShopUserId, outSurfingShopUserId, brownstoneShopUserId, jyeejrShopUserId }
 }
 
 /**

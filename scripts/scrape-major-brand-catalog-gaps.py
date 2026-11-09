@@ -440,7 +440,11 @@ def products_to_models(
         title = (product.get("title") or "").strip()
         if not title:
             continue
-        if re.search(r"\b(gift\s*card|deposit|custom order|voucher|faq)\b", title, re.I):
+        if re.search(
+            r"\b(gift\s*card|deposit|custom order|voucher|faq|used)\b",
+            title,
+            re.I,
+        ):
             continue
         name = clean_model_name(title, brand_name)
         if len(name) < 2:

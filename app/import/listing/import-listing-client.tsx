@@ -27,6 +27,7 @@ import { prepareDecodableListingPhoto } from "@/lib/client-image-decode"
 import { isListingPhotoFile, LISTING_PHOTO_ACCEPT } from "@/lib/sell-flow/listing-photo-slot"
 import { friendlyListingPhotoErrorMessage } from "@/lib/utils/friendly-listing-photo-error"
 import { uploadListingImagePairToSupabase } from "@/lib/listing-image-storage"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import type { FbMarketplaceImportPreview } from "@/lib/validations/fb-marketplace-import"
 
@@ -58,11 +59,11 @@ function ImportPreviewPhoto({ url }: { url: string }) {
     return (
       // FB import previews use short-lived CDN URLs — plain img avoids next/image host allowlisting.
       // eslint-disable-next-line @next/next/no-img-element
-      <img src={src} alt="" className="h-full w-full object-cover" loading="lazy" decoding="async" />
+      <img src={src} alt="" className={listingPhotoFillClassName} loading="lazy" decoding="async" />
     )
   }
 
-  return <Image src={src} alt="" fill className="object-cover" sizes="120px" />
+  return <Image src={src} alt="" fill className={listingPhotoFillClassName} sizes="120px" />
 }
 
 export default function ImportListingClient({

@@ -1,4 +1,5 @@
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
+import { loadOrderOperator } from "@/lib/account-access/order-operator-session"
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { insertOrderSupportRequest } from "@/lib/db/order-support"
@@ -33,6 +34,11 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  const operating = await loadOrderOperator()
+  if (!operating.ok) {
+    return NextResponse.json({ error: operating.error }, { status: operating.status })
+  }
+
   const openGate = await rejectIfMemberHasOpenSupportCase(user.id)
   if (!openGate.ok) {
     return NextResponse.json(
@@ -57,7 +63,7 @@ export async function POST(
     .from("orders")
     .select("id, order_num, status, seller_id")
     .eq("id", orderId)
-    .eq("seller_id", user.id)
+    .in("seller_id", operating.operator.sellerIds)
     .maybeSingle()
 
   if (orderErr || !order) {

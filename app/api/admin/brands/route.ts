@@ -5,7 +5,7 @@ import { revalidateSellCatalogSearch } from "@/lib/cache/revalidate-sell-catalog
 import { syncBrandToIndex } from "@/lib/elasticsearch/brands-index"
 import { syncFinCatalogBrandToIndex } from "@/lib/elasticsearch/fin-catalog-index"
 import { syncSellCatalogBrandToIndex } from "@/lib/elasticsearch/sell-catalog-index"
-import { requireAdmin } from "@/lib/brands/admin-server"
+import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
 import { listBrands } from "@/lib/brands/server"
 import { isValidBrandSlug } from "@/lib/brands/slug"
 import { BRANDS_BASE } from "@/lib/brands/routes"
@@ -22,7 +22,7 @@ const UUID_RE =
 
 /** Picker list for admin tools (board catalog attach-brand, etc.). */
 export async function GET() {
-  const gate = await requireAdmin()
+  const gate = await requireAdminOrEmployee()
   if (!gate.ok) return gate.response
 
   const rows = await listBrands(gate.ctx.supabase)
@@ -95,7 +95,7 @@ function parseBody(body: unknown): {
 }
 
 export async function POST(request: Request) {
-  const gate = await requireAdmin()
+  const gate = await requireAdminOrEmployee()
   if (!gate.ok) return gate.response
 
   let json: unknown

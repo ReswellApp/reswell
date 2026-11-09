@@ -197,6 +197,7 @@ export function inboxViewFromSearchParams(params: {
           ? "order"
           : "all"
 
+  // Solo-desk inbox only exposes Open / Resolved in the UI.
   if (params.view === "resolved" || params.status === "resolved") {
     return { view: "resolved", typeOverlay }
   }

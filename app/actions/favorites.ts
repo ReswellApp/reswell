@@ -9,6 +9,7 @@ import {
 import { getListingRowForFavoriteNotification } from "@/lib/db/listings"
 import { trackKlaviyoFavoritesButton } from "@/lib/klaviyo/track-favorites-button"
 import { trackKlaviyoListingSaved } from "@/lib/klaviyo/track-listing-saved"
+import { publishListingSaved } from "@/lib/services/notifications/publish"
 
 export async function toggleFavoriteListing(listingId: string) {
   const supabase = await createClient()
@@ -56,6 +57,14 @@ export async function toggleFavoriteListing(listingId: string) {
   const listing = await getListingRowForFavoriteNotification(supabase, listingId)
 
   if (listing && listing.user_id !== user.id) {
+    void publishListingSaved({
+      ownerId: listing.user_id,
+      actorId: user.id,
+      listingId,
+      listingTitle: listing.title,
+      listingSlug: listing.slug,
+    })
+
     const { data: favoriterProfile } = await supabase
       .from("profiles")
       .select("display_name, shop_name, is_shop")

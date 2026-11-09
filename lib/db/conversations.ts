@@ -11,7 +11,8 @@ export type ConversationRef = {
 
 /**
  * Resolves the marketplace thread between a buyer, seller, and listing.
- * Pass `listingId: null` for support / general threads (one per buyer+seller pair).
+ * Pass `listingId: null` for a listing-less marketplace DM (not support tickets —
+ * those live on `support_cases` and must not create conversation rows).
  */
 export async function getConversationForBuyerSellerListing(
   supabase: SupabaseClient,
@@ -90,7 +91,10 @@ export async function userParticipatesInConversation(
   return true
 }
 
-/** Creates buyer↔seller thread if missing. Caller must be authenticated as `buyerId` (insert RLS). */
+/**
+ * Creates a listing-less marketplace DM if missing.
+ * Do not use this for Reswell Support tickets.
+ */
 export async function ensureConversationBetweenBuyerAndSeller(
   supabase: SupabaseClient,
   buyerId: string,
@@ -189,4 +193,37 @@ export async function mapListingConversationIdsForUser(
   }
 
   return conversationRowsToOfferKeyMap((data ?? []) as ConversationOfferKeyRow[])
+}
+
+export type ConversationMessageHistoryRow = {
+  id: string
+  sender_id: string
+  content: string
+  created_at: string
+}
+
+/** Oldest-first history for a leftover support DM (service-role / staff reads). */
+export async function listConversationMessageHistory(
+  supabase: SupabaseClient,
+  conversationId: string,
+  limit = 500,
+): Promise<ConversationMessageHistoryRow[]> {
+  const { data, error } = await supabase
+    .from("messages")
+    .select("id, sender_id, content, created_at")
+    .eq("conversation_id", conversationId)
+    .order("created_at", { ascending: true })
+    .limit(limit)
+
+  if (error) {
+    console.warn("[conversations] message history skipped:", error.message)
+    return []
+  }
+
+  return (data ?? []).map((row) => ({
+    id: String((row as { id: string }).id),
+    sender_id: String((row as { sender_id: string }).sender_id),
+    content: String((row as { content?: string | null }).content ?? ""),
+    created_at: String((row as { created_at: string }).created_at),
+  }))
 }

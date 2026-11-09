@@ -62,6 +62,7 @@ import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { setImpersonation as storeImpersonation } from '@/lib/impersonation'
 import { AdminWalletCreditDialog } from '@/components/features/admin/admin-wallet-credit-dialog'
+import { ReswellBucksReconcileCard } from '@/components/features/admin/reswell-bucks-reconcile-card'
 import type { AdminWalletBalanceListRow } from '@/lib/services/adminWalletBalancesList'
 
 type WalletRow = AdminWalletBalanceListRow
@@ -437,6 +438,8 @@ export default function AdminWalletsPage() {
           </Button>
         </div>
       </div>
+
+      <ReswellBucksReconcileCard />
 
       {/* KPI strip */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">

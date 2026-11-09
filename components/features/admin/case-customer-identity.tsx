@@ -79,27 +79,27 @@ export function CaseCustomerIdentity({
       </div>
       {profile ? (
         <div className="mt-3 grid grid-cols-3 gap-2 border-t border-border/50 pt-3 text-center">
-          <div>
+          <div className="min-w-0">
             <p className="text-sm font-semibold">{context.commerce.purchases}</p>
-            <p className="text-[10px] text-muted-foreground">
-              Purchases
-              {context.commerce.purchaseSpend != null
-                ? ` · ${formatCustomerUsd(context.commerce.purchaseSpend)}`
-                : ""}
-            </p>
+            <p className="text-[10px] leading-tight text-muted-foreground">Purchases</p>
+            {context.commerce.purchaseSpend != null ? (
+              <p className="text-[10px] leading-tight text-muted-foreground">
+                {formatCustomerUsd(context.commerce.purchaseSpend)}
+              </p>
+            ) : null}
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-sm font-semibold">{context.commerce.sales}</p>
-            <p className="text-[10px] text-muted-foreground">
-              Sales
-              {context.commerce.salesVolume != null
-                ? ` · ${formatCustomerUsd(context.commerce.salesVolume)}`
-                : ""}
-            </p>
+            <p className="text-[10px] leading-tight text-muted-foreground">Sales</p>
+            {context.commerce.salesVolume != null ? (
+              <p className="text-[10px] leading-tight text-muted-foreground">
+                {formatCustomerUsd(context.commerce.salesVolume)}
+              </p>
+            ) : null}
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-sm font-semibold">{context.commerce.activeListings}</p>
-            <p className="text-[10px] text-muted-foreground">Active listings</p>
+            <p className="text-[10px] leading-tight text-muted-foreground">Active listings</p>
           </div>
         </div>
       ) : null}

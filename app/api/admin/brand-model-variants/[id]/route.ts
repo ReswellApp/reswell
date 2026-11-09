@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { requireAdmin } from "@/lib/brands/admin-server"
+import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
 import { adminBrandModelVariantPatchBodySchema } from "@/lib/validations/brand-model-variants"
 import {
   deleteBrandModelVariantService,
@@ -10,7 +10,7 @@ const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 export async function PATCH(request: Request, ctx: { params: Promise<{ id: string }> }) {
-  const gate = await requireAdmin()
+  const gate = await requireAdminOrEmployee()
   if (!gate.ok) return gate.response
 
   const { id } = await ctx.params
@@ -83,7 +83,7 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ id: strin
 }
 
 export async function DELETE(_request: Request, ctx: { params: Promise<{ id: string }> }) {
-  const gate = await requireAdmin()
+  const gate = await requireAdminOrEmployee()
   if (!gate.ok) return gate.response
 
   const { id } = await ctx.params

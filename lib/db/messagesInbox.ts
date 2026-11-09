@@ -20,6 +20,8 @@ export type MessagesInboxNotification = {
   listing_id: string | null
   actor_id: string | null
   message: string | null
+  href?: string | null
+  metadata?: Record<string, unknown> | null
   is_read: boolean
   created_at: string
   listings: MessagesInboxActivityListing | null
@@ -45,6 +47,19 @@ const CONVERSATIONS_SELECT = `
   messages(id, content, is_read, sender_id, created_at, metadata)
 `
 
+/** Header dropdown: skip listing image payloads; the messages tab uses avatars. */
+const PREVIEW_CONVERSATIONS_SELECT = `
+  id,
+  listing_id,
+  buyer_id,
+  seller_id,
+  last_message_at,
+  listing:listings(id, title),
+  buyer:profiles!conversations_buyer_id_fkey(id, display_name, avatar_url, shop_verified),
+  seller:profiles!conversations_seller_id_fkey(id, display_name, avatar_url, shop_verified),
+  messages(id, content, is_read, sender_id, created_at, metadata)
+`
+
 /** Hard cap on unread messages fetched for count/preview purposes. */
 const MAX_UNREAD_MESSAGES = 2000
 
@@ -54,30 +69,62 @@ const NOTIFICATIONS_SELECT = `
   listing_id,
   actor_id,
   message,
+  href,
+  metadata,
   is_read,
   created_at,
   listings(id, slug, title, section, price, listing_images(url, thumbnail_url, is_primary))
 `
 
+export type MessagesInboxLoadOptions = {
+  /**
+   * Cap conversations by `last_message_at` before unread merge / support filtering.
+   * Used by the header dropdown preview so it does not scan a full inbox.
+   */
+  conversationLimit?: number
+  /**
+   * Header dropdown preview: skip listing-image payloads and cap notifications
+   * so the first open is a smaller round-trip than the full `/messages` inbox.
+   */
+  preview?: boolean
+}
+
 /** Loads a user's inbox rows (service role; scoped explicitly by userId). */
-export async function loadMessagesInboxForUser(userId: string): Promise<MessagesInboxPayload> {
+export async function loadMessagesInboxForUser(
+  userId: string,
+  options?: MessagesInboxLoadOptions,
+): Promise<MessagesInboxPayload> {
   const supabase = createServiceRoleClient()
+  const conversationLimit =
+    typeof options?.conversationLimit === "number" &&
+    Number.isFinite(options.conversationLimit) &&
+    options.conversationLimit > 0
+      ? Math.min(100, Math.floor(options.conversationLimit))
+      : null
+  const preview = options?.preview === true
+  const notificationLimit = preview ? 12 : 50
+
+  let conversationsQuery = supabase
+    .from("conversations")
+    .select(preview ? PREVIEW_CONVERSATIONS_SELECT : CONVERSATIONS_SELECT)
+    .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
+    .order("last_message_at", { ascending: false })
+    .order("created_at", { ascending: false, referencedTable: "messages" })
+    .limit(1, { referencedTable: "messages" })
+
+  if (conversationLimit != null) {
+    conversationsQuery = conversationsQuery.limit(conversationLimit)
+  }
 
   const [{ data: convData, error: convError }, { data: notifData, error: notifError }] =
     await Promise.all([
-      supabase
-        .from("conversations")
-        .select(CONVERSATIONS_SELECT)
-        .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
-        .order("last_message_at", { ascending: false })
-        .order("created_at", { ascending: false, referencedTable: "messages" })
-        .limit(1, { referencedTable: "messages" }),
+      conversationsQuery,
       supabase
         .from("notifications")
         .select(NOTIFICATIONS_SELECT)
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
-        .limit(50),
+        .limit(notificationLimit),
     ])
 
   if (convError) {
@@ -100,6 +147,28 @@ export async function loadMessagesInboxForUser(userId: string): Promise<Messages
   return {
     conversations,
     notifications: (notifData ?? []) as unknown as MessagesInboxNotification[],
+  }
+}
+
+/** Same columns the website header badge reads from `profiles`. */
+export async function loadInboxTickerCountsForUser(
+  userId: string,
+): Promise<{ unreadMessages: number; unreadSupport: number }> {
+  const supabase = createServiceRoleClient()
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("unread_message_count, unread_support_count")
+    .eq("id", userId)
+    .maybeSingle()
+
+  if (error) {
+    console.error("[loadInboxTickerCountsForUser]", error)
+    return { unreadMessages: 0, unreadSupport: 0 }
+  }
+
+  return {
+    unreadMessages: Math.max(0, Math.floor(Number(data?.unread_message_count) || 0)),
+    unreadSupport: Math.max(0, Math.floor(Number(data?.unread_support_count) || 0)),
   }
 }
 

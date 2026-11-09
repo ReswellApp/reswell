@@ -4,6 +4,11 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { toast } from "sonner"
+import {
+  parseSellListingPrice,
+  readLiveSellListingPrice,
+  sellListingPriceIsPublishable,
+} from "@/lib/utils/sell-listing-price"
 import { Loader2, Upload, X, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -22,6 +27,7 @@ import {
 } from "@/components/ui/breadcrumb"
 import { LocationPicker } from "@/components/location-picker"
 import { SellFormSection } from "@/components/features/sell/sell-form-section"
+import { SellShipOnlyDeliverySection } from "@/components/features/sell/sell-ship-only-delivery-section"
 import { SellListingPhotoEmptyDropzone } from "@/components/features/sell/sell-listing-photo-empty-dropzone"
 import { SellSimplePhotoTile } from "@/components/features/sell/sell-simple-photo-tile"
 import { useSimpleListingPhotoRotate } from "@/components/features/sell/hooks/use-simple-listing-photo-rotate"
@@ -42,6 +48,8 @@ import {
   SellSectionNavHorizontal,
   buildSellSectionNavItems,
 } from "@/components/features/sell/sell-section-nav"
+import { fetchActingShopAccountId } from "@/lib/account-access/fetch-acting-shop-account"
+import { listingOwnerIsOperableAccount } from "@/lib/account-access/operates-listing"
 import { createClient } from "@/lib/supabase/client"
 import { useOwnedListingEditLoad } from "@/components/features/sell/hooks/use-owned-listing-edit-load"
 import { SellEditLoadError } from "@/components/features/sell/sell-edit-load-error"
@@ -55,6 +63,8 @@ import {
   type ListingPhotoSlot,
 } from "@/lib/sell-flow/listing-photo-slot"
 import { listingPhotoPreviewFromPrepared } from "@/lib/sell-flow/simple-listing-photo-rotate"
+import { listingPhotoOrientationPrepareOptions } from "@/lib/sell-flow/listing-photo-orientation"
+import { stageListingPhotoInstantPreview } from "@/lib/sell-flow/reveal-listing-photo-preview"
 import type { OwnedListingForEditRow } from "@/lib/db/listingEdit"
 import { assertListingOriginalSize } from "@/lib/listing-image-pipeline"
 import { prepareDecodableListingPhoto } from "@/lib/client-image-decode"
@@ -72,6 +82,11 @@ import {
 } from "@/lib/sell-flow/update-owned-listing-client"
 import { buildAccessoryListingPersistFields } from "@/lib/accessory-listing-persist-fields"
 import { computeAccessorySellSectionCompletion } from "@/lib/accessory-sell-section-completion"
+import {
+  brandNewQuantityValidationMessage,
+  parseBrandNewListingQuantity,
+  sellFormStockQuantityValue,
+} from "@/lib/listing-stock-quantity"
 import { sellFormConditionValue } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
 import { navigateAfterListingSave } from "@/lib/sell-flow/navigate-after-listing-save"
@@ -119,6 +134,9 @@ type PhotoSlot = {
   progress: number
   errorMessage?: string
   userRotate180?: boolean
+  userQuarterTurns?: 0 | 1 | 2 | 3
+  sourceIsDerivative?: boolean
+  localPreviewReady?: boolean
 }
 
 function shippingPriceToFormValue(v: unknown): string {
@@ -150,6 +168,7 @@ type AccessoryFormState = {
   sellerPurchasedFrom: string
   sellerPurchasedOn: string
   condition: string
+  stockQuantity: string
   size: string
   brand: string
   model: string
@@ -178,6 +197,7 @@ const INITIAL_STATE: AccessoryFormState = {
   sellerPurchasedFrom: "",
   sellerPurchasedOn: "",
   condition: "",
+  stockQuantity: "1",
   size: "",
   brand: "",
   model: "",
@@ -186,8 +206,8 @@ const INITIAL_STATE: AccessoryFormState = {
   locationLat: null,
   locationLng: null,
   locationDisplay: "",
-  shippingAvailable: false,
-  localPickup: true,
+  shippingAvailable: true,
+  localPickup: false,
   shippingMode: "reswell",
   shippingPrice: "",
   reswellPackageLengthIn: "",
@@ -363,6 +383,7 @@ export default function SellAccessoriesFlow({ editListingId = null }: { editList
         sellerPurchasedOn:
           (listing as { seller_purchased_on?: string | null }).seller_purchased_on ?? "",
         condition: sellFormConditionValue(listing.condition),
+        stockQuantity: sellFormStockQuantityValue((listing as { stock_quantity?: number | null }).stock_quantity),
         size: (listing as { accessory_size?: string | null }).accessory_size ?? "",
         brand: (listing as { brand?: string | null }).brand?.trim() ?? "",
         model: (listing as { model?: string | null }).model?.trim() ?? "",
@@ -371,8 +392,8 @@ export default function SellAccessoriesFlow({ editListingId = null }: { editList
         locationLat: listing.latitude != null ? Number(listing.latitude) : null,
         locationLng: listing.longitude != null ? Number(listing.longitude) : null,
         locationDisplay: [listing.city, listing.state].filter(Boolean).join(", "),
-        shippingAvailable: Boolean(listing.shipping_available),
-        localPickup: listing.local_pickup !== false,
+        shippingAvailable: true,
+        localPickup: false,
         shippingMode,
         shippingPrice: shippingPriceToFormValue(listing.shipping_price),
         ...loadedReswellPackage,
@@ -495,11 +516,23 @@ export default function SellAccessoriesFlow({ editListingId = null }: { editList
       if (!slot.file) return
       let failureContext: "add" | "upload" = "add"
       try {
-        const prepared = await prepareDecodableListingPhoto(slot.file, {
-          rotate180: Boolean(slot.userRotate180),
+        const orientation = listingPhotoOrientationPrepareOptions(slot)
+        const showedInstant = await stageListingPhotoInstantPreview(
+          slot.file,
+          slot.previewUrl,
+          orientation,
+          (previewUrl) => updateSlot(slot.clientId, { previewUrl, localPreviewReady: true }),
+        )
+        const prepared = await prepareDecodableListingPhoto(slot.file, orientation)
+        const nextPreviewUrl = showedInstant
+          ? null
+          : listingPhotoPreviewFromPrepared(slot.previewUrl, prepared.thumb)
+        updateSlot(slot.clientId, {
+          phase: "uploading",
+          progress: 5,
+          localPreviewReady: true,
+          ...(nextPreviewUrl ? { previewUrl: nextPreviewUrl } : {}),
         })
-        const nextPreviewUrl = listingPhotoPreviewFromPrepared(slot.previewUrl, prepared.thumb)
-        updateSlot(slot.clientId, { phase: "uploading", progress: 5, previewUrl: nextPreviewUrl })
 
         const supabase = supabaseRef.current
         const session = await resolveClientSessionForMutation(supabase)
@@ -704,12 +737,19 @@ export default function SellAccessoriesFlow({ editListingId = null }: { editList
       scrollAccessorySellSectionIntoView("sell-accessories-section-details")
       return
     }
+    const quantityMessage = brandNewQuantityValidationMessage(form.condition, form.stockQuantity)
+    if (quantityMessage) {
+      failValidation(quantityMessage)
+      scrollAccessorySellSectionIntoView("sell-accessories-section-details")
+      return
+    }
     if (!form.description.trim()) {
       failValidation("Add a description.")
       scrollAccessorySellSectionIntoView("sell-accessories-section-details")
       return
     }
-    if (!form.price.trim() || Number(form.price) <= 0) {
+    const livePrice = readLiveSellListingPrice(form.price)
+    if (!sellListingPriceIsPublishable(livePrice)) {
       failValidation("Enter a price.")
       scrollAccessorySellSectionIntoView("sell-accessories-section-publish")
       return
@@ -719,18 +759,13 @@ export default function SellAccessoriesFlow({ editListingId = null }: { editList
       scrollAccessorySellSectionIntoView("sell-accessories-section-delivery")
       return
     }
-    if (!form.shippingAvailable && !form.localPickup) {
-      failValidation("Choose shipping, local pickup, or both.")
-      scrollAccessorySellSectionIntoView("sell-accessories-section-delivery")
-      return
-    }
     if (form.shippingAvailable && normalizeSellShippingCostMode(form.shippingMode, submitActorIsAdmin) === "reswell") {
       const L = parseReswellParcelLengthRawToCarrierInches(form.reswellPackageLengthIn)
       const W = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageWidthIn)
       const H = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageHeightIn)
       if (L == null || L <= 0 || W == null || W <= 0 || H == null || H <= 0) {
         failValidation("Enter packed box dimensions for Reswell shipping.")
-        scrollAccessorySellSectionIntoView("sell-accessories-section-reswell-package")
+        scrollAccessorySellSectionIntoView("sell-accessories-section-delivery")
         return
       }
     }
@@ -747,8 +782,9 @@ export default function SellAccessoriesFlow({ editListingId = null }: { editList
     const payload = {
       title: form.title,
       description: form.description,
-      price: Number(form.price),
+      price: parseSellListingPrice(livePrice) ?? 0,
       condition: form.condition as CreateAccessoryListingInput["condition"],
+      stockQuantity: parseBrandNewListingQuantity(form.stockQuantity) ?? 1,
       size: form.size || null,
       brand: form.brand,
       model: form.model,
@@ -756,13 +792,10 @@ export default function SellAccessoriesFlow({ editListingId = null }: { editList
       locationState: form.locationState,
       locationLat: form.locationLat ?? undefined,
       locationLng: form.locationLng ?? undefined,
-      shippingAvailable: form.shippingAvailable,
-      localPickup: form.localPickup,
-      shippingCostMode: form.shippingAvailable
-        ? normalizeSellShippingCostMode(form.shippingMode, submitActorIsAdmin)
-        : null,
+      shippingAvailable: true,
+      localPickup: false,
+      shippingCostMode: normalizeSellShippingCostMode(form.shippingMode, submitActorIsAdmin),
       shippingPrice:
-        form.shippingAvailable &&
         normalizeSellShippingCostMode(form.shippingMode, submitActorIsAdmin) === "flat"
           ? Number(form.shippingPrice || 0)
           : null,
@@ -795,10 +828,11 @@ export default function SellAccessoriesFlow({ editListingId = null }: { editList
         storedImpersonation = null
       }
 
+      const actingShopAccountId = await fetchActingShopAccountId()
       const editingOwnListing =
         Boolean(editId) &&
         Boolean(editListingOwnerId) &&
-        user.id === editListingOwnerId
+        listingOwnerIsOperableAccount(user.id, editListingOwnerId, actingShopAccountId)
       if (editingOwnListing && storedImpersonation) {
         clearImpersonation()
         storedImpersonation = null
@@ -815,7 +849,11 @@ export default function SellAccessoriesFlow({ editListingId = null }: { editList
       )
 
       if (editId) {
-        const ownerEditsOwnListing = user.id === editListingOwnerId
+        const ownerEditsOwnListing = listingOwnerIsOperableAccount(
+          user.id,
+          editListingOwnerId,
+          actingShopAccountId,
+        )
         if (adminImpersonatesListingOwner) {
           const updated = await updateOwnedListingViaApi({
             listingId: editId,
@@ -1057,7 +1095,7 @@ export default function SellAccessoriesFlow({ editListingId = null }: { editList
                           key={photo.clientId}
                           photo={photo}
                           index={index}
-                          onRotate180={rotatePhoto180}
+                          onRotateQuarterTurns={rotatePhoto180}
                           onMakePrimary={makePrimary}
                           onRemove={removePhoto}
                         />
@@ -1155,6 +1193,8 @@ export default function SellAccessoriesFlow({ editListingId = null }: { editList
                     brand={form.brand}
                     model={form.model}
                     onConditionChange={(v) => setField("condition", v)}
+                    stockQuantity={form.stockQuantity}
+                    onStockQuantityChange={(v) => setField("stockQuantity", v)}
                     onSizeChange={(v) => setField("size", v)}
                     onBrandChange={(v) => setField("brand", v)}
                     onModelChange={(v) => setField("model", v)}
@@ -1171,189 +1211,14 @@ export default function SellAccessoriesFlow({ editListingId = null }: { editList
                 </div>
               </SellFormSection>
 
-              <SellFormSection
+              <SellShipOnlyDeliverySection
                 sectionId="sell-accessories-section-delivery"
-                title="Pickup & shipping"
-                description="Pin where the accessory is and choose delivery options."
-              >
-                <div className="space-y-8">
-                  <LocationPicker
-                    initialLat={form.locationLat ?? undefined}
-                    initialLng={form.locationLng ?? undefined}
-                    initialCity={form.locationCity}
-                    initialState={form.locationState}
-                    initialDisplay={form.locationDisplay}
-                    onLocationSelect={(loc) => {
-                      setForm((prev) => ({
-                        ...prev,
-                        locationLat: loc.lat,
-                        locationLng: loc.lng,
-                        locationCity: loc.city,
-                        locationState: loc.state,
-                        locationDisplay: loc.displayName,
-                      }))
-                    }}
-                    onLocationClear={() => {
-                      setForm((prev) => ({
-                        ...prev,
-                        locationLat: null,
-                        locationLng: null,
-                        locationCity: "",
-                        locationState: "",
-                        locationDisplay: "",
-                      }))
-                    }}
-                  />
-
-                  <div className="space-y-4 rounded-xl border border-border bg-card p-5 shadow-sm sm:p-6">
-                    <div>
-                      <h3 className="text-sm font-semibold text-foreground">
-                        Delivery options{" "}
-                        <span className="text-destructive" aria-hidden>
-                          *
-                        </span>
-                      </h3>
-                      <p className="mt-1 text-sm text-muted-foreground">You can select both options.</p>
-                    </div>
-                    <div className="space-y-4">
-                      <div className="flex items-start gap-3">
-                        <Checkbox
-                          id="sell-accessories-delivery-shipping"
-                          checked={form.shippingAvailable}
-                          onCheckedChange={(v) => {
-                            const want = v === true
-                            setForm((prev) => ({
-                              ...prev,
-                              shippingAvailable: want,
-                              localPickup: want || prev.localPickup ? prev.localPickup : true,
-                              ...(want
-                                ? {}
-                                : {
-                                    shippingMode: "reswell" as const,
-                                    shippingPrice: "",
-                                    reswellPackageLengthIn: "",
-                                    reswellPackageWidthIn: "",
-                                    reswellPackageHeightIn: "",
-                                    reswellPackageWeightLb: "",
-                                    reswellPackageWeightOz: "",
-                                  }),
-                            }))
-                          }}
-                          className="mt-0.5"
-                        />
-                        <div className="min-w-0 space-y-0.5">
-                          <Label
-                            htmlFor="sell-accessories-delivery-shipping"
-                            className="flex cursor-pointer flex-wrap items-center gap-2 text-sm font-medium leading-snug"
-                          >
-                            Shipping
-                            <Badge
-                              variant="default"
-                              className="h-auto border-0 bg-listingHeart px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white hover:bg-[#2a4170]"
-                            >
-                              Items sell faster
-                            </Badge>
-                          </Label>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-3">
-                        <Checkbox
-                          id="sell-accessories-delivery-pickup"
-                          checked={form.localPickup}
-                          onCheckedChange={(v) => {
-                            const want = v === true
-                            setForm((prev) => ({
-                              ...prev,
-                              localPickup: want,
-                              shippingAvailable:
-                                want || prev.shippingAvailable ? prev.shippingAvailable : true,
-                            }))
-                          }}
-                          className="mt-0.5"
-                        />
-                        <Label
-                          htmlFor="sell-accessories-delivery-pickup"
-                          className="cursor-pointer pt-0.5 text-sm font-medium leading-snug"
-                        >
-                          Local pickup
-                        </Label>
-                      </div>
-                    </div>
-                  </div>
-
-                  {form.shippingAvailable ? (
-                    <div className="space-y-4 rounded-xl border border-border bg-card p-5 shadow-sm sm:p-6">
-                      <h3 className="text-sm font-semibold text-foreground">
-                        Shipping cost in the Continental U.S.{" "}
-                        <span className="text-destructive" aria-hidden>
-                          *
-                        </span>
-                      </h3>
-                      <SellShippingCostModeRadios
-                        idPrefix="sell-accessories"
-                        value={form.shippingMode}
-                        onChange={(mode) => setField("shippingMode", mode)}
-                        flatRateSlot={
-                        <div className="space-y-2 rounded-lg border border-border bg-background p-4 sm:p-5">
-                          <Label htmlFor="accessory-shipping-price" className="text-sm font-semibold text-foreground">
-                            Shipping rate{" "}
-                            <span className="text-destructive" aria-hidden>
-                              *
-                            </span>
-                          </Label>
-                          <div className="relative max-w-md">
-                            <span
-                              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm tabular-nums text-muted-foreground"
-                              aria-hidden
-                            >
-                              $
-                            </span>
-                            <Input
-                              id="accessory-shipping-price"
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              placeholder="0.00"
-                              value={form.shippingPrice}
-                              onChange={(e) => setField("shippingPrice", e.target.value)}
-                              className="h-11 border-foreground/20 bg-card pl-8 tabular-nums shadow-sm placeholder:text-muted-foreground"
-                            />
-                          </div>
-                        </div>
-                        }
-                      />
-                    </div>
-                  ) : null}
-                </div>
-              </SellFormSection>
-
-              {form.shippingAvailable && form.shippingMode === "reswell" ? (
-                <SellFormSection
-                  sectionId="sell-accessories-section-reswell-package"
-                  title="Reswell shipping: packed size & weight"
-                >
-                  <ReswellPackageDimensionsCard
-                    showHeading={false}
-                    className="rounded-none border-0 bg-transparent p-0 shadow-none"
-                    lengthIn={form.reswellPackageLengthIn}
-                    widthIn={form.reswellPackageWidthIn}
-                    heightIn={form.reswellPackageHeightIn}
-                    weightLb={form.reswellPackageWeightLb}
-                    weightOz={form.reswellPackageWeightOz}
-                    onLengthInChange={(v) =>
-                      setField("reswellPackageLengthIn", normalizeBoardLengthInput(v))
-                    }
-                    onWidthInChange={(v) =>
-                      setField("reswellPackageWidthIn", normalizeTapeStyleInchesInput(v))
-                    }
-                    onHeightInChange={(v) =>
-                      setField("reswellPackageHeightIn", normalizeTapeStyleInchesInput(v))
-                    }
-                    onWeightLbChange={(v) => setField("reswellPackageWeightLb", v)}
-                    onWeightOzChange={(v) => setField("reswellPackageWeightOz", v)}
-                  />
-                </SellFormSection>
-              ) : null}
+                productNoun="Accessory"
+                idPrefix="sell-accessories"
+                complete={sellSectionCompletion["sell-accessories-section-delivery"] === true}
+                form={form}
+                onPatch={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
+              />
 
               <SellFormSection
                 sectionId="sell-accessories-section-publish"

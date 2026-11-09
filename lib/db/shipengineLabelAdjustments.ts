@@ -20,6 +20,24 @@ export type ShipEngineLabelAdjustmentRow = {
   actual_width: number | null
   actual_height: number | null
   order_id: string | null
+  wallet_transaction_id: string | null
+  wallet_debited_at: string | null
+  charge_seller_wallet: boolean
+  created_at: string
+}
+
+export type ShipEngineAdjustmentDebitSummary = {
+  processed: number
+  charged: number
+  alreadyCharged: number
+}
+
+export type ShipEngineUnalertedAdjustmentRow = {
+  id: string
+  tracking_number: string | null
+  order_id: string | null
+  adjustment_amount_usd: number
+  adjustment_at: string | null
   created_at: string
 }
 
@@ -48,7 +66,42 @@ function mapRow(row: Record<string, unknown>): ShipEngineLabelAdjustmentRow {
     actual_width: num(row.actual_width as number | string | null),
     actual_height: num(row.actual_height as number | string | null),
     order_id: typeof row.order_id === "string" ? row.order_id : null,
+    wallet_transaction_id:
+      typeof row.wallet_transaction_id === "string" ? row.wallet_transaction_id : null,
+    wallet_debited_at:
+      typeof row.wallet_debited_at === "string" ? row.wallet_debited_at : null,
+    charge_seller_wallet: row.charge_seller_wallet === true,
     created_at: String(row.created_at),
+  }
+}
+
+export async function dbApplyShipEngineAdjustmentDebits(
+  supabase: SupabaseClient,
+  limit = 500,
+): Promise<{ data: ShipEngineAdjustmentDebitSummary | null; error: Error | null }> {
+  const { data, error } = await supabase.rpc("apply_shipengine_label_adjustment_debits", {
+    p_limit: limit,
+  })
+  if (error) return { data: null, error: new Error(error.message) }
+
+  const result =
+    data != null && typeof data === "object" && !Array.isArray(data)
+      ? (data as Record<string, unknown>)
+      : null
+  if (!result) {
+    return { data: null, error: new Error("Invalid wallet debit response") }
+  }
+
+  const processed = num(result.processed as number | string | null)
+  const charged = num(result.charged as number | string | null)
+  const alreadyCharged = num(result.already_charged as number | string | null)
+  if (processed == null || charged == null || alreadyCharged == null) {
+    return { data: null, error: new Error("Invalid wallet debit summary") }
+  }
+
+  return {
+    data: { processed, charged, alreadyCharged },
+    error: null,
   }
 }
 
@@ -186,4 +239,172 @@ export async function dbListIncreasedLabelAdjustments(
     total: count ?? 0,
     error: null,
   }
+}
+
+export async function dbListUnalertedIncreasedAdjustments(
+  supabase: SupabaseClient,
+  limit = 500,
+): Promise<{
+  data: ShipEngineUnalertedAdjustmentRow[]
+  hasMore: boolean
+  error: Error | null
+}> {
+  const boundedLimit = Math.max(1, Math.min(limit, 500))
+  const { data, error } = await supabase
+    .from("shipengine_label_adjustments")
+    .select(
+      "id, tracking_number, order_id, adjustment_amount_usd, adjustment_at, created_at",
+    )
+    .gt("adjustment_amount_usd", 0)
+    .is("admin_alerted_at", null)
+    .order("created_at", { ascending: true })
+    .limit(boundedLimit + 1)
+
+  if (error) {
+    return { data: [], hasMore: false, error: new Error(error.message) }
+  }
+
+  const rows = (data ?? []).slice(0, boundedLimit).map((row) => ({
+    id: String(row.id),
+    tracking_number:
+      typeof row.tracking_number === "string" ? row.tracking_number : null,
+    order_id: typeof row.order_id === "string" ? row.order_id : null,
+    adjustment_amount_usd:
+      num(row.adjustment_amount_usd as number | string | null) ?? 0,
+    adjustment_at:
+      typeof row.adjustment_at === "string" ? row.adjustment_at : null,
+    created_at: String(row.created_at),
+  }))
+
+  return {
+    data: rows,
+    hasMore: (data?.length ?? 0) > boundedLimit,
+    error: null,
+  }
+}
+
+export async function dbMarkShipEngineAdjustmentsAdminAlerted(
+  supabase: SupabaseClient,
+  adjustmentIds: string[],
+  alertedAt: string,
+): Promise<{ error: Error | null }> {
+  const ids = [...new Set(adjustmentIds.filter(Boolean))]
+
+  for (let i = 0; i < ids.length; i += 100) {
+    const { error } = await supabase
+      .from("shipengine_label_adjustments")
+      .update({ admin_alerted_at: alertedAt })
+      .in("id", ids.slice(i, i + 100))
+      .is("admin_alerted_at", null)
+
+    if (error) return { error: new Error(error.message) }
+  }
+
+  return { error: null }
+}
+
+function addAdjustmentTotal(
+  totals: Map<string, number>,
+  key: string,
+  amount: number | string | null,
+): void {
+  const value = num(amount)
+  if (value == null || value <= 0) return
+  totals.set(key, Math.round(((totals.get(key) ?? 0) + value) * 100) / 100)
+}
+
+export type OrderAdjustmentFeeTotals = {
+  /** Every positive carrier bill on the order. */
+  recordedUsd: number
+  /** Amount actually deducted from the seller wallet. Past bills stay at 0. */
+  chargedUsd: number
+}
+
+function addAdjustmentFeeTotals(
+  totals: Map<string, OrderAdjustmentFeeTotals>,
+  key: string,
+  amount: number | string | null,
+  charged: boolean,
+): void {
+  const value = num(amount)
+  if (value == null || value <= 0) return
+  const current = totals.get(key) ?? { recordedUsd: 0, chargedUsd: 0 }
+  current.recordedUsd = Math.round((current.recordedUsd + value) * 100) / 100
+  if (charged) current.chargedUsd = Math.round((current.chargedUsd + value) * 100) / 100
+  totals.set(key, current)
+}
+
+/** Positive ShipEngine adjustments for one order, newest first. */
+export async function dbListIncreasedLabelAdjustmentsForOrder(
+  supabase: SupabaseClient,
+  orderId: string,
+): Promise<{ data: ShipEngineLabelAdjustmentRow[]; error: Error | null }> {
+  const { data, error } = await supabase
+    .from("shipengine_label_adjustments")
+    .select("*")
+    .eq("order_id", orderId)
+    .gt("adjustment_amount_usd", 0)
+    .order("adjustment_at", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false })
+
+  if (error) return { data: [], error: new Error(error.message) }
+  return {
+    data: (data ?? []).map((row) => mapRow(row as Record<string, unknown>)),
+    error: null,
+  }
+}
+
+/** Positive ShipEngine adjustment fees summed by Reswell order id. */
+export async function dbGetIncreasedAdjustmentTotalsByOrderIds(
+  supabase: SupabaseClient,
+  orderIds: string[],
+): Promise<{ data: Map<string, OrderAdjustmentFeeTotals>; error: Error | null }> {
+  const ids = [...new Set(orderIds.filter(Boolean))]
+  const totals = new Map<string, OrderAdjustmentFeeTotals>()
+
+  for (let i = 0; i < ids.length; i += 100) {
+    const { data, error } = await supabase
+      .from("shipengine_label_adjustments")
+      .select("order_id, adjustment_amount_usd, charge_seller_wallet, wallet_transaction_id")
+      .in("order_id", ids.slice(i, i + 100))
+      .gt("adjustment_amount_usd", 0)
+
+    if (error) return { data: new Map(), error: new Error(error.message) }
+    for (const row of data ?? []) {
+      const orderId = typeof row.order_id === "string" ? row.order_id : null
+      if (!orderId) continue
+      const charged =
+        row.charge_seller_wallet === true && typeof row.wallet_transaction_id === "string"
+      addAdjustmentFeeTotals(totals, orderId, row.adjustment_amount_usd, charged)
+    }
+  }
+
+  return { data: totals, error: null }
+}
+
+/** Positive ShipEngine adjustment fees summed by normalized tracking number. */
+export async function dbGetIncreasedAdjustmentTotalsByTrackingNumbers(
+  supabase: SupabaseClient,
+  trackingNumbers: string[],
+): Promise<{ data: Map<string, number>; error: Error | null }> {
+  const rawTrackingNumbers = [...new Set(trackingNumbers.map((value) => value.trim()).filter(Boolean))]
+  const totals = new Map<string, number>()
+
+  for (let i = 0; i < rawTrackingNumbers.length; i += 100) {
+    const { data, error } = await supabase
+      .from("shipengine_label_adjustments")
+      .select("tracking_number, adjustment_amount_usd")
+      .in("tracking_number", rawTrackingNumbers.slice(i, i + 100))
+      .gt("adjustment_amount_usd", 0)
+
+    if (error) return { data: new Map(), error: new Error(error.message) }
+    for (const row of data ?? []) {
+      if (typeof row.tracking_number !== "string") continue
+      const key =
+        normalizeTrackingNumberForCarrier(row.tracking_number) || row.tracking_number.trim()
+      if (key) addAdjustmentTotal(totals, key, row.adjustment_amount_usd)
+    }
+  }
+
+  return { data: totals, error: null }
 }

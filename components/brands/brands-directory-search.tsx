@@ -21,7 +21,7 @@ const BROWSE_LIMIT = 36
 const SUGGEST_DEBOUNCE_MS = 280
 
 function browseBrands(brands: BrandRow[]): BrandRow[] {
-  return [...brands].sort((a, b) => a.name.localeCompare(b.name)).slice(0, BROWSE_LIMIT)
+  return brands.slice(0, BROWSE_LIMIT)
 }
 
 type BrandsDirectorySearchProps = {
@@ -313,7 +313,7 @@ export function BrandsDirectorySearch({ brands, className }: BrandsDirectorySear
 
   return (
     <div className={cn("w-full max-w-xl", className)}>
-      <p className="mb-2 text-center text-sm font-medium text-foreground">Search the brand directory</p>
+      <p className="mb-2 text-sm font-medium text-foreground">Search brands</p>
       <div ref={containerRef}>
         <form onSubmit={handleSubmit}>
           <SiteSearchShell

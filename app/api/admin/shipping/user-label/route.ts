@@ -1,6 +1,6 @@
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
-import { requireAdmin } from "@/lib/brands/admin-server"
+import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
 import {
   loadAdminUserLabelContext,
   purchaseAdminUserShippingLabel,
@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic"
  * GET /api/admin/shipping/user-label?user_id=
  */
 export async function GET(request: NextRequest) {
-  const gate = await requireAdmin()
+  const gate = await requireAdminOrEmployee()
   if (!gate.ok) {
     return gate.response
   }
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
  * POST /api/admin/shipping/user-label
  */
 export async function POST(request: NextRequest) {
-  const gate = await requireAdmin()
+  const gate = await requireAdminOrEmployee()
   if (!gate.ok) {
     return gate.response
   }

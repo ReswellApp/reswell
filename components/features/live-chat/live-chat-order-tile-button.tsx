@@ -3,6 +3,7 @@
 import Image from "next/image"
 import { Package } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 
 interface LiveChatOrderTileButtonProps {
@@ -40,7 +41,7 @@ export function LiveChatOrderTileButton({
             src={imageUrl}
             alt=""
             fill
-            className="object-cover"
+            className={listingPhotoFillClassName}
             sizes="40px"
 
             unoptimized={listingImageShouldBypassOptimization(imageUrl)}

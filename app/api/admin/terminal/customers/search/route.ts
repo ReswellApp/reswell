@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { requireAdmin } from "@/lib/brands/admin-server"
+import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
 import { searchAdminTerminalCustomers } from "@/lib/services/adminTerminalCustomerSearch"
 import { adminTerminalCustomerSearchQuerySchema } from "@/lib/validations/adminTerminalCustomerSearch"
 
@@ -9,7 +9,7 @@ import { adminTerminalCustomerSearchQuerySchema } from "@/lib/validations/adminT
  * Member picker for in-person terminal checkout (name or email, min 2 characters).
  */
 export async function GET(request: NextRequest) {
-  const gate = await requireAdmin()
+  const gate = await requireAdminOrEmployee()
   if (!gate.ok) {
     return gate.response
   }

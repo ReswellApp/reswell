@@ -6,7 +6,7 @@ import { loadIntelligenceDashboard } from "@/lib/services/businessIntelligence"
 export const dynamic = "force-dynamic"
 
 /**
- * Live Intelligence dashboard: 30-day KPIs, monthly GMV, top URLs, latest saved reports.
+ * Live Intelligence dashboard: 30-day KPIs, monthly GMV, and top URLs.
  * GET /api/admin/intelligence
  */
 export async function GET(_request: NextRequest) {

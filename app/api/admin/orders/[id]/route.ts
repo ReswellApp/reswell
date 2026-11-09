@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server"
 import { z } from "zod"
 import { createServiceRoleClient } from "@/lib/supabase/server"
-import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
-import type { AdminOrderCapabilities } from "@/lib/admin/admin-order-capabilities"
+import { requireAdmin } from "@/lib/brands/admin-server"
+import {
+  adminOrderStaffCapabilities,
+  type AdminOrderCapabilities,
+} from "@/lib/admin/admin-order-capabilities"
 import { getOrderDetailForAdmin, isPostgrestSchemaStaleError } from "@/lib/db/adminOrders"
+import { dbGetIncreasedAdjustmentTotalsByOrderIds } from "@/lib/db/shipengineLabelAdjustments"
 import {
   fetchProfileAddresses,
   preferredProfileAddress,
@@ -26,7 +30,7 @@ export async function GET(
   _request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
-  const gate = await requireAdminOrEmployee()
+  const gate = await requireAdmin()
   if (!gate.ok) {
     return gate.response
   }
@@ -58,14 +62,19 @@ export async function GET(
     return NextResponse.json({ error: "Order not found" }, { status: 404 })
   }
 
-  const [hasShippingLabel, preparedShippingLabel, sellerAddresses] = await Promise.all([
+  const [hasShippingLabel, preparedShippingLabel, sellerAddresses, adjustments] = await Promise.all([
     orderHasAccessibleShippingLabelPdf(serviceSupabase, {
       orderId: parsed.data,
       trackingNumber: data.tracking_number,
     }),
     getLatestPreparedShippingLabelForOrder(serviceSupabase, parsed.data),
     fetchProfileAddresses(serviceSupabase, data.seller_id),
+    dbGetIncreasedAdjustmentTotalsByOrderIds(serviceSupabase, [parsed.data]),
   ])
+  if (adjustments.error) {
+    console.error("[admin order adjustments]", adjustments.error)
+    return NextResponse.json({ error: "Could not load shipping adjustments" }, { status: 500 })
+  }
   const hasPaperlessQr = preparedLabelHasPaperlessQr(preparedShippingLabel)
   const preferredShipFrom = preferredProfileAddress(sellerAddresses.addresses)
   const shipFromOnFile = preferredShipFrom
@@ -75,36 +84,30 @@ export async function GET(
       }
     : null
 
-  const canFulfillReswellShop =
-    gate.ctx.isAdmin &&
-    data.is_reswell_shop &&
-    data.status === "confirmed" &&
-    data.fulfillment_method === "shipping" &&
-    data.delivery_status === "pending" &&
-    Boolean(data.buyer_id)
-
-  const canReplaceShippingLabel =
-    gate.ctx.isAdmin &&
-    !data.is_reswell_shop &&
-    data.fulfillment_method === "shipping" &&
-    (data.status === "confirmed" || data.status === "refunding") &&
-    data.delivery_status !== "delivered" &&
-    data.delivery_status !== "picked_up"
+  const staff = adminOrderStaffCapabilities({
+    isAdmin: gate.ctx.isAdmin,
+    isReswellShop: data.is_reswell_shop,
+    status: data.status,
+    fulfillmentMethod: data.fulfillment_method,
+    deliveryStatus: data.delivery_status,
+    hasBuyer: Boolean(data.buyer_id),
+  })
 
   const capabilities: AdminOrderCapabilities = {
-    canRefund: gate.ctx.isAdmin,
-    canReleaseShippingSellerEarnings: gate.ctx.isAdmin && !data.is_reswell_shop,
+    ...staff,
     hasShippingLabel,
     hasPaperlessQr,
     paperlessInstructions: preparedShippingLabel?.paperless_instructions ?? null,
     paperlessHandoffCode: preparedShippingLabel?.paperless_handoff_code ?? null,
-    canFulfillReswellShop,
-    canReplaceShippingLabel,
     shipFromOnFile,
   }
 
   return NextResponse.json({
-    data,
+    data: {
+      ...data,
+      shipping_adjusted_fee: adjustments.data.get(parsed.data)?.recordedUsd ?? 0,
+      shipping_adjusted_fee_charged: adjustments.data.get(parsed.data)?.chargedUsd ?? 0,
+    },
     capabilities,
   })
 }

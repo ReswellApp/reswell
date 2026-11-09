@@ -17,6 +17,7 @@ import {
 import { authLandingHref } from "@/lib/auth/auth-landing-href"
 import { cn } from "@/lib/utils"
 import { useNewsletterPromoVisitorAuth } from "@/components/features/marketing/hooks/use-newsletter-promo-visitor-auth"
+import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock"
 
 export function NewsletterPromoPopup({ serverUser = null }: { serverUser?: User | null }) {
   const pathname = usePathname()
@@ -24,6 +25,9 @@ export function NewsletterPromoPopup({ serverUser = null }: { serverUser?: User 
   const authModal = useOptionalAuthModal()
   const { authResolved, isLoggedIn } = useNewsletterPromoVisitorAuth(serverUser)
   const [open, setOpen] = useState(false)
+  // Body scroll only. Do not use a Radix modal lock — that sets pointer-events:none
+  // and, with overflow hidden on <html>, iOS stops delivering taps to the dialog.
+  useBodyScrollLock(open && !isLoggedIn)
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -72,13 +76,15 @@ export function NewsletterPromoPopup({ serverUser = null }: { serverUser?: User 
   if (!open || isLoggedIn || !authResolved) return null
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} modal={false} onOpenChange={handleOpenChange}>
       <DialogContent
         showCloseButton={false}
         overlayClassName="bg-black/50"
         className={cn(
-          "max-w-[380px] gap-0 overflow-hidden border border-black/10 bg-white p-0 shadow-lg sm:rounded-xl",
+          "max-w-[380px] gap-0 overflow-y-auto border border-black/10 bg-white p-0 shadow-lg sm:rounded-xl",
         )}
+        onPointerDownOutside={() => dismiss()}
+        onFocusOutside={(event) => event.preventDefault()}
       >
         <DialogTitle className="sr-only">
           Create an account to receive {NEWSLETTER_PROMO_DISCOUNT_PERCENT}% off
@@ -88,7 +94,7 @@ export function NewsletterPromoPopup({ serverUser = null }: { serverUser?: User 
           <button
             type="button"
             onClick={dismiss}
-            className="absolute right-4 top-4 rounded-sm p-1 text-black/50 transition hover:text-black"
+            className="absolute right-2 top-2 flex h-11 w-11 items-center justify-center rounded-full text-black/50 transition hover:text-black"
             aria-label="Close"
           >
             <X className="h-4 w-4" />
@@ -113,7 +119,7 @@ export function NewsletterPromoPopup({ serverUser = null }: { serverUser?: User 
             <button
               type="button"
               onClick={dismiss}
-              className="w-full py-1 text-center text-[13px] text-black/45 underline-offset-2 hover:text-black/70 hover:underline"
+              className="flex min-h-11 w-full items-center justify-center text-center text-[13px] text-black/45 underline-offset-2 hover:text-black/70 hover:underline"
             >
               No thanks
             </button>

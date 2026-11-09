@@ -81,7 +81,11 @@ async function fetchPaged<T>(
 
 export async function selectPriceGuideListings(
   supabase: SupabaseClient,
-  filters?: { section?: PriceGuideCategorySlug; brandId?: string },
+  filters?: {
+    section?: PriceGuideCategorySlug
+    brandId?: string
+    brandModelId?: string
+  },
 ): Promise<PriceGuideListingRow[]> {
   return fetchPaged(async (from, to) => {
     let query = supabase
@@ -94,6 +98,7 @@ export async function selectPriceGuideListings(
 
     if (filters?.section) query = query.eq("section", filters.section)
     if (filters?.brandId) query = query.eq("brand_id", filters.brandId)
+    if (filters?.brandModelId) query = query.eq("brand_model_id", filters.brandModelId)
 
     const { data, error } = await query
     if (error || !data) {

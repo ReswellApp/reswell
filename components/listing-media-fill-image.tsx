@@ -2,6 +2,7 @@
 
 import Image from "next/image"
 import type { CSSProperties, DragEvent, SyntheticEvent } from "react"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { cn } from "@/lib/utils"
 
@@ -56,7 +57,7 @@ export function ListingMediaFillImage({
         onDragStart={onDragStart}
         onLoad={onLoad}
         onError={onError}
-        className={cn("absolute inset-0 h-full w-full", className)}
+        className={cn(listingPhotoFillClassName, className)}
         style={style}
       />
     )
@@ -78,7 +79,7 @@ export function ListingMediaFillImage({
       onDragStart={onDragStart}
       onLoad={onLoad}
       onError={onError}
-      className={className}
+      className={cn(listingPhotoFillClassName, className)}
       style={style}
     />
   )

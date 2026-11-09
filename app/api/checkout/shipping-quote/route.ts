@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import type { SupabaseClient, User } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/server"
 import { isBlockedOwnListingPurchase } from "@/lib/cart-eligibility"
 import { PEER_LISTING_SECTIONS_FILTER } from "@/lib/peer-listing-sections"
@@ -18,17 +19,12 @@ import {
   type CheckoutShippingPackageRate,
 } from "@/lib/services/checkoutShippingQuoteToken"
 import {
-  countSurfboardListings,
-  peerCheckoutSurfboardCountError,
-} from "@/lib/surfboard-multi-board-parcel"
-import {
   findPeerCheckoutRateOption,
   findPeerCheckoutRateOptionByServiceCode,
-  peerCheckoutSharedSection,
 } from "@/lib/shipping/peer-checkout-usps-services"
 import {
-  checkoutOffersShippingPackagingChoice,
   DEFAULT_SHIPPING_PACKAGING_MODE,
+  resolveMultiItemPackagingMode,
   resolveShippingPackagingMode,
   type ShippingPackagingMode,
 } from "@/lib/shipping/packaging-mode"
@@ -125,6 +121,15 @@ export async function POST(request: Request) {
     )
   }
 
+  return quoteCheckoutShippingForUser(supabase, user, body)
+}
+
+/** Same ShipEngine quote the website checkout uses. */
+export async function quoteCheckoutShippingForUser(
+  supabase: SupabaseClient,
+  user: User,
+  body: unknown,
+): Promise<NextResponse> {
   const bodyObj = body && typeof body === "object" ? (body as Record<string, unknown>) : {}
   const fromArray = Array.isArray(bodyObj.listing_ids)
     ? bodyObj.listing_ids
@@ -197,14 +202,6 @@ export async function POST(request: Request) {
   }
   const sellerId = mixedSeller.sellerId
 
-  const surfboardCapError = peerCheckoutSurfboardCountError(countSurfboardListings(listingRows))
-  if (surfboardCapError) {
-    return NextResponse.json(
-      { error: surfboardCapError },
-      { status: 422, headers: JSON_NO_STORE_HEADERS },
-    )
-  }
-
   if (!listingRows.every((l) => !!l.shipping_available)) {
     return NextResponse.json(
       { error: "Every item in this order must offer shipping." },
@@ -240,6 +237,16 @@ export async function POST(request: Request) {
 
   const qtyById = new Map<string, number>()
   for (const id of listingIds) qtyById.set(id, 1)
+  const bodyQuantities =
+    bodyObj.quantities != null && typeof bodyObj.quantities === "object" && !Array.isArray(bodyObj.quantities)
+      ? (bodyObj.quantities as Record<string, unknown>)
+      : null
+  if (bodyQuantities) {
+    for (const id of listingIds) {
+      const qty = Math.floor(Number(bodyQuantities[id]) || 0)
+      if (qty >= 1) qtyById.set(id, qty)
+    }
+  }
   const { data: cartQtyRows } = await supabase
     .from("cart_items")
     .select("listing_id, quantity")
@@ -247,8 +254,9 @@ export async function POST(request: Request) {
     .in("listing_id", listingIds)
   for (const row of cartQtyRows ?? []) {
     const id = String((row as { listing_id?: string }).listing_id ?? "").trim()
+    if (!id || qtyById.get(id) !== 1 || (bodyQuantities && bodyQuantities[id] != null)) continue
     const qty = Math.max(1, Math.floor(Number((row as { quantity?: number }).quantity) || 1))
-    if (id) qtyById.set(id, qty)
+    qtyById.set(id, qty)
   }
 
   if (listingRows.length === 1) {
@@ -262,9 +270,14 @@ export async function POST(request: Request) {
       sellerShipFromAddress,
       selectedRateId,
       selectedServiceCode,
+      quantity: qtyById.get(listingRow.id) ?? 1,
     })
 
     if (!totals.ok) {
+      console.error("[checkout/shipping-quote] quote failed", {
+        listingIds,
+        error: totals.error,
+      })
       return NextResponse.json({ error: totals.error }, { status: 422, headers: JSON_NO_STORE_HEADERS })
     }
 
@@ -311,10 +324,11 @@ export async function POST(request: Request) {
     )
   }
 
-  const packagingMode: ShippingPackagingMode =
-    checkoutOffersShippingPackagingChoice(listingRows) && packagingModeRequested === "separate"
-      ? "separate"
-      : "together"
+  const packagingMode = resolveMultiItemPackagingMode({
+    listings: listingRows,
+    requested: packagingModeRequested,
+    fulfillment: "shipping",
+  })
 
   if (packagingMode === "separate") {
     const quantityByListingId = Object.fromEntries(qtyById.entries())
@@ -328,6 +342,10 @@ export async function POST(request: Request) {
       quantityByListingId,
     })
     if (!multi.ok) {
+      console.error("[checkout/shipping-quote] quote failed", {
+        listingIds,
+        error: multi.error,
+      })
       return NextResponse.json({ error: multi.error }, { status: 422, headers: JSON_NO_STORE_HEADERS })
     }
 
@@ -366,9 +384,14 @@ export async function POST(request: Request) {
     sellerShipFromAddress,
     selectedRateId,
     selectedServiceCode,
+    quantities: Object.fromEntries(qtyById),
   })
 
   if (!bundleShipping.ok) {
+    console.error("[checkout/shipping-quote] quote failed", {
+      listingIds,
+      error: bundleShipping.error,
+    })
     return NextResponse.json({ error: bundleShipping.error }, { status: 422, headers: JSON_NO_STORE_HEADERS })
   }
 

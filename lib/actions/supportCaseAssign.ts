@@ -34,7 +34,7 @@ export async function listSupportStaffAction() {
     .eq("id", user.id)
     .maybeSingle()
 
-  if (!profile || (profile.is_admin !== true && profile.is_employee !== true)) {
+  if (profile?.is_admin !== true) {
     return { error: "Forbidden" as const, rows: [], currentUserId: null as string | null }
   }
 

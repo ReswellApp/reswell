@@ -16,7 +16,10 @@ import {
 } from "@/lib/services/listingVisibilityAudit"
 import { evaluateSellerCanSell } from "@/lib/services/sellerBan"
 import { fetchSellerBanState, isSellerBanActive } from "@/lib/db/sellerBan"
-import { listingIdsWithOpenMarketplaceCheckout } from "@/lib/db/listingDeleteEligibility"
+import {
+  listingIdsWithOpenMarketplaceCheckout,
+  partitionListingsByOpenMarketplaceCheckout,
+} from "@/lib/db/listingDeleteEligibility"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 
 function uniqueListingIds(listingIds: readonly (string | null | undefined)[]): string[] {
@@ -71,9 +74,41 @@ export async function relistListingsAfterRefund(
     return []
   }
 
+  // Duplicate-checkout safety: if another confirmed/refunding order still owns this
+  // listing, do not flip sold → active (would break the live sibling sale).
+  const openCheckout = await listingIdsWithOpenMarketplaceCheckout(
+    supabase,
+    rows.map((row) => String((row as { id: string }).id)),
+  )
+  if (openCheckout.error) {
+    console.error("[relist] open-checkout lookup failed — refusing to relist", {
+      listingIds: uniqueIds,
+    })
+    revalidateRecentlySoldSurfaces()
+    return []
+  }
+  const soldIds = rows.map((row) => String((row as { id: string }).id))
+  const { allowed: allowedIds, blocked: blockedIds } = partitionListingsByOpenMarketplaceCheckout(
+    soldIds,
+    openCheckout.listingIds,
+  )
+  const allowedIdSet = new Set(allowedIds)
+  const rowsWithoutOpenCheckout = rows.filter((row) =>
+    allowedIdSet.has(String((row as { id: string }).id)),
+  )
+  if (blockedIds.length > 0) {
+    console.info("[relist] skipping refund relist — listing still has open marketplace checkout", {
+      listingIds: blockedIds,
+    })
+  }
+  if (rowsWithoutOpenCheckout.length === 0) {
+    revalidateRecentlySoldSurfaces()
+    return []
+  }
+
   const sellerIds = [
     ...new Set(
-      rows
+      rowsWithoutOpenCheckout
         .map((row) => (row as { user_id?: string | null }).user_id)
         .filter((id): id is string => typeof id === "string" && id.length > 0),
     ),
@@ -87,14 +122,14 @@ export async function relistListingsAfterRefund(
     }),
   )
 
-  const liveIds = rows
+  const liveIds = rowsWithoutOpenCheckout
     .filter((row) => {
       const sellerId = (row as { user_id?: string | null }).user_id
       return typeof sellerId === "string" && !bannedSellerIds.has(sellerId)
     })
     .map((row) => String((row as { id: string }).id))
 
-  const delinquentIds = rows
+  const delinquentIds = rowsWithoutOpenCheckout
     .filter((row) => {
       const sellerId = (row as { user_id?: string | null }).user_id
       return typeof sellerId === "string" && bannedSellerIds.has(sellerId)
@@ -360,6 +395,7 @@ export async function relistSellerMarkedSoldListing(
       sold_off_platform_detail: null,
       sold_off_platform_at: null,
       sold_reswell_helped_find_buyer: null,
+      last_sold_at: null,
       updated_at: nowIso,
     })
     .eq("id", listingId)

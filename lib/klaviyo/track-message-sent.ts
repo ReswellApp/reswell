@@ -8,16 +8,19 @@
  * The Klaviyo **profile** on the event is the **receiver** so flows email them by default.
  *
  * **Klaviyo SMS flow (manual):** trigger on this metric with a **transactional** SMS action
- * filtered to `message_sms_opt_in` is true. Opt-in also sets marketing consent so a marketing
- * SMS action still works if the flow was built that way. Suggested SMS:
+ * filtered to `message_sms_opt_in` is true. Opt-in (toggle) sets marketing + transactional consent;
+ * each Message Sent only refreshes **transactional** consent so marketing double opt-in cannot
+ * leave consent pending and block SMS. Suggested SMS:
  * `Reswell: New message from {{ event.message_from.display_name }}.`
  */
 
 import { after } from "next/server"
 import { getMessageSmsReceiverContext } from "@/lib/db/messageSmsNotifications"
+import { isMessageSmsReady } from "@/lib/klaviyo/message-sms-ready"
 import { subscribeKlaviyoProfileSmsConsent } from "@/lib/klaviyo/subscribe-profile-sms-consent"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
+import { scheduleNewMessagePush } from "@/lib/services/push"
 
 function scheduleMessageSentWork(work: () => Promise<void>): void {
   const run = () =>
@@ -130,6 +133,19 @@ export type KlaviyoMessageSentPayload = {
   }
 }
 
+function scheduleMessagePush(payload: KlaviyoMessageSentPayload): void {
+  const senderName = payload.sessionSender
+    ? displayNameFromProfileRow(payload.sessionSender.profile)
+    : null
+  scheduleNewMessagePush({
+    receiverUserId: payload.receiverUserId,
+    conversationId: payload.conversationId,
+    listingId: payload.listingId,
+    senderName,
+    message: payload.message,
+  })
+}
+
 /**
  * Metric name shown in Klaviyo as "Message Sent".
  *
@@ -140,11 +156,26 @@ export type KlaviyoMessageSentPayload = {
  * (`order_placed`, `order_refunded`, `order_shipped`, `order_completed`,
  * `order_exclusive_repurchase`, `review_requested`, `shipping_label_ready`,
  * `admin_shipping_label`) must not call this — they have their own Klaviyo metrics.
+ *
+ * Schedules Klaviyo + push after the response. Prefer {@link trackKlaviyoMessageSentNow}
+ * when already inside an `after()` callback so work is awaited (not nested `after`).
  */
 export async function trackKlaviyoMessageSent(
   payload: KlaviyoMessageSentPayload,
 ): Promise<void> {
   scheduleMessageSentWork(() => performTrackKlaviyoMessageSent(payload))
+  scheduleMessagePush(payload)
+}
+
+/**
+ * Runs Message Sent immediately (awaited) and schedules push. Use from an existing
+ * `after()` side-effect chain so Vercel keeps the invocation alive until Klaviyo finishes.
+ */
+export async function trackKlaviyoMessageSentNow(
+  payload: KlaviyoMessageSentPayload,
+): Promise<void> {
+  scheduleMessagePush(payload)
+  await performTrackKlaviyoMessageSent(payload)
 }
 
 async function performTrackKlaviyoMessageSent(
@@ -215,14 +246,30 @@ async function performTrackKlaviyoMessageSent(
     )
   }
 
-  if (receiverSmsOptIn && receiverPhoneE164) {
-    await subscribeKlaviyoProfileSmsConsent({
+  /**
+   * Only claim SMS readiness when we have both opt-in and a resolvable US phone.
+   * Refresh transactional consent only — re-subscribing marketing on every message can
+   * leave consent pending (double opt-in) and block the Klaviyo SMS action.
+   */
+  const messageSmsReady = isMessageSmsReady({
+    optedIn: receiverSmsOptIn,
+    phoneE164: receiverPhoneE164,
+  })
+  if (messageSmsReady && receiverPhoneE164) {
+    const consent = await subscribeKlaviyoProfileSmsConsent({
       phoneNumber: receiverPhoneE164,
       email: receiverEmail,
       externalId: receiverUserId,
       transactional: "SUBSCRIBED",
-      marketing: "SUBSCRIBED",
     })
+    if (!consent.ok && !consent.skipped) {
+      console.error(
+        "[klaviyo] Message Sent: transactional SMS consent failed:",
+        consent.status,
+        consent.detail,
+        { receiverUserId },
+      )
+    }
   }
 
   const trimmed =
@@ -235,7 +282,7 @@ async function performTrackKlaviyoMessageSent(
     profile: {
       external_id: receiverUserId,
       email: receiverEmail,
-      phone_number: receiverPhoneE164,
+      phone_number: messageSmsReady ? receiverPhoneE164 : null,
     },
     /**
      * Avoid top-level `sender_email` / `receiver_email` strings — Klaviyo may treat scalar
@@ -250,8 +297,8 @@ async function performTrackKlaviyoMessageSent(
       listing_id: listingId ?? null,
       message_id: messageId,
       receiver_user_id: receiverUserId,
-      message_sms_opt_in: receiverSmsOptIn,
-      message_sms_phone: receiverPhoneE164,
+      message_sms_opt_in: messageSmsReady,
+      message_sms_phone: messageSmsReady ? receiverPhoneE164 : null,
       message_from: {
         email: senderEmail ?? "",
         display_name: senderDisplayName,

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 
 import { isAdminAnalyticsRawPruningEnabled } from "@/lib/analytics/admin-rollup-policy"
 import { runAdminAnalyticsRollups } from "@/lib/services/adminAnalyticsRollups"
+import { isCronRequestAuthorized } from "@/lib/utils/cron-auth"
 
 export const maxDuration = 300
 
@@ -11,8 +12,10 @@ export const maxDuration = 300
  */
 export async function GET(request: Request) {
   const cronSecret = process.env.CRON_SECRET
-  const authHeader = request.headers.get("authorization")
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+  if (!cronSecret?.trim()) {
+    return NextResponse.json({ error: "Cron authentication is not configured" }, { status: 503 })
+  }
+  if (!isCronRequestAuthorized(request, cronSecret)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 

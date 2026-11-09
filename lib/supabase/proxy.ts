@@ -13,9 +13,26 @@ import {
   UPDATE_PASSWORD_PATH,
 } from "@/lib/auth/password-reset-landing-flag"
 import { hasSupabaseAuthCookies } from '@/lib/auth/has-supabase-auth-cookies'
+import { platformAccessForSignedInUser } from '@/lib/account-access/platform-access'
+import { employeeAdminPathDecision } from '@/lib/admin/employee-access'
 import { pathnameRequiresAuthSession } from '@/lib/auth/pathname-requires-auth-session'
+import { supabaseAuthForwardPathname } from '@/lib/auth/supabase-auth-forward-path'
+import { isServerActionRequest } from '@/lib/utils/is-server-action-request'
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+
+/**
+ * Server Actions must receive RSC, not an HTML redirect. Still refresh cookies
+ * on the passthrough response; the action itself enforces auth.
+ */
+function passServerActionOrRedirect(
+  request: NextRequest,
+  passthrough: NextResponse,
+  redirect: NextResponse,
+): NextResponse {
+  if (isServerActionRequest(request)) return passthrough
+  return redirect
+}
 
 export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname
@@ -28,41 +45,27 @@ export async function updateSession(request: NextRequest) {
     const url = request.nextUrl.clone()
     url.pathname = UPDATE_PASSWORD_PATH
     url.searchParams.delete(PASSWORD_RESET_QUERY_KEY)
-    return NextResponse.redirect(url)
+    return passServerActionOrRedirect(
+      request,
+      NextResponse.next({ request }),
+      NextResponse.redirect(url),
+    )
   }
 
-  // Supabase sometimes falls back to Site URL with auth params on the homepage. Forward to
-  // the correct handler so server-side exchange / verifyOtp runs before any session probe.
-  const tokenHash = request.nextUrl.searchParams.get("token_hash")
-  const tokenType = request.nextUrl.searchParams.get("type")
-  if (
-    tokenHash &&
-    tokenType &&
-    pathname !== "/auth/callback" &&
-    pathname !== "/auth/confirm" &&
-    pathname !== "/auth/recovery"
-  ) {
+  // Forward stray Supabase auth params so server-side exchange / verifyOtp runs before any
+  // session probe.
+  const authForwardPathname = supabaseAuthForwardPathname(
+    pathname,
+    request.nextUrl.searchParams,
+  )
+  if (authForwardPathname) {
     const url = request.nextUrl.clone()
-    url.pathname =
-      tokenType === "recovery"
-        ? "/auth/recovery"
-        : tokenType === "email" ||
-            tokenType === "signup" ||
-            tokenType === "invite"
-          ? "/auth/confirm"
-          : "/auth/callback"
-    return NextResponse.redirect(url)
-  }
-
-  if (
-    pathname !== "/auth/callback" &&
-    pathname !== "/auth/recovery" &&
-    request.nextUrl.searchParams.has("code")
-  ) {
-    const url = request.nextUrl.clone()
-    url.pathname =
-      tokenType === "recovery" ? "/auth/recovery" : "/auth/callback"
-    return NextResponse.redirect(url)
+    url.pathname = authForwardPathname
+    return passServerActionOrRedirect(
+      request,
+      NextResponse.next({ request }),
+      NextResponse.redirect(url),
+    )
   }
 
   // Session cookies are set on the response inside these route handlers. Calling
@@ -240,15 +243,30 @@ async function refreshSupabaseSession(
     }
   }
 
-  /** Legacy / bookmarked URLs — same hub as /dashboard/offers (see app/offers/page.tsx). */
+  /** Legacy hubs — one offers page at /dashboard/offers. */
   const isOffersShortcut = pathname === '/offers' || pathname.startsWith('/offers/')
+  const isLegacyOffersHub = isOffersShortcut || pathname === '/messages/offers'
 
   if (user && isUserAuthBanned(user)) {
     clearSupabaseAuthCookies(request, supabaseResponse)
     const url = request.nextUrl.clone()
     url.pathname = '/auth/login'
     url.searchParams.set('error', ACCOUNT_BANNED_ERROR)
-    return NextResponse.redirect(url)
+    return passServerActionOrRedirect(
+      request,
+      supabaseResponse,
+      NextResponse.redirect(url),
+    )
+  }
+
+  if (user && isLegacyOffersHub) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/dashboard/offers'
+    return passServerActionOrRedirect(
+      request,
+      supabaseResponse,
+      NextResponse.redirect(url),
+    )
   }
 
   if (requiresAuth && !user) {
@@ -263,11 +281,15 @@ async function refreshSupabaseSession(
 
     const url = request.nextUrl.clone()
     url.pathname = '/auth/login'
-    const redirectTarget = isOffersShortcut
+    const redirectTarget = isLegacyOffersHub
       ? `/dashboard/offers${request.nextUrl.search}`
       : `${request.nextUrl.pathname}${request.nextUrl.search}`
     url.searchParams.set('redirect', redirectTarget)
-    return NextResponse.redirect(url)
+    return passServerActionOrRedirect(
+      request,
+      supabaseResponse,
+      NextResponse.redirect(url),
+    )
   }
 
   // Admin routes: same rule as app/admin/layout.tsx — staff only (not buyers/sellers).
@@ -279,13 +301,34 @@ async function refreshSupabaseSession(
         .eq('id', user.id)
         .single()
 
-      const isStaff =
-        profile?.is_admin === true || profile?.is_employee === true
+      const platformAccess = platformAccessForSignedInUser({ profile })
+      const isStaff = platformAccess.isAdmin || platformAccess.isEmployee
 
       if (!isStaff) {
         const url = request.nextUrl.clone()
         url.pathname = '/'
-        return NextResponse.redirect(url)
+        return passServerActionOrRedirect(
+          request,
+          supabaseResponse,
+          NextResponse.redirect(url),
+        )
+      }
+
+      if (!platformAccess.isAdmin && platformAccess.isEmployee) {
+        const decision = employeeAdminPathDecision(
+          request.nextUrl.pathname,
+          request.nextUrl.searchParams,
+        )
+        if (!decision.allow) {
+          const url = request.nextUrl.clone()
+          url.pathname = decision.redirectPath
+          url.search = decision.redirectSearch
+          return passServerActionOrRedirect(
+            request,
+            supabaseResponse,
+            NextResponse.redirect(url),
+          )
+        }
       }
     } catch {
       // Profiles lookup can fail during upstream outages — admin layout re-checks.

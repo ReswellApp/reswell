@@ -1,5 +1,6 @@
 import Link from "next/link"
 import type { GiveawayAdminDashboard } from "@/lib/services/giveawayEntry"
+import { SURFBOARD_GIVEAWAY_CAMPAIGN_ENABLED } from "@/lib/giveaways/catalog"
 import { GiveawayListingRemindersButton } from "@/components/features/admin/giveaway-listing-reminders-button"
 import { Badge } from "@/components/ui/badge"
 
@@ -68,11 +69,12 @@ export function GiveawayAdminDashboardView({ data }: { data: GiveawayAdminDashbo
             <h2 className="text-sm font-semibold text-foreground">Entries</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               Listing ID stays even after the board sells or is marked sold — that listing is the raffle
-              ticket. Klaviyo sends a confirmation on enter, then a listing reminder if they stay
-              pending.
+              ticket. Giveaway signup, qualification, and listing-reminder emails are off.
             </p>
           </div>
-          <GiveawayListingRemindersButton unlistedCount={notListedCount} />
+          {SURFBOARD_GIVEAWAY_CAMPAIGN_ENABLED ? (
+            <GiveawayListingRemindersButton unlistedCount={notListedCount} />
+          ) : null}
         </div>
         <div className="mt-3 overflow-x-auto rounded-xl border border-border">
           <table className="w-full min-w-[52rem] text-left text-sm">

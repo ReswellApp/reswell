@@ -2,6 +2,7 @@
 
 import { useId, useState, type HTMLAttributes, type ReactNode } from "react"
 import { cn } from "@/lib/utils"
+import { CarrierAdjustmentNotice } from "@/components/features/shipping/carrier-adjustment-notice"
 import { FedExMark, UpsMark, UspsMark } from "@/components/features/sell/carrier-mark-icons"
 import { SellRequiredMark } from "@/components/features/sell/sell-required-mark"
 import {
@@ -46,6 +47,7 @@ export interface ReswellPackageDimensionsCardProps {
   onWeightOzChange: (value: string) => void
   /** Matched dropoff carton — shown so sellers see what is stored on the listing. */
   readOnly?: boolean
+  showCarrierAdjustmentNotice?: boolean
 }
 
 /** Compact cell: label inside the field so L/W/H can sit in one row on mobile. */
@@ -193,6 +195,7 @@ export function ReswellPackageDimensionsCard({
   onWeightLbChange,
   onWeightOzChange,
   readOnly = false,
+  showCarrierAdjustmentNotice = false,
 }: ReswellPackageDimensionsCardProps) {
   const uid = useId()
   const lengthId = `${uid}-length`
@@ -394,6 +397,7 @@ export function ReswellPackageDimensionsCard({
           ) : null}
         </div>
       </div>
+      {showCarrierAdjustmentNotice && !readOnly ? <CarrierAdjustmentNotice /> : null}
     </div>
   )
 }

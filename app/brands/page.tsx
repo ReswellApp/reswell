@@ -6,7 +6,11 @@ import { BrandsExplorer } from "@/components/brands/brands-explorer"
 import { BrandsListAdminBar } from "@/components/brands/brands-list-admin-bar"
 import { createClient } from "@/lib/supabase/server"
 import { listBrands } from "@/lib/brands/server"
-import { countActiveListingsByBrandIds } from "@/lib/db/brand-listings"
+import { sortDirectoryBrands, sumDirectoryListingCounts } from "@/lib/brands/directory-rank"
+import {
+  countActiveListingsByBrandIds,
+  countPublicSoldListingsByBrandIds,
+} from "@/lib/db/brand-listings"
 import { parseBrandsDirectoryFilterCategorySlugsFromSearchParam } from "@/lib/brand-product-categories"
 import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
 
@@ -34,42 +38,57 @@ export default async function BrandsPage({
   const brands = await listBrands(supabase, {
     productCategories: categoryFilter.length > 0 ? categoryFilter : undefined,
   })
-  const activeListingCounts = await countActiveListingsByBrandIds(
-    supabase,
-    brands.map((brand) => brand.id),
+  const brandIds = brands.map((brand) => brand.id)
+  const [activeListingCounts, soldListingCounts] = await Promise.all([
+    countActiveListingsByBrandIds(supabase, brandIds),
+    countPublicSoldListingsByBrandIds(supabase, brandIds),
+  ])
+  const rankedBrands = sortDirectoryBrands(
+    brands,
+    sumDirectoryListingCounts(activeListingCounts, soldListingCounts),
   )
   const activeListingCountByBrandId = Object.fromEntries(activeListingCounts)
+  const soldListingCountByBrandId = Object.fromEntries(soldListingCounts)
 
   return (
     <main className="flex-1">
-      <section className="border-b border-border/80 bg-offwhite">
-        <div className="container relative mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-14">
-          <div className="absolute right-4 top-10 sm:right-6 sm:top-12">
-            <BrandsListAdminBar brandRequestImportId={brandRequestImportId} brands={brands} />
+      <section className="border-b border-border/60 bg-[#E8EEF6]/70">
+        <div className="container relative mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-12">
+          <div className="absolute right-4 top-8 sm:right-6 sm:top-10">
+            <BrandsListAdminBar brandRequestImportId={brandRequestImportId} brands={rankedBrands} />
           </div>
-          <div className="text-center">
-            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Directory</p>
-            <h1 className="mt-3 text-3xl font-bold tracking-tight text-balance text-foreground sm:text-4xl">Surf Brands</h1>
-            <p className="mx-auto mt-3 max-w-xl text-pretty text-base text-muted-foreground sm:text-lg">
-              Shapers and labels in the Reswell catalog. Browse live listings and recently sold gear by brand.
+          <div className="max-w-2xl">
+            <h1 className="text-3xl font-bold tracking-tight text-balance text-foreground sm:text-4xl">
+              Popular brands on Reswell
+            </h1>
+            <p className="mt-3 text-pretty text-base text-muted-foreground sm:text-lg">
+              Browse shapers and labels sorted by marketplace activity — then jump into models, live
+              listings, and recently sold gear.
             </p>
-            <div className="mx-auto mt-8 max-w-xl">
-              <BrandsDirectorySearch brands={brands} />
-            </div>
           </div>
-        </div>
-      </section>
-      <section className="border-b border-border/80 bg-background">
-        <div className="container mx-auto max-w-6xl px-4 py-6 sm:px-6">
-          <Suspense fallback={null}>
-            <BrandsCategoryFilter />
-          </Suspense>
+
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-3">
+            <div className="min-w-0 flex-1">
+              <BrandsDirectorySearch brands={rankedBrands} className="max-w-none" />
+            </div>
+            <Suspense
+              fallback={
+                <div
+                  className="h-12 w-full rounded-2xl border border-border/80 bg-white/80 sm:h-[3.25rem] sm:w-56"
+                  aria-hidden
+                />
+              }
+            >
+              <BrandsCategoryFilter />
+            </Suspense>
+          </div>
         </div>
       </section>
       <BrandsExplorer
-        brands={brands}
+        brands={rankedBrands}
         categoryFilter={categoryFilter}
         activeListingCountByBrandId={activeListingCountByBrandId}
+        soldListingCountByBrandId={soldListingCountByBrandId}
       />
     </main>
   )

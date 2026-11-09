@@ -1,4 +1,4 @@
-import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
+import { requireAdmin } from "@/lib/brands/admin-server"
 import { getOrderDetailForAdmin } from "@/lib/db/adminOrders"
 import {
   getOpenSellerSupportCaseForOrder,
@@ -25,7 +25,7 @@ export async function openSellerSupportOutreachService(
   const parsed = supportCaseSellerOutreachSchema.safeParse(raw)
   if (!parsed.success) return { error: "Write a message for the seller." }
 
-  const gate = await requireAdminOrEmployee()
+  const gate = await requireAdmin()
   if (!gate.ok) return { error: "Unauthorized" }
 
   let service: ReturnType<typeof createServiceRoleClient>

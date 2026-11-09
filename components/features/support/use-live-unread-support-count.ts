@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { authorizeRealtime } from "@/lib/supabase/realtime-auth"
 import {
   UNREAD_SUPPORT_COUNT_ADJUST_EVENT,
   UNREAD_SUPPORT_COUNT_REFRESH_EVENT,
@@ -77,6 +78,8 @@ function startSharedSubscription() {
       data: { user },
     } = await supabase.auth.getUser()
     if (!user || cancelled) return
+    const ok = await authorizeRealtime(supabase)
+    if (!ok || cancelled) return
     channel = supabase
       .channel(`unread_support_${user.id}`)
       .on(

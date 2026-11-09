@@ -8,7 +8,11 @@ import {
   recordGiveawayListingNudgeSent,
 } from "@/lib/db/giveawayListingNudges"
 import { findPublishedSurfboardId } from "@/lib/db/giveawayEntries"
-import { listCurrentGiveaways, isGiveawayOpen } from "@/lib/giveaways/catalog"
+import {
+  listCurrentGiveaways,
+  isGiveawayOpen,
+  SURFBOARD_GIVEAWAY_CAMPAIGN_ENABLED,
+} from "@/lib/giveaways/catalog"
 import { trackKlaviyoGiveawayListingReminder } from "@/lib/klaviyo/track-giveaway-entry"
 import { qualifyPublishedListingForGiveaways } from "@/lib/services/giveawayEntry"
 
@@ -37,6 +41,8 @@ export async function processGiveawayListingReminders(
     failed: 0,
     errors: [],
   }
+
+  if (!SURFBOARD_GIVEAWAY_CAMPAIGN_ENABLED) return summary
 
   const referenceTime = options.referenceTime ?? new Date()
   const minAgeHours = options.minAgeHours ?? GIVEAWAY_LISTING_REMINDER_STALE_HOURS

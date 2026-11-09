@@ -22,12 +22,20 @@ import {
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { CheckCircle2, Film, Loader2, Plus, RefreshCw, RotateCw, Upload, X } from "lucide-react"
+import { ListingPhotoOrientationDialog } from "@/components/features/sell/listing-photo-orientation-dialog"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { LISTING_VIDEO_ACCEPT } from "@/lib/listing-video-pipeline"
 import { LISTING_PHOTO_ACCEPT } from "@/lib/sell-flow/listing-photo-file"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
-import type { ListingPhotoSlot } from "@/lib/sell-flow/listing-photo-slot"
+import {
+  isLocalListingPhotoPreviewUrl,
+  listingPhotosUploadReady,
+  listingPhotosUploadingCount,
+  listingPhotoTilePreviewSrc,
+  listingPhotoTileSkeletonVisible,
+  type ListingPhotoSlot,
+} from "@/lib/sell-flow/listing-photo-slot"
 import {
   isListingVideoImagePreviewUrl,
   listingVideoUploadStatusLabel,
@@ -35,6 +43,8 @@ import {
 } from "@/lib/sell-flow/listing-video-slot"
 import { SellListingVideoRecorderDialog } from "@/components/features/sell/sell-listing-video-recorder-dialog"
 import { SELL_COMPLETE_BADGE_CLASS } from "@/components/features/sell/sell-form-surface"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
+import type { ListingPhotoQuarterTurnDelta } from "@/lib/sell-flow/listing-photo-orientation"
 import { cn } from "@/lib/utils"
 import { sellListingThumbLoadedSrcByClientId } from "@/components/features/sell/hooks/use-listing-photo-upload"
 
@@ -59,7 +69,7 @@ export type SellListingPhotoGridProps = {
   onDragEnd: (event: DragEndEvent) => void
   onRemove: (clientId: string) => void
   onRetry: (clientId: string) => void
-  onRotate180: (clientId: string) => void
+  onRotateQuarterTurns: (clientId: string, quarterTurns: ListingPhotoQuarterTurnDelta) => void
   /** When omitted, grid creates its own dnd sensors (same as surfboard sell flow). */
   photoDragSensors?: ReturnType<typeof useSensors>
   photoDescription?: string
@@ -86,13 +96,13 @@ const SellListingPhotoSortableTile = React.memo(function SellListingPhotoSortabl
   index,
   onRemove,
   onRetry,
-  onRotate180,
+  onRotateQuarterTurns,
 }: {
   image: ListingPhotoSlot
   index: number
   onRemove: (clientId: string) => void
   onRetry: (clientId: string) => void
-  onRotate180: (clientId: string) => void
+  onRotateQuarterTurns: (clientId: string, quarterTurns: ListingPhotoQuarterTurnDelta) => void
 }) {
   const {
     attributes,
@@ -112,7 +122,7 @@ const SellListingPhotoSortableTile = React.memo(function SellListingPhotoSortabl
       index={index}
       onRemove={() => onRemove(image.clientId)}
       onRetry={() => onRetry(image.clientId)}
-      onRotate180={() => onRotate180(image.clientId)}
+      onRotateQuarterTurns={(quarterTurns) => onRotateQuarterTurns(image.clientId, quarterTurns)}
       sortable={{
         setNodeRef,
         style: {
@@ -132,14 +142,14 @@ function SellListingPhotoTile({
   index,
   onRemove,
   onRetry,
-  onRotate180,
+  onRotateQuarterTurns,
   sortable,
 }: {
   image: ListingPhotoSlot
   index: number
   onRemove: () => void
   onRetry: () => void
-  onRotate180: () => void
+  onRotateQuarterTurns: (quarterTurns: ListingPhotoQuarterTurnDelta) => void
   sortable: {
     setNodeRef: (node: HTMLElement | null) => void
     style: React.CSSProperties
@@ -151,16 +161,12 @@ function SellListingPhotoTile({
   const isFailure = image.optimizePhase === "error" || image.uploadPhase === "error"
   const isPendingAuth = image.uploadPhase === "pending_auth"
 
-  const remote =
-    image.uploadPhase === "done"
-      ? (image.thumbnailUrl?.trim() || image.url?.trim() || "").trim()
+  const rawPreview = listingPhotoTilePreviewSrc(image)
+  const thumbSrc = isLocalListingPhotoPreviewUrl(rawPreview)
+    ? rawPreview
+    : rawPreview
+      ? (proxiedListingImageSrc(rawPreview) ?? rawPreview)
       : ""
-  const localPreview =
-    (image.optimizePhase === "done" || isPendingAuth) &&
-    image.previewUrl.startsWith("blob:")
-      ? image.previewUrl
-      : ""
-  const thumbSrc = remote ? (proxiedListingImageSrc(remote) ?? remote) : localPreview
   const photoReady = Boolean(thumbSrc)
 
   const persistedThumbMatches =
@@ -176,16 +182,18 @@ function SellListingPhotoTile({
     setThumbLoaded(matched)
   }, [image.clientId, thumbSrc])
 
-  const skeletonVisible =
-    !isFailure &&
-    (image.optimizePhase === "running" ||
-      image.uploadPhase === "uploading" ||
-      (Boolean(thumbSrc) && !thumbLoaded))
+  const skeletonVisible = listingPhotoTileSkeletonVisible(image, thumbLoaded)
 
-  const canRotate180 =
+  const [straightenOpen, setStraightenOpen] = useState(false)
+  const canRotate =
     !isFailure &&
     (Boolean(image.sourceFile) ||
       (image.uploadPhase === "done" && Boolean((image.url ?? "").trim())))
+  const straightenSrc = isLocalListingPhotoPreviewUrl(rawPreview)
+    ? rawPreview
+    : rawPreview
+      ? (proxiedListingImageSrc(rawPreview) ?? rawPreview)
+      : ""
 
   return (
     <div
@@ -196,7 +204,7 @@ function SellListingPhotoTile({
         touchAction: sortable.isDragging ? "none" : "pan-y",
       }}
       className={cn(
-        "relative aspect-square overflow-hidden rounded-lg border border-transparent bg-muted flex flex-col select-none",
+        "relative aspect-[3/4] overflow-hidden rounded-lg border border-transparent bg-muted flex flex-col select-none",
         sortable.isDragging && "z-[60] opacity-70 shadow-lg ring-2 ring-primary/40 scale-[1.02]",
         !isFailure && !skeletonVisible && "cursor-grab active:cursor-grabbing",
       )}
@@ -213,10 +221,17 @@ function SellListingPhotoTile({
             fill
             draggable={false}
             className={cn(
-              "pointer-events-none object-cover object-center transition-opacity duration-500 ease-out motion-reduce:duration-150 [-webkit-touch-callout:none]",
+              listingPhotoFillClassName,
+              "pointer-events-none transition-opacity ease-out motion-reduce:duration-150 [-webkit-touch-callout:none]",
+              isLocalListingPhotoPreviewUrl(rawPreview) ? "duration-150" : "duration-500",
               thumbLoaded ? "opacity-100" : "opacity-0",
             )}
             unoptimized
+            loading={isLocalListingPhotoPreviewUrl(rawPreview) ? "eager" : undefined}
+            onLoad={() => {
+              sellListingThumbLoadedSrcByClientId.set(image.clientId, thumbSrc)
+              setThumbLoaded(true)
+            }}
             onLoadingComplete={() => {
               sellListingThumbLoadedSrcByClientId.set(image.clientId, thumbSrc)
               setThumbLoaded(true)
@@ -229,7 +244,10 @@ function SellListingPhotoTile({
               "skeleton pointer-events-none absolute inset-0 z-[1] rounded-lg motion-reduce:[animation-duration:1ms]",
               skeletonVisible
                 ? "opacity-100"
-                : "opacity-0 transition-opacity duration-500 ease-out motion-reduce:duration-150 motion-reduce:transition-none",
+                : cn(
+                    "opacity-0 transition-opacity ease-out motion-reduce:duration-150 motion-reduce:transition-none",
+                    isLocalListingPhotoPreviewUrl(rawPreview) ? "duration-150" : "duration-500",
+                  ),
             )}
             aria-hidden
           />
@@ -239,22 +257,22 @@ function SellListingPhotoTile({
             <div
               className={cn(
                 "absolute inset-x-1 top-1 z-[5] flex gap-1 pointer-events-none",
-                canRotate180 ? "justify-between" : "justify-end",
+                canRotate ? "justify-between" : "justify-end",
               )}
             >
-              {canRotate180 ? (
+              {canRotate ? (
                 <button
                   type="button"
                   onPointerDown={(e) => e.stopPropagation()}
-                  onClick={onRotate180}
+                  onClick={() => setStraightenOpen(true)}
                   className={cn(
                     "pointer-events-auto flex h-7 w-7 shrink-0 items-center justify-center rounded-full touch-manipulation hover:bg-background sm:h-9 sm:w-9",
                     skeletonVisible
                       ? "bg-background/90 shadow-sm ring-1 ring-black/5"
                       : "bg-background/80",
                   )}
-                  aria-label={`Rotate photo ${index + 1} 180 degrees`}
-                  title="Rotate 180°"
+                  aria-label={`Straighten photo ${index + 1}`}
+                  title="Turn 90°"
                 >
                   <RotateCw className="h-3.5 w-3.5 sm:h-3 sm:w-3" aria-hidden />
                 </button>
@@ -313,6 +331,15 @@ function SellListingPhotoTile({
           </Button>
         </div>
       ) : null}
+      <ListingPhotoOrientationDialog
+        open={straightenOpen}
+        src={straightenSrc}
+        onOpenChange={setStraightenOpen}
+        onApply={(quarterTurns) => {
+          setStraightenOpen(false)
+          onRotateQuarterTurns(quarterTurns)
+        }}
+      />
     </div>
   )
 }
@@ -329,7 +356,7 @@ export function SellListingVideoAddTile({
 
   return (
     <>
-      <div className="relative aspect-square overflow-hidden rounded-lg border-2 border-dashed border-slate-400/80 bg-slate-50/60 transition-colors hover:border-primary/50 hover:bg-primary/[0.03]">
+      <div className="relative aspect-[3/4] overflow-hidden rounded-lg border-2 border-dashed border-slate-400/80 bg-slate-50/60 transition-colors hover:border-primary/50 hover:bg-primary/[0.03]">
         <button
           type="button"
           className="absolute inset-0 flex flex-col items-center justify-center px-2 touch-manipulation"
@@ -383,7 +410,7 @@ export function SellListingVideoFilledTile({
   return (
     <>
       <div
-        className="relative aspect-square overflow-hidden rounded-lg border border-transparent bg-muted flex flex-col select-none"
+        className="relative aspect-[3/4] overflow-hidden rounded-lg border border-transparent bg-muted flex flex-col select-none"
         aria-busy={uploading ? true : undefined}
         aria-live="polite"
       >
@@ -399,11 +426,11 @@ export function SellListingVideoFilledTile({
         <div className="relative flex-1 min-h-0 bg-black/90">
           {preview && isListingVideoImagePreviewUrl(preview) ? (
             // eslint-disable-next-line @next/next/no-img-element -- local blob / storage poster
-            <img src={preview} alt="" className="h-full w-full object-cover" />
+            <img src={preview} alt="" className={listingPhotoFillClassName} />
           ) : video.previewUrl || video.url ? (
             <video
               src={video.url ?? video.previewUrl ?? undefined}
-              className="h-full w-full object-cover"
+              className={listingPhotoFillClassName}
               muted
               playsInline
               preload="metadata"
@@ -539,7 +566,7 @@ function SellListingPhotoAddTile({
 }) {
   if (compact) {
     return (
-      <div className="relative aspect-square overflow-hidden rounded-lg border-2 border-dashed border-slate-400/80 bg-slate-50/60 transition-colors hover:border-primary/50 hover:bg-primary/[0.03]">
+      <div className="relative aspect-[3/4] overflow-hidden rounded-lg border-2 border-dashed border-slate-400/80 bg-slate-50/60 transition-colors hover:border-primary/50 hover:bg-primary/[0.03]">
         <div
           className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-2"
           aria-hidden
@@ -647,7 +674,7 @@ export function SellListingPhotoGrid({
   onDragEnd,
   onRemove,
   onRetry,
-  onRotate180,
+  onRotateQuarterTurns,
   photoDragSensors: externalSensors,
   photoDescription,
   photoTips,
@@ -672,7 +699,15 @@ export function SellListingPhotoGrid({
   const photoFailed = images.some(
     (image) => image.optimizePhase === "error" || image.uploadPhase === "error",
   )
-  const photosReady = images.length >= minPhotos && !photoFailed
+  const photosUploadingCount = listingPhotosUploadingCount(images)
+  const photosServerReady =
+    images.length >= minPhotos && !photoFailed && listingPhotosUploadReady(images)
+  const photosPendingAuth =
+    images.length >= minPhotos &&
+    !photoFailed &&
+    photosUploadingCount === 0 &&
+    !listingPhotosUploadReady(images) &&
+    images.some((image) => image.uploadPhase === "pending_auth")
   const photoCountLabel =
     images.length === 1 ? "1 photo" : `${images.length} photos`
   const videoEnabled = Boolean(
@@ -681,8 +716,8 @@ export function SellListingPhotoGrid({
   const resolvedPhotoDescription =
     photoDescription ??
     (videoEnabled
-      ? "Add photos, then drag to reorder — the first is your main image. Optional: add one short video."
-      : "Add photos, then drag to reorder — the first is your main image.")
+      ? "Dropped photos run from the first shot to the last. Drag to reorder — the first is your main image. Turn a photo 90° if it lands sideways. Optional: add one short video."
+      : "Dropped photos run from the first shot to the last. Drag to reorder — the first is your main image. Turn a photo 90° if it lands sideways.")
   const videoTile =
     videoEnabled && videoFileInputId && onVideoInputChange && onVideoRemove && onVideoRetry ? (
       <SellListingPhotoGridVideoTile
@@ -708,7 +743,7 @@ export function SellListingPhotoGrid({
             <p className="text-xs text-muted-foreground sm:text-sm">{resolvedPhotoDescription}</p>
           </div>
           <div className="shrink-0 pt-0.5" aria-live="polite">
-            {photosReady ? (
+            {photosServerReady ? (
               <span className={SELL_COMPLETE_BADGE_CLASS}>
                 <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
                 {photoCountLabel} · Ready
@@ -716,6 +751,22 @@ export function SellListingPhotoGrid({
             ) : photoFailed ? (
               <span className="inline-flex items-center rounded-full bg-destructive/10 px-2.5 py-1 text-xs font-medium text-destructive ring-1 ring-inset ring-destructive/20">
                 Retry failed photos
+              </span>
+            ) : photosUploadingCount > 0 ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-muted-foreground ring-1 ring-inset ring-slate-200/80">
+                <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" aria-hidden />
+                {photosUploadingCount === 1 && images.length === 1
+                  ? "1 photo · Uploading…"
+                  : `${photosUploadingCount} uploading…`}
+              </span>
+            ) : photosPendingAuth ? (
+              <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-muted-foreground ring-1 ring-inset ring-slate-200/80">
+                Sign in to upload
+              </span>
+            ) : images.length >= minPhotos ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-muted-foreground ring-1 ring-inset ring-slate-200/80">
+                <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" aria-hidden />
+                Finishing upload…
               </span>
             ) : (
               <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-muted-foreground ring-1 ring-inset ring-slate-200/80">
@@ -782,7 +833,7 @@ export function SellListingPhotoGrid({
                     index={index}
                     onRemove={onRemove}
                     onRetry={onRetry}
-                    onRotate180={onRotate180}
+                    onRotateQuarterTurns={onRotateQuarterTurns}
                   />
                 ))}
               </SortableContext>
@@ -801,7 +852,7 @@ export function SellListingPhotoGrid({
 
       {belowGrid}
 
-      {hideHeader && photosReady ? (
+      {hideHeader && photosServerReady ? (
         <p className="text-sm text-muted-foreground" aria-live="polite">
           {photoCountLabel} ready — drag to reorder; first is cover.
           {videoEnabled ? " Optional video sits beside your photos." : null}

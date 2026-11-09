@@ -20,6 +20,11 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { cn } from "@/lib/utils"
+
+function isCompleteEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())
+}
 
 export function ForgotPasswordFormPanel({
   variant = "page",
@@ -33,6 +38,7 @@ export function ForgotPasswordFormPanel({
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [didRequest, setDidRequest] = useState(false)
+  const emailComplete = isCompleteEmail(email)
 
   const loginLink: ReactNode = onBackToLogin ? (
     <button
@@ -158,8 +164,13 @@ export function ForgotPasswordFormPanel({
         {error ? <p className="text-sm text-neutral-700">{error}</p> : null}
         <Button
           type="submit"
-          disabled={isLoading}
-          className="h-12 w-full rounded-full bg-neutral-500 text-base font-semibold text-white hover:bg-neutral-600"
+          disabled={isLoading || !emailComplete}
+          className={cn(
+            "h-12 w-full rounded-full text-base font-semibold text-white transition-colors",
+            emailComplete
+              ? "bg-neutral-500 hover:bg-neutral-600"
+              : "bg-neutral-300 hover:bg-neutral-300 disabled:opacity-100",
+          )}
         >
           {isLoading ? "Sending…" : "Send Password Reset Email"}
         </Button>
@@ -230,7 +241,16 @@ export function ForgotPasswordFormPanel({
               />
             </div>
             {error && <p className="text-sm text-neutral-700">{error}</p>}
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button
+              type="submit"
+              className={cn(
+                "w-full rounded-full font-semibold text-white transition-colors",
+                emailComplete
+                  ? "bg-neutral-500 hover:bg-neutral-600"
+                  : "bg-neutral-300 hover:bg-neutral-300 disabled:opacity-100",
+              )}
+              disabled={isLoading || !emailComplete}
+            >
               {isLoading ? "Sending…" : "Send reset link"}
             </Button>
             <div className="text-center text-sm">{loginLink}</div>

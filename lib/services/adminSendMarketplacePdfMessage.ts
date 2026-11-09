@@ -1,4 +1,5 @@
 import { revalidateMessagesInboxForParticipants } from "@/lib/cache/revalidate-messages-inbox"
+import { broadcastInsertedMarketplaceMessage } from "@/lib/services/broadcastMarketplaceThreadMessage"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import {
   MARKETPLACE_MESSAGE_ATTACHMENTS_BUCKET,
@@ -107,6 +108,8 @@ export async function adminSendMarketplacePdfMessage(input: {
     void supabase.storage.from(MARKETPLACE_MESSAGE_ATTACHMENTS_BUCKET).remove([path])
     return { ok: false, error: "Could not send message", status: 500 }
   }
+
+  await broadcastInsertedMarketplaceMessage(inserted, conversationId)
 
   await supabase
     .from("conversations")

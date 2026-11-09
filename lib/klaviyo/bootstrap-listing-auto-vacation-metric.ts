@@ -11,6 +11,10 @@ import {
 } from "@/lib/klaviyo/track-listing-auto-vacation"
 import { SELLER_MESSAGE_INACTIVITY_DAYS } from "@/lib/db/sellerMessageInactivity"
 import { listingVisibilitySourceLabel } from "@/lib/listing-visibility-sources"
+import {
+  sellerListingAutoHiddenEmailBody,
+  VACATION_MODE_HIDDEN_LABEL,
+} from "@/lib/services/notifications/catalog"
 
 const SEED_PROFILE_EXTERNAL_ID = "reswell-metric-seed-listing-auto-vacation"
 
@@ -38,6 +42,9 @@ export async function bootstrapListingAutoVacationMetric(): Promise<{
       reswell_metric_seed: true,
       hide_reason: LISTING_AUTO_VACATION_HIDE_REASON,
       hide_reason_label: listingVisibilitySourceLabel(LISTING_AUTO_VACATION_HIDE_REASON),
+      vacation_label: VACATION_MODE_HIDDEN_LABEL,
+      email_headline: VACATION_MODE_HIDDEN_LABEL,
+      email_body: sellerListingAutoHiddenEmailBody(),
       days_unanswered: SELLER_MESSAGE_INACTIVITY_DAYS,
       Title: "Listing auto vacation (metric seed)",
       manage_url: "https://www.reswell.app/dashboard/listings",

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
+import { assertAccountPermission } from "@/lib/services/accountAccess"
 import { revokeSellerInitiatedOffer } from "@/lib/services/revokeSellerInitiatedOffer"
 import { withdrawOfferSchema } from "@/lib/validations/withdraw-offer"
 import { captureServerEvent } from "@/lib/posthog-server"
@@ -21,7 +22,9 @@ export async function revokeSellerOfferAction(raw: unknown) {
     return { error: "Sign in to revoke an offer." as const }
   }
 
-  const result = await revokeSellerInitiatedOffer(supabase, user.id, parsed.data.offerId)
+  const access = await assertAccountPermission("offers.write")
+  if ("error" in access) return { error: access.error }
+  const result = await revokeSellerInitiatedOffer(supabase, access.shop.accountId, parsed.data.offerId)
   if (!result.ok) {
     return { error: result.error }
   }

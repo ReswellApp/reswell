@@ -4,7 +4,7 @@ import { useState, useRef, useCallback, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { ProfileCircle } from "@/components/profile-circle"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { MapPin, Star, Package, ExternalLink } from "lucide-react"
@@ -13,6 +13,7 @@ import { createClient } from "@/lib/supabase/client"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { getFollowStatusForSeller } from "@/app/actions/follows"
 import { listingDetailHref } from "@/lib/listing-href"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { ratingStarFilledClassName } from "@/lib/rating-star-styles"
 import { resolveSellerProfileDisplayImageUrl } from "@/lib/sellers/profile-display-image"
@@ -174,12 +175,7 @@ export function SellerHoverCard({
         <div className="p-4">
           {/* Header */}
           <div className="flex items-start gap-3">
-            <Avatar className="h-12 w-12 shrink-0">
-              <AvatarImage src={avatarSrc} alt={displayName} />
-              <AvatarFallback className="bg-primary text-primary-foreground text-lg font-semibold">
-                {displayName.charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
+            <ProfileCircle avatarUrl={avatarSrc} alt={displayName} className="h-12 w-12" />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 flex-wrap">
                 <Link
@@ -270,7 +266,10 @@ export function SellerHoverCard({
                         src={proxiedListingImageSrc(img.url)}
                         alt={listing.title}
                         fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-200"
+                        className={cn(
+                          listingPhotoFillClassName,
+                          "transition-transform duration-200 group-hover:scale-105",
+                        )}
                         sizes="72px"
                         unoptimized
                       />

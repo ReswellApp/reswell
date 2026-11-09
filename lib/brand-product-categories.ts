@@ -30,11 +30,14 @@ export const BRAND_PRODUCT_CATEGORY_OPTIONS: readonly {
   { slug: "accessories", label: "Accessories" },
 ]
 
-/** Product types shown on `/brands` filters — expand as more catalog surfaces ship. */
+/** Product types shown on `/brands` filters. */
 export const BRANDS_DIRECTORY_FILTER_CATEGORY_SLUGS = [
   "surfboards",
   "fins",
   "wetsuits",
+  "boardbags",
+  "surfpacks",
+  "leashes",
 ] as const satisfies readonly BrandProductCategorySlug[]
 
 export type BrandsDirectoryFilterCategorySlug =

@@ -5,6 +5,8 @@ import type { SupabaseClient, User } from "@supabase/supabase-js"
 export type AdminContext = {
   supabase: SupabaseClient
   user: User
+  /** Always true: this helper only succeeds for marketplace admins. */
+  isAdmin: true
 }
 
 export type AdminStaffContext = {
@@ -15,8 +17,8 @@ export type AdminStaffContext = {
 }
 
 /**
- * Admins and support employees may read shared admin resources (e.g. order lookup).
- * Destructive actions should still use {@link requireAdmin}.
+ * Admins, and employees on the few admin tools they are allowed to use.
+ * Everything else should use {@link requireAdmin}.
  */
 export async function requireAdminOrEmployee(): Promise<
   { ok: true; ctx: AdminStaffContext } | { ok: false; response: NextResponse }
@@ -69,5 +71,5 @@ export async function requireAdmin():
   if (!profile?.is_admin) {
     return { ok: false, response: NextResponse.json({ error: "Admin only" }, { status: 403 }) }
   }
-  return { ok: true, ctx: { supabase, user } }
+  return { ok: true, ctx: { supabase, user, isAdmin: true } }
 }

@@ -1,8 +1,11 @@
 #!/usr/bin/env node
 /**
- * Copies Search Console + GCP WIF vars from .env.production.local into .env.local
- * when missing. `next dev` only loads .env.local; Vercel development env often omits
- * production-only keys.
+ * Copies keys that live on Vercel Production (and sometimes not Development)
+ * into .env.local when missing.
+ *
+ * `npm run env:pull` overwrites .env.local from Development, then this file.
+ * Expo and `next dev` only load .env.local — they never read .env.production.local.
+ * Hand-pasting into .env.local is wiped on the next pull.
  */
 import { readFileSync, writeFileSync, existsSync } from "node:fs"
 import { resolve } from "node:path"
@@ -12,6 +15,8 @@ const localPath = resolve(root, ".env.local")
 const prodPath = resolve(root, ".env.production.local")
 
 const KEYS = [
+  "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID",
+  "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID",
   "GOOGLE_SEARCH_CONSOLE_SITE_URL",
   "GCP_PROJECT_NUMBER",
   "GCP_SERVICE_ACCOUNT_EMAIL",
@@ -65,7 +70,7 @@ for (const key of KEYS) {
 }
 
 if (added.length === 0) {
-  console.log("[sync-search-console-env] .env.local already has Search Console / GCP WIF vars")
+  console.log("[sync-search-console-env] .env.local already has production-synced keys")
 } else {
   writeFileSync(localPath, localText)
   console.log(`[sync-search-console-env] added to .env.local: ${added.join(", ")}`)

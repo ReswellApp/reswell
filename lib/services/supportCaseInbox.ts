@@ -63,7 +63,7 @@ export async function updateSupportCaseInboxService(
     .eq("id", user.id)
     .maybeSingle()
 
-  if (!profile || (profile.is_admin !== true && profile.is_employee !== true)) {
+  if (profile?.is_admin !== true) {
     return { error: "Forbidden" }
   }
 

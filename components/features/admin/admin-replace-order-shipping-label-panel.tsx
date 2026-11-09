@@ -66,6 +66,13 @@ type Overview = {
     isDefault: boolean
     fields: AddressFields
   }>
+  suggestedParcel: {
+    lengthIn: string
+    widthIn: string
+    heightIn: string
+    weightLb: string
+    weightOz: string
+  } | null
 }
 
 const EMPTY_ADDRESS: AddressFields = {
@@ -205,6 +212,14 @@ export function AdminReplaceOrderShippingLabelPanel({
         body.data.shipFromAddresses.find((a) => a.id === preferred)?.fields ?? EMPTY_ADDRESS,
       )
       setShipTo(body.data.shipTo ?? EMPTY_ADDRESS)
+      const box = body.data.suggestedParcel
+      if (box) {
+        setLengthIn(box.lengthIn)
+        setWidthIn(box.widthIn)
+        setHeightIn(box.heightIn)
+        setWeightLb(box.weightLb)
+        setWeightOz(box.weightOz)
+      }
       setRates(null)
       setSelectedRateId("")
       setQuoteMeta(null)
@@ -461,6 +476,16 @@ export function AdminReplaceOrderShippingLabelPanel({
         </Alert>
       ) : null}
 
+      {overview.suggestedParcel ? (
+        <Alert>
+          <AlertTitle>Drop-off box</AlertTitle>
+          <AlertDescription>
+            This order uses a drop-off location. The carton is filled with that location&apos;s box
+            size. The ship-from name and street are the seller&apos;s.
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
       {overview.shipFromSource === "admin" && overview.shipFromAddresses.length > 0 ? (
         <Alert>
           <AlertTitle>Using admin ship-from</AlertTitle>
@@ -629,7 +654,8 @@ export function AdminReplaceOrderShippingLabelPanel({
             </TableBody>
           </Table>
           <p className="text-xs text-muted-foreground">
-            Showing the lowest UPS Ground or Priority rates.
+            Showing all available UPS services for this box and route (Ground, Priority, air,
+            overnight).
           </p>
 
           <Button

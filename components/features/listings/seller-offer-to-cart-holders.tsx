@@ -5,7 +5,7 @@ import Link from "next/link"
 import { formatDistanceToNow } from "date-fns"
 import { Loader2, ShoppingCart, Tag } from "lucide-react"
 import { toast } from "sonner"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { ProfileCircle } from "@/components/profile-circle"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -15,19 +15,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { SellerMakeOfferToBuyerDialog } from "@/components/features/messages/seller-make-offer-to-buyer-dialog"
-import { revokeSellerOfferAction } from "@/lib/actions/revokeSellerOffer"
-import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
 import { LISTING_SHIPPING_EMPHASIS_CLASS } from "@/lib/listing-fulfillment"
-import { offerMessagesHref } from "@/lib/utils/offer-messages-href"
+import { dashboardOffersPath } from "@/lib/utils/offers-dashboard-display"
 import { cn } from "@/lib/utils"
 import type { ListingCartHolder } from "@/lib/types/listing-cart-holders"
-
-function holderInitials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean)
-  if (parts.length === 0) return "M"
-  if (parts.length === 1) return parts[0]!.slice(0, 1).toUpperCase()
-  return `${parts[0]!.slice(0, 1)}${parts[1]!.slice(0, 1)}`.toUpperCase()
-}
 
 function addedAgo(iso: string): string {
   const date = new Date(iso)
@@ -64,7 +55,6 @@ export function SellerOfferToCartHolders({
   const [holders, setHolders] = useState<ListingCartHolder[]>([])
   const [loading, setLoading] = useState(false)
   const [offerBuyerId, setOfferBuyerId] = useState<string | null>(null)
-  const [revokingOfferId, setRevokingOfferId] = useState<string | null>(null)
 
   const loadHolders = useCallback(async () => {
     setLoading(true)
@@ -103,21 +93,6 @@ export function SellerOfferToCartHolders({
 
   function handleMakeOffer(buyerUserId: string) {
     setOfferBuyerId(buyerUserId)
-  }
-
-  async function handleRevoke(offerId: string) {
-    setRevokingOfferId(offerId)
-    try {
-      const result = await revokeSellerOfferAction({ offerId })
-      if ("error" in result && result.error) {
-        toast.error(result.error)
-        return
-      }
-      toast.success("Offer revoked.")
-      await loadHolders()
-    } finally {
-      setRevokingOfferId(null)
-    }
   }
 
   function handleDialogOpenChange(open: boolean) {
@@ -179,10 +154,21 @@ export function SellerOfferToCartHolders({
               embedded
               open
               onOpenChange={(open) => {
-                if (!open) {
-                  setOfferBuyerId(null)
-                  setListOpen(false)
-                }
+                if (!open) setOfferBuyerId(null)
+              }}
+              onOfferSent={(payload) => {
+                setHolders((current) =>
+                  current.map((holder) =>
+                    holder.buyerUserId === payload.buyerUserId
+                      ? {
+                          ...holder,
+                          openOfferId: payload.offerId,
+                          openOfferSellerInitiated: true,
+                        }
+                      : holder,
+                  ),
+                )
+                void loadHolders()
               }}
               listingId={listingId}
               buyerUserId={offerBuyerId}
@@ -219,17 +205,13 @@ export function SellerOfferToCartHolders({
                 ) : (
                   <ul className="space-y-2">
                     {holders.map((holder) => {
-                      const avatarSrc = profileMediaDisplaySrc(holder.avatarUrl)
                       const hasOpenOffer = Boolean(holder.openOfferId)
                       return (
                         <li
                           key={holder.buyerUserId}
                           className="flex flex-wrap items-center gap-3 rounded-xl border border-border/60 bg-card px-3 py-2.5"
                         >
-                          <Avatar className="h-10 w-10 shrink-0">
-                            {avatarSrc ? <AvatarImage src={avatarSrc} alt="" /> : null}
-                            <AvatarFallback>{holderInitials(holder.displayName)}</AvatarFallback>
-                          </Avatar>
+                          <ProfileCircle avatarUrl={holder.avatarUrl} alt="" className="h-10 w-10" />
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-sm font-medium text-foreground">
                               {holder.displayName}
@@ -242,63 +224,13 @@ export function SellerOfferToCartHolders({
                                 : addedAgo(holder.addedAt)}
                             </p>
                           </div>
-                          {hasOpenOffer && holder.openOfferId && holder.openOfferSellerInitiated ? (
-                            <div className="flex shrink-0 items-center gap-1.5">
-                              <Button
-                                type="button"
-                                size="sm"
-                                className="rounded-full"
-                                onClick={() => handleMakeOffer(holder.buyerUserId)}
-                              >
-                                Update
-                              </Button>
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                className="rounded-full"
-                                disabled={revokingOfferId === holder.openOfferId}
-                                onClick={() => {
-                                  const offerId = holder.openOfferId
-                                  if (offerId) void handleRevoke(offerId)
-                                }}
-                              >
-                                {revokingOfferId === holder.openOfferId ? (
-                                  <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-                                ) : (
-                                  "Revoke"
-                                )}
-                              </Button>
-                              <Button asChild size="sm" variant="ghost" className="rounded-full px-2">
-                                <Link
-                                  href={offerMessagesHref(
-                                    {
-                                      id: holder.openOfferId,
-                                      listing_id: listingId,
-                                      buyer_id: holder.buyerUserId,
-                                      seller_id: sellerUserId,
-                                    },
-                                    "seller",
-                                    holder.conversationId,
-                                  )}
-                                >
-                                  View
-                                </Link>
-                              </Button>
-                            </div>
-                          ) : hasOpenOffer ? (
+                          {hasOpenOffer && holder.openOfferId ? (
                             <Button asChild size="sm" variant="outline" className="shrink-0 rounded-full">
                               <Link
-                                href={offerMessagesHref(
-                                  {
-                                    id: holder.openOfferId ?? undefined,
-                                    listing_id: listingId,
-                                    buyer_id: holder.buyerUserId,
-                                    seller_id: sellerUserId,
-                                  },
-                                  "seller",
-                                  holder.conversationId,
-                                )}
+                                href={dashboardOffersPath({
+                                  role: "seller",
+                                  offerId: holder.openOfferId,
+                                })}
                               >
                                 View offer
                               </Link>

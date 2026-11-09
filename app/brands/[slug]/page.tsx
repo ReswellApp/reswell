@@ -5,7 +5,16 @@ import { getDb } from "@/lib/supabase/db"
 import { createClient } from "@/lib/supabase/server"
 import { getBrandBySlug } from "@/lib/brands/server"
 import { parseBrandPageTab } from "@/lib/brands/routes"
-import { listActiveListingsForBrand, listRecentlySoldListingsForBrand } from "@/lib/db/brand-listings"
+import {
+  countActiveListingsByBrandIds,
+  countPublicSoldListingsByBrandIds,
+  listActiveListingsForBrand,
+  listRecentlySoldListingsForBrand,
+  mapBrandModelMarketplaceCovers,
+} from "@/lib/db/brand-listings"
+import { listBrandModelsForPublicPageByBrandId } from "@/lib/db/brand-models"
+import { toBrandPageModelCards } from "@/lib/brands/model-cards"
+import { brandStoryParagraphs } from "@/lib/brands/page-content"
 import { viewerSavedSearchIdForBrand } from "@/lib/services/viewerSavedSearch"
 import { brandSavedSearchCriteria } from "@/lib/utils/saved-search-alert-kind"
 import { absoluteUrl } from "@/lib/site-metadata"
@@ -32,8 +41,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return { title: "Brand — Reswell" }
   }
   const fallbackTitle = `${brand.name} · Surf brand — Reswell`
+  const storySnippet = brandStoryParagraphs({
+    short_description: brand.short_description,
+    about_paragraphs: brand.about_paragraphs,
+  })
+    .join(" ")
+    .slice(0, 320)
   const fallbackDescription =
     brand.short_description?.trim() ||
+    storySnippet ||
     `Used ${brand.name} on Reswell — current listings and recently sold gear.`
   const seo = await resolveDynamicSeo(
     "type:brand",
@@ -74,14 +90,34 @@ export default async function BrandPage({ params, searchParams }: Props) {
   }
 
   const brandRef = { id: brand.id, name: brand.name }
-  const [brandListings, brandSoldListings] = await Promise.all([
-    listActiveListingsForBrand(supabase, brandRef, { limit: BRAND_PAGE_LISTING_LIMIT }),
-    listRecentlySoldListingsForBrand(supabase, brandRef, { limit: BRAND_PAGE_LISTING_LIMIT }),
-  ])
-
+  const catalogModelRows = await listBrandModelsForPublicPageByBrandId(supabase, brand.id)
   const {
     data: { user },
   } = await supabase.auth.getUser()
+
+  const [
+    brandListings,
+    brandSoldListings,
+    listingCovers,
+    initialSavedSearchId,
+    activeListingCounts,
+    soldListingCounts,
+  ] = await Promise.all([
+    listActiveListingsForBrand(supabase, brandRef, { limit: BRAND_PAGE_LISTING_LIMIT }),
+    listRecentlySoldListingsForBrand(supabase, brandRef, { limit: BRAND_PAGE_LISTING_LIMIT }),
+    mapBrandModelMarketplaceCovers(
+      supabase,
+      brand.id,
+      catalogModelRows.map((model) => model.id),
+    ),
+    viewerSavedSearchIdForBrand(supabase, user?.id, brand.id),
+    countActiveListingsByBrandIds(supabase, [brand.id]),
+    countPublicSoldListingsByBrandIds(supabase, [brand.id]),
+  ])
+  const catalogModels = toBrandPageModelCards(catalogModelRows, listingCovers)
+  const activeListingCount = activeListingCounts.get(brand.id) ?? 0
+  const soldListingCount = soldListingCounts.get(brand.id) ?? 0
+
   let favoritedListingIds: string[] = []
   if (user) {
     const ids = [...new Set([...brandListings, ...brandSoldListings].map((l) => l.id))]
@@ -100,7 +136,6 @@ export default async function BrandPage({ params, searchParams }: Props) {
     brandId: brand.id,
     brandSlug: brand.slug,
   })
-  const initialSavedSearchId = await viewerSavedSearchIdForBrand(supabase, user?.id, brand.id)
 
   return (
     <BrandProfileView
@@ -108,6 +143,7 @@ export default async function BrandPage({ params, searchParams }: Props) {
       criteria={criteria}
       initialSavedSearchId={initialSavedSearchId}
       initialTab={parseBrandPageTab(tab)}
+      catalogModels={catalogModels}
       brandListings={brandListings}
       brandSoldListings={brandSoldListings}
       listingsCapped={brandListings.length >= BRAND_PAGE_LISTING_LIMIT}
@@ -115,6 +151,8 @@ export default async function BrandPage({ params, searchParams }: Props) {
       favoritedListingIds={favoritedListingIds}
       isLoggedIn={!!user}
       viewerUserId={user?.id ?? null}
+      activeListingCount={activeListingCount}
+      soldListingCount={soldListingCount}
     />
   )
 }

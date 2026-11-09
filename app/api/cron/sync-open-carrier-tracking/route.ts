@@ -4,8 +4,8 @@ import { syncOpenShippingCarrierTracking } from "@/lib/services/syncOpenShipping
 export const maxDuration = 60
 
 /**
- * Every 15 minutes: poll ShipEngine for open shipping orders missing carrier_delivered_at.
- * Ensures delivery status (and the 24h pending-earnings clock) updates even if webhooks miss.
+ * Every 15 minutes (offset to :04): poll ShipEngine for open shipping orders missing carrier_delivered_at.
+ * Ensures delivery status (and the four-day pending-earnings clock) updates even if webhooks miss.
  * Protected with CRON_SECRET (same pattern as other cron routes).
  */
 export async function GET(request: Request) {

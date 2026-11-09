@@ -8,11 +8,30 @@
  * Flow filters can branch on properties such as Listing_ID, Saved_Search_ID, Section, Brand, Model,
  * Alert_Kind (`search` | `model` | `brand`). Keep one metric — do not create separate model/brand
  * metrics. Clone the flow and filter on Alert_Kind if you want different copy.
+ * `Search_URL` is the saved search itself (e.g. `https://www.reswell.app/search?q=roberts+5%2710`).
+ *
+ * Board Finder saves (`Alert_Source` = `board-finder`) also send every field the shopper
+ * filled in: `Wanted_Brand`, `Wanted_Model`, `Wanted_Size`, `Wanted_Style`, `Wanted_Condition`,
+ * `Wanted_Min_Price`, `Wanted_Max_Price`, `Wanted_Volume`, `Wanted_Construction`,
+ * `Wanted_Fin_System`, plus `Brand_URL`, `Model_URL`, and `Board_Finder_URL`.
+ * Listing fields (`Brand`, `Model`, `Title`) describe the board that just listed.
  */
 
-import { absoluteKlaviyoListingPhotoUrl } from "@/lib/klaviyo/catalog-product"
-import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
+import { boardAlertMatchFinderProperties } from "@/lib/klaviyo/board-alert-match-details"
+import { klaviyoMediaListingPhotoUrl } from "@/lib/klaviyo/catalog-product"
+import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
+import { boardAlertListingContent } from "@/lib/services/savedSearchAlertEligibility"
+import type { BoardSavedSearchCriteria } from "@/lib/validations/boardSavedSearch"
+
+/** Keep a `/media/listings` link. Other stored URLs are rewritten to that host. */
+function emailListingPhotoUrl(raw: string | null | undefined): string {
+  const trimmed = raw?.trim() ?? ""
+  if (/^https?:\/\/[^/]+\/media\/listings\//i.test(trimmed)) {
+    return trimmed.split(/[?#]/)[0] ?? trimmed
+  }
+  return klaviyoMediaListingPhotoUrl(trimmed)
+}
 
 export type KlaviyoBoardAlertMatchPayload = {
   subscriberUserId: string
@@ -38,30 +57,44 @@ export type KlaviyoBoardAlertMatchPayload = {
    */
   alertKind?: string | null
   savedSearchLabel?: string | null
+  /** Absolute URL of the saved search (`/search?q=…` or a section browse link). */
+  searchUrl?: string | null
+  searchQuery?: string | null
+  /** Saved snapshot. Board Finder fields are expanded onto the event. */
+  criteria?: BoardSavedSearchCriteria | null
 }
 
 export async function trackKlaviyoBoardAlertMatch(
   payload: KlaviyoBoardAlertMatchPayload,
 ): Promise<void> {
+  const content = boardAlertListingContent({
+    title: payload.listingTitle,
+    price: payload.listingPrice,
+    listingUrl: payload.listingAbsoluteUrl,
+  })
+  const listingId = payload.listingId.trim()
+  if (!content || !listingId) {
+    console.error("[saved_search] skipped Board Alert Match with no listing to show", {
+      savedSearchId: payload.savedSearchId,
+      listingId: payload.listingId,
+    })
+    return
+  }
+
   let email = payload.subscriberEmail?.trim() || null
   if (!email) {
     email = await getAuthEmailForUserId(payload.subscriberUserId)
   }
 
-  const priceNum =
-    typeof payload.listingPrice === "number" ? payload.listingPrice : Number(payload.listingPrice)
-
   await sendKlaviyoServerEvent({
     metricName: "Board Alert Match",
     properties: {
-      Listing_ID: payload.listingId,
+      Listing_ID: listingId,
       Saved_Search_ID: payload.savedSearchId,
-      Title: payload.listingTitle,
-      Price: Number.isFinite(priceNum) ? priceNum : payload.listingPrice,
-      Listing_URL: payload.listingAbsoluteUrl,
-      photo_url: payload.listingPhotoUrl
-        ? absoluteKlaviyoListingPhotoUrl(payload.listingPhotoUrl)
-        : "",
+      Title: content.title,
+      Price: content.price,
+      Listing_URL: content.listingUrl,
+      photo_url: emailListingPhotoUrl(payload.listingPhotoUrl),
       Brand: payload.brand ?? "",
       Model: payload.model ?? "",
       Dimensions: payload.dimensions ?? "",
@@ -70,13 +103,16 @@ export async function trackKlaviyoBoardAlertMatch(
       Section: payload.section ?? "",
       Alert_Kind: payload.alertKind ?? "",
       Saved_Search_Label: payload.savedSearchLabel ?? "",
+      Search_Query: payload.searchQuery ?? "",
+      Search_URL: payload.searchUrl ?? "",
+      ...(payload.criteria ? boardAlertMatchFinderProperties(payload.criteria) : {}),
     },
     profile: {
       external_id: payload.subscriberUserId,
       email,
     },
-    uniqueId: `board-alert-${payload.savedSearchId}-${payload.listingId}`,
-    value: Number.isFinite(priceNum) ? priceNum : undefined,
+    uniqueId: `board-alert-${payload.savedSearchId}-${listingId}`,
+    value: content.price,
     valueCurrency: "USD",
   })
 }

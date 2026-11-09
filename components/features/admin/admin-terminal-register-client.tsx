@@ -30,6 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { cn } from "@/lib/utils"
 import { AdminTerminalCardCheckout } from "@/components/features/admin/admin-terminal-card-checkout"
 
@@ -653,7 +654,7 @@ export function AdminTerminalRegisterClient() {
                             alt={hit.title}
                             fill
                             sizes="56px"
-                            className="object-cover"
+                            className={listingPhotoFillClassName}
                           />
                         ) : null}
                       </div>
@@ -700,7 +701,7 @@ export function AdminTerminalRegisterClient() {
                     alt={preview.title}
                     fill
                     sizes="80px"
-                    className="object-cover"
+                    className={listingPhotoFillClassName}
                   />
                 ) : null}
               </div>

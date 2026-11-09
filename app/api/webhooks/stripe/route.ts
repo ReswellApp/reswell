@@ -93,6 +93,10 @@ export async function POST(request: Request) {
           })()
     if (failedPaymentIntentId) {
       await revertBindingOfferIfLatestChargeDeclined(failedPaymentIntentId)
+      const { releaseReswellCreditHoldForPaymentIntent } = await import(
+        "@/lib/services/reswellCreditCheckout"
+      )
+      await releaseReswellCreditHoldForPaymentIntent(failedPaymentIntentId)
     }
     return NextResponse.json({ received: true })
   }

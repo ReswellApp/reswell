@@ -2,8 +2,8 @@ import { unstable_cache } from "next/cache"
 import type { MessagesInboxPayload } from "@/lib/db/messagesInbox"
 import { getMessagesInboxForUser } from "@/lib/services/messagesInbox"
 
-/** v4: Activity includes Reswell support replies. */
-export const MESSAGES_INBOX_CACHE_KEY_PREFIX = "messages-inbox-v4"
+/** v5: order and unread expire immediately on each message. */
+export const MESSAGES_INBOX_CACHE_KEY_PREFIX = "messages-inbox-v5"
 
 export function messagesInboxTag(userId: string): string {
   return `${MESSAGES_INBOX_CACHE_KEY_PREFIX}:${userId}`

@@ -3,9 +3,11 @@ import {
   USED_ACCESSORIES_CATEGORY_ID,
   accessorySizeSlugForDb,
 } from "@/lib/accessory-listing-config"
+import { stockQuantityForSellCondition } from "@/lib/listing-stock-quantity"
 import { reswellPackageFieldsToDb } from "@/lib/sell-listing-fulfillment-flags"
 import { normalizeSellShippingCostMode } from "@/lib/sell-shipping-cost-mode"
 import type { ListingPersistShippingOptions } from "@/lib/sell-shipping-cost-mode"
+import { shipOnlyListingShippingFieldsFor } from "@/lib/sell-ship-only-listing-shipping"
 import type { CreateAccessoryListingInput } from "@/lib/validations/accessory-listing"
 
 export function accessoryListingShippingFieldsFor(
@@ -17,40 +19,13 @@ export function accessoryListingShippingFieldsFor(
   shipping_price: number | null
   board_shipping_cost_mode: string | null
 } {
-  if (!input.shippingAvailable) {
-    return {
-      shipping_available: false,
-      local_pickup: true,
-      shipping_price: null,
-      board_shipping_cost_mode: null,
-    }
-  }
-  const mode = normalizeSellShippingCostMode(
-    input.shippingCostMode,
-    options?.allowPrivilegedShippingModes === true,
+  return shipOnlyListingShippingFieldsFor(
+    {
+      shippingCostMode: input.shippingCostMode,
+      shippingPrice: input.shippingPrice,
+    },
+    options,
   )
-  if (mode === "free") {
-    return {
-      shipping_available: true,
-      local_pickup: input.localPickup,
-      shipping_price: 0,
-      board_shipping_cost_mode: "free",
-    }
-  }
-  if (mode === "reswell") {
-    return {
-      shipping_available: true,
-      local_pickup: input.localPickup,
-      shipping_price: 0,
-      board_shipping_cost_mode: "reswell",
-    }
-  }
-  return {
-    shipping_available: true,
-    local_pickup: input.localPickup,
-    shipping_price: input.shippingPrice ?? 0,
-    board_shipping_cost_mode: "flat",
-  }
 }
 
 /** Maps validated sell-form input to `listings` columns for create/update. */
@@ -82,6 +57,7 @@ export function buildAccessoryListingPersistFields(
     description: input.description.trim(),
     price: input.price,
     condition: input.condition,
+    stock_quantity: stockQuantityForSellCondition(input.condition, input.stockQuantity),
     section: ACCESSORIES_SECTION,
     category_id: USED_ACCESSORIES_CATEGORY_ID,
     latitude: input.locationLat ?? null,

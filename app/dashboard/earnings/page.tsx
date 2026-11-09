@@ -1,15 +1,17 @@
 "use client"
 
 import { useEffect, useState, useCallback, useRef } from "react"
-import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { RefreshCw } from "lucide-react"
 import { getEarningsWalletData, loadMoreEarningsActivity } from "@/app/actions/wallet"
 import { EARNINGS_ACTIVITY_PAGE_SIZE } from "@/lib/earnings-activity-page-size"
 import { EarningsLifetimeStats } from "@/components/features/earnings/earnings-lifetime-stats"
 import { EarningsActivity } from "@/components/features/earnings/earnings-activity"
+import { EarningsBalanceListings } from "@/components/features/earnings/earnings-balance-listings"
+import type { EarningsBalanceListingRow } from "@/lib/earnings-balance-listings"
 import { EarningsStripePayoutCard } from "@/components/features/earnings/earnings-stripe-payout-card"
 import { EarningsPaymentsOverview } from "@/components/features/earnings/earnings-payments-overview"
+import { EarningsReswellCreditSection } from "@/components/features/earnings/earnings-reswell-credit-section"
 import { DashboardPageHeader } from "@/components/features/dashboard/dashboard-page-header"
 import type { StripeConnectStatusPayload } from "@/lib/utils/stripe-connect-status"
 import type { EarningsTransaction, EarningsWalletSnapshot } from "@/components/features/earnings/earnings-types"
@@ -35,6 +37,8 @@ export default function EarningsPage() {
   const [walletError, setWalletError] = useState<string | null>(null)
 
   const [transactions, setTransactions] = useState<EarningsTransaction[]>([])
+  const [pendingBalanceListings, setPendingBalanceListings] = useState<EarningsBalanceListingRow[]>([])
+  const [readyBalanceListings, setReadyBalanceListings] = useState<EarningsBalanceListingRow[]>([])
   const [activityLoading, setActivityLoading] = useState(true)
   const [activityHasMore, setActivityHasMore] = useState(false)
   const [activityLoadMoreError, setActivityLoadMoreError] = useState<string | null>(null)
@@ -59,7 +63,6 @@ export default function EarningsPage() {
   } | null>(null)
 
   const fetchGenerationRef = useRef(0)
-  const earningsResyncDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   /** First wallet+activity fetch only — later refetches update in place without skeleton flash. */
   const initialWalletActivityPaintRef = useRef(true)
 
@@ -100,6 +103,8 @@ export default function EarningsPage() {
         setWallet(nextWallet)
         dispatchHeaderWalletSync(nextWallet)
         setTransactions(earningsData.transactions as EarningsTransaction[])
+        setPendingBalanceListings(earningsData.pendingBalanceListings ?? [])
+        setReadyBalanceListings(earningsData.readyBalanceListings ?? [])
         setReversedOrderIds(new Set(earningsData.reversedOrderIds ?? []))
         setActivityHasMore(Boolean(earningsData.activityHasMore))
         setSellerEarningsTotals(earningsData.sellerEarningsTotals ?? null)
@@ -111,6 +116,8 @@ export default function EarningsPage() {
             : "Could not load your wallet.",
         )
         setTransactions([])
+        setPendingBalanceListings([])
+        setReadyBalanceListings([])
         setReversedOrderIds(new Set())
         setActivityHasMore(false)
         setSellerEarningsTotals(null)
@@ -120,6 +127,8 @@ export default function EarningsPage() {
       setWalletError("Could not load your wallet.")
       setWallet(null)
       setTransactions([])
+      setPendingBalanceListings([])
+      setReadyBalanceListings([])
       setActivityHasMore(false)
       setSellerEarningsTotals(null)
     } finally {
@@ -193,55 +202,9 @@ export default function EarningsPage() {
     [fetchWalletBundle, fetchStripeData],
   )
 
-  const scheduleEarningsResync = useCallback(() => {
-    if (earningsResyncDebounceRef.current) {
-      clearTimeout(earningsResyncDebounceRef.current)
-    }
-    earningsResyncDebounceRef.current = setTimeout(() => {
-      earningsResyncDebounceRef.current = null
-      void fetchData()
-    }, 150)
-  }, [fetchData])
-
   useEffect(() => {
     void fetchData()
   }, [fetchData])
-
-
-  useEffect(() => {
-    if (!wallet?.id) return
-    const supabase = createClient()
-    const wid = wallet.id
-    const channel = supabase
-      .channel(`earnings_wallet_${wid}`)
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "wallets", filter: `id=eq.${wid}` },
-        () => {
-          scheduleEarningsResync()
-        },
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "wallet_transactions",
-          filter: `wallet_id=eq.${wid}`,
-        },
-        () => {
-          scheduleEarningsResync()
-        },
-      )
-      .subscribe()
-    return () => {
-      if (earningsResyncDebounceRef.current) {
-        clearTimeout(earningsResyncDebounceRef.current)
-        earningsResyncDebounceRef.current = null
-      }
-      supabase.removeChannel(channel)
-    }
-  }, [wallet?.id, scheduleEarningsResync])
 
   const handleStripeBankCashOutSettled = useCallback(
     (detail: {
@@ -321,7 +284,7 @@ export default function EarningsPage() {
     <div className="space-y-6">
       <DashboardPageHeader
         title="Earnings"
-        description="Your marketplace wallet and payouts."
+        description="Reswell Bucks (cashable) and payouts — Reswell Credit stays separate."
         actions={
           <Button
             type="button"
@@ -357,6 +320,18 @@ export default function EarningsPage() {
             activityHasMore={activityHasMore}
           />
         </section>
+
+        <EarningsBalanceListings
+          pending={pendingBalanceListings}
+          ready={readyBalanceListings}
+          pendingTotalUsd={Number.isFinite(parseFloat(wallet?.pending_balance ?? "0"))
+            ? parseFloat(wallet?.pending_balance ?? "0")
+            : 0}
+          readyTotalUsd={Number.isFinite(displayAvailable) ? displayAvailable : 0}
+          isLoading={activityLoading}
+        />
+
+        <EarningsReswellCreditSection />
 
         <EarningsLifetimeStats
           wallet={wallet}

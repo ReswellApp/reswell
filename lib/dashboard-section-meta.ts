@@ -4,17 +4,24 @@ export interface DashboardSectionMeta {
   description: string
 }
 
-const OVERVIEW_META: DashboardSectionMeta = {
-  sectionName: "Overview",
-  description: "Here is what is happening with your account — updates in real time.",
+const FALLBACK_META: DashboardSectionMeta = {
+  sectionName: "Account",
+  description: "Your listings, purchases, and account settings.",
 }
 
 const SECTION_META_BY_PREFIX: { prefix: string; meta: DashboardSectionMeta }[] = [
   {
+    prefix: "/dashboard/shopify",
+    meta: {
+      sectionName: "Shopify",
+      description: "Connect your store and choose which products appear on Reswell.",
+    },
+  },
+  {
     prefix: "/dashboard/balance-sheet",
     meta: {
       sectionName: "Balance Sheet",
-      description: "Realized listing profit derived from your sales and cost basis.",
+      description: "Active inventory, sold flips, and period P&L from sales and cost basis.",
     },
   },
   {
@@ -25,17 +32,38 @@ const SECTION_META_BY_PREFIX: { prefix: string; meta: DashboardSectionMeta }[] =
     },
   },
   {
+    prefix: "/dashboard/shipper",
+    meta: {
+      sectionName: "Shipper",
+      description: "This week's boards, pickups, and drop-offs. Turn Shipper on when you are driving.",
+    },
+  },
+  {
+    prefix: "/dashboard/dropoff-location",
+    meta: {
+      sectionName: "Drop-off",
+      description: "Boards dropped at your location, and the shipping labels for those orders.",
+    },
+  },
+  {
     prefix: "/dashboard/listings",
     meta: {
-      sectionName: "My Listings",
+      sectionName: "Listings",
       description: "Summary of your surfboard inventory and performance.",
+    },
+  },
+  {
+    prefix: "/dashboard/profile/team",
+    meta: {
+      sectionName: "Team",
+      description: "Emails that can sign in and help run this account.",
     },
   },
   {
     prefix: "/dashboard/profile",
     meta: {
       sectionName: "Profile",
-      description: "Update your profile, addresses, and account settings.",
+      description: "Update your profile, sign-in access, addresses, and account settings.",
     },
   },
   {
@@ -56,19 +84,18 @@ const SECTION_META_BY_PREFIX: { prefix: string; meta: DashboardSectionMeta }[] =
     prefix: "/dashboard/purchases",
     meta: {
       sectionName: "Purchases",
-      description: "Used gear and peer-to-peer buys.",
+      description: "Track and manage your orders.",
     },
   },
   {
     prefix: "/dashboard/sales",
     meta: {
       sectionName: "Sales",
-      description:
-        "Card and wallet purchases of your listings. Shipping addresses appear here when the buyer paid with a card and chose delivery.",
+      description: "Track and fulfill your orders.",
     },
   },
   {
-    prefix: "/dashboard/favorites",
+    prefix: "/favorites",
     meta: {
       sectionName: "Favorites",
       description: "Listings you have saved to revisit later.",
@@ -84,7 +111,7 @@ const SECTION_META_BY_PREFIX: { prefix: string; meta: DashboardSectionMeta }[] =
   {
     prefix: "/dashboard/support",
     meta: {
-      sectionName: "Support",
+      sectionName: "Reswell help",
       description: "Choose a topic, pick a purchase or sale, then message the Reswell team.",
     },
   },
@@ -93,15 +120,11 @@ const SECTION_META_BY_PREFIX: { prefix: string; meta: DashboardSectionMeta }[] =
 export function resolveDashboardSectionMeta(pathname: string): DashboardSectionMeta {
   const normalized = pathname.replace(/\/$/, "") || "/"
 
-  if (normalized === "/dashboard") {
-    return OVERVIEW_META
-  }
-
   for (const { prefix, meta } of SECTION_META_BY_PREFIX) {
     if (normalized === prefix || normalized.startsWith(`${prefix}/`)) {
       return meta
     }
   }
 
-  return OVERVIEW_META
+  return FALLBACK_META
 }

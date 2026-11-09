@@ -3,7 +3,7 @@
 import {
   createContext,
   useContext,
-  useEffect,
+  useLayoutEffect,
   useState,
   type ReactNode,
   type RefObject,
@@ -29,7 +29,7 @@ export function CategoryTopShopsImageWarmProvider({
 }) {
   const [warm, setWarm] = useState(false)
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (warm) return
     const el = scrollRef.current
     if (!el) return

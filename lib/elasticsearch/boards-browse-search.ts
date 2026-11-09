@@ -8,6 +8,7 @@
  */
 
 import type { estypes } from "@elastic/elasticsearch"
+import { boardsBrowseUsesTypoFallback } from "./boards-browse-typo-fallback"
 import { getElasticsearchClient } from "./client"
 import { ELASTICSEARCH_LISTINGS_INDEX } from "./config"
 import {
@@ -47,6 +48,7 @@ import {
 } from "@/lib/listing-tail-shape-tags"
 import { parseBrowseLocationLabel } from "@/lib/listing-location-or-filter"
 import { usStateTitleCaseName } from "@/lib/us-state-name-to-code"
+import { boardsBrowseEsNearbyPrioritySortClause } from "@/lib/boards-browse-home"
 
 /** Attach `must_not` to a listings bool query body (keyword builders already set filter/must/should). */
 function withMustNot(queryBody: object, mustNot: object[]): object {
@@ -197,6 +199,8 @@ export type BoardsBrowseEsContext = {
   locationText?: string
   /** When true, only listings where the seller offers shipping. */
   shippingAvailable?: boolean
+  /** When true, only listings that offer local pickup. */
+  localPickupAvailable?: boolean
   /** Admin synonym expansions for keyword recall (e.g. "ci" → "channel islands"). */
   expansions?: string[]
   /** Exact board length from query parse (`5'10` → 70); applied as a tight inches range. */
@@ -339,6 +343,13 @@ function baseContextFilters(ctx: BoardsBrowseEsContext): object[] {
   if (ctx.shippingAvailable) {
     filters.push({ term: { shipping_available: true } })
   }
+  if (ctx.localPickupAvailable) {
+    filters.push({
+      bool: {
+        must_not: [{ term: { local_pickup: false } }],
+      },
+    })
+  }
   // Exact length wins over open bounds when both are present.
   const exactLength = lengthInchesClause(ctx.lengthInches)
   if (exactLength) {
@@ -383,12 +394,27 @@ export type BoardsBrowseEsSearchParams = BoardsBrowseEsContext & {
   condition?: string
   facets?: BoardsBrowseFacetSelections
   dimensionTokens?: string[]
-  geo?: { lat: number; lng: number; radiusMi?: number }
-  /** `newest` | `price-low` | `price-high` | `price-newest` | `nearest` | `top-picks` (24h rotate). */
+  geo?: {
+    lat: number
+    lng: number
+    /** Hard cutoff. Listings outside this radius are excluded. */
+    radiusMi?: number
+    /** Soft ranking: listings inside this radius sort before the rest. */
+    nearbyPriorityMi?: number
+  }
+  /** `newest` | `price-low` | `price-high` | `price-newest` | `nearest` | `top-picks` | `created-at` (internal, ignores keyword score). */
   sort: string
   useSuppressionSort?: boolean
   restrictToIds?: string[]
   excludeIds?: string[]
+  /**
+   * When the strict keyword query misses, retry with a fuzzy longest-token query.
+   * Browse keeps this on so a typo can still show boards. Saved-search membership
+   * must pass false: fuzzy "lost" matches "last" / "most" and emails the wrong board.
+   * Defaults to on. Also skipped when `restrictToIds` is set — a miss on one
+   * listing is not an empty search page.
+   */
+  typoFallback?: boolean
   from: number
   size: number
 }
@@ -469,6 +495,17 @@ function buildSort(params: BoardsBrowseEsSearchParams): object[] {
         unit: "mi",
       },
     })
+    return sort
+  }
+
+  if (geo?.nearbyPriorityMi && geo.nearbyPriorityMi > 0) {
+    sort.push(
+      boardsBrowseEsNearbyPrioritySortClause(geo.lat, geo.lng, geo.nearbyPriorityMi),
+    )
+  }
+
+  if (params.sort === "created-at") {
+    sort.push({ created_at: { order: "desc" } })
     return sort
   }
 
@@ -574,6 +611,8 @@ export async function searchBoardsBrowse(
   const parsed = parseBoardsBrowseHits(res)
   const q = params.query?.trim()
   if (!q || parsed.total > 0 || parsed.ids.length > 0) return parsed
+
+  if (!boardsBrowseUsesTypoFallback(params)) return parsed
 
   // Same typo recovery as `/search` when the strict listings query returns nothing.
   const typoQuery = boardsBrowseKeywordQuery(

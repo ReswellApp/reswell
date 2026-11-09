@@ -1,3 +1,5 @@
+import { peerBrandNewStockQuantity } from "@/lib/listing-stock-quantity"
+import { listingShippingPriceCaption } from "@/lib/listing-fulfillment"
 import type { ComponentProps } from "react"
 import { notFound } from "next/navigation"
 import Link from "next/link"
@@ -24,7 +26,9 @@ import {
 } from "@/lib/listing-detail-page-load"
 import { renderListingDetailWithGuestFallback } from "@/lib/listing-detail-page-safe-render"
 import { ShareButton } from "@/components/share-button"
-import { ListingOwnerManageActions } from "@/components/features/listings/listing-owner-manage-actions"
+import { ListingBuyerOnly } from "@/components/features/listings/listing-buyer-only"
+import { ListingOwnerHydratedManageActions } from "@/components/features/listings/listing-owner-hydrated-manage-actions"
+import { ListingProtectionRibbonSlot } from "@/components/features/listings/listing-protection-ribbon-slot"
 import { ListingPhotosPendingBanner } from "@/components/listing-photos-pending-banner"
 import { ImageGallery } from "@/components/image-gallery"
 import { primaryListingVideo } from "@/lib/primary-listing-video"
@@ -34,19 +38,15 @@ import { ContactSellerForm } from "@/components/contact-seller-form"
 import { ListingBoardSpecTable } from "@/components/features/listings/listing-board-spec-table"
 import { ListingCatalogIdentity } from "@/components/features/listings/listing-catalog-identity"
 import { ListingPdpDeliveryCaption } from "@/components/features/listings/listing-pdp-delivery-caption"
-import { listingConditionSpecRow } from "@/lib/utils/listing-board-spec-rows"
+import { listingAvailableQuantitySpecRow, listingConditionSpecRow } from "@/lib/utils/listing-board-spec-rows"
 import { fetchSimilarPeerListingsForListingPdp } from "@/lib/db/listing-detail-similar-peer"
 import { FavoriteButton } from "@/components/favorite-button"
 import { cn } from "@/lib/utils"
-import {
-  ListingSoldDetailNotice,
-  ListingSoldOwnerNotice,
-} from "@/components/listing-sold-detail-notice"
+import { ListingSoldDetailNotice } from "@/components/listing-sold-detail-notice"
 import { TranslateableDescription } from "@/components/translateable-description"
 import {
   ListingAboutSellerSection,
   ListingBuyerProtectionTrustRibbon,
-  ListingProtectionTrustRibbon,
 } from "@/components/features/listings/listing-about-seller-section"
 import { ListingFulfillmentAccordionItem } from "@/components/features/listings/listing-fulfillment-accordion-item"
 import { BRANDS_BASE } from "@/lib/brands/routes"
@@ -74,10 +74,9 @@ import {
   HomeListingScrollRow,
   type HomePeerScrollListing,
 } from "@/components/features/home"
-import {
-  HOME_PEER_LISTING_WITH_PROFILE_SELECT,
-  hydrateHomePeerListingRows,
-} from "@/lib/db/home-peer-listing-feed"
+import { hydrateHomePeerListingRows } from "@/lib/db/home-peer-listing-feed"
+import { fetchMoreFromSellerListings } from "@/lib/db/listing-pdp-seller-listings"
+import { sellerListingRailTitle, similarListingRailTitle } from "@/lib/listing-pdp-rail-titles"
 import {
   getCachedReswellPlatformReviewSummary,
   getCachedSellerReviewSummary,
@@ -110,7 +109,7 @@ async function renderBoardbagsListingDetailPage({
   prefetchedListing,
   viewerUser,
 }: ListingDetailPageSharedProps) {
-  const { supabase, user, listing: boardbagRaw, canSellerRelist } = await loadListingDetailPageContext({
+  const { supabase, user, listing: boardbagRaw } = await loadListingDetailPageContext({
     listingParam,
     prefetchedListing,
     viewerUser,
@@ -164,16 +163,12 @@ async function renderBoardbagsListingDetailPage({
     getCachedSellerReviewSummary(sellerId),
     listSellerReviewPreviews(supabase, sellerId),
     getCachedReswellPlatformReviewSummary(),
-    supabase
-      .from("listings")
-      .select(HOME_PEER_LISTING_WITH_PROFILE_SELECT)
-      .eq("user_id", sellerId)
-      .eq("status", "active")
-      .eq("section", BOARDBAGS_SECTION)
-      .eq("hidden_from_site", false)
-      .neq("id", boardbag.id)
-      .order("created_at", { ascending: false })
-      .limit(SELLER_BOARDBAGS_PDP_LIMIT),
+    fetchMoreFromSellerListings(supabase, {
+      sellerId,
+      section: BOARDBAGS_SECTION,
+      excludeListingId: boardbag.id as string,
+      limit: SELLER_BOARDBAGS_PDP_LIMIT,
+    }),
     brandId ? getBrandById(supabase, brandId) : Promise.resolve(null),
     fetchSimilarPeerListingsForListingPdp(supabase, {
       excludeListingId: boardbag.id as string,
@@ -191,7 +186,7 @@ async function renderBoardbagsListingDetailPage({
     sellerReviewSummaryRes
   const sellerReviewPreviews = sellerReviewPreviewRes.data ?? []
   const reswellPlatformReviewSummary = reswellPlatformReviewSummaryRes
-  const sellerBoardbags = hydrateHomePeerListingRows((sellerBoardbagsRes.data ?? []) as Record<string, unknown>[])
+  const sellerBoardbags = sellerBoardbagsRes
   const similarBoardbags = hydrateHomePeerListingRows(similarBoardbagsRaw)
 
   const sellerBoardbagIds = (sellerBoardbags ?? []).map((f) => f.id)
@@ -315,23 +310,13 @@ async function renderBoardbagsListingDetailPage({
   const boardShippingCostMode =
     (boardbag.board_shipping_cost_mode as "reswell" | "flat" | "free" | null) ?? null
 
-  let shippingPriceCaption: string | null = null
-  if (!isSold) {
-    if (!shippingOffered && pickupOffered) {
-      shippingPriceCaption = "Local pickup · shipping not offered"
-    } else if (shippingOffered && boardShippingCostMode === "free") {
-      shippingPriceCaption = "Free shipping included"
-    } else if (shippingOffered && shippingFlatRate > 0) {
-      shippingPriceCaption = `+ $${shippingFlatRate.toFixed(2)} shipping`
-    } else if (shippingOffered && boardShippingCostMode === "reswell") {
-      shippingPriceCaption = "Shipping rate calculated at checkout"
-    } else if (shippingOffered && boardShippingCostMode === "flat") {
-      shippingPriceCaption =
-        shippingFlatRate > 0
-          ? `+ $${shippingFlatRate.toFixed(2)} shipping`
-          : "Flat shipping at checkout"
-    }
-  }
+  const shippingPriceCaption = listingShippingPriceCaption({
+    isSold,
+    shippingOffered,
+    pickupOffered,
+    mode: boardShippingCostMode,
+    flatRate: shippingFlatRate,
+  })
 
   const listingViews = Number((boardbag.views as number | null) ?? 0)
   let listedRelative: string | null = null
@@ -342,15 +327,18 @@ async function renderBoardbagsListingDetailPage({
     }
   }
 
-  const softPanelClass =
-    "rounded-2xl border border-border/50 bg-muted/30 px-4 py-4 dark:border-border dark:bg-muted/15"
-
   const favoriteNextToOffer = !!(canPeerPurchase && makeOfferConfig)
   const showShareOnGalleryOverlay = isOwnListing || !favoriteNextToOffer
   const showFavoriteOnGalleryOverlay = !isOwnListing
 
   const specRows = [
     listingConditionSpecRow(boardbag.condition as string | null),
+    listingAvailableQuantitySpecRow({
+      section: boardbag.section,
+      condition: boardbag.condition as string | null,
+      stock_quantity: (boardbag as { stock_quantity?: number | null }).stock_quantity,
+      inventory_source: (boardbag as { inventory_source?: string | null }).inventory_source,
+    }),
     sizeLabel ? { label: "Size", value: sizeLabel } : null,
   ].filter(Boolean) as { label: string; value: string; href?: string | null }[]
 
@@ -491,6 +479,12 @@ async function renderBoardbagsListingDetailPage({
                   listingId={boardbag.id}
                   checkoutListingParam={boardbag.slug ?? boardbag.id}
                   section="boardbags"
+                  availableQuantity={peerBrandNewStockQuantity({
+                    section: "boardbags",
+                    condition: boardbag.condition as string | null,
+                    stock_quantity: (boardbag as { stock_quantity?: number | null }).stock_quantity,
+                    inventory_source: (boardbag as { inventory_source?: string | null }).inventory_source,
+                  })}
                   isLoggedIn={!!user}
                   makeOffer={makeOfferConfig}
                   agreedCheckoutItemUsd={buyerAgreedPriceUsd}
@@ -581,6 +575,12 @@ async function renderBoardbagsListingDetailPage({
                     listingId={boardbag.id}
                     checkoutListingParam={boardbag.slug ?? boardbag.id}
                     section="boardbags"
+                    availableQuantity={peerBrandNewStockQuantity({
+                      section: "boardbags",
+                      condition: boardbag.condition as string | null,
+                      stock_quantity: (boardbag as { stock_quantity?: number | null }).stock_quantity,
+                    inventory_source: (boardbag as { inventory_source?: string | null }).inventory_source,
+                    })}
                     isLoggedIn={!!user}
                     makeOffer={makeOfferConfig}
                     agreedCheckoutItemUsd={buyerAgreedPriceUsd}
@@ -625,22 +625,18 @@ async function renderBoardbagsListingDetailPage({
             <div className="mt-5 hidden lg:block">{aboutSellerSection}</div>
 
             {!isOwnListing ? (
-              <ListingBuyerProtectionTrustRibbon className="mt-5 border-b border-neutral-200/90 pb-5 dark:border-neutral-700/70 lg:hidden" />
+              <ListingBuyerOnly>
+                <ListingBuyerProtectionTrustRibbon className="mt-5 border-b border-neutral-200/90 pb-5 dark:border-neutral-700/70 lg:hidden" />
+              </ListingBuyerOnly>
             ) : null}
 
-            <ListingProtectionTrustRibbon
-              viewerRole={isOwnListing ? "seller" : "buyer"}
-              className={
-                isOwnListing
-                  ? "mt-5 border-b border-neutral-200/90 pb-5 dark:border-neutral-700/70"
-                  : "mt-5 hidden border-b border-neutral-200/90 pb-5 dark:border-neutral-700/70 lg:block"
-              }
-            />
+            <ListingProtectionRibbonSlot />
 
             <ReswellPlatformRatingWidget summary={reswellPlatformReviewSummary} className="mt-5" />
 
             {!isOwnListing ? (
-              <div className="border-b border-neutral-200/90 pb-4 dark:border-neutral-700/70">
+              <ListingBuyerOnly>
+                <div className="border-b border-neutral-200/90 pb-4 dark:border-neutral-700/70">
                 <Link
                   href={`/contact?topic=listing-report&listing=${encodeURIComponent(boardbag.id)}`}
                   className="inline-flex items-center gap-2 text-[14px] font-medium text-muted-foreground transition-colors hover:text-foreground"
@@ -649,21 +645,10 @@ async function renderBoardbagsListingDetailPage({
                   Report listing to Reswell
                 </Link>
               </div>
+              </ListingBuyerOnly>
             ) : null}
 
-            {isOwnListing && isSold && (
-              <div className={softPanelClass}>
-                <ListingSoldOwnerNotice
-                  dashboardListingsHref="/dashboard/listings"
-                  sectionLabel="listing"
-                  listingId={boardbag.id as string}
-                  canRelist={canSellerRelist}
-                />
-              </div>
-            )}
-
-            {isOwnListing ? (
-              <ListingOwnerManageActions
+            <ListingOwnerHydratedManageActions
                 listingId={boardbag.id}
                 section="boardbags"
                 currentPriceUsd={listPriceNum}
@@ -671,7 +656,6 @@ async function renderBoardbagsListingDetailPage({
                 listingStatus={String(boardbag.status ?? "")}
                 hiddenFromSite={boardbag.hidden_from_site === true}
               />
-            ) : null}
           </div>
 
           <div className="col-span-full min-w-0 max-w-full max-lg:order-3 lg:col-span-1 lg:[grid-area:about] lg:order-none lg:border-t lg:border-neutral-200/90 lg:pt-5 dark:lg:border-neutral-700/70 xl:pt-6">
@@ -700,7 +684,8 @@ async function renderBoardbagsListingDetailPage({
               />
 
               {!isOwnListing && !isSold ? (
-                <AccordionItem value="contact" className="border-border/55">
+                <ListingBuyerOnly>
+                  <AccordionItem value="contact" className="border-border/55">
                   <AccordionTrigger className="py-4 text-[16px] font-medium text-foreground hover:no-underline">
                     Contact seller
                   </AccordionTrigger>
@@ -717,19 +702,22 @@ async function renderBoardbagsListingDetailPage({
                     />
                   </AccordionContent>
                 </AccordionItem>
+                </ListingBuyerOnly>
               ) : null}
             </Accordion>
             {!isOwnListing ? (
-              <div className="mt-10 hidden w-full min-w-0 border-t border-neutral-200/90 pt-8 dark:border-neutral-700/70 lg:block">
+              <ListingBuyerOnly>
+                <div className="mt-10 hidden w-full min-w-0 border-t border-neutral-200/90 pt-8 dark:border-neutral-700/70 lg:block">
                 <ListingBuyerProtectionTrustRibbon />
               </div>
+              </ListingBuyerOnly>
             ) : null}
           </div>
 
             {similarBoardbags.length > 0 ? (
               <div className="col-span-full min-w-0 max-w-full max-lg:order-5 lg:[grid-area:similar] lg:order-none">
                 <section className="mt-10 border-t border-neutral-200/90 pt-8 dark:border-neutral-700/70">
-                  <h2 className="mb-8 text-2xl font-bold text-foreground">Similar boardbags</h2>
+                  <h2 className="mb-8 text-2xl font-bold text-foreground">{similarListingRailTitle(BOARDBAGS_SECTION)}</h2>
                   <HomeListingScrollRow uniformCardHeights>
                     {similarBoardbags.map((row) => (
                       <HomePeerListingScrollTile
@@ -747,7 +735,7 @@ async function renderBoardbagsListingDetailPage({
 
         {sellerBoardbags && sellerBoardbags.length > 0 && (
           <section className="mt-16 min-w-0 w-full border-t border-neutral-200/90 pt-12 dark:border-neutral-700/70">
-            <h2 className="mb-8 text-2xl font-bold text-foreground">More boardbags from this seller</h2>
+            <h2 className="mb-8 text-2xl font-bold text-foreground">{sellerListingRailTitle(BOARDBAGS_SECTION)}</h2>
             <HomeListingScrollRow uniformCardHeights>
               {sellerBoardbags.map((item) => (
                 <HomePeerListingScrollTile

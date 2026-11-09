@@ -4,6 +4,7 @@ import Image from "next/image"
 import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { brandLogoDisplaySrc } from "@/lib/public-media-display-src"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { cn } from "@/lib/utils"
 
@@ -46,7 +47,7 @@ export function SellCatalogSelectionCard({
             src={displaySrc}
             alt={selection.modelName ?? selection.brandName}
             fill
-            className={cn(selection.imageIsLogo ? "object-contain p-2" : "object-cover")}
+            className={cn(selection.imageIsLogo ? "object-contain p-2" : listingPhotoFillClassName)}
             sizes="(max-width:640px) 80px, 96px"
             unoptimized={listingImageShouldBypassOptimization(displaySrc)}
           />

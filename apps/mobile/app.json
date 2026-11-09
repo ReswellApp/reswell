@@ -1,0 +1,121 @@
+{
+  "expo": {
+    "name": "Reswell",
+    "slug": "reswell",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "reswell",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "bundleIdentifier": "app.reswell.reswell",
+      "usesAppleSignIn": true,
+      "associatedDomains": ["applinks:www.reswell.app"],
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIBackgroundModes": ["remote-notification"]
+      }
+    },
+    "android": {
+      "package": "app.reswell.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#F9F8F3",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "backgroundImage": "./assets/images/android-icon-background.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "category": ["BROWSABLE", "DEFAULT"],
+          "data": [
+            { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/l" },
+            { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/track" },
+            { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/dashboard/purchases" },
+            { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/dashboard/sales" },
+            { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/dashboard/listings" },
+            { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/dashboard/earnings" },
+            { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/dashboard/offers" },
+            { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/dashboard/orders" },
+            { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/messages" },
+            { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/inbox" },
+            { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/following" },
+            { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/favorites" },
+            { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/sellers" },
+            { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/checkout" },
+            { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/cart" },
+            { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/help" },
+            { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/safety" },
+            { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/protection-policy" },
+            { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/shipping-estimator" },
+            { "scheme": "https", "host": "www.reswell.app", "pathPrefix": "/dropoff" }
+          ]
+        }
+      ]
+    },
+    "web": {
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "enableSceneSupport": true
+          }
+        }
+      ],
+      "expo-web-browser",
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "enableBackgroundRemoteNotifications": true
+        }
+      ],
+      "expo-apple-authentication",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Reswell uses your photos so buyers can see what you're selling.",
+          "cameraPermission": "Reswell uses the camera so you can photograph what you're selling.",
+          "microphonePermission": "Reswell uses the microphone so you can record a listing video."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Reswell uses your location to find boards near you."
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#F9F8F3",
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 200
+        }
+      ],
+      "expo-video",
+      [
+        "@stripe/stripe-react-native",
+        {}
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "4072a2f0-7fb3-4a1c-9110-3879e0ac1e2d"
+      }
+    },
+    "owner": "reswell-inc"
+  }
+}

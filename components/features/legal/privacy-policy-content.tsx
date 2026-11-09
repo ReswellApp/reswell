@@ -295,7 +295,44 @@ export function PrivacyPolicyContent({ compact = false }: { compact?: boolean })
       </section>
 
       <section>
-        <h2 className={h2}>13. Changes to this policy</h2>
+        <h2 className={h2}>13. Shopify-connected stores</h2>
+        <p className="mb-2 leading-relaxed">
+          If you connect a Shopify store to Reswell, including through the Reswell app for Shopify,
+          we receive the following from Shopify:
+        </p>
+        <ul className="list-disc space-y-1 pl-6">
+          <li>
+            Your store&apos;s domain, name, and Shopify store ID, the permissions you approved, and
+            the access credentials Shopify issues to Reswell. We encrypt those credentials before
+            storing them.
+          </li>
+          <li>
+            For products you choose to publish on Reswell: titles, descriptions, vendor, product
+            status, prices, images, variant names, and inventory quantities and locations.
+          </li>
+          <li>
+            Notifications from Shopify when those products or their inventory change, are deleted,
+            or when the app is uninstalled.
+          </li>
+        </ul>
+        <p className="mt-4 leading-relaxed">
+          We use this information only to create and update your Reswell listings, keep stock in
+          sync, and, if you turn it on, lower your Shopify inventory when an item sells on Reswell.
+          Reswell does not read your Shopify customers, orders, payments, fulfillments, or refunds.
+          Buyers on Reswell check out through Reswell, and their information is handled as described
+          in the rest of this policy.
+        </p>
+        <p className="mt-4 leading-relaxed">
+          If you disconnect your store or uninstall the app, we stop syncing and take its listings
+          off Reswell. When Shopify asks us to erase a store&apos;s data, which it does after an
+          uninstall, we delete the store connection, its credentials, and its sync records, and we
+          remove the product details from those listings. Records of completed Reswell sales are
+          kept as described in Data retention.
+        </p>
+      </section>
+
+      <section>
+        <h2 className={h2}>14. Changes to this policy</h2>
         <p className="leading-relaxed">
           We may update this Privacy Policy as the platform evolves. When we do, we&apos;ll post the
           updated version here and refresh the &ldquo;Last updated&rdquo; date above. For material
@@ -305,7 +342,7 @@ export function PrivacyPolicyContent({ compact = false }: { compact?: boolean })
       </section>
 
       <section>
-        <h2 className={h2}>14. Contact</h2>
+        <h2 className={h2}>15. Contact</h2>
         <p className="leading-relaxed">
           Questions, requests, or concerns about this Privacy Policy or your data?{" "}
           <Link href="/contact" className={linkClass}>

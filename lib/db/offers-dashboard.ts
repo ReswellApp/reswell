@@ -143,6 +143,84 @@ export async function fetchDashboardOffersPartitioned(
   }
 }
 
+/** Offers between one buyer and seller, including closed rows used by thread cards. */
+export async function fetchDashboardOffersForParties(
+  supabase: SupabaseClient,
+  buyerId: string,
+  sellerId: string,
+): Promise<DashboardOfferRow[]> {
+  const { data, error } = await supabase
+    .from("offers")
+    .select(OFFER_SELECT)
+    .eq("buyer_id", buyerId)
+    .eq("seller_id", sellerId)
+    .order("updated_at", { ascending: false })
+    .limit(50)
+
+  if (error) {
+    console.error("[fetchDashboardOffersForParties]", error)
+    return []
+  }
+  return withSellerCounterNotes((data ?? []) as OfferDashboardRowRaw[])
+}
+
+async function loadOfferPartyProfiles(
+  supabase: SupabaseClient,
+  offers: DashboardOfferRow[],
+): Promise<{
+  sellersById: Record<string, DashboardProfileLite>
+  buyersById: Record<string, DashboardProfileLite>
+}> {
+  const sellerIds = [...new Set(offers.map((offer) => offer.seller_id))]
+  const buyerIds = [...new Set(offers.map((offer) => offer.buyer_id))]
+  const [{ data: sellerProfiles }, { data: buyerProfiles }] = await Promise.all([
+    sellerIds.length > 0
+      ? supabase
+          .from("profiles")
+          .select("id, display_name, avatar_url, shop_name, is_shop")
+          .in("id", sellerIds)
+      : Promise.resolve({ data: [] as DashboardProfileLite[] }),
+    buyerIds.length > 0
+      ? supabase
+          .from("profiles")
+          .select("id, display_name, avatar_url, shop_name, is_shop")
+          .in("id", buyerIds)
+      : Promise.resolve({ data: [] as DashboardProfileLite[] }),
+  ])
+  return {
+    sellersById: mapProfiles((sellerProfiles ?? []) as DashboardProfileLite[]),
+    buyersById: mapProfiles((buyerProfiles ?? []) as DashboardProfileLite[]),
+  }
+}
+
+/** One offer the user participates in, including declined / expired / withdrawn. */
+export async function fetchDashboardOfferByIdForUser(
+  supabase: SupabaseClient,
+  userId: string,
+  offerId: string,
+): Promise<{
+  offer: DashboardOfferRow
+  sellersById: Record<string, DashboardProfileLite>
+  buyersById: Record<string, DashboardProfileLite>
+} | null> {
+  const { data, error } = await supabase
+    .from("offers")
+    .select(OFFER_SELECT)
+    .eq("id", offerId)
+    .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
+    .maybeSingle()
+
+  if (error) {
+    console.error("[fetchDashboardOfferByIdForUser]", error)
+    return null
+  }
+  if (!data) return null
+  const [offer] = withSellerCounterNotes([data as OfferDashboardRowRaw])
+  if (!offer) return null
+  const profiles = await loadOfferPartyProfiles(supabase, [offer])
+  return { offer, ...profiles }
+}
+
 /** Offers the user sent (buyer-initiated or seller-initiated to a buyer). */
 export async function fetchOffersMadeForDashboard(
   supabase: SupabaseClient,

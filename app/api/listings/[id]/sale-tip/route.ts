@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
+import { resolveManagedSeller } from "@/lib/account-access/managed-seller"
 import { resolveServerAuth } from "@/lib/auth/get-safe-server-user"
 import { createSellerSaleTipPaymentIntent } from "@/lib/services/sellerSaleTip"
 import { saleTipBodySchema } from "@/lib/validations/mark-listing-sold"
@@ -38,9 +39,14 @@ export async function POST(
       )
     }
 
+    const managed = await resolveManagedSeller("listings.write")
+    if (!managed.ok) {
+      return NextResponse.json({ error: managed.error }, { status: managed.status })
+    }
+
     const result = await createSellerSaleTipPaymentIntent(supabase, {
       listingId: idParsed.data,
-      sellerUserId: user.id,
+      sellerUserId: managed.seller.sellerId,
       sellerEmail: user.email,
       amountCents: parsed.data.amountCents,
     })

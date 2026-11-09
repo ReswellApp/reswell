@@ -15,7 +15,7 @@ export type AutoReleaseCarrierPayoutSummary = {
 }
 
 /**
- * Credits seller wallet when carrier delivery was recorded at least 24h ago.
+ * Credits seller wallet when carrier delivery was recorded at least four days ago.
  * Idempotent per order via shippingDeliveredFinalize + wallet RPC.
  */
 export async function tryReleaseShippingPayoutAfterCarrierHold(
@@ -99,7 +99,7 @@ export async function autoReleaseShippingPayoutsAfterCarrierDelivery(
   ).toISOString()
 
   for (let batch = 0; batch < MAX_BATCHES; batch += 1) {
-    // Only held payouts still awaiting the 24h carrier settlement — avoids
+    // Only held payouts still awaiting the four-day carrier settlement — avoids
     // re-scanning already-released orders and blocking the queue.
     const { data: rows, error } = await supabase
       .from("orders")

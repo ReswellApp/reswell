@@ -21,6 +21,7 @@ import {
   composeListingDimensionsFromSplitListingFields,
   listingDimensionsColumnTrim,
 } from '@/lib/listing-dimensions-storage'
+import { insertListingImages } from '@/lib/db/listingImagesInsert'
 import { getAdminListingsList } from '@/lib/services/adminListingsList'
 import { adminListingsListQuerySchema } from '@/lib/validations/admin-listings-list'
 
@@ -32,7 +33,7 @@ function canAccessAdminListings(
 ): boolean {
   if (!email) return false
   if (email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()) return true
-  return profile?.is_admin === true || profile?.is_employee === true
+  return profile?.is_admin === true
 }
 
 /** One page of listing rows for /admin/listings — never selects the whole table. */
@@ -248,7 +249,12 @@ export async function POST(request: NextRequest) {
         sort_order: index,
       }
     })
-    await supabase.from('listing_images').insert(imageInserts)
+    try {
+      await insertListingImages(supabase, imageInserts)
+    } catch (imageError) {
+      await supabase.from('listings').delete().eq('id', listing.id)
+      return NextResponse.json({ error: 'Failed to save listing photos' }, { status: 500 })
+    }
   }
 
   const firstEntry = (images as (string | { url: string; thumbnail_url?: string | null })[])[0]
@@ -297,7 +303,7 @@ export async function DELETE(request: NextRequest) {
     .single()
 
   const isSuperAdmin = user.email?.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()
-  const canDelete = isSuperAdmin || profile?.is_admin || profile?.is_employee
+  const canDelete = isSuperAdmin || profile?.is_admin === true
   if (!canDelete) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }

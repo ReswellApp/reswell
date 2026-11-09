@@ -2,7 +2,12 @@
 
 import { useCallback, useState } from "react"
 import { LocationInputSuggest } from "@/components/location-input-suggest"
-import { GooglePlacesAddressInput, type GoogleResolvedAddress } from "./google-places-address-input"
+import { normalizeCountryCodeForShipping } from "@/lib/shipping/normalize-country-code"
+import {
+  GooglePlacesAddressInput,
+  type GoogleFullPlaceResolved,
+  type GoogleResolvedAddress,
+} from "./google-places-address-input"
 
 const HAS_GOOGLE_KEY = Boolean(
   typeof process !== "undefined" && process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim(),
@@ -33,6 +38,8 @@ interface CheckoutAddressLine1FieldProps {
   onChange: (line1: string) => void
   /** Called when the user selects a suggestion (Google Places or OSM + structured reverse geocode). */
   onAddressResolved: (address: ResolvedCheckoutAddress) => void
+  /** Google Places result, including place id and coordinates. */
+  onFullPlaceResolved?: (place: GoogleFullPlaceResolved) => void
   inputClassName?: string
   placeholder?: string
   debounceMs?: number
@@ -49,6 +56,7 @@ export function CheckoutAddressLine1Field({
   value,
   onChange,
   onAddressResolved,
+  onFullPlaceResolved,
   inputClassName = "",
   placeholder = "Street number and name",
   debounceMs = 150,
@@ -106,7 +114,7 @@ export function CheckoutAddressLine1Field({
               city: s.city_locality?.trim() ?? "",
               state: s.state_province?.trim() ?? "",
               postal_code: s.postal_code?.trim() ?? "",
-              country: (s.country_code?.trim() || "US").slice(0, 2).toUpperCase(),
+              country: normalizeCountryCodeForShipping(s.country_code?.trim() || "US"),
             })
           } catch {
             onAddressResolved({
@@ -146,6 +154,7 @@ export function CheckoutAddressLine1Field({
       value={value}
       onChange={onChange}
       onAddressResolved={mapGoogle}
+      onFullPlaceResolved={onFullPlaceResolved}
       onProviderError={onGoogleFail}
       placeholder={placeholder}
       inputClassName={inputClassName}

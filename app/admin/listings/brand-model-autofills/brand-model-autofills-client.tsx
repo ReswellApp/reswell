@@ -1,6 +1,7 @@
 "use client"
 
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import Link from "next/link"
 import Image from "next/image"
 import { format, formatDistanceToNow } from "date-fns"
@@ -183,7 +184,7 @@ function ListingThumb({ url, href }: { url: string | null; href: string }) {
           alt=""
           fill
           sizes="48px"
-          className="object-cover object-center"
+          className={listingPhotoFillClassName}
           unoptimized
         />
       ) : (

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { resolveManagedSeller } from '@/lib/account-access/managed-seller'
 import { createClient } from '@/lib/supabase/server'
 import { revalidateBoardsBrowseCatalog } from '@/lib/cache/revalidate-boards-browse-catalog'
 import { revalidateSellersAfterListingChange } from '@/lib/cache/revalidate-sellers-directory-catalog'
@@ -21,6 +22,7 @@ import {
   isListingDimensionDisplaySchemaCacheError,
   withoutListingDimensionDisplayDbFields,
 } from '@/lib/listing-dimensions-display'
+import { insertListingImages } from '@/lib/db/listingImagesInsert'
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -30,7 +32,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const sellGuard = await evaluateSellerCanSell(supabase, user.id)
+  const managed = await resolveManagedSeller('listings.write')
+  if (!managed.ok) {
+    return NextResponse.json({ error: managed.error }, { status: managed.status })
+  }
+  const sellerId = managed.seller.sellerId
+
+  const sellGuard = await evaluateSellerCanSell(supabase, sellerId)
   if (!sellGuard.ok) {
     return NextResponse.json({ error: sellGuard.userMessage }, { status: 403 })
   }
@@ -150,7 +158,7 @@ export async function POST(request: NextRequest) {
       : null
 
   const listingInsertRow = {
-    user_id: user.id,
+    user_id: sellerId,
     title: resolvedTitle,
     slug,
     description,
@@ -230,7 +238,12 @@ export async function POST(request: NextRequest) {
       },
     )
 
-    await supabase.from('listing_images').insert(imageInserts)
+    try {
+      await insertListingImages(supabase, imageInserts)
+    } catch (imageError) {
+      await supabase.from('listings').delete().eq('id', listing.id)
+      return NextResponse.json({ error: 'Failed to save listing photos' }, { status: 500 })
+    }
   }
 
   try {
@@ -253,8 +266,8 @@ export async function POST(request: NextRequest) {
         : null
 
   void trackKlaviyoListingCreated({
-    sellerUserId: user.id,
-    sellerEmail: user.email ?? null,
+    sellerUserId: sellerId,
+    sellerEmail: managed.seller.actingAsShop ? null : user.email ?? null,
     listingId: listing.id,
     title: resolvedTitle,
     price: parseFloat(String(price)),
@@ -264,8 +277,8 @@ export async function POST(request: NextRequest) {
   })
   void trackFirstTimeSellerForListingIfNeeded(supabase, {
     listingId: listing.id,
-    sellerUserId: user.id,
-    sellerEmail: user.email ?? null,
+    sellerUserId: sellerId,
+    sellerEmail: managed.seller.actingAsShop ? null : user.email ?? null,
   })
   void notifyBoardSavedSearchMatchesForListing(listing.id)
   void notifyFollowersNewListingKlaviyo(listing.id)
@@ -273,13 +286,13 @@ export async function POST(request: NextRequest) {
   if (section === 'surfboards') {
     revalidateBoardsBrowseCatalog()
   }
-  await revalidateSellersAfterListingChange(supabase, user.id)
+  await revalidateSellersAfterListingChange(supabase, sellerId)
   revalidateNavSearchSuggest()
   await qualifyPublishedListingForGiveaways(
     supabase,
     listing.id,
-    user.id,
-    user.email ?? null,
+    sellerId,
+    managed.seller.actingAsShop ? null : user.email ?? null,
   )
 
   return NextResponse.json({ success: true, listing_id: listing.id })

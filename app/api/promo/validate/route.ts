@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
 import { validateCheckoutPromoForCheckout } from "@/lib/services/checkoutPromo"
+import { promoDiscountScopePhrase } from "@/lib/utils/promo-product-type"
 import { createClient } from "@/lib/supabase/server"
 import { isAnonymousSupabaseUser } from "@/lib/auth/is-anonymous-user"
 import { newsletterPromoValidateBodySchema } from "@/lib/validations/newsletterPromo"
@@ -61,11 +62,24 @@ export async function POST(request: NextRequest) {
     )
   }
 
+  const listingLines = parsed.data.listing_lines?.map((line) => ({
+    id: line.id,
+    quantity: line.quantity ?? 1,
+  }))
+
   const result = await validateCheckoutPromoForCheckout({
     code: parsed.data.code,
     buyerEmail,
     itemSubtotalUsd,
     shippingUsd,
+    preview:
+      listingLines && listingLines.length > 0
+        ? {
+            buyerId: user.id,
+            offerId: parsed.data.offer_id,
+            requestedLines: listingLines,
+          }
+        : undefined,
   })
 
   if (!result.ok) {
@@ -81,6 +95,7 @@ export async function POST(request: NextRequest) {
         discountPercent: result.discountPercent,
         discountUsd: result.discountUsd,
         totalUsd: result.totalUsd,
+        appliesToLabel: result.appliesTo ? promoDiscountScopePhrase(result.appliesTo) : null,
         expiresAt: result.promo.expires_at,
       },
     },

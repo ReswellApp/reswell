@@ -4,7 +4,6 @@ import * as React from "react"
 import { SellCatalogSearch } from "@/components/features/sell/sell-catalog-search"
 import { SellContinueDrafts } from "@/components/features/sell/sell-continue-drafts"
 import { SellFaqSection } from "@/components/features/sell/sell-faq-section"
-import { SellMissingShipFromPrompt } from "@/components/features/sell/sell-missing-ship-from-prompt"
 import { SellWhySellSection } from "@/components/features/sell/sell-why-sell-section"
 import { resolveSellEntryPoint } from "@/lib/sell-flow/sell-entry-point"
 
@@ -15,12 +14,10 @@ import { resolveSellEntryPoint } from "@/lib/sell-flow/sell-entry-point"
 export function SellStart({
   isAdmin = false,
   surfboardSellHref,
-  shipFromPrompt = null,
   adminPhotoIdentify = null,
 }: {
   isAdmin?: boolean
   surfboardSellHref: string
-  shipFromPrompt?: { needsFullName: boolean; needsPhone: boolean } | null
   /** Server-rendered only for admins. Null for every other account. */
   adminPhotoIdentify?: React.ReactNode
 }) {
@@ -32,12 +29,6 @@ export function SellStart({
 
   return (
     <div className="flex-1 bg-background">
-      {shipFromPrompt ? (
-        <SellMissingShipFromPrompt
-          needsFullName={shipFromPrompt.needsFullName}
-          needsPhone={shipFromPrompt.needsPhone}
-        />
-      ) : null}
       <SellCatalogSearch
         isAdmin={isAdmin}
         surfboardSellHref={surfboardSellHref}

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
+import { requireAdmin } from "@/lib/brands/admin-server"
 import { getAdminUserDetail } from "@/lib/services/adminUserDetail"
 import { adminWalletUserIdParamSchema } from "@/lib/validations/admin-user-wallet"
 
@@ -12,7 +12,7 @@ export async function GET(
   _request: NextRequest,
   context: { params: Promise<{ userId: string }> },
 ) {
-  const gate = await requireAdminOrEmployee()
+  const gate = await requireAdmin()
   if (!gate.ok) {
     return gate.response
   }

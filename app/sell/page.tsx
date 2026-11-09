@@ -4,7 +4,6 @@ import { SellPhotoIdentifyGate } from "@/components/features/sell/sell-photo-ide
 import { SellStart } from "@/components/features/sell/sell-start"
 import { fetchProfileIsAdmin } from "@/lib/db/profileAdmin"
 import { SURFBOARD_SELL_BOARDS_CREATE_HREF } from "@/lib/sell-flow/surfboard-sell-paths"
-import { getSellHubShipFromPrompt } from "@/lib/services/sellerShipFromPrompt"
 import { createClient } from "@/lib/supabase/server"
 import SellFlowShell from "./sell-flow-client"
 
@@ -68,24 +67,14 @@ export default async function SellPage({
     )
   }
 
-  const [isAdmin, shipFromPrompt] = await Promise.all([
-    isAdminPromise,
-    getSellHubShipFromPrompt(supabase, user?.id),
-  ])
+  const isAdmin = await isAdminPromise
 
   // `/sell` and `/sell?new=1` land on catalog search (+ compact type links).
+  // Ship-from collection lives in the site-wide sign-in prompt.
   return (
     <SellStart
       isAdmin={isAdmin}
       surfboardSellHref={SURFBOARD_SELL_BOARDS_CREATE_HREF}
-      shipFromPrompt={
-        shipFromPrompt.shouldPrompt
-          ? {
-              needsFullName: shipFromPrompt.needsFullName,
-              needsPhone: shipFromPrompt.needsPhone,
-            }
-          : null
-      }
       adminPhotoIdentify={isAdmin ? <SellPhotoIdentifyGate /> : null}
     />
   )

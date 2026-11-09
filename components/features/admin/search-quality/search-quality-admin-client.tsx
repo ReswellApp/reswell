@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { cn } from "@/lib/utils"
 import { Loader2, RefreshCw } from "lucide-react"
 import type { SearchQualityEventRow, SearchQualityStats } from "@/lib/db/searchQuality"
@@ -463,7 +464,7 @@ function EventDetail({
               <li key={listing.id} className="flex gap-2 rounded-lg border p-2">
                 <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded bg-slate-100">
                   {listing.imageUrl ? (
-                    <Image src={listing.imageUrl} alt="" fill className="object-cover" sizes="56px" />
+                    <Image src={listing.imageUrl} alt="" fill className={listingPhotoFillClassName} sizes="56px" />
                   ) : null}
                 </div>
                 <div className="min-w-0 flex-1 space-y-2">

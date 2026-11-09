@@ -5,6 +5,11 @@
  * Carrier tracking, labels, and delivery clocks live on shipments; orders roll up.
  */
 
+import {
+  countSurfboardListings,
+  surfboardsRequireSeparatePackages,
+} from "@/lib/surfboard-multi-board-parcel"
+
 export const SHIPPING_PACKAGING_MODES = ["together", "separate"] as const
 
 export type ShippingPackagingMode = (typeof SHIPPING_PACKAGING_MODES)[number]
@@ -32,8 +37,9 @@ export function resolveShippingPackagingMode(
 }
 
 /**
- * Buyer may choose together vs separate when checking out 2+ surfboards
+ * Buyer may choose together vs separate when checking out 2–3 surfboards
  * that all offer shipping (peer surfboards only — shop mix stays one-box).
+ * Four or more surfboards skip the choice and ship as separate packages.
  */
 export function checkoutOffersShippingPackagingChoice(listings: Array<{
   section?: string | null
@@ -41,5 +47,27 @@ export function checkoutOffersShippingPackagingChoice(listings: Array<{
 }>): boolean {
   if (listings.length < 2) return false
   if (!listings.every((l) => !!l.shipping_available)) return false
+  if (surfboardsRequireSeparatePackages(countSurfboardListings(listings))) return false
   return listings.every((l) => l.section?.trim() === "surfboards")
+}
+
+/**
+ * Packaging for a same-seller checkout.
+ * Four or more surfboards always ship as one package per board. Two or three
+ * surfboards follow the buyer's together/separate choice. Pickup ignores packaging.
+ */
+export function resolveMultiItemPackagingMode(input: {
+  listings: Array<{ section?: string | null; shipping_available?: boolean | null }>
+  requested?: unknown
+  fulfillment: "pickup" | "shipping"
+}): ShippingPackagingMode {
+  if (input.fulfillment !== "shipping") return DEFAULT_SHIPPING_PACKAGING_MODE
+  if (surfboardsRequireSeparatePackages(countSurfboardListings(input.listings))) {
+    return "separate"
+  }
+  const requested = parseShippingPackagingMode(input.requested)
+  if (checkoutOffersShippingPackagingChoice(input.listings) && requested === "separate") {
+    return "separate"
+  }
+  return DEFAULT_SHIPPING_PACKAGING_MODE
 }

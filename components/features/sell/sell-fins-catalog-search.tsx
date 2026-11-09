@@ -28,6 +28,7 @@ import {
 } from "@/lib/types/fin-catalog-search"
 import { brandLogoDisplaySrc } from "@/lib/public-media-display-src"
 import { finCatalogSearchRowThumbUrl } from "@/lib/utils/fin-catalog-display-image"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { finSetupLabel, finSizeLabel, finSystemLabel } from "@/lib/fin-listing-config"
 import { compactSearchKey } from "@/lib/utils/fin-catalog-search-rank"
@@ -201,7 +202,7 @@ function ProductThumb({
           src={displaySrc}
           alt={alt}
           fill
-          className={cn(isLogo ? "object-contain p-1.5" : "object-cover")}
+          className={cn(isLogo ? "object-contain p-1.5" : listingPhotoFillClassName)}
           sizes="44px"
           unoptimized={listingImageShouldBypassOptimization(displaySrc)}
         />

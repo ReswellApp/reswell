@@ -1,3 +1,11 @@
+import {
+  FOR_SURF_SHOPS_DESCRIPTION,
+  FOR_SURF_SHOPS_PAGE_KEY,
+  FOR_SURF_SHOPS_PATH,
+  FOR_SURF_SHOPS_TITLE,
+  forSurfShopsFaqStructuredData,
+} from "@/lib/for-surf-shops"
+
 /**
  * Registry of the pages that matter for SEO. This is the single source of truth for each
  * page's title, description, canonical, robots, and share images. The admin SEO panel at
@@ -271,9 +279,9 @@ export const MANAGED_PAGES: ManagedPage[] = [
     path: "/boards?type=other",
   }, { variationOf: "boards", note: "/boards?type=other" }),
   page("sold", "marketplace", "Recently sold", {
-    title: "Recently sold surfboards | Reswell",
+    title: "Recently sold surf gear | Reswell",
     description:
-      "See surfboards that recently sold on Reswell — live marketplace activity and completed sales.",
+      "See surfboards, fins, leashes, and the rest of the gear that recently sold on Reswell.",
     path: "/sold",
   }),
   page("map", "marketplace", "Sales map", {
@@ -287,6 +295,13 @@ export const MANAGED_PAGES: ManagedPage[] = [
     description:
       "Browse the latest surfboard listings on Reswell — a curated feed from active sellers.",
     path: "/search/recent",
+  }),
+  page("explore", "marketplace", "Explore", {
+    title: "Explore surfboards and gear — Reswell",
+    description:
+      "Start anywhere on Reswell — browse surfboards and gear, brands, sellers, and cities with active listings.",
+    path: "/explore",
+    keywords: ["explore surfboards", "used surf gear", "surf marketplace"],
   }),
   page("brands", "marketplace", "Brands directory", {
     title: "Surf brands directory — Reswell",
@@ -309,6 +324,18 @@ export const MANAGED_PAGES: ManagedPage[] = [
       "surfboard alerts",
       "saved board search",
       "used surfboard wanted",
+    ],
+  }),
+  page("board-match", "marketplace", "Board Match", {
+    title: "Board Match — name the brand & model | Reswell",
+    description:
+      "Play Board Match: see a real board from the Reswell catalog, match the brand for points, and earn a bonus for naming the model.",
+    path: "/board-match",
+    keywords: [
+      "surfboard quiz",
+      "board match game",
+      "surfboard brands",
+      "name that surfboard",
     ],
   }),
   page("priceguide", "marketplace", "Price Guide", {
@@ -342,6 +369,12 @@ export const MANAGED_PAGES: ManagedPage[] = [
     description:
       "JSON API for Reswell listings, used-board pricing comps, and catalog search. Built for LLMs and research bots.",
     path: "/public-api",
+  }),
+  page("connect", "marketplace", "Connect an assistant", {
+    title: "Connect an assistant — Reswell",
+    description:
+      "Sign in with Reswell so Claude, ChatGPT, Grok, or any remote MCP client can search listings, read your cart, and start checkout. The assistant cannot charge your card.",
+    path: "/connect",
   }),
   // ---- Content & community ----
   page("blog", "content", "Blog index", {
@@ -451,12 +484,38 @@ export const MANAGED_PAGES: ManagedPage[] = [
   }),
 
   // ---- Marketing & growth ----
+  page("name-the-break", "marketing", "Name the Break game", {
+    title: "Name the Break — Surf Spot Quiz | Reswell",
+    description:
+      "Look at the photo and name the surf break. A short Reswell quiz of iconic spots worldwide — Pipeline, Teahupo'o, Mavericks, and more.",
+    path: "/name-the-break",
+    keywords: [
+      "surf break quiz",
+      "name the surf break",
+      "surf spot game",
+      "Pipeline",
+      "Teahupoo",
+      "Mavericks",
+    ],
+  }, { note: "Shareable photo quiz at /name-the-break." }),
   page("we-buy", "marketing", "We’ll buy your surfboard", {
     title: "We’ll Buy Your Surfboard | Reswell",
     description:
       "Sell your surfboard to Reswell. Quote in under 30 minutes. Ship in a box max 22\" wide and 5\" high — we buy the prepaid label after you send packed measurements.",
     path: "/we-buy",
     keywords: ["sell surfboard", "we buy surfboards", "surfboard quote", "sell board to Reswell"],
+  }),
+  page(FOR_SURF_SHOPS_PAGE_KEY, "marketing", "For surf shops", {
+    title: FOR_SURF_SHOPS_TITLE,
+    description: FOR_SURF_SHOPS_DESCRIPTION,
+    path: FOR_SURF_SHOPS_PATH,
+    keywords: [
+      "surf shop used boards",
+      "sell trade-in surfboards",
+      "list used surfboards",
+      "surf shop marketplace",
+    ],
+    structuredData: forSurfShopsFaqStructuredData(),
   }),
   page("listyoursurfboard", "marketing", "List your surfboard", {
     title: "List your surfboard | Reswell",
@@ -537,28 +596,32 @@ export const MANAGED_PAGES: ManagedPage[] = [
       "Estimate US surfboard shipping label costs by ship-from ZIP, receiver ZIP, weight, and package dimensions with live carrier quotes.",
     path: "/shipping-estimator",
   }),
+  page("volume-calculator", "marketing", "Volume Calculator", {
+    title: "Surfboard Volume Calculator — Reswell",
+    description:
+      "Estimate surfboard volume in liters from length, width, thickness, and outline — the same figure brands list on model size charts.",
+    path: "/volume-calculator",
+    keywords: [
+      "surfboard volume calculator",
+      "surfboard liters",
+      "board volume estimate",
+      "surfboard dimensions volume",
+    ],
+  }),
   page("giveaways", "marketing", "Giveaways", {
     title: "Surfboard Giveaways | Reswell",
-    description:
-      "Current Reswell giveaways for sellers. List a surfboard for a chance to win a custom from Channel Islands, Lost, JS, Sharpeye, Hayden Shapes, or Lovemachine.",
+    description: "The custom surfboard giveaway has ended.",
     path: "/giveaways",
-    keywords: ["surfboard giveaway", "win a surfboard", "list surfboard raffle"],
-  }),
+    robotsIndex: false,
+    robotsFollow: true,
+  }, { note: "Closed. /giveaways redirects home. Signup and Klaviyo giveaway events are off." }),
   page("giveaway-win-a-custom-surfboard", "marketing", "Win a custom surfboard", {
     title: "List a surfboard to win a surfboard | Reswell",
-    description:
-      "Publish a surfboard on Reswell and you’re entered to win a custom from Channel Islands, Lost, JS, Sharpeye, Hayden Shapes, or Lovemachine. You pick the brand.",
+    description: "The custom surfboard giveaway has ended.",
     path: "/giveaways/win-a-custom-surfboard",
-    keywords: [
-      "custom surfboard giveaway",
-      "Channel Islands",
-      "Lost",
-      "JS",
-      "Sharpeye",
-      "Hayden Shapes",
-      "Lovemachine",
-    ],
-  }, { note: "Redirects to /giveaways." }),
+    robotsIndex: false,
+    robotsFollow: true,
+  }, { note: "Closed. Redirects home." }),
   page("ratereswell", "marketing", "Rate Reswell", {
     title: "Rate Reswell",
     description:

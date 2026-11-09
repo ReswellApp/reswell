@@ -6,8 +6,10 @@ import {
   type ShipEngineAdjustmentReportMeta,
 } from "@/lib/shipengine/adjustment-reports"
 import { isShipEngineConfigured } from "@/lib/shipengine/config"
+import { listShipEngineWalletAdjustments } from "@/lib/shipengine/wallet-adjustments"
 import { normalizeTrackingNumberForCarrier } from "@/lib/shipping/normalize-tracking-number"
 import {
+  dbApplyShipEngineAdjustmentDebits,
   dbListIngestedAdjustmentReportIds,
   dbResolveOrderIdsByTrackingNumbers,
   dbUpsertAdjustmentReport,
@@ -19,6 +21,9 @@ export type SyncShipEngineAdjustmentsSummary = {
   reportsIngested: number
   rowsUpserted: number
   increasedRows: number
+  walletTransactionsSeen: number
+  walletAdjustmentsUpserted: number
+  walletDebits: number
   skipped: number
 }
 
@@ -74,6 +79,62 @@ async function ingestReport(
   }
 }
 
+async function ingestWalletAdjustments(
+  supabase: ReturnType<typeof createServiceRoleClient>,
+): Promise<
+  | { ok: true; transactionsSeen: number; adjustmentsUpserted: number }
+  | { ok: false; error: string }
+> {
+  const createdAtEnd = new Date().toISOString()
+  const createdAtStart = new Date(Date.now() - 400 * 24 * 60 * 60 * 1000).toISOString()
+  const listed = await listShipEngineWalletAdjustments({ createdAtStart, createdAtEnd })
+  if (!listed.ok) return listed
+
+  const trackingNumbers = listed.adjustments
+    .map((row) => row.trackingNumber)
+    .filter((tracking): tracking is string => Boolean(tracking))
+  const orderByTracking = await dbResolveOrderIdsByTrackingNumbers(supabase, trackingNumbers)
+  const rows = listed.adjustments.map((row) => {
+    const trackingKey = row.trackingNumber
+      ? normalizeTrackingNumberForCarrier(row.trackingNumber) || row.trackingNumber.trim()
+      : ""
+    return {
+      transactionId: row.transactionId,
+      adjustmentId: row.transactionId,
+      shipmentId: row.shipmentId,
+      trackingNumber: row.trackingNumber,
+      adjustmentType: "Balance adjustment",
+      reasonCode: row.description,
+      adjustmentAmountUsd: row.amountUsd,
+      adjustmentAt: row.transactionAt,
+      actualService: null,
+      actualPackage: null,
+      actualWeight: null,
+      actualLength: null,
+      actualWidth: null,
+      actualHeight: null,
+      orderId: trackingKey ? (orderByTracking.get(trackingKey) ?? null) : null,
+    }
+  })
+
+  const reportId = "shipengine-wallet-transactions"
+  const reportWrite = await dbUpsertAdjustmentReport(supabase, {
+    reportId,
+    reportCreatedAt: createdAtEnd,
+    rowCount: rows.length,
+  })
+  if (reportWrite.error) return { ok: false, error: reportWrite.error.message }
+
+  const rowsWrite = await dbUpsertLabelAdjustments(supabase, reportId, rows)
+  if (rowsWrite.error) return { ok: false, error: rowsWrite.error.message }
+
+  return {
+    ok: true,
+    transactionsSeen: listed.transactionsSeen,
+    adjustmentsUpserted: rows.length,
+  }
+}
+
 /**
  * Pulls nightly ShipEngine adjustment reports and stores price-change rows.
  * Skips reports already ingested unless `force` is set.
@@ -117,6 +178,9 @@ export async function syncShipEngineLabelAdjustments(opts?: {
     reportsIngested: 0,
     rowsUpserted: 0,
     increasedRows: 0,
+    walletTransactionsSeen: 0,
+    walletAdjustmentsUpserted: 0,
+    walletDebits: 0,
     skipped: 0,
   }
 
@@ -135,6 +199,28 @@ export async function syncShipEngineLabelAdjustments(opts?: {
       console.error("[syncShipEngineLabelAdjustments] report", report.reportId, msg)
       return { ok: false, error: msg }
     }
+  }
+
+  const wallet = await ingestWalletAdjustments(supabase)
+  if (!wallet.ok) {
+    console.error("[syncShipEngineLabelAdjustments] wallet", wallet.error)
+    return { ok: false, error: wallet.error }
+  }
+  summary.walletTransactionsSeen = wallet.transactionsSeen
+  summary.walletAdjustmentsUpserted = wallet.adjustmentsUpserted
+  summary.rowsUpserted += wallet.adjustmentsUpserted
+  summary.increasedRows += wallet.adjustmentsUpserted
+
+  const debitBatchSize = 500
+  for (let batch = 0; batch < 20; batch += 1) {
+    const debits = await dbApplyShipEngineAdjustmentDebits(supabase, debitBatchSize)
+    if (debits.error || !debits.data) {
+      const message = debits.error?.message ?? "Could not apply wallet debits"
+      console.error("[syncShipEngineLabelAdjustments] wallet debits", message)
+      return { ok: false, error: message }
+    }
+    summary.walletDebits += debits.data.charged
+    if (debits.data.processed < debitBatchSize) break
   }
 
   return { ok: true, summary }

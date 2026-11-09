@@ -1,19 +1,56 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
-import { Heart, Loader2, Check } from "lucide-react"
+import { Heart, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
-import { createBoardSavedSearchAction } from "@/lib/actions/boardSavedSearch"
+import { createClient } from "@/lib/supabase/client"
 import {
+  createBoardSavedSearchAction,
+  deleteBoardSavedSearchAction,
+} from "@/lib/actions/boardSavedSearch"
+import { matchingSavedSearchId } from "@/lib/utils/saved-search-criteria-equal"
+import {
+  nextSavedSearchSelection,
+  type SavedSearchSelection,
+} from "@/lib/utils/saved-search-selection"
+import {
+  BOARD_SAVED_SEARCHES_MAX,
   boardSavedCriteriaCanSaveFromEmptyState,
   type BoardSavedSearchCriteria,
 } from "@/lib/validations/boardSavedSearch"
 import type { PeerListingSection } from "@/lib/peer-listing-sections"
 import { peerSectionBrowsePath } from "@/lib/utils/peer-saved-search-criteria"
+import { savedSearchCardCopy } from "@reswell/api-contract"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
+
+function savedSearchCriteriaKey(criteria: BoardSavedSearchCriteria): string {
+  const sorted: Record<string, unknown> = {}
+  for (const key of Object.keys(criteria).sort()) {
+    sorted[key] = criteria[key as keyof BoardSavedSearchCriteria]
+  }
+  return JSON.stringify(sorted)
+}
+
+function rowsFromSavedSearchQuery(
+  data: unknown,
+): Array<{ id: string; criteria: BoardSavedSearchCriteria }> {
+  if (!Array.isArray(data)) return []
+  const rows: Array<{ id: string; criteria: BoardSavedSearchCriteria }> = []
+  for (const row of data) {
+    if (!row || typeof row !== "object") continue
+    const id = "id" in row && typeof row.id === "string" ? row.id : ""
+    const criteria =
+      "criteria" in row && row.criteria && typeof row.criteria === "object"
+        ? (row.criteria as BoardSavedSearchCriteria)
+        : null
+    if (!id || !criteria) continue
+    rows.push({ id, criteria })
+  }
+  return rows
+}
 
 function matchingNoun(section: PeerListingSection | "any" | undefined): string {
   if (!section || section === "any") return "listing"
@@ -44,26 +81,94 @@ function matchingNoun(section: PeerListingSection | "any" | undefined): string {
 }
 
 /**
- * Empty-results CTA: save the current browse/search filters and enable email alerts
+ * Save-search CTA: persist the current browse/search filters and enable email alerts
  * (Klaviyo `Board Alert Match` when a matching listing goes live).
  * Signed-out users get the same auth gate as favorites.
+ *
+ * `empty` is the large dead-end card. `compact` is a slim bar under matching results.
  */
 export function BoardsNoResultsSaveSearch({
   criteria,
   isLoggedIn,
   className,
   clearHref,
+  variant = "empty",
+  initialSavedSearchId = null,
 }: {
   criteria: BoardSavedSearchCriteria
   isLoggedIn: boolean
   className?: string
   /** Optional clear-filters link (defaults from criteria.section). */
   clearHref?: string
+  /** Large empty-state card, or a slim bar that sits under matching listings. */
+  variant?: "empty" | "compact"
+  /** Saved-search row for this criteria, when the shopper already saved it. */
+  initialSavedSearchId?: string | null
 }) {
   const openSignIn = useSignInGate()
   const { toast } = useToast()
   const [pending, setPending] = useState(false)
-  const [saved, setSaved] = useState(false)
+  const criteriaKey = savedSearchCriteriaKey(criteria)
+  const criteriaRef = useRef(criteria)
+  criteriaRef.current = criteria
+  const hoverArmed = useRef(true)
+  const previousCriteriaKey = useRef(criteriaKey)
+  const [showUnsave, setShowUnsave] = useState(false)
+  const [selection, setSelection] = useState<SavedSearchSelection>({
+    criteriaKey,
+    id: initialSavedSearchId,
+    dismissed: false,
+  })
+  const savedSearchId =
+    selection.criteriaKey === criteriaKey ? selection.id : initialSavedSearchId
+  const saved = Boolean(savedSearchId)
+  const showUnsaveLabel = saved && showUnsave && selection.criteriaKey === criteriaKey
+
+  useEffect(() => {
+    if (previousCriteriaKey.current !== criteriaKey) {
+      previousCriteriaKey.current = criteriaKey
+      setShowUnsave(false)
+      hoverArmed.current = true
+    }
+    setSelection((current) =>
+      nextSavedSearchSelection(current, criteriaKey, initialSavedSearchId),
+    )
+  }, [criteriaKey, initialSavedSearchId])
+
+  useEffect(() => {
+    if (!isLoggedIn || initialSavedSearchId) return
+    let cancelled = false
+    // Browser read — a server action here refreshes the page and can drop a save
+    // that just succeeded on the next search.
+    void (async () => {
+      try {
+        const supabase = createClient()
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+        if (!user || cancelled) return
+        const { data, error } = await supabase
+          .from("saved_searches")
+          .select("id, criteria")
+          .eq("user_id", user.id)
+          .order("updated_at", { ascending: false })
+          .limit(BOARD_SAVED_SEARCHES_MAX)
+        if (cancelled || error) return
+        const id = matchingSavedSearchId(rowsFromSavedSearchQuery(data), criteriaRef.current)
+        if (!id) return
+        setSelection((current) => {
+          if (current.criteriaKey !== criteriaKey || current.dismissed || current.id) return current
+          return { criteriaKey, id, dismissed: false }
+        })
+      } catch (err) {
+        if (!cancelled) console.error("Could not load saved searches:", err)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [criteriaKey, initialSavedSearchId, isLoggedIn])
+
   const canSave = boardSavedCriteriaCanSaveFromEmptyState(criteria)
   const section = criteria.anySection
     ? "any"
@@ -107,60 +212,141 @@ export function BoardsNoResultsSaveSearch({
       return
     }
 
-    setSaved(true)
+    hoverArmed.current = false
+    setShowUnsave(false)
+    setSelection({ criteriaKey, id: res.id, dismissed: false })
     toast({
       title: "Search saved",
       description: `We'll email you when a matching ${noun} is listed on Reswell.`,
     })
   }
 
+  async function handleUnsave() {
+    if (!savedSearchId) return
+    if (!isLoggedIn) {
+      openSignIn(undefined, { skipSessionProbe: true })
+      return
+    }
+
+    setPending(true)
+    const res = await deleteBoardSavedSearchAction({ id: savedSearchId })
+    setPending(false)
+
+    if ("error" in res) {
+      if (res.error === "Sign in to manage saved searches.") {
+        openSignIn()
+        return
+      }
+      toast({
+        title: "Could not unsave",
+        description: res.error,
+        variant: "destructive",
+      })
+      return
+    }
+
+    hoverArmed.current = true
+    setShowUnsave(false)
+    setSelection({ criteriaKey, id: null, dismissed: true })
+    toast({
+      title: "Search unsaved",
+      description: "We won't email you about new matches for this search.",
+    })
+  }
+
+  const compact = variant === "compact"
+  const headingId = compact ? "boards-results-save-heading" : "boards-no-results-save-heading"
+  const copy = savedSearchCardCopy({ saved, compact, noun })
+
   return (
-    <div className={cn("py-8 sm:py-12", className)}>
+    <div className={cn(compact ? "mt-6 sm:mt-8" : "py-8 sm:py-12", className)}>
       <section
-        className="rounded-2xl bg-neutral-100 px-6 py-12 text-center sm:px-10 sm:py-16"
-        aria-labelledby="boards-no-results-save-heading"
+        className={cn(
+          "bg-neutral-100",
+          compact
+            ? "flex flex-col items-center gap-3 rounded-xl px-4 py-3 text-center sm:flex-row sm:items-center sm:justify-between sm:gap-5 sm:px-5 sm:py-3 sm:text-left"
+            : "rounded-2xl px-6 py-12 text-center sm:px-10 sm:py-16",
+        )}
+        aria-labelledby={headingId}
       >
-        <h2
-          id="boards-no-results-save-heading"
-          className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl"
-        >
-          Let the Gear Come to You
-        </h2>
-        <p className="mx-auto mt-3 max-w-lg text-sm text-foreground/80 sm:text-base">
-          Save this search and we&apos;ll email you when a matching {noun} is listed on Reswell.
-        </p>
+        <div className={cn(compact && "min-w-0")}>
+          <h2
+            id={headingId}
+            className={cn(
+              "font-semibold tracking-tight text-foreground",
+              compact ? "text-sm" : "text-xl sm:text-2xl",
+            )}
+          >
+            {copy.title}
+          </h2>
+          <p
+            className={cn(
+              "text-foreground/80",
+              compact
+                ? "mt-0.5 text-xs leading-snug sm:text-sm"
+                : "mx-auto mt-3 max-w-lg text-sm sm:text-base",
+            )}
+          >
+            {copy.body}
+          </p>
+        </div>
         <Button
           type="button"
           variant="outline"
-          className="mt-6 rounded-full bg-background px-5 font-medium shadow-none"
-          disabled={pending || saved}
-          onClick={() => void handleSave()}
+          size={compact ? "sm" : "default"}
+          className={cn(
+            "shrink-0 rounded-full bg-background font-medium shadow-none",
+            compact ? "h-8 px-3.5" : "mt-6 px-5",
+            saved && "border-black text-black [&_svg]:fill-black [&_svg]:text-black",
+            saved && !showUnsaveLabel && "hover:bg-background hover:text-black",
+          )}
+          disabled={pending}
+          aria-pressed={saved}
+          onClick={() => void (saved ? handleUnsave() : handleSave())}
+          onPointerEnter={() => {
+            if (hoverArmed.current) setShowUnsave(true)
+          }}
+          onPointerLeave={() => {
+            hoverArmed.current = true
+            setShowUnsave(false)
+          }}
+          onFocus={(event) => {
+            if (event.currentTarget.matches(":focus-visible")) setShowUnsave(true)
+          }}
+          onBlur={() => setShowUnsave(false)}
         >
           {pending ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
-              Saving…
+              <Loader2 className={cn("animate-spin", compact ? "mr-1.5 h-3.5 w-3.5" : "mr-2 h-4 w-4")} aria-hidden />
+              {saved ? "Removing…" : "Saving…"}
+            </>
+          ) : showUnsaveLabel ? (
+            <>
+              <Heart className={cn("fill-black text-black", compact ? "mr-1.5 h-3.5 w-3.5" : "mr-2 h-4 w-4")} aria-hidden />
+              Unsave this search
             </>
           ) : saved ? (
             <>
-              <Check className="mr-2 h-4 w-4" aria-hidden />
-              Search Saved
+              <Heart className={cn("fill-black text-black", compact ? "mr-1.5 h-3.5 w-3.5" : "mr-2 h-4 w-4")} aria-hidden />
+              {copy.button}
             </>
           ) : (
             <>
-              <Heart className="mr-2 h-4 w-4" aria-hidden />
-              Save Search
+              <Heart className={cn(compact ? "mr-1.5 h-3.5 w-3.5" : "mr-2 h-4 w-4")} aria-hidden />
+              {copy.button}
             </>
           )}
         </Button>
       </section>
-      <p className="mt-6 text-center text-sm text-muted-foreground">
-        <Link href={resolvedClearHref} className="underline underline-offset-2 hover:text-foreground">
-          Clear filters
-        </Link>
-        {" · "}
-        Try adjusting your search
-      </p>
+      {compact ? null : (
+        <p className="mt-6 text-center text-sm text-muted-foreground">
+          <Link href={resolvedClearHref} className="underline underline-offset-2 hover:text-foreground">
+            Clear filters
+          </Link>
+          {" · "}
+          Try adjusting your search
+        </p>
+      )}
     </div>
   )
 }

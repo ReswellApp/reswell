@@ -1,7 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
-import { loadStripe } from "@stripe/stripe-js"
+import { useCallback, useEffect, useRef, useState } from "react"
 import {
   Elements,
   ExpressCheckoutElement,
@@ -15,12 +14,27 @@ import { useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
+import { CheckoutPaymentFormSkeleton } from "@/components/features/checkout/checkout-skeletons"
+import { StripeJsUnavailable } from "@/components/stripe-js-unavailable"
 import { BRAND_CTA_BLUE } from "@/lib/brand-colors"
-import { stripePublishableKey } from "@/lib/stripe/client-checkout-enabled"
+import { useStripeBrowser } from "@/lib/stripe/use-stripe-browser"
 import { buildOrderSuccessPath } from "@/lib/google-ads/purchase-success-path"
+import { listingQuantitiesKey } from "@/lib/stripe/checkout-quantities-key"
+import {
+  ALREADY_PURCHASED_CHECKOUT_CODE,
+  paidPaymentIntentIdFromConfirmResult,
+  stripePaymentIntentLooksPaid,
+} from "@/lib/stripe/checkout-payment-recovery"
+import {
+  clearStoredCheckoutSessionId,
+  checkoutSessionStorageKey,
+  readStoredCheckoutSessionId,
+  writeStoredCheckoutSessionId,
+} from "@/lib/stripe/checkout-session-storage"
+import { finalizeMarketplaceOrderClient } from "@/lib/stripe/finalize-marketplace-order-client"
 import { cn } from "@/lib/utils"
 
-const publishableKey = stripePublishableKey()
+export { prefetchStripeJs } from "@/lib/stripe/load-stripe-browser"
 
 /** Stripe.js errors sometimes omit enumerable fields; devtools then show `{}` for plain object logs. */
 function formatStripeConfirmError(error: unknown): string {
@@ -36,18 +50,6 @@ function formatStripeConfirmError(error: unknown): string {
   }
 }
 
-let stripePromise: ReturnType<typeof loadStripe> | null = null
-function getStripeBrowser() {
-  if (!publishableKey) return null
-  stripePromise ??= loadStripe(publishableKey)
-  return stripePromise
-}
-
-/** Start loading Stripe.js from the CDN before the payment form mounts. */
-export function prefetchStripeJs(): void {
-  void getStripeBrowser()
-}
-
 /**
  * One `<Elements>` tree: Express Checkout (Link, Apple Pay, Google Pay) + Payment Element (card, Klarna).
  * Wallets stay off on the Payment Element so they are not duplicated. Do not mount a second
@@ -60,6 +62,7 @@ function CheckoutForm({
   submitButtonLabel,
   submitButtonClassName,
   buyerEmail,
+  onConfirmLockChange,
 }: {
   clientSecret: string
   amountLabel: string
@@ -67,6 +70,7 @@ function CheckoutForm({
   submitButtonLabel?: string
   submitButtonClassName?: string
   buyerEmail?: string | null
+  onConfirmLockChange?: (locked: boolean) => void
 }) {
   const stripe = useStripe()
   const elements = useElements()
@@ -77,24 +81,18 @@ function CheckoutForm({
 
   const completeAfterSuccess = useCallback(
     async (paymentIntentId: string) => {
-      const res = await fetch("/api/stripe/finalize-order", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ payment_intent_id: paymentIntentId }),
-      })
-      const data = (await res.json()) as { error?: string; orderId?: string }
-      if (!res.ok) {
-        toast.error(data.error ?? "Could not complete order")
+      onConfirmLockChange?.(true)
+      const result = await finalizeMarketplaceOrderClient(paymentIntentId)
+      if (!result.ok) {
+        toast.error(
+          "Payment received. Your order is confirming — check Purchases. Do not pay again.",
+        )
+        router.replace("/dashboard/purchases")
         return
       }
-      if (data.orderId) {
-        router.replace(buildOrderSuccessPath(data.orderId, { reportPurchase: true }))
-      } else {
-        router.replace("/checkout/success")
-      }
+      router.replace(buildOrderSuccessPath(result.orderId, { reportPurchase: true }))
     },
-    [router],
+    [onConfirmLockChange, router],
   )
 
   const confirmAndComplete = useCallback(async (): Promise<{ ok: true } | { ok: false; message: string }> => {
@@ -102,36 +100,76 @@ function CheckoutForm({
       return { ok: false, message: "Payment is still loading. Try again." }
     }
 
+    onConfirmLockChange?.(true)
+
     const { error: submitError } = await elements.submit()
     if (submitError) {
+      onConfirmLockChange?.(false)
       return { ok: false, message: submitError.message ?? "Check your payment details and try again." }
     }
 
     const origin = window.location.origin
-    const { error, paymentIntent } = await stripe.confirmPayment({
-      elements,
+    let error: unknown
+    let paymentIntent: { id?: string; status?: string } | undefined
+    try {
+      const confirmed = await stripe.confirmPayment({
+        elements,
+        clientSecret,
+        confirmParams: {
+          return_url: `${origin}/checkout/success`,
+        },
+        redirect: "if_required",
+      })
+      error = confirmed.error
+      paymentIntent = confirmed.paymentIntent
+    } catch (confirmErr) {
+      error = confirmErr
+    }
+
+    let paidId = paidPaymentIntentIdFromConfirmResult({
+      paymentIntent,
+      error,
       clientSecret,
-      confirmParams: {
-        return_url: `${origin}/checkout/success`,
-      },
-      redirect: "if_required",
     })
 
+    if (!paidId) {
+      try {
+        const retrieved = await stripe.retrievePaymentIntent(clientSecret)
+        if (
+          retrieved.paymentIntent?.id &&
+          stripePaymentIntentLooksPaid(retrieved.paymentIntent.status)
+        ) {
+          paidId = retrieved.paymentIntent.id
+        }
+      } catch (retrieveErr) {
+        console.error("Stripe retrievePaymentIntent after confirm error", retrieveErr)
+      }
+    }
+
+    if (paidId) {
+      await completeAfterSuccess(paidId)
+      return { ok: true }
+    }
+
     if (error) {
+      onConfirmLockChange?.(false)
       const detail = formatStripeConfirmError(error)
       console.error("Stripe confirmPayment error", detail, error)
+      const messageFromError =
+        error &&
+        typeof error === "object" &&
+        typeof (error as { message?: unknown }).message === "string"
+          ? (error as { message: string }).message.trim()
+          : ""
       const userMsg =
-        (typeof error.message === "string" && error.message.trim()) ||
+        messageFromError ||
         "Payment could not be confirmed. If this persists, confirm your Stripe publishable and secret keys are both test or both live from the same Stripe account (then redeploy so the publishable key matches the server)."
       return { ok: false, message: userMsg }
     }
 
-    if (paymentIntent?.status === "succeeded" && paymentIntent.id) {
-      await completeAfterSuccess(paymentIntent.id)
-    }
-
+    onConfirmLockChange?.(false)
     return { ok: true }
-  }, [stripe, elements, clientSecret, completeAfterSuccess])
+  }, [stripe, elements, clientSecret, completeAfterSuccess, onConfirmLockChange])
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -176,6 +214,11 @@ function CheckoutForm({
     },
     [stripe, elements, confirmAndComplete],
   )
+
+  useEffect(() => {
+    if (!elements) return
+    void elements.fetchUpdates()
+  }, [elements, amountLabel])
 
   const billingEmail = buyerEmail?.trim() || undefined
 
@@ -275,6 +318,7 @@ function CheckoutForm({
 
 export function StripeCardCheckout({
   listingIds,
+  quantities,
   listingTitle,
   price,
   fulfillment,
@@ -285,11 +329,15 @@ export function StripeCardCheckout({
   packagingMode = null,
   purchaseDetailsReady = true,
   needsShipping = false,
+  surfboardShipped = false,
+  forceNewSession = false,
+  applyReswellCredit = false,
   submitButtonLabel,
   submitButtonClassName,
   buyerEmail,
 }: {
   listingIds: string[]
+  quantities?: Record<string, number>
   listingTitle: string
   price: number
   fulfillment?: "pickup" | "shipping" | null
@@ -300,6 +348,11 @@ export function StripeCardCheckout({
   packagingMode?: "together" | "separate" | null
   purchaseDetailsReady?: boolean
   needsShipping?: boolean
+  surfboardShipped?: boolean
+  /** Start a new paid attempt for an in-stock quantity listing. */
+  forceNewSession?: boolean
+  /** Admin pilot: apply Reswell Credit toward the card charge. */
+  applyReswellCredit?: boolean
   /** When set, replaces the default “Pay — $x” label. */
   submitButtonLabel?: string
   submitButtonClassName?: string
@@ -307,47 +360,63 @@ export function StripeCardCheckout({
   buyerEmail?: string | null
 }) {
   const { resolvedTheme } = useTheme()
+  const router = useRouter()
   const [clientSecret, setClientSecret] = useState<string | null>(null)
   const [chargedTotalUsd, setChargedTotalUsd] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const paymentLockedRef = useRef(false)
+  const forceNewConsumedRef = useRef(false)
+  const checkoutSessionIdRef = useRef<string | null>(null)
 
-  const stripePromise = getStripeBrowser()
+  const { stripePromise, unavailable, retry } = useStripeBrowser()
 
   const listingIdsKey = [...listingIds].sort().join("|")
+  const quantitiesKey = listingQuantitiesKey(quantities)
+  const sessionStorageKey = checkoutSessionStorageKey({
+    listingIdsKey,
+    quantitiesKey,
+    offerId: offerId ?? null,
+  })
+
+  const lockPaymentForm = useCallback((locked: boolean) => {
+    paymentLockedRef.current = locked
+  }, [])
 
   useEffect(() => {
+    if (paymentLockedRef.current) return
+
     if (!stripePromise) {
       setLoading(false)
       return
     }
 
     if (!purchaseDetailsReady) {
-      setClientSecret(null)
       setError(null)
       setLoading(false)
       return
     }
 
     if (!listingIds.length) {
-      setClientSecret(null)
       setError(null)
       setLoading(false)
       return
     }
 
     if (needsShipping && !shippingAddressId) {
-      setClientSecret(null)
       setError(null)
       setLoading(false)
       return
     }
 
     let cancelled = false
-    setClientSecret(null)
-    setChargedTotalUsd(null)
+    let navigatingAway = false
     setError(null)
     setLoading(true)
+
+    const storedSessionId = readStoredCheckoutSessionId(sessionStorageKey)
+    const resumeSessionId = checkoutSessionIdRef.current ?? storedSessionId
+    const shouldForceNew = forceNewSession && !forceNewConsumedRef.current
 
     ;(async () => {
       try {
@@ -358,21 +427,78 @@ export function StripeCardCheckout({
           credentials: "include",
           body: JSON.stringify({
             listing_ids: listingIds,
+            ...(quantities ? { quantities } : {}),
             ...(fulfillment ? { fulfillment } : {}),
             ...(needsShipping && shippingAddressId ? { address_id: shippingAddressId } : {}),
             ...(offerId ? { offer_id: offerId } : {}),
             ...(promoCode ? { promo_code: promoCode } : {}),
             ...(shippingQuoteToken ? { quote_token: shippingQuoteToken } : {}),
             ...(packagingMode ? { packaging_mode: packagingMode } : {}),
+            ...(surfboardShipped ? { surfboard_shipped: true } : {}),
+            ...(applyReswellCredit ? { apply_reswell_credit: true } : {}),
+            ...(resumeSessionId && !shouldForceNew ? { checkout_session_id: resumeSessionId } : {}),
+            ...(shouldForceNew ? { force_new_session: true } : {}),
           }),
         })
         const data = (await res.json()) as {
           clientSecret?: string
           error?: string
+          code?: string
+          orderId?: string
+          alreadyPaid?: boolean
+          paymentIntentId?: string
+          checkoutSessionId?: string
           shippingUsd?: number
           totalUsd?: number
+          reswellCreditUsd?: number
         }
-        if (cancelled) return
+        if (cancelled || paymentLockedRef.current) return
+        if (data.checkoutSessionId?.trim()) {
+          const nextSessionId = data.checkoutSessionId.trim()
+          checkoutSessionIdRef.current = nextSessionId
+          writeStoredCheckoutSessionId(sessionStorageKey, nextSessionId)
+        }
+        if (
+          shouldForceNew &&
+          (Boolean(data.checkoutSessionId?.trim()) ||
+            data.alreadyPaid === true ||
+            data.code === ALREADY_PURCHASED_CHECKOUT_CODE)
+        ) {
+          forceNewConsumedRef.current = true
+        }
+        if (
+          res.status === 409 &&
+          data.code === ALREADY_PURCHASED_CHECKOUT_CODE &&
+          data.orderId?.trim()
+        ) {
+          navigatingAway = true
+          clearStoredCheckoutSessionId(sessionStorageKey)
+          router.replace(buildOrderSuccessPath(data.orderId.trim(), { reportPurchase: true }))
+          return
+        }
+        if (res.ok && data.alreadyPaid && data.orderId?.trim()) {
+          paymentLockedRef.current = true
+          navigatingAway = true
+          clearStoredCheckoutSessionId(sessionStorageKey)
+          router.replace(buildOrderSuccessPath(data.orderId.trim(), { reportPurchase: true }))
+          return
+        }
+        if (res.ok && data.alreadyPaid && data.paymentIntentId?.trim()) {
+          paymentLockedRef.current = true
+          navigatingAway = true
+          const finalized = await finalizeMarketplaceOrderClient(data.paymentIntentId.trim())
+          if (cancelled) return
+          clearStoredCheckoutSessionId(sessionStorageKey)
+          if (finalized.ok) {
+            router.replace(buildOrderSuccessPath(finalized.orderId, { reportPurchase: true }))
+            return
+          }
+          toast.error(
+            "Payment received. Your order is confirming — check Purchases. Do not pay again.",
+          )
+          router.replace("/dashboard/purchases")
+          return
+        }
         if (!res.ok) {
           console.error("[StripeCardCheckout] create-payment-intent failed", {
             status: res.status,
@@ -382,7 +508,9 @@ export function StripeCardCheckout({
           return
         }
         if (data.clientSecret) {
-          setClientSecret(data.clientSecret)
+          setClientSecret((current) =>
+            current === data.clientSecret ? current : data.clientSecret ?? null,
+          )
           if (typeof data.totalUsd === "number" && Number.isFinite(data.totalUsd) && data.totalUsd > 0) {
             setChargedTotalUsd(data.totalUsd)
           }
@@ -393,7 +521,7 @@ export function StripeCardCheckout({
       } catch {
         if (!cancelled) setError("Could not start card payment")
       } finally {
-        if (!cancelled) setLoading(false)
+        if (!cancelled && !navigatingAway) setLoading(false)
       }
     })()
 
@@ -402,6 +530,7 @@ export function StripeCardCheckout({
     }
   }, [
     listingIdsKey,
+    quantitiesKey,
     fulfillment,
     price,
     shippingAddressId,
@@ -411,7 +540,12 @@ export function StripeCardCheckout({
     packagingMode,
     purchaseDetailsReady,
     needsShipping,
+    surfboardShipped,
+    forceNewSession,
+    applyReswellCredit,
+    sessionStorageKey,
     stripePromise,
+    router,
   ])
 
   if (!purchaseDetailsReady) {
@@ -434,16 +568,15 @@ export function StripeCardCheckout({
     return null
   }
 
-  if (loading) {
-    return (
-      <div className="flex min-h-[320px] flex-col items-center justify-center gap-2 rounded-lg border bg-card text-sm text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" />
-        Loading secure checkout…
-      </div>
-    )
+  if (unavailable) {
+    return <StripeJsUnavailable onRetry={retry} />
   }
 
-  if (error) {
+  if (loading && !clientSecret) {
+    return <CheckoutPaymentFormSkeleton />
+  }
+
+  if (error && !clientSecret) {
     return (
       <div className="flex min-h-[100px] flex-col items-start justify-center">
         <p className="text-sm text-destructive">{error}</p>
@@ -471,15 +604,19 @@ export function StripeCardCheckout({
         }
 
   return (
-    <Elements key={clientSecret} stripe={stripePromise} options={{ clientSecret, appearance }}>
-      <CheckoutForm
-        clientSecret={clientSecret}
-        amountLabel={`$${(chargedTotalUsd ?? price).toFixed(2)}`}
-        disabled={false}
-        submitButtonLabel={submitButtonLabel}
-        submitButtonClassName={submitButtonClassName}
-        buyerEmail={buyerEmail}
-      />
-    </Elements>
+    <div className="space-y-3">
+      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      <Elements key={clientSecret} stripe={stripePromise} options={{ clientSecret, appearance }}>
+        <CheckoutForm
+          clientSecret={clientSecret}
+          amountLabel={`$${(chargedTotalUsd ?? price).toFixed(2)}`}
+          disabled={loading}
+          submitButtonLabel={submitButtonLabel}
+          submitButtonClassName={submitButtonClassName}
+          buyerEmail={buyerEmail}
+          onConfirmLockChange={lockPaymentForm}
+        />
+      </Elements>
+    </div>
   )
 }

@@ -1,3 +1,5 @@
+import { coerceSubmittedListingPrice } from "@/lib/utils/sell-listing-price"
+
 /** Owner and admin updates must never change identity / visibility columns from the client. */
 export const LISTING_UPDATE_FORBIDDEN_FIELDS = new Set([
   "id",
@@ -17,6 +19,7 @@ export function listingFieldsForPeerUpdate(raw: Record<string, unknown>): Record
     if (LISTING_UPDATE_FORBIDDEN_FIELDS.has(key)) continue
     next[key] = value
   }
+  coerceSubmittedListingPrice(next)
   return next
 }
 
@@ -29,11 +32,14 @@ export function resolveListingUpdateActor(args: {
   actorIsAdmin: boolean
   actorUserId: string
   listingOwnerId: string | null | undefined
-}): "owner" | "admin" | "forbidden" {
+  /** Active shop member with listings.write on this listing's account. Not admin. */
+  memberCanWriteShop?: boolean
+}): "owner" | "admin" | "member" | "forbidden" {
   const ownerId = args.listingOwnerId?.trim()
   const actorId = args.actorUserId.trim()
   if (!ownerId || !actorId) return "forbidden"
   if (actorId === ownerId) return "owner"
+  if (args.memberCanWriteShop) return "member"
   if (args.actorIsAdmin) return "admin"
   return "forbidden"
 }

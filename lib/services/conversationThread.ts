@@ -1,5 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { revalidateMessagesInboxForParticipants } from "@/lib/cache/revalidate-messages-inbox"
+import {
+  broadcastInsertedMarketplaceMessage,
+  broadcastMarketplaceThreadRefresh,
+} from "@/lib/services/broadcastMarketplaceThreadMessage"
 import { ensureConversationForBuyerSellerListing } from "@/lib/db/conversations"
 
 export type AppendConversationMessageOptions = {
@@ -67,17 +71,23 @@ export async function appendConversationMessageWithClient(
     }
   }
 
-  const { error: msgError } = await supabase.from("messages").insert({
-    conversation_id: conversationId,
-    sender_id: senderId,
-    content,
-    offer_id: offerId ?? null,
-  })
+  const { data: inserted, error: msgError } = await supabase
+    .from("messages")
+    .insert({
+      conversation_id: conversationId,
+      sender_id: senderId,
+      content,
+      offer_id: offerId ?? null,
+    })
+    .select("id, sender_id, content, created_at, is_read, offer_id, metadata")
+    .single()
 
-  if (msgError) {
+  if (msgError || !inserted) {
     console.error("[appendConversationMessage] insert message:", msgError)
     return { ok: false }
   }
+
+  await broadcastInsertedMarketplaceMessage(inserted, conversationId)
 
   await supabase
     .from("conversations")
@@ -144,6 +154,7 @@ export async function rewriteOfferThreadMessages(
   ]
   if (conversationIds.length > 0) {
     await supabase.from("conversations").update({ last_message_at: now }).in("id", conversationIds)
+    await Promise.all(conversationIds.map((conversationId) => broadcastMarketplaceThreadRefresh(conversationId)))
   }
   revalidateMessagesInboxForParticipants(input.buyerId, input.sellerId)
 

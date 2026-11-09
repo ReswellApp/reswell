@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { cn } from "@/lib/utils"
 import type { HowItWorksBuyerCurationSlot } from "@/lib/db/home-how-it-works-buyer-curation"
 
@@ -259,7 +260,7 @@ export function HomeHowItWorksBuyerCurator({ isAdmin, className }: { isAdmin: bo
                           src={s.listing.card_image_url}
                           alt=""
                           fill
-                          className="object-cover"
+                          className={listingPhotoFillClassName}
                           sizes="76px"
                           unoptimized={s.listing.card_image_url.startsWith("/")}
                         />
@@ -374,7 +375,7 @@ export function HomeHowItWorksBuyerCurator({ isAdmin, className }: { isAdmin: bo
                                   src={hit.primary_image_url}
                                   alt=""
                                   fill
-                                  className="object-cover"
+                                  className={listingPhotoFillClassName}
                                   sizes="62px"
                                   unoptimized={hit.primary_image_url.startsWith("/")}
                                 />

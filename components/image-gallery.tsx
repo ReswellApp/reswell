@@ -1,23 +1,36 @@
 "use client"
 
-import { type CSSProperties, type PointerEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react"
+import {
+  type PointerEvent,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react"
 import { preload } from "react-dom"
 import dynamic from "next/dynamic"
 import useEmblaCarousel from "embla-carousel-react"
 import { cn } from "@/lib/utils"
 import { listingFilmImageSrcFromRow, listingTileImageSrcFromRow } from "@/lib/listing-image-display"
+import { LISTING_PDP_HERO_IMAGE_SIZES } from "@/lib/listing-hero-frame"
 import {
   proxiedListingImageSrc,
   withListingMediaPdpVariant,
 } from "@/lib/listing-media-proxy-url"
 import { Maximize2, Play } from "lucide-react"
+import { ListingGalleryPhoto } from "@/components/features/listings/listing-gallery-photo"
+import { ListingPdpCropIsland } from "@/components/features/listings/listing-pdp-crop-island"
 import {
-  ListingGalleryPhoto,
-  listingPhotoBackdropStyle,
-} from "@/components/features/listings/listing-gallery-photo"
+  listingPdpCropFromImageRow,
+  type ListingPdpCrop,
+} from "@/lib/utils/listing-pdp-crop"
+import { useListingGallerySwipe } from "@/components/features/listings/hooks/use-passive-gallery-swipe"
 import { ListingImageCarouselNavButton } from "@/components/features/listings/listing-image-carousel-nav-button"
 import { ListingPdpVideo } from "@/components/features/listings/listing-pdp-video"
 import type { ListingPdpVideoSource } from "@/lib/primary-listing-video"
+import { LISTING_GALLERY_EMBLA_WATCH_DRAG } from "@/lib/utils/listing-gallery-touch"
 
 function preloadListingImageLightbox() {
   return import("@/components/features/listings/listing-image-lightbox")
@@ -35,13 +48,16 @@ interface ImageGalleryProps {
     url: string
     is_primary: boolean
     thumbnail_url?: string | null
+    pdp_crop_zoom?: number | null
+    pdp_crop_x?: number | null
+    pdp_crop_y?: number | null
   }>
   title: string
   /** Optional listing video — rendered as the last carousel slide, not above the photos. */
   video?: ListingPdpVideoSource | null
   /** Sold listings: SOLD badge on the hero. */
   sold?: boolean
-  /** Mobile PDP: edge-to-edge hero, natural ratio, height-capped so title stays nearby. */
+  /** Mobile PDP: edge-to-edge hero. The frame stays 3:4 on every photo. */
   compactMobile?: boolean
   /** Share / favorite controls — rendered on the hero tile so they track its bounds. */
   heroOverlay?: ReactNode
@@ -71,8 +87,16 @@ function warmHeroSlideNeighbors(urls: string[], activeIndex: number): void {
   }
 }
 
+type ReplacedGalleryImage = {
+  url: string
+  thumbnail_url: string | null
+  pdp_crop_zoom: number | null
+  pdp_crop_x: number | null
+  pdp_crop_y: number | null
+}
+
 export function ImageGallery({
-  images,
+  images: imagesProp,
   title,
   video,
   sold,
@@ -85,13 +109,20 @@ export function ImageGallery({
   /** Mount once the zoom chunk is ready so the first enlarge is a state change, not a white shell. */
   const [lightboxMounted, setLightboxMounted] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(0)
-  /** Natural width/height per slide — mobile hero uses this instead of a fixed crop frame. */
-  const [imageAspectRatios, setImageAspectRatios] = useState<Record<number, number>>({})
-  /** Aspect frame follows the settled slide so the hero height does not jump mid-swipe. */
-  const [frameIndex, setFrameIndex] = useState(0)
+  const [cropOverrides, setCropOverrides] = useState<Record<string, ListingPdpCrop | null>>({})
+  const [replacedImages, setReplacedImages] = useState<Record<string, ReplacedGalleryImage>>({})
+  const images = useMemo(
+    () =>
+      imagesProp.map((image) => {
+        const next = replacedImages[image.id]
+        return next ? { ...image, ...next } : image
+      }),
+    [imagesProp, replacedImages],
+  )
   const pointerStartRef = useRef<{ x: number; y: number } | null>(null)
   const suppressHeroClickRef = useRef(false)
   const thumbRowRef = useRef<HTMLDivElement>(null)
+  const [viewportNode, setViewportNode] = useState<HTMLElement | null>(null)
 
   const hasVideo = Boolean(video?.url?.trim())
   const videoIndex = hasVideo ? images.length : -1
@@ -102,20 +133,48 @@ export function ImageGallery({
     align: "start",
     duration: 22,
     dragThreshold: 8,
-    // Native video controls live on the <video> node — do not start a swipe there.
-    watchDrag: (_api, event) => {
-      if (!canSwipe) return false
-      const target = event.target
-      if (target instanceof Element && target.closest("video")) return false
-      return true
-    },
+    // Keep Embla for layout and snapping only. Any truthy value installs its
+    // non-passive touchmove listener, which can lock mobile Safari.
+    watchDrag: LISTING_GALLERY_EMBLA_WATCH_DRAG,
   })
+  const setGalleryViewport = useCallback(
+    (node: HTMLElement | null) => {
+      setViewportNode(node)
+      emblaRef(node)
+    },
+    [emblaRef],
+  )
+
+  const selectedIndexRef = useRef(selectedIndex)
+  selectedIndexRef.current = selectedIndex
+  const swipeTo = useRef<(direction: -1 | 1) => void>(() => {})
+  swipeTo.current = (direction) => {
+    suppressHeroClickRef.current = true
+    if (emblaApi && canSwipe) {
+      if (direction > 0) emblaApi.scrollNext()
+      else emblaApi.scrollPrev()
+      return
+    }
+    const prev = selectedIndexRef.current
+    const next =
+      direction > 0 ? (prev === slideCount - 1 ? 0 : prev + 1) : prev === 0 ? slideCount - 1 : prev - 1
+    setSelectedIndex(next)
+  }
+  useListingGallerySwipe(
+    canSwipe,
+    viewportNode,
+    (direction) => {
+      swipeTo.current(direction)
+    },
+    () => {
+      suppressHeroClickRef.current = true
+    },
+    () => {
+      suppressHeroClickRef.current = false
+    },
+  )
 
   const isVideoSelected = hasVideo && selectedIndex === videoIndex
-  const isVideoFrame = hasVideo && frameIndex === videoIndex
-  const mobileHeroAspectRatio = isVideoFrame
-    ? 3 / 4
-    : imageAspectRatios[frameIndex] ?? imageAspectRatios[selectedIndex] ?? 3 / 4
 
   /** Photo URLs only — video is a trailing carousel slide and stays out of the lightbox. */
   const proxiedUrls = useMemo(
@@ -149,6 +208,13 @@ export function ImageGallery({
     [heroUrls],
   )
 
+  function cropForImage(image: ImageGalleryProps["images"][number]): ListingPdpCrop | null {
+    if (Object.prototype.hasOwnProperty.call(cropOverrides, image.id)) {
+      return cropOverrides[image.id] ?? null
+    }
+    return listingPdpCropFromImageRow(image)
+  }
+
   const firstHero = heroUrls[0]
   if (firstHero && firstHero !== "/placeholder.svg") {
     preload(firstHero, { as: "image", fetchPriority: "high" })
@@ -162,22 +228,12 @@ export function ImageGallery({
     const onSelect = () => {
       setSelectedIndex(emblaApi.selectedScrollSnap())
     }
-    const onSettle = () => {
-      setFrameIndex(emblaApi.selectedScrollSnap())
-    }
-    const onReInit = () => {
-      onSelect()
-      onSettle()
-    }
     onSelect()
-    onSettle()
     emblaApi.on("select", onSelect)
-    emblaApi.on("settle", onSettle)
-    emblaApi.on("reInit", onReInit)
+    emblaApi.on("reInit", onSelect)
     return () => {
       emblaApi.off("select", onSelect)
-      emblaApi.off("settle", onSettle)
-      emblaApi.off("reInit", onReInit)
+      emblaApi.off("reInit", onSelect)
     }
   }, [emblaApi])
 
@@ -229,8 +285,7 @@ export function ImageGallery({
   if (slideCount === 0) {
     return (
       <div
-        className="relative w-full rounded-2xl bg-[#f5f5f7] text-muted-foreground shadow-sm ring-1 ring-black/[0.04] dark:bg-muted dark:ring-white/[0.06]"
-        style={{ paddingBottom: "133.33%" }}
+        className="listing-pdp-hero relative rounded-2xl bg-muted text-muted-foreground shadow-sm ring-1 ring-black/[0.04] dark:ring-white/[0.06]"
       >
         <span className="absolute inset-0 flex items-center justify-center">No images available</span>
       </div>
@@ -299,19 +354,17 @@ export function ImageGallery({
               return
             }
             setSelectedIndex(lightboxIndex)
-            setFrameIndex(lightboxIndex)
           }}
           proxiedUrls={proxiedUrls}
           title={title}
           index={lightboxIndex}
           onIndexChange={setLightboxIndex}
-          aspectRatios={imageAspectRatios}
           dimensionsLine={dimensionsLine}
           previewUrls={previewUrls}
         />
       ) : null}
 
-      {/* Main Image — tablet/desktop: stable 3:4; phone: edge-to-edge, natural ratio, height-capped */}
+      {/* Main image — locked 3:4 tile. Photos cover the frame from the center. */}
       <div
         className={cn(
           compactMobile &&
@@ -320,16 +373,11 @@ export function ImageGallery({
       >
         <div
           className={cn(
-            "relative overflow-hidden bg-transparent select-none",
+            "listing-pdp-hero relative overflow-hidden bg-muted select-none",
             compactMobile
-              ? "max-md:h-auto max-md:max-h-[min(58dvh,30rem)] max-md:w-full max-md:min-w-full max-md:[aspect-ratio:var(--hero-aspect,3/4)] max-md:rounded-none md:aspect-[3/4] md:max-h-none md:h-auto md:w-full md:rounded-2xl md:shadow-sm md:ring-1 md:ring-black/[0.04] dark:md:ring-white/[0.06]"
-              : "w-full rounded-2xl shadow-sm ring-1 ring-black/[0.04] dark:ring-white/[0.06]",
+              ? "max-md:rounded-none md:rounded-2xl md:shadow-sm md:ring-1 md:ring-black/[0.04] dark:md:ring-white/[0.06]"
+              : "rounded-2xl shadow-sm ring-1 ring-black/[0.04] dark:ring-white/[0.06]",
           )}
-          style={
-            compactMobile
-              ? ({ "--hero-aspect": mobileHeroAspectRatio } as CSSProperties)
-              : { paddingBottom: "133.33%" }
-          }
         >
         {heroOverlay ? (
           <div className="absolute right-2 top-2 z-[15] flex items-start gap-2 sm:right-3 sm:top-3 md:right-4 md:top-4">
@@ -343,11 +391,39 @@ export function ImageGallery({
             <span className="sr-only">Enlarge</span>
           </div>
         )}
+        <ListingPdpCropIsland
+          images={images}
+          initialIndex={selectedIndex < images.length ? selectedIndex : 0}
+          hidden={isVideoSelected}
+          onCropsSaved={(saved) => {
+            setCropOverrides((prev) => ({ ...prev, ...saved }))
+          }}
+          onImagesRotated={(rotated) => {
+            setReplacedImages((prev) => {
+              const next = { ...prev }
+              for (const image of rotated) {
+                next[image.id] = {
+                  url: image.url,
+                  thumbnail_url: image.thumbnailUrl,
+                  pdp_crop_zoom: image.crop?.zoom ?? null,
+                  pdp_crop_x: image.crop?.x ?? null,
+                  pdp_crop_y: image.crop?.y ?? null,
+                }
+              }
+              return next
+            })
+            setCropOverrides((prev) => {
+              const next = { ...prev }
+              for (const image of rotated) next[image.id] = image.crop
+              return next
+            })
+          }}
+        />
 
         <div
-          ref={emblaRef}
+          ref={setGalleryViewport}
           className={cn(
-            "absolute inset-0 z-[1] overflow-hidden overscroll-x-contain outline-none ring-inset ring-offset-0 transition-[box-shadow] focus-visible:ring-2 focus-visible:ring-ring",
+            "absolute inset-0 z-[1] overflow-hidden outline-none ring-inset ring-offset-0 transition-[box-shadow] focus-visible:ring-2 focus-visible:ring-ring [touch-action:manipulation]",
             isVideoSelected ? "cursor-default" : "cursor-zoom-in",
           )}
           role={hasVideo ? undefined : "button"}
@@ -373,32 +449,30 @@ export function ImageGallery({
             openLightbox()
           }}
         >
-          <div className="flex h-full touch-pan-y will-change-transform backface-hidden">
+          <div className="flex h-full [touch-action:manipulation]">
             {images.map((image, i) => {
               const isSelected = i === selectedIndex
-              const slideSrc = previewUrls[i] || heroUrls[i]
+              const crop = cropForImage(image)
               return (
                 <div
                   key={image.id || `hero-${i}-${image.url}`}
-                  className="relative h-full min-w-0 shrink-0 grow-0 basis-full backface-hidden transform-gpu"
-                  style={listingPhotoBackdropStyle(slideSrc)}
+                  className="relative h-full min-w-0 shrink-0 grow-0 basis-full overflow-hidden bg-muted backface-hidden transform-gpu"
                   aria-hidden={!isSelected}
                 >
                   <ListingGalleryPhoto
-                    src={heroUrls[i] || "/placeholder.svg"}
+                    src={
+                      crop && crop.zoom > 1
+                        ? proxiedUrls[i] || heroUrls[i] || "/placeholder.svg"
+                        : heroUrls[i] || "/placeholder.svg"
+                    }
                     previewSrc={previewUrls[i]}
+                    objectFit="cover"
                     alt={`${title} - Image ${i + 1}`}
                     priority={i === 0 && selectedIndex === 0}
                     fetchPriority={isSelected ? "high" : "auto"}
                     loading="eager"
-                    sizes="(max-width: 1024px) 100svw, 50svw"
-                    onLoaded={({ naturalWidth, naturalHeight }) => {
-                      const ratio = naturalWidth / naturalHeight
-                      setImageAspectRatios((prev) => {
-                        if (prev[i] === ratio) return prev
-                        return { ...prev, [i]: ratio }
-                      })
-                    }}
+                    crop={crop}
+                    sizes={LISTING_PDP_HERO_IMAGE_SIZES}
                   />
                 </div>
               )
@@ -485,7 +559,6 @@ export function ImageGallery({
                   return
                 }
                 setSelectedIndex(index)
-                setFrameIndex(index)
               }}
               aria-label={`Show photo ${index + 1} in gallery`}
               className={cn(
@@ -498,7 +571,7 @@ export function ImageGallery({
             >
               <span
                 className={cn(
-                  "listing-tile-shimmer relative block",
+                  "relative block bg-muted",
                   compactMobile ? "w-11 md:w-16" : "w-16",
                 )}
                 style={{ paddingBottom: "133.33%" }}
@@ -531,7 +604,6 @@ export function ImageGallery({
                   return
                 }
                 setSelectedIndex(videoIndex)
-                setFrameIndex(videoIndex)
               }}
               aria-label="Show video in gallery"
               className={cn(
@@ -544,7 +616,7 @@ export function ImageGallery({
             >
               <span
                 className={cn(
-                  "listing-tile-shimmer relative block",
+                  "relative block bg-muted",
                   compactMobile ? "w-11 md:w-16" : "w-16",
                 )}
                 style={{ paddingBottom: "133.33%" }}

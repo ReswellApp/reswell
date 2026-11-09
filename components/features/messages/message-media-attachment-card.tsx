@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, type ReactNode } from "react"
 import Image from "next/image"
 import { Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -16,6 +16,7 @@ import {
   parseMarketplaceMessagePdfAttachment,
   parseMarketplaceMessageVideoAttachment,
 } from "@/lib/validations/marketplace-message-attachment"
+import { MessageTextBubble } from "@/components/features/messages/message-text-bubble"
 
 const messageMediaShellClass =
   "max-w-[min(100%,12.5rem)] sm:max-w-[min(100%,14rem)] md:max-w-[min(100%,17rem)]"
@@ -154,25 +155,48 @@ function MessageMediaAttachmentVideo({
   )
 }
 
-function MessageTextBubble({
-  content,
-  isOwn,
+function LocalMediaPreview({
+  url,
+  kind,
+  fileName,
+  sendStatus,
+  progress,
 }: {
-  content: string
-  isOwn: boolean
+  url: string
+  kind: "image" | "video"
+  fileName: string
+  sendStatus?: "sending" | "failed"
+  progress?: number
 }) {
+  const sending = sendStatus === "sending"
+  const pct = Math.max(0, Math.min(100, Math.round(progress ?? 0)))
   return (
-    <div
-      className={cn(
-        "max-w-[min(100%,18.5rem)] rounded-[20px] px-3.5 py-2 sm:max-w-[min(100%,20rem)] sm:px-4 sm:py-2.5 md:max-w-[min(100%,28rem)]",
-        isOwn
-          ? "rounded-br-[6px] bg-listingHeart text-white shadow-[0_1px_2px_rgba(53,81,133,0.22)]"
-          : "rounded-bl-[6px] border border-border/45 bg-card text-foreground shadow-sm",
+    <div className={cn("relative min-h-[8rem] min-w-[8rem] overflow-hidden bg-muted/30", messageMediaFrameClass)}>
+      {kind === "video" ? (
+        <video
+          src={url}
+          muted
+          playsInline
+          preload="metadata"
+          className={messageMediaMaxSizeClass}
+          aria-hidden
+        />
+      ) : (
+        // Local blob preview — next/image cannot load blob: URLs.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={url} alt={fileName} className={messageMediaMaxSizeClass} />
       )}
-    >
-      <p className="whitespace-pre-wrap break-words text-[17px] leading-[1.35] tracking-[-0.01em]">
-        {content}
-      </p>
+      {sending ? (
+        <>
+          <div className="absolute inset-0 bg-black/20" aria-hidden />
+          <div className="absolute inset-x-0 bottom-0 h-1 bg-black/25">
+            <div
+              className="h-full bg-white/90 transition-[width] duration-150"
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+        </>
+      ) : null}
     </div>
   )
 }
@@ -183,15 +207,29 @@ export function MessageMediaAttachmentCard({
   content,
   isOwn,
   formattedTime,
+  showTime = true,
   onOpenImage,
+  localPreviewUrl,
+  localPreviewKind,
+  sendStatus,
+  progress,
+  onRetryFailed,
 }: {
   messageId: string
   metadata: unknown
   content: string
   isOwn: boolean
-  formattedTime: string
+  formattedTime: ReactNode
+  /** Per-item timestamps clutter an iMessage-style thread; group labels cover this. */
+  showTime?: boolean
   /** Opens a parent-owned image gallery (swipe across thread photos). */
   onOpenImage?: (messageId: string) => void
+  /** Optimistic outgoing photo/video still uploading from this device. */
+  localPreviewUrl?: string
+  localPreviewKind?: "image" | "video"
+  sendStatus?: "sending" | "failed"
+  progress?: number
+  onRetryFailed?: () => void
 }) {
   const imageAtt = parseMarketplaceMessageImageAttachment(metadata)
   const videoAtt = parseMarketplaceMessageVideoAttachment(metadata)
@@ -201,22 +239,32 @@ export function MessageMediaAttachmentCard({
     ? composeMediaAttachmentMessageBody("image")
     : videoAtt
       ? composeMediaAttachmentMessageBody("video")
-      : null
+      : localPreviewKind
+        ? composeMediaAttachmentMessageBody(localPreviewKind)
+        : null
   const redundantCaption =
     defaultBody != null && content.trim() === defaultBody
 
-  if (imageAtt || videoAtt) {
+  if (imageAtt || videoAtt || localPreviewUrl) {
+    const previewKind = localPreviewKind ?? (videoAtt ? "video" : "image")
     return (
       <div className={cn("flex flex-col gap-1.5", messageMediaShellClass, isOwn && "items-end")}>
-        {imageAtt ? (
+        {localPreviewUrl ? (
+          <LocalMediaPreview
+            url={localPreviewUrl}
+            kind={previewKind}
+            fileName={imageAtt?.file_name ?? videoAtt?.file_name ?? (previewKind === "video" ? "Video" : "Photo")}
+            sendStatus={sendStatus}
+            progress={progress}
+          />
+        ) : imageAtt ? (
           <MessageMediaAttachmentImage
             messageId={messageId}
             fileName={imageAtt.file_name}
             className={messageMediaFrameClass}
             onOpenImage={onOpenImage}
           />
-        ) : null}
-        {videoAtt ? (
+        ) : videoAtt ? (
           <MessageMediaAttachmentVideo
             messageId={messageId}
             fileName={videoAtt.file_name}
@@ -226,27 +274,31 @@ export function MessageMediaAttachmentCard({
         {!redundantCaption && content.trim() ? (
           <MessageTextBubble content={content} isOwn={isOwn} />
         ) : null}
-        <p
-          className={cn(
-            "px-0.5 text-[11px] tabular-nums leading-none text-muted-foreground",
-            isOwn && "text-right",
-          )}
-        >
-          {formattedTime}
-        </p>
+        {isOwn && sendStatus === "failed" ? (
+          <button
+            type="button"
+            className="px-0.5 text-[11px] font-medium text-red-500"
+            onClick={onRetryFailed}
+          >
+            Not Delivered — Tap to Retry
+          </button>
+        ) : null}
+        {showTime ? (
+          <p
+            className={cn(
+              "px-0.5 text-[11px] tabular-nums leading-none text-muted-foreground",
+              isOwn && "text-right",
+            )}
+          >
+            {formattedTime}
+          </p>
+        ) : null}
       </div>
     )
   }
 
   return (
-    <div
-      className={cn(
-        "max-w-[min(100%,18.5rem)] rounded-[20px] px-3.5 py-2 sm:max-w-[min(100%,20rem)] sm:px-4 sm:py-2.5 md:max-w-[min(100%,28rem)]",
-        isOwn
-          ? "rounded-br-[6px] bg-listingHeart text-white shadow-[0_1px_2px_rgba(53,81,133,0.22)]"
-          : "rounded-bl-[6px] border border-border/45 bg-card text-foreground shadow-sm",
-      )}
-    >
+    <MessageTextBubble content={content} isOwn={isOwn} className="sm:py-2.5">
       {pdfAtt ? (
         <OpenMarketplacePdfButton
           messageId={messageId}
@@ -263,14 +315,16 @@ export function MessageMediaAttachmentCard({
           {content}
         </p>
       ) : null}
-      <p
-        className={cn(
-          "mt-1 text-[11px] tabular-nums leading-none",
-          isOwn ? "text-white/55" : "text-muted-foreground",
-        )}
-      >
-        {formattedTime}
-      </p>
-    </div>
+      {showTime ? (
+        <p
+          className={cn(
+            "mt-1 text-[11px] tabular-nums leading-none",
+            isOwn ? "text-white/55" : "text-muted-foreground",
+          )}
+        >
+          {formattedTime}
+        </p>
+      ) : null}
+    </MessageTextBubble>
   )
 }

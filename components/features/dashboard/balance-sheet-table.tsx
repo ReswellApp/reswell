@@ -1,13 +1,26 @@
 import Link from "next/link"
-import { ArrowLeft, ArrowRight } from "lucide-react"
+import { ArrowLeft, ArrowRight, ArrowUp, ArrowUpDown } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { AcquisitionDetailsDialog } from "@/components/features/dashboard/acquisition-details-dialog"
+import { RemoveBalanceSheetItemButton } from "@/components/features/dashboard/remove-balance-sheet-item-button"
 import { listingDetailHref } from "@/lib/listing-href"
+import type { PeerListingSection } from "@/lib/peer-listing-sections"
 import type { SellerBalanceSheetPage } from "@/lib/types/sellerBalanceSheet"
+import { balanceSheetHref } from "@/lib/utils/balance-sheet-query"
+import type {
+  BalanceSheetPeriod,
+  BalanceSheetSort,
+  BalanceSheetView,
+} from "@/lib/validations/seller-balance-sheet"
 
 interface BalanceSheetTableProps {
   sheet: SellerBalanceSheetPage
+  category: PeerListingSection | null
+  sort: BalanceSheetSort
+  view: BalanceSheetView
+  period: BalanceSheetPeriod
 }
 
 function usd(value: number | null): string {
@@ -37,7 +50,27 @@ function sourceLabel(source: SellerBalanceSheetPage["entries"][number]["saleSour
   return source === "reswell" ? "Reswell sale" : "Off-platform sale"
 }
 
-export function BalanceSheetTable({ sheet }: BalanceSheetTableProps) {
+function pageHref(
+  page: number,
+  category: PeerListingSection | null,
+  sort: BalanceSheetSort,
+  view: BalanceSheetView,
+  period: BalanceSheetPeriod,
+): string {
+  return balanceSheetHref({ page, category, sort, view, period })
+}
+
+export function BalanceSheetTable({
+  sheet,
+  category,
+  sort,
+  view,
+  period,
+}: BalanceSheetTableProps) {
+  const missingPaidFirst = sort === "missing-paid"
+  const priceHeader = view === "active" ? "Asking" : view === "sold" ? "Sold for" : "Asking / sold"
+  const statusHeader = view === "active" ? "Listed" : view === "sold" ? "Sold" : "Status"
+
   return (
     <div className="space-y-4">
       <div className="hidden overflow-hidden rounded-xl border md:block">
@@ -45,11 +78,39 @@ export function BalanceSheetTable({ sheet }: BalanceSheetTableProps) {
           <thead className="bg-muted/50 text-left text-xs text-muted-foreground">
             <tr>
               <th className="px-4 py-3 font-medium">Listing</th>
-              <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 text-right font-medium">Paid</th>
-              <th className="px-4 py-3 text-right font-medium">Asking / sold</th>
+              <th className="px-4 py-3 font-medium">{statusHeader}</th>
+              <th
+                className="px-4 py-3 text-right font-medium"
+                aria-sort={missingPaidFirst ? "other" : "none"}
+              >
+                <Link
+                  href={balanceSheetHref({
+                    category,
+                    sort: missingPaidFirst ? "recent" : "missing-paid",
+                    view,
+                    period,
+                  })}
+                  className="inline-flex items-center justify-end gap-1 hover:text-foreground"
+                  aria-label={
+                    missingPaidFirst
+                      ? "Missing paid prices are first. Show newest first."
+                      : "Sort by missing paid price"
+                  }
+                >
+                  Paid
+                  {missingPaidFirst ? (
+                    <ArrowUp className="h-3.5 w-3.5" aria-hidden />
+                  ) : (
+                    <ArrowUpDown className="h-3.5 w-3.5 opacity-50" aria-hidden />
+                  )}
+                </Link>
+              </th>
+              <th className="px-4 py-3 text-right font-medium">{priceHeader}</th>
               <th className="px-4 py-3 text-right font-medium">Fee</th>
               <th className="px-4 py-3 text-right font-medium">Profit</th>
+              <th className="w-12 px-2 py-3">
+                <span className="sr-only">Actions</span>
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y">
@@ -76,7 +137,16 @@ export function BalanceSheetTable({ sheet }: BalanceSheetTableProps) {
                     {sourceLabel(entry.saleSource)}
                   </Badge>
                 </td>
-                <td className="px-4 py-3 text-right tabular-nums">{usd(entry.purchasePrice)}</td>
+                <td className="px-4 py-3 text-right">
+                  <AcquisitionDetailsDialog
+                    listingId={entry.listingId}
+                    listingTitle={entry.listingTitle}
+                    purchasePrice={entry.purchasePrice}
+                    purchasedFrom={entry.purchasedFrom}
+                    purchasedOn={entry.purchasedOn}
+                    trigger="price"
+                  />
+                </td>
                 <td className="px-4 py-3 text-right tabular-nums">{usd(entry.soldPrice)}</td>
                 <td className="px-4 py-3 text-right tabular-nums">
                   {entry.saleSource === "inventory" ? "—" : usd(entry.reswellFee)}
@@ -88,6 +158,12 @@ export function BalanceSheetTable({ sheet }: BalanceSheetTableProps) {
                       {entry.profitMarginPercent.toFixed(1)}%
                     </span>
                   ) : null}
+                </td>
+                <td className="px-2 py-3 text-right">
+                  <RemoveBalanceSheetItemButton
+                    listingId={entry.listingId}
+                    listingTitle={entry.listingTitle}
+                  />
                 </td>
               </tr>
             ))}
@@ -120,6 +196,21 @@ export function BalanceSheetTable({ sheet }: BalanceSheetTableProps) {
                 <div><dt className="text-muted-foreground">Fee</dt><dd className="tabular-nums">{entry.saleSource === "inventory" ? "—" : usd(entry.reswellFee)}</dd></div>
                 <div><dt className="text-muted-foreground">Profit</dt><dd className={`font-semibold tabular-nums ${profitClass(entry.profit)}`}>{entry.saleSource === "inventory" ? "—" : usd(entry.profit)}</dd></div>
               </dl>
+              <div className="flex flex-wrap gap-2">
+                <AcquisitionDetailsDialog
+                  listingId={entry.listingId}
+                  listingTitle={entry.listingTitle}
+                  purchasePrice={entry.purchasePrice}
+                  purchasedFrom={entry.purchasedFrom}
+                  purchasedOn={entry.purchasedOn}
+                  trigger="button"
+                />
+                <RemoveBalanceSheetItemButton
+                  listingId={entry.listingId}
+                  listingTitle={entry.listingTitle}
+                  display="button"
+                />
+              </div>
             </CardContent>
           </Card>
         ))}
@@ -133,7 +224,7 @@ export function BalanceSheetTable({ sheet }: BalanceSheetTableProps) {
           <div className="flex gap-2">
             {sheet.page > 1 ? (
               <Button asChild variant="outline" size="sm">
-                <Link href={`/dashboard/balance-sheet?page=${sheet.page - 1}`}>
+                <Link href={pageHref(sheet.page - 1, category, sort, view, period)}>
                   <ArrowLeft className="mr-1 h-4 w-4" /> Previous
                 </Link>
               </Button>
@@ -144,7 +235,7 @@ export function BalanceSheetTable({ sheet }: BalanceSheetTableProps) {
             )}
             {sheet.page < sheet.totalPages ? (
               <Button asChild variant="outline" size="sm">
-                <Link href={`/dashboard/balance-sheet?page=${sheet.page + 1}`}>
+                <Link href={pageHref(sheet.page + 1, category, sort, view, period)}>
                   Next <ArrowRight className="ml-1 h-4 w-4" />
                 </Link>
               </Button>

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useSearchParams } from "next/navigation"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -25,9 +25,11 @@ import {
 } from "@/components/ui/table"
 import { Loader2, Truck } from "lucide-react"
 import { toast } from "sonner"
+import { navigateAfterSellerLabelPurchase } from "@/lib/shipping/navigate-after-seller-label-purchase"
 import { validateLabelParcelEntry } from "@/lib/shipping/surfboard-label-limits"
 import { SellerShippingLabelCheckout } from "@/components/seller-shipping-label-checkout"
 import { SantaBarbaraDropoffInstructionsCard } from "@/components/features/sales/santa-barbara-dropoff-instructions-card"
+import { CarrierAdjustmentNotice } from "@/components/features/shipping/carrier-adjustment-notice"
 
 type SellerAddr = { id: string; label: string; oneLine: string; isDefault: boolean }
 
@@ -158,7 +160,6 @@ function ManualParcelFields({
 }
 
 export function ShippingLabelTool({ orderId }: { orderId: string }) {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const [overview, setOverview] = useState<OverviewResponse["data"] | null>(null)
   const [loading, setLoading] = useState(true)
@@ -320,9 +321,9 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
         window.open(data.labelUrl, "_blank", "noopener,noreferrer")
       }
       // Back to the sale: the label PDF, tracking, and shipped status all live there.
-      router.push(`/dashboard/sales/${encodeURIComponent(orderId)}`)
+      navigateAfterSellerLabelPurchase(orderId)
     },
-    [router, orderId],
+    [orderId],
   )
 
   useEffect(() => {
@@ -360,7 +361,7 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
     return () => {
       cancelled = true
     }
-  }, [orderId, searchParams, router, handleLabelPurchaseSuccess])
+  }, [orderId, searchParams, handleLabelPurchaseSuccess])
 
   if (loading) {
     return (
@@ -512,6 +513,7 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
                   setSelectedRateId("")
                 }}
               />
+              <CarrierAdjustmentNotice />
               {manualParcelHint ? (
                 <p className="text-sm text-destructive" role="alert">
                   {manualParcelHint}

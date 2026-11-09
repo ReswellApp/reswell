@@ -3,7 +3,10 @@ import Link from "next/link"
 import { UserRound } from "lucide-react"
 import { VerifiedBadge } from "@/components/verified-badge"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
-import type { MarketplaceSalesMapTopSeller } from "@/lib/types/marketplace-sales-map"
+import type { MobileMarketplaceSalesMap } from "@reswell/api-contract"
+import { cn } from "@/lib/utils"
+
+type SalesMapTopSellerRow = MobileMarketplaceSalesMap["topSellers"][number]
 
 function salesLabel(count: number): string {
   return count === 1 ? "1 sold" : `${count.toLocaleString()} sold`
@@ -11,11 +14,18 @@ function salesLabel(count: number): string {
 
 export function SalesMapTopSellers({
   sellers,
+  className,
 }: {
-  sellers: MarketplaceSalesMapTopSeller[]
+  sellers: SalesMapTopSellerRow[]
+  className?: string
 }) {
   return (
-    <aside className="overflow-hidden rounded-xl border border-border/80 bg-white shadow-sm sm:rounded-2xl">
+    <aside
+      className={cn(
+        "overflow-hidden rounded-xl border border-border/80 bg-white shadow-sm sm:rounded-2xl",
+        className,
+      )}
+    >
       <div className="flex items-center gap-2 border-b border-border/70 px-4 py-3">
         <UserRound className="h-3.5 w-3.5 text-[#5574AD]" aria-hidden />
         <h2 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#5574AD]">

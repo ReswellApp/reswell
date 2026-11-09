@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
-import { requireAdmin } from "@/lib/brands/admin-server"
+import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { attachAdminShippingLabelToOrder } from "@/lib/services/adminOrderShippingLabelNotify"
 import { PEER_SURFBOARD_CHECKOUT_LISTING_SELECT } from "@/lib/services/peerListingShippingQuote"
@@ -19,7 +19,7 @@ const MAX_BYTES = 15 * 1024 * 1024
  * multipart/form-data: order_id (uuid), file (application/pdf)
  */
 export async function POST(request: NextRequest) {
-  const gate = await requireAdmin()
+  const gate = await requireAdminOrEmployee()
   if (!gate.ok) {
     return gate.response
   }

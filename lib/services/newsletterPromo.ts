@@ -168,7 +168,7 @@ export type WelcomePromoForAccountResult =
 
 /**
  * Unredeemed codes may be replaced when expired, or when the stored percent is below
- * the current welcome offer (e.g. leftover 10% codes swapping to 15%).
+ * the current welcome offer. Higher unredeemed codes (for example leftover 15%) stay until expiry.
  */
 function isEligibleForWelcomePromoReplacement(
   row: NewsletterPromoCodeRow,

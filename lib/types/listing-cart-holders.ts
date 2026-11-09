@@ -24,4 +24,5 @@ export type ListingCartOfferProspect = {
   title: string
   cartCount: number
   price: number
+  imageUrl?: string | null
 }

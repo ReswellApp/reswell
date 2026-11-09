@@ -7,7 +7,7 @@ import { Loader2, MessageSquare, Send } from 'lucide-react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { ProfileCircle } from '@/components/profile-circle'
 import { Button } from '@/components/ui/button'
 import { MessageComposerTextarea } from '@/components/features/messages/message-composer-textarea'
 import { VerifiedBadge } from '@/components/verified-badge'
@@ -27,6 +27,7 @@ import { getPolicyBlockFromSendResult } from '@/lib/messages/policy-block-client
 import type { MessagePolicyReasonCode } from '@/lib/messages/fraud-reason-codes'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { listingTitleThumbnailSrc, type ListingImageForCard } from '@/lib/listing-image-display'
+import { listingPhotoFillClassName } from '@/lib/listing-photo-fill'
 import { listingImageShouldBypassOptimization } from '@/lib/listing-media-proxy-url'
 import { cn } from '@/lib/utils'
 import { isAbortError } from '@/lib/utils/is-abort-error'
@@ -236,12 +237,7 @@ export function MessageSellerDialog({
           </DialogTitle>
 
           <div className="mt-4 flex items-center gap-3">
-            <Avatar className="h-10 w-10 shrink-0">
-              <AvatarImage src={sellerAvatarSrc ?? undefined} alt="" />
-              <AvatarFallback className="text-sm font-semibold">
-                {sellerDisplayName.charAt(0).toUpperCase() || 'U'}
-              </AvatarFallback>
-            </Avatar>
+            <ProfileCircle avatarUrl={sellerAvatarSrc} alt="" className="h-10 w-10" />
             <p className="flex min-w-0 items-center gap-1.5 text-[15px] font-semibold text-foreground">
               <span className="truncate">{sellerDisplayName}</span>
               {sellerShopVerified ? <VerifiedBadge size="sm" /> : null}
@@ -257,7 +253,7 @@ export function MessageSellerDialog({
                     alt={capitalizeWords(listing.title)}
                     fill
                     sizes="48px"
-                    className="object-cover object-center"
+                    className={listingPhotoFillClassName}
                     unoptimized={listingImageShouldBypassOptimization(listingThumbSrc)}
                   />
                 ) : null}

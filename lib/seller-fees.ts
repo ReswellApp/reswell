@@ -71,9 +71,19 @@ export function getSellerEarnings(
 }
 
 /** Wallet / ledger copy for the fee portion of a pending sale description. */
-export function pendingSaleFeeClause(platformFeeUsd: number): string {
-  const fee = Math.max(0, platformFeeUsd)
-  return `${MARKETPLACE_FEE_PERCENT}% fee: $${fee.toFixed(2)}`
+export function pendingSaleFeeClause(
+  platformFeeUsd: number,
+  shopifyUsageFeeUsd = 0,
+): string {
+  const stripeFee = Math.max(0, platformFeeUsd)
+  const shopifyFee = Math.max(0, shopifyUsageFeeUsd)
+  if (shopifyFee > 0 && stripeFee === 0) {
+    return `${MARKETPLACE_FEE_PERCENT}% billed through Shopify: $${shopifyFee.toFixed(2)}`
+  }
+  if (shopifyFee > 0) {
+    return `${MARKETPLACE_FEE_PERCENT}% fee: $${stripeFee.toFixed(2)}; ${MARKETPLACE_FEE_PERCENT}% billed through Shopify: $${shopifyFee.toFixed(2)}`
+  }
+  return `${MARKETPLACE_FEE_PERCENT}% fee: $${stripeFee.toFixed(2)}`
 }
 
 export type MarketplaceListingItemGmvOrder = {

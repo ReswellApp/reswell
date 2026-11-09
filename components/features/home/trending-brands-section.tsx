@@ -23,9 +23,11 @@ function toStripBrands(rows: HomeTrendingBrandRow[]): TrendingStripBrand[] {
 export function TrendingBrandsSection({
   rows,
   isAdmin,
+  title = "Trending brands",
 }: {
   rows: HomeTrendingBrandRow[]
   isAdmin: boolean
+  title?: string
 }) {
   const brands = toStripBrands(rows)
   if (brands.length === 0 && !isAdmin) {
@@ -38,7 +40,7 @@ export function TrendingBrandsSection({
         <div className="container mx-auto">
           <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
-              <h2 className="text-2xl font-bold">Trending brands</h2>
+              <h2 className="text-2xl font-bold">{title}</h2>
             </div>
             <div className="flex shrink-0 items-center gap-2 sm:justify-end">
               {brands.length > 0 && (

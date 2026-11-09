@@ -302,7 +302,8 @@ async function loadHomeTrendingBrandsCatalogUncached(): Promise<HomeTrendingBran
 }
 
 async function loadHomeRecentlyAddedSurfboardsCatalogUncached(): Promise<HomeRecentlyAddedSurfboardsCatalog> {
-  const supabase = getDb({ consistency: "eventual" })
+  // Primary read: replica lag must not cache the previous cover after a listing save.
+  const supabase = getDb({ consistency: "strong" })
   const rows = (await loadHomeFeaturedSurfboardRows(supabase)) as HomePeerScrollListing[]
   const featuredBoards =
     rows.length > 0 ? rows.map((row) => projectHomePeerCardListing(row)) : null
@@ -360,7 +361,7 @@ export const getCachedHomeTrendingBrandsCatalog = unstable_cache(
 
 export const getCachedHomeRecentlyAddedSurfboardsCatalog = unstable_cache(
   loadHomeRecentlyAddedSurfboardsCatalogUncached,
-  ["home-recently-added-surfboards-catalog-v2"],
+  ["home-recently-added-surfboards-catalog-v3"],
   {
     revalidate: HOME_RECENTLY_ADDED_SURFBOARDS_REVALIDATE_SECONDS,
     tags: [HOME_RECENTLY_ADDED_SURFBOARDS_CACHE_TAG],
@@ -377,7 +378,7 @@ export const getCachedHomeRecentlyAddedFinsCatalog = unstable_cache(
 )
 
 async function loadHomeMostViewedCatalogUncached(): Promise<HomeMostViewedCatalog> {
-  const supabase = getDb({ consistency: "eventual" })
+  const supabase = getDb({ consistency: "strong" })
   const mostViewedMosaic = await loadHomeMostViewedMosaic(supabase)
 
   const featuredListingIds = mostViewedMosaic
@@ -405,7 +406,7 @@ export const getCachedHomeRecentlySoldCatalog = unstable_cache(
 
 export const getCachedHomeMostViewedCatalog = unstable_cache(
   loadHomeMostViewedCatalogUncached,
-  ["home-most-viewed-catalog-v3"],
+  ["home-most-viewed-catalog-v4"],
   {
     revalidate: HOME_MOST_VIEWED_REVALIDATE_SECONDS,
     tags: [HOME_MOST_VIEWED_CACHE_TAG],
@@ -413,7 +414,7 @@ export const getCachedHomeMostViewedCatalog = unstable_cache(
 )
 
 async function loadHomeRecentlyListedGridCatalogUncached(): Promise<HomeRecentlyListedGridCatalog> {
-  const supabase = getDb({ consistency: "eventual" })
+  const supabase = getDb({ consistency: "strong" })
   const rows = await loadHomeRecentlyListedGridRows(supabase)
   const recentlyListedGrid =
     rows.length > 0 ? rows.map((row) => projectHomePeerCardListing(row)) : null
@@ -426,7 +427,7 @@ async function loadHomeRecentlyListedGridCatalogUncached(): Promise<HomeRecently
 
 export const getCachedHomeRecentlyListedGridCatalog = unstable_cache(
   loadHomeRecentlyListedGridCatalogUncached,
-  ["home-recently-listed-grid-catalog-v5"],
+  ["home-recently-listed-grid-catalog-v6"],
   {
     revalidate: HOME_RECENTLY_LISTED_GRID_REVALIDATE_SECONDS,
     tags: [HOME_RECENTLY_LISTED_GRID_CACHE_TAG],

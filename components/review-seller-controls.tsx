@@ -2,12 +2,13 @@
 
 import { useRouter } from "next/navigation"
 import { useState } from "react"
-import { Star } from "lucide-react"
+import { ChevronRight, Info, Star } from "lucide-react"
 import { ratingStarEmptyClassName, ratingStarFilledClassName } from "@/lib/rating-star-styles"
 import { cn } from "@/lib/utils"
+import { SellerRatingStarRow } from "@/components/seller-rating-stars"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { LocalDateTime } from "@/components/ui/local-datetime"
+import { LocalDateOnly, LocalDateTime } from "@/components/ui/local-datetime"
 import { SellerReviewDialog } from "@/components/features/messages/seller-review-dialog"
 import { MarketplaceReviewPhotos } from "@/components/features/reviews/marketplace-review-photos"
 import type { ExistingMarketplaceReview } from "@/lib/types/marketplace-review"
@@ -36,6 +37,28 @@ function StarRow({ value }: { value: number }) {
 
 export type ExistingSellerReview = ExistingMarketplaceReview
 
+function CompactExistingReview({ review }: { review: ExistingSellerReview }) {
+  return (
+    <div>
+      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-sm leading-snug text-muted-foreground">
+        <div className="inline-flex shrink-0" role="img" aria-label={`${review.rating} out of 5`}>
+          <SellerRatingStarRow value={review.rating} size="sm" />
+        </div>
+        <span>Your review</span>
+        <span className="inline-flex items-center gap-x-1.5">
+          <span className="tabular-nums">{review.rating}/5</span>
+          <span aria-hidden>·</span>
+          <LocalDateOnly iso={review.created_at} dateStyle="medium" />
+        </span>
+      </div>
+      {review.comment ? (
+        <p className="mt-0.5 text-sm leading-snug text-muted-foreground whitespace-pre-wrap">{review.comment}</p>
+      ) : null}
+      <MarketplaceReviewPhotos reviewId={review.id} photos={review.photos} size="sm" className="mt-1.5" />
+    </div>
+  )
+}
+
 type ReviewSellerControlsProps = {
   orderId: string
   sellerName: string
@@ -43,6 +66,8 @@ type ReviewSellerControlsProps = {
   existingReview: ExistingSellerReview | null
   /** When true, use compact layout (e.g. purchases list). */
   compact?: boolean
+  /** Row matches the purchase details list style. */
+  appearance?: "button" | "row"
   /** Called after a new review is saved (e.g. refetch client-loaded purchase lists). */
   onSuccess?: () => void
 }
@@ -53,38 +78,34 @@ export function ReviewSellerControls({
   canReview,
   existingReview,
   compact,
+  appearance = "button",
   onSuccess,
 }: ReviewSellerControlsProps) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
 
   if (existingReview) {
+    if (compact) {
+      return <CompactExistingReview review={existingReview} />
+    }
+
     return (
-      <Card
-        className={cn(
-          "border-primary/15 bg-gradient-to-b from-primary/[0.04] to-background",
-          compact && "shadow-none",
-        )}
-      >
-        <CardContent className={cn("py-3", compact ? "px-3" : "px-4")}>
-          <p className="text-xs font-semibold uppercase tracking-wide text-primary/80 mb-2">Your review</p>
-          <div className="flex flex-wrap items-center gap-2 mb-2">
+      <Card className="border-primary/15 bg-gradient-to-b from-primary/[0.04] to-background">
+        <CardContent className="px-4 py-3">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-primary/80">Your review</p>
+          <div className="mb-2 flex flex-wrap items-center gap-2">
             <StarRow value={existingReview.rating} />
             <span className="text-sm font-medium tabular-nums">{existingReview.rating}/5</span>
-            <span className="text-xs text-muted-foreground ml-auto">
+            <span className="ml-auto text-xs text-muted-foreground">
               <LocalDateTime iso={existingReview.created_at} dateStyle="medium" timeStyle="short" />
             </span>
           </div>
           {existingReview.comment ? (
-            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{existingReview.comment}</p>
+            <p className="whitespace-pre-wrap text-sm text-muted-foreground">{existingReview.comment}</p>
           ) : (
-            <p className="text-sm text-muted-foreground italic">No written comment.</p>
+            <p className="text-sm italic text-muted-foreground">No written comment.</p>
           )}
-          <MarketplaceReviewPhotos
-            reviewId={existingReview.id}
-            photos={existingReview.photos}
-            size={compact ? "sm" : "md"}
-          />
+          <MarketplaceReviewPhotos reviewId={existingReview.id} photos={existingReview.photos} />
         </CardContent>
       </Card>
     )
@@ -96,16 +117,31 @@ export function ReviewSellerControls({
 
   return (
     <>
-      <Button
-        type="button"
-        variant={compact ? "outline" : "default"}
-        size={compact ? "sm" : "default"}
-        className={cn("gap-2", compact && "w-full sm:w-auto")}
-        onClick={() => setOpen(true)}
-      >
-        <Star className={cn("h-4 w-4", ratingStarFilledClassName)} strokeWidth={0} />
-        Review seller
-      </Button>
+      {appearance === "row" ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="flex w-full items-center gap-3 rounded-xl bg-slate-50 px-4 py-3 text-left dark:bg-slate-900/40"
+        >
+          <Star className={cn("h-4 w-4 shrink-0", ratingStarFilledClassName)} strokeWidth={0} aria-hidden />
+          <span className="min-w-0 flex-1 text-sm font-medium text-foreground">
+            Leave a review for the seller
+          </span>
+          <Info className="h-4 w-4 shrink-0 text-[#5574AD] dark:text-[#7F9DD5]" aria-hidden />
+          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+        </button>
+      ) : (
+        <Button
+          type="button"
+          variant={compact ? "outline" : "default"}
+          size={compact ? "sm" : "default"}
+          className={cn(compact ? "h-8 w-fit gap-1.5 px-2.5" : "gap-2")}
+          onClick={() => setOpen(true)}
+        >
+          <Star className={cn("h-4 w-4", ratingStarFilledClassName)} strokeWidth={0} />
+          Review seller
+        </Button>
+      )}
 
       <SellerReviewDialog
         orderId={orderId}

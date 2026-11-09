@@ -26,6 +26,7 @@ import {
   type ListingMediaResizeVariant,
 } from "@/lib/media/listing-tile-variant-resize"
 import { PUBLIC_MEDIA_CACHE_CONTROL } from "@/lib/listing-media-cache-control"
+import { listingImageStandInObjectPaths } from "@/lib/listing-image-storage-siblings"
 
 const PUBLIC_LISTINGS_MARKER = "/storage/v1/object/public/listings/"
 
@@ -60,13 +61,34 @@ async function resizedListingResponse(
   objectPath: string,
   variant: ListingMediaResizeVariant,
 ): Promise<NextResponse> {
-  const upstreamUrl = listingsUpstreamUrl(objectPath)
-  if (!upstreamUrl) {
-    return new NextResponse("Server misconfiguration", { status: 500 })
+  for (const sourcePath of [objectPath, ...listingImageStandInObjectPaths(objectPath)]) {
+    const upstreamUrl = listingsUpstreamUrl(sourcePath)
+    if (!upstreamUrl) {
+      return new NextResponse("Server misconfiguration", { status: 500 })
+    }
+    const resized = await getCachedListingVariantBody(
+      "listings",
+      sourcePath,
+      upstreamUrl,
+      variant,
+    )
+    if (resized) return storedObjectResponse(sourcePath, resized.body, resized.contentType)
   }
-  const resized = await getCachedListingVariantBody("listings", objectPath, upstreamUrl, variant)
-  if (!resized) return new NextResponse("Not found", { status: 404 })
-  return storedObjectResponse(objectPath, resized.body, resized.contentType)
+  return new NextResponse("Not found", { status: 404 })
+}
+
+/** Serve the named object, or the card/film file still in the bucket when it is gone. */
+async function listingObjectOrStandInResponse(objectPath: string): Promise<NextResponse> {
+  for (const sourcePath of [objectPath, ...listingImageStandInObjectPaths(objectPath)]) {
+    const stored = await cachedPublicStorageGetResponse({
+      bucket: "listings",
+      objectPath: sourcePath,
+      publicMarker: PUBLIC_LISTINGS_MARKER,
+      contentTypeFallback,
+    })
+    if (stored.status !== 404) return stored
+  }
+  return new NextResponse("Not found", { status: 404 })
 }
 
 function contentTypeFallback(filename: string): string {
@@ -151,12 +173,7 @@ export async function GET(
     listingMediaPathLooksLikeStoredThumb(objectPath) && !resizeFromFullObject
 
   if (!resizeVariant || serveStoredThumbWithoutResize) {
-    return cachedPublicStorageGetResponse({
-      bucket: "listings",
-      objectPath,
-      publicMarker: PUBLIC_LISTINGS_MARKER,
-      contentTypeFallback,
-    })
+    return listingObjectOrStandInResponse(objectPath)
   }
 
   return resizedListingResponse(objectPath, resizeVariant)

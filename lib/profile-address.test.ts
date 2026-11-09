@@ -1,9 +1,11 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 import {
+  isMissingGoogleAddressColumn,
   parseOrderShippingAddressForProfile,
   profileAddressesMatch,
   profileAddressToOrderShippingJson,
+  uniqueProfileAddresses,
   type ProfileAddressRow,
 } from "./profile-address.ts"
 
@@ -52,6 +54,61 @@ describe("profileAddressesMatch", () => {
         city: "Santa Barbara",
         postal_code: "93101-4321",
       }),
+      true,
+    )
+  })
+})
+
+describe("uniqueProfileAddresses", () => {
+  it("keeps one row when the same street is stored twice", () => {
+    const first = row({ id: "older", is_default: true, city: "SANTA BARBARA" })
+    const duplicate = row({
+      id: "newer",
+      is_default: false,
+      city: "Santa Barbara",
+      postal_code: "93101-1234",
+      created_at: "2026-10-01T00:00:00.000Z",
+    })
+    const somis = row({
+      id: "somis",
+      line1: "4000 Somewhere Rd",
+      city: "Somis",
+      postal_code: "93066",
+      is_default: false,
+    })
+    const unique = uniqueProfileAddresses([first, duplicate, somis])
+    assert.deepEqual(
+      unique.map((item) => item.id),
+      ["older", "somis"],
+    )
+  })
+
+  it("keeps the selected row when it is the duplicate", () => {
+    const first = row({ id: "older", is_default: true })
+    const selected = row({ id: "selected", is_default: false, city: "santa barbara" })
+    const unique = uniqueProfileAddresses([first, selected], "selected")
+    assert.deepEqual(
+      unique.map((item) => item.id),
+      ["selected"],
+    )
+  })
+})
+
+describe("isMissingGoogleAddressColumn", () => {
+  it("recognizes PostgREST schema-cache errors", () => {
+    assert.equal(
+      isMissingGoogleAddressColumn(
+        "Could not find the 'formatted_address' column of 'addresses' in the schema cache",
+      ),
+      true,
+    )
+  })
+
+  it("recognizes direct PostgreSQL missing-column errors", () => {
+    assert.equal(
+      isMissingGoogleAddressColumn(
+        'column "google_geocoded_at" of relation "addresses" does not exist',
+      ),
       true,
     )
   })

@@ -11,11 +11,15 @@ function IdentityLink({
   href: string | null
   kind: "brand" | "model"
 }) {
+  const className = "max-w-full font-semibold text-foreground"
   if (href) {
     return (
       <Link
         href={href}
-        className="font-semibold text-foreground underline decoration-foreground/40 underline-offset-4 hover:decoration-foreground"
+        className={cn(
+          className,
+          "underline decoration-foreground/40 underline-offset-4 hover:decoration-foreground",
+        )}
         aria-label={`View ${name} ${kind} page`}
       >
         {name}
@@ -23,15 +27,7 @@ function IdentityLink({
     )
   }
 
-  return <span className="font-semibold text-foreground">{name}</span>
-}
-
-function MetaDot() {
-  return (
-    <span className="text-neutral-300 dark:text-neutral-600" aria-hidden>
-      ·
-    </span>
-  )
+  return <span className={className}>{name}</span>
 }
 
 export function ListingCatalogIdentity({
@@ -59,12 +55,11 @@ export function ListingCatalogIdentity({
       {brand || model ? (
         <nav
           aria-label="Brand and model"
-          className="flex flex-wrap items-baseline gap-x-2 text-[15px] leading-snug"
+          className="flex flex-col items-start gap-1.5 text-[15px] leading-snug"
         >
           {brand ? (
             <IdentityLink name={brand} href={brandHref?.trim() || null} kind="brand" />
           ) : null}
-          {brand && model ? <MetaDot /> : null}
           {model ? (
             <IdentityLink name={model} href={modelHref?.trim() || null} kind="model" />
           ) : null}

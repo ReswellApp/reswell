@@ -17,6 +17,7 @@ import {
   boardTypeForDbFromBrowseParam,
   BOARDS_BROWSE_DEFAULT_SORT,
 } from "@/lib/marketplace-slug-metadata"
+import { isListingDiscoveryEligible } from "@/lib/listing-public-visibility"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import {
@@ -28,6 +29,10 @@ import {
   boardDimensionBrowseIlikeTokens,
 } from "@/lib/utils/board-dimension-browse-filter"
 import { resolveSavedSearchSection } from "@/lib/utils/peer-saved-search-criteria"
+import {
+  listingAppearsInMarketplaceSearch,
+  type SavedSearchMatchCache,
+} from "@/lib/services/marketplaceSearchMembership"
 
 export type ListingRowForBoardAlert = {
   id: string
@@ -35,6 +40,7 @@ export type ListingRowForBoardAlert = {
   section: string | null
   status: string | null
   hidden_from_site?: boolean | null
+  archived_at?: string | null
   title: string | null
   description?: string | null
   price: number | string | null
@@ -50,6 +56,9 @@ export type ListingRowForBoardAlert = {
   fin_system?: string | null
   fin_size?: string | null
   wetsuit_size?: string | null
+  boardbag_size?: string | null
+  surfpack_size?: string | null
+  leash_size?: string | null
   apparel_kind?: string | null
   magazine_year?: number | string | null
   traction_size?: string | null
@@ -184,6 +193,9 @@ function keywordMatchesListing(listing: ListingRowForBoardAlert, q: string | und
     listing.fin_system,
     listing.fin_size,
     listing.wetsuit_size,
+    listing.boardbag_size,
+    listing.surfpack_size,
+    listing.leash_size,
     listing.traction_size,
   ]
     .map((x) => norm(x))
@@ -275,8 +287,16 @@ export function listingMatchesBoardSavedCriteria(
   const c = parsed.data
 
   if (!sectionAllowsListing(c, listing.section)) return false
-  if (listing.status !== "active") return false
-  if (listing.hidden_from_site) return false
+  if (
+    !isListingDiscoveryEligible({
+      status: String(listing.status ?? ""),
+      title: listing.title,
+      hidden_from_site: listing.hidden_from_site,
+      archived_at: listing.archived_at,
+    })
+  ) {
+    return false
+  }
 
   if (!keywordMatchesListing(listing, c.q)) return false
 
@@ -340,6 +360,18 @@ export function listingMatchesBoardSavedCriteria(
     if (!slugListOverlapsStored(c.sizes, listing.wetsuit_size)) return false
   }
 
+  if (listing.section === "boardbags" || (section === "boardbags" && !c.anySection)) {
+    if (!slugListOverlapsStored(c.sizes, listing.boardbag_size)) return false
+  }
+
+  if (listing.section === "surfpacks" || (section === "surfpacks" && !c.anySection)) {
+    if (!slugListOverlapsStored(c.sizes, listing.surfpack_size)) return false
+  }
+
+  if (listing.section === "leashes" || (section === "leashes" && !c.anySection)) {
+    if (!slugListOverlapsStored(c.sizes, listing.leash_size)) return false
+  }
+
   if (listing.section === "apparel" || (section === "apparel" && !c.anySection)) {
     if (!slugListOverlapsStored(c.kind, listing.apparel_kind)) return false
   }
@@ -355,21 +387,40 @@ export function listingMatchesBoardSavedCriteria(
   return true
 }
 
+export type { SavedSearchMatchCache }
+
 /**
  * True when the listing would appear in the saved search.
- * Surfboards prefer Elasticsearch browse replay; other sections use field matching.
+ * A `/search?q=` save uses the same result pass as that page. Surfboard browse
+ * saves replay `/boards`. Other sections use field matching.
  */
 export async function listingMatchesSavedSearch(
   listingId: string,
   listing: ListingRowForBoardAlert,
   rawCriteria: unknown,
+  cache?: SavedSearchMatchCache,
 ): Promise<boolean> {
   const parsed = boardSavedSearchCriteriaSchema.safeParse(rawCriteria)
   if (!parsed.success) return false
 
   if (!sectionAllowsListing(parsed.data, listing.section)) return false
 
+  const q = parsed.data.q?.trim() ?? ""
   const target = resolveSavedSearchSection(parsed.data)
+  if (
+    target === "any" &&
+    q &&
+    !parsed.data.brandId?.trim() &&
+    !parsed.data.brandModelId?.trim()
+  ) {
+    const appears = await listingAppearsInMarketplaceSearch(listingId, q, cache)
+    if (appears === null) {
+      return listingMatchesBoardSavedCriteria(listing, rawCriteria)
+    }
+    if (!appears) return false
+    return listingMatchesBoardSavedCriteria(listing, { ...parsed.data, q: undefined })
+  }
+
   const useBoardsEs =
     (target === "surfboards" || (target === "any" && listing.section === "surfboards")) &&
     isBoardsBrowseEsEnabled()
@@ -383,6 +434,7 @@ export async function listingMatchesSavedSearch(
         from: 0,
         size: 1,
         sort: "newest",
+        typoFallback: false,
       })
       if (res !== null) {
         return res.total > 0 || res.ids.includes(listingId)

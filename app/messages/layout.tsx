@@ -1,6 +1,7 @@
 import type { ReactNode } from "react"
 import { privatePageMetadata } from "@/lib/site-metadata"
 import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
+import { getShopAccountContext } from "@/lib/services/accountAccess"
 import { getCachedMessagesInbox } from "@/lib/cache/messages-inbox"
 import { loadMessageSmsNotificationsStateForUser } from "@/lib/services/messageSmsNotifications"
 import { MessagesAccountShell } from "@/components/features/messages/messages-account-shell"
@@ -14,7 +15,10 @@ export const metadata = privatePageMetadata({
 
 export default async function MessagesLayout({ children }: { children: ReactNode }) {
   const { user } = await getCachedRequestSession()
-  const inbox = user ? await getCachedMessagesInbox(user.id) : null
+  const shop = user ? await getShopAccountContext() : null
+  const inboxUserId =
+    user && shop?.actingAsShop && shop.permissions.has("messages.read") ? shop.accountId : user?.id
+  const inbox = inboxUserId ? await getCachedMessagesInbox(inboxUserId) : null
   const smsState = user
     ? await loadMessageSmsNotificationsStateForUser(user.id, user.phone)
     : null
@@ -23,7 +27,7 @@ export default async function MessagesLayout({ children }: { children: ReactNode
     <MessagesAccountShell>
       {user && inbox ? (
         <MessagesInboxProvider
-          userId={user.id}
+          userId={inboxUserId ?? user.id}
           initialConversations={inbox.conversations}
           initialNotifications={inbox.notifications}
           initialMessageSmsOptIn={smsState?.message_sms_opt_in ?? false}

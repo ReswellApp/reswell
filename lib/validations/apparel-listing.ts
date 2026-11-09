@@ -1,4 +1,6 @@
 import { z } from "zod"
+import { sellListingPriceField } from "@/lib/validations/sell-listing-price"
+import { listingStockQuantityField } from "@/lib/validations/listing-stock-quantity"
 import { addReswellPackedWeightZodIssues } from "@/lib/validations/reswell-packed-weight"
 import {
   listingRemovedVideoIdsSchema,
@@ -43,8 +45,9 @@ const apparelListingImageSchema = z.object({
 const apparelListingBaseSchema = z.object({
   title: z.string().trim().min(3, "Add a title").max(APPAREL_LISTING_TITLE_MAX_LENGTH),
   description: z.string().trim().min(1, "Add a description"),
-  price: z.coerce.number().positive("Enter a price greater than $0"),
+  price: sellListingPriceField,
   condition: z.enum(sellableConditions),
+  stockQuantity: listingStockQuantityField,
 
   /** Apparel category — boardshorts | hat | t_shirt. Required. */
   kind: z.enum(apparelKindValues, { required_error: "Choose a category" }),
@@ -61,8 +64,8 @@ const apparelListingBaseSchema = z.object({
   locationLat: z.coerce.number().optional(),
   locationLng: z.coerce.number().optional(),
 
-  shippingAvailable: z.boolean().default(false),
-  localPickup: z.boolean().default(true),
+  shippingAvailable: z.boolean().default(true),
+  localPickup: z.boolean().default(false),
   shippingCostMode: z.enum(["reswell", "flat", "free"]).nullable().optional(),
   shippingPrice: z.coerce.number().nonnegative().nullable().optional(),
   reswellPackageLengthIn: z.string().optional().default(""),
@@ -83,9 +86,9 @@ const apparelListingBaseSchema = z.object({
 
 function withApparelListingRefinements<T extends z.ZodType>(schema: T) {
   return schema
-    .refine((data) => data.shippingAvailable || data.localPickup, {
-      message: "Choose shipping, local pickup, or both",
-      path: ["localPickup"],
+    .refine((data) => data.shippingAvailable && !data.localPickup, {
+      message: "Apparel listings must ship — local pickup is not available",
+      path: ["shippingAvailable"],
     })
     .superRefine((data, ctx) => {
       if (!data.shippingAvailable) return

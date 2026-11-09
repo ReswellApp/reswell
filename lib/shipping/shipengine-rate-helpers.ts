@@ -3,8 +3,10 @@
  * Used by the admin rate calculator and public surfboard estimate API.
  */
 
+import { shipEngineShipmentInsurance } from "@/lib/shipengine/insurance"
 import { normalizeUsStateProvinceForShipping } from "@/lib/us-state-name-to-code"
 import { normalizeCountryCodeForShipping } from "@/lib/shipping/normalize-country-code"
+import { expandUspsAbbreviatedCityName } from "@/lib/shipping/usps-city-name"
 
 export type ShippingAddressInput = {
   name: string
@@ -51,7 +53,7 @@ export function addressToPayload(a: ShippingAddressInput, role: "from" | "to") {
     company_name: a.company_name.trim() || undefined,
     address_line1: a.address_line1.trim(),
     address_line2: a.address_line2.trim() || undefined,
-    city_locality: a.city_locality.trim(),
+    city_locality: expandUspsAbbreviatedCityName(a.city_locality) || a.city_locality.trim(),
     state_province: normalizeUsStateProvinceForShipping(country, a.state_province),
     postal_code: a.postal_code.trim(),
     country_code: country,
@@ -72,9 +74,6 @@ export function buildShipmentBody(
     dimUnit: "inch" | "centimeter"
     packageCode: string
     validateAddress: "no_validation" | "validate_only" | "validate_and_clean"
-    insuranceProvider?: string | null
-    insuredValueAmount?: number | null
-    insuredValueCurrency?: string | null
   },
 ) {
   const pkg: Record<string, unknown> = {
@@ -93,25 +92,12 @@ export function buildShipmentBody(
   if (labelMessages) {
     pkg.label_messages = labelMessages
   }
-  const insuredAmount =
-    typeof opts.insuredValueAmount === "number" && Number.isFinite(opts.insuredValueAmount)
-      ? opts.insuredValueAmount
-      : null
-  const insuranceProvider = opts.insuranceProvider?.trim() || null
-  if (insuranceProvider && insuranceProvider !== "none" && insuredAmount != null && insuredAmount > 0) {
-    pkg.insured_value = {
-      currency: (opts.insuredValueCurrency?.trim() || "usd").toLowerCase(),
-      amount: Math.round(insuredAmount * 100) / 100,
-    }
-  }
   const shipment: Record<string, unknown> = {
     validate_address: opts.validateAddress,
     ship_from: addressToPayload(shipFrom, "from"),
     ship_to: addressToPayload(shipTo, "to"),
     packages: [pkg],
-  }
-  if (insuranceProvider && insuranceProvider !== "none" && insuredAmount != null && insuredAmount > 0) {
-    shipment.insurance_provider = insuranceProvider
+    ...shipEngineShipmentInsurance(),
   }
   return shipment
 }
@@ -123,6 +109,62 @@ export function extractRatesFromApiEnvelope(envelope: unknown): Record<string, u
   const rr = asRecord(se?.rate_response) ?? asRecord(se)
   const rates = rr?.rates
   return Array.isArray(rates) ? (rates as Record<string, unknown>[]) : []
+}
+
+export type ShipEngineInvalidRateSummary = {
+  serviceCode: string | null
+  serviceName: string | null
+  message: string | null
+}
+
+/** USPS/UPS often put declined services here instead of `rates`. */
+export function extractInvalidRatesFromApiEnvelope(envelope: unknown): ShipEngineInvalidRateSummary[] {
+  const root = asRecord(envelope)
+  const inner = root?.data !== undefined && root?.data !== null ? root.data : envelope
+  const se = asRecord(inner)
+  const rr = asRecord(se?.rate_response) ?? asRecord(se)
+  const invalid = rr?.invalid_rates
+  if (!Array.isArray(invalid)) return []
+  const out: ShipEngineInvalidRateSummary[] = []
+  for (const entry of invalid) {
+    const rec = asRecord(entry)
+    if (!rec) continue
+    const serviceCode = typeof rec.service_code === "string" ? rec.service_code.trim() : null
+    const serviceName =
+      typeof rec.service_type === "string"
+        ? rec.service_type.trim()
+        : typeof rec.service_name === "string"
+          ? rec.service_name.trim()
+          : null
+    let message: string | null = null
+    const errors = rec.error_messages
+    if (Array.isArray(errors)) {
+      for (const err of errors) {
+        if (typeof err === "string" && err.trim()) {
+          message = err.trim()
+          break
+        }
+        const er = asRecord(err)
+        const msg = er && typeof er.message === "string" ? er.message.trim() : ""
+        if (msg) {
+          message = msg
+          break
+        }
+      }
+    } else if (typeof rec.error_message === "string" && rec.error_message.trim()) {
+      message = rec.error_message.trim()
+    } else if (typeof rec.message === "string" && rec.message.trim()) {
+      message = rec.message.trim()
+    }
+    if (serviceCode || serviceName || message) {
+      out.push({
+        serviceCode: serviceCode || null,
+        serviceName: serviceName || null,
+        message,
+      })
+    }
+  }
+  return out
 }
 
 /**

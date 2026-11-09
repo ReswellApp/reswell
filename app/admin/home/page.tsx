@@ -36,22 +36,30 @@ export default async function AdminHomePage({ searchParams }: AdminHomePageProps
   const { data: profile } = user
     ? await supabase
         .from('profiles')
-        .select('is_admin, display_name')
+        .select('is_admin, is_employee, display_name')
         .eq('id', user.id)
         .single()
-    : { data: null as { is_admin: boolean | null; display_name: string | null } | null }
+    : {
+        data: null as {
+          is_admin: boolean | null
+          is_employee: boolean | null
+          display_name: string | null
+        } | null,
+      }
 
   const isAdmin = profile?.is_admin === true
 
   const [badgeCounts, trendResult, pulseResult, growthResult, insightsResult, monthlyResult] =
     await Promise.all([
-      getCachedAdminNavBadgeCounts(supabase, {
-        includeBrandRequests: isAdmin,
-      }),
+      isAdmin
+        ? getCachedAdminNavBadgeCounts(supabase, {
+            includeBrandRequests: true,
+          })
+        : Promise.resolve({}),
       isAdmin
         ? loadAdminRevenueTrend({ yearMonth: selectedYearMonth, range })
         : Promise.resolve(null),
-      getCachedAdminHomePulse(),
+      isAdmin ? getCachedAdminHomePulse() : Promise.resolve(null),
       isAdmin
         ? loadAdminHomeGrowthTrends({ yearMonth: selectedYearMonth, range })
         : Promise.resolve(null),
@@ -71,7 +79,8 @@ export default async function AdminHomePage({ searchParams }: AdminHomePageProps
   const monthlyRevenueError =
     isAdmin && monthlyResult && !monthlyResult.ok ? monthlyResult.error : null
 
-  const displayName = profile?.display_name?.trim() || null
+  const displayName =
+    profile?.display_name?.trim() || user?.email?.split('@')[0]?.trim() || null
 
   return (
     <AdminHomeDashboard
@@ -81,7 +90,7 @@ export default async function AdminHomePage({ searchParams }: AdminHomePageProps
       revenueTrendError={revenueTrendError}
       selectedYearMonth={selectedYearMonth}
       range={range}
-      pulse={pulseResult.ok ? pulseResult.data : null}
+      pulse={pulseResult && pulseResult.ok ? pulseResult.data : null}
       insights={insights}
       insightsError={insightsError}
       monthlyRevenue={monthlyRevenue}

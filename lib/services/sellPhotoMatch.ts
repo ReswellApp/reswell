@@ -1,5 +1,6 @@
 import "server-only"
 
+import { after } from "next/server"
 import { generateText, Output } from "ai"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { z } from "zod"
@@ -10,6 +11,14 @@ import {
   resolveConfiguredModel,
 } from "@/lib/llm/app-models"
 import { searchSellCatalogForSell } from "@/lib/services/sellCatalogSearch"
+import {
+  aggregateSurfboardDimensionPhotoMatchStats,
+  insertSurfboardDimensionPhotoMatch,
+} from "@/lib/db/surfboardDimensionPhoto"
+import { surfboardDimensionPhotoMemoryPromptBlock } from "@/lib/services/surfboardDimensionPhotoMemory"
+import { surfboardDimensionPhotoMatchMeetsTarget } from "@/lib/validations/surfboardDimensionPhoto"
+import type { SellPhotoObservation } from "@/lib/validations/sellPhotoMatch"
+import { listingObjectPublicUrl } from "@/lib/supabase/storage-upload-xhr"
 import {
   coerceSellPhotoObservation,
   sellPhotoMatchLookupQuery,
@@ -33,6 +42,8 @@ const sellPhotoObservationModelSchema = z.object({
 })
 
 const MAX_ROWS = 8
+/** Same default window as /admin/dimension-photo-match stats. */
+const ACCURACY_WINDOW_MS = 30 * 24 * 60 * 60 * 1000
 
 function photoMatchFeature() {
   const feature = APP_LLM_FEATURES.find((item) => item.id === "sell_photo_match")
@@ -63,6 +74,32 @@ Do not invent a brand from the outline, color, or template of the board.`
 
 export function isSellPhotoMatchEnabled(): boolean {
   return isAppLlmFeatureEnabled(photoMatchFeature())
+}
+
+/**
+ * Sell autofill only gets L×W×T once Photo and Dims rated accuracy both clear the
+ * 95% target. Corpus capture still stores the raw read for admin training.
+ */
+export async function observationForSellAutofill(
+  supabase: SupabaseClient,
+  observation: SellPhotoObservation,
+): Promise<SellPhotoObservation> {
+  const fromIso = new Date(Date.now() - ACCURACY_WINDOW_MS).toISOString()
+  try {
+    const stats = await aggregateSurfboardDimensionPhotoMatchStats(supabase, fromIso)
+    if (surfboardDimensionPhotoMatchMeetsTarget(stats)) return observation
+  } catch (err) {
+    console.error(
+      "[sellPhotoMatch] accuracy gate failed; withholding dims:",
+      err instanceof Error ? err.message : err,
+    )
+  }
+  return {
+    ...observation,
+    lengthText: null,
+    widthText: null,
+    thicknessText: null,
+  }
 }
 
 export type SellPhotoMatchOutcome =
@@ -117,12 +154,16 @@ export async function matchSellPhoto(input: {
     return { ok: false, error: "Add the top, bottom, and dimensions photos.", status: 422 }
   }
 
+  const memoryBlock = await surfboardDimensionPhotoMemoryPromptBlock(input.supabase).catch(
+    () => "",
+  )
+
   let raw: unknown
   try {
     const { output } = await generateText({
       model: resolveConfiguredModel(photoMatchFeature()),
       output: Output.object({ schema: sellPhotoObservationModelSchema }),
-      system: SYSTEM_PROMPT,
+      system: SYSTEM_PROMPT + (memoryBlock ? `\n${memoryBlock}` : ""),
       messages: [
         {
           role: "user",
@@ -177,12 +218,75 @@ export async function matchSellPhoto(input: {
     }
   }
 
+  // Capture sell-flow observations into the admin review corpus (no second LLM call).
+  const captureShots: Array<{
+    shot: string
+    bytes: Uint8Array
+    mediaType: SellPhotoMatchMime
+  }> = [
+    { shot: "top", bytes: input.shots.top.bytes, mediaType: input.shots.top.mediaType },
+    { shot: "bottom", bytes: input.shots.bottom.bytes, mediaType: input.shots.bottom.mediaType },
+    {
+      shot: "dimensions",
+      bytes: input.shots.dimensions.bytes,
+      mediaType: input.shots.dimensions.mediaType,
+    },
+  ]
+  after(() => {
+    void (async () => {
+      try {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
+        const folder = `dimension-photo-matches/${crypto.randomUUID()}`
+        const inputPreview: Array<{ shot: string; imageUrl: string }> = []
+        if (supabaseUrl) {
+          for (const shot of captureShots) {
+            const ext =
+              shot.mediaType === "image/png"
+                ? "png"
+                : shot.mediaType === "image/webp"
+                  ? "webp"
+                  : "jpg"
+            const path = `${folder}/${shot.shot}.${ext}`
+            const { error } = await input.supabase.storage
+              .from("listings")
+              .upload(path, shot.bytes, {
+                upsert: false,
+                contentType: shot.mediaType,
+                cacheControl: "31536000",
+              })
+            if (error) continue
+            inputPreview.push({
+              shot: shot.shot,
+              imageUrl: listingObjectPublicUrl(supabaseUrl, path),
+            })
+          }
+        }
+        await insertSurfboardDimensionPhotoMatch(input.supabase, {
+          surface: "sell_photo_match",
+          inputPreview,
+          predictedLength: observation.lengthText,
+          predictedWidth: observation.widthText,
+          predictedThickness: observation.thicknessText,
+          predictedConfidence: observation.confidence,
+          predictedSummary: observation.summary,
+        })
+      } catch (err) {
+        console.error(
+          "[sellPhotoMatch] dimension corpus capture failed:",
+          err instanceof Error ? err.message : err,
+        )
+      }
+    })()
+  })
+
+  const clientObservation = await observationForSellAutofill(input.supabase, observation)
+
   const categories = sellPhotoMatchSearchCategories()
-  const primary = sellPhotoMatchLookupQuery(observation)
+  const primary = sellPhotoMatchLookupQuery(clientObservation)
   if (!primary) {
     return {
       ok: true,
-      data: { observation, lookupQuery: null, matchTier: "none", rows: [] },
+      data: { observation: clientObservation, lookupQuery: null, matchTier: "none", rows: [] },
     }
   }
 
@@ -190,19 +294,24 @@ export async function matchSellPhoto(input: {
   if (first.rows.length > 0) {
     return {
       ok: true,
-      data: { observation, lookupQuery: primary, matchTier: first.matchTier, rows: first.rows },
+      data: {
+        observation: clientObservation,
+        lookupQuery: primary,
+        matchTier: first.matchTier,
+        rows: first.rows,
+      },
     }
   }
 
-  const brandOnly = observation.brandText?.trim() ?? ""
-  const modelOnly = observation.modelText?.trim() ?? ""
+  const brandOnly = clientObservation.brandText?.trim() ?? ""
+  const modelOnly = clientObservation.modelText?.trim() ?? ""
   if (brandOnly.length >= 2 && modelOnly.length >= 2) {
     const brandSearch = await searchCatalog(input.supabase, brandOnly, categories)
     if (brandSearch.rows.length > 0) {
       return {
         ok: true,
         data: {
-          observation,
+          observation: clientObservation,
           lookupQuery: brandOnly,
           matchTier: brandSearch.matchTier,
           rows: brandSearch.rows,
@@ -217,7 +326,7 @@ export async function matchSellPhoto(input: {
       return {
         ok: true,
         data: {
-          observation,
+          observation: clientObservation,
           lookupQuery: modelOnly,
           matchTier: modelSearch.matchTier,
           rows: modelSearch.rows,
@@ -228,6 +337,11 @@ export async function matchSellPhoto(input: {
 
   return {
     ok: true,
-    data: { observation, lookupQuery: primary, matchTier: "none", rows: [] },
+    data: {
+      observation: clientObservation,
+      lookupQuery: primary,
+      matchTier: "none",
+      rows: [],
+    },
   }
 }

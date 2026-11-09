@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { requireAdmin } from "@/lib/brands/admin-server"
+import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
 import {
   adminBrandModelVariantCreateBodySchema,
   adminBrandModelVariantsListQuerySchema,
@@ -10,7 +10,7 @@ import {
 } from "@/lib/services/brandModelVariants"
 
 export async function GET(req: NextRequest) {
-  const gate = await requireAdmin()
+  const gate = await requireAdminOrEmployee()
   if (!gate.ok) return gate.response
 
   const sp = req.nextUrl.searchParams
@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(request: Request) {
-  const gate = await requireAdmin()
+  const gate = await requireAdminOrEmployee()
   if (!gate.ok) return gate.response
 
   let json: unknown

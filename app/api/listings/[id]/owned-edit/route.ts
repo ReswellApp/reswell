@@ -1,6 +1,8 @@
 import { after, NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { getSafeRouteUser, resolveServerAuth } from "@/lib/auth/get-safe-server-user"
+import { expirePublicListingSurfacesAfterEdit } from "@/lib/cache/revalidate-listing-after-edit"
+import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { fetchListingForEditById, fetchOwnedListingForEdit } from "@/lib/db/listingEdit"
 import {
   IMPERSONATION_COOKIE,
@@ -17,6 +19,7 @@ import {
 } from "@/lib/services/persistPeerListingUpdate"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import type { SellFormBoardCatalogSlice } from "@/lib/utils/listing-board-catalog-snapshot"
+import { getShopAccountContext } from "@/lib/services/accountAccess"
 import { resolveListingUpdateActor } from "@/lib/utils/listing-update-actor"
 
 const listingIdParamSchema = z.string().uuid("Invalid listing id")
@@ -51,6 +54,21 @@ export async function GET(
     let listing = await fetchOwnedListingForEdit(supabase, idParsed.data, user.id)
     let impersonationCookieToSet: ReturnType<typeof serializeImpersonationCookie> | null = null
     let actorIsAdmin = false
+
+    if (!listing) {
+      const shop = await getShopAccountContext()
+      if (shop?.actingAsShop && shop.permissions.has("listings.read")) {
+        try {
+          listing = await fetchOwnedListingForEdit(
+            createServiceRoleClient(),
+            idParsed.data,
+            shop.accountId,
+          )
+        } catch {
+          listing = null
+        }
+      }
+    }
 
     if (!listing) {
       const { data: profile } = await supabase
@@ -216,6 +234,37 @@ export async function PUT(
   let constrainToOwner = true
 
   if (ownedErr || !existingListing) {
+    const shop = await getShopAccountContext()
+    if (shop?.permissions.has("listings.write") && shop.accountId !== user.id) {
+      try {
+        const service = createServiceRoleClient()
+        const { data: shopListing, error: shopErr } = await service
+          .from("listings")
+          .select(
+            "user_id, status, title, description, price, city, state, latitude, longitude, slug, local_pickup, shipping_available, section",
+          )
+          .eq("id", listingId)
+          .eq("user_id", shop.accountId)
+          .maybeSingle()
+        const actor = resolveListingUpdateActor({
+          actorIsAdmin: false,
+          actorUserId: user.id,
+          listingOwnerId: shopListing?.user_id ? String(shopListing.user_id) : null,
+          memberCanWriteShop: !shopErr && Boolean(shopListing?.user_id),
+        })
+        if (actor === "member" && shopListing) {
+          existingListing = shopListing as PersistPeerListingExistingRow
+          writeDb = service
+          ownerUserId = shop.accountId
+          constrainToOwner = true
+        }
+      } catch {
+        existingListing = null
+      }
+    }
+  }
+
+  if (!existingListing) {
     const { data: actorProfile } = await supabase
       .from("profiles")
       .select("is_admin")
@@ -285,13 +334,24 @@ export async function PUT(
     return NextResponse.json({ error: result.error }, { status: result.status })
   }
 
-  if (result.published) {
-    after(() => {
+  try {
+    // Before the JSON returns. The sell form navigates to `/l` as soon as this
+    // response arrives; `after()` runs too late and the hourly shell is already served.
+    expirePublicListingSurfacesAfterEdit(listingId, result.slug)
+  } catch (error) {
+    console.error("[owned-edit] listing revalidate:", error)
+  }
+
+  after(() => {
+    void revalidateSellersAfterListingChange(writeDb, ownerUserId).catch((error) => {
+      console.error("[owned-edit] seller revalidate:", error)
+    })
+    if (result.published) {
       void schedulePublishedListingSideEffects(writeDb, listingId, ownerUserId).catch((error) => {
         console.error("[owned-edit] publish side effects:", error)
       })
-    })
-  }
+    }
+  })
 
   return NextResponse.json({
     success: true,

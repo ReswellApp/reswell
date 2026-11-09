@@ -3,7 +3,6 @@
 import { useRouter, usePathname } from "next/navigation"
 import { useClientSearchParams } from "@/hooks/use-client-search-params"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import Image from "next/image"
 import Link from "next/link"
 import { X, Search } from "lucide-react"
 import { createPortal } from "react-dom"
@@ -17,8 +16,8 @@ import {
   NavSearchTopListingSectionHeader,
   NavSearchTopListingText,
   NavSearchTopListingThumb,
+  navSearchBrandNameTileClassName,
   navSearchTopListingRowClassName,
-  navSearchTopListingThumbClassName,
 } from "@/components/features/search/nav-search-top-listing-row"
 import { FocusScrim } from "@/components/focus-scrim"
 import { SearchInputWithSuggest } from "@/components/search-input-with-suggest"
@@ -133,29 +132,11 @@ function NavSearchIdleRecentlyViewedBrandTile({
   return (
     <Link
       href={`${BRANDS_BASE}/${encodeURIComponent(brand.slug)}`}
-      className="w-12 shrink-0 snap-start sm:w-14"
+      className={navSearchBrandNameTileClassName}
       onMouseDown={(e) => e.preventDefault()}
       onClick={onNavigate}
     >
-      <div className={navSearchTopListingThumbClassName}>
-        {brand.logoUrl ? (
-          <Image
-            src={brand.logoUrl}
-            alt=""
-            fill
-            className="object-contain p-1"
-            sizes="(max-width:640px) 48px, 56px"
-            unoptimized
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center text-sm font-bold text-cerulean">
-            {brand.name.slice(0, 1).toUpperCase()}
-          </div>
-        )}
-      </div>
-      <p className="mt-1.5 line-clamp-2 text-[11px] font-semibold leading-snug text-foreground sm:text-xs">
-        {brand.name}
-      </p>
+      {brand.name}
     </Link>
   )
 }
@@ -218,13 +199,10 @@ function NavSearchPersonalizationSkeleton() {
       </div>
       <div className="border-t border-border/60">
         <NavSearchIdleSectionTitle title="Recently viewed brands" />
-        <div className="flex gap-3 overflow-hidden px-4 pb-3">
-          {[0, 1, 2].map((i) => (
-            <div key={i} className="w-12 shrink-0 sm:w-14">
-              <Skeleton className="aspect-square w-full rounded-md sm:rounded-lg" />
-              <Skeleton className="mt-1.5 h-3 w-full" />
-            </div>
-          ))}
+        <div className="flex gap-2 overflow-hidden px-4 pb-3">
+          <Skeleton className="h-9 w-24 shrink-0 rounded-lg" />
+          <Skeleton className="h-9 w-32 shrink-0 rounded-lg" />
+          <Skeleton className="h-9 w-20 shrink-0 rounded-lg" />
         </div>
       </div>
     </div>
@@ -713,7 +691,7 @@ export function HeaderNavSearch({
                 )}
               >
                 <NavSearchIdleSectionTitle title="Recently viewed brands" />
-                <div className="flex gap-3 overflow-x-auto px-4 pb-3 pt-0.5 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <div className="flex min-w-0 gap-2 overflow-x-auto overscroll-x-contain px-4 pb-3 pt-0.5 snap-x snap-mandatory touch-pan-x [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   {recentBrands.map((brand) => (
                     <NavSearchIdleRecentlyViewedBrandTile
                       key={brand.id}

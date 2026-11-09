@@ -4,6 +4,7 @@ import { boardLengthLabelFromDimensionsColumn } from "@/lib/listing-dimensions-s
 import {
   coalesceListingImagesForCard,
   listingCoverImageForCard,
+  listingTitleThumbnailSrc,
 } from "@/lib/listing-image-display"
 import { brandTextAliasesForSearch } from "@/lib/utils/marketplace-brand-synonyms"
 import { brandLegacyRecallTokens } from "@/lib/utils/marketplace-brand-query"
@@ -169,16 +170,26 @@ function mapRowToRecentListing(row: BrandMarketplaceListingRow): RecentListing {
 const BRAND_ID_IN_CHUNK = 80
 const LISTING_BRAND_ID_PAGE = 1000
 
-/**
- * Active peer-marketplace listing counts keyed by directory `brands.id`.
- * Counts rows with `listings.brand_id` set (same discovery gates as brand inventory lists).
- */
-export async function countActiveListingsByBrandIds(
-  supabase: SupabaseClient,
-  brandIds: readonly string[],
-): Promise<Map<string, number>> {
+type BrandIdCountRow = {
+  brand_id: string | null
+  status?: string | null
+  title?: string | null
+  hidden_from_site?: boolean | null
+  archived_at?: string | null
+}
+
+function emptyBrandIdCounts(brandIds: readonly string[]): Map<string, number> {
   const counts = new Map<string, number>()
   for (const id of brandIds) counts.set(id, 0)
+  return counts
+}
+
+async function countPeerListingsAttachedByBrandIds(
+  supabase: SupabaseClient,
+  brandIds: readonly string[],
+  options: { status: "active" | "sold"; logLabel: string },
+): Promise<Map<string, number>> {
+  const counts = emptyBrandIdCounts(brandIds)
   if (brandIds.length === 0) return counts
 
   for (let i = 0; i < brandIds.length; i += BRAND_ID_IN_CHUNK) {
@@ -186,23 +197,40 @@ export async function countActiveListingsByBrandIds(
     let from = 0
 
     for (;;) {
-      const { data, error } = await supabase
+      let query = supabase
         .from("listings")
-        .select("brand_id")
-        .eq("status", "active")
-        .eq("hidden_from_site", false)
+        .select(
+          options.status === "sold"
+            ? "brand_id, status, title, hidden_from_site, archived_at"
+            : "brand_id",
+        )
+        .eq("status", options.status)
         .in("section", PEER_LISTING_SECTIONS_FILTER)
         .in("brand_id", chunk)
         .range(from, from + LISTING_BRAND_ID_PAGE - 1)
 
+      if (options.status === "active") {
+        query = query.eq("hidden_from_site", false)
+      }
+
+      const { data, error } = await query
+
       if (error) {
-        console.error("[countActiveListingsByBrandIds]", error.message)
+        console.error(`[${options.logLabel}]`, error.message)
         break
       }
 
-      const rows = (data ?? []) as { brand_id: string | null }[]
+      const rows = (data ?? []) as BrandIdCountRow[]
       for (const row of rows) {
         if (!row.brand_id) continue
+        if (options.status === "sold" && !isListingVisibleInPublicSoldFeed({
+          status: row.status ?? "sold",
+          title: row.title,
+          hidden_from_site: row.hidden_from_site,
+          archived_at: row.archived_at,
+        })) {
+          continue
+        }
         counts.set(row.brand_id, (counts.get(row.brand_id) ?? 0) + 1)
       }
 
@@ -212,6 +240,34 @@ export async function countActiveListingsByBrandIds(
   }
 
   return counts
+}
+
+/**
+ * Active peer-marketplace listing counts keyed by directory `brands.id`.
+ * Counts rows with `listings.brand_id` set (same discovery gates as brand inventory lists).
+ */
+export async function countActiveListingsByBrandIds(
+  supabase: SupabaseClient,
+  brandIds: readonly string[],
+): Promise<Map<string, number>> {
+  return countPeerListingsAttachedByBrandIds(supabase, brandIds, {
+    status: "active",
+    logLabel: "countActiveListingsByBrandIds",
+  })
+}
+
+/**
+ * Public sold-feed listing counts keyed by directory `brands.id`.
+ * Counts sold peer listings with `listings.brand_id` set that appear on the site.
+ */
+export async function countPublicSoldListingsByBrandIds(
+  supabase: SupabaseClient,
+  brandIds: readonly string[],
+): Promise<Map<string, number>> {
+  return countPeerListingsAttachedByBrandIds(supabase, brandIds, {
+    status: "sold",
+    logLabel: "countPublicSoldListingsByBrandIds",
+  })
 }
 
 /**
@@ -251,6 +307,73 @@ export async function listActiveListingsForBrand(
   }
   if (!data?.length) return []
   return (data as BrandMarketplaceListingRow[]).map(mapRowToRecentListing)
+}
+
+/**
+ * Same active-listing filters as `listActiveListingsForBrand`, for one id.
+ * Saved-search alerts use this so a brand search only includes a board the
+ * search page's brand inventory would return.
+ */
+export async function listingIsInActiveBrandInventory(
+  supabase: SupabaseClient,
+  listingId: string,
+  brand: { id: string; name: string },
+  options: { categoryId?: string | null; sections?: string[] } = {},
+): Promise<boolean> {
+  const id = listingId.trim()
+  if (!id) return false
+
+  const { categoryId = null, sections } = options
+  let q = supabase
+    .from("listings")
+    .select("id")
+    .eq("id", id)
+    .eq("status", "active")
+    .eq("hidden_from_site", false)
+
+  if (categoryId) {
+    q = q.eq("category_id", categoryId)
+  } else if (sections?.length) {
+    q = q.in("section", sections)
+  } else {
+    q = q.in("section", PEER_LISTING_SECTIONS_FILTER)
+  }
+
+  const { data, error } = await q.or(brandInventoryOrClause(brand)).limit(1)
+  if (error) {
+    console.error("[listingIsInActiveBrandInventory]", error.message)
+    return false
+  }
+  return (data ?? []).some((row) => row.id === id)
+}
+
+/** True when `/search` would show at least one row from this brand inventory. */
+export async function activeBrandInventoryHasListings(
+  supabase: SupabaseClient,
+  brand: { id: string; name: string },
+  options: { categoryId?: string | null; sections?: string[] } = {},
+): Promise<boolean> {
+  const { categoryId = null, sections } = options
+  let q = supabase
+    .from("listings")
+    .select("id")
+    .eq("status", "active")
+    .eq("hidden_from_site", false)
+
+  if (categoryId) {
+    q = q.eq("category_id", categoryId)
+  } else if (sections?.length) {
+    q = q.in("section", sections)
+  } else {
+    q = q.in("section", PEER_LISTING_SECTIONS_FILTER)
+  }
+
+  const { data, error } = await q.or(brandInventoryOrClause(brand)).limit(1)
+  if (error) {
+    console.error("[activeBrandInventoryHasListings]", error.message)
+    return false
+  }
+  return (data ?? []).length > 0
 }
 
 /**
@@ -626,4 +749,116 @@ export async function listActiveListingIdsByBrandModelIds(
   return ((data ?? []) as { id: string }[])
     .map((row) => row.id)
     .filter((id) => id.length > 0)
+}
+
+export type BrandModelMarketplaceCover = {
+  /** Marketplace listing thumb only — never manufacturer catalog scrapes. */
+  imageUrl: string | null
+  activeCount: number
+  soldCount: number
+}
+
+type BrandModelCoverRow = {
+  brand_model_id: string | null
+  status?: string | null
+  title?: string | null
+  hidden_from_site?: boolean | null
+  archived_at?: string | null
+  primary_image_url?: string | null
+  primary_thumbnail_url?: string | null
+  tile_gallery_images?: unknown
+  created_at?: string | null
+  updated_at?: string | null
+}
+
+function listingThumbFromCoverRow(row: BrandModelCoverRow): string | null {
+  const images = coalesceListingImagesForCard(row)
+  const src = listingTitleThumbnailSrc(images).trim()
+  return src || null
+}
+
+const BRAND_MODEL_COVER_PAGE = 1000
+
+/**
+ * Active listing counts + one marketplace cover photo per catalog model for a brand.
+ * Prefers a live listing photo; falls back to a visible sold listing. Catalog scrapes
+ * are never returned.
+ */
+export async function mapBrandModelMarketplaceCovers(
+  supabase: SupabaseClient,
+  brandId: string,
+  modelIds: readonly string[],
+): Promise<Map<string, BrandModelMarketplaceCover>> {
+  const ids = [...new Set(modelIds.map((id) => id.trim()).filter(Boolean))]
+  const out = new Map<string, BrandModelMarketplaceCover>()
+  for (const id of ids) {
+    out.set(id, { imageUrl: null, activeCount: 0, soldCount: 0 })
+  }
+  if (!brandId.trim() || ids.length === 0) return out
+
+  const wanted = new Set(ids)
+  const activeImageByModel = new Map<string, string>()
+  const soldImageByModel = new Map<string, string>()
+
+  let from = 0
+  for (;;) {
+    const { data, error } = await supabase
+      .from("listings")
+      .select(
+        "brand_model_id, status, title, hidden_from_site, archived_at, primary_image_url, primary_thumbnail_url, tile_gallery_images, created_at, updated_at",
+      )
+      .eq("brand_id", brandId)
+      .not("brand_model_id", "is", null)
+      .in("status", ["active", "sold"])
+      .in("section", PEER_LISTING_SECTIONS_FILTER)
+      .order("created_at", { ascending: false })
+      .range(from, from + BRAND_MODEL_COVER_PAGE - 1)
+
+    if (error) {
+      console.error("[mapBrandModelMarketplaceCovers]", error.message)
+      break
+    }
+
+    const rows = (data ?? []) as BrandModelCoverRow[]
+    for (const row of rows) {
+      const modelId = row.brand_model_id?.trim() ?? ""
+      if (!modelId || !wanted.has(modelId)) continue
+
+      const current = out.get(modelId) ?? { imageUrl: null, activeCount: 0, soldCount: 0 }
+      const isActive = row.status === "active" && row.hidden_from_site === false
+      const isSold = isListingVisibleInPublicSoldFeed({
+        status: row.status ?? "sold",
+        title: row.title,
+        hidden_from_site: row.hidden_from_site,
+        archived_at: row.archived_at,
+      })
+
+      if (isActive) {
+        current.activeCount += 1
+        if (!activeImageByModel.has(modelId)) {
+          const thumb = listingThumbFromCoverRow(row)
+          if (thumb) activeImageByModel.set(modelId, thumb)
+        }
+      } else if (isSold) {
+        current.soldCount += 1
+        if (!soldImageByModel.has(modelId)) {
+          const thumb = listingThumbFromCoverRow(row)
+          if (thumb) soldImageByModel.set(modelId, thumb)
+        }
+      }
+
+      out.set(modelId, current)
+    }
+
+    if (rows.length < BRAND_MODEL_COVER_PAGE) break
+    from += BRAND_MODEL_COVER_PAGE
+  }
+
+  for (const id of ids) {
+    const current = out.get(id) ?? { imageUrl: null, activeCount: 0, soldCount: 0 }
+    current.imageUrl = activeImageByModel.get(id) ?? soldImageByModel.get(id) ?? null
+    out.set(id, current)
+  }
+
+  return out
 }

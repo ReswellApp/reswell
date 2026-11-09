@@ -5,12 +5,20 @@ import {
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { trackKlaviyoBoardAlertMatch } from "@/lib/klaviyo/track-board-alert-match"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
-import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import {
   ensureListingIndexedForSavedSearchAlerts,
   listingMatchesSavedSearch,
   type ListingRowForBoardAlert,
+  type SavedSearchMatchCache,
 } from "@/lib/services/boardSavedSearchMatch"
+import { savedSearchAbsoluteUrl } from "@/lib/klaviyo/saved-search-url"
+import { resolveBoardAlertPhotoUrl } from "@/lib/services/resolveBoardAlertPhoto"
+import {
+  boardAlertListingContent,
+  listingIsEligibleForBoardSavedSearchAlert,
+  listingListedAfterSavedSearch,
+  parseAlertTimestamp,
+} from "@/lib/services/savedSearchAlertEligibility"
 import { inferSavedSearchAlertKind } from "@/lib/utils/saved-search-alert-kind"
 import { boardSavedSearchCriteriaSchema } from "@/lib/validations/boardSavedSearch"
 
@@ -23,8 +31,36 @@ function listingPublicPath(listing: ListingRowForBoardAlert): string {
   return `/l/${listing.id}`
 }
 
+function timestampString(value: unknown): string | null {
+  if (typeof value === "string" && parseAlertTimestamp(value)) return value.trim()
+  if (value instanceof Date && Number.isFinite(value.getTime())) return value.toISOString()
+  return null
+}
+
 /**
- * When a peer listing goes live, notify users whose saved searches would return that listing.
+ * When the listing first went live (`listing_creation_events` from the publish trigger).
+ * Draft rows never get an event; we do not fall back to `created_at` (draft creation time).
+ */
+async function resolveListingListedAt(
+  service: ReturnType<typeof createServiceRoleClient>,
+  listingId: string,
+): Promise<string | null> {
+  const { data, error } = await service
+    .from("listing_creation_events")
+    .select("listed_at")
+    .eq("listing_id", listingId)
+    .maybeSingle()
+
+  if (error) {
+    console.error("[saved_search] listing listed_at lookup failed:", error.message)
+  }
+
+  return timestampString(data?.listed_at)
+}
+
+/**
+ * When a peer listing goes live, notify saved searches that were saved before
+ * that listing and that would return it. Never sends without a title, price, and link.
  */
 export async function notifyBoardSavedSearchMatchesForListing(
   listingId: string,
@@ -39,7 +75,7 @@ export async function notifyBoardSavedSearchMatchesForListing(
   const { data: listing, error: listingErr } = await service
     .from("listings")
     .select(
-      "id, user_id, section, status, hidden_from_site, title, description, price, brand, model, dimensions, board_type, condition, brand_id, brand_model_id, slug, fins_setup, fin_system, fin_size, wetsuit_size, apparel_kind, magazine_year",
+      "id, user_id, section, status, hidden_from_site, archived_at, title, description, price, brand, model, dimensions, board_type, condition, brand_id, brand_model_id, slug, fins_setup, fin_system, fin_size, wetsuit_size, boardbag_size, surfpack_size, leash_size, apparel_kind, magazine_year, traction_size",
     )
     .eq("id", listingId)
     .maybeSingle()
@@ -50,8 +86,23 @@ export async function notifyBoardSavedSearchMatchesForListing(
 
   const row = listing as ListingRowForBoardAlert
 
-  if (!isPeerListingSection(row.section) || row.status !== "active" || row.hidden_from_site) {
+  if (!listingIsEligibleForBoardSavedSearchAlert(row)) {
     return { attempted: 0, sent: 0, skippedReason: "listing_not_alertable" }
+  }
+
+  const listedAt = await resolveListingListedAt(service, listingId)
+  const origin = publicSiteOrigin()
+  const content = boardAlertListingContent({
+    title: row.title,
+    price: row.price,
+    listingUrl: `${origin}${listingPublicPath(row)}`,
+  })
+  if (!listedAt || !content) {
+    return {
+      attempted: 0,
+      sent: 0,
+      skippedReason: !content ? "listing_incomplete" : "listing_listed_at_unknown",
+    }
   }
 
   if (row.section === "surfboards") {
@@ -60,7 +111,7 @@ export async function notifyBoardSavedSearchMatchesForListing(
 
   const { data: searches, error: searchErr } = await fetchBoardSavedSearchesWithEmailEnabled(
     service,
-    { section: row.section },
+    { section: row.section, createdBefore: listedAt },
   )
   if (searchErr) {
     console.error("[saved_search] fetch enabled searches:", searchErr)
@@ -69,25 +120,37 @@ export async function notifyBoardSavedSearchMatchesForListing(
 
   const candidates = searches.filter((s) => s.user_id !== row.user_id)
   const eligible: typeof candidates = []
+  const matchCache: SavedSearchMatchCache = {
+    marketplaceParses: new Map(),
+    searchWinners: new Map(),
+  }
   for (const s of candidates) {
-    const matches = await listingMatchesSavedSearch(listingId, row, s.criteria)
+    if (!listingListedAfterSavedSearch(listedAt, s.created_at)) continue
+    const matches = await listingMatchesSavedSearch(listingId, row, s.criteria, matchCache)
     if (matches) eligible.push(s)
   }
 
-  const origin = publicSiteOrigin()
+  if (eligible.length === 0) {
+    return { attempted: 0, sent: 0 }
+  }
 
   const { data: firstImage } = await service
     .from("listing_images")
     .select("url, thumbnail_url")
     .eq("listing_id", listingId)
+    .order("is_primary", { ascending: false })
     .order("sort_order", { ascending: true })
     .limit(1)
     .maybeSingle()
 
-  const photoUrl =
-    (firstImage?.thumbnail_url && String(firstImage.thumbnail_url).trim()) ||
-    (firstImage?.url && String(firstImage.url).trim()) ||
-    null
+  const storedPhotoUrl = firstImage?.url ? String(firstImage.url) : null
+  const storedThumbUrl = firstImage?.thumbnail_url ? String(firstImage.thumbnail_url) : null
+  const photoUrl = await resolveBoardAlertPhotoUrl(storedPhotoUrl, storedThumbUrl)
+  if ((storedPhotoUrl?.trim() || storedThumbUrl?.trim()) && !photoUrl) {
+    console.warn("[saved_search] omitted listing photo; storage object missing", {
+      listingId,
+    })
+  }
 
   let sent = 0
   for (const sub of eligible) {
@@ -98,16 +161,15 @@ export async function notifyBoardSavedSearchMatchesForListing(
     }
     if (!claim.inserted) continue
 
-    const priceNum = typeof row.price === "number" ? row.price : Number(row.price ?? NaN)
     const parsedCriteria = boardSavedSearchCriteriaSchema.safeParse(sub.criteria)
 
     void trackKlaviyoBoardAlertMatch({
       subscriberUserId: sub.user_id,
       savedSearchId: sub.id,
       listingId: row.id,
-      listingTitle: String(row.title ?? ""),
-      listingPrice: Number.isFinite(priceNum) ? priceNum : 0,
-      listingAbsoluteUrl: `${origin}${listingPublicPath(row)}`,
+      listingTitle: content.title,
+      listingPrice: content.price,
+      listingAbsoluteUrl: content.listingUrl,
       listingPhotoUrl: photoUrl,
       brand: row.brand,
       model: row.model,
@@ -119,6 +181,9 @@ export async function notifyBoardSavedSearchMatchesForListing(
         ? inferSavedSearchAlertKind(parsedCriteria.data)
         : "search",
       savedSearchLabel: sub.label,
+      searchQuery: parsedCriteria.success ? (parsedCriteria.data.q?.trim() ?? "") : "",
+      searchUrl: parsedCriteria.success ? savedSearchAbsoluteUrl(parsedCriteria.data) : "",
+      criteria: parsedCriteria.success ? parsedCriteria.data : null,
     })
     sent += 1
   }

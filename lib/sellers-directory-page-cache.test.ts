@@ -32,12 +32,13 @@ describe("sellers directory cache constraints", () => {
     assert.doesNotMatch(follow, /initialFollowing:/)
   })
 
-  it("serves directory mosaics from the film derivative", () => {
+  it("serves directory mosaics from the film derivative with card fallbacks", () => {
     const src = readFileSync(
       new URL("../lib/sellers/directory-mosaic-images.ts", import.meta.url),
       "utf8",
     )
-    assert.match(src, /listingFilmImageSrcFromRow/)
+    assert.match(src, /listingFilmImageSrcCandidatesFromRow/)
+    assert.match(src, /SELLER_DIRECTORY_MOSAIC_COVER_POOL/)
     assert.doesNotMatch(src, /listingCardImageSrc/)
   })
 })

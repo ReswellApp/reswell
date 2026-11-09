@@ -10,18 +10,28 @@ import {
   type ReactNode,
 } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { authorizeRealtime } from "@/lib/supabase/realtime-auth"
 import type { MessagesInboxNotification } from "@/lib/db/messagesInbox"
 import { refreshMessagesInbox } from "@/app/actions/messages"
 import {
+  applyInboxThreadActivity,
   markConversationMessagesReadLocally,
+  mergeInboxConversationSnapshots,
   type InboxConversationRow,
+  type InboxThreadActivity,
 } from "@/lib/utils/messages-inbox-grouping"
 import {
+  CONVERSATION_INBOX_ACTIVITY_EVENT,
   CONVERSATION_THREAD_OPENED_EVENT,
   MESSAGES_INBOX_REFRESH_EVENT,
   UNREAD_COUNT_REFRESH_EVENT,
   type ConversationThreadOpenedDetail,
 } from "@/lib/utils/unread-message-count-events"
+import {
+  NAV_MESSAGES_PREVIEW_CONVERSATION_LIMIT,
+  readNavMessagesPreviewCache,
+  writeNavMessagesPreviewCache,
+} from "@/lib/utils/nav-messages-preview-cache"
 
 interface MessagesInboxContextValue {
   currentUserId: string
@@ -67,14 +77,31 @@ export function MessagesInboxProvider({
   const [notifications, setNotifications] = useState(initialNotifications)
 
   useEffect(() => {
-    setConversations(initialConversations)
+    setConversations((current) =>
+      current === initialConversations
+        ? current
+        : mergeInboxConversationSnapshots(current, initialConversations),
+    )
     setNotifications(initialNotifications)
   }, [initialConversations, initialNotifications])
+
+  useEffect(() => {
+    if (conversations.length === 0 && notifications.length === 0) {
+      const existing = readNavMessagesPreviewCache(userId)
+      if (existing && (existing.conversations.length > 0 || existing.notifications.length > 0)) {
+        return
+      }
+    }
+    writeNavMessagesPreviewCache(userId, {
+      conversations: conversations.slice(0, NAV_MESSAGES_PREVIEW_CONVERSATION_LIMIT),
+      notifications,
+    })
+  }, [userId, conversations, notifications])
 
   const refreshInbox = useCallback(async () => {
     const fresh = await refreshMessagesInbox()
     if ("error" in fresh) return
-    setConversations(fresh.conversations)
+    setConversations((current) => mergeInboxConversationSnapshots(current, fresh.conversations))
     setNotifications(fresh.notifications)
     if (typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent(UNREAD_COUNT_REFRESH_EVENT))
@@ -84,6 +111,7 @@ export function MessagesInboxProvider({
   useEffect(() => {
     if (!userId) return
 
+    let active = true
     let refreshTimer: ReturnType<typeof setTimeout> | null = null
 
     const scheduleRefresh = () => {
@@ -107,8 +135,17 @@ export function MessagesInboxProvider({
       scheduleRefresh()
     }
 
+    const onInboxActivity = (event: Event) => {
+      const detail = (event as CustomEvent<InboxThreadActivity>).detail
+      if (!detail?.conversationId) return
+      setConversations((prev) => applyInboxThreadActivity(prev, detail))
+    }
+
     window.addEventListener(CONVERSATION_THREAD_OPENED_EVENT, onThreadOpened)
     window.addEventListener(MESSAGES_INBOX_REFRESH_EVENT, onInboxRefresh)
+    // Private inbox broadcast (header `useMarketplaceInboxLive`) patches rows
+    // and schedules a refetch. Do not subscribe to all `messages` changes.
+    window.addEventListener(CONVERSATION_INBOX_ACTIVITY_EVENT, onInboxActivity)
 
     const channels = (["buyer_id", "seller_id"] as const).map((column) =>
       supabase
@@ -122,14 +159,20 @@ export function MessagesInboxProvider({
             filter: `${column}=eq.${userId}`,
           },
           scheduleRefresh,
-        )
-        .subscribe(),
+        ),
     )
 
+    void authorizeRealtime(supabase).then((ok) => {
+      if (!active || !ok) return
+      for (const channel of channels) channel.subscribe()
+    })
+
     return () => {
+      active = false
       if (refreshTimer) clearTimeout(refreshTimer)
       window.removeEventListener(CONVERSATION_THREAD_OPENED_EVENT, onThreadOpened)
       window.removeEventListener(MESSAGES_INBOX_REFRESH_EVENT, onInboxRefresh)
+      window.removeEventListener(CONVERSATION_INBOX_ACTIVITY_EVENT, onInboxActivity)
       for (const channel of channels) void supabase.removeChannel(channel)
     }
   }, [userId, supabase, refreshInbox])

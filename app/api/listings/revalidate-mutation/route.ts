@@ -3,10 +3,8 @@ import { revalidatePath } from "next/cache"
 import { z } from "zod"
 
 import { resolveServerAuth } from "@/lib/auth/get-safe-server-user"
-import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
-import { revalidateListingDetailPage } from "@/lib/cache/revalidate-listing-public-detail"
+import { expirePublicListingSurfacesAfterEdit } from "@/lib/cache/revalidate-listing-after-edit"
 import { revalidateNavSearchSuggest } from "@/lib/cache/revalidate-nav-search-suggest"
-import { revalidateNavSuggestedSurfboards } from "@/lib/cache/revalidate-nav-suggested-surfboards"
 import { revalidateSellersDirectoryCatalog } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { createClient } from "@/lib/supabase/server"
 
@@ -48,10 +46,13 @@ export async function POST(request: NextRequest) {
   const sellerSlug =
     typeof sellerProfile?.seller_slug === "string" ? sellerProfile.seller_slug.trim() : ""
 
+  try {
+    expirePublicListingSurfacesAfterEdit(listingId, slug ?? null)
+  } catch (error) {
+    console.error("[revalidate-mutation] listing revalidate:", error)
+  }
+
   after(() => {
-    revalidateListingDetailPage(listingId, slug ?? null)
-    revalidateBoardsBrowseCatalog()
-    revalidateNavSuggestedSurfboards()
     if (sellerSlug) {
       revalidatePath(`/sellers/${sellerSlug}`, "page")
     }

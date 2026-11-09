@@ -22,6 +22,11 @@ export type ProfileAddressRow = {
   updated_at: string
   residential?: AddressResidentialIndicator | null
   address_validated_at?: string | null
+  google_place_id?: string | null
+  latitude?: number | null
+  longitude?: number | null
+  formatted_address?: string | null
+  google_geocoded_at?: string | null
 }
 
 function parseStoredResidential(value: unknown): AddressResidentialIndicator | null {
@@ -44,8 +49,65 @@ export function profileAddressToOrderShippingJson(addr: ProfileAddressRow, email
       postal_code: addr.postal_code,
       country: addr.country,
       residential: parseStoredResidential(addr.residential) ?? "yes",
+      ...googleAddressSnapshot(addr),
     },
   }
+}
+
+/** Place id and coordinates already stored on a saved address. Omitted when unset. */
+export function googleAddressSnapshot(addr: {
+  google_place_id?: string | null
+  latitude?: number | null
+  longitude?: number | null
+  formatted_address?: string | null
+  google_geocoded_at?: string | null
+}): {
+  google_place_id?: string
+  latitude?: number
+  longitude?: number
+  formatted_address?: string
+  google_geocoded_at?: string
+} {
+  const snapshot: {
+    google_place_id?: string
+    latitude?: number
+    longitude?: number
+    formatted_address?: string
+    google_geocoded_at?: string
+  } = {}
+  const placeId = addr.google_place_id?.trim()
+  const formatted = addr.formatted_address?.trim()
+  const geocodedAt = addr.google_geocoded_at?.trim()
+  if (placeId) snapshot.google_place_id = placeId
+  if (typeof addr.latitude === "number" && Number.isFinite(addr.latitude)) snapshot.latitude = addr.latitude
+  if (typeof addr.longitude === "number" && Number.isFinite(addr.longitude)) snapshot.longitude = addr.longitude
+  if (formatted) snapshot.formatted_address = formatted
+  if (geocodedAt) snapshot.google_geocoded_at = geocodedAt
+  return snapshot
+}
+
+/** Street row without the Google columns, for a database that has not migrated yet. */
+export function withoutGoogleAddressColumns<T extends object>(row: T): T {
+  const street = { ...row } as Record<string, unknown>
+  delete street.google_place_id
+  delete street.latitude
+  delete street.longitude
+  delete street.formatted_address
+  delete street.google_geocoded_at
+  return street as T
+}
+
+/** True when this database has not applied the Google address columns yet. */
+export function isMissingGoogleAddressColumn(message: string | null | undefined): boolean {
+  const value = message ?? ""
+  return (
+    /column "(google_place_id|formatted_address|latitude|longitude|google_geocoded_at)" of relation "addresses" does not exist/i.test(
+      value,
+    ) ||
+    /could not find the ['"]?(google_place_id|formatted_address|latitude|longitude|google_geocoded_at)['"]? column of ['"]?addresses['"]? in the schema cache/i.test(
+      value,
+    )
+  )
 }
 
 /** Fields needed to insert / match a row in `public.addresses`. */
@@ -60,6 +122,11 @@ export type ProfileAddressFieldsFromOrder = {
   country: string
   residential?: AddressResidentialIndicator | null
   address_validated_at?: string | null
+  google_place_id?: string | null
+  latitude?: number | null
+  longitude?: number | null
+  formatted_address?: string | null
+  google_geocoded_at?: string | null
 }
 
 /**
@@ -122,4 +189,23 @@ export function profileAddressesMatch(
     norm(a.city) === norm(b.city) &&
     normalizePostalForMatch(a.postal_code) === normalizePostalForMatch(b.postal_code)
   )
+}
+
+/**
+ * One row per street. Callers pass addresses already ordered default-first, then newest.
+ * The selected id wins when that street is stored more than once.
+ */
+export function uniqueProfileAddresses<
+  T extends Pick<ProfileAddressRow, "id" | "line1" | "city" | "postal_code">,
+>(rows: T[], selectedId?: string | null): T[] {
+  const unique: T[] = []
+  for (const row of rows) {
+    const index = unique.findIndex((kept) => profileAddressesMatch(kept, row))
+    if (index === -1) {
+      unique.push(row)
+      continue
+    }
+    if (selectedId && row.id === selectedId) unique[index] = row
+  }
+  return unique
 }

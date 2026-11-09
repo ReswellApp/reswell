@@ -35,7 +35,7 @@ export function MessageSellerOfferButton({
         variant="ghost"
         size="icon"
         disabled={disabled}
-        className="h-10 w-10 shrink-0 rounded-full border-0 bg-transparent text-muted-foreground shadow-none hover:bg-transparent hover:text-foreground"
+        className="h-8 w-8 shrink-0 rounded-full bg-[#E9E9EB] text-foreground shadow-none hover:bg-[#dedee0] dark:bg-[#3A3A3C] dark:hover:bg-[#4a4a4c]"
         aria-label="Make an offer"
         onClick={() => setOpen(true)}
       >

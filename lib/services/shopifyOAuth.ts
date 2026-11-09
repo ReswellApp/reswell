@@ -1,0 +1,707 @@
+import type { SupabaseClient } from "@supabase/supabase-js"
+import { randomUUID } from "node:crypto"
+import { createServiceRoleClient } from "@/lib/supabase/server"
+import {
+  dbGetActiveShopifyCredential,
+  dbInsertActiveShopifyCredential,
+  dbUpdateShopifyCredentialTokens,
+} from "@/lib/db/shopifyCredentials"
+import {
+  dbClaimShopifyTokenRefresh,
+  dbConsumeShopifyOAuthState,
+  dbDeleteExpiredShopifyOAuthStates,
+  dbGetShopifyConnectionByDomain,
+  dbGetShopifyConnectionById,
+  dbGetShopifyConnectionForUser,
+  dbInsertShopifyOAuthState,
+  dbMarkShopifyConnectionStatus,
+  dbMirrorShopifyConnectionTokens,
+  dbSetShopifyOrdersSyncEnabled,
+  dbReleaseShopifyTokenRefresh,
+  dbUpdateShopifyConnectionTokens,
+  dbUpsertShopifyConnection,
+} from "@/lib/db/shopifyConnections"
+import { dbUnpublishAllShopifyListingsForConnection } from "@/lib/db/shopifyCatalog"
+import {
+  dbCancelShopifyInventoryJobsForConnection,
+  dbReviveDeadShopifyInventoryJobs,
+} from "@/lib/db/shopifyQueue"
+import {
+  shopifyGraphqlRequest,
+  throwOnShopifyUserErrors,
+} from "@/lib/shopify/admin-graphql"
+import { ensureShopifySalesChannelConnection } from "@/lib/services/shopifyChannelConnection"
+import { saveShopifyDefaultPackageIfMissing } from "@/lib/services/shopifyDefaultPackage"
+import {
+  SHOPIFY_MVP_SCOPES,
+  SHOPIFY_OAUTH_SCOPES,
+  shopifyApiKey,
+  shopifyApiSecret,
+  shopifyOAuthRedirectUri,
+  shopifyWebhookUri,
+} from "@/lib/shopify/config"
+import {
+  createShopifyOAuthState,
+  decryptShopifySecret,
+  encryptShopifySecret,
+  hashShopifyOAuthState,
+} from "@/lib/shopify/crypto"
+import { isShopifyOrdersWebhookRejection } from "@/lib/shopify/orders-webhook"
+import type { ShopifyConnectionRow } from "@/lib/shopify/types"
+
+type ShopifyTokenResponse = {
+  access_token?: string
+  refresh_token?: string
+  expires_in?: number
+  refresh_token_expires_in?: number
+  scope?: string
+}
+
+class ShopifyOAuthRequestError extends Error {
+  readonly status: number
+
+  constructor(message: string, status: number) {
+    super(message)
+    this.name = "ShopifyOAuthRequestError"
+    this.status = status
+  }
+}
+
+const DIFFERENT_SHOPIFY_STORE_ERROR =
+  "This Reswell account is already linked to a different Shopify store"
+
+const SHOPIFY_STORE_TAKEN_ERROR =
+  "This Shopify store is already linked to a different Reswell account"
+
+const SHOP_MOVE_INVENTORY_CANCEL_REASON =
+  "Canceled because this Reswell account connected a different Shopify store"
+
+/** A disconnected row still stores the old shop domain, but it is not a live link. */
+export function shopifyConnectionBlocksDifferentShop(
+  existing: Pick<ShopifyConnectionRow, "shop_domain" | "status"> | null,
+  shopDomain: string,
+): boolean {
+  return Boolean(
+    existing &&
+      existing.shop_domain !== shopDomain &&
+      existing.status !== "disconnected",
+  )
+}
+
+export function shopifyShopActivelyLinkedToOtherAccount(
+  existing: Pick<ShopifyConnectionRow, "user_id" | "status"> | null,
+  userId: string,
+): boolean {
+  return Boolean(
+    existing &&
+      existing.user_id !== userId &&
+      existing.status !== "disconnected",
+  )
+}
+
+export function shopifyReconnectMovesToNewShop(
+  existing: Pick<ShopifyConnectionRow, "shop_domain"> | null,
+  shopDomain: string,
+): boolean {
+  return Boolean(existing && existing.shop_domain !== shopDomain)
+}
+
+async function loadShopifyReconnectContext(
+  serviceSupabase: SupabaseClient,
+  userId: string,
+  shopDomain: string,
+): Promise<ShopifyConnectionRow | null> {
+  const existing = await dbGetShopifyConnectionForUser(serviceSupabase, userId)
+  if (shopifyConnectionBlocksDifferentShop(existing, shopDomain)) {
+    throw new Error(DIFFERENT_SHOPIFY_STORE_ERROR)
+  }
+  const domainOwner = await dbGetShopifyConnectionByDomain(
+    serviceSupabase,
+    shopDomain,
+  )
+  if (shopifyShopActivelyLinkedToOtherAccount(domainOwner, userId)) {
+    throw new Error(SHOPIFY_STORE_TAKEN_ERROR)
+  }
+  return existing
+}
+
+/**
+ * The connection row is reused for the new shop, so old mappings and inventory
+ * jobs would otherwise republish the previous store's listings.
+ */
+export async function retireShopifyListingsForShopMove(
+  serviceSupabase: SupabaseClient,
+  connectionId: string,
+): Promise<void> {
+  await dbUnpublishAllShopifyListingsForConnection(
+    serviceSupabase,
+    connectionId,
+  )
+  await dbCancelShopifyInventoryJobsForConnection(
+    serviceSupabase,
+    connectionId,
+    SHOP_MOVE_INVENTORY_CANCEL_REASON,
+  )
+}
+
+function expiresAt(seconds: number | undefined): string | null {
+  if (!Number.isFinite(seconds) || Number(seconds) <= 0) return null
+  return new Date(Date.now() + Number(seconds) * 1000).toISOString()
+}
+
+function encryptedTokenFields(input: ShopifyTokenResponse) {
+  if (!input.access_token?.trim()) {
+    throw new Error("Shopify token response did not include an access token")
+  }
+  const access = encryptShopifySecret(input.access_token)
+  const refresh = input.refresh_token?.trim()
+    ? encryptShopifySecret(input.refresh_token)
+    : null
+  return {
+    accessTokenCiphertext: access.ciphertext,
+    accessTokenIv: access.iv,
+    accessTokenTag: access.tag,
+    refreshTokenCiphertext: refresh?.ciphertext ?? null,
+    refreshTokenIv: refresh?.iv ?? null,
+    refreshTokenTag: refresh?.tag ?? null,
+    encryptionKeyVersion: access.keyVersion,
+    tokenExpiresAt: expiresAt(input.expires_in),
+    refreshTokenExpiresAt: expiresAt(input.refresh_token_expires_in),
+  }
+}
+
+async function requestShopifyToken(
+  shopDomain: string,
+  params: URLSearchParams,
+): Promise<ShopifyTokenResponse> {
+  const response = await fetch(
+    `https://${shopDomain}/admin/oauth/access_token`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: params,
+      cache: "no-store",
+      signal: AbortSignal.timeout(15_000),
+    },
+  )
+  if (!response.ok) {
+    throw new ShopifyOAuthRequestError(
+      `Shopify OAuth request failed (${response.status})`,
+      response.status,
+    )
+  }
+  return (await response.json()) as ShopifyTokenResponse
+}
+
+export async function createShopifyInstallUrl(input: {
+  serviceSupabase: SupabaseClient
+  userId: string | null
+  shopDomain: string
+  flowType?: "account_oauth" | "public_install"
+}): Promise<string> {
+  const flowType = input.flowType ?? "account_oauth"
+  const state = createShopifyOAuthState()
+  await dbDeleteExpiredShopifyOAuthStates(input.serviceSupabase)
+  await dbInsertShopifyOAuthState(input.serviceSupabase, {
+    stateHash: state.stateHash,
+    userId: input.userId,
+    shopDomain: input.shopDomain,
+    expiresAt: new Date(Date.now() + 10 * 60_000).toISOString(),
+    flowType,
+  })
+
+  // The app uses the legacy install flow, so Shopify grants only the scopes
+  // sent here. Keep this list identical to the released app version.
+  const params = new URLSearchParams({
+    client_id: shopifyApiKey(),
+    scope: SHOPIFY_OAUTH_SCOPES.join(","),
+    redirect_uri: shopifyOAuthRedirectUri(),
+    state: state.state,
+  })
+  return `https://${input.shopDomain}/admin/oauth/authorize?${params.toString()}`
+}
+
+export async function startShopifyOAuth(input: {
+  userId: string
+  shopDomain: string
+  serviceSupabase?: SupabaseClient
+}): Promise<string> {
+  const serviceSupabase = input.serviceSupabase ?? createServiceRoleClient()
+  await loadShopifyReconnectContext(
+    serviceSupabase,
+    input.userId,
+    input.shopDomain,
+  )
+  return createShopifyInstallUrl({
+    serviceSupabase,
+    userId: input.userId,
+    shopDomain: input.shopDomain,
+  })
+}
+
+export async function consumeShopifyOAuthState(input: {
+  serviceSupabase: SupabaseClient
+  userId: string
+  shopDomain: string
+  state: string
+}): Promise<boolean> {
+  return dbConsumeShopifyOAuthState(input.serviceSupabase, {
+    stateHash: hashShopifyOAuthState(input.state),
+    userId: input.userId,
+    shopDomain: input.shopDomain,
+  })
+}
+
+export async function fetchShopIdentity(
+  shopDomain: string,
+  accessToken: string,
+): Promise<{ shopGid: string; shopName: string | null }> {
+  const data = await shopifyGraphqlRequest<{
+    shop: { id?: string | null; name?: string | null }
+  }>({
+    shopDomain,
+    accessToken,
+    query: `query ReswellShopIdentity { shop { id name } }`,
+  })
+  const shopGid = data.shop.id?.trim()
+  if (!shopGid) throw new Error("Shopify did not return a shop id")
+  return {
+    shopGid,
+    shopName: data.shop.name?.trim() || null,
+  }
+}
+
+const REQUIRED_WEBHOOKS = [
+  "PRODUCTS_UPDATE",
+  "PRODUCTS_DELETE",
+  "INVENTORY_LEVELS_UPDATE",
+  "APP_UNINSTALLED",
+] as const
+
+/** Needs Shopify protected-customer-data approval. A rejection must not block connect. */
+const ORDER_SYNC_WEBHOOK = "ORDERS_CREATE"
+
+const OPTIONAL_WEBHOOKS = ["METAFIELDS_UPDATE"] as const
+
+export type ShopifyWebhookRegistration = {
+  ordersCreateSubscribed: boolean
+}
+
+export async function registerShopifyWebhooks(
+  shopDomain: string,
+  accessToken: string,
+  callbackUrl = shopifyWebhookUri(),
+): Promise<ShopifyWebhookRegistration> {
+  const existing = await shopifyGraphqlRequest<{
+    webhookSubscriptions: {
+      nodes: Array<{ topic: string; endpoint?: { callbackUrl?: string | null } | null }>
+    }
+  }>({
+    shopDomain,
+    accessToken,
+    query: `
+      query ReswellWebhookSubscriptions {
+        webhookSubscriptions(first: 100) {
+          nodes {
+            topic
+            endpoint {
+              ... on WebhookHttpEndpoint { callbackUrl }
+            }
+          }
+        }
+      }
+    `,
+  })
+  const installed = new Set(
+    existing.webhookSubscriptions.nodes
+      .filter((node) => node.endpoint?.callbackUrl === callbackUrl)
+      .map((node) => node.topic),
+  )
+  let ordersCreateSubscribed = installed.has(ORDER_SYNC_WEBHOOK)
+
+  for (const topic of [
+    ...REQUIRED_WEBHOOKS,
+    ORDER_SYNC_WEBHOOK,
+    ...OPTIONAL_WEBHOOKS,
+  ]) {
+    if (installed.has(topic)) continue
+    const optional =
+      topic === ORDER_SYNC_WEBHOOK ||
+      (OPTIONAL_WEBHOOKS as readonly string[]).includes(topic)
+    try {
+      const result = await shopifyGraphqlRequest<{
+        webhookSubscriptionCreate: {
+          userErrors: Array<{ field?: string[] | null; message?: string | null }>
+        }
+      }>({
+        shopDomain,
+        accessToken,
+        query: `
+          mutation ReswellCreateWebhook(
+            $topic: WebhookSubscriptionTopic!,
+            $subscription: WebhookSubscriptionInput!
+          ) {
+            webhookSubscriptionCreate(
+              topic: $topic,
+              webhookSubscription: $subscription
+            ) {
+              userErrors { field message }
+            }
+          }
+        `,
+        variables: {
+          topic,
+          subscription: { uri: callbackUrl, format: "JSON" },
+        },
+      })
+      throwOnShopifyUserErrors(result.webhookSubscriptionCreate.userErrors)
+      if (topic === ORDER_SYNC_WEBHOOK) ordersCreateSubscribed = true
+    } catch (error) {
+      if (topic === ORDER_SYNC_WEBHOOK) {
+        ordersCreateSubscribed = false
+        console.error("[shopify] orders webhook", { topic, error })
+        continue
+      }
+      if (!optional) throw error
+      console.error("[shopify] optional webhook", { topic, error })
+    }
+  }
+
+  return { ordersCreateSubscribed }
+}
+
+export async function completeShopifyOAuth(input: {
+  serviceSupabase: SupabaseClient
+  userId: string
+  shopDomain: string
+  code: string
+}): Promise<ShopifyConnectionRow> {
+  const previous = await loadShopifyReconnectContext(
+    input.serviceSupabase,
+    input.userId,
+    input.shopDomain,
+  )
+  const movingToNewShop = shopifyReconnectMovesToNewShop(
+    previous,
+    input.shopDomain,
+  )
+
+  const token = await requestShopifyToken(
+    input.shopDomain,
+    new URLSearchParams({
+      client_id: shopifyApiKey(),
+      client_secret: shopifyApiSecret(),
+      code: input.code,
+      expiring: "1",
+    }),
+  )
+  if (!token.access_token) {
+    throw new Error("Shopify did not return an access token")
+  }
+
+  const identity = await fetchShopIdentity(
+    input.shopDomain,
+    token.access_token,
+  )
+  const scopes = (token.scope ?? SHOPIFY_MVP_SCOPES.join(","))
+    .split(",")
+    .map((scope) => scope.trim())
+    .filter(Boolean)
+  const tokenFields = encryptedTokenFields(token)
+  if (movingToNewShop && previous) {
+    await retireShopifyListingsForShopMove(input.serviceSupabase, previous.id)
+  }
+  const connection = await dbUpsertShopifyConnection(input.serviceSupabase, {
+    userId: input.userId,
+    shopDomain: input.shopDomain,
+    shopGid: identity.shopGid,
+    shopName: identity.shopName,
+    ...tokenFields,
+    scopes,
+    credentialProvider: "public_oauth",
+  })
+  await dbInsertActiveShopifyCredential(input.serviceSupabase, {
+    connectionId: connection.id,
+    provider: "public_oauth",
+    authMode: "expiring_oauth",
+    ...tokenFields,
+    tokenExpiresAt: tokenFields.tokenExpiresAt,
+    refreshTokenExpiresAt: tokenFields.refreshTokenExpiresAt,
+    scopes,
+  })
+  if (!movingToNewShop) {
+    await dbReviveDeadShopifyInventoryJobs(
+      input.serviceSupabase,
+      connection.id,
+    )
+  }
+  let ordersCreateSubscribed = false
+  await saveShopifyDefaultPackageIfMissing({
+    supabase: input.serviceSupabase,
+    userId: input.userId,
+    shopDomain: input.shopDomain,
+    accessToken: token.access_token,
+  })
+  try {
+    const registration = await registerShopifyWebhooks(
+      input.shopDomain,
+      token.access_token,
+    )
+    ordersCreateSubscribed = registration.ordersCreateSubscribed
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    if (isShopifyOrdersWebhookRejection(message)) {
+      console.error("[shopify] orders webhook", error)
+      await rememberShopifyOrderSync(input.serviceSupabase, connection.id, false)
+      await ensureShopifySalesChannelConnection({
+        serviceSupabase: input.serviceSupabase,
+        connection,
+      })
+      return connection
+    }
+    await dbMarkShopifyConnectionStatus(input.serviceSupabase, connection.id, {
+      status: "error",
+      syncEnabled: false,
+      error: `Webhook setup failed: ${message}`,
+    })
+    throw error
+  }
+  await rememberShopifyOrderSync(
+    input.serviceSupabase,
+    connection.id,
+    ordersCreateSubscribed,
+  )
+  await ensureShopifySalesChannelConnection({
+    serviceSupabase: input.serviceSupabase,
+    connection,
+  })
+  return connection
+}
+
+async function rememberShopifyOrderSync(
+  supabase: SupabaseClient,
+  connectionId: string,
+  ordersCreateSubscribed: boolean,
+): Promise<void> {
+  try {
+    await dbSetShopifyOrdersSyncEnabled(
+      supabase,
+      connectionId,
+      ordersCreateSubscribed,
+    )
+  } catch (error) {
+    console.error("[shopify] order sync flag", { connectionId, error })
+  }
+}
+
+export async function finishShopifyOAuth(input: {
+  userId: string
+  shopDomain: string
+  code: string
+  state: string
+}): Promise<ShopifyConnectionRow> {
+  const serviceSupabase = createServiceRoleClient()
+  const stateValid = await consumeShopifyOAuthState({
+    serviceSupabase,
+    userId: input.userId,
+    shopDomain: input.shopDomain,
+    state: input.state,
+  })
+  if (!stateValid) throw new Error("Shopify OAuth state is invalid or expired")
+  return completeShopifyOAuth({
+    serviceSupabase,
+    userId: input.userId,
+    shopDomain: input.shopDomain,
+    code: input.code,
+  })
+}
+
+function decryptAccessToken(connection: ShopifyConnectionRow): string {
+  return decryptShopifySecret({
+    ciphertext: connection.access_token_ciphertext,
+    iv: connection.access_token_iv,
+    tag: connection.access_token_tag,
+    keyVersion: connection.encryption_key_version,
+  })
+}
+
+function decryptRefreshToken(connection: ShopifyConnectionRow): string | null {
+  if (
+    !connection.refresh_token_ciphertext ||
+    !connection.refresh_token_iv ||
+    !connection.refresh_token_tag
+  ) {
+    return null
+  }
+  return decryptShopifySecret({
+    ciphertext: connection.refresh_token_ciphertext,
+    iv: connection.refresh_token_iv,
+    tag: connection.refresh_token_tag,
+    keyVersion: connection.encryption_key_version,
+  })
+}
+
+function tokenNeedsRefresh(connection: ShopifyConnectionRow): boolean {
+  if (!connection.token_expires_at) return false
+  return Date.parse(connection.token_expires_at) <= Date.now() + 10 * 60_000
+}
+
+async function mintMerchantCustomAccessToken(input: {
+  shopDomain: string
+  clientId: string
+  clientSecret: string
+}): Promise<ShopifyTokenResponse> {
+  return requestShopifyToken(
+    input.shopDomain,
+    new URLSearchParams({
+      grant_type: "client_credentials",
+      client_id: input.clientId,
+      client_secret: input.clientSecret,
+    }),
+  )
+}
+
+export async function getShopifyAccessToken(
+  serviceSupabase: SupabaseClient,
+  connection: ShopifyConnectionRow,
+): Promise<string> {
+  if (connection.credential_provider === "merchant_custom") {
+    const credential = await dbGetActiveShopifyCredential(
+      serviceSupabase,
+      connection.id,
+    )
+    if (!credential) {
+      throw new Error("Shopify merchant credential is missing")
+    }
+    if (
+      credential.token_expires_at &&
+      Date.parse(credential.token_expires_at) > Date.now() + 10 * 60_000
+    ) {
+      return decryptShopifySecret({
+        ciphertext: credential.access_token_ciphertext,
+        iv: credential.access_token_iv,
+        tag: credential.access_token_tag,
+        keyVersion: credential.encryption_key_version,
+      })
+    }
+    if (
+      !credential.client_id_ciphertext ||
+      !credential.client_id_iv ||
+      !credential.client_id_tag ||
+      !credential.client_secret_ciphertext ||
+      !credential.client_secret_iv ||
+      !credential.client_secret_tag
+    ) {
+      throw new Error("Shopify merchant credential is incomplete")
+    }
+    const clientId = decryptShopifySecret({
+      ciphertext: credential.client_id_ciphertext,
+      iv: credential.client_id_iv,
+      tag: credential.client_id_tag,
+      keyVersion: credential.encryption_key_version,
+    })
+    const clientSecret = decryptShopifySecret({
+      ciphertext: credential.client_secret_ciphertext,
+      iv: credential.client_secret_iv,
+      tag: credential.client_secret_tag,
+      keyVersion: credential.encryption_key_version,
+    })
+    const token = await mintMerchantCustomAccessToken({
+      shopDomain: connection.shop_domain,
+      clientId,
+      clientSecret,
+    })
+    const tokenFields = encryptedTokenFields(token)
+    await dbUpdateShopifyCredentialTokens(serviceSupabase, credential.id, {
+      accessTokenCiphertext: tokenFields.accessTokenCiphertext,
+      accessTokenIv: tokenFields.accessTokenIv,
+      accessTokenTag: tokenFields.accessTokenTag,
+      encryptionKeyVersion: tokenFields.encryptionKeyVersion,
+      tokenExpiresAt: tokenFields.tokenExpiresAt,
+    })
+    await dbMirrorShopifyConnectionTokens(serviceSupabase, connection.id, {
+      ...tokenFields,
+      refreshTokenCiphertext: null,
+      refreshTokenIv: null,
+      refreshTokenTag: null,
+      refreshTokenExpiresAt: null,
+    })
+    if (!token.access_token) throw new Error("Shopify token mint returned no token")
+    return token.access_token
+  }
+
+  if (!tokenNeedsRefresh(connection)) return decryptAccessToken(connection)
+
+  const refreshToken = decryptRefreshToken(connection)
+  if (!refreshToken) {
+    await dbMarkShopifyConnectionStatus(serviceSupabase, connection.id, {
+      status: "reauthorization_required",
+      syncEnabled: false,
+      error: "Shopify authorization expired. Reconnect the store.",
+    })
+    await dbUnpublishAllShopifyListingsForConnection(
+      serviceSupabase,
+      connection.id,
+    )
+    throw new Error("Shopify store must be reconnected")
+  }
+
+  const refreshLockId = randomUUID()
+  const claimed = await dbClaimShopifyTokenRefresh(
+    serviceSupabase,
+    connection.id,
+    refreshLockId,
+  )
+  if (!claimed) {
+    await new Promise((resolve) => setTimeout(resolve, 400))
+    const refreshed = await dbGetShopifyConnectionById(
+      serviceSupabase,
+      connection.id,
+    )
+    if (refreshed && !tokenNeedsRefresh(refreshed)) {
+      return decryptAccessToken(refreshed)
+    }
+    throw new Error("Shopify credential refresh is already running")
+  }
+
+  try {
+    const token = await requestShopifyToken(
+      connection.shop_domain,
+      new URLSearchParams({
+        grant_type: "refresh_token",
+        client_id: shopifyApiKey(),
+        client_secret: shopifyApiSecret(),
+        refresh_token: refreshToken,
+      }),
+    )
+    await dbUpdateShopifyConnectionTokens(
+      serviceSupabase,
+      connection.id,
+      refreshLockId,
+      encryptedTokenFields(token),
+    )
+    if (!token.access_token) throw new Error("Shopify refresh returned no token")
+    return token.access_token
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    if (error instanceof ShopifyOAuthRequestError && error.status === 401) {
+      await dbMarkShopifyConnectionStatus(serviceSupabase, connection.id, {
+        status: "reauthorization_required",
+        syncEnabled: false,
+        error: "Shopify authorization expired. Reconnect the store.",
+      })
+      await dbUnpublishAllShopifyListingsForConnection(
+        serviceSupabase,
+        connection.id,
+      )
+      throw error
+    }
+    await dbReleaseShopifyTokenRefresh(
+      serviceSupabase,
+      connection.id,
+      refreshLockId,
+      message,
+    )
+    throw error
+  }
+}

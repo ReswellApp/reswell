@@ -65,7 +65,7 @@ export function ProfileSignInTab({
   }, [supabase, copy.signedInWithEmail, copy.signedInWithGoogle])
 
   return (
-    <div className="mx-auto max-w-xl space-y-8 pt-2">
+    <div className="space-y-8">
       <section className="space-y-4">
         <h2 className={profileSectionTitleClass}>{copy.loginMethods}</h2>
         <div className={`${profileCardClass} divide-y divide-neutral-200/80 px-5 py-1 sm:px-6`}>

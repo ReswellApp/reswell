@@ -1,9 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { findOpenBuyerOfferOnListing } from "@/lib/db/offers"
-import { getConversationForBuyerSellerListing } from "@/lib/db/conversations"
-import { offerMessagesHref } from "@/lib/utils/offer-messages-href"
+import { dashboardOffersPath } from "@/lib/utils/offers-dashboard-display"
 
-/** Listing-scoped messages URL for the viewer’s open offer, if they have one. */
+/** Offers-page URL for the viewer’s open offer on this listing, if they have one. */
 export async function resolveListingBuyerOpenOfferHref(
   supabase: SupabaseClient,
   listingId: string,
@@ -11,13 +10,5 @@ export async function resolveListingBuyerOpenOfferHref(
 ): Promise<string | null> {
   const offer = await findOpenBuyerOfferOnListing(supabase, listingId, buyerId)
   if (!offer) return null
-
-  const conversation = await getConversationForBuyerSellerListing(
-    supabase,
-    offer.buyer_id,
-    offer.seller_id,
-    offer.listing_id,
-  )
-
-  return offerMessagesHref(offer, "buyer", conversation?.id ?? null)
+  return dashboardOffersPath({ role: "buyer", offerId: offer.id })
 }

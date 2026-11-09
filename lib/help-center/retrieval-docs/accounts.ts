@@ -105,7 +105,7 @@ export const accountsRetrievalDocs = [
       "selling/how-long-to-get-paid",
     ],
     quickAnswer:
-      "Earnings from completed sales land in your wallet. Pending is held until delivery or pickup clears. Ready to transfer can be spent at checkout or cashed out to your bank.",
+      "Earnings from completed sales land in your wallet. Shipped-order earnings stay Pending until 4 days after carrier-confirmed delivery; local-pickup earnings release when pickup is verified. Ready to transfer can be spent at checkout or cashed out to your bank.",
     sections: [
       {
         heading: "What the wallet is",
@@ -113,7 +113,7 @@ export const accountsRetrievalDocs = [
       },
       {
         heading: "Pending vs ready",
-        text: "Pending: recent sales waiting on delivery, pickup, or a hold. Ready to transfer to your bank: spendable now. Total includes pending.",
+        text: "Pending: recent sales waiting for carrier-confirmed delivery plus the 4-day hold, pickup verification, or another hold. Ready to transfer to your bank: spendable now. Total includes pending.",
       },
       {
         heading: "Activity history",

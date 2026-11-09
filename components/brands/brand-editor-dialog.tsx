@@ -129,9 +129,6 @@ export function BrandEditorDialog({
 
       const mc = Math.max(0, Math.floor(Number(modelCount) || 0))
 
-      /** Long-form `about_paragraphs` is retired; clear on save so the brand page stays short-description only. */
-      const about_paragraphs: string[] = []
-
       if (mode === "create") {
         const res = await fetch("/api/admin/brands", {
           method: "POST",
@@ -146,7 +143,7 @@ export function BrandEditorDialog({
             lead_shaper_name: leadShaperName.trim() || null,
             location_label: locationLabel.trim() || null,
             model_count: mc,
-            about_paragraphs,
+            about_paragraphs: [],
             product_categories: productCategories,
             ...(sourceBrandRequestId ? { brand_request_id: sourceBrandRequestId } : {}),
           }),
@@ -180,7 +177,6 @@ export function BrandEditorDialog({
           lead_shaper_name: leadShaperName.trim() || null,
           location_label: locationLabel.trim() || null,
           model_count: mc,
-          about_paragraphs,
           product_categories: productCategories,
         }),
       })

@@ -15,6 +15,10 @@ import type {
   AdminIssuedPromoCodeStatusFilter,
   AdminIssuedPromoCodesListResult,
 } from "@/lib/types/admin-issued-promo-codes"
+import {
+  adminPromoProductTypeLabel,
+  normalizeAdminPromoEligibleSections,
+} from "@/lib/utils/promo-product-type"
 
 function getServiceOrThrow(): ReturnType<typeof createServiceRoleClient> | null {
   try {
@@ -115,6 +119,8 @@ async function buildListResult(
       code: row.code,
       discountPercent: row.discount_percent,
       note: row.note,
+      eligibleSections: normalizeAdminPromoEligibleSections(row.eligible_sections),
+      appliesToLabel: adminPromoProductTypeLabel(row.eligible_sections),
       createdAt: row.created_at,
       expiresAt: row.expires_at,
       redeemedAt: row.redeemed_at,

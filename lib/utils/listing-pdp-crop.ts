@@ -1,0 +1,394 @@
+export type ListingPdpCrop = {
+  /** 0 = contain (entire photo visible), 1 = cover (fill the frame), >1 extra zoom. */
+  zoom: number
+  x: number
+  y: number
+}
+
+export type ListingPdpCropLayout = {
+  width: number
+  height: number
+  left: number
+  top: number
+}
+
+export const LISTING_PDP_CROP_COVER: ListingPdpCrop = { zoom: 1, x: 50, y: 50 }
+export const LISTING_PDP_CROP_FIT: ListingPdpCrop = { zoom: 0, x: 50, y: 50 }
+export const LISTING_PDP_CROP_MAX_ZOOM = 4
+/** Each +/- tap multiplies the on-screen size by this factor. */
+export const LISTING_PDP_CROP_ZOOM_STEP = 1.25
+export const LISTING_PDP_CROP_OPEN_EVENT = "reswell:open-listing-pdp-crop"
+
+const ZOOM_EPS = 0.0001
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value))
+}
+
+function clampPct(value: number): number {
+  return clamp(value, 0, 100)
+}
+
+function parseFinite(raw: unknown): number | null {
+  if (typeof raw === "number") return Number.isFinite(raw) ? raw : null
+  if (typeof raw !== "string") return null
+  const trimmed = raw.trim()
+  if (!trimmed) return null
+  const n = Number(trimmed)
+  return Number.isFinite(n) ? n : null
+}
+
+export function clampListingPdpCrop(crop: ListingPdpCrop): ListingPdpCrop {
+  return {
+    zoom: clamp(crop.zoom, 0, LISTING_PDP_CROP_MAX_ZOOM),
+    x: clampPct(crop.x),
+    y: clampPct(crop.y),
+  }
+}
+
+/** Null columns mean no seller crop. The /l hero then covers the 3:4 frame. */
+export function resolveListingPdpCrop(
+  zoom: unknown,
+  x: unknown,
+  y: unknown,
+): ListingPdpCrop | null {
+  const parsedZoom = parseFinite(zoom)
+  const parsedX = parseFinite(x)
+  const parsedY = parseFinite(y)
+  if (parsedZoom == null && parsedX == null && parsedY == null) return null
+  return clampListingPdpCrop({
+    zoom: parsedZoom ?? LISTING_PDP_CROP_COVER.zoom,
+    x: parsedX ?? LISTING_PDP_CROP_COVER.x,
+    y: parsedY ?? LISTING_PDP_CROP_COVER.y,
+  })
+}
+
+export function listingPdpCropFromImageRow(row: {
+  pdp_crop_zoom?: unknown
+  pdp_crop_x?: unknown
+  pdp_crop_y?: unknown
+}): ListingPdpCrop | null {
+  return resolveListingPdpCrop(row.pdp_crop_zoom, row.pdp_crop_x, row.pdp_crop_y)
+}
+
+/** Unset or centered Fill. Fit (contain) is an explicit save. */
+export function isListingPdpCropDefault(crop: ListingPdpCrop | null | undefined): boolean {
+  if (!crop) return true
+  return (
+    Math.abs(crop.zoom - LISTING_PDP_CROP_COVER.zoom) < ZOOM_EPS &&
+    Math.abs(crop.x - LISTING_PDP_CROP_COVER.x) < 0.05 &&
+    Math.abs(crop.y - LISTING_PDP_CROP_COVER.y) < 0.05
+  )
+}
+
+export function listingPdpContainScale(
+  frameW: number,
+  frameH: number,
+  imageW: number,
+  imageH: number,
+): number {
+  if (frameW <= 0 || frameH <= 0 || imageW <= 0 || imageH <= 0) return 0
+  return Math.min(frameW / imageW, frameH / imageH)
+}
+
+export function listingPdpCoverScale(
+  frameW: number,
+  frameH: number,
+  imageW: number,
+  imageH: number,
+): number {
+  if (frameW <= 0 || frameH <= 0 || imageW <= 0 || imageH <= 0) return 0
+  return Math.max(frameW / imageW, frameH / imageH)
+}
+
+/** Pixel scale for a stored zoom: 0…1 interpolates contain→cover, above 1 multiplies cover. */
+export function listingPdpRenderScale(
+  frameW: number,
+  frameH: number,
+  imageW: number,
+  imageH: number,
+  zoom: number,
+): number {
+  const contain = listingPdpContainScale(frameW, frameH, imageW, imageH)
+  const cover = listingPdpCoverScale(frameW, frameH, imageW, imageH)
+  const z = clamp(zoom, 0, LISTING_PDP_CROP_MAX_ZOOM)
+  if (z <= 1) return contain + z * (cover - contain)
+  return cover * z
+}
+
+export function listingPdpZoomFromRenderScale(
+  frameW: number,
+  frameH: number,
+  imageW: number,
+  imageH: number,
+  renderScale: number,
+): number {
+  const contain = listingPdpContainScale(frameW, frameH, imageW, imageH)
+  const cover = listingPdpCoverScale(frameW, frameH, imageW, imageH)
+  if (contain <= 0 || cover <= 0 || renderScale <= 0) return 1
+  if (renderScale <= cover + ZOOM_EPS) {
+    if (Math.abs(cover - contain) < ZOOM_EPS) return renderScale >= cover ? 1 : 0
+    return clamp((renderScale - contain) / (cover - contain), 0, 1)
+  }
+  return clamp(renderScale / cover, 1, LISTING_PDP_CROP_MAX_ZOOM)
+}
+
+export function listingPdpCropToLayout(
+  frameW: number,
+  frameH: number,
+  imageW: number,
+  imageH: number,
+  crop: ListingPdpCrop,
+): ListingPdpCropLayout {
+  const scale = listingPdpRenderScale(frameW, frameH, imageW, imageH, crop.zoom)
+  const width = imageW * scale
+  const height = imageH * scale
+  return clampListingPdpCropLayout(frameW, frameH, {
+    width,
+    height,
+    left: frameW * (crop.x / 100) - width * (crop.x / 100),
+    top: frameH * (crop.y / 100) - height * (crop.y / 100),
+  })
+}
+
+/**
+ * Slider position 0…1 maps linearly across on-screen size, from the fitted
+ * photo up to max zoom. The stored zoom value is not linear: 0…1 only
+ * covers contain→cover, so a raw zoom slider feels stuck and then jumps.
+ */
+export function listingPdpZoomFromSliderPosition(
+  frameW: number,
+  frameH: number,
+  imageW: number,
+  imageH: number,
+  position: number,
+): number {
+  const contain = listingPdpContainScale(frameW, frameH, imageW, imageH)
+  const maxScale = listingPdpCoverScale(frameW, frameH, imageW, imageH) * LISTING_PDP_CROP_MAX_ZOOM
+  if (contain <= 0 || maxScale <= 0) return 1
+  const t = clamp(position, 0, 1)
+  if (t <= 0) return 0
+  const scale = contain + t * (maxScale - contain)
+  if (scale <= contain + ZOOM_EPS) return 0
+  return listingPdpZoomFromRenderScale(frameW, frameH, imageW, imageH, scale)
+}
+
+export function listingPdpSliderPositionFromZoom(
+  frameW: number,
+  frameH: number,
+  imageW: number,
+  imageH: number,
+  zoom: number,
+): number {
+  const contain = listingPdpContainScale(frameW, frameH, imageW, imageH)
+  const maxScale = listingPdpCoverScale(frameW, frameH, imageW, imageH) * LISTING_PDP_CROP_MAX_ZOOM
+  if (contain <= 0 || maxScale <= contain + ZOOM_EPS) return zoom <= 0 ? 0 : 1
+  const scale = listingPdpRenderScale(frameW, frameH, imageW, imageH, zoom)
+  return clamp((scale - contain) / (maxScale - contain), 0, 1)
+}
+
+/** Multiply the on-screen size and clamp to fit…max zoom. */
+export function stepListingPdpCropZoom(params: {
+  frameW: number
+  frameH: number
+  imageW: number
+  imageH: number
+  zoom: number
+  factor: number
+}): number {
+  const contain = listingPdpContainScale(params.frameW, params.frameH, params.imageW, params.imageH)
+  const maxScale =
+    listingPdpCoverScale(params.frameW, params.frameH, params.imageW, params.imageH) *
+    LISTING_PDP_CROP_MAX_ZOOM
+  if (contain <= 0 || maxScale <= 0 || !(params.factor > 0)) return params.zoom
+  const scale = listingPdpRenderScale(
+    params.frameW,
+    params.frameH,
+    params.imageW,
+    params.imageH,
+    params.zoom,
+  )
+  const next = clamp(scale * params.factor, contain, maxScale)
+  if (next <= contain + ZOOM_EPS) return 0
+  return listingPdpZoomFromRenderScale(
+    params.frameW,
+    params.frameH,
+    params.imageW,
+    params.imageH,
+    next,
+  )
+}
+
+export function listingPdpLayoutToCrop(
+  frameW: number,
+  frameH: number,
+  imageW: number,
+  imageH: number,
+  layout: ListingPdpCropLayout,
+): ListingPdpCrop {
+  const scale = imageW > 0 ? layout.width / imageW : 1
+  const zoom = listingPdpZoomFromRenderScale(frameW, frameH, imageW, imageH, scale)
+  const spanX = frameW - layout.width
+  const spanY = frameH - layout.height
+  return clampListingPdpCrop({
+    zoom,
+    x: Math.abs(spanX) < 0.5 ? 50 : (layout.left / spanX) * 100,
+    y: Math.abs(spanY) < 0.5 ? 50 : (layout.top / spanY) * 100,
+  })
+}
+
+/** Keep the photo overlapping the frame. Smaller-than-frame axes stay centered. */
+export function clampListingPdpCropLayout(
+  frameW: number,
+  frameH: number,
+  layout: ListingPdpCropLayout,
+): ListingPdpCropLayout {
+  let { left, top, width, height } = layout
+  if (width <= frameW) {
+    left = (frameW - width) / 2
+  } else {
+    left = clamp(left, frameW - width, 0)
+  }
+  if (height <= frameH) {
+    top = (frameH - height) / 2
+  } else {
+    top = clamp(top, frameH - height, 0)
+  }
+  return { width, height, left, top }
+}
+
+export function applyListingPdpCropPan(params: {
+  layout: ListingPdpCropLayout
+  deltaX: number
+  deltaY: number
+  frameW: number
+  frameH: number
+}): ListingPdpCropLayout {
+  return clampListingPdpCropLayout(params.frameW, params.frameH, {
+    ...params.layout,
+    left: params.layout.left + params.deltaX,
+    top: params.layout.top + params.deltaY,
+  })
+}
+
+export function applyListingPdpCropZoom(params: {
+  layout: ListingPdpCropLayout
+  factor: number
+  /** Frame point on `layout` that should stay attached to the gesture. */
+  originX: number
+  originY: number
+  /**
+   * Where that photo point should land. Defaults to the origin, which keeps
+   * a cursor or pinch center fixed. A moving pinch passes the new midpoint.
+   */
+  targetX?: number
+  targetY?: number
+  frameW: number
+  frameH: number
+  imageW: number
+  imageH: number
+}): ListingPdpCropLayout {
+  const { layout, originX, originY, frameW, frameH, imageW, imageH } = params
+  if (imageW <= 0 || imageH <= 0 || layout.width <= 0 || layout.height <= 0) return layout
+
+  const minScale = listingPdpContainScale(frameW, frameH, imageW, imageH)
+  const maxScale = listingPdpCoverScale(frameW, frameH, imageW, imageH) * LISTING_PDP_CROP_MAX_ZOOM
+  const nextScale = clamp((layout.width / imageW) * params.factor, minScale, maxScale)
+  const nextW = imageW * nextScale
+  const nextH = imageH * nextScale
+  const focusX = (originX - layout.left) / layout.width
+  const focusY = (originY - layout.top) / layout.height
+  const targetX = params.targetX ?? originX
+  const targetY = params.targetY ?? originY
+
+  return clampListingPdpCropLayout(frameW, frameH, {
+    width: nextW,
+    height: nextH,
+    left: targetX - focusX * nextW,
+    top: targetY - focusY * nextH,
+  })
+}
+
+export function listingPdpCropObjectPosition(crop: ListingPdpCrop): string {
+  return `${crop.x}% ${crop.y}%`
+}
+
+/**
+ * CSS-only first paint. Intermediate zooms refine with a measured layout after load.
+ * null (thumbs) and zoom 1 → cover. zoom 0 → contain.
+ */
+export function listingPdpCropCssFit(crop: ListingPdpCrop | null): "cover" | "contain" {
+  if (!crop) return "cover"
+  if (crop.zoom <= ZOOM_EPS) return "contain"
+  return "cover"
+}
+
+export function listingPdpCropNeedsPreciseLayout(crop: ListingPdpCrop | null): boolean {
+  if (!crop || crop.zoom <= ZOOM_EPS) return false
+  return Math.abs(crop.zoom - 1) > ZOOM_EPS
+}
+
+/**
+ * Move a saved frame with a clockwise quarter turn so the same part of the
+ * photo stays under the hero after the pixels rotate.
+ * Centered Fill has nothing to preserve.
+ */
+export function rotateListingPdpCropClockwise(
+  crop: ListingPdpCrop | null,
+  quarterTurns: number,
+): ListingPdpCrop | null {
+  if (!crop || isListingPdpCropDefault(crop)) return null
+  const turns = ((Math.trunc(quarterTurns) % 4) + 4) % 4
+  let next = clampListingPdpCrop(crop)
+  for (let i = 0; i < turns; i += 1) {
+    next = clampListingPdpCrop({
+      zoom: next.zoom,
+      x: 100 - next.y,
+      y: next.x,
+    })
+  }
+  return isListingPdpCropDefault(next) ? null : next
+}
+
+export function listingPdpCropsEqual(
+  a: ListingPdpCrop | null | undefined,
+  b: ListingPdpCrop | null | undefined,
+): boolean {
+  if (isListingPdpCropDefault(a) && isListingPdpCropDefault(b)) return true
+  if (!a || !b) return false
+  return (
+    Math.abs(a.zoom - b.zoom) < 0.001 &&
+    Math.abs(a.x - b.x) < 0.05 &&
+    Math.abs(a.y - b.y) < 0.05
+  )
+}
+
+/**
+ * Same pixel size keeps the previous object. Cached listing images can report
+ * their natural size from both a ref and onLoad; repeated reports must not
+ * schedule another render.
+ */
+export function retainMeasuredSize(
+  prev: { w: number; h: number } | null,
+  w: number,
+  h: number,
+): { w: number; h: number } | null {
+  if (!(w > 0) || !(h > 0)) return prev
+  if (prev && prev.w === w && prev.h === h) return prev
+  return { w, h }
+}
+
+export function openListingPdpCropEditor(): void {
+  if (typeof window === "undefined") return
+  window.dispatchEvent(new CustomEvent(LISTING_PDP_CROP_OPEN_EVENT))
+}
+
+/** Photo crop is allowed only when the signed-in user id is the listing owner. */
+export function listingPdpCropActorIsOwner(
+  actorUserId: string | null | undefined,
+  listingOwnerUserId: string | null | undefined,
+): boolean {
+  const actor = actorUserId?.trim() ?? ""
+  const owner = listingOwnerUserId?.trim() ?? ""
+  return actor.length > 0 && actor === owner
+}

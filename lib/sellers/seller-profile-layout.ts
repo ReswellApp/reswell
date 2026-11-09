@@ -5,7 +5,7 @@ export const sellerProfileShellClassName = cn("container mx-auto w-full min-w-0 
 
 /** Full-bleed shop banner — Reverb-style edge-to-edge header. */
 export const sellerProfileBannerClassName = cn(
-  "relative w-full overflow-hidden bg-[#04070E]",
+  "relative w-full overflow-hidden bg-[#5574AD]",
   "min-h-[100px] sm:min-h-[120px] md:min-h-[140px] lg:min-h-[160px]",
 )
 

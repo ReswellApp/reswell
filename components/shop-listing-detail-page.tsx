@@ -14,6 +14,7 @@ import {
   getCachedShopRelatedListings,
   SHOP_LISTING_SELECT,
 } from "@/lib/listing-detail-cache"
+import { SHOP_RELATED_RAIL_TITLE } from "@/lib/listing-pdp-rail-titles"
 import { Package, Truck, Shield, RotateCcw } from "lucide-react"
 import { QuantitySelector } from "@/components/quantity-selector"
 import { MarketplaceNewGrid } from "@/components/marketplace-new-grid"
@@ -248,7 +249,7 @@ export async function ShopListingDetailPage({
         {relatedItems.length > 0 && (
           <section className="mt-20 min-w-0 max-w-full border-t border-border/40 pt-16">
             <h2 className="font-headline mb-10 text-[1.8125rem] font-semibold tracking-tight text-foreground sm:text-[1.875rem]">
-              You may also like
+              {SHOP_RELATED_RAIL_TITLE}
             </h2>
             <MarketplaceNewGrid items={relatedItems} userId={viewerId} />
           </section>

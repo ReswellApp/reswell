@@ -9,9 +9,22 @@ import {
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { generateAdminIssuedPromoCode } from "@/lib/utils/admin-issued-promo-code"
 import {
+  loadPromoCheckoutLinesForPreview,
+  withResolvedPromoProductTypes,
+} from "@/lib/services/promoProductType"
+import {
   computeCheckoutTotalWithNewsletterPromo,
   computeNewsletterPromoItemDiscountUsd,
 } from "@/lib/services/newsletterPromo"
+import {
+  computeRestrictedPromoCheckoutAmounts,
+  eligiblePromoItemSubtotalUsd,
+  normalizeAdminPromoEligibleSections,
+  promoProductTypeRestrictionError,
+  sumPromoLineSubtotalUsd,
+  type PromoCheckoutLine,
+} from "@/lib/utils/promo-product-type"
+import type { PeerListingSection } from "@/lib/peer-listing-sections"
 
 function promoExpiryIso(from = new Date()): string {
   const d = new Date(from)
@@ -30,6 +43,8 @@ export type AdminIssuedPromoValidationResult =
       discountPercent: number
       discountUsd: number
       totalUsd: number
+      /** Null when the code discounts every product type. */
+      appliesTo: PeerListingSection[] | null
     }
   | { ok: false; error: string }
 
@@ -37,6 +52,14 @@ export async function validateAdminIssuedPromoForCheckout(params: {
   code: string
   itemSubtotalUsd: number
   shippingUsd: number
+  /** Already priced checkout lines. Payment creation passes these. */
+  lines?: readonly PromoCheckoutLine[]
+  /** Checkout preview loads prices here when the code is limited to a product type. */
+  preview?: {
+    buyerId: string
+    offerId?: string | null
+    requestedLines: readonly { id: string; quantity: number }[]
+  }
 }): Promise<AdminIssuedPromoValidationResult> {
   let supabase
   try {
@@ -61,11 +84,45 @@ export async function validateAdminIssuedPromoForCheckout(params: {
   }
 
   const discountPercent = row.discount_percent
-  const { discountUsd, totalUsd } = computeCheckoutTotalWithNewsletterPromo({
-    itemSubtotalUsd: params.itemSubtotalUsd,
-    shippingUsd: params.shippingUsd,
-    discountPercent,
-  })
+  const appliesTo = normalizeAdminPromoEligibleSections(row.eligible_sections)
+
+  let itemSubtotalUsd = params.itemSubtotalUsd
+  let eligibleItemSubtotalUsd = params.itemSubtotalUsd
+
+  if (appliesTo) {
+    let lines = params.lines
+    if (!lines && params.preview) {
+      const loaded = await loadPromoCheckoutLinesForPreview(supabase, params.preview)
+      if (loaded.error) return { ok: false, error: loaded.error }
+      lines = loaded.lines
+    }
+    if (!lines || lines.length === 0) {
+      return { ok: false, error: promoProductTypeRestrictionError(appliesTo) }
+    }
+    const resolved = await withResolvedPromoProductTypes(supabase, lines)
+    if (resolved.error) return { ok: false, error: resolved.error }
+    lines = resolved.lines
+    eligibleItemSubtotalUsd = eligiblePromoItemSubtotalUsd(lines, appliesTo)
+    if (eligibleItemSubtotalUsd <= 0) {
+      return { ok: false, error: promoProductTypeRestrictionError(appliesTo) }
+    }
+    if (!params.lines) {
+      itemSubtotalUsd = sumPromoLineSubtotalUsd(lines)
+    }
+  }
+
+  const { discountUsd, totalUsd } = appliesTo
+    ? computeRestrictedPromoCheckoutAmounts({
+        itemSubtotalUsd,
+        eligibleItemSubtotalUsd,
+        shippingUsd: params.shippingUsd,
+        discountPercent,
+      })
+    : computeCheckoutTotalWithNewsletterPromo({
+        itemSubtotalUsd,
+        shippingUsd: params.shippingUsd,
+        discountPercent,
+      })
 
   if (totalUsd < 0.5) {
     return { ok: false, error: "Order total is below the minimum after discount." }
@@ -77,6 +134,7 @@ export async function validateAdminIssuedPromoForCheckout(params: {
     discountPercent,
     discountUsd,
     totalUsd,
+    appliesTo,
   }
 }
 
@@ -88,6 +146,7 @@ export async function createAdminIssuedPromoCode(params: {
   discountPercent: number
   createdByProfileId: string
   note?: string
+  eligibleSections?: PeerListingSection[] | null
 }): Promise<CreateAdminIssuedPromoResult> {
   let supabase
   try {
@@ -108,6 +167,7 @@ export async function createAdminIssuedPromoCode(params: {
       expiresAt,
       createdByProfileId: params.createdByProfileId,
       note: params.note,
+      eligibleSections: params.eligibleSections,
     })
     if (inserted.row) {
       codeRow = inserted.row

@@ -1,7 +1,9 @@
 /**
  * Server-only: Klaviyo Events API — fires when seller earnings are released to the wallet (fulfillment complete).
  *
- * **Metric name in Klaviyo:** `Sale Successful` — use as the flow trigger (Flows → Metric).
+ * **Metric name in Klaviyo:** `Sale Successful` — kept for existing flows.
+ * New seller “money unlocked” emails should use **Earnings Available**
+ * (`track-earnings-available.ts`) so the trigger name matches the copy.
  *
  * **Building the flow in Klaviyo:** Flows → Create flow → Metric → select **Sale Successful** →
  * add email; in the template use event variables, e.g. `{{ event.order_num }}`, `{{ event.Title }}`,

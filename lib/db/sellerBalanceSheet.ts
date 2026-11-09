@@ -5,6 +5,18 @@ import type {
   SellerBalanceSheetPage,
   SellerBalanceSheetSummary,
 } from "@/lib/types/sellerBalanceSheet"
+import type { PeerListingSection } from "@/lib/peer-listing-sections"
+import {
+  balanceSheetEntryOrder,
+  balanceSheetPeriodStart,
+} from "@/lib/utils/balance-sheet-query"
+import type { UpdateListingAcquisitionInput } from "@/lib/validations/listing-acquisition"
+import type {
+  BalanceSheetPeriod,
+  BalanceSheetSort,
+  BalanceSheetView,
+  RemoveBalanceSheetItemInput,
+} from "@/lib/validations/seller-balance-sheet"
 
 interface BalanceSheetViewRow {
   entry_key: string
@@ -93,19 +105,59 @@ export async function getSellerBalanceSheetPage(
   userId: string,
   page: number,
   pageSize: number,
+  listingSection: PeerListingSection | null,
+  sort: BalanceSheetSort,
+  view: BalanceSheetView = "all",
+  period: BalanceSheetPeriod = "all",
 ): Promise<SellerBalanceSheetPage> {
   const from = (page - 1) * pageSize
   const to = from + pageSize - 1
+  const soldSinceIso = balanceSheetPeriodStart(period)?.toISOString() ?? null
+
+  let entriesQuery = supabase
+    .from("visible_seller_balance_sheet_entries")
+    .select(BALANCE_SHEET_COLUMNS, { count: "exact" })
+    .eq("owner_id", userId)
+
+  if (listingSection) {
+    entriesQuery = entriesQuery.eq("listing_section", listingSection)
+  }
+
+  if (view === "active") {
+    entriesQuery = entriesQuery.eq("sale_source", "inventory")
+  } else if (view === "sold") {
+    entriesQuery = entriesQuery.neq("sale_source", "inventory")
+    if (soldSinceIso) {
+      entriesQuery = entriesQuery.gte("sold_at", soldSinceIso)
+    }
+  } else if (soldSinceIso) {
+    entriesQuery = entriesQuery.or(
+      `sale_source.eq.inventory,sold_at.gte.${soldSinceIso}`,
+    )
+  }
+
+  const orderedEntries = balanceSheetEntryOrder(sort).reduce(
+    (query, step) =>
+      query.order(step.column, {
+        ascending: step.ascending,
+        nullsFirst: step.nullsFirst,
+      }),
+    entriesQuery,
+  )
+
+  const summaryRequest =
+    period === "all"
+      ? supabase.rpc("get_my_balance_sheet_summary_by_section", {
+          p_listing_section: listingSection,
+        })
+      : supabase.rpc("get_my_balance_sheet_summary_filtered", {
+          p_listing_section: listingSection,
+          p_period: period,
+        })
 
   const [entriesResult, summaryResult] = await Promise.all([
-    supabase
-      .from("seller_balance_sheet_entries")
-      .select(BALANCE_SHEET_COLUMNS, { count: "exact" })
-      .eq("owner_id", userId)
-      .order("sold_at", { ascending: false })
-      .order("entry_key", { ascending: false })
-      .range(from, to),
-    supabase.rpc("get_my_balance_sheet_summary"),
+    orderedEntries.range(from, to),
+    summaryRequest,
   ])
 
   if (entriesResult.error) throw entriesResult.error
@@ -124,4 +176,46 @@ export async function getSellerBalanceSheetPage(
     totalEntries,
     totalPages,
   }
+}
+
+export async function updateOwnedListingAcquisition(
+  supabase: SupabaseClient,
+  userId: string,
+  input: UpdateListingAcquisitionInput,
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("listings")
+    .update({
+      seller_purchase_price_usd: input.purchasePrice,
+      seller_purchased_from: input.purchasedFrom,
+      seller_purchased_on: input.purchasedOn,
+    })
+    .eq("id", input.listingId)
+    .eq("user_id", userId)
+    .select("id")
+    .maybeSingle()
+
+  if (error) throw error
+  return data?.id === input.listingId
+}
+
+export async function excludeOwnedBalanceSheetItem(
+  supabase: SupabaseClient,
+  userId: string,
+  input: RemoveBalanceSheetItemInput,
+): Promise<void> {
+  const { error } = await supabase
+    .from("seller_balance_sheet_exclusions")
+    .upsert(
+      {
+        owner_id: userId,
+        listing_id: input.listingId,
+      },
+      {
+        onConflict: "owner_id,listing_id",
+        ignoreDuplicates: true,
+      },
+    )
+
+  if (error) throw error
 }

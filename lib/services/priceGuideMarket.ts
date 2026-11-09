@@ -74,7 +74,11 @@ function isGuideCategory(section: string): section is PriceGuideCategorySlug {
 
 export async function loadPriceGuideMarketBundle(
   supabase: SupabaseClient,
-  filters?: { section?: PriceGuideCategorySlug; brandId?: string },
+  filters?: {
+    section?: PriceGuideCategorySlug
+    brandId?: string
+    brandModelId?: string
+  },
 ): Promise<PriceGuideMarketBundle> {
   const listings = (await selectPriceGuideListings(supabase, filters)).filter((row) =>
     isGuideCategory(row.section),

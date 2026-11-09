@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server"
-import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
+import { requireAdmin } from "@/lib/brands/admin-server"
 import { getAdminRefundThreadNotificationsStats } from "@/lib/services/adminRefundThreadNotifications"
 
 /** GET /api/admin/refund-thread-notifications/stats — KPI counts for refund thread notifications. */
 export async function GET() {
-  const gate = await requireAdminOrEmployee()
+  const gate = await requireAdmin()
   if (!gate.ok) {
     return gate.response
   }

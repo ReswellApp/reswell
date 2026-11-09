@@ -8,7 +8,7 @@ import { SalesMapTopSellers } from "@/components/features/map/sales-map-top-sell
 import { SellerResourcesCta } from "@/components/features/seller-resources/seller-resources-cta"
 import { Button } from "@/components/ui/button"
 import { HOW_TO_SELL_HREF, HOW_TO_SHIP_HREF } from "@/lib/seller-resources"
-import type { MarketplaceSalesMapPayload } from "@/lib/types/marketplace-sales-map"
+import type { MobileMarketplaceSalesMap } from "@reswell/api-contract"
 import { BRAND_CTA_BLUE, BRAND_DARK_BLUE, BRAND_DEEP_BLUE } from "@/lib/brand-colors"
 import { formatGmv } from "@/lib/format-gmv"
 import { cn } from "@/lib/utils"
@@ -66,7 +66,7 @@ function hexToRgba(hex: string, alpha: number): string {
 }
 
 type UsaSalesFlowMapProps = {
-  data: MarketplaceSalesMapPayload
+  data: MobileMarketplaceSalesMap
   className?: string
   /** Compact height for directory embeds; default matches `/map`. */
   size?: "default" | "compact"
@@ -329,29 +329,6 @@ export function UsaSalesFlowMap({
               </ul>
             </div>
           ) : null}
-
-          {!isCompact ? (
-            <div className="pointer-events-none absolute bottom-2 left-2 right-2 rounded-lg border border-border/70 bg-background/90 px-2 py-1.5 shadow-sm backdrop-blur-sm sm:bottom-3 sm:left-3 sm:right-auto sm:rounded-xl sm:px-2.5 sm:py-2">
-              <div className="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-[10px] text-muted-foreground sm:justify-start sm:gap-x-3 sm:text-xs">
-                {isMobileView && !selection ? (
-                  <span className="w-full text-center font-medium text-foreground/80 sm:w-auto">
-                    Tap a state for stats
-                  </span>
-                ) : null}
-                <span className="inline-flex items-center gap-1">
-                  <span className="h-2 w-4 rounded-full bg-[#dc2626]/70 sm:h-2.5 sm:w-6" />
-                  Flow
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <span
-                    className="h-2 w-2 rounded-full sm:h-2.5 sm:w-2.5"
-                    style={{ backgroundColor: BRAND_CTA_BLUE }}
-                  />
-                  Active states
-                </span>
-              </div>
-            </div>
-          ) : null}
         </div>
 
         {selectionLabel && isMobileView ? (
@@ -375,13 +352,33 @@ export function UsaSalesFlowMap({
             </div>
           </div>
         ) : null}
+
+        {!isCompact ? (
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 border-t border-border/70 px-3 py-2 text-[11px] text-muted-foreground sm:justify-start sm:px-4 sm:py-2.5 sm:text-xs">
+            {isMobileView && !selection ? (
+              <span className="font-medium text-foreground/80">Tap a state for stats</span>
+            ) : null}
+            <span className="inline-flex items-center gap-1.5">
+              <span className="h-2 w-4 rounded-full bg-[#dc2626]/70 sm:h-2.5 sm:w-6" aria-hidden />
+              Flow
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span
+                className="h-2 w-2 rounded-full sm:h-2.5 sm:w-2.5"
+                style={{ backgroundColor: BRAND_CTA_BLUE }}
+                aria-hidden
+              />
+              Active states
+            </span>
+          </div>
+        ) : null}
       </div>
     </div>
   )
 }
 
 type SalesMapPageClientProps = {
-  data: MarketplaceSalesMapPayload
+  data: MobileMarketplaceSalesMap
 }
 
 export function SalesMapPageClient({ data }: SalesMapPageClientProps) {
@@ -389,7 +386,7 @@ export function SalesMapPageClient({ data }: SalesMapPageClientProps) {
     <main className="flex-1 bg-white">
       <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:py-12">
         <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_21rem] xl:grid-cols-[minmax(0,1fr)_22.5rem] xl:gap-10">
-          <div>
+          <div className="min-w-0">
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#5574AD]">
               Seller Resources
             </p>
@@ -454,8 +451,8 @@ export function SalesMapPageClient({ data }: SalesMapPageClientProps) {
             </p>
           </div>
 
-          <div className="lg:sticky lg:top-24">
-            <SalesMapTopSellers sellers={data.topSellers} />
+          <div className="min-w-0 lg:sticky lg:top-24">
+            <SalesMapTopSellers sellers={data.topSellers} className="mt-2 lg:mt-0" />
           </div>
         </div>
       </section>

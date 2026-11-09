@@ -13,10 +13,110 @@ export function getPublicSellerDisplayName(profile: { display_name?: string | nu
   return "Anonymous Seller"
 }
 
+/**
+ * Max letter-count for an isolated all-caps token we leave alone in mixed-case text
+ * (acronyms / initials). Google accepts caps for acronyms like "ADHD", "UK", "USD" —
+ * https://support.google.com/merchants/answer/14987767
+ */
+const PRESERVE_ALL_CAPS_LETTER_MAX = 4
+
+/**
+ * Acronyms / size codes / roman numerals kept uppercase even inside a shouting title.
+ * Includes Google examples (ADHD, UNICEF, UK, USD) plus common surf tokens (FCS, EPS).
+ */
+const PRESERVE_ALL_CAPS_WORDS = new Set([
+  "ADHD",
+  "UNICEF",
+  "NASA",
+  "NATO",
+  "FIFA",
+  "USDA",
+  "HTTPS",
+  "HTTP",
+  "USA",
+  "USD",
+  "UK",
+  "US",
+  "EU",
+  "AU",
+  "FCS",
+  "EPS",
+  "XTR",
+  "LFT",
+  "PU",
+  "PE",
+  "PVC",
+  "CI",
+  "XL",
+  "XXL",
+  "XS",
+  "II",
+  "III",
+  "IV",
+])
+
+function lettersOnly(token: string): string {
+  return token.replace(/[^A-Za-z]/g, "")
+}
+
+function isAllCapsLetters(token: string): boolean {
+  const letters = lettersOnly(token)
+  if (letters.length === 0) return false
+  return letters === letters.toUpperCase() && /[A-Z]/.test(letters)
+}
+
+function titleCaseToken(token: string): string {
+  return token.replace(/[A-Za-z]+/g, (chunk) => {
+    if (chunk.length === 1) return chunk.toUpperCase()
+    return chunk.charAt(0).toUpperCase() + chunk.slice(1).toLowerCase()
+  })
+}
+
+/** True when most letters are uppercase — the Google "excessive capitalization" pattern. */
+export function hasExcessiveCapitalization(text: string): boolean {
+  const letters = text.replace(/[^A-Za-z]/g, "")
+  if (letters.length < 6) return false
+  const upper = (letters.match(/[A-Z]/g) ?? []).length
+  return upper / letters.length >= 0.65
+}
+
+function shouldPreserveAllCapsToken(token: string, shouting: boolean): boolean {
+  const letters = lettersOnly(token)
+  if (!letters) return true
+  if (PRESERVE_ALL_CAPS_WORDS.has(letters.toUpperCase())) return true
+  // Model / size codes with digits (XF2, 5FIN, G10) stay as written.
+  if (/\d/.test(token)) return true
+  // In mixed-case copy, leave short ALL-CAPS acronyms alone.
+  if (!shouting && letters.length <= PRESERVE_ALL_CAPS_LETTER_MAX) return true
+  return false
+}
+
+/**
+ * Strip gimmicky ALL CAPS used for emphasis (Google Merchant / Shopping policy).
+ * Converts shouting words to title case; keeps known acronyms, initials, and
+ * alphanumeric model codes. Mixed-case text is left unchanged aside from long
+ * isolated ALL-CAPS words.
+ *
+ * @see https://support.google.com/merchants/answer/14987767
+ */
+export function normalizeExcessiveCapitalization(text: string | null | undefined): string {
+  if (!text || typeof text !== "string") return ""
+  const trimmed = text.trim()
+  if (!trimmed) return ""
+
+  const shouting = hasExcessiveCapitalization(trimmed)
+
+  return trimmed.replace(/[A-Za-z][A-Za-z0-9'’.-]*/g, (token) => {
+    if (!isAllCapsLetters(token)) return token
+    if (shouldPreserveAllCapsToken(token, shouting)) return token
+    return titleCaseToken(token)
+  })
+}
+
 /** Capitalize the first letter of each word for listing titles and other display text. */
 export function capitalizeWords(text: string | null | undefined): string {
   if (!text || typeof text !== "string") return ""
-  return text.trim().replace(/\b\w/g, (c) => c.toUpperCase())
+  return normalizeExcessiveCapitalization(text.trim()).replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
 /** Short labels for tiles, filters, chips, and `formatCondition`. */
@@ -33,19 +133,21 @@ export const LISTING_CONDITION_LABELS: Record<string, string> = {
   poor: "Poor",
 }
 
-const LISTING_CONDITION_ORDER = ["brand_new", "excellent", "very_good", "good", "fair", "poor"] as const
+export const LISTING_SELLABLE_CONDITIONS = [
+  "brand_new",
+  "excellent",
+  "very_good",
+  "good",
+  "fair",
+  "poor",
+] as const
+
+export type ListingSellableCondition = (typeof LISTING_SELLABLE_CONDITIONS)[number]
 
 export function isListingSellableCondition(
   c: string | null | undefined,
-): c is (typeof LISTING_CONDITION_ORDER)[number] {
-  return (
-    c === "brand_new" ||
-    c === "excellent" ||
-    c === "very_good" ||
-    c === "good" ||
-    c === "fair" ||
-    c === "poor"
-  )
+): c is ListingSellableCondition {
+  return c != null && (LISTING_SELLABLE_CONDITIONS as readonly string[]).includes(c)
 }
 
 /**
@@ -80,13 +182,12 @@ export function formatHomePeerListingConditionLine(condition: string | null | un
 }
 
 /** Sell-form and browse filter condition values (excludes legacy `new`). */
-export const LISTING_CONDITION_SELL_OPTIONS: { value: string; label: string }[] = LISTING_CONDITION_ORDER.map(
-  (v) => ({ value: v, label: LISTING_CONDITION_LABELS[v] ?? v }),
-)
+export const LISTING_CONDITION_SELL_OPTIONS: { value: string; label: string }[] =
+  LISTING_SELLABLE_CONDITIONS.map((v) => ({ value: v, label: LISTING_CONDITION_LABELS[v] ?? v }))
 
 /** Rows for browse filters (values only; pair with `{ value: \"all\", label: \"Condition Any\" }`). */
 export function listingConditionFilterRows(): { value: string; label: string }[] {
-  return LISTING_CONDITION_ORDER.map((v) => ({
+  return LISTING_SELLABLE_CONDITIONS.map((v) => ({
     value: v,
     label: LISTING_CONDITION_LABELS[v],
   }))

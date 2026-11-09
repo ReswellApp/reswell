@@ -3,6 +3,7 @@
 import Image from "next/image"
 import { useEffect, useMemo, useState } from "react"
 import { formatDistanceToNow } from "date-fns"
+import { RelativeTime } from "@/components/ui/relative-time"
 import {
   Check,
   ChevronDown,
@@ -14,6 +15,7 @@ import {
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import {
   Popover,
   PopoverContent,
@@ -233,7 +235,6 @@ export function DraftsPicker({
                 const isDiscarding = discardingId === draft.id
                 const title = draftDisplayTitle(draft)
                 const price = formatDraftPrice(draft.price)
-                const updated = formatDraftUpdated(draft.updatedAt)
                 const imgSrc = draft.primaryImageUrl
                   ? proxiedListingImageSrc(draft.primaryImageUrl)
                   : null
@@ -269,7 +270,7 @@ export function DraftsPicker({
                               alt=""
                               fill
                               sizes="48px"
-                              className="object-cover"
+                              className={listingPhotoFillClassName}
                             />
                           ) : (
                             <div className="flex h-full w-full items-center justify-center text-muted-foreground">
@@ -305,7 +306,13 @@ export function DraftsPicker({
                                 </span>
                               </>
                             )}
-                            <span className="truncate">Edited {updated}</span>
+                            <span className="truncate">
+                              Edited{" "}
+                              <RelativeTime
+                                iso={draft.updatedAt}
+                                formatLabel={formatDraftUpdated}
+                              />
+                            </span>
                           </div>
                         </div>
                       </button>

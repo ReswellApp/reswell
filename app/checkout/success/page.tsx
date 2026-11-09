@@ -5,6 +5,7 @@ import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { buildOrderSuccessPath } from "@/lib/google-ads/purchase-success-path"
+import { finalizeMarketplaceOrderClient } from "@/lib/stripe/finalize-marketplace-order-client"
 import { Card, CardContent } from "@/components/ui/card"
 import { CheckCircle2, Loader2 } from "lucide-react"
 
@@ -61,10 +62,6 @@ function CheckoutSuccessInner() {
 
   useEffect(() => {
     if (!paymentIntent) return
-    if (redirectStatus === "failed") {
-      setFinalizeError("Your bank did not authorize this payment.")
-      return
-    }
 
     let cancelled = false
     setFinalizeBusy(true)
@@ -73,27 +70,26 @@ function CheckoutSuccessInner() {
 
     ;(async () => {
       try {
-        const res = await fetch("/api/stripe/finalize-order", {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ payment_intent_id: paymentIntent }),
-        })
-        const data = (await res.json()) as { error?: string; orderId?: string }
+        const result = await finalizeMarketplaceOrderClient(paymentIntent)
         if (cancelled) return
-        if (res.status === 401) {
-          setFinalizeAuth(true)
+        if (!result.ok) {
+          if (result.unauthorized) {
+            setFinalizeAuth(true)
+            return
+          }
+          // Trust the PaymentIntent, not Stripe's redirect_status query param.
+          // A failed 3DS return can still belong to a succeeded charge.
+          if (
+            redirectStatus === "failed" &&
+            result.error.toLowerCase().includes("not complete")
+          ) {
+            setFinalizeError("Your bank did not authorize this payment.")
+            return
+          }
+          setFinalizeError(result.error)
           return
         }
-        if (!res.ok) {
-          setFinalizeError(data.error ?? "Could not complete your purchase.")
-          return
-        }
-        if (!data.orderId?.trim()) {
-          setFinalizeError("Could not complete your purchase.")
-          return
-        }
-        setFinalizedOrderId(data.orderId.trim())
+        setFinalizedOrderId(result.orderId)
       } catch {
         if (!cancelled) setFinalizeError("Something went wrong completing your purchase.")
       } finally {
@@ -113,31 +109,6 @@ function CheckoutSuccessInner() {
 
   if (!paymentIntent && !orderIdInUrl) {
     return <StaticSuccess />
-  }
-
-  if (paymentIntent && redirectStatus === "failed") {
-    return (
-      <main className="flex-1 py-16">
-        <div className="container mx-auto max-w-md text-center">
-          <Card>
-            <CardContent className="pt-8 pb-8 space-y-4">
-              <h1 className="text-xl font-bold">Payment issue</h1>
-              <p className="text-sm text-muted-foreground">
-                Your bank did not authorize this payment.
-              </p>
-              <div className="flex flex-col gap-3">
-                <Button asChild>
-                  <Link href="/dashboard/purchases">View purchases</Link>
-                </Button>
-                <Button variant="outline" asChild>
-                  <Link href="/">Continue shopping</Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </main>
-    )
   }
 
   if (finalizeAuth) {
@@ -195,7 +166,7 @@ function CheckoutSuccessInner() {
   }
 
   const waitingOnFinalize =
-    Boolean(paymentIntent) && redirectStatus !== "failed" && !finalizedOrderId && !finalizeError && !finalizeAuth
+    Boolean(paymentIntent) && !finalizedOrderId && !finalizeError && !finalizeAuth
 
   const redirectingToSuccess =
     Boolean(orderIdInUrl) && !paymentIntent && !finalizeError && !finalizeAuth

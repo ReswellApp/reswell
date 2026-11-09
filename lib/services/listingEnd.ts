@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { deleteListingDocument } from "@/lib/elasticsearch/listings-index"
 import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
+import { revalidateMarketplaceNewListingsFeed } from "@/lib/cache/revalidate-marketplace-sold-feed"
 import { revalidateListingDetailPage } from "@/lib/cache/revalidate-listing-public-detail"
 import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { removeListingFromGoogleMerchantFeed } from "@/lib/services/googleMerchantSync"
@@ -72,6 +73,12 @@ export async function deleteSellerDraftListing(
     .eq("user_id", sellerUserId)
 
   if (error) {
+    console.error("[deleteSellerDraftListing] delete failed", {
+      listingId,
+      sellerUserId,
+      code: error.code,
+      message: error.message,
+    })
     return { ok: false, status: 500, error: "Failed to delete draft" }
   }
 
@@ -127,6 +134,12 @@ export async function endSellerListing(
     .eq("user_id", sellerUserId)
 
   if (error) {
+    console.error("[endSellerListing] delete failed", {
+      listingId,
+      sellerUserId,
+      code: error.code,
+      message: error.message,
+    })
     if (error.code === "23503") {
       return { ok: false, status: 409, error: ORDER_HISTORY_DELETE_BLOCKED_MESSAGE }
     }
@@ -150,6 +163,7 @@ export async function endSellerListing(
   }
 
   revalidateBoardsBrowseCatalog()
+  revalidateMarketplaceNewListingsFeed()
   await revalidateSellersAfterListingChange(supabase, sellerUserId)
 
   return { ok: true, mode: "delete" }

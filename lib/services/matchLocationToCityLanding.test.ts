@@ -97,4 +97,9 @@ describe("matchLocationToCityLanding", () => {
     assert.equal(matchLocationToCityLanding({ label: "Atlantis, CA" }, cities), null)
     assert.equal(matchLocationToCityLanding({ label: "" }, cities), null)
   })
+
+  it("does not treat a one-letter prefix as a city landing", () => {
+    assert.equal(matchLocationToCityLanding({ label: "S" }, cities), null)
+    assert.equal(matchLocationToCityLanding({ label: "s" }, cities), null)
+  })
 })

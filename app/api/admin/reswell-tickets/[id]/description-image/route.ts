@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAdminOrEmployee } from '@/lib/brands/admin-server'
+import { requireAdmin } from '@/lib/brands/admin-server'
 import { uploadReswellTicketDescriptionImage } from '@/lib/services/reswellTicketImages'
 
 interface RouteContext {
@@ -7,7 +7,7 @@ interface RouteContext {
 }
 
 export async function POST(req: NextRequest, context: RouteContext) {
-  const gate = await requireAdminOrEmployee()
+  const gate = await requireAdmin()
   if (!gate.ok) return gate.response
 
   const { id } = await context.params

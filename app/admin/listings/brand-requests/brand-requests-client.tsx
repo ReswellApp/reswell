@@ -137,6 +137,7 @@ export function BrandRequestsAdminClient() {
               ) : rows.length === 0 ? (
                 <p className="p-8 text-center text-sm text-muted-foreground">No brand requests yet.</p>
               ) : (
+                <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -192,6 +193,7 @@ export function BrandRequestsAdminClient() {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -208,6 +210,7 @@ export function BrandRequestsAdminClient() {
               ) : modelRows.length === 0 ? (
                 <p className="p-8 text-center text-sm text-muted-foreground">No model requests yet.</p>
               ) : (
+                <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -256,6 +259,7 @@ export function BrandRequestsAdminClient() {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               )}
             </CardContent>
           </Card>

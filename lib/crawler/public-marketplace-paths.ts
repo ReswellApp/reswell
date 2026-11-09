@@ -1,11 +1,17 @@
 import { isModelPagePathname } from "@/lib/models/routes"
 import {
+  BROWSER_HTML_CACHE_CONTROL,
   PUBLIC_MARKETPLACE_EDGE_CACHE_CONTROL,
+  isCacheablePublicMarketplaceRequest,
   publicMarketplaceCdnCacheControl as cdnCacheControlForPublicHtml,
   shouldAttachDeviceCookieOnDocument as shouldAttachDeviceCookie,
 } from "@/lib/crawler/public-marketplace-cache-policy"
 
-export { PUBLIC_MARKETPLACE_EDGE_CACHE_CONTROL }
+export {
+  BROWSER_HTML_CACHE_CONTROL,
+  PUBLIC_MARKETPLACE_EDGE_CACHE_CONTROL,
+  isCacheablePublicMarketplaceRequest,
+}
 
 /**
  * Anonymous marketplace HTML. These documents must not `Set-Cookie` and must not
@@ -36,6 +42,7 @@ export function isPublicMarketplaceHtmlPath(pathname: string): boolean {
   ) {
     return true
   }
+  if (pathname.startsWith("/pricing/brand/")) return true
   if (isModelPagePathname(pathname)) return true
   return false
 }
@@ -48,5 +55,9 @@ export function publicMarketplaceCdnCacheControl(
   pathname: string,
   hasSetCookie: boolean,
 ): string | null {
+  // Cookie-free document. Next.js revalidatePath owns freshness for these
+  // routes. The shared `s-maxage` + 24h stale-while-revalidate window kept
+  // serving the previous document after a save or a sale.
+  if (pathname === "/sold" || pathname.startsWith("/l/")) return null
   return cdnCacheControlForPublicHtml(isPublicMarketplaceHtmlPath(pathname), hasSetCookie)
 }

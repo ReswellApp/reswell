@@ -5,7 +5,10 @@ export function roundCompareAtUsd(n: number): number {
 
 export function parseOptionalUsdAmount(value: unknown): number | null {
   if (value == null || value === "") return null
-  const n = typeof value === "number" ? value : Number.parseFloat(String(value).replace(/,/g, ""))
+  const n =
+    typeof value === "number"
+      ? value
+      : Number.parseFloat(String(value).replace(/[$,\s]/g, ""))
   if (!Number.isFinite(n) || n <= 0) return null
   return roundCompareAtUsd(n)
 }

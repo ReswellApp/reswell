@@ -1,4 +1,5 @@
 import { revalidateMessagesInboxForParticipants } from "@/lib/cache/revalidate-messages-inbox"
+import { broadcastInsertedMarketplaceMessage } from "@/lib/services/broadcastMarketplaceThreadMessage"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 
 export type AdminSendMarketplaceThreadMessageResult =
@@ -56,6 +57,8 @@ export async function adminSendMarketplaceThreadMessage(input: {
     console.error("[adminSendMarketplaceThreadMessage] insert:", insErr)
     return { ok: false, error: "Could not send message", status: 500 }
   }
+
+  await broadcastInsertedMarketplaceMessage(inserted, conversationId)
 
   await supabase
     .from("conversations")

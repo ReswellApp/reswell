@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
-import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
+import { requireAdmin } from "@/lib/brands/admin-server"
 import { getAdminMarketplaceConversations } from "@/lib/services/adminMarketplaceMessages"
 import { startStaffOutboundMarketplaceConversation } from "@/lib/services/adminStartMarketplaceConversation"
 import { adminStartMarketplaceConversationBodySchema } from "@/lib/validations/adminStartMarketplaceConversation"
@@ -17,7 +17,7 @@ const querySchema = z.object({
  * Paginated buyer↔seller threads (one row per conversation) for the admin inbox.
  */
 export async function GET(request: NextRequest) {
-  const gate = await requireAdminOrEmployee()
+  const gate = await requireAdmin()
   if (!gate.ok) {
     return gate.response
   }
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
  * Opens or reuses a staff↔member marketplace thread and optionally sends an opening message.
  */
 export async function POST(request: NextRequest) {
-  const gate = await requireAdminOrEmployee()
+  const gate = await requireAdmin()
   if (!gate.ok) {
     return gate.response
   }

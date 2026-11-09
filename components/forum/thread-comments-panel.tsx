@@ -12,7 +12,7 @@ import {
   type SentForumCommentMedia,
 } from "@/lib/validations/forum-comment-attachment"
 import { createClient } from "@/lib/supabase/client"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { ProfileCircle } from "@/components/profile-circle"
 import { CommentLikeButton } from "@/components/forum/comment-like-button"
 import { LinkifiedText } from "@/components/forum/linkified-text"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
@@ -20,7 +20,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { formatDistanceToNowLabel, RelativeTime } from "@/components/ui/relative-time"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
-import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
 import {
   threadsDestructiveClassName,
   threadsSuccessTextClassName,
@@ -577,7 +576,6 @@ export function ThreadCommentsPanel({
       <ul className="divide-y divide-border/50">
         {topLevel.map((c) => {
           const name = displayName(c)
-          const initial = name.charAt(0).toUpperCase()
           const mine = currentUserId != null && c.user_id === currentUserId
           const showDelete = canDeleteComment(c.user_id)
           const nested = repliesByParent.get(c.id) ?? []
@@ -588,13 +586,11 @@ export function ThreadCommentsPanel({
               className="scroll-mt-20 px-5 py-5 sm:px-6"
             >
               <div className="flex gap-3 sm:gap-4">
-                <Avatar className="h-9 w-9 shrink-0 ring-2 ring-background sm:h-10 sm:w-10">
-                  <AvatarImage
-                    src={profileMediaDisplaySrc(c.profiles?.avatar_url || "")}
-                    alt=""
-                  />
-                  <AvatarFallback className="text-xs">{initial}</AvatarFallback>
-                </Avatar>
+                <ProfileCircle
+                  avatarUrl={c.profiles?.avatar_url}
+                  alt=""
+                  className="h-9 w-9 ring-2 ring-background sm:h-10 sm:w-10"
+                />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                     <span className="text-sm font-semibold text-foreground">{name}</span>
@@ -717,19 +713,16 @@ export function ThreadCommentsPanel({
                     <ul className="mt-4 space-y-3 border-l-2 border-border/60 pl-4 sm:pl-5">
                       {nested.map((r) => {
                         const rname = displayName(r)
-                        const rinitial = rname.charAt(0).toUpperCase()
                         const rmine = currentUserId != null && r.user_id === currentUserId
                         const showReplyDelete = canDeleteComment(r.user_id)
                         return (
                           <li key={r.id} id={`comment-${r.id}`} className="scroll-mt-16">
                             <div className="flex gap-2.5">
-                              <Avatar className="h-8 w-8 shrink-0">
-                                <AvatarImage
-                                  src={profileMediaDisplaySrc(r.profiles?.avatar_url || "")}
-                                  alt=""
-                                />
-                                <AvatarFallback className="text-[10px]">{rinitial}</AvatarFallback>
-                              </Avatar>
+                              <ProfileCircle
+                                avatarUrl={r.profiles?.avatar_url}
+                                alt=""
+                                className="h-8 w-8"
+                              />
                               <div className="min-w-0 flex-1">
                                 <div className="flex flex-wrap items-baseline gap-x-2">
                                   <span className="text-sm font-medium text-foreground">{rname}</span>

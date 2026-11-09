@@ -136,6 +136,18 @@ const nextConfig = {
         hostname: 'images.unsplash.com',
         pathname: '/**',
       },
+      // Name the Break game — Wikimedia Commons photos (copyright-free)
+      {
+        protocol: 'https',
+        hostname: 'upload.wikimedia.org',
+        pathname: '/wikipedia/commons/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'thumb.wikimedia.org',
+        pathname: '/wikipedia/commons/**',
+      },
+
       // Maps Static API previews (conversation location pins — same GCP key as Places)
       {
         protocol: 'https',
@@ -230,16 +242,16 @@ const nextConfig = {
         ]
       : []
 
-    // Static listing photos: edge-rewrite to Supabase public objects so Google Merchant /
-    // Googlebot-Image fetch a direct image file instead of a serverless resize handler.
-    // Requests with ?variant= still hit app/media/listings/[...path]/route.ts.
-    // `-card2.` / `-film2.` (and the first-generation names) stay on that route so a
-    // missing derivative is resized from `*-full.*`.
+    // Posters and other non-photo objects edge-rewrite to the public Storage file.
+    // `*-full.*` and `*-thumb.*` stay on the media route, with card and film, so a
+    // missing file can be answered from the sibling that is still in the bucket.
+    // Requests with ?variant= always hit that route.
     return {
       beforeFiles: supabaseUrl
         ? [
             {
-              source: "/media/listings/:userId/:file((?!.*(?:-card2|-film2|-card|-film)\\.).+)",
+              source:
+                "/media/listings/:userId/:file((?!.*(?:-card2|-film2|-card|-film|-full|-thumb)\\.).+)",
               missing: [{ type: "query", key: "variant" }],
               destination: `${supabaseUrl}/storage/v1/object/public/listings/:userId/:file`,
             },
@@ -250,12 +262,29 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      { source: "/admin/coastal-delivery", destination: "/admin/shipper", permanent: false },
+      { source: "/admin/coastal-delivery/join", destination: "/admin/shipper", permanent: false },
+      { source: "/admin/coastal-delivery/schedule", destination: "/admin/shipper", permanent: false },
+      {
+        source: "/admin/coastal-delivery/schedule/:shipperId",
+        destination: "/admin/shipper/:shipperId",
+        permanent: false,
+      },
+      { source: "/admin/coastal-delivery/stops", destination: "/admin/shipper/stops", permanent: false },
+      { source: "/admin/coastal-delivery/preview", destination: "/admin/shipper/preview", permanent: false },
+      { source: "/admin/coastal-delivery/:path*", destination: "/admin/shipper", permanent: false },
+      { source: "/coastal-delivery", destination: "/dashboard/shipper", permanent: false },
+      { source: "/coastal-delivery/:shipperId", destination: "/admin/shipper/:shipperId", permanent: false },
+      { source: "/dashboard/favorites", destination: "/favorites", permanent: true },
+      { source: "/dashboard/favorites/:path*", destination: "/favorites", permanent: true },
+      { source: "/dashboard/team", destination: "/dashboard/profile/team", permanent: true },
+      { source: "/dashboard/team/:path*", destination: "/dashboard/profile/team", permanent: true },
       { source: "/dashboard/orders", destination: "/dashboard/purchases", permanent: true },
       { source: "/dashboard/orders/:id", destination: "/dashboard/purchases/:id", permanent: true },
-      { source: "/dashboard/claims", destination: "/dashboard", permanent: true },
-      { source: "/dashboard/claims/:path*", destination: "/dashboard", permanent: true },
-      { source: "/dashboard/disputes", destination: "/dashboard", permanent: true },
-      { source: "/dashboard/disputes/:path*", destination: "/dashboard", permanent: true },
+      { source: "/dashboard/claims", destination: "/dashboard/listings", permanent: true },
+      { source: "/dashboard/claims/:path*", destination: "/dashboard/listings", permanent: true },
+      { source: "/dashboard/disputes", destination: "/dashboard/listings", permanent: true },
+      { source: "/dashboard/disputes/:path*", destination: "/dashboard/listings", permanent: true },
       { source: "/dashboard/sales/disputes", destination: "/dashboard/sales", permanent: true },
       { source: "/dashboard/sales/disputes/:path*", destination: "/dashboard/sales", permanent: true },
       { source: "/admin/disputes", destination: "/admin", permanent: true },
@@ -273,8 +302,8 @@ const nextConfig = {
       { source: "/offers/:path+", destination: "/dashboard/offers", permanent: true },
       { source: "/listings", destination: "/dashboard/listings", permanent: true },
       { source: "/saved", destination: "/favorites", permanent: true },
-      { source: "/dashboard/reports", destination: "/dashboard", permanent: true },
-      { source: "/dashboard/reports/:path*", destination: "/dashboard", permanent: true },
+      { source: "/dashboard/reports", destination: "/dashboard/listings", permanent: true },
+      { source: "/dashboard/reports/:path*", destination: "/dashboard/listings", permanent: true },
       { source: "/admin/reports", destination: "/admin", permanent: true },
       { source: "/admin/reports/:path*", destination: "/admin", permanent: true },
       // Legacy /used/* URLs → flat marketplace routes + /gear
@@ -292,6 +321,10 @@ const nextConfig = {
       { source: "/used/:path*", destination: "/boards", permanent: true },
       { source: "/gear", destination: "/boards", permanent: true },
       { source: "/gear/:path*", destination: "/boards", permanent: true },
+      // Routing redirect, not a page-level redirect(). Client navigations to a
+      // page that calls redirect() crash the app router (React #310) before
+      // /cities/top can render.
+      { source: "/cities", destination: "/cities/top", permanent: true },
       { source: "/categories", destination: "/boards", permanent: true },
       { source: "/categories/:path*", destination: "/boards", permanent: true },
       { source: "/board-bags", destination: "/boardbags", permanent: true },

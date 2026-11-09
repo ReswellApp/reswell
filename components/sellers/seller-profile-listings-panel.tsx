@@ -3,10 +3,13 @@
 import { useMemo, useState } from "react"
 import { ListingMediaFillImage } from "@/components/listing-media-fill-image"
 import Link from "next/link"
+import { formatDistanceToNowStrict } from "date-fns"
 import { LayoutGrid, List, Package, Search } from "lucide-react"
 import { HomePeerListingScrollTile } from "@/components/features/home/home-peer-listing-scroll-tile"
 import { ListingPriceWithMarkdown } from "@/components/features/listings/listing-price-with-markdown"
 import { FavoriteButton } from "@/components/favorite-button"
+import { ListingTile, ListingTileSoldStamp } from "@/components/listing-tile"
+import { RelativeTime } from "@/components/ui/relative-time"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import {
@@ -23,6 +26,8 @@ import {
 } from "@/lib/listing-labels"
 import { listingCardImageSrc } from "@/lib/listing-image-display"
 import { listingDetailHref } from "@/lib/listing-href"
+import { soldFeedSalePriceLabel } from "@/lib/sold-feed-sale-label"
+import { publicListingListPriceUsd } from "@/lib/utils/public-listing-price"
 import { SaveShopAlertCta } from "@/components/sellers/save-shop-alert-cta"
 import { sellerProfileSectionSortRank } from "@/lib/peer-listing-sections"
 import type { SellerDirectoryTileMeta } from "@/lib/sellers/directory-tile-meta"
@@ -30,6 +35,16 @@ import {
   sellerProfileListingsGridClassName,
   sellerProfileListingsListClassName,
 } from "@/lib/sellers/seller-profile-layout"
+import {
+  homePeerListingGridCardClass,
+  homePeerListingTileTitleClass,
+  homePeerTilePriceClass,
+  homePeerTileSubtitleClass,
+  homeUniformScrollBodyClass,
+  homeUniformScrollLinkClass,
+  homeUniformScrollMetaFooterClass,
+  homeUniformScrollTitleSlotClass,
+} from "@/lib/home-listing-scroll-styles"
 import { cn } from "@/lib/utils"
 
 export type SellerProfileListing = {
@@ -46,6 +61,14 @@ export type SellerProfileListing = {
   shipping_available?: boolean | null
   condition?: string | null
   created_at?: string | null
+  /** Confirmed sale time for Sold-tab tiles (last sale). */
+  sold_at?: string | null
+  /** Units in the most recent confirmed sale line (Sold tab). */
+  quantity_sold?: number | null
+  /** Total paid for that sale line (Sold tab). */
+  sold_price?: number | null
+  /** When true, show multi-qty stamp / “Sold N for $X” like `/sold`. */
+  show_sale_quantity?: boolean | null
   listing_images?: {
     url: string
     thumbnail_url?: string | null
@@ -65,6 +88,11 @@ type SellerProfileListingsPanelProps = {
   tileMeta: SellerDirectoryTileMeta
   emptyMessage?: string
   showPromoCards?: boolean
+  /**
+   * Sold-tab presentation — same stamp + sale price labeling as `/sold`
+   * (including multi-quantity “N sold”).
+   */
+  soldPresentation?: boolean
   /** Shown when the Listings tab is displaying sold/history because nothing is active. */
   noActiveListingsNotice?: boolean
   onViewSoldTab?: () => void
@@ -91,6 +119,99 @@ function listingStatusLabel(
 function listingPrice(listing: SellerProfileListing): number {
   const value = typeof listing.price === "number" ? listing.price : Number.parseFloat(String(listing.price))
   return Number.isFinite(value) ? value : 0
+}
+
+function listingSortTime(listing: SellerProfileListing): number {
+  const soldAt = listing.sold_at ? new Date(listing.sold_at).getTime() : 0
+  if (Number.isFinite(soldAt) && soldAt > 0) return soldAt
+  const createdAt = listing.created_at ? new Date(listing.created_at).getTime() : 0
+  return Number.isFinite(createdAt) ? createdAt : 0
+}
+
+function soldRelativeLabel(iso: string): string {
+  const d = new Date(iso)
+  const now = new Date()
+  const sod = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const soldDay = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+  const dayDiff = Math.round((sod.getTime() - soldDay.getTime()) / 86400000)
+  if (dayDiff === 0) return "Sold today"
+  if (dayDiff === 1) return "Sold yesterday"
+  return `Sold ${formatDistanceToNowStrict(d, { addSuffix: true })}`
+}
+
+function soldListingQuantity(listing: SellerProfileListing): number {
+  const qty = Math.floor(Number(listing.quantity_sold) || 1)
+  return qty > 0 ? qty : 1
+}
+
+function soldListingPriceLabel(listing: SellerProfileListing): string {
+  const quantity = soldListingQuantity(listing)
+  const showQuantity = Boolean(listing.show_sale_quantity)
+  const soldPrice =
+    listing.sold_price != null && Number.isFinite(Number(listing.sold_price))
+      ? Number(listing.sold_price)
+      : publicListingListPriceUsd(listing.price)
+  return soldFeedSalePriceLabel(quantity, soldPrice, showQuantity)
+}
+
+/** Sold-tab grid tile — mirrors `/sold` stamps, sale price, and relative time. */
+function SellerProfileSoldGridTile({ listing }: { listing: SellerProfileListing }) {
+  const conditionLine = formatHomePeerListingConditionLine(listing.condition)
+  const quantity = soldListingQuantity(listing)
+
+  return (
+    <ListingTile
+      href={listingDetailHref({
+        id: listing.id,
+        slug: listing.slug,
+        section: listing.section,
+      })}
+      listingId={listing.id}
+      title={listing.title}
+      imageAlt={capitalizeWords(listing.title)}
+      imageUrl={listingCardImageSrc(listing.listing_images)}
+      price={listingPrice(listing)}
+      imageTopLeftOverlay={
+        <ListingTileSoldStamp
+          quantity={listing.show_sale_quantity ? quantity : undefined}
+        />
+      }
+      linkLayout="unified"
+      linkClassName={homeUniformScrollLinkClass}
+      cardClassName={homePeerListingGridCardClass}
+      cardContentClassName={homeUniformScrollBodyClass}
+      showFavorites={false}
+      favorites={null}
+      titleSlot={
+        <div className={homeUniformScrollTitleSlotClass}>
+          <h3 className={homePeerListingTileTitleClass}>{capitalizeWords(listing.title)}</h3>
+        </div>
+      }
+      subtitle={
+        conditionLine ? <p className={homePeerTileSubtitleClass}>{conditionLine}</p> : null
+      }
+      footerSlot={
+        <div className={homeUniformScrollMetaFooterClass}>
+          <p className={cn(homePeerTilePriceClass, "text-[#163060]")}>
+            {soldListingPriceLabel(listing)}
+          </p>
+          <div className="mt-1.5 space-y-0.5 text-xs font-normal leading-snug text-muted-foreground">
+            {listing.sold_at ? (
+              <p>
+                <RelativeTime
+                  iso={listing.sold_at}
+                  formatLabel={soldRelativeLabel}
+                  placeholder="Sold"
+                />
+              </p>
+            ) : (
+              <p>Sold</p>
+            )}
+          </div>
+        </div>
+      }
+    />
+  )
 }
 
 function filterPillTriggerClassName(active: boolean) {
@@ -149,15 +270,19 @@ function SellerProfileListingListRow({
   viewerId,
   isFavorited,
   statusLabel,
+  soldPresentation,
 }: {
   listing: SellerProfileListing
   viewerId: string | null
   isFavorited: boolean
   statusLabel: "sold" | "pending" | "ended" | null
+  soldPresentation: boolean
 }) {
   const imageSrc = listingCardImageSrc(listing.listing_images)
   const conditionLine = formatHomePeerListingConditionLine(listing.condition)
   const price = listingPrice(listing)
+  const showSoldStamp = soldPresentation || statusLabel === "sold"
+  const quantity = soldListingQuantity(listing)
 
   return (
     <article className="group relative rounded-xl border border-border/80 bg-card transition-colors hover:border-border">
@@ -182,10 +307,12 @@ function SellerProfileListingListRow({
               <Package className="h-8 w-8" />
             </div>
           )}
-          {statusLabel === "sold" ? (
-            <span className="absolute left-1.5 top-1.5 rounded-full bg-[#111] px-2 py-0.5 text-[10px] font-semibold text-white">
-              SOLD
-            </span>
+          {showSoldStamp ? (
+            <ListingTileSoldStamp
+              quantity={
+                soldPresentation && listing.show_sale_quantity ? quantity : undefined
+              }
+            />
           ) : null}
         </div>
 
@@ -196,26 +323,45 @@ function SellerProfileListingListRow({
           {conditionLine ? (
             <p className="text-xs text-muted-foreground sm:text-sm">{conditionLine}</p>
           ) : null}
-          <p className="text-base font-bold tabular-nums text-foreground sm:text-lg">
-            <ListingPriceWithMarkdown
-              priceUsd={price}
-              compareAtPriceUsd={listing.compare_at_price}
-              priceClassName="text-base font-bold tabular-nums text-foreground sm:text-lg"
-              compareClassName="text-sm font-medium text-muted-foreground line-through tabular-nums"
-            />
-          </p>
+          {soldPresentation ? (
+            <div className="space-y-0.5">
+              <p className="text-base font-bold tabular-nums text-[#163060] sm:text-lg">
+                {soldListingPriceLabel(listing)}
+              </p>
+              {listing.sold_at ? (
+                <p className="text-xs text-muted-foreground sm:text-sm">
+                  <RelativeTime
+                    iso={listing.sold_at}
+                    formatLabel={soldRelativeLabel}
+                    placeholder="Sold"
+                  />
+                </p>
+              ) : null}
+            </div>
+          ) : (
+            <p className="text-base font-bold tabular-nums text-foreground sm:text-lg">
+              <ListingPriceWithMarkdown
+                priceUsd={price}
+                compareAtPriceUsd={listing.compare_at_price}
+                priceClassName="text-base font-bold tabular-nums text-foreground sm:text-lg"
+                compareClassName="text-sm font-medium text-muted-foreground line-through tabular-nums"
+              />
+            </p>
+          )}
         </div>
       </Link>
 
-      <div className="absolute right-3 top-3 sm:right-4 sm:top-4">
-        <FavoriteButton
-          listingId={listing.id}
-          initialFavorited={isFavorited}
-          isLoggedIn={!!viewerId}
-          className="h-8 w-8 rounded-full border border-neutral-200/90 bg-white/90 shadow-sm"
-          heartAccent="listingTile"
-        />
-      </div>
+      {!soldPresentation ? (
+        <div className="absolute right-3 top-3 sm:right-4 sm:top-4">
+          <FavoriteButton
+            listingId={listing.id}
+            initialFavorited={isFavorited}
+            isLoggedIn={!!viewerId}
+            className="h-8 w-8 rounded-full border border-neutral-200/90 bg-white/90 shadow-sm"
+            heartAccent="listingTile"
+          />
+        </div>
+      ) : null}
     </article>
   )
 }
@@ -227,6 +373,7 @@ export function SellerProfileListingsPanel({
   tileMeta,
   emptyMessage = "No listings in this category yet.",
   showPromoCards = true,
+  soldPresentation = false,
   noActiveListingsNotice = false,
   onViewSoldTab,
   shopName,
@@ -272,7 +419,8 @@ export function SellerProfileListingsPanel({
     })
 
     result = [...result].sort((a, b) => {
-      if (sectionFilter === "all") {
+      // Sold history is chronological by sale time — don't group by category.
+      if (!soldPresentation && sectionFilter === "all") {
         const sectionRank =
           sellerProfileSectionSortRank(a.section) -
           sellerProfileSectionSortRank(b.section)
@@ -281,15 +429,13 @@ export function SellerProfileListingsPanel({
       if (sort === "price_asc") return listingPrice(a) - listingPrice(b)
       if (sort === "price_desc") return listingPrice(b) - listingPrice(a)
       if (sort === "newest") {
-        const aTime = a.created_at ? new Date(a.created_at).getTime() : 0
-        const bTime = b.created_at ? new Date(b.created_at).getTime() : 0
-        return bTime - aTime
+        return listingSortTime(b) - listingSortTime(a)
       }
       return 0
     })
 
     return result
-  }, [listings, query, sectionFilter, conditionFilter, sort])
+  }, [listings, query, sectionFilter, conditionFilter, sort, soldPresentation])
 
   if (listings.length === 0 && showSaveShopCta && shopName && sellerId) {
     return (
@@ -450,32 +596,36 @@ export function SellerProfileListingsPanel({
         )
       ) : viewMode === "grid" ? (
         <div className={sellerProfileListingsGridClassName}>
-          {filteredListings.map((listing) => (
-            <HomePeerListingScrollTile
-              key={listing.id}
-              layout="grid"
-              userId={viewerId}
-              isFavorited={favoritedIds.includes(listing.id)}
-              statusLabel={listingStatusLabel(listing)}
-              listing={{
-                id: listing.id,
-                slug: listing.slug,
-                user_id: listing.user_id,
-                title: listing.title,
-                price: listing.price,
-                compare_at_price: listing.compare_at_price,
-                is_good_deal: listing.is_good_deal,
-                status: listing.status ?? "active",
-                section: listing.section,
-                local_pickup: listing.local_pickup,
-                shipping_available: listing.shipping_available,
-                listing_images: listing.listing_images,
-                categories: listing.categories,
-                board_type: listing.board_type,
-                condition: listing.condition,
-              }}
-            />
-          ))}
+          {filteredListings.map((listing) =>
+            soldPresentation ? (
+              <SellerProfileSoldGridTile key={listing.id} listing={listing} />
+            ) : (
+              <HomePeerListingScrollTile
+                key={listing.id}
+                layout="grid"
+                userId={viewerId}
+                isFavorited={favoritedIds.includes(listing.id)}
+                statusLabel={listingStatusLabel(listing)}
+                listing={{
+                  id: listing.id,
+                  slug: listing.slug,
+                  user_id: listing.user_id,
+                  title: listing.title,
+                  price: listing.price,
+                  compare_at_price: listing.compare_at_price,
+                  is_good_deal: listing.is_good_deal,
+                  status: listing.status ?? "active",
+                  section: listing.section,
+                  local_pickup: listing.local_pickup,
+                  shipping_available: listing.shipping_available,
+                  listing_images: listing.listing_images,
+                  categories: listing.categories,
+                  board_type: listing.board_type,
+                  condition: listing.condition,
+                }}
+              />
+            ),
+          )}
         </div>
       ) : (
         <div className={sellerProfileListingsListClassName}>
@@ -486,6 +636,7 @@ export function SellerProfileListingsPanel({
               viewerId={viewerId}
               isFavorited={favoritedIds.includes(listing.id)}
               statusLabel={listingStatusLabel(listing)}
+              soldPresentation={soldPresentation}
             />
           ))}
         </div>

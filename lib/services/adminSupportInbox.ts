@@ -59,7 +59,7 @@ async function requireStaff() {
     .eq("id", user.id)
     .maybeSingle()
 
-  if (!profile || (profile.is_admin !== true && profile.is_employee !== true)) {
+  if (profile?.is_admin !== true) {
     return { ok: false as const, error: "Forbidden" }
   }
   return { ok: true as const, supabase, userId: user.id }

@@ -1,0 +1,38 @@
+import type { MobileDashboardPage, MobileDashboardPageId } from "@reswell/api-contract"
+
+/** Extra-permission tools that stay on the website. */
+const WEB_ONLY: ReadonlySet<MobileDashboardPageId> = new Set(["shipper", "balance-sheet", "shopify"])
+
+const SELLING: ReadonlySet<MobileDashboardPageId> = new Set([
+  "earnings",
+  "listings",
+  "offers",
+  "sales",
+  "seller-profile",
+])
+
+const BUYING: ReadonlySet<MobileDashboardPageId> = new Set(["purchases", "favorites", "following"])
+
+const ACCOUNT: ReadonlySet<MobileDashboardPageId> = new Set(["profile", "messages", "support"])
+
+/** Dashboard menu rows for Me. Overview is this screen, so it stays off the menu. */
+export function meDashboardPages(pages: MobileDashboardPage[]): MobileDashboardPage[] {
+  return pages.filter((page) => page.id !== "overview" && !WEB_ONLY.has(page.id))
+}
+
+export function groupMeDashboardPages(pages: MobileDashboardPage[]): {
+  selling: MobileDashboardPage[]
+  buying: MobileDashboardPage[]
+  account: MobileDashboardPage[]
+} {
+  const visible = meDashboardPages(pages)
+  const selling: MobileDashboardPage[] = []
+  const buying: MobileDashboardPage[] = []
+  const account: MobileDashboardPage[] = []
+  for (const page of visible) {
+    if (SELLING.has(page.id)) selling.push(page)
+    else if (BUYING.has(page.id)) buying.push(page)
+    else if (ACCOUNT.has(page.id)) account.push(page)
+  }
+  return { selling, buying, account }
+}

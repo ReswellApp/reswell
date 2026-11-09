@@ -12,6 +12,7 @@ export type ShippingLabelThreadPayload = {
   listingTitle: string | null
   trackingNumber: string | null
   trackingCarrier: string | null
+  trackingUrl: string | null
   labelPdfUrl: string | null
   hasPaperlessQr: boolean
 }
@@ -49,6 +50,7 @@ function toShippingLabelThreadPayload(
     listingTitle: meta.listingTitle?.trim() || null,
     trackingNumber: meta.trackingNumber?.trim() || null,
     trackingCarrier: meta.trackingCarrier?.trim() || null,
+    trackingUrl: meta.trackingUrl?.trim() || null,
     labelPdfUrl: httpUrlOrNull(meta.labelPdfUrl),
     hasPaperlessQr: Boolean(meta.hasPaperlessQr),
   }
@@ -76,6 +78,7 @@ export function parseShippingLabelThreadMessage(
     listingTitle: firstText(metaPayload?.listingTitle, fromContent?.listingTitle),
     trackingNumber: firstText(metaPayload?.trackingNumber, fromContent?.trackingNumber),
     trackingCarrier: firstText(metaPayload?.trackingCarrier, fromContent?.trackingCarrier),
+    trackingUrl: metaPayload?.trackingUrl ?? null,
     labelPdfUrl: metaPayload?.labelPdfUrl ?? fromContent?.labelPdfUrl ?? null,
     hasPaperlessQr: Boolean(metaPayload?.hasPaperlessQr || fromContent?.hasPaperlessQr),
   }

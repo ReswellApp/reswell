@@ -25,11 +25,14 @@ export async function syncListingDraftVideosClient(
           : "Could not remove old video from storage.",
       )
     }
-    await supabase
+    const { error: deleteError } = await supabase
       .from("listing_videos")
       .delete()
       .in("id", removedIds)
       .eq("listing_id", listingId)
+    if (deleteError) {
+      throw new Error("Could not remove this video from the listing.")
+    }
   }
 
   if (!video?.url?.trim() || video.status !== "ready") {

@@ -1,6 +1,6 @@
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
-import { requireAdmin } from "@/lib/brands/admin-server"
+import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
 import { sendFetchedShipengineLabelPdfToSeller } from "@/lib/services/sendFetchedShipengineLabelToSeller"
 import { shipengineLabelSendBodySchema } from "@/lib/validations/shipengine-label-send"
 
@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic"
  * stores in order-shipping-labels, posts to buyer–seller thread (same path as manual PDF upload).
  */
 export async function POST(request: NextRequest) {
-  const gate = await requireAdmin()
+  const gate = await requireAdminOrEmployee()
   if (!gate.ok) return gate.response
 
   let json: unknown

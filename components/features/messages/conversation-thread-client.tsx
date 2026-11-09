@@ -12,30 +12,60 @@ import { MessageThreadMobileComposerDock } from '@/components/features/messages/
 import { ConversationPartyProfile } from '@/components/features/messages/conversation-party-profile'
 import { ConversationThreadHeaderChip } from '@/components/features/messages/conversation-thread-header-chip'
 import { type OtherPartyProfileSummary } from '@/lib/messages/profile-reviews-loader'
-import { format, isToday, isYesterday } from 'date-fns'
+import {
+  formatMessageTooltipTimestamp,
+  formatThreadGroupTimestamp,
+} from '@/lib/utils/message-display-time'
+import {
+  messageBubbleGroup,
+  shouldBreakMessageGroup,
+} from '@/lib/utils/message-thread-grouping'
+import { MessageTextBubble, messageThreadCanvasClassName } from '@/components/features/messages/message-text-bubble'
+import { helpHubHref } from '@/lib/help/help-hub-intents'
+import { RelativeTime } from '@/components/ui/relative-time'
 import { toast } from 'sonner'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { listingDetailPath } from '@/lib/listing-query'
 import { listingTitleThumbnailSrc, type ListingImageForCard } from "@/lib/listing-image-display"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import {
-  sendConversationReply,
   loadConversationThread,
   markConversationThreadRead,
   type ConversationThreadData,
 } from '@/app/actions/messages'
+import { postMarketplaceThreadReply } from '@/lib/messages/post-marketplace-thread-reply'
 import {
+  confirmMarketplaceThreadSend,
+  forgetMarketplaceThreadSend,
+  getMarketplaceThreadSends,
+  mergeCachedMarketplaceThreadSends,
+  patchMarketplaceThreadSend,
+  patchMarketplaceThreadSendProgress,
+  pruneMarketplaceThreadSends,
+  rememberMarketplaceThreadSend,
+  subscribeMarketplaceThreadSends,
+} from '@/lib/messages/marketplace-thread-send-cache'
+import {
+  dispatchConversationInboxActivity,
   dispatchConversationThreadOpened,
   dispatchMessagesInboxRefresh,
   dispatchUnreadCountRefresh,
   dispatchUnreadMessageCountAdjust,
 } from '@/lib/utils/unread-message-count-events'
-import { getPolicyBlockFromSendResult, isPolicyBlockedSendResult } from '@/lib/messages/policy-block-client'
+import { getPolicyBlockFromSendResult } from '@/lib/messages/policy-block-client'
+import { isMessageSendRestrictionResult } from '@/lib/messages/send-restriction-errors'
 import {
   createLocalPolicyBlockMessage,
   mergeServerMessagesPreservingLocalPolicyBlocks,
   parseLocalPolicyBlockMetadata,
+  PENDING_THREAD_MESSAGE_ID_PREFIX,
+  replaceMatchingPendingThreadMessage,
 } from '@/lib/messages/local-phone-policy-block-message'
+import {
+  useConversationThreadLive,
+  type RealtimeThreadMessage,
+} from '@/components/features/messages/hooks/use-conversation-thread-live'
 import { OfferMessageCard } from '@/components/features/messages/offer-message-card'
 import {
   OfferLegacyMirrorCard,
@@ -46,7 +76,9 @@ import {
   parseOfferNegotiationMessage,
   resolveActionableCounteredOffer,
   resolveAcceptedOfferForCheckout,
+  resolveNegotiationOffer,
 } from '@/lib/utils/parse-offer-negotiation-message'
+import { dashboardOffersPath } from '@/lib/utils/offers-dashboard-display'
 import { parseOfferLineItems } from '@/lib/types/offer-line-item'
 import { parseOrderCompletedMessageMetadata } from '@/lib/validations/order-completed-message-metadata'
 import { parseOrderPlacedMessageMetadata } from '@/lib/validations/order-placed-message-metadata'
@@ -81,12 +113,13 @@ import {
   parseMarketplaceMessageImageAttachment,
 } from '@/lib/validations/marketplace-message-attachment'
 import { isPeerListingSection } from '@/lib/peer-listing-sections'
+import { listingStatusAcceptsOffers } from '@/lib/utils/listing-offer-eligibility'
 import { effectiveMinimumOfferPct } from '@/lib/utils/offers-minimum-pct'
 import { type ListingThreadOption } from '@/components/features/messages/conversation-listing-switcher'
 import { getOtherUserIdFromConversation } from '@/lib/utils/messages-inbox-grouping'
 import { offerMessageAnchorId } from '@/lib/utils/offer-messages-href'
 import { resolveThreadPrimaryListingId } from '@/lib/utils/message-thread-active-listing'
-import { PromiseDeadlineError, raceWithDeadline } from '@/lib/utils/race-with-deadline'
+import { raceWithDeadline } from '@/lib/utils/race-with-deadline'
 import { isAbortError } from '@/lib/utils/is-abort-error'
 import { useComposerUnlock } from '@/hooks/use-composer-unlock'
 import { COMPOSER_UNLOCK_DENIED_ERROR } from '@/lib/messages/composer-unlock-errors'
@@ -101,6 +134,12 @@ interface Message {
   created_at: string
   offer_id?: string | null
   metadata?: unknown | null
+  sendStatus?: 'sending' | 'failed'
+  localPreview?: {
+    url: string
+    kind: 'image' | 'video'
+    progress: number
+  }
 }
 
 interface Conversation {
@@ -112,6 +151,7 @@ interface Conversation {
     id: string
     title: string
     price: number
+    status?: string | null
     section: string
     slug?: string | null
     listing_images: ListingImageForCard[]
@@ -145,28 +185,6 @@ function buildListingMap(
   return map
 }
 
-/**
- * App-style threading: a new run of bubbles (and a centered time/day label)
- * starts when the calendar day changes or messages are more than this far apart.
- */
-const MESSAGE_GROUP_GAP_MS = 45 * 60 * 1000
-
-function isSameCalendarDay(a: Date, b: Date): boolean {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  )
-}
-
-function shouldBreakMessageGroup(prevIso: string | null, currentIso: string): boolean {
-  if (!prevIso) return true
-  const prev = new Date(prevIso)
-  const current = new Date(currentIso)
-  if (!isSameCalendarDay(prev, current)) return true
-  return current.getTime() - prev.getTime() > MESSAGE_GROUP_GAP_MS
-}
-
 function buildOffersMap(data: ConversationThreadData): Record<string, OfferRowLite> {
   const map: Record<string, OfferRowLite> = {}
   for (const o of (data.offers as unknown as OfferRowLite[]) ?? []) {
@@ -197,7 +215,11 @@ export function ConversationThreadClient({
   const [otherPartyProfile, setOtherPartyProfile] =
     useState<OtherPartyProfileSummary | null>(() => initialData.otherPartyProfile)
   const [messages, setMessages] = useState<Message[]>(
-    () => (initialData.messages as unknown as Message[]) ?? [],
+    () =>
+      mergeCachedMarketplaceThreadSends(
+        (initialData.messages as unknown as Message[]) ?? [],
+        getMarketplaceThreadSends(id),
+      ),
   )
   const [hiddenShippingLabelOrderIds, setHiddenShippingLabelOrderIds] = useState(
     () => new Set(initialData.hiddenShippingLabelOrderIds ?? []),
@@ -213,16 +235,19 @@ export function ConversationThreadClient({
     () => (initialData.listingThreads as ListingThreadOption[]) ?? [],
   )
   const [newMessage, setNewMessage] = useState('')
-  const [sending, setSending] = useState(false)
+  const newMessageRef = useRef('')
+  newMessageRef.current = newMessage
+  const inFlightSendIdsRef = useRef(new Set<string>())
   const composerUnlock = useComposerUnlock({ scope: 'marketplace' })
   const [currentUserId, setCurrentUserId] = useState<string | null>(
     () => initialData.currentUserId ?? null,
   )
   const unreadAdjustRef = useRef(0)
+  const knownMessageIdsRef = useRef(new Set<string>())
   const [listingBannerImageReady, setListingBannerImageReady] = useState(false)
   const messagesScrollRef = useRef<HTMLDivElement>(null)
   const stickToBottomRef = useRef(true)
-  const initialScrollDoneRef = useRef(false)
+  const programmaticScrollRef = useRef(false)
   const supabase = createClient()
 
   const orderedMessages = useMemo(
@@ -236,6 +261,7 @@ export function ConversationThreadClient({
   const threadImageGallery = useMemo((): Array<MessageMediaImageLightboxItem & { messageId: string }> => {
     const items: Array<MessageMediaImageLightboxItem & { messageId: string }> = []
     for (const message of orderedMessages) {
+      if (message.localPreview || message.id.startsWith(PENDING_THREAD_MESSAGE_ID_PREFIX)) continue
       const imageAtt = parseMarketplaceMessageImageAttachment(message.metadata)
       if (!imageAtt) continue
       items.push({
@@ -309,7 +335,16 @@ export function ConversationThreadClient({
   const scrollThreadToBottom = useCallback((behavior: ScrollBehavior = 'auto') => {
     const el = messagesScrollRef.current
     if (!el) return
+    programmaticScrollRef.current = true
+    if (behavior === 'auto') {
+      el.scrollTop = el.scrollHeight
+      programmaticScrollRef.current = false
+      return
+    }
     el.scrollTo({ top: el.scrollHeight, behavior })
+    requestAnimationFrame(() => {
+      programmaticScrollRef.current = false
+    })
   }, [])
 
   const [offerHashId, setOfferHashId] = useState<string | null>(null)
@@ -333,6 +368,7 @@ export function ConversationThreadClient({
     const el = messagesScrollRef.current
     if (!el) return
     const onScroll = () => {
+      if (programmaticScrollRef.current) return
       const thresholdPx = 72
       const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
       stickToBottomRef.current = distanceFromBottom < thresholdPx
@@ -341,20 +377,15 @@ export function ConversationThreadClient({
     return () => el.removeEventListener('scroll', onScroll)
   }, [conversation])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (offerHashId) {
       stickToBottomRef.current = false
       return
     }
     if (!stickToBottomRef.current) return
-    const idFrame = requestAnimationFrame(() => {
-      // Snap to bottom instantly on first paint; glide for live updates.
-      scrollThreadToBottom(initialScrollDoneRef.current ? 'smooth' : 'auto')
-      initialScrollDoneRef.current = true
-    })
-    return () => {
-      cancelAnimationFrame(idFrame)
-    }
+    // Snap before paint. A smooth scroll fires mid-flight scroll events that
+    // clear stick-to-bottom, so the new bubble stays below the fold until refresh.
+    scrollThreadToBottom('auto')
   }, [offerHashId, orderedMessages, scrollThreadToBottom])
 
   useEffect(() => {
@@ -408,7 +439,7 @@ export function ConversationThreadClient({
     ;(async () => {
       const { data, error } = await supabase
         .from('listings')
-        .select('id, title, price, section, slug, listing_images(url, thumbnail_url, is_primary), minimum_offer_pct')
+        .select('id, title, price, status, section, slug, listing_images(url, thumbnail_url, is_primary), minimum_offer_pct')
         .eq('id', threadPrimaryListingId)
         .maybeSingle()
       if (cancelled || error || !data) return
@@ -421,47 +452,11 @@ export function ConversationThreadClient({
     }
   }, [threadPrimaryListingId, conversation?.listing?.id, threadListingsById, supabase])
 
-  useEffect(() => {
-    const lid = threadPrimaryListingId
-    if (!lid) return
-
-    const channel = supabase
-      .channel(`listing-images:${id}:${lid}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'listing_images',
-          filter: `listing_id=eq.${lid}`,
-        },
-        () => {
-          void supabase
-            .from('listings')
-            .select(
-              'id, title, price, section, slug, listing_images(url, thumbnail_url, is_primary), minimum_offer_pct',
-            )
-            .eq('id', lid)
-            .maybeSingle()
-            .then(({ data: row, error }) => {
-              if (error || !row) return
-              const L = row as ListingRow
-              setThreadListingsById((prev) => ({ ...prev, [L.id]: L }))
-            })
-        },
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [id, threadPrimaryListingId, supabase])
-
-  const loadThread = useCallback(async (isActive: () => boolean = () => true) => {
+  const loadThread = useCallback(async (isActive: () => boolean = () => true): Promise<Message[] | null> => {
     try {
       const result = await loadConversationThread(id)
-      if (!isActive()) return
-      if ('error' in result) return
+      if (!isActive()) return null
+      if ('error' in result) return null
 
       const nextConv = (result.conversation as Conversation | null) ?? null
       const nextThreadListingsPatch: Record<string, ListingRow> = {}
@@ -479,6 +474,7 @@ export function ConversationThreadClient({
       }
 
       const rows = result.messages as unknown as Message[]
+      pruneMarketplaceThreadSends(id, rows.map((row) => row.id))
 
       setHiddenShippingLabelOrderIds(new Set(result.hiddenShippingLabelOrderIds ?? []))
       setOtherPartyProfile(result.otherPartyProfile)
@@ -488,16 +484,27 @@ export function ConversationThreadClient({
       if (Object.keys(nextThreadListingsPatch).length > 0) {
         setThreadListingsById((prev) => ({ ...prev, ...nextThreadListingsPatch }))
       }
-      setMessages((prev) => mergeServerMessagesPreservingLocalPolicyBlocks(prev, rows))
+      setMessages((prev) =>
+        mergeCachedMarketplaceThreadSends(
+          mergeServerMessagesPreservingLocalPolicyBlocks(prev, rows),
+          getMarketplaceThreadSends(id),
+        ),
+      )
       if (Object.keys(nextOffersById).length > 0) {
         setOffersById((prev) => ({ ...prev, ...nextOffersById }))
       }
+      return rows
     } catch (err) {
       if (!isAbortError(err)) {
         console.error("[messages] loadThread failed:", err)
       }
+      return null
     }
   }, [id])
+
+  const refreshThread = useCallback(() => {
+    void loadThread()
+  }, [loadThread])
 
   const fetchOfferForMessage = useCallback(
     (offerId: string, isActive: () => boolean) => {
@@ -517,7 +524,7 @@ export function ConversationThreadClient({
             void Promise.resolve(
               supabase
                 .from('listings')
-                .select('id, title, price, section, slug, listing_images(url, thumbnail_url, is_primary), minimum_offer_pct')
+                .select('id, title, price, status, section, slug, listing_images(url, thumbnail_url, is_primary), minimum_offer_pct')
                 .eq('id', lid)
                 .maybeSingle(),
             )
@@ -534,166 +541,379 @@ export function ConversationThreadClient({
     [supabase],
   )
 
-  // Realtime: append the inserted message straight from the payload (no full
-  // re-fetch) so new messages land instantly. Offers still need their row
-  // hydrated, so we fetch just that offer — never the whole thread.
+  const threadGenerationRef = useRef(0)
   useEffect(() => {
-    let active = true
-
-    const channel = supabase
-      .channel(`messages:${id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages',
-          filter: `conversation_id=eq.${id}`,
-        },
-        (payload) => {
-          const msg = payload.new as Message
-          const viewerIsSeller = Boolean(
-            currentUserId && conversation?.seller_id === currentUserId,
-          )
-          const hideSellerLabelPayload =
-            viewerIsSeller && parseShippingLabelThreadMessage(msg.content, msg.metadata)
-          if (hideSellerLabelPayload) {
-            void loadThread()
-          } else {
-            setMessages((prev) => {
-              if (prev.some((m) => m.id === msg.id)) return prev
-              const withoutPending = prev.filter(
-                (m) => !(String(m.id).startsWith('pending-') && m.content === msg.content && m.sender_id === msg.sender_id),
-              )
-              return [...withoutPending, msg]
-            })
-            if (msg.offer_id) {
-              fetchOfferForMessage(msg.offer_id, () => active)
-            }
-          }
-          if (currentUserId && msg.sender_id !== currentUserId) {
-            // Viewing this thread — clear badge/inbox for the inbound message
-            // immediately so the ticker never flashes while mark-read runs.
-            dispatchConversationThreadOpened(id, 1)
-            dispatchUnreadMessageCountAdjust(-1)
-            void markConversationThreadRead(id)
-              .then(() => {
-                dispatchUnreadCountRefresh()
-                dispatchMessagesInboxRefresh()
-              })
-              .catch(() => {
-                dispatchUnreadMessageCountAdjust(1)
-              })
-          }
-        },
-      )
-      .subscribe()
-
     return () => {
-      active = false
-      supabase.removeChannel(channel)
+      threadGenerationRef.current += 1
     }
-  }, [id, supabase, fetchOfferForMessage, currentUserId, conversation?.seller_id, loadThread])
+  }, [id])
 
-  const handleSend = async () => {
-    const trimmed = newMessage.trim()
+  useEffect(() => {
+    const applyCachedSends = () => {
+      setMessages((prev) =>
+        mergeCachedMarketplaceThreadSends(prev, getMarketplaceThreadSends(id)),
+      )
+    }
+    applyCachedSends()
+    return subscribeMarketplaceThreadSends(id, applyCachedSends)
+  }, [id])
+
+  const syncOpenThread = useCallback(() => {
+    const generation = threadGenerationRef.current
+    void loadThread(() => threadGenerationRef.current === generation).then((rows) => {
+      if (threadGenerationRef.current !== generation || !rows || !currentUserId) return
+      const unreadInbound = rows.reduce(
+        (count, message) =>
+          count + (!message.is_read && message.sender_id !== currentUserId ? 1 : 0),
+        0,
+      )
+      if (unreadInbound <= 0) return
+      dispatchConversationThreadOpened(id, unreadInbound)
+      void markConversationThreadRead(id)
+        .then(() => {
+          dispatchUnreadCountRefresh()
+          dispatchMessagesInboxRefresh()
+        })
+        .catch(() => {})
+    })
+  }, [currentUserId, id, loadThread])
+
+  for (const message of messages) {
+    knownMessageIdsRef.current.add(message.id)
+  }
+
+  const applyInsertedMessage = useCallback(
+    (incoming: RealtimeThreadMessage) => {
+      if (knownMessageIdsRef.current.has(incoming.id)) return
+      knownMessageIdsRef.current.add(incoming.id)
+      const msg: Message = {
+        id: incoming.id,
+        content: incoming.content,
+        sender_id: incoming.sender_id,
+        created_at: incoming.created_at,
+        is_read: incoming.is_read ?? false,
+        offer_id: incoming.offer_id ?? null,
+        metadata: incoming.metadata ?? null,
+      }
+      const generation = threadGenerationRef.current
+      const isCurrentThread = () => threadGenerationRef.current === generation
+      const viewerIsSeller = Boolean(
+        currentUserId && conversation?.seller_id === currentUserId,
+      )
+      const hideSellerLabelPayload =
+        viewerIsSeller && parseShippingLabelThreadMessage(msg.content, msg.metadata)
+      if (hideSellerLabelPayload) {
+        void loadThread(isCurrentThread)
+      } else {
+        stickToBottomRef.current = true
+        setMessages((prev) =>
+          mergeCachedMarketplaceThreadSends(
+            replaceMatchingPendingThreadMessage(prev, msg),
+            getMarketplaceThreadSends(id),
+          ),
+        )
+        pruneMarketplaceThreadSends(id, [msg.id])
+        if (msg.offer_id) {
+          fetchOfferForMessage(msg.offer_id, isCurrentThread)
+        }
+      }
+      dispatchConversationInboxActivity({
+        conversationId: id,
+        at: msg.created_at,
+        message: {
+          id: msg.id,
+          content: msg.content,
+          sender_id: msg.sender_id,
+          created_at: msg.created_at,
+          is_read: true,
+          metadata: msg.metadata,
+        },
+      })
+      if (currentUserId && msg.sender_id !== currentUserId) {
+        // Viewing this thread — clear badge/inbox for the inbound message
+        // immediately so the ticker never flashes while mark-read runs.
+        dispatchConversationThreadOpened(id, 1)
+        dispatchUnreadMessageCountAdjust(-1)
+        void markConversationThreadRead(id)
+          .then(() => {
+            dispatchUnreadCountRefresh()
+            dispatchMessagesInboxRefresh()
+          })
+          .catch(() => {
+            dispatchUnreadMessageCountAdjust(1)
+          })
+      }
+    },
+    [conversation?.seller_id, currentUserId, fetchOfferForMessage, id, loadThread],
+  )
+
+  const applyUpdatedMessage = useCallback((incoming: RealtimeThreadMessage) => {
+    setMessages((prev) =>
+      prev.map((message) =>
+        message.id === incoming.id
+          ? {
+              ...message,
+              is_read: incoming.is_read ?? message.is_read,
+              content: incoming.content || message.content,
+              metadata: incoming.metadata ?? message.metadata,
+            }
+          : message,
+      ),
+    )
+  }, [])
+
+  useConversationThreadLive({
+    conversationId: id,
+    onMessageInsert: applyInsertedMessage,
+    onMessageUpdate: applyUpdatedMessage,
+    onThreadChanged: syncOpenThread,
+  })
+
+  const restoreComposerIfEmpty = useCallback((content: string) => {
+    if (newMessageRef.current.trim()) return
+    newMessageRef.current = content
+    setNewMessage(content)
+  }, [])
+
+  const sendThreadText = useCallback(
+    async (content: string, existingTempId?: string) => {
+      if (!currentUserId) {
+        toast.error('Still loading — try again in a moment.')
+        return
+      }
+      if (existingTempId && inFlightSendIdsRef.current.has(existingTempId)) return
+
+      const tempId = existingTempId ?? `${PENDING_THREAD_MESSAGE_ID_PREFIX}${crypto.randomUUID()}`
+      const createdAt =
+        getMarketplaceThreadSends(id).find((send) => send.id === tempId)?.createdAt ??
+        new Date().toISOString()
+      inFlightSendIdsRef.current.add(tempId)
+      stickToBottomRef.current = true
+
+      rememberMarketplaceThreadSend({
+        conversationId: id,
+        id: tempId,
+        content,
+        senderId: currentUserId,
+        createdAt,
+        sendStatus: 'sending',
+      })
+      dispatchConversationInboxActivity({
+        conversationId: id,
+        at: createdAt,
+        message: {
+          id: tempId,
+          content,
+          sender_id: currentUserId,
+          created_at: createdAt,
+          is_read: true,
+        },
+      })
+
+      const unlockToken = await composerUnlock.ensure()
+      if (!unlockToken) {
+        patchMarketplaceThreadSend(tempId, { sendStatus: 'failed' })
+        toast.error(COMPOSER_UNLOCK_DENIED_ERROR)
+        if (!existingTempId) restoreComposerIfEmpty(content)
+        inFlightSendIdsRef.current.delete(tempId)
+        return
+      }
+
+      try {
+        const result = await raceWithDeadline(
+          postMarketplaceThreadReply({
+            conversationId: id,
+            content,
+            composerUnlockToken: unlockToken,
+            clientId: tempId,
+          }),
+          SEND_SERVER_ACTION_MS,
+        )
+
+        if ('error' in result) {
+          const policyReason = getPolicyBlockFromSendResult(result)
+          if (policyReason) {
+            forgetMarketplaceThreadSend(tempId)
+            const blocked = createLocalPolicyBlockMessage({
+              senderId: currentUserId,
+              originalContent: content,
+              reasonCode: policyReason,
+            })
+            rememberMarketplaceThreadSend({
+              conversationId: id,
+              id: blocked.id,
+              content: blocked.content,
+              senderId: blocked.sender_id,
+              createdAt: blocked.created_at,
+              sendStatus: 'failed',
+              metadata: blocked.metadata,
+            })
+            return
+          }
+          if (
+            isMessageSendRestrictionResult(result) ||
+            result.error === 'Unauthorized' ||
+            result.error === 'Forbidden'
+          ) {
+            forgetMarketplaceThreadSend(tempId)
+            setMessages((prev) => prev.filter((message) => message.id !== tempId))
+            restoreComposerIfEmpty(content)
+            toast.error(
+              result.error === 'Unauthorized' ? 'Sign in again to send messages.' : result.error,
+            )
+            return
+          }
+          patchMarketplaceThreadSend(tempId, { sendStatus: 'failed' })
+          return
+        }
+
+        const inserted = result.message as Message
+        knownMessageIdsRef.current.add(inserted.id)
+        confirmMarketplaceThreadSend(tempId, {
+          id: inserted.id,
+          content: inserted.content,
+          sender_id: inserted.sender_id,
+          created_at: inserted.created_at,
+          is_read: inserted.is_read,
+          metadata: inserted.metadata,
+        })
+        dispatchConversationInboxActivity({
+          conversationId: id,
+          at: inserted.created_at,
+          message: {
+            id: inserted.id,
+            content: inserted.content,
+            sender_id: inserted.sender_id,
+            created_at: inserted.created_at,
+            is_read: true,
+            metadata: inserted.metadata,
+          },
+        })
+      } catch {
+        patchMarketplaceThreadSend(tempId, { sendStatus: 'failed' })
+      } finally {
+        inFlightSendIdsRef.current.delete(tempId)
+      }
+    },
+    [composerUnlock.ensure, currentUserId, id, restoreComposerIfEmpty],
+  )
+
+  const handleSend = () => {
+    const trimmed = newMessageRef.current.trim()
     if (!trimmed) return
     if (!currentUserId || !conversation) {
       toast.error('Still loading — try again in a moment.')
       return
     }
-
-    const unlockToken = await composerUnlock.ensure()
-    if (!unlockToken) {
-      toast.error(COMPOSER_UNLOCK_DENIED_ERROR)
-      return
-    }
-
-    const content = trimmed
+    newMessageRef.current = ''
     setNewMessage('')
-    setSending(true)
-    stickToBottomRef.current = true
-
-    const tempId = `pending-${Date.now()}`
-    const optimisticMessage: Message = {
-      id: tempId,
-      content,
-      sender_id: currentUserId,
-      is_read: true,
-      created_at: new Date().toISOString(),
-    }
-    setMessages((prev) => [...prev, optimisticMessage])
-
-    try {
-      const result = await raceWithDeadline(
-        sendConversationReply({
-          conversation_id: id,
-          content,
-          composer_unlock_token: unlockToken,
-        }),
-        SEND_SERVER_ACTION_MS,
-      )
-
-      if ('error' in result) {
-        setMessages((prev) => {
-          const withoutPending = prev.filter((m) => m.id !== tempId)
-          const policyReason = getPolicyBlockFromSendResult(result)
-          if (policyReason) {
-            return [
-              ...withoutPending,
-              createLocalPolicyBlockMessage({
-                senderId: currentUserId,
-                originalContent: content,
-                reasonCode: policyReason,
-              }),
-            ]
-          }
-          return withoutPending
-        })
-        if (!isPolicyBlockedSendResult(result)) {
-          setNewMessage(content)
-          const messageText =
-            result.error === 'Unauthorized'
-              ? 'Sign in again to send messages.'
-              : result.error
-          toast.error(messageText)
-        }
-        return
-      }
-
-      const inserted = result.message as Message
-      setMessages((prev) => prev.map((m) => (m.id === tempId ? inserted : m)))
-    } catch (e) {
-      setMessages((prev) => prev.filter((m) => m.id !== tempId))
-      setNewMessage(content)
-      toast.error(
-        e instanceof PromiseDeadlineError
-          ? 'Message took too long. Check your connection and try again.'
-          : 'Failed to send message',
-      )
-    } finally {
-      setSending(false)
-    }
+    void sendThreadText(trimmed)
   }
 
-  const handleMediaSent = useCallback(
-    (inserted: Message) => {
+  const mediaRetryRef = useRef<((draftId: string) => void) | null>(null)
+
+  const handleMediaOptimistic = useCallback(
+    (draft: {
+      id: string
+      kind: 'image' | 'video'
+      previewUrl: string
+      content: string
+    }) => {
+      if (!currentUserId) return
       stickToBottomRef.current = true
       setNewMessage('')
-      setMessages((prev) => {
-        const withoutDup = prev.filter((m) => m.id !== inserted.id)
-        return [...withoutDup, inserted]
+      newMessageRef.current = ''
+      const createdAt = new Date().toISOString()
+      rememberMarketplaceThreadSend({
+        conversationId: id,
+        id: draft.id,
+        content: draft.content,
+        senderId: currentUserId,
+        createdAt,
+        sendStatus: 'sending',
+        localPreview: {
+          url: draft.previewUrl,
+          kind: draft.kind,
+          progress: 5,
+        },
+      })
+      dispatchConversationInboxActivity({
+        conversationId: id,
+        at: createdAt,
+        message: {
+          id: draft.id,
+          content: draft.content,
+          sender_id: currentUserId,
+          created_at: createdAt,
+          is_read: true,
+        },
       })
     },
-    [],
+    [currentUserId, id],
   )
 
-  const formatMessageDate = (dateStr: string) => {
-    const date = new Date(dateStr)
-    if (isToday(date)) return format(date, 'h:mm a')
-    if (isYesterday(date)) return `Yesterday ${format(date, 'h:mm a')}`
-    return format(date, 'MMM d, h:mm a')
-  }
+  const handleMediaProgress = useCallback((draftId: string, progress: number) => {
+    patchMarketplaceThreadSendProgress(draftId, progress)
+  }, [])
+
+  const handleMediaFailed = useCallback((draftId: string) => {
+    patchMarketplaceThreadSend(draftId, { sendStatus: 'failed' })
+  }, [])
+
+  const handleMediaDismiss = useCallback((draftId: string) => {
+    forgetMarketplaceThreadSend(draftId)
+    setMessages((prev) => prev.filter((message) => message.id !== draftId))
+  }, [])
+
+  const registerMediaRetry = useCallback((retry: (draftId: string) => void) => {
+    mediaRetryRef.current = retry
+  }, [])
+
+  const handleMediaSent = useCallback(
+    (inserted: Message, draftId: string) => {
+      stickToBottomRef.current = true
+      setNewMessage('')
+      knownMessageIdsRef.current.add(inserted.id)
+      confirmMarketplaceThreadSend(draftId, {
+        id: inserted.id,
+        content: inserted.content,
+        sender_id: inserted.sender_id,
+        created_at: inserted.created_at,
+        is_read: inserted.is_read,
+        metadata: inserted.metadata,
+      })
+      dispatchConversationInboxActivity({
+        conversationId: id,
+        at: inserted.created_at,
+        message: {
+          id: inserted.id,
+          content: inserted.content,
+          sender_id: inserted.sender_id,
+          created_at: inserted.created_at,
+          is_read: true,
+          metadata: inserted.metadata,
+        },
+      })
+    },
+    [id],
+  )
+
+  const threadTime = (iso: string) => (
+    <RelativeTime iso={iso} formatLabel={formatThreadGroupTimestamp} />
+  )
+
+  const lastThreadMessage = orderedMessages.at(-1)
+  const lastOwnReceipt =
+    lastThreadMessage && currentUserId && lastThreadMessage.sender_id === currentUserId
+      ? lastThreadMessage.sendStatus === 'failed'
+        ? null
+        : lastThreadMessage.sendStatus === 'sending' ||
+            lastThreadMessage.id.startsWith(PENDING_THREAD_MESSAGE_ID_PREFIX)
+          ? 'Sending'
+          : lastThreadMessage.is_read
+            ? 'Read'
+            : 'Delivered'
+      : null
 
   // True only for ordinary text bubbles — every special card (offer, order,
   // review, location, media, negotiation, policy block) breaks a bubble run so
@@ -701,6 +921,7 @@ export function ConversationThreadClient({
   const isPlainTextMessage = useCallback(
     (m: Message): boolean => {
       const own = m.sender_id === currentUserId
+      if (m.localPreview) return false
       if (parseLocalPolicyBlockMetadata(m.metadata) && own) return false
       if (m.offer_id && offersById[m.offer_id]) return false
       if (m.offer_id && m.content.trim()) return false
@@ -743,7 +964,6 @@ export function ConversationThreadClient({
   const backHref =
     backHrefProp ??
     (hasMultipleListingThreads ? `/messages/with/${otherUserId}` : '/messages')
-  const showListingSwitcher = hasMultipleListingThreads
   // Inbox stays visible on desktop, so hide Back unless this person has more
   // than one listing thread — then Back returns to that listing list.
   const hideEmbeddedDesktopBack = embedded && !hasMultipleListingThreads
@@ -753,9 +973,13 @@ export function ConversationThreadClient({
   const isSellerViewer = !!currentUserId && currentUserId === conversation.seller_id
   const sellerOfferListing = displayListing ?? conversation.listing
   const sellerOfferListingId = sellerOfferListing?.id ?? conversation.listing_id
+  const sellerOfferListingStatusOk =
+    sellerOfferListing?.status == null ||
+    listingStatusAcceptsOffers(sellerOfferListing.status)
   const canMakeSellerOffer =
     isSellerViewer &&
     !!sellerOfferListingId &&
+    sellerOfferListingStatusOk &&
     (!sellerOfferListing?.section || isPeerListingSection(sellerOfferListing.section))
 
   return (
@@ -765,25 +989,9 @@ export function ConversationThreadClient({
         embedded ? "overflow-hidden" : "h-full overflow-hidden",
       )}
     >
-      <div
-        className={cn(
-          "flex h-full min-h-0 flex-1 flex-col",
-          "overflow-hidden",
-          embedded
-            ? "px-0 pb-2 pt-0 max-sm:px-4 max-sm:pb-[max(0.5rem,env(safe-area-inset-bottom))] max-sm:pt-2"
-            : "container mx-auto max-w-2xl px-4 pb-2 pt-2 max-sm:pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:px-5 sm:pb-6 sm:pt-3 md:max-w-4xl lg:max-w-5xl",
-        )}
-      >
-        {/* Header */}
+      <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
         {!hideHeader ? (
-        <header
-          className={cn(
-            "relative z-20 shrink-0 border-b border-border/60 bg-background py-2",
-            embedded
-              ? "px-3 sm:px-4"
-              : "-mx-4 mb-2 px-2 sm:-mx-5 sm:mb-3 sm:bg-background/85 sm:px-3 sm:backdrop-blur-md supports-[backdrop-filter]:sm:bg-background/70",
-          )}
-        >
+        <header className="relative z-20 shrink-0 border-b border-border/60 bg-background/90 px-2 py-1.5 backdrop-blur-md supports-[backdrop-filter]:bg-background/75 sm:px-3">
           <div className="flex items-center gap-1 sm:gap-2">
             <Link
               href={backHref}
@@ -798,30 +1006,13 @@ export function ConversationThreadClient({
                 <ArrowLeft className="h-[22px] w-[22px]" strokeWidth={2} />
               </Button>
             </Link>
-            <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:contents">
+            <div className="flex min-w-0 flex-1 items-center gap-1.5">
               <ConversationPartyProfile
                 displayName={otherUser?.display_name ?? ''}
                 avatarUrl={otherUser?.avatar_url ?? null}
                 shopVerified={!!otherUser?.shop_verified}
                 profile={otherPartyProfile}
                 pending={!otherUser?.display_name && !otherUser?.avatar_url}
-                secondaryLine={
-                  displayListing ? (
-                    <Link
-                      href={listingDetailPath(displayListing)}
-                      className={cn(
-                        'hidden truncate text-[15px] text-muted-foreground transition-colors hover:text-foreground',
-                        showListingSwitcher ? 'md:block' : 'sm:block',
-                      )}
-                    >
-                      {capitalizeWords(displayListing.title)}
-                    </Link>
-                  ) : listingChromeLoading ? (
-                    <p className="hidden truncate text-[15px] text-muted-foreground sm:block">
-                      Updating listing…
-                    </p>
-                  ) : null
-                }
               />
               {listingChromeLoading ? (
                 <ConversationThreadHeaderChip
@@ -829,7 +1020,7 @@ export function ConversationThreadClient({
                   thumb={<span className="block h-full w-full animate-pulse rounded-md bg-muted" />}
                   primary={<span className="block h-3 w-16 animate-pulse rounded bg-muted" />}
                   secondary={<span className="block h-3.5 w-12 animate-pulse rounded bg-muted" />}
-                  className="sm:hidden"
+                  className="ml-auto max-w-[11rem]"
                 />
               ) : displayListing ? (
                 <ConversationThreadHeaderChip
@@ -847,7 +1038,7 @@ export function ConversationThreadClient({
                           alt=""
                           fill
                           sizes="36px"
-                          className="object-cover object-center"
+                          className={listingPhotoFillClassName}
                           unoptimized={listingImageShouldBypassOptimization(threadListingThumbSrc)}
                           onLoad={() => setListingBannerImageReady(true)}
                         />
@@ -856,90 +1047,24 @@ export function ConversationThreadClient({
                   }
                   primary={capitalizeWords(displayListing.title)}
                   secondary={`$${displayListing.price}`}
-                  className="sm:hidden"
+                  className="ml-auto max-w-[11rem] sm:max-w-[14rem]"
                 />
               ) : null}
             </div>
+            <Link
+              href={helpHubHref({ conversationId: id })}
+              className="hidden shrink-0 px-2 text-[15px] font-medium text-listingHeart hover:underline sm:block"
+            >
+              Help
+            </Link>
           </div>
         </header>
         ) : null}
 
-        <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
-        {listingChromeLoading ? (
-          <div
-            className={cn(
-              'mb-2 hidden gap-2 rounded-2xl border border-border/70 bg-card p-2 shadow-[0_1px_2px_rgba(17,17,17,0.04)] dark:shadow-none sm:mb-4 sm:gap-3 sm:rounded-[18px] sm:p-3',
-              showListingSwitcher ? 'md:flex' : 'sm:flex',
-            )}
-          >
-            <span className="relative block w-14 shrink-0 animate-pulse rounded-xl bg-muted aspect-[3/4] sm:w-[72px] sm:rounded-2xl" />
-            <div className="flex min-w-0 flex-1 flex-col justify-center gap-1.5 sm:gap-2">
-              <span className="block h-4 w-[min(100%,12rem)] animate-pulse rounded bg-muted sm:h-5 sm:w-[min(100%,14rem)]" />
-              <span className="block h-5 w-20 animate-pulse rounded bg-muted sm:h-6 sm:w-24" />
-            </div>
-          </div>
-        ) : null}
-        {displayListing ? (
-          <Link
-            href={listingDetailPath(displayListing)}
-            className={cn(
-              'mb-2 hidden overflow-hidden rounded-2xl border border-border/70 bg-card shadow-[0_1px_2px_rgba(17,17,17,0.04)] transition-colors hover:bg-muted/40 active:bg-muted/55 dark:shadow-none sm:mb-4 sm:rounded-[18px]',
-              showListingSwitcher ? 'md:block' : 'sm:block',
-            )}
-          >
-            <div className="flex gap-2 p-2 sm:gap-3 sm:p-3">
-              <div className="relative w-14 shrink-0 overflow-hidden rounded-xl bg-muted aspect-[3/4] sm:w-[72px] sm:rounded-2xl">
-                {threadListingThumbSrc ? (
-                  <>
-                    {!listingBannerImageReady ? (
-                      <span
-                        className="absolute inset-0 z-10 block h-full w-full animate-pulse rounded-xl bg-muted sm:rounded-2xl"
-                        aria-hidden
-                      />
-                    ) : null}
-                    <Image
-                      key={threadListingThumbSrc}
-                      src={threadListingThumbSrc}
-                      alt={capitalizeWords(displayListing.title)}
-                      fill
-                      sizes="(max-width: 640px) 56px, 72px"
-                      className="object-cover object-center"
-                      unoptimized={listingImageShouldBypassOptimization(threadListingThumbSrc)}
-                      onLoad={() => setListingBannerImageReady(true)}
-                    />
-                  </>
-                ) : null}
-              </div>
-              <div className="min-w-0 flex flex-col justify-center">
-                <p className="text-[14px] font-semibold leading-snug text-foreground sm:text-[17px]">
-                  {capitalizeWords(displayListing.title)}
-                </p>
-                <p className="mt-0.5 text-[15px] font-semibold tabular-nums tracking-tight text-foreground sm:mt-1 sm:text-[20px]">
-                  ${displayListing.price}
-                </p>
-              </div>
-            </div>
-          </Link>
-        ) : null}
-
-        {/* Messages — bounded scroll module (internal scroll; page chrome scrolls separately) */}
-        <div
-          className={cn(
-            "relative mb-2 flex min-h-0 flex-col overflow-hidden rounded-[22px] border border-border/50 bg-muted/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] dark:bg-muted/25 sm:mb-3",
-            embedded
-              ? cn(
-                  "max-lg:min-h-0 max-lg:flex-1",
-                  "lg:min-h-0 lg:flex-1 lg:h-[min(38rem,56svh)] lg:max-h-[min(48rem,72svh)]",
-                )
-              : cn(
-                  "min-h-0 flex-1 basis-0",
-                  "sm:max-h-[min(26rem,52svh)] sm:flex-none sm:h-[min(24rem,45svh)] md:h-[min(34rem,52svh)] md:max-h-[min(42rem,68svh)] lg:h-[min(38rem,56svh)] lg:max-h-[min(48rem,72svh)]",
-                ),
-          )}
-        >
+        <div className={cn("relative flex min-h-0 flex-1 flex-col overflow-hidden", messageThreadCanvasClassName())}>
           <div
             ref={messagesScrollRef}
-            className="h-full min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y [scrollbar-width:thin]"
+            className="min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y [scrollbar-width:thin]"
             aria-label="Message thread"
           >
             {messages.length === 0 ? (
@@ -976,7 +1101,7 @@ export function ConversationThreadClient({
                           <LocalPhonePolicyBlockBubble
                             originalContent={policyBlock.originalContent}
                             reasonCode={policyBlock.reasonCode}
-                            formattedTime={formatMessageDate(message.created_at)}
+                            formattedTime={threadTime(message.created_at)}
                             relatedConversationId={id}
                           />
                         </div>
@@ -998,7 +1123,7 @@ export function ConversationThreadClient({
                             minOfferAmount={minOfferAmount}
                             minOfferPct={listingOfferMinPct}
                             createdAt={message.created_at}
-                            onThreadRefresh={loadThread}
+                            onThreadRefresh={refreshThread}
                           />
                         </div>
                       )
@@ -1116,7 +1241,7 @@ export function ConversationThreadClient({
                             createdAt={message.created_at}
                             viewerIsBuyer={viewerIsBuyer}
                             sellerDisplayName={sellerDisplayName}
-                            onAfterReviewSubmitted={loadThread}
+                            onAfterReviewSubmitted={refreshThread}
                           />
                         </div>
                       )
@@ -1132,7 +1257,7 @@ export function ConversationThreadClient({
                         <div className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start', cardMargin)}>
                           <MessageLocationCard
                             payload={locationPin}
-                            formattedTime={formatMessageDate(message.created_at)}
+                            formattedTime={threadTime(message.created_at)}
                             listingThumbnailSrc={locationThumbSrc}
                             listingImageAlt={locationThumbAlt}
                             listingThumbnailPending={listingChromeLoading}
@@ -1142,7 +1267,7 @@ export function ConversationThreadClient({
                     }
 
                     const mediaAtt = parseMarketplaceMessageAttachment(message.metadata)
-                    if (mediaAtt) {
+                    if (mediaAtt || message.localPreview) {
                       return (
                         <div className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start', cardMargin)}>
                           <MessageMediaAttachmentCard
@@ -1150,8 +1275,27 @@ export function ConversationThreadClient({
                             metadata={message.metadata}
                             content={message.content}
                             isOwn={isOwn}
-                            formattedTime={formatMessageDate(message.created_at)}
+                            formattedTime={threadTime(message.created_at)}
+                            showTime={false}
                             onOpenImage={openThreadImage}
+                            localPreviewUrl={message.localPreview?.url}
+                            localPreviewKind={message.localPreview?.kind}
+                            sendStatus={message.sendStatus}
+                            progress={message.localPreview?.progress}
+                            onRetryFailed={
+                              message.sendStatus === 'failed'
+                                ? () => {
+                                    setMessages((prev) =>
+                                      prev.map((row) =>
+                                        row.id === message.id
+                                          ? { ...row, sendStatus: 'sending' }
+                                          : row,
+                                      ),
+                                    )
+                                    mediaRetryRef.current?.(message.id)
+                                  }
+                                : undefined
+                            }
                           />
                         </div>
                       )
@@ -1184,6 +1328,21 @@ export function ConversationThreadClient({
                       const checkoutLineItems = checkoutOffer
                         ? parseOfferLineItems(checkoutOffer.line_items)
                         : null
+                      const linkedOffer =
+                        (message.offer_id ? offersById[message.offer_id] : undefined) ??
+                        actionable ??
+                        checkoutOffer ??
+                        resolveNegotiationOffer(
+                          offersList,
+                          message.content,
+                          listingIdForOffer,
+                        )
+                      const negotiationOfferHref = linkedOffer
+                        ? dashboardOffersPath({
+                            role: isSeller ? 'seller' : 'buyer',
+                            offerId: linkedOffer.id,
+                          })
+                        : null
                       return (
                         <div className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start', cardMargin)}>
                           <OfferNegotiationEventCard
@@ -1191,12 +1350,12 @@ export function ConversationThreadClient({
                             content={message.content}
                             createdAt={message.created_at}
                             isOwn={isOwn}
-                            showSellerDashboardLink={isSeller && isOwn}
+                            offerHref={negotiationOfferHref}
                             actionableOfferId={actionable?.id ?? null}
                             actionableExpiresAt={actionable?.expires_at ?? null}
                             checkoutOfferId={checkoutOffer?.id ?? null}
                             checkoutLineItemCount={checkoutLineItems?.length ?? 0}
-                            onThreadRefresh={loadThread}
+                            onThreadRefresh={refreshThread}
                           />
                         </div>
                       )
@@ -1248,42 +1407,37 @@ export function ConversationThreadClient({
                       !nextBreaks &&
                       next.sender_id === message.sender_id &&
                       isPlainTextMessage(next)
-                    const isTail = !groupedWithNext
+                    const group = messageBubbleGroup(groupedWithPrev, groupedWithNext)
                     const rowMargin = separatorBefore
                       ? ''
                       : groupedWithPrev
-                        ? 'mt-0.5'
-                        : 'mt-2.5'
+                        ? 'mt-[2px]'
+                        : 'mt-2'
 
                     return (
                       <div
                         className={cn(
-                          'flex w-full',
-                          isOwn ? 'justify-end' : 'justify-start',
+                          'flex w-full flex-col',
+                          isOwn ? 'items-end' : 'items-start',
                           rowMargin,
                         )}
                       >
-                        <div
-                          title={format(new Date(message.created_at), 'EEEE, MMM d • h:mm a')}
-                          className={cn(
-                            'max-w-[min(100%,18.5rem)] rounded-[20px] px-3.5 py-[7px] sm:max-w-[min(100%,20rem)] sm:px-4 sm:py-2 md:max-w-[min(100%,28rem)]',
-                            isOwn
-                              ? cn(
-                                  'bg-listingHeart text-white shadow-[0_1px_2px_rgba(53,81,133,0.18)]',
-                                  groupedWithPrev && 'rounded-tr-[7px]',
-                                  isTail ? 'rounded-br-[6px]' : 'rounded-br-[7px]',
-                                )
-                              : cn(
-                                  'border border-border/45 bg-card text-foreground shadow-sm',
-                                  groupedWithPrev && 'rounded-tl-[7px]',
-                                  isTail ? 'rounded-bl-[6px]' : 'rounded-bl-[7px]',
-                                ),
-                          )}
-                        >
-                          <p className="whitespace-pre-wrap break-words text-[15px] leading-[1.4] tracking-[-0.01em]">
-                            {message.content}
-                          </p>
-                        </div>
+                        <MessageTextBubble
+                          content={message.content}
+                          isOwn={isOwn}
+                          group={group}
+                          title={formatMessageTooltipTimestamp(message.created_at)}
+                          className={message.sendStatus === 'failed' ? 'opacity-80' : undefined}
+                        />
+                        {isOwn && message.sendStatus === 'failed' ? (
+                          <button
+                            type="button"
+                            className="mt-0.5 pr-1 text-[11px] font-medium text-red-500"
+                            onClick={() => void sendThreadText(message.content, message.id)}
+                          >
+                            Not Delivered — Tap to Retry
+                          </button>
+                        ) : null}
                       </div>
                     )
                   })()
@@ -1291,9 +1445,9 @@ export function ConversationThreadClient({
                   return (
                     <Fragment key={message.id}>
                       {separatorBefore ? (
-                        <div className="flex justify-center pb-1.5 pt-3 first:pt-1">
-                          <span className="text-[11px] font-medium tabular-nums text-muted-foreground/70">
-                            {formatMessageDate(message.created_at)}
+                        <div className="flex justify-center pb-2 pt-3 first:pt-1">
+                          <span className="text-[12px] font-medium tabular-nums text-muted-foreground/80">
+                            {threadTime(message.created_at)}
                           </span>
                         </div>
                       ) : null}
@@ -1301,17 +1455,20 @@ export function ConversationThreadClient({
                     </Fragment>
                   )
                 })}
+                {lastOwnReceipt ? (
+                  <p className="mt-1 pr-1 text-right text-[11px] font-medium tabular-nums text-muted-foreground">
+                    {lastOwnReceipt}
+                  </p>
+                ) : null}
               </div>
             )}
           </div>
-        </div>
 
         <MessageThreadMobileComposerDock>
           <MessageComposerBar
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             onSubmit={handleSend}
-            sending={sending}
             unlock={composerUnlock}
             composerUnlockToken={composerUnlock.token}
             leadingActions={
@@ -1324,8 +1481,7 @@ export function ConversationThreadClient({
                   listingTitle={sellerOfferListing?.title ?? listingTitleForOffers}
                   listPrice={listPriceNum}
                   primaryImageUrl={threadListingThumbSrc || null}
-                  disabled={sending}
-                  onOfferSent={loadThread}
+                  onOfferSent={refreshThread}
                 />
               ) : null
             }
@@ -1333,10 +1489,15 @@ export function ConversationThreadClient({
               conversationId: id,
               disabled: !currentUserId || !conversation,
               onSent: handleMediaSent,
-              onBlockedPolicy: (originalContent, reasonCode) => {
+              onOptimistic: handleMediaOptimistic,
+              onProgress: handleMediaProgress,
+              onFailed: handleMediaFailed,
+              onDismiss: handleMediaDismiss,
+              registerRetry: registerMediaRetry,
+              onBlockedPolicy: (originalContent, reasonCode, draftId) => {
                 if (!currentUserId) return
                 setMessages((prev) => [
-                  ...prev,
+                  ...prev.filter((message) => message.id !== draftId),
                   createLocalPolicyBlockMessage({
                     senderId: currentUserId,
                     originalContent,

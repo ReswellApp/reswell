@@ -31,8 +31,12 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { getAdminSession } from "@/app/actions/account"
+import { browserProfileIsAdmin } from "@/lib/auth/browser-profile-is-admin"
+import { createClient } from "@/lib/supabase/client"
 import { boardsBrowseBoardTypeLabel } from "@/lib/marketplace-slug-metadata"
 import { listingDetailHref } from "@/lib/listing-href"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { cn } from "@/lib/utils"
 
 type AdminListingRow = {
@@ -109,15 +113,22 @@ function listingMetaLine(opts: {
 }
 
 type BoardsBrowseAdminCuratorProps = {
-  isAdmin: boolean
   className?: string
 }
 
 /**
  * Admin CMS for /boards: pin listings to the top, suppress to sort last, or hide site-wide.
+ *
+ * `/boards` is one cached document for every visitor (ISR + CDN). The header on
+ * that document stays on Sign up / Log in until the browser has a Supabase auth
+ * cookie. Resolve admin from that same browser session after mount. A server
+ * action on this URL can see cookies the header cannot, and must not be the
+ * only signal — that is how the plus showed next to Log in.
  */
-export function BoardsBrowseAdminCurator({ isAdmin, className }: BoardsBrowseAdminCuratorProps) {
+export function BoardsBrowseAdminCurator({ className }: BoardsBrowseAdminCuratorProps) {
   const router = useRouter()
+  const [isAdmin, setIsAdmin] = React.useState(false)
+  const [adminLoaded, setAdminLoaded] = React.useState(false)
   const [dialogOpen, setDialogOpen] = React.useState(false)
   const [activeTab, setActiveTab] = React.useState<CmsTab>("top-picks")
   const [topPicks, setTopPicks] = React.useState<TopPickRow[]>([])
@@ -204,6 +215,33 @@ export function BoardsBrowseAdminCurator({ isAdmin, className }: BoardsBrowseAdm
     } finally {
       if (append) setLoadingMoreInventory(false)
       else setSearching(false)
+    }
+  }, [])
+
+  React.useEffect(() => {
+    let cancelled = false
+    const supabase = createClient()
+    void (async () => {
+      try {
+        const fromBrowser = await browserProfileIsAdmin(supabase)
+        if (cancelled) return
+        if (fromBrowser !== null) {
+          setIsAdmin(fromBrowser)
+          setAdminLoaded(true)
+          return
+        }
+        // Cookies are present but the browser auth call failed (lock abort,
+        // blip). Ask the server only in that case — never for a logged-out header.
+        const session = await getAdminSession()
+        if (cancelled) return
+        setIsAdmin(session.isAdmin === true)
+        setAdminLoaded(true)
+      } catch {
+        if (!cancelled) setAdminLoaded(true)
+      }
+    })()
+    return () => {
+      cancelled = true
     }
   }, [])
 
@@ -572,7 +610,7 @@ export function BoardsBrowseAdminCurator({ isAdmin, className }: BoardsBrowseAdm
     )
   }
 
-  if (!isAdmin) return null
+  if (!adminLoaded || !isAdmin) return null
 
   return (
     <>
@@ -1000,7 +1038,7 @@ function ListingPickRow({
             alt=""
             fill
             sizes="80px"
-            className="object-cover"
+            className={listingPhotoFillClassName}
             unoptimized={imageUrl.startsWith("/")}
           />
         ) : (

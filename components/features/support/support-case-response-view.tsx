@@ -4,11 +4,14 @@ import {
   formatSupportCaseReference,
   isSupportCaseOpen,
   splitSupportCaseSubject,
+  SUPPORT_CASE_STATUS_DESCRIPTION,
   SUPPORT_CASE_STATUS_LABEL,
   SUPPORT_DESK_NAME,
 } from "@/lib/utils/support-case-display"
+import { humanizeSupportCasePreview } from "@/lib/utils/humanize-support-case-preview"
 import type { SupportCaseKind, SupportCaseStatus } from "@/lib/types/supportCase"
 import type { SupportCaseThreadMessage } from "@/lib/services/supportCaseThread"
+import { SupportCaseLiveRefresh } from "@/components/features/support/support-case-live-refresh"
 import { SupportCaseThread } from "@/components/features/support/support-case-thread"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -25,19 +28,33 @@ export type SupportCaseResponseViewProps = {
   createdAt: string
   messages: SupportCaseThreadMessage[]
   repairCreditTotal?: number
+  initialUnreadCount?: number
 }
 
 export function SupportCaseResponseView({
   caseId,
   subject,
   status,
+  preview,
+  createdAt,
   orderRef,
   orderHref,
   messages,
   repairCreditTotal = 0,
+  initialUnreadCount = 0,
 }: SupportCaseResponseViewProps) {
   const { title } = splitSupportCaseSubject(subject)
   const open = isSupportCaseOpen(status)
+  const waiting = status === "waiting_on_you"
+  const customerOpening =
+    messages.find((message) => message.author_role === "customer" && !message.is_internal)
+      ?.body ?? ""
+  // Case preview tracks the latest snippet (often the staff reply) — only use it
+  // before any customer message exists in the thread.
+  const openingBody = humanizeSupportCasePreview(
+    customerOpening || (messages.some((message) => message.author_role === "agent") ? "" : preview),
+    12000,
+  )
   const subtitleParts = [
     title,
     formatSupportCaseReference(caseId),
@@ -45,7 +62,9 @@ export function SupportCaseResponseView({
   ].filter(Boolean)
 
   return (
-    <div className="mx-auto flex h-full min-h-0 w-full max-w-2xl flex-1 flex-col bg-background lg:h-auto lg:flex-none lg:pt-2">
+    <div className="mx-auto flex h-[min(100dvh,52rem)] min-h-0 w-full max-w-2xl flex-1 flex-col overflow-hidden border-border/60 bg-background sm:rounded-2xl sm:border sm:shadow-sm lg:my-4">
+      <SupportCaseLiveRefresh initialUnreadCount={initialUnreadCount} />
+
       <header className="flex shrink-0 items-center gap-1 border-b border-border/60 bg-background px-1 py-2 sm:px-2">
         <Button asChild variant="ghost" size="icon" className="h-11 w-11 shrink-0 rounded-full">
           <Link href="/dashboard/support" aria-label="Back to Support">
@@ -70,9 +89,11 @@ export function SupportCaseResponseView({
         <span
           className={cn(
             "shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium",
-            open
-              ? "bg-listingHeart/12 text-listingHeart"
-              : "bg-muted text-muted-foreground",
+            waiting
+              ? "bg-amber-500/15 text-amber-800 dark:text-amber-200"
+              : open
+                ? "bg-listingHeart/12 text-listingHeart"
+                : "bg-muted text-muted-foreground",
           )}
         >
           {SUPPORT_CASE_STATUS_LABEL[status]}
@@ -87,6 +108,12 @@ export function SupportCaseResponseView({
         ) : null}
       </header>
 
+      {waiting ? (
+        <p className="shrink-0 border-b border-amber-200/70 bg-amber-50 px-4 py-2.5 text-center text-[13px] leading-snug text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-50 sm:px-3">
+          {SUPPORT_CASE_STATUS_DESCRIPTION.waiting_on_you}
+        </p>
+      ) : null}
+
       {repairCreditTotal > 0 ? (
         <p className="shrink-0 border-b border-border/40 px-4 py-2 text-center text-[12px] text-muted-foreground sm:px-2">
           Repair credit ${repairCreditTotal.toFixed(2)} ·{" "}
@@ -96,13 +123,18 @@ export function SupportCaseResponseView({
         </p>
       ) : null}
 
-      <div className="flex min-h-0 flex-1 flex-col lg:flex-none">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <SupportCaseThread
           caseId={caseId}
           messages={messages}
           canReply
           role="member"
           closed={status === "resolved"}
+          originalRequest={
+            openingBody
+              ? { body: openingBody, createdAt, name: "You" }
+              : null
+          }
         />
       </div>
     </div>

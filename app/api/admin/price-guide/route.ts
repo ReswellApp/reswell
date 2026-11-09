@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
+import { requireAdmin } from "@/lib/brands/admin-server"
 import {
   priceGuideAdminListQuerySchema,
   priceGuideEntryCreateSchema,
@@ -10,7 +10,7 @@ import {
 } from "@/lib/services/priceGuideAdmin"
 
 export async function GET(req: NextRequest) {
-  const gate = await requireAdminOrEmployee()
+  const gate = await requireAdmin()
   if (!gate.ok) return gate.response
 
   const sp = req.nextUrl.searchParams
@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(request: Request) {
-  const gate = await requireAdminOrEmployee()
+  const gate = await requireAdmin()
   if (!gate.ok) return gate.response
 
   let json: unknown

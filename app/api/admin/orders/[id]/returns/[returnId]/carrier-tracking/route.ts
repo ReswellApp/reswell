@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { z } from "zod"
 import { createServiceRoleClient } from "@/lib/supabase/server"
-import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
+import { requireAdmin } from "@/lib/brands/admin-server"
 import { getOrderReturnCarrierTracking } from "@/lib/services/orderReturnCarrierTracking"
 
 export const dynamic = "force-dynamic"
@@ -12,7 +12,7 @@ export async function GET(
   _request: Request,
   context: { params: Promise<{ id: string; returnId: string }> },
 ) {
-  const gate = await requireAdminOrEmployee()
+  const gate = await requireAdmin()
   if (!gate.ok) return gate.response
 
   const { id, returnId } = await context.params

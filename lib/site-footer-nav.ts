@@ -11,15 +11,17 @@ export const siteFooterNavLinks: {
   legal: readonly SiteFooterNavLink[]
 } = {
   marketplace: [
+    { name: "Explore", href: "/explore" },
     { name: "Shop from Reswell", href: "/reswell/shop" },
     { name: "Board Finder", href: "/board-finder" },
+    { name: "Volume Calculator", href: "/volume-calculator" },
     { name: "Recently sold", href: "/sold" },
     { name: "Sell your gear", href: "/sell" },
     { name: "Seller Resources", href: "/seller-resources" },
     { name: "Sellers", href: "/sellers" },
     { name: "Cities", href: "/cities/top" },
     { name: "Surf shops", href: "/surf-shops" },
-    { name: "Giveaways", href: "/giveaways" },
+    { name: "For surf shops", href: "/for-surf-shops" },
     { name: "Blog", href: "/blog" },
   ],
   help: [

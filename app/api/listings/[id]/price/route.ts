@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
+import { resolveManagedSeller } from "@/lib/account-access/managed-seller"
 import { resolveServerAuth } from "@/lib/auth/get-safe-server-user"
 import { updateSellerListingQuickPrice } from "@/lib/services/listingQuickPrice"
 import { listingQuickPriceBodySchema } from "@/lib/validations/listing-quick-price"
@@ -38,9 +39,14 @@ export async function PATCH(
       )
     }
 
+    const managed = await resolveManagedSeller("listings.write")
+    if (!managed.ok) {
+      return NextResponse.json({ error: managed.error }, { status: managed.status })
+    }
+
     const result = await updateSellerListingQuickPrice(supabase, {
       listingId,
-      sellerUserId: user.id,
+      sellerUserId: managed.seller.sellerId,
       priceUsd: parsed.data.priceUsd,
       showPriceMarkdown: parsed.data.showPriceMarkdown,
     })

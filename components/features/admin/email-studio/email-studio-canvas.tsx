@@ -28,6 +28,7 @@ import {
   KLAVIYO_EMAIL_FONT_SANS,
   KLAVIYO_EMAIL_MUTED,
 } from "@/lib/klaviyo/email-brand-styles"
+import { listingPhotoCoverClassName } from "@/lib/listing-photo-fill"
 import { cn } from "@/lib/utils"
 import type { EmailBlock, EmailBlockType, EmailTextStyle } from "@/lib/types/emailStudio"
 import { emailBlockLabel } from "@/components/features/admin/email-studio/email-studio-outline"
@@ -401,7 +402,7 @@ function BlockBody({
               <div key={item.id} className={cn("min-w-0", block.items.length === 1 && "sm:grid sm:grid-cols-2 sm:gap-5")}>
                 {/* Listing photos are dynamic marketplace URLs and cannot use a fixed next/image host. */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={item.imageUrl} alt={item.title} className="aspect-[4/3] w-full rounded-lg object-cover" />
+                <img src={item.imageUrl} alt={item.title} className={cn(listingPhotoCoverClassName, "aspect-[4/3] w-full rounded-lg")} />
                 <div className="pt-3">
                   {block.showAvailability ? (
                     <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-[#64748B]">

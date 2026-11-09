@@ -1,5 +1,6 @@
 import type { HelpArticle } from "@/lib/help-center/types"
 import { SHIPPING_DEADLINE_DAYS } from "@/lib/shipping-deadline"
+import { BOARD_SAVED_SEARCHES_MAX } from "@/lib/saved-search-limits"
 import {
   BulletList,
   HelpNote,
@@ -183,7 +184,7 @@ export const buyingHelpArticles: HelpArticle[] = [
           <>
             <p>
               Your offer shows up in {helpLink("/messages", "Messages")} and on{" "}
-              {helpLink("/dashboard/offers", "Offers")} under <strong>I made</strong>. From there the
+              {helpLink("/dashboard/offers?tab=buyer", "Offers")} under <strong>Buying</strong>. From there the
               seller can:
             </p>
             <BulletList
@@ -326,9 +327,9 @@ export const buyingHelpArticles: HelpArticle[] = [
         body: (
           <>
             <p>
-              Open {helpLink("/dashboard/favorites", "Favorites")} from your profile menu or dashboard
-              to see everything you have saved. Tap a listing to go back to it, or tap the heart again
-              to remove it.
+              Open {helpLink("/favorites", "Favorites")} from the heart in the header or from your
+              dashboard to see everything you have saved. Tap a listing to go back to it, or tap the
+              heart again to remove it.
             </p>
             <BulletList
               items={[
@@ -443,8 +444,9 @@ export const buyingHelpArticles: HelpArticle[] = [
         heading: "What is wallet balance?",
         body: (
           <p>
-            Your wallet holds earnings from completed sales on Reswell. After a sale clears through
-            Purchase Protection timelines, the funds show up in{" "}
+            Your wallet holds earnings from completed sales on Reswell. Shipped-order earnings become
+            ready 4 days after carrier-confirmed delivery; local-pickup earnings become ready when
+            pickup is verified. The funds show up in{" "}
             {helpLink("/dashboard/earnings", "Earnings")}. You can spend that balance on other listings
             or cash out to your bank.
           </p>
@@ -574,7 +576,7 @@ export const buyingHelpArticles: HelpArticle[] = [
                     Submit from Help Hub. We usually review Purchase Protection claims within{" "}
                     <strong>3 business days</strong>. Include tracking numbers, delivery dates, and
                     photos when you have them. Track replies under{" "}
-                    {helpLink("/dashboard/support", "Support")}.
+                    {helpLink("/dashboard/support", "Reswell help")}.
                   </>
                 ),
               },
@@ -1170,7 +1172,8 @@ export const buyingHelpArticles: HelpArticle[] = [
       <>
         Go to {helpLink("/board-finder", "Board Finder")}, set brand, model, size, condition, or
         price filters, and save the search. You can also save a model or brand from its page. We
-        email you when a new listing matches. You can keep up to 5 saved searches per account.
+        email you when a new listing matches. You can keep up to {BOARD_SAVED_SEARCHES_MAX} saved
+        searches per account.
       </>
     ),
     sections: [
@@ -1188,9 +1191,9 @@ export const buyingHelpArticles: HelpArticle[] = [
         heading: "Limits and managing alerts",
         body: (
           <p>
-            Each account can save up to 5 searches across marketplace categories. Manage or delete
-            them on the Board Finder page. A match email links you to the listing so you can favorite
-            it, message the seller, or buy.
+            Each account can save up to {BOARD_SAVED_SEARCHES_MAX} searches across marketplace
+            categories. Manage or delete them on the Board Finder page. A match email links you to
+            the listing so you can favorite it, message the seller, or buy.
           </p>
         ),
       },
@@ -1373,7 +1376,7 @@ export const buyingHelpArticles: HelpArticle[] = [
     quickAnswer: (
       <>
         Message the other person first. If you still need us, open the purchase or sale and tap{" "}
-        <strong>Get help</strong>, or start from {helpLink("/support", "Support")}. Choose a
+        <strong>Get help</strong>, or start from {helpLink("/support", "Reswell help")}. Choose a
         purchase, sale, Purchase Protection claim, or another topic. We typically review protection
         claims within <strong>3 business days</strong>.
       </>
@@ -1397,7 +1400,7 @@ export const buyingHelpArticles: HelpArticle[] = [
         heading: "Support hub when there is no order",
         body: (
           <p>
-            Use {helpLink("/support", "Support")} (or {helpLink("/dashboard/support", "Support in your dashboard")}{" "}
+            Use {helpLink("/support", "Reswell help")} (or {helpLink("/dashboard/support", "Reswell help in your dashboard")}{" "}
             when signed in) for buying or selling questions, payments and payouts, account issues, or
             safety reports. Search the Help Center from that page if an article already answers it.
           </p>

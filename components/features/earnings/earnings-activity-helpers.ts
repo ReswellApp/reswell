@@ -1,34 +1,20 @@
 import { cn } from "@/lib/utils"
-import type { EarningsActivityStatusFilter, EarningsTransaction } from "./earnings-types"
+import {
+  isLikelyOrderUuid,
+  orderDetailPathFromLedgerTx,
+  orderIdFromSellerSaleLedger,
+} from "@/lib/earnings-sale-ledger"
+import type { EarningsActivityStatusFilter, EarningsListingRef, EarningsTransaction } from "./earnings-types"
 
-const ORDER_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-
-export function isLikelyOrderUuid(id: string): boolean {
-  return ORDER_UUID_RE.test(id.trim())
-}
+export { isLikelyOrderUuid }
 
 /** Dashboard order detail when `reference_id` is the marketplace order id. */
 export function orderDetailPathFromTx(t: EarningsTransaction): string | null {
-  const rid = typeof t.reference_id === "string" ? t.reference_id.trim() : ""
-  if (!rid || !isLikelyOrderUuid(rid)) return null
-  const rt = t.reference_type ?? ""
-  if (
-    rt === "order_pending_earnings" ||
-    rt === "order_seller_earnings" ||
-    rt === "wallet_refund"
-  ) {
-    return `/dashboard/purchases/${rid}`
-  }
-  return null
+  return orderDetailPathFromLedgerTx(t)
 }
 
 export function orderIdFromSellerSaleLedgerTx(t: EarningsTransaction): string | null {
-  const rt = t.reference_type
-  if (rt === "order_pending_earnings" || rt === "order_seller_earnings") {
-    const rid = typeof t.reference_id === "string" ? t.reference_id.trim() : ""
-    return rid || null
-  }
-  return null
+  return orderIdFromSellerSaleLedger(t)
 }
 
 export function omitReversedSaleCreditRow(
@@ -226,12 +212,28 @@ export const activityRowSurfaceNeutral =
   "hover:bg-muted/35 border-l-2 border-l-transparent hover:border-l-border/80"
 
 export function parseDescription(raw: string, type: string): { title: string; subtitle: string } {
+  if (raw.startsWith("Adjustment fee returned — ")) {
+    return {
+      title: "Adjustment fee returned",
+      subtitle: raw.slice("Adjustment fee returned — ".length),
+    }
+  }
+  if (raw.startsWith("Adjustment fee — ") || raw.startsWith("Shipping label adjustment — ")) {
+    const marker = raw.startsWith("Adjustment fee — ")
+      ? "Adjustment fee — "
+      : "Shipping label adjustment — "
+    return {
+      title: "Adjustment fee",
+      subtitle: raw.slice(marker.length),
+    }
+  }
+
   if (raw.startsWith("Pending — ")) {
     const m = raw.match(/^Pending — Sold "(.+?)"\s*/)
     if (m) {
       return {
         title: `Pending — ${m[1]}`,
-        subtitle: "Waiting on delivery or pickup—then this becomes ready in your balance.",
+        subtitle: "Waiting for fulfillment and its release hold to clear.",
       }
     }
   }
@@ -318,12 +320,101 @@ export type ActivityTxRow =
   | { kind: "merged"; key: string; pending: EarningsTransaction; release: EarningsTransaction }
   | { kind: "single"; key: string; t: EarningsTransaction }
 
+export interface AvailableEarningsListingRow {
+  key: string
+  title: string
+  imageUrl: string | null
+  listingHref: string | null
+  saleHref: string | null
+  amountUsd: number
+  extraListingCount: number
+  createdAt: string
+}
+
+function listingFromTx(t: EarningsTransaction): EarningsListingRef | null {
+  return t.listing ?? null
+}
+
+function amountForAvailableRow(
+  pending: EarningsTransaction | null,
+  release: EarningsTransaction,
+): number {
+  if (pending) {
+    const pendingAmt = parseFloat(pending.amount)
+    if (Number.isFinite(pendingAmt) && pendingAmt > 0) return pendingAmt
+  }
+  const fromOrder = release.sellerEarningsUsd ?? pending?.sellerEarningsUsd ?? null
+  if (fromOrder != null && Number.isFinite(fromOrder) && fromOrder > 0) return fromOrder
+  const releaseAmt = parseFloat(release.amount)
+  return Number.isFinite(releaseAmt) ? Math.abs(releaseAmt) : 0
+}
+
+/** Ready (unlocked) sale rows with the listing they came from — newest first. */
+export function availableEarningsListingRows(
+  transactions: EarningsTransaction[],
+  reversedOrderIds: Set<string>,
+): AvailableEarningsListingRow[] {
+  const { pendingSkip, mergeByReleaseId } = buildSalePendingReleasePairs(transactions)
+  const rows: AvailableEarningsListingRow[] = []
+  const seenOrders = new Set<string>()
+
+  for (const t of transactions) {
+    if (pendingSkip.has(t.id)) continue
+    const merged = mergeByReleaseId.get(t.id)
+    if (merged) {
+      const oid =
+        orderIdFromSellerSaleLedgerTx(merged.pending) ?? orderIdFromSellerSaleLedgerTx(merged.release)
+      if (oid && reversedOrderIds.has(oid)) continue
+      if (oid && seenOrders.has(oid)) continue
+      if (oid) seenOrders.add(oid)
+      const listing = listingFromTx(merged.pending) ?? listingFromTx(merged.release)
+      const title =
+        listing?.title ||
+        extractSoldItemName(merged.pending.description) ||
+        extractSoldItemName(merged.release.description) ||
+        "Sale"
+      rows.push({
+        key: merged.release.id,
+        title,
+        imageUrl: listing?.imageUrl ?? null,
+        listingHref: listing?.href ?? null,
+        saleHref: merged.release.saleHref ?? merged.pending.saleHref ?? orderDetailPathFromTx(merged.release),
+        amountUsd: amountForAvailableRow(merged.pending, merged.release),
+        extraListingCount: listing?.extraListingCount ?? 0,
+        createdAt: merged.release.created_at,
+      })
+      continue
+    }
+
+    if (omitReversedSaleCreditRow(t, reversedOrderIds)) continue
+    const { title: parsedTitle } = parseDescription(t.description, t.type)
+    if (singleRowVisualKind(t, parsedTitle, reversedOrderIds) !== "available") continue
+    const oid = orderIdFromSellerSaleLedgerTx(t)
+    if (oid && seenOrders.has(oid)) continue
+    if (oid) seenOrders.add(oid)
+    const listing = listingFromTx(t)
+    const title = listing?.title || extractSoldItemName(t.description) || parsedTitle.replace(/^Available — /, "") || "Sale"
+    rows.push({
+      key: t.id,
+      title,
+      imageUrl: listing?.imageUrl ?? null,
+      listingHref: listing?.href ?? null,
+      saleHref: t.saleHref ?? orderDetailPathFromTx(t),
+      amountUsd: amountForAvailableRow(null, t),
+      extraListingCount: listing?.extraListingCount ?? 0,
+      createdAt: t.created_at,
+    })
+  }
+
+  return rows.sort((a, b) => txTime(b.createdAt) - txTime(a.createdAt))
+}
+
 export function activityEmptyFilterCopy(filter: EarningsActivityStatusFilter): { title: string; body: string } {
   switch (filter) {
     case "available":
       return {
         title: "Nothing is “ready to use” yet",
-        body: "Sales stay pending until delivery or pickup wraps up. Try “Pending” or “All”, or check back after the buyer confirms.",
+        body: "Shipped sales stay pending until 4 days after carrier-confirmed delivery; pickup sales wait for verification. Try “Pending” or “All”.",
       }
     case "pending":
       return {

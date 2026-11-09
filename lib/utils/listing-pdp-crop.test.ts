@@ -1,0 +1,310 @@
+import assert from "node:assert/strict"
+import { describe, it } from "node:test"
+import {
+  LISTING_PDP_CROP_COVER,
+  LISTING_PDP_CROP_FIT,
+  applyListingPdpCropPan,
+  applyListingPdpCropZoom,
+  clampListingPdpCropLayout,
+  isListingPdpCropDefault,
+  listingPdpContainScale,
+  listingPdpCoverScale,
+  listingPdpCropActorIsOwner,
+  listingPdpCropCssFit,
+  listingPdpCropFromImageRow,
+  listingPdpCropNeedsPreciseLayout,
+  listingPdpCropToLayout,
+  listingPdpCropsEqual,
+  rotateListingPdpCropClockwise,
+  listingPdpLayoutToCrop,
+  listingPdpRenderScale,
+  listingPdpSliderPositionFromZoom,
+  listingPdpZoomFromRenderScale,
+  listingPdpZoomFromSliderPosition,
+  resolveListingPdpCrop,
+  retainMeasuredSize,
+  stepListingPdpCropZoom,
+} from "./listing-pdp-crop.ts"
+
+describe("resolveListingPdpCrop", () => {
+  it("keeps null columns as no seller crop", () => {
+    assert.equal(resolveListingPdpCrop(null, null, null), null)
+    assert.equal(listingPdpCropFromImageRow({}), null)
+    assert.equal(isListingPdpCropDefault(null), true)
+    assert.equal(isListingPdpCropDefault(LISTING_PDP_CROP_FIT), false)
+    assert.equal(isListingPdpCropDefault(LISTING_PDP_CROP_COVER), true)
+  })
+
+  it("fills missing pieces when any crop column is set", () => {
+    assert.deepEqual(resolveListingPdpCrop(0, null, null), LISTING_PDP_CROP_FIT)
+    assert.deepEqual(resolveListingPdpCrop(null, 20, 80), { zoom: 1, x: 20, y: 80 })
+  })
+
+  it("accepts PostgREST numeric strings", () => {
+    assert.deepEqual(resolveListingPdpCrop("1", "20", "80"), { zoom: 1, x: 20, y: 80 })
+    assert.deepEqual(
+      listingPdpCropFromImageRow({
+        pdp_crop_zoom: "0",
+        pdp_crop_x: "50",
+        pdp_crop_y: "50",
+      }),
+      LISTING_PDP_CROP_FIT,
+    )
+    assert.equal(resolveListingPdpCrop("", null, null), null)
+    assert.equal(resolveListingPdpCrop("nope", null, null), null)
+  })
+
+  it("clamps out-of-range values", () => {
+    assert.deepEqual(resolveListingPdpCrop(9, -10, 140), { zoom: 4, x: 0, y: 100 })
+  })
+})
+
+describe("listingPdp render scale", () => {
+  const frame = { w: 300, h: 400 }
+  const image = { w: 200, h: 400 }
+
+  it("interpolates contain → cover between zoom 0 and 1", () => {
+    const contain = listingPdpContainScale(frame.w, frame.h, image.w, image.h)
+    const cover = listingPdpCoverScale(frame.w, frame.h, image.w, image.h)
+    assert.equal(contain, 1)
+    assert.equal(cover, 1.5)
+    assert.equal(listingPdpRenderScale(frame.w, frame.h, image.w, image.h, 0), contain)
+    assert.equal(listingPdpRenderScale(frame.w, frame.h, image.w, image.h, 1), cover)
+    assert.ok(
+      Math.abs(
+        listingPdpRenderScale(frame.w, frame.h, image.w, image.h, 0.5) -
+          (contain + 0.5 * (cover - contain)),
+      ) < 1e-9,
+    )
+  })
+
+  it("multiplies cover above zoom 1 and round-trips", () => {
+    const cover = listingPdpCoverScale(frame.w, frame.h, image.w, image.h)
+    const scale = listingPdpRenderScale(frame.w, frame.h, image.w, image.h, 2)
+    assert.equal(scale, cover * 2)
+    assert.ok(
+      Math.abs(listingPdpZoomFromRenderScale(frame.w, frame.h, image.w, image.h, scale) - 2) <
+        1e-9,
+    )
+  })
+})
+
+describe("listingPdpCropToLayout / listingPdpLayoutToCrop", () => {
+  it("centers a cover crop", () => {
+    const layout = listingPdpCropToLayout(300, 400, 300, 400, LISTING_PDP_CROP_COVER)
+    assert.equal(layout.width, 300)
+    assert.equal(layout.height, 400)
+    assert.equal(layout.left, 0)
+    assert.equal(layout.top, 0)
+    assert.deepEqual(listingPdpLayoutToCrop(300, 400, 300, 400, layout), LISTING_PDP_CROP_COVER)
+  })
+
+  it("fits a tall board inside a 3:4 frame without cropping", () => {
+    const layout = listingPdpCropToLayout(300, 400, 200, 500, LISTING_PDP_CROP_FIT)
+    assert.ok(layout.width <= 300 + 1e-6)
+    assert.ok(layout.height <= 400 + 1e-6)
+    assert.ok(Math.abs(layout.left - (300 - layout.width) / 2) < 1e-6)
+    assert.ok(Math.abs(layout.top - (400 - layout.height) / 2) < 1e-6)
+    const back = listingPdpLayoutToCrop(300, 400, 200, 500, layout)
+    assert.ok(Math.abs(back.zoom - 0) < 0.01)
+  })
+
+  it("keeps the photo's aspect ratio at every zoom", () => {
+    const image = { w: 200, h: 500 }
+    for (const zoom of [0, 0.35, 1, 1.7, 4]) {
+      const layout = listingPdpCropToLayout(300, 400, image.w, image.h, {
+        zoom,
+        x: 30,
+        y: 70,
+      })
+      assert.ok(Math.abs(layout.width / layout.height - image.w / image.h) < 1e-9)
+      if (zoom >= 1) {
+        assert.ok(layout.left <= 0.5)
+        assert.ok(layout.left + layout.width >= 300 - 0.5)
+        assert.ok(layout.top <= 0.5)
+        assert.ok(layout.top + layout.height >= 400 - 0.5)
+      }
+    }
+  })
+
+  it("round-trips a panned cover crop", () => {
+    const crop = { zoom: 2, x: 20, y: 80 }
+    const layout = listingPdpCropToLayout(300, 400, 600, 600, crop)
+    const back = listingPdpLayoutToCrop(300, 400, 600, 600, layout)
+    assert.ok(Math.abs(back.zoom - 2) < 0.01)
+    assert.ok(Math.abs(back.x - 20) < 0.2)
+    assert.ok(Math.abs(back.y - 80) < 0.2)
+  })
+})
+
+describe("slider zoom", () => {
+  it("spreads a same-aspect photo across the whole slider", () => {
+    const frame = { w: 300, h: 400 }
+    const image = { w: 300, h: 400 }
+    assert.equal(listingPdpZoomFromSliderPosition(frame.w, frame.h, image.w, image.h, 0), 0)
+    const maxZoom = listingPdpZoomFromSliderPosition(frame.w, frame.h, image.w, image.h, 1)
+    assert.ok(Math.abs(maxZoom - 4) < 1e-6)
+    const midZoom = listingPdpZoomFromSliderPosition(frame.w, frame.h, image.w, image.h, 0.5)
+    const midScale = listingPdpRenderScale(frame.w, frame.h, image.w, image.h, midZoom)
+    assert.ok(Math.abs(midScale - 2.5) < 1e-6)
+    assert.ok(
+      Math.abs(listingPdpSliderPositionFromZoom(frame.w, frame.h, image.w, image.h, midZoom) - 0.5) <
+        1e-6,
+    )
+  })
+
+  it("steps size by a constant factor instead of the stored zoom unit", () => {
+    const frame = { w: 300, h: 400 }
+    const image = { w: 300, h: 400 }
+    const stepped = stepListingPdpCropZoom({
+      frameW: frame.w,
+      frameH: frame.h,
+      imageW: image.w,
+      imageH: image.h,
+      zoom: 0,
+      factor: 1.25,
+    })
+    const scale = listingPdpRenderScale(frame.w, frame.h, image.w, image.h, stepped)
+    const fitted = listingPdpRenderScale(frame.w, frame.h, image.w, image.h, 0)
+    assert.ok(Math.abs(scale / fitted - 1.25) < 1e-6)
+  })
+})
+
+describe("clamp and gestures", () => {
+  it("centers an image smaller than the frame", () => {
+    const clamped = clampListingPdpCropLayout(300, 400, {
+      width: 150,
+      height: 200,
+      left: 0,
+      top: 0,
+    })
+    assert.equal(clamped.left, 75)
+    assert.equal(clamped.top, 100)
+  })
+
+  it("does not pan a fitted image off-center", () => {
+    const fitted = listingPdpCropToLayout(300, 400, 200, 500, LISTING_PDP_CROP_FIT)
+    const panned = applyListingPdpCropPan({
+      layout: fitted,
+      deltaX: 80,
+      deltaY: -40,
+      frameW: 300,
+      frameH: 400,
+    })
+    assert.ok(Math.abs(panned.left - fitted.left) < 1e-6)
+    assert.ok(Math.abs(panned.top - fitted.top) < 1e-6)
+  })
+
+  it("zooms around a pinch origin and stays clamped", () => {
+    const start = listingPdpCropToLayout(300, 400, 300, 400, LISTING_PDP_CROP_COVER)
+    const zoomed = applyListingPdpCropZoom({
+      layout: start,
+      factor: 2,
+      originX: 150,
+      originY: 200,
+      frameW: 300,
+      frameH: 400,
+      imageW: 300,
+      imageH: 400,
+    })
+    assert.ok(zoomed.width > start.width)
+    assert.ok(zoomed.left <= 0)
+    assert.ok(zoomed.top <= 0)
+    assert.ok(zoomed.left + zoomed.width >= 300 - 1e-6)
+    assert.ok(zoomed.top + zoomed.height >= 400 - 1e-6)
+    assert.ok(Math.abs(zoomed.width / zoomed.height - 300 / 400) < 1e-9)
+  })
+
+  it("moves the photo with a two-finger drag and keeps the aspect ratio", () => {
+    const start = listingPdpCropToLayout(300, 400, 300, 400, { zoom: 2, x: 50, y: 50 })
+    const moved = applyListingPdpCropZoom({
+      layout: start,
+      factor: 1,
+      originX: 150,
+      originY: 200,
+      targetX: 180,
+      targetY: 230,
+      frameW: 300,
+      frameH: 400,
+      imageW: 300,
+      imageH: 400,
+    })
+    assert.ok(Math.abs(moved.width - start.width) < 1e-6)
+    assert.ok(Math.abs(moved.height - start.height) < 1e-6)
+    assert.ok(Math.abs(moved.left - (start.left + 30)) < 1e-6)
+    assert.ok(Math.abs(moved.top - (start.top + 30)) < 1e-6)
+  })
+})
+
+describe("listingPdpCropActorIsOwner", () => {
+  it("allows the crop control only when the viewer id is the listing owner", () => {
+    const ownerId = "11111111-1111-4111-8111-111111111111"
+    const otherId = "22222222-2222-4222-8222-222222222222"
+    assert.equal(listingPdpCropActorIsOwner(ownerId, ownerId), true)
+    assert.equal(listingPdpCropActorIsOwner(`  ${ownerId}  `, ownerId), true)
+    assert.equal(listingPdpCropActorIsOwner(otherId, ownerId), false)
+    assert.equal(listingPdpCropActorIsOwner(null, ownerId), false)
+    assert.equal(listingPdpCropActorIsOwner(ownerId, null), false)
+    assert.equal(listingPdpCropActorIsOwner("", ownerId), false)
+    assert.equal(listingPdpCropActorIsOwner("   ", "   "), false)
+  })
+})
+
+describe("listingPdpCropCssFit", () => {
+  it("uses contain only for an explicit fit crop", () => {
+    assert.equal(listingPdpCropCssFit(null), "cover")
+    assert.equal(listingPdpCropCssFit(LISTING_PDP_CROP_COVER), "cover")
+    assert.equal(listingPdpCropCssFit(LISTING_PDP_CROP_FIT), "contain")
+    assert.equal(listingPdpCropCssFit({ zoom: 1.4, x: 50, y: 40 }), "cover")
+  })
+
+  it("needs a measured layout only for intermediate zooms", () => {
+    assert.equal(listingPdpCropNeedsPreciseLayout(null), false)
+    assert.equal(listingPdpCropNeedsPreciseLayout(LISTING_PDP_CROP_FIT), false)
+    assert.equal(listingPdpCropNeedsPreciseLayout(LISTING_PDP_CROP_COVER), false)
+    assert.equal(listingPdpCropNeedsPreciseLayout({ zoom: 0.4, x: 50, y: 50 }), true)
+    assert.equal(listingPdpCropsEqual(LISTING_PDP_CROP_FIT, null), false)
+    assert.equal(listingPdpCropsEqual(LISTING_PDP_CROP_COVER, null), true)
+  })
+})
+
+describe("rotateListingPdpCropClockwise", () => {
+  it("leaves a centered fill alone", () => {
+    assert.equal(rotateListingPdpCropClockwise(null, 1), null)
+    assert.equal(rotateListingPdpCropClockwise(LISTING_PDP_CROP_COVER, 1), null)
+  })
+
+  it("walks a focal point clockwise around the photo", () => {
+    assert.deepEqual(rotateListingPdpCropClockwise({ zoom: 1.4, x: 50, y: 0 }, 1), {
+      zoom: 1.4,
+      x: 100,
+      y: 50,
+    })
+    assert.deepEqual(rotateListingPdpCropClockwise({ zoom: 1.4, x: 20, y: 80 }, 2), {
+      zoom: 1.4,
+      x: 80,
+      y: 20,
+    })
+  })
+})
+
+describe("retainMeasuredSize", () => {
+  it("reuses the same object when the bitmap size is unchanged", () => {
+    const first = retainMeasuredSize(null, 800, 1200)
+    assert.deepEqual(first, { w: 800, h: 1200 })
+    assert.equal(retainMeasuredSize(first, 800, 1200), first)
+  })
+
+  it("replaces the object when the bitmap size changes", () => {
+    const first = retainMeasuredSize(null, 800, 1200)
+    const next = retainMeasuredSize(first, 900, 1200)
+    assert.deepEqual(next, { w: 900, h: 1200 })
+    assert.notEqual(next, first)
+  })
+
+  it("ignores an unmeasured bitmap", () => {
+    const first = retainMeasuredSize(null, 800, 1200)
+    assert.equal(retainMeasuredSize(first, 0, 0), first)
+    assert.equal(retainMeasuredSize(null, 0, 400), null)
+  })
+})

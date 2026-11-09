@@ -9,6 +9,7 @@ import {
   insertBoardSavedSearch,
   type BoardSavedSearchRow,
 } from "@/lib/db/savedSearches"
+import { savedSearchMatchesCriteria } from "@/lib/utils/saved-search-criteria-equal"
 import {
   BOARD_SAVED_SEARCHES_MAX,
   createBoardSavedSearchActionSchema,
@@ -24,6 +25,23 @@ export type BoardSavedSearchListItem = {
   categoryId: string | null
   emailNotificationsEnabled: boolean
   updatedAt: string
+}
+
+function revalidateSavedSearchPaths() {
+  try {
+    revalidatePath("/board-finder")
+    revalidatePath("/boards")
+    revalidatePath("/fins")
+    revalidatePath("/wetsuits")
+    revalidatePath("/magazines")
+    revalidatePath("/boardbags")
+    revalidatePath("/surfpacks")
+    revalidatePath("/leashes")
+    revalidatePath("/apparel")
+    revalidatePath("/accessories")
+  } catch (err) {
+    console.error("[saved_search] revalidate failed:", err)
+  }
 }
 
 function toListItem(row: BoardSavedSearchRow): BoardSavedSearchListItem {
@@ -86,6 +104,25 @@ export async function createBoardSavedSearchAction(raw: unknown) {
     return { error: "Choose at least one filter before saving." as const }
   }
 
+  const existing = await fetchBoardSavedSearchesForUser(
+    supabase,
+    user.id,
+    BOARD_SAVED_SEARCHES_MAX,
+  )
+  if (!existing.error) {
+    const already = existing.data.find((row) =>
+      savedSearchMatchesCriteria([row], criteria),
+    )
+    if (already) {
+      return {
+        success: true as const,
+        id: already.id,
+        emailNotificationsEnabled: already.email_notifications_enabled,
+        alreadySaved: true as const,
+      }
+    }
+  }
+
   const { count, error: countError } = await countBoardSavedSearchesForUser(supabase, user.id)
   if (countError) {
     return { error: "Could not save search. Try again." as const }
@@ -103,20 +140,17 @@ export async function createBoardSavedSearchAction(raw: unknown) {
   })
 
   if (error || !data) {
+    if (error && "code" in error && error.code === "23505") {
+      return {
+        error: "Could not save another search. Remove one and try again." as const,
+      }
+    }
     return { error: "Could not save search. Try again." as const }
   }
 
-  revalidatePath("/board-finder")
-  revalidatePath("/boards")
-  revalidatePath("/fins")
-  revalidatePath("/wetsuits")
-  revalidatePath("/magazines")
-  revalidatePath("/boardbags")
-  revalidatePath("/surfpacks")
-  revalidatePath("/leashes")
-  revalidatePath("/apparel")
-  revalidatePath("/accessories")
-  revalidatePath("/search")
+  // Do not email here. The match email is sent only when a listing goes live
+  // after this row's created_at, and only when that listing has a title, price, and link.
+  revalidateSavedSearchPaths()
 
   return {
     success: true as const,
@@ -145,8 +179,7 @@ export async function deleteBoardSavedSearchAction(raw: unknown) {
     return { error: "Could not remove saved search." as const }
   }
 
-  revalidatePath("/board-finder")
-  revalidatePath("/boards")
+  revalidateSavedSearchPaths()
 
   return { success: true as const }
 }

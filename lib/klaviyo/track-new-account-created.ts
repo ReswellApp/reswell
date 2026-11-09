@@ -66,7 +66,7 @@ export function shouldTrackKlaviyoNewAccountForOAuthSession(user: User): boolean
 
 /**
  * Klaviyo metric **"New Account Created"** — use in a flow to send a welcome email.
- * A new account also receives the 15% welcome code on this event (`promo_code`,
+ * A new account also receives the 10% welcome code on this event (`promo_code`,
  * `discount_percent`, `expires_at`). When the account opted into marketing email,
  * a **Newsletter** event is sent too so that flow can deliver the same code.
  * Deduped per user via `uniqueId` if multiple hooks run for the same account.

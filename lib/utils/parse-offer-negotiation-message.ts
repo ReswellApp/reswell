@@ -99,6 +99,15 @@ function matchOfferByAmountAndListing(
   return onListing.length === 1 ? onListing[0]! : null
 }
 
+/** Match a mirrored negotiation line to the offer it describes, when one is on the thread. */
+export function resolveNegotiationOffer(
+  offers: OfferLikeForNegotiation[],
+  content: string,
+  listingId: string | null | undefined,
+): OfferLikeForNegotiation | null {
+  return matchOfferByAmountAndListing(offers, content, listingId)
+}
+
 /**
  * Match a mirrored counter / seller-offer line to an open COUNTERED offer so the
  * latest thread card can show Accept / Decline.

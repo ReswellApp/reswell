@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { requireAdmin } from "@/lib/brands/admin-server"
+import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
 import { getStripe } from "@/lib/stripe-server"
 import {
   ADMIN_TERMINAL_SALES_CHANNEL,
@@ -12,7 +12,7 @@ import { adminTerminalSaleFinalizeSchema } from "@/lib/validations/adminTerminal
  * when the PaymentIntent succeeds (idempotent; the Stripe webhook also settles).
  */
 export async function POST(request: NextRequest) {
-  const gate = await requireAdmin()
+  const gate = await requireAdminOrEmployee()
   if (!gate.ok) {
     return gate.response
   }

@@ -23,7 +23,8 @@ async function loadBoardsBrowseCategoryTypePage(
   page: number,
   rotateSeed: string,
 ): Promise<BoardsBrowseCategoryTypePage> {
-  const supabase = getDb({ consistency: "eventual" })
+  // Primary read: a replica snapshot must not be cached as the live cover after a save.
+  const supabase = getDb({ consistency: "strong" })
   return fetchBoardsBrowseCategoryTypePage(supabase, {
     boardType,
     condition,
@@ -36,7 +37,7 @@ async function loadBoardsBrowseCategoryTypePage(
 const getCachedBoardsBrowseCategoryTypePage = unstable_cache(
   loadBoardsBrowseCategoryTypePage,
   // `v5` prepends admin-pinned listings above new-this-window + the 24h seeded shuffle.
-  ["boards-browse-category-type", "v5-daily-rotate-pins"],
+  ["boards-browse-category-type", "v6-primary-cover"],
   {
     revalidate: BOARDS_BROWSE_REVALIDATE_SECONDS,
     tags: [BOARDS_BROWSE_CACHE_TAG],

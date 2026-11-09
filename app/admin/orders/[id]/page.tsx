@@ -14,6 +14,7 @@ import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { format } from "date-fns"
 import { AdminIssueRefundButton } from "@/components/features/admin/admin-issue-refund-button"
 import { AdminIssueItemReturnPanel } from "@/components/features/admin/admin-issue-item-return-panel"
+import { AdminOrderShipEngineDisputeLink } from "@/components/features/admin/admin-order-shipengine-dispute-link"
 import { AdminReplaceOrderShippingLabelPanel } from "@/components/features/admin/admin-replace-order-shipping-label-panel"
 import { AdminReswellShopFulfillForm } from "@/components/features/admin/admin-reswell-shop-fulfill-form"
 import { ReswellTrackingSection } from "@/components/features/orders/reswell-tracking-section"
@@ -22,15 +23,18 @@ import {
   pickupCodeBannerLabelClassName,
   pickupCodeBannerSurfaceClassName,
 } from "@/components/order-actions"
+import { adminOrderShowsShippingLabel } from "@/lib/admin/admin-order-label-visibility"
 import { orderStatusBadgeVariant, orderStatusLabel, deliveryStatusLabel, payoutStatusLabel } from "@/lib/order-status"
 import { carrierDeliveryPayoutEligibleAt } from "@/lib/shipping/carrier-delivery-payout-hold"
 import { createClient } from "@/lib/supabase/client"
-import { OrderDetailRealtimeRefresh } from "@/components/order-realtime-refresh"
 import { toast } from "sonner"
 
 type OrderApiResponse =
   | {
-      data: AdminOrderDetail
+      data: AdminOrderDetail & {
+        shipping_adjusted_fee: number
+        shipping_adjusted_fee_charged: number
+      }
       capabilities: {
         canRefund: boolean
         canReleaseShippingSellerEarnings: boolean
@@ -217,8 +221,11 @@ export default function AdminOrderDetailPage() {
   const hasPaperlessQr = payload.capabilities.hasPaperlessQr
   const canFulfillReswellShop = payload.capabilities.canFulfillReswellShop
   const canReplaceShippingLabel = payload.capabilities.canReplaceShippingLabel
-  const showShippingLabel =
-    o.fulfillment_method === "shipping" && hasShippingLabel
+  const showShippingLabel = adminOrderShowsShippingLabel({
+    fulfillmentMethod: o.fulfillment_method,
+    hasPdf: hasShippingLabel,
+    hasPaperlessQr,
+  })
   const showCarrierTracking =
     o.fulfillment_method === "shipping" && Boolean(o.tracking_number?.trim())
   const showLegacyManualPayoutRelease =
@@ -262,7 +269,6 @@ export default function AdminOrderDetailPage() {
 
   return (
     <div className="space-y-6">
-      <OrderDetailRealtimeRefresh orderId={id} onUpdate={bumpRefetch} />
       <div className="flex flex-wrap items-center gap-3">
         <Button variant="ghost" size="sm" asChild className="gap-2">
           <Link href={o.is_reswell_shop ? "/admin/shop/orders" : "/admin/orders"}>
@@ -331,6 +337,19 @@ export default function AdminOrderDetailPage() {
               </p>
               <p className="font-medium tabular-nums">${o.shipping_amount.toFixed(2)}</p>
             </div>
+            {o.shipping_adjusted_fee > 0 ? (
+              <div>
+                <p className="text-muted-foreground">Carrier adjustment</p>
+                <p className="font-semibold tabular-nums text-rose-700 dark:text-rose-400">
+                  +${o.shipping_adjusted_fee.toFixed(2)}
+                </p>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                  {o.shipping_adjusted_fee_charged > 0
+                    ? `$${o.shipping_adjusted_fee_charged.toFixed(2)} was deducted from the seller wallet as an adjustment fee. The buyer’s shipping payment stays the amount above.`
+                    : "Recorded before seller adjustment fees. The buyer’s shipping payment stays the amount above. Reswell keeps this carrier bill."}
+                </p>
+              </div>
+            ) : null}
             <div>
               <p className="text-muted-foreground">Platform fee (7% of item)</p>
               <p className="font-medium tabular-nums">-${o.platform_fee.toFixed(2)}</p>
@@ -450,6 +469,14 @@ export default function AdminOrderDetailPage() {
             </div>
           )}
 
+          {o.fulfillment_method === "shipping" ? (
+            <AdminOrderShipEngineDisputeLink
+              orderId={o.id}
+              trackingCarrier={o.tracking_carrier}
+              trackingNumber={o.tracking_number}
+            />
+          ) : null}
+
           {o.fulfillment_method === "shipping" && o.status === "confirmed" && (
             <div className="rounded-lg border border-border/60 bg-muted/20 p-4 space-y-3">
               <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
@@ -510,7 +537,7 @@ export default function AdminOrderDetailPage() {
                       o.carrier_delivered_at && (
                       <p className="text-xs text-muted-foreground leading-relaxed rounded-md border border-border/60 bg-muted/30 px-3 py-2">
                         <span className="font-medium text-foreground">Carrier delivery confirmed. </span>
-                        Seller earnings release automatically 24 hours after the carrier delivery timestamp (
+                        Seller earnings release automatically 4 days after the carrier delivery timestamp (
                         {format(carrierDeliveryPayoutEligibleAt(new Date(o.carrier_delivered_at)), "MMM d, yyyy HH:mm")}
                         ).
                       </p>
@@ -544,7 +571,7 @@ export default function AdminOrderDetailPage() {
                       canReleaseShippingSellerEarnings &&
                       o.payout.hold_reason !== "awaiting_carrier_settlement" && (
                       <p className="text-xs text-muted-foreground leading-relaxed border-t border-border/60 pt-3">
-                        Payout is on hold. Carrier-tracked Reswell shipping orders release automatically 24 hours
+                        Payout is on hold. Carrier-tracked Reswell shipping orders release automatically 4 days
                         after ShipEngine reports delivery.
                       </p>
                     )}
@@ -628,9 +655,12 @@ export default function AdminOrderDetailPage() {
         <SellerPreparedShippingLabelCard
           orderId={o.id}
           downloadApiPrefix="/api/admin/orders"
+          hasPdf={hasShippingLabel}
           hasPaperlessQr={hasPaperlessQr}
           paperlessInstructions={payload.capabilities.paperlessInstructions}
           paperlessHandoffCode={payload.capabilities.paperlessHandoffCode}
+          title="Shipping label"
+          description="Carrier label purchased for this order. View or download it here to pack and ship."
         />
       ) : null}
 

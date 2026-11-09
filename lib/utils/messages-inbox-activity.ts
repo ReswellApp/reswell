@@ -1,5 +1,15 @@
 import { listingDetailHref } from "@/lib/listing-href"
+import { dashboardOfferFocusPath, parseOfferFocusId } from "@/lib/utils/offers-dashboard-display"
 import type { MessagesInboxNotification } from "@/lib/db/messagesInbox"
+import {
+  isLikelyOrderUuid,
+  purchaseHrefForOrderId,
+  saleHrefForOrderId,
+} from "@/lib/earnings-sale-ledger"
+import {
+  ORDER_DELIVERED_BUYER_HREF,
+  ORDER_DELIVERED_SELLER_HREF,
+} from "@/lib/services/notifications/catalog"
 import { supportCaseResponseHref } from "@/lib/utils/support-case-paths"
 import {
   isSupportActivityType,
@@ -20,7 +30,10 @@ export function activityKindLabel(type: string | undefined): string {
   if (t.includes("favorite") || t.includes("save") || t === "listing_saved") return "Favorite"
   if (t.includes("follow")) return "Follow"
   if (t.startsWith("offer_")) return "Offer"
+  if (t === "order_delivered" || t === "order_delivered_payout") return "Order"
   if (t === "payout_info_required") return "Payout"
+  if (t === "seller_message_waiting") return "Reply"
+  if (t === "seller_listing_hide_warning" || t === "seller_listing_auto_hidden") return "Vacation"
   return "Activity"
 }
 
@@ -41,17 +54,57 @@ export function filterInboxActivityNotifications(
   return notifications.filter((n) => !isOfferActivityType(n.type))
 }
 
+export function offerIdFromInboxNotification(n: MessagesInboxNotification): string | null {
+  const meta = n.metadata
+  if (meta && typeof meta === "object" && !Array.isArray(meta)) {
+    const fromMeta = parseOfferFocusId(typeof meta.offerId === "string" ? meta.offerId : undefined)
+    if (fromMeta) return fromMeta
+  }
+  const href = n.href?.trim() ?? ""
+  if (!href.startsWith("/") || href.startsWith("//")) return null
+  const query = href.includes("?") ? href.slice(href.indexOf("?") + 1).split("#")[0] ?? "" : ""
+  return parseOfferFocusId(new URLSearchParams(query).get("offer") ?? undefined)
+}
+
 export function inboxActivityNotificationHref(n: MessagesInboxNotification): string {
   if (n.support_case_id) return supportCaseResponseHref(n.support_case_id)
   if (isSupportActivityType(n.type) && n.id.startsWith("support:")) {
     return supportCaseResponseHref(n.id.slice("support:".length))
   }
-  if (n.type === "payout_info_required") return "/dashboard/earnings"
+  const type = (n.type || "").toLowerCase()
+  if (isOfferActivityType(type)) return dashboardOfferFocusPath(offerIdFromInboxNotification(n))
+  if (type === "order_delivered_payout") return orderDeliveredHref(n, "seller")
+  if (type === "order_delivered") return orderDeliveredHref(n, "buyer")
+  const href = n.href?.trim()
+  if (href && href.startsWith("/") && !href.startsWith("//")) return href
+  if (type === "payout_info_required") return "/dashboard/earnings"
   const listing = n.listings
   if (n.listing_id && listing?.section) {
     return listingDetailHref(listing)
   }
-  return "/dashboard/favorites"
+  return "/favorites"
+}
+
+function orderDeliveredHref(n: MessagesInboxNotification, role: "seller" | "buyer"): string {
+  const orderId = orderIdFromInboxNotification(n)
+  if (role === "seller") {
+    return orderId ? saleHrefForOrderId(orderId) : ORDER_DELIVERED_SELLER_HREF
+  }
+  return orderId ? purchaseHrefForOrderId(orderId) : ORDER_DELIVERED_BUYER_HREF
+}
+
+function orderIdFromInboxNotification(n: MessagesInboxNotification): string | null {
+  const meta = n.metadata
+  if (meta && typeof meta === "object" && !Array.isArray(meta)) {
+    const raw = meta.orderId
+    if (typeof raw === "string" && isLikelyOrderUuid(raw)) return raw.trim()
+  }
+  const href = n.href?.trim() ?? ""
+  if (!href.startsWith("/") || href.startsWith("//")) return null
+  const path = href.split(/[?#]/)[0] ?? href
+  const match = path.match(/^\/dashboard\/(?:sales|purchases)\/([^/]+)$/)
+  const id = match?.[1]?.trim() ?? ""
+  return isLikelyOrderUuid(id) ? id : null
 }
 
 export function countUnreadInboxActivityNotifications(

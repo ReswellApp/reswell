@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { revalidateMessagesInboxForParticipants } from "@/lib/cache/revalidate-messages-inbox"
+import { broadcastInsertedMarketplaceMessage } from "@/lib/services/broadcastMarketplaceThreadMessage"
 import { getAnyConversationBetweenUsers } from "@/lib/db/conversations"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 
@@ -74,15 +75,24 @@ async function insertStaffOutboundMessage(
   targetUserId: string,
   content: string,
 ): Promise<{ ok: true } | { ok: false; error: string; status: number }> {
-  const { error: msgErr } = await supabase.from("messages").insert({
-    conversation_id: conversationId,
-    sender_id: staffUserId,
-    content: content.slice(0, 8000),
-  })
-  if (msgErr) {
+  const body = content.slice(0, 8000)
+  const { data: inserted, error: msgErr } = await supabase
+    .from("messages")
+    .insert({
+      conversation_id: conversationId,
+      sender_id: staffUserId,
+      content: body,
+    })
+    .select("id, created_at")
+    .single()
+  if (msgErr || !inserted) {
     console.error("[startStaffOutboundMarketplaceConversation] message insert:", msgErr)
     return { ok: false, error: "Could not send message", status: 500 }
   }
+  await broadcastInsertedMarketplaceMessage(
+    { ...inserted, sender_id: staffUserId, content: body },
+    conversationId,
+  )
   revalidateMessagesInboxForParticipants(staffUserId, targetUserId)
   return { ok: true }
 }

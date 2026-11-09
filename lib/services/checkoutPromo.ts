@@ -16,6 +16,8 @@ import {
 } from "@/lib/db/newsletterPromoCodes"
 import { validateAdminIssuedPromoForCheckout } from "@/lib/services/adminIssuedPromo"
 import { validateNewsletterPromoForCheckout } from "@/lib/services/newsletterPromo"
+import type { PeerListingSection } from "@/lib/peer-listing-sections"
+import type { PromoCheckoutLine } from "@/lib/utils/promo-product-type"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { normalizeNewsletterPromoCodeInput } from "@/lib/utils/newsletter-promo-code"
 
@@ -33,6 +35,7 @@ export type CheckoutPromoValidationResult =
       discountPercent: number
       discountUsd: number
       totalUsd: number
+      appliesTo: null
     }
   | {
       ok: true
@@ -41,6 +44,7 @@ export type CheckoutPromoValidationResult =
       discountPercent: number
       discountUsd: number
       totalUsd: number
+      appliesTo: PeerListingSection[] | null
     }
   | { ok: false; error: string }
 
@@ -49,6 +53,12 @@ export async function validateCheckoutPromoForCheckout(params: {
   buyerEmail: string
   itemSubtotalUsd: number
   shippingUsd: number
+  lines?: readonly PromoCheckoutLine[]
+  preview?: {
+    buyerId: string
+    offerId?: string | null
+    requestedLines: readonly { id: string; quantity: number }[]
+  }
 }): Promise<CheckoutPromoValidationResult> {
   const normalized = normalizeNewsletterPromoCodeInput(params.code)
 
@@ -81,6 +91,8 @@ export async function validateCheckoutPromoForCheckout(params: {
       code: normalized,
       itemSubtotalUsd: params.itemSubtotalUsd,
       shippingUsd: params.shippingUsd,
+      lines: params.lines,
+      preview: params.preview,
     })
     if (!adminResult.ok) return adminResult
     return {
@@ -90,6 +102,7 @@ export async function validateCheckoutPromoForCheckout(params: {
       discountPercent: adminResult.discountPercent,
       discountUsd: adminResult.discountUsd,
       totalUsd: adminResult.totalUsd,
+      appliesTo: adminResult.appliesTo,
     }
   }
 
@@ -108,6 +121,7 @@ export async function validateCheckoutPromoForCheckout(params: {
       discountPercent: newsletterResult.discountPercent,
       discountUsd: newsletterResult.discountUsd,
       totalUsd: newsletterResult.totalUsd,
+      appliesTo: null,
     }
   }
 

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
+import { readOptionalMobileSession } from "@/lib/auth/mobile-session"
 import { authorizeMarketplaceAttachmentDownload } from "@/lib/services/marketplaceMessageAttachmentAccess"
-import { createServiceRoleClient } from "@/lib/supabase/server"
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 
 function contentDispositionHeader(fileName: string, inline: boolean): string {
   const fallback = "attachment"
@@ -26,7 +27,9 @@ export async function HEAD(
     return new NextResponse(null, { status: 400 })
   }
 
-  const auth = await authorizeMarketplaceAttachmentDownload(parsed.data)
+  const mobile = await readOptionalMobileSession(_request)
+  const supabase = mobile?.ok ? mobile.supabase : await createClient()
+  const auth = await authorizeMarketplaceAttachmentDownload(parsed.data, supabase)
   if (!auth.ok) {
     return new NextResponse(null, { status: auth.status })
   }
@@ -89,7 +92,9 @@ export async function GET(
     return NextResponse.json({ error: "Invalid message id" }, { status: 400 })
   }
 
-  const auth = await authorizeMarketplaceAttachmentDownload(parsed.data)
+  const mobile = await readOptionalMobileSession(request)
+  const supabase = mobile?.ok ? mobile.supabase : await createClient()
+  const auth = await authorizeMarketplaceAttachmentDownload(parsed.data, supabase)
   if (!auth.ok) {
     return NextResponse.json({ error: auth.error }, { status: auth.status })
   }

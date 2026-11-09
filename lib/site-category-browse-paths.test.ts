@@ -4,7 +4,6 @@ import { describe, it } from "node:test"
 import {
   CATEGORY_BROWSE_PATHNAMES,
   isCategoryBrowsePathname,
-  shouldSkipPageEnterAnimation,
 } from "./site-category-browse-paths.ts"
 
 describe("isCategoryBrowsePathname", () => {
@@ -33,29 +32,12 @@ describe("isCategoryBrowsePathname", () => {
   })
 })
 
-describe("shouldSkipPageEnterAnimation", () => {
-  it("skips the enter on listing PDPs and category browse pages", () => {
-    assert.equal(shouldSkipPageEnterAnimation("/l/lost-round-nose"), true)
-    assert.equal(shouldSkipPageEnterAnimation("/l"), true)
-    assert.equal(shouldSkipPageEnterAnimation("/boards"), true)
-    assert.equal(shouldSkipPageEnterAnimation("/fins"), true)
-    assert.equal(shouldSkipPageEnterAnimation("/apparel"), true)
-    assert.equal(shouldSkipPageEnterAnimation("/magazines"), true)
-  })
-
-  it("still allows the enter animation on other marketing and account routes", () => {
-    assert.equal(shouldSkipPageEnterAnimation("/"), false)
-    assert.equal(shouldSkipPageEnterAnimation("/search"), false)
-    assert.equal(shouldSkipPageEnterAnimation("/sell/boards"), false)
-    assert.equal(shouldSkipPageEnterAnimation("/dashboard"), false)
-  })
-})
-
 describe("root-level page-enter wiring", () => {
-  it("gates page-enter from NavigationPageGate via the shared helper", () => {
+  it("does not remount or fade the page shell on soft navigation", () => {
     const src = readFileSync(new URL("../components/navigation-page-gate.tsx", import.meta.url), "utf8")
-    assert.match(src, /shouldSkipPageEnterAnimation/)
-    assert.doesNotMatch(src, /!pathname\.startsWith\("\/l\/"\) && "page-enter"/)
+    assert.doesNotMatch(src, /key=\{navCount\}/)
+    assert.doesNotMatch(src, /["']page-enter["']/)
+    assert.doesNotMatch(src, /shouldSkipPageEnterAnimation/)
   })
 
   it("uses the category browse skeleton from root loading.tsx", () => {

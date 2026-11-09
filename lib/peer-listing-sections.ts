@@ -87,6 +87,9 @@ export const SELLER_PROFILE_SECTION_SORT_ORDER = [
   "surfboards",
   "fins",
   "wetsuits",
+  "boardbags",
+  "surfpacks",
+  "leashes",
   "magazines",
   "traction",
 ] as const

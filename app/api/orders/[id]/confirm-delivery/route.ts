@@ -1,11 +1,12 @@
 import { createClient } from "@/lib/supabase/server"
 import { getConversationForBuyerSellerListing, ensureConversationForBuyerSellerListing } from "@/lib/db/conversations"
 import { sendFulfillmentReviewPrompts } from "@/lib/services/fulfillmentReviewPrompts"
+import { broadcastInsertedMarketplaceMessage } from "@/lib/services/broadcastMarketplaceThreadMessage"
 import { NextRequest, NextResponse } from "next/server"
 
 /**
  * Buyer marks the shipment received (manual-tracking orders only).
- * Reswell shipping with carrier tracking completes from ShipEngine delivery + 24h hold.
+ * Reswell shipping with carrier tracking completes after ShipEngine delivery + a four-day hold.
  */
 export async function POST(
   _request: NextRequest,
@@ -89,11 +90,22 @@ export async function POST(
   }
 
   if (conv) {
-    await supabase.from("messages").insert({
-      conversation_id: conv.id,
-      sender_id: user.id,
-      content: `I confirmed I received "${listing?.title ?? "the item"}". Reswell will review and an admin can approve your payout after verifying delivery.`,
-    })
+    const receivedContent = `I confirmed I received "${listing?.title ?? "the item"}". Reswell will review and an admin can approve your payout after verifying delivery.`
+    const { data: inserted } = await supabase
+      .from("messages")
+      .insert({
+        conversation_id: conv.id,
+        sender_id: user.id,
+        content: receivedContent,
+      })
+      .select("id, created_at")
+      .single()
+    if (inserted) {
+      await broadcastInsertedMarketplaceMessage(
+        { ...inserted, sender_id: user.id, content: receivedContent },
+        conv.id,
+      )
+    }
     await supabase
       .from("conversations")
       .update({ last_message_at: now })

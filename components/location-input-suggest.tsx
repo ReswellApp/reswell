@@ -5,6 +5,10 @@ import { createPortal } from "react-dom"
 import { Input } from "@/components/ui/input"
 import { SITE_FILTER_BAR_HEIGHT } from "@/components/site-search-bar"
 import { cn } from "@/lib/utils"
+import {
+  computeBelowFieldDropdownLayout,
+  type BelowFieldDropdownLayout,
+} from "@/lib/utils/below-field-dropdown-layout"
 import { loadGoogleMapsWithPlaces } from "@/lib/maps/load-google-maps"
 import {
   choosePlacesAutocompleteBackend,
@@ -75,6 +79,12 @@ interface LocationInputSuggestProps {
    * (e.g. geocode the current input as a free-text confirm).
    */
   onEnterWhenPanelClosed?: () => void
+  /**
+   * `portal` (default): body-fixed list for forms.
+   * `inline`: in-flow list under the field — use inside overflow scrollers
+   * (browse filter sidebar / mobile sheet) so the panel does not drift on Mac/iOS.
+   */
+  panelPlacement?: "portal" | "inline"
 }
 
 const HAS_GOOGLE_KEY = Boolean(
@@ -214,7 +224,7 @@ export function LocationInputSuggest({
   onPickSuggestion,
   suggestMode = "location",
   pickSetsInputValue = true,
-  name = "location",
+  name = "location-q",
   id,
   placeholder = "City or ZIP",
   className = "",
@@ -226,6 +236,7 @@ export function LocationInputSuggest({
   "aria-label": ariaLabel,
   endSlot,
   onEnterWhenPanelClosed,
+  panelPlacement = "portal",
 }: LocationInputSuggestProps) {
   const [open, setOpen] = useState(false)
   const [inputFocused, setInputFocused] = useState(false)
@@ -234,7 +245,7 @@ export function LocationInputSuggest({
   const [googleRows, setGoogleRows] = useState<GoogleLocationRow[]>([])
   const [fetchEmpty, setFetchEmpty] = useState(false)
   const [activeIndex, setActiveIndex] = useState(-1)
-  const [dropdownRect, setDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null)
+  const [dropdownRect, setDropdownRect] = useState<BelowFieldDropdownLayout | null>(null)
   const [googleLocationReady, setGoogleLocationReady] = useState(false)
   const [googleLocationFailed, setGoogleLocationFailed] = useState(() => !HAS_GOOGLE_KEY)
   const [resolvingPick, setResolvingPick] = useState(false)
@@ -245,6 +256,7 @@ export function LocationInputSuggest({
   const suppressOpenUntilTypingRef = useRef(false)
   const blurCloseTimerRef = useRef<number | null>(null)
   const pickLockRef = useRef(false)
+  const hoverArmedRef = useRef(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const shellRef = useRef<HTMLDivElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -421,9 +433,10 @@ export function LocationInputSuggest({
               }))
 
               if (mappedRows.length > 0) {
+                hoverArmedRef.current = false
                 setGoogleRows(mappedRows)
                 setFetchEmpty(false)
-                setActiveIndex(0)
+                setActiveIndex(-1)
                 const allowOpen = !suppressOpenUntilTypingRef.current
                 setOpenAfterFetch(allowOpen)
               } else {
@@ -467,9 +480,10 @@ export function LocationInputSuggest({
             if (runId !== generationRef.current) return
 
             if (rows.length > 0) {
+              hoverArmedRef.current = false
               setGoogleRows(rows)
               setFetchEmpty(false)
-              setActiveIndex(0)
+              setActiveIndex(-1)
               const allowOpen = !suppressOpenUntilTypingRef.current
               setOpenAfterFetch(allowOpen)
             } else {
@@ -501,9 +515,10 @@ export function LocationInputSuggest({
                 secondaryText: p.secondaryText,
               }))
               if (mappedRows.length > 0) {
+                hoverArmedRef.current = false
                 setGoogleRows(mappedRows)
                 setFetchEmpty(false)
-                setActiveIndex(0)
+                setActiveIndex(-1)
                 const allowOpen = !suppressOpenUntilTypingRef.current
                 setOpenAfterFetch(allowOpen)
               } else {
@@ -542,10 +557,11 @@ export function LocationInputSuggest({
     const cachedImmediate = readSuggestCache(q, suggestMode)
     if (cachedImmediate !== undefined) {
       if (runId !== generationRef.current) return
+      hoverArmedRef.current = false
       setSuggestions(cachedImmediate)
       setGoogleRows([])
       setFetchEmpty(cachedImmediate.length === 0)
-      setActiveIndex(cachedImmediate.length > 0 ? 0 : -1)
+      setActiveIndex(-1)
       setLoading(false)
       const allowOpen = !suppressOpenUntilTypingRef.current
       setOpenAfterFetch(allowOpen)
@@ -562,9 +578,10 @@ export function LocationInputSuggest({
 
       const cached = readSuggestCache(q, suggestMode)
       if (cached !== undefined) {
+        hoverArmedRef.current = false
         setSuggestions(cached)
         setFetchEmpty(cached.length === 0)
-        setActiveIndex(cached.length > 0 ? 0 : -1)
+        setActiveIndex(-1)
         const allowOpen = !suppressOpenUntilTypingRef.current
         setOpenAfterFetch(allowOpen)
         setLoading(false)
@@ -580,9 +597,10 @@ export function LocationInputSuggest({
           const list = await fetchSuggestions(q, ac.signal, suggestMode)
           if (runId !== generationRef.current) return
           writeSuggestCache(q, suggestMode, list)
+          hoverArmedRef.current = false
           setSuggestions(list)
           setFetchEmpty(list.length === 0)
-          setActiveIndex(list.length > 0 ? 0 : -1)
+          setActiveIndex(-1)
           const allowOpen = !suppressOpenUntilTypingRef.current
           setOpenAfterFetch(allowOpen)
         } catch (err) {
@@ -614,8 +632,10 @@ export function LocationInputSuggest({
   const hasResults = listHasResults
   const showListbox = panelOpen && hasResults && !loading
 
+  const useInlinePanel = panelPlacement === "inline"
+
   useEffect(() => {
-    if (!panelOpen) {
+    if (!panelOpen || useInlinePanel) {
       setDropdownRect(null)
       return
     }
@@ -624,9 +644,15 @@ export function LocationInputSuggest({
     const update = () => {
       const el = anchorEl()
       if (!el) return
-      const rect = el.getBoundingClientRect()
-      const gap = 6
-      setDropdownRect({ top: rect.bottom + gap, left: rect.left, width: rect.width })
+      setDropdownRect(
+        computeBelowFieldDropdownLayout(el, {
+          gap: 6,
+          minListWidth: isAddress ? 280 : 240,
+          maxListWidth: isAddress ? 520 : 360,
+          maxHeightCap: isAddress ? 340 : 320,
+          allowFlip: true,
+        }),
+      )
     }
     update()
     window.addEventListener("scroll", update, { capture: true, passive: true })
@@ -652,7 +678,7 @@ export function LocationInputSuggest({
       window.clearTimeout(t0)
       window.clearTimeout(t1)
     }
-  }, [panelOpen, endSlot])
+  }, [panelOpen, endSlot, useInlinePanel, isAddress])
 
   useEffect(() => {
     if (!showListbox || activeIndex < 0) return
@@ -857,6 +883,8 @@ export function LocationInputSuggest({
   )
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.nativeEvent.isComposing || e.keyCode === 229) return
+
     if (!panelOpen) {
       if (e.key === "Escape") setOpen(false)
       if (e.key === "Enter" && onEnterWhenPanelClosed) {
@@ -871,6 +899,10 @@ export function LocationInputSuggest({
         e.preventDefault()
         setOpen(false)
         setActiveIndex(-1)
+      } else if (e.key === "Enter" && onEnterWhenPanelClosed) {
+        e.preventDefault()
+        setOpen(false)
+        onEnterWhenPanelClosed()
       }
       return
     }
@@ -878,18 +910,23 @@ export function LocationInputSuggest({
     const len = useGoogleLocationPath ? googleRows.length : suggestions.length
     if (e.key === "ArrowDown") {
       e.preventDefault()
-      setActiveIndex((i) => (i + 1) % len)
+      setActiveIndex((i) => (i < 0 ? 0 : (i + 1) % len))
     } else if (e.key === "ArrowUp") {
       e.preventDefault()
-      setActiveIndex((i) => (i <= 0 ? len - 1 : i - 1))
+      setActiveIndex((i) => (i < 0 ? len - 1 : i <= 0 ? len - 1 : i - 1))
     } else if (e.key === "Enter") {
       e.preventDefault()
-      const idx = activeIndex >= 0 ? activeIndex : 0
+      if (activeIndex < 0) {
+        setOpen(false)
+        setActiveIndex(-1)
+        onEnterWhenPanelClosed?.()
+        return
+      }
       if (useGoogleLocationPath) {
-        const row = googleRows[idx]
+        const row = googleRows[activeIndex]
         if (row) pickGoogleRow(row)
       } else {
-        const item = suggestions[idx]
+        const item = suggestions[activeIndex]
         if (item) pickHttp(item)
       }
     } else if (e.key === "Escape") {
@@ -899,231 +936,260 @@ export function LocationInputSuggest({
     }
   }
 
-  const portalReady = panelOpen && dropdownRect && typeof document !== "undefined"
-
-  const panelWidth = dropdownRect ? Math.max(dropdownRect.width, isAddress ? 280 : 240) : 240
-  const panelLeft = dropdownRect
-    ? Math.min(dropdownRect.left, typeof window !== "undefined" ? window.innerWidth - panelWidth - 12 : dropdownRect.left)
-    : 0
-
+  const portalReady = !useInlinePanel && panelOpen && dropdownRect && typeof document !== "undefined"
+  const showPanel = useInlinePanel ? panelOpen : Boolean(portalReady && dropdownRect)
   const showGoogleAttribution = useGoogleLocationPath && showListbox
 
-  const dropdownPanel =
-    portalReady &&
-    dropdownRect &&
-    createPortal(
-      <div
-        ref={dropdownRef}
-        id={listboxId}
-        data-location-suggest=""
-        role={showListbox ? "listbox" : loading ? "status" : !fetchEmpty ? undefined : "status"}
-        aria-label={
-          showListbox
-            ? isAddress
-              ? "Address suggestions"
-              : "Location suggestions"
-            : loading
-              ? "Loading address suggestions"
-              : fetchEmpty
-                ? "No matching addresses"
-                : undefined
-        }
-        aria-busy={loading}
-        // Mouse: keep input focused when clicking panel chrome. Touch: do not preventDefault here
-        // (that blocks list scrolling); option buttons handle preventDefault + pick themselves.
-        onPointerDown={(e) => {
-          if (e.target instanceof Element && e.target.closest("a")) return
-          if (e.pointerType === "mouse") e.preventDefault()
-        }}
-        className={cn(
-          // pointer-events-auto: Radix modal Sheet/Dialog sets body { pointer-events: none }.
-          // Without this, the portaled list is visible but inert — taps hit filters underneath.
-          "fixed z-[160] overflow-hidden pointer-events-auto touch-pan-y",
-          isAddress
-            ? "origin-top rounded-[6px] border border-neutral-200 bg-white text-neutral-900 shadow-[0_10px_40px_-4px_rgba(0,0,0,0.12)]"
-            : "origin-top rounded-xl border border-border/80 bg-popover text-popover-foreground shadow-xl shadow-black/10 animate-in fade-in-0 slide-in-from-top-2 duration-200",
-        )}
-        style={{
-          top: dropdownRect.top,
-          left: panelLeft,
-          width: panelWidth,
-          maxHeight: isAddress ? "min(60vh, 340px)" : "min(55vh, 320px)",
-        }}
-      >
-        {loading ? (
-          <div className="flex items-center gap-3 px-4 py-3.5 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
-            <span>Searching…</span>
+  const highlightRow = (idx: number) => {
+    if (!hoverArmedRef.current) return
+    setActiveIndex(idx)
+  }
+
+  const dropdownInner = !showPanel ? null : (
+    <>
+      {loading ? (
+        <div className="flex items-center gap-3 px-3 py-3 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
+          <span>Searching…</span>
+        </div>
+      ) : fetchEmpty ? (
+        <div
+          className={cn(
+            "flex gap-3 px-3 py-3",
+            isAddress ? "text-[13px] text-neutral-600" : "text-sm text-muted-foreground",
+          )}
+        >
+          {isAddress ? (
+            <Building2 className="mt-0.5 h-4 w-4 shrink-0 text-neutral-400" aria-hidden />
+          ) : (
+            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/70" aria-hidden />
+          )}
+          <div className="min-w-0">
+            <p className={cn("font-medium", isAddress ? "text-neutral-900" : "text-foreground")}>No matches</p>
+            <p className="mt-1 text-xs leading-relaxed text-neutral-500">
+              {isAddress
+                ? "Try a house number and street, or add city or ZIP."
+                : "Try a US ZIP code, city name, or neighborhood — check spelling or add the state."}
+            </p>
           </div>
-        ) : fetchEmpty ? (
+        </div>
+      ) : useGoogleLocationPath ? (
+        <div className="flex min-h-0 flex-col">
           <div
             className={cn(
-              "flex gap-3 px-4 py-3.5",
-              isAddress ? "text-[13px] text-neutral-600" : "text-sm text-muted-foreground",
+              "min-h-0 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]",
+              useInlinePanel ? "max-h-[min(42dvh,280px)]" : "max-h-[min(48vh,268px)]",
             )}
+            onPointerMove={() => {
+              hoverArmedRef.current = true
+            }}
           >
-            {isAddress ? (
-              <Building2 className="mt-0.5 h-4 w-4 shrink-0 text-neutral-400" aria-hidden />
-            ) : (
-              <MapPin className="h-5 w-5 shrink-0 text-muted-foreground/70 mt-0.5" aria-hidden />
-            )}
-            <div className="min-w-0">
-              <p className={cn("font-medium", isAddress ? "text-neutral-900" : "text-foreground")}>No matches</p>
-              <p className="mt-1 text-xs leading-relaxed text-neutral-500">
-                {isAddress
-                  ? "Try a house number and street, or add city or ZIP."
-                  : "Try a US ZIP code, city name, or neighborhood — check spelling or add the state."}
+            {googleRows.map((row, idx) => (
+              <button
+                key={row.placeId}
+                type="button"
+                role="option"
+                aria-selected={idx === activeIndex}
+                id={`${listboxId}-opt-${idx}`}
+                className={cn(
+                  "flex w-full min-h-touch cursor-pointer items-start gap-2.5 px-3 py-3 text-left transition-colors",
+                  "hover:bg-muted/60 active:bg-muted",
+                  idx === activeIndex ? "bg-muted" : "",
+                )}
+                onPointerDown={(ev) => {
+                  if (ev.pointerType === "mouse") ev.preventDefault()
+                }}
+                onClick={() => pickGoogleRow(row)}
+                onMouseEnter={() => highlightRow(idx)}
+              >
+                <MapPin
+                  className={cn(
+                    "mt-0.5 h-4 w-4 shrink-0",
+                    idx === activeIndex ? "text-primary" : "text-muted-foreground/70",
+                  )}
+                  aria-hidden
+                />
+                <span className="min-w-0 flex-1 leading-snug">
+                  <span className="flex flex-col gap-0.5">
+                    <span className="text-[15px] font-medium text-foreground">
+                      <HighlightMatch text={row.mainText} query={qTrim} />
+                    </span>
+                    {row.secondaryText ? (
+                      <span className="text-xs leading-snug text-muted-foreground">{row.secondaryText}</span>
+                    ) : null}
+                  </span>
+                </span>
+              </button>
+            ))}
+          </div>
+          {showGoogleAttribution ? (
+            <div className="border-t border-border/60 bg-background px-3 py-1.5">
+              <p className="text-[10px] text-muted-foreground">
+                <a
+                  href="https://developers.google.com/maps/documentation/javascript/policies#logo"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline-offset-2 hover:text-foreground hover:underline"
+                >
+                  Powered by Google
+                </a>
               </p>
             </div>
+          ) : null}
+          <div className="hidden border-t border-border/60 px-3 py-1.5 text-[11px] text-muted-foreground md:block">
+            <span className="tabular-nums">↑↓</span> move · <span className="tabular-nums">Enter</span> select ·{" "}
+            <span className="tabular-nums">Esc</span> close
           </div>
-        ) : useGoogleLocationPath ? (
-          <div className="flex max-h-[min(55vh,320px)] flex-col">
-            <div className="max-h-[min(48vh,268px)] overflow-y-auto overscroll-contain py-1">
-              {googleRows.map((row, idx) => (
+        </div>
+      ) : (
+        <div className="flex min-h-0 flex-col">
+          <div
+            className={cn(
+              "min-h-0 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]",
+              useInlinePanel
+                ? "max-h-[min(42dvh,280px)]"
+                : isAddress
+                  ? "max-h-[min(52vh,300px)]"
+                  : "max-h-[min(48vh,268px)]",
+            )}
+            onPointerMove={() => {
+              hoverArmedRef.current = true
+            }}
+          >
+            {suggestions.map((s, idx) => {
+              const { primary, secondary } = splitSuggestionLabel(s.label)
+              return (
                 <button
-                  key={row.placeId}
+                  key={`${idx}-${s.lat}-${s.lng}-${s.label}`}
                   type="button"
                   role="option"
                   aria-selected={idx === activeIndex}
                   id={`${listboxId}-opt-${idx}`}
                   className={cn(
-                    "flex w-full min-h-touch cursor-pointer items-start gap-2.5 px-3 py-2.5 text-left transition-colors",
-                    "hover:bg-muted/70 active:bg-muted",
-                    idx === activeIndex ? "bg-muted" : "",
+                    "flex w-full min-h-touch cursor-pointer items-start gap-2.5 text-left transition-colors",
+                    isAddress ? "border-l-[3px] px-3 py-2.5 pl-[9px]" : "px-3 py-3",
+                    isAddress
+                      ? cn(
+                          "hover:bg-neutral-100/90 active:bg-neutral-100",
+                          idx === activeIndex
+                            ? "border-l-[#5574AD] bg-[#5574AD]/[0.06]"
+                            : "border-l-transparent",
+                        )
+                      : cn("hover:bg-muted/60 active:bg-muted", idx === activeIndex ? "bg-muted" : ""),
                   )}
                   onPointerDown={(ev) => {
-                    // Mouse only: prevent input blur so the portaled list stays mounted.
-                    // Touch must not preventDefault here or the list cannot scroll.
                     if (ev.pointerType === "mouse") ev.preventDefault()
                   }}
-                  onClick={() => pickGoogleRow(row)}
-                  onMouseEnter={() => setActiveIndex(idx)}
+                  onClick={() => pickHttp(s)}
+                  onMouseEnter={() => highlightRow(idx)}
                 >
-                  <MapPin
-                    className={cn(
-                      "mt-0.5 h-4 w-4 shrink-0",
-                      idx === activeIndex ? "text-primary" : "text-muted-foreground/70",
-                    )}
-                    aria-hidden
-                  />
+                  {isAddress ? (
+                    <Building2
+                      className={cn(
+                        "mt-0.5 h-3.5 w-3.5 shrink-0",
+                        idx === activeIndex ? "text-[#5574AD]" : "text-neutral-400",
+                      )}
+                      aria-hidden
+                    />
+                  ) : (
+                    <MapPin
+                      className={cn(
+                        "mt-0.5 h-4 w-4 shrink-0",
+                        idx === activeIndex ? "text-primary" : "text-muted-foreground/70",
+                      )}
+                      aria-hidden
+                    />
+                  )}
                   <span className="min-w-0 flex-1 leading-snug">
-                    <span className="flex flex-col gap-0.5">
-                      <span className="text-sm font-medium text-foreground">
-                        <HighlightMatch text={row.mainText} query={qTrim} />
+                    {isAddress ? (
+                      <span className="flex flex-col gap-0.5">
+                        <span className="text-sm font-medium text-neutral-900">
+                          <HighlightMatch text={primary} query={qTrim} />
+                        </span>
+                        {secondary ? (
+                          <span className="text-[13px] leading-snug">
+                            <HighlightMatch text={secondary} query={qTrim} muted />
+                          </span>
+                        ) : null}
                       </span>
-                      {row.secondaryText ? (
-                        <span className="text-[13px] leading-snug text-neutral-500">{row.secondaryText}</span>
-                      ) : null}
-                    </span>
+                    ) : (
+                      <span className="flex flex-col gap-0.5">
+                        <span className="text-[15px] font-medium text-foreground">
+                          <HighlightMatch text={primary} query={qTrim} />
+                        </span>
+                        {secondary ? (
+                          <span className="text-xs leading-snug text-muted-foreground">{secondary}</span>
+                        ) : null}
+                      </span>
+                    )}
                   </span>
                 </button>
-              ))}
-            </div>
-            {showGoogleAttribution ? (
-              <div className="border-t border-border/60 bg-muted/15 px-3 py-2">
-                <p className="text-[10px] text-muted-foreground">
-                  <a
-                    href="https://developers.google.com/maps/documentation/javascript/policies#logo"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline-offset-2 hover:text-foreground hover:underline"
-                  >
-                    Powered by Google
-                  </a>
-                </p>
-              </div>
-            ) : null}
-            <div className="border-t border-border/60 bg-muted/15 px-3 py-2 text-[11px] text-muted-foreground">
+              )
+            })}
+          </div>
+          {!isAddress && (
+            <div className="hidden border-t border-border/60 px-3 py-1.5 text-[11px] text-muted-foreground md:block">
               <span className="tabular-nums">↑↓</span> move · <span className="tabular-nums">Enter</span> select ·{" "}
               <span className="tabular-nums">Esc</span> close
             </div>
-          </div>
-        ) : (
-          <div className={cn("flex flex-col", isAddress ? "max-h-[min(60vh,340px)]" : "max-h-[min(55vh,320px)]")}>
-            <div
-              className={cn(
-                "overflow-y-auto overscroll-contain",
-                isAddress ? "max-h-[min(52vh,300px)] py-1" : "max-h-[min(48vh,268px)] py-1",
-              )}
-            >
-              {suggestions.map((s, idx) => {
-                const { primary, secondary } = splitSuggestionLabel(s.label)
-                return (
-                  <button
-                    key={`${idx}-${s.lat}-${s.lng}-${s.label}`}
-                    type="button"
-                    role="option"
-                    aria-selected={idx === activeIndex}
-                    id={`${listboxId}-opt-${idx}`}
-                    className={cn(
-                      "flex w-full min-h-touch cursor-pointer items-start gap-2.5 text-left transition-colors",
-                      isAddress ? "border-l-[3px] px-3 py-2.5 pl-[9px]" : "px-3 py-2.5",
-                      isAddress
-                        ? cn(
-                            "hover:bg-neutral-100/90 active:bg-neutral-100",
-                            idx === activeIndex
-                              ? "border-l-[#5574AD] bg-[#5574AD]/[0.06]"
-                              : "border-l-transparent",
-                          )
-                        : cn(
-                            "hover:bg-muted/70 active:bg-muted",
-                            idx === activeIndex ? "bg-muted" : "",
-                          ),
-                    )}
-                    onPointerDown={(ev) => {
-                      if (ev.pointerType === "mouse") ev.preventDefault()
-                    }}
-                    onClick={() => pickHttp(s)}
-                    onMouseEnter={() => setActiveIndex(idx)}
-                  >
-                    {isAddress ? (
-                      <Building2
-                        className={cn(
-                          "mt-0.5 h-3.5 w-3.5 shrink-0",
-                          idx === activeIndex ? "text-[#5574AD]" : "text-neutral-400",
-                        )}
-                        aria-hidden
-                      />
-                    ) : (
-                      <MapPin
-                        className={cn(
-                          "mt-0.5 h-4 w-4 shrink-0",
-                          idx === activeIndex ? "text-primary" : "text-muted-foreground/70",
-                        )}
-                        aria-hidden
-                      />
-                    )}
-                    <span className="min-w-0 flex-1 leading-snug">
-                      {isAddress ? (
-                        <span className="flex flex-col gap-0.5">
-                          <span className="text-sm font-medium text-neutral-900">
-                            <HighlightMatch text={primary} query={qTrim} />
-                          </span>
-                          {secondary ? (
-                            <span className="text-[13px] leading-snug">
-                              <HighlightMatch text={secondary} query={qTrim} muted />
-                            </span>
-                          ) : null}
-                        </span>
-                      ) : (
-                        <HighlightMatch text={s.label} query={qTrim} />
-                      )}
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
-            {!isAddress && (
-              <div className="border-t border-border/60 bg-muted/15 px-3 py-2 text-[11px] text-muted-foreground">
-                <span className="tabular-nums">↑↓</span> move · <span className="tabular-nums">Enter</span> select ·{" "}
-                <span className="tabular-nums">Esc</span> close
-              </div>
-            )}
-          </div>
-        )}
-      </div>,
-      document.body,
-    )
+          )}
+        </div>
+      )}
+    </>
+  )
+
+  const dropdownShellClassName = cn(
+    "overflow-hidden pointer-events-auto touch-pan-y",
+    isAddress
+      ? "rounded-[6px] border border-neutral-200 bg-white text-neutral-900 shadow-[0_10px_40px_-4px_rgba(0,0,0,0.12)]"
+      : "rounded-xl border border-border bg-background text-foreground shadow-[0_4px_16px_rgba(15,23,42,0.08)]",
+    useInlinePanel ? "relative mt-1.5 w-full" : "fixed z-[160]",
+  )
+
+  const dropdownPanelEl = showPanel ? (
+    <div
+      ref={dropdownRef}
+      id={listboxId}
+      data-location-suggest=""
+      role={showListbox ? "listbox" : loading ? "status" : !fetchEmpty ? undefined : "status"}
+      aria-label={
+        showListbox
+          ? isAddress
+            ? "Address suggestions"
+            : "Location suggestions"
+          : loading
+            ? "Loading address suggestions"
+            : fetchEmpty
+              ? "No matching addresses"
+              : undefined
+      }
+      aria-busy={loading}
+      onPointerDown={(e) => {
+        if (e.target instanceof Element && e.target.closest("a")) return
+        if (e.pointerType === "mouse") e.preventDefault()
+      }}
+      className={dropdownShellClassName}
+      style={
+        !useInlinePanel && dropdownRect
+          ? {
+              top: dropdownRect.top,
+              left: dropdownRect.left,
+              width: dropdownRect.width,
+              maxHeight: dropdownRect.maxHeight,
+            }
+          : undefined
+      }
+    >
+      {dropdownInner}
+    </div>
+  ) : null
+
+  const dropdownPanel =
+    !useInlinePanel && portalReady && dropdownPanelEl && typeof document !== "undefined"
+      ? createPortal(dropdownPanelEl, document.body)
+      : useInlinePanel
+        ? dropdownPanelEl
+        : null
 
   const inputBusy =
     resolvingPick ||
@@ -1135,6 +1201,7 @@ export function LocationInputSuggest({
     inputBusy ? "pr-10" : "",
     !endSlot &&
       panelOpen &&
+      !useInlinePanel &&
       (isAddress
         ? "ring-1 ring-[#5574AD]/30 ring-offset-0"
         : "ring-2 ring-ring/35 ring-offset-2 ring-offset-background"),
@@ -1162,6 +1229,13 @@ export function LocationInputSuggest({
       value={value}
       disabled={disabled}
       autoComplete="off"
+      autoCorrect="off"
+      autoCapitalize="none"
+      spellCheck={false}
+      inputMode={isAddress ? "text" : "search"}
+      data-1p-ignore=""
+      data-lpignore="true"
+      data-form-type="other"
       aria-expanded={panelOpen}
       aria-busy={inputBusy}
       aria-controls={panelOpen ? listboxId : undefined}
@@ -1188,9 +1262,10 @@ export function LocationInputSuggest({
           if (!useGoogleLocationPath) {
             const cached = readSuggestCache(q, suggestMode)
             if (cached !== undefined) {
+              hoverArmedRef.current = false
               setSuggestions(cached)
               setFetchEmpty(cached.length === 0)
-              setActiveIndex(cached.length > 0 ? 0 : -1)
+              setActiveIndex(-1)
             }
           }
         }

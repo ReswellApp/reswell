@@ -44,10 +44,10 @@ export function CaseInboxListSkeleton() {
 export function CaseInboxWorkspaceSkeleton() {
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-background">
-      <header className="flex h-[49px] shrink-0 items-center gap-3 border-b border-border/60 px-3">
-        <div className="space-y-1.5">
-          <Skeleton className="h-3.5 w-32" />
-          <Skeleton className="h-2.5 w-52" />
+      <header className="flex h-[49px] shrink-0 items-center gap-2 border-b border-border/60 px-3">
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <Skeleton className="hidden h-3.5 w-32 md:block" />
+          <Skeleton className="h-2.5 w-24 md:w-52" />
         </div>
       </header>
 

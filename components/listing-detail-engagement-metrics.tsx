@@ -1,7 +1,11 @@
+"use client"
+
 import { ShoppingCart } from "lucide-react"
 
 import { SellerOfferToCartHolders } from "@/components/features/listings/seller-offer-to-cart-holders"
+import { useListingViewer } from "@/components/features/listings/listing-viewer-provider"
 import { LISTING_SHIPPING_EMPHASIS_CLASS } from "@/lib/listing-fulfillment"
+import { listingViewerIsOwner } from "@/lib/listing-owner-view"
 import { cn } from "@/lib/utils"
 
 export type ListingOfferToCartProps = {
@@ -30,6 +34,10 @@ export function ListingDetailEngagementMetrics({
   className,
   offerToCart = null,
 }: ListingDetailEngagementMetricsProps) {
+  const viewer = useListingViewer()
+  const isOwner = listingViewerIsOwner(viewer?.userId, viewer?.sellerUserId)
+  const ownerListingId = offerToCart?.listingId ?? viewer?.listingId ?? null
+  const ownerUserId = viewer?.userId ?? null
   if (isSold) return null
 
   return (
@@ -52,14 +60,14 @@ export function ListingDetailEngagementMetrics({
         </span>
       </span>
       {cartHolderCount > 0 ? (
-        offerToCart ? (
+        isOwner && ownerUserId && ownerListingId ? (
           <SellerOfferToCartHolders
-            listingId={offerToCart.listingId}
-            sellerUserId={offerToCart.sellerUserId}
+            listingId={ownerListingId}
+            sellerUserId={ownerUserId}
             cartHolderCount={cartHolderCount}
-            listingTitle={offerToCart.listingTitle}
-            listPrice={offerToCart.listPrice}
-            primaryImageUrl={offerToCart.primaryImageUrl}
+            listingTitle={offerToCart?.listingTitle}
+            listPrice={offerToCart?.listPrice}
+            primaryImageUrl={offerToCart?.primaryImageUrl}
             triggerVariant="stat"
           />
         ) : (

@@ -5,8 +5,6 @@ import {
   isLabelImagesNotSupportedError,
 } from "@/lib/shipengine/errors"
 import {
-  getShipEngineLabelInsuranceProvider,
-  isShipEngineLabelInsuranceEnabled,
   pickInsuranceClaimUrl,
   pickInsuranceCost,
   pickShipEngineLabelIds,
@@ -16,10 +14,12 @@ import {
   buildShipEngineRateShipment,
   type RateQuoteAddressFields,
 } from "@/lib/shipping/rate-address"
-import { RESIDENTIAL_DELIVERY_LABEL_MESSAGE } from "@/lib/shipping/shipengine-rate-helpers"
+import { sellerFacingLabelPurchaseError, sellerFacingLabelRateError } from "@/lib/shipping/buyer-shipping-error"
 import {
+  extractInvalidRatesFromApiEnvelope,
   extractRatesFromApiEnvelope,
   rateMoneyTotal,
+  RESIDENTIAL_DELIVERY_LABEL_MESSAGE,
 } from "@/lib/shipping/shipengine-rate-helpers"
 import { validateSurfboardLabelParcelLimits } from "@/lib/shipping/surfboard-label-limits"
 import {
@@ -118,8 +118,11 @@ export async function fetchShipEngineRatesForSurfboard(params: {
   listingSection?: string | null
   /** Admin-only picker option for urgent member shipments. */
   includeSameAndNextDayRates?: boolean
-  /** Declared value for ParcelGuard / carrier insurance when enabled. */
-  insuredValueUsd?: number | null
+  /**
+   * Admin tools: return every distinct USPS / UPS / FedEx service (Ground,
+   * Priority, air, overnight), not only the cheapest Ground/Priority quotes.
+   */
+  includeAllDistinctServices?: boolean
 }): Promise<
   | { ok: true; rates: ShipEngineRateOption[] }
   | { ok: false; error: string; status: number }
@@ -163,15 +166,6 @@ export async function fetchShipEngineRatesForSurfboard(params: {
     }
   }
 
-  const insuranceEnabled = isShipEngineLabelInsuranceEnabled()
-  const insured =
-    insuranceEnabled &&
-    typeof params.insuredValueUsd === "number" &&
-    Number.isFinite(params.insuredValueUsd) &&
-    params.insuredValueUsd > 0
-      ? params.insuredValueUsd
-      : null
-
   const shipment = buildShipEngineRateShipment(params.shipFrom, params.shipTo, {
     weightValue: params.parcel.weightLb,
     weightUnit: "pound",
@@ -181,9 +175,6 @@ export async function fetchShipEngineRatesForSurfboard(params: {
     dimUnit: "inch",
     packageCode: "package",
     validateAddress: "no_validation",
-    insuranceProvider: insured != null ? getShipEngineLabelInsuranceProvider() : null,
-    insuredValueAmount: insured,
-    insuredValueCurrency: "usd",
   })
 
   const body = {
@@ -196,25 +187,39 @@ export async function fetchShipEngineRatesForSurfboard(params: {
     body: JSON.stringify(body),
   })
   const data = await parseJsonSafe(res)
+  const invalidRates = extractInvalidRatesFromApiEnvelope(data)
   if (!res.ok) {
-    const msg =
-      typeof data === "object" && data
-        ? JSON.stringify(data).slice(0, 600)
-        : "Could not get carrier rates for this shipment"
-    return { ok: false, error: msg, status: res.status >= 400 ? res.status : 502 }
+    console.error("[surfboard-label] /rates HTTP:", res.status, data)
+    return {
+      ok: false,
+      error: sellerFacingLabelRateError({
+        invalidRates,
+        apiError: formatShipEngineApiError(data),
+      }),
+      status: res.status >= 400 ? res.status : 502,
+    }
   }
 
   const rawRates = extractRatesFromApiEnvelope(data)
+  const includeAllDistinct = params.includeAllDistinctServices === true
   const rates = curateLabelPurchaseRates(
     normalizeShipEngineRatesForUi(rawRates),
     params.listingSection,
-    { includeSameAndNextDay: params.includeSameAndNextDayRates === true },
+    {
+      includeSameAndNextDay: params.includeSameAndNextDayRates === true,
+      includeAllDistinctServices: includeAllDistinct,
+    },
   )
   if (!rates.length) {
+    console.error("[surfboard-label] /rates empty after curation", { invalidRates })
     return {
       ok: false,
-      error:
-        "No USPS, UPS, or FedEx Ground or Priority rates for this shipment. Check addresses and parcel size.",
+      error: sellerFacingLabelRateError({
+        invalidRates,
+        fallback: includeAllDistinct
+          ? "No USPS, UPS, or FedEx rates for this shipment. Check addresses and parcel size."
+          : "No USPS, UPS, or FedEx Ground or Priority rates for this shipment. Check addresses and parcel size.",
+      }),
       status: 422,
     }
   }
@@ -468,7 +473,7 @@ function interpretShipEngineLabelPurchaseResponse(
   if (apiErr) {
     return {
       ok: false,
-      error: apiErr,
+      error: sellerFacingLabelPurchaseError({ apiError: apiErr }),
       status: res.ok ? 422 : res.status >= 400 ? res.status : 502,
     }
   }
@@ -481,7 +486,7 @@ function interpretShipEngineLabelPurchaseResponse(
         : "Could not purchase label"
     return {
       ok: false,
-      error: fallback,
+      error: sellerFacingLabelPurchaseError({ apiError: fallback }),
       status: res.status >= 400 ? res.status : 502,
     }
   }
@@ -490,7 +495,9 @@ function interpretShipEngineLabelPurchaseResponse(
   if (status === "error") {
     return {
       ok: false,
-      error: formatShipEngineApiError(data) || JSON.stringify(data).slice(0, 800),
+      error: sellerFacingLabelPurchaseError({
+        apiError: formatShipEngineApiError(data) || JSON.stringify(data).slice(0, 800),
+      }),
       status: 422,
     }
   }

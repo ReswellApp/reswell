@@ -12,6 +12,10 @@ import {
 } from "@/components/ui/accordion"
 import { SELL_CONTROL_CLASS } from "@/components/features/sell/sell-form-surface"
 import { SellEarningsBreakdown } from "@/components/features/sell/sell-earnings-breakdown"
+import {
+  SellPriceGuidancePicker,
+  type SellPriceGuidancePickerProps,
+} from "@/components/features/sell/sell-price-guidance-picker"
 import { SellRequiredMark } from "@/components/features/sell/sell-required-mark"
 import { ListingPriceMarkdownToggle } from "@/components/features/listings/listing-price-markdown-toggle"
 import { cn } from "@/lib/utils"
@@ -19,13 +23,12 @@ import {
   parseOptionalUsdAmount,
   resolveCompareAtPriceOnUpdate,
 } from "@/lib/listing-compare-at-price"
+import { sellListingPriceIsPublishable } from "@/lib/utils/sell-listing-price"
+import { useAdoptAutofilledSellPrice } from "@/components/features/sell/use-adopt-autofilled-sell-price"
 
 /** Mirrors the listing-price rule in `pricePublishFieldsComplete` (sell-section-completion). */
 function listingPriceComplete(raw: string): boolean {
-  const t = raw.trim().replace(/,/g, "")
-  if (!t) return false
-  const n = Number.parseFloat(t)
-  return Number.isFinite(n) && n >= 0.01 && n <= 999_999.99
+  return sellListingPriceIsPublishable(raw)
 }
 
 export interface SellPriceFieldsProps {
@@ -46,6 +49,15 @@ export interface SellPriceFieldsProps {
   existingCompareAtPriceUsd?: number | null
   showPriceMarkdown?: boolean
   onShowPriceMarkdownChange?: (value: boolean) => void
+  /**
+   * Admin-only Reswell price guidance (surfboards + fins). Callers should pass this
+   * only when `profiles.is_admin` is true. When brand + model are set, shows clickable
+   * low / best / high suggestions from the price guide + market comps.
+   */
+  priceGuidance?: Omit<
+    SellPriceGuidancePickerProps,
+    "listingPrice" | "onSelectPrice" | "className"
+  > | null
 }
 
 export function SellPriceFields({
@@ -65,7 +77,9 @@ export function SellPriceFields({
   existingCompareAtPriceUsd = null,
   showPriceMarkdown = false,
   onShowPriceMarkdownChange,
+  priceGuidance = null,
 }: SellPriceFieldsProps) {
+  useAdoptAutofilledSellPrice("sell-listing-price", listingPrice, onListingPriceChange)
   const nextPrice = parseOptionalUsdAmount(listingPrice)
   const canOfferMarkdown =
     publishedPriceUsd != null &&
@@ -88,6 +102,17 @@ export function SellPriceFields({
       <p className="text-sm leading-relaxed text-muted-foreground">
         Fair, competitive listings tend to sell faster on Reswell.
       </p>
+
+      {priceGuidance ? (
+        <SellPriceGuidancePicker
+          categorySlug={priceGuidance.categorySlug}
+          brandId={priceGuidance.brandId}
+          brandModelId={priceGuidance.brandModelId}
+          condition={priceGuidance.condition}
+          listingPrice={listingPrice}
+          onSelectPrice={onListingPriceChange}
+        />
+      ) : null}
 
       <div className="space-y-2">
         <Label htmlFor="sell-listing-price" className="text-sm font-semibold text-foreground">

@@ -35,6 +35,8 @@ export type ShipEngineTrackingPayload = {
     state_province?: string | null
     postal_code?: string | null
     country_code?: string | null
+    latitude?: number | null
+    longitude?: number | null
   }>
 }
 

@@ -241,6 +241,16 @@ export async function GET(request: NextRequest) {
           }
         });
       }
+      // Recovery must sync cookies via `/auth/completing` before the update-password
+      // client gate — same path as OAuth success / `/auth/recovery`.
+      if (type === "recovery") {
+        const finalResponse = NextResponse.redirect(
+          `${origin}${buildAuthCompletingPath(otpNext)}`,
+        );
+        copyAuthCookies(redirectResponse, finalResponse);
+        finalResponse.headers.set("Cache-Control", "private, no-store");
+        return finalResponse;
+      }
       redirectResponse.headers.set("Cache-Control", "private, no-store");
       return redirectResponse;
     }

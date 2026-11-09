@@ -12,6 +12,8 @@ export type AdminIssuedPromoCodeListRow = {
   code: string
   discountPercent: number
   note: string | null
+  eligibleSections: string[] | null
+  appliesToLabel: string
   createdAt: string
   expiresAt: string
   redeemedAt: string | null
@@ -47,6 +49,8 @@ export type AdminIssuedPromoGenerateResult = {
   code: string
   discountPercent: number
   note: string | null
+  eligibleSections: string[] | null
+  appliesToLabel: string
   expiresAt: string
   createdAt: string
 }

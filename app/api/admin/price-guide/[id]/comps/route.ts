@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server"
-import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
+import { requireAdmin } from "@/lib/brands/admin-server"
 import { priceGuideCompCreateSchema } from "@/lib/validations/price-guide"
 import { addPriceGuideCompService } from "@/lib/services/priceGuideAdmin"
 
 type RouteCtx = { params: Promise<{ id: string }> }
 
 export async function POST(request: Request, ctx: RouteCtx) {
-  const gate = await requireAdminOrEmployee()
+  const gate = await requireAdmin()
   if (!gate.ok) return gate.response
 
   const { id } = await ctx.params

@@ -4,6 +4,11 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { toast } from "sonner"
+import {
+  parseSellListingPrice,
+  readLiveSellListingPrice,
+  sellListingPriceIsPublishable,
+} from "@/lib/utils/sell-listing-price"
 import { Loader2, Upload, X, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -22,6 +27,7 @@ import {
 } from "@/components/ui/breadcrumb"
 import { LocationPicker } from "@/components/location-picker"
 import { SellFormSection } from "@/components/features/sell/sell-form-section"
+import { SellShipOnlyDeliverySection } from "@/components/features/sell/sell-ship-only-delivery-section"
 import { SellListingPhotoEmptyDropzone } from "@/components/features/sell/sell-listing-photo-empty-dropzone"
 import { SellSimplePhotoTile } from "@/components/features/sell/sell-simple-photo-tile"
 import { useSimpleListingPhotoRotate } from "@/components/features/sell/hooks/use-simple-listing-photo-rotate"
@@ -40,6 +46,8 @@ import {
   SellSectionNavHorizontal,
   buildSellSectionNavItems,
 } from "@/components/features/sell/sell-section-nav"
+import { fetchActingShopAccountId } from "@/lib/account-access/fetch-acting-shop-account"
+import { listingOwnerIsOperableAccount } from "@/lib/account-access/operates-listing"
 import { createClient } from "@/lib/supabase/client"
 import { useOwnedListingEditLoad } from "@/components/features/sell/hooks/use-owned-listing-edit-load"
 import { SellEditLoadError } from "@/components/features/sell/sell-edit-load-error"
@@ -58,6 +66,8 @@ import {
   type ListingPhotoSlot,
 } from "@/lib/sell-flow/listing-photo-slot"
 import { listingPhotoPreviewFromPrepared } from "@/lib/sell-flow/simple-listing-photo-rotate"
+import { listingPhotoOrientationPrepareOptions } from "@/lib/sell-flow/listing-photo-orientation"
+import { stageListingPhotoInstantPreview } from "@/lib/sell-flow/reveal-listing-photo-preview"
 import {
   APPAREL_LISTING_MAX_PHOTOS,
   APPAREL_LISTING_TITLE_MAX_LENGTH,
@@ -70,6 +80,11 @@ import {
 } from "@/lib/sell-flow/update-owned-listing-client"
 import { buildApparelListingPersistFields } from "@/lib/apparel-listing-persist-fields"
 import { computeApparelSellSectionCompletion } from "@/lib/apparel-sell-section-completion"
+import {
+  brandNewQuantityValidationMessage,
+  parseBrandNewListingQuantity,
+  sellFormStockQuantityValue,
+} from "@/lib/listing-stock-quantity"
 import { sellFormConditionValue } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
 import { navigateAfterListingSave } from "@/lib/sell-flow/navigate-after-listing-save"
@@ -125,6 +140,9 @@ type PhotoSlot = {
   progress: number
   errorMessage?: string
   userRotate180?: boolean
+  userQuarterTurns?: 0 | 1 | 2 | 3
+  sourceIsDerivative?: boolean
+  localPreviewReady?: boolean
 }
 
 function shippingPriceToFormValue(v: unknown): string {
@@ -142,6 +160,7 @@ type ApparelFormState = {
   sellerPurchasedOn: string
   kind: string
   condition: string
+  stockQuantity: string
   size: string
   brand: string
   model: string
@@ -171,6 +190,7 @@ const INITIAL_STATE: ApparelFormState = {
   sellerPurchasedOn: "",
   kind: "",
   condition: "",
+  stockQuantity: "1",
   size: "",
   brand: "",
   model: "",
@@ -179,8 +199,8 @@ const INITIAL_STATE: ApparelFormState = {
   locationLat: null,
   locationLng: null,
   locationDisplay: "",
-  shippingAvailable: false,
-  localPickup: true,
+  shippingAvailable: true,
+  localPickup: false,
   shippingMode: "reswell",
   shippingPrice: "",
   reswellPackageLengthIn: "",
@@ -374,6 +394,7 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
           (listing as { seller_purchased_on?: string | null }).seller_purchased_on ?? "",
         kind: (listing as { apparel_kind?: string | null }).apparel_kind ?? "",
         condition: sellFormConditionValue(listing.condition),
+        stockQuantity: sellFormStockQuantityValue((listing as { stock_quantity?: number | null }).stock_quantity),
         size: (listing as { apparel_size?: string | null }).apparel_size ?? "",
         brand: (listing as { brand?: string | null }).brand?.trim() ?? "",
         model: (listing as { model?: string | null }).model?.trim() ?? "",
@@ -382,8 +403,8 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
         locationLat: listing.latitude != null ? Number(listing.latitude) : null,
         locationLng: listing.longitude != null ? Number(listing.longitude) : null,
         locationDisplay: [listing.city, listing.state].filter(Boolean).join(", "),
-        shippingAvailable: Boolean(listing.shipping_available),
-        localPickup: listing.local_pickup !== false,
+        shippingAvailable: true,
+        localPickup: false,
         shippingMode: "reswell",
         shippingPrice: shippingPriceToFormValue(listing.shipping_price),
         ...loadedReswellPackage,
@@ -481,11 +502,23 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
       if (!slot.file) return
       let failureContext: "add" | "upload" = "add"
       try {
-        const prepared = await prepareDecodableListingPhoto(slot.file, {
-          rotate180: Boolean(slot.userRotate180),
+        const orientation = listingPhotoOrientationPrepareOptions(slot)
+        const showedInstant = await stageListingPhotoInstantPreview(
+          slot.file,
+          slot.previewUrl,
+          orientation,
+          (previewUrl) => updateSlot(slot.clientId, { previewUrl, localPreviewReady: true }),
+        )
+        const prepared = await prepareDecodableListingPhoto(slot.file, orientation)
+        const nextPreviewUrl = showedInstant
+          ? null
+          : listingPhotoPreviewFromPrepared(slot.previewUrl, prepared.thumb)
+        updateSlot(slot.clientId, {
+          phase: "uploading",
+          progress: 5,
+          localPreviewReady: true,
+          ...(nextPreviewUrl ? { previewUrl: nextPreviewUrl } : {}),
         })
-        const nextPreviewUrl = listingPhotoPreviewFromPrepared(slot.previewUrl, prepared.thumb)
-        updateSlot(slot.clientId, { phase: "uploading", progress: 5, previewUrl: nextPreviewUrl })
 
         const supabase = supabaseRef.current
         const session = await resolveClientSessionForMutation(supabase)
@@ -696,12 +729,19 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
       scrollApparelSellSectionIntoView("sell-apparel-section-details")
       return
     }
+    const quantityMessage = brandNewQuantityValidationMessage(form.condition, form.stockQuantity)
+    if (quantityMessage) {
+      failValidation(quantityMessage)
+      scrollApparelSellSectionIntoView("sell-apparel-section-details")
+      return
+    }
     if (!form.description.trim()) {
       failValidation("Add a description.")
       scrollApparelSellSectionIntoView("sell-apparel-section-details")
       return
     }
-    if (!form.price.trim() || Number(form.price) <= 0) {
+    const livePrice = readLiveSellListingPrice(form.price)
+    if (!sellListingPriceIsPublishable(livePrice)) {
       failValidation("Enter a price.")
       scrollApparelSellSectionIntoView("sell-apparel-section-publish")
       return
@@ -711,18 +751,13 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
       scrollApparelSellSectionIntoView("sell-apparel-section-delivery")
       return
     }
-    if (!form.shippingAvailable && !form.localPickup) {
-      failValidation("Choose shipping, local pickup, or both.")
-      scrollApparelSellSectionIntoView("sell-apparel-section-delivery")
-      return
-    }
     if (form.shippingAvailable) {
       const L = parseReswellParcelLengthRawToCarrierInches(form.reswellPackageLengthIn)
       const W = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageWidthIn)
       const H = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageHeightIn)
       if (L == null || L <= 0 || W == null || W <= 0 || H == null || H <= 0) {
         failValidation("Enter packed box dimensions for Reswell shipping.")
-        scrollApparelSellSectionIntoView("sell-apparel-section-reswell-package")
+        scrollApparelSellSectionIntoView("sell-apparel-section-delivery")
         return
       }
     }
@@ -730,8 +765,9 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
     const payload = {
       title: form.title,
       description: form.description,
-      price: Number(form.price),
+      price: parseSellListingPrice(livePrice) ?? 0,
       condition: form.condition as CreateApparelListingInput["condition"],
+      stockQuantity: parseBrandNewListingQuantity(form.stockQuantity) ?? 1,
       kind: form.kind as CreateApparelListingInput["kind"],
       size: form.size || null,
       brand: form.brand,
@@ -740,9 +776,9 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
       locationState: form.locationState,
       locationLat: form.locationLat ?? undefined,
       locationLng: form.locationLng ?? undefined,
-      shippingAvailable: form.shippingAvailable,
-      localPickup: form.localPickup,
-      shippingCostMode: form.shippingAvailable ? ("reswell" as const) : null,
+      shippingAvailable: true,
+      localPickup: false,
+      shippingCostMode: "reswell" as const,
       shippingPrice: null,
       reswellPackageLengthIn: form.reswellPackageLengthIn,
       reswellPackageWidthIn: form.reswellPackageWidthIn,
@@ -773,10 +809,11 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
         storedImpersonation = null
       }
 
+      const actingShopAccountId = await fetchActingShopAccountId()
       const editingOwnListing =
         Boolean(editId) &&
         Boolean(editListingOwnerId) &&
-        user.id === editListingOwnerId
+        listingOwnerIsOperableAccount(user.id, editListingOwnerId, actingShopAccountId)
       if (editingOwnListing && storedImpersonation) {
         clearImpersonation()
         storedImpersonation = null
@@ -793,7 +830,11 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
       )
 
       if (editId) {
-        const ownerEditsOwnListing = user.id === editListingOwnerId
+        const ownerEditsOwnListing = listingOwnerIsOperableAccount(
+          user.id,
+          editListingOwnerId,
+          actingShopAccountId,
+        )
         if (adminImpersonatesListingOwner) {
           const updated = await updateOwnedListingViaApi({
             listingId: editId,
@@ -1041,7 +1082,7 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
                           key={photo.clientId}
                           photo={photo}
                           index={index}
-                          onRotate180={rotatePhoto180}
+                          onRotateQuarterTurns={rotatePhoto180}
                           onMakePrimary={makePrimary}
                           onRemove={removePhoto}
                         />
@@ -1141,6 +1182,8 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
                     model={form.model}
                     onKindChange={(v) => setField("kind", v)}
                     onConditionChange={(v) => setField("condition", v)}
+                    stockQuantity={form.stockQuantity}
+                    onStockQuantityChange={(v) => setField("stockQuantity", v)}
                     onSizeChange={(v) => setField("size", v)}
                     onBrandChange={(v) => setField("brand", v)}
                     onModelChange={(v) => setField("model", v)}
@@ -1157,157 +1200,16 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
                 </div>
               </SellFormSection>
 
-              <SellFormSection
+              <SellShipOnlyDeliverySection
                 sectionId="sell-apparel-section-delivery"
-                title="Pickup & shipping"
-                description="Pin where the apparel is and choose delivery options."
-              >
-                <div className="space-y-8">
-                  <LocationPicker
-                    initialLat={form.locationLat ?? undefined}
-                    initialLng={form.locationLng ?? undefined}
-                    initialCity={form.locationCity}
-                    initialState={form.locationState}
-                    initialDisplay={form.locationDisplay}
-                    onLocationSelect={(loc) => {
-                      setForm((prev) => ({
-                        ...prev,
-                        locationLat: loc.lat,
-                        locationLng: loc.lng,
-                        locationCity: loc.city,
-                        locationState: loc.state,
-                        locationDisplay: loc.displayName,
-                      }))
-                    }}
-                    onLocationClear={() => {
-                      setForm((prev) => ({
-                        ...prev,
-                        locationLat: null,
-                        locationLng: null,
-                        locationCity: "",
-                        locationState: "",
-                        locationDisplay: "",
-                      }))
-                    }}
-                  />
-
-                  <div className="space-y-4 rounded-xl border border-border bg-card p-5 shadow-sm sm:p-6">
-                    <div>
-                      <h3 className="text-sm font-semibold text-foreground">
-                        Delivery options{" "}
-                        <span className="text-destructive" aria-hidden>
-                          *
-                        </span>
-                      </h3>
-                      <p className="mt-1 text-sm text-muted-foreground">You can select both options.</p>
-                    </div>
-                    <div className="space-y-4">
-                      <div className="flex items-start gap-3">
-                        <Checkbox
-                          id="sell-apparel-delivery-shipping"
-                          checked={form.shippingAvailable}
-                          onCheckedChange={(v) => {
-                            const want = v === true
-                            setForm((prev) => ({
-                              ...prev,
-                              shippingAvailable: want,
-                              localPickup: want || prev.localPickup ? prev.localPickup : true,
-                              ...(want
-                                ? {}
-                                : {
-                                    shippingMode: "reswell" as const,
-                                    shippingPrice: "",
-                                    reswellPackageLengthIn: "",
-                                    reswellPackageWidthIn: "",
-                                    reswellPackageHeightIn: "",
-                                    reswellPackageWeightLb: "",
-                                    reswellPackageWeightOz: "",
-                                  }),
-                            }))
-                          }}
-                          className="mt-0.5"
-                        />
-                        <div className="min-w-0 space-y-0.5">
-                          <Label
-                            htmlFor="sell-apparel-delivery-shipping"
-                            className="flex cursor-pointer flex-wrap items-center gap-2 text-sm font-medium leading-snug"
-                          >
-                            Shipping
-                            <Badge
-                              variant="default"
-                              className="h-auto border-0 bg-listingHeart px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white hover:bg-[#2a4170]"
-                            >
-                              Items sell faster
-                            </Badge>
-                          </Label>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-3">
-                        <Checkbox
-                          id="sell-apparel-delivery-pickup"
-                          checked={form.localPickup}
-                          onCheckedChange={(v) => {
-                            const want = v === true
-                            setForm((prev) => ({
-                              ...prev,
-                              localPickup: want,
-                              shippingAvailable:
-                                want || prev.shippingAvailable ? prev.shippingAvailable : true,
-                            }))
-                          }}
-                          className="mt-0.5"
-                        />
-                        <Label
-                          htmlFor="sell-apparel-delivery-pickup"
-                          className="cursor-pointer pt-0.5 text-sm font-medium leading-snug"
-                        >
-                          Local pickup
-                        </Label>
-                      </div>
-                    </div>
-                  </div>
-
-                  {form.shippingAvailable ? (
-                    <div className="space-y-2 rounded-xl border border-border bg-card p-5 shadow-sm sm:p-6">
-                      <h3 className="text-sm font-semibold text-foreground">
-                        Reswell shipping
-                      </h3>
-                      <p className="text-sm leading-relaxed text-muted-foreground">
-                        Buyers pay a live USPS rate at checkout. Reswell buys the label and adds
-                        tracking to your sale automatically.
-                      </p>
-                    </div>
-                  ) : null}
-                </div>
-              </SellFormSection>
-
-              {form.shippingAvailable ? (
-                <SellFormSection
-                  sectionId="sell-apparel-section-reswell-package"
-                  title="Reswell shipping: packed size & weight"
-                >
-                  <ReswellPackageDimensionsCard
-                    showHeading={false}
-                    className="rounded-none border-0 bg-transparent p-0 shadow-none"
-                    lengthIn={form.reswellPackageLengthIn}
-                    widthIn={form.reswellPackageWidthIn}
-                    heightIn={form.reswellPackageHeightIn}
-                    weightLb={form.reswellPackageWeightLb}
-                    weightOz={form.reswellPackageWeightOz}
-                    onLengthInChange={(v) =>
-                      setField("reswellPackageLengthIn", normalizeBoardLengthInput(v))
-                    }
-                    onWidthInChange={(v) =>
-                      setField("reswellPackageWidthIn", normalizeTapeStyleInchesInput(v))
-                    }
-                    onHeightInChange={(v) =>
-                      setField("reswellPackageHeightIn", normalizeTapeStyleInchesInput(v))
-                    }
-                    onWeightLbChange={(v) => setField("reswellPackageWeightLb", v)}
-                    onWeightOzChange={(v) => setField("reswellPackageWeightOz", v)}
-                  />
-                </SellFormSection>
-              ) : null}
+                productNoun="Apparel"
+                idPrefix="sell-apparel"
+                complete={sellSectionCompletion["sell-apparel-section-delivery"] === true}
+                form={form}
+                onPatch={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
+                reswellCalculatedOnly
+                reswellCalculatedOnlyBlurb="Buyers pay a live USPS rate at checkout. Reswell buys the label and adds tracking to your sale automatically."
+              />
 
               <SellFormSection
                 sectionId="sell-apparel-section-publish"

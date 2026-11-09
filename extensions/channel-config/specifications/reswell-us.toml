@@ -1,0 +1,25 @@
+handle = "reswell-us"
+name = "Reswell"
+label = "Reswell"
+icon = "reswell-channel-icon.svg"
+productFeedManagement = "automatic"
+
+[capabilities]
+bundles = false
+digitalProducts = false
+subscriptions = false
+
+[requirements]
+# Marketplace checkout runs on Reswell; Shopify receives a paid order for stock.
+expectsOnlineStoreParity = false
+merchantOfRecord = "channel"
+
+[[countries]]
+code = "US"
+languages = ["en"]
+currency = "USD"
+
+[[countries]]
+code = "CA"
+languages = ["en"]
+currency = "CAD"

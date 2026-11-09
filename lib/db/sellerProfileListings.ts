@@ -5,6 +5,15 @@ import {
   listingImagesFromPrimaryFields,
 } from "@/lib/listing-image-display"
 import { PEER_LISTING_SECTIONS_FILTER } from "@/lib/peer-listing-sections"
+import {
+  fetchSellerProfileSoldListingRefs,
+  fetchSellerProfileSoldSaleMetaByListingId,
+} from "@/lib/db/seller-profile-sold-listings"
+import { publicListingListPriceUsd } from "@/lib/utils/public-listing-price"
+import {
+  soldFeedShowsSaleQuantity,
+  soldFeedTilePrice,
+} from "@/lib/sold-feed-sale-label"
 
 /**
  * Columns needed for seller storefront tiles + inventory/sold filtering.
@@ -82,7 +91,28 @@ function normalizeCategories(
   return categories
 }
 
-function mapListing(row: SellerProfileListingRow): SellerProfileListing {
+function mapListing(
+  row: SellerProfileListingRow,
+  options?: {
+    forceSoldStatus?: boolean
+    soldAt?: string | null
+    quantitySold?: number | null
+    soldPrice?: number | null
+    showSaleQuantity?: boolean
+  },
+): SellerProfileListing {
+  const listPrice = publicListingListPriceUsd(row.price)
+  const quantitySold =
+    options?.quantitySold != null && options.quantitySold > 0
+      ? Math.floor(options.quantitySold)
+      : 1
+  const showSaleQuantity =
+    options?.showSaleQuantity ?? soldFeedShowsSaleQuantity(quantitySold)
+  const soldPrice =
+    options?.soldPrice != null && Number.isFinite(options.soldPrice)
+      ? options.soldPrice
+      : soldFeedTilePrice(listPrice, quantitySold, null)
+
   return {
     id: row.id,
     slug: row.slug,
@@ -91,12 +121,18 @@ function mapListing(row: SellerProfileListingRow): SellerProfileListing {
     price: row.price,
     compare_at_price: row.compare_at_price ?? null,
     is_good_deal: row.is_good_deal,
-    status: row.status ?? "active",
+    // Sold tab may include still-active brand-new quantity listings; force the
+    // sold badge there without changing inventory-tab status.
+    status: options?.forceSoldStatus ? "sold" : (row.status ?? "active"),
     section: row.section,
     local_pickup: row.local_pickup,
     shipping_available: row.shipping_available,
     condition: row.condition,
     created_at: row.created_at,
+    sold_at: options?.soldAt ?? null,
+    quantity_sold: options?.forceSoldStatus ? quantitySold : null,
+    sold_price: options?.forceSoldStatus ? soldPrice : null,
+    show_sale_quantity: options?.forceSoldStatus ? showSaleQuantity : null,
     listing_images: listingCoverImageForCard(
       listingImagesFromPrimaryFields(row.primary_image_url, row.primary_thumbnail_url),
     ),
@@ -110,7 +146,8 @@ function mapListing(row: SellerProfileListingRow): SellerProfileListing {
  * Splits inventory vs sold so large sold history cannot inflate the hot path.
  *
  * Vacation / site-hidden inventory is excluded for everyone (including the owner);
- * owners manage those from My Listings. Sold history remains public.
+ * owners manage those from My Listings. Sold history remains public and includes
+ * in-stock brand-new quantity sales via `listings.last_sold_at` denorm.
  */
 export async function fetchSellerProfileListings(
   supabase: SupabaseClient,
@@ -127,30 +164,66 @@ export async function fetchSellerProfileListings(
     .order("created_at", { ascending: false })
     .limit(SELLER_PROFILE_INVENTORY_LIMIT)
 
-  // Sold history stays public on the profile even after seller archive/cleanup.
-  const pastQuery = supabase
-    .from("listings")
-    .select(SELLER_PROFILE_LISTING_SELECT)
-    .eq("user_id", sellerId)
-    .in("section", PEER_LISTING_SECTIONS_FILTER)
-    .eq("status", "sold")
-    .order("created_at", { ascending: false })
-    .limit(SELLER_PROFILE_PAST_LIMIT)
+  const soldRefsPromise = fetchSellerProfileSoldListingRefs(
+    supabase,
+    sellerId,
+    SELLER_PROFILE_PAST_LIMIT,
+  )
 
-  const [inventoryRes, pastRes] = await Promise.all([inventoryQuery, pastQuery])
+  const [inventoryRes, soldRefsResult] = await Promise.all([inventoryQuery, soldRefsPromise])
 
   if (inventoryRes.error) {
     console.error("[sellerProfileListings] inventory:", inventoryRes.error.message)
   }
-  if (pastRes.error) {
-    console.error("[sellerProfileListings] past:", pastRes.error.message)
-  }
 
   const inventoryRows = (inventoryRes.data ?? []) as SellerProfileListingRow[]
-  const pastRows = (pastRes.data ?? []) as SellerProfileListingRow[]
+  const soldRefs = soldRefsResult.refs
+  const soldIds = soldRefs.map((ref) => ref.listingId)
+  const soldAtById = new Map(soldRefs.map((ref) => [ref.listingId, ref.lastSoldAt]))
 
-  const currentListings = inventoryRows.map(mapListing)
-  const pastListings = pastRows.map(mapListing)
+  let pastRows: SellerProfileListingRow[] = []
+  if (soldIds.length > 0) {
+    const { data: pastData, error: pastError } = await supabase
+      .from("listings")
+      .select(SELLER_PROFILE_LISTING_SELECT)
+      .in("id", soldIds)
+      .eq("user_id", sellerId)
+
+    if (pastError) {
+      console.error("[sellerProfileListings] past:", pastError.message)
+    } else {
+      const byId = new Map(
+        ((pastData ?? []) as SellerProfileListingRow[]).map((row) => [row.id, row]),
+      )
+      // Preserve sale-time order from sold refs.
+      pastRows = soldIds
+        .map((id) => byId.get(id))
+        .filter((row): row is SellerProfileListingRow => row != null)
+    }
+  }
+
+  const saleMetaById =
+    pastRows.length > 0
+      ? await fetchSellerProfileSoldSaleMetaByListingId(
+          supabase,
+          pastRows.map((row) => row.id),
+        )
+      : new Map()
+
+  const currentListings = inventoryRows.map((row) => mapListing(row))
+  // Sold tab tiles always show the sold badge — including still-active brand-new
+  // quantity listings that have confirmed sales while stock remains.
+  const pastListings = pastRows.map((row) => {
+    const meta = saleMetaById.get(row.id)
+    const soldAt = meta?.soldAt ?? soldAtById.get(row.id) ?? null
+    return mapListing(row, {
+      forceSoldStatus: true,
+      soldAt,
+      quantitySold: meta?.quantitySold ?? 1,
+      soldPrice: meta?.soldPrice ?? null,
+      showSaleQuantity: soldFeedShowsSaleQuantity(meta?.quantitySold ?? 1),
+    })
+  })
 
   const tileMetaSource = [...inventoryRows, ...pastRows].map((row) => ({
     city: row.city ?? null,
@@ -158,7 +231,7 @@ export async function fetchSellerProfileListings(
     shipping_available: row.shipping_available ?? null,
   }))
 
-  const listingIds = [...currentListings, ...pastListings].map((l) => l.id)
+  const listingIds = [...new Set([...currentListings, ...pastListings].map((l) => l.id))]
 
   return {
     currentListings,

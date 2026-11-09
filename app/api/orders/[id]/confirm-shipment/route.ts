@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
+import { loadOrderOperator } from "@/lib/account-access/order-operator-session"
 import { NextRequest, NextResponse } from "next/server"
 import { markOrderDispatchedBySeller } from "@/lib/services/markOrderShipped"
 
@@ -26,11 +27,16 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  const operating = await loadOrderOperator()
+  if (!operating.ok) {
+    return NextResponse.json({ error: operating.error }, { status: operating.status })
+  }
+
   const { data: order, error: fetchErr } = await supabase
     .from("orders")
     .select("id, seller_id, buyer_id, listing_id, fulfillment_method, delivery_status")
     .eq("id", orderId)
-    .eq("seller_id", user.id)
+    .in("seller_id", operating.operator.sellerIds)
     .maybeSingle()
 
   if (fetchErr || !order) {
@@ -48,7 +54,7 @@ export async function POST(
       buyer_id: order.buyer_id,
       listing_id: order.listing_id,
     },
-    user.id,
+    String(order.seller_id),
   )
 
   if (!result.ok) {

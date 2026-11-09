@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation"
+import { platformAccessForSignedInUser } from "@/lib/account-access/platform-access"
 import { createClient } from "@/lib/supabase/server"
 import { privatePageMetadata } from "@/lib/site-metadata"
 import { AdminTerminalRegisterClient } from "@/components/features/admin/admin-terminal-register-client"
@@ -21,11 +22,12 @@ export default async function AdminTerminalCheckoutPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("is_admin")
+    .select("is_admin, is_employee")
     .eq("id", user.id)
     .maybeSingle()
 
-  if (!profile?.is_admin) {
+  const access = platformAccessForSignedInUser({ profile })
+  if (!access.isAdmin && !access.isEmployee) {
     redirect("/")
   }
 

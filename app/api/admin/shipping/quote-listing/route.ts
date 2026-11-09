@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { requireAdmin } from "@/lib/brands/admin-server"
+import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { z } from "zod"
 import {
@@ -66,7 +66,7 @@ function extractListingRefFromInput(raw: string): { kind: "id" | "slug"; value: 
  * the buyer-side number matches what `/admin/shipping` returns when given the same dims/lane.
  */
 export async function POST(request: Request) {
-  const gate = await requireAdmin()
+  const gate = await requireAdminOrEmployee()
   if (!gate.ok) return gate.response
 
   let raw: unknown

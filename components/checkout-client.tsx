@@ -8,6 +8,7 @@ import {
 } from "@/components/checkout-order-summary-aside"
 import { CheckoutPurchaseDetails, type PurchaseDetailsState } from "@/components/checkout-purchase-details"
 import type { CheckoutCopy, CheckoutListing, CheckoutSeller } from "@/components/checkout-types"
+import { CheckoutShippingRatesSkeleton } from "@/components/features/checkout/checkout-skeletons"
 import { PurchaseOptions } from "@/components/purchase-options"
 import { ProtectionTrustBlock } from "@/components/protection-trust-block"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
@@ -28,14 +29,16 @@ import {
   listingHasShippingModeFields,
   peerCheckoutNeedsLiveShippingQuote,
 } from "@/lib/checkout-peer-shipping-client"
+import { resolveCheckoutShippingPriceDisplay } from "@/lib/checkout-shipping-price"
 import { effectiveBoardShippingMode } from "@/lib/services/peerListingShippingQuote"
 import {
   peerCheckoutOffersShippingRateChoice,
   peerCheckoutRateChoiceIntro,
-  peerCheckoutSharedSection,
+  peerCheckoutRateFamilyForSections,
   type PeerCheckoutShippingRateOption,
 } from "@/lib/shipping/peer-checkout-usps-services"
 import { LocalDateOnly } from "@/components/ui/local-datetime"
+import { toast } from "sonner"
 import { Truck, MapPin } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -46,8 +49,25 @@ import {
 import {
   checkoutOffersShippingPackagingChoice,
   DEFAULT_SHIPPING_PACKAGING_MODE,
+  resolveMultiItemPackagingMode,
   type ShippingPackagingMode,
 } from "@/lib/shipping/packaging-mode"
+import {
+  countSurfboardListings,
+  MAX_SURFBOARDS_PER_SELLER_CHECKOUT,
+  surfboardsRequireSeparatePackages,
+} from "@/lib/surfboard-multi-board-parcel"
+import { previewSurfboardShippedCheckoutAction } from "@/lib/actions/surfboardShippedActions"
+import {
+  SURFBOARD_SHIPPED_FEE_USD,
+  SURFBOARD_SHIPPED_NAME,
+  surfboardShippedDropoffCopy,
+  isCaliforniaAddressState,
+} from "@/lib/services/surfboardShipped"
+import type {
+  SurfboardShippedCheckoutPreview,
+  SurfboardShippedCheckoutSeed,
+} from "@/lib/services/surfboardShippedOffer"
 
 export type { CheckoutCopy, CheckoutListing, CheckoutSeller } from "@/components/checkout-types"
 
@@ -65,6 +85,14 @@ interface CheckoutClientProps {
   suggestedFulfillment?: "pickup" | "shipping" | null
   /** Listing ids whose displayed price is the accepted offer amount. */
   acceptedOfferListingIds?: string[]
+  /** Checkout seed when the listing opted into Surfboard Shipped. Null hides the option. */
+  surfboardShippedSeed?: SurfboardShippedCheckoutSeed | null
+  /** Admin pilot. Null hides Pay with Reswell Bucks. */
+  reswellBucksCheckout?: { spendableUsd: number } | null
+  /** Admin pilot. Null hides Apply Reswell Credit. */
+  reswellCreditCheckout?: { spendableUsd: number } | null
+  /** Explicit second purchase of an in-stock quantity listing. */
+  forceNewSession?: boolean
 }
 
 function CheckoutShippingArrival({ rate }: { rate: PeerCheckoutShippingRateOption }) {
@@ -95,6 +123,10 @@ export function CheckoutClient({
   offerId = null,
   suggestedFulfillment = null,
   acceptedOfferListingIds,
+  surfboardShippedSeed = null,
+  reswellBucksCheckout = null,
+  reswellCreditCheckout = null,
+  forceNewSession = false,
 }: CheckoutClientProps) {
   const isBundle = listings.length > 1
   const offerSuggestedFulfillment = normalizeOfferFulfillment(suggestedFulfillment)
@@ -125,34 +157,50 @@ export function CheckoutClient({
     ? listings.every((l) => !!l.shipping_available)
     : !!primaryListing.shipping_available
 
-  const [method, setMethod] = useState<"pickup" | "shipping">(() => {
+  const [method, setMethod] = useState<"pickup" | "shipping" | "surfboard_shipped">(() => {
     if (offerSuggestedFulfillment === "pickup" && canPick) return "pickup"
     if (offerSuggestedFulfillment === "shipping" && canShip) return "shipping"
     if (canPick && !canShip) return "pickup"
     if (!canPick && canShip) return "shipping"
+    if (!canPick && !canShip && surfboardShippedSeed) return "surfboard_shipped"
     return "pickup"
   })
 
+  const surfboardShippedSelected = method === "surfboard_shipped"
+
   /** Multi-item payment intents always require an explicit fulfillment. */
-  const impliedFulfillment: "pickup" | "shipping" =
-    canPick && canShip ? method : !canPick && canShip ? "shipping" : "pickup"
+  const carrierMethod: "pickup" | "shipping" = method === "shipping" ? "shipping" : "pickup"
+  const impliedFulfillment: "pickup" | "shipping" = surfboardShippedSelected
+    ? "shipping"
+    : canPick && canShip
+      ? carrierMethod
+      : !canPick && canShip
+        ? "shipping"
+        : "pickup"
 
   const fulfillmentForApi = isBundle
     ? impliedFulfillment
-    : canPick && canShip
-      ? method
+    : surfboardShippedSelected || (canPick && canShip)
+      ? impliedFulfillment
       : undefined
 
   const needsShipping = impliedFulfillment === "shipping"
 
-  const offersPackagingChoice =
-    needsShipping && checkoutOffersShippingPackagingChoice(listings)
+  const multiPackagingFulfillment: "pickup" | "shipping" =
+    needsShipping && !surfboardShippedSelected ? "shipping" : "pickup"
+  const mustShipSurfboardsSeparately =
+    multiPackagingFulfillment === "shipping" &&
+    surfboardsRequireSeparatePackages(countSurfboardListings(listings))
   const [packagingMode, setPackagingMode] = useState<ShippingPackagingMode>(
     DEFAULT_SHIPPING_PACKAGING_MODE,
   )
-  const effectivePackagingMode: ShippingPackagingMode = offersPackagingChoice
-    ? packagingMode
-    : DEFAULT_SHIPPING_PACKAGING_MODE
+  const effectivePackagingMode = resolveMultiItemPackagingMode({
+    listings,
+    requested: packagingMode,
+    fulfillment: multiPackagingFulfillment,
+  })
+  const offersPackagingChoice =
+    multiPackagingFulfillment === "shipping" && checkoutOffersShippingPackagingChoice(listings)
 
   const resolved = useMemo(() => {
     if (isBundle) {
@@ -178,10 +226,33 @@ export function CheckoutClient({
   const [purchaseDetails, setPurchaseDetails] = useState<PurchaseDetailsState>({
     readyToPay: false,
     shippingAddressId: null,
+    shippingState: null,
+    shippingCity: null,
+    shippingAddressVersion: 0,
   })
+  const [surfboardPreview, setSurfboardPreview] = useState<SurfboardShippedCheckoutPreview | null>(
+    null,
+  )
+  const buyerAddressIsCalifornia =
+    !purchaseDetails.shippingState || isCaliforniaAddressState(purchaseDetails.shippingState)
+  const showSurfboardShipped =
+    !isBundle &&
+    surfboardShippedSeed != null &&
+    buyerAddressIsCalifornia &&
+    (surfboardPreview == null || surfboardPreview.available || !purchaseDetails.shippingAddressId)
 
   const listingIds = useMemo(() => listings.map((l) => l.id), [listings])
   const listingIdsKey = listingIds.join(",")
+  const checkoutQuantities = useMemo(
+    () =>
+      Object.fromEntries(
+        listings.map((listing) => [
+          listing.id,
+          Math.max(1, Math.floor(listing.quantity ?? 1)),
+        ]),
+      ),
+    [listings],
+  )
 
   const [shipQuote, setShipQuote] = useState<{
     shippingUsd: number
@@ -200,8 +271,8 @@ export function CheckoutClient({
   const [quoteLoading, setQuoteLoading] = useState(false)
   const [quoteError, setQuoteError] = useState<string | null>(null)
 
-  const rateChoiceSection = useMemo(
-    () => peerCheckoutSharedSection(listings.map((l) => l.section)),
+  const rateFamily = useMemo(
+    () => peerCheckoutRateFamilyForSections(listings.map((l) => l.section)),
     [listings],
   )
 
@@ -209,24 +280,35 @@ export function CheckoutClient({
     if (!needsShipping) return false
     if (offersPackagingChoice && effectivePackagingMode === "separate") return false
     if (!listings.every((l) => effectiveBoardShippingMode(l) === "reswell")) return false
-    return peerCheckoutOffersShippingRateChoice(rateChoiceSection)
+    return peerCheckoutOffersShippingRateChoice(null, rateFamily)
   }, [
     effectivePackagingMode,
     listings,
     needsShipping,
     offersPackagingChoice,
-    rateChoiceSection,
+    rateFamily,
   ])
 
   const isMagazineReswellCheckout = useMemo(() => {
-    if (isBundle || !needsShipping) return false
-    return primaryListing.section === "magazines" && effectiveBoardShippingMode(primaryListing) === "reswell"
-  }, [isBundle, needsShipping, primaryListing])
+    if (!needsShipping) return false
+    if (!listings.every((l) => effectiveBoardShippingMode(l) === "reswell")) return false
+    return rateFamily === "usps_media_mail"
+  }, [listings, needsShipping, rateFamily])
 
   const needsLiveShippingQuote = useMemo(
     () => needsShipping && peerCheckoutNeedsLiveShippingQuote(listings.map(listingHasShippingModeFields)),
     [needsShipping, listings],
   )
+
+  const priceDependsOnAddress = needsLiveShippingQuote || surfboardShippedSelected
+
+  const staticShipQuote = useMemo(() => {
+    if (!needsShipping || priceDependsOnAddress || !resolved.ok) return null
+    return computeStaticPeerShippingQuoteUsd(
+      listings.map(listingHasShippingModeFields),
+      resolved.itemPrice,
+    )
+  }, [listings, needsShipping, priceDependsOnAddress, resolved])
 
   const [promoCodeInput, setPromoCodeInput] = useState("")
   const [appliedPromo, setAppliedPromo] = useState<AppliedNewsletterPromo | null>(null)
@@ -248,8 +330,99 @@ export function CheckoutClient({
   }, [])
 
   useEffect(() => {
+    if (!surfboardShippedSeed || !purchaseDetails.shippingAddressId || isBundle) {
+      setSurfboardPreview(null)
+      return
+    }
+    if (!isCaliforniaAddressState(purchaseDetails.shippingState)) {
+      setSurfboardPreview({
+        available: false,
+        feeUsd: SURFBOARD_SHIPPED_FEE_USD,
+        window: null,
+        shippers: [],
+        matchedShipperName: null,
+        matchedWeekday: null,
+      })
+      return
+    }
+    let cancelled = false
+    void previewSurfboardShippedCheckoutAction({
+      listingId: primaryListing.id,
+      addressId: purchaseDetails.shippingAddressId,
+    }).then((preview) => {
+      if (!cancelled) setSurfboardPreview(preview)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [
+    isBundle,
+    primaryListing.id,
+    purchaseDetails.shippingAddressId,
+    purchaseDetails.shippingState,
+    surfboardShippedSeed,
+  ])
+
+  useEffect(() => {
+    if (method !== "surfboard_shipped") return
+    if (showSurfboardShipped) return
+    setMethod(canPick ? "pickup" : canShip ? "shipping" : "pickup")
+  }, [canPick, canShip, method, showSurfboardShipped])
+
+  useEffect(() => {
+    if (surfboardShippedSelected) {
+      if (!needsShipping) return
+      if (!purchaseDetails.shippingAddressId || !surfboardPreview) {
+        setShipQuote(null)
+        setShipQuoteToken(null)
+        setQuoteError(null)
+        setQuoteLoading(Boolean(purchaseDetails.shippingAddressId))
+        return
+      }
+      if (!resolved.ok) {
+        setShipQuote(null)
+        setShipQuoteToken(null)
+        setQuoteLoading(false)
+        setQuoteError(resolved.error)
+        return
+      }
+      if (!surfboardPreview.available) {
+        setShipQuote(null)
+        setShipQuoteToken(null)
+        setQuoteLoading(false)
+        setQuoteError(null)
+        return
+      }
+      setShipQuote({
+        shippingUsd: surfboardPreview.feeUsd,
+        totalUsd: Math.round((resolved.itemPrice + surfboardPreview.feeUsd) * 100) / 100,
+        usedReswellQuote: false,
+      })
+      setShipQuoteToken(null)
+      setQuoteError(null)
+      setQuoteLoading(false)
+      return
+    }
+
     if (!needsShipping) {
       setShipQuote(null)
+      setShipQuoteToken(null)
+      setQuoteError(null)
+      setQuoteLoading(false)
+      return
+    }
+
+    if (!needsLiveShippingQuote) {
+      if (!resolved.ok) {
+        setShipQuote(null)
+        setShipQuoteToken(null)
+        setQuoteError(resolved.error)
+        setQuoteLoading(false)
+        return
+      }
+      setShipQuote(
+        computeStaticPeerShippingQuoteUsd(listings.map(listingHasShippingModeFields), resolved.itemPrice),
+      )
       setShipQuoteToken(null)
       setQuoteError(null)
       setQuoteLoading(false)
@@ -262,21 +435,6 @@ export function CheckoutClient({
       setQuoteError(null)
       setQuoteLoading(false)
       setSelectedShippingServiceCode(null)
-      return
-    }
-
-    if (!needsLiveShippingQuote) {
-      if (!resolved.ok) {
-        setShipQuote(null)
-        setShipQuoteToken(null)
-        setQuoteError(resolved.error)
-        setQuoteLoading(false)
-        return
-      }
-      setShipQuote(computeStaticPeerShippingQuoteUsd(listings.map(listingHasShippingModeFields), resolved.itemPrice))
-      setShipQuoteToken(null)
-      setQuoteError(null)
-      setQuoteLoading(false)
       return
     }
 
@@ -293,6 +451,9 @@ export function CheckoutClient({
           credentials: "include",
           body: JSON.stringify({
             listing_ids: listingIdsKey.split(","),
+            quantities: Object.fromEntries(
+              listings.map((listing) => [listing.id, Math.max(1, Math.floor(listing.quantity ?? 1))]),
+            ),
             address_id: purchaseDetails.shippingAddressId,
             packaging_mode: effectivePackagingMode,
             ...(offerId ? { offer_id: offerId } : {}),
@@ -360,14 +521,28 @@ export function CheckoutClient({
     listings,
     offerId,
     purchaseDetails.shippingAddressId,
+    // Same address id is updated in place when the buyer edits it.
+    purchaseDetails.shippingAddressVersion,
     resolved,
     selectedShippingServiceCode,
     effectivePackagingMode,
+    surfboardShippedSelected,
+    surfboardPreview,
   ])
+
+  useEffect(() => {
+    if (!quoteError) {
+      toast.dismiss("checkout-shipping-quote")
+      return
+    }
+    toast.error(quoteError, { id: "checkout-shipping-quote", duration: 10_000 })
+  }, [quoteError])
 
   const handlePurchaseDetailsChange = useCallback((state: PurchaseDetailsState) => {
     setPurchaseDetails(state)
   }, [])
+
+  const activeShipQuote = staticShipQuote ?? shipQuote
 
   const applyPromoCode = useCallback(
     async (rawCode: string) => {
@@ -379,12 +554,7 @@ export function CheckoutClient({
       setPromoError(null)
 
       const itemSubtotal = resolved.ok ? resolved.itemPrice : 0
-      const shippingUsd =
-        needsShipping && shipQuote
-          ? shipQuote.shippingUsd
-          : resolved.ok
-            ? resolved.shipping
-            : 0
+      const shippingUsd = needsShipping && activeShipQuote ? activeShipQuote.shippingUsd : 0
 
       try {
         const res = await fetch("/api/promo/validate", {
@@ -396,6 +566,11 @@ export function CheckoutClient({
             code,
             item_subtotal_usd: itemSubtotal,
             shipping_usd: shippingUsd,
+            listing_lines: listings.map((listing) => ({
+              id: listing.id,
+              quantity: Math.max(1, Math.floor(listing.quantity ?? 1)),
+            })),
+            ...(offerId ? { offer_id: offerId } : {}),
           }),
         })
         const data = (await res.json()) as {
@@ -404,6 +579,7 @@ export function CheckoutClient({
             code: string
             discountUsd: number
             discountPercent: number
+            appliesToLabel?: string | null
           }
         }
         if (!res.ok || !data.data) {
@@ -416,6 +592,7 @@ export function CheckoutClient({
           code: data.data.code,
           discountUsd: data.data.discountUsd,
           discountPercent: data.data.discountPercent,
+          appliesToLabel: data.data.appliesToLabel ?? null,
         })
         setPromoCodeInput(data.data.code)
         clearPendingPromoCode()
@@ -427,7 +604,7 @@ export function CheckoutClient({
         setPromoApplying(false)
       }
     },
-    [resolved, needsShipping, shipQuote],
+    [resolved, needsShipping, activeShipQuote, listings, offerId],
   )
 
   const handleApplyPromo = useCallback(() => {
@@ -488,17 +665,17 @@ export function CheckoutClient({
   }
 
   const displayTotals =
-    needsShipping && shipQuote
+    needsShipping && activeShipQuote
       ? {
           itemPrice: resolved.itemPrice,
-          shipping: shipQuote.shippingUsd,
-          total: shipQuote.totalUsd,
+          shipping: activeShipQuote.shippingUsd,
+          total: activeShipQuote.totalUsd,
           discount: appliedPromo?.discountUsd,
         }
       : {
           itemPrice: resolved.itemPrice,
-          shipping: resolved.shipping,
-          total: resolved.total,
+          shipping: 0,
+          total: resolved.itemPrice,
           discount: appliedPromo?.discountUsd,
         }
 
@@ -508,28 +685,34 @@ export function CheckoutClient({
     return Math.max(0, Math.round((baseTotal - discount) * 100) / 100)
   }, [displayTotals.total, appliedPromo?.discountUsd])
 
-  const shippingQuoteReady = !needsShipping || (!!shipQuote && !quoteLoading && !quoteError)
+  const shippingQuoteReady =
+    !needsShipping || (!!activeShipQuote && !quoteLoading && !quoteError)
   const paymentBlocked = !purchaseDetails.readyToPay || !shippingQuoteReady
 
-  const shippingSummaryRight = (() => {
-    if (!needsShipping) {
-      return <span className="text-neutral-500">Local pickup</span>
-    }
-    // Short text keeps the aside shipping row stable (no line-wrap on mobile = no height shift).
-    if (!purchaseDetails.readyToPay) {
-      return <span className="text-neutral-400">—</span>
-    }
-    if (quoteLoading) {
-      return <span className="text-neutral-500">Calculating…</span>
-    }
-    if (quoteError) {
-      return <span className="text-destructive">Unavailable</span>
-    }
-    if (displayTotals.shipping === 0) {
-      return <span className="text-neutral-700">Free</span>
-    }
-    return <span className="tabular-nums text-neutral-900">${displayTotals.shipping.toFixed(2)}</span>
-  })()
+  const shippingPriceDisplay = resolveCheckoutShippingPriceDisplay({
+    needsShipping,
+    priceDependsOnAddress,
+    hasShippingAddress: Boolean(purchaseDetails.shippingAddressId),
+    quoteLoading: priceDependsOnAddress && quoteLoading,
+    quoteError: priceDependsOnAddress ? quoteError : null,
+    shippingUsd: activeShipQuote ? activeShipQuote.shippingUsd : null,
+  })
+
+  const shippingSummaryRight = (
+    <span
+      className={cn(
+        "tabular-nums",
+        shippingPriceDisplay.status === "priced" && "text-neutral-900",
+        shippingPriceDisplay.status === "free" && "text-neutral-700",
+        shippingPriceDisplay.status === "unavailable" && "text-destructive",
+        shippingPriceDisplay.status === "pending" && "text-neutral-400",
+        (shippingPriceDisplay.status === "calculating" || shippingPriceDisplay.status === "pickup") &&
+          "text-neutral-500",
+      )}
+    >
+      {shippingPriceDisplay.label}
+    </span>
+  )
 
   const payButtonClassName = cn(
     "h-[52px] w-full rounded-[6px] text-[16px] font-semibold shadow-none",
@@ -548,7 +731,12 @@ export function CheckoutClient({
                 <span className="font-semibold text-foreground">{itemCountPhrase}</span> from one seller in a
                 single payment.{" "}
                 {needsShipping ? (
-                  offersPackagingChoice ? (
+                  mustShipSurfboardsSeparately ? (
+                    <>
+                      Each item ships in its own box. One box holds up to{" "}
+                      {MAX_SURFBOARDS_PER_SELLER_CHECKOUT} surfboards, so every item gets its own shipping label.
+                    </>
+                  ) : offersPackagingChoice ? (
                     <>
                       Choose whether boards ship in one box or each get their own shipping label below.
                     </>
@@ -618,9 +806,11 @@ export function CheckoutClient({
                       </span>
                       <p className="mt-1 text-xs leading-relaxed text-neutral-500">
                         {isBundle && !shipQuote
-                          ? offersPackagingChoice
-                            ? `Choose packaging below — rate is calculated for your address.`
-                            : `All ${itemNoun.plural} ship together in one box — rate is calculated for your address.`
+                          ? mustShipSurfboardsSeparately
+                            ? `Each item ships in its own box — rate is calculated for your address.`
+                            : offersPackagingChoice
+                              ? `Choose packaging below — rate is calculated for your address.`
+                              : `All ${itemNoun.plural} ship together in one box — rate is calculated for your address.`
                           : shipQuote?.usedReswellQuote
                             ? displayTotals.shipping > 0
                               ? `Includes about $${displayTotals.shipping.toFixed(2)} carrier shipping (Reswell rate).`
@@ -632,6 +822,46 @@ export function CheckoutClient({
                     </div>
                   </label>
                 </RadioGroup>
+              </div>
+            ) : null}
+
+            {showSurfboardShipped && surfboardShippedSeed ? (
+              <div className="mb-10 space-y-3">
+                <h2 className="text-[15px] font-semibold tracking-tight text-foreground">
+                  {SURFBOARD_SHIPPED_NAME}
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setMethod("surfboard_shipped")}
+                  className={cn(
+                    "w-full rounded-[8px] border p-4 text-left transition-colors",
+                    surfboardShippedSelected
+                      ? "border-[#5574AD] bg-[#5574AD]/[0.04]"
+                      : "border-neutral-200 bg-white hover:border-neutral-300",
+                  )}
+                >
+                  <span className="flex items-center gap-2 text-sm font-medium text-foreground">
+                    <Truck className="h-4 w-4 shrink-0 text-neutral-600" />
+                    {SURFBOARD_SHIPPED_NAME}
+                    {surfboardPreview?.available ? ` · $${surfboardPreview.feeUsd}` : ""}
+                  </span>
+                  <p className="mt-1 text-xs leading-relaxed text-neutral-500">
+                    {surfboardShippedDropoffCopy(surfboardPreview?.window)}
+                    {surfboardPreview?.matchedShipperName
+                      ? ` ${surfboardPreview.matchedShipperName} is live and driving this coast.`
+                      : " A shipper picks the board up and drives it to you."}
+                  </p>
+                  <ul className="mt-2 space-y-1 text-xs text-foreground">
+                    {(surfboardPreview?.available
+                      ? surfboardPreview.shippers
+                      : surfboardShippedSeed.liveShippers
+                    ).map((shipper) => (
+                      <li key={shipper.id}>
+                        {shipper.displayName} · ${shipper.priceUsd} · Live
+                      </li>
+                    ))}
+                  </ul>
+                </button>
               </div>
             ) : null}
 
@@ -724,23 +954,21 @@ export function CheckoutClient({
             {needsShipping && (
               <div className="mt-10 space-y-3">
                 <h2 className="text-[15px] font-semibold tracking-tight text-foreground">Shipping</h2>
-                {quoteError && purchaseDetails.readyToPay ? (
+                {quoteError && purchaseDetails.shippingAddressId ? (
                   <p className="rounded-[8px] border border-destructive/30 bg-destructive/5 px-4 py-3.5 text-[13px] leading-relaxed text-destructive">
                     {quoteError}
                   </p>
                 ) : null}
-                {!purchaseDetails.readyToPay ? (
+                {priceDependsOnAddress && !purchaseDetails.shippingAddressId ? (
                   <div className="min-h-[3.5rem] rounded-[8px] border border-neutral-200 bg-neutral-100/80 px-4 py-3.5 text-[13px] leading-relaxed text-neutral-600">
                     Enter your shipping address above to confirm delivery.
                   </div>
                 ) : quoteLoading ? (
-                  <div className="min-h-[3.5rem] rounded-[8px] border border-neutral-200 bg-neutral-100/80 px-4 py-3.5 text-[13px] leading-relaxed text-neutral-600">
-                    Getting live carrier rates for your address…
-                  </div>
+                  <CheckoutShippingRatesSkeleton />
                 ) : offersShippingRateChoice && shipQuote?.availableShippingRates?.length ? (
                   <div className="space-y-3 rounded-[8px] border border-neutral-200 bg-white px-4 py-4">
                     <p className="text-[13px] leading-relaxed text-neutral-600">
-                      {peerCheckoutRateChoiceIntro(rateChoiceSection)}
+                      {peerCheckoutRateChoiceIntro(null, rateFamily, shipQuote.availableShippingRates)}
                     </p>
                     <RadioGroup
                       value={
@@ -783,6 +1011,8 @@ export function CheckoutClient({
                           ? `USPS Media Mail is $${displayTotals.shipping.toFixed(2)} — included in your total.`
                           : `Reswell recommended shipping (carrier rate) is about $${displayTotals.shipping.toFixed(2)} — included in your total.`
                         : "Free shipping from this seller — included in your total."
+                      : surfboardShippedSelected
+                        ? `${SURFBOARD_SHIPPED_NAME} is $${(surfboardPreview?.available ? surfboardPreview.feeUsd : displayTotals.shipping).toFixed(2)} — included in your total. ${surfboardShippedDropoffCopy(surfboardPreview?.window)}`
                       : displayTotals.shipping > 0
                         ? `Flat $${displayTotals.shipping.toFixed(2)} shipping from the seller — included in your total.`
                         : "Free shipping from this seller — included in your total."}
@@ -799,11 +1029,15 @@ export function CheckoutClient({
               <div className="rounded-[8px] border border-neutral-200 bg-white p-4 sm:p-5">
                 <PurchaseOptions
                   listingIds={listingIds}
+                  quantities={checkoutQuantities}
                   listingTitle={listingSummaryTitle}
                   price={payableTotal}
                   fulfillment={fulfillmentForApi ?? null}
                   shippingAddressId={needsShipping ? purchaseDetails.shippingAddressId : null}
                   purchaseDetailsReady={!paymentBlocked}
+                  paymentPreparing={
+                    purchaseDetails.readyToPay && paymentBlocked && !quoteError
+                  }
                   needsShipping={needsShipping}
                   offerId={offerId}
                   promoCode={appliedPromo?.code ?? null}
@@ -813,6 +1047,11 @@ export function CheckoutClient({
                   submitButtonClassName={payButtonClassName}
                   hideStripeFooter
                   buyerEmail={buyerEmail ?? null}
+                  surfboardShipped={surfboardShippedSelected}
+                  forceNewSession={forceNewSession}
+                  reswellBucks={surfboardShippedSelected ? null : reswellBucksCheckout}
+                  reswellCredit={surfboardShippedSelected ? null : reswellCreditCheckout}
+                  itemSubtotalUsd={displayTotals.itemPrice}
                 />
                 <p className="mt-3 text-center text-[12px] text-neutral-500">
                   Secure payment processed by{" "}

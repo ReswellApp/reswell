@@ -9,6 +9,7 @@ import { getOrCreateReviewInviteTokenForOrder } from "@/lib/services/orderReview
 import { validateSellerReviewForOrder } from "@/lib/services/orderSellerReview"
 import { parseOrderTrackingDetail } from "@/lib/shipping/order-tracking-detail"
 import { createServiceRoleClient } from "@/lib/supabase/server"
+import { broadcastInsertedMarketplaceMessage } from "@/lib/services/broadcastMarketplaceThreadMessage"
 import type { ReviewRequestMessagePayload } from "@/lib/validations/review-request-message-metadata"
 import { parseReviewRequestMessageMetadata } from "@/lib/validations/review-request-message-metadata"
 
@@ -204,6 +205,16 @@ export async function sendSellerReviewRequestForOrder(
     console.error("[seller review request] message insert:", msgError)
     return { ok: false, error: "Could not send the review request." }
   }
+
+  await broadcastInsertedMarketplaceMessage(
+    {
+      ...inserted,
+      sender_id: sellerUserId,
+      content: REVIEW_REQUEST_MESSAGE,
+      metadata,
+    },
+    conversation.id,
+  )
 
   await supabase
     .from("conversations")

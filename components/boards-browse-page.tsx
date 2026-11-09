@@ -39,9 +39,12 @@ import {
 import {
   boardsBrowseBoardTypeLabel,
   BOARDS_BROWSE_DEFAULT_SORT,
+  isBoardsBrowseLocalPickupAvailableParam,
   isBoardsBrowseShippingAvailableParam,
   type BoardsBrowseSearchParams,
 } from "@/lib/marketplace-slug-metadata"
+import { loadMergedBoardsBrowseFilters } from "@/lib/services/boardsBrowseProfileHomeApply"
+import { boardsBrowseProfileHomeRedirectHref } from "@/lib/services/boardsBrowseProfileHomeMerge"
 import { getCachedForwardGeocodePlace } from "@/lib/cache/forward-geocode-place"
 import { resolveBoardsBrowseGeocodeRedirectHref } from "@/lib/services/boardsBrowseGeocode"
 import {
@@ -73,27 +76,16 @@ import { haversineMi } from "@/lib/db/boards-browse-listings"
 import { boardsBrowseDailyRotateSeed } from "@/lib/utils/boards-browse-daily-rotate"
 import { facetSelectionsFromBrowseParams } from "@/lib/boards-browse-facets"
 import {
+  boardsBrowseNearbyPriorityMiles,
+  boardsBrowseUsesHardRadius,
+  nearbyPriorityBucket,
+} from "@/lib/boards-browse-home"
+import {
   boardsBrowseEffectiveSort,
   boardsBrowseHasSidebarFilters,
 } from "@/lib/boards-browse-sidebar-filters"
 import { getOpenBoardsGiveaway } from "@/lib/giveaways/boards-enter-props"
 import type { BoardsGiveawayEnterProps } from "@/components/features/giveaways/boards-giveaway-enter-button"
-
-async function BoardsBrowseAdminCuratorGate() {
-  const { supabase, user } = await getCachedRequestSession()
-  if (!user) return null
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("is_admin")
-    .eq("id", user.id)
-    .maybeSingle()
-  return (
-    <BoardsBrowseAdminCurator
-      isAdmin={profile?.is_admin === true}
-      className="border-white/55 bg-white/95 text-[#001A4A] shadow-sm hover:bg-white"
-    />
-  )
-}
 
 async function BoardsBrowseFiltersSection({
   searchParams: searchParamsPromise,
@@ -130,8 +122,8 @@ async function BoardListings({
 }: {
   searchParams: Promise<BoardsBrowseSearchParams>
 }) {
-  const searchParams = await searchParamsPromise
   const supabase = getDb({ consistency: "eventual" })
+  const searchParams = await searchParamsPromise
   const parsedPage = parseInt(searchParams.page || "1", 10)
   const page = Number.isFinite(parsedPage) && parsedPage >= 1 ? parsedPage : 1
   const limit = BOARDS_BROWSE_PAGE_SIZE
@@ -166,6 +158,9 @@ async function BoardListings({
   const urlShipping = isBoardsBrowseShippingAvailableParam(searchParams.shipping)
     ? true
     : undefined
+  const urlPickup = isBoardsBrowseLocalPickupAvailableParam(searchParams.pickup)
+    ? true
+    : undefined
   const radiusMi = searchParams.radius ? Number(searchParams.radius) : undefined
   const parsedLat = parseBoardsBrowseCoord(searchParams.lat)
   const parsedLng = parseBoardsBrowseCoord(searchParams.lng)
@@ -174,10 +169,19 @@ async function BoardListings({
   const lng = hasLatLng ? parsedLng : undefined
   const geoBrowseMaxRows = GEO_BROWSE_HTML_MAX_ROWS
   const hasRadius = radiusMi != null && !Number.isNaN(radiusMi) && radiusMi > 0
-  const filterByRadius = hasLatLng && hasRadius
+  const filterByRadius =
+    hasLatLng && hasRadius && boardsBrowseUsesHardRadius(searchParams)
+  const nearbyPriorityMi = boardsBrowseNearbyPriorityMiles({
+    home: searchParams.home,
+    radius: searchParams.radius,
+    hasLatLng,
+    sort,
+  })
+  const useNearbyPriority = nearbyPriorityMi != null && nearbyPriorityMi > 0
   const isNearestSort = sort === "nearest" && hasLatLng
 
-  const useGeocodedAnchor = hasLatLng && (filterByRadius || isNearestSort)
+  const useGeocodedAnchor =
+    hasLatLng && (filterByRadius || isNearestSort || useNearbyPriority)
 
   const isTopPicksSort = isBoardsBrowseTopPicksSort(sort)
 
@@ -203,6 +207,7 @@ async function BoardListings({
   const maxPrice =
     urlMaxPrice != null && !Number.isNaN(urlMaxPrice) ? urlMaxPrice : nl?.maxPrice
   const shippingAvailable = urlShipping ?? nl?.shippingAvailable
+  const localPickupAvailable = urlPickup ?? undefined
 
   // When resolve ran, honor its keyword (including "none") — never fall back to the raw
   // URL `q`. Falling back re-introduces filter words ("under", "$800") into ES `must`
@@ -278,10 +283,16 @@ async function BoardListings({
         minPrice,
         maxPrice,
         shippingAvailable,
+        localPickupAvailable,
         locationText: location.trim() && !useGeocodedAnchor ? location : undefined,
         geo:
-          hasLatLng && (filterByRadius || isNearestSort)
-            ? { lat: lat!, lng: lng!, radiusMi: filterByRadius ? radiusMi : undefined }
+          hasLatLng && (filterByRadius || isNearestSort || useNearbyPriority)
+            ? {
+                lat: lat!,
+                lng: lng!,
+                radiusMi: filterByRadius ? radiusMi : undefined,
+                nearbyPriorityMi: useNearbyPriority ? nearbyPriorityMi : undefined,
+              }
             : undefined,
         sort,
         page,
@@ -326,7 +337,7 @@ async function BoardListings({
   } else if (cachedCategoryPage) {
     boards = cachedCategoryPage.boards
     totalPages = cachedCategoryPage.totalPages
-  } else if (isTopPicksSort && !filterByRadius && !isNearestSort) {
+  } else if (isTopPicksSort && !filterByRadius && !isNearestSort && !useNearbyPriority) {
     const rotatePage = await fetchBoardsBrowseDailyRotatePage(supabase, {
       boardType,
       condition,
@@ -350,19 +361,20 @@ async function BoardListings({
       minPrice,
       maxPrice,
       shippingAvailable,
+      localPickupAvailable,
       useSuppressionSort,
       geoBbox:
         filterByRadius && hasLatLng
           ? { lat: lat!, lng: lng!, radiusMiles: radiusMi! }
           : undefined,
       rangeBeforeKeywordOr:
-        filterByRadius || isNearestSort
+        filterByRadius || isNearestSort || useNearbyPriority
           ? { from: 0, to: geoBrowseMaxRows - 1 }
           : undefined,
-      prependCreatedAtOrder: filterByRadius || isNearestSort,
-      pagedSort: filterByRadius || isNearestSort ? undefined : sort,
+      prependCreatedAtOrder: filterByRadius || isNearestSort || useNearbyPriority,
+      pagedSort: filterByRadius || isNearestSort || useNearbyPriority ? undefined : sort,
       pagedRange:
-        filterByRadius || isNearestSort
+        filterByRadius || isNearestSort || useNearbyPriority
           ? undefined
           : { from: offset, to: offset + limit - 1 },
       locationTextFilter:
@@ -370,11 +382,12 @@ async function BoardListings({
     })) as unknown as SurfboardBrowseListingsQuery
 
     /**
-     * When the user has a geocoded point and is searching by distance (radius or nearest),
-     * the anchor is lat/lng — do not also require `city`/`state` to match the geocoder label,
-     * or valid nearby listings are dropped before distance runs.
+     * When the user has a geocoded point (hard radius, nearest sort, or nearby
+     * ranking), the anchor is lat/lng — do not also require `city`/`state` to
+     * match the geocoder label, or valid nearby listings are dropped before
+     * distance runs.
      */
-    if (filterByRadius || isNearestSort) {
+    if (filterByRadius || isNearestSort || useNearbyPriority) {
       const geoChain = listingsChain
       const { data: rawBoards } = await geoChain
       type GeoListingRow = BoardBrowseListingRow & { _distance: number }
@@ -388,18 +401,27 @@ async function BoardListings({
       if (filterByRadius) {
         withDistance = withDistance.filter((b) => b._distance <= radiusMi!)
       }
-      if (isNearestSort) {
-        withDistance.sort((a, b) => {
+      const rotateSeed = isTopPicksSort ? boardsBrowseDailyRotateSeed() : null
+      const compareAfterNearby = (a: GeoListingRow, b: GeoListingRow): number => {
+        if (isNearestSort) {
           const supDiff = suppressedBrowseRank(a) - suppressedBrowseRank(b)
           if (supDiff !== 0) return supDiff
           return a._distance - b._distance
-        })
-      } else if (isTopPicksSort) {
-        const rotateSeed = boardsBrowseDailyRotateSeed()
-        withDistance.sort((a, b) => compareBoardBrowseRowsDailyRotate(a, b, rotateSeed))
-      } else {
-        withDistance.sort((a, b) => compareBoardBrowseRows(a, b, sort))
+        }
+        if (rotateSeed) {
+          return compareBoardBrowseRowsDailyRotate(a, b, rotateSeed)
+        }
+        return compareBoardBrowseRows(a, b, sort)
       }
+      withDistance.sort((a, b) => {
+        if (useNearbyPriority && nearbyPriorityMi != null) {
+          const bucket =
+            nearbyPriorityBucket(a._distance, nearbyPriorityMi) -
+            nearbyPriorityBucket(b._distance, nearbyPriorityMi)
+          if (bucket !== 0) return bucket
+        }
+        return compareAfterNearby(a, b)
+      })
       totalPages = Math.ceil(withDistance.length / limit)
       boards = withDistance.slice(offset, offset + limit)
     } else {
@@ -420,19 +442,20 @@ async function BoardListings({
           minPrice,
           maxPrice,
           shippingAvailable,
+          localPickupAvailable,
           useSuppressionSort: false,
           geoBbox:
             filterByRadius && hasLatLng
               ? { lat: lat!, lng: lng!, radiusMiles: radiusMi! }
               : undefined,
           rangeBeforeKeywordOr:
-            filterByRadius || isNearestSort
+            filterByRadius || isNearestSort || useNearbyPriority
               ? { from: 0, to: geoBrowseMaxRows - 1 }
               : undefined,
-          prependCreatedAtOrder: filterByRadius || isNearestSort,
-          pagedSort: filterByRadius || isNearestSort ? undefined : sort,
+          prependCreatedAtOrder: filterByRadius || isNearestSort || useNearbyPriority,
+          pagedSort: filterByRadius || isNearestSort || useNearbyPriority ? undefined : sort,
           pagedRange:
-            filterByRadius || isNearestSort
+            filterByRadius || isNearestSort || useNearbyPriority
               ? undefined
               : { from: offset, to: offset + limit - 1 },
           locationTextFilter:
@@ -503,6 +526,7 @@ async function BoardListings({
         minPrice,
         maxPrice,
         shippingAvailable,
+        localPickupAvailable,
         offset,
         limit,
         useSuppressionSort,
@@ -702,11 +726,10 @@ export async function BoardsBrowsePage(props: {
   const rawSearchParams = await props.searchParams
   const browsePath = props.browsePath?.trim() || "/boards"
   const pageDefaultSort = props.defaultSort ?? BOARDS_BROWSE_DEFAULT_SORT
-  const searchParams: BoardsBrowseSearchParams = {
+  let searchParams: BoardsBrowseSearchParams = {
     ...rawSearchParams,
     sort: rawSearchParams.sort?.trim() || pageDefaultSort,
   }
-  const searchParamsPromise = Promise.resolve(searchParams)
   if (searchParams.type === "foamie") {
     const next = boardsBrowseSearchParamsToURLSearchParams(searchParams, new Set(["type"]))
     redirect(boardsBrowsePathWithSearchParams(browsePath, next))
@@ -730,7 +753,22 @@ export async function BoardsBrowsePage(props: {
   if (geocodeRedirectHref) {
     redirect(geocodeRedirectHref)
   }
-  const typeCrumb = boardsBrowseBoardTypeLabel(searchParams.type)
+
+  const { user: browseUser } = await getCachedRequestSession()
+  const mergedNearMe = await loadMergedBoardsBrowseFilters(browseUser?.id, searchParams)
+  const nearMeRedirectHref = boardsBrowseProfileHomeRedirectHref(
+    browsePath,
+    searchParams,
+    mergedNearMe,
+  )
+  if (nearMeRedirectHref) {
+    redirect(nearMeRedirectHref)
+  }
+  const effectiveSearchParams = mergedNearMe.searchParams
+  const searchParamsForPage = effectiveSearchParams
+  const searchParamsPromise = Promise.resolve(searchParamsForPage)
+
+  const typeCrumb = boardsBrowseBoardTypeLabel(searchParamsForPage.type)
   const pageTitle = typeCrumb ?? surfboardsBrowseRootLabel
   const openGiveaway = props.showListYourSurfboardCta ? null : getOpenBoardsGiveaway()
   const giveawayEnter: BoardsGiveawayEnterProps | null = openGiveaway
@@ -739,7 +777,7 @@ export async function BoardsBrowsePage(props: {
 
   return (
     <main className="flex-1">
-      <BoardsBrowseJsonLd searchParams={searchParams} />
+      <BoardsBrowseJsonLd searchParams={searchParamsForPage} />
       {!props.showListYourSurfboardCta ? (
         <section className="bg-offwhite pt-1 sm:pt-2 lg:pt-6">
           <div className="container mx-auto">
@@ -747,12 +785,12 @@ export async function BoardsBrowsePage(props: {
               <CategoryBrowseBreadcrumbs
                 rootHref="/boards"
                 rootLabel={surfboardsBrowseRootLabel}
-                searchParams={searchParams}
+                searchParams={searchParamsForPage}
                 segment={
-                  typeCrumb && searchParams.type?.trim()
+                  typeCrumb && searchParamsForPage.type?.trim()
                     ? {
                         label: typeCrumb,
-                        href: `/boards?type=${encodeURIComponent(searchParams.type.trim())}`,
+                        href: `/boards?type=${encodeURIComponent(searchParamsForPage.type.trim())}`,
                         ownedParamKeys: ["type"],
                       }
                     : undefined
@@ -790,9 +828,7 @@ export async function BoardsBrowsePage(props: {
               giveawayEnter={giveawayEnter}
               headerAction={
                 props.showListYourSurfboardCta ? undefined : (
-                  <Suspense fallback={null}>
-                    <BoardsBrowseAdminCuratorGate />
-                  </Suspense>
+                  <BoardsBrowseAdminCurator className="border-white/55 bg-white/95 text-[#001A4A] shadow-sm hover:bg-white" />
                 )
               }
             >

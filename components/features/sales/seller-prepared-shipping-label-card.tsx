@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { Download, ExternalLink, QrCode, Truck } from "lucide-react"
+import { SellerShippingLabelQrDialog } from "@/components/features/sales/seller-shipping-label-qr-dialog"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -12,9 +13,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { SHIPPING_LABEL_CREATED_STATUS } from "@/lib/sale-card-status"
-
-const USPS_LABEL_BROKER_FINDER =
-  "https://tools.usps.com/find-location.htm?locationType=po&serviceType=lbroretail"
+import {
+  USPS_LABEL_BROKER_FINDER,
+  sellerShippingLabelQrHref,
+} from "@/lib/shipping/seller-shipping-label-qr"
 
 export function SellerPreparedShippingLabelCard({
   orderId,
@@ -22,6 +24,7 @@ export function SellerPreparedShippingLabelCard({
   title = null,
   description = null,
   downloadApiPrefix = "/api/orders",
+  hasPdf = true,
   hasPaperlessQr = false,
   paperlessInstructions = null,
   paperlessHandoffCode = null,
@@ -33,6 +36,8 @@ export function SellerPreparedShippingLabelCard({
   description?: string | null
   /** API prefix before `/:orderId/shipping-label/download` — use `/api/admin/orders` on admin pages. */
   downloadApiPrefix?: string
+  /** Printable PDF is on file. Paperless-only labels omit the PDF buttons. */
+  hasPdf?: boolean
   /** USPS Label Broker QR available for phone drop-off. */
   hasPaperlessQr?: boolean
   paperlessInstructions?: string | null
@@ -45,7 +50,7 @@ export function SellerPreparedShippingLabelCard({
   const labelQuery = labelId ? `&label_id=${encodeURIComponent(labelId)}` : ""
   const viewHref = `${downloadApiPrefix}/${encodedId}/shipping-label/download?inline=1${labelQuery}`
   const downloadHref = `${downloadApiPrefix}/${encodedId}/shipping-label/download${labelId ? `?label_id=${encodeURIComponent(labelId)}` : ""}`
-  const qrHref = `${downloadApiPrefix}/${encodedId}/shipping-label/qr${labelId ? `?label_id=${encodeURIComponent(labelId)}` : ""}`
+  const qrHref = sellerShippingLabelQrHref({ orderId, labelId, downloadApiPrefix })
 
   return (
     <>
@@ -123,22 +128,26 @@ export function SellerPreparedShippingLabelCard({
                 Show USPS QR code
               </Button>
             ) : null}
-            <Button
-              size="sm"
-              variant="outline"
-              className="gap-2"
-              type="button"
-              onClick={() => setPdfOpen(true)}
-            >
-              <ExternalLink className="h-4 w-4" />
-              View label PDF
-            </Button>
-            <Button size="sm" variant="outline" className="gap-2" asChild>
-              <a href={downloadHref} download>
-                <Download className="h-4 w-4" />
-                Download PDF
-              </a>
-            </Button>
+            {hasPdf ? (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-2"
+                  type="button"
+                  onClick={() => setPdfOpen(true)}
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  View label PDF
+                </Button>
+                <Button size="sm" variant="outline" className="gap-2" asChild>
+                  <a href={downloadHref} download>
+                    <Download className="h-4 w-4" />
+                    Download PDF
+                  </a>
+                </Button>
+              </>
+            ) : null}
           </div>
         </CardContent>
       </Card>
@@ -159,44 +168,13 @@ export function SellerPreparedShippingLabelCard({
         </DialogContent>
       </Dialog>
 
-      <Dialog open={qrOpen} onOpenChange={setQrOpen}>
-        <DialogContent className="flex h-[min(96vh,960px)] max-h-[min(96vh,960px)] w-[min(96vw,560px)] max-w-[560px] flex-col gap-0 overflow-hidden p-0">
-          <DialogHeader className="shrink-0 border-b px-6 py-4 text-left">
-            <DialogTitle>USPS drop-off QR code</DialogTitle>
-            <DialogDescription className="text-sm leading-relaxed">
-              Show this screen at a participating USPS retail counter. The clerk will scan the code,
-              print the label, and apply it for you.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-4 bg-white px-6 py-8">
-            {/* eslint-disable-next-line @next/next/no-img-element -- authenticated binary QR from our API */}
-            <img
-              src={qrHref}
-              alt="USPS Label Broker QR code for this shipment"
-              className="h-auto w-full max-w-[320px] object-contain"
-            />
-            {paperlessHandoffCode ? (
-              <p className="text-center text-sm text-neutral-700">
-                Handoff code:{" "}
-                <span className="font-mono font-semibold tracking-wide">{paperlessHandoffCode}</span>
-              </p>
-            ) : null}
-            {paperlessInstructions ? (
-              <p className="max-w-sm text-center text-xs leading-relaxed text-neutral-600">
-                {paperlessInstructions}
-              </p>
-            ) : null}
-            <a
-              href={USPS_LABEL_BROKER_FINDER}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-neutral-600 underline underline-offset-2"
-            >
-              Find participating USPS locations
-            </a>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <SellerShippingLabelQrDialog
+        open={qrOpen}
+        onOpenChange={setQrOpen}
+        qrHref={hasPaperlessQr ? qrHref : null}
+        paperlessInstructions={paperlessInstructions}
+        paperlessHandoffCode={paperlessHandoffCode}
+      />
     </>
   )
 }

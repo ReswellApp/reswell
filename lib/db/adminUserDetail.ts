@@ -15,6 +15,8 @@ const ADMIN_USER_DETAIL_PROFILE_SELECT = [
   "is_admin",
   "is_employee",
   "is_reswell_seller",
+  "shopify_connect_enabled",
+  "shopify_connect_requested_at",
   "is_shop",
   "shop_name",
   "seller_slug",
@@ -44,6 +46,8 @@ export type AdminUserDetailProfileRow = {
   is_admin: boolean
   is_employee: boolean
   is_reswell_seller: boolean
+  shopify_connect_enabled: boolean
+  shopify_connect_requested_at: string | null
   is_shop: boolean
   shop_name: string | null
   seller_slug: string | null
@@ -123,6 +127,8 @@ function normalizeProfile(row: Record<string, unknown>): AdminUserDetailProfileR
     is_admin: asBool(row.is_admin),
     is_employee: asBool(row.is_employee),
     is_reswell_seller: asBool(row.is_reswell_seller),
+    shopify_connect_enabled: asBool(row.shopify_connect_enabled),
+    shopify_connect_requested_at: asText(row.shopify_connect_requested_at),
     is_shop: asBool(row.is_shop),
     shop_name: asText(row.shop_name),
     seller_slug: asText(row.seller_slug),

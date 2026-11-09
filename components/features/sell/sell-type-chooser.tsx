@@ -43,6 +43,18 @@ function sellTypeOptions(
       title: "Wetsuits",
     },
     {
+      href: "/sell/boardbags?new=1",
+      title: "Boardbags",
+    },
+    {
+      href: "/sell/surfpacks?new=1",
+      title: "Surfpacks",
+    },
+    {
+      href: "/sell/leashes?new=1",
+      title: "Leashes",
+    },
+    {
       href: "/sell/magazines?new=1",
       title: "Magazines",
     },

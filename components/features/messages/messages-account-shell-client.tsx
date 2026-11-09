@@ -9,13 +9,19 @@ import { cn } from "@/lib/utils"
 
 interface MessagesAccountShellClientProps {
   sellerProfileHref: string | null
-  sidebar: ReactNode
+  isAdmin?: boolean
+  isShipper?: boolean
+  isDropoffLocation?: boolean
+  hasShopifyAccess: boolean
   children: ReactNode
 }
 
 export function MessagesAccountShellClient({
   sellerProfileHref,
-  sidebar,
+  isAdmin = false,
+  isShipper = false,
+  isDropoffLocation = false,
+  hasShopifyAccess,
   children,
 }: MessagesAccountShellClientProps) {
   const flatMobileInbox = useFlatMobileMessagesInbox()
@@ -25,24 +31,30 @@ export function MessagesAccountShellClient({
   return (
     <div
       className={cn(
-        "container mx-auto flex flex-col py-6 sm:py-8",
-        flatMobileInbox ? "min-h-0 flex-none" : "min-h-0 flex-1",
-        threadDetail && "max-lg:max-w-none max-lg:px-0 max-lg:py-0",
+        "flex flex-col",
+        flatMobileInbox
+          ? "min-h-0 flex-none px-4 py-6 sm:px-6"
+          : "h-full min-h-0 flex-1 overflow-hidden",
+        threadDetail && "max-lg:px-0 max-lg:py-0",
       )}
     >
-      <MessagesAccountMobileChrome sellerProfileHref={sellerProfileHref} />
+      <MessagesAccountMobileChrome
+        sellerProfileHref={sellerProfileHref}
+        isAdmin={isAdmin}
+        isShipper={isShipper}
+        isDropoffLocation={isDropoffLocation}
+        hasShopifyAccess={hasShopifyAccess}
+      />
 
       <div
         className={cn(
-          "mt-6 flex flex-col gap-8 lg:mt-0 lg:flex-row lg:gap-12 xl:gap-14",
-          flatMobileInbox ? "flex-none" : "min-h-0 flex-1",
-          threadDetail && "max-lg:mt-0 max-lg:gap-0",
+          "flex min-w-0 flex-col",
+          flatMobileInbox
+            ? "mt-4 flex-none"
+            : cn("min-h-0 flex-1 overflow-hidden", threadDetail ? "max-lg:mt-0" : "lg:mt-0"),
         )}
       >
-        {sidebar}
-        <div className={cn(flatMobileInbox ? "flex flex-col" : "flex min-h-0 min-w-0 flex-1 flex-col")}>
-          {children}
-        </div>
+        {children}
       </div>
     </div>
   )

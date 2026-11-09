@@ -1,18 +1,26 @@
 import { z } from "zod"
+import {
+  draftOptionalCoord,
+  draftOptionalDate,
+  draftOptionalListingId,
+  draftOptionalMoney,
+  draftOptionalUuid,
+} from "@/lib/validations/listing-draft-fields"
 
 const fulfillment = z.enum(["pickup_only", "shipping_only", "pickup_and_shipping"])
 const shippingCostMode = z.enum(["reswell", "free", "flat"])
 
 /** Relaxed payload from the surfboard sell form for server-side draft persistence. */
 export const listingDraftAutosaveSchema = z.object({
-  listingId: z.string().uuid().optional().nullable(),
+  listingId: draftOptionalListingId.optional(),
   title: z.string().optional(),
   description: z.string().optional(),
-  price: z.string().optional(),
-  sellerPurchasePrice: z.string().optional(),
+  price: draftOptionalMoney,
+  sellerPurchasePrice: draftOptionalMoney,
   sellerPurchasedFrom: z.string().max(200).optional(),
-  sellerPurchasedOn: z.string().regex(/^$|^\d{4}-\d{2}-\d{2}$/).optional(),
+  sellerPurchasedOn: draftOptionalDate.optional(),
   condition: z.string().optional(),
+  stockQuantity: z.union([z.string(), z.number()]).optional(),
   category: z.string().optional(),
   brand: z.string().optional(),
   boardFulfillment: fulfillment.optional(),
@@ -35,11 +43,11 @@ export const listingDraftAutosaveSchema = z.object({
   boardFinSystem: z.string().optional(),
   boardConstruction: z.string().optional(),
   boardFinsIncluded: z.string().optional(),
-  boardBrandId: z.string().optional(),
-  boardBrandModelId: z.string().optional(),
+  boardBrandId: draftOptionalUuid.optional(),
+  boardBrandModelId: draftOptionalUuid.optional(),
   boardModelName: z.string().optional(),
-  locationLat: z.number().optional(),
-  locationLng: z.number().optional(),
+  locationLat: draftOptionalCoord,
+  locationLng: draftOptionalCoord,
   locationCity: z.string().optional(),
   locationState: z.string().optional(),
   reswellPackageLengthIn: z.string().optional(),

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { requireAdmin } from "@/lib/brands/admin-server"
+import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
 import { getAdminShippingStats } from "@/lib/services/adminShippingStats"
 
 export const dynamic = "force-dynamic"
@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic"
  * GET /api/admin/shipping/stats — aggregated shipping analytics for the admin dashboard.
  */
 export async function GET() {
-  const gate = await requireAdmin()
+  const gate = await requireAdminOrEmployee()
   if (!gate.ok) {
     return gate.response
   }

@@ -10,11 +10,15 @@ import {
   isListingDimensionDisplaySchemaCacheError,
   withoutListingDimensionDisplayDbFields,
 } from "@/lib/listing-dimensions-display"
-import { revalidatePath } from "next/cache"
-import { revalidateListingPublicDetailCatalog } from "@/lib/cache/revalidate-listing-public-detail"
+import {
+  revalidateListingDetailPage,
+  revalidateListingPublicDetailCatalog,
+} from "@/lib/cache/revalidate-listing-public-detail"
+import { revalidateMarketplaceNewListingsFeed } from "@/lib/cache/revalidate-marketplace-sold-feed"
 import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { upsertUserListingBoardModelDataFromSellForm } from "@/lib/db/user-listing-board-model-data"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
+import { insertListingImages } from "@/lib/db/listingImagesInsert"
 import { persistableListingThumbnailUrl } from "@/lib/listing-media-proxy-url"
 import { omitClientAutoPriceDropSchedule } from "@/lib/listing-auto-price-drop"
 import type { SellFormBoardCatalogSlice } from "@/lib/utils/listing-board-catalog-snapshot"
@@ -180,8 +184,9 @@ export async function POST(request: NextRequest) {
       is_primary: index === 0,
       sort_order: index,
     }))
-    const { error: imgErr } = await service.from("listing_images").insert(imageInserts)
-    if (imgErr) {
+    try {
+      await insertListingImages(service, imageInserts)
+    } catch (imgErr) {
       console.error("[impersonate] listing_images insert error:", imgErr)
     }
   }
@@ -249,8 +254,9 @@ export async function POST(request: NextRequest) {
   void notifyFollowersNewListingKlaviyo(listing.id)
   void syncListingToGoogleMerchantBestEffort(service, listing.id)
 
-  revalidatePath(`/l/${listing.slug}`, "page")
+  revalidateListingDetailPage(String(listing.id), typeof listing.slug === "string" ? listing.slug : null)
   revalidateListingPublicDetailCatalog()
+  revalidateMarketplaceNewListingsFeed()
   await revalidateSellersAfterListingChange(service, targetUserId)
 
   return NextResponse.json({

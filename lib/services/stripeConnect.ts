@@ -105,24 +105,47 @@ function instantPayoutDailyLimitUserMessage(): { error: string; errorDetail: str
   }
 }
 
-function userFacingMessageForStripeInstantPayoutError(e: unknown): string {
+function userFacingMessageForStripeInstantPayoutError(e: unknown): {
+  error: string
+  errorDetail?: string
+  errorCode?: string
+  nextAction?: ConnectCashOutNextAction
+} {
   if (e instanceof Stripe.errors.StripeError) {
     if (e.code === "instant_payouts_limit_exceeded") {
-      return instantPayoutDailyLimitUserMessage().error
+      const limitMsg = instantPayoutDailyLimitUserMessage()
+      return {
+        error: limitMsg.error,
+        errorDetail: limitMsg.errorDetail,
+        errorCode: "instant_payouts_limit_exceeded",
+        nextAction: "use_standard",
+      }
     }
     if (e.code === "instant_payouts_unsupported") {
-      return (
-        "Instant payout isn’t available for this payout account yet. Use standard delivery (2–3 business days), " +
-        "or open Manage payout banks in Stripe to add an eligible debit card or bank."
-      )
+      return {
+        error: "Instant payout isn’t available for this bank yet",
+        errorDetail:
+          "Choose Standard delivery (2–3 business days), or open Manage banks in Stripe to add an eligible debit card or bank.",
+        errorCode: "instant_payouts_unsupported",
+        nextAction: "use_standard",
+      }
     }
     if (e.code === "amount_too_small") {
-      return "The amount is too small for Stripe to pay out instantly. Try a slightly higher amount or use standard delivery."
+      return {
+        error: "That amount is too small for an instant payout",
+        errorDetail: "Try a slightly higher amount, or switch to Standard delivery (2–3 business days).",
+        errorCode: "amount_too_small",
+        nextAction: "use_standard",
+      }
     }
   }
-  return (
-    "Stripe couldn’t start an instant payout to your bank. Try standard delivery, or verify your payout account in Stripe."
-  )
+  return {
+    error: "Stripe couldn’t start an instant payout",
+    errorDetail:
+      "Try Standard delivery, or open Manage banks / Finish verification if Stripe still needs details on your payout account.",
+    errorCode: "instant_payout_failed",
+    nextAction: "use_standard",
+  }
 }
 
 /**
@@ -580,6 +603,21 @@ export async function createConnectAccountSessionClientSecret(
   }
 }
 
+/** Express dashboard, where a connected seller adds or changes a payout bank. */
+export async function createConnectExpressLoginLink(
+  stripeAccountId: string,
+): Promise<{ url: string } | { error: string }> {
+  const stripe = getStripe()
+  try {
+    const link = await stripe.accounts.createLoginLink(stripeAccountId)
+    if (!link.url) return { error: "Stripe did not return a bank link" }
+    return { url: link.url }
+  } catch (e) {
+    console.error("[stripe connect] createConnectExpressLoginLink", e)
+    return { error: "Could not open bank setup. Try again shortly." }
+  }
+}
+
 /** Hosted Stripe onboarding — reliable when embedded onboarding has nothing left to show. */
 export async function createConnectHostedOnboardingLink(
   stripeAccountId: string,
@@ -731,6 +769,14 @@ export async function ensureCashOutDestinationBank(
   return setDefaultConnectBankAccount(supabase, userId, externalAccountId)
 }
 
+/** What the Earnings UI should offer when cash-out is blocked by Stripe setup. */
+export type ConnectCashOutNextAction =
+  | "finish_verification"
+  | "manage_banks"
+  | "wait_review"
+  | "contact_support"
+  | "use_standard"
+
 export type ConnectCashOutResult =
   | {
       ok: true
@@ -745,7 +791,118 @@ export type ConnectCashOutResult =
       availableBalanceAfter: number
       lifetimeCashedOutAfter: number
     }
-  | { ok: false; error: string; errorDetail?: string; errorCode?: string; status?: number }
+  | {
+      ok: false
+      error: string
+      errorDetail?: string
+      errorCode?: string
+      nextAction?: ConnectCashOutNextAction
+      requirementsChecklist?: string[]
+      status?: number
+    }
+
+/**
+ * When Stripe still needs identity / bank info (or is reviewing / restricted),
+ * return an actionable failure instead of a vague “payouts not enabled” string.
+ */
+function cashOutBlockedByIncompleteStripeSetup(
+  connected: Stripe.Account,
+): Extract<ConnectCashOutResult, { ok: false }> | null {
+  const bank = pickDefaultBank(connected)
+  const status = deriveConnectStatusFields({
+    hasAccount: true,
+    payoutsEnabled: connected.payouts_enabled ?? false,
+    detailsSubmitted: connected.details_submitted ?? false,
+    bankLast4: bank?.last4 ?? null,
+    bankName: bank?.bankName ?? null,
+    defaultExternalAccountId: bank?.externalId ?? null,
+    bankAccounts: bank
+      ? [
+          {
+            id: bank.externalId,
+            last4: bank.last4,
+            bankName: bank.bankName,
+            defaultForCurrency: true,
+            currency: "usd",
+          },
+        ]
+      : [],
+    bankAccountsDeletableViaPlatformApi: false,
+    pastDue: connected.requirements?.past_due ?? [],
+    currentlyDue: connected.requirements?.currently_due ?? [],
+    eventuallyDue: connected.requirements?.eventually_due ?? [],
+    pendingVerification: connected.requirements?.pending_verification ?? [],
+    disabledReason: connected.requirements?.disabled_reason ?? null,
+    identityIncomplete: isStripeIdentityIncomplete(connected.individual),
+    futurePastDue: connected.future_requirements?.past_due ?? [],
+    futureCurrentlyDue: connected.future_requirements?.currently_due ?? [],
+    futureEventuallyDue: connected.future_requirements?.eventually_due ?? [],
+    futureDeadlineUnix: connected.future_requirements?.current_deadline ?? null,
+  })
+
+  const transfersActive = connected.capabilities?.transfers === "active"
+
+  if (status.cashOutReady && transfersActive) {
+    return null
+  }
+
+  if (status.cashOutReady && !transfersActive) {
+    return {
+      ok: false,
+      error: "Stripe is still activating transfers on your payout profile",
+      errorDetail:
+        "Your bank is linked, but Stripe has not finished enabling transfers yet. " +
+        "Open Finish verification, complete any remaining steps Stripe shows, then try cashing out again.",
+      errorCode: "stripe_transfers_inactive",
+      nextAction: "finish_verification",
+      requirementsChecklist: status.requirementsChecklist,
+      status: 400,
+    }
+  }
+
+  if (status.setupStatus === "pending_review") {
+    return {
+      ok: false,
+      error: "Stripe is still reviewing your details",
+      errorDetail:
+        status.verificationMessage ??
+        "You do not need to enter anything again. Refresh Earnings in a few minutes, then retry cash out.",
+      errorCode: "stripe_pending_review",
+      nextAction: "wait_review",
+      requirementsChecklist: status.requirementsChecklist,
+      status: 400,
+    }
+  }
+
+  if (status.setupStatus === "restricted") {
+    return {
+      ok: false,
+      error: "Stripe paused payouts on this account",
+      errorDetail:
+        status.verificationMessage ??
+        "There is nothing left to submit in Stripe. Contact Reswell support if this continues.",
+      errorCode: "stripe_restricted",
+      nextAction: "contact_support",
+      requirementsChecklist: status.requirementsChecklist,
+      status: 400,
+    }
+  }
+
+  const needed = status.requirementsChecklist
+  const neededLine =
+    needed.length > 0
+      ? `Still needed: ${needed.join(", ")}.`
+      : (status.verificationMessage ?? "Stripe still needs identity or bank details.")
+  return {
+    ok: false,
+    error: "Stripe needs a few more details before you can cash out",
+    errorDetail: `${neededLine} Open Finish verification to complete these in Stripe, then try cashing out again.`,
+    errorCode: "stripe_action_required",
+    nextAction: "finish_verification",
+    requirementsChecklist: needed,
+    status: 400,
+  }
+}
 
 export async function cashOutToStripeConnectedAccount(
   supabase: SupabaseClient,
@@ -826,24 +983,9 @@ export async function cashOutToStripeConnectedAccount(
 
   await syncStripeConnectAccountRow(supabase, connected.id)
 
-  if (!connected.payouts_enabled) {
-    const bankLinked = Boolean(pickDefaultBank(connected))
-    return {
-      ok: false,
-      error: bankLinked
-        ? "Stripe hasn’t enabled payouts on your account yet. Open Complete verification in Earnings and finish any identity steps Stripe requests."
-        : "Complete bank setup and verification before cashing out.",
-      status: 400,
-    }
-  }
-
-  if (connected.capabilities?.transfers !== "active") {
-    return {
-      ok: false,
-      error:
-        "Stripe hasn’t finished activating transfers on your payout profile. Open Manage payout banks and complete any verification Stripe requests.",
-      status: 400,
-    }
+  const setupBlock = cashOutBlockedByIncompleteStripeSetup(connected)
+  if (setupBlock) {
+    return setupBlock
   }
 
   if (externalAccountId?.trim()) {
@@ -972,13 +1114,18 @@ export async function cashOutToStripeConnectedAccount(
           error: limitMsg.error,
           errorDetail: limitMsg.errorDetail,
           errorCode: "instant_payouts_limit_exceeded",
+          nextAction: "use_standard",
           status: 503,
         }
       }
 
+      const instantMsg = userFacingMessageForStripeInstantPayoutError(e)
       return {
         ok: false,
-        error: userFacingMessageForStripeInstantPayoutError(e),
+        error: instantMsg.error,
+        ...(instantMsg.errorDetail ? { errorDetail: instantMsg.errorDetail } : {}),
+        ...(instantMsg.errorCode ? { errorCode: instantMsg.errorCode } : {}),
+        ...(instantMsg.nextAction ? { nextAction: instantMsg.nextAction } : {}),
         status: 502,
       }
     }

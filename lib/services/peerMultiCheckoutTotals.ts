@@ -10,12 +10,16 @@ import {
   type PeerSurfboardCheckoutListingRow,
 } from "@/lib/services/peerListingShippingQuote"
 import { fetchSellerFeeWaived } from "@/lib/db/profileSellerFee"
+import { connectedSalePayout } from "@/lib/shopify/billing"
+import { shopifyManagedCheckoutBilling } from "@/lib/services/shopifyBilling"
 import { getSellerEarnings } from "@/lib/seller-fees"
 import { resolveMixedCheckoutSellerId } from "@/lib/mixed-checkout"
 import { getReswellShopLineEarnings, isReswellShopListing } from "@/lib/reswell-shop"
+import { peerBrandNewStockQuantity } from "@/lib/listing-stock-quantity"
 import {
   countSurfboardListings,
   peerCheckoutSurfboardCountError,
+  surfboardsRequireSeparatePackages,
 } from "@/lib/surfboard-multi-board-parcel"
 import {
   DEFAULT_SHIPPING_PACKAGING_MODE,
@@ -34,6 +38,7 @@ export type PeerCheckoutLineComputation = {
   usedReswellQuote: boolean
   platformFee: number
   sellerEarnings: number
+  shopifyUsageFee: number
   /** Separate packaging: ShipEngine rate for this line (when Reswell-quoted). */
   packageRateId?: string | null
   packageServiceCode?: string | null
@@ -66,6 +71,8 @@ export async function computePeerMultiCheckoutUsd(params: {
   }
   /** Units per listing id (shop inventory). Peer lines default to 1. */
   quantityByListingId?: Record<string, number>
+  /** Replaces carrier and flat shipping with one checkout line. Single listing only. */
+  fixedShippingUsd?: number
 }): Promise<
   | {
       ok: true
@@ -76,6 +83,7 @@ export async function computePeerMultiCheckoutUsd(params: {
       totalItemPriceUsd: number
       totalPlatformFee: number
       totalSellerEarnings: number
+      totalShopifyUsageFee: number
       anyUsedReswellQuote: boolean
       reswellQuote: PeerReswellShippingQuote | null
       packagingMode: ShippingPackagingMode
@@ -97,14 +105,31 @@ export async function computePeerMultiCheckoutUsd(params: {
     return { ok: false, error: "No listings to checkout" }
   }
 
+  const shopifyBilling = await shopifyManagedCheckoutBilling(listingsOrdered)
+  if (!shopifyBilling.ok) {
+    return { ok: false, error: shopifyBilling.error }
+  }
+  const shopifyBilled = shopifyBilling.billedListingIds
+
   const packagingMode =
     fulfillment === "shipping" && listingsOrdered.length > 1
       ? resolveShippingPackagingMode(params.packagingMode, DEFAULT_SHIPPING_PACKAGING_MODE)
       : DEFAULT_SHIPPING_PACKAGING_MODE
 
-  const surfboardCapError = peerCheckoutSurfboardCountError(countSurfboardListings(listingsOrdered))
-  if (surfboardCapError) {
-    return { ok: false, error: surfboardCapError }
+  const surfboardCount = countSurfboardListings(listingsOrdered)
+  if (
+    fulfillment === "shipping" &&
+    packagingMode !== "separate" &&
+    surfboardsRequireSeparatePackages(surfboardCount)
+  ) {
+    const surfboardCapError = peerCheckoutSurfboardCountError(surfboardCount)
+    if (surfboardCapError) {
+      return { ok: false, error: surfboardCapError }
+    }
+  }
+
+  if (params.fixedShippingUsd != null && listingsOrdered.length !== 1) {
+    return { ok: false, error: "Surfboard Shipped is one board per checkout." }
   }
 
   const sellerResolved = resolveMixedCheckoutSellerId(
@@ -119,10 +144,11 @@ export async function computePeerMultiCheckoutUsd(params: {
   }
   const sellerId = sellerResolved.sellerId
 
-  const qtyFor = (listingId: string, section: string | null) => {
-    if (isReswellShopListing(section)) {
-      return Math.max(1, Math.floor(quantityByListingId?.[listingId] ?? 1))
-    }
+  const qtyFor = (listing: (typeof listingsOrdered)[number]) => {
+    const requested = Math.max(1, Math.floor(quantityByListingId?.[listing.id] ?? 1))
+    if (isReswellShopListing(listing.section)) return requested
+    const peerStock = peerBrandNewStockQuantity(listing)
+    if (peerStock >= 1) return Math.min(requested, peerStock)
     return 1
   }
 
@@ -182,7 +208,7 @@ export async function computePeerMultiCheckoutUsd(params: {
 
   for (let i = 0; i < listingsOrdered.length; i++) {
     const listing = listingsOrdered[i]!
-    const quantity = qtyFor(listing.id, listing.section)
+    const quantity = qtyFor(listing)
     const lineOverride = shipSeparately
       ? (() => {
           const pkg = preverifiedByListing.get(listing.id)
@@ -204,6 +230,8 @@ export async function computePeerMultiCheckoutUsd(params: {
       sellerShipFromName,
       sellerShipFromAddress,
       shippingOverride: lineOverride,
+      fixedShippingUsd: params.fixedShippingUsd,
+      quantity,
     })
     if (!totals.ok) {
       return { ok: false, error: totals.error }
@@ -227,10 +255,19 @@ export async function computePeerMultiCheckoutUsd(params: {
 
     let platformFee: number
     let sellerEarnings: number
+    let shopifyUsageFee = 0
     if (isReswellShopListing(listing.section)) {
       const shop = getReswellShopLineEarnings(unitPrice, quantity)
       platformFee = shop.platformFee
       sellerEarnings = shop.sellerEarnings
+    } else if (shopifyBilled.has(listing.id)) {
+      const payout = connectedSalePayout(lineItemTotal, {
+        feeWaived,
+        shopifyBilled: true,
+      })
+      platformFee = payout.platformFee
+      sellerEarnings = payout.sellerEarnings
+      shopifyUsageFee = payout.shopifyUsageFee
     } else {
       ;({ marketplaceFee: platformFee, sellerEarnings } = getSellerEarnings(lineItemTotal, {
         feeWaived,
@@ -270,6 +307,7 @@ export async function computePeerMultiCheckoutUsd(params: {
       usedReswellQuote: totals.usedReswellQuote,
       platformFee,
       sellerEarnings,
+      shopifyUsageFee,
       packageRateId,
       packageServiceCode,
     })
@@ -278,7 +316,10 @@ export async function computePeerMultiCheckoutUsd(params: {
   if (isMultiLine && fulfillment === "shipping" && !shipSeparately) {
     const bundleShipping = preverifiedShipping
       ? (() => {
-          const parcelCheck = resolveCombinedPackedParcelFromListings(listingsOrdered)
+          const parcelCheck = resolveCombinedPackedParcelFromListings(
+            listingsOrdered,
+            quantityByListingId,
+          )
           if (!parcelCheck.ok) {
             return parcelCheck
           }
@@ -305,6 +346,7 @@ export async function computePeerMultiCheckoutUsd(params: {
           diagnosticTag: `${diagnosticTagPrefix}:bundle`,
           sellerShipFromName,
           sellerShipFromAddress,
+          quantities: quantityByListingId,
         })
     if (!bundleShipping.ok) {
       return { ok: false, error: bundleShipping.error }
@@ -340,6 +382,8 @@ export async function computePeerMultiCheckoutUsd(params: {
     Math.round(lines.reduce((s, l) => s + l.platformFee, 0) * 100) / 100
   const totalSellerEarnings =
     Math.round(lines.reduce((s, l) => s + l.sellerEarnings, 0) * 100) / 100
+  const totalShopifyUsageFee =
+    Math.round(lines.reduce((s, l) => s + l.shopifyUsageFee, 0) * 100) / 100
 
   return {
     ok: true,
@@ -350,6 +394,7 @@ export async function computePeerMultiCheckoutUsd(params: {
     totalItemPriceUsd,
     totalPlatformFee,
     totalSellerEarnings,
+    totalShopifyUsageFee,
     anyUsedReswellQuote,
     reswellQuote,
     packagingMode,

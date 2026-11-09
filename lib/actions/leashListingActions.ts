@@ -1,5 +1,6 @@
 "use server"
 
+import { resolveManagedSeller } from "@/lib/account-access/managed-seller"
 import { createClient } from "@/lib/supabase/server"
 import { revalidateListingMutationPaths } from "@/lib/cache/revalidate-listing-mutation-paths"
 import { evaluateSellerCanSell } from "@/lib/services/sellerBan"
@@ -40,13 +41,17 @@ export async function createLeashListingAction(
   }
 
 
-  const sellGuard = await evaluateSellerCanSell(supabase, user.id)
+  const managed = await resolveManagedSeller("listings.write")
+  if (!managed.ok) return { error: managed.error }
+  const sellerId = managed.seller.sellerId
+
+  const sellGuard = await evaluateSellerCanSell(supabase, sellerId)
   if (!sellGuard.ok) {
     return { error: sellGuard.userMessage }
   }
 
   try {
-    const result = await createLeashListing(supabase, user.id, parsed.data)
+    const result = await createLeashListing(supabase, sellerId, parsed.data)
     revalidateListingMutationPaths("/leashes", result.slug)
     return { success: true, listingId: result.listingId, slug: result.slug }
   } catch (error) {
@@ -76,8 +81,16 @@ export async function updateLeashListingAction(
     return { error: "Please sign in to edit this listing." }
   }
 
+  const managed = await resolveManagedSeller("listings.write")
+  if (!managed.ok) return { error: managed.error }
+
   try {
-    const result = await updateLeashListing(supabase, parsed.data.listingId, user.id, parsed.data)
+    const result = await updateLeashListing(
+      supabase,
+      parsed.data.listingId,
+      managed.seller.sellerId,
+      parsed.data,
+    )
     revalidateListingMutationPaths("/leashes", result.slug)
     return { success: true, slug: result.slug }
   } catch (error) {

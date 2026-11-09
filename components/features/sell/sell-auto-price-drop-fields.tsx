@@ -7,12 +7,16 @@ import { ListingPriceWithMarkdown } from "@/components/features/listings/listing
 import { SellRequiredMark } from "@/components/features/sell/sell-required-mark"
 import { parseOptionalUsdAmount } from "@/lib/listing-compare-at-price"
 import { AUTO_PRICE_DROP_DELAY_DAYS } from "@/lib/listing-auto-price-drop"
+import {
+  parseSellListingPrice,
+  sellListingPriceIsPublishable,
+} from "@/lib/utils/sell-listing-price"
 
 function priceDropFloorComplete(floorRaw: string, priceRaw: string): boolean {
-  const floor = Number.parseFloat(floorRaw.trim().replace(/,/g, ""))
-  if (!Number.isFinite(floor) || floor < 0.01 || floor > 999_999.99) return false
-  const price = Number.parseFloat(priceRaw.trim().replace(/,/g, ""))
-  return Number.isFinite(price) ? floor < price : true
+  const floor = parseSellListingPrice(floorRaw)
+  if (floor == null || !sellListingPriceIsPublishable(floor)) return false
+  const price = parseSellListingPrice(priceRaw)
+  return price != null ? floor < price : true
 }
 
 function formatScheduledDropDate(iso: string): string | null {

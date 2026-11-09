@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef } from "react"
 import reswellLogoPng from "@/public/images/reswell-logo.png"
 import type { PartnerEmbedPublicPayload } from "@/lib/db/partner-listing-embeds"
+import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import {
   trackPartnerEmbedClick,
   type PartnerEmbedClickType,
@@ -136,7 +137,7 @@ export function PartnerListingBannerClient({
                         <img
                           src={listing.image_url}
                           alt=""
-                          className="block h-full w-full object-cover"
+                          className={listingPhotoFillClassName}
                           loading="lazy"
                         />
                       ) : (

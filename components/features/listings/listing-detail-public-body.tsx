@@ -121,7 +121,7 @@ export async function ListingDetailPublicBody({
   const sellerUserId = typeof listing.user_id === "string" ? listing.user_id : null
 
   return (
-    <ListingViewerProvider sellerUserId={sellerUserId}>
+    <ListingViewerProvider sellerUserId={sellerUserId} listingId={listing.id}>
       <ListingPrivateChromeIsland listing={listing} />
       {isGoogleMerchantPeerSection(listing.section) ? (
         <ListingPdpProductJsonLd listing={listing as GoogleMerchantListingRow} />

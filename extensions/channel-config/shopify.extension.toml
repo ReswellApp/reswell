@@ -1,0 +1,10 @@
+# Declares Reswell as a Sales Channel (Shopify App Store requirement 4.5.1).
+# Deploy with: shopify app deploy
+# After first deploy, Shopify CLI may write a uid — commit that change.
+[[extensions]]
+name = "Reswell channel config"
+type = "channel_config"
+name = "Reswell channel config"
+handle = "channel-config"
+# Keep legacy auto-channel until channelCreate is proven on every install path.
+create_legacy_channel_on_app_install = true

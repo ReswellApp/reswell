@@ -92,6 +92,7 @@ export function parseSupportThreadSystemMessage(
 export function isSupportStatusUpdateMessage(body: string): boolean {
   const trimmed = body.trim()
   if (/^status updated\b/i.test(trimmed)) return true
+  if (/^conversation marked resolved\.?$/i.test(trimmed)) return true
   if (/^this (case|conversation|request) (is|has been) (closed|resolved|marked resolved)\b/i.test(trimmed)) {
     return true
   }

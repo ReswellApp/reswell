@@ -142,12 +142,12 @@ export const accountsHelpArticles: HelpArticle[] = [
         body: (
           <>
             <p>
-              To delete your Reswell account, {helpLink("/contact", "contact support")} from the
-              email address registered on the account. Tell us you want the account deleted and
-              include any relevant details (active listings, open orders, wallet balance).
+              On the Reswell iOS app, go to Account → Profile → Sign-in → Delete account. Finish open
+              orders and cash out earnings first.
             </p>
             <p>
-              We verify ownership before processing deletion. Open orders or pending payouts may need
+              On the website, {helpLink("/contact", "contact support")} from the email address
+              registered on the account and ask for deletion. Open orders or pending payouts may need
               to resolve first.
             </p>
           </>
@@ -201,7 +201,7 @@ export const accountsHelpArticles: HelpArticle[] = [
             <p>Earnings shows a few numbers that matter:</p>
             <BulletList
               items={[
-                <><strong>Pending</strong> holds earnings from recent sales until delivery or pickup is confirmed and any hold clears.</>,
+                <><strong>Pending</strong> holds shipped-order earnings until 4 days after carrier-confirmed delivery. Local-pickup earnings release when pickup is verified.</>,
                 <><strong>Ready to transfer to your bank</strong> is spendable now. Cash out or use it at checkout.</>,
                 <><strong>Total (including pending)</strong> is everything in your wallet.</>,
               ]}
@@ -516,7 +516,7 @@ export const accountsHelpArticles: HelpArticle[] = [
     quickAnswer: (
       <>
         Search the {helpLink("/help", "Help Center")} first. For an order, use <strong>Get help</strong>{" "}
-        on the purchase or sale. For everything else, open {helpLink("/support", "Support")} or{" "}
+        on the purchase or sale. For everything else, open {helpLink("/support", "Reswell help")} or{" "}
         {helpLink("/contact", "Contact")}. We read every message. Protection claims are typically
         reviewed within 3 business days.
       </>
@@ -531,7 +531,7 @@ export const accountsHelpArticles: HelpArticle[] = [
                 {helpLink("/help", "Help Center")} for self-serve articles.
               </>,
               <>
-                {helpLink("/support", "Support hub")} to open a case with the team.
+                {helpLink("/support", "Reswell help")} to start a help thread with the team.
               </>,
               <>
                 <strong>Get help</strong> on a {helpLink("/dashboard/purchases", "purchase")} or{" "}

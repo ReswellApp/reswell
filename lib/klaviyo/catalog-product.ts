@@ -163,6 +163,7 @@ export function isKlaviyoPlaceholderListingPhotoUrl(url: string | null | undefin
 /**
  * Buyer order emails — never fall back to the Reswell opengraph logo.
  * Returns empty string when the listing has no photo (template should hide the img).
+ * Prefers the direct Supabase file so mail clients do not depend on the app proxy.
  */
 export function klaviyoEmailListingPhotoUrl(raw: string | null | undefined): string {
   const direct = listingDirectPublicImageUrl(raw)
@@ -173,6 +174,19 @@ export function klaviyoEmailListingPhotoUrl(raw: string | null | undefined): str
 
   const origin = publicSiteOriginForEmail().replace(/\/$/, "")
   if (/^https?:\/\//i.test(proxied)) return proxied
+  return `${origin}${proxied.startsWith("/") ? proxied : `/${proxied}`}`
+}
+
+/**
+ * Saved-search and board-alert emails. Always the public `/media/listings` URL
+ * (`https://www.reswell.app/media/listings/...`), never the Supabase storage host.
+ * Empty when the listing has no photo.
+ */
+export function klaviyoMediaListingPhotoUrl(raw: string | null | undefined): string {
+  const proxied = proxiedListingImageSrc(raw)
+  if (!proxied.trim() || /^https?:\/\//i.test(proxied)) return ""
+
+  const origin = publicSiteOriginForEmail().replace(/\/$/, "")
   return `${origin}${proxied.startsWith("/") ? proxied : `/${proxied}`}`
 }
 

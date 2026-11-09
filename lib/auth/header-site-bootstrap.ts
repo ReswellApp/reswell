@@ -1,4 +1,10 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js"
+import type { AccountRole } from "@/lib/account-access/permissions"
+import { coastalShipperMembership } from "@/lib/services/coastalShipperAccess"
+import { getShopAccountContext } from "@/lib/services/accountAccess"
+import { dropoffLocationMembership } from "@/lib/services/dropoffLocationAccess"
+import { accountHasShopifyNavLink } from "@/lib/services/shopifyNavAccess"
+import { resolveHeaderWalletBalance } from "@/lib/auth/header-wallet-sync"
 import { reconcileWalletAggregates, walletAggregateStrings } from "@/lib/wallet-reconcile"
 import {
   persistWalletAggregatesIfNeeded,
@@ -7,6 +13,7 @@ import {
 
 export type HeaderProfileBootstrap = {
   is_admin: boolean | null
+  is_employee?: boolean | null
   avatar_url: string | null
   display_name: string | null
   shop_logo_url: string | null
@@ -15,11 +22,37 @@ export type HeaderProfileBootstrap = {
   unread_support_count: number | null
 }
 
+export interface HeaderShopAccessOption {
+  accountId: string
+  label: string
+  role: AccountRole
+  /** Linked Shopify store for this account — drives the Shopify nav link after a switch. */
+  shopifyConnectEnabled?: boolean
+}
+
+/** Accounts this login can work in. Personal stays their own user; shops are memberships. */
+export interface HeaderShopAccess {
+  actorUserId: string
+  activeAccountId: string
+  actingAsShop: boolean
+  shopLabel: string
+  role: AccountRole
+  actorEmail: string | null
+  showEarnings: boolean
+  hasShopifyAccess: boolean
+  options: HeaderShopAccessOption[]
+}
+
 export type HeaderSiteBootstrap = {
   profile: HeaderProfileBootstrap | null
   unreadMessages: number
   unreadSupport: number
   walletBalance: number | null
+  /** True when this user has a coastal_shippers row. Schedule and runs do not count. */
+  isShipper: boolean
+  /** True when this user has a dropoff_location_grants row. Admin does not count. */
+  isDropoffLocation: boolean
+  shopAccess: HeaderShopAccess | null
 }
 
 /**
@@ -30,11 +63,11 @@ export async function fetchHeaderSiteBootstrap(
   supabase: SupabaseClient,
   user: User,
 ): Promise<HeaderSiteBootstrap> {
-  const [profileRes, walletRes] = await Promise.all([
+  const [profileRes, walletRes, shipperRes, dropoffRes, shop] = await Promise.all([
     supabase
       .from("profiles")
       .select(
-        "is_admin, avatar_url, display_name, shop_logo_url, is_shop, unread_message_count, unread_support_count",
+        "is_admin, is_employee, avatar_url, display_name, shop_logo_url, is_shop, unread_message_count, unread_support_count",
       )
       .eq("id", user.id)
       .single(),
@@ -42,7 +75,13 @@ export async function fetchHeaderSiteBootstrap(
       .from("wallets")
       .select("id, balance, pending_balance, lifetime_earned, lifetime_spent, lifetime_cashed_out")
       .eq("user_id", user.id)
-      .single(),
+      .maybeSingle(),
+    supabase.from("coastal_shippers").select("id").eq("user_id", user.id).maybeSingle(),
+    supabase.from("dropoff_location_grants").select("id").eq("user_id", user.id).maybeSingle(),
+    getShopAccountContext().catch((error: unknown) => {
+      console.error("[header] shop access failed", error)
+      return null
+    }),
   ])
 
   const profile = profileRes.data ?? null
@@ -60,10 +99,39 @@ export async function fetchHeaderSiteBootstrap(
       }
     }
   }
+  const hasShopifyAccess = shop
+    ? await accountHasShopifyNavLink(shop.accountId)
+    : false
   return {
     profile,
     unreadMessages: Number(profile?.unread_message_count ?? 0),
     unreadSupport: Number(profile?.unread_support_count ?? 0),
-    walletBalance: wallet ? reconcileWalletAggregates(wallet).totalBalance : 0,
+    // Failed wallet reads stay null — never paint a fake $0.00 over a load race.
+    walletBalance: resolveHeaderWalletBalance({ data: wallet, error: walletRes.error }),
+    isShipper: coastalShipperMembership({
+      rowId: shipperRes.data?.id,
+      queryFailed: Boolean(shipperRes.error),
+    }),
+    isDropoffLocation: dropoffLocationMembership({
+      rowId: dropoffRes.data?.id,
+      queryFailed: Boolean(dropoffRes.error),
+    }),
+    shopAccess: shop
+      ? {
+          actorUserId: shop.actorUserId,
+          activeAccountId: shop.accountId,
+          actingAsShop: shop.actingAsShop,
+          shopLabel: shop.shopLabel,
+          role: shop.role,
+          actorEmail: shop.actorEmail,
+          showEarnings: shop.permissions.has("payouts.read"),
+          hasShopifyAccess,
+          options: shop.options.map((option) => ({
+            accountId: option.accountId,
+            label: option.label,
+            role: option.role,
+          })),
+        }
+      : null,
   }
 }

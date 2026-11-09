@@ -12,13 +12,13 @@ export const dashboardMobileSectionTitleClass =
 /** Message composer row: media button + input shell. */
 export const messageComposerFormClass = "flex items-center gap-2"
 
-/** Pill-shaped input shell — cerulean outline when the textarea is focused. */
+/** Pill-shaped input shell — iMessage-style gray field that tightens on focus. */
 export const messageComposerInputShellClass =
-  "flex min-w-0 flex-1 items-end gap-1 rounded-[24px] border border-border/70 bg-background/95 px-2 py-1.5 shadow-[0_2px_16px_rgba(17,17,17,0.06)] backdrop-blur-sm transition-[border-color,box-shadow] focus-within:border-cerulean focus-within:ring-2 focus-within:ring-cerulean/20 dark:border-border/80 dark:bg-card/95 dark:shadow-none dark:focus-within:border-cerulean/70"
+  "flex min-w-0 flex-1 items-end gap-1 rounded-[20px] border border-border/80 bg-muted/70 px-1.5 py-1 shadow-none transition-[border-color,background-color] focus-within:border-border focus-within:bg-background dark:border-border/70 dark:bg-muted/40 dark:focus-within:bg-card"
 
-/** Nested send control inside the composer input shell. */
+/** Nested send control inside the composer input shell — iMessage-style circular arrow. */
 export const messageComposerSendButtonClass =
-  "mb-0.5 h-9 shrink-0 rounded-full bg-muted/80 px-4 text-[15px] font-semibold text-muted-foreground hover:bg-muted disabled:pointer-events-none disabled:opacity-40"
+  "mb-0.5 h-8 w-8 shrink-0 rounded-full bg-listingHeart p-0 text-white hover:bg-listingHeart/90 disabled:pointer-events-none disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100"
 
 /** @deprecated Use messageComposerFormClass + messageComposerInputShellClass */
 export const messageComposerBarClass = messageComposerInputShellClass
@@ -41,6 +41,15 @@ export const listingOfferTileCompactClass = "sm:w-36 lg:w-44"
 
 /** Dashboard sidebar shell width (reference: ~20–25% of content area on desktop). */
 export const dashboardSidebarWidthClass = "lg:w-72 xl:w-80 2xl:w-[22rem]"
+
+/**
+ * Sticky dashboard rail. `self-start` keeps it from stretching with a long
+ * main column, `top-24` sits under the site header, and the max height lets
+ * the rail scroll on its own. Without that cap, links below the fold stay
+ * pinned until the page itself reaches the bottom.
+ */
+export const dashboardSidebarStickyScrollClass =
+  "sticky top-24 self-start max-h-[calc(100dvh-7.5rem)] overflow-y-auto overscroll-y-contain pb-4 [scrollbar-width:thin]"
 
 export const dashboardSidebarNavItemClass =
   "flex items-center gap-4 rounded-xl px-4 py-3 text-base font-semibold transition-colors"

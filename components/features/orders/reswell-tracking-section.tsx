@@ -7,7 +7,6 @@ import {
   CheckCircle2,
   Copy,
   Loader2,
-  MapPin,
   Package,
   RefreshCw,
   Truck,
@@ -20,7 +19,10 @@ import {
 } from "@/lib/shipping/carrier-status-display"
 import type { OrderTrackingDetail } from "@/lib/shipping/order-tracking-detail"
 import { formatCarrierDisplayName } from "@/lib/shipping/resolve-carrier-code"
+import { trackingMapPointsFromEvents, trackingMapSummary } from "@/lib/shipping/tracking-map-points"
 import { cn } from "@/lib/utils"
+import { TrackingRouteMap } from "@/components/features/orders/tracking-route-map"
+import { TrackingTimeline } from "@/components/features/orders/tracking-timeline"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -28,67 +30,6 @@ import { LocalDateOnly, LocalDateTime } from "@/components/ui/local-datetime"
 
 const POLL_MS = 45_000
 const FETCH_TIMEOUT_MS = 35_000
-
-function formatEventLocation(event: NonNullable<OrderTrackingDetail["events"]>[number]): string | null {
-  const cityState = [event.city_locality, event.state_province].filter(Boolean).join(", ")
-  const postal = event.postal_code?.trim()
-  if (cityState && postal) return `${cityState} ${postal}`
-  if (cityState) return cityState
-  if (postal) return postal
-  return null
-}
-
-function TrackingTimeline({ events }: { events: NonNullable<OrderTrackingDetail["events"]> }) {
-  return (
-    <ol className="relative space-y-0">
-      {events.map((event, index) => {
-        const isFirst = index === 0
-        const isLast = index === events.length - 1
-        const location = formatEventLocation(event)
-        return (
-          <li key={`${event.occurred_at ?? "event"}-${index}`} className="relative flex gap-4 pb-6 last:pb-0">
-            {!isLast ? (
-              <span
-                className="absolute left-[7px] top-3 h-[calc(100%-4px)] w-px bg-border"
-                aria-hidden
-              />
-            ) : null}
-            <span
-              className={cn(
-                "relative z-[1] mt-1.5 h-[15px] w-[15px] shrink-0 rounded-full border-2 bg-background",
-                isFirst ? "border-primary bg-primary/15" : "border-muted-foreground/35",
-              )}
-              aria-hidden
-            />
-            <div className="min-w-0 flex-1 pt-0.5">
-              {event.occurred_at ? (
-                <p className="text-xs tabular-nums text-muted-foreground">
-                  <LocalDateTime iso={event.occurred_at} dateStyle="medium" timeStyle="short" />
-                </p>
-              ) : null}
-              {event.description?.trim() ? (
-                <p
-                  className={cn(
-                    "mt-1 text-sm leading-snug",
-                    isFirst ? "font-medium text-foreground" : "text-foreground/90",
-                  )}
-                >
-                  {event.description.trim()}
-                </p>
-              ) : null}
-              {location ? (
-                <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                  <MapPin className="h-3 w-3 shrink-0 opacity-70" aria-hidden />
-                  {location}
-                </p>
-              ) : null}
-            </div>
-          </li>
-        )
-      })}
-    </ol>
-  )
-}
 
 export function ReswellTrackingSection(props: {
   orderId: string
@@ -98,8 +39,12 @@ export function ReswellTrackingSection(props: {
   marketplaceDeliveryStatus: string
   variant?: "buyer" | "seller"
   className?: string
+  /** Keep live carrier polling without rendering the tracking card. */
+  pollOnly?: boolean
   /** Defaults to `/api/orders/:id/carrier-tracking` (buyer/seller). Pass admin path for staff views. */
   carrierTrackingFetchPath?: string
+  /** On-site Reswell tracker (`/track/{orderId}`). */
+  trackUrl?: string | null
   sectionTitle?: string
   sectionDescription?: string
 }) {
@@ -111,7 +56,9 @@ export function ReswellTrackingSection(props: {
     marketplaceDeliveryStatus,
     variant = "buyer",
     className,
+    pollOnly = false,
     carrierTrackingFetchPath,
+    trackUrl,
     sectionTitle = "Reswell tracking",
     sectionDescription = "Live carrier scans for your shipment.",
   } = props
@@ -210,9 +157,16 @@ export function ReswellTrackingSection(props: {
     [carrierTrackingFetchPath, orderId, router],
   )
 
+  const marketplaceTerminal =
+    marketplaceDeliveryStatus === "delivered" || marketplaceDeliveryStatus === "picked_up"
+  const skipLiveFetchOnMount = marketplaceTerminal && (pollOnly || Boolean(initialDetail))
+
   useEffect(() => {
+    // A finished shipment already has its scans. Skip the carrier call on open;
+    // in-transit orders still load live scans.
+    if (skipLiveFetchOnMount) return
     void loadTracking()
-  }, [loadTracking])
+  }, [loadTracking, skipLiveFetchOnMount])
 
   useEffect(() => {
     if (marketplaceDeliveryStatus === "delivered" || marketplaceDeliveryStatus === "picked_up") return
@@ -231,6 +185,8 @@ export function ReswellTrackingSection(props: {
     marketplaceDeliveryStatus !== "delivered" &&
     marketplaceDeliveryStatus !== "picked_up"
   const events = detail?.events ?? []
+  const mapPoints = trackingMapPointsFromEvents(events)
+  const mapSummary = trackingMapSummary(mapPoints)
 
   const copyTracking = async () => {
     try {
@@ -240,6 +196,8 @@ export function ReswellTrackingSection(props: {
       toast.error("Could not copy tracking number")
     }
   }
+
+  if (pollOnly) return null
 
   return (
     <Card className={cn("overflow-hidden border-primary/20", className)}>
@@ -286,6 +244,13 @@ export function ReswellTrackingSection(props: {
               <Copy className="h-3.5 w-3.5" aria-hidden />
               <span className="sr-only">Copy tracking number</span>
             </Button>
+            {trackUrl ? (
+              <Button variant="outline" size="sm" className="h-8" asChild>
+                <a href={trackUrl} target="_blank" rel="noopener noreferrer">
+                  Track package
+                </a>
+              </Button>
+            ) : null}
           </div>
         </div>
 
@@ -318,7 +283,7 @@ export function ReswellTrackingSection(props: {
                 {variant === "seller" ? (
                   <>
                     The carrier reports this shipment as delivered. Reswell uses carrier tracking as the source of
-                    truth — your payout releases automatically 24 hours after delivery.
+                    truth — your payout releases automatically 4 days after delivery.
                   </>
                 ) : (
                   <>
@@ -369,7 +334,8 @@ export function ReswellTrackingSection(props: {
                       Shipment activity
                     </p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {events.length} {events.length === 1 ? "event" : "events"} · scroll to see all
+                      {mapSummary ??
+                        `${events.length} ${events.length === 1 ? "scan" : "scans"}`}
                     </p>
                   </div>
                   <Button
@@ -384,18 +350,9 @@ export function ReswellTrackingSection(props: {
                     Refresh
                   </Button>
                 </div>
-                <div className="relative rounded-lg border border-border/70 bg-muted/10">
-                  <div
-                    className="max-h-[min(22rem,52vh)] overflow-y-auto overscroll-y-contain px-3 py-3 sm:max-h-96"
-                    aria-label="Shipment activity timeline"
-                    tabIndex={0}
-                  >
-                    <TrackingTimeline events={events} />
-                  </div>
-                  <div
-                    className="pointer-events-none absolute inset-x-0 bottom-0 h-8 rounded-b-lg bg-gradient-to-t from-muted/30 to-transparent"
-                    aria-hidden
-                  />
+                {mapPoints.length > 0 ? <TrackingRouteMap points={mapPoints} className="mb-4" /> : null}
+                <div className="rounded-lg border border-border/70 bg-muted/10 px-3 py-3">
+                  <TrackingTimeline events={events} />
                 </div>
               </div>
             ) : (
