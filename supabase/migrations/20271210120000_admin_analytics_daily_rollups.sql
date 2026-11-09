@@ -341,28 +341,28 @@ AS $$
 WITH params AS (
   SELECT
     LEAST(GREATEST(p_months, 1), 60)::integer AS mcount,
-    now() AS current_time
+    now() AS as_of
 ),
 windows AS (
   SELECT
-    public.site_traffic_window_stats(current_time - interval '7 days', current_time) AS last7,
-    public.site_traffic_window_stats(current_time - interval '30 days', current_time) AS last30,
-    current_time,
-    mcount
-  FROM params
+    public.site_traffic_window_stats(p.as_of - interval '7 days', p.as_of) AS last7,
+    public.site_traffic_window_stats(p.as_of - interval '30 days', p.as_of) AS last30,
+    p.as_of,
+    p.mcount
+  FROM params p
 ),
 monthly AS (
   SELECT
     month_start,
     public.site_traffic_window_stats(
       month_start,
-      LEAST(month_start + interval '1 month', w.current_time)
+      LEAST(month_start + interval '1 month', w.as_of)
     ) AS stats
   FROM windows w
   CROSS JOIN LATERAL generate_series(
-    date_trunc('month', w.current_time)
+    date_trunc('month', w.as_of)
       - ((w.mcount - 1) * interval '1 month'),
-    date_trunc('month', w.current_time),
+    date_trunc('month', w.as_of),
     interval '1 month'
   ) AS month_start
 )
