@@ -331,7 +331,7 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
 
   return (
     <div className="space-y-8">
-      <PurchaseDetailView>
+      <PurchaseDetailView
         orderId={order.id}
         orderNumber={formatOrderNumForCustomer(order.order_num, order.id)}
         items={
