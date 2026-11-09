@@ -225,7 +225,12 @@ where section is distinct from 'surfboards'
   and (
     shipping_package_tier is not null
     or shipping_package_band is not null
-    or coalesce(shipping_packed_length_in, 0) > 48
+    -- Include 0 and (0, 4): empty stand-ins fail the CHECK below and would
+    -- roll back the hold-release functions in this same file.
+    or (
+      shipping_packed_length_in is not null
+      and shipping_packed_length_in not between 4 and 48
+    )
   );
 
 alter table public.listings

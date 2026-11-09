@@ -108,4 +108,17 @@ describe("resolvePackedParcelFromListing", () => {
     assert.equal(result.heightIn, 4)
     assert.equal(result.weightOz, 32)
   })
+
+  it("does not quote a leftover board carton when section is omitted", () => {
+    const result = resolvePackedParcelFromListing({
+      shipping_package_tier: "shortboard",
+      shipping_package_band: "shortboard_medium",
+      shipping_packed_length_in: 78,
+      shipping_packed_width_in: 25.5,
+      shipping_packed_height_in: 7.25,
+      shipping_packed_weight_oz: 352,
+      dimensions: "(6'2 18 2 1/4 32L)",
+    })
+    assert.equal(result.ok, false)
+  })
 })

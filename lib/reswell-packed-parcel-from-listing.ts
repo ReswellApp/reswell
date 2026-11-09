@@ -105,15 +105,13 @@ function finListingUsesDefaultPackedParcel(row: ListingPackedParcelSource): bool
 }
 
 /**
- * Surfboard carton / board-length heuristics are only for surfboard rows.
- * Fins and other gear that inherited `shipping_package_tier`, leftover
- * `dimensions`, or a 78″ packed box were rated as boards — USPS refused the
- * parcel (“can't deliver”) and UPS Ground came back around $300.
+ * Surfboard carton / board-length heuristics are only for explicit surfboard rows.
+ * A blank or omitted `section` must not fail open as a board: quote and
+ * payment-intent loads that skip the column still carry leftover `dimensions`
+ * or a 78″ box — the path that produced the ~$300 fin Ground rate.
  */
 function shouldUseSurfboardPackedParcelPath(row: ListingPackedParcelSource): boolean {
-  const section = row.section?.trim()
-  if (!section) return true
-  return isSurfboardListingSection(section)
+  return isSurfboardListingSection(row.section)
 }
 
 function sectionDefaultPackedParcelResult(section: string | null | undefined): {
