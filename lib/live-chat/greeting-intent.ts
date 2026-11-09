@@ -20,7 +20,7 @@ const GREETING_ONLY =
   /^(?:hi|hello|hey|yo|hiya|howdy|sup|whats? up|good morning|good afternoon|good evening)(?: there)?$/
 
 const PRESENCE_PING =
-  /^(?:(?:hi|hello|hey|yo)(?: there)? )?(?:is )?(?:there )?(?:anyone|anybody|someone|you|anything) (?:there|here|around)$/
+  /^(?:(?:hi|hello|hey|yo)(?: there)? )?(?:(?:is|are) )?(?:there )?(?:anyone|anybody|someone|you|anything) (?:there|here|around)$/
 
 /** True when they are only checking if someone is here — no product question. */
 export function isLiveChatPresenceIntent(text: string): boolean {
