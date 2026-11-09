@@ -3647,7 +3647,7 @@ function SellPageContentInner({
 
         /** Persists surfboard dims on `listings.dimensions` (see migration `20260815120000_listings_dimensions_column.sql`). */
         const dimensionsStored = listingDimensionsColumnFromSurfboardSellForm(fd)
-        const packedRow = reswellPackageFieldsToDb(fd)
+        const packedRow = reswellPackageFieldsToDb({ ...fd, listingSection: "surfboards" })
         const editListingFields = {
           title: resolvedListingTitle,
           description: fd.description,
@@ -3767,7 +3767,7 @@ function SellPageContentInner({
       } else {
         /** Persists surfboard dims on `listings.dimensions` (see migration `20260815120000_listings_dimensions_column.sql`). */
         const dimensionsStoredNew = listingDimensionsColumnFromSurfboardSellForm(fd)
-        const packedRowNew = reswellPackageFieldsToDb(fd)
+        const packedRowNew = reswellPackageFieldsToDb({ ...fd, listingSection: "surfboards" })
         const listingFields = {
           title: resolvedListingTitle,
           description: fd.description,

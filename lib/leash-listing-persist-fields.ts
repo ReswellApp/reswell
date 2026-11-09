@@ -40,6 +40,7 @@ export function buildLeashListingPersistFields(
   )
   const packedRow = reswellPackageFieldsToDb({
     boardShippingCostMode: shippingMode,
+    listingSection: LEASHES_SECTION,
     reswellPackageLengthIn: input.reswellPackageLengthIn,
     reswellPackageWidthIn: input.reswellPackageWidthIn,
     reswellPackageHeightIn: input.reswellPackageHeightIn,

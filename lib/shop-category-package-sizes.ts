@@ -140,6 +140,7 @@ export function listingPackageColumnsForShopSize(
     if (sizeId === "shortboard_compact" || sizeId === "shortboard_medium") {
       return reswellPackageFieldsToDb({
         boardShippingCostMode: "reswell",
+        listingSection: "surfboards",
         surfboardShippingTier: "shortboard",
         surfboardShippingPackBand: sizeId,
         category: "surfboards",
@@ -148,6 +149,7 @@ export function listingPackageColumnsForShopSize(
     if (sizeId === "midlength" || sizeId === "longboard") {
       return reswellPackageFieldsToDb({
         boardShippingCostMode: "reswell",
+        listingSection: "surfboards",
         surfboardShippingTier: sizeId,
         category: "surfboards",
       })

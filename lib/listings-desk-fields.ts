@@ -264,7 +264,8 @@ function packedColumnsForSpec(
   }
   const entered = reswellPackageFieldsToDb({
     boardShippingCostMode: "reswell",
-    adminCustomShippingCarton: true,
+    listingSection: section,
+    adminCustomShippingCarton: section === "surfboards",
     reswellPackageLengthIn: spec.packageLengthIn,
     reswellPackageWidthIn: spec.packageWidthIn,
     reswellPackageHeightIn: spec.packageHeightIn,
