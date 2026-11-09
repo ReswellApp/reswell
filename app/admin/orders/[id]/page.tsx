@@ -473,6 +473,7 @@ export default function AdminOrderDetailPage() {
 
           {o.fulfillment_method === "shipping" ? (
             <AdminOrderShipEngineDisputeLink
+              orderId={o.id}
               trackingCarrier={o.tracking_carrier}
               trackingNumber={o.tracking_number}
             />

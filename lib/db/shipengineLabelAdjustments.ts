@@ -334,6 +334,26 @@ function addAdjustmentFeeTotals(
   totals.set(key, current)
 }
 
+/** Positive ShipEngine adjustments for one order, newest first. */
+export async function dbListIncreasedLabelAdjustmentsForOrder(
+  supabase: SupabaseClient,
+  orderId: string,
+): Promise<{ data: ShipEngineLabelAdjustmentRow[]; error: Error | null }> {
+  const { data, error } = await supabase
+    .from("shipengine_label_adjustments")
+    .select("*")
+    .eq("order_id", orderId)
+    .gt("adjustment_amount_usd", 0)
+    .order("adjustment_at", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false })
+
+  if (error) return { data: [], error: new Error(error.message) }
+  return {
+    data: (data ?? []).map((row) => mapRow(row as Record<string, unknown>)),
+    error: null,
+  }
+}
+
 /** Positive ShipEngine adjustment fees summed by Reswell order id. */
 export async function dbGetIncreasedAdjustmentTotalsByOrderIds(
   supabase: SupabaseClient,
