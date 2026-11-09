@@ -6,7 +6,6 @@ import { z } from "zod"
 import {
   getSurfboardListingScanCandidate,
   insertSurfboardDimensionPhotoMatch,
-  listDimensionPhotoPickTrainingExamples,
   listDimensionPhotoRematchCandidates,
   listSurfboardDimensionPhotoRefsForFewShot,
   listSurfboardListingsForDimensionPhotoScan,
@@ -23,7 +22,13 @@ import {
   isAppLlmFeatureEnabled,
   resolveConfiguredModel,
 } from "@/lib/llm/app-models"
+import {
+  clampStampCropBox,
+  cropStampPhotoForVision,
+  type StampCropBox,
+} from "@/lib/media/crop-stamp-photo"
 import { enhanceStampPhotoForVision } from "@/lib/media/enhance-stamp-photo"
+import { computeImageDhash } from "@/lib/media/image-phash"
 import { listingFullImageUrlFromRef } from "@/lib/listing-media-src"
 import { sniffSellPhotoMatchMime } from "@/lib/sell-flow/sell-photo-match"
 import {
@@ -32,14 +37,16 @@ import {
   verifyDimensionPhotoWithJev,
 } from "@/lib/llm/jev-dimension-photo-verify"
 import type { DimensionPhotoJevReview } from "@/lib/llm/dimension-photo-verify"
+import { buildIndexedMemoryPromptSections } from "@/lib/services/surfboardDimensionPhotoMemoryCatalog"
 import {
-  formatBadPickExampleCaption,
-  formatExcludeExampleCaption,
-  formatGoodPickExampleCaption,
+  formatIndexedMemoryImageCaption,
   formatRefFewShotCaption,
-  surfboardDimensionPhotoJevMemorySnippet,
-  surfboardDimensionPhotoMemoryPromptBlock,
 } from "@/lib/services/surfboardDimensionPhotoMemory"
+import {
+  indexRatedDimensionPhotoMatch,
+  retrieveDimensionPhotoMemory,
+  type RetrievedDimensionPhotoMemory,
+} from "@/lib/services/surfboardDimensionPhotoMemoryIndex"
 import { listingObjectPublicUrl } from "@/lib/supabase/storage-upload-xhr"
 import type { SurfboardDimensionPhotoSurface } from "@/lib/validations/surfboardDimensionPhoto"
 
@@ -54,9 +61,20 @@ const HARNESS_MAX_OUTPUT_TOKENS = 4096
 const PHOTO_PICK_TIMEOUT_MS = 90_000
 const DIMS_READ_TIMEOUT_MS = 60_000
 
+const stampBoxSchema = z
+  .object({
+    x: z.coerce.number(),
+    y: z.coerce.number(),
+    width: z.coerce.number(),
+    height: z.coerce.number(),
+  })
+  .nullable()
+  .optional()
+
 /** Stage 1 harness output — photo pick only. */
 const photoPickSchema = z.object({
   dimensionPhotoIndex: z.coerce.number().int().nullable().optional(),
+  stampBox: stampBoxSchema,
   confidence: z.string().optional(),
   summary: z.string().optional(),
 })
@@ -73,6 +91,9 @@ const dimsReadSchema = z.object({
 
 export type DimensionPhotoObservation = {
   dimensionPhotoIndex: number | null
+  /** Pre-gate pick, kept even when Jev withholds the row. */
+  pickedIndex: number | null
+  stampBox: StampCropBox | null
   lengthText: string | null
   widthText: string | null
   thicknessText: string | null
@@ -119,7 +140,12 @@ function coerceConfidence(raw: string | undefined): "high" | "medium" | "low" {
 function coercePhotoPick(
   raw: unknown,
   photoCount: number,
-): { index: number | null; confidence: "high" | "medium" | "low"; summary: string } | null {
+): {
+  index: number | null
+  stampBox: StampCropBox | null
+  confidence: "high" | "medium" | "low"
+  summary: string
+} | null {
   const parsed = photoPickSchema.safeParse(raw)
   if (!parsed.success) return null
   let index =
@@ -130,6 +156,7 @@ function coercePhotoPick(
   if (index != null && (index < 0 || index >= photoCount)) index = null
   return {
     index,
+    stampBox: index == null ? null : clampStampCropBox(parsed.data.stampBox),
     confidence: coerceConfidence(parsed.data.confidence),
     summary: emptyToNull(parsed.data.summary)?.slice(0, 400) ?? "No pick summary.",
   }
@@ -257,6 +284,7 @@ Output ONLY:
 CORRECT pick: size stamp, stringer handwriting, tail block, or manufacturer label with readable L×W×T text.
 WRONG pick: beauty/lifestyle full-board, outline silhouette, logo-only, fins/rails without measurements.
 EXCLUDE-like galleries: leave dimensionPhotoIndex null — do not force a pick.
+If you pick an index, also return stampBox as fractions 0–1 of THAT photo covering the printed measurements (x, y, width, height). Pad slightly around the digits. Null stampBox when index is null.
 confidence=high ONLY when the stamp digits are clearly readable in the chosen frame. If unsure, return dimensionPhotoIndex null with confidence=low — never guess a beauty/outline/logo shot.
 Never read or invent dimensions in this stage. Never name brand or model.`
 
@@ -300,16 +328,41 @@ function mergeHarnessConfidence(
   return rank[pick] <= rank[dims] ? pick : dims
 }
 
+async function hashGalleryShots(shots: DimensionPhotoMatchImage[]): Promise<string[]> {
+  const hashes: string[] = []
+  for (const shot of shots) {
+    const hash = await computeImageDhash(shot.bytes)
+    if (hash) hashes.push(hash)
+  }
+  return hashes
+}
+
+function emptyObservation(partial: Partial<DimensionPhotoObservation>): DimensionPhotoObservation {
+  return {
+    dimensionPhotoIndex: null,
+    pickedIndex: null,
+    stampBox: null,
+    lengthText: null,
+    widthText: null,
+    thicknessText: null,
+    volumeText: null,
+    confidence: "low",
+    summary: "No pick summary.",
+    ...partial,
+  }
+}
+
 /**
  * Focused harness — two LLM calls, two jobs only:
- *   Stage 1 (photo pick): gallery originals + Good/Bad/Exclude few-shot → index
- *   Stage 2 (dims read): chosen stamp + OCR enhance (+ optional Good OCR refs) → L×W×T
- * Enhance runs only on the picked photo (never the whole gallery).
+ *   Stage 1 (photo pick): gallery originals + indexed Good/Bad/Exclude few-shot → index
+ *   Stage 2 (dims read): cropped stamp + OCR enhance (+ indexed Close/Bad/Good OCR) → L×W×T
+ * Enhance runs only on the picked crop (never the whole gallery).
  */
 async function runDimensionVision(input: {
   supabase: SupabaseClient
   shots: DimensionPhotoMatchImage[]
   includeRefs: boolean
+  retrieved?: RetrievedDimensionPhotoMemory
 }): Promise<DimensionHarnessResult> {
   if (!isSurfboardDimensionPhotoMatchEnabled()) {
     return { ok: false, error: "Dimension photo matching is not configured.", status: 503 }
@@ -318,7 +371,16 @@ async function runDimensionVision(input: {
     return { ok: false, error: "Add at least one surfboard photo.", status: 422 }
   }
 
-  const pick = await runPhotoPickStage(input)
+  const retrieved =
+    input.retrieved ??
+    (await retrieveDimensionPhotoMemory(input.supabase, await hashGalleryShots(input.shots)))
+
+  const pick = await runPhotoPickStage({
+    supabase: input.supabase,
+    shots: input.shots,
+    includeRefs: input.includeRefs,
+    retrieved,
+  })
   if (!pick.ok) return pick
 
   // Conservative: only OCR dims when the picker is high-confidence on a stamp.
@@ -326,12 +388,9 @@ async function runDimensionVision(input: {
   if (pick.index == null || pick.confidence !== "high") {
     return {
       ok: true,
-      observation: {
-        dimensionPhotoIndex: null,
-        lengthText: null,
-        widthText: null,
-        thicknessText: null,
-        volumeText: null,
+      observation: emptyObservation({
+        pickedIndex: pick.index,
+        stampBox: pick.stampBox,
         confidence: pick.index == null ? pick.confidence : "low",
         summary:
           pick.index == null
@@ -339,7 +398,7 @@ async function runDimensionVision(input: {
             : `${pick.summary} Pick confidence ${pick.confidence} — withheld (need high).`
                 .trim()
                 .slice(0, 400),
-      },
+      }),
       usedRefs: pick.usedRefs,
       fewShotImagesIncluded: pick.fewShotImagesIncluded,
     }
@@ -349,7 +408,9 @@ async function runDimensionVision(input: {
     supabase: input.supabase,
     shot: input.shots[pick.index]!,
     index: pick.index,
+    stampBox: pick.stampBox,
     includeRefs: input.includeRefs,
+    retrieved,
   })
   // Soft-fail dims: still save the pick so admin can rate Photo (and Rematch later).
   if (!dims.ok) {
@@ -359,17 +420,15 @@ async function runDimensionVision(input: {
     )
     return {
       ok: true,
-      observation: {
+      observation: emptyObservation({
         dimensionPhotoIndex: pick.index,
-        lengthText: null,
-        widthText: null,
-        thicknessText: null,
-        volumeText: null,
+        pickedIndex: pick.index,
+        stampBox: pick.stampBox,
         confidence: pick.confidence === "high" ? "medium" : pick.confidence,
         summary: `${pick.summary} Dims read failed — rate the photo pick; use Rematch for dims.`
           .trim()
           .slice(0, 400),
-      },
+      }),
       usedRefs: pick.usedRefs,
       fewShotImagesIncluded: pick.fewShotImagesIncluded,
     }
@@ -377,28 +436,51 @@ async function runDimensionVision(input: {
 
   return {
     ok: true,
-    observation: {
+    observation: emptyObservation({
       dimensionPhotoIndex: pick.index,
+      pickedIndex: pick.index,
+      stampBox: pick.stampBox,
       lengthText: dims.lengthText,
       widthText: dims.widthText,
       thicknessText: dims.thicknessText,
       volumeText: dims.volumeText,
       confidence: mergeHarnessConfidence(pick.confidence, dims.confidence),
       summary: `${pick.summary} ${dims.summary}`.trim().slice(0, 400),
-    },
+    }),
     usedRefs: [...pick.usedRefs, ...dims.usedRefs],
     fewShotImagesIncluded: pick.fewShotImagesIncluded || dims.fewShotImagesIncluded,
   }
+}
+
+async function appendIndexedExampleImages(
+  content: VisionContentPart[],
+  examples: RetrievedDimensionPhotoMemory["good"],
+  limit: number,
+): Promise<number> {
+  let shown = 0
+  for (const row of examples) {
+    const url = row.imageUrl?.trim()
+    if (!url) continue
+    const fetched = await fetchBestListingVisionBytes({ url })
+    if (!fetched) continue
+    content.push({ type: "text", text: formatIndexedMemoryImageCaption(row) })
+    content.push({ type: "file", mediaType: fetched.mediaType, data: fetched.bytes })
+    shown += 1
+    if (shown >= limit) break
+  }
+  return shown
 }
 
 async function runPhotoPickStage(input: {
   supabase: SupabaseClient
   shots: DimensionPhotoMatchImage[]
   includeRefs: boolean
+  retrieved: RetrievedDimensionPhotoMemory
 }): Promise<
   | {
       ok: true
       index: number | null
+      stampBox: StampCropBox | null
       confidence: "high" | "medium" | "low"
       summary: string
       usedRefs: SurfboardDimensionPhotoRefRow[]
@@ -406,65 +488,27 @@ async function runPhotoPickStage(input: {
     }
   | { ok: false; error: string; status: 422 | 503 }
 > {
-  const [memoryBlock, pickExamples] = await Promise.all([
-    surfboardDimensionPhotoMemoryPromptBlock(input.supabase),
-    listDimensionPhotoPickTrainingExamples(input.supabase, {
-      goodLimit: 5,
-      badLimit: 6,
-      excludeLimit: 4,
-    }),
-  ])
+  const memoryBlock = buildIndexedMemoryPromptSections(input.retrieved.catalog).join("\n")
 
   const content: VisionContentPart[] = [
     {
       type: "text",
-      text: "PHOTO PICK ONLY. Choose dimensionPhotoIndex for THIS gallery. Do not read or invent L×W×T. Study GOOD / BAD / EXCLUDE examples — EXCLUDE-like galleries → null index.",
+      text: "PHOTO PICK ONLY. Choose dimensionPhotoIndex for THIS gallery. Do not read or invent L×W×T. Study GOOD / BAD / EXCLUDE examples — EXCLUDE-like galleries → null index. If you pick, also return stampBox on that photo.",
     },
   ]
   if (memoryBlock) {
     content.push({
       type: "text",
-      text: `Admin photo-pick memory (use for pick quality only — ignore measurement numbers here):\n${memoryBlock}`,
+      text: `Indexed admin memory (use for pick quality only — ignore measurement numbers here):\n${memoryBlock}`,
     })
   }
 
-  let excludeShown = 0
-  for (const row of pickExamples.excluded) {
-    const url = row.sourceImageUrl?.trim()
-    if (!url) continue
-    const fetched = await fetchBestListingVisionBytes({ url })
-    if (!fetched) continue
-    content.push({ type: "text", text: formatExcludeExampleCaption(excludeShown) })
-    content.push({ type: "file", mediaType: fetched.mediaType, data: fetched.bytes })
-    excludeShown += 1
-    if (excludeShown >= 4) break
-  }
-
-  let badPickShown = 0
-  for (const row of pickExamples.bad) {
-    const url = row.sourceImageUrl?.trim()
-    if (!url) continue
-    const fetched = await fetchBestListingVisionBytes({ url })
-    if (!fetched) continue
-    content.push({ type: "text", text: formatBadPickExampleCaption(badPickShown) })
-    content.push({ type: "file", mediaType: fetched.mediaType, data: fetched.bytes })
-    badPickShown += 1
-    if (badPickShown >= 6) break
-  }
-
-  let goodPickShown = 0
-  for (const row of pickExamples.good) {
-    const url = row.sourceImageUrl?.trim()
-    if (!url) continue
-    const fetched = await fetchBestListingVisionBytes({ url })
-    if (!fetched) continue
-    content.push({ type: "text", text: formatGoodPickExampleCaption(goodPickShown) })
-    content.push({ type: "file", mediaType: fetched.mediaType, data: fetched.bytes })
-    goodPickShown += 1
-    if (goodPickShown >= 5) break
-  }
+  const excludeShown = await appendIndexedExampleImages(content, input.retrieved.excluded, 4)
+  const badPickShown = await appendIndexedExampleImages(content, input.retrieved.bad, 6)
+  const goodPickShown = await appendIndexedExampleImages(content, input.retrieved.good, 5)
 
   const usedRefs: SurfboardDimensionPhotoRefRow[] = []
+  const goodUrls = new Set(input.retrieved.good.map((row) => row.imageUrl.trim()))
   if (input.includeRefs) {
     const refs = await listSurfboardDimensionPhotoRefsForFewShot(input.supabase, { limit: 6 })
     for (const ref of refs) {
@@ -474,14 +518,7 @@ async function runPhotoPickStage(input: {
       })
       if (!fetched) continue
       const refUrl = (ref.imageUrl || ref.thumbnailUrl || "").trim()
-      if (
-        refUrl &&
-        pickExamples.good.some(
-          (g) => g.sourceImageUrl?.trim() && g.sourceImageUrl.trim() === refUrl,
-        )
-      ) {
-        continue
-      }
+      if (refUrl && goodUrls.has(refUrl)) continue
       usedRefs.push(ref)
       content.push({
         type: "text",
@@ -494,7 +531,7 @@ async function runPhotoPickStage(input: {
 
   content.push({
     type: "text",
-    text: `Gallery to score (${input.shots.length} photos). Indices 0…${input.shots.length - 1}. Return only dimensionPhotoIndex + confidence + summary.`,
+    text: `Gallery to score (${input.shots.length} photos). Indices 0…${input.shots.length - 1}. Return dimensionPhotoIndex, stampBox, confidence, summary.`,
   })
   for (let index = 0; index < input.shots.length; index++) {
     const shot = input.shots[index]!
@@ -532,6 +569,7 @@ async function runPhotoPickStage(input: {
     return {
       ok: true,
       index: coerced.index,
+      stampBox: coerced.stampBox,
       confidence: coerced.confidence,
       summary: coerced.summary,
       usedRefs,
@@ -554,7 +592,9 @@ async function runDimsReadStage(input: {
   supabase: SupabaseClient
   shot: DimensionPhotoMatchImage
   index: number
+  stampBox: StampCropBox | null
   includeRefs: boolean
+  retrieved: RetrievedDimensionPhotoMemory
 }): Promise<
   | {
       ok: true
@@ -572,12 +612,14 @@ async function runDimsReadStage(input: {
   const content: VisionContentPart[] = [
     {
       type: "text",
-      text: `DIMS READ ONLY for stamp photo index ${input.index} (${input.shot.shot}). Read L×W×T from the images below. volumeText null unless liters are printed. Do not pick photos.`,
+      text: `DIMS READ ONLY for stamp photo index ${input.index} (${input.shot.shot}). Read L×W×T from the images below. volumeText null unless liters are printed. Do not pick photos. When actual L×W×T is listed on an example, that is ground truth.`,
     },
   ]
 
+  const ocrExamples = await appendIndexedExampleImages(content, input.retrieved.dimsRefs, 4)
+
   const usedRefs: SurfboardDimensionPhotoRefRow[] = []
-  if (input.includeRefs) {
+  if (input.includeRefs && ocrExamples < 2) {
     const refs = await listSurfboardDimensionPhotoRefsForFewShot(input.supabase, { limit: 4 })
     for (const ref of refs) {
       const fetched = await fetchBestListingVisionBytes({
@@ -595,16 +637,34 @@ async function runDimsReadStage(input: {
     }
   }
 
-  content.push({ type: "text", text: "Stamp photo — original." })
-  content.push({ type: "file", mediaType: input.shot.mediaType, data: input.shot.bytes })
-
-  const enhanced = await enhanceStampPhotoForVision(input.shot.bytes)
-  if (enhanced) {
+  const cropped = input.stampBox
+    ? await cropStampPhotoForVision(input.shot.bytes, input.stampBox)
+    : null
+  if (cropped) {
     content.push({
       type: "text",
-      text: "Same stamp — OCR-enhanced (brightness + contrast + sharpen). Prefer this when the original is faint.",
+      text: "Stamp crop — read L×W×T from this tight crop of the printed measurements.",
     })
-    content.push({ type: "file", mediaType: enhanced.mediaType, data: enhanced.bytes })
+    content.push({ type: "file", mediaType: cropped.mediaType, data: cropped.bytes })
+    const enhancedCrop = await enhanceStampPhotoForVision(cropped.bytes)
+    if (enhancedCrop) {
+      content.push({
+        type: "text",
+        text: "Same crop — OCR-enhanced (brightness + contrast + sharpen). Prefer this when the original crop is faint.",
+      })
+      content.push({ type: "file", mediaType: enhancedCrop.mediaType, data: enhancedCrop.bytes })
+    }
+  } else {
+    content.push({ type: "text", text: "Stamp photo — original." })
+    content.push({ type: "file", mediaType: input.shot.mediaType, data: input.shot.bytes })
+    const enhanced = await enhanceStampPhotoForVision(input.shot.bytes)
+    if (enhanced) {
+      content.push({
+        type: "text",
+        text: "Same stamp — OCR-enhanced (brightness + contrast + sharpen). Prefer this when the original is faint.",
+      })
+      content.push({ type: "file", mediaType: enhanced.mediaType, data: enhanced.bytes })
+    }
   }
 
   try {
@@ -666,16 +726,22 @@ async function verifyAndMaybeRetryDimensionVision(input: {
     }
   | { ok: false; error: string; status: 422 | 503 }
 > {
-  // Always inject Good/Bad/Exclude few-shot on the first pass when includeRefs
-  // is on — faster learning than a light first pass + optional Jev retry.
+  const queryHashes = await hashGalleryShots(input.shots)
+  const retrieved = await retrieveDimensionPhotoMemory(input.supabase, queryHashes)
+  const adminMemorySnippet = buildIndexedMemoryPromptSections(retrieved.catalog)
+    .join("\n")
+    .slice(0, 2400)
+
+  // Always inject indexed Good/Bad/Exclude few-shot on the first pass when
+  // includeRefs is on — faster learning than a light first pass + optional Jev retry.
   let vision = await runDimensionVision({
     supabase: input.supabase,
     shots: input.shots,
     includeRefs: input.includeRefs,
+    retrieved,
   })
   if (!vision.ok) return vision
 
-  const adminMemorySnippet = await surfboardDimensionPhotoJevMemorySnippet(input.supabase)
   const shotLabels = input.shots.map((s, i) => `${i}:${s.shot}`)
 
   let jevReview = await verifyDimensionPhotoWithJev({
@@ -695,6 +761,7 @@ async function verifyAndMaybeRetryDimensionVision(input: {
       supabase: input.supabase,
       shots: input.shots,
       includeRefs: true,
+      retrieved,
     })
     if (retry.ok) {
       vision = retry
@@ -724,7 +791,7 @@ function sourceUrlFromObservation(
   preview: SurfboardDimensionPhotoShotPreview[],
   observation: DimensionPhotoObservation,
 ): string | null {
-  const idx = observation.dimensionPhotoIndex
+  const idx = observation.pickedIndex ?? observation.dimensionPhotoIndex
   if (idx == null) {
     const marked = preview.find((p) => p.shot === "dimensions")
     return marked?.imageUrl ?? preview[0]?.imageUrl ?? shots[0]?.previewUrl ?? null
@@ -786,6 +853,7 @@ export async function matchSurfboardDimensionPhotos(input: {
     referencesPreview: vision.usedRefs.map(refPreviewFromRow),
     listingId: input.listingId ?? null,
     priorMatchId: input.priorMatchId ?? null,
+    stampBox: vision.observation.stampBox,
   })
 
   if (inserted.error || !inserted.data) {
@@ -1000,13 +1068,14 @@ export async function rateAndMaybePromoteDimensionPhotoMatch(input: {
   correctedWidth?: string | null
   correctedThickness?: string | null
   correctedVolume?: string | null
+  correctedSourceImageUrl?: string | null
   excluded?: boolean
   promoteToRefs?: boolean
 }): Promise<{ data: SurfboardDimensionPhotoMatchRow | null; error: Error | null }> {
   const existing = await input.supabase
     .from("surfboard_dimension_photo_matches")
     .select(
-      "id, listing_id, input_preview, source_image_url, predicted_length, predicted_width, predicted_thickness, predicted_volume, match_rating, photo_rating, dims_rating, corrected_length, corrected_width, corrected_thickness, corrected_volume, promoted_ref_id",
+      "id, listing_id, input_preview, source_image_url, predicted_length, predicted_width, predicted_thickness, predicted_volume, match_rating, photo_rating, dims_rating, corrected_length, corrected_width, corrected_thickness, corrected_volume, corrected_source_image_url, promoted_ref_id",
     )
     .eq("id", input.matchId)
     .maybeSingle()
@@ -1029,6 +1098,7 @@ export async function rateAndMaybePromoteDimensionPhotoMatch(input: {
     corrected_width: string | null
     corrected_thickness: string | null
     corrected_volume: string | null
+    corrected_source_image_url: string | null
     promoted_ref_id: string | null
   }
 
@@ -1061,17 +1131,24 @@ export async function rateAndMaybePromoteDimensionPhotoMatch(input: {
     input.correctedVolume !== undefined
       ? emptyToNull(input.correctedVolume)
       : emptyToNull(row.corrected_volume)
+  const nextCorrectedSource =
+    input.correctedSourceImageUrl !== undefined
+      ? emptyToNull(input.correctedSourceImageUrl)
+      : emptyToNull(row.corrected_source_image_url)
   const hasFullCorrection = Boolean(
     nextCorrectedLength && nextCorrectedWidth && nextCorrectedThickness,
   )
+  const stampPhotoConfirmed =
+    nextPhoto === "good" || Boolean(nextPhoto === "bad" && nextCorrectedSource)
 
   let promotedRefId: string | null | undefined = undefined
   // Photo Good + Dims Good → promote model read.
-  // Photo Good + Bad/Close dims + admin L×W×T → promote ground-truth OCR ref.
+  // Photo Good (or admin-picked stamp after Photo Bad) + Bad/Close dims + admin L×W×T
+  // → promote ground-truth OCR ref.
   const shouldPromote =
     input.excluded !== true &&
     input.promoteToRefs !== false &&
-    nextPhoto === "good" &&
+    stampPhotoConfirmed &&
     !row.promoted_ref_id &&
     (nextDims === "good" ||
       ((nextDims === "bad" || nextDims === "close") && hasFullCorrection))
@@ -1099,6 +1176,7 @@ export async function rateAndMaybePromoteDimensionPhotoMatch(input: {
         (item as { shot?: string }).shot === "dimensions",
     ) as { imageUrl?: string; image_url?: string } | undefined
     const imageUrl =
+      nextCorrectedSource ||
       emptyToNull(row.source_image_url) ||
       emptyToNull(sourceFromPreview?.imageUrl) ||
       emptyToNull(sourceFromPreview?.image_url) ||
@@ -1121,7 +1199,7 @@ export async function rateAndMaybePromoteDimensionPhotoMatch(input: {
     }
   }
 
-  return rateSurfboardDimensionPhotoMatch(input.supabase, input.matchId, input.ratedBy, {
+  const rated = await rateSurfboardDimensionPhotoMatch(input.supabase, input.matchId, input.ratedBy, {
     matchRating: input.matchRating,
     photoRating: input.photoRating,
     dimsRating: input.dimsRating,
@@ -1130,7 +1208,19 @@ export async function rateAndMaybePromoteDimensionPhotoMatch(input: {
     correctedWidth: input.correctedWidth,
     correctedThickness: input.correctedThickness,
     correctedVolume: input.correctedVolume,
+    correctedSourceImageUrl: input.correctedSourceImageUrl,
     excluded: input.excluded,
     promotedRefId,
   })
+  if (rated.data) {
+    try {
+      await indexRatedDimensionPhotoMatch(input.supabase, rated.data)
+    } catch (error) {
+      console.error(
+        "[surfboardDimensionPhotoMatch] memory index failed:",
+        error instanceof Error ? error.message : error,
+      )
+    }
+  }
+  return rated
 }

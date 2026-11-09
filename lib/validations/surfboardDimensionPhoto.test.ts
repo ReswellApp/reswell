@@ -3,6 +3,8 @@ import { describe, it } from "node:test"
 import {
   SURFBOARD_DIMENSION_PHOTO_MATCH_CONFIDENCE_GATE,
   SURFBOARD_DIMENSION_PHOTO_MATCH_TARGET,
+  rateSurfboardDimensionPhotoMatchSchema,
+  surfboardDimensionPhotoMatchListQuerySchema,
   surfboardDimensionPhotoMatchMeetsTarget,
 } from "./surfboardDimensionPhoto.ts"
 
@@ -34,6 +36,19 @@ describe("surfboardDimensionPhotoMatchMeetsTarget", () => {
       }),
       false,
     )
+  })
+
+  it("accepts withheld filter and stamp-photo corrections", () => {
+    const list = surfboardDimensionPhotoMatchListQuerySchema.parse({
+      rating: "withheld",
+    })
+    assert.equal(list.rating, "withheld")
+    const rated = rateSurfboardDimensionPhotoMatchSchema.parse({
+      photoRating: "bad",
+      correctedSourceImageUrl: "https://cdn.example.com/stamp.jpg",
+    })
+    assert.equal(rated.photoRating, "bad")
+    assert.equal(rated.correctedSourceImageUrl, "https://cdn.example.com/stamp.jpg")
   })
 
   it("rejects missing ratings", () => {
