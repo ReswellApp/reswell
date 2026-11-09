@@ -237,10 +237,15 @@ function HeaderAccountMenuInner({
                         <Icon className="mr-2 h-4 w-4" />
                         {link.name}
                       </span>
-                      {walletBalance !== null && (
+                      {walletBalance !== null ? (
                         <span className="ml-2 text-xs font-medium tabular-nums text-foreground dark:text-white">
                           ${walletBalance.toFixed(2)}
                         </span>
+                      ) : (
+                        <span
+                          className="ml-2 inline-block h-3 w-10 animate-pulse rounded bg-muted"
+                          aria-label="Loading earnings"
+                        />
                       )}
                     </Link>
                   </DropdownMenuItem>
