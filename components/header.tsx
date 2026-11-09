@@ -74,7 +74,7 @@ import {
 } from "@/lib/utils/unread-message-count-events"
 import { useMarketplaceInboxLive } from "@/components/features/messages/hooks/use-marketplace-inbox-live"
 import { authorizeRealtime } from "@/lib/supabase/realtime-auth"
-import { walletTotalBalanceUsd } from "@/lib/auth/header-wallet-sync"
+import { resolveHeaderWalletBalance } from "@/lib/auth/header-wallet-sync"
 import { getOAuthAvatarUrl } from "@/lib/auth/profile-completion"
 import { getAuthUserWithRetry } from "@/lib/auth/get-user-with-retry"
 import { isAbortError } from "@/lib/utils/is-abort-error"
@@ -717,6 +717,9 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     }
 
     const isPartialBootstrap = Boolean(d.user && !d.authLoaded)
+    const previousUserId = user?.id ?? null
+    const nextUserId = d.user?.id ?? null
+    const userChanged = previousUserId !== nextUserId
 
     setUser(d.user)
 
@@ -751,6 +754,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       applyServerUnread(d.unreadMessages, "partial")
       applyServerUnreadSupport(d.unreadSupport, "partial")
       setWalletBalance((prev) => {
+        if (userChanged) return d.walletBalance
         if (prev !== null) return prev
         const clientTotal = clientWalletTotalRef.current
         if (clientTotal !== null) return clientTotal
@@ -782,9 +786,10 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
           }
           return d.walletBalance
         })
-      } else {
-        setWalletBalance(d.walletBalance)
+      } else if (!d.user || userChanged) {
+        setWalletBalance(null)
       }
+      // Same user + failed wallet read: keep last-known until client refetch fills in.
     }
 
     // Never drop back to skeleton / logged-out chrome while the client session is still valid.
@@ -839,7 +844,9 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       setAuthSessionReady(true)
 
       const shopGeneration = ++shopAccessRequestRef.current
-      const [{ data: profile }, shipperRes, dropoffRes, shopLoad] = await Promise.all([
+      const walletSelect =
+        "balance, pending_balance, lifetime_earned, lifetime_spent, lifetime_cashed_out" as const
+      const [{ data: profile }, shipperRes, dropoffRes, shopLoad, walletRes] = await Promise.all([
         supabase
           .from("profiles")
           .select(
@@ -850,6 +857,9 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         supabase.from("coastal_shippers").select("id").eq("user_id", resolvedUser.id).maybeSingle(),
         supabase.from("dropoff_location_grants").select("id").eq("user_id", resolvedUser.id).maybeSingle(),
         loadHeaderShopAccessAction(resolvedUser.id, resolvedUser.email ?? null),
+        // Same round-trip as profile — waiting until after shop access made Earnings
+        // blank right after login when the menu opened early.
+        supabase.from("wallets").select(walletSelect).eq("user_id", resolvedUser.id).maybeSingle(),
       ])
       if (headerChromeSignOutActive()) return
       if (shopGeneration === shopAccessRequestRef.current && shopLoad.ok) {
@@ -884,19 +894,30 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         if (Number.isFinite(nextSupport)) setUnreadSupport(Math.max(0, nextSupport))
       }
 
-      const { data: wallet } = await supabase
-        .from("wallets")
-        .select("balance, pending_balance, lifetime_earned, lifetime_spent, lifetime_cashed_out")
-        .eq("user_id", resolvedUser.id)
-        .single()
+      let total = resolveHeaderWalletBalance(walletRes)
+      if (total === null) {
+        // Session/RLS can lag a beat right after password/OAuth login — one retry.
+        await new Promise((resolve) => window.setTimeout(resolve, 250))
+        if (headerChromeSignOutActive()) return
+        const retry = await supabase
+          .from("wallets")
+          .select(walletSelect)
+          .eq("user_id", resolvedUser.id)
+          .maybeSingle()
+        total = resolveHeaderWalletBalance(retry)
+        if (total === null && retry.error) {
+          console.warn("[header] wallet balance read failed; keeping current UI:", retry.error)
+        }
+      }
       if (headerChromeSignOutActive()) return
-      const total = wallet ? walletTotalBalanceUsd(wallet) : 0
-      setWalletBalance(total)
-      if (
-        clientWalletTotalRef.current !== null &&
-        Math.abs(total - clientWalletTotalRef.current) <= WALLET_TOTAL_EPS
-      ) {
-        clientWalletTotalRef.current = null
+      if (total !== null) {
+        setWalletBalance(total)
+        if (
+          clientWalletTotalRef.current !== null &&
+          Math.abs(total - clientWalletTotalRef.current) <= WALLET_TOTAL_EPS
+        ) {
+          clientWalletTotalRef.current = null
+        }
       }
       if (profile && !headerChromeSignOutActive()) {
         const persistedAvatar = headerChromeAvatarCssValue(nextAvatarUrl) ? nextAvatarUrl : null
@@ -1081,7 +1102,13 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         (event === "SIGNED_IN" || event === "USER_UPDATED") &&
         session?.user
       ) {
-        if (event === "SIGNED_IN") allowHeaderChromeSignIn()
+        if (event === "SIGNED_IN") {
+          allowHeaderChromeSignIn()
+          // Fresh session — drop any prior wallet so Earnings shows loading
+          // until the parallel wallets read returns (avoids a blank/stale amount).
+          clientWalletTotalRef.current = null
+          setWalletBalance(null)
+        }
         setAuthSessionReady(true)
         setUser(session.user)
         setAuthLoaded(true)
@@ -1218,17 +1245,17 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       .from("wallets")
       .select("balance, pending_balance, lifetime_earned, lifetime_spent, lifetime_cashed_out")
       .eq("user_id", user.id)
-      .single()
-      .then(({ data: wallet }) => {
-        if (!cancelled && wallet) {
-          const total = walletTotalBalanceUsd(wallet)
-          setWalletBalance(total)
-          if (
-            clientWalletTotalRef.current !== null &&
-            Math.abs(total - clientWalletTotalRef.current) <= WALLET_TOTAL_EPS
-          ) {
-            clientWalletTotalRef.current = null
-          }
+      .maybeSingle()
+      .then((walletRes) => {
+        if (cancelled) return
+        const total = resolveHeaderWalletBalance(walletRes)
+        if (total === null) return
+        setWalletBalance(total)
+        if (
+          clientWalletTotalRef.current !== null &&
+          Math.abs(total - clientWalletTotalRef.current) <= WALLET_TOTAL_EPS
+        ) {
+          clientWalletTotalRef.current = null
         }
       })
     supabase
