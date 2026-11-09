@@ -1,16 +1,17 @@
 import type {
   BoardMatchAnswerResult,
+  BoardMatchBrandOption,
+  BoardMatchCard,
   BoardMatchRoundSummary,
-  BoardMatchScenario,
 } from "@/lib/types/boardMatch"
-import type { SurfboardSellCategoryKey } from "@/lib/surfboard-sell-categories"
 
-export const BOARD_MATCH_BASE_POINTS = 100
+export const BOARD_MATCH_BRAND_POINTS = 100
+export const BOARD_MATCH_MODEL_BONUS = 75
 export const BOARD_MATCH_SPEED_BONUS_MAX = 40
-/** Full speed bonus if answered within this many ms. */
-export const BOARD_MATCH_SPEED_FULL_MS = 4_000
+/** Full speed bonus if brand answered within this many ms. */
+export const BOARD_MATCH_SPEED_FULL_MS = 5_000
 /** Speed bonus reaches 0 at this elapsed time. */
-export const BOARD_MATCH_SPEED_ZERO_MS = 10_000
+export const BOARD_MATCH_SPEED_ZERO_MS = 12_000
 export const BOARD_MATCH_STREAK_3_BONUS = 25
 export const BOARD_MATCH_STREAK_5_BONUS = 50
 
@@ -29,19 +30,26 @@ export function boardMatchStreakBonus(streakAfterCorrect: number): number {
   return 0
 }
 
+/**
+ * Score one card. Brand match earns base + speed + streak.
+ * Model-name match adds a bonus only when the brand was correct.
+ */
 export function scoreBoardMatchAnswer(input: {
-  scenario: BoardMatchScenario
-  choice: SurfboardSellCategoryKey
-  elapsedMs: number
-  /** Streak before this answer (correct answers in a row). */
+  card: BoardMatchCard
+  brandChoiceId: string | null
+  modelChoiceId: string | null
+  /** Elapsed ms for the brand pick. */
+  brandElapsedMs: number
   priorStreak: number
 }): BoardMatchAnswerResult {
-  const correct = input.choice === input.scenario.correct
-  if (!correct) {
+  const brandCorrect = input.brandChoiceId === input.card.brand.id
+  if (!brandCorrect) {
     return {
-      correct: false,
+      brandCorrect: false,
+      modelCorrect: false,
       pointsEarned: 0,
-      basePoints: 0,
+      brandPoints: 0,
+      modelBonus: 0,
       speedBonus: 0,
       streakBonus: 0,
       streak: 0,
@@ -49,14 +57,18 @@ export function scoreBoardMatchAnswer(input: {
   }
 
   const streak = input.priorStreak + 1
-  const basePoints = BOARD_MATCH_BASE_POINTS
-  const speedBonus = boardMatchSpeedBonus(input.elapsedMs)
+  const brandPoints = BOARD_MATCH_BRAND_POINTS
+  const speedBonus = boardMatchSpeedBonus(input.brandElapsedMs)
   const streakBonus = boardMatchStreakBonus(streak)
+  const modelCorrect = input.modelChoiceId === input.card.model.id
+  const modelBonus = modelCorrect ? BOARD_MATCH_MODEL_BONUS : 0
 
   return {
-    correct: true,
-    pointsEarned: basePoints + speedBonus + streakBonus,
-    basePoints,
+    brandCorrect: true,
+    modelCorrect,
+    pointsEarned: brandPoints + speedBonus + streakBonus + modelBonus,
+    brandPoints,
+    modelBonus,
     speedBonus,
     streakBonus,
     streak,
@@ -64,45 +76,53 @@ export function scoreBoardMatchAnswer(input: {
 }
 
 export function summarizeBoardMatchRound(input: {
-  scenarios: readonly BoardMatchScenario[]
-  choices: readonly (SurfboardSellCategoryKey | null)[]
+  cards: readonly BoardMatchCard[]
+  brandChoiceIds: readonly (string | null)[]
+  modelChoiceIds: readonly (string | null)[]
   pointsPerQuestion: readonly number[]
   streaksAfterEach: readonly number[]
 }): BoardMatchRoundSummary {
-  const questionCount = input.scenarios.length
-  let correctCount = 0
+  const questionCount = input.cards.length
+  let brandCorrectCount = 0
+  let modelCorrectCount = 0
   let totalPoints = 0
   let bestStreak = 0
-  const correctTypeCounts = new Map<SurfboardSellCategoryKey, number>()
+  const brandHits = new Map<string, { count: number; brand: BoardMatchBrandOption }>()
 
   for (let i = 0; i < questionCount; i++) {
-    const scenario = input.scenarios[i]
-    const choice = input.choices[i]
+    const card = input.cards[i]
+    const brandChoiceId = input.brandChoiceIds[i]
+    const modelChoiceId = input.modelChoiceIds[i]
     const points = input.pointsPerQuestion[i] ?? 0
     const streak = input.streaksAfterEach[i] ?? 0
     totalPoints += points
     if (streak > bestStreak) bestStreak = streak
-    if (!scenario || choice == null) continue
-    if (choice === scenario.correct) {
-      correctCount += 1
-      correctTypeCounts.set(scenario.correct, (correctTypeCounts.get(scenario.correct) ?? 0) + 1)
-    }
+    if (!card || brandChoiceId == null) continue
+    if (brandChoiceId !== card.brand.id) continue
+    brandCorrectCount += 1
+    const prev = brandHits.get(card.brand.id)
+    brandHits.set(card.brand.id, {
+      count: (prev?.count ?? 0) + 1,
+      brand: card.brand,
+    })
+    if (modelChoiceId === card.model.id) modelCorrectCount += 1
   }
 
-  let featuredBoardType: SurfboardSellCategoryKey | null = null
+  let featuredBrand: BoardMatchBrandOption | null = null
   let featuredCount = 0
-  for (const [type, count] of correctTypeCounts) {
-    if (count > featuredCount) {
-      featuredBoardType = type
-      featuredCount = count
+  for (const hit of brandHits.values()) {
+    if (hit.count > featuredCount) {
+      featuredBrand = hit.brand
+      featuredCount = hit.count
     }
   }
 
   return {
     totalPoints,
-    correctCount,
+    brandCorrectCount,
+    modelCorrectCount,
     questionCount,
     bestStreak,
-    featuredBoardType,
+    featuredBrand,
   }
 }

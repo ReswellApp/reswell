@@ -327,15 +327,15 @@ export const MANAGED_PAGES: ManagedPage[] = [
     ],
   }),
   page("board-match", "marketplace", "Board Match", {
-    title: "Board Match — pick the right surfboard shape | Reswell",
+    title: "Board Match — name the brand & model | Reswell",
     description:
-      "Play Board Match: read the session, choose the board type that fits, and earn points for accuracy, speed, and streaks. Then browse matching boards on Reswell.",
+      "Play Board Match: see a real board from the Reswell catalog, match the brand for points, and earn a bonus for naming the model.",
     path: "/board-match",
     keywords: [
       "surfboard quiz",
       "board match game",
-      "surfboard shapes",
-      "which surfboard for conditions",
+      "surfboard brands",
+      "name that surfboard",
     ],
   }),
   page("priceguide", "marketplace", "Price Guide", {
