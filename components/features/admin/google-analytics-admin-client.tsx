@@ -51,7 +51,11 @@ import type {
   GoogleAnalyticsDashboardResult,
   GoogleAnalyticsComparisonMetric,
   GoogleAnalyticsEmbedStat,
+  GoogleAnalyticsOriginRow,
+  GoogleAnalyticsSiteReferrerRow,
+  GoogleAnalyticsSourceRow,
 } from "@/lib/services/googleAnalytics"
+import type { TrafficOriginId } from "@/lib/google-analytics/traffic-origin"
 
 const RANGE_OPTIONS = [
   { value: 7, label: "Last 7 days" },
@@ -413,6 +417,15 @@ export function GoogleAnalyticsAdminClient({
     )
   }, [data, rangeDays])
 
+  const exportSourcesCsv = useCallback(() => {
+    if (!data.configured) return
+    downloadCsv(
+      `reswell-traffic-sources-${rangeDays}d.csv`,
+      ["origin", "source", "medium", "sessions", "views", "conversions"],
+      data.sources.map((r) => [r.originLabel, r.source, r.medium, r.sessions, r.views, r.conversions]),
+    )
+  }, [data, rangeDays])
+
   if (!data.configured) {
     return <SetupPanel reason={data.reason} />
   }
@@ -463,6 +476,10 @@ export function GoogleAnalyticsAdminClient({
               ))}
             </SelectContent>
           </Select>
+          <Button type="button" variant="outline" size="sm" className="h-9 gap-1.5 bg-white" onClick={exportSourcesCsv}>
+            <Download className="h-4 w-4" />
+            Export sources
+          </Button>
           <Button type="button" variant="outline" size="sm" className="h-9 gap-1.5 bg-white" onClick={exportEmbedsCsv}>
             <Download className="h-4 w-4" />
             Export embeds
@@ -512,11 +529,20 @@ export function GoogleAnalyticsAdminClient({
         <KpiCard label="Embed clicks" value={formatNumber(data.partnerEmbeds.totals.clicks)} subtitle={`CTR ${formatPercent(data.partnerEmbeds.totals.clickThroughRate)}`} icon={<MousePointerClick className="h-4 w-4" />} accent="amber" delta={data.comparison.embedClicks} />
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-4">
+      <SectionCard>
+        <SectionHeader
+          title="Where people come from"
+          description="ChatGPT, Claude, Google, and every other GA4 source in this window. Direct is typed-in traffic or a stripped referrer — some AI apps hide the referring site."
+          icon={<Globe className="h-4 w-4" />}
+        />
+        <OriginSummary rows={data.origins} totalSessions={data.site.totals.sessions} />
+      </SectionCard>
+
+      <Tabs defaultValue="acquisition" className="space-y-4">
         <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1 bg-slate-100/80 p-1">
+          <TabsTrigger value="acquisition">Acquisition</TabsTrigger>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="embeds">Partner embeds</TabsTrigger>
-          <TabsTrigger value="acquisition">Acquisition</TabsTrigger>
           <TabsTrigger value="content">Content</TabsTrigger>
           <TabsTrigger value="events">Events</TabsTrigger>
         </TabsList>
@@ -670,6 +696,25 @@ export function GoogleAnalyticsAdminClient({
         </TabsContent>
 
         <TabsContent value="acquisition" className="space-y-4">
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+            <SectionCard>
+              <SectionHeader
+                title="Source / medium"
+                description="Raw GA4 session source and medium — chatgpt.com / referral, google / organic, claude.ai / referral, and the rest."
+                icon={<Globe className="h-4 w-4" />}
+              />
+              <SourceTable rows={data.sources} />
+            </SectionCard>
+            <SectionCard>
+              <SectionHeader
+                title="Referring sites"
+                description="Hostname of the previous page. Empty or (direct) means the browser did not send a referrer."
+                icon={<Globe className="h-4 w-4" />}
+              />
+              <ReferrerTable rows={data.referrers} />
+            </SectionCard>
+          </div>
+
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <SectionCard>
               <SectionHeader title="Channels" description="Session default channel group." icon={<TrendingUp className="h-4 w-4" />} />
@@ -785,6 +830,124 @@ export function GoogleAnalyticsAdminClient({
       <p className="text-center text-[11px] text-slate-400">
         Data cached ~1h · Generated {new Date(data.generatedAt).toLocaleString("en-US")}
       </p>
+    </div>
+  )
+}
+
+function originTone(origin: TrafficOriginId): PillTone {
+  switch (origin) {
+    case "chatgpt":
+      return "emerald"
+    case "claude":
+      return "amber"
+    case "google":
+      return "blue"
+    case "gemini":
+      return "teal"
+    case "perplexity":
+      return "teal"
+    case "copilot":
+      return "violet"
+    case "meta":
+      return "blue"
+    case "youtube":
+      return "rose"
+    case "direct":
+      return "slate"
+    default:
+      return "slate"
+  }
+}
+
+function OriginSummary({
+  rows,
+  totalSessions,
+}: {
+  rows: GoogleAnalyticsOriginRow[]
+  totalSessions: number
+}) {
+  if (rows.length === 0) {
+    return <EmptyState>No source data in this window.</EmptyState>
+  }
+
+  return (
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-6">
+      {rows.map((row) => {
+        const share = totalSessions > 0 ? row.sessions / totalSessions : 0
+        return (
+          <div key={row.origin} className="rounded-lg border border-slate-100 bg-slate-50/60 px-3 py-3">
+            <Pill tone={originTone(row.origin)}>{row.label}</Pill>
+            <p className="mt-2 text-xl font-bold tabular-nums text-slate-900">{formatNumber(row.sessions)}</p>
+            <p className="text-xs text-slate-500">{formatPercent(share, 0)} of sessions</p>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function SourceTable({ rows }: { rows: GoogleAnalyticsSourceRow[] }) {
+  if (rows.length === 0) {
+    return <EmptyState>No source / medium rows in this window.</EmptyState>
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[520px] text-left text-sm">
+        <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
+          <tr>
+            <th className="pb-2 pr-4 font-medium">Origin</th>
+            <th className="pb-2 pr-4 font-medium">Source</th>
+            <th className="pb-2 pr-4 font-medium">Medium</th>
+            <th className="pb-2 pr-4 font-medium text-right">Sessions</th>
+            <th className="pb-2 font-medium text-right">Views</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={`${row.source}:${row.medium}`} className="border-b border-slate-100 last:border-0">
+              <td className="py-2.5 pr-4">
+                <Pill tone={originTone(row.origin)}>{row.originLabel}</Pill>
+              </td>
+              <td className="py-2.5 pr-4 font-medium text-slate-900">{row.source}</td>
+              <td className="py-2.5 pr-4 text-slate-600">{row.medium}</td>
+              <td className="py-2.5 pr-4 text-right tabular-nums text-slate-700">{formatNumber(row.sessions)}</td>
+              <td className="py-2.5 text-right tabular-nums text-slate-700">{formatNumber(row.views)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function ReferrerTable({ rows }: { rows: GoogleAnalyticsSiteReferrerRow[] }) {
+  if (rows.length === 0) {
+    return <EmptyState>No referring sites in this window.</EmptyState>
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[420px] text-left text-sm">
+        <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
+          <tr>
+            <th className="pb-2 pr-4 font-medium">Site</th>
+            <th className="pb-2 pr-4 font-medium">Origin</th>
+            <th className="pb-2 font-medium text-right">Sessions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.host} className="border-b border-slate-100 last:border-0">
+              <td className="py-2.5 pr-4 font-medium text-slate-900">{row.host}</td>
+              <td className="py-2.5 pr-4">
+                <Pill tone={originTone(row.origin)}>{row.originLabel}</Pill>
+              </td>
+              <td className="py-2.5 text-right tabular-nums text-slate-700">{formatNumber(row.sessions)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   )
 }

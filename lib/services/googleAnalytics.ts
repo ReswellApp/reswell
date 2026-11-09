@@ -1,5 +1,14 @@
 import { getVercelOidcToken } from "@vercel/oidc"
 import { ExternalAccountClient, GoogleAuth } from "google-auth-library"
+import {
+  classifyTrafficOrigin,
+  formatMediumLabel,
+  formatSourceLabel,
+  referrerHostname,
+  rollupTrafficOrigins,
+  TRAFFIC_ORIGIN_LABEL,
+  type TrafficOriginId,
+} from "@/lib/google-analytics/traffic-origin"
 
 /**
  * Google Analytics 4 (Data API) integration — site-side traffic for the products you advertise
@@ -108,6 +117,31 @@ export interface GoogleAnalyticsReferrerRow {
   sessions: number
 }
 
+export interface GoogleAnalyticsSourceRow {
+  source: string
+  medium: string
+  origin: TrafficOriginId
+  originLabel: string
+  sessions: number
+  views: number
+  conversions: number
+}
+
+export interface GoogleAnalyticsOriginRow {
+  origin: TrafficOriginId
+  label: string
+  sessions: number
+  views: number
+  conversions: number
+}
+
+export interface GoogleAnalyticsSiteReferrerRow {
+  host: string
+  origin: TrafficOriginId
+  originLabel: string
+  sessions: number
+}
+
 export interface GoogleAnalyticsDashboardComparison {
   sessions: GoogleAnalyticsComparisonMetric
   users: GoogleAnalyticsComparisonMetric
@@ -144,6 +178,9 @@ export interface GoogleAnalyticsDashboardData {
   }
   devices: GoogleAnalyticsDimensionRow[]
   countries: GoogleAnalyticsDimensionRow[]
+  sources: GoogleAnalyticsSourceRow[]
+  origins: GoogleAnalyticsOriginRow[]
+  referrers: GoogleAnalyticsSiteReferrerRow[]
   topEvents: GoogleAnalyticsEventRow[]
   insights: string[]
 }
@@ -739,6 +776,75 @@ async function queryEmbedReferrers(
     .filter((row) => row.sessions > 0)
 }
 
+async function querySessionSources(
+  token: string,
+  property: string,
+  startDate: string,
+  endDate: string,
+): Promise<GoogleAnalyticsSourceRow[]> {
+  const rows = await runReportSafe(token, property, {
+    dateRanges: [{ startDate, endDate }],
+    dimensions: [{ name: "sessionSource" }, { name: "sessionMedium" }],
+    metrics: [{ name: "sessions" }, { name: "screenPageViews" }, { name: "conversions" }],
+    orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
+    limit: 50,
+  })
+
+  return rows
+    .map((row) => {
+      const source = formatSourceLabel(row.dimensionValues?.[0]?.value)
+      const medium = formatMediumLabel(row.dimensionValues?.[1]?.value)
+      const origin = classifyTrafficOrigin({ source, medium })
+      return {
+        source,
+        medium,
+        origin,
+        originLabel: TRAFFIC_ORIGIN_LABEL[origin],
+        sessions: toNumber(row.metricValues?.[0]?.value),
+        views: toNumber(row.metricValues?.[1]?.value),
+        conversions: toNumber(row.metricValues?.[2]?.value),
+      }
+    })
+    .filter((row) => row.sessions > 0 || row.views > 0)
+}
+
+async function querySiteReferrers(
+  token: string,
+  property: string,
+  startDate: string,
+  endDate: string,
+): Promise<GoogleAnalyticsSiteReferrerRow[]> {
+  const rows = await runReportSafe(token, property, {
+    dateRanges: [{ startDate, endDate }],
+    dimensions: [{ name: "pageReferrer" }],
+    metrics: [{ name: "sessions" }],
+    orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
+    limit: 80,
+  })
+
+  const byHost = new Map<string, GoogleAnalyticsSiteReferrerRow>()
+  for (const row of rows) {
+    const referrer = row.dimensionValues?.[0]?.value?.trim() || "(direct)"
+    const sessions = toNumber(row.metricValues?.[0]?.value)
+    if (sessions <= 0) continue
+    const host = referrerHostname(referrer) || "(direct)"
+    const origin = classifyTrafficOrigin({ referrer, source: host })
+    const existing = byHost.get(host)
+    if (existing) {
+      existing.sessions += sessions
+      continue
+    }
+    byHost.set(host, {
+      host,
+      origin,
+      originLabel: TRAFFIC_ORIGIN_LABEL[origin],
+      sessions,
+    })
+  }
+
+  return [...byHost.values()].sort((a, b) => b.sessions - a.sessions).slice(0, 30)
+}
+
 async function queryRealtimeActiveUsers(token: string, property: string): Promise<number> {
   try {
     const res = await fetch(
@@ -763,6 +869,9 @@ function buildAnalyticsInsights(input: {
   siteEngagementRate: number
   embedClickThroughRate: number
   topChannel: string | null
+  topOrigin: GoogleAnalyticsOriginRow | null
+  chatgptSessions: number
+  claudeSessions: number
   topEmbed: GoogleAnalyticsEmbedStat | null
   topEvent: GoogleAnalyticsEventRow | null
 }): string[] {
@@ -804,6 +913,19 @@ function buildAnalyticsInsights(input: {
     insights.push(`Top acquisition channel: ${input.topChannel}.`)
   }
 
+  if (input.topOrigin && input.topOrigin.sessions > 0) {
+    insights.push(
+      `Top traffic origin: ${input.topOrigin.label} (${input.topOrigin.sessions.toLocaleString("en-US")} sessions).`,
+    )
+  }
+
+  const aiSessions = input.chatgptSessions + input.claudeSessions
+  if (aiSessions > 0) {
+    insights.push(
+      `AI assistants sent ${aiSessions.toLocaleString("en-US")} session${aiSessions === 1 ? "" : "s"} (ChatGPT ${input.chatgptSessions.toLocaleString("en-US")}, Claude ${input.claudeSessions.toLocaleString("en-US")}).`,
+    )
+  }
+
   if (input.topEmbed && input.topEmbed.sessions > 0) {
     insights.push(
       `Leading partner embed: ${input.topEmbed.slug} (${input.topEmbed.sessions.toLocaleString("en-US")} sessions, ${input.topEmbed.clicks.toLocaleString("en-US")} clicks).`,
@@ -816,7 +938,7 @@ function buildAnalyticsInsights(input: {
     )
   }
 
-  return insights.slice(0, 6)
+  return insights.slice(0, 8)
 }
 
 function withEmbedClickThroughRates(rows: GoogleAnalyticsEmbedStat[]): GoogleAnalyticsEmbedStat[] {
@@ -982,6 +1104,8 @@ export async function getGoogleAnalyticsDashboardData(options?: {
       countries,
       topEvents,
       embedReferrers,
+      sources,
+      referrers,
       activeUsers,
     ] = await Promise.all([
       queryGoogleAnalyticsTraffic(access.token, access.property, {
@@ -1039,6 +1163,8 @@ export async function getGoogleAnalyticsDashboardData(options?: {
       }),
       queryTopEvents(access.token, access.property, current.startDate, current.endDate),
       queryEmbedReferrers(access.token, access.property, current.startDate, current.endDate),
+      querySessionSources(access.token, access.property, current.startDate, current.endDate),
+      querySiteReferrers(access.token, access.property, current.startDate, current.endDate),
       queryRealtimeActiveUsers(access.token, access.property),
     ])
 
@@ -1054,11 +1180,22 @@ export async function getGoogleAnalyticsDashboardData(options?: {
       embedClicks: comparisonMetric(embedClicks.totalClicks, priorEmbedClicks),
     }
 
+    const origins = rollupTrafficOrigins(sources)
+    const topNamedOrigin =
+      origins
+        .filter((row) => row.origin !== "other" && row.origin !== "direct")
+        .sort((a, b) => b.sessions - a.sessions)[0] ??
+      origins.find((row) => row.sessions > 0) ??
+      null
+
     const insights = buildAnalyticsInsights({
       comparison,
       siteEngagementRate: site.totals.engagementRate,
       embedClickThroughRate: embedCtr,
       topChannel: site.channels[0]?.channel ?? null,
+      topOrigin: topNamedOrigin,
+      chatgptSessions: origins.find((row) => row.origin === "chatgpt")?.sessions ?? 0,
+      claudeSessions: origins.find((row) => row.origin === "claude")?.sessions ?? 0,
       topEmbed: byEmbed[0] ?? null,
       topEvent: topEvents[0] ?? null,
     })
@@ -1090,6 +1227,9 @@ export async function getGoogleAnalyticsDashboardData(options?: {
       },
       devices,
       countries,
+      sources,
+      origins,
+      referrers,
       topEvents,
       insights,
     }
