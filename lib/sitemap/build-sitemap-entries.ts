@@ -216,6 +216,12 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
       changeFrequency: "monthly",
       priority: 0.35,
     },
+    {
+      url: `${BASE}/volume-calculator`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.4,
+    },
     { url: `${BASE}/safety`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
     // Policy/legal pages stay indexable via footer links — omit from sitemap to save crawl budget.
   ]
