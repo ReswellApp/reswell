@@ -1,0 +1,55 @@
+{
+  "generated_for": "Jay Novak Surfboards official named standup catalog",
+  "source": "https://www.jaynovaksurfboards.com/ (official Squarespace homepage Best Selling Models for 2026 — named standup models only; excludes workshop photos, action shots, and unpublished custom files)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "jay-novak-surfboards",
+      "name": "Jay Novak Surfboards",
+      "website_url": "https://www.jaynovaksurfboards.com/",
+      "location_label": "Imperial Beach, California",
+      "founder_name": "Jay Novak",
+      "lead_shaper_name": "Jay Novak",
+      "short_description": "Independent Imperial Beach shaper Jay Novak — surfing since 1965, shaping since 1975 — building current-model fish, shortboards, eggs, and longboards under Novak Surf Designs / AKA.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/jay-novak-surfboards.png",
+      "models": [
+        {
+          "name": "OG Nose Rider",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/60d9343e1a52ec4669d1673f/38d36e16-29ad-410c-8d48-663e20113143/6140319576330510698.JPG?format=1500w",
+          "description": "Mucho 60's era DNA is present and hard at work. A wide concave nose - almost 19\" - for stability and planing. Some roll on the bottom and soft rails throughout. A thin tail with slight vee makes it sensitive and responsive. This board pictured above also has a 3/4\" redwood/balsa T-band and a laminated tail block. A beautifully crafted and thought-out design. The OG Nose Rider is an almost perfect small wave longboard.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "AKA SS Round Tail",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/60d9343e1a52ec4669d1673f/604e7ae9-b09a-4aac-816d-8e0ebb8c942a/shred_top.png?format=1500w",
+          "description": "The Super Short (SS) design has had a long refining period. I wanted a true high-performance short board, with a \"pointed nose\" that is more versatile and user-friendly. So, the board carries more width, especially thru the nose compared to past years. Slightly relaxed rocker, and some hidden volume. It is responsive and fast in a variety of waves. Board pictured above is single concave, 5'9\" x 19.25 × 2.5 × 13 15/16 nose x 14 7/8 tail - (30.1 liters).",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "AKA Classic Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/60d9343e1a52ec4669d1673f/2998412a-f2e3-45aa-8c5d-f4e3825914ff/fish_top.png?format=1500w",
+          "description": "This design has been around for a long time. I shaped my first one in the 1970's! A proven shape, it provides speed and glide in a variety of surf conditions. I have refined and improved on the fish concept, and the newest version comes with a slightly increased rocker, modern rails, and a double concave bottom. Board pictured is 5'9\" x 21 5/8 x 2 9/16 - 36.8 Liters. IT still comes with the beak nose, and quite a bit of volume for it's size. Some have said that this shape is a perfect \"one-board\" quiver. Others enjoy the linear flow and instant speed as a unique compliment to other shapes. Not just a small-wave demon, this board is quite versatile. Usual shapes between 5'4\" and 6'4\".",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "AKA Twinzer Egg",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/60d9343e1a52ec4669d1673f/1ff9b785-3cd5-44b8-828e-1c4007abb60f/egg_top.JPG?format=1500w",
+          "description": "The Twinzer Egg came into being as surfers and shapers became more open-minded. What happens when the classic egg gets updated? The board gets faster and more maneuverable, and the channel bottom gives it that extra bit of stability and hold. A time-proven design has just got better! Board pictured above is 6'10\" x 20 5/8 × 2 11/16, and has 43.4 liters of volume.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "SBT - Short Board Twinzer",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/60d9343e1a52ec4669d1673f/62e66197-895c-4ad9-9569-f44055eaeec3/bitchin_top.png?format=1500w",
+          "description": "SBT - Short Board Twinzer: A brief bit of history here - I did some of my absolute best surfing on twin fins in the 70's and 80's. This twinzer takes the design to the next level. Proven theories meet modern elements to create something special. A close friend said that it was like surfing on ball bearings. My biggest seller from fall '25 thru spring '26. This short board twinzer is 31.4 liters, is 6'0\" x 20.5 × 2.5 with 14 5/8 nose and a 14 5/8 tail. Width-forward and lots of volume makes it user friendly.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "AKA Fish Modern",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/60d9343e1a52ec4669d1673f/c18b75d2-95b7-4809-ba81-85d607c64797/blue_top.png?format=1500w",
+          "description": "After riding many fish shapes over the years, I have confidence in the new Fish Modern. Looking for a more vertical performance? This shape has been updated in a few areas. #1, It has a narrower nose and tail to allow for quicker turning. #2, Has a slightly increased rocker for sensitivity. #3, Has a winged tail to act as a pivot point, again for turning ease. #4, The bottom has a 2/3 length increasing vee, with a double concave between the fins. Board pictured is 5'6\" x 20 3/4 x 2 33.0 liters. The result is a lively, fast, quick-responding shape that you will feel from the first wave. I give this one 4 our of 4 stars. ~Jay",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
