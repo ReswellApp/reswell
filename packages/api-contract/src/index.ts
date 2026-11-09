@@ -1629,6 +1629,8 @@ export const mobileEarningsSchema = z.object({
   earned_last_30d_label: z.string(),
   credit_usd: z.number().nonnegative(),
   credit_label: z.string(),
+  /** Admin-only Reswell Credit pilot. Missing/false hides Rewards on earnings. */
+  credit_visible: z.boolean().optional().default(false),
   payout_label: z.string(),
   payout_detail: z.string(),
   cash_out_ready: z.boolean(),

@@ -265,6 +265,7 @@ export async function getMobileEarningsService(
     earned_last_30d_label: money(earnedLast30),
     credit_usd: Math.max(0, creditPilot?.wallet.balanceUsd ?? 0),
     credit_label: money(Math.max(0, creditPilot?.wallet.balanceUsd ?? 0)),
+    credit_visible: creditPilot != null,
     payout_label: payout.label,
     payout_detail: payout.detail,
     cash_out_ready: Boolean(payoutStatus?.cashOutReady),
