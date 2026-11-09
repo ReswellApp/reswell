@@ -155,6 +155,52 @@ function MessageMediaAttachmentVideo({
   )
 }
 
+function LocalMediaPreview({
+  url,
+  kind,
+  fileName,
+  sendStatus,
+  progress,
+}: {
+  url: string
+  kind: "image" | "video"
+  fileName: string
+  sendStatus?: "sending" | "failed"
+  progress?: number
+}) {
+  const sending = sendStatus === "sending"
+  const pct = Math.max(0, Math.min(100, Math.round(progress ?? 0)))
+  return (
+    <div className={cn("relative min-h-[8rem] min-w-[8rem] overflow-hidden bg-muted/30", messageMediaFrameClass)}>
+      {kind === "video" ? (
+        <video
+          src={url}
+          muted
+          playsInline
+          preload="metadata"
+          className={messageMediaMaxSizeClass}
+          aria-hidden
+        />
+      ) : (
+        // Local blob preview — next/image cannot load blob: URLs.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={url} alt={fileName} className={messageMediaMaxSizeClass} />
+      )}
+      {sending ? (
+        <>
+          <div className="absolute inset-0 bg-black/20" aria-hidden />
+          <div className="absolute inset-x-0 bottom-0 h-1 bg-black/25">
+            <div
+              className="h-full bg-white/90 transition-[width] duration-150"
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+        </>
+      ) : null}
+    </div>
+  )
+}
+
 export function MessageMediaAttachmentCard({
   messageId,
   metadata,
@@ -163,6 +209,11 @@ export function MessageMediaAttachmentCard({
   formattedTime,
   showTime = true,
   onOpenImage,
+  localPreviewUrl,
+  localPreviewKind,
+  sendStatus,
+  progress,
+  onRetryFailed,
 }: {
   messageId: string
   metadata: unknown
@@ -173,6 +224,12 @@ export function MessageMediaAttachmentCard({
   showTime?: boolean
   /** Opens a parent-owned image gallery (swipe across thread photos). */
   onOpenImage?: (messageId: string) => void
+  /** Optimistic outgoing photo/video still uploading from this device. */
+  localPreviewUrl?: string
+  localPreviewKind?: "image" | "video"
+  sendStatus?: "sending" | "failed"
+  progress?: number
+  onRetryFailed?: () => void
 }) {
   const imageAtt = parseMarketplaceMessageImageAttachment(metadata)
   const videoAtt = parseMarketplaceMessageVideoAttachment(metadata)
@@ -182,22 +239,32 @@ export function MessageMediaAttachmentCard({
     ? composeMediaAttachmentMessageBody("image")
     : videoAtt
       ? composeMediaAttachmentMessageBody("video")
-      : null
+      : localPreviewKind
+        ? composeMediaAttachmentMessageBody(localPreviewKind)
+        : null
   const redundantCaption =
     defaultBody != null && content.trim() === defaultBody
 
-  if (imageAtt || videoAtt) {
+  if (imageAtt || videoAtt || localPreviewUrl) {
+    const previewKind = localPreviewKind ?? (videoAtt ? "video" : "image")
     return (
       <div className={cn("flex flex-col gap-1.5", messageMediaShellClass, isOwn && "items-end")}>
-        {imageAtt ? (
+        {localPreviewUrl ? (
+          <LocalMediaPreview
+            url={localPreviewUrl}
+            kind={previewKind}
+            fileName={imageAtt?.file_name ?? videoAtt?.file_name ?? (previewKind === "video" ? "Video" : "Photo")}
+            sendStatus={sendStatus}
+            progress={progress}
+          />
+        ) : imageAtt ? (
           <MessageMediaAttachmentImage
             messageId={messageId}
             fileName={imageAtt.file_name}
             className={messageMediaFrameClass}
             onOpenImage={onOpenImage}
           />
-        ) : null}
-        {videoAtt ? (
+        ) : videoAtt ? (
           <MessageMediaAttachmentVideo
             messageId={messageId}
             fileName={videoAtt.file_name}
@@ -206,6 +273,15 @@ export function MessageMediaAttachmentCard({
         ) : null}
         {!redundantCaption && content.trim() ? (
           <MessageTextBubble content={content} isOwn={isOwn} />
+        ) : null}
+        {isOwn && sendStatus === "failed" ? (
+          <button
+            type="button"
+            className="px-0.5 text-[11px] font-medium text-red-500"
+            onClick={onRetryFailed}
+          >
+            Not Delivered — Tap to Retry
+          </button>
         ) : null}
         {showTime ? (
           <p

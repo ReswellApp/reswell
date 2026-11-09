@@ -123,6 +123,11 @@ interface Message {
   offer_id?: string | null
   metadata?: unknown | null
   sendStatus?: 'sending' | 'failed'
+  localPreview?: {
+    url: string
+    kind: 'image' | 'video'
+    progress: number
+  }
 }
 
 interface Conversation {
@@ -239,6 +244,7 @@ export function ConversationThreadClient({
   const threadImageGallery = useMemo((): Array<MessageMediaImageLightboxItem & { messageId: string }> => {
     const items: Array<MessageMediaImageLightboxItem & { messageId: string }> = []
     for (const message of orderedMessages) {
+      if (message.localPreview || message.id.startsWith(PENDING_THREAD_MESSAGE_ID_PREFIX)) continue
       const imageAtt = parseMarketplaceMessageImageAttachment(message.metadata)
       if (!imageAtt) continue
       items.push({
@@ -790,13 +796,79 @@ export function ConversationThreadClient({
     void sendThreadText(trimmed)
   }
 
-  const handleMediaSent = useCallback(
-    (inserted: Message) => {
+  const mediaRetryRef = useRef<((draftId: string) => void) | null>(null)
+
+  const handleMediaOptimistic = useCallback(
+    (draft: {
+      id: string
+      kind: 'image' | 'video'
+      previewUrl: string
+      content: string
+    }) => {
+      if (!currentUserId) return
       stickToBottomRef.current = true
       setNewMessage('')
+      newMessageRef.current = ''
+      setMessages((prev) => [
+        ...prev.filter((message) => message.id !== draft.id),
+        {
+          id: draft.id,
+          content: draft.content,
+          sender_id: currentUserId,
+          is_read: false,
+          created_at: new Date().toISOString(),
+          sendStatus: 'sending',
+          localPreview: {
+            url: draft.previewUrl,
+            kind: draft.kind,
+            progress: 5,
+          },
+        },
+      ])
+    },
+    [currentUserId],
+  )
+
+  const handleMediaProgress = useCallback((draftId: string, progress: number) => {
+    setMessages((prev) =>
+      prev.map((message) =>
+        message.id === draftId && message.localPreview
+          ? {
+              ...message,
+              sendStatus: 'sending',
+              localPreview: { ...message.localPreview, progress },
+            }
+          : message,
+      ),
+    )
+  }, [])
+
+  const handleMediaFailed = useCallback((draftId: string) => {
+    setMessages((prev) =>
+      prev.map((message) =>
+        message.id === draftId ? { ...message, sendStatus: 'failed' } : message,
+      ),
+    )
+  }, [])
+
+  const handleMediaDismiss = useCallback((draftId: string) => {
+    setMessages((prev) => prev.filter((message) => message.id !== draftId))
+  }, [])
+
+  const registerMediaRetry = useCallback((retry: (draftId: string) => void) => {
+    mediaRetryRef.current = retry
+  }, [])
+
+  const handleMediaSent = useCallback(
+    (inserted: Message, draftId: string) => {
+      stickToBottomRef.current = true
+      setNewMessage('')
+      knownMessageIdsRef.current.add(inserted.id)
       setMessages((prev) => {
-        const withoutDup = prev.filter((m) => m.id !== inserted.id)
-        return [...withoutDup, inserted]
+        const without = prev.filter(
+          (message) => message.id !== inserted.id && message.id !== draftId,
+        )
+        return [...without, inserted]
       })
       dispatchConversationInboxActivity({
         conversationId: id,
@@ -837,6 +909,7 @@ export function ConversationThreadClient({
   const isPlainTextMessage = useCallback(
     (m: Message): boolean => {
       const own = m.sender_id === currentUserId
+      if (m.localPreview) return false
       if (parseLocalPolicyBlockMetadata(m.metadata) && own) return false
       if (m.offer_id && offersById[m.offer_id]) return false
       if (m.offer_id && m.content.trim()) return false
@@ -1178,7 +1251,7 @@ export function ConversationThreadClient({
                     }
 
                     const mediaAtt = parseMarketplaceMessageAttachment(message.metadata)
-                    if (mediaAtt) {
+                    if (mediaAtt || message.localPreview) {
                       return (
                         <div className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start', cardMargin)}>
                           <MessageMediaAttachmentCard
@@ -1189,6 +1262,24 @@ export function ConversationThreadClient({
                             formattedTime={threadTime(message.created_at)}
                             showTime={false}
                             onOpenImage={openThreadImage}
+                            localPreviewUrl={message.localPreview?.url}
+                            localPreviewKind={message.localPreview?.kind}
+                            sendStatus={message.sendStatus}
+                            progress={message.localPreview?.progress}
+                            onRetryFailed={
+                              message.sendStatus === 'failed'
+                                ? () => {
+                                    setMessages((prev) =>
+                                      prev.map((row) =>
+                                        row.id === message.id
+                                          ? { ...row, sendStatus: 'sending' }
+                                          : row,
+                                      ),
+                                    )
+                                    mediaRetryRef.current?.(message.id)
+                                  }
+                                : undefined
+                            }
                           />
                         </div>
                       )
@@ -1382,10 +1473,15 @@ export function ConversationThreadClient({
               conversationId: id,
               disabled: !currentUserId || !conversation,
               onSent: handleMediaSent,
-              onBlockedPolicy: (originalContent, reasonCode) => {
+              onOptimistic: handleMediaOptimistic,
+              onProgress: handleMediaProgress,
+              onFailed: handleMediaFailed,
+              onDismiss: handleMediaDismiss,
+              registerRetry: registerMediaRetry,
+              onBlockedPolicy: (originalContent, reasonCode, draftId) => {
                 if (!currentUserId) return
                 setMessages((prev) => [
-                  ...prev,
+                  ...prev.filter((message) => message.id !== draftId),
                   createLocalPolicyBlockMessage({
                     senderId: currentUserId,
                     originalContent,
