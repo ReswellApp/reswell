@@ -300,6 +300,18 @@ export function EarningsPageClient() {
   const last30 = sellerEarningsTotals?.earnedLast30dUsd ?? 0
   const stripeBlockLoading = stripePayoutsEnabled && (stripeStatusLoading || stripeHistoryLoading)
 
+  useEffect(() => {
+    if (view !== "available") return
+    if (window.location.hash !== "#earnings-bank-payout") return
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById("earnings-bank-payout")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      })
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [view, stripeBlockLoading])
+
   if (walletLoading && !wallet) {
     return <EarningsHubSkeleton />
   }
@@ -374,6 +386,7 @@ export function EarningsPageClient() {
       pendingLabel={formatUsd(displayPending)}
       readyLabel={formatUsd(displayAvailable)}
       creditLabel={formatUsd(creditBalanceUsd)}
+      showTransfer={stripePayoutsEnabled}
     />
   )
 }

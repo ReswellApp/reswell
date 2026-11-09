@@ -11,22 +11,28 @@ import {
   Star,
   type LucideIcon,
 } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { helpTopicPath } from "@/lib/help-center/paths"
-import { earningsHref } from "@/lib/earnings-view"
+import { earningsBankPayoutHref, earningsHref } from "@/lib/earnings-view"
 import { cn } from "@/lib/utils"
 
 export function EarningsHubSkeleton() {
   return (
     <div className={hubCardClass}>
       <Skeleton className="hidden h-8 w-36 lg:block" />
-      <div className="mt-5 grid grid-cols-3 divide-x divide-border/70 rounded-xl bg-muted/50 px-2 py-5 sm:px-4">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="flex flex-col items-center gap-2 px-2">
-            <Skeleton className="h-7 w-16" />
-            <Skeleton className="h-3 w-24" />
-          </div>
-        ))}
+      <div className="mt-5 rounded-xl bg-muted/50">
+        <div className="grid grid-cols-3 divide-x divide-border/70 px-2 py-5 sm:px-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="flex flex-col items-center gap-2 px-2">
+              <Skeleton className="h-7 w-16" />
+              <Skeleton className="h-3 w-24" />
+            </div>
+          ))}
+        </div>
+        <div className="px-3 pb-4 sm:px-4">
+          <Skeleton className="h-12 w-full rounded-full" />
+        </div>
       </div>
       <div className="mt-2 divide-y divide-border/70">
         {Array.from({ length: 3 }).map((_, i) => (
@@ -52,6 +58,7 @@ export function EarningsHub({
   pendingLabel,
   readyLabel,
   creditLabel,
+  showTransfer = false,
 }: {
   lifetimeLabel: string
   last30Label: string
@@ -59,15 +66,28 @@ export function EarningsHub({
   pendingLabel: string
   readyLabel: string
   creditLabel: string
+  showTransfer?: boolean
 }) {
   return (
     <div className={hubCardClass}>
       <h1 className="hidden text-2xl font-bold tracking-tight text-foreground lg:block">Earnings</h1>
 
-      <div className="grid grid-cols-3 divide-x divide-border/60 rounded-xl bg-muted/50 px-1 py-4 lg:mt-5 sm:px-2 sm:py-5">
-        <EarningsStat value={lifetimeLabel} label="Lifetime Earnings" />
-        <EarningsStat value={last30Label} label="Last 30 Days" />
-        <EarningsStat value={availableLabel} label="Available Earnings" />
+      <div className="rounded-xl bg-muted/50 lg:mt-5">
+        <div className="grid grid-cols-3 divide-x divide-border/60 px-1 py-4 sm:px-2 sm:py-5">
+          <EarningsStat value={lifetimeLabel} label="Lifetime Earnings" />
+          <EarningsStat value={last30Label} label="Last 30 Days" />
+          <EarningsStat value={availableLabel} label="Available Earnings" />
+        </div>
+        {showTransfer ? (
+          <div className="px-3 pb-4 sm:px-4">
+            <Button
+              asChild
+              className="h-12 w-full rounded-full bg-listingHeart text-[17px] font-bold text-white hover:bg-listingHeart/90"
+            >
+              <Link href={earningsBankPayoutHref()}>Transfer Funds</Link>
+            </Button>
+          </div>
+        ) : null}
       </div>
 
       <div className="mt-1">
