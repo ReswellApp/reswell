@@ -1,10 +1,20 @@
 /**
  * Marketplace how-tos vs this-visitor lookups.
  * Generic "I sold a board, how do I get paid?" is published policy — not an order lookup.
+ * Buyer payment / refund phrasing is not a seller cash-out.
  */
 
+const BUYER_PAYOUT_LOOKALIKE =
+  /\b(refunds?|money back|returns?|returning|purchase protection|bought|buy(?:ing)?|purchase[ds]?|(?<!get\s)paid for|how(?:\s+\w+){0,8}\s+pay(?:ment|ing)?\b|when(?:\s+\w+){0,8}\s+pay(?:ment|ing)?\b)\b/i
+
 const SELLER_PAYOUT_HOWTO =
-  /\b(get(?:ting)?(?:\s+my)?\s+(?:money|paid|payout)|get paid|cash(?:\s*|-)?outs?|withdraw|how(?:\s+\w+){0,8}\s+(?:paid|pay|money|payout|earnings|cash)|when(?:\s+\w+){0,8}\s+(?:paid|pay|money|payout|earnings)|sold.{0,80}(?:money|paid|payout|earnings|cash(?:\s*|-)?outs?)|(?:money|paid|payout|earnings).{0,40}(?:sold|sale|board))\b/i
+  /\b(cash(?:\s*|-)?outs?|withdraw(?:al|ing)?s?|payouts?|earnings|get(?:ting)?\s+paid|how(?:\s+\w+){0,8}\s+(?:payout|earnings)|when(?:\s+\w+){0,8}\s+(?:payout|earnings))\b/i
+
+const SELLER_CONTEXT =
+  /\b(sold|sell(?:ing)?|sale|seller|earnings|payouts?|cash(?:\s*|-)?outs?)\b/i
+
+const MONEY_ASK =
+  /\b(get(?:ting)?(?:\s+my)?\s+(?:money|paid|payout)|how(?:\s+\w+){0,8}\s+(?:paid|money)|when(?:\s+\w+){0,8}\s+(?:paid|money)|money)\b/i
 
 const SPECIFIC_PAYOUT_LOOKUP =
   /\b(order\s*#?\s*\d|where(?:'s| is) my (?:payout|money|earnings)|still (?:pending|waiting|held)|hasn'?t (?:released|arrived|shown)|this (?:sale|order)|my sale|stuck)\b/i
@@ -25,8 +35,9 @@ export function isLiveChatSellerPayoutHowtoIntent(text: string): boolean {
   const trimmed = text.trim()
   if (!trimmed) return false
   if (SPECIFIC_PAYOUT_LOOKUP.test(trimmed)) return false
+  if (BUYER_PAYOUT_LOOKALIKE.test(trimmed)) return false
   if (SELLER_PAYOUT_HOWTO.test(trimmed)) return true
-  return /\bsold\b/i.test(trimmed) && /\b(money|paid|pay|payout|earnings|cash(?:\s*|-)?out)\b/i.test(trimmed)
+  return SELLER_CONTEXT.test(trimmed) && MONEY_ASK.test(trimmed)
 }
 
 export function liveChatPinnedHelpSlugs(query: string): string[] {

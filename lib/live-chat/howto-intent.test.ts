@@ -13,6 +13,7 @@ describe("live chat seller payout how-to intent", () => {
       true,
     )
     assert.equal(isLiveChatSellerPayoutHowtoIntent("How do I get paid after a sale?"), true)
+    assert.equal(isLiveChatSellerPayoutHowtoIntent("how do I get paid?"), true)
     assert.equal(isLiveChatSellerPayoutHowtoIntent("how do cash outs work"), true)
   })
 
@@ -20,6 +21,16 @@ describe("live chat seller payout how-to intent", () => {
     assert.equal(isLiveChatSellerPayoutHowtoIntent("Where is my payout for order 1042?"), false)
     assert.equal(isLiveChatSellerPayoutHowtoIntent("My sale is still pending — is it stuck?"), false)
     assert.equal(isLiveChatSellerPayoutHowtoIntent("hi there"), false)
+  })
+
+  it("does not treat buyer payment or refund phrasing as a seller cash-out", () => {
+    assert.equal(isLiveChatSellerPayoutHowtoIntent("how do I pay for this board?"), false)
+    assert.equal(isLiveChatSellerPayoutHowtoIntent("I paid for this board"), false)
+    assert.equal(isLiveChatSellerPayoutHowtoIntent("when do I get my money back?"), false)
+    assert.equal(isLiveChatSellerPayoutHowtoIntent("can I get a refund?"), false)
+    assert.equal(isLiveChatSellerPayoutHowtoIntent("I want my money back"), false)
+    assert.ok(liveChatPinnedHelpSlugs("I want a refund").includes("purchase-protection-claim"))
+    assert.ok(liveChatPinnedHelpSlugs("I paid for this board").includes("purchase-protection-claim"))
   })
 
   it("pins payout help for that how-to instead of protection defaults", () => {
