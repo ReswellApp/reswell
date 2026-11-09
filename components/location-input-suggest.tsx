@@ -85,6 +85,11 @@ interface LocationInputSuggestProps {
    * (browse filter sidebar / mobile sheet) so the panel does not drift on Mac/iOS.
    */
   panelPlacement?: "portal" | "inline"
+  /**
+   * Skip the extra input ring while the portaled suggestion panel is open.
+   * Use when a parent already draws the focus chrome.
+   */
+  hidePanelFocusRing?: boolean
 }
 
 const HAS_GOOGLE_KEY = Boolean(
@@ -237,6 +242,7 @@ export function LocationInputSuggest({
   endSlot,
   onEnterWhenPanelClosed,
   panelPlacement = "portal",
+  hidePanelFocusRing = false,
 }: LocationInputSuggestProps) {
   const [open, setOpen] = useState(false)
   const [inputFocused, setInputFocused] = useState(false)
@@ -1202,6 +1208,7 @@ export function LocationInputSuggest({
     !endSlot &&
       panelOpen &&
       !useInlinePanel &&
+      !hidePanelFocusRing &&
       (isAddress
         ? "ring-1 ring-[#5574AD]/30 ring-offset-0"
         : "ring-2 ring-ring/35 ring-offset-2 ring-offset-background"),

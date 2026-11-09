@@ -54,7 +54,8 @@ export function BoardsBrowseLocationFilterButton({ state }: Props) {
         side="bottom"
         sideOffset={8}
         collisionPadding={12}
-        className="w-[min(100vw-1.5rem,20rem)] p-3"
+        aria-label="Location filter"
+        className="w-[min(100vw-1.5rem,21rem)] rounded-2xl border-neutral-200/90 p-3 shadow-lg"
         onPointerDownOutside={(event) => {
           if (isPortaledOverlayTarget(event.target)) event.preventDefault()
         }}
@@ -65,10 +66,11 @@ export function BoardsBrowseLocationFilterButton({ state }: Props) {
           if (isPortaledOverlayTarget(event.target)) event.preventDefault()
         }}
       >
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Location
-        </p>
-        <BoardsBrowseLocationFilter state={state} listboxId="boards-location-toolbar" />
+        <BoardsBrowseLocationFilter
+          state={state}
+          listboxId="boards-location-toolbar"
+          layout="toolbar"
+        />
       </PopoverContent>
     </Popover>
   )
