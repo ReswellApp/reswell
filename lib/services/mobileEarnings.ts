@@ -11,6 +11,7 @@ import { parseDescription } from "@/components/features/earnings/earnings-activi
 import type { EarningsBalanceListingRow } from "@/lib/earnings-balance-listings"
 import { orderIdFromSellerSaleLedger } from "@/lib/earnings-sale-ledger"
 import { getMySellerEarningsTotals } from "@/lib/db/sellerEarningsTotals"
+import { getAdminReswellCreditPilotBundle } from "@/lib/services/reswellCreditPilot"
 import { absolutePublicMediaUrl } from "@/lib/site-metadata"
 import { attachListingsToEarningsTransactions } from "@/lib/services/earningsActivityListings"
 import { getEarningsBalanceListings } from "@/lib/services/earningsBalanceListings"
@@ -188,7 +189,7 @@ export async function getMobileEarningsService(
   const available = Math.round((ready + pending) * 100) / 100
   const cashedOut = Math.max(0, usd(wallet?.lifetime_cashed_out))
 
-  const [totals, activityResult, payoutStatus, balanceListings] = await Promise.all([
+  const [totals, activityResult, payoutStatus, balanceListings, creditPilot] = await Promise.all([
     getMySellerEarningsTotals(supabase),
     wallet
       ? supabase
@@ -212,6 +213,7 @@ export async function getMobileEarningsService(
           readyBalanceUsd: ready,
         })
       : Promise.resolve({ pending: [], ready: [], reversedOrderIds: [] }),
+    getAdminReswellCreditPilotBundle(supabase, userId).catch(() => null),
   ])
   const payout = payoutStatus
     ? payoutCopy(payoutStatus)
@@ -247,6 +249,7 @@ export async function getMobileEarningsService(
   const readyItems = balanceListings.ready.filter((row) => uuidOrNull(row.key)).map((row) => balanceLine(row, "ready"))
 
   const earnedLast30 = Math.max(0, totals?.earnedLast30dUsd ?? 0)
+  const lifetime = Math.max(0, totals?.lifetimeSoldUsd ?? 0)
   const parsed = mobileEarningsSchema.safeParse({
     available_usd: available,
     available_label: money(available),
@@ -256,8 +259,12 @@ export async function getMobileEarningsService(
     pending_label: money(pending),
     cashed_out_usd: cashedOut,
     cashed_out_label: money(cashedOut),
+    lifetime_usd: lifetime,
+    lifetime_label: money(lifetime),
     earned_last_30d_usd: earnedLast30,
     earned_last_30d_label: money(earnedLast30),
+    credit_usd: Math.max(0, creditPilot?.wallet.balanceUsd ?? 0),
+    credit_label: money(Math.max(0, creditPilot?.wallet.balanceUsd ?? 0)),
     payout_label: payout.label,
     payout_detail: payout.detail,
     cash_out_ready: Boolean(payoutStatus?.cashOutReady),

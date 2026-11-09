@@ -6,13 +6,14 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text
 import type { MobileEarnings } from "@reswell/api-contract"
 import { DashboardPageGate } from "@/components/dashboard-page-gate"
 import { EarningsTransfer } from "@/components/earnings-transfer"
+import { MeStatTile } from "@/components/me-stat-tile"
 import { fetchEarnings } from "@/lib/api"
 import { helpTopicHref } from "@/lib/in-app-href"
 import { useAccountResource } from "@/lib/use-account-resource"
 import { fontFamily, useReswellColors } from "@/theme"
 
 type EarningsLine = MobileEarnings["activity"][number]
-type EarningsPane = "menu" | "pending" | "available" | "activity" | "transfer"
+type EarningsPane = "menu" | "pending" | "available" | "activity" | "transfer" | "credit"
 type ActivityFilter = "all" | "pending" | "ready" | "payout" | "refund"
 
 const ACTIVITY_FILTERS: { id: ActivityFilter; label: string }[] = [
@@ -33,7 +34,13 @@ export default function AccountEarningsScreen() {
     <DashboardPageGate
       id="earnings"
       title="Earnings"
-      onBack={pane === "menu" ? undefined : pane === "transfer" ? () => setPane("available") : () => setPane("menu")}
+      onBack={
+        pane === "menu"
+          ? undefined
+          : pane === "transfer"
+            ? () => setPane("available")
+            : () => setPane("menu")
+      }
     >
       {() => (
         <KeyboardAvoidingView
@@ -65,6 +72,8 @@ export default function AccountEarningsScreen() {
                   onReload={earnings.reload}
                   onDone={() => setPane("available")}
                 />
+              ) : pane === "credit" ? (
+                <CreditBalance data={earnings.data} />
               ) : (
                 <EarningsMenu data={earnings.data} onOpen={setPane} />
               )
@@ -83,6 +92,13 @@ function EarningsMenu({ data, onOpen }: { data: MobileEarnings; onOpen: (pane: E
   return (
     <View>
       <Text style={[styles.pageTitle, { color: colors.foreground, fontFamily: fontFamily.headline }]}>Earnings</Text>
+      <View style={[styles.statsBand, { backgroundColor: colors.secondary }]}>
+        <MeStatTile plain accentValue label={"Lifetime\nEarnings"} value={data.lifetime_label} />
+        <View style={[styles.statsDivider, { backgroundColor: colors.border }]} />
+        <MeStatTile plain accentValue label={"Last\n30 Days"} value={data.earned_last_30d_label} />
+        <View style={[styles.statsDivider, { backgroundColor: colors.border }]} />
+        <MeStatTile plain accentValue label={"Available\nEarnings"} value={data.ready_label} />
+      </View>
       <EarningsLink
         icon={<SymbolView name={{ ios: "clock.fill", android: "schedule", web: "schedule" }} size={16} tintColor={colors.background} />}
         title="Pending Release"
@@ -109,6 +125,35 @@ function EarningsMenu({ data, onOpen }: { data: MobileEarnings; onOpen: (pane: E
         onPress={() => router.push(helpTopicHref("selling"))}
       />
       <View style={[styles.rule, { backgroundColor: colors.border }]} />
+      <Text style={[styles.rewardsTitle, { color: colors.foreground, fontFamily: fontFamily.headline }]}>Rewards</Text>
+      <EarningsLink
+        icon={<SymbolView name={{ ios: "gift.fill", android: "redeem", web: "redeem" }} size={16} tintColor={colors.background} />}
+        title="Reswell Credit"
+        amount={data.credit_label}
+        onPress={() => onOpen("credit")}
+      />
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => router.push(helpTopicHref("buying"))}
+        style={[styles.promo, { backgroundColor: "#D9F0D3" }]}
+      >
+        <View style={[styles.promoMark, { backgroundColor: "#3B7D3A" }]}>
+          <SymbolView name={{ ios: "star.fill", android: "star", web: "star" }} size={16} tintColor="#FFFFFF" />
+        </View>
+        <View style={styles.promoCopy}>
+          <Text style={[styles.promoTitle, { color: "#1F5B28", fontFamily: fontFamily.headline }]}>
+            Earn extra Reswell Credit
+          </Text>
+          <Text style={[styles.promoBody, { color: "#1F5B28", fontFamily: fontFamily.text }]}>
+            Get credit on purchases, and you can pay with available earnings at checkout.
+          </Text>
+        </View>
+        <SymbolView
+          name={{ ios: "chevron.right", android: "chevron_right", web: "chevron_right" }}
+          size={16}
+          tintColor="#1F5B28"
+        />
+      </Pressable>
     </View>
   )
 }
@@ -159,6 +204,30 @@ function PendingRelease({ data }: { data: MobileEarnings }) {
         />
       ) : (
         <EarningsLineList items={data.pending_items} />
+      )}
+    </View>
+  )
+}
+
+function CreditBalance({ data }: { data: MobileEarnings }) {
+  const colors = useReswellColors()
+  return (
+    <View>
+      <View style={[styles.balanceBand, { backgroundColor: "#E8F6EA" }]}>
+        <Text style={[styles.balanceEyebrow, { color: "#3B7D3A", fontFamily: fontFamily.text }]}>Reswell Credit</Text>
+        <Text style={[styles.balanceAmount, { color: colors.foreground, fontFamily: fontFamily.headline }]}>
+          {data.credit_label}
+        </Text>
+      </View>
+      {data.credit_usd <= 0 ? (
+        <EarningsEmpty
+          title="No Reswell Credit yet"
+          body="Reswell Credit is store credit you earn on buys and sales. Use it at checkout — it is never cashable, and it is separate from available earnings."
+        />
+      ) : (
+        <Text style={[styles.emptyBody, { color: colors.muted, fontFamily: fontFamily.text, paddingHorizontal: 36, paddingTop: 24 }]}>
+          Reswell Credit is store credit you earn on buys and sales. Use it at checkout — it is never cashable, and it is separate from available earnings.
+        </Text>
       )}
     </View>
   )
@@ -308,7 +377,38 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   scrollContent: { flexGrow: 1, paddingBottom: 48 },
   loading: { fontSize: 15, paddingVertical: 12, paddingHorizontal: 16 },
-  pageTitle: { fontSize: 32, fontWeight: "700", letterSpacing: -0.6, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 18 },
+  pageTitle: { fontSize: 32, fontWeight: "700", letterSpacing: -0.6, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12 },
+  statsBand: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginHorizontal: 16,
+    marginBottom: 10,
+    paddingVertical: 16,
+    paddingHorizontal: 6,
+    borderRadius: 12,
+  },
+  statsDivider: { width: StyleSheet.hairlineWidth, height: 22, marginTop: 5, opacity: 0.7 },
+  rewardsTitle: { fontSize: 28, fontWeight: "700", letterSpacing: -0.5, paddingHorizontal: 16, paddingTop: 22, paddingBottom: 10 },
+  promo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginHorizontal: 16,
+    marginTop: 4,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    borderRadius: 12,
+  },
+  promoMark: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  promoCopy: { flex: 1, gap: 2 },
+  promoTitle: { fontSize: 15, fontWeight: "700" },
+  promoBody: { fontSize: 13, lineHeight: 18 },
   link: {
     flexDirection: "row",
     alignItems: "center",

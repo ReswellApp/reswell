@@ -70,7 +70,7 @@ const SECTION_META_BY_PREFIX: { prefix: string; meta: DashboardSectionMeta }[] =
     prefix: "/dashboard/earnings",
     meta: {
       sectionName: "Earnings",
-      description: "Your marketplace wallet and payouts.",
+      description: "Your sales balance, payouts, and rewards.",
     },
   },
   {
