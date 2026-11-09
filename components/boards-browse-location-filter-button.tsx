@@ -40,8 +40,8 @@ export function BoardsBrowseLocationFilterButton({ state }: Props) {
   function clearLocation(event: MouseEvent<HTMLButtonElement>) {
     event.preventDefault()
     event.stopPropagation()
+    // Clears location, lat, lng, and radius in one URL update.
     state.setLocationQuery("")
-    state.setRadius(null)
     setOpen(false)
   }
 
