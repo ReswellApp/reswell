@@ -28,8 +28,17 @@ interface CaseInboxCommandBarProps {
 
 const WORKFLOW_STATUS_VALUES: SupportCaseStatus[] = [
   "in_progress",
+  "in_review",
+  "waiting_on_you",
   "resolved",
 ]
+
+function workflowSelectValue(status: SupportCaseStatus): SupportCaseStatus {
+  if (status === "resolved") return "resolved"
+  if (status === "waiting_on_you") return "waiting_on_you"
+  if (status === "in_review" || status === "submitted") return "in_review"
+  return "in_progress"
+}
 
 export function CaseInboxCommandBar({
   item,
@@ -46,17 +55,17 @@ export function CaseInboxCommandBar({
 
   return (
     <div
-      className="grid shrink-0 grid-cols-2 gap-x-2 gap-y-1 px-3 py-2 md:flex md:items-center md:gap-3 md:overflow-x-auto md:px-5"
+      className="grid shrink-0 grid-cols-2 gap-x-2 gap-y-1 border-b border-border/40 px-3 py-2 md:flex md:items-center md:gap-3 md:overflow-x-auto md:px-5"
       aria-label="Case workflow"
     >
       <label className="flex min-w-0 items-center gap-1.5 text-[12px] text-muted-foreground">
         Status
         <Select
-          value={item.status === "resolved" ? "resolved" : "in_progress"}
+          value={workflowSelectValue(item.status)}
           onValueChange={(value) => onStatus(value as SupportCaseStatus)}
           disabled={pending}
         >
-          <SelectTrigger className="h-8 min-w-0 flex-1 border-0 bg-transparent px-1 shadow-none text-xs font-medium text-foreground md:h-7 md:w-[132px] md:flex-none">
+          <SelectTrigger className="h-8 min-w-0 flex-1 border-0 bg-transparent px-1 shadow-none text-xs font-medium text-foreground md:h-7 md:w-[148px] md:flex-none">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

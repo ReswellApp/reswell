@@ -181,6 +181,22 @@ export function viewToFilters(view: CaseInboxView): {
   }
 }
 
+const INBOX_VIEWS = new Set<CaseInboxView>([
+  "open",
+  "mine",
+  "unassigned",
+  "new",
+  "waiting",
+  "claims",
+  "overdue",
+  "resolved",
+  "all",
+])
+
+export function isCaseInboxView(value: string | null | undefined): value is CaseInboxView {
+  return Boolean(value && INBOX_VIEWS.has(value as CaseInboxView))
+}
+
 export function inboxViewFromSearchParams(params: {
   view: string | null
   status: string | null
@@ -197,8 +213,28 @@ export function inboxViewFromSearchParams(params: {
           ? "order"
           : "all"
 
-  if (params.view === "resolved" || params.status === "resolved") {
+  if (isCaseInboxView(params.view)) {
+    return { view: params.view, typeOverlay }
+  }
+
+  // Legacy query params from older inbox links.
+  if (params.status === "resolved") {
     return { view: "resolved", typeOverlay }
+  }
+  if (params.status === "waiting") {
+    return { view: "waiting", typeOverlay }
+  }
+  if (params.status === "new") {
+    return { view: "new", typeOverlay }
+  }
+  if (params.assignee === "mine") {
+    return { view: "mine", typeOverlay }
+  }
+  if (params.assignee === "unassigned") {
+    return { view: "unassigned", typeOverlay }
+  }
+  if (typeOverlay === "claims") {
+    return { view: "claims", typeOverlay: "all" }
   }
   return { view: "open", typeOverlay }
 }
