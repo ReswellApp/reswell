@@ -1,5 +1,15 @@
 import { normalizeBoardBrowseRadius } from "@/lib/boards-browse-location"
-import { parseBoardsBrowseCoord } from "@/lib/utils/boards-browse-geocode"
+import {
+  isValidBoardsBrowseLatLng,
+  parseBoardsBrowseCoord,
+} from "@/lib/utils/boards-browse-geocode"
+
+export type BoardsBrowseLocationRadiusInput = {
+  location?: string | null
+  lat?: number | null
+  lng?: number | null
+  radius?: string | null
+}
 
 /** Query flag for the signed-in home-area preference on `/boards`. */
 export const BOARDS_BROWSE_HOME_PARAM = "home"
@@ -46,6 +56,50 @@ export function clearBoardsBrowseGeoParams(params: URLSearchParams): void {
   params.delete("lat")
   params.delete("lng")
   params.delete("radius")
+}
+
+/**
+ * Write location, coords, and radius in one URL mutation.
+ * Radius clicks in the location popover must include the typed/picked place so
+ * `radius=25` never lands without an anchor (nationwide results + a 25 mi chip).
+ */
+export function applyBoardsBrowseLocationRadiusParams(
+  params: URLSearchParams,
+  input: BoardsBrowseLocationRadiusInput,
+): void {
+  if (input.location !== undefined) {
+    const label = input.location?.trim() ?? ""
+    if (!label) {
+      clearBoardsBrowseGeoParams(params)
+      params.delete("pickup")
+      markBoardsBrowseHomeDismissed(params)
+      return
+    }
+    params.set("location", label)
+    const lat = input.lat
+    const lng = input.lng
+    if (
+      lat != null &&
+      lng != null &&
+      Number.isFinite(lat) &&
+      Number.isFinite(lng) &&
+      isValidBoardsBrowseLatLng(lat, lng)
+    ) {
+      params.set("lat", String(lat))
+      params.set("lng", String(lng))
+    } else {
+      params.delete("lat")
+      params.delete("lng")
+    }
+  }
+
+  if (input.radius !== undefined) {
+    const radius = normalizeBoardBrowseRadius(input.radius)
+    if (radius === "any") params.delete("radius")
+    else params.set("radius", radius)
+  }
+
+  markBoardsBrowseHomeDismissed(params)
 }
 
 /** Hard radius cutoff: user chose a distance, not the home ranking preference. */

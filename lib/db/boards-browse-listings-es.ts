@@ -69,7 +69,8 @@ function isLockedEmptyEsResult(input: BoardsBrowseEsPageInput): boolean {
     input.maxPrice != null ||
     Boolean(input.shippingAvailable) ||
     Boolean(input.localPickupAvailable) ||
-    Boolean(input.facets && hasAnyFacetSelection(input.facets))
+    Boolean(input.facets && hasAnyFacetSelection(input.facets)) ||
+    Boolean(input.geo?.radiusMi && input.geo.radiusMi > 0)
   )
 }
 

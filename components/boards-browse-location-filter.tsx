@@ -14,6 +14,7 @@ import { LocationInputSuggest } from "@/components/location-input-suggest"
 import { useBoardsLocationCityRedirect } from "@/components/features/browse/hooks/use-boards-location-city-redirect"
 import type { BoardsFilterState } from "@/components/boards-browse-filter-state"
 import { boardRadiusOptions } from "@/lib/boards-browse-location"
+import { parseBoardsBrowseCoord } from "@/lib/utils/boards-browse-geocode"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 
@@ -33,12 +34,45 @@ export function BoardsBrowseLocationFilter({
   const { toast } = useToast()
   const { goToCityLanding, resolveCityLanding } = useBoardsLocationCityRedirect(state.searchParams)
   const [location, setLocation] = useState(state.location)
+  const [pickedPlace, setPickedPlace] = useState<{
+    label: string
+    lat: number
+    lng: number
+  } | null>(null)
   const [locationLoading, setLocationLoading] = useState(false)
   const isToolbar = layout === "toolbar"
+  const urlLat = state.searchParams.get("lat")
+  const urlLng = state.searchParams.get("lng")
 
   useEffect(() => {
     setLocation(state.location)
-  }, [state.location])
+    const lat = parseBoardsBrowseCoord(urlLat)
+    const lng = parseBoardsBrowseCoord(urlLng)
+    if (state.location.trim() && lat != null && lng != null) {
+      setPickedPlace({ label: state.location, lat, lng })
+    } else if (!state.location.trim()) {
+      setPickedPlace(null)
+    }
+  }, [state.location, urlLat, urlLng])
+
+  function locationRadiusGeo():
+    | { label: string; lat?: number; lng?: number }
+    | undefined {
+    const label = location.trim()
+    if (!label) return undefined
+    const picked =
+      pickedPlace && pickedPlace.label.trim() === label ? pickedPlace : null
+    const urlCoordsMatch = state.location.trim() === label
+    const lat =
+      picked?.lat ?? (urlCoordsMatch ? parseBoardsBrowseCoord(urlLat) : undefined)
+    const lng =
+      picked?.lng ?? (urlCoordsMatch ? parseBoardsBrowseCoord(urlLng) : undefined)
+    return { label, lat, lng }
+  }
+
+  function commitRadius(value: string | null) {
+    state.setRadius(value, locationRadiusGeo())
+  }
 
   async function applyLocationOrCity(opts: {
     label: string
@@ -76,6 +110,9 @@ export function BoardsBrowseLocationFilter({
 
   function handleLocationTextChange(next: string) {
     setLocation(next)
+    if (pickedPlace && next.trim() !== pickedPlace.label.trim()) {
+      setPickedPlace(null)
+    }
     if (!next.trim() && state.location.trim()) {
       state.setLocationQuery("")
     }
@@ -106,6 +143,7 @@ export function BoardsBrowseLocationFilter({
           /* keep default label */
         }
         setLocation(displayName)
+        setPickedPlace({ label: displayName, lat, lng })
         setLocationLoading(false)
         await applyLocationOrCity({ label: displayName, lat, lng })
       },
@@ -130,6 +168,7 @@ export function BoardsBrowseLocationFilter({
       onChange={handleLocationTextChange}
       onPickSuggestion={(place) => {
         setLocation(place.label)
+        setPickedPlace({ label: place.label, lat: place.lat, lng: place.lng })
         void applyLocationOrCity({
           label: place.label,
           lat: place.lat,
@@ -195,7 +234,7 @@ export function BoardsBrowseLocationFilter({
                 key={opt.value}
                 type="button"
                 aria-pressed={selected}
-                onClick={() => state.setRadius(opt.value === "any" ? null : opt.value)}
+                onClick={() => commitRadius(opt.value === "any" ? null : opt.value)}
                 className={cn(
                   "rounded-full px-2.5 py-1 text-[13px] font-medium transition-colors",
                   selected
@@ -222,7 +261,7 @@ export function BoardsBrowseLocationFilter({
       <Select
         name="radius"
         value={state.radius}
-        onValueChange={(v) => state.setRadius(v === "any" ? null : v)}
+        onValueChange={(v) => commitRadius(v === "any" ? null : v)}
       >
         <SelectTrigger
           aria-label="Search radius (miles from location)"

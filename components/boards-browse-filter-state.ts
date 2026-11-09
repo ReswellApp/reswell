@@ -15,7 +15,7 @@ import {
 } from "@/lib/marketplace-slug-metadata"
 import { normalizeBoardBrowseRadius } from "@/lib/boards-browse-location"
 import {
-  clearBoardsBrowseGeoParams,
+  applyBoardsBrowseLocationRadiusParams,
   isBoardsBrowseHomePreference,
   markBoardsBrowseHomeDismissed,
 } from "@/lib/boards-browse-home"
@@ -69,7 +69,10 @@ export type BoardsFilterState = {
   setPriceRange: (min: string | null, max: string | null) => void
   setLocationQuery: (query: string) => void
   setLocationCoords: (label: string, lat: number, lng: number) => void
-  setRadius: (value: string | null) => void
+  setRadius: (
+    value: string | null,
+    geo?: { label: string; lat?: number; lng?: number },
+  ) => void
   setShippingAvailable: (on: boolean) => void
   clearKey: (key: string) => void
   clearAll: () => void
@@ -273,16 +276,9 @@ export function useBoardsFilterState(
         detail: trimmed ? "set" : "clear",
       })
       navigate((params) => {
-        if (trimmed) {
-          params.set("location", trimmed)
-          // Text-only updates must not keep a previous place's coordinates.
-          params.delete("lat")
-          params.delete("lng")
-        } else {
-          clearBoardsBrowseGeoParams(params)
-          params.delete("pickup")
-        }
-        markBoardsBrowseHomeDismissed(params)
+        applyBoardsBrowseLocationRadiusParams(params, {
+          location: trimmed || null,
+        })
       })
     },
     [navigate],
@@ -298,18 +294,22 @@ export function useBoardsFilterState(
       })
       navigate((params) => {
         const wasHomePreference = isBoardsBrowseHomePreference(params.get("home"))
-        params.set("location", label)
-        params.set("lat", String(lat))
-        params.set("lng", String(lng))
+        applyBoardsBrowseLocationRadiusParams(params, {
+          location: label,
+          lat,
+          lng,
+        })
         if (wasHomePreference) params.delete("radius")
-        markBoardsBrowseHomeDismissed(params)
       })
     },
     [navigate],
   )
 
   const setRadius = useCallback(
-    (value: string | null) => {
+    (
+      value: string | null,
+      geo?: { label: string; lat?: number; lng?: number },
+    ) => {
       const trimmed = value?.trim() ?? ""
       logBrowseFacetClick({
         category: "boards",
@@ -318,9 +318,12 @@ export function useBoardsFilterState(
         detail: trimmed ? "set" : "clear",
       })
       navigate((params) => {
-        if (trimmed) params.set("radius", trimmed)
-        else params.delete("radius")
-        markBoardsBrowseHomeDismissed(params)
+        applyBoardsBrowseLocationRadiusParams(params, {
+          location: geo?.label,
+          lat: geo?.lat,
+          lng: geo?.lng,
+          radius: trimmed || null,
+        })
       })
     },
     [navigate],
