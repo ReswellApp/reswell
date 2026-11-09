@@ -46,6 +46,15 @@ describe("isInStockQuantitySale", () => {
       }),
       true,
     )
+    assert.equal(
+      isListingVisibleInPublicSoldFeed({
+        status: "active",
+        stock_quantity: 19,
+        hidden_from_site: true,
+        title: "True Ames Greenough 4A",
+      }),
+      true,
+    )
   })
 
   it("does not treat a relisted unique listing as leftover stock", () => {

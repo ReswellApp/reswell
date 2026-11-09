@@ -1,8 +1,7 @@
--- /sold is a feed of confirmed checkouts.
--- Hide-from-site still removes a listing from browse / PDP. It must not erase a
--- completed order — in-store inventory is hidden on purpose, and checkout can
--- leave a unique item in pending_sale until mark-sold finishes.
--- Off-platform tipped marks stay subject to hide-from-site.
+-- /sold is every confirmed checkout that was not refunded.
+-- Quantity SKUs stay `active` after a unit sells; leftover stock must not hide
+-- that checkout. Hide-from-site still removes a listing from browse / PDP, not
+-- from this feed. Off-platform tipped marks stay subject to hide-from-site.
 
 DROP FUNCTION IF EXISTS public.marketplace_sold_listing_page(
   integer,
@@ -52,7 +51,17 @@ AS $function$
       AND o.is_admin_test = false
       AND l.section = ANY (p_sections)
       AND l.title NOT ILIKE 'Admin seed%'
-      AND l.status IN ('sold', 'active', 'pending_sale')
+      AND l.status IS DISTINCT FROM 'draft'
+      AND NOT EXISTS (
+        SELECT 1
+        FROM public.order_item_returns r
+        WHERE r.status = 'refunded'
+          AND r.order_id = o.id
+          AND (
+            r.order_item_id = oi.id
+            OR (r.order_item_id IS NULL AND r.listing_id = oi.listing_id)
+          )
+      )
       AND (
         (p_brand_id IS NULL AND p_brand_name IS NULL)
         OR l.brand_id = p_brand_id
@@ -92,7 +101,13 @@ AS $function$
       )
       AND l.section = ANY (p_sections)
       AND l.title NOT ILIKE 'Admin seed%'
-      AND l.status IN ('sold', 'active', 'pending_sale')
+      AND l.status IS DISTINCT FROM 'draft'
+      AND NOT EXISTS (
+        SELECT 1
+        FROM public.order_item_returns r
+        WHERE r.status = 'refunded'
+          AND r.order_id = o.id
+      )
       AND (
         (p_brand_id IS NULL AND p_brand_name IS NULL)
         OR l.brand_id = p_brand_id
@@ -145,7 +160,7 @@ AS $function$
       )
       AND l.section = ANY (p_sections)
       AND l.title NOT ILIKE 'Admin seed%'
-      AND l.status IN ('sold', 'active', 'pending_sale')
+      AND l.status IS DISTINCT FROM 'draft'
       AND (
         l.hidden_from_site = false
         OR l.archived_at IS NOT NULL
@@ -198,7 +213,7 @@ COMMENT ON FUNCTION public.marketplace_sold_listing_page(
   text,
   uuid
 ) IS
-  'Newest-page /sold scan. Confirmed checkouts are not gated on hidden_from_site. pending_sale rows stay visible until mark-sold lands.';
+  'Newest-page /sold scan. Each confirmed, non-refunded checkout is a tile — leftover quantity stock does not hide the sale.';
 
 REVOKE ALL ON FUNCTION public.marketplace_sold_listing_page(
   integer,
@@ -255,6 +270,16 @@ AS $function$
     INNER JOIN public.order_items oi ON oi.order_id = o.id
     WHERE o.status = 'confirmed'
       AND o.is_admin_test = false
+      AND NOT EXISTS (
+        SELECT 1
+        FROM public.order_item_returns r
+        WHERE r.status = 'refunded'
+          AND r.order_id = o.id
+          AND (
+            r.order_item_id = oi.id
+            OR (r.order_item_id IS NULL AND r.listing_id = oi.listing_id)
+          )
+      )
 
     UNION ALL
 
@@ -264,6 +289,12 @@ AS $function$
       AND o.is_admin_test = false
       AND o.listing_id IS NOT NULL
       AND NOT EXISTS (SELECT 1 FROM public.order_items oi WHERE oi.order_id = o.id)
+      AND NOT EXISTS (
+        SELECT 1
+        FROM public.order_item_returns r
+        WHERE r.status = 'refunded'
+          AND r.order_id = o.id
+      )
   ),
   tipped_lines AS (
     SELECT sst.listing_id AS lid, MAX(l.price)::numeric AS listing_price
@@ -294,7 +325,7 @@ AS $function$
     FROM sale_lines sl
     INNER JOIN public.listings l ON l.id = sl.lid
     WHERE l.section = ANY(p_sections)
-      AND l.status IN ('sold', 'active', 'pending_sale')
+      AND l.status IS DISTINCT FROM 'draft'
       AND l.title NOT ILIKE 'Admin seed%'
       AND (
         sl.source = 'checkout'
@@ -309,7 +340,7 @@ AS $function$
 $function$;
 
 COMMENT ON FUNCTION public.marketplace_listing_confirmed_sale_stats(text[]) IS
-  'Headline GMS from confirmed checkouts and tipped mark-as-sold rows. Checkouts are not gated on hidden_from_site.';
+  'Headline GMS from confirmed non-refunded checkouts and tipped mark-as-sold rows. Leftover quantity stock does not exclude the sale.';
 
 GRANT EXECUTE ON FUNCTION public.marketplace_listing_confirmed_sale_stats(text[]) TO anon;
 GRANT EXECUTE ON FUNCTION public.marketplace_listing_confirmed_sale_stats(text[]) TO authenticated;

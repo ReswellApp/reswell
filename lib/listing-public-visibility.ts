@@ -64,17 +64,19 @@ export function canShowPeerListingPurchaseActions(params: {
 
 /**
  * Public sold feed / recently sold strips.
- * Confirmed checkout rows (sold / pending_sale) stay visible even when hidden from
- * browse — in-store inventory is hidden on purpose. Leftover-stock `active` rows
- * still require a public, unarchived listing unless they sold at the register.
+ * Confirmed checkout rows stay visible even when hidden from browse. Quantity
+ * leftover stock stays `active` after a unit sells — that checkout is still a sale.
  */
 export function isListingVisibleInPublicSoldFeed(listing: ListingPublicVisibilityFields): boolean {
   if (isAdminSeedListingTitle(listing.title)) return false
   if (listing.status === "sold" || listing.status === "pending_sale") return true
+  if (listing.status === "active" && Math.floor(Number(listing.stock_quantity) || 0) > 0) {
+    return true
+  }
   if (listing.hidden_from_site && !listing.archived_at && !listing.soldViaAdminTerminal) {
     return false
   }
-  return isInStockQuantitySale(listing)
+  return false
 }
 
 /**

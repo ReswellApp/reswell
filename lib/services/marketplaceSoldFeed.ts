@@ -115,7 +115,7 @@ async function hydrateSoldFeedListings(
     .from("listings")
     .select(SOLD_LISTING_SELECT)
     .in("id", orderedListingIds)
-    .in("status", ["sold", "active", "pending_sale"])
+    .neq("status", "draft")
 
   if (error) {
     console.error("[marketplaceSoldFeed] listings fetch:", error.message)

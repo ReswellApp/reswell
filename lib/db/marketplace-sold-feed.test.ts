@@ -45,19 +45,23 @@ describe("marketplace sold feed RPC", () => {
     assert.doesNotMatch(src, /if \(options\.cursor\?\.saleLineId\)/)
   })
 
-  it("lets confirmed checkouts onto /sold even when the listing is hidden or pending_sale", () => {
+  it("lets confirmed checkouts onto /sold even when leftover quantity stock remains", () => {
     const sql = readRepo(
       "supabase/migrations/20271211120000_sold_feed_confirmed_checkout_visibility.sql",
     )
-    assert.match(sql, /l\.status IN \('sold', 'active', 'pending_sale'\)/)
-    assert.match(
-      sql,
-      /Confirmed checkouts are not gated on hidden_from_site/,
-    )
+    assert.match(sql, /l\.status IS DISTINCT FROM 'draft'/)
+    assert.match(sql, /leftover stock must not hide/)
+    assert.match(sql, /leftover quantity stock does not hide the sale/)
+    assert.match(sql, /r\.status = 'refunded'/)
     const checkoutArm = sql.slice(
       sql.indexOf("checkout_lines AS"),
       sql.indexOf("legacy_lines AS"),
     )
     assert.doesNotMatch(checkoutArm, /hidden_from_site/)
+    assert.doesNotMatch(checkoutArm, /stock_quantity/)
+    assert.doesNotMatch(checkoutArm, /l\.status IN \('sold'/)
+    const hydrate = readRepo("lib/services/marketplaceSoldFeed.ts")
+    assert.match(hydrate, /\.neq\("status", "draft"\)/)
+    assert.doesNotMatch(hydrate, /\.in\("status", \["sold", "active"/)
   })
 })
