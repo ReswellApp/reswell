@@ -31,11 +31,21 @@ import {
 import { StripeConnectSetupDialog } from "@/components/features/earnings/stripe-connect-setup-dialog"
 import { PayoutRequirementsChecklist } from "@/components/features/earnings/payout-requirements-checklist"
 import type { StripeConnectStatusPayload, PayoutSetupStatus } from "@/lib/utils/stripe-connect-status"
-import { AlertCircle, Building2, CheckCircle2, Loader2, Shield, Trash2, Zap } from "lucide-react"
+import { AlertCircle, Building2, CheckCircle2, ChevronDown, Loader2, Shield, Trash2, Zap } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { bankTransferBadge } from "@/lib/utils/stripe-connect-transfer-status"
+import {
+  formatPayoutAmount,
+  historyTriggerSummary,
+  transferNeedsAttention,
+} from "@/lib/utils/stripe-bank-transfer-history"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 
 /** Mirrors Stripe Connect external bank accounts returned by `/api/stripe/connect/status`. */
 export interface StripeConnectBankAccountRow {
@@ -159,6 +169,134 @@ function TransferStatusBadge({
     <Badge variant="secondary" className="bg-muted text-muted-foreground">
       {badge.label}
     </Badge>
+  )
+}
+
+function BankTransferHistoryList({ rows }: { rows: StripeTransferHistoryRow[] }) {
+  return (
+    <ul className="space-y-2.5">
+      {rows.map((row) => {
+        const feeRaw = row.fee_amount
+        const feeNum =
+          feeRaw != null && feeRaw !== ""
+            ? typeof feeRaw === "string"
+              ? parseFloat(feeRaw)
+              : feeRaw
+            : 0
+        const isInstant = row.payout_speed?.toLowerCase() === "instant"
+        const deposit = bankTransferBadge({
+          status: row.status,
+          payoutSpeed: row.payout_speed,
+          bankPayoutStatus: row.bank_payout_status,
+          expectedArrivalAt: row.expected_arrival_at,
+        })
+        const ref = row.stripe_payout_id?.trim() || row.stripe_transfer_id?.trim() || "—"
+        return (
+          <li
+            key={row.id}
+            className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm border-b border-border/60 pb-2 last:border-0 last:pb-0"
+          >
+            <span className="text-muted-foreground tabular-nums w-[7.5rem] shrink-0">
+              {new Date(row.created_at).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}
+            </span>
+            <span className="font-medium tabular-nums shrink-0 inline-flex flex-wrap items-center gap-2">
+              ${formatPayoutAmount(row.amount)}
+              {isInstant ? (
+                <Badge
+                  variant="secondary"
+                  className="text-[10px] uppercase tracking-wide h-5 px-1.5"
+                >
+                  Instant
+                </Badge>
+              ) : null}
+              {Number.isFinite(feeNum) && feeNum > 0 ? (
+                <span className="text-xs font-normal text-muted-foreground tabular-nums">
+                  fee ${feeNum.toFixed(2)}
+                </span>
+              ) : null}
+            </span>
+            <span className="text-muted-foreground truncate min-w-0 font-mono text-[11px] sm:text-xs">
+              {ref}
+            </span>
+            <span className="ml-auto shrink-0 inline-flex items-center gap-2">
+              {deposit.hint ? (
+                <span className="text-xs text-muted-foreground tabular-nums">{deposit.hint}</span>
+              ) : null}
+              <TransferStatusBadge
+                status={row.status}
+                payoutSpeed={row.payout_speed}
+                bankPayoutStatus={row.bank_payout_status}
+                expectedArrivalAt={row.expected_arrival_at}
+              />
+            </span>
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
+function BankTransferHistoryPanel({
+  transferHistory,
+}: {
+  transferHistory: StripeTransferHistoryRow[]
+}) {
+  const [open, setOpen] = useState(() => transferHistory.some(transferNeedsAttention))
+
+  if (transferHistory.length === 0) {
+    return (
+      <div className="pt-2 border-t border-border/60">
+        <h3 className="text-sm font-semibold mb-3">Bank transfer history</h3>
+        <p className="text-sm text-muted-foreground">No bank transfers yet.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="pt-2 border-t border-border/60">
+      <Collapsible open={open} onOpenChange={setOpen}>
+        <CollapsibleTrigger asChild>
+          <button
+            type="button"
+            className={cn(
+              "flex w-full items-center gap-3 rounded-lg py-1.5 text-left",
+              "-mx-1 px-1 hover:bg-muted/40",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            )}
+          >
+            <span className="min-w-0 flex-1">
+              <h3 className="text-sm font-semibold">Bank transfer history</h3>
+              <span className="mt-0.5 block text-xs text-muted-foreground">
+                {historyTriggerSummary(transferHistory)}
+              </span>
+            </span>
+            <ChevronDown
+              className={cn(
+                "h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200",
+                open && "rotate-180",
+              )}
+              aria-hidden
+            />
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <p className="text-xs text-muted-foreground leading-snug mt-3 mb-3">
+            New payouts appear here right away.{" "}
+            <span className="text-foreground font-medium">Processing</span> means the deposit has not
+            reached your bank yet. <span className="text-foreground font-medium">Arrives</span> is the
+            day Stripe expects it. <span className="text-foreground font-medium">Sent</span> means that
+            day has arrived, shown as Deposit. Your bank can still take the rest of the day to post it.
+          </p>
+          <div className="max-h-80 overflow-y-auto overscroll-contain pr-1">
+            <BankTransferHistoryList rows={transferHistory} />
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
+    </div>
   )
 }
 
@@ -735,86 +873,7 @@ export function StripeBankPayoutSection({
             ) : null}
           </div>
 
-          <div className="pt-2 border-t border-border/60">
-            <h3 className="text-sm font-semibold mb-3">Bank transfer history</h3>
-            <p className="text-xs text-muted-foreground leading-snug mb-3">
-              New payouts appear here right away.{" "}
-              <span className="text-foreground font-medium">Processing</span> means the deposit has not reached your
-              bank yet. <span className="text-foreground font-medium">Arrives</span> is the day Stripe expects it.{" "}
-              <span className="text-foreground font-medium">Sent</span> means that day has arrived, shown as Deposit.
-              Your bank can still take the rest of the day to post it.
-            </p>
-            {transferHistory.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No bank transfers yet.</p>
-            ) : (
-              <ul className="space-y-2.5">
-                {transferHistory.map((row) => {
-                  const amt =
-                    typeof row.amount === "string" ? parseFloat(row.amount) : row.amount
-                  const feeRaw = row.fee_amount
-                  const feeNum =
-                    feeRaw != null && feeRaw !== ""
-                      ? typeof feeRaw === "string"
-                        ? parseFloat(feeRaw)
-                        : feeRaw
-                      : 0
-                  const isInstant = row.payout_speed?.toLowerCase() === "instant"
-                  const deposit = bankTransferBadge({
-                    status: row.status,
-                    payoutSpeed: row.payout_speed,
-                    bankPayoutStatus: row.bank_payout_status,
-                    expectedArrivalAt: row.expected_arrival_at,
-                  })
-                  const ref =
-                    row.stripe_payout_id?.trim() || row.stripe_transfer_id?.trim() || "—"
-                  return (
-                    <li
-                      key={row.id}
-                      className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm border-b border-border/60 pb-2 last:border-0 last:pb-0"
-                    >
-                      <span className="text-muted-foreground tabular-nums w-[7.5rem] shrink-0">
-                        {new Date(row.created_at).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })}
-                      </span>
-                      <span className="font-medium tabular-nums shrink-0 inline-flex flex-wrap items-center gap-2">
-                        ${Number.isFinite(amt) ? amt.toFixed(2) : row.amount}
-                        {isInstant ? (
-                          <Badge
-                            variant="secondary"
-                            className="text-[10px] uppercase tracking-wide h-5 px-1.5"
-                          >
-                            Instant
-                          </Badge>
-                        ) : null}
-                        {Number.isFinite(feeNum) && feeNum > 0 ? (
-                          <span className="text-xs font-normal text-muted-foreground tabular-nums">
-                            fee ${feeNum.toFixed(2)}
-                          </span>
-                        ) : null}
-                      </span>
-                      <span className="text-muted-foreground truncate min-w-0 font-mono text-[11px] sm:text-xs">
-                        {ref}
-                      </span>
-                      <span className="ml-auto shrink-0 inline-flex items-center gap-2">
-                        {deposit.hint ? (
-                          <span className="text-xs text-muted-foreground tabular-nums">{deposit.hint}</span>
-                        ) : null}
-                        <TransferStatusBadge
-                          status={row.status}
-                          payoutSpeed={row.payout_speed}
-                          bankPayoutStatus={row.bank_payout_status}
-                          expectedArrivalAt={row.expected_arrival_at}
-                        />
-                      </span>
-                    </li>
-                  )
-                })}
-              </ul>
-            )}
-          </div>
+          <BankTransferHistoryPanel transferHistory={transferHistory} />
         </CardContent>
       </Card>
 
