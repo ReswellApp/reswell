@@ -55,7 +55,8 @@ function footerHint(
   if (hasBuyerActions && expiresAt) {
     return (
       <>
-        Accept or decline <RelativeTime iso={expiresAt} formatLabel={formatDistanceToNowLabel} />.
+        Accept & checkout or decline{" "}
+        <RelativeTime iso={expiresAt} formatLabel={formatDistanceToNowLabel} />.
       </>
     )
   }
@@ -75,10 +76,10 @@ function footerHint(
     return "This offer is closed."
   }
   if (kind === "accepted" && hasCheckout) {
-    return "Pay at your agreed price. You’re not required to complete a purchase."
+    return "Continue to checkout to pay at your agreed price."
   }
   if (kind === "accepted") {
-    return "Complete checkout when you’re ready."
+    return "Continue to checkout to finish this purchase."
   }
   return null
 }
@@ -102,7 +103,7 @@ export function OfferLegacyMirrorCard({
 
 /**
  * Renders seller (or system) negotiation outcomes in the same visual language as `OfferMessageCard`.
- * Buyers get Accept / Decline on open counters, and Checkout on accepted offers.
+ * Buyers get Accept & checkout / Decline on open counters, and Checkout on accepted offers.
  */
 export function OfferNegotiationEventCard({
   kind,

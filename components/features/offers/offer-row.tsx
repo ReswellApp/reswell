@@ -337,7 +337,7 @@ export function OfferRow({
                   type="button"
                   onClick={() => onViewCounterOpen?.(offer)}
                 >
-                  Accept or decline
+                  Accept & checkout
                 </Button>
               ) : null}
               {showRespond ? (

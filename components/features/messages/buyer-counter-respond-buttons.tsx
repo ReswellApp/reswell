@@ -1,15 +1,18 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { respondToCounterOfferAction } from "@/lib/actions/offerCounterRespond"
+import { acceptedOfferCheckoutHref } from "@/lib/listing-href"
 import { cn } from "@/lib/utils"
 
 /**
  * Inline Accept / Decline for an open seller counter (thread cards).
  * Same server action as the counteroffer dialog — no extra confirmation step.
+ * Accept sends the buyer straight to checkout at the agreed price.
  */
 export function BuyerCounterRespondButtons({
   offerId,
@@ -20,6 +23,7 @@ export function BuyerCounterRespondButtons({
   onCompleted: () => void | Promise<void>
   className?: string
 }) {
+  const router = useRouter()
   const [busy, setBusy] = useState<"accept" | "decline" | null>(null)
 
   async function run(action: "accept" | "decline") {
@@ -30,7 +34,18 @@ export function BuyerCounterRespondButtons({
         toast.error(result.error)
         return
       }
-      toast.success(action === "accept" ? "Counteroffer accepted" : "Counteroffer declined")
+      if (action === "accept") {
+        const checkoutHref =
+          "checkoutHref" in result && typeof result.checkoutHref === "string"
+            ? result.checkoutHref
+            : acceptedOfferCheckoutHref(offerId)
+        toast.success("Offer accepted — continue to checkout")
+        // Navigate immediately so a slow thread refresh cannot leave Accept spinning.
+        router.push(checkoutHref)
+        void onCompleted()
+        return
+      }
+      toast.success("Offer declined")
       await onCompleted()
     } finally {
       setBusy(null)
@@ -46,7 +61,11 @@ export function BuyerCounterRespondButtons({
         disabled={busy !== null}
         onClick={() => void run("accept")}
       >
-        {busy === "accept" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : "Accept"}
+        {busy === "accept" ? (
+          <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+        ) : (
+          "Accept & checkout"
+        )}
       </Button>
       <Button
         type="button"
