@@ -13,6 +13,7 @@ import {
 } from '@/lib/utils/dashboard-display-styles'
 import type { MessagePolicyReasonCode } from '@/lib/messages/fraud-reason-codes'
 import type { MarketplaceMessageAttachment } from '@/lib/validations/marketplace-message-attachment'
+import type { OptimisticMediaDraft } from '@/components/features/messages/message-media-send-button'
 
 type SentMediaMessage = {
   id: string
@@ -39,9 +40,18 @@ export interface MessageComposerBarProps {
   media?: {
     conversationId: string | null
     disabled?: boolean
-    onSent: (message: SentMediaMessage) => void
-    onBlockedPolicy?: (originalContent: string, reasonCode: MessagePolicyReasonCode) => void
+    onSent: (message: SentMediaMessage, draftId: string) => void
+    onBlockedPolicy?: (
+      originalContent: string,
+      reasonCode: MessagePolicyReasonCode,
+      draftId?: string,
+    ) => void
     ensureConversationId?: () => Promise<string | null>
+    onOptimistic?: (draft: OptimisticMediaDraft) => void
+    onProgress?: (draftId: string, progress: number) => void
+    onFailed?: (draftId: string) => void
+    onDismiss?: (draftId: string) => void
+    registerRetry?: (retry: (draftId: string) => void) => void
   }
 }
 
@@ -98,7 +108,12 @@ export function MessageComposerBar({
             onSent={media.onSent}
             onBlockedPolicy={media.onBlockedPolicy}
             ensureConversationId={media.ensureConversationId}
-            onDraftUiChange={handleDraftUiChange}
+            onDraftUiChange={media.onOptimistic ? undefined : handleDraftUiChange}
+            onOptimistic={media.onOptimistic}
+            onProgress={media.onProgress}
+            onFailed={media.onFailed}
+            onDismiss={media.onDismiss}
+            registerRetry={media.registerRetry}
           />
         ) : null}
         {leadingActions}
