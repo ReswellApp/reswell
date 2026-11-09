@@ -76,6 +76,10 @@ describe("admin analytics retention policy", () => {
     assert.match(migration, /only completed UTC dates may be rolled up/)
     assert.match(migration, /CREATE TABLE IF NOT EXISTS public\.site_traffic_daily/)
     assert.match(migration, /NOTIFY pgrst, 'reload schema'/)
+    assert.doesNotMatch(migration, /now\(\) AS current_time/)
+    assert.match(migration, /now\(\) AS as_of/)
+    assert.match(migration, /p\.as_of/)
+    assert.match(migration, /w\.as_of/)
   })
 
   it("keeps scheduled backfill separate from raw pruning", async () => {
@@ -143,6 +147,9 @@ describe("admin analytics retention policy", () => {
     }
 
     const rollup = await readMigrationBySuffix("_admin_analytics_daily_rollups.sql")
+    const repair = await readMigrationBySuffix(
+      "_admin_analytics_rollup_dashboard_as_of.sql",
+    )
     const retention = await readMigrationBySuffix(
       "_async_recently_viewed_retention.sql",
     )
@@ -153,12 +160,25 @@ describe("admin analytics retention policy", () => {
 
     assert.notEqual(rollup.version, "20271008120000")
     assert.equal(balanceSheet.version, "20271008120000")
+    assert.ok(repair.version > rollup.version, repair.filename)
     assert.equal(filesByVersion.get(rollup.version)?.length, 1, rollup.filename)
+    assert.equal(filesByVersion.get(repair.version)?.length, 1, repair.filename)
     assert.equal(filesByVersion.get(retention.version)?.length, 1, retention.filename)
     assert.equal(filesByVersion.get(geo.version)?.length, 1, geo.filename)
     assert.equal(
-      new Set([rollup.version, retention.version, geo.version]).size,
-      3,
+      new Set([rollup.version, repair.version, retention.version, geo.version]).size,
+      4,
     )
+    assert.doesNotMatch(repair.sql, /now\(\) AS current_time/)
+    assert.match(repair.sql, /now\(\) AS as_of/)
+    assert.match(
+      repair.sql,
+      /CREATE OR REPLACE FUNCTION public\.admin_site_traffic_dashboard/,
+    )
+    assert.match(
+      repair.sql,
+      /CREATE OR REPLACE FUNCTION public\.klaviyo_event_log_analytics/,
+    )
+    assert.match(repair.sql, /NOTIFY pgrst, 'reload schema'/)
   })
 })
