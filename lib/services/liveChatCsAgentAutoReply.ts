@@ -39,6 +39,7 @@ import {
 } from "@/lib/services/liveChatHumanFeel"
 import { routeLiveChatWriterWithJev } from "@/lib/llm/jev-live-chat-router"
 import { liveChatCsAgentWriterModel } from "@/lib/live-chat/writer-route"
+import { liveChatEmailSafeReplyContent } from "@/lib/live-chat/klaviyo-policy"
 import { notifyLiveChatReplyViaKlaviyo } from "@/lib/services/liveChatKlaviyoReply"
 import { shouldHonorLiveChatTicketClose } from "@/lib/utils/live-chat-support-ticket"
 
@@ -92,7 +93,7 @@ async function persistTeamReply(
   void notifyLiveChatReplyViaKlaviyo(svc, {
     session: { ...session, support_case_id: caseId ?? session.support_case_id },
     messageId: message.id,
-    content: message.content,
+    content: liveChatEmailSafeReplyContent(message.content),
   })
 
   return message

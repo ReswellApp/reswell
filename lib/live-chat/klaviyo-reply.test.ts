@@ -35,6 +35,17 @@ describe("buildLiveChatKlaviyoReplyPayload", () => {
     assert.equal(payload?.externalId, "user-1")
   })
 
+  it("emails a reopen ask instead of widget-only tap copy", () => {
+    const payload = buildLiveChatKlaviyoReplyPayload({
+      ...base,
+      content: "Tap the order below and I'll look that one up.",
+    })
+    assert.ok(payload)
+    assert.match(payload.response, /reopen the conversation/i)
+    assert.doesNotMatch(payload.response, /tap the order below/i)
+    assert.equal(payload.ticketUrl, "https://www.reswell.app/?chat=lc_a1b2c3d4e5f67890")
+  })
+
   it("skips when email, body, case, message, or public id is missing", () => {
     assert.equal(buildLiveChatKlaviyoReplyPayload({ ...base, visitorEmail: null }), null)
     assert.equal(buildLiveChatKlaviyoReplyPayload({ ...base, content: "  " }), null)
