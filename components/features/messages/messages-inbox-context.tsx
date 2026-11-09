@@ -28,6 +28,11 @@ import {
   UNREAD_COUNT_REFRESH_EVENT,
   type ConversationThreadOpenedDetail,
 } from "@/lib/utils/unread-message-count-events"
+import {
+  NAV_MESSAGES_PREVIEW_CONVERSATION_LIMIT,
+  readNavMessagesPreviewCache,
+  writeNavMessagesPreviewCache,
+} from "@/lib/utils/nav-messages-preview-cache"
 
 interface MessagesInboxContextValue {
   currentUserId: string
@@ -80,6 +85,19 @@ export function MessagesInboxProvider({
     )
     setNotifications(initialNotifications)
   }, [initialConversations, initialNotifications])
+
+  useEffect(() => {
+    if (conversations.length === 0 && notifications.length === 0) {
+      const existing = readNavMessagesPreviewCache(userId)
+      if (existing && (existing.conversations.length > 0 || existing.notifications.length > 0)) {
+        return
+      }
+    }
+    writeNavMessagesPreviewCache(userId, {
+      conversations: conversations.slice(0, NAV_MESSAGES_PREVIEW_CONVERSATION_LIMIT),
+      notifications,
+    })
+  }, [userId, conversations, notifications])
 
   const refreshInbox = useCallback(async () => {
     const fresh = await refreshMessagesInbox()
