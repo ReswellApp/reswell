@@ -35,6 +35,11 @@ import {
   isSupportActivityType,
 } from "@/lib/utils/messages-inbox-activity"
 import { formatInboxChatPreviewText } from "@/lib/utils/messages-inbox-preview"
+import {
+  isNavMessagesPreviewCacheStale,
+  readNavMessagesPreviewCache,
+  writeNavMessagesPreviewCache,
+} from "@/lib/utils/nav-messages-preview-cache"
 import { cn } from "@/lib/utils"
 import {
   CONVERSATION_INBOX_ACTIVITY_EVENT,
@@ -367,12 +372,38 @@ export function NavMessagesDropdown({
     unreadSupport > 0 ? "activity" : "messages",
   )
   const [loading, setLoading] = useState(false)
-  const [hasLoaded, setHasLoaded] = useState(false)
-  const [conversations, setConversations] = useState<InboxConversationRow[]>([])
-  const [notifications, setNotifications] = useState<MessagesInboxNotification[]>([])
+  const [hasLoaded, setHasLoaded] = useState(
+    () => readNavMessagesPreviewCache(userId) != null,
+  )
+  const [conversations, setConversations] = useState<InboxConversationRow[]>(
+    () => readNavMessagesPreviewCache(userId)?.conversations ?? [],
+  )
+  const [notifications, setNotifications] = useState<MessagesInboxNotification[]>(
+    () => readNavMessagesPreviewCache(userId)?.notifications ?? [],
+  )
   const loadGenerationRef = useRef(0)
   const openRef = useRef(open)
+  const userIdRef = useRef(userId)
+  const conversationsRef = useRef(conversations)
+  const notificationsRef = useRef(notifications)
   openRef.current = open
+  userIdRef.current = userId
+  conversationsRef.current = conversations
+  notificationsRef.current = notifications
+
+  // Shop-switch / remount: rehydrate from the module cache for this inbox user.
+  useEffect(() => {
+    const cached = readNavMessagesPreviewCache(userId)
+    if (cached) {
+      setConversations(cached.conversations)
+      setNotifications(cached.notifications)
+      setHasLoaded(true)
+      return
+    }
+    setConversations([])
+    setNotifications([])
+    setHasLoaded(false)
+  }, [userId])
 
   const activityNotifications = useMemo(
     () => filterInboxActivityNotifications(notifications),
@@ -388,11 +419,29 @@ export function NavMessagesDropdown({
     [conversations, userId],
   )
   const previewActivity = activityNotifications.slice(0, NAV_PREVIEW_LIMIT)
-  // Keep prior rows visible while refreshing — only blank on the first open.
+  // Keep prior / cached rows visible while refreshing — only blank with no cache.
   const showLoading = loading && !hasLoaded
+
+  const persistPreview = useCallback(
+    (
+      nextConversations: InboxConversationRow[],
+      nextNotifications: MessagesInboxNotification[],
+      inboxUserId = userIdRef.current,
+    ) => {
+      writeNavMessagesPreviewCache(inboxUserId, {
+        conversations: nextConversations,
+        notifications: nextNotifications,
+      })
+      setConversations(nextConversations)
+      setNotifications(nextNotifications)
+      setHasLoaded(true)
+    },
+    [],
+  )
 
   const loadInbox = useCallback(async () => {
     const generation = ++loadGenerationRef.current
+    const inboxUserId = userIdRef.current
     setLoading(true)
     try {
       const fresh = await refreshMessagesInbox({
@@ -400,15 +449,27 @@ export function NavMessagesDropdown({
       })
       if (generation !== loadGenerationRef.current) return
       if ("error" in fresh) return
-      setConversations((current) => mergeInboxConversationSnapshots(current, fresh.conversations))
-      setNotifications(fresh.notifications)
-      setHasLoaded(true)
+      // Drop the response if the signed-in inbox user changed mid-flight.
+      if (inboxUserId !== userIdRef.current) return
+
+      const merged = mergeInboxConversationSnapshots(
+        conversationsRef.current,
+        fresh.conversations,
+      )
+      persistPreview(merged, fresh.notifications, inboxUserId)
     } finally {
       if (generation === loadGenerationRef.current) {
         setLoading(false)
       }
     }
-  }, [])
+  }, [persistPreview])
+
+  const prefetchInboxIfStale = useCallback(() => {
+    if (!isNavMessagesPreviewCacheStale(readNavMessagesPreviewCache(userIdRef.current))) {
+      return
+    }
+    void loadInbox()
+  }, [loadInbox])
 
   useEffect(() => {
     if (!open) return
@@ -419,19 +480,25 @@ export function NavMessagesDropdown({
     function onInboxRefresh() {
       // Badge-only `unreadCountRefresh` must not re-fetch the panel — opening the
       // dropdown already dispatches that event, which previously stacked loads.
+      // Closed-panel content stays warm via the module cache + local activity patches;
+      // open always revalidates.
       if (openRef.current) void loadInbox()
     }
     function onThreadOpened(event: Event) {
       const detail = (event as CustomEvent<ConversationThreadOpenedDetail>).detail
       if (!detail?.conversationId) return
-      setConversations((current) =>
-        markConversationMessagesReadLocally(current, detail.conversationId, userId),
+      const next = markConversationMessagesReadLocally(
+        conversationsRef.current,
+        detail.conversationId,
+        userId,
       )
+      persistPreview(next, notificationsRef.current, userId)
     }
     function onInboxActivity(event: Event) {
       const detail = (event as CustomEvent<InboxThreadActivity>).detail
       if (!detail?.conversationId) return
-      setConversations((current) => applyInboxThreadActivity(current, detail))
+      const next = applyInboxThreadActivity(conversationsRef.current, detail)
+      persistPreview(next, notificationsRef.current, userId)
     }
     window.addEventListener(MESSAGES_INBOX_REFRESH_EVENT, onInboxRefresh)
     window.addEventListener(CONVERSATION_THREAD_OPENED_EVENT, onThreadOpened)
@@ -441,7 +508,7 @@ export function NavMessagesDropdown({
       window.removeEventListener(CONVERSATION_THREAD_OPENED_EVENT, onThreadOpened)
       window.removeEventListener(CONVERSATION_INBOX_ACTIVITY_EVENT, onInboxActivity)
     }
-  }, [loadInbox, userId])
+  }, [loadInbox, persistPreview, userId])
 
   const handleOpenChange = useCallback(
     (next: boolean) => {
@@ -464,14 +531,15 @@ export function NavMessagesDropdown({
       setTab(next)
       if (next === "activity" && unreadActivityCount > 0) {
         void markInboxNotificationsRead().then(() => {
-          setNotifications((prev) =>
-            prev.map((n) => (isSupportActivityType(n.type) ? n : { ...n, is_read: true })),
+          const updated = notificationsRef.current.map((n) =>
+            isSupportActivityType(n.type) ? n : { ...n, is_read: true },
           )
+          persistPreview(conversationsRef.current, updated, userId)
           window.dispatchEvent(new CustomEvent("unreadCountRefresh"))
         })
       }
     },
-    [unreadActivityCount],
+    [persistPreview, unreadActivityCount, userId],
   )
 
   const navigateAndClose = useCallback(
@@ -508,6 +576,8 @@ export function NavMessagesDropdown({
       )}
       aria-label={triggerIcon === "bell" ? "Notifications" : "Messages and activity"}
       aria-expanded={open}
+      onPointerEnter={prefetchInboxIfStale}
+      onFocus={prefetchInboxIfStale}
       onClick={isMobile ? () => handleOpenChange(true) : undefined}
     >
       <TriggerIcon className={cn("h-6 w-6", iconClassName)} strokeWidth={iconStrokeWidth} />
