@@ -15,6 +15,7 @@ import {
   DIMENSION_PHOTO_JEV_DIMS_CRITERIA,
   DIMENSION_PHOTO_JEV_DIMS_INSTRUCTIONS,
   DIMENSION_PHOTO_JEV_GATEWAY_MODEL,
+  DIMENSION_PHOTO_JEV_MATCH_READY_INSTRUCTIONS,
   DIMENSION_PHOTO_JEV_NEXT_CRITERIA,
   DIMENSION_PHOTO_JEV_NEXT_INSTRUCTIONS,
   DIMENSION_PHOTO_JEV_PHOTO_CRITERIA,
@@ -114,6 +115,10 @@ export async function verifyDimensionPhotoWithJev(
           type: "boolean",
           instructions: DIMENSION_PHOTO_JEV_VOLUME_INSTRUCTIONS,
         },
+        match_ready: {
+          type: "boolean",
+          instructions: DIMENSION_PHOTO_JEV_MATCH_READY_INSTRUCTIONS,
+        },
         next_action: {
           type: "choice",
           instructions: DIMENSION_PHOTO_JEV_NEXT_INSTRUCTIONS,
@@ -132,6 +137,7 @@ export async function verifyDimensionPhotoWithJev(
     const dimsVerdict = parseDimensionPhotoJevDimsVerdict(result.answers.dims.choice)
     let nextAction = parseDimensionPhotoJevNextAction(result.answers.next_action.choice)
     const volumeNullProbability = booleanProbability(result.answers.volume_should_be_null)
+    const matchReadyProbability = booleanProbability(result.answers.match_ready)
 
     // Honest guardrails: never invent scores; clamp impossible retries.
     if (
@@ -142,7 +148,13 @@ export async function verifyDimensionPhotoWithJev(
         photoVerdict === "reject" || dimsVerdict === "bad" ? "distrust" : "keep"
     }
 
-    if (!photoVerdict && !dimsVerdict && !nextAction && volumeNullProbability == null) {
+    if (
+      !photoVerdict &&
+      !dimsVerdict &&
+      !nextAction &&
+      volumeNullProbability == null &&
+      matchReadyProbability == null
+    ) {
       return fallbackDimensionPhotoJevReview(
         "Jev returned no usable photo/dims/next answers.",
       )
@@ -153,14 +165,19 @@ export async function verifyDimensionPhotoWithJev(
       photoVerdict,
       dimsVerdict,
       volumeNullProbability,
+      matchReadyProbability,
       volumeCleared: false,
       nextAction,
       retriedWithExamples: Boolean(input.retriedWithExamples),
+      withheldFromReview: false,
       reason: [
         photoVerdict ? `photo ${photoVerdict}` : null,
         dimsVerdict ? `dims ${dimsVerdict}` : null,
         volumeNullProbability != null
           ? `volume_null p=${volumeNullProbability.toFixed(2)}`
+          : null,
+        matchReadyProbability != null
+          ? `match_ready p=${matchReadyProbability.toFixed(2)}`
           : null,
         nextAction ? `next ${nextAction}` : null,
       ]

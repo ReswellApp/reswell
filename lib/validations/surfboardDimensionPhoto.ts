@@ -24,6 +24,12 @@ export type SurfboardDimensionPhotoRefSource =
 /** Photo pick and dims read must each hit this rated accuracy before we treat the harness as ready. */
 export const SURFBOARD_DIMENSION_PHOTO_MATCH_TARGET = 0.95
 
+/**
+ * Per-match publish confidence. Below this, do not show the row in
+ * /admin/dimension-photo-match (still stored as a scan marker so listings are not re-queued).
+ */
+export const SURFBOARD_DIMENSION_PHOTO_MATCH_CONFIDENCE_GATE = 0.9
+
 /** Both Photo and Dims accuracy must clear the target (Overall alone is not enough). */
 export function surfboardDimensionPhotoMatchMeetsTarget(stats: {
   photoAccuracy: number | null
@@ -45,9 +51,13 @@ export type SurfboardDimensionPhotoJevReview = {
   photoVerdict: "accept" | "reject" | null
   dimsVerdict: "good" | "close" | "bad" | null
   volumeNullProbability: number | null
+  /** P(this photo+dims pair is ready for admin review / future production reuse). */
+  matchReadyProbability: number | null
   volumeCleared: boolean
   nextAction: "keep" | "clear_volume" | "retry_with_examples" | "distrust" | null
   retriedWithExamples: boolean
+  /** True when below the confidence gate — hidden from the admin review grid. */
+  withheldFromReview: boolean
   reason: string
 }
 

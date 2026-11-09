@@ -508,11 +508,12 @@ export function DimensionPhotoMatchAdminClient() {
           <p className="mt-1 max-w-xl text-sm text-muted-foreground">
             Rate <span className="text-foreground">Photo</span> and{" "}
             <span className="text-foreground">Dims</span>. Each rating is injected into the next
-            scan as examples (Good/Bad stamp photos + text) — keep marking Photo Bad on wrong
-            picks; that trains picking fastest. Target:{" "}
-            <span className="text-foreground">95%</span> on both Photo and Dims before we trust
-            the LLM for sell autofill. Jev checks the vision result afterward (volume, confidence,
-            soft hints) — it never auto-rates for you.
+            scan as few-shot examples (Good/Bad stamp photos + text) — Photo Bad trains picking
+            fastest; Close/Bad dims with actual L×W×T trains OCR. Only ≥
+            <span className="text-foreground">90%</span> confidence matches appear here (unsure
+            picks are withheld). Corpus target for sell autofill:{" "}
+            <span className="text-foreground">95%</span> on both Photo and Dims. Jev scores
+            match_ready after vision — it never auto-rates Good/Bad for you.
             {stats?.refCount ? (
               <span className="text-foreground/80"> {stats.refCount} pairs in memory.</span>
             ) : null}
