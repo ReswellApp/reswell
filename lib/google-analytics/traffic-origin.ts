@@ -182,13 +182,14 @@ export function classifyTrafficOrigin(input: {
     return "google"
   }
 
-  if (
+  const unnamedSource =
+    source === "" ||
     source === "(direct)" ||
     source === "(none)" ||
     source === "(not set)" ||
-    source === "direct" ||
-    ((source === "" || medium === "(none)" || medium === "(not set)") && !host && (medium === "(none)" || medium === "" || medium === "(not set)"))
-  ) {
+    source === "direct"
+  const unnamedMedium = medium === "" || medium === "(none)" || medium === "(not set)"
+  if (unnamedSource && !host && unnamedMedium) {
     return "direct"
   }
 
@@ -205,6 +206,67 @@ export function formatMediumLabel(medium: string | null | undefined): string {
   const raw = (medium ?? "").trim()
   if (!raw || raw === "(not set)" || raw === "(none)") return "(none)"
   return raw
+}
+
+const DEFAULT_OWN_PROPERTY_HOSTS = ["reswell.app"] as const
+
+function isOwnPropertyHost(
+  host: string,
+  ownHosts: readonly string[] = DEFAULT_OWN_PROPERTY_HOSTS,
+): boolean {
+  if (!host || host === "(direct)") return false
+  return ownHosts.some((own) => host === own || host.endsWith(`.${own}`))
+}
+
+export function mergeSourceMediumRows<
+  T extends { source: string; medium: string; sessions: number; views: number; conversions: number },
+>(rows: T[]): T[] {
+  const byKey = new Map<string, T>()
+  for (const row of rows) {
+    const key = `${row.source}\0${row.medium}`
+    const existing = byKey.get(key)
+    if (existing) {
+      existing.sessions += row.sessions
+      existing.views += row.views
+      existing.conversions += row.conversions
+      continue
+    }
+    byKey.set(key, { ...row })
+  }
+  return [...byKey.values()].sort((a, b) => b.sessions - a.sessions || b.views - a.views)
+}
+
+export function rollupReferrersByHost(
+  rows: Array<{ referrer: string; sessions: number }>,
+  ownHosts: readonly string[] = DEFAULT_OWN_PROPERTY_HOSTS,
+): Array<{
+  host: string
+  origin: TrafficOriginId
+  originLabel: string
+  sessions: number
+}> {
+  const byHost = new Map<
+    string,
+    { host: string; origin: TrafficOriginId; originLabel: string; sessions: number }
+  >()
+  for (const row of rows) {
+    if (row.sessions <= 0) continue
+    const host = referrerHostname(row.referrer) || "(direct)"
+    if (isOwnPropertyHost(host, ownHosts)) continue
+    const existing = byHost.get(host)
+    if (existing) {
+      existing.sessions += row.sessions
+      continue
+    }
+    const origin = classifyTrafficOrigin({ referrer: row.referrer, source: host })
+    byHost.set(host, {
+      host,
+      origin,
+      originLabel: TRAFFIC_ORIGIN_LABEL[origin],
+      sessions: row.sessions,
+    })
+  }
+  return [...byHost.values()].sort((a, b) => b.sessions - a.sessions)
 }
 
 export function rollupTrafficOrigins<T extends { origin: TrafficOriginId; sessions: number; views: number; conversions: number }>(

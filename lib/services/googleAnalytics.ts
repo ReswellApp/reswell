@@ -4,7 +4,9 @@ import {
   classifyTrafficOrigin,
   formatMediumLabel,
   formatSourceLabel,
+  mergeSourceMediumRows,
   referrerHostname,
+  rollupReferrersByHost,
   rollupTrafficOrigins,
   TRAFFIC_ORIGIN_LABEL,
   type TrafficOriginId,
@@ -776,6 +778,49 @@ async function queryEmbedReferrers(
     .filter((row) => row.sessions > 0)
 }
 
+const SESSION_SOURCE_QUERY_LIMIT = 10_000
+const SESSION_SOURCE_TABLE_LIMIT = 50
+const SITE_REFERRER_QUERY_LIMIT = 10_000
+const SITE_REFERRER_TABLE_LIMIT = 30
+
+function ownPropertyHosts(): string[] {
+  const hosts = new Set<string>(["reswell.app"])
+  const siteUrl = envValue("NEXT_PUBLIC_SITE_URL")
+  if (siteUrl) {
+    const host = referrerHostname(siteUrl)
+    if (host) hosts.add(host)
+  }
+  return [...hosts]
+}
+
+function excludeOwnPropertyReferrersFilter(hosts: string[]): unknown | undefined {
+  if (hosts.length === 0) return undefined
+  const [firstHost, ...restHosts] = hosts
+  if (!firstHost) return undefined
+  if (restHosts.length === 0) {
+    return {
+      notExpression: {
+        filter: {
+          fieldName: "pageReferrer",
+          stringFilter: { matchType: "CONTAINS", value: firstHost },
+        },
+      },
+    }
+  }
+  return {
+    notExpression: {
+      orGroup: {
+        expressions: hosts.map((host) => ({
+          filter: {
+            fieldName: "pageReferrer",
+            stringFilter: { matchType: "CONTAINS", value: host },
+          },
+        })),
+      },
+    },
+  }
+}
+
 async function querySessionSources(
   token: string,
   property: string,
@@ -787,10 +832,10 @@ async function querySessionSources(
     dimensions: [{ name: "sessionSource" }, { name: "sessionMedium" }],
     metrics: [{ name: "sessions" }, { name: "screenPageViews" }, { name: "conversions" }],
     orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
-    limit: 50,
+    limit: SESSION_SOURCE_QUERY_LIMIT,
   })
 
-  return rows
+  const mapped = rows
     .map((row) => {
       const source = formatSourceLabel(row.dimensionValues?.[0]?.value)
       const medium = formatMediumLabel(row.dimensionValues?.[1]?.value)
@@ -806,6 +851,8 @@ async function querySessionSources(
       }
     })
     .filter((row) => row.sessions > 0 || row.views > 0)
+
+  return mergeSourceMediumRows(mapped)
 }
 
 async function querySiteReferrers(
@@ -814,35 +861,23 @@ async function querySiteReferrers(
   startDate: string,
   endDate: string,
 ): Promise<GoogleAnalyticsSiteReferrerRow[]> {
+  const ownHosts = ownPropertyHosts()
   const rows = await runReportSafe(token, property, {
     dateRanges: [{ startDate, endDate }],
     dimensions: [{ name: "pageReferrer" }],
     metrics: [{ name: "sessions" }],
+    dimensionFilter: excludeOwnPropertyReferrersFilter(ownHosts),
     orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
-    limit: 80,
+    limit: SITE_REFERRER_QUERY_LIMIT,
   })
 
-  const byHost = new Map<string, GoogleAnalyticsSiteReferrerRow>()
-  for (const row of rows) {
-    const referrer = row.dimensionValues?.[0]?.value?.trim() || "(direct)"
-    const sessions = toNumber(row.metricValues?.[0]?.value)
-    if (sessions <= 0) continue
-    const host = referrerHostname(referrer) || "(direct)"
-    const origin = classifyTrafficOrigin({ referrer, source: host })
-    const existing = byHost.get(host)
-    if (existing) {
-      existing.sessions += sessions
-      continue
-    }
-    byHost.set(host, {
-      host,
-      origin,
-      originLabel: TRAFFIC_ORIGIN_LABEL[origin],
-      sessions,
-    })
-  }
-
-  return [...byHost.values()].sort((a, b) => b.sessions - a.sessions).slice(0, 30)
+  return rollupReferrersByHost(
+    rows.map((row) => ({
+      referrer: row.dimensionValues?.[0]?.value?.trim() || "(direct)",
+      sessions: toNumber(row.metricValues?.[0]?.value),
+    })),
+    ownHosts,
+  ).slice(0, SITE_REFERRER_TABLE_LIMIT)
 }
 
 async function queryRealtimeActiveUsers(token: string, property: string): Promise<number> {
@@ -1227,7 +1262,7 @@ export async function getGoogleAnalyticsDashboardData(options?: {
       },
       devices,
       countries,
-      sources,
+      sources: sources.slice(0, SESSION_SOURCE_TABLE_LIMIT),
       origins,
       referrers,
       topEvents,
