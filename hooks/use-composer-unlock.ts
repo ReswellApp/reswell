@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
+import { retryOnceOnAbort } from "@/lib/utils/retry-on-abort"
 
 export type ComposerUnlockRequest =
   | { scope: "marketplace" }
@@ -26,11 +27,15 @@ async function fetchUnlockToken(
           public_id: request.publicId || undefined,
         }
 
-  const res = await fetch("/api/composer-unlock", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  })
+  const res = await retryOnceOnAbort(() =>
+    fetch("/api/composer-unlock", {
+      method: "POST",
+      credentials: "include",
+      keepalive: true,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }),
+  )
   if (!res.ok) return null
   const json = (await res.json()) as {
     data?: { token?: string; expires_at?: number }

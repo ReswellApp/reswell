@@ -4,6 +4,8 @@ import { sendConversationMediaReply } from "@/app/actions/messages"
 import { composerUnlockTokenSchema } from "@/lib/validations/composer-unlock"
 import { marketplaceMessageAttachmentInputSchema } from "@/lib/validations/marketplace-message-attachment"
 
+export const maxDuration = 60
+
 const bodySchema = z.object({
   conversation_id: z.string().uuid(),
   attachment: marketplaceMessageAttachmentInputSchema,

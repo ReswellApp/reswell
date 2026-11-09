@@ -1,3 +1,5 @@
+import { retryOnceOnAbort } from "@/lib/utils/retry-on-abort"
+
 export type MarketplaceThreadReplyResult =
   | {
       success: true
@@ -73,9 +75,34 @@ function parseReplyResult(json: unknown): MarketplaceThreadReplyResult {
   return { error: "Failed to send message" }
 }
 
+async function postReplyOnce(input: {
+  conversationId: string
+  content: string
+  composerUnlockToken: string
+  clientId: string
+}): Promise<MarketplaceThreadReplyResult> {
+  const res = await fetch("/api/messages/send", {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    keepalive: true,
+    body: JSON.stringify({
+      conversation_id: input.conversationId,
+      content: input.content,
+      composer_unlock_token: input.composerUnlockToken,
+      client_id: input.clientId,
+    }),
+  })
+  return parseReplyResult(await res.json().catch(() => null))
+}
+
 /**
  * POST /api/messages/send with keepalive so the insert outlives leaving the thread.
  * Dedupes by client id so a remount does not start a second request for the same bubble.
+ * Retries once on navigation abort; the server treats `client_id` as idempotent.
  */
 export function postMarketplaceThreadReply(input: {
   conversationId: string
@@ -87,23 +114,9 @@ export function postMarketplaceThreadReply(input: {
   const existing = inFlight.get(key)
   if (existing) return existing
 
-  const work = (async () => {
-    const res = await fetch("/api/messages/send", {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-      keepalive: true,
-      body: JSON.stringify({
-        conversation_id: input.conversationId,
-        content: input.content,
-        composer_unlock_token: input.composerUnlockToken,
-      }),
-    })
-    return parseReplyResult(await res.json().catch(() => null))
-  })()
+  const work = retryOnceOnAbort(() => postReplyOnce(input)).catch(
+    (): MarketplaceThreadReplyResult => ({ error: "Failed to send message" }),
+  )
 
   inFlight.set(key, work)
   void work.finally(() => {
