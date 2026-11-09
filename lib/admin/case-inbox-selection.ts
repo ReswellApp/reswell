@@ -93,9 +93,10 @@ export function shouldApplyInboxLoad(args: {
   requestQueryKey: string
   currentQueryKey: string
 }): boolean {
-  // Live refresh must not drop an in-flight Load more for the same query.
-  if (args.mode === "page") return args.requestQueryKey === args.currentQueryKey
+  // Live refresh does not bump generation, so an in-flight Load more still applies.
+  // Initial (view/search reset) does, which drops a stale page even if the query matches again.
   if (args.requestGeneration !== args.currentGeneration) return false
+  if (args.mode === "page") return args.requestQueryKey === args.currentQueryKey
   return true
 }
 

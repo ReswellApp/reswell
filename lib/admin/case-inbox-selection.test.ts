@@ -175,7 +175,7 @@ describe("shouldApplyInboxLoad", () => {
     )
   })
 
-  it("keeps a matching page after a live refresh bumps generation", () => {
+  it("drops a matching page after initial load bumps generation", () => {
     assert.equal(
       shouldApplyInboxLoad({
         mode: "page",
@@ -184,7 +184,7 @@ describe("shouldApplyInboxLoad", () => {
         requestQueryKey: mine,
         currentQueryKey: mine,
       }),
-      true,
+      false,
     )
   })
 })
@@ -274,6 +274,21 @@ describe("inboxRefreshPagination", () => {
         incomingNextOffset: 50,
       }),
       { hasMore: false, nextOffset: 50 },
+    )
+  })
+
+  it("keeps Load more cursor when item count has not flushed yet", () => {
+    assert.deepEqual(
+      inboxRefreshPagination({
+        paged: true,
+        loadedCount: 50,
+        incomingCount: 50,
+        currentHasMore: true,
+        incomingHasMore: true,
+        currentNextOffset: 100,
+        incomingNextOffset: 50,
+      }),
+      { hasMore: true, nextOffset: 100 },
     )
   })
 })

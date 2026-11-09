@@ -281,6 +281,12 @@ export function CaseInboxAdminClient({
           setCounts(res.counts)
           setHasMore(pagination.hasMore)
           setNextOffset(pagination.nextOffset)
+          // Flush before paint so an overlapping refresh sees the Load more cursor.
+          hasMoreRef.current = pagination.hasMore
+          nextOffsetRef.current = pagination.nextOffset
+          if (mode === "page") {
+            itemsLengthRef.current = Math.max(itemsLengthRef.current, pagination.nextOffset)
+          }
         }
       } finally {
         if (mode === "page") {
