@@ -89,4 +89,23 @@ describe("resolvePackedParcelFromListing", () => {
     assert.equal(result.heightIn, 2)
     assert.equal(result.weightOz, 6)
   })
+
+  it("does not rate a leftover shortboard carton as a leash box", () => {
+    const medium = SURFBOARD_SHIPPING_PACK_BANDS.shortboard_medium
+    const result = resolvePackedParcelFromListing({
+      section: "leashes",
+      shipping_package_tier: "shortboard",
+      shipping_package_band: "shortboard_medium",
+      shipping_packed_length_in: medium.lengthIn,
+      shipping_packed_width_in: medium.widthIn,
+      shipping_packed_height_in: medium.heightIn,
+      shipping_packed_weight_oz: medium.weightLb * 16,
+    })
+    assert.equal(result.ok, true)
+    if (!result.ok) return
+    assert.equal(result.lengthIn, 12)
+    assert.equal(result.widthIn, 10)
+    assert.equal(result.heightIn, 4)
+    assert.equal(result.weightOz, 32)
+  })
 })

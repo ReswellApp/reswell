@@ -11,6 +11,11 @@ import {
 } from "@/lib/surfboard-shipping-pack-bands"
 
 import {
+  listingSectionCartonFormFields,
+  listingSectionPackageFieldsAllBlank,
+  listingSectionUsesSurfboardCarton,
+} from "@/lib/listing-section-cartons"
+import {
   parseReswellParcelLengthRawToCarrierInches,
   parseReswellParcelWidthHeightRawToCarrierInches,
   parseReswellPackedWeightToTotalOz,
@@ -30,8 +35,8 @@ export type SellFulfillmentPersistInput = {
   category?: string
   /**
    * `listings.section` for this write. Board sell historically omitted this
-   * (the form's `category` is a board-style id). Gear must pass `fins`, `leashes`,
-   * etc. so we never persist `shipping_package_tier`.
+   * (the form's `category` is a board-style id). Only `"surfboards"` persists
+   * `shipping_package_tier`; every other section keeps its own packed carton.
    */
   listingSection?: string
   /** Seller-selected Reswell surfboard shipping tier (shortboard / midlength / longboard). */
@@ -65,9 +70,7 @@ function shippingPackageBandForDb(bandId: string | null): string | null {
 }
 
 function persistUsesSurfboardCarton(fd: SellFulfillmentPersistInput): boolean {
-  const section = fd.listingSection?.trim()
-  if (!section) return true
-  return section === "surfboards"
+  return listingSectionUsesSurfboardCarton(fd.listingSection)
 }
 
 const EMPTY_PACKED_PACKAGE_COLUMNS = {
@@ -114,12 +117,24 @@ export function reswellPackageFieldsToDb(fd: SellFulfillmentPersistInput): {
   }
 
   if (!surfboardCarton) {
-    const L = parseReswellParcelLengthRawToCarrierInches(fd.reswellPackageLengthIn)
-    const W = parseReswellParcelWidthHeightRawToCarrierInches(fd.reswellPackageWidthIn)
-    const H = parseReswellParcelWidthHeightRawToCarrierInches(fd.reswellPackageHeightIn)
+    const entered = {
+      reswellPackageLengthIn: fd.reswellPackageLengthIn,
+      reswellPackageWidthIn: fd.reswellPackageWidthIn,
+      reswellPackageHeightIn: fd.reswellPackageHeightIn,
+      reswellPackageWeightLb: fd.reswellPackageWeightLb,
+      reswellPackageWeightOz: fd.reswellPackageWeightOz,
+    }
+    const fallback =
+      listingSectionPackageFieldsAllBlank(entered)
+        ? listingSectionCartonFormFields(fd.listingSection)
+        : null
+    const packageFields = fallback ?? entered
+    const L = parseReswellParcelLengthRawToCarrierInches(packageFields.reswellPackageLengthIn)
+    const W = parseReswellParcelWidthHeightRawToCarrierInches(packageFields.reswellPackageWidthIn)
+    const H = parseReswellParcelWidthHeightRawToCarrierInches(packageFields.reswellPackageHeightIn)
     const totalOz = parseReswellPackedWeightToTotalOz(
-      fd.reswellPackageWeightLb,
-      fd.reswellPackageWeightOz,
+      packageFields.reswellPackageWeightLb,
+      packageFields.reswellPackageWeightOz,
     )
     if (L == null || L <= 0 || W == null || W <= 0 || H == null || H <= 0 || totalOz == null) {
       return { ...EMPTY_PACKED_PACKAGE_COLUMNS }

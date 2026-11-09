@@ -1,4 +1,5 @@
 import { FINS_SECTION } from "@/lib/fin-listing-config"
+import { defaultListingSectionCarton } from "@/lib/listing-section-cartons"
 import {
   applyFinReswellPackageDefaultsPerField,
   finReswellPackageFormFieldsFromListingRow,
@@ -120,6 +121,26 @@ function shouldUseSurfboardPackedParcelPath(row: ListingPackedParcelSource): boo
   return isSurfboardListingSection(section)
 }
 
+function sectionDefaultPackedParcelResult(section: string | null | undefined): {
+  ok: true
+  source: ResolvedPackedParcelSource
+  weightOz: number
+  lengthIn: number
+  widthIn: number
+  heightIn: number
+} | null {
+  const carton = defaultListingSectionCarton(section)
+  if (!carton) return null
+  return {
+    ok: true,
+    source: "heuristic",
+    weightOz: carton.weightOz,
+    lengthIn: carton.lengthIn,
+    widthIn: carton.widthIn,
+    heightIn: carton.heightIn,
+  }
+}
+
 function finDefaultPackedParcelResult(): {
   ok: true
   source: ResolvedPackedParcelSource
@@ -128,14 +149,16 @@ function finDefaultPackedParcelResult(): {
   widthIn: number
   heightIn: number
 } {
-  return {
-    ok: true,
-    source: "heuristic",
-    weightOz: FIN_RESWELL_DEFAULT_PACKAGE_WEIGHT_OZ_NUM,
-    lengthIn: FIN_RESWELL_DEFAULT_PACKAGE_LENGTH_IN_NUM,
-    widthIn: FIN_RESWELL_DEFAULT_PACKAGE_WIDTH_IN_NUM,
-    heightIn: FIN_RESWELL_DEFAULT_PACKAGE_HEIGHT_IN_NUM,
-  }
+  return (
+    sectionDefaultPackedParcelResult(FINS_SECTION) ?? {
+      ok: true,
+      source: "heuristic",
+      weightOz: FIN_RESWELL_DEFAULT_PACKAGE_WEIGHT_OZ_NUM,
+      lengthIn: FIN_RESWELL_DEFAULT_PACKAGE_LENGTH_IN_NUM,
+      widthIn: FIN_RESWELL_DEFAULT_PACKAGE_WIDTH_IN_NUM,
+      heightIn: FIN_RESWELL_DEFAULT_PACKAGE_HEIGHT_IN_NUM,
+    }
+  )
 }
 
 function finPackedParcelResultFromStoredRow(
@@ -644,6 +667,20 @@ function resolveSmallPackedParcelFromListing(row: ListingPackedParcelSource):
     )
     if (!limitCheck.ok) return limitCheck
     return finParcel
+  }
+  const sectionParcel = sectionDefaultPackedParcelResult(row.section)
+  if (sectionParcel) {
+    const limitCheck = validateResolvedParcelForCarrier(
+      {
+        lengthIn: sectionParcel.lengthIn,
+        widthIn: sectionParcel.widthIn,
+        heightIn: sectionParcel.heightIn,
+        weightOz: sectionParcel.weightOz,
+      },
+      null,
+    )
+    if (!limitCheck.ok) return limitCheck
+    return sectionParcel
   }
   return {
     ok: false,

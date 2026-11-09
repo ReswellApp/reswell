@@ -5,7 +5,7 @@
 
 import { totalBoardLengthInchesFromCombinedInput } from "@/lib/board-measurements"
 import { parseListingDimensionsColumn } from "@/lib/listing-dimensions-storage"
-import { isPeerListingSection, type PeerListingSection } from "@/lib/peer-listing-sections"
+import { listingSectionUsesSurfboardCarton } from "@/lib/listing-section-cartons"
 import {
   shopPackageSizeLabel,
   type ListingPackageColumns,
@@ -345,16 +345,6 @@ export function shopShippingColumnsForRef(
   return customColumns(pkg, tierForBoardSize(boardSize))
 }
 
-export function shopShippingColumnsForSoftSection(
-  defaults: ShopShippingDefaults,
-  section: PeerListingSection,
-): ListingPackageColumns | null {
-  const pkg = defaults.storeDefault
-  if (!pkg || section === "surfboards") return null
-  const columns = customColumns(pkg, null)
-  return packageFitsSmallParcel(columns) ? columns : null
-}
-
 export function planShopShippingListingUpdates(input: {
   defaults: ShopShippingDefaults
   categoryPresets: ShopCategoryPackageSizeMap
@@ -368,28 +358,22 @@ export function planShopShippingListingUpdates(input: {
   let skippedBecausePackageDoesNotFit = 0
 
   for (const listing of input.listings) {
-    if (listing.section === "surfboards") {
-      const boardSize = shopBoardPackSizeForLength(listing.lengthTotalInches)
-      if (!boardSize || listing.lengthTotalInches == null) continue
-      const ref = input.defaults.boardSizes[boardSize] ?? SHOP_STORE_DEFAULT_ID
-      const columns = shopShippingColumnsForRef(input.defaults, ref, boardSize)
-      if (!columns) continue
-      const cartonLength = columns.shipping_packed_length_in
-      const coversBoard =
-        cartonLength != null && cartonLength + 0.26 >= listing.lengthTotalInches
-      if (!packageFitsSurfboardListing(columns) || !coversBoard) {
-        skippedBecausePackageDoesNotFit += 1
-        continue
-      }
-      if (!listingPackageColumnsMatch(listing.columns, columns)) {
-        updates.push({ id: listing.id, columns })
-      }
+    // Shop box + board-length assignments stay on surfboards.
+    // Other categories keep the carton saved on that section (shop category
+    // preset or the section default) — never inherit the shop board box.
+    if (!listingSectionUsesSurfboardCarton(listing.section)) continue
+    const boardSize = shopBoardPackSizeForLength(listing.lengthTotalInches)
+    if (!boardSize || listing.lengthTotalInches == null) continue
+    const ref = input.defaults.boardSizes[boardSize] ?? SHOP_STORE_DEFAULT_ID
+    const columns = shopShippingColumnsForRef(input.defaults, ref, boardSize)
+    if (!columns) continue
+    const cartonLength = columns.shipping_packed_length_in
+    const coversBoard =
+      cartonLength != null && cartonLength + 0.26 >= listing.lengthTotalInches
+    if (!packageFitsSurfboardListing(columns) || !coversBoard) {
+      skippedBecausePackageDoesNotFit += 1
       continue
     }
-
-    if (!isPeerListingSection(listing.section) || input.categoryPresets[listing.section]) continue
-    const columns = shopShippingColumnsForSoftSection(input.defaults, listing.section)
-    if (!columns) continue
     if (!listingPackageColumnsMatch(listing.columns, columns)) {
       updates.push({ id: listing.id, columns })
     }

@@ -220,37 +220,34 @@ test("writes a custom shop box onto boards that fit inside it", () => {
   assert.equal(plan.updates[0]?.columns.shipping_package_band, null)
 })
 
-test("uses the shop box for other categories that do not already have a preset", () => {
-  const saved = shopShippingDefaultsFromDraft({
-    physicalProduct: true,
-    dimensionUnit: "in",
-    weightUnit: "lb",
-    name: "Mailer",
-    presetId: "small",
-    length: "12",
-    width: "10",
-    height: "4",
-    weight: "2",
-    savedPackages: [],
-    boardSizes: {},
-  })
-  assert.equal(saved.ok, true)
-  if (!saved.ok) return
-  const open = planShopShippingListingUpdates({
-    defaults: saved.defaults,
+test("does not stamp the shop box onto other categories", () => {
+  const plan = planShopShippingListingUpdates({
+    defaults: {
+      ...EMPTY_SHOP_SHIPPING_DEFAULTS,
+      storeDefault: {
+        id: SHOP_STORE_DEFAULT_ID,
+        name: "Shop box",
+        lengthIn: 74,
+        widthIn: 22,
+        heightIn: 5,
+        weightLb: 14,
+        presetId: null,
+      },
+    },
     categoryPresets: {},
-    listings: [listing("fin", "fins", null)],
+    listings: [
+      listing("fin", "fins", null),
+      listing("leash", "leashes", null),
+      listing("board", "surfboards", 70),
+    ],
   })
-  assert.equal(open.updates.length, 1)
-  assert.equal(open.updates[0]?.columns.shipping_packed_length_in, 12)
-  assert.equal(open.updates[0]?.columns.shipping_package_band, null)
-  assert.equal(saved.defaults.storeDefault?.presetId, null)
-  const held = planShopShippingListingUpdates({
-    defaults: saved.defaults,
-    categoryPresets: { fins: "large" },
-    listings: [listing("fin", "fins", null)],
-  })
-  assert.equal(held.updates.length, 0)
+  assert.equal(
+    plan.updates.some((row) => row.id === "fin" || row.id === "leash"),
+    false,
+  )
+  const board = plan.updates.find((row) => row.id === "board")
+  assert.equal(board?.columns.shipping_packed_length_in, 74)
+  assert.equal(board?.columns.shipping_package_tier, "shortboard")
 })
 
 test("does not rewrite listings while physical product is off", () => {
