@@ -5,7 +5,7 @@ import {
   type BoardsBrowseEffectiveFilters,
 } from "@/lib/services/boardsBrowseProfileHomeMerge"
 
-/** Loads cached profile home area and merges it into browse URL params. */
+/** Loads cached profile home area and merges it into browse URL params (`home=off` opts out). */
 export async function loadMergedBoardsBrowseFilters(
   userId: string | null | undefined,
   searchParams: BoardsBrowseSearchParams,

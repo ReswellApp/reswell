@@ -76,6 +76,11 @@ import { haversineMi } from "@/lib/db/boards-browse-listings"
 import { boardsBrowseDailyRotateSeed } from "@/lib/utils/boards-browse-daily-rotate"
 import { facetSelectionsFromBrowseParams } from "@/lib/boards-browse-facets"
 import {
+  boardsBrowseNearbyPriorityMiles,
+  boardsBrowseUsesHardRadius,
+  nearbyPriorityBucket,
+} from "@/lib/boards-browse-home"
+import {
   boardsBrowseEffectiveSort,
   boardsBrowseHasSidebarFilters,
 } from "@/lib/boards-browse-sidebar-filters"
@@ -164,10 +169,19 @@ async function BoardListings({
   const lng = hasLatLng ? parsedLng : undefined
   const geoBrowseMaxRows = GEO_BROWSE_HTML_MAX_ROWS
   const hasRadius = radiusMi != null && !Number.isNaN(radiusMi) && radiusMi > 0
-  const filterByRadius = hasLatLng && hasRadius
+  const filterByRadius =
+    hasLatLng && hasRadius && boardsBrowseUsesHardRadius(searchParams)
+  const nearbyPriorityMi = boardsBrowseNearbyPriorityMiles({
+    home: searchParams.home,
+    radius: searchParams.radius,
+    hasLatLng,
+    sort,
+  })
+  const useNearbyPriority = nearbyPriorityMi != null && nearbyPriorityMi > 0
   const isNearestSort = sort === "nearest" && hasLatLng
 
-  const useGeocodedAnchor = hasLatLng && (filterByRadius || isNearestSort)
+  const useGeocodedAnchor =
+    hasLatLng && (filterByRadius || isNearestSort || useNearbyPriority)
 
   const isTopPicksSort = isBoardsBrowseTopPicksSort(sort)
 
@@ -272,8 +286,13 @@ async function BoardListings({
         localPickupAvailable,
         locationText: location.trim() && !useGeocodedAnchor ? location : undefined,
         geo:
-          hasLatLng && (filterByRadius || isNearestSort)
-            ? { lat: lat!, lng: lng!, radiusMi: filterByRadius ? radiusMi : undefined }
+          hasLatLng && (filterByRadius || isNearestSort || useNearbyPriority)
+            ? {
+                lat: lat!,
+                lng: lng!,
+                radiusMi: filterByRadius ? radiusMi : undefined,
+                nearbyPriorityMi: useNearbyPriority ? nearbyPriorityMi : undefined,
+              }
             : undefined,
         sort,
         page,
@@ -318,7 +337,7 @@ async function BoardListings({
   } else if (cachedCategoryPage) {
     boards = cachedCategoryPage.boards
     totalPages = cachedCategoryPage.totalPages
-  } else if (isTopPicksSort && !filterByRadius && !isNearestSort) {
+  } else if (isTopPicksSort && !filterByRadius && !isNearestSort && !useNearbyPriority) {
     const rotatePage = await fetchBoardsBrowseDailyRotatePage(supabase, {
       boardType,
       condition,
@@ -349,13 +368,13 @@ async function BoardListings({
           ? { lat: lat!, lng: lng!, radiusMiles: radiusMi! }
           : undefined,
       rangeBeforeKeywordOr:
-        filterByRadius || isNearestSort
+        filterByRadius || isNearestSort || useNearbyPriority
           ? { from: 0, to: geoBrowseMaxRows - 1 }
           : undefined,
-      prependCreatedAtOrder: filterByRadius || isNearestSort,
-      pagedSort: filterByRadius || isNearestSort ? undefined : sort,
+      prependCreatedAtOrder: filterByRadius || isNearestSort || useNearbyPriority,
+      pagedSort: filterByRadius || isNearestSort || useNearbyPriority ? undefined : sort,
       pagedRange:
-        filterByRadius || isNearestSort
+        filterByRadius || isNearestSort || useNearbyPriority
           ? undefined
           : { from: offset, to: offset + limit - 1 },
       locationTextFilter:
@@ -363,11 +382,12 @@ async function BoardListings({
     })) as unknown as SurfboardBrowseListingsQuery
 
     /**
-     * When the user has a geocoded point and is searching by distance (radius or nearest),
-     * the anchor is lat/lng — do not also require `city`/`state` to match the geocoder label,
-     * or valid nearby listings are dropped before distance runs.
+     * When the user has a geocoded point (hard radius, nearest sort, or nearby
+     * ranking), the anchor is lat/lng — do not also require `city`/`state` to
+     * match the geocoder label, or valid nearby listings are dropped before
+     * distance runs.
      */
-    if (filterByRadius || isNearestSort) {
+    if (filterByRadius || isNearestSort || useNearbyPriority) {
       const geoChain = listingsChain
       const { data: rawBoards } = await geoChain
       type GeoListingRow = BoardBrowseListingRow & { _distance: number }
@@ -381,18 +401,27 @@ async function BoardListings({
       if (filterByRadius) {
         withDistance = withDistance.filter((b) => b._distance <= radiusMi!)
       }
-      if (isNearestSort) {
-        withDistance.sort((a, b) => {
+      const rotateSeed = isTopPicksSort ? boardsBrowseDailyRotateSeed() : null
+      const compareAfterNearby = (a: GeoListingRow, b: GeoListingRow): number => {
+        if (isNearestSort) {
           const supDiff = suppressedBrowseRank(a) - suppressedBrowseRank(b)
           if (supDiff !== 0) return supDiff
           return a._distance - b._distance
-        })
-      } else if (isTopPicksSort) {
-        const rotateSeed = boardsBrowseDailyRotateSeed()
-        withDistance.sort((a, b) => compareBoardBrowseRowsDailyRotate(a, b, rotateSeed))
-      } else {
-        withDistance.sort((a, b) => compareBoardBrowseRows(a, b, sort))
+        }
+        if (rotateSeed) {
+          return compareBoardBrowseRowsDailyRotate(a, b, rotateSeed)
+        }
+        return compareBoardBrowseRows(a, b, sort)
       }
+      withDistance.sort((a, b) => {
+        if (useNearbyPriority && nearbyPriorityMi != null) {
+          const bucket =
+            nearbyPriorityBucket(a._distance, nearbyPriorityMi) -
+            nearbyPriorityBucket(b._distance, nearbyPriorityMi)
+          if (bucket !== 0) return bucket
+        }
+        return compareAfterNearby(a, b)
+      })
       totalPages = Math.ceil(withDistance.length / limit)
       boards = withDistance.slice(offset, offset + limit)
     } else {
@@ -420,13 +449,13 @@ async function BoardListings({
               ? { lat: lat!, lng: lng!, radiusMiles: radiusMi! }
               : undefined,
           rangeBeforeKeywordOr:
-            filterByRadius || isNearestSort
+            filterByRadius || isNearestSort || useNearbyPriority
               ? { from: 0, to: geoBrowseMaxRows - 1 }
               : undefined,
-          prependCreatedAtOrder: filterByRadius || isNearestSort,
-          pagedSort: filterByRadius || isNearestSort ? undefined : sort,
+          prependCreatedAtOrder: filterByRadius || isNearestSort || useNearbyPriority,
+          pagedSort: filterByRadius || isNearestSort || useNearbyPriority ? undefined : sort,
           pagedRange:
-            filterByRadius || isNearestSort
+            filterByRadius || isNearestSort || useNearbyPriority
               ? undefined
               : { from: offset, to: offset + limit - 1 },
           locationTextFilter:
