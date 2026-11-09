@@ -89,4 +89,22 @@ describe("resolvePackedParcelFromListing", () => {
     assert.equal(result.heightIn, 2)
     assert.equal(result.weightOz, 6)
   })
+
+  it("quotes a seller-entered boardbag or surfpack carton longer than 48″", () => {
+    for (const section of ["boardbags", "surfpacks"]) {
+      const result = resolvePackedParcelFromListing({
+        section,
+        shipping_packed_length_in: 80,
+        shipping_packed_width_in: 22,
+        shipping_packed_height_in: 6,
+        shipping_packed_weight_oz: 80,
+      })
+      assert.equal(result.ok, true)
+      if (!result.ok) return
+      assert.equal(result.lengthIn, 80)
+      assert.equal(result.widthIn, 22)
+      assert.equal(result.heightIn, 6)
+      assert.equal(result.weightOz, 80)
+    }
+  })
 })

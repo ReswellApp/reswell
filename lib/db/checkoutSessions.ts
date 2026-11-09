@@ -155,15 +155,19 @@ export async function dbExpireStaleCheckoutSessions(
   }
 }
 
-/** Releases unique holds whose checkout session is no longer open (JS fallback before SQL lands). */
+/** Releases holds for cart listings whose checkout session is no longer open (JS fallback before SQL lands). */
 export async function dbReleaseOrphanedCheckoutStockHolds(
   supabase: SupabaseClient,
+  listingIds: string[],
 ): Promise<void> {
+  const ids = [...new Set(listingIds.map((id) => id.trim()).filter(Boolean))]
+  if (ids.length === 0) return
+
   const { data: holds, error: holdsError } = await supabase
     .from("checkout_stock_holds")
     .select("id, session_id")
+    .in("listing_id", ids)
     .eq("status", "held")
-    .limit(200)
 
   if (holdsError) {
     if (!isMissingCheckoutSessionsRelation(holdsError)) {

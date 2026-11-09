@@ -251,7 +251,7 @@ export async function bindCheckoutSessionPaymentIntent(input: {
     await cancelReusablePaymentIntent(input.stripe, row.stripe_payment_intent_id)
   }
   await dbExpireStaleCheckoutSessions(input.supabase)
-  await dbReleaseOrphanedCheckoutStockHolds(input.supabase)
+  await dbReleaseOrphanedCheckoutStockHolds(input.supabase, input.listingIds)
 
   const fingerprint = checkoutSessionFingerprint({
     listingIds: input.listingIds,

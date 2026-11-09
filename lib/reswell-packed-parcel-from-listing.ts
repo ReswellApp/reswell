@@ -1,4 +1,6 @@
+import { BOARDBAGS_SECTION } from "@/lib/boardbag-listing-config"
 import { FINS_SECTION } from "@/lib/fin-listing-config"
+import { SURFPACKS_SECTION } from "@/lib/surfpack-listing-config"
 import {
   applyFinReswellPackageDefaultsPerField,
   finReswellPackageFormFieldsFromListingRow,
@@ -118,6 +120,12 @@ function shouldUseSurfboardPackedParcelPath(row: ListingPackedParcelSource): boo
   const section = row.section?.trim()
   if (!section) return true
   return isSurfboardListingSection(section)
+}
+
+/** Boardbags / surfpacks ship in seller cartons that often exceed the 48″ small-parcel cap. */
+function listingAllowsStoredLargeAccessoryCarton(row: ListingPackedParcelSource): boolean {
+  const section = row.section?.trim()
+  return section === BOARDBAGS_SECTION || section === SURFPACKS_SECTION
 }
 
 function finDefaultPackedParcelResult(): {
@@ -644,6 +652,21 @@ function resolveSmallPackedParcelFromListing(row: ListingPackedParcelSource):
     )
     if (!limitCheck.ok) return limitCheck
     return finParcel
+  }
+  if (
+    listingAllowsStoredLargeAccessoryCarton(row) &&
+    Ls &&
+    Ws &&
+    Hs &&
+    Woz &&
+    storedPackedSurfboardDimsLookUsable(Ls, Ws, Hs, Woz)
+  ) {
+    return finishResolvedParcel(
+      "heuristic",
+      { lengthIn: Ls, widthIn: Ws, heightIn: Hs },
+      Woz,
+      null,
+    )
   }
   return {
     ok: false,
