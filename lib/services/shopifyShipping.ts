@@ -74,11 +74,10 @@ function shopDefaultColumnsForImport(
   shippingDefaults: ShopShippingDefaults | undefined,
 ): ListingPackageColumns | null {
   if (shippingDefaults && !shippingDefaults.physicalProduct) return null
-  if (section === "surfboards") {
-    if (!shippingDefaults) return null
+  if (section === "surfboards" && shippingDefaults) {
     const ref = shippingDefaults.boardSizes.shortboard_medium ?? SHOP_STORE_DEFAULT_ID
     const columns = shopShippingColumnsForRef(shippingDefaults, ref, "shortboard_medium")
-    return columns && packageFitsSurfboardListing(columns) ? columns : null
+    if (columns && packageFitsSurfboardListing(columns)) return columns
   }
   const packageSizeId = packageSizes[section]
   if (packageSizeId) return listingPackageColumnsForShopSize(section, packageSizeId)
