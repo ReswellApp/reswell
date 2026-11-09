@@ -1,5 +1,6 @@
 "use client"
 
+import { forwardRef } from "react"
 import { AlertCircle } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -7,9 +8,12 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import {
   StripeBankPayoutSection,
+  type StripeBankPayoutSectionHandle,
   type StripeBankPayoutSectionProps,
   type StripeConnectStatusPayload,
 } from "@/components/features/earnings/stripe-bank-payout-section"
+
+export type { StripeBankPayoutSectionHandle }
 
 interface StripeTransferHistoryItem {
   id: string
@@ -40,29 +44,35 @@ export function EarningsStripePayoutCardSkeleton() {
 /**
  * Bank payout (Stripe Connect) block with loading skeleton and soft failure when status/history APIs error.
  */
-export function EarningsStripePayoutCard({
-  enabled,
-  isLoading,
-  statusFetchFailed,
-  historyFetchFailed,
-  onRetry,
-  availableBalance,
-  connectStatus,
-  transferHistory,
-  onRefresh,
-  onCashOutSettled,
-}: {
-  enabled: boolean
-  isLoading: boolean
-  statusFetchFailed: boolean
-  historyFetchFailed: boolean
-  onRetry: () => void
-  availableBalance: number
-  connectStatus: StripeConnectStatusPayload | null
-  transferHistory: StripeTransferHistoryItem[]
-  onRefresh: () => void | Promise<void>
-  onCashOutSettled?: StripeBankPayoutSectionProps["onCashOutSettled"]
-}) {
+export const EarningsStripePayoutCard = forwardRef<
+  StripeBankPayoutSectionHandle,
+  {
+    enabled: boolean
+    isLoading: boolean
+    statusFetchFailed: boolean
+    historyFetchFailed: boolean
+    onRetry: () => void
+    availableBalance: number
+    connectStatus: StripeConnectStatusPayload | null
+    transferHistory: StripeTransferHistoryItem[]
+    onRefresh: () => void | Promise<void>
+    onCashOutSettled?: StripeBankPayoutSectionProps["onCashOutSettled"]
+  }
+>(function EarningsStripePayoutCard(
+  {
+    enabled,
+    isLoading,
+    statusFetchFailed,
+    historyFetchFailed,
+    onRetry,
+    availableBalance,
+    connectStatus,
+    transferHistory,
+    onRefresh,
+    onCashOutSettled,
+  },
+  ref,
+) {
   if (!enabled) {
     return null
   }
@@ -95,6 +105,7 @@ export function EarningsStripePayoutCard({
         </Alert>
       )}
       <StripeBankPayoutSection
+        ref={ref}
         availableBalance={availableBalance}
         stripeConfigured={enabled}
         connectStatus={connectStatus}
@@ -104,4 +115,4 @@ export function EarningsStripePayoutCard({
       />
     </div>
   )
-}
+})
