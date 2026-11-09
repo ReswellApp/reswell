@@ -1,7 +1,9 @@
 "use client"
 
 import Link from "next/link"
-import { useOptionalAuthModal } from "@/components/auth/auth-modal-context"
+import { useRouter } from "next/navigation"
+import { useSignInGate } from "@/components/auth/use-sign-in-gate"
+import { useHydratedIsLoggedIn } from "@/components/features/listings/listing-viewer-provider"
 import { ListingTileBasketSvg } from "@/components/listing-tile-basket-svg"
 import { cn } from "@/lib/utils"
 
@@ -29,35 +31,25 @@ export function ListingTileCheckoutBasketIcon({
   isLoggedIn: boolean
   className?: string
 }) {
-  const authModal = useOptionalAuthModal()
-
-  if (!isLoggedIn) {
-    return (
-      <Link
-        href={loginHref}
-        prefetch={false}
-        onClick={(e) => {
-          e.stopPropagation()
-          if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
-          if (!authModal) return
-          e.preventDefault()
-          authModal.openLogin(checkoutHref)
-        }}
-        className={cn(tileBtnClass, className)}
-        aria-label="Sign in to checkout"
-      >
-        <ListingTileBasketSvg />
-      </Link>
-    )
-  }
+  const requireSignIn = useSignInGate()
+  const loggedIn = useHydratedIsLoggedIn(isLoggedIn)
+  const router = useRouter()
 
   return (
     <Link
-      href={checkoutHref}
+      href={loggedIn ? checkoutHref : loginHref}
       prefetch={false}
-      onClick={(e) => e.stopPropagation()}
+      onClick={(e) => {
+        e.stopPropagation()
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+        if (loggedIn) return
+        e.preventDefault()
+        void requireSignIn(checkoutHref).then((ok) => {
+          if (ok) router.push(checkoutHref)
+        })
+      }}
       className={cn(tileBtnClass, className)}
-      aria-label="Go to checkout"
+      aria-label={loggedIn ? "Go to checkout" : "Sign in to checkout"}
     >
       <ListingTileBasketSvg />
     </Link>

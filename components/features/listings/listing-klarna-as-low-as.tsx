@@ -5,8 +5,8 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { addCartItem } from "@/app/actions/cart"
-import { useOptionalAuthModal } from "@/components/auth/auth-modal-context"
-import { safeRedirectPath } from "@/lib/auth/safe-redirect"
+import { useSignInGate } from "@/components/auth/use-sign-in-gate"
+import { useHydratedIsLoggedIn } from "@/components/features/listings/listing-viewer-provider"
 import { cartAddListingHref } from "@/lib/listing-href"
 import { collectMetaClientBrowserSignals } from "@/lib/meta/collect-client-browser-signals"
 import { trackMetaAddToCart } from "@/lib/meta/pixel-events"
@@ -24,27 +24,17 @@ export function ListingKlarnaAsLowAs({
 }) {
   const [pending, setPending] = useState(false)
   const router = useRouter()
-  const authModal = useOptionalAuthModal()
+  const requireSignIn = useSignInGate()
+  const loggedIn = useHydratedIsLoggedIn(isLoggedIn)
   const cartAddHref = cartAddListingHref(listingId)
-
-  function openLoginGate() {
-    if (authModal) {
-      authModal.openLogin(cartAddHref)
-      return
-    }
-    router.push(`/auth/login?redirect=${encodeURIComponent(safeRedirectPath(cartAddHref))}`)
-  }
 
   async function handleKlarnaClick(e: MouseEvent<HTMLAnchorElement>) {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
     e.preventDefault()
-    if (!isLoggedIn) {
-      openLoginGate()
-      return
-    }
     if (pending) return
     setPending(true)
     try {
+      if (!loggedIn && !(await requireSignIn(cartAddHref))) return
       const browserSignals = await collectMetaClientBrowserSignals().catch(() => ({
         fbc: null,
         fbp: null,
