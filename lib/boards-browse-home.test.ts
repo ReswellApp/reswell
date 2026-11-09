@@ -4,6 +4,7 @@ import {
   BOARDS_BROWSE_HOME_OFF,
   BOARDS_BROWSE_HOME_ON,
   BOARDS_BROWSE_NEARBY_PRIORITY_DEFAULT_MI,
+  applyBoardsBrowseLocationRadiusParams,
   boardsBrowseEsNearbyPrioritySortClause,
   boardsBrowseHomeCoordsMatch,
   boardsBrowseNearbyPriorityMiles,
@@ -134,5 +135,56 @@ describe("boards browse home preference", () => {
 
   it("keeps home=on as the preference token", () => {
     assert.equal(BOARDS_BROWSE_HOME_ON, "1")
+  })
+})
+
+describe("applyBoardsBrowseLocationRadiusParams", () => {
+  it("writes location, coords, and radius in one mutation", () => {
+    const params = new URLSearchParams()
+    applyBoardsBrowseLocationRadiusParams(params, {
+      location: "Santa Barbara, CA, USA",
+      lat: 34.42083,
+      lng: -119.69819,
+      radius: "25",
+    })
+    assert.equal(params.get("location"), "Santa Barbara, CA, USA")
+    assert.equal(params.get("lat"), "34.42083")
+    assert.equal(params.get("lng"), "-119.69819")
+    assert.equal(params.get("radius"), "25")
+    assert.equal(params.get("home"), BOARDS_BROWSE_HOME_OFF)
+  })
+
+  it("keeps an existing location when only radius changes", () => {
+    const params = new URLSearchParams(
+      "location=Santa+Barbara%2C+CA&lat=34.42&lng=-119.7",
+    )
+    applyBoardsBrowseLocationRadiusParams(params, { radius: "50" })
+    assert.equal(params.get("location"), "Santa Barbara, CA")
+    assert.equal(params.get("lat"), "34.42")
+    assert.equal(params.get("radius"), "50")
+  })
+
+  it("drops coords when a typed place has no anchor so the server can geocode", () => {
+    const params = new URLSearchParams("lat=34.42&lng=-119.7")
+    applyBoardsBrowseLocationRadiusParams(params, {
+      location: "93101",
+      radius: "25",
+    })
+    assert.equal(params.get("location"), "93101")
+    assert.equal(params.get("lat"), null)
+    assert.equal(params.get("lng"), null)
+    assert.equal(params.get("radius"), "25")
+  })
+
+  it("clears geo when location is emptied", () => {
+    const params = new URLSearchParams(
+      "location=SB&lat=34&lng=-119&radius=25&pickup=1",
+    )
+    applyBoardsBrowseLocationRadiusParams(params, { location: "" })
+    assert.equal(params.get("location"), null)
+    assert.equal(params.get("lat"), null)
+    assert.equal(params.get("radius"), null)
+    assert.equal(params.get("pickup"), null)
+    assert.equal(params.get("home"), BOARDS_BROWSE_HOME_OFF)
   })
 })

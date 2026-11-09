@@ -496,6 +496,7 @@ async function BoardListings({
     }
 
     const canTryNearbyFallback =
+      !filterByRadius &&
       anchorLat != null &&
       anchorLng != null &&
       !Number.isNaN(anchorLat) &&
@@ -542,20 +543,12 @@ async function BoardListings({
           locationFallbackNotice =
             "No exact matches in this region — showing the closest listings we have (sorted by distance)."
         } else if (fallback.kind === "near-keyword") {
-          if (filterByRadius && radiusMi != null && radiusMi < LOCATION_FALLBACK_RADIUS_MI) {
-            locationFallbackNotice = `No boards within ${Math.round(radiusMi)} mi — showing the nearest listings within ${LOCATION_FALLBACK_RADIUS_MI} miles.`
-          } else if (geocodedForFallback) {
+          if (geocodedForFallback) {
             locationFallbackNotice = `No listings right in that area — showing the nearest surfboards within ${LOCATION_FALLBACK_RADIUS_MI} miles.`
           } else {
             locationFallbackNotice =
               "No listings matched that closely — showing the nearest surfboards within 100 miles."
           }
-        } else if (
-          filterByRadius &&
-          radiusMi != null &&
-          radiusMi >= LOCATION_FALLBACK_RADIUS_MI
-        ) {
-          locationFallbackNotice = `No boards within ${Math.round(radiusMi)} mi — showing the closest listings we have (sorted by distance).`
         } else {
           locationFallbackNotice =
             "No boards within 100 miles with those filters — showing the closest listings we have (sorted by distance)."
