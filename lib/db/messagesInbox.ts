@@ -63,19 +63,42 @@ const NOTIFICATIONS_SELECT = `
   listings(id, slug, title, section, price, listing_images(url, thumbnail_url, is_primary))
 `
 
+export type MessagesInboxLoadOptions = {
+  /**
+   * Cap conversations by `last_message_at` before unread merge / support filtering.
+   * Used by the header dropdown preview so it does not scan a full inbox.
+   */
+  conversationLimit?: number
+}
+
 /** Loads a user's inbox rows (service role; scoped explicitly by userId). */
-export async function loadMessagesInboxForUser(userId: string): Promise<MessagesInboxPayload> {
+export async function loadMessagesInboxForUser(
+  userId: string,
+  options?: MessagesInboxLoadOptions,
+): Promise<MessagesInboxPayload> {
   const supabase = createServiceRoleClient()
+  const conversationLimit =
+    typeof options?.conversationLimit === "number" &&
+    Number.isFinite(options.conversationLimit) &&
+    options.conversationLimit > 0
+      ? Math.min(100, Math.floor(options.conversationLimit))
+      : null
+
+  let conversationsQuery = supabase
+    .from("conversations")
+    .select(CONVERSATIONS_SELECT)
+    .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
+    .order("last_message_at", { ascending: false })
+    .order("created_at", { ascending: false, referencedTable: "messages" })
+    .limit(1, { referencedTable: "messages" })
+
+  if (conversationLimit != null) {
+    conversationsQuery = conversationsQuery.limit(conversationLimit)
+  }
 
   const [{ data: convData, error: convError }, { data: notifData, error: notifError }] =
     await Promise.all([
-      supabase
-        .from("conversations")
-        .select(CONVERSATIONS_SELECT)
-        .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
-        .order("last_message_at", { ascending: false })
-        .order("created_at", { ascending: false, referencedTable: "messages" })
-        .limit(1, { referencedTable: "messages" }),
+      conversationsQuery,
       supabase
         .from("notifications")
         .select(NOTIFICATIONS_SELECT)

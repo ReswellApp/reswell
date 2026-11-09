@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
@@ -39,6 +39,7 @@ import { cn } from "@/lib/utils"
 import {
   CONVERSATION_INBOX_ACTIVITY_EVENT,
   CONVERSATION_THREAD_OPENED_EVENT,
+  MESSAGES_INBOX_REFRESH_EVENT,
   dispatchUnreadCountRefresh,
   type ConversationThreadOpenedDetail,
 } from "@/lib/utils/unread-message-count-events"
@@ -46,6 +47,8 @@ import { useLiveUnreadSupportCount } from "@/components/features/support/use-liv
 import { inboxTickerCount } from "@/lib/utils/inbox-ticker-count"
 
 const NAV_PREVIEW_LIMIT = 8
+/** Enough recent threads for an 8-row counterparty preview after support filtering. */
+const NAV_CONVERSATION_FETCH_LIMIT = 48
 
 type NavMessagesTab = "activity" | "messages"
 
@@ -364,8 +367,12 @@ export function NavMessagesDropdown({
     unreadSupport > 0 ? "activity" : "messages",
   )
   const [loading, setLoading] = useState(false)
+  const [hasLoaded, setHasLoaded] = useState(false)
   const [conversations, setConversations] = useState<InboxConversationRow[]>([])
   const [notifications, setNotifications] = useState<MessagesInboxNotification[]>([])
+  const loadGenerationRef = useRef(0)
+  const openRef = useRef(open)
+  openRef.current = open
 
   const activityNotifications = useMemo(
     () => filterInboxActivityNotifications(notifications),
@@ -381,27 +388,38 @@ export function NavMessagesDropdown({
     [conversations, userId],
   )
   const previewActivity = activityNotifications.slice(0, NAV_PREVIEW_LIMIT)
+  // Keep prior rows visible while refreshing — only blank on the first open.
+  const showLoading = loading && !hasLoaded
 
   const loadInbox = useCallback(async () => {
+    const generation = ++loadGenerationRef.current
     setLoading(true)
     try {
-      const fresh = await refreshMessagesInbox()
+      const fresh = await refreshMessagesInbox({
+        conversationLimit: NAV_CONVERSATION_FETCH_LIMIT,
+      })
+      if (generation !== loadGenerationRef.current) return
       if ("error" in fresh) return
       setConversations((current) => mergeInboxConversationSnapshots(current, fresh.conversations))
       setNotifications(fresh.notifications)
+      setHasLoaded(true)
     } finally {
-      setLoading(false)
+      if (generation === loadGenerationRef.current) {
+        setLoading(false)
+      }
     }
   }, [])
 
   useEffect(() => {
     if (!open) return
     void loadInbox()
-  }, [open, liveSupportUnread, loadInbox])
+  }, [open, loadInbox])
 
   useEffect(() => {
-    function onUnreadRefresh() {
-      if (open) void loadInbox()
+    function onInboxRefresh() {
+      // Badge-only `unreadCountRefresh` must not re-fetch the panel — opening the
+      // dropdown already dispatches that event, which previously stacked loads.
+      if (openRef.current) void loadInbox()
     }
     function onThreadOpened(event: Event) {
       const detail = (event as CustomEvent<ConversationThreadOpenedDetail>).detail
@@ -415,15 +433,15 @@ export function NavMessagesDropdown({
       if (!detail?.conversationId) return
       setConversations((current) => applyInboxThreadActivity(current, detail))
     }
-    window.addEventListener("unreadCountRefresh", onUnreadRefresh)
+    window.addEventListener(MESSAGES_INBOX_REFRESH_EVENT, onInboxRefresh)
     window.addEventListener(CONVERSATION_THREAD_OPENED_EVENT, onThreadOpened)
     window.addEventListener(CONVERSATION_INBOX_ACTIVITY_EVENT, onInboxActivity)
     return () => {
-      window.removeEventListener("unreadCountRefresh", onUnreadRefresh)
+      window.removeEventListener(MESSAGES_INBOX_REFRESH_EVENT, onInboxRefresh)
       window.removeEventListener(CONVERSATION_THREAD_OPENED_EVENT, onThreadOpened)
       window.removeEventListener(CONVERSATION_INBOX_ACTIVITY_EVENT, onInboxActivity)
     }
-  }, [open, loadInbox, userId])
+  }, [loadInbox, userId])
 
   const handleOpenChange = useCallback(
     (next: boolean) => {
@@ -469,7 +487,7 @@ export function NavMessagesDropdown({
     unreadMessages,
     unreadActivityCount,
     tab,
-    loading,
+    loading: showLoading,
     previewActivity,
     chatGroups,
     onTabChange: handleTabChange,
