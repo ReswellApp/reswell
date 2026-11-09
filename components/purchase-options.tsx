@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic"
 import Link from "next/link"
-import { Loader2 } from "lucide-react"
+import { CheckoutPaymentFormSkeleton } from "@/components/features/checkout/checkout-skeletons"
 import { stripeCardCheckoutEnabled } from "@/lib/stripe/client-checkout-enabled"
 import { ReswellBucksPayButton } from "@/components/features/checkout/reswell-bucks-pay-button"
 
@@ -14,12 +14,7 @@ const StripeCardCheckout = dynamic(
   {
     ssr: false,
     // Matches the reserved min-h of the mounted Stripe element so the page doesn't reflow.
-    loading: () => (
-      <div className="flex min-h-[320px] flex-col items-center justify-center gap-2 rounded-lg border bg-card text-sm text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" />
-        Loading secure checkout…
-      </div>
-    ),
+    loading: () => <CheckoutPaymentFormSkeleton />,
   },
 )
 
@@ -44,6 +39,11 @@ interface PurchaseOptionsProps {
   packagingMode?: "together" | "separate" | null
   /** When false, card checkout stays disabled until purchase details are complete. */
   purchaseDetailsReady?: boolean
+  /**
+   * Details are filled but payment cannot mount yet (e.g. live shipping quote in flight).
+   * Shows a Stripe-shaped skeleton instead of the “complete details above” placeholder.
+   */
+  paymentPreparing?: boolean
   /** True when the order ships (includes ship-only listings where fulfillment is undefined). */
   needsShipping?: boolean
   submitButtonLabel?: string
@@ -79,6 +79,7 @@ export function PurchaseOptions({
   shippingQuoteToken,
   packagingMode = null,
   purchaseDetailsReady = true,
+  paymentPreparing = false,
   needsShipping = false,
   submitButtonLabel,
   submitButtonClassName,
@@ -110,9 +111,13 @@ export function PurchaseOptions({
   return (
     <div className="flex min-h-[400px] flex-col">
       {!canMountStripe ? (
-        <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed bg-muted/30 p-6 text-center text-sm text-muted-foreground">
-          {purchaseDetailsPlaceholder(needsShipping)}
-        </div>
+        paymentPreparing ? (
+          <CheckoutPaymentFormSkeleton className="flex-1" />
+        ) : (
+          <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed bg-muted/30 p-6 text-center text-sm text-muted-foreground">
+            {purchaseDetailsPlaceholder(needsShipping)}
+          </div>
+        )
       ) : (
         <div className="flex flex-1 flex-col space-y-3">
           {reswellBucks ? (

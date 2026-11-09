@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
+import { CheckoutPaymentFormSkeleton } from "@/components/features/checkout/checkout-skeletons"
 import { StripeJsUnavailable } from "@/components/stripe-js-unavailable"
 import { BRAND_CTA_BLUE } from "@/lib/brand-colors"
 import { useStripeBrowser } from "@/lib/stripe/use-stripe-browser"
@@ -566,12 +567,7 @@ export function StripeCardCheckout({
   }
 
   if (loading && !clientSecret) {
-    return (
-      <div className="flex min-h-[320px] flex-col items-center justify-center gap-2 rounded-lg border bg-card text-sm text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" />
-        Loading secure checkout…
-      </div>
-    )
+    return <CheckoutPaymentFormSkeleton />
   }
 
   if (error && !clientSecret) {

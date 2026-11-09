@@ -8,6 +8,7 @@ import {
 } from "@/components/checkout-order-summary-aside"
 import { CheckoutPurchaseDetails, type PurchaseDetailsState } from "@/components/checkout-purchase-details"
 import type { CheckoutCopy, CheckoutListing, CheckoutSeller } from "@/components/checkout-types"
+import { CheckoutShippingRatesSkeleton } from "@/components/features/checkout/checkout-skeletons"
 import { PurchaseOptions } from "@/components/purchase-options"
 import { ProtectionTrustBlock } from "@/components/protection-trust-block"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
@@ -960,9 +961,7 @@ export function CheckoutClient({
                     Enter your shipping address above to confirm delivery.
                   </div>
                 ) : quoteLoading ? (
-                  <div className="min-h-[3.5rem] rounded-[8px] border border-neutral-200 bg-neutral-100/80 px-4 py-3.5 text-[13px] leading-relaxed text-neutral-600">
-                    Getting live carrier rates for your address…
-                  </div>
+                  <CheckoutShippingRatesSkeleton />
                 ) : offersShippingRateChoice && shipQuote?.availableShippingRates?.length ? (
                   <div className="space-y-3 rounded-[8px] border border-neutral-200 bg-white px-4 py-4">
                     <p className="text-[13px] leading-relaxed text-neutral-600">
@@ -1033,6 +1032,9 @@ export function CheckoutClient({
                   fulfillment={fulfillmentForApi ?? null}
                   shippingAddressId={needsShipping ? purchaseDetails.shippingAddressId : null}
                   purchaseDetailsReady={!paymentBlocked}
+                  paymentPreparing={
+                    purchaseDetails.readyToPay && paymentBlocked && !quoteError
+                  }
                   needsShipping={needsShipping}
                   offerId={offerId}
                   promoCode={appliedPromo?.code ?? null}
