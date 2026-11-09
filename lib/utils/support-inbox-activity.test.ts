@@ -3,8 +3,11 @@ import { describe, it } from "node:test"
 
 import type { MessagesInboxNotification } from "../db/messagesInbox.ts"
 import {
+  SUPPORT_INBOX_ACTIVITY_AGENT_BATCH_LIMIT,
   isSupportActivityType,
+  latestAgentCreatedAtByCaseId,
   mergeInboxActivityNotifications,
+  remainingSupportActivityCaseIds,
   supportCaseToInboxNotification,
 } from "./support-inbox-activity.ts"
 
@@ -47,5 +50,53 @@ describe("support inbox activity", () => {
     const merged = mergeInboxActivityNotifications([favoriteNote()], [support])
     assert.equal(merged[0]?.id, "support:case-1")
     assert.equal(merged.length, 2)
+  })
+
+  it("keeps sibling cases when one ticket fills the newest-first window", () => {
+    const busy = "case-busy"
+    const quiet = "case-quiet"
+    const page = Array.from({ length: 32 }, (_, index) => ({
+      case_id: busy,
+      created_at: `2026-11-09T15:00:${String(index).padStart(2, "0")}.000Z`,
+    }))
+
+    assert.deepEqual(
+      remainingSupportActivityCaseIds({
+        caseIds: [busy, quiet],
+        page,
+        batchLimit: 32,
+      }),
+      [quiet],
+    )
+
+    const latest = latestAgentCreatedAtByCaseId(page)
+    assert.equal(latest.get(busy), page[0]?.created_at)
+    assert.equal(latest.has(quiet), false)
+  })
+
+  it("does not refetch when the window was not full", () => {
+    assert.deepEqual(
+      remainingSupportActivityCaseIds({
+        caseIds: ["case-a", "case-b"],
+        page: [{ case_id: "case-a", created_at: "2026-11-09T15:00:00.000Z" }],
+        batchLimit: SUPPORT_INBOX_ACTIVITY_AGENT_BATCH_LIMIT,
+      }),
+      [],
+    )
+  })
+
+  it("stops once every loaded case appeared in a full window", () => {
+    const page = [
+      { case_id: "case-a", created_at: "2026-11-09T16:00:00.000Z" },
+      { case_id: "case-b", created_at: "2026-11-09T15:00:00.000Z" },
+    ]
+    assert.deepEqual(
+      remainingSupportActivityCaseIds({
+        caseIds: ["case-a", "case-b"],
+        page: [...page, ...Array.from({ length: 398 }, () => page[0]!)],
+        batchLimit: SUPPORT_INBOX_ACTIVITY_AGENT_BATCH_LIMIT,
+      }),
+      [],
+    )
   })
 })
