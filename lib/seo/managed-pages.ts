@@ -570,6 +570,18 @@ export const MANAGED_PAGES: ManagedPage[] = [
       "Estimate US surfboard shipping label costs by ship-from ZIP, receiver ZIP, weight, and package dimensions with live carrier quotes.",
     path: "/shipping-estimator",
   }),
+  page("volume-calculator", "marketing", "Volume Calculator", {
+    title: "Surfboard Volume Calculator — Reswell",
+    description:
+      "Estimate surfboard volume in liters from length, width, thickness, and outline — the same figure brands list on model size charts.",
+    path: "/volume-calculator",
+    keywords: [
+      "surfboard volume calculator",
+      "surfboard liters",
+      "board volume estimate",
+      "surfboard dimensions volume",
+    ],
+  }),
   page("giveaways", "marketing", "Giveaways", {
     title: "Surfboard Giveaways | Reswell",
     description: "The custom surfboard giveaway has ended.",

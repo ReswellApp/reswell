@@ -170,6 +170,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
       { href: '/admin/partner-embeds', label: 'Partner embeds', icon: 'code' },
       { href: '/admin/reswelltickets', label: 'Reswell tickets', icon: 'ticket' },
       { href: '/admin/tools', label: 'Admin tools', icon: 'wrench' },
+      { href: '/admin/volume-calculator', label: 'Volume calculator', icon: 'waves' },
       { href: '/admin/site-assets', label: 'Site assets', icon: 'layers' },
       { href: '/admin/settings', label: 'Settings', icon: 'settings' },
     ],

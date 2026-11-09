@@ -14,6 +14,7 @@ export const siteFooterNavLinks: {
     { name: "Explore", href: "/explore" },
     { name: "Shop from Reswell", href: "/reswell/shop" },
     { name: "Board Finder", href: "/board-finder" },
+    { name: "Volume Calculator", href: "/volume-calculator" },
     { name: "Recently sold", href: "/sold" },
     { name: "Sell your gear", href: "/sell" },
     { name: "Seller Resources", href: "/seller-resources" },
