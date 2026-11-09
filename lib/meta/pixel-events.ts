@@ -6,6 +6,8 @@
  * Every sender no-ops safely when the pixel base snippet has not loaded.
  */
 
+import { metaValueAndCurrency } from "@/lib/meta/currency"
+
 declare global {
   interface Window {
     fbq?: (...args: unknown[]) => void
@@ -22,22 +24,17 @@ export type MetaProductEventParams = {
   eventId?: string | null
 }
 
-/** Meta rejects anything that is not an ISO 4217 code. */
-function isoCurrency(value: string | null | undefined): string {
-  const code = value?.trim().toUpperCase() ?? ""
-  return /^[A-Z]{3}$/.test(code) ? code : "USD"
-}
-
-function buildProductParams(params: MetaProductEventParams): Record<string, unknown> {
+/** Pixel payload for ViewContent / AddToCart. Always pairs `value` with a valid ISO currency. */
+export function buildMetaProductEventParams(params: MetaProductEventParams): Record<string, unknown> {
   const out: Record<string, unknown> = {
     content_type: "product",
     content_ids: [params.contentId],
   }
 
-  const value = typeof params.value === "number" ? params.value : Number(params.value)
-  if (Number.isFinite(value) && value > 0) {
-    out.value = Math.round(value * 100) / 100
-    out.currency = isoCurrency(params.currency)
+  const money = metaValueAndCurrency(params.value, params.currency)
+  if (money) {
+    out.value = money.value
+    out.currency = money.currency
   }
 
   if (params.contentName?.trim()) {
@@ -58,12 +55,12 @@ function track(event: string, params: Record<string, unknown>, eventId?: string 
 
 export function trackMetaViewContent(params: MetaProductEventParams): void {
   if (!params.contentId?.trim()) return
-  track("ViewContent", buildProductParams(params), params.eventId)
+  track("ViewContent", buildMetaProductEventParams(params), params.eventId)
 }
 
 export function trackMetaAddToCart(params: MetaProductEventParams): void {
   if (!params.contentId?.trim()) return
-  track("AddToCart", buildProductParams(params), params.eventId)
+  track("AddToCart", buildMetaProductEventParams(params), params.eventId)
 }
 
 /** SPA PageView. The base snippet already tracks the first full document load. */

@@ -29,6 +29,12 @@ export default function AccountEarningsScreen() {
   const load = useCallback((accessToken: string) => fetchEarnings(accessToken), [])
   const earnings = useAccountResource(load)
   const [pane, setPane] = useState<EarningsPane>("menu")
+  const [transferBack, setTransferBack] = useState<Exclude<EarningsPane, "transfer">>("available")
+
+  const openTransfer = useCallback((from: Exclude<EarningsPane, "transfer">) => {
+    setTransferBack(from)
+    setPane("transfer")
+  }, [])
 
   return (
     <DashboardPageGate
@@ -38,7 +44,7 @@ export default function AccountEarningsScreen() {
         pane === "menu"
           ? undefined
           : pane === "transfer"
-            ? () => setPane("available")
+            ? () => setPane(transferBack)
             : () => setPane("menu")
       }
     >
@@ -63,7 +69,7 @@ export default function AccountEarningsScreen() {
               pane === "pending" ? (
                 <PendingRelease data={earnings.data} />
               ) : pane === "available" ? (
-                <AvailableBalance data={earnings.data} onTransfer={() => setPane("transfer")} />
+                <AvailableBalance data={earnings.data} onTransfer={() => openTransfer("available")} />
               ) : pane === "activity" ? (
                 <ActivityHistory items={earnings.data.activity} />
               ) : pane === "transfer" ? (
@@ -75,7 +81,11 @@ export default function AccountEarningsScreen() {
               ) : pane === "credit" && earnings.data.credit_visible ? (
                 <CreditBalance data={earnings.data} />
               ) : (
-                <EarningsMenu data={earnings.data} onOpen={setPane} />
+                <EarningsMenu
+                  data={earnings.data}
+                  onOpen={setPane}
+                  onTransfer={() => openTransfer("menu")}
+                />
               )
             ) : null}
           </ScrollView>
@@ -85,7 +95,15 @@ export default function AccountEarningsScreen() {
   )
 }
 
-function EarningsMenu({ data, onOpen }: { data: MobileEarnings; onOpen: (pane: EarningsPane) => void }) {
+function EarningsMenu({
+  data,
+  onOpen,
+  onTransfer,
+}: {
+  data: MobileEarnings
+  onOpen: (pane: EarningsPane) => void
+  onTransfer: () => void
+}) {
   const colors = useReswellColors()
   const router = useRouter()
 
@@ -93,11 +111,20 @@ function EarningsMenu({ data, onOpen }: { data: MobileEarnings; onOpen: (pane: E
     <View>
       <Text style={[styles.pageTitle, { color: colors.foreground, fontFamily: fontFamily.headline }]}>Earnings</Text>
       <View style={[styles.statsBand, { backgroundColor: colors.secondary }]}>
-        <MeStatTile plain accentValue label={"Lifetime\nEarnings"} value={data.lifetime_label} />
-        <View style={[styles.statsDivider, { backgroundColor: colors.border }]} />
-        <MeStatTile plain accentValue label={"Last\n30 Days"} value={data.earned_last_30d_label} />
-        <View style={[styles.statsDivider, { backgroundColor: colors.border }]} />
-        <MeStatTile plain accentValue label={"Available\nEarnings"} value={data.ready_label} />
+        <View style={styles.statsRow}>
+          <MeStatTile plain accentValue label={"Lifetime\nEarnings"} value={data.lifetime_label} />
+          <View style={[styles.statsDivider, { backgroundColor: colors.border }]} />
+          <MeStatTile plain accentValue label={"Last\n30 Days"} value={data.earned_last_30d_label} />
+          <View style={[styles.statsDivider, { backgroundColor: colors.border }]} />
+          <MeStatTile plain accentValue label={"Available\nEarnings"} value={data.ready_label} />
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          onPress={onTransfer}
+          style={[styles.transfer, styles.hubTransfer, { backgroundColor: colors.sellerProfileBannerDefault }]}
+        >
+          <Text style={[styles.transferLabel, { color: "#FFFFFF", fontFamily: fontFamily.text }]}>Transfer Funds</Text>
+        </Pressable>
       </View>
       <EarningsLink
         icon={<SymbolView name={{ ios: "clock.fill", android: "schedule", web: "schedule" }} size={16} tintColor={colors.background} />}
@@ -383,15 +410,22 @@ const styles = StyleSheet.create({
   loading: { fontSize: 15, paddingVertical: 12, paddingHorizontal: 16 },
   pageTitle: { fontSize: 32, fontWeight: "700", letterSpacing: -0.6, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12 },
   statsBand: {
-    flexDirection: "row",
-    alignItems: "flex-start",
     marginHorizontal: 16,
     marginBottom: 10,
-    paddingVertical: 16,
-    paddingHorizontal: 6,
+    paddingTop: 16,
+    paddingBottom: 14,
+    paddingHorizontal: 12,
     borderRadius: 12,
+    gap: 12,
+  },
+  statsRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
   },
   statsDivider: { width: StyleSheet.hairlineWidth, height: 22, marginTop: 5, opacity: 0.7 },
+  hubTransfer: {
+    marginTop: 0,
+  },
   rewardsTitle: { fontSize: 28, fontWeight: "700", letterSpacing: -0.5, paddingHorizontal: 16, paddingTop: 22, paddingBottom: 10 },
   promo: {
     flexDirection: "row",

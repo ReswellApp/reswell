@@ -8,6 +8,10 @@ import { getMetaPixelId } from '@/lib/meta/pixel-config'
  *
  * `lazyOnload` keeps fbevents.js off the first-paint path. SPA PageViews are
  * consolidated in {@link MarketingPageViewTracker}.
+ *
+ * `autoConfig` is off so the pixel does not scrape `$1,250`-style prices from the DOM
+ * and fire automatic events with currency `$` (Meta: "Invalid parameter format for currency").
+ * ViewContent / AddToCart / Purchase are sent explicitly with ISO 4217 codes.
  */
 export function MetaPixel() {
   const id = getMetaPixelId()
@@ -25,6 +29,7 @@ n.queue=[];t=b.createElement(e);t.async=!0;
 t.src=v;s=b.getElementsByTagName(e)[0];
 s.parentNode.insertBefore(t,s)}(window, document,'script',
 'https://connect.facebook.net/en_US/fbevents.js');
+fbq('set', 'autoConfig', false, '${id}');
 fbq('init', '${id}');
 fbq('track', 'PageView');
 `}

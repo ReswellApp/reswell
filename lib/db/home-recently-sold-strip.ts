@@ -51,7 +51,7 @@ export async function filterListingIdsStillSoldOnMarketplace(
     .from("listings")
     .select("id, title, status, hidden_from_site, archived_at, sold_off_platform, stock_quantity")
     .in("id", [...orderedListingIds])
-    .in("status", ["sold", "active"])
+    .in("status", ["sold", "active", "pending_sale"])
     .eq("sold_off_platform", false)
     .in("section", [...sections])
 
@@ -68,7 +68,7 @@ export async function filterListingIdsStillSoldOnMarketplace(
       .from("listings")
       .select("id, title, status, hidden_from_site, archived_at, stock_quantity")
       .in("id", [...orderedListingIds])
-      .in("status", ["sold", "active"])
+      .in("status", ["sold", "active", "pending_sale"])
       .in("section", [...sections])
     data = (fallback.data ?? []) as Record<string, unknown>[]
     error = fallback.error
@@ -121,7 +121,7 @@ async function resolveVisibleSoldListingOrder(
     .from("listings")
     .select("id, title, status, hidden_from_site, archived_at, stock_quantity")
     .in("id", [...rpcOrderedListingIds])
-    .in("status", ["sold", "active"])
+    .in("status", ["sold", "active", "pending_sale"])
     .in("section", [...sections])
 
   if (error) {
@@ -285,7 +285,7 @@ async function fetchRecentlySoldListingSaleTimesFallback(
     .select("id, title, status, hidden_from_site, archived_at, sold_off_platform, stock_quantity")
     .in("id", candidateIds)
     .in("section", [...sections])
-    .in("status", ["sold", "active"])
+    .in("status", ["sold", "active", "pending_sale"])
     .eq("sold_off_platform", false)
 
   if (listingsError) {
@@ -382,7 +382,7 @@ export async function fetchHomeRecentlySoldSurfboardRows(
     .from("listings")
     .select(`${HOME_PEER_LISTING_WITH_PROFILE_SELECT}, hidden_from_site, archived_at, stock_quantity`)
     .in("id", orderedListingIds)
-    .in("status", ["sold", "active"])
+    .in("status", ["sold", "active", "pending_sale"])
 
   if (error) {
     console.error("fetchHomeRecentlySoldSurfboardRows:", error.message)

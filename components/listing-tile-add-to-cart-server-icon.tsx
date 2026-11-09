@@ -9,9 +9,9 @@ import { trackMetaAddToCart } from "@/lib/meta/pixel-events"
 import { collectMetaClientBrowserSignals } from "@/lib/meta/collect-client-browser-signals"
 import { ListingTileBasketSvg } from "@/components/listing-tile-basket-svg"
 import { cn } from "@/lib/utils"
-import { useOptionalAuthModal } from "@/components/auth/auth-modal-context"
+import { useSignInGate } from "@/components/auth/use-sign-in-gate"
+import { useHydratedIsLoggedIn } from "@/components/features/listings/listing-viewer-provider"
 import { useReportAddedToCart } from "@/components/features/cart/added-to-cart-context"
-import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 import { useClientSearchParams } from "@/hooks/use-client-search-params"
 
 const tileBtnClass = cn(
@@ -53,7 +53,8 @@ export function ListingTileAddToCartServerIcon({
 }) {
   const [loading, setLoading] = useState(false)
   const [added, setAdded] = useState(false)
-  const authModal = useOptionalAuthModal()
+  const requireSignIn = useSignInGate()
+  const loggedIn = useHydratedIsLoggedIn(isLoggedIn)
   const reportAddedToCart = useReportAddedToCart()
   const router = useRouter()
   const pathname = usePathname()
@@ -63,17 +64,10 @@ export function ListingTileAddToCartServerIcon({
   async function handleClick(e: React.MouseEvent) {
     e.preventDefault()
     e.stopPropagation()
-    if (!isLoggedIn) {
-      const safe = safeRedirectPath(here)
-      if (authModal) {
-        authModal.openLogin(here)
-      } else {
-        router.push(`/auth/login?redirect=${encodeURIComponent(safe)}`)
-      }
-      return
-    }
+    if (loading) return
     setLoading(true)
     try {
+      if (!loggedIn && !(await requireSignIn(here))) return
       const browserSignals = await collectMetaClientBrowserSignals().catch(() => ({
         fbc: null,
         fbp: null,
@@ -108,18 +102,17 @@ export function ListingTileAddToCartServerIcon({
       type="button"
       onClick={handleClick}
       disabled={loading}
-      aria-label={isLoggedIn ? "Add to cart" : "Sign in to save to cart"}
+      aria-label={loggedIn ? "Add to cart" : "Sign in to save to cart"}
       className={cn(
         tileBtnClass,
-        isLoggedIn &&
-          added &&
+        added &&
           "border-neutral-300 bg-neutral-100 text-neutral-900 dark:border-neutral-500 dark:bg-neutral-800 dark:text-neutral-50",
         className,
       )}
     >
-      {isLoggedIn && loading ? (
+      {loading ? (
         <Loader2 className="h-4 w-4 animate-spin text-neutral-900 dark:text-neutral-100" aria-hidden />
-      ) : isLoggedIn && added ? (
+      ) : added ? (
         <CheckSvg />
       ) : (
         <ListingTileBasketSvg />

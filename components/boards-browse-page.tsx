@@ -820,7 +820,14 @@ export async function BoardsBrowsePage(props: {
               Browse all surfboards
             </h2>
           ) : null}
-          <Suspense fallback={<BoardsBrowseFiltersSectionSkeleton showTitle={!props.showListYourSurfboardCta} />}>
+          <Suspense
+            fallback={
+              <BoardsBrowseFiltersSectionSkeleton
+                showTitle={!props.showListYourSurfboardCta}
+                showLocationToolbar={!props.showListYourSurfboardCta}
+              />
+            }
+          >
             <BoardsBrowseFiltersSection
               searchParams={searchParamsPromise}
               title={props.showListYourSurfboardCta ? undefined : pageTitle}

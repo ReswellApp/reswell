@@ -485,7 +485,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
 
   return (
     <div className="mx-auto w-full max-w-xl space-y-5 pb-12">
-      <SaleDetailSummary>
+      <SaleDetailSummary
         items={summaryItems}
         orderNumber={orderNumber}
         itemAmount={itemPriceAmount}
