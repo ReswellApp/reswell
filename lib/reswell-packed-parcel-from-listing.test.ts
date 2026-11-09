@@ -7,34 +7,35 @@ import {
   FIN_RESWELL_DEFAULT_PACKAGE_WIDTH_IN_NUM,
 } from "./fin-reswell-shipping-defaults.ts"
 import { resolvePackedParcelFromListing } from "./reswell-packed-parcel-from-listing.ts"
-import { SURFBOARD_SHIPPING_PACK_BANDS } from "./surfboard-shipping-pack-bands.ts"
 
 describe("resolvePackedParcelFromListing", () => {
-  it("keeps a shortboard listing on the Medium carton", () => {
-    const medium = SURFBOARD_SHIPPING_PACK_BANDS.shortboard_medium
+  it("quotes the stored surfboard box instead of a stock pack band", () => {
     const result = resolvePackedParcelFromListing({
       section: "surfboards",
       shipping_package_tier: "shortboard",
       shipping_package_band: "shortboard_medium",
+      shipping_packed_length_in: 74,
+      shipping_packed_width_in: 22,
+      shipping_packed_height_in: 5,
+      shipping_packed_weight_oz: 224,
     })
     assert.equal(result.ok, true)
     if (!result.ok) return
-    assert.equal(result.lengthIn, medium.lengthIn)
-    assert.equal(result.widthIn, medium.widthIn)
-    assert.equal(result.heightIn, medium.heightIn)
-    assert.equal(result.weightOz, medium.weightLb * 16)
+    assert.equal(result.lengthIn, 74)
+    assert.equal(result.widthIn, 22)
+    assert.equal(result.heightIn, 5)
+    assert.equal(result.weightOz, 224)
   })
 
   it("does not rate fins on a leftover shortboard carton", () => {
-    const medium = SURFBOARD_SHIPPING_PACK_BANDS.shortboard_medium
     const result = resolvePackedParcelFromListing({
       section: "fins",
       shipping_package_tier: "shortboard",
       shipping_package_band: "shortboard_medium",
-      shipping_packed_length_in: medium.lengthIn,
-      shipping_packed_width_in: medium.widthIn,
-      shipping_packed_height_in: medium.heightIn,
-      shipping_packed_weight_oz: medium.weightLb * 16,
+      shipping_packed_length_in: 78,
+      shipping_packed_width_in: 25.5,
+      shipping_packed_height_in: 7.25,
+      shipping_packed_weight_oz: 352,
     })
     assert.equal(result.ok, true)
     if (!result.ok) return
@@ -91,15 +92,14 @@ describe("resolvePackedParcelFromListing", () => {
   })
 
   it("does not rate a leftover shortboard carton as a leash box", () => {
-    const medium = SURFBOARD_SHIPPING_PACK_BANDS.shortboard_medium
     const result = resolvePackedParcelFromListing({
       section: "leashes",
       shipping_package_tier: "shortboard",
       shipping_package_band: "shortboard_medium",
-      shipping_packed_length_in: medium.lengthIn,
-      shipping_packed_width_in: medium.widthIn,
-      shipping_packed_height_in: medium.heightIn,
-      shipping_packed_weight_oz: medium.weightLb * 16,
+      shipping_packed_length_in: 78,
+      shipping_packed_width_in: 25.5,
+      shipping_packed_height_in: 7.25,
+      shipping_packed_weight_oz: 352,
     })
     assert.equal(result.ok, true)
     if (!result.ok) return

@@ -2,7 +2,7 @@ import { isPeerListingSection, type PeerListingSection } from "@/lib/peer-listin
 
 /**
  * Packed carton owned by one marketplace section.
- * Surfboards use `shipping_package_tier` / pack bands instead of this table.
+ * Surfboards persist seller/shop L×W×H — not stock compact/medium/mid/long cartons.
  */
 export type ListingSectionCarton = {
   lengthIn: number

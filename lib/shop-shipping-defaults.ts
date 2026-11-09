@@ -7,15 +7,10 @@ import { totalBoardLengthInchesFromCombinedInput } from "@/lib/board-measurement
 import { parseListingDimensionsColumn } from "@/lib/listing-dimensions-storage"
 import { listingSectionUsesSurfboardCarton } from "@/lib/listing-section-cartons"
 import {
-  shopPackageSizeLabel,
   type ListingPackageColumns,
   type ShopCategoryPackageSizeMap,
   type ShopPackageSizeId,
 } from "@/lib/shop-category-package-sizes"
-import {
-  SHORTBOARD_PACK_BAND_LENGTH_PAD_IN,
-  SURFBOARD_SHIPPING_PACK_BANDS,
-} from "@/lib/surfboard-shipping-pack-bands"
 import {
   RESWELL_MAX_REASONABLE_SMALL_PARCEL_HEIGHT_IN,
   RESWELL_MAX_REASONABLE_SMALL_PARCEL_LENGTH_IN,
@@ -45,12 +40,16 @@ export const SHOP_STORE_DEFAULT_ID = "store_default"
 export const SHOP_STORE_DEFAULT_PACKAGE_NAME = "Shop box"
 export const SHOP_SAVED_PACKAGE_LIMIT = 12
 
+/** Board-length buckets for assigning a shop's own saved box. Not stock cartons. */
 export const SHOP_BOARD_PACK_SIZE_IDS = [
   "shortboard_compact",
   "shortboard_medium",
   "midlength",
   "longboard",
 ] as const
+
+/** Longest bare board that still uses the shorter shortboard shop-box slot. */
+const SHOP_SHORTBOARD_COMPACT_MAX_BOARD_LENGTH_IN = 71
 
 export type ShopBoardPackSizeId = (typeof SHOP_BOARD_PACK_SIZE_IDS)[number]
 export type ShopDimensionUnit = "in" | "cm"
@@ -198,16 +197,21 @@ export function formatStoreDefaultPackageLabel(
   return `Store default • ${title} - ${summary}`
 }
 
+export function shopBoardPackSizeLabel(sizeId: ShopBoardPackSizeId): string {
+  if (sizeId === "shortboard_compact") return "Shortboard"
+  if (sizeId === "shortboard_medium") return "Shortboard · longer"
+  if (sizeId === "midlength") return "Midlength"
+  return "Longboard"
+}
+
 export function shopBoardPackSizeHint(sizeId: ShopBoardPackSizeId): string {
   if (sizeId === "shortboard_compact") {
     return `Up to about ${formatSurfboardTierBoardLengthLabel(
-      SURFBOARD_SHIPPING_PACK_BANDS.shortboard_compact.maxBoardLengthIn,
+      SHOP_SHORTBOARD_COMPACT_MAX_BOARD_LENGTH_IN,
     )}`
   }
   if (sizeId === "shortboard_medium") {
-    const min = formatSurfboardTierBoardLengthLabel(
-      SURFBOARD_SHIPPING_PACK_BANDS.shortboard_compact.maxBoardLengthIn + 1,
-    )
+    const min = formatSurfboardTierBoardLengthLabel(SHOP_SHORTBOARD_COMPACT_MAX_BOARD_LENGTH_IN + 1)
     const max = formatSurfboardTierBoardLengthLabel(SURFBOARD_TIER_SHORTBOARD_MAX_BOARD_LENGTH_IN - 1)
     return `About ${min}–${max}`
   }
@@ -217,14 +221,14 @@ export function shopBoardPackSizeHint(sizeId: ShopBoardPackSizeId): string {
 export function shopBoardPackSizes(): { id: ShopBoardPackSizeId; label: string; hint: string }[] {
   return SHOP_BOARD_PACK_SIZE_IDS.map((id) => ({
     id,
-    label: shopPackageSizeLabel(id),
+    label: shopBoardPackSizeLabel(id),
     hint: shopBoardPackSizeHint(id),
   }))
 }
 
-/** Longest bare board this band is meant to cover. */
+/** Longest bare board this length bucket is meant to cover. */
 export function shopBoardPackSizeMaxLengthIn(sizeId: ShopBoardPackSizeId): number {
-  if (sizeId === "shortboard_compact") return SURFBOARD_SHIPPING_PACK_BANDS.shortboard_compact.maxBoardLengthIn
+  if (sizeId === "shortboard_compact") return SHOP_SHORTBOARD_COMPACT_MAX_BOARD_LENGTH_IN
   if (sizeId === "shortboard_medium") return SURFBOARD_TIER_SHORTBOARD_MAX_BOARD_LENGTH_IN - 1
   if (sizeId === "midlength") return SURFBOARD_TIER_MIDLENGTH_MAX_BOARD_LENGTH_IN - 1
   return SURFBOARD_TIER_LONGBOARD_MAX_BOARD_LENGTH_IN - 1
@@ -236,10 +240,7 @@ export function shopBoardPackSizeForLength(
   if (lengthIn == null || !Number.isFinite(lengthIn) || lengthIn <= 0) return null
   const tier = resolveSurfboardShippingTierFromBoardLengthIn(lengthIn)
   if (tier === "midlength" || tier === "longboard") return tier
-  const packedNeed = lengthIn + SHORTBOARD_PACK_BAND_LENGTH_PAD_IN
-  if (packedNeed <= SURFBOARD_SHIPPING_PACK_BANDS.shortboard_compact.lengthIn) {
-    return "shortboard_compact"
-  }
+  if (lengthIn <= SHOP_SHORTBOARD_COMPACT_MAX_BOARD_LENGTH_IN) return "shortboard_compact"
   return "shortboard_medium"
 }
 

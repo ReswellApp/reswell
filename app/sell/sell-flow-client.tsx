@@ -232,11 +232,7 @@ import {
   parseSurfboardShippingTierId,
   type SurfboardShippingTierId,
 } from "@/lib/surfboard-shipping-tiers"
-import {
-  parseSurfboardShippingPackBandId,
-  surfboardShippingPackBandFixedParcel,
-  type SurfboardShippingPackBandId,
-} from "@/lib/surfboard-shipping-pack-bands"
+import type { SurfboardShippingPackBandId } from "@/lib/surfboard-shipping-pack-bands"
 import {
   isListingDimensionDisplaySchemaCacheError,
   withoutListingDimensionDisplayDbFields,
@@ -1519,29 +1515,12 @@ function SellPageContentInner({
         parseSurfboardShippingTierId(
           (listing as { shipping_package_tier?: string | null }).shipping_package_tier,
         ) ?? ""
-      const explicitPackBand = parseSurfboardShippingPackBandId(
-        (listing as { shipping_package_band?: string | null }).shipping_package_band,
-      )
       const hasReswellPackageFromDb =
         loadedReswellPackage.reswellPackageLengthIn.trim() !== "" ||
         loadedReswellPackage.reswellPackageWidthIn.trim() !== "" ||
         loadedReswellPackage.reswellPackageHeightIn.trim() !== "" ||
         loadedReswellPackage.reswellPackageWeightLb.trim() !== "" ||
         loadedReswellPackage.reswellPackageWeightOz.trim() !== ""
-      // Legacy pack-band listings: prefill the package fields from the fixed carton.
-      const packageFromLegacyBand =
-        !hasReswellPackageFromDb && explicitPackBand
-          ? (() => {
-              const band = surfboardShippingPackBandFixedParcel(explicitPackBand)
-              return {
-                reswellPackageLengthIn: String(band.lengthIn),
-                reswellPackageWidthIn: String(band.widthIn),
-                reswellPackageHeightIn: String(band.heightIn),
-                reswellPackageWeightLb: String(band.weightLb),
-                reswellPackageWeightOz: "",
-              }
-            })()
-          : null
       const parsedDims = surfboardSellFormDimensionsFromListingRow(
         listing as {
           dimensions?: string | null
@@ -1582,7 +1561,7 @@ function SellPageContentInner({
         adminCustomShippingCarton: boardShippingCostMode === "reswell",
         ...(hasReswellPackageFromDb
           ? loadedReswellPackage
-          : packageFromLegacyBand ?? {
+          : {
               reswellPackageLengthIn: "",
               reswellPackageWidthIn: "",
               reswellPackageHeightIn: "",

@@ -1,5 +1,3 @@
-import { SURFBOARD_SHIPPING_PACK_BANDS } from "@/lib/surfboard-shipping-pack-bands"
-
 export type HowToSellBoxCalculatorPreset = {
   id: string
   label: string
@@ -44,9 +42,6 @@ export const HOW_TO_SELL_LARGE_PARCEL_TYPICAL_USD = {
   jump: 100,
 } as const
 
-const compact = SURFBOARD_SHIPPING_PACK_BANDS.shortboard_compact
-const medium = SURFBOARD_SHIPPING_PACK_BANDS.shortboard_medium
-
 export const HOW_TO_SELL_BOX_CALCULATOR_PRESETS: HowToSellBoxCalculatorPreset[] = [
   {
     id: "best-rate",
@@ -54,23 +49,15 @@ export const HOW_TO_SELL_BOX_CALCULATOR_PRESETS: HowToSellBoxCalculatorPreset[] 
     lengthIn: HOW_TO_SELL_BEST_RATE_BOX.lengthIn,
     widthIn: HOW_TO_SELL_BEST_RATE_BOX.widthIn,
     heightIn: HOW_TO_SELL_BEST_RATE_BOX.heightIn,
-    weightLb: compact.weightLb,
-  },
-  {
-    id: "compact",
-    label: `${compact.lengthIn}×${compact.widthIn}×${compact.heightIn} · tighter`,
-    lengthIn: compact.lengthIn,
-    widthIn: compact.widthIn,
-    heightIn: compact.heightIn,
-    weightLb: compact.weightLb,
+    weightLb: 14,
   },
   {
     id: "large-parcel",
-    label: `${medium.lengthIn}×${medium.widthIn}×${medium.heightIn} · large parcel`,
-    lengthIn: medium.lengthIn,
-    widthIn: medium.widthIn,
-    heightIn: medium.heightIn,
-    weightLb: medium.weightLb,
+    label: `${HOW_TO_SELL_LARGE_PARCEL_CLIFF.lengthIn}×${HOW_TO_SELL_LARGE_PARCEL_CLIFF.widthIn}×${HOW_TO_SELL_LARGE_PARCEL_CLIFF.heightIn} · large parcel`,
+    lengthIn: HOW_TO_SELL_LARGE_PARCEL_CLIFF.lengthIn,
+    widthIn: HOW_TO_SELL_LARGE_PARCEL_CLIFF.widthIn,
+    heightIn: HOW_TO_SELL_LARGE_PARCEL_CLIFF.heightIn,
+    weightLb: 22,
   },
 ]
 

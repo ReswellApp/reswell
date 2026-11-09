@@ -32,10 +32,6 @@ import {
   shopPackageSizesForSection,
   type ListingPackageColumns,
 } from "@/lib/shop-category-package-sizes"
-import {
-  parseSurfboardShippingPackBandId,
-  surfboardShippingPackBandFixedParcel,
-} from "@/lib/surfboard-shipping-pack-bands"
 import { tractionSizeSlugForDb, TRACTION_SIZE_OPTIONS } from "@/lib/traction-listing-config"
 import { wetsuitSizeSlugForDb, WETSUIT_SIZE_OPTIONS } from "@/lib/wetsuit-listing-config"
 
@@ -184,22 +180,11 @@ function packageFormFromSource(row: ListingDeskSource): {
       packageWeightOz: loaded.reswellPackageWeightOz,
     }
   }
-  const band = row.section === "surfboards" ? parseSurfboardShippingPackBandId(row.shipping_package_band) : null
-  if (!band) {
-    return {
-      packageLengthIn: "",
-      packageWidthIn: "",
-      packageHeightIn: "",
-      packageWeightLb: "",
-      packageWeightOz: "",
-    }
-  }
-  const parcel = surfboardShippingPackBandFixedParcel(band)
   return {
-    packageLengthIn: String(parcel.lengthIn),
-    packageWidthIn: String(parcel.widthIn),
-    packageHeightIn: String(parcel.heightIn),
-    packageWeightLb: String(parcel.weightLb),
+    packageLengthIn: "",
+    packageWidthIn: "",
+    packageHeightIn: "",
+    packageWeightLb: "",
     packageWeightOz: "",
   }
 }

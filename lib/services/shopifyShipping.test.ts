@@ -18,18 +18,30 @@ test("keeps package data but disables shipping until ship-from is ready", () => 
   const defaults = shopifyImportFulfillmentDefaults({
     section: "surfboards",
     hasShipFromAddress: false,
-    packageSizes: { surfboards: "shortboard_compact" },
+    packageSizes: {},
+    shippingDefaults: {
+      ...EMPTY_SHOP_SHIPPING_DEFAULTS,
+      storeDefault: {
+        id: SHOP_STORE_DEFAULT_ID,
+        name: "Shop box",
+        lengthIn: 74,
+        widthIn: 22,
+        heightIn: 5,
+        weightLb: 14,
+        presetId: null,
+      },
+    },
   })
   assert.equal(defaults.shipping_available, false)
-  assert.equal(defaults.shipping_package_tier, "shortboard")
-  assert.equal(defaults.shipping_package_band, "shortboard_compact")
+  assert.equal(defaults.shipping_packed_length_in, 74)
+  assert.equal(defaults.shipping_package_band, null)
 })
 
 test("uses a surfboard shop default before an older category preset", () => {
   const defaults = shopifyImportFulfillmentDefaults({
     section: "surfboards",
     hasShipFromAddress: true,
-    packageSizes: { surfboards: "longboard" },
+    packageSizes: {},
     shippingDefaults: {
       ...EMPTY_SHOP_SHIPPING_DEFAULTS,
       storeDefault: {
@@ -39,7 +51,7 @@ test("uses a surfboard shop default before an older category preset", () => {
         widthIn: 22,
         heightIn: 5,
         weightLb: 14,
-        presetId: "shortboard_compact",
+        presetId: null,
       },
     },
   })
@@ -84,7 +96,7 @@ test("uses the fin carton instead of the shop box when fins have no preset", () 
         widthIn: 22,
         heightIn: 5,
         weightLb: 14,
-        presetId: "shortboard_medium",
+        presetId: null,
       },
     },
   })

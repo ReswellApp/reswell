@@ -24,16 +24,24 @@ describe("reswellPackageFieldsToDb", () => {
     assert.equal(packed.shipping_packed_weight_oz, 48)
   })
 
-  it("keeps a shortboard pack band on surfboard listings", () => {
+  it("persists the seller's surfboard box instead of a stock pack band", () => {
     const packed = reswellPackageFieldsToDb({
       boardShippingCostMode: "reswell",
       listingSection: "surfboards",
       surfboardShippingTier: "shortboard",
       surfboardShippingPackBand: "shortboard_medium",
+      reswellPackageLengthIn: "74",
+      reswellPackageWidthIn: "22",
+      reswellPackageHeightIn: "5",
+      reswellPackageWeightLb: "14",
+      reswellPackageWeightOz: "0",
     })
     assert.equal(packed.shipping_package_tier, "shortboard")
-    assert.equal(packed.shipping_package_band, "shortboard_medium")
-    assert.ok((packed.shipping_packed_length_in ?? 0) >= 70)
+    assert.equal(packed.shipping_package_band, null)
+    assert.equal(packed.shipping_packed_length_in, 74)
+    assert.equal(packed.shipping_packed_width_in, 22)
+    assert.equal(packed.shipping_packed_height_in, 5)
+    assert.equal(packed.shipping_packed_weight_oz, 224)
   })
 
   it("assigns the leash carton, not a leftover shortboard, when dims are blank", () => {
