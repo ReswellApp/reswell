@@ -34,6 +34,11 @@ describe("public site shell script loading", () => {
     }
   })
 
+  it("disables Meta Pixel autoConfig so scraped $ prices are not sent as currency", () => {
+    const source = readRepoFile("components/meta-pixel.tsx")
+    assert.match(source, /fbq\('set', 'autoConfig', false,/)
+  })
+
   it("does not statically import posthog-js from instrumentation-client", () => {
     const source = readRepoFile("instrumentation-client.ts")
     assert.doesNotMatch(source, /from ['"]posthog-js['"]/)

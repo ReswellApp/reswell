@@ -16,6 +16,7 @@ import "server-only"
 
 import { createHash } from "node:crypto"
 
+import { metaValueAndCurrency } from "@/lib/meta/currency"
 import { normalizeMetaEmail } from "@/lib/meta/normalize-customer-info"
 import { getMetaPixelId } from "@/lib/meta/pixel-config"
 
@@ -128,10 +129,10 @@ function buildCustomDataPayload(customData: MetaCustomData | undefined): Record<
   const out: Record<string, unknown> = {}
   if (!customData) return out
 
-  const value = typeof customData.value === "number" ? customData.value : Number(customData.value)
-  if (Number.isFinite(value) && value > 0) {
-    out.value = Math.round(value * 100) / 100
-    out.currency = customData.currency?.trim().toUpperCase() || "USD"
+  const money = metaValueAndCurrency(customData.value, customData.currency)
+  if (money) {
+    out.value = money.value
+    out.currency = money.currency
   }
 
   const ids = (customData.contentIds ?? [])
