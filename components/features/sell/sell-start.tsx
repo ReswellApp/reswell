@@ -9,17 +9,13 @@ import { resolveSellEntryPoint } from "@/lib/sell-flow/sell-entry-point"
 
 /**
  * `/sell` hub — catalog search → drafts → why sell → FAQ.
- * The admin photo match is rendered by the server page, only for admins.
  */
 export function SellStart({
   isAdmin = false,
   surfboardSellHref,
-  adminPhotoIdentify = null,
 }: {
   isAdmin?: boolean
   surfboardSellHref: string
-  /** Server-rendered only for admins. Null for every other account. */
-  adminPhotoIdentify?: React.ReactNode
 }) {
   React.useEffect(() => {
     // Stamp session entry once so downstream flow_started rows join cleanly.
@@ -33,9 +29,6 @@ export function SellStart({
         isAdmin={isAdmin}
         surfboardSellHref={surfboardSellHref}
       />
-      {adminPhotoIdentify ? (
-        <div className="mx-auto w-full max-w-2xl px-4 pb-2 sm:px-6">{adminPhotoIdentify}</div>
-      ) : null}
       <div className="mx-auto w-full max-w-2xl px-4 pb-4 pt-2 sm:px-6 sm:pt-0">
         <SellContinueDrafts />
       </div>
