@@ -3,14 +3,14 @@ import {
   dbListUnalertedIncreasedAdjustments,
   dbMarkShipEngineAdjustmentsAdminAlerted,
 } from "@/lib/db/shipengineLabelAdjustments"
+import { ADMIN_SMS_ALERT_PROFILE_ID } from "@/lib/klaviyo/admin-sms-alert-profile"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 
 const ALERT_METRIC = "ShipEngine Label Adjustment Alert"
 const ALERT_BATCH_SIZE = 500
-export const SHIPENGINE_ADJUSTMENT_ALERT_PROFILE_ID =
-  "reswell-admin-shipengine-adjustment-alerts"
+export const SHIPENGINE_ADJUSTMENT_ALERT_PROFILE_ID = ADMIN_SMS_ALERT_PROFILE_ID
 
 export type ShipEngineAdjustmentAdminAlertSummary = {
   sent: boolean

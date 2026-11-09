@@ -24,6 +24,7 @@ import {
   isReswellTransactionalSender,
   normalizeEmailForMatch,
 } from "@/lib/utils/support-inbound-email"
+import { notifyStaffSupportCustomerReply } from "@/lib/services/adminSupportAlerts"
 import { scheduleSupportReplyDraft } from "@/lib/services/supportReplyDraft"
 
 const BODY_MAX = 12000
@@ -270,5 +271,14 @@ export async function applyInboundSupportEmail(
   }
 
   scheduleSupportReplyDraft(row.id)
+  notifyStaffSupportCustomerReply({
+    id: row.id,
+    subject: row.subject,
+    preview: body,
+    source_channel: row.source_channel,
+    uniqueId: posted.id
+      ? `support-ticket-admin-alert-reply-${posted.id}`
+      : `support-ticket-admin-alert-reply-inbound-${email.inboundEmailId}`,
+  })
   return { ok: true, status: "appended", caseId: row.id }
 }
