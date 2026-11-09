@@ -345,7 +345,7 @@ export function BoardsBrowseClient({
           {afterHeader}
 
           {showLocationFilter && title ? (
-            <div className="mb-3 flex justify-end">
+            <div className="mb-2 flex items-center justify-end md:mb-3">
               <BoardsBrowseLocationFilterButton state={state} />
             </div>
           ) : null}

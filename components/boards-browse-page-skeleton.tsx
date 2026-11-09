@@ -26,7 +26,7 @@ export function BoardsBrowseFiltersSectionSkeleton({
       <div className="mt-5">
         {showTitle ? (
           <div className="mb-3 flex justify-end">
-            <Skeleton className="h-9 w-[7.25rem] rounded-full" />
+            <Skeleton className="h-5 w-36" />
           </div>
         ) : null}
         <ListingTileGridSkeleton count={10} ariaLabel="Loading surfboards" />
