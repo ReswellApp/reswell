@@ -153,7 +153,7 @@ export function OfferMessageCard({
 
         {!isSeller && countered && !counterExpired && offer.expires_at ? (
           <ThreadEventHint>
-            Accept or decline{" "}
+            Accept & checkout or decline{" "}
             <RelativeTime iso={offer.expires_at} formatLabel={formatDistanceToNowLabel} />.
           </ThreadEventHint>
         ) : null}
