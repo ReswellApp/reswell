@@ -172,6 +172,13 @@ export function AdminAdjustmentDisputesTab() {
                   <TableCell className="max-w-[140px] truncate text-sm">{row.sellerName || "Seller"}</TableCell>
                   <TableCell className="text-xs">{adjustmentDisputeStatusLabel(row.status)}</TableCell>
                   <TableCell className="space-x-2 text-right">
+                    {row.order_id ? (
+                      <Button type="button" size="sm" variant="outline" asChild>
+                        <Link href={`/admin/orders/${row.order_id}#shipping-dispute`}>
+                          Prepare filing
+                        </Link>
+                      </Button>
+                    ) : null}
                     {row.status === "submitted_to_reswell" ? (
                       <Button
                         type="button"
