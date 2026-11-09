@@ -48,6 +48,7 @@ export async function PATCH(
     correctedThickness: parsed.data.correctedThickness,
     correctedVolume: parsed.data.correctedVolume,
     excluded: parsed.data.excluded,
+    correctedSourceImageUrl: parsed.data.correctedSourceImageUrl,
     promoteToRefs: parsed.data.excluded === true ? false : parsed.data.promoteToRefs,
   })
 

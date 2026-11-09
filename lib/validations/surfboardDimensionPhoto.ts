@@ -61,10 +61,28 @@ export type SurfboardDimensionPhotoJevReview = {
   reason: string
 }
 
+export const SURFBOARD_DIMENSION_PHOTO_MEMORY_KINDS = [
+  "photo_good",
+  "photo_bad",
+  "dims_good",
+  "dims_close",
+  "dims_bad",
+  "exclude",
+] as const
+export type SurfboardDimensionPhotoMemoryKind =
+  (typeof SURFBOARD_DIMENSION_PHOTO_MEMORY_KINDS)[number]
+
+export type SurfboardDimensionPhotoStampBox = {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
 export const surfboardDimensionPhotoMatchListQuerySchema = z.object({
   days: z.coerce.number().int().min(1).max(90).optional().default(30),
   rating: z
-    .enum(["unrated", "good", "close", "bad", "excluded", "all"])
+    .enum(["unrated", "good", "close", "bad", "excluded", "withheld", "all"])
     .optional()
     .default("unrated"),
   surface: z
@@ -108,6 +126,17 @@ export const rateSurfboardDimensionPhotoMatchSchema = z
     correctedVolume: correctedDimField,
     /** Skip this case forever for rematch/scan; stores exclude memory. */
     excluded: z.boolean().optional(),
+    /** Admin-picked stamp photo when the model chose the wrong gallery frame. */
+    correctedSourceImageUrl: z
+      .string()
+      .trim()
+      .max(2000)
+      .nullable()
+      .optional()
+      .refine(
+        (value) => value == null || value === "" || /^https?:\/\//i.test(value),
+        "correctedSourceImageUrl must be an http(s) URL",
+      ),
     promoteToRefs: z.boolean().optional().default(true),
   })
   .refine(
@@ -120,7 +149,8 @@ export const rateSurfboardDimensionPhotoMatchSchema = z
       v.correctedLength !== undefined ||
       v.correctedWidth !== undefined ||
       v.correctedThickness !== undefined ||
-      v.correctedVolume !== undefined,
+      v.correctedVolume !== undefined ||
+      v.correctedSourceImageUrl !== undefined,
     { message: "Nothing to update" },
   )
 

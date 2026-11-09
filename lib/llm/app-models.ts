@@ -217,7 +217,7 @@ export const APP_LLM_FEATURES: readonly AppLlmFeatureDefinition[] = [
     id: "surfboard_dimension_photo_pick",
     name: "Dimension photo picker",
     purpose:
-      "Harness stage 1 only: choose which gallery photo is the size stamp (index). Multi-image classification with Good/Bad/Exclude few-shot. Never reads L×W×T. Gemini 3 Flash for speed + pick quality on large galleries; override with SURFBOARD_DIMENSION_PHOTO_PICK_MODEL.",
+      "Harness stage 1 only: choose which gallery photo is the size stamp (index). Retrieves indexed Good/Bad/Exclude examples by perceptual hash + diversity. Never reads L×W×T. Gemini 3 Flash for speed + pick quality on large galleries; override with SURFBOARD_DIMENSION_PHOTO_PICK_MODEL.",
     gatewayFeatureTag: "feature:surfboard-dimension-photo-pick",
     transport: "vercel_ai_gateway",
     // Gemini 3 Flash: faster + stronger than 2.5 Flash for multi-image pick; structured index.
@@ -238,7 +238,7 @@ export const APP_LLM_FEATURES: readonly AppLlmFeatureDefinition[] = [
     id: "surfboard_dimension_photo",
     name: "Dimension photo dims reader",
     purpose:
-      "Harness stage 2 only: OCR L×W×T from the stamp photo chosen by the picker (original + enhance). Never brand/model/catalog. Never listings.dimensions. Pro for faint handwriting; override with SURFBOARD_DIMENSION_PHOTO_MODEL or SURFBOARD_DIMENSION_PHOTO_DIMS_MODEL.",
+      "Harness stage 2 only: OCR L×W×T from a cropped stamp (picker stampBox + enhance) using indexed Close/Bad ground-truth examples. Never brand/model/catalog. Never listings.dimensions. Pro for faint handwriting; override with SURFBOARD_DIMENSION_PHOTO_MODEL or SURFBOARD_DIMENSION_PHOTO_DIMS_MODEL.",
     gatewayFeatureTag: "feature:surfboard-dimension-photo-dims",
     transport: "vercel_ai_gateway",
     // Pro: stamp OCR / handwriting while dims accuracy is still climbing.
