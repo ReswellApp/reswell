@@ -1,0 +1,139 @@
+{
+  "generated_for": "1-DA Shapes official named standup catalog",
+  "source": "https://1-dashapes.com (official WooCommerce model pages — excludes used/dimension SKUs, grips, epoxy tech page, custom deposits, and kneeboards)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "1-da-shapes",
+      "name": "1-DA Shapes",
+      "website_url": "https://1-dashapes.com",
+      "location_label": "Tweed Heads, New South Wales, Australia",
+      "founder_name": "Gavin Upson",
+      "lead_shaper_name": "Gavin Upson",
+      "short_description": "Named standup surfboards designed and shaped by Gavin Upson in Tweed Heads, New South Wales.",
+      "logo_url": "https://1-dashapes.com/wp-content/uploads/2023/01/Standard-logo-for-website-Black-dark-grey-logo-with-white-icon-clear-background.png",
+      "models": [
+        {
+          "name": "Mid-E",
+          "image_url": "https://1-dashapes.com/wp-content/uploads/2023/09/1Da_MidE_V2-1024x1024.jpg",
+          "description": "Gav took the classic mid length surfboard design and enhanced it with 21st century features to bring you a mid length surfboard for the modern era. The MID-E features a lower nose entry and an accellerated tail rocker to compliment the single to double barrel vee concave through the fin tail area, with all these features working together to make this board absolutely fly.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Fish",
+          "image_url": "https://1-dashapes.com/wp-content/uploads/2020/03/FISH-web-image-slightly-larger-transparent-background-600x600.png",
+          "description": "The FISH was created with my 1-DA Community Members. They shared their feedback on their challenges and frustrations when it came to Fish surfboards, and I overcame that through my design work. Specialising in high performance surfboards since 1996, I couldn’t help myself but incorporate some performance elements to this traditional design.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Elite",
+          "image_url": "https://1-dashapes.com/wp-content/uploads/2023/07/ELITE2.0-model-image-1024x1024.jpg",
+          "description": "THE ELITE is a super high performance board with all the bells & whistles. The ELITE 2.0 has a continuous rocker, even foil & low boxy rails, which creates a well balanced super high performance board that loves pocket, lip and aerial surfing.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Cheater",
+          "image_url": "https://1-dashapes.com/wp-content/uploads/2018/08/CHEATER-model-image-1024x1024.jpg",
+          "description": "THE CHEATER is a versatile hybrid designed for all surfers. The design is based on Gav’s knowledge & experience over the last 20 years shaping and designing boards. THE CHEATER has a full flat deck with a drop down rail, and incorporates a single to deep double concave for ease of rail to rail transition.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Mass Destruction",
+          "image_url": "https://1-dashapes.com/wp-content/uploads/2018/08/MASS-DESTRUCTION-model-image-1024x1024.jpg",
+          "description": "The MASS DESTRUCTION is a high performance grom board designed specifically for groms taking their competitive surfing to the ultimate level. Gav took THE ELITE model and modified it into a high performance grom board.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Little Warrior",
+          "image_url": "https://1-dashapes.com/wp-content/uploads/2018/07/Little-Warrior-new-cover-pic-maybe-600x600.webp",
+          "description": "The design of the little WARRIOR is based on the foamy Learn-To-Surf boards. It has a flat deck and beefed up rails providing stability which is great for beginners. It’s also great for the intermediate and advanced mal riders, for when the waves are waist height and under.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Buzzinga",
+          "image_url": "https://1-dashapes.com/wp-content/uploads/2018/07/BUZZINGA-white-background-600x600.png",
+          "description": "Not just for fun and going straight, this little gem is also geared up with performance in mind. The design came through discussions with Bobby Martinez of what he likes in his shoulder-high-and-under boards where he feels the ‘buzz’ .",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Shuriken",
+          "image_url": "https://1-dashapes.com/wp-content/uploads/2018/07/1Da_Shurikenpng-1024x1024.jpg",
+          "description": "The SHURIKEN is a Japanese martial arts weapon. Our SHURIKEN model is the result of smashing together the designs of our two small wave boards … The Cheater and The Multi. The result is a super sharp hybrid board for small wave days.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Classic",
+          "image_url": "https://1-dashapes.com/wp-content/uploads/2018/09/CLASSIC-600x600.png",
+          "description": "THE CLASSIC – the name says it all. The design is based on Gav’s knowledge & experience over the last 20 years. THE CLASSIC incorporates traditional characteristics of a classic mal – a nose concave, rolled bottom, 50/50 rails and a hip in the tail outline.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Mistress",
+          "image_url": "https://1-dashapes.com/wp-content/uploads/2018/09/MISTRESS-600x600.png",
+          "description": "The MISTRESS is a performance mal you just can’t leave behind. The design is based on Gav’s knowledge & experience over the last 20 years. The MISTRESS incorporates mid rails and has an even foil.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Gun",
+          "image_url": "https://1-dashapes.com/wp-content/uploads/2018/07/Website-Board-Images-Square-DRAFT-2021-01-08T134951.911-600x600.png",
+          "description": "THE GUN is a board for those seriously big waves. The design is based on Gav’s knowledge & experience over the last 10 years working with big wave riders. THE GUN has a foiled out tail, giving more hold and drive.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Semi Gun",
+          "image_url": "https://1-dashapes.com/wp-content/uploads/2018/07/SEMI-GUN-web-image-600x600.png",
+          "description": "The SEMI GUN is a step up board for bigger waves. The design is based on Gav’s knowledge & experience over the last 10 years working with big wave riders. The SEMI GUN has a foiled out tail, giving more hold and drive.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Free Soul",
+          "image_url": "https://1-dashapes.com/wp-content/uploads/2018/09/FREE-SOUL-600x600.png",
+          "description": "The FREE SOUL is a single fin board designed for all those cruisy surfers with a laid back approach to surfing. The FREE SOUL has all the traditional characteristics of a single fin board, including beak nose, flat deck, rolled bottom with vee-double concave and forward outline, but with a modern twist of the softened top rail for a smoother feel.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Hypo",
+          "image_url": "https://1-dashapes.com/wp-content/uploads/2018/07/HYPO-model-image-1024x1024.jpg",
+          "description": "Just as the name suggests, the HYPO is your board full of hype. It’s definitely a runner so hold on tight! The HYPO is all about speed and fun. You’ll find yourself making sections you wouldn’t normally make on your high performance short board.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Dub T",
+          "image_url": "https://1-dashapes.com/wp-content/uploads/2018/07/DUBT-model-image-1024x1024.jpg",
+          "description": "The DUB T was designed as a performance Twin Fin surfboard. This twinnie features a single into a double concave with a slight vee off the tail, working in conjunction with the single flyer swallow tail for added drive.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Popsicle",
+          "image_url": "https://1-dashapes.com/wp-content/uploads/2018/09/POPSICLE-600x600.png",
+          "description": "The POPSICLE is the perfect hybrid board for super fun small wave days. The design is based on the original Mini Simmons but with Gav’s personal touch. The POPSICLE has the traditional characteristics of a full nose & tail, flat deck and drop down rails, but with the added zing created through Gav’s unique bottom contour design and personal fin shape.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Big J",
+          "image_url": "https://1-dashapes.com/wp-content/uploads/2018/07/BIG-J-web-image-with-larger-logo-600x600.png",
+          "description": "The BIG J is a performance board designed for the big guy or average fitness surfer. The design is based on the J-FORCE model, but with increased volume. The BIG J ’s added volume is incorporated through mid-rails and evenly distributed foam.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Multi",
+          "image_url": "https://1-dashapes.com/wp-content/uploads/2018/07/MULTI-model-image-1-1024x1024.jpg",
+          "description": "THE MULTI is the most versatile board in the quiver, designed for all surfers to feel the power of a performance board with the support of a forgiving design. THE MULTI has a slightly reduced rocker, single to deep double concave, fuller nose & tail outline, flatter deck & full rail, creating a board that gives every surfer an easy enjoyable ride.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "J-Force",
+          "image_url": "https://1-dashapes.com/wp-content/uploads/2018/07/JFORCE-model-image-1024x1024.jpg",
+          "description": "The J-FORCE is a FAST high performance board designed for all experienced surfers. The design is based on Gav’s knowledge and experience, specifically when working with Graham ‘Gee Force’ Smith to create magic boards for Jordy.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Cub",
+          "image_url": "https://1-dashapes.com/wp-content/uploads/2018/07/1Da_TheCub-1024x1024.jpg",
+          "description": "THE CUB is a performance board designed specifically for you, the frothing grom. It hides foam in all the right places so you can push your surfing ability to the limit with confidence.",
+          "board_category_slug": "shortboard"
+        }
+      ]
+    }
+  ]
+}
