@@ -1,0 +1,55 @@
+{
+  "generated_for": "Gallery Surfboards official named standup catalog",
+  "source": "https://www.gallerysurf.com/boards (official Squarespace named standup models with dedicated pages — excludes New Skool and Juicer listing tiles that have no first-party description, custom order deposits, and merch)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "gallery-surfboards",
+      "name": "Gallery Surfboards",
+      "website_url": "https://www.gallerysurf.com/",
+      "location_label": "Fair Haven, New Jersey",
+      "founder_name": "Rick DeJianne",
+      "lead_shaper_name": "Rick DeJianne",
+      "short_description": "Custom EPS/epoxy surfboards hand-shaped by Rick DeJianne in Fair Haven, New Jersey — shortboard-to-midlength designs built for East Coast beach break.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/gallery-surfboards.jpg",
+      "models": [
+        {
+          "name": "Variant",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5223318ce4b0b90e69177b86/1505013453541-FTPWIHGRLVDU9HQ692SS/IMG_0107.jpg?format=1500w",
+          "description": "By far my most popular design, the Variant is a small wave catching machine. Several years ago the mini simmons craze was in full effect and everyone was buying the short flat rockered plank boards with keel fins that were great for catching tiny waves, but lacked performance and versatility. Then came the Hull craze, but everyone struggled trying to make them work in beach break. The Variant was born in my attempt to inject more performance and versatility into the mini simmons concept by combining modern design features with the trim and glide of a Hull. With the pulled in nose, more curve to the outline, step deck, fluted wings, and speed dialer fins, the Variant design fits somewhere between a fish, a stubby and a mini simmons, but it's versatility goes way beyond that. While it was specifically designed to catch waves as small as a whale fart, the Variant can be surfed up to head high and even overhead. It's a great option for surfers in need of a board with more volume. Advanced surfers will love how easy it paddles and catches waves in bigger surfer. It will replace your longboard and make you question reaching for your shortboard even when the waves are good. Take a Variant on your next surf trip and you'll never get skunked. At home it will get you through the worst Jersey summer. WAVE SIZE: ankle to chest high. BEST IN: small summer time mush and peelers. LENGTH: same as your height to 5 inch shorter. EXPERIENCE: beginner to expert. NOSE ROCKER: flat. TAIL ROCKER: flat. BOTTOM: flat with belly in the nose and tail. STOCK DIMENSIONS: 5'7\" x 20 7/8\" x 2 3/8\".",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Variable",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5223318ce4b0b90e69177b86/1505013494747-J4GXQMKGG6LXDSPA1UOU/IMG_1532.jpg?format=1500w",
+          "description": "The Variable was the result of riders pushing the limits of their Variant into bigger surf and wanting that same easy paddling and wave catching ability in a design that could surf harder off the tail and feel more comfortable in bigger punchier surf. The Variable has a touch more nose and tail rocker than the Variant, but it's still quite relaxed. The step deck of the Variant is replaced by a more foiled rail. The tail is pulled in and speed dialers are swapped for standard quad or thruster fin setup options. It comes standard as a squash, but can also be ordered with a swallow tail for more fishy feel. It's a great option for the winter when you're wrapped in rubber. If you want a board that catches waves easily with lots of built in drive, but feels more shortboardy than your Variant, the Variable is the answer. WAVE SIZE: thigh to head high. BEST IN: waist to chest high windswell. LENGTH: 1-2 inches longer than your Variant. EXPERIENCE: novice to expert. NOSE ROCKER: low. TAIL ROCKER: low. BOTTOM: belly in the nose, belly in the tail, flat through the center.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Standard Deviation",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5223318ce4b0b90e69177b86/1505013631549-HCEFVMPPCTLE1PYRRM7I/standard-deviation1.JPG?format=1500w",
+          "description": "My deviation on the short fat stubby performance board craze that started when someone famous went diving in dumpsters for diamonds. Great for when you want the look of a shortboard, but the range of a fish. Available with squash, swallow or diamond tail in a quad or thruster setup.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Honeybadger",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5223318ce4b0b90e69177b86/1505013667008-Y2T4PNS13JOXIMH67F0C/honeybadger2.jpg?format=1500w",
+          "description": "Big waves, small waves, Honeybadger don't care! The most versatile board in our lineup. There is no such thing as a \"one board quiver\" that does it all, but if I could only have one board, this would be it. I've surfed this board in all sorts of conditions from waist high wind slop beach break in Monmouth Beach to head high Boilers in Morocco and it's my go to board in fun sized waves. Generous overall width provides plenty of planing surface. The wide point is set slightly forward putting lots of paddle power under your chest and a gas pedal under your front foot. Available with swallow or optional diamond tail. The rail line in the tail is straight enough to provide ample width and surface area for instant bursts of speed and drive with your back foot. The diamond tail provides better small wave performance with slightly more tail area while the swallow holds better in juicy surf. The bottom design utilizes the venturi principle of funneling fluid from high pressure to low pressure. The single concave acts to compress the water and starts after the entry rocker. This area of high pressure transitions to a double concave where pressure is reduced to create thrust. The same concept that was first applied to surfboard design by the Campbell Brothers. WAVE SIZE: waist to head high. WAVE TYPE: average to good. BEST IN: chest high punchy windswell. LENGTH: same as your height to 1-2 inch taller. EXPERIENCE: novice to advanced. NOSE ROCKER: medium. TAIL ROCKER: medium. BOTTOM: flat entry to single concave through the center transitioning to double concave in front of the fins to double set in vee out the tail. STOCK DIMENSIONS: 5'9\" x 19 7/8\" x 2 3/8\"; 5'11\" x 20 1/4\" x 2 1/2\"; 6'1\" x 20 1/2\" x 2 1/2\".",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Doppelgänger",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5223318ce4b0b90e69177b86/1505013706044-L7C4S4BQ1MQVS43AF5ZZ/doppelganger-10_1000.jpg?format=1500w",
+          "description": "This is not your father's twin fin. The doppelgänger is based on the twin fin designs that won 4 world championships in the late 70's and early 80's, tweaked with some modern performance improvements. Twin fins were known for being fast and loose. However, they lacked some stability without the center fin. Later a small stabilizer fin was added making it a twin finner type design. This twin finner configuration developed a cult following with Mark Richards and later the Channel Islands model. I widened the tail a bit from the extremely pulled swallow to make the design more Jersey specific. With this configuration the Doppelgänger can be ridden as a twin, twin plus stabilizer, or thruster providing options for a broad range of surf conditions from waist high to overhead. The bottom design features a low entry rocker into a single concave that transitions into a double concave in front of the fins set in vee out the tail. A beak nose allows the board to carry plenty of volume for added paddling ease. Ride this board about an inch or two longer than you are tall and add some volume.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "HBSU",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5223318ce4b0b90e69177b86/1505014311739-8VTUWZF3IXICBLU6T4FJ/HBSU-3.jpg?format=1500w",
+          "description": "The Honey Badger Step Up takes our favorite Honey Badger design and modifies that platform to handle more juice. The template is stretched out, the tail is pulled into a roundtail, rocker is accelerated in both the nose and tail, and the bottom is changed to a more predictable single concave. If your standard board is a more alternative wide point forward design like the Honey Badger, then the HBSU will be an easy transition when the waves are pumping.",
+          "board_category_slug": "step-up-gun"
+        }
+      ]
+    }
+  ]
+}
