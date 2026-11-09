@@ -452,42 +452,6 @@ export function ConversationThreadClient({
     }
   }, [threadPrimaryListingId, conversation?.listing?.id, threadListingsById, supabase])
 
-  useEffect(() => {
-    const lid = threadPrimaryListingId
-    if (!lid) return
-
-    const channel = supabase
-      .channel(`listing-images:${id}:${lid}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'listing_images',
-          filter: `listing_id=eq.${lid}`,
-        },
-        () => {
-          void supabase
-            .from('listings')
-            .select(
-              'id, title, price, status, section, slug, listing_images(url, thumbnail_url, is_primary), minimum_offer_pct',
-            )
-            .eq('id', lid)
-            .maybeSingle()
-            .then(({ data: row, error }) => {
-              if (error || !row) return
-              const L = row as ListingRow
-              setThreadListingsById((prev) => ({ ...prev, [L.id]: L }))
-            })
-        },
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [id, threadPrimaryListingId, supabase])
-
   const loadThread = useCallback(async (isActive: () => boolean = () => true): Promise<Message[] | null> => {
     try {
       const result = await loadConversationThread(id)

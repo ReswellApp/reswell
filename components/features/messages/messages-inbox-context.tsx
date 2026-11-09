@@ -15,7 +15,6 @@ import type { MessagesInboxNotification } from "@/lib/db/messagesInbox"
 import { refreshMessagesInbox } from "@/app/actions/messages"
 import {
   applyInboxThreadActivity,
-  inboxActivityFromMessageRow,
   markConversationMessagesReadLocally,
   mergeInboxConversationSnapshots,
   type InboxConversationRow,
@@ -142,18 +141,10 @@ export function MessagesInboxProvider({
       setConversations((prev) => applyInboxThreadActivity(prev, detail))
     }
 
-    const onMessageChange = (payload: { eventType: string; new: Record<string, unknown> }) => {
-      if (payload.eventType !== "DELETE") {
-        const activity = inboxActivityFromMessageRow(payload.new)
-        if (activity) {
-          setConversations((prev) => applyInboxThreadActivity(prev, activity))
-        }
-      }
-      scheduleRefresh()
-    }
-
     window.addEventListener(CONVERSATION_THREAD_OPENED_EVENT, onThreadOpened)
     window.addEventListener(MESSAGES_INBOX_REFRESH_EVENT, onInboxRefresh)
+    // Private inbox broadcast (header `useMarketplaceInboxLive`) patches rows
+    // and schedules a refetch. Do not subscribe to all `messages` changes.
     window.addEventListener(CONVERSATION_INBOX_ACTIVITY_EVENT, onInboxActivity)
 
     const channels = (["buyer_id", "seller_id"] as const).map((column) =>
@@ -171,18 +162,9 @@ export function MessagesInboxProvider({
         ),
     )
 
-    const messagesChannel = supabase
-      .channel(`inbox:messages:${userId}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "messages" },
-        onMessageChange,
-      )
-
     void authorizeRealtime(supabase).then((ok) => {
       if (!active || !ok) return
       for (const channel of channels) channel.subscribe()
-      messagesChannel.subscribe()
     })
 
     return () => {
@@ -192,7 +174,6 @@ export function MessagesInboxProvider({
       window.removeEventListener(MESSAGES_INBOX_REFRESH_EVENT, onInboxRefresh)
       window.removeEventListener(CONVERSATION_INBOX_ACTIVITY_EVENT, onInboxActivity)
       for (const channel of channels) void supabase.removeChannel(channel)
-      void supabase.removeChannel(messagesChannel)
     }
   }, [userId, supabase, refreshInbox])
 

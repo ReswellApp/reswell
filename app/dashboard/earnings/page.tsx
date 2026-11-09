@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState, useCallback, useRef } from "react"
-import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { RefreshCw } from "lucide-react"
 import { getEarningsWalletData, loadMoreEarningsActivity } from "@/app/actions/wallet"
@@ -64,7 +63,6 @@ export default function EarningsPage() {
   } | null>(null)
 
   const fetchGenerationRef = useRef(0)
-  const earningsResyncDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   /** First wallet+activity fetch only — later refetches update in place without skeleton flash. */
   const initialWalletActivityPaintRef = useRef(true)
 
@@ -204,55 +202,9 @@ export default function EarningsPage() {
     [fetchWalletBundle, fetchStripeData],
   )
 
-  const scheduleEarningsResync = useCallback(() => {
-    if (earningsResyncDebounceRef.current) {
-      clearTimeout(earningsResyncDebounceRef.current)
-    }
-    earningsResyncDebounceRef.current = setTimeout(() => {
-      earningsResyncDebounceRef.current = null
-      void fetchData()
-    }, 150)
-  }, [fetchData])
-
   useEffect(() => {
     void fetchData()
   }, [fetchData])
-
-
-  useEffect(() => {
-    if (!wallet?.id) return
-    const supabase = createClient()
-    const wid = wallet.id
-    const channel = supabase
-      .channel(`earnings_wallet_${wid}`)
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "wallets", filter: `id=eq.${wid}` },
-        () => {
-          scheduleEarningsResync()
-        },
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "wallet_transactions",
-          filter: `wallet_id=eq.${wid}`,
-        },
-        () => {
-          scheduleEarningsResync()
-        },
-      )
-      .subscribe()
-    return () => {
-      if (earningsResyncDebounceRef.current) {
-        clearTimeout(earningsResyncDebounceRef.current)
-        earningsResyncDebounceRef.current = null
-      }
-      supabase.removeChannel(channel)
-    }
-  }, [wallet?.id, scheduleEarningsResync])
 
   const handleStripeBankCashOutSettled = useCallback(
     (detail: {
