@@ -309,8 +309,6 @@ import {
   sellListingCameFromCatalogSearch,
   takeSellCatalogHandoff,
 } from "@/lib/sell-flow/catalog-handoff"
-import { takeSellPhotoMatchDimensions } from "@/lib/sell-flow/sell-photo-match-dimensions"
-import { fillEmptyBoardDimensions } from "@/lib/sell-flow/sell-photo-match"
 import {
   SellCatalogSelectionCard,
   type SellCatalogSelectionCardData,
@@ -1100,7 +1098,6 @@ function SellPageContentInner({
     catalogHandoffTakenRef.current = true
     const handoff = takeSellCatalogHandoff("surfboards")
     if (!handoff) return
-    const photoDims = takeSellPhotoMatchDimensions()
     markSellCatalogSearchAgain()
     setCameFromCatalogSearch(true)
     setViewModeState("guided")
@@ -1116,23 +1113,18 @@ function SellPageContentInner({
       })
     }
     if (handoff.selectionKind === "brand") {
-      setFormData((f) =>
-        fillEmptyBoardDimensions(
-          {
-            ...f,
-            title: f.title.trim() ? f.title : handoff.suggestedTitle,
-            description:
-              f.description.trim() || !handoff.suggestedDescription
-                ? f.description
-                : handoff.suggestedDescription,
-            brand: handoff.brandName,
-            boardLinkedBrandName: handoff.brandName,
-            boardBrandId: handoff.brandId,
-            boardIndexBrandSlug: handoff.brandSlug,
-          },
-          photoDims,
-        ),
-      )
+      setFormData((f) => ({
+        ...f,
+        title: f.title.trim() ? f.title : handoff.suggestedTitle,
+        description:
+          f.description.trim() || !handoff.suggestedDescription
+            ? f.description
+            : handoff.suggestedDescription,
+        brand: handoff.brandName,
+        boardLinkedBrandName: handoff.brandName,
+        boardBrandId: handoff.brandId,
+        boardIndexBrandSlug: handoff.brandSlug,
+      }))
       return
     }
     if (handoff.selectionKind === "model") {
@@ -1143,27 +1135,22 @@ function SellPageContentInner({
       const handoffBoardCategoryId = handoff.boardCategorySlug
         ? boardCategoryMap[handoff.boardCategorySlug] ?? ""
         : ""
-      setFormData((f) =>
-        fillEmptyBoardDimensions(
-          {
-            ...f,
-            title: f.title.trim() ? f.title : handoff.suggestedTitle,
-            brand: handoff.brandName,
-            boardLinkedBrandName: handoff.brandName,
-            boardBrandId: handoff.brandId,
-            boardIndexBrandSlug: handoff.brandSlug,
-            boardModelName: handoff.modelName,
-            boardBrandModelId: handoff.brandModelId,
-            ...(handoffBoardCategoryId && !f.category.trim()
-              ? {
-                  category: handoffBoardCategoryId,
-                  boardType: handoff.boardCategorySlug ?? f.boardType,
-                }
-              : {}),
-          },
-          photoDims,
-        ),
-      )
+      setFormData((f) => ({
+        ...f,
+        title: f.title.trim() ? f.title : handoff.suggestedTitle,
+        brand: handoff.brandName,
+        boardLinkedBrandName: handoff.brandName,
+        boardBrandId: handoff.brandId,
+        boardIndexBrandSlug: handoff.brandSlug,
+        boardModelName: handoff.modelName,
+        boardBrandModelId: handoff.brandModelId,
+        ...(handoffBoardCategoryId && !f.category.trim()
+          ? {
+              category: handoffBoardCategoryId,
+              boardType: handoff.boardCategorySlug ?? f.boardType,
+            }
+          : {}),
+      }))
     }
   }, [editId, draftHydrated])
 

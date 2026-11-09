@@ -15,7 +15,6 @@ export type AppLlmFeatureId =
   | "live_chat_jev_router"
   | "listing_brand_model_research"
   | "message_fraud_review"
-  | "sell_photo_match"
   | "surfboard_dimension_photo"
   | "surfboard_dimension_photo_pick"
   | "surfboard_dimension_photo_jev"
@@ -215,22 +214,6 @@ export const APP_LLM_FEATURES: readonly AppLlmFeatureDefinition[] = [
     ],
   },
   {
-    id: "sell_photo_match",
-    name: "Sell photo match",
-    purpose:
-      "Admin-only on /sell. Reads three surfboard photos (top, bottom, dimensions close-up) and turns the visible brand and model into a catalog search.",
-    gatewayFeatureTag: "feature:sell-photo-match",
-    transport: "vercel_ai_gateway",
-    defaultModel: "google/gemini-2.5-flash",
-    modelEnvVar: "SELL_PHOTO_MATCH_MODEL",
-    enabledEnvVar: "SELL_PHOTO_MATCH_ENABLED",
-    surfaces: ["/sell", "POST /api/sell/photo-match"],
-    sourceFiles: [
-      "lib/services/sellPhotoMatch.ts",
-      "app/api/sell/photo-match/route.ts",
-    ],
-  },
-  {
     id: "surfboard_dimension_photo_pick",
     name: "Dimension photo picker",
     purpose:
@@ -265,7 +248,6 @@ export const APP_LLM_FEATURES: readonly AppLlmFeatureDefinition[] = [
     surfaces: [
       "/admin/dimension-photo-match",
       "POST /api/admin/dimension-photo-match/test",
-      "POST /api/sell/photo-match",
       "GET /api/cron/surfboard-dimension-photo-queue",
     ],
     sourceFiles: [
