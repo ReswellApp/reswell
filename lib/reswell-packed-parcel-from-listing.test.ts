@@ -108,4 +108,40 @@ describe("resolvePackedParcelFromListing", () => {
     assert.equal(result.heightIn, 4)
     assert.equal(result.weightOz, 32)
   })
+
+  it("does not quote a leftover board carton when section is missing", () => {
+    const leftoverBoardCarton = {
+      shipping_package_tier: "shortboard",
+      shipping_package_band: "shortboard_medium",
+      shipping_packed_length_in: 78,
+      shipping_packed_width_in: 25.5,
+      shipping_packed_height_in: 7.25,
+      shipping_packed_weight_oz: 352,
+      dimensions: "(6'2 18 2 1/4 32L)",
+    }
+    for (const section of [undefined, null, "", "  "]) {
+      const result = resolvePackedParcelFromListing({
+        ...leftoverBoardCarton,
+        section,
+      })
+      assert.equal(result.ok, false)
+      if (result.ok) return
+      assert.equal(result.error.includes("missing packed shipping dimensions"), true)
+    }
+  })
+
+  it("keeps a usable small parcel when section is omitted", () => {
+    const result = resolvePackedParcelFromListing({
+      shipping_packed_length_in: 10,
+      shipping_packed_width_in: 7,
+      shipping_packed_height_in: 4,
+      shipping_packed_weight_oz: 16,
+    })
+    assert.equal(result.ok, true)
+    if (!result.ok) return
+    assert.equal(result.lengthIn, 10)
+    assert.equal(result.widthIn, 7)
+    assert.equal(result.heightIn, 4)
+    assert.equal(result.weightOz, 16)
+  })
 })

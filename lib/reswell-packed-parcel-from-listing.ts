@@ -1,5 +1,8 @@
 import { FINS_SECTION } from "@/lib/fin-listing-config"
-import { defaultListingSectionCarton } from "@/lib/listing-section-cartons"
+import {
+  defaultListingSectionCarton,
+  listingSectionUsesSurfboardCarton,
+} from "@/lib/listing-section-cartons"
 import {
   applyFinReswellPackageDefaultsPerField,
   finReswellPackageFormFieldsFromListingRow,
@@ -111,9 +114,7 @@ function finListingUsesDefaultPackedParcel(row: ListingPackedParcelSource): bool
  * parcel (“can't deliver”) and UPS Ground came back around $300.
  */
 function shouldUseSurfboardPackedParcelPath(row: ListingPackedParcelSource): boolean {
-  const section = row.section?.trim()
-  if (!section) return true
-  return isSurfboardListingSection(section)
+  return listingSectionUsesSurfboardCarton(row.section)
 }
 
 function sectionDefaultPackedParcelResult(section: string | null | undefined): {

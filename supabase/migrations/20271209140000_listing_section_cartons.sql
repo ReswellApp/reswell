@@ -58,7 +58,13 @@ where section is distinct from 'surfboards'
   and (
     shipping_package_tier is not null
     or shipping_package_band is not null
-    or coalesce(shipping_packed_length_in, 0) > 48
+    or (
+      shipping_packed_length_in is not null
+      and (
+        shipping_packed_length_in < 4
+        or shipping_packed_length_in > 48
+      )
+    )
   );
 
 alter table public.listings

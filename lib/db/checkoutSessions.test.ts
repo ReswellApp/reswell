@@ -30,6 +30,19 @@ describe("checkoutStockReserveUserError", () => {
     )
   })
 
+  it("maps unique-index races to a retryable reserved message", () => {
+    assert.equal(
+      checkoutStockReserveUserError(
+        'duplicate key value violates unique constraint "checkout_stock_holds_unique_item_uidx"',
+      ),
+      CHECKOUT_ITEM_RESERVED_ERROR,
+    )
+    assert.equal(
+      checkoutStockReserveUserError("Could not reserve inventory", "23505"),
+      CHECKOUT_ITEM_RESERVED_ERROR,
+    )
+  })
+
   it("maps sold-out and missing listings to no longer available", () => {
     assert.equal(
       checkoutStockReserveUserError("reserve_checkout_session_stock: insufficient stock for listing abc"),
@@ -37,6 +50,10 @@ describe("checkoutStockReserveUserError", () => {
     )
     assert.equal(
       checkoutStockReserveUserError("reserve_checkout_session_stock: listing abc is not available"),
+      CHECKOUT_ITEM_UNAVAILABLE_ERROR,
+    )
+    assert.equal(
+      checkoutStockReserveUserError("reserve_checkout_session_stock: listing abc is not available", "23505"),
       CHECKOUT_ITEM_UNAVAILABLE_ERROR,
     )
     assert.equal(

@@ -59,15 +59,22 @@ export const CHECKOUT_ITEM_RESERVED_ERROR =
   "This item is reserved in another checkout. Try again in a few minutes."
 
 /** Maps reserve_checkout_session_stock exceptions to buyer-facing copy. */
-export function checkoutStockReserveUserError(message: string): string {
+export function checkoutStockReserveUserError(message: string, code?: string): string {
   const text = message.toLowerCase()
-  if (text.includes("already reserved")) return CHECKOUT_ITEM_RESERVED_ERROR
   if (
     text.includes("insufficient stock") ||
     text.includes("is not available") ||
     (text.includes("listing") && text.includes("not found"))
   ) {
     return CHECKOUT_ITEM_UNAVAILABLE_ERROR
+  }
+  if (
+    text.includes("already reserved") ||
+    code === "23505" ||
+    text.includes("duplicate key") ||
+    text.includes("unique constraint")
+  ) {
+    return CHECKOUT_ITEM_RESERVED_ERROR
   }
   return message
 }
@@ -378,7 +385,7 @@ export async function dbReserveCheckoutSessionStock(
   const message = error.message ?? "Could not reserve inventory"
   return {
     ok: false,
-    error: checkoutStockReserveUserError(message),
+    error: checkoutStockReserveUserError(message, error.code),
     code: error.code,
   }
 }
