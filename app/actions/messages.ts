@@ -945,14 +945,28 @@ export async function sendSellerReviewRequest(input: unknown) {
   return { success: true as const, conversation_id: result.conversationId }
 }
 
+const refreshMessagesInboxOptionsSchema = z
+  .object({
+    conversationLimit: z.number().int().positive().max(100).optional(),
+  })
+  .optional()
+
 /**
  * Fresh inbox read for live updates. Bypasses the tag cache so a realtime
  * conversation change can pull the current preview/unread state without a full
  * route refresh. Scoped to the signed-in user via the verified session.
+ *
+ * Pass `conversationLimit` for the header dropdown preview so it does not scan
+ * the member's full conversation history.
  */
-export async function refreshMessagesInbox(): Promise<
-  { error: string } | MessagesInboxPayload
-> {
+export async function refreshMessagesInbox(
+  options?: { conversationLimit?: number },
+): Promise<{ error: string } | MessagesInboxPayload> {
+  const parsed = refreshMessagesInboxOptionsSchema.safeParse(options)
+  if (!parsed.success) {
+    return { error: "Invalid request" }
+  }
+
   const supabase = await createClient()
   const {
     data: { user },
@@ -965,7 +979,7 @@ export async function refreshMessagesInbox(): Promise<
   const shop = await getShopAccountContext()
   const inboxUserId =
     shop?.actingAsShop && shop.permissions.has("messages.read") ? shop.accountId : user.id
-  return getMessagesInboxForUser(inboxUserId)
+  return getMessagesInboxForUser(inboxUserId, parsed.data)
 }
 
 export type CounterpartyThreadProfile = {

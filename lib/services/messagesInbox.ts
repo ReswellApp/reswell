@@ -2,7 +2,11 @@ import { z } from "zod"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { listConversationIdsLinkedToSupportTickets } from "@/lib/db/contactMessages"
 import { listConversationIdsLinkedToOrderSupport } from "@/lib/db/order-support"
-import { loadMessagesInboxForUser, type MessagesInboxPayload } from "@/lib/db/messagesInbox"
+import {
+  loadMessagesInboxForUser,
+  type MessagesInboxLoadOptions,
+  type MessagesInboxPayload,
+} from "@/lib/db/messagesInbox"
 import {
   redactShippingLabelArtifactsFromMessage,
   shippingLabelOrderIdFromMessage,
@@ -46,39 +50,36 @@ export async function retainMarketplaceInboxConversations(
  * Marketplace Messages inbox for a member. Excludes Reswell Support ticket DMs
  * so those only appear under `/dashboard/support`.
  */
-export async function getMessagesInboxForUser(userId: string): Promise<MessagesInboxPayload> {
-  const payload = await loadMessagesInboxForUser(userId)
-  const supportResolved = await resolveSupportRecipientUserId()
+export async function getMessagesInboxForUser(
+  userId: string,
+  options?: MessagesInboxLoadOptions,
+): Promise<MessagesInboxPayload> {
+  const supabase = createServiceRoleClient()
+  const [payload, supportResolved, supportActivity] = await Promise.all([
+    loadMessagesInboxForUser(userId, options),
+    resolveSupportRecipientUserId(),
+    loadSupportInboxActivityNotifications(supabase, userId).catch((err) => {
+      console.warn("[messagesInbox] support activity skipped", err)
+      return [] as MessagesInboxPayload["notifications"]
+    }),
+  ])
   const supportUserId = supportResolved.ok ? supportResolved.userId : null
 
-  let supportActivity: MessagesInboxPayload["notifications"] = []
-  let hiddenShippingLabelOrderIds = new Set<string>()
-  try {
-    const supabase = createServiceRoleClient()
-    try {
-      supportActivity = await loadSupportInboxActivityNotifications(supabase, userId)
-    } catch (err) {
-      console.warn("[messagesInbox] support activity skipped", err)
-    }
-    const sellerLabelOrderIds = payload.conversations
-      .filter((conversation) => conversation.seller_id === userId)
-      .flatMap((conversation) => conversation.messages)
-      .map((message) => shippingLabelOrderIdFromMessage(message))
-      .filter((orderId): orderId is string => Boolean(orderId))
-    if (sellerLabelOrderIds.length > 0) {
-      hiddenShippingLabelOrderIds = await fetchSantaBarbaraDropoffOrderIds(
-        supabase,
-        sellerLabelOrderIds,
-      )
-    }
-  } catch (err) {
-    console.warn("[messagesInbox] santa barbara label redaction skipped", err)
-  }
+  const sellerLabelOrderIds = payload.conversations
+    .filter((conversation) => conversation.seller_id === userId)
+    .flatMap((conversation) => conversation.messages)
+    .map((message) => shippingLabelOrderIdFromMessage(message))
+    .filter((orderId): orderId is string => Boolean(orderId))
 
-  const conversations = await retainMarketplaceInboxConversations(
-    payload.conversations,
-    supportUserId,
-  )
+  const [hiddenShippingLabelOrderIds, conversations] = await Promise.all([
+    sellerLabelOrderIds.length === 0
+      ? Promise.resolve(new Set<string>())
+      : fetchSantaBarbaraDropoffOrderIds(supabase, sellerLabelOrderIds).catch((err) => {
+          console.warn("[messagesInbox] santa barbara label redaction skipped", err)
+          return new Set<string>()
+        }),
+    retainMarketplaceInboxConversations(payload.conversations, supportUserId),
+  ])
   const redactedConversations =
     hiddenShippingLabelOrderIds.size === 0
       ? conversations
