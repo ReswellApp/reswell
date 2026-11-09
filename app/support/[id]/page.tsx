@@ -51,6 +51,7 @@ export default async function SupportCaseResponsePage({
       orderHref={orderHref}
       createdAt={row.created_at}
       messages={result.messages}
+      initialUnreadCount={result.unreadCount}
     />
   )
 }

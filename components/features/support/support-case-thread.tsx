@@ -14,6 +14,7 @@ import type { SupportCaseThreadMessage } from "@/lib/services/supportCaseThread"
 import { isSupportStatusUpdateMessage } from "@/lib/messages/parse-support-thread-message"
 import { displaySupportCaseSystemBody, SUPPORT_DESK_NAME } from "@/lib/utils/support-case-display"
 import { normalizedSupportMessageBody } from "@/lib/utils/support-case-thread-history"
+import { mergeThreadMessagesWithPendingLocal } from "@/lib/admin/case-inbox-thread-merge"
 import { MessageComposerBar } from "@/components/features/messages/message-composer-bar"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -104,7 +105,8 @@ export function SupportCaseThread({
   const messages = canReply ? localMessages : initial
 
   useEffect(() => {
-    if (canReply) setLocalMessages(initial)
+    if (!canReply) return
+    setLocalMessages((prev) => mergeThreadMessagesWithPendingLocal(prev, initial))
   }, [canReply, initial])
 
   useEffect(() => {

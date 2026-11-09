@@ -1,11 +1,14 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 import {
+  applyInboxLoadItems,
   findInboxItemBySelection,
   firstNonEmptyText,
   inboxItemPassesMineFilter,
   inboxLoadQueryKey,
+  inboxRefreshPagination,
   mergeInboxPageItems,
+  mergeInboxRefreshItems,
   nextInboxSelectedKey,
   pinSelectedInboxItem,
   shouldApplyInboxLoad,
@@ -171,6 +174,19 @@ describe("shouldApplyInboxLoad", () => {
       true,
     )
   })
+
+  it("keeps a matching page after a live refresh bumps generation", () => {
+    assert.equal(
+      shouldApplyInboxLoad({
+        mode: "page",
+        requestGeneration: 1,
+        currentGeneration: 2,
+        requestQueryKey: mine,
+        currentQueryKey: mine,
+      }),
+      true,
+    )
+  })
 })
 
 describe("inboxItemPassesMineFilter", () => {
@@ -189,5 +205,75 @@ describe("mergeInboxPageItems", () => {
   it("appends unseen keys only", () => {
     const merged = mergeInboxPageItems([{ key: "sc:a" }], [{ key: "sc:a" }, { key: "sc:b" }])
     assert.deepEqual(merged.map((item) => item.key), ["sc:a", "sc:b"])
+  })
+})
+
+describe("mergeInboxRefreshItems", () => {
+  it("updates the first page and keeps conversations loaded via Load more", () => {
+    const merged = mergeInboxRefreshItems(
+      [
+        { key: "sc:a", preview: "old" },
+        { key: "sc:page-2", preview: "older" },
+      ],
+      [
+        { key: "sc:new", preview: "hello" },
+        { key: "sc:a", preview: "fresh" },
+      ],
+    )
+    assert.deepEqual(
+      merged.map((item) => [item.key, item.preview]),
+      [
+        ["sc:new", "hello"],
+        ["sc:a", "fresh"],
+        ["sc:page-2", "older"],
+      ],
+    )
+  })
+})
+
+describe("applyInboxLoadItems", () => {
+  it("replaces the open queue on refresh and merges paged views", () => {
+    const prev = [{ key: "sc:a" }, { key: "sc:older" }]
+    const next = [{ key: "sc:a" }]
+    assert.deepEqual(
+      applyInboxLoadItems({ mode: "refresh", paged: false, prev, next }).map((item) => item.key),
+      ["sc:a"],
+    )
+    assert.deepEqual(
+      applyInboxLoadItems({ mode: "refresh", paged: true, prev, next }).map((item) => item.key),
+      ["sc:a", "sc:older"],
+    )
+  })
+})
+
+describe("inboxRefreshPagination", () => {
+  it("keeps Load more state after a first-page poll", () => {
+    assert.deepEqual(
+      inboxRefreshPagination({
+        paged: true,
+        loadedCount: 100,
+        incomingCount: 50,
+        currentHasMore: true,
+        incomingHasMore: true,
+        currentNextOffset: 100,
+        incomingNextOffset: 50,
+      }),
+      { hasMore: true, nextOffset: 100 },
+    )
+  })
+
+  it("uses the incoming page when nothing extra is loaded", () => {
+    assert.deepEqual(
+      inboxRefreshPagination({
+        paged: true,
+        loadedCount: 50,
+        incomingCount: 50,
+        currentHasMore: true,
+        incomingHasMore: false,
+        currentNextOffset: 50,
+        incomingNextOffset: 50,
+      }),
+      { hasMore: false, nextOffset: 50 },
+    )
   })
 })

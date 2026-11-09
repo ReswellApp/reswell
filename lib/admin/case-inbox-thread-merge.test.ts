@@ -47,6 +47,22 @@ describe("mergeThreadMessagesWithPendingLocal", () => {
     assert.equal(merged[1]?.body, "Thanks — looking into this now.")
   })
 
+  it("keeps optimistic member replies when a live refresh returns a stale thread", () => {
+    const prev = [
+      msg({ id: "cust-1", author_role: "customer", body: "Board never arrived" }),
+      msg({
+        id: "local-sent",
+        author_role: "customer",
+        body: "Just checking in — any word?",
+        created_at: "2026-11-07T20:01:00.000Z",
+      }),
+    ]
+    const server = [msg({ id: "cust-1", author_role: "customer", body: "Board never arrived" })]
+    const merged = mergeThreadMessagesWithPendingLocal(prev, server)
+    assert.equal(merged.length, 2)
+    assert.equal(merged[1]?.id, "local-sent")
+  })
+
   it("drops local bubbles once the server includes the same agent body", () => {
     const prev = [
       msg({ id: "cust-1", author_role: "customer", body: "Help" }),

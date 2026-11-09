@@ -93,14 +93,53 @@ export function shouldApplyInboxLoad(args: {
   requestQueryKey: string
   currentQueryKey: string
 }): boolean {
+  // Live refresh must not drop an in-flight Load more for the same query.
+  if (args.mode === "page") return args.requestQueryKey === args.currentQueryKey
   if (args.requestGeneration !== args.currentGeneration) return false
-  if (args.mode === "page" && args.requestQueryKey !== args.currentQueryKey) return false
   return true
 }
 
 export function mergeInboxPageItems<T extends { key: string }>(prev: T[], next: T[]): T[] {
   const seen = new Set(prev.map((item) => item.key))
   return [...prev, ...next.filter((item) => !seen.has(item.key))]
+}
+
+/** First-page poll: update those rows, keep conversations already loaded via Load more. */
+export function mergeInboxRefreshItems<T extends { key: string }>(prev: T[], next: T[]): T[] {
+  const seen = new Set(next.map((item) => item.key))
+  return [...next, ...prev.filter((item) => !seen.has(item.key))]
+}
+
+export function applyInboxLoadItems<T extends { key: string }>(args: {
+  mode: InboxLoadMode
+  paged: boolean
+  prev: T[]
+  next: T[]
+}): T[] {
+  if (args.mode === "page") return mergeInboxPageItems(args.prev, args.next)
+  if (args.mode === "refresh" && args.paged) return mergeInboxRefreshItems(args.prev, args.next)
+  return args.next
+}
+
+export function inboxRefreshPagination(args: {
+  paged: boolean
+  loadedCount: number
+  incomingCount: number
+  currentHasMore: boolean
+  incomingHasMore: boolean
+  currentNextOffset: number
+  incomingNextOffset: number
+}): { hasMore: boolean; nextOffset: number } {
+  const alreadyPaged =
+    args.paged &&
+    (args.loadedCount > args.incomingCount || args.currentNextOffset > args.incomingNextOffset)
+  if (alreadyPaged) {
+    return {
+      hasMore: args.currentHasMore,
+      nextOffset: Math.max(args.currentNextOffset, args.incomingNextOffset),
+    }
+  }
+  return { hasMore: args.incomingHasMore, nextOffset: args.incomingNextOffset }
 }
 
 /** Unknown staff id must not empty a server-hydrated Mine queue. */
