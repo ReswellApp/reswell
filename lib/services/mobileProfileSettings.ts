@@ -10,7 +10,6 @@ import {
 } from "@reswell/api-contract"
 import { fetchDashboardProfile } from "@/lib/db/dashboard-profile"
 import { fetchProfileAddresses, profileAddressOneLine } from "@/lib/db/profile-addresses"
-import { upsertMessageSmsOptInForUser } from "@/lib/db/messageSmsNotifications"
 import {
   getPushTopicFlagsForUser,
   patchPushTopicForUser,
@@ -19,7 +18,10 @@ import {
 import { anyPushTopicEnabled, type PushTopic } from "@/lib/utils/push-topics"
 import { validateDisplayName } from "@/lib/display-name-validation"
 import { absoluteProxiedProfileMediaUrl } from "@/lib/public-media-display-src"
-import { loadMessageSmsNotificationsStateForUser } from "@/lib/services/messageSmsNotifications"
+import {
+  applyMessageSmsOptInForUser,
+  loadMessageSmsNotificationsStateForUser,
+} from "@/lib/services/messageSmsNotifications"
 import { removeProfileAvatar, uploadProcessedProfileAvatar } from "@/lib/services/profileAvatar"
 import { removeProfileBanner, uploadProcessedProfileBanner } from "@/lib/services/profileBanner"
 import { removeProfileTileBanner, uploadProcessedProfileTileBanner } from "@/lib/services/profileTileBanner"
@@ -146,7 +148,11 @@ export async function updateMobileProfileSettingsService(
   if (error) return { ok: false, status: 500, error: "Unable to save your profile right now" }
 
   if (typeof parsed.data.message_sms_opt_in === "boolean") {
-    const saved = await upsertMessageSmsOptInForUser(supabase, user.id, parsed.data.message_sms_opt_in)
+    const saved = await applyMessageSmsOptInForUser({
+      supabase,
+      user,
+      enabled: parsed.data.message_sms_opt_in,
+    })
     if (!saved.ok) return { ok: false, status: 400, error: saved.error }
   }
 
