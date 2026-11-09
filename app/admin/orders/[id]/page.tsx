@@ -27,7 +27,6 @@ import { adminOrderShowsShippingLabel } from "@/lib/admin/admin-order-label-visi
 import { orderStatusBadgeVariant, orderStatusLabel, deliveryStatusLabel, payoutStatusLabel } from "@/lib/order-status"
 import { carrierDeliveryPayoutEligibleAt } from "@/lib/shipping/carrier-delivery-payout-hold"
 import { createClient } from "@/lib/supabase/client"
-import { OrderDetailRealtimeRefresh } from "@/components/order-realtime-refresh"
 import { toast } from "sonner"
 
 type OrderApiResponse =
@@ -270,7 +269,6 @@ export default function AdminOrderDetailPage() {
 
   return (
     <div className="space-y-6">
-      <OrderDetailRealtimeRefresh orderId={id} onUpdate={bumpRefetch} />
       <div className="flex flex-wrap items-center gap-3">
         <Button variant="ghost" size="sm" asChild className="gap-2">
           <Link href={o.is_reswell_shop ? "/admin/shop/orders" : "/admin/orders"}>

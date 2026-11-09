@@ -47,6 +47,19 @@ const CONVERSATIONS_SELECT = `
   messages(id, content, is_read, sender_id, created_at, metadata)
 `
 
+/** Header dropdown: skip listing image payloads; the messages tab uses avatars. */
+const PREVIEW_CONVERSATIONS_SELECT = `
+  id,
+  listing_id,
+  buyer_id,
+  seller_id,
+  last_message_at,
+  listing:listings(id, title),
+  buyer:profiles!conversations_buyer_id_fkey(id, display_name, avatar_url, shop_verified),
+  seller:profiles!conversations_seller_id_fkey(id, display_name, avatar_url, shop_verified),
+  messages(id, content, is_read, sender_id, created_at, metadata)
+`
+
 /** Hard cap on unread messages fetched for count/preview purposes. */
 const MAX_UNREAD_MESSAGES = 2000
 
@@ -69,6 +82,11 @@ export type MessagesInboxLoadOptions = {
    * Used by the header dropdown preview so it does not scan a full inbox.
    */
   conversationLimit?: number
+  /**
+   * Header dropdown preview: skip listing-image payloads and cap notifications
+   * so the first open is a smaller round-trip than the full `/messages` inbox.
+   */
+  preview?: boolean
 }
 
 /** Loads a user's inbox rows (service role; scoped explicitly by userId). */
@@ -83,10 +101,12 @@ export async function loadMessagesInboxForUser(
     options.conversationLimit > 0
       ? Math.min(100, Math.floor(options.conversationLimit))
       : null
+  const preview = options?.preview === true
+  const notificationLimit = preview ? 12 : 50
 
   let conversationsQuery = supabase
     .from("conversations")
-    .select(CONVERSATIONS_SELECT)
+    .select(preview ? PREVIEW_CONVERSATIONS_SELECT : CONVERSATIONS_SELECT)
     .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
     .order("last_message_at", { ascending: false })
     .order("created_at", { ascending: false, referencedTable: "messages" })
@@ -104,7 +124,7 @@ export async function loadMessagesInboxForUser(
         .select(NOTIFICATIONS_SELECT)
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
-        .limit(50),
+        .limit(notificationLimit),
     ])
 
   if (convError) {

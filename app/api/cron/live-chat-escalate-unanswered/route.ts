@@ -7,7 +7,7 @@ import {
 export const maxDuration = 60
 
 /**
- * Hourly: converts signed-in live chats with no agent reply for 24h into
+ * Hourly at :45: converts signed-in live chats with no agent reply for 24h into
  * support tickets (contact_messages) so they don't slip through the cracks,
  * and resolves chats that have been completely silent for 7 days.
  * Guest sessions stay in live chat only.

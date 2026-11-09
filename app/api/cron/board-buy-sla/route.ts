@@ -2,8 +2,8 @@ import { applyOverdueBoardBuyAutoQuotes } from "@/lib/services/boardBuySla"
 import { NextResponse } from "next/server"
 
 /**
- * Every 5 minutes: if ops has not quoted a buy-program submission within 30 minutes,
- * auto-offer 20% off the seller's asking price.
+ * Every 5 minutes (offset to :01): if ops has not quoted a buy-program submission
+ * within 30 minutes, auto-offer 20% off the seller's asking price.
  */
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization")

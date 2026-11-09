@@ -20,7 +20,6 @@ import { parseEarningsView } from "@/lib/earnings-view"
 import { dispatchHeaderWalletSync } from "@/lib/auth/header-wallet-sync"
 import type { SellerEarningsDashboardTotals } from "@/lib/db/sellerEarningsTotals"
 import { formatUsd } from "@/lib/utils/format-usd"
-import { createClient } from "@/lib/supabase/client"
 import type { StripeConnectStatusPayload } from "@/lib/utils/stripe-connect-status"
 
 interface StripeTransferHistoryItem {
@@ -83,7 +82,6 @@ export function EarningsPageClient() {
   } | null>(null)
 
   const fetchGenerationRef = useRef(0)
-  const earningsResyncDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const initialWalletActivityPaintRef = useRef(true)
 
   const stripePayoutsEnabled =
@@ -220,54 +218,9 @@ export function EarningsPageClient() {
     await Promise.all([fetchWalletBundle(gen), fetchStripeData(gen)])
   }, [fetchWalletBundle, fetchStripeData])
 
-  const scheduleEarningsResync = useCallback(() => {
-    if (earningsResyncDebounceRef.current) {
-      clearTimeout(earningsResyncDebounceRef.current)
-    }
-    earningsResyncDebounceRef.current = setTimeout(() => {
-      earningsResyncDebounceRef.current = null
-      void fetchData()
-    }, 150)
-  }, [fetchData])
-
   useEffect(() => {
     void fetchData()
   }, [fetchData])
-
-  useEffect(() => {
-    if (!wallet?.id) return
-    const supabase = createClient()
-    const wid = wallet.id
-    const channel = supabase
-      .channel(`earnings_wallet_${wid}`)
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "wallets", filter: `id=eq.${wid}` },
-        () => {
-          scheduleEarningsResync()
-        },
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "wallet_transactions",
-          filter: `wallet_id=eq.${wid}`,
-        },
-        () => {
-          scheduleEarningsResync()
-        },
-      )
-      .subscribe()
-    return () => {
-      if (earningsResyncDebounceRef.current) {
-        clearTimeout(earningsResyncDebounceRef.current)
-        earningsResyncDebounceRef.current = null
-      }
-      supabase.removeChannel(channel)
-    }
-  }, [wallet?.id, scheduleEarningsResync])
 
   const handleStripeBankCashOutSettled = useCallback(
     (detail: {
