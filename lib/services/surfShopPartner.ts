@@ -1,57 +1,34 @@
 import { insertContactFormMessage } from "@/lib/db/contactMessages"
-import { FOR_SURF_SHOPS_OFFER_MONTHS } from "@/lib/for-surf-shops"
 import { trackKlaviyoSupportTicketCreated } from "@/lib/klaviyo/track-support-ticket"
 import { createSupportCaseWithOpeningMessage } from "@/lib/services/supportCaseOpen"
 import { rejectIfMemberHasOpenSupportCase } from "@/lib/services/supportCaseOpenLimit"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
+import {
+  SURF_SHOP_PARTNER_SUBJECT,
+  buildSurfShopPartnerCustomerMessage,
+  buildSurfShopPartnerOpsNotes,
+  surfShopPartnerLinkedUserId,
+} from "@/lib/utils/surf-shop-partner-ticket"
 import type { SurfShopPartnerApplicationInput } from "@/lib/validations/surfShopPartner"
-
-export const SURF_SHOP_PARTNER_SUBJECT = "Surf shop partner offer"
-
-function buildPartnerMessage(input: SurfShopPartnerApplicationInput): string {
-  const lines = [
-    `Surf shop partner application — ${FOR_SURF_SHOPS_OFFER_MONTHS} months no selling fees`,
-    "",
-    `Contact name: ${input.name}`,
-    `Shop name: ${input.shopName}`,
-    `Email: ${input.email}`,
-    `City: ${input.city}`,
-  ]
-
-  if (input.website) {
-    lines.push(`Website / Instagram: ${input.website}`)
-  }
-  if (input.boardCount) {
-    lines.push(`Approx. boards to list: ${input.boardCount}`)
-  }
-  if (input.message) {
-    lines.push("", "Note from the shop:", input.message)
-  }
-
-  lines.push(
-    "",
-    "Ops: confirm this is a real surf shop, then grant marketplace fee waiver (is_reswell_seller) for the offer window.",
-  )
-
-  return lines.join("\n")
-}
 
 export async function submitSurfShopPartnerApplicationService(
   input: SurfShopPartnerApplicationInput,
 ): Promise<{ success: true; ticketId?: string } | { error: string; existingId?: string }> {
-  const message = buildPartnerMessage(input)
+  const customerMessage = buildSurfShopPartnerCustomerMessage(input)
   const email = input.email
   const name = input.name
 
   let linkedUserId: string | null = null
+  let sessionEmail: string | null = null
   try {
     const sessionClient = await createClient()
     const {
       data: { user },
     } = await sessionClient.auth.getUser()
-    if (user?.id && (user.email ?? "").trim().toLowerCase() === email.toLowerCase()) {
-      linkedUserId = user.id
-      const openGate = await rejectIfMemberHasOpenSupportCase(user.id)
+    linkedUserId = surfShopPartnerLinkedUserId(user)
+    sessionEmail = (user?.email ?? "").trim() || null
+    if (linkedUserId) {
+      const openGate = await rejectIfMemberHasOpenSupportCase(linkedUserId)
       if (!openGate.ok) {
         return { error: openGate.error, existingId: openGate.existingId }
       }
@@ -59,6 +36,11 @@ export async function submitSurfShopPartnerApplicationService(
   } catch {
     // Anonymous submission — continue without linking.
   }
+
+  const opsNotes = buildSurfShopPartnerOpsNotes({
+    sessionEmail,
+    workEmail: email,
+  })
 
   let supabase: ReturnType<typeof createServiceRoleClient>
   try {
@@ -71,9 +53,10 @@ export async function submitSurfShopPartnerApplicationService(
   const inserted = await insertContactFormMessage(supabase, {
     name,
     email,
-    message,
+    message: customerMessage,
     subject: SURF_SHOP_PARTNER_SUBJECT,
     user_id: linkedUserId,
+    internal_notes: opsNotes,
   })
   if ("error" in inserted) {
     console.error("Surf shop partner insert error:", inserted.error)
@@ -89,8 +72,9 @@ export async function submitSurfShopPartnerApplicationService(
     requester_role: linkedUserId ? "member" : "guest",
     contact_message_id: inserted.id,
     source_channel: "contact_form",
-    body: message,
+    body: customerMessage,
     authorUserId: linkedUserId,
+    internal_notes: opsNotes,
   })
 
   const caseId = opened?.id ?? inserted.id
@@ -100,7 +84,7 @@ export async function submitSurfShopPartnerApplicationService(
     externalId: linkedUserId,
     source: "contact_form",
     subject: SURF_SHOP_PARTNER_SUBJECT,
-    message,
+    message: customerMessage,
   })
 
   return { success: true, ticketId: caseId }
