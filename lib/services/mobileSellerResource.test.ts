@@ -1,30 +1,37 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
-import { FOR_SURF_SHOPS_HERO_DESCRIPTION } from "../for-surf-shops.ts"
+import { FOR_SURFBOARD_FLIPPERS_HERO_DESCRIPTION } from "../for-surfboard-flippers.ts"
 import { HOW_TO_SELL_HERO } from "../seller-resource-copy.ts"
 import { sellerResourcesComingSoon } from "../seller-resources.ts"
 import { buildMobileSellerResource } from "./mobileSellerResource.ts"
 
 describe("mobile seller resources", () => {
-  it("builds For surf shops from the website copy", () => {
-    const page = buildMobileSellerResource("for-surf-shops")
-    assert.equal(page.title, "For surf shops")
+  it("builds For surfboard flippers from the website copy", () => {
+    const page = buildMobileSellerResource("for-surfboard-flippers")
+    assert.equal(page.title, "For surfboard flippers")
     assert.equal(page.cta_label, "Claim 6 months free")
     const intro = page.sections.find((section) => section.kind === "paragraphs")
     assert.equal(intro?.kind, "paragraphs")
     if (intro?.kind !== "paragraphs") return
-    assert.equal(intro.paragraphs[0], FOR_SURF_SHOPS_HERO_DESCRIPTION)
+    assert.equal(intro.paragraphs[0], FOR_SURFBOARD_FLIPPERS_HERO_DESCRIPTION)
     assert.equal(intro.title, "Six months. No selling fees.")
     assert.ok(page.sections.some((section) => section.kind === "faqs"))
   })
 
-  it("keeps the shop offer CTA when signed in", () => {
-    const page = buildMobileSellerResource("for-surf-shops", { signedIn: true })
+  it("keeps the flipper offer CTA when signed in", () => {
+    const page = buildMobileSellerResource("for-surfboard-flippers", { signedIn: true })
     assert.equal(page.cta_label, "Claim 6 months free")
     const faqs = page.sections.find((section) => section.kind === "faqs")
     assert.equal(faqs?.kind, "faqs")
     if (faqs?.kind !== "faqs") return
-    assert.equal(faqs.title, "Selling from the shop")
+    assert.equal(faqs.title, "Selling as a flipper")
+  })
+
+  it("aliases legacy for-surf-shops to flipper copy", () => {
+    const page = buildMobileSellerResource("for-surf-shops")
+    assert.equal(page.title, "For surfboard flippers")
+    assert.equal(page.slug, "for-surf-shops")
+    assert.equal(page.cta_label, "Claim 6 months free")
   })
 
   it("builds How to Sell without live shop data", () => {
@@ -47,7 +54,7 @@ describe("mobile seller resources", () => {
     if (cards?.kind !== "cards") return
     assert.deepEqual(
       cards.cards.map((item) => item.screen),
-      ["for-surf-shops", "how-to-sell", "how-to-ship", "sales-map"],
+      ["for-surfboard-flippers", "how-to-sell", "how-to-ship", "sales-map"],
     )
     const soon = page.sections.find((section) => section.kind === "cards" && section.title === "Coming soon")
     assert.equal(soon?.kind, "cards")

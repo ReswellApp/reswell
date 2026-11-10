@@ -112,9 +112,9 @@ export const MORE_SELL_RESOURCES_HERO = {
 
 export const MORE_SELL_RESOURCES_PRIMARY = [
   {
-    title: "For surf shops",
-    body: "Six months no selling fees — list trade-ins and used boards on Reswell.",
-    screen: "for-surf-shops" as const,
+    title: "For surfboard flippers",
+    body: "Six months no selling fees — for surfers who buy and sell boards.",
+    screen: "for-surfboard-flippers" as const,
   },
   {
     title: "How to Sell",

@@ -262,6 +262,11 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      {
+        source: "/for-surf-shops",
+        destination: "/for-surfboard-flippers",
+        permanent: true,
+      },
       { source: "/admin/coastal-delivery", destination: "/admin/shipper", permanent: false },
       { source: "/admin/coastal-delivery/join", destination: "/admin/shipper", permanent: false },
       { source: "/admin/coastal-delivery/schedule", destination: "/admin/shipper", permanent: false },

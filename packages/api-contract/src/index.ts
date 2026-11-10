@@ -631,6 +631,8 @@ export const MOBILE_CATEGORY_CHIPS: readonly MobileCategoryChip[] = [
 
 /** Seller resource screens. Same pages as the website dropdown. */
 export const MOBILE_SELLER_RESOURCE_SLUGS = [
+  "for-surfboard-flippers",
+  /** @deprecated Prefer `for-surfboard-flippers`. Kept so older apps still resolve. */
   "for-surf-shops",
   "how-to-sell",
   "how-to-ship",

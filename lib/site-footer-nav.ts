@@ -21,7 +21,7 @@ export const siteFooterNavLinks: {
     { name: "Sellers", href: "/sellers" },
     { name: "Cities", href: "/cities/top" },
     { name: "Surf shops", href: "/surf-shops" },
-    { name: "For surf shops", href: "/for-surf-shops" },
+    { name: "For surfboard flippers", href: "/for-surfboard-flippers" },
     { name: "Blog", href: "/blog" },
   ],
   help: [

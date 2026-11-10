@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { BookOpen, Map, Package, Store } from "lucide-react"
+import { ArrowLeftRight, BookOpen, Map, Package } from "lucide-react"
 import { helpArticlePath, helpTopicPath } from "@/lib/help-center/paths"
 import { HowToSellSection } from "@/components/features/seller-resources/how-to-sell-section"
 import { SellerResourcesCta } from "@/components/features/seller-resources/seller-resources-cta"
@@ -13,9 +13,9 @@ import {
 import { SANTA_BARBARA_DROPOFF_HREF } from "@/lib/dropoff-santa-barbara"
 import { SURFBOARD_SELL_BOARDS_CREATE_HREF } from "@/lib/sell-flow/surfboard-sell-paths"
 
-const PRIMARY_ICONS = [Store, BookOpen, Package, Map] as const
+const PRIMARY_ICONS = [ArrowLeftRight, BookOpen, Package, Map] as const
 const PRIMARY_HREFS = [
-  "/for-surf-shops",
+  "/for-surfboard-flippers",
   HOW_TO_SELL_HREF,
   "/seller-resources/how-to-ship",
   "/map",

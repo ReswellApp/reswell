@@ -48,7 +48,14 @@ describe("webHrefToNativePath", () => {
     assert.equal(webHrefToNativePath("/protection-policy"), "/protection-policy")
     assert.equal(webHrefToNativePath("/shipping-estimator"), "/shipping-estimator")
     assert.equal(webHrefToNativePath("/dropoff/santa-barbara"), "/dropoff/santa-barbara")
-    assert.equal(webHrefToNativePath("/for-surf-shops"), "/seller-resources/for-surf-shops")
+    assert.equal(
+      webHrefToNativePath("/for-surfboard-flippers"),
+      "/seller-resources/for-surfboard-flippers",
+    )
+    assert.equal(
+      webHrefToNativePath("/for-surf-shops"),
+      "/seller-resources/for-surfboard-flippers",
+    )
     assert.equal(webHrefToNativePath("/auth/sign-up"), "/sign-in")
     assert.equal(webHrefToNativePath("/sell/boards?new=1"), "/sell/new?new=1")
     assert.equal(webHrefToNativePath("/track/abc"), null)
