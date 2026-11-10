@@ -9,31 +9,15 @@ import type { SurfShopPartnerApplicationInput } from "@/lib/validations/surfShop
 export const SURF_SHOP_PARTNER_SUBJECT = "Surf shop partner offer"
 
 function buildPartnerMessage(input: SurfShopPartnerApplicationInput): string {
-  const lines = [
+  return [
     `Surf shop partner application — ${FOR_SURF_SHOPS_OFFER_MONTHS} months no selling fees`,
     "",
-    `Contact name: ${input.name}`,
     `Shop name: ${input.shopName}`,
     `Email: ${input.email}`,
     `City: ${input.city}`,
-  ]
-
-  if (input.website) {
-    lines.push(`Website / Instagram: ${input.website}`)
-  }
-  if (input.boardCount) {
-    lines.push(`Approx. boards to list: ${input.boardCount}`)
-  }
-  if (input.message) {
-    lines.push("", "Note from the shop:", input.message)
-  }
-
-  lines.push(
     "",
     "Ops: confirm this is a real surf shop, then grant marketplace fee waiver (is_reswell_seller) for the offer window.",
-  )
-
-  return lines.join("\n")
+  ].join("\n")
 }
 
 export async function submitSurfShopPartnerApplicationService(
@@ -41,7 +25,7 @@ export async function submitSurfShopPartnerApplicationService(
 ): Promise<{ success: true; ticketId?: string } | { error: string; existingId?: string }> {
   const message = buildPartnerMessage(input)
   const email = input.email
-  const name = input.name
+  const name = input.shopName
 
   let linkedUserId: string | null = null
   try {
