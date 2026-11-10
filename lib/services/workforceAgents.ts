@@ -152,6 +152,9 @@ export async function executeWorkforceAgent(input: {
       summary: result.summary,
       ranAt: run.created_at,
     })
+    if (result.status === "error") {
+      return { ok: false, error: result.summary }
+    }
     return {
       ok: true,
       data: { status: result.status, summary: result.summary, runId: run.id },

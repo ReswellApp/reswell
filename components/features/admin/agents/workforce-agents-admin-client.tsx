@@ -82,6 +82,7 @@ function AgentRow({ agent }: { agent: WorkforceAgentAdminView }) {
       if ("error" in result && result.error) {
         setError(result.error)
         toast.error(result.error)
+        router.refresh()
         return
       }
       setError(null)
@@ -89,7 +90,12 @@ function AgentRow({ agent }: { agent: WorkforceAgentAdminView }) {
         "summary" in result && typeof result.summary === "string"
           ? result.summary
           : `${agent.name} finished`
-      toast.success(summary)
+      if ("status" in result && result.status === "error") {
+        setError(summary)
+        toast.error(summary)
+      } else {
+        toast.success(summary)
+      }
       router.refresh()
     })
   }

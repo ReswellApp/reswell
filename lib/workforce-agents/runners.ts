@@ -197,35 +197,41 @@ async function runListingCompleter(supabase: SupabaseClient): Promise<WorkforceR
 
 async function runSellerReactivator(supabase: SupabaseClient): Promise<WorkforceRunResult> {
   const cutoff = new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString()
-  const { data: recentSellers, error } = await supabase
-    .from("listings")
-    .select("user_id, updated_at, status")
-    .eq("status", "active")
-    .gt("updated_at", cutoff)
-    .limit(500)
-
-  if (error) return err(`Seller reactivator failed: ${error.message}`)
-
-  const activeRecently = new Set((recentSellers ?? []).map((row) => row.user_id))
-
   const { data: pastSellers, error: pastError } = await supabase
     .from("listings")
     .select("user_id, updated_at")
-    .in("status", ["sold", "archived", "active"])
+    .in("status", ["sold", "removed", "active"])
     .lt("updated_at", cutoff)
     .order("updated_at", { ascending: false })
     .limit(200)
 
   if (pastError) return err(`Seller reactivator failed: ${pastError.message}`)
 
-  const candidates: { userId: string; lastSeen: string }[] = []
+  const uniquePast: { userId: string; lastSeen: string }[] = []
   const seen = new Set<string>()
   for (const row of pastSellers ?? []) {
-    if (!row.user_id || seen.has(row.user_id) || activeRecently.has(row.user_id)) continue
+    if (!row.user_id || seen.has(row.user_id)) continue
     seen.add(row.user_id)
-    candidates.push({ userId: row.user_id, lastSeen: row.updated_at })
-    if (candidates.length >= 20) break
+    uniquePast.push({ userId: row.user_id, lastSeen: row.updated_at })
   }
+
+  const candidateIds = uniquePast.map((row) => row.userId)
+  let activeRecently = new Set<string>()
+  if (candidateIds.length > 0) {
+    const { data: recentSellers, error } = await supabase
+      .from("listings")
+      .select("user_id")
+      .eq("status", "active")
+      .gt("updated_at", cutoff)
+      .in("user_id", candidateIds)
+
+    if (error) return err(`Seller reactivator failed: ${error.message}`)
+    activeRecently = new Set((recentSellers ?? []).map((row) => row.user_id))
+  }
+
+  const candidates = uniquePast
+    .filter((row) => !activeRecently.has(row.userId))
+    .slice(0, 20)
 
   return ok(`Ranked ${candidates.length} sellers to reactivate (quiet 45+ days).`, {
     candidates,

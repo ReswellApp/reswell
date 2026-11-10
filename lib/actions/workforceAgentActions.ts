@@ -37,9 +37,9 @@ export async function runWorkforceAgentAction(raw: unknown) {
   if (!parsed.success) return { error: flattenZod(parsed.error) }
 
   const result = await runWorkforceAgentAsAdmin(parsed.data)
+  revalidatePath("/admin/agents")
   if (!result.ok) return { error: result.error }
 
-  revalidatePath("/admin/agents")
   return {
     success: true as const,
     status: result.data.status,
