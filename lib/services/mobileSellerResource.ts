@@ -5,15 +5,15 @@ import {
   type MobileSellerResourceSlug,
 } from "@reswell/api-contract"
 import {
-  FOR_SURF_SHOPS_DESCRIPTION,
-  FOR_SURF_SHOPS_FAQS,
-  FOR_SURF_SHOPS_HERO_DESCRIPTION,
-  FOR_SURF_SHOPS_STEPS,
-  FOR_SURF_SHOPS_USES,
-  FOR_SURF_SHOPS_VALUES,
-  forSurfShopsOfferHref,
-  forSurfShopsOfferLabel,
-} from "@/lib/for-surf-shops"
+  FOR_SURFBOARD_FLIPPERS_DESCRIPTION,
+  FOR_SURFBOARD_FLIPPERS_FAQS,
+  FOR_SURFBOARD_FLIPPERS_HERO_DESCRIPTION,
+  FOR_SURFBOARD_FLIPPERS_STEPS,
+  FOR_SURFBOARD_FLIPPERS_USES,
+  FOR_SURFBOARD_FLIPPERS_VALUES,
+  forSurfboardFlippersOfferHref,
+  forSurfboardFlippersOfferLabel,
+} from "@/lib/for-surfboard-flippers"
 import { helpArticlePath, helpTopicPath } from "@/lib/help-center/paths"
 import {
   HOW_TO_SELL_BOXES_LEAD,
@@ -104,39 +104,49 @@ function withCta(
   }
 }
 
-function forSurfShops(signedIn: boolean): MobileSellerResource {
+function forSurfboardFlippers(
+  signedIn: boolean,
+  slug: "for-surfboard-flippers" | "for-surf-shops" = "for-surfboard-flippers",
+): MobileSellerResource {
   return withCta(
     {
-      slug: "for-surf-shops",
-      title: "For surf shops",
-      description: FOR_SURF_SHOPS_DESCRIPTION,
+      slug,
+      title: "For surfboard flippers",
+      description: FOR_SURFBOARD_FLIPPERS_DESCRIPTION,
       sections: [
         {
           kind: "paragraphs",
           title: "Six months. No selling fees.",
-          paragraphs: [FOR_SURF_SHOPS_HERO_DESCRIPTION],
+          paragraphs: [FOR_SURFBOARD_FLIPPERS_HERO_DESCRIPTION],
         },
         {
           kind: "cards",
-          title: "Why shops list on Reswell",
-          cards: FOR_SURF_SHOPS_VALUES.map((item) => card(item.title, item.body)),
+          title: "Why flippers list on Reswell",
+          cards: FOR_SURFBOARD_FLIPPERS_VALUES.map((item) => card(item.title, item.body)),
         },
-        { kind: "steps", title: "How a shop gets started", steps: [...FOR_SURF_SHOPS_STEPS] },
+        {
+          kind: "steps",
+          title: "How a flipper gets started",
+          steps: [...FOR_SURFBOARD_FLIPPERS_STEPS],
+        },
         {
           kind: "cards",
-          title: "What shops list",
-          cards: FOR_SURF_SHOPS_USES.map((item) => card(item.title, item.body)),
+          title: "What flippers list",
+          cards: FOR_SURFBOARD_FLIPPERS_USES.map((item) => card(item.title, item.body)),
         },
         {
           kind: "faqs",
-          title: signedIn ? "Selling from the shop" : "Before you apply",
-          items: FOR_SURF_SHOPS_FAQS.map((item) => ({ question: item.question, answer: item.answer })),
+          title: signedIn ? "Selling as a flipper" : "Before you apply",
+          items: FOR_SURFBOARD_FLIPPERS_FAQS.map((item) => ({
+            question: item.question,
+            answer: item.answer,
+          })),
         },
       ],
     },
     {
-      label: forSurfShopsOfferLabel(),
-      href: forSurfShopsOfferHref(),
+      label: forSurfboardFlippersOfferLabel(),
+      href: forSurfboardFlippersOfferHref(),
     },
   )
 }
@@ -341,15 +351,17 @@ export function buildMobileSellerResource(
 ): MobileSellerResource {
   const signedIn = extras.signedIn === true
   const document =
-    slug === "for-surf-shops"
-      ? forSurfShops(signedIn)
-      : slug === "how-to-sell"
-        ? howToSell(extras)
-        : slug === "how-to-ship"
-          ? howToShip()
-          : slug === "sales-map"
-            ? salesMap(extras)
-            : hub()
+    slug === "for-surfboard-flippers"
+      ? forSurfboardFlippers(signedIn, "for-surfboard-flippers")
+      : slug === "for-surf-shops"
+        ? forSurfboardFlippers(signedIn, "for-surf-shops")
+        : slug === "how-to-sell"
+          ? howToSell(extras)
+          : slug === "how-to-ship"
+            ? howToShip()
+            : slug === "sales-map"
+              ? salesMap(extras)
+              : hub()
   return mobileSellerResourceSchema.parse(document)
 }
 

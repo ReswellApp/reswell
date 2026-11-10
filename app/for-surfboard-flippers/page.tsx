@@ -1,12 +1,12 @@
-import { ForSurfShopsLanding } from "@/components/features/marketing/for-surf-shops-landing"
+import { ForSurfboardFlippersLanding } from "@/components/features/marketing/for-surfboard-flippers-landing"
 import { PageStructuredData } from "@/components/seo/page-structured-data"
 import { isAnonymousSupabaseUser } from "@/lib/auth/is-anonymous-user"
-import { FOR_SURF_SHOPS_PAGE_KEY } from "@/lib/for-surf-shops"
+import { FOR_SURFBOARD_FLIPPERS_PAGE_KEY } from "@/lib/for-surfboard-flippers"
 import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
 import { createClient } from "@/lib/supabase/server"
 
 export async function generateMetadata() {
-  return resolvePageMetadata(FOR_SURF_SHOPS_PAGE_KEY)
+  return resolvePageMetadata(FOR_SURFBOARD_FLIPPERS_PAGE_KEY)
 }
 
 async function readSignedIn(): Promise<boolean> {
@@ -15,7 +15,7 @@ async function readSignedIn(): Promise<boolean> {
     const { data } = await supabase.auth.getUser()
     return Boolean(data.user) && !isAnonymousSupabaseUser(data.user)
   } catch (error) {
-    console.error("[for-surf-shops] auth lookup failed", {
+    console.error("[for-surfboard-flippers] auth lookup failed", {
       message: error instanceof Error ? error.message : "unknown",
       timestamp: new Date().toISOString(),
     })
@@ -23,13 +23,13 @@ async function readSignedIn(): Promise<boolean> {
   }
 }
 
-export default async function ForSurfShopsPage() {
+export default async function ForSurfboardFlippersPage() {
   const signedIn = await readSignedIn()
 
   return (
     <>
-      <PageStructuredData pageKey={FOR_SURF_SHOPS_PAGE_KEY} />
-      <ForSurfShopsLanding signedIn={signedIn} />
+      <PageStructuredData pageKey={FOR_SURFBOARD_FLIPPERS_PAGE_KEY} />
+      <ForSurfboardFlippersLanding signedIn={signedIn} />
     </>
   )
 }

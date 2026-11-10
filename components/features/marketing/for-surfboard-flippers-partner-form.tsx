@@ -3,28 +3,24 @@
 import { useState } from "react"
 import { CheckCircle2 } from "lucide-react"
 import { toast } from "sonner"
-import { submitSurfShopPartnerApplication } from "@/lib/actions/surfShopPartner"
-import { FOR_SURF_SHOPS_OFFER_MONTHS } from "@/lib/for-surf-shops"
+import { submitSurfboardFlipperOffer } from "@/lib/actions/surfboardFlipperOffer"
+import { FOR_SURFBOARD_FLIPPERS_OFFER_MONTHS } from "@/lib/for-surfboard-flippers"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
-export function ForSurfShopsPartnerForm() {
+export function ForSurfboardFlippersPartnerForm() {
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [name, setName] = useState("")
   const [email, setEmail] = useState("")
-  const [shopName, setShopName] = useState("")
   const [city, setCity] = useState("")
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     try {
-      const data = await submitSurfShopPartnerApplication({
-        email,
-        shopName,
-        city,
-      })
+      const data = await submitSurfboardFlipperOffer({ name, email, city })
       if ("error" in data) {
         toast.error(data.error ?? "Failed to send")
         return
@@ -45,8 +41,8 @@ export function ForSurfShopsPartnerForm() {
         </div>
         <p className="mt-4 text-lg font-semibold tracking-tight text-[#001A4A]">You&apos;re in</p>
         <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-[#5c6b89]">
-          We&apos;ll confirm your shop and turn on {FOR_SURF_SHOPS_OFFER_MONTHS} months of no
-          selling fees. Watch your inbox.
+          We&apos;ll confirm and turn on {FOR_SURFBOARD_FLIPPERS_OFFER_MONTHS} months of no selling
+          fees. Watch your inbox.
         </p>
       </div>
     )
@@ -60,41 +56,41 @@ export function ForSurfShopsPartnerForm() {
     >
       <div className="space-y-4">
         <div className="space-y-1.5">
-          <Label htmlFor="shop-partner-shop" className="text-[#001A4A]">
-            Shop name
+          <Label htmlFor="flipper-offer-name" className="text-[#001A4A]">
+            Name
           </Label>
           <Input
-            id="shop-partner-shop"
-            value={shopName}
-            onChange={(e) => setShopName(e.target.value)}
-            placeholder="Your shop"
+            id="flipper-offer-name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Your name"
             className="h-11 rounded-xl border-border/80"
             required
-            autoComplete="organization"
+            autoComplete="name"
             autoFocus
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="shop-partner-email" className="text-[#001A4A]">
+          <Label htmlFor="flipper-offer-email" className="text-[#001A4A]">
             Email
           </Label>
           <Input
-            id="shop-partner-email"
+            id="flipper-offer-email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@yourshop.com"
+            placeholder="you@email.com"
             className="h-11 rounded-xl border-border/80"
             required
             autoComplete="email"
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="shop-partner-city" className="text-[#001A4A]">
+          <Label htmlFor="flipper-offer-city" className="text-[#001A4A]">
             City
           </Label>
           <Input
-            id="shop-partner-city"
+            id="flipper-offer-city"
             value={city}
             onChange={(e) => setCity(e.target.value)}
             placeholder="Santa Barbara, CA"

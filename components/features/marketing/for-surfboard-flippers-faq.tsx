@@ -7,12 +7,12 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import { FOR_SURF_SHOPS_FAQS } from "@/lib/for-surf-shops"
+import { FOR_SURFBOARD_FLIPPERS_FAQS } from "@/lib/for-surfboard-flippers"
 
-export function ForSurfShopsFaq() {
+export function ForSurfboardFlippersFaq() {
   return (
     <Accordion type="single" collapsible className="mx-auto flex max-w-3xl flex-col gap-3">
-      {FOR_SURF_SHOPS_FAQS.map((faq) => (
+      {FOR_SURFBOARD_FLIPPERS_FAQS.map((faq) => (
         <AccordionItem
           key={faq.question}
           value={faq.question}
