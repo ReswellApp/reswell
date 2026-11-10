@@ -71,12 +71,15 @@ export async function insertSupportCase(
     source_channel: string
     opened_by?: "requester" | "staff"
     priority?: "low" | "normal" | "high" | "urgent"
+    /** Staff-only; never copied into the member thread. */
+    internal_notes?: string | null
   },
 ): Promise<{ data: SupportCaseRow | null; error: Error | null }> {
   const id = crypto.randomUUID()
   const priority = row.priority ?? (row.kind === "safety" ? "urgent" : "normal")
   const hours = slaHoursForKind(row.kind, priority)
   const slaDue = new Date(Date.now() + hours * 60 * 60 * 1000).toISOString()
+  const internalNotes = row.internal_notes?.trim() || null
 
   const { data, error } = await supabase
     .from("support_cases")
@@ -100,6 +103,7 @@ export async function insertSupportCase(
       source_channel: row.source_channel,
       opened_by: row.opened_by ?? "requester",
       sla_due_at: slaDue,
+      ...(internalNotes ? { internal_notes: internalNotes } : {}),
     })
     .select(CASE_SELECT)
     .single()

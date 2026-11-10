@@ -75,8 +75,11 @@ export async function insertContactFormMessage(
     message: string
     subject?: string | null
     user_id?: string | null
+    /** Staff-only; omitted from member portal selects. */
+    internal_notes?: string | null
   },
 ): Promise<{ id: string } | { error: Error }> {
+  const internalNotes = row.internal_notes?.trim() || null
   const { data, error } = await supabase
     .from("contact_messages")
     .insert({
@@ -86,6 +89,7 @@ export async function insertContactFormMessage(
       subject: row.subject?.trim() ? row.subject.trim() : null,
       source: "contact_form",
       user_id: row.user_id ?? null,
+      ...(internalNotes ? { internal_notes: internalNotes } : {}),
     })
     .select("id")
     .single()
