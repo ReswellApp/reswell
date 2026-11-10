@@ -5,6 +5,7 @@ import {
   SURF_SHOP_PARTNER_OPS_NOTE,
   buildSurfShopPartnerCustomerMessage,
   buildSurfShopPartnerOpsNotes,
+  surfShopPartnerKlaviyoExternalId,
   surfShopPartnerLinkedUserId,
 } from "./surf-shop-partner-ticket.ts"
 
@@ -63,6 +64,30 @@ describe("surfShopPartnerLinkedUserId", () => {
   })
 })
 
+describe("surfShopPartnerKlaviyoExternalId", () => {
+  it("sends the member id only when session and work emails match", () => {
+    assert.equal(
+      surfShopPartnerKlaviyoExternalId({
+        linkedUserId: "user-1",
+        sessionEmail: "alex@tideshop.com",
+        workEmail: "alex@tideshop.com",
+      }),
+      "user-1",
+    )
+  })
+
+  it("omits the member id when the shop address belongs to someone else", () => {
+    assert.equal(
+      surfShopPartnerKlaviyoExternalId({
+        linkedUserId: "user-1",
+        sessionEmail: "alex@gmail.com",
+        workEmail: "shop@tideshop.com",
+      }),
+      null,
+    )
+  })
+})
+
 describe("submitSurfShopPartnerApplicationService wiring", () => {
   it("keeps ops notes off the customer opening message, member thread, and Klaviyo message", () => {
     assert.match(serviceSource, /message: customerMessage/)
@@ -80,5 +105,10 @@ describe("submitSurfShopPartnerApplicationService wiring", () => {
       serviceSource,
       /user\.email[\s\S]{0,80}=== email/,
     )
+  })
+
+  it("does not send the member id to Klaviyo when work email differs", () => {
+    assert.match(serviceSource, /surfShopPartnerKlaviyoExternalId/)
+    assert.doesNotMatch(serviceSource, /externalId: linkedUserId/)
   })
 })

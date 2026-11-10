@@ -59,3 +59,27 @@ export function surfShopPartnerLinkedUserId(
   const id = sessionUser?.id?.trim()
   return id || null
 }
+
+/**
+ * Klaviyo treats `email` and `external_id` as the same profile. Only send the
+ * member id when it belongs to the submitted work address — otherwise the shop
+ * inbox and the signed-in member get aliased.
+ */
+export function surfShopPartnerKlaviyoExternalId(args: {
+  linkedUserId: string | null
+  sessionEmail?: string | null
+  workEmail?: string | null
+}): string | null {
+  const linkedUserId = args.linkedUserId?.trim() || null
+  if (!linkedUserId) return null
+  const sessionEmail = (args.sessionEmail ?? "").trim()
+  const workEmail = (args.workEmail ?? "").trim()
+  if (
+    !sessionEmail ||
+    !workEmail ||
+    sessionEmail.toLowerCase() !== workEmail.toLowerCase()
+  ) {
+    return null
+  }
+  return linkedUserId
+}
