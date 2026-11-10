@@ -165,6 +165,52 @@
   }
 }
 
+/* ─── For surf shops landing ───────────────────────────────────────────────── */
+@keyframes for-surf-shops-hero-media-in {
+  from {
+    transform: scale(1.06);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@keyframes for-surf-shops-hero-copy-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.for-surf-shops-hero-media {
+  animation: for-surf-shops-hero-media-in 1.15s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.for-surf-shops-hero-copy {
+  animation: for-surf-shops-hero-copy-in 700ms cubic-bezier(0.22, 1, 0.36, 1) 120ms both;
+}
+
+.for-surf-shops-story-media {
+  clip-path: inset(0 8% 0 0);
+}
+
+@media (max-width: 1023px) {
+  .for-surf-shops-story-media {
+    clip-path: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .for-surf-shops-hero-media,
+  .for-surf-shops-hero-copy {
+    animation: none;
+  }
+}
+
 /* ─── Tailwind utilities ───────────────────────────────────────────────────── */
 @layer utilities {
   /*

@@ -5,13 +5,26 @@ import { SURFBOARD_SELL_BOARDS_CREATE_HREF } from "@/lib/sell-flow/surfboard-sel
 
 export const FOR_SURF_SHOPS_PATH = "/for-surf-shops"
 export const FOR_SURF_SHOPS_PAGE_KEY = "for-surf-shops"
+export const FOR_SURF_SHOPS_OFFER_ANCHOR = "claim-offer"
 
-export const FOR_SURF_SHOPS_TITLE = "Sell used surfboards from your shop | Reswell"
+/** Shop acquisition offer — fee waiver granted by Reswell after apply. */
+export const FOR_SURF_SHOPS_OFFER_MONTHS = 6
 
-export const FOR_SURF_SHOPS_DESCRIPTION = `Surf shops: create a free Reswell account and list trade-ins and used boards. Free to post. You keep ${SELLER_SHARE_PERCENT}% of the item price when a board sells.`
+export const FOR_SURF_SHOPS_TITLE =
+  "Surf shops: 6 months no selling fees | Reswell"
+
+export const FOR_SURF_SHOPS_DESCRIPTION = `Surf shops: list trade-ins and used boards on Reswell with ${FOR_SURF_SHOPS_OFFER_MONTHS} months of zero marketplace fees. Apply once — we set up the shop offer.`
 
 export const FOR_SURF_SHOPS_HERO_DESCRIPTION =
-  "Create a free Reswell account and list the used boards on your rack — trade-ins, boards you took in, and demos you are done with. Buyers pay on Reswell and can pick the board up at the shop or have it shipped."
+  "Reswell is the marketplace for buying and selling surfboards. Put your shop's used rack in front of buyers nationwide — and try it with six months of no selling fees."
+
+export function forSurfShopsOfferHref(): string {
+  return `${FOR_SURF_SHOPS_PATH}#${FOR_SURF_SHOPS_OFFER_ANCHOR}`
+}
+
+export function forSurfShopsOfferLabel(): string {
+  return "Claim 6 months free"
+}
 
 export function forSurfShopsAccountHref(signedIn: boolean): string {
   if (signedIn) return SURFBOARD_SELL_BOARDS_CREATE_HREF
@@ -29,37 +42,37 @@ export function forSurfShopsSignInHref(): string {
 export const FOR_SURF_SHOPS_VALUES = [
   {
     key: "fee",
-    title: "Free until it sells",
-    body: `Listing costs nothing. Reswell takes ${MARKETPLACE_FEE_PERCENT}% of the item price only when a board sells. You keep ${SELLER_SHARE_PERCENT}%.`,
+    title: "Six months at 0%",
+    body: `Apply once. We waive the usual ${MARKETPLACE_FEE_PERCENT}% marketplace fee for ${FOR_SURF_SHOPS_OFFER_MONTHS} months so your shop can try Reswell risk-free.`,
   },
   {
-    key: "shipping",
-    title: "Pickup or shipping",
-    body: "Offer local pickup, Reswell shipping, or both. The buyer pays the shipping label at checkout. Shipping is not part of the marketplace fee.",
+    key: "reach",
+    title: "Buyers beyond your zip",
+    body: "Local racks stay local. Reswell reaches surfers who are already hunting used boards — pickup at the shop or shipped.",
   },
   {
     key: "shop",
-    title: "A public shop page",
-    body: "Your display name, listings, and buyer reviews live on one seller page people can follow.",
+    title: "Your shop, on the marketplace",
+    body: "Use your shop name as the seller. Listings, reviews, and a public seller page live in one place buyers can follow.",
   },
 ] as const
 
 export const FOR_SURF_SHOPS_STEPS = [
   {
-    title: "Create a Reswell account",
-    body: "Sign up with email or Google. You land in Sell, ready to list the first board.",
+    title: "Tell us about your shop",
+    body: "Short apply form — shop name, city, and how to reach you. No public promo code; we confirm real shops and turn the offer on.",
   },
   {
-    title: "Put your shop name on the profile",
-    body: "Set the shop name as your display name. That name shows on every listing and on your public seller page.",
+    title: "We unlock zero selling fees",
+    body: `Reswell sets ${FOR_SURF_SHOPS_OFFER_MONTHS} months of no marketplace fee on your seller account. You keep 100% of the item price while the offer runs.`,
   },
   {
-    title: "Photograph and price each board",
-    body: "Deck, bottom, rails, and any dings. Check recently sold boards for a similar brand, size, and condition.",
+    title: "List the used rack",
+    body: "Trade-ins, demos, boards in the back. Free to post. Photograph deck, bottom, rails, and any dings.",
   },
   {
-    title: "Publish, then get paid in your wallet",
-    body: "Posting is free. When a board sells, earnings go to your Reswell wallet. Connect a bank account and cash out when the sale is ready.",
+    title: "Sell, then get paid in your wallet",
+    body: "When a board sells, earnings go to your Reswell wallet. Connect a bank account and cash out when the sale is ready.",
   },
 ] as const
 
@@ -78,6 +91,43 @@ export const FOR_SURF_SHOPS_USES = [
   },
 ] as const
 
+export const FOR_SURF_SHOPS_WHY = {
+  eyebrow: "Why Reswell",
+  title: "One place to buy and sell surfboards",
+  body: [
+    "Some boards move fine on Facebook Marketplace or Craigslist. Others sit for months — while someone a few towns over is hunting that exact shape.",
+    "Reswell was built so buying and selling surfboards does not stop at local pickup. One dedicated marketplace for boards and gear, with shipping when meetup is not the right fit.",
+    "Surf shops are part of that. You already take trade-ins and run a used rack. Reswell gives those boards a wider audience without asking you to rebuild your storefront.",
+  ],
+} as const
+
+export const FOR_SURF_SHOPS_FIT = {
+  eyebrow: "Your shop on Reswell",
+  title: "How shops fit the marketplace",
+  lead: "Reswell connects surfers who want a specific board with people who have one. Shops bring inventory, trust, and local pickup — the marketplace brings demand.",
+  points: [
+    {
+      title: "Inventory that should move",
+      body: "Trade-ins and used boards should not gather dust in the back. List them once and reach buyers who are already searching.",
+    },
+    {
+      title: "Pickup at the counter",
+      body: "Offer local pickup, shipping, or both. Shoppers can grab the board from you or have it shipped — you choose per listing.",
+    },
+    {
+      title: "Same Sell flow, shop identity",
+      body: "No special account type to learn. Sign up, set your shop name as the display name, and list from Sell like any seller.",
+    },
+  ],
+} as const
+
+export const FOR_SURF_SHOPS_OFFER = {
+  eyebrow: "Shop offer",
+  title: "Six months. No selling fees.",
+  lead: `Normally Reswell takes ${MARKETPLACE_FEE_PERCENT}% of the item price when a board sells (you keep ${SELLER_SHARE_PERCENT}%). For shops in this offer, we waive that fee for ${FOR_SURF_SHOPS_OFFER_MONTHS} months so you can demo the marketplace with real inventory.`,
+  after: `After the ${FOR_SURF_SHOPS_OFFER_MONTHS} months, the standard ${MARKETPLACE_FEE_PERCENT}% marketplace fee applies. Listing stays free either way. Shipping is buyer-paid and never part of the fee.`,
+} as const
+
 export type ForSurfShopsFaq = {
   question: string
   answer: string
@@ -86,14 +136,25 @@ export type ForSurfShopsFaq = {
 
 export const FOR_SURF_SHOPS_FAQS: readonly ForSurfShopsFaq[] = [
   {
+    question: "How do I get the 6 months with no selling fees?",
+    answer: `Apply on this page with your shop details. There is no public promo code — that would get shared beyond real shops. A Reswell teammate confirms your shop and turns on ${FOR_SURF_SHOPS_OFFER_MONTHS} months of zero marketplace fees on your seller account.`,
+    href: forSurfShopsOfferHref(),
+  },
+  {
+    question: "Why not just publish a promo code?",
+    answer:
+      "Seller fee waivers are set on the shop's account by Reswell. A public code would be hard to limit to real shops and easy to abuse. Applying first keeps the offer for surf shops that are ready to list used boards.",
+    href: forSurfShopsOfferHref(),
+  },
+  {
     question: "Do surf shops need a special account?",
     answer:
-      "No. Shops use the same free Reswell account as any seller. Sign up, set your shop name as your display name, and list boards from Sell.",
+      "No. Shops use the same free Reswell account as any seller. Sign up, set your shop name as your display name, and list boards from Sell. The shop offer is a fee setting on that account after you apply.",
     href: helpArticlePath("selling", "how-to-list-a-board"),
   },
   {
-    question: "What does it cost to sell a used board?",
-    answer: `It is free to list. When a board sells, Reswell takes a ${MARKETPLACE_FEE_PERCENT}% marketplace fee on the item price. You keep ${SELLER_SHARE_PERCENT}%. Buyer-paid shipping is not included in that fee, and card processing is not deducted from your payout.`,
+    question: "What does it cost after the offer?",
+    answer: `It is always free to list. When a board sells after the offer ends, Reswell takes a ${MARKETPLACE_FEE_PERCENT}% marketplace fee on the item price. You keep ${SELLER_SHARE_PERCENT}%. Buyer-paid shipping is not included in that fee, and card processing is not deducted from your payout.`,
     href: helpArticlePath("selling", "marketplace-fees"),
   },
   {
@@ -105,7 +166,7 @@ export const FOR_SURF_SHOPS_FAQS: readonly ForSurfShopsFaq[] = [
   {
     question: "How is this different from the surf shop directory?",
     answer:
-      "The directory at /surf-shops lists independent shops featured on Reswell city pages. This page is for any surf shop that wants a seller account and to list used boards on the marketplace.",
+      "The directory at /surf-shops lists independent shops featured on Reswell city pages. This page is for any surf shop that wants a seller account, the 6-month fee offer, and to list used boards on the marketplace.",
     href: "/surf-shops",
   },
   {

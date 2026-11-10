@@ -11,8 +11,8 @@ import {
   FOR_SURF_SHOPS_STEPS,
   FOR_SURF_SHOPS_USES,
   FOR_SURF_SHOPS_VALUES,
-  forSurfShopsAccountHref,
-  forSurfShopsAccountLabel,
+  forSurfShopsOfferHref,
+  forSurfShopsOfferLabel,
 } from "@/lib/for-surf-shops"
 import { helpArticlePath, helpTopicPath } from "@/lib/help-center/paths"
 import {
@@ -113,7 +113,7 @@ function forSurfShops(signedIn: boolean): MobileSellerResource {
       sections: [
         {
           kind: "paragraphs",
-          title: "Sell used boards from your shop",
+          title: "Six months. No selling fees.",
           paragraphs: [FOR_SURF_SHOPS_HERO_DESCRIPTION],
         },
         {
@@ -129,14 +129,14 @@ function forSurfShops(signedIn: boolean): MobileSellerResource {
         },
         {
           kind: "faqs",
-          title: signedIn ? "Selling from the shop" : "Before you open an account",
+          title: signedIn ? "Selling from the shop" : "Before you apply",
           items: FOR_SURF_SHOPS_FAQS.map((item) => ({ question: item.question, answer: item.answer })),
         },
       ],
     },
     {
-      label: forSurfShopsAccountLabel(signedIn),
-      href: forSurfShopsAccountHref(signedIn),
+      label: forSurfShopsOfferLabel(),
+      href: forSurfShopsOfferHref(),
     },
   )
 }
