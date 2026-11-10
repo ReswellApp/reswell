@@ -9,18 +9,18 @@ describe("mobile seller resources", () => {
   it("builds For surf shops from the website copy", () => {
     const page = buildMobileSellerResource("for-surf-shops")
     assert.equal(page.title, "For surf shops")
-    assert.equal(page.cta_label, "Create a free account")
+    assert.equal(page.cta_label, "Claim 6 months free")
     const intro = page.sections.find((section) => section.kind === "paragraphs")
     assert.equal(intro?.kind, "paragraphs")
     if (intro?.kind !== "paragraphs") return
     assert.equal(intro.paragraphs[0], FOR_SURF_SHOPS_HERO_DESCRIPTION)
+    assert.equal(intro.title, "Six months. No selling fees.")
     assert.ok(page.sections.some((section) => section.kind === "faqs"))
   })
 
-  it("uses the website signed-in CTA for For surf shops", () => {
+  it("keeps the shop offer CTA when signed in", () => {
     const page = buildMobileSellerResource("for-surf-shops", { signedIn: true })
-    assert.equal(page.cta_label, "List a used board")
-    assert.notEqual(page.cta_label, "Create a free account")
+    assert.equal(page.cta_label, "Claim 6 months free")
     const faqs = page.sections.find((section) => section.kind === "faqs")
     assert.equal(faqs?.kind, "faqs")
     if (faqs?.kind !== "faqs") return
