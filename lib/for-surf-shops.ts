@@ -60,7 +60,7 @@ export const FOR_SURF_SHOPS_VALUES = [
 export const FOR_SURF_SHOPS_STEPS = [
   {
     title: "Tell us about your shop",
-    body: "Short apply form — shop name, city, and how to reach you. No public promo code; we confirm real shops and turn the offer on.",
+    body: "Shop name, email, city — that’s it. No public promo code; we confirm real shops and turn the offer on.",
   },
   {
     title: "We unlock zero selling fees",

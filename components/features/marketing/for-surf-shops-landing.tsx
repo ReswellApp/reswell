@@ -203,14 +203,13 @@ export function ForSurfShopsLanding({ signedIn }: { signedIn: boolean }) {
             </p>
           </div>
 
-          <div className="mx-auto mt-12 max-w-3xl">
-            <div className="mb-6 text-center">
+          <div className="mx-auto mt-12 max-w-md">
+            <div className="mb-5 text-center">
               <h3 className="font-headline text-2xl font-bold tracking-tight text-white">
-                Apply to claim the offer
+                Claim the offer
               </h3>
               <p className="mt-2 text-sm text-white/70">
-                Reach out first — we verify your shop, then unlock zero selling fees. Faster and
-                safer than a public promo code.
+                Three fields. We verify your shop and turn on zero fees.
               </p>
             </div>
             <ForSurfShopsPartnerForm />
