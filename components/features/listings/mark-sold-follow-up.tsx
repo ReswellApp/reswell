@@ -11,7 +11,10 @@ import {
 import { submitSoldFlowReswellReviewAction } from "@/lib/actions/reswellPlatformReview"
 import { postListingSaleFeedback, postListingSaleTip } from "@/lib/listing-sale-feedback-request"
 import { postEndListing } from "@/lib/listing-end-request"
-import { postMarkListingSold } from "@/lib/listing-mark-sold-request"
+import {
+  listingMarkSoldAlreadyComplete,
+  postMarkListingSold,
+} from "@/lib/listing-mark-sold-request"
 import { prefetchSaleTipCheckout } from "@/lib/stripe/prefetch-sale-tip-checkout"
 import {
   SALE_TIP_MAX_CENTS,
@@ -81,6 +84,7 @@ export function MarkSoldFollowUp({
   const tipSecretsRef = useRef<Map<number, string>>(new Map())
   const tipInflightRef = useRef<Map<number, Promise<string | null>>>(new Map())
   const customTipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const tipPaidFollowUpRef = useRef(false)
   const listingIdRef = useRef(listingId)
   listingIdRef.current = listingId
 
@@ -127,7 +131,7 @@ export function MarkSoldFollowUp({
           }
         : {},
     )
-    if (!result.ok) {
+    if (!result.ok && !listingMarkSoldAlreadyComplete(result)) {
       toast.error(result.error)
       return false
     }
@@ -320,15 +324,18 @@ export function MarkSoldFollowUp({
                 amountCents={activeTipCents}
                 onSuccess={() => {
                   void (async () => {
+                    if (tipPaidFollowUpRef.current) return
+                    tipPaidFollowUpRef.current = true
                     if (intent === "delete") {
                       const saved = await saveFeedbackAndReview()
-                      if (!saved) return
-                      const deleted = await confirmListingDeleted()
-                      if (!deleted) return
+                      if (saved) {
+                        await confirmListingDeleted()
+                      }
                     } else {
                       const marked = await confirmListingSold()
-                      if (!marked) return
-                      void saveFeedbackAndReview()
+                      if (marked) {
+                        void saveFeedbackAndReview()
+                      }
                     }
                     setTipped(true)
                     clientSecretRef.current = null

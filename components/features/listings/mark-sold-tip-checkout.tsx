@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useState } from "react"
+import { useCallback, useRef, useState } from "react"
 import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js"
 import type { Appearance } from "@stripe/stripe-js"
 import { useTheme } from "next-themes"
@@ -10,6 +10,10 @@ import { Button } from "@/components/ui/button"
 import { StripeJsUnavailable } from "@/components/stripe-js-unavailable"
 import { BRAND_CTA_BLUE } from "@/lib/brand-colors"
 import { finalizeListingSaleTip } from "@/lib/listing-sale-feedback-request"
+import {
+  paidPaymentIntentIdFromConfirmResult,
+  stripePaymentIntentLooksPaid,
+} from "@/lib/stripe/checkout-payment-recovery"
 import { useStripeBrowser } from "@/lib/stripe/use-stripe-browser"
 
 export { prefetchStripeJs as prefetchSaleTipStripeJs } from "@/lib/stripe/load-stripe-browser"
@@ -43,20 +47,22 @@ function TipPaymentForm({
   const [busy, setBusy] = useState(false)
   const [elementLoadError, setElementLoadError] = useState<string | null>(null)
   const [paymentReady, setPaymentReady] = useState(false)
+  const paidRef = useRef(false)
+  const confirmingRef = useRef(false)
 
   const completeAfterSuccess = useCallback(
     async (paymentIntentId: string) => {
+      paidRef.current = true
       const finalized = await finalizeListingSaleTip(listingId, paymentIntentId)
       if (!finalized.ok) {
         console.error("Sale tip finalize failed", finalized.error)
       }
-      onSuccess()
     },
-    [listingId, onSuccess],
+    [listingId],
   )
 
   const confirmAndComplete = useCallback(async (): Promise<
-    { ok: true } | { ok: false; message: string }
+    { ok: true; paid: boolean } | { ok: false; message: string }
   > => {
     if (!stripe || !elements) {
       return { ok: false, message: "Payment is still loading. Try again." }
@@ -64,47 +70,85 @@ function TipPaymentForm({
 
     const { error: submitError } = await elements.submit()
     if (submitError) {
-      return { ok: false, message: submitError.message ?? "Check your payment details and try again." }
+      return {
+        ok: false,
+        message: submitError.message ?? "Check your payment details and try again.",
+      }
     }
 
-    const { error, paymentIntent } = await stripe.confirmPayment({
-      elements,
+    let error: unknown
+    let paymentIntent: { id?: string; status?: string } | undefined
+    try {
+      const confirmed = await stripe.confirmPayment({
+        elements,
+        clientSecret,
+        confirmParams: {
+          return_url: window.location.href,
+        },
+        redirect: "if_required",
+      })
+      error = confirmed.error
+      paymentIntent = confirmed.paymentIntent
+    } catch (confirmErr) {
+      error = confirmErr
+    }
+
+    let paidId = paidPaymentIntentIdFromConfirmResult({
+      paymentIntent,
+      error,
       clientSecret,
-      confirmParams: {
-        return_url: window.location.href,
-      },
-      redirect: "if_required",
     })
+
+    if (!paidId) {
+      try {
+        const retrieved = await stripe.retrievePaymentIntent(clientSecret)
+        if (
+          retrieved.paymentIntent?.id &&
+          stripePaymentIntentLooksPaid(retrieved.paymentIntent.status)
+        ) {
+          paidId = retrieved.paymentIntent.id
+        }
+      } catch (retrieveErr) {
+        console.error("Stripe retrievePaymentIntent after tip confirm error", retrieveErr)
+      }
+    }
+
+    if (paidId) {
+      await completeAfterSuccess(paidId)
+      return { ok: true, paid: true }
+    }
 
     if (error) {
       console.error("Stripe confirmPayment error", formatStripeConfirmError(error), error)
-      return { ok: false, message: error.message ?? "Payment could not be confirmed." }
+      return { ok: false, message: formatStripeConfirmError(error) }
     }
 
-    if (paymentIntent?.status === "succeeded" && paymentIntent.id) {
-      await completeAfterSuccess(paymentIntent.id)
-    }
-
-    return { ok: true }
+    return { ok: true, paid: false }
   }, [stripe, elements, clientSecret, completeAfterSuccess])
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault()
-      if (!stripe || !elements) return
+      if (!stripe || !elements || confirmingRef.current) return
 
+      confirmingRef.current = true
       setBusy(true)
       try {
         const result = await confirmAndComplete()
-        if (!result.ok) toast.error(result.message)
+        if (result.ok && result.paid) {
+          onSuccess()
+          return
+        }
+        if (!result.ok && !paidRef.current) toast.error(result.message)
       } catch (err) {
         console.error("Sale tip checkout error", err)
-        toast.error(formatStripeConfirmError(err))
+        if (!paidRef.current) toast.error(formatStripeConfirmError(err))
       } finally {
+        confirmingRef.current = false
         setBusy(false)
       }
     },
-    [stripe, elements, confirmAndComplete],
+    [stripe, elements, confirmAndComplete, onSuccess],
   )
 
   return (
@@ -126,6 +170,7 @@ function TipPaymentForm({
             }}
             onReady={() => setPaymentReady(true)}
             onLoadError={(event) => {
+              if (paidRef.current || confirmingRef.current) return
               const msg =
                 event.error?.message?.trim() ||
                 "Payment form failed to load. Confirm Stripe keys are configured."
