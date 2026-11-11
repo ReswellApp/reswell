@@ -1067,7 +1067,11 @@ function SellPageContentInner({
       setFormData((fd) => (fd.dropoffLocationId ? { ...fd, dropoffLocationId: "" } : fd))
       return
     }
-    if (dropoffLocationsStatus === "error" && dropoffLoadedOriginKey !== dropoffOriginKey) {
+    if (
+      dropoffLocationsStatus === "error" &&
+      dropoffLoadedOriginKey &&
+      dropoffLoadedOriginKey !== dropoffOriginKey
+    ) {
       setFormData((fd) => (fd.dropoffLocationId ? { ...fd, dropoffLocationId: "" } : fd))
       return
     }

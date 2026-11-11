@@ -90,7 +90,7 @@ export function ListingDeskBoardShipping({
       onChange({ dropoffLocationId: "" })
       return
     }
-    if (status === "error" && loadedOriginKey !== originKey) {
+    if (status === "error" && loadedOriginKey && loadedOriginKey !== originKey) {
       onChange({ dropoffLocationId: "" })
       return
     }
