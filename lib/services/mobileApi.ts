@@ -730,16 +730,19 @@ export async function getMobileListingService(
 ): Promise<MobileApiResult<MobileListingDetail>> {
   if (viewer) {
     const publicResult = await getCachedPublicMobileListingDetail(listingParam)
-    if (!publicResult.ok) return publicResult
-    if (viewer.userId === publicResult.data.seller.id) {
-      return loadMobileListingDetailFromDb(listingParam, viewer)
+    if (publicResult.ok) {
+      if (viewer.userId === publicResult.data.seller.id) {
+        return loadMobileListingDetailFromDb(listingParam, viewer)
+      }
+      const overlay = await loadMobileListingBuyerOverlay(
+        viewer,
+        publicResult.data.id,
+        publicResult.data.seller.id,
+      )
+      return { ok: true, data: applyMobileListingViewerOverlay(publicResult.data, overlay) }
     }
-    const overlay = await loadMobileListingBuyerOverlay(
-      viewer,
-      publicResult.data.id,
-      publicResult.data.seller.id,
-    )
-    return { ok: true, data: applyMobileListingViewerOverlay(publicResult.data, overlay) }
+    // Drafts and vacation listings are not public; still load them for the owner.
+    return loadMobileListingDetailFromDb(listingParam, viewer)
   }
   return getCachedPublicMobileListingDetail(listingParam)
 }
@@ -751,19 +754,23 @@ async function loadMobileListingDetailFromDb(
   const supabase = getDb({ consistency: "eventual", purpose: "catalog" })
   const found = await findListingByParam(supabase, listingParam, {
     select: MOBILE_LISTING_DETAIL_SELECT,
+    includeHiddenListings: Boolean(viewer),
   })
   if (found.queryFailed) {
     return { ok: false, status: 500, error: "Unable to load listing right now" }
   }
 
   const row = found.listing as MobileListingRow | null
-  if (!row || !isMobileListingDetailVisible(row)) {
+  if (!row) {
     return { ok: false, status: 404, error: "Listing not found" }
   }
 
   const sold = row.status === "sold"
   const sellerId = nullableText(row.user_id)
   const isOwner = Boolean(viewer && sellerId && viewer.userId === sellerId)
+  if (!isOwner && !isMobileListingDetailVisible(row)) {
+    return { ok: false, status: 404, error: "Listing not found" }
+  }
   const [viewerState, watcherCount, cartHolderCount, reviews, catalog, canDelete] = await Promise.all([
     viewer
       ? Promise.all([

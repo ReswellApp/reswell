@@ -110,7 +110,7 @@ const LISTING_FOR_MOBILE_EDIT_SELECT = `
   board_shipping_cost_mode, shipping_packed_length_in, shipping_packed_width_in,
   shipping_packed_height_in, shipping_packed_weight_oz, shipping_package_tier,
   shipping_package_band, dropoff_location_id, brand, model, category_id, board_type,
-  fin_setup, fin_system, construction, fins_setup, fins_included,
+  fin_system, construction, fins_setup, fins_included,
   seller_purchase_price_usd, seller_purchased_from, seller_purchased_on,
   dimensions, length_total_inches, volume_liters,
   listing_images (id, url, thumbnail_url, is_primary, sort_order),
@@ -133,7 +133,14 @@ export async function fetchOwnedListingForEdit(
     .eq("user_id", userId)
     .maybeSingle()
 
-  if (error || !data?.id) return null
+  if (error) {
+    console.error("[listingEdit] owned listing query failed", {
+      listingId: trimmed,
+      message: error.message,
+    })
+    return null
+  }
+  if (!data?.id) return null
   return data as OwnedListingForEditRow
 }
 
@@ -153,7 +160,14 @@ export async function fetchOwnedListingForMobileEdit(
     .eq("user_id", userId)
     .maybeSingle()
 
-  if (error || !data?.id) return null
+  if (error) {
+    console.error("[listingEdit] mobile owned listing query failed", {
+      listingId: trimmed,
+      message: error.message,
+    })
+    return null
+  }
+  if (!data?.id) return null
   return data as OwnedListingForEditRow
 }
 
@@ -171,6 +185,13 @@ export async function fetchListingForEditById(
     .eq("id", trimmed)
     .maybeSingle()
 
-  if (error || !data?.id) return null
+  if (error) {
+    console.error("[listingEdit] listing-by-id query failed", {
+      listingId: trimmed,
+      message: error.message,
+    })
+    return null
+  }
+  if (!data?.id) return null
   return data as OwnedListingForEditRow
 }
