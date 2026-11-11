@@ -7,11 +7,11 @@ import Link from "next/link"
 import { X, Search } from "lucide-react"
 import { createPortal } from "react-dom"
 import {
-  getNavSearchPersonalizationAction,
-  recordNavRecentlyViewedBrandAction,
-  recordNavSearchPersonalizationQueryAction,
-  removeNavSearchPersonalizationQueryAction,
-} from "@/app/actions/navSearchPersonalization"
+  fetchNavSearchPersonalization,
+  recordNavRecentlyViewedBrand,
+  recordNavSearchPersonalizationQuery,
+  removeNavSearchPersonalizationQuery,
+} from "@/lib/nav-search-personalization-client"
 import {
   NavSearchTopListingSectionHeader,
   NavSearchTopListingText,
@@ -425,7 +425,7 @@ export function HeaderNavSearch({
 
     setPersonalizationLoaded(false)
     try {
-      const result = await getNavSearchPersonalizationAction()
+      const result = await fetchNavSearchPersonalization()
       if ("error" in result) {
         setRecentSearches(getRecentSearches())
         setRecentlyViewed([])
@@ -529,7 +529,7 @@ export function HeaderNavSearch({
       }
 
       if (userId) {
-        void recordNavRecentlyViewedBrandAction({
+        recordNavRecentlyViewedBrand({
           name: brand.name,
           slug: brand.slug,
         })
@@ -542,7 +542,7 @@ export function HeaderNavSearch({
     (term: string) => {
       saveRecentSearch(term)
       if (userId) {
-        void recordNavSearchPersonalizationQueryAction(term)
+        recordNavSearchPersonalizationQuery(term)
       }
     },
     [userId],
@@ -552,13 +552,13 @@ export function HeaderNavSearch({
     (q: string) => {
       const term = q.trim()
       if (!term) return
-      persistRecentSearch(term)
+      const href = hrefForNavMarketplaceSearch(term, pathname, searchParams)
+      if (!href) return
       setQuery(term)
       writeNavSearchQuery(term)
       dismissSearchFocus()
-      void hrefForNavMarketplaceSearch(term, pathname, searchParams).then((href) => {
-        if (href) router.push(href)
-      })
+      router.push(href)
+      persistRecentSearch(term)
     },
     [router, pathname, searchParams, persistRecentSearch, dismissSearchFocus],
   )
@@ -568,26 +568,26 @@ export function HeaderNavSearch({
     clearNavSearchQuery()
   }, [])
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    const term = query.trim()
+    const fromInput = new FormData(e.currentTarget).get("q")
+    const term = (typeof fromInput === "string" ? fromInput : query).trim()
     if (!term) {
       clearNavSearchQuery()
       setQuery("")
       dismissSearchFocus()
-      await goToCuratedSearchPage(router, pathname, searchParams.toString())
+      void goToCuratedSearchPage(router, pathname, searchParams.toString())
       return
     }
-    runSearch(query)
+    runSearch(term)
   }
 
   const handleRemoveRecent = (term: string) => {
     if (userId) {
-      void removeNavSearchPersonalizationQueryAction(term).then(() => {
-        setRecentSearches((prev) =>
-          prev.filter((s) => s.toLowerCase() !== term.toLowerCase()),
-        )
-      })
+      removeNavSearchPersonalizationQuery(term)
+      setRecentSearches((prev) =>
+        prev.filter((s) => s.toLowerCase() !== term.toLowerCase()),
+      )
     } else {
       removeRecentSearch(term)
       setRecentSearches(getRecentSearches())
@@ -745,6 +745,7 @@ export function HeaderNavSearch({
   const sharedSearchInputProps = {
     value: query,
     onChange: setQuery,
+    name: "q",
     onMarketplaceBrandPick: persistRecentBrand,
     onBrandStripPick: (
       brandName: string,

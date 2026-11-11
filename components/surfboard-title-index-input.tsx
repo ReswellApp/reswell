@@ -11,7 +11,7 @@ import type { IndexBoardModelSelection } from "@/components/index-board-model-co
 import { getBoardModelsCatalogItems, searchBrandsCatalogSuggest } from "@/app/actions/marketplace"
 import { searchFinBrandsCatalogSuggest } from "@/lib/actions/finListingActions"
 import type { BrandCatalogSuggestRow } from "@/lib/services/brandDirectorySearch"
-import { recordSearchSuggestPick } from "@/app/actions/search-suggest-analytics"
+import { recordSearchSuggestPick } from "@/lib/search-suggest-analytics-client"
 import type { SearchSuggestPickSurface } from "@/lib/elasticsearch/search-suggest-analytics-index"
 import { LISTING_TITLE_MAX_LENGTH } from "@/lib/sell-form-validation"
 import { useIsMobile } from "@/hooks/use-mobile"

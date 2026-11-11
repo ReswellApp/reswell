@@ -12,7 +12,7 @@ import { isBenignClientFetchError } from "@/lib/utils/is-abort-error"
 import { capitalizeWords, formatCondition } from "@/lib/listing-labels"
 import { searchBrandsCatalogSuggest, searchSuggest, type SearchSuggestBrandChip } from "@/app/actions/marketplace"
 import type { BrandCatalogSuggestRow } from "@/lib/services/brandDirectorySearch"
-import { recordSearchSuggestPick } from "@/app/actions/search-suggest-analytics"
+import { recordSearchSuggestPick } from "@/lib/search-suggest-analytics-client"
 import type {
   SearchSuggestPickKind,
   SearchSuggestPickSurface,
@@ -1542,9 +1542,19 @@ export function SearchInputWithSuggest({
       <Input
         type={inputType}
         name={name}
+        enterKeyHint={inputType === "search" ? "search" : undefined}
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onKeyDown={(event) => {
+          if (inputType !== "search") return
+          if (event.key !== "Enter") return
+          if (event.nativeEvent.isComposing || event.keyCode === 229) return
+          const form = event.currentTarget.form
+          if (!form) return
+          event.preventDefault()
+          form.requestSubmit()
+        }}
         onFocus={() => {
           onFocusProp?.()
           if (disableSuggest) return
