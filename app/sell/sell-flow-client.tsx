@@ -1063,6 +1063,14 @@ function SellPageContentInner({
 
   useEffect(() => {
     if (!formData.dropoffLocationId) return
+    if (
+      dropoffLocationsStatus === "error" &&
+      dropoffLoadedOriginKey !== "" &&
+      dropoffLoadedOriginKey !== dropoffOriginKey
+    ) {
+      setFormData((fd) => (fd.dropoffLocationId ? { ...fd, dropoffLocationId: "" } : fd))
+      return
+    }
     if (dropoffLocationsStatus !== "ready") return
     if (dropoffLoadedOriginKey !== dropoffOriginKey) return
     const location = dropoffLocations.find((row) => row.id === formData.dropoffLocationId)
