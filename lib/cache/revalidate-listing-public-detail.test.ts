@@ -38,4 +38,31 @@ describe("listing detail revalidation", () => {
       PUBLIC_MARKETPLACE_EDGE_CACHE_CONTROL,
     )
   })
+
+  it("forwards anonymousPublicView into every section PDP so cookies() cannot dynamize /l", () => {
+    const pages = [
+      "components/surfboard-listing-detail-page.tsx",
+      "components/fins-listing-detail-page.tsx",
+      "components/wetsuits-listing-detail-page.tsx",
+      "components/boardbags-listing-detail-page.tsx",
+      "components/surfpacks-listing-detail-page.tsx",
+      "components/leashes-listing-detail-page.tsx",
+      "components/apparel-listing-detail-page.tsx",
+      "components/accessories-listing-detail-page.tsx",
+      "components/magazines-listing-detail-page.tsx",
+      "components/traction-listing-detail-page.tsx",
+    ]
+    for (const page of pages) {
+      const src = readRepo(page)
+      assert.match(src, /anonymousPublicView,/, `${page} must forward anonymousPublicView`)
+    }
+
+    const load = readRepo("lib/listing-detail-page-load.ts")
+    assert.match(load, /if \(anonymousPublicView && prefetchedListing\)/)
+    assert.match(load, /createAnonSupabaseClient/)
+
+    const strips = readRepo("components/features/listings/surfboard-listing-pdp-catalog-strips.tsx")
+    assert.match(strips, /viewerUser \?\? null/)
+    assert.match(strips, /user \? \(await getCachedRequestSession\(\)\)\.supabase : null/)
+  })
 })

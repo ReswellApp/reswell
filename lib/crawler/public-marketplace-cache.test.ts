@@ -8,6 +8,7 @@ import {
   publicMarketplaceCdnCacheControl,
   shouldAttachDeviceCookieOnDocument,
 } from "./public-marketplace-cache-policy.ts"
+import { shouldAttachDeviceCookieOnDocument as attachDeviceCookieOnPath } from "./public-marketplace-paths.ts"
 
 describe("public marketplace document cache", () => {
   it("does not set the device cookie on marketplace HTML", () => {
@@ -66,6 +67,13 @@ describe("public marketplace document cache", () => {
     assert.doesNotMatch(shop, /auth\.getUser\(/)
     assert.match(proxy, /shouldAttachDeviceCookieOnDocument/)
     assert.match(proxy, /applyPublicMarketplaceCacheHints/)
+    assert.match(proxy, /media\//)
+  })
+
+  it("does not attach the device cookie on public media paths", () => {
+    assert.equal(attachDeviceCookieOnPath("/media/listings/abc/file.jpg"), false)
+    assert.equal(attachDeviceCookieOnPath("/media/listing-videos/abc/clip.mp4"), false)
+    assert.equal(attachDeviceCookieOnPath("/dashboard/listings"), true)
   })
 
   it("resolves the /boards pin CMS after mount, not in the cached document", () => {

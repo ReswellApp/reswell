@@ -108,11 +108,13 @@ async function renderSurfpacksListingDetailPage({
   listingParam,
   prefetchedListing,
   viewerUser,
+  anonymousPublicView,
 }: ListingDetailPageSharedProps) {
   const { supabase, user, listing: surfpackRaw } = await loadListingDetailPageContext({
     listingParam,
     prefetchedListing,
     viewerUser,
+    anonymousPublicView,
     section: SURFPACKS_SECTION,
   })
   const surfpack = surfpackRaw as Record<string, any> | null

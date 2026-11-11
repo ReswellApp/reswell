@@ -99,9 +99,10 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization)
      * - favicon.ico (favicon file)
-     * - images - .svg, .png, .jpg, .jpeg, .gif, .webp
+     * - images - .svg, .png, .jpg, .jpeg, .gif, .webp, video
+     * - media/* — public listing/blog bytes; skip session + device cookie so the CDN can store them
      * - api/webhooks/* — Stripe/ShipEngine need the raw body; skip Supabase session work here
      */
-    '/((?!_next/static|_next/image|favicon.ico|images/|api/webhooks/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|images/|media/|api/webhooks/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp4|mov|webm|m4v)$).*)',
   ],
 }

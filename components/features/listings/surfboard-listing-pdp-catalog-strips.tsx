@@ -7,8 +7,8 @@ import { fetchMoreFromSellerListings, PDP_SELLER_LISTING_LIMIT } from "@/lib/db/
 import { hydrateHomePeerListingRows } from "@/lib/db/home-peer-listing-feed"
 import { sellerListingRailTitle, similarListingRailTitle } from "@/lib/listing-pdp-rail-titles"
 import { fetchSignedInPdpRecentlyViewedSurfboards } from "@/lib/services/pdp-recent-strip-listings"
-import { getDb } from "@/lib/supabase/db"
 import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
+import { getDb } from "@/lib/supabase/db"
 
 export function SurfboardListingPdpCatalogStripsFallback() {
   return (
@@ -31,9 +31,11 @@ export async function SurfboardListingPdpCatalogStrips({
   }
   viewerUser?: User | null
 }) {
-  const { supabase, user: sessionUser } = await getCachedRequestSession()
-  const user = viewerUser ?? sessionUser
+  // Use only the viewer the PDP already resolved. Probing the session when
+  // `viewerUser` is null calls cookies() and dynamizes the anonymous `/l` ISR shell.
+  const user = viewerUser ?? null
   const catalog = getDb({ consistency: "eventual" })
+  const viewerClient = user ? (await getCachedRequestSession()).supabase : null
   const listPriceNum =
     typeof board.price === "number" ? board.price : Number.parseFloat(String(board.price)) || 0
 
@@ -56,8 +58,8 @@ export async function SurfboardListingPdpCatalogStrips({
         excludeListingId: board.id,
         limit: PDP_SELLER_LISTING_LIMIT,
       }),
-      user
-        ? fetchSignedInPdpRecentlyViewedSurfboards(supabase, user.id, board.id)
+      user && viewerClient
+        ? fetchSignedInPdpRecentlyViewedSurfboards(viewerClient, user.id, board.id)
         : Promise.resolve(undefined),
     ])
   } catch (error) {
@@ -72,9 +74,9 @@ export async function SurfboardListingPdpCatalogStrips({
   ]
 
   let favoritedIds = new Set<string>()
-  if (user && stripIds.length > 0) {
+  if (user && viewerClient && stripIds.length > 0) {
     try {
-      const { data } = await supabase
+      const { data } = await viewerClient
         .from("favorites")
         .select("listing_id")
         .eq("user_id", user.id)
