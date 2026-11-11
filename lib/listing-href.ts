@@ -18,9 +18,16 @@ export function boardDetailHref(board: { id: string; slug?: string | null }): st
 }
 
 /** Peer-to-peer checkout (surfboards). */
-export function peerListingCheckoutHref(_listingSection: string, listingSlugOrId: string): string {
+export function peerListingCheckoutHref(
+  _listingSection: string,
+  listingSlugOrId: string,
+  options?: { quantity?: number; buyAgain?: boolean },
+): string {
   const params = new URLSearchParams()
   params.set("listing", listingSlugOrId)
+  const quantity = Math.floor(Number(options?.quantity) || 0)
+  if (quantity > 1) params.set("qty", String(quantity))
+  if (options?.buyAgain) params.set("buy_again", "1")
   return `/checkout?${params.toString()}`
 }
 

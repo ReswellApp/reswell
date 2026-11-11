@@ -109,3 +109,5 @@ GRANT EXECUTE ON FUNCTION public.trim_user_recently_viewed_listings(integer, int
 
 COMMENT ON FUNCTION public.trim_user_recently_viewed_listings(integer, integer) IS
   'Deletes one bounded batch beyond each user''s recently viewed retention cap. Service role only and safe to retry.';
+
+NOTIFY pgrst, 'reload schema';

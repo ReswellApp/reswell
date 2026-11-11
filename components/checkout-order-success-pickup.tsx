@@ -271,9 +271,15 @@ export function CheckoutOrderSuccessPickup({ data }: { data: CheckoutOrderSucces
               </Link>
             </Button>
           )}
-          <Button size="lg" variant="outline" asChild>
-            <Link href="/boards">Continue shopping</Link>
-          </Button>
+          {data.buyAgainHref ? (
+            <Button size="lg" variant="outline" asChild>
+              <Link href={data.buyAgainHref}>Buy again</Link>
+            </Button>
+          ) : (
+            <Button size="lg" variant="outline" asChild>
+              <Link href="/boards">Continue shopping</Link>
+            </Button>
+          )}
         </motion.div>
 
         <motion.div

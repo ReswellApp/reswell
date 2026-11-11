@@ -2,6 +2,7 @@
 
 import { useEffect } from "react"
 
+import { metaIsoCurrency } from "@/lib/meta/currency"
 import { trackMetaViewContent } from "@/lib/meta/pixel-events"
 import { collectMetaClientBrowserSignals } from "@/lib/meta/collect-client-browser-signals"
 
@@ -52,7 +53,7 @@ export function MetaViewContentTracker({
           listing_id: listingId,
           event_id: eventId,
           value: numericValue,
-          currency: currency?.toUpperCase(),
+          currency: metaIsoCurrency(currency),
           source_url: typeof window !== "undefined" ? window.location.href : undefined,
           fbc: browserSignals.fbc ?? undefined,
           fbp: browserSignals.fbp ?? undefined,

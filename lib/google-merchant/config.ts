@@ -85,10 +85,10 @@ export const GOOGLE_MERCHANT_DEFAULT_FINS_PRODUCT_CATEGORY = "3525"
 /** Google taxonomy: Media > Magazines & Newspapers > Magazines (784). */
 export const GOOGLE_MERCHANT_DEFAULT_MAGAZINES_PRODUCT_CATEGORY = "784"
 
-/** Google taxonomy: Sporting Goods > … > Boating & Water Sport Apparel (499813). */
-export const GOOGLE_MERCHANT_DEFAULT_WETSUITS_PRODUCT_CATEGORY = "499813"
+/** Google taxonomy: Sporting Goods > … > Boating & Water Sport Apparel > Wetsuits (1147). */
+export const GOOGLE_MERCHANT_DEFAULT_WETSUITS_PRODUCT_CATEGORY = "1147"
 
-/** Google taxonomy: Sporting Goods > … > Boating & Water Sport Apparel (499813). */
+/** Google taxonomy: Sporting Goods > … > Boating & Water Sport Apparel (499813). Not wetsuits. */
 export const GOOGLE_MERCHANT_DEFAULT_APPAREL_PRODUCT_CATEGORY = "499813"
 
 export function getGoogleMerchantFinsProductCategory(): string {

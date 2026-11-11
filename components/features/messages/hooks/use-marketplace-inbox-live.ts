@@ -22,6 +22,7 @@ import {
 /**
  * One private channel per signed-in person. A new message moves the inbox row
  * immediately and reconciles the header ticker, including while another page is open.
+ * This is the inbox live path; `/messages` does not subscribe to all `messages` WAL.
  */
 export function useMarketplaceInboxLive(userId: string | null): void {
   const supabase = createClient()

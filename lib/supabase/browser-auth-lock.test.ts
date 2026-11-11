@@ -4,7 +4,20 @@ import { describe, it } from "node:test"
 import {
   BrowserAuthLockTimeoutError,
   browserAuthLock,
+  toInTabAcquireTimeout,
 } from "./browser-auth-lock.ts"
+
+describe("toInTabAcquireTimeout", () => {
+  it("keeps 0 so auto-refresh can skip a busy lock", () => {
+    assert.equal(toInTabAcquireTimeout(0), 0)
+  })
+
+  it("waits forever for every other auth-js wait budget", () => {
+    assert.equal(toInTabAcquireTimeout(-1), -1)
+    assert.equal(toInTabAcquireTimeout(1), -1)
+    assert.equal(toInTabAcquireTimeout(10_000), -1)
+  })
+})
 
 describe("browserAuthLock", () => {
   it("runs the operation when the lock is free", async () => {
@@ -105,5 +118,42 @@ describe("browserAuthLock", () => {
     await held
     await later
     assert.deepEqual(order, ["holder", "later"])
+  })
+
+  it("fails immediately when acquireTimeout is 0 and the lock is held", async () => {
+    let release: (() => void) | undefined
+    const held = browserAuthLock("busy", -1, () => {
+      return new Promise<void>((resolve) => {
+        release = resolve
+      })
+    })
+
+    await assert.rejects(
+      browserAuthLock("busy", 0, async () => "should-not-run"),
+      (error: unknown) => error instanceof BrowserAuthLockTimeoutError,
+    )
+
+    release?.()
+    await held
+  })
+
+  it("lets remapped waiters finish after a holder that outlives auth-js's 10s budget", async () => {
+    let release: (() => void) | undefined
+    const held = browserAuthLock("page-load", -1, () => {
+      return new Promise<void>((resolve) => {
+        release = resolve
+      })
+    })
+
+    const waiter = browserAuthLock(
+      "page-load",
+      toInTabAcquireTimeout(10_000),
+      async () => "session",
+    )
+
+    await new Promise((resolve) => setTimeout(resolve, 40))
+    release?.()
+    assert.equal(await waiter, "session")
+    await held
   })
 })

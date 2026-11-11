@@ -80,6 +80,11 @@ export const exploreDestinations: readonly ExploreDestination[] = [
     description: "Save a search and get an email when a matching board is listed.",
   },
   {
+    label: "Board Match",
+    href: "/board-match",
+    description: "See a catalog board, name the brand for points, and bonus for the model.",
+  },
+  {
     label: "Recently sold",
     href: "/sold",
     description: "Boards that just changed hands on Reswell.",

@@ -5,7 +5,7 @@ import { cityLandingHrefWithBrowseParams } from "./city-landing-path.ts"
 describe("cityLandingHrefWithBrowseParams", () => {
   it("keeps boards facets and drops location params", () => {
     const params = new URLSearchParams(
-      "style=shortboard&minPrice=200&location=San+Diego&lat=32.7&lng=-117.1&radius=50&page=2",
+      "style=shortboard&minPrice=200&location=San+Diego&lat=32.7&lng=-117.1&radius=50&home=1&page=2",
     )
     assert.equal(
       cityLandingHrefWithBrowseParams("san-diego", params),

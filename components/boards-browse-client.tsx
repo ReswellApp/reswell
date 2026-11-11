@@ -17,6 +17,7 @@ import {
 } from "@/components/features/browse/browse-filters-hover-bar"
 import { BoardsBrowseFacetControls } from "@/components/boards-browse-facet-controls"
 import { useBoardsFilterState } from "@/components/boards-browse-filter-state"
+import { BoardsBrowseLocationFilterButton } from "@/components/boards-browse-location-filter-button"
 import { BoardsSaveSearchPanel } from "@/components/boards-save-search-panel"
 import {
   BoardsGiveawayEnterControls,
@@ -185,19 +186,27 @@ export function BoardsBrowseClient({
         onRemove: () => state.setPriceRange(null, null),
       })
     }
-    if (showLocationFilter && state.location.trim()) {
+    if (showLocationFilter && state.homePreference && state.location.trim()) {
       out.push({
-        id: "location",
-        label: state.location.trim(),
+        id: "home",
+        label: `Near ${state.location.trim()}`,
         onRemove: () => state.setLocationQuery(""),
       })
-    }
-    if (showLocationFilter && state.radius !== "any") {
-      out.push({
-        id: "radius",
-        label: `${state.radius} mi`,
-        onRemove: () => state.setRadius(null),
-      })
+    } else {
+      if (showLocationFilter && state.location.trim()) {
+        out.push({
+          id: "location",
+          label: state.location.trim(),
+          onRemove: () => state.setLocationQuery(""),
+        })
+      }
+      if (showLocationFilter && state.radius !== "any") {
+        out.push({
+          id: "radius",
+          label: `${state.radius} mi`,
+          onRemove: () => state.setRadius(null),
+        })
+      }
     }
     if (state.shippingAvailable) {
       out.push({
@@ -334,6 +343,12 @@ export function BoardsBrowseClient({
             opening the sidebar narrows them with the board grid. */}
         <div className="min-w-0 flex-1 overflow-x-clip">
           {afterHeader}
+
+          {showLocationFilter && title ? (
+            <div className="mb-2 flex items-center justify-end md:mb-3">
+              <BoardsBrowseLocationFilterButton state={state} />
+            </div>
+          ) : null}
 
           <div
             ref={scrollListingsIntoViewOnFilter ? listingsAnchorRef : undefined}

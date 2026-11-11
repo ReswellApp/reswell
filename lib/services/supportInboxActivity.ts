@@ -8,9 +8,19 @@ import { countUnreadSupportMessages } from "@/lib/utils/unread-support-count-eve
 export async function loadSupportInboxActivityNotifications(
   supabase: SupabaseClient,
   userId: string,
+  options?: { caseLimit?: number },
 ): Promise<MessagesInboxNotification[]> {
-  const cases = await listSupportCasesForRequester(supabase, userId, "all")
-  const visible = cases.slice(0, 30)
+  const caseLimit =
+    typeof options?.caseLimit === "number" &&
+    Number.isFinite(options.caseLimit) &&
+    options.caseLimit > 0
+      ? Math.min(30, Math.floor(options.caseLimit))
+      : 30
+
+  const cases = await listSupportCasesForRequester(supabase, userId, "all", {
+    limit: caseLimit,
+  })
+  const visible = cases
   if (visible.length === 0) return []
 
   const { data: agentMessages, error } = await supabase
@@ -23,7 +33,7 @@ export async function loadSupportInboxActivityNotifications(
     .eq("author_role", "agent")
     .eq("is_internal", false)
     .order("created_at", { ascending: false })
-    .limit(400)
+    .limit(Math.min(visible.length * 4, 400))
 
   if (error) {
     console.warn("[supportInboxActivity] agent messages skipped:", error.message)

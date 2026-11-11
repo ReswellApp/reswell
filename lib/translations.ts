@@ -245,10 +245,10 @@ const en: Translations = {
       browseHome: {
         title: 'Home surf area',
         description:
-          'Your default city or break for browsing boards. Separate from the public location above — this is private and only affects your browse experience when you turn it on.',
+          'Your default city or break for browsing boards. Separate from the public location above — this is private. Nearby boards show up first, and you can change or clear the location on /boards anytime.',
         applyLabel: 'Use on surfboard browse',
         applyHint:
-          'When signed in, /boards opens with your home area and radius already applied (you can still change filters).',
+          'When signed in, boards near your home area show up first. You can change the location, set a distance, or clear it anytime — it will not lock your filters.',
         pickupOnlyLabel: 'Local pickup only',
         pickupOnlyHint:
           'Optional. When on with browse default, only show boards that offer local pickup near your home area.',

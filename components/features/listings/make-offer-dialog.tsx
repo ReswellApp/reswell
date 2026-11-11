@@ -24,13 +24,12 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { useOptionalAuthModal } from "@/components/auth/auth-modal-context"
+import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import {
   OfferDeliveryStep,
   type OfferDeliveryReadyState,
 } from "@/components/features/offers/offer-delivery-step"
 import { OfferPaymentStep } from "@/components/features/offers/offer-payment-step"
-import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 import {
   offerShippingCostHint,
   offerShippingCostLabel,
@@ -40,7 +39,7 @@ import { cn } from "@/lib/utils"
 import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { peerListingItemNounForm } from "@/lib/peer-listing-item-nouns"
-import { prefetchStripeJs } from "@/components/stripe-card-checkout"
+import { prefetchStripeCheckout } from "@/lib/stripe/prefetch-stripe-checkout"
 import { dashboardOffersPath } from "@/lib/utils/offers-dashboard-display"
 
 function roundMoney(n: number): number {
@@ -130,7 +129,7 @@ export function MakeOfferDialog({
   const router = useRouter()
   const pathname = usePathname()
   const here = pathname || "/"
-  const authModal = useOptionalAuthModal()
+  const requireSignIn = useSignInGate()
 
   const [step, setStep] = useState<OfferStep>("offer")
   const [fulfillment, setFulfillment] = useState<"pickup" | "shipping">(() =>
@@ -166,7 +165,7 @@ export function MakeOfferDialog({
 
   useEffect(() => {
     if (!open) resetDialog()
-    else if (isLoggedIn) prefetchStripeJs()
+    else if (isLoggedIn) void prefetchStripeCheckout({ immediate: true })
   }, [open, resetDialog, isLoggedIn])
 
   const offerAmount = useMemo(() => parseAmountInput(amountInput), [amountInput])
@@ -210,16 +209,13 @@ export function MakeOfferDialog({
     [listPrice, minOfferAmount],
   )
 
-  function requireLogin(): boolean {
+  async function requireLogin(): Promise<boolean> {
     if (isLoggedIn) return true
-    const safe = safeRedirectPath(here)
-    if (authModal) authModal.openLogin(here)
-    else router.push(`/auth/login?redirect=${encodeURIComponent(safe)}`)
-    return false
+    return requireSignIn(here)
   }
 
-  function goToDelivery() {
-    if (!requireLogin()) return
+  async function goToDelivery() {
+    if (!(await requireLogin())) return
     if (!amountValid || offerAmount === null) {
       setSubmitNotice({
         kind: "error",

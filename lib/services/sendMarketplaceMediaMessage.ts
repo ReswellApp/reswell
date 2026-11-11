@@ -1,4 +1,3 @@
-import { revalidateMessagesInboxForParticipants } from "@/lib/cache/revalidate-messages-inbox"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { verifyStorageObjectExists } from "@/lib/supabase/storage-object-exists"
 import { captureBlockedFraudMessage } from "@/lib/services/captureBlockedFraudMessage"
@@ -7,8 +6,7 @@ import { getSupportCaseByContactMessageId } from "@/lib/db/supportCases"
 import { evaluateMessagePolicyForSend } from "@/lib/messages/message-policy-enforcement"
 import { evaluateUserMessageSend } from "@/lib/services/accountRestrictions"
 import { trackKlaviyoSupportTicketResponse } from "@/lib/klaviyo/track-support-ticket-response"
-import { trackKlaviyoMessageSent } from "@/lib/klaviyo/track-message-sent"
-import { broadcastInsertedMarketplaceMessage } from "@/lib/services/broadcastMarketplaceThreadMessage"
+import { scheduleMarketplaceMessageSendSideEffects } from "@/lib/services/marketplaceMessageSendSideEffects"
 import { MESSAGE_BLOCKED_POLICY_ERROR } from "@/lib/messages/policy-errors"
 import {
   messagePolicyBlocksDelivery,
@@ -171,53 +169,44 @@ export async function sendMarketplaceMediaMessage(input: {
     return { ok: false, error: "Could not send message", status: 500 }
   }
 
-  await broadcastInsertedMarketplaceMessage(inserted, conversationId)
-
-  await service
-    .from("conversations")
-    .update({ last_message_at: new Date().toISOString() })
-    .eq("id", conversationId)
-
-  revalidateMessagesInboxForParticipants(conv.buyer_id as string, conv.seller_id as string)
-
-  const { data: senderProfile } = await service
-    .from("profiles")
-    .select("display_name, shop_name, is_shop")
-    .eq("id", senderId)
-    .maybeSingle()
-
-  void trackKlaviyoMessageSent({
-    senderUserId: senderId,
-    receiverUserId: receiverId,
-    message: content,
+  scheduleMarketplaceMessageSendSideEffects({
+    inserted: {
+      id: inserted.id as string,
+      content: inserted.content as string,
+      sender_id: inserted.sender_id as string,
+      created_at: inserted.created_at as string,
+      is_read: inserted.is_read as boolean,
+      metadata: inserted.metadata,
+    },
     conversationId,
+    buyerId: conv.buyer_id as string,
+    sellerId: conv.seller_id as string,
+    receiverId,
     listingId: conv.listing_id,
-    messageId: inserted.id as string,
-    sentAt: inserted.created_at as string,
-    sessionSender: {
-      email: null,
-      profile: senderProfile,
+    writeDb: service,
+    senderEmail: null,
+    afterPersist: async () => {
+      try {
+        const ticketMeta = await findMessagesSupportTicketMetaByConversationId(service, conversationId)
+        const supportStaffReply =
+          senderId === conv.seller_id && ticketMeta != null && ticketMeta.email.trim() !== ""
+        if (supportStaffReply) {
+          const shadow = await getSupportCaseByContactMessageId(service, ticketMeta.id)
+          void trackKlaviyoSupportTicketResponse({
+            supportTicketId: ticketMeta.id,
+            supportCaseId: shadow?.id,
+            email: ticketMeta.email.trim(),
+            externalId: ticketMeta.user_id,
+            response: content,
+            responseType: "support_dm_reply",
+            uniqueId: `support-ticket-response-dm-${inserted.id as string}`,
+          })
+        }
+      } catch {
+        // Missing service role locally — Response metric skipped for support DM attribution.
+      }
     },
   })
-
-  try {
-    const ticketMeta = await findMessagesSupportTicketMetaByConversationId(service, conversationId)
-    const supportStaffReply = senderId === conv.seller_id && ticketMeta != null && ticketMeta.email.trim() !== ""
-    if (supportStaffReply) {
-      const shadow = await getSupportCaseByContactMessageId(service, ticketMeta.id)
-      void trackKlaviyoSupportTicketResponse({
-        supportTicketId: ticketMeta.id,
-        supportCaseId: shadow?.id,
-        email: ticketMeta.email.trim(),
-        externalId: ticketMeta.user_id,
-        response: content,
-        responseType: "support_dm_reply",
-        uniqueId: `support-ticket-response-dm-${inserted.id as string}`,
-      })
-    }
-  } catch {
-    // Missing service role locally — Response metric skipped for support DM attribution.
-  }
 
   const metaRow = inserted.metadata as unknown
   const att = marketplaceMessageAttachmentMetadataSchema.safeParse(metaRow)

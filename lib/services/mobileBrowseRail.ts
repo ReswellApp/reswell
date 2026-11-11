@@ -28,7 +28,8 @@ const CATEGORY_BY_PATH: Record<string, MobileListingCategory> = {
 }
 
 const SCREEN_BY_PATH: Record<string, MobileSellerResourceSlug> = {
-  "/for-surf-shops": "for-surf-shops",
+  "/for-surfboard-flippers": "for-surfboard-flippers",
+  "/for-surf-shops": "for-surfboard-flippers",
   "/seller-resources/how-to-sell": "how-to-sell",
   "/seller-resources/how-to-ship": "how-to-ship",
   "/map": "sales-map",

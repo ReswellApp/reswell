@@ -68,6 +68,7 @@ export type ListingTilePriceAction =
   | {
       type: "addToCart"
       item: ListingTileCartItem
+      isLoggedIn?: boolean
     }
   | {
       type: "addToCartServer"
@@ -271,7 +272,7 @@ export function ListingTile({
               isLoggedIn={priceAction.isLoggedIn}
             />
           ) : priceAction.type === "addToCart" ? (
-            <ListingTileAddToCartIcon item={priceAction.item} />
+            <ListingTileAddToCartIcon item={priceAction.item} isLoggedIn={priceAction.isLoggedIn} />
           ) : (
             <ListingTileAddToCartServerIcon
               listingId={priceAction.listingId}

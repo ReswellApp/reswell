@@ -23,9 +23,10 @@ import type {
   SurfboardDimensionPhotoMatchRow,
   SurfboardDimensionPhotoMatchStats,
 } from "@/lib/db/surfboardDimensionPhoto"
+import { surfboardDimensionPhotoMatchMeetsTarget } from "@/lib/validations/surfboardDimensionPhoto"
 import { Loader2, Minus, Plus, RefreshCw, RotateCcw, ZoomIn } from "lucide-react"
 
-type RatingFilter = "all" | "unrated" | "good" | "close" | "bad" | "excluded"
+type RatingFilter = "all" | "unrated" | "good" | "close" | "bad" | "excluded" | "withheld"
 type AspectRating = "good" | "close" | "bad"
 
 type CorrectionDraft = {
@@ -90,12 +91,25 @@ function correctedDimsLine(row: SurfboardDimensionPhotoMatchRow): string | null 
   })
 }
 
-/** Prefer the photo the LLM said contains the dimensions stamp. */
+/** Prefer the admin-picked stamp, then the LLM pick. */
 function sourcePhoto(row: SurfboardDimensionPhotoMatchRow): string | null {
+  if (row.correctedSourceImageUrl?.trim()) return row.correctedSourceImageUrl.trim()
   if (row.sourceImageUrl?.trim()) return row.sourceImageUrl.trim()
   const marked = row.inputPreview.find((p) => p.shot === "dimensions")
   if (marked?.imageUrl) return marked.imageUrl
   return row.inputPreview[0]?.imageUrl ?? null
+}
+
+function galleryThumbs(row: SurfboardDimensionPhotoMatchRow): { imageUrl: string; shot: string }[] {
+  const seen = new Set<string>()
+  const out: { imageUrl: string; shot: string }[] = []
+  for (const preview of row.inputPreview) {
+    const url = preview.imageUrl?.trim()
+    if (!url || seen.has(url)) continue
+    seen.add(url)
+    out.push({ imageUrl: url, shot: preview.shot })
+  }
+  return out
 }
 
 function jevHintLine(row: SurfboardDimensionPhotoMatchRow): string | null {
@@ -189,8 +203,59 @@ export function DimensionPhotoMatchAdminClient() {
 
   useEffect(() => {
     setZoom(1)
-    zoomRef.current?.resetTransform(0)
+    // Short ease so the board settles instead of snapping.
+    zoomRef.current?.resetTransform(180, "easeOut")
   }, [lightbox?.id])
+
+  useEffect(() => {
+    if (!lightbox) return
+    function onKey(event: KeyboardEvent) {
+      const target = event.target as HTMLElement | null
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable)
+      ) {
+        return
+      }
+      if (!lightbox || busyId) return
+      if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
+        event.preventDefault()
+        const index = matches.findIndex((row) => row.id === lightbox.id)
+        if (index < 0) return
+        const next =
+          event.key === "ArrowRight"
+            ? matches[Math.min(matches.length - 1, index + 1)]
+            : matches[Math.max(0, index - 1)]
+        if (next && next.id !== lightbox.id) setLightbox(next)
+        return
+      }
+      const key = event.key.toLowerCase()
+      if (key === "g") {
+        event.preventDefault()
+        void rateAspect(lightbox, "photo", "good")
+      } else if (key === "b") {
+        event.preventDefault()
+        void rateAspect(lightbox, "photo", "bad")
+      } else if (key === "1") {
+        event.preventDefault()
+        void rateAspect(lightbox, "dims", "good")
+      } else if (key === "2") {
+        event.preventDefault()
+        void rateAspect(lightbox, "dims", "close")
+      } else if (key === "3") {
+        event.preventDefault()
+        void rateAspect(lightbox, "dims", "bad")
+      } else if (key === "x") {
+        event.preventDefault()
+        void excludeMatch(lightbox)
+      }
+    }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [lightbox, matches, busyId])
 
   async function syncListings() {
     setScanning(true)
@@ -415,11 +480,53 @@ export function DimensionPhotoMatchAdminClient() {
       toast.success(
         body.data.promotedRefId
           ? "Correct dims saved — OCR ref promoted"
-          : "Correct dims saved — model will learn this",
+          : "Correct dims indexed — next scan will retrieve them",
       )
       void load(true)
     } catch {
       toast.error("Could not save correct dims")
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  async function markStampPhoto(row: SurfboardDimensionPhotoMatchRow, imageUrl: string) {
+    if (busyId || row.excludedAt) return
+    const url = imageUrl.trim()
+    if (!url) return
+    const modelPick = row.sourceImageUrl?.trim()
+    const isModelPick = Boolean(modelPick && modelPick === url)
+    setBusyId(row.id)
+    try {
+      const res = await fetch(`/api/admin/dimension-photo-match/${row.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          photoRating: isModelPick ? "good" : "bad",
+          correctedSourceImageUrl: isModelPick ? null : url,
+          promoteToRefs: true,
+        }),
+      })
+      const body = (await res.json().catch(() => ({}))) as {
+        data?: SurfboardDimensionPhotoMatchRow
+        error?: string
+      }
+      if (!res.ok || !body.data) {
+        toast.error(body.error || "Could not save stamp photo")
+        void load(true)
+        return
+      }
+      setMatches((prev) => prev.map((m) => (m.id === body.data!.id ? body.data! : m)))
+      setLightbox(body.data!)
+      toast.success(
+        isModelPick
+          ? "Photo Good — model pick indexed as a stamp"
+          : "Wrong pick indexed as Bad · this thumb is the stamp",
+      )
+      void load(true)
+    } catch {
+      toast.error("Could not save stamp photo")
+      void load(true)
     } finally {
       setBusyId(null)
     }
@@ -491,6 +598,7 @@ export function DimensionPhotoMatchAdminClient() {
     close: stats?.close ?? 0,
     bad: stats?.bad ?? 0,
     excluded: stats?.excluded ?? 0,
+    withheld: stats?.withheld ?? 0,
   }
 
   const lightboxSrc = lightbox ? sourcePhoto(lightbox) : null
@@ -505,11 +613,19 @@ export function DimensionPhotoMatchAdminClient() {
           <h2 className="text-xl font-semibold text-foreground">Dimension photo match</h2>
           <p className="mt-1 max-w-xl text-sm text-muted-foreground">
             Rate <span className="text-foreground">Photo</span> and{" "}
-            <span className="text-foreground">Dims</span>. Each rating is injected into the next
-            scan as examples (Good/Bad stamp photos + text) — keep marking Photo Bad on wrong
-            picks; that trains picking fastest. Jev checks the vision result afterward (volume,
-            confidence, soft hints) — it never auto-rates for you.
-            {stats?.refCount ? (
+            <span className="text-foreground">Dims</span>. Ratings are indexed (not fine-tuned)
+            and retrieved into the next vision call — similar Good/Bad/Close/Exclude examples,
+            not just the last few. Photo Bad trains picking fastest; Close/Bad dims with actual
+            L×W×T trains OCR. Click the right gallery thumb when the pick is wrong. Unsure
+            (&lt;90%) rows live in Withheld — rate those too. Target:{" "}
+            <span className="text-foreground">95%</span> on both Photo and Dims.
+            {stats?.memoryIndexCount ? (
+              <span className="text-foreground/80">
+                {" "}
+                {stats.memoryIndexCount} indexed examples
+                {stats.refCount ? ` · ${stats.refCount} OCR refs` : ""}.
+              </span>
+            ) : stats?.refCount ? (
               <span className="text-foreground/80"> {stats.refCount} pairs in memory.</span>
             ) : null}
           </p>
@@ -564,40 +680,54 @@ export function DimensionPhotoMatchAdminClient() {
       </div>
 
       {stats ? (
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-          <AccuracyCard
-            title="Photo"
-            subtitle="Did it pick the stamp photo?"
-            accuracy={stats.photoAccuracy}
-            summary={
-              stats.photoRated > 0
-                ? `Right on ${stats.photoGood} of ${stats.photoRated} you rated`
-                : "Rate some photos to see this"
-            }
-            target={stats.target}
-          />
-          <AccuracyCard
-            title="Dims"
-            subtitle="Did it read L × W × T correctly?"
-            accuracy={stats.dimsAccuracy}
-            summary={
-              stats.dimsRated > 0
-                ? `Right on ${stats.dimsGood}, close on ${stats.dimsClose}, wrong on ${stats.dimsBad}`
-                : "Rate some dims to see this"
-            }
-            target={stats.target}
-          />
-          <AccuracyCard
-            title="Overall"
-            subtitle="Photo and dims both right?"
-            accuracy={stats.overallAccuracy}
-            summary={
-              stats.overallRated > 0
-                ? `Fully right on ${stats.overallGood} of ${stats.overallRated}`
-                : "Needs both Photo and Dims rated"
-            }
-            target={stats.target}
-          />
+        <div className="space-y-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <AccuracyCard
+              title="Photo"
+              subtitle="Did it pick the stamp photo?"
+              accuracy={stats.photoAccuracy}
+              summary={
+                stats.photoRated > 0
+                  ? `Right on ${stats.photoGood} of ${stats.photoRated} you rated`
+                  : "Rate some photos to see this"
+              }
+              target={stats.target}
+            />
+            <AccuracyCard
+              title="Dims"
+              subtitle="Did it read L × W × T correctly?"
+              accuracy={stats.dimsAccuracy}
+              summary={
+                stats.dimsRated > 0
+                  ? `Right on ${stats.dimsGood}, close on ${stats.dimsClose}, wrong on ${stats.dimsBad}`
+                  : "Rate some dims to see this"
+              }
+              target={stats.target}
+            />
+            <AccuracyCard
+              title="Overall"
+              subtitle="Photo and dims both right?"
+              accuracy={stats.overallAccuracy}
+              summary={
+                stats.overallRated > 0
+                  ? `Fully right on ${stats.overallGood} of ${stats.overallRated}`
+                  : "Needs both Photo and Dims rated"
+              }
+              target={stats.target}
+            />
+          </div>
+          <p
+            className={cn(
+              "text-xs",
+              surfboardDimensionPhotoMatchMeetsTarget(stats)
+                ? "text-emerald-700"
+                : "text-muted-foreground",
+            )}
+          >
+            {surfboardDimensionPhotoMatchMeetsTarget(stats)
+              ? "Photo and Dims both at 95% — sell autofill can use LLM dimensions."
+              : "Sell autofill withholds LLM dimensions until Photo and Dims both hit 95%."}
+          </p>
         </div>
       ) : null}
 
@@ -609,6 +739,7 @@ export function DimensionPhotoMatchAdminClient() {
             { key: "good", label: "Good" },
             { key: "close", label: "Close" },
             { key: "bad", label: "Bad" },
+            { key: "withheld", label: "Withheld" },
             { key: "excluded", label: "Excluded" },
           ] as const
         ).map((tag) => {
@@ -624,6 +755,7 @@ export function DimensionPhotoMatchAdminClient() {
                 tag.key === "close" && active && "border-amber-500 bg-amber-500 text-white",
                 tag.key === "bad" && active && "border-rose-500 bg-rose-600 text-white",
                 tag.key === "excluded" && active && "border-slate-500 bg-slate-600 text-white",
+                tag.key === "withheld" && active && "border-sky-500 bg-sky-600 text-white",
                 (tag.key === "all" || tag.key === "unrated") &&
                   active &&
                   "border-slate-800 bg-slate-900 text-white",
@@ -639,6 +771,9 @@ export function DimensionPhotoMatchAdminClient() {
                 !active &&
                   tag.key === "excluded" &&
                   "border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300",
+                !active &&
+                  tag.key === "withheld" &&
+                  "border-sky-200 bg-sky-50 text-sky-800 hover:border-sky-300",
                 !active &&
                   (tag.key === "all" || tag.key === "unrated") &&
                   "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50",
@@ -753,6 +888,10 @@ export function DimensionPhotoMatchAdminClient() {
                     <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-600">
                       Excluded · skip forever
                     </p>
+                  ) : row.jevReview?.withheldFromReview ? (
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-sky-700">
+                      Withheld · rate to teach
+                    </p>
                   ) : row.priorMatchId ? (
                     <p className="text-[10px] font-semibold uppercase tracking-wide text-sky-700">
                       Rematch · prior kept
@@ -845,57 +984,71 @@ export function DimensionPhotoMatchAdminClient() {
 
       <Dialog open={Boolean(lightbox)} onOpenChange={(open) => !open && setLightbox(null)}>
         <DialogContent
-          className="flex max-h-[94dvh] w-[min(98vw,64rem)] max-w-5xl flex-col gap-0 overflow-hidden p-0"
+          className={cn(
+            "grid h-[min(94dvh,920px)] w-[min(98vw,64rem)] max-w-5xl grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0",
+            "duration-300 ease-out",
+            "data-[state=open]:zoom-in-100 data-[state=closed]:zoom-out-100",
+            "data-[state=open]:slide-in-from-top-0 data-[state=closed]:slide-out-to-top-0",
+            "data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0",
+          )}
           showCloseButton
         >
-          <DialogHeader className="shrink-0 space-y-1 border-b px-4 py-3 pr-12 text-left">
-            <DialogTitle className="text-base">
+          <DialogHeader className="space-y-1 border-b px-4 py-3 pr-12 text-left">
+            <DialogTitle className="text-base tabular-nums">
               {lightbox ? predictedDimsLine(lightbox) : "Photo"}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-pretty leading-relaxed">
               {lightbox?.priorMatchId
                 ? "Rematch of a prior Bad/Close run — both attempts are saved. "
                 : null}
-              Scroll to zoom, drag to pan, double-click to toggle. Rate whether the photo and the
-              read dims are correct — that trains the model. On Dims Bad/Close, type the actual
-              L×W×T so the next reads learn from ground truth.
+              Scroll to zoom, drag to pan, double-click to toggle. Click the correct gallery
+              thumb if the pick is wrong. Keys: G/B photo, 1/2/3 dims, X exclude, arrows next.
+              On Dims Close/Bad, enter the actual L×W×T as ground truth.
             </DialogDescription>
           </DialogHeader>
           {lightboxSrc ? (
-            <div className="relative min-h-0 flex-1 bg-slate-950">
+            <div className="relative min-h-0 overflow-hidden bg-slate-950">
               <TransformWrapper
+                key={lightbox?.id ?? "photo"}
                 ref={zoomRef}
                 initialScale={1}
                 minScale={1}
                 maxScale={8}
                 centerOnInit
                 centerZoomedOut
-                limitToBounds={false}
+                limitToBounds
                 smooth
-                wheel={{ step: 0.14 }}
+                wheel={{ step: 0.12 }}
                 panning={{
                   disabled: zoom <= 1.02,
                   allowLeftClickPan: zoom > 1.02,
                   velocityDisabled: false,
                 }}
                 pinch={{ step: 3.2, allowPanning: true }}
-                doubleClick={{ mode: "toggle", step: 2.5 }}
-                onTransform={(_ctx, state) => setZoom(state.scale)}
+                doubleClick={{ mode: "toggle", step: 2.2, animationTime: 220, animationType: "easeOut" }}
+                zoomAnimation={{ animationTime: 220, animationType: "easeOut" }}
+                autoAlignment={{ sizeX: 0, sizeY: 0, animationTime: 200 }}
+                velocityAnimation={{ animationTime: 260 }}
+                onTransform={(_ctx, state) => {
+                  // Only re-render when the badge percent changes — keeps pan/zoom smooth.
+                  const next = Math.round(state.scale * 100) / 100
+                  setZoom((prev) => (Math.abs(prev - next) < 0.005 ? prev : next))
+                }}
               >
                 <TransformComponent
-                  wrapperClass="!h-[min(58dvh,32rem)] !w-full !cursor-grab active:!cursor-grabbing"
+                  wrapperClass="!h-full !w-full !overflow-hidden !cursor-grab active:!cursor-grabbing"
                   contentClass="!flex !h-full !w-full !items-center !justify-center"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={lightboxSrc}
                     alt="Dimensions photo"
-                    className="max-h-[min(58dvh,32rem)] max-w-full select-none object-contain"
+                    className="max-h-full max-w-full select-none object-contain"
                     draggable={false}
                   />
                 </TransformComponent>
               </TransformWrapper>
-              <div className="pointer-events-none absolute bottom-3 left-3 rounded-md bg-black/60 px-2 py-1 text-[11px] font-medium tabular-nums text-white">
+              <div className="pointer-events-none absolute bottom-3 left-3 rounded-md bg-black/60 px-2 py-1 text-[11px] font-medium tabular-nums text-white backdrop-blur-[2px]">
                 {Math.round(zoom * 100)}%
               </div>
               <div className="absolute bottom-3 right-3 flex gap-1">
@@ -903,9 +1056,9 @@ export function DimensionPhotoMatchAdminClient() {
                   type="button"
                   size="icon"
                   variant="secondary"
-                  className="h-8 w-8"
+                  className="h-8 w-8 shadow-sm"
                   disabled={zoom <= 1.02}
-                  onClick={() => zoomRef.current?.zoomOut(0.35)}
+                  onClick={() => zoomRef.current?.zoomOut(0.35, 200, "easeOut")}
                 >
                   <Minus className="h-4 w-4" />
                 </Button>
@@ -913,9 +1066,9 @@ export function DimensionPhotoMatchAdminClient() {
                   type="button"
                   size="icon"
                   variant="secondary"
-                  className="h-8 w-8"
+                  className="h-8 w-8 shadow-sm"
                   disabled={zoom >= 7.9}
-                  onClick={() => zoomRef.current?.zoomIn(0.35)}
+                  onClick={() => zoomRef.current?.zoomIn(0.35, 200, "easeOut")}
                 >
                   <Plus className="h-4 w-4" />
                 </Button>
@@ -923,32 +1076,85 @@ export function DimensionPhotoMatchAdminClient() {
                   type="button"
                   size="icon"
                   variant="secondary"
-                  className="h-8 w-8"
+                  className="h-8 w-8 shadow-sm"
                   disabled={zoom <= 1.02}
-                  onClick={() => zoomRef.current?.resetTransform()}
+                  onClick={() => zoomRef.current?.resetTransform(200, "easeOut")}
                   title="Reset zoom"
                 >
                   <RotateCcw className="h-3.5 w-3.5" />
                 </Button>
               </div>
             </div>
-          ) : null}
+          ) : (
+            <div className="min-h-0 bg-slate-950" />
+          )}
           {lightbox ? (
-            <div className="shrink-0 space-y-3 border-t bg-background px-4 py-3">
-              <p className="text-sm font-medium tabular-nums text-foreground">
-                {predictedDimsLine(lightbox)}
-                {!lightbox.predictedVolume ? (
-                  <span className="ml-2 text-xs font-normal text-muted-foreground">no volume</span>
-                ) : null}
-              </p>
-              {jevHintLine(lightbox) ? (
-                <p className="text-xs text-muted-foreground" title={lightbox.jevReview?.reason ?? undefined}>
-                  {jevHintLine(lightbox)}
-                  {lightbox.predictedConfidence === "low" ? " · low confidence" : null}
-                  {" — soft hint only; still rate Photo + Dims."}
+            <div className="flex max-h-[min(42dvh,22rem)] flex-col gap-3 overflow-y-auto overscroll-contain border-t bg-background px-4 py-3">
+              <div className="space-y-1">
+                <p className="text-sm font-medium tabular-nums text-foreground">
+                  {predictedDimsLine(lightbox)}
+                  {!lightbox.predictedVolume ? (
+                    <span className="ml-2 text-xs font-normal text-muted-foreground">no volume</span>
+                  ) : null}
                 </p>
+                {jevHintLine(lightbox) ? (
+                  <p
+                    className="text-pretty text-xs leading-relaxed text-muted-foreground"
+                    title={lightbox.jevReview?.reason ?? undefined}
+                  >
+                    {jevHintLine(lightbox)}
+                    {lightbox.predictedConfidence === "low" ? " · low confidence" : null}
+                    {" — soft hint only; still rate Photo + Dims."}
+                  </p>
+                ) : null}
+              </div>
+              {galleryThumbs(lightbox).length > 1 ? (
+                <div className="space-y-1.5">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Gallery — click the stamp photo
+                  </p>
+                  <div className="flex gap-2 overflow-x-auto pb-1">
+                    {galleryThumbs(lightbox).map((thumb) => {
+                      const selected = sourcePhoto(lightbox) === thumb.imageUrl
+                      const modelPick = lightbox.sourceImageUrl?.trim() === thumb.imageUrl
+                      return (
+                        <button
+                          key={thumb.imageUrl}
+                          type="button"
+                          disabled={busyId === lightbox.id || Boolean(lightbox.excludedAt)}
+                          onClick={() => void markStampPhoto(lightbox, thumb.imageUrl)}
+                          className={cn(
+                            "relative h-16 w-12 shrink-0 overflow-hidden rounded-md border",
+                            selected
+                              ? "border-emerald-500 ring-2 ring-emerald-200"
+                              : "border-slate-200 hover:border-slate-400",
+                          )}
+                          title={
+                            modelPick
+                              ? "Model pick — click to mark Photo Good"
+                              : "Click if this is the size stamp"
+                          }
+                        >
+                          <Image
+                            src={thumb.imageUrl}
+                            alt={thumb.shot}
+                            fill
+                            unoptimized
+                            className={listingPhotoFillClassName}
+                            sizes="48px"
+                          />
+                          {modelPick ? (
+                            <span className="absolute inset-x-0 bottom-0 bg-black/60 px-0.5 py-px text-[8px] font-semibold uppercase tracking-wide text-white">
+                              Model
+                            </span>
+                          ) : null}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
               ) : null}
-              <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                 <div className="flex gap-1">
                   <span className="mr-1 self-center text-[10px] font-semibold uppercase text-muted-foreground">
                     Photo
@@ -1005,91 +1211,101 @@ export function DimensionPhotoMatchAdminClient() {
                   />
                 </div>
               </div>
-              {!lightbox.excludedAt &&
-              (lightbox.dimsRating === "bad" || lightbox.dimsRating === "close") ? (
-                <div className="space-y-2 rounded-lg border border-rose-200 bg-rose-50/60 px-3 py-2.5">
-                  <p className="text-xs font-medium text-rose-900">
-                    Actual dims on this stamp — used as ground truth for the next OCR reads
-                    {lightbox.photoRating === "good"
-                      ? " and promoted as an OCR reference when L×W×T are filled."
-                      : "."}
-                  </p>
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                    <label className="space-y-1">
-                      <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                        Length
-                      </span>
-                      <Input
-                        value={correction.length}
-                        onChange={(e) =>
-                          setCorrection((prev) => ({ ...prev, length: e.target.value }))
-                        }
-                        placeholder={`5'8"`}
-                        className="h-9 bg-white font-mono text-sm"
-                        disabled={busyId === lightbox.id}
-                      />
-                    </label>
-                    <label className="space-y-1">
-                      <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                        Width
-                      </span>
-                      <Input
-                        value={correction.width}
-                        onChange={(e) =>
-                          setCorrection((prev) => ({ ...prev, width: e.target.value }))
-                        }
-                        placeholder="17 7/8"
-                        className="h-9 bg-white font-mono text-sm"
-                        disabled={busyId === lightbox.id}
-                      />
-                    </label>
-                    <label className="space-y-1">
-                      <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                        Thickness
-                      </span>
-                      <Input
-                        value={correction.thickness}
-                        onChange={(e) =>
-                          setCorrection((prev) => ({ ...prev, thickness: e.target.value }))
-                        }
-                        placeholder="2 5/16"
-                        className="h-9 bg-white font-mono text-sm"
-                        disabled={busyId === lightbox.id}
-                      />
-                    </label>
-                    <label className="space-y-1">
-                      <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                        Volume L
-                      </span>
-                      <Input
-                        value={correction.volume}
-                        onChange={(e) =>
-                          setCorrection((prev) => ({ ...prev, volume: e.target.value }))
-                        }
-                        placeholder="25.6"
-                        className="h-9 bg-white font-mono text-sm"
-                        disabled={busyId === lightbox.id}
-                      />
-                    </label>
+              <div
+                className={cn(
+                  "grid transition-[grid-template-rows] duration-300 ease-out",
+                  !lightbox.excludedAt &&
+                    (lightbox.dimsRating === "bad" || lightbox.dimsRating === "close")
+                    ? "grid-rows-[1fr]"
+                    : "grid-rows-[0fr]",
+                )}
+              >
+                <div className="min-h-0 overflow-hidden">
+                  <div className="space-y-2 rounded-lg border border-rose-200 bg-rose-50/60 px-3 py-2.5">
+                    <p className="text-pretty text-xs font-medium leading-relaxed text-rose-900">
+                      Actual dims on this stamp — used as ground truth for the next OCR reads
+                      {lightbox.photoRating === "good"
+                        ? " and promoted as an OCR reference when L×W×T are filled."
+                        : "."}
+                    </p>
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                      <label className="space-y-1">
+                        <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                          Length
+                        </span>
+                        <Input
+                          value={correction.length}
+                          onChange={(e) =>
+                            setCorrection((prev) => ({ ...prev, length: e.target.value }))
+                          }
+                          placeholder={`5'8"`}
+                          className="h-9 bg-white font-mono text-sm"
+                          disabled={busyId === lightbox.id}
+                        />
+                      </label>
+                      <label className="space-y-1">
+                        <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                          Width
+                        </span>
+                        <Input
+                          value={correction.width}
+                          onChange={(e) =>
+                            setCorrection((prev) => ({ ...prev, width: e.target.value }))
+                          }
+                          placeholder="17 7/8"
+                          className="h-9 bg-white font-mono text-sm"
+                          disabled={busyId === lightbox.id}
+                        />
+                      </label>
+                      <label className="space-y-1">
+                        <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                          Thickness
+                        </span>
+                        <Input
+                          value={correction.thickness}
+                          onChange={(e) =>
+                            setCorrection((prev) => ({ ...prev, thickness: e.target.value }))
+                          }
+                          placeholder="2 5/16"
+                          className="h-9 bg-white font-mono text-sm"
+                          disabled={busyId === lightbox.id}
+                        />
+                      </label>
+                      <label className="space-y-1">
+                        <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                          Volume L
+                        </span>
+                        <Input
+                          value={correction.volume}
+                          onChange={(e) =>
+                            setCorrection((prev) => ({ ...prev, volume: e.target.value }))
+                          }
+                          placeholder="25.6"
+                          className="h-9 bg-white font-mono text-sm"
+                          disabled={busyId === lightbox.id}
+                        />
+                      </label>
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={busyId === lightbox.id}
+                      onClick={() => void saveCorrectedDims(lightbox)}
+                    >
+                      {busyId === lightbox.id ? (
+                        <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                      ) : null}
+                      Save correct dims
+                    </Button>
                   </div>
-                  <Button
-                    type="button"
-                    size="sm"
-                    disabled={busyId === lightbox.id}
-                    onClick={() => void saveCorrectedDims(lightbox)}
-                  >
-                    {busyId === lightbox.id ? (
-                      <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                    ) : null}
-                    Save correct dims
-                  </Button>
                 </div>
-              ) : null}
+              </div>
               {!lightbox.excludedAt ? (
                 <Button
                   type="button"
                   size="sm"
                   variant="outline"
+                  className="self-start"
                   disabled={busyId === lightbox.id}
                   onClick={() => void excludeMatch(lightbox)}
                 >
@@ -1144,6 +1360,10 @@ function AccuracyCard({
         {formatAccuracyPct(accuracy)}
       </p>
       <p className="mt-1 text-xs text-muted-foreground">{summary}</p>
+      <p className="mt-0.5 text-[11px] text-muted-foreground">
+        Target {formatAccuracyPct(target)}
+        {onTarget ? " · met" : null}
+      </p>
       {accuracy != null ? (
         <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-slate-100">
           <div

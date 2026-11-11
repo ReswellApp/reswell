@@ -1,5 +1,6 @@
 import { isModelPagePathname } from "@/lib/models/routes"
 import {
+  BROWSER_HTML_CACHE_CONTROL,
   PUBLIC_MARKETPLACE_EDGE_CACHE_CONTROL,
   isCacheablePublicMarketplaceRequest,
   publicMarketplaceCdnCacheControl as cdnCacheControlForPublicHtml,
@@ -7,6 +8,7 @@ import {
 } from "@/lib/crawler/public-marketplace-cache-policy"
 
 export {
+  BROWSER_HTML_CACHE_CONTROL,
   PUBLIC_MARKETPLACE_EDGE_CACHE_CONTROL,
   isCacheablePublicMarketplaceRequest,
 }

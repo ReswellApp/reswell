@@ -3,6 +3,8 @@
 import { useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { MessageCircle } from 'lucide-react'
+import { useChunkLoadRecovery } from '@/lib/client/use-chunk-load-recovery'
+import { isChunkLoadError } from '@/lib/utils/is-chunk-load-error'
 
 export default function MessagesError({
   error,
@@ -11,9 +13,22 @@ export default function MessagesError({
   error: Error & { digest?: string }
   reset: () => void
 }) {
+  const recovering = useChunkLoadRecovery(error)
+
   useEffect(() => {
+    if (isChunkLoadError(error)) return
     console.error('[messages] page error:', error)
   }, [error])
+
+  if (recovering) {
+    return (
+      <main
+        className="flex flex-1 items-center justify-center bg-background px-4 py-16"
+        role="status"
+        aria-label="Loading page"
+      />
+    )
+  }
 
   return (
     <main className="flex flex-1 flex-col bg-background">
@@ -28,11 +43,17 @@ export default function MessagesError({
           Something went wrong loading your messages. Try again and it should resolve.
         </p>
         <Button
-          onClick={reset}
+          onClick={() => {
+            if (isChunkLoadError(error)) {
+              window.location.reload()
+              return
+            }
+            reset()
+          }}
           className="mt-6 rounded-full"
           variant="outline"
         >
-          Try again
+          {isChunkLoadError(error) ? 'Reload page' : 'Try again'}
         </Button>
         {error.digest && (
           <p className="mt-6 text-xs text-muted-foreground">

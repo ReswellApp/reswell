@@ -1,10 +1,10 @@
 import {
-  FOR_SURF_SHOPS_DESCRIPTION,
-  FOR_SURF_SHOPS_PAGE_KEY,
-  FOR_SURF_SHOPS_PATH,
-  FOR_SURF_SHOPS_TITLE,
-  forSurfShopsFaqStructuredData,
-} from "@/lib/for-surf-shops"
+  FOR_SURFBOARD_FLIPPERS_DESCRIPTION,
+  FOR_SURFBOARD_FLIPPERS_PAGE_KEY,
+  FOR_SURFBOARD_FLIPPERS_PATH,
+  FOR_SURFBOARD_FLIPPERS_TITLE,
+  forSurfboardFlippersFaqStructuredData,
+} from "@/lib/for-surfboard-flippers"
 
 /**
  * Registry of the pages that matter for SEO. This is the single source of truth for each
@@ -326,6 +326,18 @@ export const MANAGED_PAGES: ManagedPage[] = [
       "used surfboard wanted",
     ],
   }),
+  page("board-match", "marketplace", "Board Match", {
+    title: "Board Match — name the brand & model | Reswell",
+    description:
+      "Play Board Match: see a real board from the Reswell catalog, match the brand for points, and earn a bonus for naming the model.",
+    path: "/board-match",
+    keywords: [
+      "surfboard quiz",
+      "board match game",
+      "surfboard brands",
+      "name that surfboard",
+    ],
+  }),
   page("priceguide", "marketplace", "Price Guide", {
     title: "Surfboard & surf gear price guide — Reswell",
     description:
@@ -472,6 +484,20 @@ export const MANAGED_PAGES: ManagedPage[] = [
   }),
 
   // ---- Marketing & growth ----
+  page("name-the-break", "marketing", "Name the Break game", {
+    title: "Name the Break — Surf Spot Quiz | Reswell",
+    description:
+      "Look at the photo and name the surf break. A short Reswell quiz of iconic spots worldwide — Pipeline, Teahupo'o, Mavericks, and more.",
+    path: "/name-the-break",
+    keywords: [
+      "surf break quiz",
+      "name the surf break",
+      "surf spot game",
+      "Pipeline",
+      "Teahupoo",
+      "Mavericks",
+    ],
+  }, { note: "Shareable photo quiz at /name-the-break." }),
   page("we-buy", "marketing", "We’ll buy your surfboard", {
     title: "We’ll Buy Your Surfboard | Reswell",
     description:
@@ -479,17 +505,17 @@ export const MANAGED_PAGES: ManagedPage[] = [
     path: "/we-buy",
     keywords: ["sell surfboard", "we buy surfboards", "surfboard quote", "sell board to Reswell"],
   }),
-  page(FOR_SURF_SHOPS_PAGE_KEY, "marketing", "For surf shops", {
-    title: FOR_SURF_SHOPS_TITLE,
-    description: FOR_SURF_SHOPS_DESCRIPTION,
-    path: FOR_SURF_SHOPS_PATH,
+  page(FOR_SURFBOARD_FLIPPERS_PAGE_KEY, "marketing", "For surfboard flippers", {
+    title: FOR_SURFBOARD_FLIPPERS_TITLE,
+    description: FOR_SURFBOARD_FLIPPERS_DESCRIPTION,
+    path: FOR_SURFBOARD_FLIPPERS_PATH,
     keywords: [
-      "surf shop used boards",
-      "sell trade-in surfboards",
-      "list used surfboards",
-      "surf shop marketplace",
+      "surfboard flipper",
+      "buy and sell surfboards",
+      "flip used surfboards",
+      "surfboard marketplace sellers",
     ],
-    structuredData: forSurfShopsFaqStructuredData(),
+    structuredData: forSurfboardFlippersFaqStructuredData(),
   }),
   page("listyoursurfboard", "marketing", "List your surfboard", {
     title: "List your surfboard | Reswell",
@@ -569,6 +595,18 @@ export const MANAGED_PAGES: ManagedPage[] = [
     description:
       "Estimate US surfboard shipping label costs by ship-from ZIP, receiver ZIP, weight, and package dimensions with live carrier quotes.",
     path: "/shipping-estimator",
+  }),
+  page("volume-calculator", "marketing", "Volume Calculator", {
+    title: "Surfboard Volume Calculator — Reswell",
+    description:
+      "Estimate surfboard volume in liters from length, width, thickness, and outline — the same figure brands list on model size charts.",
+    path: "/volume-calculator",
+    keywords: [
+      "surfboard volume calculator",
+      "surfboard liters",
+      "board volume estimate",
+      "surfboard dimensions volume",
+    ],
   }),
   page("giveaways", "marketing", "Giveaways", {
     title: "Surfboard Giveaways | Reswell",

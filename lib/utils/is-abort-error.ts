@@ -50,6 +50,20 @@ function isBenignFetchFailureMessage(value: string): boolean {
   )
 }
 
+/**
+ * Next.js Server Action client (`server-action-reducer`) throws this when the
+ * POST response is not RSC (`text/x-component`) and is not an action redirect.
+ * Typical causes: middleware HTML 302, Vercel 502/504 HTML, stale action id
+ * after a deploy. Not an application exception.
+ */
+function isUnexpectedServerActionResponseMessage(value: string): boolean {
+  const message = value.trim().toLowerCase()
+  return (
+    message === "an unexpected response was received from the server." ||
+    message.endsWith(": an unexpected response was received from the server.")
+  )
+}
+
 function messageLooksAborted(value: string): boolean {
   const message = value.toLowerCase()
   return (
@@ -62,15 +76,22 @@ function messageLooksAborted(value: string): boolean {
   )
 }
 
-/** Navigation / HMR often aborts in-flight server actions as a TypeError from fetch(). */
+function isBenignClientProtocolMessage(value: string): boolean {
+  return (
+    isBenignFetchFailureMessage(value) ||
+    isUnexpectedServerActionResponseMessage(value)
+  )
+}
+
+/** Navigation, HMR, and Next.js Server Action protocol mismatches — not application bugs. */
 export function isBenignClientFetchError(err: unknown, depth = 0): boolean {
   if (isAbortError(err, depth)) return true
-  if (err instanceof Error && isBenignFetchFailureMessage(err.message)) return true
+  if (err instanceof Error && isBenignClientProtocolMessage(err.message)) return true
   if (typeof err === "object" && err !== null) {
     const message = (err as { message?: unknown }).message
-    if (typeof message === "string" && isBenignFetchFailureMessage(message)) return true
+    if (typeof message === "string" && isBenignClientProtocolMessage(message)) return true
   }
-  if (typeof err === "string" && isBenignFetchFailureMessage(err)) return true
+  if (typeof err === "string" && isBenignClientProtocolMessage(err)) return true
   return false
 }
 
@@ -121,7 +142,7 @@ function postHogExceptionMessages(event: PostHogEventLike): string[] {
   return messages
 }
 
-/** Drop `$exception` events that are browser fetch failures, not application bugs. */
+/** Drop `$exception` events that are browser fetch / Server Action protocol failures. */
 export function isPostHogBenignClientFetchError(event: PostHogEventLike): boolean {
   if (!event || event.event !== "$exception") return false
   return postHogExceptionMessages(event).some((message) => isBenignClientFetchError(message))

@@ -26,14 +26,18 @@ import {
 import {
   filterReswellRatesForPeerSection,
   findPeerCheckoutRateOptionByServiceCode,
+  isSmallParcelUspsGroundServiceCode,
+  isSmallParcelUspsPriorityServiceCode,
   normalizeCarrierEstimatedDeliveryIso,
   peerCheckoutRateFamilyForSections,
   peerCheckoutSectionRestrictsUspsServices,
   peerCheckoutShippingServiceError,
   type PeerCheckoutRateFamily,
   type PeerCheckoutShippingRateOption,
+  type PeerCheckoutShipTo,
   toPeerCheckoutShippingRateOptions,
 } from "@/lib/shipping/peer-checkout-usps-services"
+import { buyerFacingCheckoutShippingError } from "@/lib/shipping/buyer-shipping-error"
 import { buyerResidentialIndicator } from "@/lib/shipping/buyer-address-validation"
 import { normalizeUsStateProvinceForShipping } from "@/lib/us-state-name-to-code"
 import { logPackBandQuoteTelemetry } from "@/lib/shipping/pack-band-telemetry"
@@ -44,6 +48,7 @@ import { formatShipEngineApiError } from "@/lib/shipengine/errors"
 import {
   buildShipmentBody,
   extractCarrierIdsFromCarriersResponse,
+  extractInvalidRatesFromApiEnvelope,
   extractRatesFromApiEnvelope,
   rateMoneyTotal,
   type ShippingAddressInput,
@@ -366,7 +371,7 @@ function resolveSelectedCheckoutRate(
   section: string | null | undefined,
   selectedRateId: string | null | undefined,
   selectedServiceCode?: string | null,
-  shipTo?: { stateProvince?: string | null; postalCode?: string | null } | null,
+  shipTo?: PeerCheckoutShipTo | null,
   rateFamily?: PeerCheckoutRateFamily | null,
 ): { ok: true; selected: ReswellListingRateRow; checkoutRateOptions: PeerCheckoutShippingRateOption[] } | { ok: false; error: string } {
   const filtered = filterReswellRatesForPeerSection(decorated, section, shipTo, rateFamily)
@@ -441,7 +446,7 @@ export async function getCheapestReswellRateForListings(input: {
   sellerShipFromAddress?: ProfileAddressRow | null
   /** Units per listing id. Small-parcel weight and box volume scale by this. */
   quantities?: Record<string, number> | null
-  /** Mixed small-parcel carts share one USPS choice even when sections differ. */
+  /** Mixed small-parcel carts share one USPS + UPS Ground choice even when sections differ. */
   rateFamily?: PeerCheckoutRateFamily | null
 }): Promise<ReswellListingRateResult> {
   if (!isShipEngineConfigured()) {
@@ -555,6 +560,22 @@ export async function getCheapestReswellRateForListings(input: {
     }),
   }
 
+  const section =
+    input.section?.trim() ||
+    (listings[0] as { section?: string | null } | undefined)?.section?.trim() ||
+    null
+  const rateFamily =
+    input.rateFamily ??
+    peerCheckoutRateFamilyForSections(
+      listings.map((listing) => (listing as { section?: string | null }).section),
+    )
+  const shipToCheckout: PeerCheckoutShipTo = {
+    stateProvince: input.shipTo.state_province,
+    postalCode: input.shipTo.postal_code,
+    line1: input.shipTo.address_line1,
+    line2: input.shipTo.address_line2,
+  }
+
   if (isDebugEnabled()) {
     console.info(
       "[reswellListingShippingRate] /rates payload:",
@@ -573,10 +594,20 @@ export async function getCheapestReswellRateForListings(input: {
     return { ok: false, error: "Could not reach the shipping rate service." }
   }
   const raw = await parseJsonSafe(res)
+  const invalidRates = extractInvalidRatesFromApiEnvelope(raw)
   if (!res.ok) {
     const hint = formatShipEngineApiError(raw)
     console.error("[reswellListingShippingRate] /rates HTTP:", res.status, raw)
-    return { ok: false, error: hint.trim() || "ShipEngine did not return rates for this package." }
+    return {
+      ok: false,
+      error: buyerFacingCheckoutShippingError({
+        section,
+        shipTo: shipToCheckout,
+        rateFamily,
+        invalidRates,
+        apiError: hint,
+      }),
+    }
   }
 
   const rates = extractRatesFromApiEnvelope(raw)
@@ -586,39 +617,75 @@ export async function getCheapestReswellRateForListings(input: {
 
   if (decorated.length === 0) {
     const emptyHint = formatShipEngineApiError(raw)
-    console.error("[reswellListingShippingRate] /rates empty:", { hint: emptyHint, raw })
+    console.error("[reswellListingShippingRate] /rates empty:", {
+      hint: emptyHint,
+      invalidRates,
+      raw,
+    })
     return {
       ok: false,
-      error: emptyHint.trim() || "No carrier rates returned for this shipment.",
+      error: buyerFacingCheckoutShippingError({
+        section,
+        shipTo: shipToCheckout,
+        rateFamily,
+        invalidRates,
+        apiError: emptyHint,
+      }),
     }
   }
 
   decorated.sort((a, b) => a.totalAmount - b.totalAmount)
-
-  const section =
-    input.section?.trim() ||
-    (listings[0] as { section?: string | null } | undefined)?.section?.trim() ||
-    null
-
-  const rateFamily =
-    input.rateFamily ??
-    peerCheckoutRateFamilyForSections(
-      listings.map((listing) => (listing as { section?: string | null }).section),
-    )
 
   const resolved = resolveSelectedCheckoutRate(
     decorated,
     section,
     input.selectedRateId,
     input.selectedServiceCode,
-    {
-      stateProvince: input.shipTo.state_province,
-      postalCode: input.shipTo.postal_code,
-    },
+    shipToCheckout,
     rateFamily,
   )
   if (!resolved.ok) {
-    return resolved
+    console.error("[reswellListingShippingRate] checkout rates filtered empty", {
+      tag: input.diagnosticTag ?? null,
+      section,
+      rateFamily,
+      shipTo: shipToCheckout,
+      services: decorated.map((row) => ({
+        carrier: row.carrierCode,
+        service: row.serviceCode,
+        name: row.serviceName,
+      })),
+      invalidRates,
+      error: resolved.error,
+    })
+    return {
+      ok: false,
+      error: buyerFacingCheckoutShippingError({
+        section,
+        shipTo: shipToCheckout,
+        rateFamily,
+        invalidRates,
+      }),
+    }
+  }
+  if (rateFamily === "usps_ground_priority") {
+    const usedUsps = resolved.checkoutRateOptions.some(
+      (option) =>
+        isSmallParcelUspsGroundServiceCode(option.serviceCode) ||
+        isSmallParcelUspsPriorityServiceCode(option.serviceCode),
+    )
+    if (!usedUsps) {
+      console.info("[reswellListingShippingRate] USPS Ground/Priority missing; using carrier fallback", {
+        tag: input.diagnosticTag ?? null,
+        section,
+        shipTo: shipToCheckout,
+        fallback: resolved.checkoutRateOptions.map((option) => ({
+          service: option.serviceCode,
+          name: option.displayName,
+        })),
+        invalidRates,
+      })
+    }
   }
 
   const cheapest = resolved.selected

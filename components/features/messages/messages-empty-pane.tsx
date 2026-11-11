@@ -1,11 +1,8 @@
 "use client"
 
-import Image from "next/image"
-import Link from "next/link"
-import { MessageSquare } from "lucide-react"
-import { wideShimmer } from "@/lib/image-shimmer"
+import { MessageCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
-import emptyStateImage from "@/public/images/brand/fiji-underboard.jpg"
+import { messageThreadCanvasClassName } from "@/components/features/messages/message-text-bubble"
 
 interface MessagesEmptyPaneProps {
   variant?: "pane" | "banner"
@@ -17,17 +14,17 @@ export function MessagesEmptyPane({ variant = "pane", className }: MessagesEmpty
     return (
       <div
         className={cn(
-          "flex items-start gap-3 rounded-xl border border-border/60 bg-muted/30 px-4 py-3 text-left",
+          "flex items-start gap-3 rounded-xl bg-muted/50 px-4 py-3 text-left",
           className,
         )}
       >
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted">
-          <MessageSquare className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
+          <MessageCircle className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
         </div>
         <div className="min-w-0">
           <p className="text-[15px] font-semibold text-foreground">Select a conversation</p>
           <p className="mt-0.5 text-[13px] leading-snug text-muted-foreground">
-            Choose a chat from the list below to view messages and reply.
+            Choose a chat from the list to view messages and reply.
           </p>
         </div>
       </div>
@@ -37,34 +34,19 @@ export function MessagesEmptyPane({ variant = "pane", className }: MessagesEmpty
   return (
     <div
       className={cn(
-        "flex min-h-0 flex-1 flex-col items-center px-6 pt-10 text-center lg:items-start lg:px-8 lg:pt-8 lg:text-left",
+        "flex min-h-0 flex-1 flex-col items-center justify-center px-8 text-center",
+        messageThreadCanvasClassName(),
         className,
       )}
     >
-      <div className="relative mb-5 h-36 w-full max-w-sm overflow-hidden rounded-2xl border border-border/60 lg:max-w-md">
-        <Image
-          src={emptyStateImage}
-          alt=""
-          fill
-          sizes="(max-width: 1024px) 24rem, 28rem"
-          className="object-cover object-[center_35%]"
-          placeholder="blur"
-          blurDataURL={wideShimmer}
-          aria-hidden
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" aria-hidden />
+      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-background shadow-sm ring-1 ring-black/5 dark:bg-card dark:ring-white/10">
+        <MessageCircle className="h-8 w-8 text-muted-foreground" strokeWidth={1.5} />
       </div>
-      <p className="text-[17px] font-semibold text-foreground">Select a conversation</p>
-      <p className="mt-2 max-w-sm text-[14px] leading-relaxed text-muted-foreground">
-        Choose a marketplace chat from the list to view messages and reply. For help from
-        Reswell, open{" "}
-        <Link
-          href="/dashboard/support"
-          className="text-primary underline underline-offset-2"
-        >
-          Support
-        </Link>
-        .
+      <p className="mt-5 text-[22px] font-semibold tracking-tight text-foreground">
+        No conversation selected
+      </p>
+      <p className="mt-2 max-w-sm text-[15px] leading-relaxed text-muted-foreground">
+        Choose a chat from the list to send a message.
       </p>
     </div>
   )

@@ -3,9 +3,13 @@
  * Jev never looks at pixels — it verifies / routes after vision.
  */
 
-import type { SurfboardDimensionPhotoJevReview } from "@/lib/validations/surfboardDimensionPhoto"
+import {
+  SURFBOARD_DIMENSION_PHOTO_MATCH_CONFIDENCE_GATE,
+  type SurfboardDimensionPhotoJevReview,
+} from "@/lib/validations/surfboardDimensionPhoto"
 
 export const DIMENSION_PHOTO_JEV_GATEWAY_MODEL = "typesafe-ai/jev"
+export { SURFBOARD_DIMENSION_PHOTO_MATCH_CONFIDENCE_GATE }
 
 export const DIMENSION_PHOTO_JEV_PHOTO_VERDICTS = ["accept", "reject"] as const
 export type DimensionPhotoJevPhotoVerdict =
@@ -62,6 +66,9 @@ export const DIMENSION_PHOTO_JEV_DIMS_INSTRUCTIONS =
 export const DIMENSION_PHOTO_JEV_VOLUME_INSTRUCTIONS =
   "Should volume be null? True when liters are not clearly printed / were likely invented. Most stamps show only L×W×T. Prefer true when volume is present but the summary does not mention liters, L, or volume."
 
+export const DIMENSION_PHOTO_JEV_MATCH_READY_INSTRUCTIONS =
+  "Is this photo pick + L×W×T read ready to show an admin (and later users) as a trusted match? True only when the vision summary clearly describes a stamp close-up AND length/width/thickness look printed (not invented). False when beauty/outline/logo, missing core dims, or uncertainty."
+
 export const DIMENSION_PHOTO_JEV_NEXT_INSTRUCTIONS =
   "Pick the next pipeline action. You are routing only. Prefer retry_with_examples only when few_shot_images_included is false and the photo pick looks wrong or uncertain."
 
@@ -101,11 +108,48 @@ export function fallbackDimensionPhotoJevReview(reason: string): DimensionPhotoJ
     photoVerdict: null,
     dimsVerdict: null,
     volumeNullProbability: null,
+    matchReadyProbability: null,
     volumeCleared: false,
     nextAction: null,
     retriedWithExamples: false,
+    withheldFromReview: true,
     reason,
   }
+}
+
+/**
+ * Conservative publish gate used by admin review (and later production reuse).
+ * Requires high vision confidence + Jev accept/good-or-close + match_ready ≥ gate.
+ * When Jev is unavailable (fallback), require vision high only — still no medium/low.
+ */
+export function dimensionPhotoMatchPassesConfidenceGate(input: {
+  confidence: "high" | "medium" | "low"
+  review: DimensionPhotoJevReview
+  hasCoreDims?: boolean
+  gate?: number
+}): boolean {
+  const gate = input.gate ?? SURFBOARD_DIMENSION_PHOTO_MATCH_CONFIDENCE_GATE
+  const { confidence, review } = input
+  if (confidence !== "high") return false
+
+  if (review.source === "fallback") {
+    // Cannot score match_ready without Jev — keep high-confidence vision rows reviewable.
+    return input.hasCoreDims !== false
+  }
+
+  if (review.photoVerdict !== "accept") return false
+  if (review.dimsVerdict !== "good" && review.dimsVerdict !== "close") return false
+  if (review.nextAction === "distrust" || review.nextAction === "retry_with_examples") {
+    return false
+  }
+  if (
+    review.matchReadyProbability == null ||
+    !Number.isFinite(review.matchReadyProbability) ||
+    review.matchReadyProbability < gate
+  ) {
+    return false
+  }
+  return true
 }
 
 export type DimensionPhotoJevMutableObservation = {
@@ -120,7 +164,7 @@ export type DimensionPhotoJevMutableObservation = {
 
 /**
  * Apply Jev policy to a vision observation. Does not invent dims — only clears
- * volume and adjusts confidence for admin review priority.
+ * volume / rejected picks and adjusts confidence for the publish gate.
  */
 export function applyDimensionPhotoJevReview<T extends DimensionPhotoJevMutableObservation>(
   observation: T,
@@ -140,25 +184,61 @@ export function applyDimensionPhotoJevReview<T extends DimensionPhotoJevMutableO
     volumeCleared = true
   }
 
-  if (
-    review.photoVerdict === "reject" ||
-    review.nextAction === "distrust" ||
-    review.dimsVerdict === "bad"
-  ) {
-    next = { ...next, confidence: "low" }
-  } else if (review.dimsVerdict === "close" && next.confidence === "high") {
+  const nextAction =
+    volumeCleared && review.nextAction === "keep" ? "clear_volume" : review.nextAction
+
+  const gatedReview: DimensionPhotoJevReview = {
+    ...review,
+    volumeCleared,
+    nextAction,
+    withheldFromReview: false,
+  }
+
+  // Gate on vision confidence before soft Close→medium ranking downgrades.
+  const hasCoreDims = Boolean(
+    next.lengthText && next.widthText && next.thicknessText,
+  )
+  const passes = dimensionPhotoMatchPassesConfidenceGate({
+    confidence: observation.confidence,
+    review: gatedReview,
+    hasCoreDims,
+  })
+
+  if (!passes) {
+    // Do not surface uncertain / rejected picks as matches. Keep a scan marker
+    // (listing won't re-queue) but clear dims so nothing looks "matched".
+    next = {
+      ...next,
+      dimensionPhotoIndex: null,
+      lengthText: null,
+      widthText: null,
+      thicknessText: null,
+      volumeText: null,
+      confidence: "low",
+      summary: `${observation.summary} Withheld — below ${Math.round(SURFBOARD_DIMENSION_PHOTO_MATCH_CONFIDENCE_GATE * 100)}% confidence gate.`
+        .trim()
+        .slice(0, 400),
+    }
+    gatedReview.withheldFromReview = true
+    if (!gatedReview.reason.includes("withheld")) {
+      const p =
+        gatedReview.matchReadyProbability != null
+          ? `match_ready p=${gatedReview.matchReadyProbability.toFixed(2)}`
+          : "match_ready unknown"
+      gatedReview.reason = [gatedReview.reason, p, "withheld"]
+        .filter(Boolean)
+        .join(" · ")
+        .slice(0, 400)
+    }
+    return { observation: next, review: gatedReview }
+  }
+
+  if (review.dimsVerdict === "close" && next.confidence === "high") {
     next = { ...next, confidence: "medium" }
   }
 
   return {
     observation: next,
-    review: {
-      ...review,
-      volumeCleared,
-      nextAction:
-        volumeCleared && review.nextAction === "keep"
-          ? "clear_volume"
-          : review.nextAction,
-    },
+    review: gatedReview,
   }
 }

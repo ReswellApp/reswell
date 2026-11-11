@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
 import { describe, it } from "node:test"
 import {
+  BROWSER_HTML_CACHE_CONTROL,
   PUBLIC_MARKETPLACE_EDGE_CACHE_CONTROL,
   isCacheablePublicMarketplaceRequest,
   publicMarketplaceCdnCacheControl,
@@ -20,6 +21,14 @@ describe("public marketplace document cache", () => {
     assert.equal(publicMarketplaceCdnCacheControl(false, false), null)
   })
 
+  it("tells browsers to revalidate marketplace HTML so deploys cannot serve stale chunk hashes", () => {
+    assert.equal(BROWSER_HTML_CACHE_CONTROL, "public, max-age=0, must-revalidate")
+    const proxy = readFileSync(new URL("../../proxy.ts", import.meta.url), "utf8")
+    assert.match(proxy, /CDN-Cache-Control/)
+    assert.match(proxy, /BROWSER_HTML_CACHE_CONTROL/)
+    assert.match(proxy, /Cache-Control/)
+  })
+
   it("does not CDN-cache server action posts on public marketplace URLs", () => {
     assert.equal(isCacheablePublicMarketplaceRequest("GET", false), true)
     assert.equal(isCacheablePublicMarketplaceRequest("HEAD", false), true)
@@ -28,6 +37,7 @@ describe("public marketplace document cache", () => {
     assert.equal(isCacheablePublicMarketplaceRequest("GET", true), false)
     const proxy = readFileSync(new URL("../../proxy.ts", import.meta.url), "utf8")
     assert.match(proxy, /isCacheablePublicMarketplaceRequest/)
+    assert.match(proxy, /isServerActionRequest/)
   })
 
   it("keeps cookies() off the anonymous shell", () => {

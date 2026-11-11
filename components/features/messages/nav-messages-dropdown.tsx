@@ -1,14 +1,15 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { formatDistanceToNow } from "date-fns"
+import { RelativeTime, formatDistanceToNowLabel } from "@/components/ui/relative-time"
 import { Bell, ChevronDown, Heart, LifeBuoy, MessageSquare, X } from "lucide-react"
 import { Button, iconButtonHoverClassName } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
+import { Skeleton } from "@/components/ui/skeleton"
 import { NavUnreadCountBadge } from "@/components/nav-unread-count-badge"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { MessageProfileAvatar } from "@/components/features/messages/message-profile-avatar"
@@ -35,10 +36,20 @@ import {
   isSupportActivityType,
 } from "@/lib/utils/messages-inbox-activity"
 import { formatInboxChatPreviewText } from "@/lib/utils/messages-inbox-preview"
+import {
+  isNavMessagesPreviewCacheStale,
+  loadNavMessagesPreview,
+  NAV_MESSAGES_PREVIEW_CONVERSATION_LIMIT,
+  readNavMessagesPreviewCache,
+  subscribeNavMessagesPreviewCache,
+  writeNavMessagesPreviewCache,
+  type NavMessagesPreviewCacheEntry,
+} from "@/lib/utils/nav-messages-preview-cache"
 import { cn } from "@/lib/utils"
 import {
   CONVERSATION_INBOX_ACTIVITY_EVENT,
   CONVERSATION_THREAD_OPENED_EVENT,
+  MESSAGES_INBOX_REFRESH_EVENT,
   dispatchUnreadCountRefresh,
   type ConversationThreadOpenedDetail,
 } from "@/lib/utils/unread-message-count-events"
@@ -46,6 +57,43 @@ import { useLiveUnreadSupportCount } from "@/components/features/support/use-liv
 import { inboxTickerCount } from "@/lib/utils/inbox-ticker-count"
 
 const NAV_PREVIEW_LIMIT = 8
+/** Hide the blocking skeleton if the preview action hangs. Rows still appear when it lands. */
+const NAV_LOADING_GRACE_MS = 8_000
+
+function applyPreviewCacheEntry(
+  entry: NavMessagesPreviewCacheEntry | null,
+  setters: {
+    setConversations: (next: InboxConversationRow[]) => void
+    setNotifications: (next: MessagesInboxNotification[]) => void
+    setHasLoaded: (next: boolean) => void
+  },
+) {
+  if (!entry) {
+    setters.setConversations([])
+    setters.setNotifications([])
+    setters.setHasLoaded(false)
+    return
+  }
+  setters.setConversations(entry.conversations)
+  setters.setNotifications(entry.notifications)
+  setters.setHasLoaded(true)
+}
+
+function NavMessagesPreviewSkeleton() {
+  return (
+    <ul className="divide-y divide-border/50" aria-hidden>
+      {Array.from({ length: 5 }, (_, index) => (
+        <li key={index} className="flex items-center gap-3 px-3 py-3">
+          <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
+          <div className="min-w-0 flex-1 space-y-2">
+            <Skeleton className="h-3.5 w-1/3" />
+            <Skeleton className="h-3 w-2/3" />
+          </div>
+        </li>
+      ))}
+    </ul>
+  )
+}
 
 type NavMessagesTab = "activity" | "messages"
 
@@ -179,8 +227,8 @@ function NavMessagesPanelBody({
 
       <div className={cn("min-h-0 overflow-y-auto px-1 py-2", scrollClassName)}>
         {loading ? (
-          <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
-            Loading…
+          <div role="status" aria-live="polite" aria-label="Loading messages">
+            <NavMessagesPreviewSkeleton />
           </div>
         ) : tab === "activity" ? (
           previewActivity.length === 0 ? (
@@ -248,12 +296,11 @@ function NavMessagesPanelBody({
                               {n.message || "Someone saved your item"}
                             </span>
                           </p>
-                          <time
-                            className="shrink-0 text-[11px] tabular-nums text-muted-foreground"
-                            dateTime={n.created_at}
-                          >
-                            {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
-                          </time>
+                          <RelativeTime
+                            iso={n.created_at}
+                            formatLabel={formatDistanceToNowLabel}
+                            className="shrink-0 text-[11px] text-muted-foreground"
+                          />
                         </div>
                       </div>
                     </button>
@@ -299,14 +346,11 @@ function NavMessagesPanelBody({
                           {otherUser?.display_name || "Unknown User"}
                         </span>
                         {group.latestActivityMs > 0 ? (
-                          <time
-                            className="shrink-0 text-[11px] tabular-nums text-muted-foreground"
-                            dateTime={new Date(group.latestActivityMs).toISOString()}
-                          >
-                            {formatDistanceToNow(new Date(group.latestActivityMs), {
-                              addSuffix: true,
-                            })}
-                          </time>
+                          <RelativeTime
+                            iso={new Date(group.latestActivityMs).toISOString()}
+                            formatLabel={formatDistanceToNowLabel}
+                            className="shrink-0 text-[11px] text-muted-foreground"
+                          />
                         ) : null}
                       </div>
                       <p
@@ -368,8 +412,45 @@ export function NavMessagesDropdown({
     unreadSupport > 0 ? "activity" : "messages",
   )
   const [loading, setLoading] = useState(false)
-  const [conversations, setConversations] = useState<InboxConversationRow[]>([])
-  const [notifications, setNotifications] = useState<MessagesInboxNotification[]>([])
+  const [hasLoaded, setHasLoaded] = useState(
+    () => readNavMessagesPreviewCache(userId) != null,
+  )
+  const [conversations, setConversations] = useState<InboxConversationRow[]>(
+    () => readNavMessagesPreviewCache(userId)?.conversations ?? [],
+  )
+  const [notifications, setNotifications] = useState<MessagesInboxNotification[]>(
+    () => readNavMessagesPreviewCache(userId)?.notifications ?? [],
+  )
+  const openRef = useRef(open)
+  const userIdRef = useRef(userId)
+  const conversationsRef = useRef(conversations)
+  const notificationsRef = useRef(notifications)
+  openRef.current = open
+  userIdRef.current = userId
+  conversationsRef.current = conversations
+  notificationsRef.current = notifications
+
+  // Keep every mounted header instance (mobile/desktop swap) in sync with the
+  // shared preview cache, including sessionStorage rehydrates and in-flight loads.
+  useEffect(() => {
+    return subscribeNavMessagesPreviewCache((inboxUserId, entry) => {
+      if (inboxUserId !== userIdRef.current) return
+      applyPreviewCacheEntry(entry, {
+        setConversations,
+        setNotifications,
+        setHasLoaded,
+      })
+    })
+  }, [])
+
+  // Shop-switch / remount: rehydrate from the module + session cache.
+  useEffect(() => {
+    applyPreviewCacheEntry(readNavMessagesPreviewCache(userId), {
+      setConversations,
+      setNotifications,
+      setHasLoaded,
+    })
+  }, [userId])
 
   const activityNotifications = useMemo(
     () => filterInboxActivityNotifications(notifications),
@@ -385,49 +466,102 @@ export function NavMessagesDropdown({
     [conversations, userId],
   )
   const previewActivity = activityNotifications.slice(0, NAV_PREVIEW_LIMIT)
+  // Keep prior / cached rows visible while refreshing — only blank with no cache.
+  const showLoading = loading && !hasLoaded
+
+  const persistPreview = useCallback(
+    (
+      nextConversations: InboxConversationRow[],
+      nextNotifications: MessagesInboxNotification[],
+      inboxUserId = userIdRef.current,
+    ) => {
+      writeNavMessagesPreviewCache(inboxUserId, {
+        conversations: nextConversations,
+        notifications: nextNotifications,
+      })
+    },
+    [],
+  )
 
   const loadInbox = useCallback(async () => {
+    const inboxUserId = userIdRef.current
     setLoading(true)
     try {
-      const fresh = await refreshMessagesInbox()
-      if ("error" in fresh) return
-      setConversations((current) => mergeInboxConversationSnapshots(current, fresh.conversations))
-      setNotifications(fresh.notifications)
+      await loadNavMessagesPreview(inboxUserId, async () => {
+        const fresh = await refreshMessagesInbox({
+          conversationLimit: NAV_MESSAGES_PREVIEW_CONVERSATION_LIMIT,
+          preview: true,
+        })
+        if ("error" in fresh) return null
+        const prior =
+          inboxUserId === userIdRef.current ? conversationsRef.current : fresh.conversations
+        return {
+          conversations: mergeInboxConversationSnapshots(prior, fresh.conversations),
+          notifications: fresh.notifications,
+        }
+      })
     } finally {
-      setLoading(false)
+      if (inboxUserId === userIdRef.current) {
+        setLoading(false)
+      }
     }
   }, [])
+
+  const prefetchInboxIfStale = useCallback(() => {
+    if (!isNavMessagesPreviewCacheStale(readNavMessagesPreviewCache(userIdRef.current))) {
+      return
+    }
+    void loadInbox()
+  }, [loadInbox])
+
+  useEffect(() => {
+    prefetchInboxIfStale()
+  }, [prefetchInboxIfStale, userId])
 
   useEffect(() => {
     if (!open) return
     void loadInbox()
-  }, [open, liveSupportUnread, loadInbox])
+  }, [open, loadInbox])
 
   useEffect(() => {
-    function onUnreadRefresh() {
-      if (open) void loadInbox()
+    if (!loading) return
+    const timeout = window.setTimeout(() => setLoading(false), NAV_LOADING_GRACE_MS)
+    return () => window.clearTimeout(timeout)
+  }, [loading])
+
+  useEffect(() => {
+    function onInboxRefresh() {
+      // Badge-only `unreadCountRefresh` must not re-fetch the panel — opening the
+      // dropdown already dispatches that event, which previously stacked loads.
+      // Closed-panel content stays warm via the module cache + local activity patches;
+      // open always revalidates.
+      if (openRef.current) void loadInbox()
     }
     function onThreadOpened(event: Event) {
       const detail = (event as CustomEvent<ConversationThreadOpenedDetail>).detail
       if (!detail?.conversationId) return
-      setConversations((current) =>
-        markConversationMessagesReadLocally(current, detail.conversationId, userId),
+      const next = markConversationMessagesReadLocally(
+        conversationsRef.current,
+        detail.conversationId,
+        userId,
       )
+      persistPreview(next, notificationsRef.current, userId)
     }
     function onInboxActivity(event: Event) {
       const detail = (event as CustomEvent<InboxThreadActivity>).detail
       if (!detail?.conversationId) return
-      setConversations((current) => applyInboxThreadActivity(current, detail))
+      const next = applyInboxThreadActivity(conversationsRef.current, detail)
+      persistPreview(next, notificationsRef.current, userId)
     }
-    window.addEventListener("unreadCountRefresh", onUnreadRefresh)
+    window.addEventListener(MESSAGES_INBOX_REFRESH_EVENT, onInboxRefresh)
     window.addEventListener(CONVERSATION_THREAD_OPENED_EVENT, onThreadOpened)
     window.addEventListener(CONVERSATION_INBOX_ACTIVITY_EVENT, onInboxActivity)
     return () => {
-      window.removeEventListener("unreadCountRefresh", onUnreadRefresh)
+      window.removeEventListener(MESSAGES_INBOX_REFRESH_EVENT, onInboxRefresh)
       window.removeEventListener(CONVERSATION_THREAD_OPENED_EVENT, onThreadOpened)
       window.removeEventListener(CONVERSATION_INBOX_ACTIVITY_EVENT, onInboxActivity)
     }
-  }, [open, loadInbox, userId])
+  }, [loadInbox, persistPreview, userId])
 
   const handleOpenChange = useCallback(
     (next: boolean) => {
@@ -450,14 +584,15 @@ export function NavMessagesDropdown({
       setTab(next)
       if (next === "activity" && unreadActivityCount > 0) {
         void markInboxNotificationsRead().then(() => {
-          setNotifications((prev) =>
-            prev.map((n) => (isSupportActivityType(n.type) ? n : { ...n, is_read: true })),
+          const updated = notificationsRef.current.map((n) =>
+            isSupportActivityType(n.type) ? n : { ...n, is_read: true },
           )
+          persistPreview(conversationsRef.current, updated, userId)
           window.dispatchEvent(new CustomEvent("unreadCountRefresh"))
         })
       }
     },
-    [unreadActivityCount],
+    [persistPreview, unreadActivityCount, userId],
   )
 
   const navigateAndClose = useCallback(
@@ -473,7 +608,7 @@ export function NavMessagesDropdown({
     unreadMessages,
     unreadActivityCount,
     tab,
-    loading,
+    loading: showLoading,
     previewActivity,
     chatGroups,
     onTabChange: handleTabChange,
@@ -494,6 +629,8 @@ export function NavMessagesDropdown({
       )}
       aria-label={triggerIcon === "bell" ? "Notifications" : "Messages and activity"}
       aria-expanded={open}
+      onPointerEnter={prefetchInboxIfStale}
+      onFocus={prefetchInboxIfStale}
       onClick={isMobile ? () => handleOpenChange(true) : undefined}
     >
       <TriggerIcon className={cn("h-6 w-6", iconClassName)} strokeWidth={iconStrokeWidth} />

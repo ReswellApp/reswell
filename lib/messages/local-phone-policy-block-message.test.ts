@@ -1,7 +1,79 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 
-import { mergeServerMessagesPreservingLocalPolicyBlocks } from "./local-phone-policy-block-message"
+import {
+  mergeServerMessagesPreservingLocalPolicyBlocks,
+  replaceMatchingPendingThreadMessage,
+} from "./local-phone-policy-block-message"
+
+describe("replaceMatchingPendingThreadMessage", () => {
+  it("replaces only the oldest matching pending bubble", () => {
+    const replaced = replaceMatchingPendingThreadMessage(
+      [
+        {
+          id: "pending-1",
+          content: "hey",
+          sender_id: "me",
+        },
+        {
+          id: "pending-2",
+          content: "hey",
+          sender_id: "me",
+        },
+      ],
+      {
+        id: "server-1",
+        content: "hey",
+        sender_id: "me",
+      },
+    )
+
+    assert.deepEqual(
+      replaced.map((message) => message.id),
+      ["server-1", "pending-2"],
+    )
+  })
+
+  it("appends when no pending bubble matches", () => {
+    const replaced = replaceMatchingPendingThreadMessage(
+      [
+        {
+          id: "server-1",
+          content: "earlier",
+          sender_id: "them",
+        },
+      ],
+      {
+        id: "server-2",
+        content: "new",
+        sender_id: "them",
+      },
+    )
+
+    assert.deepEqual(
+      replaced.map((message) => message.id),
+      ["server-1", "server-2"],
+    )
+  })
+
+  it("is a no-op when the inserted id is already in the thread", () => {
+    const previous = [
+      {
+        id: "server-1",
+        content: "hey",
+        sender_id: "me",
+      },
+    ]
+    assert.equal(
+      replaceMatchingPendingThreadMessage(previous, {
+        id: "server-1",
+        content: "hey",
+        sender_id: "me",
+      }),
+      previous,
+    )
+  })
+})
 
 describe("mergeServerMessagesPreservingLocalPolicyBlocks", () => {
   it("keeps a pending send the snapshot has not caught up to", () => {

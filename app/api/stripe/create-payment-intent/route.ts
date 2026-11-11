@@ -33,6 +33,10 @@ import {
   encodeListingQuantitiesMeta,
   resolveMixedCheckoutSellerId,
 } from "@/lib/mixed-checkout"
+import { dbFindRecentDuplicateBuyerCheckoutOrder } from "@/lib/db/recentBuyerCheckoutOrder"
+import { ALREADY_PURCHASED_CHECKOUT_CODE } from "@/lib/stripe/checkout-payment-recovery"
+import { checkoutPaymentIntentIdempotencyKey } from "@/lib/stripe/checkout-payment-intent-idempotency"
+import { bindCheckoutSessionPaymentIntent } from "@/lib/services/checkoutSessionPayment"
 import { evaluateUserPurchase } from "@/lib/services/accountRestrictions"
 import { assertBuyerMayPurchaseListingExclusiveWindow } from "@/lib/services/listingBuyerExclusiveWindow"
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
@@ -61,6 +65,11 @@ import {
   prepareSurfboardShippedCharge,
   type SurfboardShippedCharge,
 } from "@/lib/services/surfboardShippedOffer"
+import {
+  holdReswellCreditAfterPaymentIntentCreated,
+  releaseReswellCreditHoldForPaymentIntent,
+  resolveAdminReswellCreditForPaymentIntent,
+} from "@/lib/services/reswellCreditCheckout"
 
 const JSON_NO_STORE_HEADERS = {
   "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
@@ -147,6 +156,9 @@ export async function createPaymentIntentForUser(
     quote_token?: string | null
     packaging_mode?: string | null
     quantities?: unknown
+    checkout_session_id?: string | null
+    force_new_session?: boolean
+    apply_reswell_credit?: boolean
   }
 
   const fromArray = Array.isArray(body.listing_ids)
@@ -590,7 +602,28 @@ export async function createPaymentIntentForUser(
         : { kind: "admin_issued", promo: promoCheck.promo }
   }
 
-  const chargedTotalUsd = promoRef ? promoCheckTotalUsd : bundle.totalUsd
+  const totalBeforeCreditUsd = promoRef ? promoCheckTotalUsd : bundle.totalUsd
+
+  const creditResolution = await resolveAdminReswellCreditForPaymentIntent({
+    supabase,
+    userId: user.id,
+    apply: body.apply_reswell_credit === true,
+    itemSubtotalUsd: bundle.totalItemPriceUsd,
+    shippingUsd: bundle.totalShippingUsd,
+    promoDiscountUsd,
+  })
+  if ("error" in creditResolution) {
+    return NextResponse.json(
+      { error: creditResolution.error },
+      { status: creditResolution.status, headers: JSON_NO_STORE_HEADERS },
+    )
+  }
+  const reswellCreditCents = creditResolution.creditCents
+  const reswellCreditUsd = creditResolution.creditUsd
+  const chargedTotalUsd = Math.max(
+    0.5,
+    Math.round((totalBeforeCreditUsd - reswellCreditUsd) * 100) / 100,
+  )
 
   const amountCents = Math.round(chargedTotalUsd * 100)
   if (amountCents < 50) {
@@ -626,12 +659,21 @@ export async function createPaymentIntentForUser(
       }
     }
 
+    let sessionSupabase: ReturnType<typeof createServiceRoleClient> | null = promoServiceSupabase
+    if (!sessionSupabase) {
+      try {
+        sessionSupabase = createServiceRoleClient()
+      } catch {
+        sessionSupabase = null
+      }
+    }
+
     const adAttribution = await readAdAttributionFromCookies()
     // Stash hashed-match email for Meta CAPI Purchase on the webhook path (no session).
     const buyerEmailForMeta =
       (await getAuthEmailForUserId(user.id)) ?? user.email?.trim() ?? null
 
-    const paymentIntent = await stripe.paymentIntents.create({
+    const createParams: Stripe.PaymentIntentCreateParams = {
       amount: amountCents,
       currency: "usd",
       automatic_payment_methods: { enabled: true },
@@ -659,6 +701,9 @@ export async function createPaymentIntentForUser(
               promo_discount_cents: String(Math.round(promoDiscountUsd * 100)),
               promo_discount_percent: String(promoDiscountPercent),
             }
+          : {}),
+        ...(reswellCreditCents > 0
+          ? { reswell_credit_cents: String(reswellCreditCents) }
           : {}),
         ...(bundle.anyUsedReswellQuote
           ? {
@@ -692,15 +737,118 @@ export async function createPaymentIntentForUser(
           ? {
               surfboard_shipped: "1",
               surfboard_shipped_cents: String(surfboardCharge.feeCents),
-              surfboard_shipped_shipper_id: surfboardCharge.shipperId,
               surfboard_shipped_run_id: surfboardCharge.runId,
+              surfboard_shipped_shipper_id: surfboardCharge.shipperId,
               surfboard_shipped_window_start: surfboardCharge.windowStart,
               surfboard_shipped_window_end: surfboardCharge.windowEnd,
             }
           : {}),
       },
       description: stripeDescription.slice(0, 1000),
-    })
+    }
+
+    let paymentIntent: Stripe.PaymentIntent | undefined
+    let checkoutSessionId: string | null = null
+    let useLegacyPaymentIntent = sessionSupabase == null
+
+    if (sessionSupabase) {
+      const bound = await bindCheckoutSessionPaymentIntent({
+        supabase: sessionSupabase,
+        stripe,
+        buyerId: user.id,
+        listingIds: listingIdsOrdered,
+        quantities: quantityByListingId,
+        listings: listingsOrdered,
+        amountCents,
+        fulfillment: impliedFulfillment,
+        addressId: addressId ?? null,
+        promoCodeId,
+        offerId: validatedOfferId,
+        resumeSessionId: typeof body.checkout_session_id === "string" ? body.checkout_session_id : null,
+        forceNewSession: body.force_new_session === true,
+        createParams,
+      })
+
+      if (bound.ok) {
+        paymentIntent = bound.paymentIntent
+        checkoutSessionId = bound.sessionId
+        if (bound.alreadyPaid) {
+          return NextResponse.json(
+            {
+              alreadyPaid: true,
+              paymentIntentId: paymentIntent.id,
+              checkoutSessionId,
+              ...(bound.orderId ? { orderId: bound.orderId } : {}),
+              shippingUsd: bundle.totalShippingUsd,
+              totalUsd: chargedTotalUsd,
+            },
+            { headers: JSON_NO_STORE_HEADERS },
+          )
+        }
+      } else if (bound.missingTable) {
+        useLegacyPaymentIntent = true
+      } else {
+        return NextResponse.json(
+          {
+            error: bound.error,
+            ...(bound.code ? { code: bound.code } : {}),
+            ...(bound.orderId ? { orderId: bound.orderId } : {}),
+          },
+          { status: bound.status, headers: JSON_NO_STORE_HEADERS },
+        )
+      }
+    }
+
+    if (useLegacyPaymentIntent) {
+      const recentDuplicate = await dbFindRecentDuplicateBuyerCheckoutOrder(
+        sessionSupabase ?? supabase,
+        {
+          buyerId: user.id,
+          listingIds: listingIdsOrdered,
+        },
+      )
+      if (recentDuplicate) {
+        return NextResponse.json(
+          {
+            error: "You already purchased this item. Open your order instead of paying again.",
+            code: ALREADY_PURCHASED_CHECKOUT_CODE,
+            orderId: recentDuplicate.orderId,
+          },
+          { status: 409, headers: JSON_NO_STORE_HEADERS },
+        )
+      }
+      paymentIntent = await stripe.paymentIntents.create(createParams, {
+        idempotencyKey: checkoutPaymentIntentIdempotencyKey({
+          buyerId: user.id,
+          listingIds: listingIdsOrdered,
+          quantities: quantityByListingId,
+          amountCents,
+          addressId,
+          fulfillment: impliedFulfillment,
+          promoCodeId,
+        }),
+      })
+    }
+
+    if (!paymentIntent) {
+      return NextResponse.json(
+        { error: "Could not start checkout" },
+        { status: 500, headers: JSON_NO_STORE_HEADERS },
+      )
+    }
+
+    if (paymentIntent.status === "succeeded") {
+      return NextResponse.json(
+        {
+          alreadyPaid: true,
+          paymentIntentId: paymentIntent.id,
+          ...(checkoutSessionId ? { checkoutSessionId } : {}),
+          shippingUsd: bundle.totalShippingUsd,
+          totalUsd: chargedTotalUsd,
+        },
+        { headers: JSON_NO_STORE_HEADERS },
+      )
+    }
 
     if (promoCodeId && promoRef) {
       if (!promoServiceSupabase) {
@@ -708,6 +856,7 @@ export async function createPaymentIntentForUser(
           promoServiceSupabase = createServiceRoleClient()
         } catch {
           await stripe.paymentIntents.cancel(paymentIntent.id)
+          await releaseReswellCreditHoldForPaymentIntent(paymentIntent.id)
           return NextResponse.json(
             { error: "Could not reserve promo code." },
             { status: 503, headers: JSON_NO_STORE_HEADERS },
@@ -723,8 +872,24 @@ export async function createPaymentIntentForUser(
       )
       if (!reserved.ok) {
         await stripe.paymentIntents.cancel(paymentIntent.id)
+        await releaseReswellCreditHoldForPaymentIntent(paymentIntent.id)
         return NextResponse.json(
           { error: reserved.error ?? "This promo code is no longer available." },
+          { status: 409, headers: JSON_NO_STORE_HEADERS },
+        )
+      }
+    }
+
+    if (reswellCreditCents > 0) {
+      const held = await holdReswellCreditAfterPaymentIntentCreated({
+        userId: user.id,
+        paymentIntentId: paymentIntent.id,
+        creditCents: reswellCreditCents,
+      })
+      if (!held.ok) {
+        await stripe.paymentIntents.cancel(paymentIntent.id)
+        return NextResponse.json(
+          { error: held.error },
           { status: 409, headers: JSON_NO_STORE_HEADERS },
         )
       }
@@ -735,6 +900,8 @@ export async function createPaymentIntentForUser(
         clientSecret: paymentIntent.client_secret,
         shippingUsd: bundle.totalShippingUsd,
         totalUsd: chargedTotalUsd,
+        reswellCreditUsd,
+        ...(checkoutSessionId ? { checkoutSessionId } : {}),
       },
       { headers: JSON_NO_STORE_HEADERS },
     )

@@ -1,7 +1,9 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react"
-import { format, formatDistanceToNowStrict } from "date-fns"
+import { format } from "date-fns"
+import { RelativeTime } from "@/components/ui/relative-time"
+import { formatDeskTime } from "@/lib/utils/format-local-thread-time"
 import { LifeBuoy, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import {
@@ -31,12 +33,6 @@ type SupportCaseThreadProps = {
   /** Case requester — used so staff-authored rows stay on the agent side. */
   requesterUserId?: string | null
   counterpartLabel?: string
-}
-
-function deskTime(value: string): string {
-  return formatDistanceToNowStrict(new Date(value))
-    .replace(/ minutes?/, " min")
-    .replace(/ seconds?/, " sec")
 }
 
 /** Staff/agent replies → right for staff viewers; customer → left. */
@@ -202,22 +198,15 @@ export function SupportCaseThread({
   const member = role === "member"
 
   return (
-    <div
-      className={cn(
-        "flex min-h-0 flex-col",
-        member ? "h-full flex-1 lg:h-auto lg:flex-none" : "h-full flex-1",
-      )}
-    >
+    <div className="flex h-full min-h-0 flex-1 flex-col">
       <div
         ref={listRef}
         className={cn(
-          "flex min-h-0 flex-col overflow-y-auto overflow-x-hidden",
-          member
-            ? "flex-1 px-3 py-4 lg:flex-none lg:max-h-[min(36rem,calc(100dvh-18rem))]"
-            : "flex-1 space-y-3 px-2 py-3",
+          "flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden",
+          member ? "px-3 py-4" : "space-y-3 px-2 py-3",
         )}
       >
-        <div className={cn(member ? "flex flex-col gap-3" : "space-y-3")}>
+        <div className={cn(member ? "mt-auto flex flex-col gap-3" : "space-y-3")}>
         {displayMessages.length === 0 ? (
           <p className="px-3 py-10 text-center text-sm text-muted-foreground">No messages yet.</p>
         ) : (
@@ -281,7 +270,7 @@ export function SupportCaseThread({
                           requesterUserId,
                         )}
                     {" · "}
-                    {deskTime(message.created_at)}
+                    <RelativeTime iso={message.created_at} formatLabel={formatDeskTime} />
                   </p>
                   <div
                     className={cn(
@@ -298,6 +287,7 @@ export function SupportCaseThread({
                               : "rounded-2xl border border-listingHeart/15 bg-listingHeart/[0.08] text-foreground",
                     )}
                     title={format(new Date(message.created_at), "PPpp")}
+                    suppressHydrationWarning
                   >
                     <p className="whitespace-pre-wrap break-words">{message.body}</p>
                   </div>
@@ -341,7 +331,7 @@ export function SupportCaseThread({
         )
       ) : closed ? (
         <p className="shrink-0 border-t border-border/50 px-3 py-3 text-center text-[13px] text-muted-foreground">
-          This request is closed.
+          This conversation is closed. Start a new one from Help anytime.
         </p>
       ) : null}
     </div>

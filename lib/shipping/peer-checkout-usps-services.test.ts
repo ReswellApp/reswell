@@ -5,8 +5,10 @@ import {
   filterReswellRatesForPeerSection,
   findPeerCheckoutRateOptionByServiceCode,
   isNonContiguousUsShipTo,
+  isSmallParcelUspsGroundServiceCode,
   peerCheckoutAllowsPoBoxDestination,
   peerCheckoutOffersShippingRateChoice,
+  peerCheckoutRateChoiceIntro,
   peerCheckoutRateFamilyForSections,
   peerCheckoutShippingServiceError,
   surfboardCheckoutBucket,
@@ -184,6 +186,17 @@ describe("findPeerCheckoutRateOptionByServiceCode", () => {
     )
     assert.equal(found?.displayName, "UPS Next Day Air")
   })
+
+  it("keeps a fin UPS Ground selection when USPS rates are also present", () => {
+    const options = toPeerCheckoutShippingRateOptions(USPS_AND_UPS, "fins", CA)
+    const found = findPeerCheckoutRateOptionByServiceCode(
+      options,
+      "ups_ground",
+      "fins",
+      CA,
+    )
+    assert.equal(found?.displayName, "UPS Ground")
+  })
 })
 
 describe("peerCheckoutShippingServiceError", () => {
@@ -232,20 +245,74 @@ describe("peerCheckoutRateFamilyForSections", () => {
 })
 
 describe("small parcel USPS choice", () => {
-  it("shows Ground and Priority for leashes and hides other carriers", () => {
-    const options = toPeerCheckoutShippingRateOptions(USPS_AND_UPS, "leashes", CA)
+  it("shows USPS Ground, USPS Priority, and UPS Ground for fins", () => {
+    const options = toPeerCheckoutShippingRateOptions(USPS_AND_UPS, "fins", CA)
     assert.deepEqual(
       options.map((option) => option.displayName),
-      ["USPS Ground", "USPS Priority"],
+      ["USPS Ground", "USPS Priority", "UPS Ground"],
+    )
+    assert.match(
+      peerCheckoutRateChoiceIntro("fins", "usps_ground_priority", options),
+      /USPS Ground, USPS Priority, or UPS/,
     )
   })
 
-  it("keeps Ground and Priority when the cart mixes small-parcel categories", () => {
+  it("shows the same USPS and UPS options for leashes", () => {
+    const options = toPeerCheckoutShippingRateOptions(USPS_AND_UPS, "leashes", CA)
+    assert.deepEqual(
+      options.map((option) => option.displayName),
+      ["USPS Ground", "USPS Priority", "UPS Ground"],
+    )
+  })
+
+  it("keeps USPS and UPS Ground when the cart mixes small-parcel categories", () => {
     const options = toPeerCheckoutShippingRateOptions(USPS_AND_UPS, null, CA, "usps_ground_priority")
     assert.deepEqual(
       options.map((option) => option.serviceCode),
-      ["usps_ground_advantage", "usps_priority_mail"],
+      ["usps_ground_advantage", "usps_priority_mail", "ups_ground"],
     )
+  })
+
+  it("treats USPS Ground Advantage cubic as Ground and still offers UPS", () => {
+    assert.equal(isSmallParcelUspsGroundServiceCode("usps_ground_advantage_cubic"), true)
+    const cubic = rate({
+      rate_id: "usps-cubic",
+      carrierCode: "stamps_com",
+      carrierName: "Stamps.com",
+      serviceCode: "usps_ground_advantage_cubic",
+      serviceName: "USPS Ground Advantage Cubic",
+      totalAmount: 5.1,
+    })
+    const options = toPeerCheckoutShippingRateOptions([cubic, UPS_GROUND], "fins", CA)
+    assert.deepEqual(
+      options.map((option) => option.displayName),
+      ["USPS Ground", "UPS Ground"],
+    )
+  })
+
+  it("still offers UPS Ground when USPS Ground and Priority are missing", () => {
+    const kept = filterReswellRatesForPeerSection(ALL_RATES, "fins", CA).map((row) => row.rate_id)
+    assert.deepEqual(kept, ["ups-ground"])
+    const options = toPeerCheckoutShippingRateOptions(ALL_RATES, "fins", CA)
+    assert.deepEqual(
+      options.map((option) => option.displayName),
+      ["UPS Ground"],
+    )
+    assert.match(peerCheckoutRateChoiceIntro("fins", "usps_ground_priority", options), /UPS shipping/)
+  })
+
+  it("does not offer UPS for a PO Box", () => {
+    const poBox = { ...CA, line1: "PO Box 123" }
+    const kept = filterReswellRatesForPeerSection(USPS_AND_UPS, "fins", poBox).map((row) => row.rate_id)
+    assert.deepEqual(kept, ["usps-ground", "usps-priority"])
+    const empty = filterReswellRatesForPeerSection(ALL_RATES, "fins", poBox)
+    assert.deepEqual(empty, [])
+    assert.match(peerCheckoutShippingServiceError("fins", poBox), /PO Box/)
+  })
+
+  it("offers Hawaii-capable air rates when USPS is missing", () => {
+    const kept = filterReswellRatesForPeerSection(ALL_RATES, "fins", HI).map((row) => row.rate_id)
+    assert.deepEqual(kept, ["ups-2nd", "ups-next", "fx-2day", "fx-ovn"])
   })
 })
 

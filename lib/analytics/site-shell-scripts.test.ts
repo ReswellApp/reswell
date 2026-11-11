@@ -11,6 +11,8 @@ describe("public site shell script loading", () => {
   it("keeps Klaviyo, PostHog identify, page-view trackers, and Vercel Analytics out of the root layout", () => {
     const layout = readRepoFile("app/layout.tsx")
     assert.match(layout, /DeferredMarketingRuntime/)
+    assert.match(layout, /rel="preconnect"/)
+    assert.match(layout, /https:\/\/js\.stripe\.com/)
     assert.doesNotMatch(layout, /KlaviyoOnsite/)
     assert.doesNotMatch(layout, /KlaviyoPageViewTracker/)
     assert.doesNotMatch(layout, /MetaPixelPageViewTracker/)
@@ -30,6 +32,11 @@ describe("public site shell script loading", () => {
       assert.match(source, /strategy="lazyOnload"/, `${file} should use lazyOnload`)
       assert.doesNotMatch(source, /strategy="afterInteractive"/, `${file} should not use afterInteractive`)
     }
+  })
+
+  it("disables Meta Pixel autoConfig so scraped $ prices are not sent as currency", () => {
+    const source = readRepoFile("components/meta-pixel.tsx")
+    assert.match(source, /fbq\('set', 'autoConfig', false,/)
   })
 
   it("does not statically import posthog-js from instrumentation-client", () => {

@@ -45,7 +45,6 @@ import {
   fetchOptionalOrderTrackingDetailJson,
   parseOrderTrackingDetail,
 } from "@/lib/shipping/order-tracking-detail"
-import { OrderDetailRealtimeRefresh } from "@/components/order-realtime-refresh"
 import { getMarketplaceReviewByOrderAndReviewer } from "@/lib/db/order-reviews"
 import { existingMarketplaceReviewFromRow } from "@/lib/marketplace-review-photos"
 import { validateSellerReviewForOrder } from "@/lib/services/orderSellerReview"
@@ -486,7 +485,6 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
 
   return (
     <div className="mx-auto w-full max-w-xl space-y-5 pb-12">
-      <OrderDetailRealtimeRefresh orderId={id} />
       <SaleDetailSummary
         items={summaryItems}
         orderNumber={orderNumber}

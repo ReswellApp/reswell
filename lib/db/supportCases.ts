@@ -135,6 +135,33 @@ export type SupportCaseEventRow = {
   created_at: string
 }
 
+const SUPPORT_CASE_MESSAGE_SELECT_WITH_META =
+  "id, case_id, author_user_id, author_role, body, is_internal, metadata, created_at"
+const SUPPORT_CASE_MESSAGE_SELECT_BASE =
+  "id, case_id, author_user_id, author_role, body, is_internal, created_at"
+
+function isMissingSupportCaseMessageMetadataColumn(message: string): boolean {
+  return /column support_case_messages\.metadata does not exist/i.test(message)
+}
+
+function mapSupportCaseMessageRows(
+  rows: Array<Record<string, unknown>>,
+): SupportCaseMessageRow[] {
+  return rows.map((row) => ({
+    id: String(row.id),
+    case_id: String(row.case_id),
+    author_user_id: row.author_user_id == null ? null : String(row.author_user_id),
+    author_role: row.author_role as SupportCaseMessageRow["author_role"],
+    body: String(row.body ?? ""),
+    is_internal: row.is_internal === true,
+    metadata:
+      row.metadata && typeof row.metadata === "object" && !Array.isArray(row.metadata)
+        ? (row.metadata as Record<string, unknown>)
+        : {},
+    created_at: String(row.created_at),
+  }))
+}
+
 export async function insertSupportCaseMessage(
   supabase: SupabaseClient,
   row: {
@@ -161,11 +188,18 @@ export async function insertSupportCaseMessage(
     insert.inbound_email_id = row.inbound_email_id.trim()
   }
 
-  const { data, error } = await supabase
-    .from("support_case_messages")
-    .insert(insert)
-    .select("id")
-    .single()
+  const attemptInsert = async (payload: Record<string, unknown>) =>
+    supabase.from("support_case_messages").insert(payload).select("id").single()
+
+  let { data, error } = await attemptInsert(insert)
+  if (
+    error &&
+    insert.metadata != null &&
+    isMissingSupportCaseMessageMetadataColumn(error.message)
+  ) {
+    const { metadata: _metadata, ...withoutMeta } = insert
+    ;({ data, error } = await attemptInsert(withoutMeta))
+  }
   if (error) {
     if (error.code === "23505" && row.inbound_email_id?.trim()) {
       return { id: null, error: null, duplicate: true }
@@ -390,14 +424,20 @@ export async function listSupportCasesForRequester(
   supabase: SupabaseClient,
   userId: string,
   filter: "all" | "open" | "resolved" = "all",
+  options?: { limit?: number },
 ): Promise<SupportCaseRow[]> {
+  const limit =
+    typeof options?.limit === "number" && Number.isFinite(options.limit) && options.limit > 0
+      ? Math.min(200, Math.floor(options.limit))
+      : 200
+
   let query = supabase
     .from("support_cases")
     .select(CASE_SELECT)
     .eq("requester_user_id", userId)
     .neq("source_channel", "live_chat")
     .order("updated_at", { ascending: false })
-    .limit(200)
+    .limit(limit)
 
   if (filter === "open") query = query.neq("status", "resolved")
   if (filter === "resolved") query = query.eq("status", "resolved")
@@ -460,27 +500,35 @@ export async function listSupportCaseMessages(
   caseId: string,
   opts?: { includeInternal?: boolean },
 ): Promise<SupportCaseMessageRow[]> {
-  let query = supabase
-    .from("support_case_messages")
-    .select("id, case_id, author_user_id, author_role, body, is_internal, metadata, created_at")
-    .eq("case_id", caseId)
-    .order("created_at", { ascending: true })
-    .limit(500)
+  const run = async (columns: string) => {
+    let query = supabase
+      .from("support_case_messages")
+      .select(columns)
+      .eq("case_id", caseId)
+      .order("created_at", { ascending: true })
+      .limit(500)
+    if (!opts?.includeInternal) query = query.eq("is_internal", false)
+    return query
+  }
 
-  if (!opts?.includeInternal) query = query.eq("is_internal", false)
+  const first = await run(SUPPORT_CASE_MESSAGE_SELECT_WITH_META)
+  if (!first.error) {
+    return mapSupportCaseMessageRows((first.data ?? []) as Array<Record<string, unknown>>)
+  }
 
-  const { data, error } = await query
-  if (error) {
-    console.warn("[support_case_messages] list skipped:", error.message)
+  // Production may lag the metadata migration; still load the thread so admin
+  // replies do not vanish after send when the list query would otherwise fail.
+  if (isMissingSupportCaseMessageMetadataColumn(first.error.message)) {
+    const fallback = await run(SUPPORT_CASE_MESSAGE_SELECT_BASE)
+    if (!fallback.error) {
+      return mapSupportCaseMessageRows((fallback.data ?? []) as Array<Record<string, unknown>>)
+    }
+    console.warn("[support_case_messages] list skipped:", fallback.error.message)
     return []
   }
-  return (data ?? []).map((row) => ({
-    ...(row as Omit<SupportCaseMessageRow, "metadata">),
-    metadata:
-      row.metadata && typeof row.metadata === "object" && !Array.isArray(row.metadata)
-        ? (row.metadata as Record<string, unknown>)
-        : {},
-  }))
+
+  console.warn("[support_case_messages] list skipped:", first.error.message)
+  return []
 }
 
 export async function replaceLatestMatchingSupportCaseAgentBody(

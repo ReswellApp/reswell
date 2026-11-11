@@ -4,6 +4,7 @@ import {
   addedToCartHeading,
   cartFromCartCheckoutHref,
   cartItemCountFromQuantities,
+  listingDetailCartButtonLabel,
   shouldOpenAddedToCartDialog,
 } from "./added-to-cart.ts"
 
@@ -42,5 +43,12 @@ describe("shouldOpenAddedToCartDialog", () => {
 describe("cartItemCountFromQuantities", () => {
   it("sums line quantities", () => {
     assert.equal(cartItemCountFromQuantities([{ quantity: 1 }, { quantity: 3 }]), 4)
+  })
+})
+
+describe("listingDetailCartButtonLabel", () => {
+  it("switches to View cart once the listing is in the cart", () => {
+    assert.equal(listingDetailCartButtonLabel(false), "Add to cart")
+    assert.equal(listingDetailCartButtonLabel(true), "View cart")
   })
 })

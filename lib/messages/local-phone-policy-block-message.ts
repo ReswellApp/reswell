@@ -9,6 +9,27 @@ export const LOCAL_POLICY_BLOCK_ID_PREFIX = "local-policy-block-" as const
 /** Optimistic composer rows, replaced when the inserted row comes back. */
 export const PENDING_THREAD_MESSAGE_ID_PREFIX = "pending-" as const
 
+/**
+ * Realtime INSERT (or the action result) should replace one optimistic bubble,
+ * not every pending row with the same body — overlapping identical sends keep
+ * their own bubbles until each row lands.
+ */
+export function replaceMatchingPendingThreadMessage<
+  T extends { id: string; content: string; sender_id: string },
+>(previous: T[], incoming: T): T[] {
+  if (previous.some((message) => message.id === incoming.id)) return previous
+  const index = previous.findIndex(
+    (message) =>
+      message.id.startsWith(PENDING_THREAD_MESSAGE_ID_PREFIX) &&
+      message.content === incoming.content &&
+      message.sender_id === incoming.sender_id,
+  )
+  if (index === -1) return [...previous, incoming]
+  const next = previous.slice()
+  next[index] = incoming
+  return next
+}
+
 /** @deprecated Use {@link LOCAL_POLICY_BLOCK_ID_PREFIX} */
 export const LOCAL_PHONE_POLICY_BLOCK_ID_PREFIX = LOCAL_POLICY_BLOCK_ID_PREFIX
 

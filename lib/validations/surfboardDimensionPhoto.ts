@@ -21,7 +21,29 @@ export const SURFBOARD_DIMENSION_PHOTO_REF_SOURCES = [
 export type SurfboardDimensionPhotoRefSource =
   (typeof SURFBOARD_DIMENSION_PHOTO_REF_SOURCES)[number]
 
-export const SURFBOARD_DIMENSION_PHOTO_MATCH_TARGET = 0.9
+/** Photo pick and dims read must each hit this rated accuracy before we treat the harness as ready. */
+export const SURFBOARD_DIMENSION_PHOTO_MATCH_TARGET = 0.95
+
+/**
+ * Per-match publish confidence. Below this, do not show the row in
+ * /admin/dimension-photo-match (still stored as a scan marker so listings are not re-queued).
+ */
+export const SURFBOARD_DIMENSION_PHOTO_MATCH_CONFIDENCE_GATE = 0.9
+
+/** Both Photo and Dims accuracy must clear the target (Overall alone is not enough). */
+export function surfboardDimensionPhotoMatchMeetsTarget(stats: {
+  photoAccuracy: number | null
+  dimsAccuracy: number | null
+  target?: number
+}): boolean {
+  const target = stats.target ?? SURFBOARD_DIMENSION_PHOTO_MATCH_TARGET
+  return (
+    stats.photoAccuracy != null &&
+    stats.dimsAccuracy != null &&
+    stats.photoAccuracy >= target &&
+    stats.dimsAccuracy >= target
+  )
+}
 
 /** Soft Jev post-vision verify payload persisted on match rows. */
 export type SurfboardDimensionPhotoJevReview = {
@@ -29,16 +51,38 @@ export type SurfboardDimensionPhotoJevReview = {
   photoVerdict: "accept" | "reject" | null
   dimsVerdict: "good" | "close" | "bad" | null
   volumeNullProbability: number | null
+  /** P(this photo+dims pair is ready for admin review / future production reuse). */
+  matchReadyProbability: number | null
   volumeCleared: boolean
   nextAction: "keep" | "clear_volume" | "retry_with_examples" | "distrust" | null
   retriedWithExamples: boolean
+  /** True when below the confidence gate — hidden from the admin review grid. */
+  withheldFromReview: boolean
   reason: string
+}
+
+export const SURFBOARD_DIMENSION_PHOTO_MEMORY_KINDS = [
+  "photo_good",
+  "photo_bad",
+  "dims_good",
+  "dims_close",
+  "dims_bad",
+  "exclude",
+] as const
+export type SurfboardDimensionPhotoMemoryKind =
+  (typeof SURFBOARD_DIMENSION_PHOTO_MEMORY_KINDS)[number]
+
+export type SurfboardDimensionPhotoStampBox = {
+  x: number
+  y: number
+  width: number
+  height: number
 }
 
 export const surfboardDimensionPhotoMatchListQuerySchema = z.object({
   days: z.coerce.number().int().min(1).max(90).optional().default(30),
   rating: z
-    .enum(["unrated", "good", "close", "bad", "excluded", "all"])
+    .enum(["unrated", "good", "close", "bad", "excluded", "withheld", "all"])
     .optional()
     .default("unrated"),
   surface: z
@@ -82,6 +126,17 @@ export const rateSurfboardDimensionPhotoMatchSchema = z
     correctedVolume: correctedDimField,
     /** Skip this case forever for rematch/scan; stores exclude memory. */
     excluded: z.boolean().optional(),
+    /** Admin-picked stamp photo when the model chose the wrong gallery frame. */
+    correctedSourceImageUrl: z
+      .string()
+      .trim()
+      .max(2000)
+      .nullable()
+      .optional()
+      .refine(
+        (value) => value == null || value === "" || /^https?:\/\//i.test(value),
+        "correctedSourceImageUrl must be an http(s) URL",
+      ),
     promoteToRefs: z.boolean().optional().default(true),
   })
   .refine(
@@ -94,7 +149,8 @@ export const rateSurfboardDimensionPhotoMatchSchema = z
       v.correctedLength !== undefined ||
       v.correctedWidth !== undefined ||
       v.correctedThickness !== undefined ||
-      v.correctedVolume !== undefined,
+      v.correctedVolume !== undefined ||
+      v.correctedSourceImageUrl !== undefined,
     { message: "Nothing to update" },
   )
 

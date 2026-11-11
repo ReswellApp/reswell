@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { ShoppingCart, Check, Loader2 } from "lucide-react"
@@ -9,9 +9,9 @@ import { addCartItem } from "@/app/actions/cart"
 import { trackMetaAddToCart } from "@/lib/meta/pixel-events"
 import { collectMetaClientBrowserSignals } from "@/lib/meta/collect-client-browser-signals"
 import { cn } from "@/lib/utils"
-import { useOptionalAuthModal } from "@/components/auth/auth-modal-context"
+import { useSignInGate } from "@/components/auth/use-sign-in-gate"
+import { useHydratedIsLoggedIn } from "@/components/features/listings/listing-viewer-provider"
 import { useReportAddedToCart } from "@/components/features/cart/added-to-cart-context"
-import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 import { useClientSearchParams } from "@/hooks/use-client-search-params"
 
 interface AddToCartButtonProps {
@@ -39,9 +39,9 @@ export function AddToCartButton({
 }: AddToCartButtonProps) {
   const [loading, setLoading] = useState(false)
   const [added, setAdded] = useState(false)
-  const authModal = useOptionalAuthModal()
+  const requireSignIn = useSignInGate()
+  const loggedIn = useHydratedIsLoggedIn(isLoggedIn)
   const reportAddedToCart = useReportAddedToCart()
-  const router = useRouter()
   const pathname = usePathname()
   const searchParams = useClientSearchParams()
   const here = `${pathname}${searchParams.toString() ? `?${searchParams}` : ""}`
@@ -51,17 +51,10 @@ export function AddToCartButton({
       toast.error("Out of stock")
       return
     }
-    if (!isLoggedIn) {
-      const safe = safeRedirectPath(here)
-      if (authModal) {
-        authModal.openLogin(here)
-      } else {
-        router.push(`/auth/login?redirect=${encodeURIComponent(safe)}`)
-      }
-      return
-    }
+    if (loading) return
     setLoading(true)
     try {
+      if (!loggedIn && !(await requireSignIn(here))) return
       const browserSignals = await collectMetaClientBrowserSignals().catch(() => ({
         fbc: null,
         fbp: null,

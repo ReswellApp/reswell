@@ -2,8 +2,9 @@
 
 import type { ReactNode } from "react"
 import Link from "next/link"
-import { format, isToday, isYesterday } from "date-fns"
 import type { LucideIcon } from "lucide-react"
+import { RelativeTime } from "@/components/ui/relative-time"
+import { formatLocalThreadTime } from "@/lib/utils/format-local-thread-time"
 import { cn } from "@/lib/utils"
 
 export type ThreadEventTone = "neutral" | "success" | "info" | "warning" | "accent"
@@ -20,11 +21,7 @@ const TONE_ICON: Record<ThreadEventTone, string> = {
 }
 
 export function formatThreadEventTime(dateStr: string): string {
-  const date = new Date(dateStr)
-  if (Number.isNaN(date.getTime())) return ""
-  if (isToday(date)) return format(date, "h:mm a")
-  if (isYesterday(date)) return `Yesterday ${format(date, "h:mm a")}`
-  return format(date, "MMM d, h:mm a")
+  return formatLocalThreadTime(dateStr)
 }
 
 export function ThreadEventCard({
@@ -87,7 +84,7 @@ export function ThreadEventCard({
                   children ? "mt-2.5" : "mt-2",
                 )}
               >
-                {formatThreadEventTime(createdAt)}
+                <RelativeTime iso={createdAt} formatLabel={formatLocalThreadTime} />
               </p>
             ) : null}
           </div>

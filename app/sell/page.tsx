@@ -1,6 +1,5 @@
 import { Suspense } from "react"
 import { redirect } from "next/navigation"
-import { SellPhotoIdentifyGate } from "@/components/features/sell/sell-photo-identify-gate"
 import { SellStart } from "@/components/features/sell/sell-start"
 import { fetchProfileIsAdmin } from "@/lib/db/profileAdmin"
 import { SURFBOARD_SELL_BOARDS_CREATE_HREF } from "@/lib/sell-flow/surfboard-sell-paths"
@@ -75,7 +74,6 @@ export default async function SellPage({
     <SellStart
       isAdmin={isAdmin}
       surfboardSellHref={SURFBOARD_SELL_BOARDS_CREATE_HREF}
-      adminPhotoIdentify={isAdmin ? <SellPhotoIdentifyGate /> : null}
     />
   )
 }

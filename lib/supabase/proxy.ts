@@ -17,8 +17,22 @@ import { platformAccessForSignedInUser } from '@/lib/account-access/platform-acc
 import { employeeAdminPathDecision } from '@/lib/admin/employee-access'
 import { pathnameRequiresAuthSession } from '@/lib/auth/pathname-requires-auth-session'
 import { supabaseAuthForwardPathname } from '@/lib/auth/supabase-auth-forward-path'
+import { isServerActionRequest } from '@/lib/utils/is-server-action-request'
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+
+/**
+ * Server Actions must receive RSC, not an HTML redirect. Still refresh cookies
+ * on the passthrough response; the action itself enforces auth.
+ */
+function passServerActionOrRedirect(
+  request: NextRequest,
+  passthrough: NextResponse,
+  redirect: NextResponse,
+): NextResponse {
+  if (isServerActionRequest(request)) return passthrough
+  return redirect
+}
 
 export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname
@@ -31,7 +45,11 @@ export async function updateSession(request: NextRequest) {
     const url = request.nextUrl.clone()
     url.pathname = UPDATE_PASSWORD_PATH
     url.searchParams.delete(PASSWORD_RESET_QUERY_KEY)
-    return NextResponse.redirect(url)
+    return passServerActionOrRedirect(
+      request,
+      NextResponse.next({ request }),
+      NextResponse.redirect(url),
+    )
   }
 
   // Forward stray Supabase auth params so server-side exchange / verifyOtp runs before any
@@ -43,7 +61,11 @@ export async function updateSession(request: NextRequest) {
   if (authForwardPathname) {
     const url = request.nextUrl.clone()
     url.pathname = authForwardPathname
-    return NextResponse.redirect(url)
+    return passServerActionOrRedirect(
+      request,
+      NextResponse.next({ request }),
+      NextResponse.redirect(url),
+    )
   }
 
   // Session cookies are set on the response inside these route handlers. Calling
@@ -230,13 +252,21 @@ async function refreshSupabaseSession(
     const url = request.nextUrl.clone()
     url.pathname = '/auth/login'
     url.searchParams.set('error', ACCOUNT_BANNED_ERROR)
-    return NextResponse.redirect(url)
+    return passServerActionOrRedirect(
+      request,
+      supabaseResponse,
+      NextResponse.redirect(url),
+    )
   }
 
   if (user && isLegacyOffersHub) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard/offers'
-    return NextResponse.redirect(url)
+    return passServerActionOrRedirect(
+      request,
+      supabaseResponse,
+      NextResponse.redirect(url),
+    )
   }
 
   if (requiresAuth && !user) {
@@ -255,7 +285,11 @@ async function refreshSupabaseSession(
       ? `/dashboard/offers${request.nextUrl.search}`
       : `${request.nextUrl.pathname}${request.nextUrl.search}`
     url.searchParams.set('redirect', redirectTarget)
-    return NextResponse.redirect(url)
+    return passServerActionOrRedirect(
+      request,
+      supabaseResponse,
+      NextResponse.redirect(url),
+    )
   }
 
   // Admin routes: same rule as app/admin/layout.tsx — staff only (not buyers/sellers).
@@ -273,7 +307,11 @@ async function refreshSupabaseSession(
       if (!isStaff) {
         const url = request.nextUrl.clone()
         url.pathname = '/'
-        return NextResponse.redirect(url)
+        return passServerActionOrRedirect(
+          request,
+          supabaseResponse,
+          NextResponse.redirect(url),
+        )
       }
 
       if (!platformAccess.isAdmin && platformAccess.isEmployee) {
@@ -285,7 +323,11 @@ async function refreshSupabaseSession(
           const url = request.nextUrl.clone()
           url.pathname = decision.redirectPath
           url.search = decision.redirectSearch
-          return NextResponse.redirect(url)
+          return passServerActionOrRedirect(
+            request,
+            supabaseResponse,
+            NextResponse.redirect(url),
+          )
         }
       }
     } catch {

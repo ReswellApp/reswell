@@ -9,7 +9,7 @@ import { surfboardDimensionPhotoMatchListQuerySchema } from "@/lib/validations/s
 
 function loadError(message: string): string {
   if (/does not exist|schema cache|relation/i.test(message)) {
-    return "Dimension photo tables are missing. Apply migrations 20271201120000 and 20271201130000, then refresh."
+    return "Dimension photo tables are missing. Apply migrations through 20271212120000 (memory index), then refresh."
   }
   return "Could not load dimension photo matches"
 }

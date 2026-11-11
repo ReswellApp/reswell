@@ -84,6 +84,7 @@ describe("gear rows on the main catalog feed", () => {
       "META_CATALOG_SURFPACKS_GOOGLE_PRODUCT_CATEGORY",
       "META_CATALOG_FINS_GOOGLE_PRODUCT_CATEGORY",
       "META_CATALOG_APPAREL_GOOGLE_PRODUCT_CATEGORY",
+      "META_CATALOG_WETSUITS_GOOGLE_PRODUCT_CATEGORY",
     ] as const
     const previous = new Map(keys.map((key) => [key, process.env[key]]))
     for (const key of keys) delete process.env[key]
@@ -94,6 +95,11 @@ describe("gear rows on the main catalog feed", () => {
       assert.equal(getMetaCatalogGoogleProductCategoryForSection("surfpacks"), "100")
       assert.equal(getMetaCatalogGoogleProductCategoryForSection("fins"), "3525")
       assert.equal(getMetaCatalogGoogleProductCategoryForSection("apparel"), "499813")
+      assert.equal(getMetaCatalogGoogleProductCategoryForSection("wetsuits"), "1147")
+      assert.notEqual(
+        getMetaCatalogGoogleProductCategoryForSection("wetsuits"),
+        getMetaCatalogGoogleProductCategoryForSection("apparel"),
+      )
     } finally {
       for (const [key, value] of previous) {
         if (value === undefined) delete process.env[key]

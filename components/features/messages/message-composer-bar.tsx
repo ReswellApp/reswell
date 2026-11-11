@@ -1,7 +1,7 @@
 'use client'
 
-import { useCallback, useState, type ReactNode } from 'react'
-import { Loader2 } from 'lucide-react'
+import { useCallback, useState, type KeyboardEvent, type ReactNode } from 'react'
+import { ArrowUp, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { MessageComposerTextarea } from '@/components/features/messages/message-composer-textarea'
 import { MessageMediaSendButton } from '@/components/features/messages/message-media-send-button'
@@ -13,6 +13,7 @@ import {
 } from '@/lib/utils/dashboard-display-styles'
 import type { MessagePolicyReasonCode } from '@/lib/messages/fraud-reason-codes'
 import type { MarketplaceMessageAttachment } from '@/lib/validations/marketplace-message-attachment'
+import type { OptimisticMediaDraft } from '@/components/features/messages/message-media-send-button'
 
 type SentMediaMessage = {
   id: string
@@ -39,9 +40,18 @@ export interface MessageComposerBarProps {
   media?: {
     conversationId: string | null
     disabled?: boolean
-    onSent: (message: SentMediaMessage) => void
-    onBlockedPolicy?: (originalContent: string, reasonCode: MessagePolicyReasonCode) => void
+    onSent: (message: SentMediaMessage, draftId: string) => void
+    onBlockedPolicy?: (
+      originalContent: string,
+      reasonCode: MessagePolicyReasonCode,
+      draftId?: string,
+    ) => void
     ensureConversationId?: () => Promise<string | null>
+    onOptimistic?: (draft: OptimisticMediaDraft) => void
+    onProgress?: (draftId: string, progress: number) => void
+    onFailed?: (draftId: string) => void
+    onDismiss?: (draftId: string) => void
+    registerRetry?: (retry: (draftId: string) => void) => void
   }
 }
 
@@ -51,7 +61,7 @@ export function MessageComposerBar({
   onSubmit,
   sending = false,
   className,
-  placeholder = 'Send a message',
+  placeholder = 'Message',
   textareaDisabled = false,
   showMedia = true,
   leadingActions,
@@ -70,6 +80,14 @@ export function MessageComposerBar({
   const handleDraftUiChange = useCallback((node: ReactNode) => {
     setMediaDraftUi(node)
   }, [])
+  const canSend = !disabled && Boolean(value.trim())
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key !== 'Enter' || event.shiftKey || event.nativeEvent.isComposing) return
+    event.preventDefault()
+    if (!canSend) return
+    void onSubmit()
+  }
 
   return (
     <div className={cn('flex w-full min-w-0 flex-col gap-2', className)}>
@@ -90,7 +108,12 @@ export function MessageComposerBar({
             onSent={media.onSent}
             onBlockedPolicy={media.onBlockedPolicy}
             ensureConversationId={media.ensureConversationId}
-            onDraftUiChange={handleDraftUiChange}
+            onDraftUiChange={media.onOptimistic ? undefined : handleDraftUiChange}
+            onOptimistic={media.onOptimistic}
+            onProgress={media.onProgress}
+            onFailed={media.onFailed}
+            onDismiss={media.onDismiss}
+            registerRetry={media.registerRetry}
           />
         ) : null}
         {leadingActions}
@@ -98,19 +121,25 @@ export function MessageComposerBar({
           <MessageComposerTextarea
             value={value}
             onChange={onChange}
+            onKeyDown={handleKeyDown}
             placeholder={resolvedPlaceholder}
             disabled={disabled}
             autoComplete="off"
+            enterKeyHint="send"
             aria-label="Message text"
           />
           <Button
             type="submit"
             variant="ghost"
-            disabled={disabled || !value.trim()}
+            disabled={!canSend}
             className={messageComposerSendButtonClass}
             aria-label="Send message"
           >
-            {sending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : 'Send'}
+            {sending ? (
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+            ) : (
+              <ArrowUp className="h-4 w-4" strokeWidth={2.5} aria-hidden />
+            )}
           </Button>
         </div>
       </form>

@@ -52,14 +52,14 @@ const sections: FaqSection[] = [
       {
         question: "Can I make an offer?",
         answerPlain:
-          "If the seller has offers turned on for a listing, you'll see a Make an offer button on the listing page. Send your price and the seller can accept, counter, or decline in Messages. Once an offer is accepted, we'll send you a checkout link so you can pay at the agreed price.",
+          "If the seller has offers turned on for a listing, you'll see a Make an offer button on the listing page. Send your price and the seller can accept, counter, or decline in Messages. When you accept a seller offer or counter, you’ll go straight to checkout at the agreed price. If the seller accepts your offer, we’ll also email you a checkout link.",
         answer: (
           <>
             If the seller has offers turned on for a listing, you&apos;ll see a{" "}
             <strong className="text-foreground">Make an offer</strong> button on the listing page.
-            Send your price and the seller can accept, counter, or decline in Messages. Once an
-            offer is accepted, we&apos;ll send you a checkout link so you can pay at the agreed
-            price.
+            Send your price and the seller can accept, counter, or decline in Messages. When you
+            accept a seller offer or counter, you&apos;ll go straight to checkout at the agreed
+            price. If the seller accepts your offer, we&apos;ll also email you a checkout link.
           </>
         ),
       },

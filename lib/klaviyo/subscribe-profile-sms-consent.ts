@@ -69,7 +69,7 @@ export async function subscribeKlaviyoProfileSmsConsent(input: {
 
   if (input.marketing === "SUBSCRIBED" && !listId) {
     console.warn(
-      "[klaviyo] KLAVIYO_SMS_SUBSCRIBE_LIST_ID is not set — SMS marketing subscribe uses account default opt-in (often double opt-in). Consent may stay pending until confirmed, and Message Sent SMS flows will not send.",
+      "[klaviyo] KLAVIYO_SMS_SUBSCRIBE_LIST_ID is not set — SMS marketing subscribe uses account default opt-in (often double opt-in). Consent may stay pending until confirmed. Message Sent SMS must use a transactional SMS action (not marketing).",
     )
   }
 

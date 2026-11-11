@@ -144,7 +144,7 @@ export const accountsRetrievalDocs = [
       },
       {
         heading: "Starting a cash out",
-        text: "Open Earnings, tap Cash out, choose Standard (free) or Instant (fee when available), and confirm.",
+        text: "Open Available on Earnings, tap Transfer Funds, choose Standard (free) or Instant (fee when available), and confirm.",
       },
       {
         heading: "Tracking",

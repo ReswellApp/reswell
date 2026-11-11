@@ -1,24 +1,15 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { loadStripe } from "@stripe/stripe-js"
 import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js"
 import type { Appearance } from "@stripe/stripe-js"
 import { useTheme } from "next-themes"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
+import { StripeJsUnavailable } from "@/components/stripe-js-unavailable"
 import { BRAND_CTA_BLUE } from "@/lib/brand-colors"
-import { stripePublishableKey } from "@/lib/stripe/client-checkout-enabled"
-
-const publishableKey = stripePublishableKey()
-
-let stripePromise: ReturnType<typeof loadStripe> | null = null
-function getStripeBrowser() {
-  if (!publishableKey) return null
-  stripePromise ??= loadStripe(publishableKey)
-  return stripePromise
-}
+import { useStripeBrowser } from "@/lib/stripe/use-stripe-browser"
 
 function formatStripeConfirmError(error: unknown): string {
   if (error == null) return String(error)
@@ -154,7 +145,7 @@ export function AdminTerminalCardCheckout({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const stripePromise = getStripeBrowser()
+  const { stripePromise, unavailable, retry } = useStripeBrowser()
   const payloadKey = useMemo(() => JSON.stringify(checkoutPayload ?? {}), [checkoutPayload])
 
   useEffect(() => {
@@ -213,6 +204,10 @@ export function AdminTerminalCardCheckout({
         Complete customer details above to pay by card.
       </div>
     )
+  }
+
+  if (unavailable) {
+    return <StripeJsUnavailable onRetry={retry} />
   }
 
   if (loading) {

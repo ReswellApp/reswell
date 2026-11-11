@@ -5,6 +5,7 @@ import {
   googleMerchantListingImageUrl,
 } from "@/lib/google-merchant/product-image-link"
 import { asListingImageArray, type ListingImageForCard } from "@/lib/listing-image-display"
+import { capitalizeWords, normalizeExcessiveCapitalization } from "@/lib/listing-labels"
 import { listingDirectPublicImageUrl } from "@/lib/listing-media-proxy-url"
 import { LISTING_VIDEO_MIN_DURATION_SECONDS } from "@/lib/listing-video-constants"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
@@ -217,12 +218,15 @@ function listingVideoLinks(listing: GoogleMerchantListingRow): string[] | undefi
 
 function listingBrand(listing: GoogleMerchantListingRow): string | null {
   const brand = listing.brand?.trim()
-  return brand || null
+  if (!brand) return null
+  // Longer all-caps wordmarks tip titles into Google's excessive-caps check.
+  return normalizeExcessiveCapitalization(brand)
 }
 
 function listingModel(listing: GoogleMerchantListingRow): string | null {
   const model = listing.model?.trim()
-  return model || null
+  if (!model) return null
+  return normalizeExcessiveCapitalization(model)
 }
 
 function productIdentifiers(listing: GoogleMerchantListingRow): {
@@ -343,7 +347,8 @@ export function mapListingToProductInput(
     contentLanguage: getGoogleMerchantContentLanguage(),
     feedLabel: getGoogleMerchantFeedLabel(),
     productAttributes: {
-      title: listing.title.trim(),
+      // Title case + strip shouting ALL CAPS (Google Merchant editorial policy).
+      title: capitalizeWords(listing.title.trim()),
       description,
       link,
       imageLink,

@@ -35,6 +35,7 @@ export const MODEL_PAGE_RESERVED_BRAND_SEGMENTS = new Set([
   "fins",
   "following",
   "for-surf-shops",
+  "for-surfboard-flippers",
   "giveaways",
   "help",
   "import",

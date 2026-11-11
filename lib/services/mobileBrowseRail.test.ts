@@ -28,7 +28,7 @@ describe("mobile browse rail", () => {
     )
     assert.deepEqual(
       menu.items.map((item) => item.screen),
-      ["for-surf-shops", "how-to-sell", "how-to-ship", "sales-map", "seller-resources"],
+      ["for-surfboard-flippers", "how-to-sell", "how-to-ship", "sales-map", "seller-resources"],
     )
     const pages = rail.items.filter((item) => item.kind === "page")
     assert.deepEqual(

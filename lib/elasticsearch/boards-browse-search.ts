@@ -48,6 +48,7 @@ import {
 } from "@/lib/listing-tail-shape-tags"
 import { parseBrowseLocationLabel } from "@/lib/listing-location-or-filter"
 import { usStateTitleCaseName } from "@/lib/us-state-name-to-code"
+import { boardsBrowseEsNearbyPrioritySortClause } from "@/lib/boards-browse-home"
 
 /** Attach `must_not` to a listings bool query body (keyword builders already set filter/must/should). */
 function withMustNot(queryBody: object, mustNot: object[]): object {
@@ -393,7 +394,14 @@ export type BoardsBrowseEsSearchParams = BoardsBrowseEsContext & {
   condition?: string
   facets?: BoardsBrowseFacetSelections
   dimensionTokens?: string[]
-  geo?: { lat: number; lng: number; radiusMi?: number }
+  geo?: {
+    lat: number
+    lng: number
+    /** Hard cutoff. Listings outside this radius are excluded. */
+    radiusMi?: number
+    /** Soft ranking: listings inside this radius sort before the rest. */
+    nearbyPriorityMi?: number
+  }
   /** `newest` | `price-low` | `price-high` | `price-newest` | `nearest` | `top-picks` | `created-at` (internal, ignores keyword score). */
   sort: string
   useSuppressionSort?: boolean
@@ -488,6 +496,12 @@ function buildSort(params: BoardsBrowseEsSearchParams): object[] {
       },
     })
     return sort
+  }
+
+  if (geo?.nearbyPriorityMi && geo.nearbyPriorityMi > 0) {
+    sort.push(
+      boardsBrowseEsNearbyPrioritySortClause(geo.lat, geo.lng, geo.nearbyPriorityMi),
+    )
   }
 
   if (params.sort === "created-at") {

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Loader2 } from "lucide-react"
 import {
@@ -12,8 +13,9 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { respondToCounterOfferAction } from "@/lib/actions/offerCounterRespond"
+import { acceptedOfferCheckoutHref } from "@/lib/listing-href"
 import { capitalizeWords } from "@/lib/listing-labels"
-import { formatDistanceToNow } from "date-fns"
+import { RelativeTime, formatDistanceToNowLabel } from "@/components/ui/relative-time"
 import { parseOfferLineItems } from "@/lib/types/offer-line-item"
 
 export type BuyerCounterOfferRow = {
@@ -50,6 +52,7 @@ export function BuyerCounterOfferDialog({
   listPrice: number
   onCompleted: () => void | Promise<void>
 }) {
+  const router = useRouter()
   const [busy, setBusy] = useState<"accept" | "decline" | null>(null)
 
   const handleClose = (next: boolean) => {
@@ -66,6 +69,17 @@ export function BuyerCounterOfferDialog({
         return
       }
       onOpenChange(false)
+      if (action === "accept") {
+        const checkoutHref =
+          "checkoutHref" in result && typeof result.checkoutHref === "string"
+            ? result.checkoutHref
+            : acceptedOfferCheckoutHref(offer.id)
+        toast.success("Offer accepted — continue to checkout")
+        // Navigate immediately so a slow offers refresh cannot leave Accept spinning.
+        router.push(checkoutHref)
+        void onCompleted()
+        return
+      }
       await onCompleted()
     } finally {
       setBusy(null)
@@ -101,7 +115,8 @@ export function BuyerCounterOfferDialog({
           </p>
           {offer.expires_at ? (
             <p className="text-left text-[13px] leading-snug text-muted-foreground">
-              Respond {formatDistanceToNow(new Date(offer.expires_at), { addSuffix: true })}.
+              Respond{" "}
+              <RelativeTime iso={offer.expires_at} formatLabel={formatDistanceToNowLabel} />.
             </p>
           ) : null}
         </DialogHeader>
@@ -177,7 +192,7 @@ export function BuyerCounterOfferDialog({
               {busy === "accept" ? (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
               ) : (
-                "Accept"
+                "Accept & checkout"
               )}
             </Button>
             <Button
@@ -198,8 +213,8 @@ export function BuyerCounterOfferDialog({
 
         <DialogFooter className="sm:justify-start">
           <p className="text-left text-[13px] leading-snug text-muted-foreground">
-            Accepting records this agreed price for checkout if you decide to buy (shipping and taxes still
-            apply at payment). You’re not required to complete a purchase.
+            Accepting takes you to checkout at this agreed price. Shipping and taxes still apply at
+            payment.
           </p>
         </DialogFooter>
       </DialogContent>

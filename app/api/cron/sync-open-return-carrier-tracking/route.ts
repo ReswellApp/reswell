@@ -4,7 +4,7 @@ import { syncOpenReturnCarrierTracking } from "@/lib/services/syncOpenReturnCarr
 export const maxDuration = 60
 
 /**
- * Every 15 minutes: poll ShipEngine for open return shipments missing carrier_delivered_at.
+ * Every 15 minutes (offset to :09): poll ShipEngine for open return shipments missing carrier_delivered_at.
  */
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization")

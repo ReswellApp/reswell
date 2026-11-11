@@ -1,6 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { SoldFeedListing } from "@/app/sold/sold-page-client"
-import { MARKETPLACE_SOLD_FEED_SECTIONS } from "@/lib/db/home-recently-sold-strip"
 import { fetchShippedSurfboardSaleOrdering } from "@/lib/db/soldSurfboardShippingFulfillment"
 import { filterListingIdsMatchingBrand } from "@/lib/db/brand-listings"
 import { getBrandBySlug } from "@/lib/brands/server"
@@ -15,6 +14,7 @@ import {
 } from "@/lib/listing-image-display"
 import {
   fetchMarketplaceSoldFeedOrderPage,
+  MARKETPLACE_SOLD_FEED_ALL_SECTIONS,
   type MarketplaceSoldFeedCursor,
   type MarketplaceSoldFeedSale,
 } from "@/lib/db/marketplace-sold-feed"
@@ -115,7 +115,7 @@ async function hydrateSoldFeedListings(
     .from("listings")
     .select(SOLD_LISTING_SELECT)
     .in("id", orderedListingIds)
-    .in("status", ["sold", "active"])
+    .neq("status", "draft")
 
   if (error) {
     console.error("[marketplaceSoldFeed] listings fetch:", error.message)
@@ -126,13 +126,22 @@ async function hydrateSoldFeedListings(
     ((data ?? []) as Record<string, unknown>[]).map((row) => [String(row.id), row]),
   )
 
-  return sales
+  const listings = sales
     .map((sale) => {
       const row = rowsById.get(sale.listingId)
       if (!row) return null
       return mapSoldRow(row, sale)
     })
     .filter((listing): listing is SoldFeedListing => listing != null)
+
+  if (listings.length < sales.length) {
+    console.warn("[marketplaceSoldFeed] dropped sale lines during hydrate", {
+      sales: sales.length,
+      hydrated: listings.length,
+    })
+  }
+
+  return listings
 }
 
 export async function loadMarketplaceSoldFeedPage(
@@ -238,7 +247,7 @@ export async function loadMarketplaceSoldFeed(
 
   const [page, stats] = await Promise.all([
     loadMarketplaceSoldFeedPage(supabase, brandSlug, null),
-    getSoldFeedStats([...MARKETPLACE_SOLD_FEED_SECTIONS]),
+    getSoldFeedStats([...MARKETPLACE_SOLD_FEED_ALL_SECTIONS]),
   ])
   return {
     ...page,

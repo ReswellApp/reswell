@@ -1,3 +1,4 @@
+import type { SupabaseClient, User } from "@supabase/supabase-js"
 import { z } from "zod"
 import { createClient } from "@/lib/supabase/server"
 import { createServiceRoleClient } from "@/lib/supabase/server"
@@ -54,6 +55,73 @@ const saveWithPhoneSchema = messageSmsPhoneInputSchema.extend({
 export type SaveMessageSmsWithPhoneResult =
   | { ok: true; message_sms_opt_in: boolean }
   | { ok: false; error: string; code?: "invalid_phone" }
+
+/**
+ * Shared opt-in/out for web + mobile. Enabling requires a resolvable US phone and
+ * awaits Klaviyo transactional (+ marketing) consent before persisting the flag.
+ */
+export async function applyMessageSmsOptInForUser(input: {
+  supabase: SupabaseClient
+  user: Pick<User, "id" | "email" | "phone">
+  enabled: boolean
+}): Promise<UpdateMessageSmsNotificationsResult> {
+  const { supabase, user, enabled } = input
+
+  if (enabled) {
+    const phoneE164 = await resolveMessageSmsPhoneE164(supabase, user.id, user.phone)
+    if (!phoneE164) {
+      return {
+        ok: false,
+        error:
+          "Add a phone number to your personal information under Addresses before enabling text alerts.",
+        code: "missing_phone",
+      }
+    }
+
+    const subscribed = await subscribeKlaviyoProfileSmsConsent({
+      phoneNumber: phoneE164,
+      email: user.email,
+      externalId: user.id,
+      transactional: "SUBSCRIBED",
+      marketing: "SUBSCRIBED",
+    })
+    if (!subscribed.ok && !subscribed.skipped) {
+      console.error(
+        "[messageSmsNotifications] Klaviyo SMS subscribe failed:",
+        subscribed.status,
+        subscribed.detail,
+      )
+      return {
+        ok: false,
+        error: "Could not register your number for text alerts. Try again in a moment.",
+      }
+    }
+
+    const saved = await upsertMessageSmsOptInForUser(supabase, user.id, true)
+    if (!saved.ok) {
+      return { ok: false, error: saved.error }
+    }
+
+    return { ok: true, message_sms_opt_in: true }
+  }
+
+  const saved = await upsertMessageSmsOptInForUser(supabase, user.id, false)
+  if (!saved.ok) {
+    return { ok: false, error: saved.error }
+  }
+
+  const phoneE164 = await resolveMessageSmsPhoneE164(supabase, user.id, user.phone)
+  if (phoneE164) {
+    void subscribeKlaviyoProfileSmsMarketing({
+      phoneNumber: phoneE164,
+      email: user.email,
+      externalId: user.id,
+      consent: "UNSUBSCRIBED",
+    })
+  }
+
+  return { ok: true, message_sms_opt_in: false }
+}
 
 export async function saveMessageSmsNotificationsWithPhone(
   input: unknown,
@@ -140,48 +208,9 @@ export async function updateMessageSmsNotificationsOptIn(
     return { ok: false, error: "Unauthorized." }
   }
 
-  const { enabled } = parsed.data
-
-  if (enabled) {
-    const phoneE164 = await resolveMessageSmsPhoneE164(supabase, user.id, user.phone)
-    if (!phoneE164) {
-      return {
-        ok: false,
-        error: "Add a phone number to your personal information under Addresses before enabling text alerts.",
-        code: "missing_phone",
-      }
-    }
-
-    const saved = await upsertMessageSmsOptInForUser(supabase, user.id, true)
-    if (!saved.ok) {
-      return { ok: false, error: saved.error }
-    }
-
-    void subscribeKlaviyoProfileSmsConsent({
-      phoneNumber: phoneE164,
-      email: user.email,
-      externalId: user.id,
-      transactional: "SUBSCRIBED",
-      marketing: "SUBSCRIBED",
-    })
-
-    return { ok: true, message_sms_opt_in: true }
-  }
-
-  const saved = await upsertMessageSmsOptInForUser(supabase, user.id, false)
-  if (!saved.ok) {
-    return { ok: false, error: saved.error }
-  }
-
-  const phoneE164 = await resolveMessageSmsPhoneE164(supabase, user.id, user.phone)
-  if (phoneE164) {
-    void subscribeKlaviyoProfileSmsMarketing({
-      phoneNumber: phoneE164,
-      email: user.email,
-      externalId: user.id,
-      consent: "UNSUBSCRIBED",
-    })
-  }
-
-  return { ok: true, message_sms_opt_in: false }
+  return applyMessageSmsOptInForUser({
+    supabase,
+    user,
+    enabled: parsed.data.enabled,
+  })
 }

@@ -1,10 +1,11 @@
 "use client"
 
+import type { ReactNode } from "react"
 import Link from "next/link"
 import { Handshake } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { acceptedOfferCheckoutHref } from "@/lib/listing-href"
-import { formatDistanceToNow } from "date-fns"
+import { RelativeTime, formatDistanceToNowLabel } from "@/components/ui/relative-time"
 import {
   parseCounterofferNoteFromThread,
   parseNegotiationAmountFromContent,
@@ -50,9 +51,14 @@ function footerHint(
   hasBuyerActions: boolean,
   hasCheckout: boolean,
   expiresAt: string | null | undefined,
-): string | null {
+): ReactNode {
   if (hasBuyerActions && expiresAt) {
-    return `Accept or decline ${formatDistanceToNow(new Date(expiresAt), { addSuffix: true })}.`
+    return (
+      <>
+        Accept & checkout or decline{" "}
+        <RelativeTime iso={expiresAt} formatLabel={formatDistanceToNowLabel} />.
+      </>
+    )
   }
   if (kind === "seller_offer" && isOwn) {
     return "Waiting for the buyer to respond to your offer."
@@ -70,10 +76,10 @@ function footerHint(
     return "This offer is closed."
   }
   if (kind === "accepted" && hasCheckout) {
-    return "Pay at your agreed price. You’re not required to complete a purchase."
+    return "Continue to checkout to pay at your agreed price."
   }
   if (kind === "accepted") {
-    return "Complete checkout when you’re ready."
+    return "Continue to checkout to finish this purchase."
   }
   return null
 }
@@ -97,7 +103,7 @@ export function OfferLegacyMirrorCard({
 
 /**
  * Renders seller (or system) negotiation outcomes in the same visual language as `OfferMessageCard`.
- * Buyers get Accept / Decline on open counters, and Checkout on accepted offers.
+ * Buyers get Accept & checkout / Decline on open counters, and Checkout on accepted offers.
  */
 export function OfferNegotiationEventCard({
   kind,

@@ -37,17 +37,14 @@ export function MessageSmsNotificationsToggle({
     <>
       <div
         className={cn(
-          "flex items-start justify-between gap-3 border-b border-border/60 px-3 py-3",
+          "flex items-center justify-between gap-3 border-b border-border/50 px-3 py-2",
           className,
         )}
       >
-        <div className="min-w-0 space-y-0.5">
-          <Label htmlFor="message-sms-opt-in" className="text-[14px] font-medium text-foreground">
+        <div className="min-w-0">
+          <Label htmlFor="message-sms-opt-in" className="text-[13px] font-medium text-foreground">
             Text me new messages
           </Label>
-          <p className="text-[12px] leading-snug text-muted-foreground">
-            Get an SMS when someone sends you a message on Reswell.
-          </p>
         </div>
         <Switch
           id="message-sms-opt-in"

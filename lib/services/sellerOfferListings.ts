@@ -10,6 +10,7 @@ import type { SellerOfferListing } from "@/lib/types/seller-offer-listing"
 import { parseOfferLineItems } from "@/lib/types/offer-line-item"
 import { latestSellerCounterNoteFromTimeline } from "@/lib/utils/offer-timeline"
 import { lineItemListingIdsFromRaw } from "@/lib/utils/seller-offer-revision"
+import { listingStatusAcceptsOffers } from "@/lib/utils/listing-offer-eligibility"
 
 function roundMoney(n: number): number {
   return Math.round(n * 100) / 100
@@ -24,7 +25,7 @@ function listingImages(row: ListingRowForOffer): ListingImageForCard[] | null {
 function mapSellerOfferListing(row: ListingRowForOffer): SellerOfferListing | null {
   const price = roundMoney(parseFloat(String(row.price ?? 0)))
   if (!Number.isFinite(price) || price <= 0) return null
-  if (row.status !== "active" && row.status !== "pending_sale") return null
+  if (!listingStatusAcceptsOffers(row.status)) return null
   if (!isPeerListingSection(row.section)) return null
 
   const mode = row.board_shipping_cost_mode
@@ -115,10 +116,15 @@ export async function listSellerOfferListings(
     }
 
     if (!hasAnchor) {
+      const anchorRow = rows.find((row) => row.id === anchorListingId)
+      const soldOrInactive =
+        anchorRow != null && !listingStatusAcceptsOffers(anchorRow.status)
       return {
         ok: false,
         status: 404,
-        error: "This listing is not available for an offer right now.",
+        error: soldOrInactive
+          ? "This listing is sold or no longer active, so you can’t send an offer."
+          : "This listing is not available for an offer right now.",
       }
     }
 

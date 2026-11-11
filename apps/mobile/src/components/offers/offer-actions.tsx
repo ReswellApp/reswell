@@ -1,10 +1,16 @@
 import { useState } from "react"
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native"
+import { Linking, Pressable, StyleSheet, Text, TextInput, View } from "react-native"
 import type { MobileOffer } from "@reswell/api-contract"
 import { actOnOffer } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
 import { isOfferPastExpiry, offerNeedsAction } from "@/lib/offer-display"
+import { publicSiteUrl } from "@/lib/public-env"
 import { fontFamily, useReswellColors } from "@/theme"
+
+function acceptedOfferCheckoutUrl(offerId: string): string {
+  const origin = publicSiteUrl().replace(/\/$/, "")
+  return `${origin}/checkout?offer=${encodeURIComponent(offerId)}`
+}
 
 export function OfferActions({
   offer,
@@ -38,6 +44,12 @@ export function OfferActions({
         action,
         counter_amount: amount,
       })
+      if (action === "accept" && buyerCounter) {
+        // Open web checkout immediately — native checkout does not take an offer id yet.
+        void Linking.openURL(acceptedOfferCheckoutUrl(offer.id))
+        onDone()
+        return
+      }
       onDone()
     } catch (cause: unknown) {
       setError(cause instanceof Error ? cause.message : "Could not update this offer")
@@ -52,12 +64,14 @@ export function OfferActions({
         <View style={styles.row}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Accept offer"
+            accessibilityLabel={buyerCounter ? "Accept and checkout" : "Accept offer"}
             disabled={busy}
             onPress={() => void run("accept")}
             style={[styles.primary, { backgroundColor: colors.listingHeart, opacity: busy ? 0.55 : 1 }]}
           >
-            <Text style={[styles.primaryLabel, { color: "#FFFFFF", fontFamily: fontFamily.text }]}>Accept</Text>
+            <Text style={[styles.primaryLabel, { color: "#FFFFFF", fontFamily: fontFamily.text }]}>
+              {buyerCounter ? "Accept & checkout" : "Accept"}
+            </Text>
           </Pressable>
           <Pressable
             accessibilityRole="button"

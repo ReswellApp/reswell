@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { toast } from "sonner"
 import { Check, Loader2, MessageCircle, Send } from "lucide-react"
-import { formatDistanceToNow } from "date-fns"
+import { RelativeTime, formatDistanceToNowLabel } from "@/components/ui/relative-time"
 import { sendConversationReply, sendListingMessage } from "@/app/actions/messages"
 import { LocalPhonePolicyBlockBubble } from "@/components/features/messages/local-phone-policy-block-bubble"
 import { getPolicyBlockFromSendResult } from "@/lib/messages/policy-block-client"
@@ -240,7 +240,8 @@ export function OrderMessageThread({
                 return (
                   <li key={m.id} className="flex flex-col gap-0.5 items-end">
                     <span className="text-xs text-muted-foreground">
-                      You · {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
+                      You ·{" "}
+                      <RelativeTime iso={m.created_at} formatLabel={formatDistanceToNowLabel} />
                     </span>
                     <LocalPhonePolicyBlockBubble
                       originalContent={policyBlock.originalContent}
@@ -258,7 +259,7 @@ export function OrderMessageThread({
                 >
                   <span className="text-xs text-muted-foreground">
                     {fromSelf ? "You" : counterpartyName} ·{" "}
-                    {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
+                    <RelativeTime iso={m.created_at} formatLabel={formatDistanceToNowLabel} />
                   </span>
                   <span
                     className={`max-w-[90%] rounded-lg px-3 py-2 ${

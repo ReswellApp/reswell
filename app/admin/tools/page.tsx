@@ -387,6 +387,20 @@ export default function AdminToolsPage() {
             </Link>
           </Button>
         </ToolCard>
+        <ToolCard
+          icon={Wrench}
+          accent="violet"
+          title="Catalog volume calculator"
+          description="Prototype: estimate custom-board liters from nearby stock variants and measure leave-one-out accuracy against the catalog."
+        >
+          <Button variant="outline" asChild>
+            <Link href="/admin/volume-calculator">
+              <Wrench className="mr-2 h-4 w-4" />
+              Open volume calculator
+              <ArrowUpRight className="ml-1.5 h-4 w-4" />
+            </Link>
+          </Button>
+        </ToolCard>
       </section>
 
       {/* Klaviyo confirmation */}

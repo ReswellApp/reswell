@@ -1,6 +1,6 @@
 "use client"
 
-import { formatDistanceToNow } from "date-fns"
+import { RelativeTime, formatDistanceToNowLabel } from "@/components/ui/relative-time"
 import { Bot, ChevronRight, MessageCircle, ShieldCheck, X } from "lucide-react"
 import { LiveChatAdminOnlyBadge } from "@/components/features/live-chat/live-chat-admin-only-badge"
 import { LiveChatSupportLeadAvatar } from "@/components/features/live-chat/live-chat-support-lead-avatar"
@@ -120,7 +120,10 @@ export function LiveChatHomeView({
                     {recentMessage.senderName}
                   </p>
                   <span className="shrink-0 text-xs text-muted-foreground">
-                    {formatDistanceToNow(new Date(recentMessage.createdAt), { addSuffix: true })}
+                    <RelativeTime
+                      iso={recentMessage.createdAt}
+                      formatLabel={formatDistanceToNowLabel}
+                    />
                   </span>
                 </div>
                 <p className="mt-0.5 line-clamp-2 text-sm leading-snug text-muted-foreground">

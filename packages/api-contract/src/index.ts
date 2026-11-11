@@ -631,6 +631,8 @@ export const MOBILE_CATEGORY_CHIPS: readonly MobileCategoryChip[] = [
 
 /** Seller resource screens. Same pages as the website dropdown. */
 export const MOBILE_SELLER_RESOURCE_SLUGS = [
+  "for-surfboard-flippers",
+  /** @deprecated Prefer `for-surfboard-flippers`. Kept so older apps still resolve. */
   "for-surf-shops",
   "how-to-sell",
   "how-to-ship",
@@ -1623,8 +1625,14 @@ export const mobileEarningsSchema = z.object({
   pending_label: z.string(),
   cashed_out_usd: z.number().nonnegative(),
   cashed_out_label: z.string(),
+  lifetime_usd: z.number().nonnegative(),
+  lifetime_label: z.string(),
   earned_last_30d_usd: z.number().nonnegative(),
   earned_last_30d_label: z.string(),
+  credit_usd: z.number().nonnegative(),
+  credit_label: z.string(),
+  /** Admin-only Reswell Credit pilot. Missing/false hides Rewards on earnings. */
+  credit_visible: z.boolean().optional().default(false),
   payout_label: z.string(),
   payout_detail: z.string(),
   cash_out_ready: z.boolean(),

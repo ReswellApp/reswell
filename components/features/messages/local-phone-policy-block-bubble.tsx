@@ -1,5 +1,6 @@
 "use client"
 
+import type { ReactNode } from "react"
 import Link from "next/link"
 import { getMessagePolicyNotice } from "@/lib/messages/phone-policy-notice"
 import type { MessagePolicyReasonCode } from "@/lib/messages/fraud-reason-codes"
@@ -12,7 +13,7 @@ type Align = "thread" | "inline"
 interface LocalPhonePolicyBlockBubbleProps {
   originalContent: string
   reasonCode?: MessagePolicyReasonCode
-  formattedTime?: string
+  formattedTime?: ReactNode
   /** Links the support ticket to this marketplace thread when present. */
   relatedConversationId?: string | null
   align?: Align

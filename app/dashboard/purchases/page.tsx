@@ -10,7 +10,6 @@ import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-
 import { canSubmitSellerReview } from "@/lib/services/orderSellerReview"
 import { parseOrderTrackingDetail } from "@/lib/shipping/order-tracking-detail"
 import { existingMarketplaceReviewFromRow, isReviewsMetadataColumnMissing } from "@/lib/marketplace-review-photos"
-import { OrdersListRealtimeRefresh } from "@/components/order-realtime-refresh"
 import { PurchasesOrderList } from "@/components/features/purchases/purchases-order-list"
 import {
   purchaseDetailLine,
@@ -229,7 +228,6 @@ export default async function PurchasesPage() {
 
   return (
     <div>
-      <OrdersListRealtimeRefresh role="buyer" />
       <header className="hidden border-b border-border/80 pb-5 lg:block">
         <h1 className="font-headline text-2xl font-bold tracking-tight text-foreground sm:text-[28px]">
           Your Purchases

@@ -136,6 +136,18 @@ const nextConfig = {
         hostname: 'images.unsplash.com',
         pathname: '/**',
       },
+      // Name the Break game — Wikimedia Commons photos (copyright-free)
+      {
+        protocol: 'https',
+        hostname: 'upload.wikimedia.org',
+        pathname: '/wikipedia/commons/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'thumb.wikimedia.org',
+        pathname: '/wikipedia/commons/**',
+      },
+
       // Maps Static API previews (conversation location pins — same GCP key as Places)
       {
         protocol: 'https',
@@ -250,6 +262,11 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      {
+        source: "/for-surf-shops",
+        destination: "/for-surfboard-flippers",
+        permanent: true,
+      },
       { source: "/admin/coastal-delivery", destination: "/admin/shipper", permanent: false },
       { source: "/admin/coastal-delivery/join", destination: "/admin/shipper", permanent: false },
       { source: "/admin/coastal-delivery/schedule", destination: "/admin/shipper", permanent: false },
@@ -368,6 +385,12 @@ const withObservability = posthogApiKey && posthogProjectId
       personalApiKey: posthogApiKey,
       projectId: posthogProjectId,
       host: 'https://us.posthog.com',
+      // Vercel has no reliable detached post-build hook. Keep PostHog's
+      // runtime analytics/error capture, but do not block static generation
+      // while the compiler hook processes and uploads every emitted map.
+      sourcemaps: {
+        enabled: false,
+      },
     })
   : analyzed
 

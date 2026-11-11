@@ -11,6 +11,9 @@ import { Button } from '@/components/ui/button'
 import { MessageComposerBar } from '@/components/features/messages/message-composer-bar'
 import { ConversationThreadSkeleton } from '@/components/features/messages/messages-page-skeletons'
 import { ConversationPartyProfile } from '@/components/features/messages/conversation-party-profile'
+import { ConversationThreadHeaderChip } from '@/components/features/messages/conversation-thread-header-chip'
+import { MessagesChatSplit } from '@/components/features/messages/messages-chat-split'
+import { messageThreadCanvasClassName } from '@/components/features/messages/message-text-bubble'
 import {
   loadOtherPartyProfile,
   type OtherPartyProfileSummary,
@@ -242,10 +245,10 @@ function NewMessageComposeContent() {
 
   return (
     <main className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-background">
-      <div className="container mx-auto flex h-full min-h-0 max-w-2xl flex-1 flex-col overflow-hidden px-4 pb-0 pt-2 max-sm:pt-0 sm:px-5 sm:pb-6 sm:pt-3 md:max-w-4xl lg:max-w-5xl lg:pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-        <header className="z-10 shrink-0 -mx-4 mb-2 border-b border-border/60 bg-background/85 px-2 py-2 backdrop-blur-md supports-[backdrop-filter]:bg-background/70 sm:-mx-5 sm:mb-3 sm:px-3">
+      <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+        <header className="z-10 shrink-0 border-b border-border/60 bg-background/90 px-2 py-1.5 backdrop-blur-md supports-[backdrop-filter]:bg-background/75 sm:px-3">
           <div className="flex items-center gap-1 sm:gap-2">
-            <Link href="/messages" className="shrink-0">
+            <Link href="/messages" className="shrink-0 lg:hidden">
               <Button
                 variant="ghost"
                 size="icon"
@@ -255,65 +258,45 @@ function NewMessageComposeContent() {
                 <ArrowLeft className="h-[22px] w-[22px]" strokeWidth={2} />
               </Button>
             </Link>
-            <ConversationPartyProfile
-              displayName={counterparty.display_name}
-              avatarUrl={counterparty.avatar_url}
-              shopVerified={!!counterparty.shop_verified}
-              profile={otherPartyProfile}
-              secondaryLine={
-                <Link
-                  href={listingDetailPath(listing)}
-                  className="block truncate text-[15px] text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  {capitalizeWords(listing.title)}
-                </Link>
-              }
-            />
+            <div className="flex min-w-0 flex-1 items-center gap-1.5">
+              <ConversationPartyProfile
+                displayName={counterparty.display_name}
+                avatarUrl={counterparty.avatar_url}
+                shopVerified={!!counterparty.shop_verified}
+                profile={otherPartyProfile}
+              />
+              <ConversationThreadHeaderChip
+                href={listingDetailPath(listing)}
+                ariaLabel={`View listing: ${capitalizeWords(listing.title)}`}
+                thumb={
+                  threadListingThumbSrc ? (
+                    <>
+                      {!listingBannerImageReady ? (
+                        <span className="absolute inset-0 z-10 block h-full w-full animate-pulse rounded-md bg-muted" aria-hidden />
+                      ) : null}
+                      <Image
+                        key={threadListingThumbSrc}
+                        src={threadListingThumbSrc}
+                        alt=""
+                        fill
+                        sizes="36px"
+                        className={listingPhotoFillClassName}
+                        unoptimized={listingImageShouldBypassOptimization(threadListingThumbSrc)}
+                        onLoad={() => setListingBannerImageReady(true)}
+                      />
+                    </>
+                  ) : null
+                }
+                primary={capitalizeWords(listing.title)}
+                secondary={`$${listing.price}`}
+                className="ml-auto max-w-[11rem] sm:max-w-[14rem]"
+              />
+            </div>
           </div>
         </header>
 
-        <Link
-          href={listingDetailPath(listing)}
-          className="mb-4 block overflow-hidden rounded-[18px] border border-border/70 bg-card shadow-[0_1px_2px_rgba(17,17,17,0.04)] transition-colors hover:bg-muted/40 active:bg-muted/55 dark:shadow-none"
-        >
-          <div className="flex gap-3 p-3">
-            <div className="relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-2xl bg-muted">
-              {threadListingThumbSrc ? (
-                <>
-                  {!listingBannerImageReady ? (
-                    <div className="absolute inset-0 z-10 animate-pulse rounded-2xl bg-muted" aria-hidden />
-                  ) : null}
-                  <Image
-                    key={threadListingThumbSrc}
-                    src={threadListingThumbSrc}
-                    alt={capitalizeWords(listing.title)}
-                    fill
-                    sizes="72px"
-                    className={listingPhotoFillClassName}
-                    unoptimized={listingImageShouldBypassOptimization(threadListingThumbSrc)}
-                    onLoad={() => setListingBannerImageReady(true)}
-                  />
-                </>
-              ) : null}
-            </div>
-            <div className="flex min-w-0 flex-col justify-center">
-              <p className="text-[17px] font-semibold leading-snug text-foreground">
-                {capitalizeWords(listing.title)}
-              </p>
-              <p className="mt-1 text-[20px] font-semibold tabular-nums tracking-tight text-foreground">
-                ${listing.price}
-              </p>
-            </div>
-          </div>
-        </Link>
-
-        <div
-          className={cn(
-            'mb-2 flex min-h-0 flex-1 flex-col overflow-hidden rounded-[22px] border border-border/50 bg-muted/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] dark:bg-muted/25 sm:mb-3',
-            'sm:max-h-[min(26rem,52svh)] sm:flex-none sm:h-[min(24rem,45svh)] md:h-[min(34rem,52svh)] md:max-h-[min(42rem,68svh)] lg:h-[min(38rem,56svh)] lg:max-h-[min(48rem,72svh)]',
-          )}
-        >
-          <div className="flex h-full min-h-[12rem] flex-col items-center justify-center px-6 py-8 text-center">
+        <div className={cn('relative flex min-h-0 flex-1 flex-col overflow-hidden', messageThreadCanvasClassName())}>
+          <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-6 py-8 text-center">
             {blockedPolicyNotice ? (
               <div className="w-full max-w-md">
                 <LocalPhonePolicyBlockBubble
@@ -332,7 +315,6 @@ function NewMessageComposeContent() {
               </>
             )}
           </div>
-        </div>
 
         <MessageThreadMobileComposerDock>
           <MessageComposerBar
@@ -381,6 +363,7 @@ function NewMessageComposeContent() {
             }}
           />
         </MessageThreadMobileComposerDock>
+        </div>
       </div>
     </main>
   )
@@ -388,8 +371,10 @@ function NewMessageComposeContent() {
 
 export default function NewMessageComposePage() {
   return (
-    <Suspense fallback={<ConversationThreadSkeleton />}>
-      <NewMessageComposeContent />
-    </Suspense>
+    <MessagesChatSplit>
+      <Suspense fallback={<ConversationThreadSkeleton />}>
+        <NewMessageComposeContent />
+      </Suspense>
+    </MessagesChatSplit>
   )
 }

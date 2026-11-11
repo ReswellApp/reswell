@@ -58,6 +58,7 @@ import { assertBuyerMayPurchaseListingsExclusiveWindow } from "@/lib/services/li
 import { peerCheckoutCopyFromSections } from "@/lib/peer-listing-item-nouns"
 import { getSurfboardShippedCheckoutSeed } from "@/lib/services/surfboardShippedOffer"
 import { getAdminReswellBucksCheckoutOffer } from "@/lib/services/reswellBucksCheckout"
+import { getAdminReswellCreditCheckoutOffer } from "@/lib/services/reswellCreditPilot"
 import type { SurfboardShippedCheckoutSeed } from "@/lib/services/surfboardShippedOffer"
 
 async function surfboardShippedSeedForCheckout(
@@ -109,11 +110,13 @@ export default async function CheckoutPage(props: {
     seller_id?: string
     offer?: string
     qty?: string
+    buy_again?: string
   }>
 }) {
   const searchParams = await props.searchParams
   const fromCart = searchParams.from_cart === "1"
   const offerParam = searchParams.offer?.trim()
+  const forceNewSession = searchParams.buy_again === "1"
 
   const supabase = await createClient()
 
@@ -124,6 +127,10 @@ export default async function CheckoutPage(props: {
   const reswellBucksCheckout =
     user && !isAnonymousSupabaseUser(user)
       ? await getAdminReswellBucksCheckoutOffer(supabase, user.id)
+      : null
+  const reswellCreditCheckout =
+    user && !isAnonymousSupabaseUser(user)
+      ? await getAdminReswellCreditCheckoutOffer(supabase, user.id)
       : null
 
   if (offerParam) {
@@ -212,6 +219,8 @@ export default async function CheckoutPage(props: {
             suggestedFulfillment={loaded.fulfillment}
             surfboardShippedSeed={await surfboardShippedSeedForCheckout(user.id, checkoutListings)}
             reswellBucksCheckout={reswellBucksCheckout}
+            reswellCreditCheckout={reswellCreditCheckout}
+            forceNewSession={forceNewSession}
           />
         </div>
       </main>
@@ -359,6 +368,7 @@ export default async function CheckoutPage(props: {
             }
             acceptedOfferListingIds={acceptedOfferListingIds}
             reswellBucksCheckout={reswellBucksCheckout}
+            reswellCreditCheckout={reswellCreditCheckout}
             suggestedFulfillment={
               matchedOffer && acceptedOfferMatchesListingIds(matchedOffer, checkoutListings.map((l) => l.id))
                 ? suggestedFulfillmentFromOfferAndListings(
@@ -368,6 +378,7 @@ export default async function CheckoutPage(props: {
                 : null
             }
             surfboardShippedSeed={await surfboardShippedSeedForCheckout(user.id, checkoutListings)}
+            forceNewSession={forceNewSession}
           />
         </div>
       </main>
@@ -656,6 +667,8 @@ export default async function CheckoutPage(props: {
           suggestedFulfillment={matchedOfferFulfillment}
           surfboardShippedSeed={surfboardShippedSeed}
           reswellBucksCheckout={reswellBucksCheckout}
+          reswellCreditCheckout={reswellCreditCheckout}
+          forceNewSession={forceNewSession}
         />
       </div>
     </main>

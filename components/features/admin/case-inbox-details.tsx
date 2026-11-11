@@ -41,8 +41,17 @@ import Link from "next/link"
 
 const WORKFLOW_STATUS_VALUES: SupportCaseStatus[] = [
   "in_progress",
+  "in_review",
+  "waiting_on_you",
   "resolved",
 ]
+
+function workflowSelectValue(status: SupportCaseStatus): SupportCaseStatus {
+  if (status === "resolved") return "resolved"
+  if (status === "waiting_on_you") return "waiting_on_you"
+  if (status === "in_review" || status === "submitted") return "in_review"
+  return "in_progress"
+}
 
 const OUTCOME_OPTIONS: { value: OrderSupportOutcome; label: string }[] = [
   { value: "approved", label: "Approved" },
@@ -169,7 +178,7 @@ export function CaseInboxDetails({
               <div className="space-y-1.5">
                 <Label className="text-[11px] text-muted-foreground">Status</Label>
                 <Select
-                  value={item.status === "resolved" ? "resolved" : "in_progress"}
+                  value={workflowSelectValue(item.status)}
                   onValueChange={(value) => onStatus(value as SupportCaseStatus)}
                   disabled={savePending}
                 >

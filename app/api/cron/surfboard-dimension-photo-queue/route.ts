@@ -6,7 +6,7 @@ import { isCronRequestAuthorized } from "@/lib/utils/cron-auth"
 export const maxDuration = 300
 
 /**
- * Every 4 hours: rematch Bad/Close dimension-photo rows, then scan up to 15
+ * Every 4 hours at :42: rematch Bad/Close dimension-photo rows, then scan up to 15
  * unscanned active/sold surfboards so /admin/dimension-photo-match Unrated is
  * pre-filled. Skips new scans when Unrated is already ≥ 25.
  * Protected with CRON_SECRET.

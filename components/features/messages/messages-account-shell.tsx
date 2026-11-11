@@ -1,13 +1,7 @@
-import React, { Suspense } from "react"
-import Link from "next/link"
+import React from "react"
 import { redirect } from "next/navigation"
-import { Plus } from "lucide-react"
 import { getCachedDashboardSession } from "@/lib/dashboard-session"
 import { sellerProfileHref } from "@/lib/seller-slug"
-import { Button } from "@/components/ui/button"
-import { DashboardSidebarNav } from "@/components/features/dashboard/dashboard-sidebar-nav"
-import { dashboardSidebarStickyScrollClass } from "@/lib/utils/dashboard-display-styles"
-import { cn } from "@/lib/utils"
 import { MessagesAccountShellClient } from "@/components/features/messages/messages-account-shell-client"
 import { coastalShipperMembership } from "@/lib/services/coastalShipperAccess"
 import { dropoffLocationMembership } from "@/lib/services/dropoffLocationAccess"
@@ -48,33 +42,7 @@ export async function MessagesAccountShell({ children }: { children: React.React
       isShipper={isShipper}
       isDropoffLocation={isDropoffLocation}
       hasShopifyAccess={hasShopifyAccess}
-      sidebar={
-        <aside
-          className={cn(
-            "hidden shrink-0 lg:block lg:w-64 xl:w-72",
-            dashboardSidebarStickyScrollClass,
-          )}
-        >
-          <div className="space-y-5">
-            <Button asChild className="h-10 w-full lg:h-11 lg:text-[15px]">
-              <Link href="/sell?new=1">
-                <Plus className="mr-2 h-4 w-4" />
-                Create Listing
-              </Link>
-            </Button>
-
-            <Suspense fallback={null}>
-              <DashboardSidebarNav
-                sellerProfileHref={shopHref}
-                isAdmin={profile?.is_admin === true}
-                isShipper={isShipper}
-                isDropoffLocation={isDropoffLocation}
-                hasShopifyAccess={hasShopifyAccess}
-              />
-            </Suspense>
-          </div>
-        </aside>
-      }>
+    >
       {children}
     </MessagesAccountShellClient>
   )

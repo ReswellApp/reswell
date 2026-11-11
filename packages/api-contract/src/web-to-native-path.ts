@@ -179,7 +179,9 @@ function mapPathname(pathname: string): string | null {
   if (pathname === "/protection-policy") return "/protection-policy"
   if (pathname === "/shipping-estimator") return "/shipping-estimator"
   if (pathname === "/dropoff/santa-barbara") return "/dropoff/santa-barbara"
-  if (pathname === "/for-surf-shops") return "/seller-resources/for-surf-shops"
+  if (pathname === "/for-surfboard-flippers" || pathname === "/for-surf-shops") {
+    return "/seller-resources/for-surfboard-flippers"
+  }
   if (pathname === "/seller-resources") return "/seller-resources/seller-resources"
   if (pathname === "/seller-resources/how-to-sell") return "/seller-resources/how-to-sell"
   if (pathname === "/seller-resources/how-to-ship") return "/seller-resources/how-to-ship"

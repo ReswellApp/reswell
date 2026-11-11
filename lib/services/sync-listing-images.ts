@@ -217,6 +217,12 @@ export async function syncListingImages(
     )
   }
 
+  // Re-check after deletes. A concurrent reconcile can remove storage between
+  // the opening assert and these writes; never insert rows that 404 on the PDP.
+  await assertAllListingImageObjectsExist(
+    imagesToWrite.map((img) => ({ url: img.url, thumbnailUrl: img.thumbnailUrl })),
+  )
+
   if (await listingImagesAlreadySynced(supabase, listingId, [], imagesToWrite)) {
     return readSyncedListingImages(supabase, listingId)
   }

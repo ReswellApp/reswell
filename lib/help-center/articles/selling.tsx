@@ -329,8 +329,8 @@ export const sellingHelpArticles: HelpArticle[] = [
         body: (
           <>
             <p>
-              Open {helpLink("/dashboard/earnings", "Earnings")} and look for the{" "}
-              <strong>Bank transfer (ACH)</strong> section. Tap{" "}
+              Open {helpLink("/dashboard/earnings?view=available", "Available")} on Earnings and look
+              for <strong>Bank transfers</strong>. Tap{" "}
               <strong>Complete bank setup to cash out</strong> if you have not connected an account
               yet.
             </p>

@@ -69,7 +69,13 @@ function normalizeContactMessageUserRow(raw: Record<string, unknown>): ContactMe
 /** Website /contact form row — server-only (service role); never trust client for source/user_id. */
 export async function insertContactFormMessage(
   supabase: SupabaseClient,
-  row: { name: string; email: string; message: string; user_id?: string | null },
+  row: {
+    name: string
+    email: string
+    message: string
+    subject?: string | null
+    user_id?: string | null
+  },
 ): Promise<{ id: string } | { error: Error }> {
   const { data, error } = await supabase
     .from("contact_messages")
@@ -77,6 +83,7 @@ export async function insertContactFormMessage(
       name: row.name,
       email: row.email,
       message: row.message,
+      subject: row.subject?.trim() ? row.subject.trim() : null,
       source: "contact_form",
       user_id: row.user_id ?? null,
     })

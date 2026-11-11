@@ -1,29 +1,18 @@
 "use client"
 
 import { useCallback, useState } from "react"
-import { loadStripe } from "@stripe/stripe-js"
 import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js"
 import type { Appearance } from "@stripe/stripe-js"
 import { useTheme } from "next-themes"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
+import { StripeJsUnavailable } from "@/components/stripe-js-unavailable"
 import { BRAND_CTA_BLUE } from "@/lib/brand-colors"
 import { finalizeListingSaleTip } from "@/lib/listing-sale-feedback-request"
-import { stripePublishableKey } from "@/lib/stripe/client-checkout-enabled"
+import { useStripeBrowser } from "@/lib/stripe/use-stripe-browser"
 
-let stripePromise: ReturnType<typeof loadStripe> | null = null
-function getStripeBrowser() {
-  const key = stripePublishableKey()
-  if (!key) return null
-  stripePromise ??= loadStripe(key)
-  return stripePromise
-}
-
-/** Warm Stripe.js while the seller picks a tip amount. */
-export function prefetchSaleTipStripeJs(): void {
-  void getStripeBrowser()
-}
+export { prefetchStripeJs as prefetchSaleTipStripeJs } from "@/lib/stripe/load-stripe-browser"
 
 function formatStripeConfirmError(error: unknown): string {
   if (error == null) return "Payment could not be confirmed."
@@ -178,7 +167,7 @@ export function MarkSoldTipCheckout({
   onSuccess: () => void
 }) {
   const { resolvedTheme } = useTheme()
-  const stripe = getStripeBrowser()
+  const { stripePromise: stripe, unavailable, retry } = useStripeBrowser()
   const amountLabel = `$${(amountCents / 100).toFixed(amountCents % 100 === 0 ? 0 : 2)}`
 
   if (!stripe) {
@@ -187,6 +176,10 @@ export function MarkSoldTipCheckout({
         Card payments aren&apos;t available right now. Refresh and try again, or skip the tip.
       </p>
     )
+  }
+
+  if (unavailable) {
+    return <StripeJsUnavailable onRetry={retry} />
   }
 
   const appearance: Appearance =

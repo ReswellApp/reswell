@@ -220,11 +220,11 @@ export const sellingRetrievalDocs = [
       "selling/where-payouts-available",
     ],
     quickAnswer:
-      "Open Earnings and complete Bank transfer (ACH) setup through Stripe Connect. Reswell does not store your full account number. Use Manage payout banks to update accounts later.",
+      "Open Available on Earnings and complete Bank transfers setup through Stripe Connect. Reswell does not store your full account number. Use Manage payout banks to update accounts later.",
     sections: [
       {
         heading: "Where to connect",
-        text: "Earnings shows Complete bank setup to cash out if nothing is linked. Bank details go to Stripe.",
+        text: "Open Available on Earnings. Bank transfers shows Complete bank setup to cash out if nothing is linked. Bank details go to Stripe.",
       },
       {
         heading: "Managing banks",

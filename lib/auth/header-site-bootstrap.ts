@@ -4,6 +4,7 @@ import { coastalShipperMembership } from "@/lib/services/coastalShipperAccess"
 import { getShopAccountContext } from "@/lib/services/accountAccess"
 import { dropoffLocationMembership } from "@/lib/services/dropoffLocationAccess"
 import { accountHasShopifyNavLink } from "@/lib/services/shopifyNavAccess"
+import { resolveHeaderWalletBalance } from "@/lib/auth/header-wallet-sync"
 import { reconcileWalletAggregates, walletAggregateStrings } from "@/lib/wallet-reconcile"
 import {
   persistWalletAggregatesIfNeeded,
@@ -74,7 +75,7 @@ export async function fetchHeaderSiteBootstrap(
       .from("wallets")
       .select("id, balance, pending_balance, lifetime_earned, lifetime_spent, lifetime_cashed_out")
       .eq("user_id", user.id)
-      .single(),
+      .maybeSingle(),
     supabase.from("coastal_shippers").select("id").eq("user_id", user.id).maybeSingle(),
     supabase.from("dropoff_location_grants").select("id").eq("user_id", user.id).maybeSingle(),
     getShopAccountContext().catch((error: unknown) => {
@@ -105,7 +106,8 @@ export async function fetchHeaderSiteBootstrap(
     profile,
     unreadMessages: Number(profile?.unread_message_count ?? 0),
     unreadSupport: Number(profile?.unread_support_count ?? 0),
-    walletBalance: wallet ? reconcileWalletAggregates(wallet).totalBalance : 0,
+    // Failed wallet reads stay null — never paint a fake $0.00 over a load race.
+    walletBalance: resolveHeaderWalletBalance({ data: wallet, error: walletRes.error }),
     isShipper: coastalShipperMembership({
       rowId: shipperRes.data?.id,
       queryFailed: Boolean(shipperRes.error),

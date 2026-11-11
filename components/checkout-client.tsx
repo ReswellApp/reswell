@@ -8,6 +8,7 @@ import {
 } from "@/components/checkout-order-summary-aside"
 import { CheckoutPurchaseDetails, type PurchaseDetailsState } from "@/components/checkout-purchase-details"
 import type { CheckoutCopy, CheckoutListing, CheckoutSeller } from "@/components/checkout-types"
+import { CheckoutShippingRatesSkeleton } from "@/components/features/checkout/checkout-skeletons"
 import { PurchaseOptions } from "@/components/purchase-options"
 import { ProtectionTrustBlock } from "@/components/protection-trust-block"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
@@ -37,6 +38,7 @@ import {
   type PeerCheckoutShippingRateOption,
 } from "@/lib/shipping/peer-checkout-usps-services"
 import { LocalDateOnly } from "@/components/ui/local-datetime"
+import { toast } from "sonner"
 import { Truck, MapPin } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -87,6 +89,10 @@ interface CheckoutClientProps {
   surfboardShippedSeed?: SurfboardShippedCheckoutSeed | null
   /** Admin pilot. Null hides Pay with Reswell Bucks. */
   reswellBucksCheckout?: { spendableUsd: number } | null
+  /** Admin pilot. Null hides Apply Reswell Credit. */
+  reswellCreditCheckout?: { spendableUsd: number } | null
+  /** Explicit second purchase of an in-stock quantity listing. */
+  forceNewSession?: boolean
 }
 
 function CheckoutShippingArrival({ rate }: { rate: PeerCheckoutShippingRateOption }) {
@@ -119,6 +125,8 @@ export function CheckoutClient({
   acceptedOfferListingIds,
   surfboardShippedSeed = null,
   reswellBucksCheckout = null,
+  reswellCreditCheckout = null,
+  forceNewSession = false,
 }: CheckoutClientProps) {
   const isBundle = listings.length > 1
   const offerSuggestedFulfillment = normalizeOfferFulfillment(suggestedFulfillment)
@@ -235,6 +243,16 @@ export function CheckoutClient({
 
   const listingIds = useMemo(() => listings.map((l) => l.id), [listings])
   const listingIdsKey = listingIds.join(",")
+  const checkoutQuantities = useMemo(
+    () =>
+      Object.fromEntries(
+        listings.map((listing) => [
+          listing.id,
+          Math.max(1, Math.floor(listing.quantity ?? 1)),
+        ]),
+      ),
+    [listings],
+  )
 
   const [shipQuote, setShipQuote] = useState<{
     shippingUsd: number
@@ -511,6 +529,14 @@ export function CheckoutClient({
     surfboardShippedSelected,
     surfboardPreview,
   ])
+
+  useEffect(() => {
+    if (!quoteError) {
+      toast.dismiss("checkout-shipping-quote")
+      return
+    }
+    toast.error(quoteError, { id: "checkout-shipping-quote", duration: 10_000 })
+  }, [quoteError])
 
   const handlePurchaseDetailsChange = useCallback((state: PurchaseDetailsState) => {
     setPurchaseDetails(state)
@@ -938,13 +964,11 @@ export function CheckoutClient({
                     Enter your shipping address above to confirm delivery.
                   </div>
                 ) : quoteLoading ? (
-                  <div className="min-h-[3.5rem] rounded-[8px] border border-neutral-200 bg-neutral-100/80 px-4 py-3.5 text-[13px] leading-relaxed text-neutral-600">
-                    Getting live carrier rates for your address…
-                  </div>
+                  <CheckoutShippingRatesSkeleton />
                 ) : offersShippingRateChoice && shipQuote?.availableShippingRates?.length ? (
                   <div className="space-y-3 rounded-[8px] border border-neutral-200 bg-white px-4 py-4">
                     <p className="text-[13px] leading-relaxed text-neutral-600">
-                      {peerCheckoutRateChoiceIntro(null, rateFamily)}
+                      {peerCheckoutRateChoiceIntro(null, rateFamily, shipQuote.availableShippingRates)}
                     </p>
                     <RadioGroup
                       value={
@@ -1005,17 +1029,15 @@ export function CheckoutClient({
               <div className="rounded-[8px] border border-neutral-200 bg-white p-4 sm:p-5">
                 <PurchaseOptions
                   listingIds={listingIds}
-                  quantities={Object.fromEntries(
-                    listings.map((listing) => [
-                      listing.id,
-                      Math.max(1, Math.floor(listing.quantity ?? 1)),
-                    ]),
-                  )}
+                  quantities={checkoutQuantities}
                   listingTitle={listingSummaryTitle}
                   price={payableTotal}
                   fulfillment={fulfillmentForApi ?? null}
                   shippingAddressId={needsShipping ? purchaseDetails.shippingAddressId : null}
                   purchaseDetailsReady={!paymentBlocked}
+                  paymentPreparing={
+                    purchaseDetails.readyToPay && paymentBlocked && !quoteError
+                  }
                   needsShipping={needsShipping}
                   offerId={offerId}
                   promoCode={appliedPromo?.code ?? null}
@@ -1026,7 +1048,10 @@ export function CheckoutClient({
                   hideStripeFooter
                   buyerEmail={buyerEmail ?? null}
                   surfboardShipped={surfboardShippedSelected}
+                  forceNewSession={forceNewSession}
                   reswellBucks={surfboardShippedSelected ? null : reswellBucksCheckout}
+                  reswellCredit={surfboardShippedSelected ? null : reswellCreditCheckout}
+                  itemSubtotalUsd={displayTotals.itemPrice}
                 />
                 <p className="mt-3 text-center text-[12px] text-neutral-500">
                   Secure payment processed by{" "}

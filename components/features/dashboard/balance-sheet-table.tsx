@@ -9,12 +9,18 @@ import { listingDetailHref } from "@/lib/listing-href"
 import type { PeerListingSection } from "@/lib/peer-listing-sections"
 import type { SellerBalanceSheetPage } from "@/lib/types/sellerBalanceSheet"
 import { balanceSheetHref } from "@/lib/utils/balance-sheet-query"
-import type { BalanceSheetSort } from "@/lib/validations/seller-balance-sheet"
+import type {
+  BalanceSheetPeriod,
+  BalanceSheetSort,
+  BalanceSheetView,
+} from "@/lib/validations/seller-balance-sheet"
 
 interface BalanceSheetTableProps {
   sheet: SellerBalanceSheetPage
   category: PeerListingSection | null
   sort: BalanceSheetSort
+  view: BalanceSheetView
+  period: BalanceSheetPeriod
 }
 
 function usd(value: number | null): string {
@@ -48,12 +54,23 @@ function pageHref(
   page: number,
   category: PeerListingSection | null,
   sort: BalanceSheetSort,
+  view: BalanceSheetView,
+  period: BalanceSheetPeriod,
 ): string {
-  return balanceSheetHref({ page, category, sort })
+  return balanceSheetHref({ page, category, sort, view, period })
 }
 
-export function BalanceSheetTable({ sheet, category, sort }: BalanceSheetTableProps) {
+export function BalanceSheetTable({
+  sheet,
+  category,
+  sort,
+  view,
+  period,
+}: BalanceSheetTableProps) {
   const missingPaidFirst = sort === "missing-paid"
+  const priceHeader = view === "active" ? "Asking" : view === "sold" ? "Sold for" : "Asking / sold"
+  const statusHeader = view === "active" ? "Listed" : view === "sold" ? "Sold" : "Status"
+
   return (
     <div className="space-y-4">
       <div className="hidden overflow-hidden rounded-xl border md:block">
@@ -61,7 +78,7 @@ export function BalanceSheetTable({ sheet, category, sort }: BalanceSheetTablePr
           <thead className="bg-muted/50 text-left text-xs text-muted-foreground">
             <tr>
               <th className="px-4 py-3 font-medium">Listing</th>
-              <th className="px-4 py-3 font-medium">Status</th>
+              <th className="px-4 py-3 font-medium">{statusHeader}</th>
               <th
                 className="px-4 py-3 text-right font-medium"
                 aria-sort={missingPaidFirst ? "other" : "none"}
@@ -70,6 +87,8 @@ export function BalanceSheetTable({ sheet, category, sort }: BalanceSheetTablePr
                   href={balanceSheetHref({
                     category,
                     sort: missingPaidFirst ? "recent" : "missing-paid",
+                    view,
+                    period,
                   })}
                   className="inline-flex items-center justify-end gap-1 hover:text-foreground"
                   aria-label={
@@ -86,7 +105,7 @@ export function BalanceSheetTable({ sheet, category, sort }: BalanceSheetTablePr
                   )}
                 </Link>
               </th>
-              <th className="px-4 py-3 text-right font-medium">Asking / sold</th>
+              <th className="px-4 py-3 text-right font-medium">{priceHeader}</th>
               <th className="px-4 py-3 text-right font-medium">Fee</th>
               <th className="px-4 py-3 text-right font-medium">Profit</th>
               <th className="w-12 px-2 py-3">
@@ -205,7 +224,7 @@ export function BalanceSheetTable({ sheet, category, sort }: BalanceSheetTablePr
           <div className="flex gap-2">
             {sheet.page > 1 ? (
               <Button asChild variant="outline" size="sm">
-                <Link href={pageHref(sheet.page - 1, category, sort)}>
+                <Link href={pageHref(sheet.page - 1, category, sort, view, period)}>
                   <ArrowLeft className="mr-1 h-4 w-4" /> Previous
                 </Link>
               </Button>
@@ -216,7 +235,7 @@ export function BalanceSheetTable({ sheet, category, sort }: BalanceSheetTablePr
             )}
             {sheet.page < sheet.totalPages ? (
               <Button asChild variant="outline" size="sm">
-                <Link href={pageHref(sheet.page + 1, category, sort)}>
+                <Link href={pageHref(sheet.page + 1, category, sort, view, period)}>
                   Next <ArrowRight className="ml-1 h-4 w-4" />
                 </Link>
               </Button>

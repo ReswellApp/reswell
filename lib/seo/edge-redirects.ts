@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server"
+import { isServerActionRequest } from "@/lib/utils/is-server-action-request"
 
 /**
  * Admin-managed 301/302 redirects (table `seo_redirects`) resolved at the edge from `proxy.ts`.
@@ -71,6 +72,8 @@ function normalizePathname(pathname: string): string {
  * (so the caller continues the normal request pipeline).
  */
 export async function resolveSeoRedirect(request: NextRequest): Promise<NextResponse | null> {
+  if (isServerActionRequest(request)) return null
+
   const { pathname, search } = request.nextUrl
   const map = await getRedirectMap()
   if (map.size === 0) return null

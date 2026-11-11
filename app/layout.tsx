@@ -79,6 +79,10 @@ export default function RootLayout({
       data-scroll-behavior="auto"
       suppressHydrationWarning
     >
+      <head>
+        <link rel="preconnect" href="https://js.stripe.com" />
+        <link rel="dns-prefetch" href="https://js.stripe.com" />
+      </head>
       <body
         className={`${stackSansText.variable} ${stackSansHeadline.variable} font-sans antialiased bg-background text-muted-foreground min-h-dvh overflow-x-clip selection:bg-slate-900/10 selection:text-foreground`}
         suppressHydrationWarning

@@ -4,7 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { formatDistanceToNow } from "date-fns"
+import { RelativeTime } from "@/components/ui/relative-time"
 import { ArrowLeft } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { authorizeRealtime } from "@/lib/supabase/realtime-auth"
@@ -27,6 +27,7 @@ import { loadCounterpartyThreads, type CounterpartyThreadsData } from "@/app/act
 import { parseReviewRequestMessageMetadata } from "@/lib/validations/review-request-message-metadata"
 import { parseMessageLocationMetadata } from "@/lib/validations/message-location-metadata"
 import { formatMessageMediaPreviewText } from "@/lib/utils/message-media-preview-text"
+import { formatInboxTimestamp } from "@/lib/utils/message-display-time"
 
 function formatThreadPreview(
   lastMessage: InboxConversationRow["messages"][number] | undefined,
@@ -134,7 +135,7 @@ export function CounterpartyThreadsClient({
   }, [supabase, currentUserId, otherUserId])
 
   const groupedShell =
-    "overflow-hidden rounded-[20px] border border-border/70 bg-card shadow-[0_1px_2px_rgba(17,17,17,0.04)] dark:shadow-none dark:border-border"
+    "overflow-hidden rounded-xl bg-muted/40 dark:bg-muted/20"
 
   return (
     <main
@@ -239,12 +240,11 @@ export function CounterpartyThreadsClient({
                         {title}
                       </p>
                       {activityMs > 0 ? (
-                        <time
-                          className="shrink-0 text-[12px] tabular-nums text-muted-foreground"
-                          dateTime={new Date(activityMs).toISOString()}
-                        >
-                          {formatDistanceToNow(new Date(activityMs), { addSuffix: true })}
-                        </time>
+                        <RelativeTime
+                          iso={new Date(activityMs).toISOString()}
+                          formatLabel={formatInboxTimestamp}
+                          className="shrink-0 text-[12px] text-muted-foreground"
+                        />
                       ) : null}
                     </div>
                     <div className="mt-1 flex items-start justify-between gap-2">
@@ -257,7 +257,7 @@ export function CounterpartyThreadsClient({
                         {formatThreadPreview(lastMessage, currentUserId)}
                       </p>
                       {unread > 0 ? (
-                        <span className="mt-0.5 flex h-[20px] min-w-[20px] shrink-0 items-center justify-center rounded-full bg-foreground px-1.5 text-[11px] font-semibold tabular-nums leading-none text-background">
+                        <span className="mt-0.5 flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full bg-listingHeart px-1 text-[11px] font-semibold tabular-nums leading-none text-white">
                           {unread > 99 ? "99+" : unread}
                         </span>
                       ) : null}

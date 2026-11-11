@@ -45,6 +45,7 @@ describe("root-level page-enter wiring", () => {
     assert.match(src, /isCategoryBrowsePathname/)
     assert.match(src, /BoardsBrowsePageSkeleton/)
     assert.match(src, /from ["']@\/lib\/site-category-browse-paths["']/)
+    assert.match(src, /showLocationToolbar=\{pathname === ["']\/boards["']\}/)
   })
 
   it("does not fade page-enter from opacity 0", () => {

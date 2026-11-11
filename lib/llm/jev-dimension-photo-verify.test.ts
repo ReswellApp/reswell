@@ -75,6 +75,7 @@ describe("Jev dimension-photo verify", () => {
               photo: { type: "choice", choice: "accept" },
               dims: { type: "choice", choice: "good" },
               volume_should_be_null: { type: "boolean", probability: 0.88 },
+              match_ready: { type: "boolean", probability: 0.94 },
               next_action: { type: "choice", choice: "clear_volume" },
             },
           }) as never,
@@ -86,6 +87,7 @@ describe("Jev dimension-photo verify", () => {
     assert.equal(review.dimsVerdict, "good")
     assert.equal(review.nextAction, "clear_volume")
     assert.equal(review.volumeNullProbability, 0.88)
+    assert.equal(review.matchReadyProbability, 0.94)
   })
 
   it("does not invent verdicts when Jev throws", async () => {
@@ -134,6 +136,7 @@ describe("Jev dimension-photo verify", () => {
               photo: { type: "choice", choice: "reject" },
               dims: { type: "choice", choice: "bad" },
               volume_should_be_null: { type: "boolean", probability: 0.2 },
+              match_ready: { type: "boolean", probability: 0.05 },
               next_action: { type: "choice", choice: "retry_with_examples" },
             },
           }) as never,

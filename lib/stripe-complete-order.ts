@@ -27,6 +27,9 @@ import {
 } from "@/lib/services/applyAcceptedOfferToPeerCheckoutListings"
 import { validateAcceptedOfferForPaymentIntent } from "@/lib/services/acceptedOfferCheckout"
 import { pendingSaleFeeClause } from "@/lib/seller-fees"
+import { maybeAwardBuyerReswellCredit } from "@/lib/services/reswellCreditAwards"
+import { finalizeReswellCreditHoldForOrder } from "@/lib/services/reswellCreditCheckout"
+import { computeMaxReswellCreditApplyCents } from "@/lib/reswell-credit-rates"
 import {
   dbMarkListingsSoldViaCheckout,
   dbRepairPeerListingsSoldViaCheckout,
@@ -107,6 +110,7 @@ import {
 } from "@/lib/services/adminTerminalSale"
 import { syncAdminTerminalGuestToCrm } from "@/lib/services/crmAdminTerminalGuest"
 import { isSellerSaleTipPaymentIntent } from "@/lib/stripe/seller-sale-tip-intent"
+import { completeCheckoutSessionForPaymentIntent } from "@/lib/services/checkoutSessionPayment"
 
 export type StripeCompleteOrderResult =
   | { ok: true; orderId: string; alreadyProcessed?: boolean }
@@ -622,6 +626,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       // Order row can exist while mark-sold failed (e.g. undeployed last_sold_at).
       // Repair before acknowledging alreadyProcessed so the listing cannot be bought again.
       await dbRepairPeerListingsSoldViaCheckout(serviceSupabase, recoveryListingIds)
+      await completeCheckoutSessionForPaymentIntent(serviceSupabase, pi, existing.id)
       await emitPurchaseSuccessfulKlaviyoForOrderId(serviceSupabase, existing.id)
       if (!isAdminTerminalSale) {
         void sendPostPurchaseReviewInvite(existing.id)
@@ -641,6 +646,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       return recovered
     }
     await dbRepairPeerListingsSoldViaCheckout(serviceSupabase, recoveryListingIds)
+    await completeCheckoutSessionForPaymentIntent(serviceSupabase, pi, existing.id)
     await emitPurchaseSuccessfulKlaviyoForOrderId(serviceSupabase, existing.id)
     if (!isAdminTerminalSale) {
       void sendPostPurchaseReviewInvite(existing.id)
@@ -982,12 +988,24 @@ export async function completeMarketplaceOrderFromPaymentIntent(
   const promoCodeFromMeta = pi.metadata.promo_code?.trim() || null
   const promoDiscountCentsRaw = pi.metadata.promo_discount_cents?.trim()
   const promoDiscountPercentRaw = pi.metadata.promo_discount_percent?.trim()
+  const reswellCreditCentsRaw = pi.metadata.reswell_credit_cents?.trim()
   const promoKind =
     parseCheckoutPromoKind(pi.metadata.promo_kind) ??
     (promoCodeId ? await inferCheckoutPromoKind(promoCodeId) : null)
   let promoDiscountUsd = 0
   let promoDiscountPercent = 0
   let expectedPromoTotal = 0
+  let reswellCreditCents = 0
+
+  if (reswellCreditCentsRaw) {
+    if (!/^\d+$/.test(reswellCreditCentsRaw)) {
+      return { ok: false, error: "Invalid Reswell Credit metadata", status: 400 }
+    }
+    reswellCreditCents = parseInt(reswellCreditCentsRaw, 10)
+    if (!Number.isFinite(reswellCreditCents) || reswellCreditCents < 0) {
+      return { ok: false, error: "Invalid Reswell Credit metadata", status: 400 }
+    }
+  }
 
   if (promoCodeId) {
     if (!promoDiscountCentsRaw || !/^\d+$/.test(promoDiscountCentsRaw)) {
@@ -1037,8 +1055,9 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     expectedPromoTotal = amounts.totalUsd
 
     const expectedPromoCents = Math.round(expectedPromoTotal * 100)
-    const metaCents = hasMetaAmountCents ? parseInt(metaAmountCentsRaw!, 10) : expectedPromoCents
-    if (Math.abs(metaCents - expectedPromoCents) > 1) {
+    const expectedWithCreditCents = Math.max(50, expectedPromoCents - reswellCreditCents)
+    const metaCents = hasMetaAmountCents ? parseInt(metaAmountCentsRaw!, 10) : expectedWithCreditCents
+    if (Math.abs(metaCents - expectedWithCreditCents) > 1) {
       return { ok: false, error: "Promo discount does not match order", status: 400 }
     }
     if (Math.abs(Math.round(promoDiscountUsd * 100) - Math.round(expectedDiscountUsd * 100)) > 1) {
@@ -1046,11 +1065,24 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     }
   }
 
+  if (reswellCreditCents > 0) {
+    const maxCredit = computeMaxReswellCreditApplyCents({
+      itemSubtotalUsd: bundle.totalItemPriceUsd,
+      shippingUsd,
+      promoDiscountUsd,
+      availableCreditCents: reswellCreditCents,
+    })
+    if (reswellCreditCents > maxCredit + 1) {
+      return { ok: false, error: "Reswell Credit exceeds checkout cap", status: 400 }
+    }
+  }
+
+  const baseExpectedCents = promoCodeId
+    ? Math.round(expectedPromoTotal * 100)
+    : Math.round((bundle.totalItemPriceUsd + shippingUsd) * 100)
   const expectedCents = hasMetaAmountCents
     ? parseInt(metaAmountCentsRaw!, 10)
-    : promoCodeId
-      ? Math.round(expectedPromoTotal * 100)
-      : Math.round((bundle.totalItemPriceUsd + shippingUsd) * 100)
+    : Math.max(50, baseExpectedCents - reswellCreditCents)
 
   if (pi.amount !== expectedCents) {
     return { ok: false, error: "Payment amount does not match listing", status: 400 }
@@ -1399,6 +1431,8 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     }
   }
 
+  await completeCheckoutSessionForPaymentIntent(serviceSupabase, pi, purchase.id)
+
   for (const line of bundle.lines) {
     const listing = listingsOrdered.find((row) => row.id === line.listingId)
     if (!listing || !isShopifyManagedListing(listing)) continue
@@ -1537,6 +1571,29 @@ export async function completeMarketplaceOrderFromPaymentIntent(
 
   if (buyerId) {
     void sendPostPurchaseReviewInvite(purchase.id)
+  }
+
+  if (reswellCreditCents > 0) {
+    const finalized = await finalizeReswellCreditHoldForOrder({
+      paymentIntentId: piId,
+      orderId: purchase.id,
+      expectedCreditCents: reswellCreditCents,
+    })
+    if (!finalized.ok) {
+      console.error("[stripe-complete-order] reswell credit finalize", finalized.error, {
+        orderId: purchase.id,
+        pi: piId,
+      })
+    }
+  }
+
+  if (buyerId) {
+    void maybeAwardBuyerReswellCredit({
+      supabase: serviceSupabase,
+      buyerId,
+      orderId: purchase.id,
+      itemSubtotalUsd: bundle.totalItemPriceUsd,
+    })
   }
 
   if (isAdminTerminalSale) {

@@ -40,6 +40,23 @@ describe("listingStorageUrlsToRemove", () => {
     )
     assert.deepEqual(listingStorageUrlsToRemove([THUMB], [FULL]), [])
   })
+
+  it("keeps siblings when the keep URL is a /media proxy for the same object", () => {
+    assert.deepEqual(
+      listingStorageUrlsToRemove([FULL, THUMB], ["/media/listings/user/1791512250743-photo-full.webp"]),
+      [],
+    )
+  })
+
+  it("keeps siblings when the keep URL is an absolute site media URL", () => {
+    assert.deepEqual(
+      listingStorageUrlsToRemove(
+        [FULL],
+        ["https://www.reswell.app/media/listings/user/1791512250743-photo-thumb.webp"],
+      ),
+      [],
+    )
+  })
 })
 
 describe("listingImageStandInObjectPaths", () => {

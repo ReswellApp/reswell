@@ -168,7 +168,28 @@ export async function payMobileCheckoutService(
   })
   const result = await readJson(response)
   if (result.status !== 200) {
-    return { ok: false, status: result.status, error: errorMessage(result.body, "Could not start payment") }
+    const alreadyPurchased =
+      result.body.code === "already_purchased" && typeof result.body.orderId === "string"
+    return {
+      ok: false,
+      status: result.status,
+      error: alreadyPurchased
+        ? "You already purchased this item. Open Purchases instead of paying again."
+        : errorMessage(result.body, "Could not start payment"),
+    }
+  }
+  if (result.body.alreadyPaid === true && typeof result.body.paymentIntentId === "string") {
+    const finalized = await finalizeMobileCheckoutService(supabase, user, {
+      payment_intent_id: result.body.paymentIntentId,
+    })
+    if (finalized.ok) {
+      return { ok: false, status: 409, error: "You already purchased this item. Open Purchases instead of paying again." }
+    }
+    return {
+      ok: false,
+      status: 409,
+      error: "Payment already succeeded. Open Purchases — do not pay again.",
+    }
   }
   const total = Number(result.body.totalUsd)
   const shipping = Number(result.body.shippingUsd)

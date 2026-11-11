@@ -41,3 +41,8 @@ export function cartItemCountFromQuantities(rows: { quantity?: number | null }[]
     0,
   )
 }
+
+/** Listing PDP add-to-cart label after the buyer already has this item. */
+export function listingDetailCartButtonLabel(inCart: boolean): "View cart" | "Add to cart" {
+  return inCart ? "View cart" : "Add to cart"
+}

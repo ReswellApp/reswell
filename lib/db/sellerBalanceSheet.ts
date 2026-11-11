@@ -6,10 +6,15 @@ import type {
   SellerBalanceSheetSummary,
 } from "@/lib/types/sellerBalanceSheet"
 import type { PeerListingSection } from "@/lib/peer-listing-sections"
-import { balanceSheetEntryOrder } from "@/lib/utils/balance-sheet-query"
+import {
+  balanceSheetEntryOrder,
+  balanceSheetPeriodStart,
+} from "@/lib/utils/balance-sheet-query"
 import type { UpdateListingAcquisitionInput } from "@/lib/validations/listing-acquisition"
 import type {
+  BalanceSheetPeriod,
   BalanceSheetSort,
+  BalanceSheetView,
   RemoveBalanceSheetItemInput,
 } from "@/lib/validations/seller-balance-sheet"
 
@@ -102,9 +107,12 @@ export async function getSellerBalanceSheetPage(
   pageSize: number,
   listingSection: PeerListingSection | null,
   sort: BalanceSheetSort,
+  view: BalanceSheetView = "all",
+  period: BalanceSheetPeriod = "all",
 ): Promise<SellerBalanceSheetPage> {
   const from = (page - 1) * pageSize
   const to = from + pageSize - 1
+  const soldSinceIso = balanceSheetPeriodStart(period)?.toISOString() ?? null
 
   let entriesQuery = supabase
     .from("visible_seller_balance_sheet_entries")
@@ -113,6 +121,19 @@ export async function getSellerBalanceSheetPage(
 
   if (listingSection) {
     entriesQuery = entriesQuery.eq("listing_section", listingSection)
+  }
+
+  if (view === "active") {
+    entriesQuery = entriesQuery.eq("sale_source", "inventory")
+  } else if (view === "sold") {
+    entriesQuery = entriesQuery.neq("sale_source", "inventory")
+    if (soldSinceIso) {
+      entriesQuery = entriesQuery.gte("sold_at", soldSinceIso)
+    }
+  } else if (soldSinceIso) {
+    entriesQuery = entriesQuery.or(
+      `sale_source.eq.inventory,sold_at.gte.${soldSinceIso}`,
+    )
   }
 
   const orderedEntries = balanceSheetEntryOrder(sort).reduce(
@@ -124,11 +145,19 @@ export async function getSellerBalanceSheetPage(
     entriesQuery,
   )
 
+  const summaryRequest =
+    period === "all"
+      ? supabase.rpc("get_my_balance_sheet_summary_by_section", {
+          p_listing_section: listingSection,
+        })
+      : supabase.rpc("get_my_balance_sheet_summary_filtered", {
+          p_listing_section: listingSection,
+          p_period: period,
+        })
+
   const [entriesResult, summaryResult] = await Promise.all([
     orderedEntries.range(from, to),
-    supabase.rpc("get_my_balance_sheet_summary_by_section", {
-      p_listing_section: listingSection,
-    }),
+    summaryRequest,
   ])
 
   if (entriesResult.error) throw entriesResult.error

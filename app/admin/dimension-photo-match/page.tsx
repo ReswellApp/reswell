@@ -4,7 +4,7 @@ import { DimensionPhotoMatchAdminClient } from "@/components/features/admin/dime
 export const metadata = privatePageMetadata({
   title: "Dimension photo match — Reswell admin",
   description:
-    "Train and review surfboard dimension photo matching (length × width × thickness only). Rate Good / Close / Bad so the vision model learns from labeled listing photos.",
+    "Train and review surfboard dimension photo matching. Ratings are indexed and retrieved into the next vision call (Good / Close / Bad / Exclude).",
   path: "/admin/dimension-photo-match",
 })
 

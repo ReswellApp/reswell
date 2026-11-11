@@ -3,6 +3,13 @@
 export const PUBLIC_MARKETPLACE_EDGE_CACHE_CONTROL =
   "public, s-maxage=3600, stale-while-revalidate=86400"
 
+/**
+ * Browser lifetime for those same documents. The edge may keep HTML (`s-maxage`),
+ * but the browser must revalidate so a refresh after a deploy gets new chunk hashes
+ * instead of a cached document pointing at deleted `/_next/static` files.
+ */
+export const BROWSER_HTML_CACHE_CONTROL = "public, max-age=0, must-revalidate"
+
 export function shouldAttachDeviceCookieOnDocument(isPublicMarketplaceHtml: boolean): boolean {
   return !isPublicMarketplaceHtml
 }

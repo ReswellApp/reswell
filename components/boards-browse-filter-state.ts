@@ -15,6 +15,11 @@ import {
 } from "@/lib/marketplace-slug-metadata"
 import { normalizeBoardBrowseRadius } from "@/lib/boards-browse-location"
 import {
+  applyBoardsBrowseLocationRadiusParams,
+  isBoardsBrowseHomePreference,
+  markBoardsBrowseHomeDismissed,
+} from "@/lib/boards-browse-home"
+import {
   browseFacetRangeValue,
   logBrowseFacetClick,
 } from "@/lib/log-browse-button-click"
@@ -34,6 +39,7 @@ const FACET_OWNED_KEYS = [
   "lng",
   "radius",
   "shipping",
+  "pickup",
 ] as const
 
 type NavigateMutator = (params: URLSearchParams) => void
@@ -54,6 +60,8 @@ export type BoardsFilterState = {
   /** Number of distinct active facet filters (for the "Filter" badge). */
   activeCount: number
   hasAnyActive: boolean
+  /** Saved home area is ranking nearby boards (not a hard radius lock). */
+  homePreference: boolean
   toggleMulti: (key: string, value: string) => void
   setSingle: (key: string, value: string | null) => void
   setBrand: (next: { brand: string; brandId?: string; model?: string; brandModelId?: string }) => void
@@ -61,7 +69,10 @@ export type BoardsFilterState = {
   setPriceRange: (min: string | null, max: string | null) => void
   setLocationQuery: (query: string) => void
   setLocationCoords: (label: string, lat: number, lng: number) => void
-  setRadius: (value: string | null) => void
+  setRadius: (
+    value: string | null,
+    geo?: { label: string; lat?: number; lng?: number },
+  ) => void
   setShippingAvailable: (on: boolean) => void
   clearKey: (key: string) => void
   clearAll: () => void
@@ -123,6 +134,7 @@ export function useBoardsFilterState(
   const location = searchParams.get("location") ?? ""
   const radius = normalizeBoardBrowseRadius(searchParams.get("radius"))
   const shippingAvailable = isBoardsBrowseShippingAvailableParam(searchParams.get("shipping"))
+  const homePreference = isBoardsBrowseHomePreference(searchParams.get("home"))
 
   const toggleMulti = useCallback(
     (key: string, value: string) => {
@@ -264,17 +276,9 @@ export function useBoardsFilterState(
         detail: trimmed ? "set" : "clear",
       })
       navigate((params) => {
-        if (trimmed) {
-          params.set("location", trimmed)
-          // Text-only updates must not keep a previous place's coordinates.
-          params.delete("lat")
-          params.delete("lng")
-        } else {
-          params.delete("location")
-          params.delete("lat")
-          params.delete("lng")
-          params.delete("radius")
-        }
+        applyBoardsBrowseLocationRadiusParams(params, {
+          location: trimmed || null,
+        })
       })
     },
     [navigate],
@@ -289,16 +293,23 @@ export function useBoardsFilterState(
         detail: "set",
       })
       navigate((params) => {
-        params.set("location", label)
-        params.set("lat", String(lat))
-        params.set("lng", String(lng))
+        const wasHomePreference = isBoardsBrowseHomePreference(params.get("home"))
+        applyBoardsBrowseLocationRadiusParams(params, {
+          location: label,
+          lat,
+          lng,
+        })
+        if (wasHomePreference) params.delete("radius")
       })
     },
     [navigate],
   )
 
   const setRadius = useCallback(
-    (value: string | null) => {
+    (
+      value: string | null,
+      geo?: { label: string; lat?: number; lng?: number },
+    ) => {
       const trimmed = value?.trim() ?? ""
       logBrowseFacetClick({
         category: "boards",
@@ -307,8 +318,12 @@ export function useBoardsFilterState(
         detail: trimmed ? "set" : "clear",
       })
       navigate((params) => {
-        if (trimmed) params.set("radius", trimmed)
-        else params.delete("radius")
+        applyBoardsBrowseLocationRadiusParams(params, {
+          location: geo?.label,
+          lat: geo?.lat,
+          lng: geo?.lng,
+          radius: trimmed || null,
+        })
       })
     },
     [navigate],
@@ -335,6 +350,7 @@ export function useBoardsFilterState(
   const clearAll = useCallback(() => {
     navigate((params) => {
       for (const key of FACET_OWNED_KEYS) params.delete(key)
+      markBoardsBrowseHomeDismissed(params)
     })
   }, [navigate])
 
@@ -350,8 +366,10 @@ export function useBoardsFilterState(
     if (brand.trim() || brandId.trim()) n += 1
     if (model.trim() || brandModelId.trim()) n += 1
     if (minPrice.trim() || maxPrice.trim()) n += 1
-    if (location.trim()) n += 1
-    if (radius !== "any") n += 1
+    if (!homePreference) {
+      if (location.trim()) n += 1
+      if (radius !== "any") n += 1
+    }
     if (shippingAvailable) n += 1
     return n
   }, [
@@ -365,6 +383,7 @@ export function useBoardsFilterState(
     location,
     radius,
     shippingAvailable,
+    homePreference,
   ])
 
   return {
@@ -380,6 +399,7 @@ export function useBoardsFilterState(
     radius,
     shippingAvailable,
     activeCount,
+    homePreference,
     hasAnyActive:
       hasAnyFacetSelection(selections) ||
       Boolean(
@@ -391,7 +411,8 @@ export function useBoardsFilterState(
           maxPrice.trim() ||
           location.trim() ||
           radius !== "any" ||
-          shippingAvailable,
+          shippingAvailable ||
+          homePreference,
       ),
     toggleMulti,
     setSingle,

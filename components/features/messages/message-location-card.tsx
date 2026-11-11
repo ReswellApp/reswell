@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, type ReactNode } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { ExternalLink, MapPinned } from "lucide-react"
@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 interface MessageLocationCardProps {
   payload: MessageLocationPayload
-  formattedTime: string
+  formattedTime: ReactNode
   /** First listing image from the thread (active listing banner). Same-origin `/media/listings/` or trusted URL. */
   listingThumbnailSrc: string | null
   listingImageAlt: string

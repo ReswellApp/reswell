@@ -91,7 +91,26 @@ export function SupportHubHome({
 
   return (
     <div className="space-y-6">
-      {signedIn && current ? <SupportCurrentRequest item={current} /> : null}
+      {signedIn && current ? (
+        <div className="space-y-3">
+          <div className="flex items-end justify-between gap-3 px-0.5">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                Your conversation
+              </p>
+              <p className="mt-1 text-[15px] font-semibold tracking-tight text-foreground">
+                Message Reswell Help like a chat
+              </p>
+            </div>
+            {openCases.length > 1 ? (
+              <p className="pb-0.5 text-[12px] tabular-nums text-muted-foreground">
+                {openCases.length} open
+              </p>
+            ) : null}
+          </div>
+          <SupportCurrentRequest item={current} />
+        </div>
+      ) : null}
       {collapseNewRequest || atLimit ? null : newRequestSection}
       {morePanel}
     </div>

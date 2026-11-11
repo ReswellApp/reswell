@@ -266,8 +266,8 @@ export const accountsHelpArticles: HelpArticle[] = [
                 title: "Open Earnings",
                 body: (
                   <>
-                    Go to {helpLink("/dashboard/earnings", "Earnings")}. Your ready balance appears
-                    under <strong>Balance</strong>.
+                    Go to {helpLink("/dashboard/earnings?view=available", "Available")} on Earnings.
+                    Your ready balance is at the top.
                   </>
                 ),
               },

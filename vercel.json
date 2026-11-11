@@ -32,7 +32,7 @@
     },
     {
       "path": "/api/cron/klaviyo-catalog-sync",
-      "schedule": "*/10 * * * *"
+      "schedule": "6-56/10 * * * *"
     },
     {
       "path": "/api/cron/seller-message-inactivity",
@@ -64,11 +64,11 @@
     },
     {
       "path": "/api/cron/board-buy-sla",
-      "schedule": "*/5 * * * *"
+      "schedule": "1-56/5 * * * *"
     },
     {
       "path": "/api/cron/shopify-sync",
-      "schedule": "*/5 * * * *"
+      "schedule": "2-57/5 * * * *"
     },
     {
       "path": "/api/cron/google-merchant-refresh",
@@ -76,11 +76,11 @@
     },
     {
       "path": "/api/cron/elasticsearch-reindex",
-      "schedule": "20 4,16 * * *"
+      "schedule": "48 4,16 * * *"
     },
     {
       "path": "/api/cron/sync-open-carrier-tracking",
-      "schedule": "*/15 * * * *"
+      "schedule": "4-49/15 * * * *"
     },
     {
       "path": "/api/cron/release-carrier-delivered-payouts",
@@ -88,7 +88,7 @@
     },
     {
       "path": "/api/cron/sync-open-return-carrier-tracking",
-      "schedule": "*/15 * * * *"
+      "schedule": "9-54/15 * * * *"
     },
     {
       "path": "/api/cron/refund-after-return-delivered",
@@ -128,7 +128,7 @@
     },
     {
       "path": "/api/cron/support-case-backfill",
-      "schedule": "*/15 * * * *"
+      "schedule": "14-59/15 * * * *"
     },
     {
       "path": "/api/cron/auto-price-drop",
@@ -136,19 +136,19 @@
     },
     {
       "path": "/api/cron/live-chat-escalate-unanswered",
-      "schedule": "40 * * * *"
+      "schedule": "45 * * * *"
     },
     {
       "path": "/api/cron/notification-fanout",
-      "schedule": "*/5 * * * *"
+      "schedule": "3-58/5 * * * *"
     },
     {
       "path": "/api/cron/listing-image-storage-drift",
-      "schedule": "15 14 * * *"
+      "schedule": "47 14 * * *"
     },
     {
       "path": "/api/cron/surfboard-dimension-photo-queue",
-      "schedule": "20 */4 * * *"
+      "schedule": "42 */4 * * *"
     }
   ]
 }

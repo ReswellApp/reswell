@@ -1,8 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type {
   SurfboardDimensionPhotoJevReview,
+  SurfboardDimensionPhotoMemoryKind,
   SurfboardDimensionPhotoRating,
   SurfboardDimensionPhotoRefSource,
+  SurfboardDimensionPhotoStampBox,
   SurfboardDimensionPhotoSurface,
 } from "@/lib/validations/surfboardDimensionPhoto"
 import { SURFBOARD_DIMENSION_PHOTO_MATCH_TARGET } from "@/lib/validations/surfboardDimensionPhoto"
@@ -84,6 +86,10 @@ export type SurfboardDimensionPhotoMatchRow = {
   /** When set, do not rematch/re-scan; used as exclude memory. */
   excludedAt: string | null
   excludedBy: string | null
+  /** Admin-picked stamp photo when the model chose the wrong gallery frame. */
+  correctedSourceImageUrl: string | null
+  /** Normalized stamp crop from the picker, when returned. */
+  stampBox: SurfboardDimensionPhotoStampBox | null
   createdAt: string
 }
 
@@ -117,13 +123,70 @@ export type SurfboardDimensionPhotoMatchStats = {
   overallRated: number
   overallGood: number
   excluded: number
+  /** Below the 90% gate — hidden from Unrated until an admin rates them. */
+  withheld: number
+  /** Rows in the retrieval index the LLM reads on the next match. */
+  memoryIndexCount: number
 }
 
 const REF_SELECT =
   "id, listing_id, image_url, thumbnail_url, board_length, board_width_inches, board_thickness_inches, board_volume_l, brand_text, model_text, brand_id, brand_model_id, dimensions_raw, source, active, created_at, updated_at"
 
 const MATCH_SELECT =
-  "id, occurred_at, surface, input_preview, source_image_url, predicted_length, predicted_width, predicted_thickness, predicted_volume, predicted_brand, predicted_model, predicted_confidence, predicted_summary, jev_review, reference_ids, references_preview, match_rating, photo_rating, dims_rating, corrected_length, corrected_width, corrected_thickness, corrected_volume, corrected_brand, corrected_model, rating_note, rated_by, rated_at, promoted_ref_id, listing_id, prior_match_id, excluded_at, excluded_by, created_at"
+  "id, occurred_at, surface, input_preview, source_image_url, predicted_length, predicted_width, predicted_thickness, predicted_volume, predicted_brand, predicted_model, predicted_confidence, predicted_summary, jev_review, reference_ids, references_preview, match_rating, photo_rating, dims_rating, corrected_length, corrected_width, corrected_thickness, corrected_volume, corrected_brand, corrected_model, rating_note, rated_by, rated_at, promoted_ref_id, listing_id, prior_match_id, excluded_at, excluded_by, corrected_source_image_url, stamp_box, created_at"
+
+const MEMORY_INDEX_SELECT =
+  "id, match_id, ref_id, kind, failure_mode, stamp_style, length_band, image_url, phash, caption, predicted_length, predicted_width, predicted_thickness, predicted_volume, actual_length, actual_width, actual_thickness, actual_volume, rating_note, active, created_at, updated_at"
+
+export type SurfboardDimensionPhotoMemoryIndexRow = {
+  id: string
+  matchId: string
+  refId: string | null
+  kind: SurfboardDimensionPhotoMemoryKind
+  failureMode: string | null
+  stampStyle: string | null
+  lengthBand: string | null
+  imageUrl: string
+  phash: string | null
+  caption: string
+  predictedLength: string | null
+  predictedWidth: string | null
+  predictedThickness: string | null
+  predictedVolume: string | null
+  actualLength: string | null
+  actualWidth: string | null
+  actualThickness: string | null
+  actualVolume: string | null
+  ratingNote: string | null
+  active: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+function parseStampBox(raw: unknown): SurfboardDimensionPhotoStampBox | null {
+  if (!raw || typeof raw !== "object") return null
+  const row = raw as Record<string, unknown>
+  const num = (value: unknown): number | null => {
+    const n = typeof value === "number" ? value : typeof value === "string" ? Number(value) : NaN
+    return Number.isFinite(n) ? n : null
+  }
+  const x = num(row.x)
+  const y = num(row.y)
+  const width = num(row.width)
+  const height = num(row.height)
+  if (x == null || y == null || width == null || height == null) return null
+  if (width < 0.04 || height < 0.04) return null
+  const box = {
+    x: Math.min(0.96, Math.max(0, x)),
+    y: Math.min(0.96, Math.max(0, y)),
+    width: Math.min(1, Math.max(0.04, width)),
+    height: Math.min(1, Math.max(0.04, height)),
+  }
+  if (box.x + box.width > 1) box.width = 1 - box.x
+  if (box.y + box.height > 1) box.height = 1 - box.y
+  if (box.width < 0.04 || box.height < 0.04) return null
+  return box
+}
 
 function parseJevReview(raw: unknown): SurfboardDimensionPhotoJevReview | null {
   if (!raw || typeof raw !== "object") return null
@@ -147,14 +210,20 @@ function parseJevReview(raw: unknown): SurfboardDimensionPhotoJevReview | null {
     typeof row.volumeNullProbability === "number" && Number.isFinite(row.volumeNullProbability)
       ? row.volumeNullProbability
       : null
+  const matchReadyProbability =
+    typeof row.matchReadyProbability === "number" && Number.isFinite(row.matchReadyProbability)
+      ? row.matchReadyProbability
+      : null
   return {
     source,
     photoVerdict,
     dimsVerdict,
     volumeNullProbability,
+    matchReadyProbability,
     volumeCleared: Boolean(row.volumeCleared),
     nextAction,
     retriedWithExamples: Boolean(row.retriedWithExamples),
+    withheldFromReview: Boolean(row.withheldFromReview),
     reason: asString(row.reason) ?? "",
   }
 }
@@ -276,7 +345,36 @@ function mapMatch(raw: Record<string, unknown>): SurfboardDimensionPhotoMatchRow
     priorMatchId: asString(raw.prior_match_id),
     excludedAt: asString(raw.excluded_at),
     excludedBy: asString(raw.excluded_by),
+    correctedSourceImageUrl: asString(raw.corrected_source_image_url),
+    stampBox: parseStampBox(raw.stamp_box),
     createdAt: String(raw.created_at ?? ""),
+  }
+}
+
+function mapMemoryIndex(raw: Record<string, unknown>): SurfboardDimensionPhotoMemoryIndexRow {
+  return {
+    id: String(raw.id),
+    matchId: String(raw.match_id ?? ""),
+    refId: asString(raw.ref_id),
+    kind: (asString(raw.kind) ?? "photo_good") as SurfboardDimensionPhotoMemoryKind,
+    failureMode: asString(raw.failure_mode),
+    stampStyle: asString(raw.stamp_style),
+    lengthBand: asString(raw.length_band),
+    imageUrl: String(raw.image_url ?? ""),
+    phash: asString(raw.phash),
+    caption: String(raw.caption ?? ""),
+    predictedLength: asString(raw.predicted_length),
+    predictedWidth: asString(raw.predicted_width),
+    predictedThickness: asString(raw.predicted_thickness),
+    predictedVolume: asString(raw.predicted_volume),
+    actualLength: asString(raw.actual_length),
+    actualWidth: asString(raw.actual_width),
+    actualThickness: asString(raw.actual_thickness),
+    actualVolume: asString(raw.actual_volume),
+    ratingNote: asString(raw.rating_note),
+    active: raw.active !== false,
+    createdAt: String(raw.created_at ?? ""),
+    updatedAt: String(raw.updated_at ?? ""),
   }
 }
 
@@ -512,6 +610,7 @@ export async function insertSurfboardDimensionPhotoMatch(
     referencesPreview?: SurfboardDimensionPhotoRefPreview[]
     listingId?: string | null
     priorMatchId?: string | null
+    stampBox?: SurfboardDimensionPhotoStampBox | null
   },
 ): Promise<{ data: SurfboardDimensionPhotoMatchRow | null; error: Error | null }> {
   const { data, error } = await service
@@ -520,6 +619,7 @@ export async function insertSurfboardDimensionPhotoMatch(
       surface: input.surface,
       input_preview: input.inputPreview,
       source_image_url: input.sourceImageUrl?.trim() || null,
+      stamp_box: input.stampBox ?? null,
       predicted_length: input.predictedLength ?? null,
       predicted_width: input.predictedWidth ?? null,
       predicted_thickness: input.predictedThickness ?? null,
@@ -652,7 +752,7 @@ export async function listDimensionPhotoRematchCandidates(
   return out
 }
 
-/** Unrated (photo or dims still null), not excluded — used by the queue cron. */
+/** Unrated (photo or dims still null), not excluded / not confidence-withheld — queue cron. */
 export async function countUnratedSurfboardDimensionPhotoMatches(
   service: SupabaseClient,
   fromIso: string,
@@ -663,6 +763,8 @@ export async function countUnratedSurfboardDimensionPhotoMatches(
     .gte("occurred_at", fromIso)
     .is("excluded_at", null)
     .or("photo_rating.is.null,dims_rating.is.null")
+    // Hide rows the pipeline withheld (<90% match_ready / rejected).
+    .or("jev_review.is.null,jev_review->>withheldFromReview.is.null,jev_review->>withheldFromReview.neq.true")
 
   if (error) {
     console.error("[surfboardDimensionPhoto] unrated count failed:", error.message)
@@ -675,7 +777,7 @@ export async function listSurfboardDimensionPhotoMatches(
   service: SupabaseClient,
   options: {
     fromIso: string
-    rating?: "unrated" | "good" | "close" | "bad" | "excluded" | "all"
+    rating?: "unrated" | "good" | "close" | "bad" | "excluded" | "withheld" | "all"
     surface?: "all" | SurfboardDimensionPhotoSurface
     limit?: number
     offset?: number
@@ -696,8 +798,15 @@ export async function listSurfboardDimensionPhotoMatches(
 
   if (options.rating === "excluded") {
     query = query.not("excluded_at", "is", null)
+  } else if (options.rating === "withheld") {
+    query = query.is("excluded_at", null)
+    query = query.eq("jev_review->>withheldFromReview", "true")
   } else if (options.rating !== "all") {
     query = query.is("excluded_at", null)
+    // Confidence gate: do not show withheld scan markers in Unrated/Good/Close/Bad.
+    query = query.or(
+      "jev_review.is.null,jev_review->>withheldFromReview.is.null,jev_review->>withheldFromReview.neq.true",
+    )
   }
 
   if (options.rating === "unrated") {
@@ -760,12 +869,13 @@ export async function rateSurfboardDimensionPhotoMatch(
     correctedWidth?: string | null
     correctedThickness?: string | null
     correctedVolume?: string | null
+    correctedSourceImageUrl?: string | null
     promotedRefId?: string | null
   },
 ): Promise<{ data: SurfboardDimensionPhotoMatchRow | null; error: Error | null }> {
   const { data: existing, error: existingError } = await service
     .from("surfboard_dimension_photo_matches")
-    .select("photo_rating, dims_rating, match_rating")
+    .select("photo_rating, dims_rating, match_rating, jev_review")
     .eq("id", id)
     .maybeSingle()
   if (existingError) return { data: null, error: new Error(existingError.message) }
@@ -812,7 +922,20 @@ export async function rateSurfboardDimensionPhotoMatch(
     patch.corrected_thickness = input.correctedThickness
   }
   if (input.correctedVolume !== undefined) patch.corrected_volume = input.correctedVolume
+  if (input.correctedSourceImageUrl !== undefined) {
+    patch.corrected_source_image_url = input.correctedSourceImageUrl
+  }
   if (input.promotedRefId !== undefined) patch.promoted_ref_id = input.promotedRefId
+
+  const existingJev = parseJevReview(
+    (existing as { jev_review?: unknown } | null)?.jev_review,
+  )
+  if (
+    existingJev?.withheldFromReview &&
+    (nextPhoto != null || nextDims != null || input.excluded === true)
+  ) {
+    patch.jev_review = { ...existingJev, withheldFromReview: false }
+  }
 
   const { data, error } = await service
     .from("surfboard_dimension_photo_matches")
@@ -828,17 +951,18 @@ export async function aggregateSurfboardDimensionPhotoMatchStats(
   service: SupabaseClient,
   fromIso: string,
 ): Promise<SurfboardDimensionPhotoMatchStats> {
-  const [{ data, error }, refCount] = await Promise.all([
+  const [{ data, error }, refCount, memoryIndexCount] = await Promise.all([
     service
       .from("surfboard_dimension_photo_matches")
-      .select("match_rating, photo_rating, dims_rating, excluded_at")
+      .select("match_rating, photo_rating, dims_rating, excluded_at, jev_review")
       .gte("occurred_at", fromIso),
     countActiveSurfboardDimensionPhotoRefs(service),
+    countActiveDimensionPhotoMemoryIndex(service),
   ])
 
   if (error) {
     console.error("[surfboardDimensionPhoto] stats failed:", error.message)
-    return emptyDimensionPhotoMatchStats(refCount)
+    return emptyDimensionPhotoMatchStats(refCount, memoryIndexCount)
   }
 
   let unrated = 0
@@ -846,6 +970,7 @@ export async function aggregateSurfboardDimensionPhotoMatchStats(
   let close = 0
   let bad = 0
   let excluded = 0
+  let withheld = 0
   let photoGood = 0
   let photoBad = 0
   let dimsGood = 0
@@ -853,6 +978,7 @@ export async function aggregateSurfboardDimensionPhotoMatchStats(
   let dimsBad = 0
   let overallGood = 0
   let overallRated = 0
+  let visible = 0
 
   for (const row of data ?? []) {
     const r = row as {
@@ -860,11 +986,19 @@ export async function aggregateSurfboardDimensionPhotoMatchStats(
       photo_rating?: string | null
       dims_rating?: string | null
       excluded_at?: string | null
+      jev_review?: unknown
     }
     if (r.excluded_at) {
       excluded += 1
       continue
     }
+    const jev = parseJevReview(r.jev_review)
+    if (jev?.withheldFromReview) {
+      withheld += 1
+      continue
+    }
+
+    visible += 1
     const photo = r.photo_rating ?? null
     const dims = r.dims_rating ?? null
 
@@ -890,7 +1024,7 @@ export async function aggregateSurfboardDimensionPhotoMatchStats(
     }
   }
 
-  const total = (data ?? []).length
+  const total = visible + excluded + withheld
   const rated = good + close + bad
   const photoRated = photoGood + photoBad
   const dimsRated = dimsGood + dimsClose + dimsBad
@@ -904,6 +1038,8 @@ export async function aggregateSurfboardDimensionPhotoMatchStats(
     close,
     bad,
     excluded,
+    withheld,
+    memoryIndexCount,
     acceptableRate: rated > 0 ? (good + close) / rated : null,
     target: SURFBOARD_DIMENSION_PHOTO_MATCH_TARGET,
     refCount,
@@ -922,7 +1058,10 @@ export async function aggregateSurfboardDimensionPhotoMatchStats(
   }
 }
 
-function emptyDimensionPhotoMatchStats(refCount: number): SurfboardDimensionPhotoMatchStats {
+function emptyDimensionPhotoMatchStats(
+  refCount: number,
+  memoryIndexCount = 0,
+): SurfboardDimensionPhotoMatchStats {
   return {
     total: 0,
     unrated: 0,
@@ -931,6 +1070,8 @@ function emptyDimensionPhotoMatchStats(refCount: number): SurfboardDimensionPhot
     close: 0,
     bad: 0,
     excluded: 0,
+    withheld: 0,
+    memoryIndexCount,
     acceptableRate: null,
     target: SURFBOARD_DIMENSION_PHOTO_MATCH_TARGET,
     refCount,
@@ -981,8 +1122,8 @@ export async function listDimensionPhotoPickTrainingExamples(
   bad: SurfboardDimensionPhotoMatchRow[]
   excluded: SurfboardDimensionPhotoMatchRow[]
 }> {
-  const goodLimit = Math.min(Math.max(options.goodLimit ?? 3, 1), 6)
-  const badLimit = Math.min(Math.max(options.badLimit ?? 3, 1), 6)
+  const goodLimit = Math.min(Math.max(options.goodLimit ?? 3, 1), 8)
+  const badLimit = Math.min(Math.max(options.badLimit ?? 3, 1), 8)
   const excludeLimit = Math.min(Math.max(options.excludeLimit ?? 3, 1), 6)
 
   const [goodRes, badRes, excludeRes] = await Promise.all([
@@ -1242,4 +1383,98 @@ export async function listSurfboardListingsForDimensionPhotoScan(
   }
 
   return out
+}
+
+export async function countActiveDimensionPhotoMemoryIndex(
+  service: SupabaseClient,
+): Promise<number> {
+  const { count, error } = await service
+    .from("surfboard_dimension_photo_memory_index")
+    .select("id", { count: "exact", head: true })
+    .eq("active", true)
+  if (error) {
+    console.error("[surfboardDimensionPhoto] memory index count failed:", error.message)
+    return 0
+  }
+  return count ?? 0
+}
+
+export async function listActiveDimensionPhotoMemoryIndex(
+  service: SupabaseClient,
+  options: {
+    kinds?: SurfboardDimensionPhotoMemoryKind[]
+    limit?: number
+  } = {},
+): Promise<SurfboardDimensionPhotoMemoryIndexRow[]> {
+  const limit = Math.min(Math.max(options.limit ?? 80, 1), 200)
+  let query = service
+    .from("surfboard_dimension_photo_memory_index")
+    .select(MEMORY_INDEX_SELECT)
+    .eq("active", true)
+    .order("updated_at", { ascending: false })
+    .limit(limit)
+  if (options.kinds && options.kinds.length > 0) {
+    query = query.in("kind", options.kinds)
+  }
+  const { data, error } = await query
+  if (error) {
+    console.error("[surfboardDimensionPhoto] memory index list failed:", error.message)
+    return []
+  }
+  return ((data ?? []) as Record<string, unknown>[]).map(mapMemoryIndex)
+}
+
+export async function upsertDimensionPhotoMemoryIndexRows(
+  service: SupabaseClient,
+  rows: Array<{
+    matchId: string
+    refId?: string | null
+    kind: SurfboardDimensionPhotoMemoryKind
+    failureMode?: string | null
+    stampStyle?: string | null
+    lengthBand?: string | null
+    imageUrl: string
+    phash?: string | null
+    caption: string
+    predictedLength?: string | null
+    predictedWidth?: string | null
+    predictedThickness?: string | null
+    predictedVolume?: string | null
+    actualLength?: string | null
+    actualWidth?: string | null
+    actualThickness?: string | null
+    actualVolume?: string | null
+    ratingNote?: string | null
+    active?: boolean
+  }>,
+): Promise<void> {
+  if (rows.length === 0) return
+  const payload = rows.map((row) => ({
+    match_id: row.matchId,
+    ref_id: row.refId ?? null,
+    kind: row.kind,
+    failure_mode: row.failureMode ?? null,
+    stamp_style: row.stampStyle ?? null,
+    length_band: row.lengthBand ?? null,
+    image_url: row.imageUrl.trim(),
+    phash: row.phash ?? null,
+    caption: row.caption.trim(),
+    predicted_length: row.predictedLength ?? null,
+    predicted_width: row.predictedWidth ?? null,
+    predicted_thickness: row.predictedThickness ?? null,
+    predicted_volume: row.predictedVolume ?? null,
+    actual_length: row.actualLength ?? null,
+    actual_width: row.actualWidth ?? null,
+    actual_thickness: row.actualThickness ?? null,
+    actual_volume: row.actualVolume ?? null,
+    rating_note: row.ratingNote ?? null,
+    active: row.active ?? true,
+    updated_at: new Date().toISOString(),
+  }))
+  const { error } = await service
+    .from("surfboard_dimension_photo_memory_index")
+    .upsert(payload, { onConflict: "match_id,kind" })
+  if (error) {
+    console.error("[surfboardDimensionPhoto] memory index upsert failed:", error.message)
+  }
 }

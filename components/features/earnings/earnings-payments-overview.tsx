@@ -226,7 +226,7 @@ export function EarningsPaymentsOverview({
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-center gap-2 text-sm font-medium opacity-95">
                 <Banknote className="h-4 w-4 shrink-0" aria-hidden />
-                Balance
+                Reswell Bucks
               </div>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -244,18 +244,19 @@ export function EarningsPaymentsOverview({
                   className="max-w-[19rem] text-xs leading-relaxed space-y-2 px-3 py-2.5"
                 >
                   <p>
-                    <span className="font-semibold text-foreground">Total</span> is your ready balance plus pending
-                    earnings. When a sale clears, pending becomes ready—only ready funds can be spent on Reswell or
-                    cashed out.
+                    <span className="font-semibold text-foreground">Reswell Bucks</span> are your cashable earnings.
+                    Total is ready Bucks plus pending. Ready Bucks can be spent on Reswell or cashed out to your bank.
                   </p>
                   <p>
                     When someone pays, that sale appears as <span className="font-semibold">pending</span> until delivery
-                    or pickup is done. Then it moves to <span className="font-semibold">ready</span>—money you can spend
-                    on Reswell or pay out.
+                    or pickup is done. Then it moves to <span className="font-semibold">ready</span>.
+                  </p>
+                  <p>
+                    Reswell Credit is a separate rewards balance and is never cashable — do not confuse it with Bucks.
                   </p>
                   <p>
                     {stripePayoutsEnabled
-                      ? "Use Bank transfers below to move ready balance to your linked account."
+                      ? "Use Bank transfers below to move ready Reswell Bucks to your linked account."
                       : "Bank payouts will be available when Stripe Connect is enabled for this workspace."}
                   </p>
                 </TooltipContent>
@@ -263,13 +264,13 @@ export function EarningsPaymentsOverview({
             </div>
 
             <p className="text-sm text-primary-foreground/80 leading-relaxed -mt-0.5">
-              Your balance can be transferred to a linked bank account.
+              Reswell Bucks can be transferred to a linked bank account. Not Reswell Credit.
             </p>
 
             <div className="space-y-2">
               <div>
                 <p className="text-[11px] font-medium tracking-wide text-primary-foreground/75 mb-0.5 leading-snug">
-                  Ready to transfer to your bank
+                  Ready Reswell Bucks (cashable)
                 </p>
                 <p className="text-2xl sm:text-3xl font-bold tabular-nums tracking-tight">
                   ${displayAvailable.toFixed(2)}
