@@ -1,4 +1,4 @@
-import { effectiveBoardShippingMode } from "@/lib/services/peerListingShippingQuote"
+import { effectiveBoardShippingMode } from "@/lib/board-shipping-cost-mode"
 import type { CheckoutListing } from "@/components/checkout-types"
 
 type ShippingModeListing = {

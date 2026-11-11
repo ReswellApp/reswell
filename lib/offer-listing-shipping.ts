@@ -1,4 +1,4 @@
-import { effectiveBoardShippingMode } from "@/lib/services/peerListingShippingQuote"
+import { effectiveBoardShippingMode } from "@/lib/board-shipping-cost-mode"
 
 function roundMoney(n: number): number {
   return Math.round(n * 100) / 100
