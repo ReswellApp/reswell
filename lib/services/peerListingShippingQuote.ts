@@ -1,4 +1,3 @@
-import { listingAlwaysUsesReswellShipping } from "@/lib/apparel-listing-config"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import { resolvePackedParcelFromListing } from "@/lib/reswell-packed-parcel-from-listing"
 import type { ListingPackedParcelSource } from "@/lib/reswell-packed-parcel-from-listing"
@@ -86,15 +85,7 @@ export type PeerSurfboardCheckoutListingRow = PeerListingForShippingQuote & {
   shipping_available: boolean | null
 }
 
-export function effectiveBoardShippingMode(
-  listing: PeerListingForShippingQuote,
-): "free" | "flat" | "reswell" {
-  if (listingAlwaysUsesReswellShipping(listing.section)) return "reswell"
-  const m = listing.board_shipping_cost_mode?.trim()
-  if (m === "free" || m === "flat" || m === "reswell") return m
-  const sp = Math.max(0, parseFloat(String(listing.shipping_price ?? 0)) || 0)
-  return sp > 0 ? "flat" : "reswell"
-}
+export { effectiveBoardShippingMode } from "@/lib/board-shipping-cost-mode"
 
 /**
  * Live ShipEngine quote (USD) for peer surfboard checkout when the listing uses Reswell-calculated shipping.

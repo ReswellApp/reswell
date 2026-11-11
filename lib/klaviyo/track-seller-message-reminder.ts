@@ -1,18 +1,14 @@
 /**
- * Server-only Klaviyo reminders before a listing is auto-hidden.
+ * Server-only Klaviyo reminders for unanswered buyer listing messages.
  *
  * **Day 3 metric:** `Seller Still Here`
  * Flow copy: "Still here? Someone is waiting for a response on your listing."
  *
- * **Day 6 metric:** `Seller Listing Hide Warning`
- * Flow copy: the listing goes into vacation mode (hidden) if there's no response.
- * The seller can turn it back on whenever they like.
+ * Auto vacation is off. **Seller Listing Hide Warning** is no longer emitted.
  *
  * Profile is the seller. Ignore events where `reswell_metric_seed` is true.
  * Use `email_headline`, `email_body`, `messages_url`, `Title`, and `photo_url`
  * in the flow template.
- *
- * Day 7 stays on **Inactive Seller** and **Listing Auto Vacation**.
  *
  * Bootstrap: `POST /api/integrations/klaviyo/bootstrap-seller-message-reminder-metrics`
  * Cron: `GET /api/cron/seller-message-inactivity`

@@ -1,10 +1,6 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
-import {
-  sellerListingAutoHiddenBody,
-  sellerListingHideWarningBody,
-  sellerMessageWaitingBody,
-} from "@/lib/services/notifications/catalog"
+import { sellerMessageWaitingBody } from "@/lib/services/notifications/catalog"
 import {
   resolveSellerMessageReminderStage,
   sellerMessageReminderMessageKey,
@@ -17,15 +13,19 @@ function atDaysAgo(days: number, extraMs = 0): Date {
   return new Date(REFERENCE.getTime() - days * 24 * 60 * 60 * 1000 - extraMs)
 }
 
+const unsetMilestones = {
+  reminder3dAt: null,
+  warning6dAt: null,
+  vacationAppliedAt: null,
+} as const
+
 describe("resolveSellerMessageReminderStage", () => {
   it("stays quiet until the message is strictly older than 3 days", () => {
     assert.equal(
       resolveSellerMessageReminderStage({
         buyerMessageAt: atDaysAgo(3),
         referenceTime: REFERENCE,
-        reminder3dAt: null,
-        warning6dAt: null,
-        vacationAppliedAt: null,
+        ...unsetMilestones,
       }),
       null,
     )
@@ -33,28 +33,32 @@ describe("resolveSellerMessageReminderStage", () => {
       resolveSellerMessageReminderStage({
         buyerMessageAt: atDaysAgo(3, 1),
         referenceTime: REFERENCE,
-        reminder3dAt: null,
-        warning6dAt: null,
-        vacationAppliedAt: null,
+        ...unsetMilestones,
       }),
       "day3",
     )
   })
 
-  it("warns on day 6 even if the day-3 reminder was missed", () => {
+  it("still sends the day-3 reminder when earlier hide milestones were skipped", () => {
     assert.equal(
       resolveSellerMessageReminderStage({
         buyerMessageAt: atDaysAgo(6, 1),
         referenceTime: REFERENCE,
-        reminder3dAt: null,
-        warning6dAt: null,
-        vacationAppliedAt: null,
+        ...unsetMilestones,
       }),
-      "day6",
+      "day3",
+    )
+    assert.equal(
+      resolveSellerMessageReminderStage({
+        buyerMessageAt: atDaysAgo(7, 1),
+        referenceTime: REFERENCE,
+        ...unsetMilestones,
+      }),
+      "day3",
     )
   })
 
-  it("sends the day-6 warning once, then waits for day 7", () => {
+  it("does not auto-hide or warn after day 3 has already been sent", () => {
     assert.equal(
       resolveSellerMessageReminderStage({
         buyerMessageAt: atDaysAgo(6, 1),
@@ -63,34 +67,31 @@ describe("resolveSellerMessageReminderStage", () => {
         warning6dAt: null,
         vacationAppliedAt: null,
       }),
-      "day6",
+      null,
     )
     assert.equal(
       resolveSellerMessageReminderStage({
-        buyerMessageAt: atDaysAgo(6, 1),
+        buyerMessageAt: atDaysAgo(7, 1),
         referenceTime: REFERENCE,
         reminder3dAt: "2026-10-18T07:00:00.000Z",
-        warning6dAt: "2026-10-21T07:00:00.000Z",
+        warning6dAt: null,
         vacationAppliedAt: null,
       }),
       null,
     )
   })
 
-  it("hides on day 7 even when the earlier reminders were missed", () => {
+  it("does not remind a message that already got a hide warning or auto vacation", () => {
     assert.equal(
       resolveSellerMessageReminderStage({
-        buyerMessageAt: atDaysAgo(7, 1),
+        buyerMessageAt: atDaysAgo(6, 1),
         referenceTime: REFERENCE,
         reminder3dAt: null,
-        warning6dAt: null,
+        warning6dAt: "2026-10-21T07:00:00.000Z",
         vacationAppliedAt: null,
       }),
-      "day7",
+      null,
     )
-  })
-
-  it("does not remind a message that already hid the listing", () => {
     assert.equal(
       resolveSellerMessageReminderStage({
         buyerMessageAt: atDaysAgo(8),
@@ -105,17 +106,10 @@ describe("resolveSellerMessageReminderStage", () => {
 })
 
 describe("seller unanswered notice copy", () => {
-  it("uses the still-here, hide-warning, and hidden sentences", () => {
+  it("uses the still-here reminder", () => {
     assert.match(sellerMessageWaitingBody("Bunny Chow"), /Are you still here\?/)
     assert.match(sellerMessageWaitingBody("Bunny Chow"), /never responded/)
-    assert.match(sellerListingHideWarningBody("Bunny Chow"), /vacation mode \(hidden\)/)
-    assert.match(sellerListingHideWarningBody("Bunny Chow"), /still have this listing/)
-    assert.match(sellerListingHideWarningBody("Bunny Chow"), /turn it back on whenever you like/)
-    assert.match(sellerListingAutoHiddenBody("Bunny Chow"), /Bunny Chow is in vacation mode \(hidden\)/)
-    assert.match(sellerListingAutoHiddenBody("Bunny Chow"), /turn it back on whenever you like/)
     assert.equal(activityKindLabel("seller_message_waiting"), "Reply")
-    assert.equal(activityKindLabel("seller_listing_hide_warning"), "Vacation")
-    assert.equal(activityKindLabel("seller_listing_auto_hidden"), "Vacation")
     assert.equal(sellerMessageReminderMessageKey(["b", "a"]), "a,b")
   })
 })

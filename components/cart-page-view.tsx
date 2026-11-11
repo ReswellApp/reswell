@@ -36,7 +36,7 @@ import type { CartSellerAddonCarouselItem } from "@/lib/services/cartSellerAddon
 import { cn } from "@/lib/utils"
 import { FavoriteButton } from "@/components/favorite-button"
 import { MAX_SURFBOARDS_PER_SELLER_CHECKOUT } from "@/lib/surfboard-multi-board-parcel"
-import { effectiveBoardShippingMode } from "@/lib/services/peerListingShippingQuote"
+import { effectiveBoardShippingMode } from "@/lib/board-shipping-cost-mode"
 import { peerCheckoutSmallParcelBundleCopy } from "@/lib/shipping/peer-checkout-usps-services"
 
 function listingAvailable(listing: CartPageItem["listing"]) {

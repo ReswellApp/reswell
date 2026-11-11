@@ -30,7 +30,7 @@ import {
   peerCheckoutNeedsLiveShippingQuote,
 } from "@/lib/checkout-peer-shipping-client"
 import { resolveCheckoutShippingPriceDisplay } from "@/lib/checkout-shipping-price"
-import { effectiveBoardShippingMode } from "@/lib/services/peerListingShippingQuote"
+import { effectiveBoardShippingMode } from "@/lib/board-shipping-cost-mode"
 import {
   peerCheckoutOffersShippingRateChoice,
   peerCheckoutRateChoiceIntro,

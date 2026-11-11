@@ -24,7 +24,7 @@ import {
   offerShippingCostHint,
   offerShippingCostLabel,
 } from "@/lib/offer-listing-shipping"
-import { effectiveBoardShippingMode } from "@/lib/services/peerListingShippingQuote"
+import { effectiveBoardShippingMode } from "@/lib/board-shipping-cost-mode"
 import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
 import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import type { SellerOfferListing } from "@/lib/types/seller-offer-listing"

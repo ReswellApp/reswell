@@ -24,8 +24,8 @@ export type SellerMessageInactivityEligibleRow = {
 
 /**
  * Conversations whose latest message is from the buyer, older than `cutoff`, on a live
- * listing that has not been auto-hidden for that buyer message yet.
- * `cutoff` is the day-3 mark. The service decides which milestone is due.
+ * listing that has not already received a reminder (or a legacy hide warning / auto vacation)
+ * for that buyer message. `cutoff` is the day-3 mark.
  */
 export async function fetchListingsEligibleForSellerMessageInactivity(
   supabase: SupabaseClient,
