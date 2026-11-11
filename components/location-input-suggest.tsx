@@ -90,6 +90,8 @@ interface LocationInputSuggestProps {
    * Use when a parent already draws the focus chrome.
    */
   hidePanelFocusRing?: boolean
+  /** Focus the input on mount (e.g. mobile location drawer). */
+  autoFocus?: boolean
 }
 
 const HAS_GOOGLE_KEY = Boolean(
@@ -243,6 +245,7 @@ export function LocationInputSuggest({
   onEnterWhenPanelClosed,
   panelPlacement = "portal",
   hidePanelFocusRing = false,
+  autoFocus = false,
 }: LocationInputSuggestProps) {
   const [open, setOpen] = useState(false)
   const [inputFocused, setInputFocused] = useState(false)
@@ -984,7 +987,7 @@ export function LocationInputSuggest({
           <div
             className={cn(
               "min-h-0 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]",
-              useInlinePanel ? "max-h-[min(42dvh,280px)]" : "max-h-[min(48vh,268px)]",
+              useInlinePanel ? "max-h-[min(48dvh,22rem)]" : "max-h-[min(48vh,268px)]",
             )}
             onPointerMove={() => {
               hoverArmedRef.current = true
@@ -1053,7 +1056,7 @@ export function LocationInputSuggest({
             className={cn(
               "min-h-0 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]",
               useInlinePanel
-                ? "max-h-[min(42dvh,280px)]"
+                ? "max-h-[min(48dvh,22rem)]"
                 : isAddress
                   ? "max-h-[min(52vh,300px)]"
                   : "max-h-[min(48vh,268px)]",
@@ -1294,6 +1297,7 @@ export function LocationInputSuggest({
         }, 180)
       }}
       onKeyDown={onKeyDown}
+      autoFocus={autoFocus}
       className={inputClass}
     />
   )
