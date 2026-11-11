@@ -1,11 +1,16 @@
 import { SymbolView } from "expo-symbols"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Pressable, StyleSheet, Text, View } from "react-native"
 import { SellField, SellSwitchField } from "@/components/sell/sell-field"
 import { SellLocationField } from "@/components/sell/sell-location-field"
 import { SellPackageDimensionsCard } from "@/components/sell/sell-package-dimensions-card"
 import { fetchSellDropoffLocations } from "@/lib/api"
-import { sanitizePriceInput, SURFBOARDS_CATEGORY_SLUG, type SellDraft } from "@/lib/sell-flow"
+import {
+  sanitizePriceInput,
+  sellListingOriginIsSet,
+  SURFBOARDS_CATEGORY_SLUG,
+  type SellDraft,
+} from "@/lib/sell-flow"
 import type { MobileSellDropoffLocations, MobileSellFulfillment } from "@reswell/api-contract"
 
 type SellShippingOption = MobileSellFulfillment["shipping_options"][number]
@@ -138,6 +143,8 @@ export function SellPlaceStep({
           selectedId={draft.dropoffLocationId}
           boardLength={draft.specs.length ?? ""}
           boardWidth={draft.specs.width ?? ""}
+          listingLat={draft.locationLat}
+          listingLng={draft.locationLng}
           onSelect={(location) =>
             onChange({
               dropoffLocationId: location.id,
@@ -303,12 +310,16 @@ function DropoffChoices({
   selectedId,
   boardLength,
   boardWidth,
+  listingLat,
+  listingLng,
   onSelect,
   onClear,
 }: {
   selectedId: string
   boardLength: string
   boardWidth: string
+  listingLat: number | null
+  listingLng: number | null
   onSelect: (location: MobileSellDropoffLocations["locations"][number]) => void
   onClear: () => void
 }) {
@@ -316,13 +327,32 @@ function DropoffChoices({
   const [locations, setLocations] = useState<MobileSellDropoffLocations["locations"] | null>(null)
   const [error, setError] = useState(false)
   const [reload, setReload] = useState(0)
+  const hasOrigin = sellListingOriginIsSet(listingLat, listingLng)
+  const selectedIdRef = useRef(selectedId)
+  const onClearRef = useRef(onClear)
+  selectedIdRef.current = selectedId
+  onClearRef.current = onClear
 
   useEffect(() => {
+    if (listingLat == null || listingLng == null || !hasOrigin) {
+      setLocations([])
+      setError(false)
+      if (selectedIdRef.current) onClearRef.current()
+      return
+    }
     let cancelled = false
+    setLocations(null)
     setError(false)
-    fetchSellDropoffLocations(boardLength, boardWidth)
+    fetchSellDropoffLocations(boardLength, boardWidth, { lat: listingLat, lng: listingLng })
       .then((result) => {
-        if (!cancelled) setLocations(result.locations)
+        if (cancelled) return
+        setLocations(result.locations)
+        if (
+          selectedIdRef.current &&
+          !result.locations.some((location) => location.id === selectedIdRef.current)
+        ) {
+          onClearRef.current()
+        }
       })
       .catch(() => {
         if (!cancelled) setError(true)
@@ -330,7 +360,10 @@ function DropoffChoices({
     return () => {
       cancelled = true
     }
-  }, [reload, boardLength, boardWidth])
+  }, [reload, boardLength, boardWidth, hasOrigin, listingLat, listingLng])
+
+  if (!hasOrigin) return null
+  if (!error && (locations == null || locations.length === 0)) return null
 
   return (
     <View style={styles.options}>

@@ -123,6 +123,17 @@ export type SellDraft = {
 
 export const SURFBOARDS_CATEGORY_SLUG = "surfboards"
 
+/** True once the seller has pinned a city, ZIP, or current-location point. */
+export function sellListingOriginIsSet(
+  lat: number | null | undefined,
+  lng: number | null | undefined,
+): boolean {
+  if (lat == null || lng == null) return false
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false
+  if (lat === 0 && lng === 0) return false
+  return true
+}
+
 /** Surfboards default to local pickup only; every other category defaults to shipping only. */
 export function defaultDeliveryForCategory(category: string): Pick<SellDraft, "shipping" | "localPickup"> {
   if (category === SURFBOARDS_CATEGORY_SLUG) {
