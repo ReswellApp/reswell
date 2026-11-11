@@ -1,6 +1,6 @@
 import { SymbolView } from "expo-symbols"
 import type { ReactNode, Ref } from "react"
-import { Pressable, StyleSheet, Switch, Text, TextInput, View, type TextInput as RNTextInput } from "react-native"
+import { Keyboard, Pressable, StyleSheet, Switch, Text, TextInput, View, type TextInput as RNTextInput } from "react-native"
 import { fontFamily, useReswellColors } from "@/theme"
 
 function FieldLabel({ label, required }: { label: string; required?: boolean }) {
@@ -69,11 +69,12 @@ export function SellField({
       autoCapitalize={autoCapitalize}
       autoCorrect={autoCorrect ?? autoCapitalize !== "characters"}
       autoComplete={autoComplete}
+      autoFocus={false}
       onFocus={onFocus}
       onBlur={onBlur}
       onSubmitEditing={onSubmitEditing}
-      returnKeyType={returnKeyType}
-      blurOnSubmit={blurOnSubmit}
+      returnKeyType={returnKeyType ?? (multiline ? "default" : "done")}
+      blurOnSubmit={blurOnSubmit ?? !multiline}
       accessibilityLabel={accessibilityLabel || label || placeholder || "Text field"}
       style={[
         styles.input,
@@ -119,14 +120,24 @@ export function SellSwitchField({
   const colors = useReswellColors()
   return (
     <View style={styles.switchWrap}>
-      <Pressable accessible={false} onPress={() => onValueChange(!value)} style={styles.switchLabelRow}>
+      <Pressable
+        accessible={false}
+        onPress={() => {
+          Keyboard.dismiss()
+          onValueChange(!value)
+        }}
+        style={styles.switchLabelRow}
+      >
         <Text style={[styles.switchLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}>{label}</Text>
         {trailing}
       </Pressable>
       <Switch
         accessibilityLabel={label}
         value={value}
-        onValueChange={onValueChange}
+        onValueChange={(next) => {
+          Keyboard.dismiss()
+          onValueChange(next)
+        }}
         trackColor={{ false: colors.border, true: colors.listingHeart }}
         thumbColor="#FFFFFF"
         ios_backgroundColor={colors.border}
@@ -154,7 +165,10 @@ export function SellSelectField({
       <FieldLabel label={label} required={required} />
       <Pressable
         accessibilityRole="button"
-        onPress={onPress}
+        onPress={() => {
+          Keyboard.dismiss()
+          onPress()
+        }}
         style={[styles.input, styles.select, { borderColor: colors.foreground, backgroundColor: colors.background }]}
       >
         <Text

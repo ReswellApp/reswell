@@ -1,8 +1,9 @@
 import { Stack, useRouter } from "expo-router"
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native"
+import { ActivityIndicator, Keyboard, Pressable, StyleSheet, Text, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { SymbolView } from "expo-symbols"
+import { ScreenScroll, ScreenShell } from "@/components/screen-shell"
 import { findBoardSpecField, SellBoardSpecs } from "@/components/sell/sell-board-specs"
 import { SellDetailsStep } from "@/components/sell/sell-details-step"
 import { SellOptionSheet } from "@/components/sell/sell-option-sheet"
@@ -321,10 +322,7 @@ export function SellListingFlow({
   }
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.screen, { backgroundColor: colors.background }]}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
+    <ScreenShell style={[styles.screen, { backgroundColor: colors.background }]}>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.foreground }]}>
         <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={() => router.back()} hitSlop={8} style={styles.headerSide}>
@@ -336,17 +334,27 @@ export function SellListingFlow({
         {isEdit ? (
           <View style={[styles.headerSide, styles.headerSideEnd]} />
         ) : (
-          <Pressable accessibilityRole="button" disabled={busy !== null} onPress={() => void saveDraft()} hitSlop={8} style={[styles.headerSide, styles.headerSideEnd]}>
+          <Pressable
+            accessibilityRole="button"
+            disabled={busy !== null}
+            onPress={() => {
+              Keyboard.dismiss()
+              void saveDraft()
+            }}
+            hitSlop={8}
+            style={[styles.headerSide, styles.headerSideEnd]}
+          >
             <Text style={[styles.draft, { color: draftSaved ? colors.muted : colors.foreground, fontFamily: fontFamily.text }]}>
               {busy === "draft" ? "Saving" : "Draft"}
             </Text>
           </Pressable>
         )}
       </View>
-      <ScrollView
-        keyboardShouldPersistTaps="always"
-        nestedScrollEnabled
-        automaticallyAdjustKeyboardInsets
+      <ScreenScroll
+        contentInsetAdjustmentBehavior="never"
+        keyboardDismissMode="on-drag"
+        onScrollBeginDrag={Keyboard.dismiss}
+        endPadding={Math.max(insets.bottom, 24)}
         contentContainerStyle={styles.content}
       >
         <Section>
@@ -420,12 +428,13 @@ export function SellListingFlow({
             Complete the required fields above to save your changes.
           </Text>
         ) : null}
-      </ScrollView>
-      <View style={[styles.footer, { borderTopColor: colors.foreground, paddingBottom: Math.max(insets.bottom, 12) }]}>
         <Pressable
           accessibilityRole="button"
           disabled={!ready || busy !== null}
-          onPress={() => void postListing()}
+          onPress={() => {
+            Keyboard.dismiss()
+            void postListing()
+          }}
           style={[styles.post, { backgroundColor: colors.foreground, opacity: ready && busy === null ? 1 : 0.35 }]}
         >
           <Text style={[styles.postLabel, { color: colors.background, fontFamily: fontFamily.text }]}>
@@ -440,7 +449,7 @@ export function SellListingFlow({
                   : "Sign in to publish"}
           </Text>
         </Pressable>
-      </View>
+      </ScreenScroll>
       {conditionOpen ? (
         <SellOptionSheet
           title="Condition"
@@ -474,7 +483,7 @@ export function SellListingFlow({
           />
         )
       })() : null}
-    </KeyboardAvoidingView>
+    </ScreenShell>
   )
 }
 
@@ -515,17 +524,13 @@ const styles = StyleSheet.create({
   headerSideEnd: { alignItems: "flex-end" },
   headerTitle: { fontSize: 17, fontWeight: "700" },
   draft: { fontSize: 16, fontWeight: "700" },
-  content: { paddingHorizontal: 16, paddingBottom: 28, gap: 8 },
+  content: { paddingHorizontal: 16, gap: 8 },
   section: { gap: 14, paddingTop: 18, borderTopWidth: StyleSheet.hairlineWidth, marginTop: 8 },
   sectionTitle: { fontSize: 22, fontWeight: "700" },
   notice: { fontSize: 15, lineHeight: 21 },
-  footer: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-  },
   post: {
     minHeight: 48,
+    marginTop: 12,
     borderRadius: 24,
     alignItems: "center",
     justifyContent: "center",

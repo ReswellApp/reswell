@@ -1,6 +1,6 @@
 import * as Location from "expo-location"
 import { useEffect, useState } from "react"
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native"
+import { ActivityIndicator, Keyboard, Pressable, StyleSheet, Text, TextInput, View } from "react-native"
 import { fetchSellPlaceDetails, fetchSellPlaceSuggestions, fetchStructuredPlace } from "@/lib/api"
 import type { SellDraft } from "@/lib/sell-flow"
 import type { MobilePlaceSuggestion } from "@reswell/api-contract"
@@ -62,6 +62,7 @@ export function SellLocationField({
   }
 
   function commitPlace(place: { label: string; city: string; state: string; lat: number; lng: number }) {
+    Keyboard.dismiss()
     setQuery(place.label)
     setSuggestions([])
     setNote(null)
@@ -147,6 +148,9 @@ export function SellLocationField({
         placeholderTextColor={colors.muted}
         autoCapitalize="words"
         autoCorrect={false}
+        autoFocus={false}
+        returnKeyType="done"
+        blurOnSubmit
         style={[styles.input, { color: colors.foreground, borderColor: colors.foreground, fontFamily: fontFamily.text }]}
       />
       {searching ? <ActivityIndicator color={colors.listingHeart} style={styles.spinner} /> : null}
