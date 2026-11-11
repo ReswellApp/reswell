@@ -1,0 +1,103 @@
+{
+  "generated_for": "Hydro Theory official named standup catalog",
+  "source": "https://www.hydrotheorysurf.com/surfboards (Wix model pages + unique product-front gallery PNGs; excludes Tow, Frisbee, Little Jerry workshop holds, merch, and the Sports page)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "hydro-theory",
+      "name": "Hydro Theory",
+      "website_url": "https://www.hydrotheorysurf.com/",
+      "location_label": "Torquay, Victoria, Australia",
+      "founder_name": "Marcus Hyett",
+      "lead_shaper_name": "Marcus Hyett",
+      "short_description": "Custom surfboards hand-built by Marcus Hyett in Torquay, Victoria — Great Ocean Road shapes refined from Port Campbell through the Surf Coast.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/hydro-theory.png",
+      "models": [
+        {
+          "name": "Kickboard",
+          "image_url": "https://static.wixstatic.com/media/94cf5b_3af2149cdff14785911274ba3a16c453~mv2.png",
+          "board_category_slug": "fish",
+          "description": "The Kickboard is my take on the classic twin keel fish and the board I surf when the waves are very small, where most others are looking to longboards. That being said it actually holds onto size surprisingly well, and can easily be surfed in solid 4ft points. It has a very subtle single concave through the centre flowing into a deep Vee Double concave out the back which makes this board flow onto rail very smoothly and with great speed. It has quite low shortboard style rail which helps a wider board stay playful and sensitive. Large full rake Keels are recommended as a starting point, but less raked versions can be used depending on the riders needs. You can also order your Kickboard as a quad version which work great too. It is a flat board but there is enough rocker in the nose to keep you out of trouble on late take-offs. It also has a beaked nose with a chine in the deck that runs about half way back to centre. This hides a nice chunk of foam right under your chest and really helps for catching small weak waves. It is a very fast and lively little board that is most suited to 1-3ft small points and beachies, generally surfed 4-5 inches shorter than your shortboard and with an extra 2-3L of foam."
+        },
+        {
+          "name": "Batmobile",
+          "image_url": "https://static.wixstatic.com/media/94cf5b_69677a2d2a6b410bbda556c1dadb8728~mv2.png",
+          "board_category_slug": "groveler",
+          "description": "The Batmobile is my Quad fin groveller offering. If you're really into quads this one is hard to go past. It shares a lot of similarities with the chakra twin in its foil, rocker and bottom contour. Its tail is a lot wider though which spreads the fins out a touch and reduces that quad fin stickyness you can feel in shortboards sometimes. The wider tail also adds a bit more looseness, and makes it great for blasting the fins out in the lip. The batmobile is a very fast board, made for head high beachies and points. Its modified crescent tail shortens the rail line by about an inch compared to a traditional swallow. This helps it turn in a slightly tighter arc as well as allowing it to slide more freely in the lip. The Batmobile should be surfed a couple of inches shorter than your shortboard and with an extra 1L of foam."
+        },
+        {
+          "name": "Chakra Twin",
+          "image_url": "https://static.wixstatic.com/media/94cf5b_03c41dded45e45aaa33d1b7864ca3b7e~mv2.png",
+          "board_category_slug": "fish",
+          "description": "The Chakra-Twin is a performance twin fin designed to be ridden with Twin+Stabiliser fin setup. It shares the same basic platform as the 'Batmobile' with single to double to Vee bottom contour, relatively low rocker and a low, sensitive shortboard style rail. With a set of tall upright twin fins placed precisely under foot you have a very playful and lively little board that drives hard down the line and loves to go fins free when thrown at the lip. Its Twin+1 fin configuration makes it turn very tight in the pocket where it is best suited to 2-4ft waves. The Chakra has also proven to be very popular as a standard 3 fin for those that love their thrusters, or with 5 fin boxes for those that like their quads. It is generally surfed 2-3 inches shorter than your shortboard with an extra 1L of volume."
+        },
+        {
+          "name": "Guillotine",
+          "image_url": "https://static.wixstatic.com/media/94cf5b_5d59405900b34d3ebe3dc63997121494~mv2.png",
+          "board_category_slug": "fish",
+          "description": "The Guillotine is a high performance twin fin designed for fast radical surfing, where it utilises a more traditional Keel style fin as opposed to the more upright MR style. It has the rocker line and general proportions taken from the Chakra Twin and a low shortboard style rail. It has a very fast bottom contour, which is a light single concave flowing into a deep quad concave within it. The contour provides a huge amount of drive but also grips and holds really hard through turns, this dramatically helps a twin fin with the execution of turns when put on rail at speed. It is surfed 3-4 inches shorter than your shortboard, about an inch wider and with the same thickness. Compared to the Kickboard this is a less cruizy/flowy style of board, and aimed at a higher level of surfer. Both have a similar top speed though."
+        },
+        {
+          "name": "Rehab",
+          "image_url": "https://static.wixstatic.com/media/94cf5b_318155f631f84339a0e459856cc02e79~mv2.png",
+          "board_category_slug": "groveler",
+          "description": "The Rehab is a great one for someone who wants a fast and forgiving little groveller but doesn't want to ride a fish. It features a single concave running into 4 belly channels giving it a good amount of squirt, while the channels also give great hold and bite while pushing hard through turns. This makes it a very fun carving board. It's rounded pin tail helps it draw a tighter turning arc than its swallow tail cousins making it a lot of fun in waist to chest high waves. It has a bit more rocker curve than Batmobile/Chakra Twin and Kickboard giving it a bit more of a shortboard feel. Generally surfed as a standard thruster but is also a lot of fun as a 2+1 Twin, or quad."
+        },
+        {
+          "name": "Guillotine Shorty",
+          "image_url": "https://static.wixstatic.com/media/94cf5b_07b6e5515bff4990bf33eef6520e5ed2~mv2.png",
+          "board_category_slug": "shortboard",
+          "description": "The Guillotine shorty I designed for myself to get back into riding high performance shortboards, after being stuck riding bigger boards for years following 2 hip replacements. Initially when I went back to my normal HP shortboards (Golden boy/Pinapple Express) they felt very loose and fidgety and lacking flow and drive. Surfing glidey mid twins for too long will do this to everyone I think. The plan was to try to come up with a flatter rockered Shortboard that incorporated the Guillotines quad concave to create a board that had all the speed of my twins, and from the first iteration it worked like a dream, I took it on my next 3 indo trips and surfed basically nothing else. The Guillotine shorty has a much lower rocker than standard shortboards, particularly in the tail, this combined with the Guillotines quad concave gives it loads of drive as soon as you plant the feet. The prominent contour also gives a huge amount of grip on rail making it a carving beast. Its general proportions are half way between groveller and HP shorty where it carries a lot more volume through its nose in its foil and plan shape, with a slightly wider tail as well, this makes it a really good paddler and takes a lot of that shortboard twitchiness away. For me it's my go to board for 3-4ft reefs and beaches, I ride it as a thruster, but have done quad versions which do work well if that's your preference."
+        },
+        {
+          "name": "Golden Boy",
+          "image_url": "https://static.wixstatic.com/media/94cf5b_84a00b94a87b465284befc8c5ad818e2~mv2.png",
+          "board_category_slug": "shortboard",
+          "description": "The Golden Boy is your classic all round shortboard which will work best in clean 4-6ft surf but can also be used as a groveller in less favourable conditions for those that like to always be on a proper shortboard. A deep single concave throughout makes it a very fast drivey board. It has a slightly lower tail rocker than some, but the apex of its rail line curve is pushed back between the feet, giving you the feeling of a board that will instantly and easily go wherever directed. This combined with low soft rails makes it feel smooth, responsive and predictable through turns. It can be ordered as a r/square, swallow or round tail and can be surfed as a thruster or quad. Quad working best with a swallow or round pin in powerful hollow surf. Channels are also a popular addition, giving even more drive and hold for powerful rail surfing."
+        },
+        {
+          "name": "Pineapple Express",
+          "image_url": "https://static.wixstatic.com/media/94cf5b_afdd4b24fea24b449f0ff24973c5de42~mv2.png",
+          "board_category_slug": "shortboard",
+          "description": "The Pineapple Express is the most tuned up, high performance shortboard in the Hydro Theory lineup. It has quite a lot of rocker, particularly in the tail and low sensitive rails. This combined with a deep single concave gives it a ton of speed where it is most at home driving through fast open face carves, but will also release the fins into the lip with ease. It suits a surfer that likes to keep their feet grounded and has a smaller sweet spot than the Golden Boy. 4 channels can be added for extra drive and hold and a touch more sensitivity under foot. It is generally surfed as a thruster only and paired with either thumb or rounded pin tail."
+        },
+        {
+          "name": "Troppo Shorty",
+          "image_url": "https://static.wixstatic.com/media/94cf5b_d01e6f59315f4146b89c85a59a408cd4~mv2.png",
+          "board_category_slug": "shortboard",
+          "description": "The Troppo Shorty originally called the Pineapple Troppo combines elements of The Pineapple Express shortboard and Troppo Step up models. Developed with my Brother Tristan, we went through many iterations of this model to get it right. The Troppo Shorty is inspired by the boards most tour surfers ride. It has quite a bit of rocker in the tail, low rails, pulled in plan shape and rounded pin tail. Most of these attributes come from the Troppo, but we combined the relatively deep single concave bottom contour from the Pineapple Express to give it quite a bit more speed and hold on rail. Its point of difference though is that it packs quite a lot of volume considering how refined it is in the rail. The foam is very well hidden, mostly in the chest area and all along the stringer line. As it has a very low rail this gives it a very domed deck. This extra foam has made it popular with older blokes that still want a full blown HP shorty but are needing the extra volume as they age. It is a very good carving boards for the points with its increased tail rocker and a very good tube board too, with foam to get you over the ledge. It is made to be surfed in 4-6ft reefs and beachies. Round pin tail only and thruster fin configuration. If you have enjoyed the Golden boy in your younger years but now finding it a little too sensitive and refined, this is the natural progression, with a bit more focus on open face carves than attacks at the lip."
+        },
+        {
+          "name": "Troppo",
+          "image_url": "https://static.wixstatic.com/media/94cf5b_3be89e1b24bd4b47ac5c978f12192395~mv2.png",
+          "board_category_slug": "step-up-gun",
+          "description": "The Troppo is a good wave step up board. Its outline, rocker and rail line are all about even flowing curves designed to fit in perfect 5-6ft plus surf. This design is more about control than speed generation so has less single concave than my shortboard models and a slightly more pronounced double between the fins. It has low rails, a refined foil and a fairly pulled in rounded pintail which helps it transition from rail to rail with ease. This is a smooth, dependable and confidence inspiring board for when the waves get a bit more serious. It works best as a standard thruster setup and also works very well as four or six channel for some extra drive and hold on rail."
+        },
+        {
+          "name": "Guillotine Mid",
+          "image_url": "https://static.wixstatic.com/media/94cf5b_9f9b923e7b9b42e9b854d28c8aad3ae1~mv2.png",
+          "board_category_slug": "hybrid",
+          "description": "The Guillotine mid is a stretched out mid length version of the very popular Guillotine twin keel. It's main difference to the shorter version apart from its length is the subtle changes to its bottom contour. The mid length version has less single concave through the belly and much more Vee out the tail helping a bigger board roll onto rail with little effort. I am continually asked the difference between this and the speed egg from customers chasing their first mid length style board. My response is this, the Guillotine mid is a much faster and high performance style board compared to the more cruisy fluid style of the Speed egg. This speed and drive comes from its parallel outline, and a double concave leading into a deep quad concave between the feet. It also has a flatter rocker through the tail than the speed egg and of course, large high area keel fins. It turns tighter in the pocket than the speed egg and can attack the lip with far more aggression due to the placement of its keels - slightly more forward than traditionally seen. It also features quite low refined rails which make it very sensitive and responsive. For me this is a one board quiver and something that I enjoy thoroughly in both 1 foot slop and 6ft open faces."
+        },
+        {
+          "name": "Speed Egg",
+          "image_url": "https://static.wixstatic.com/media/94cf5b_6f8b1146d8d84f7dbfc55145e736c303~mv2.png",
+          "board_category_slug": "hybrid",
+          "description": "The Speed Egg a very versatile board which can be used as a small point cruiser or a step up for bigger more powerful surf. It's wide point has been pushed forward putting foam under the chest which gives it great paddle power. This also straightens its outline leading into the fins, helping it draw out carves in bigger surf. It's rocker line is quite flat, particularly in the nose, for a board of this length. It features a light double concave providing a bit of squirt, to Vee double out the back third, which helps a reasonably large board transition from rail to rail quite easily. It has a thinned out tail and low rail helping it to engage rail easily and remain sensitive under foot. It can be surfed as a thruster, quad, twin fin or 2+1."
+        },
+        {
+          "name": "Katana",
+          "image_url": "https://static.wixstatic.com/media/94cf5b_5b14dbcbb4a54f45ab161fbb4e832f2b~mv2.png",
+          "board_category_slug": "longboard",
+          "description": "The Katana is your classic noserider. It has a bottom contour that comes from logs and pigs of the 50/60's, featuring a heavily rolled Vee from nose to tail, but even more pronounce in the back half, this helps it roll over easily when put on rail. It also has a light nose concave shaped into this Vee up front providing lift when perched on the nose. It has an even flowing rocker line with fairly aggressively flipped tail to help turn a fairly heavy board easily. It features 50/50 rails and a very short hard edge behind the fin which massively helps manoeuvring when put on rail. This is an easy nose rider which should be surfed with 10\"- 11\" single fin of your choice."
+        },
+        {
+          "name": "Hyperfroth",
+          "image_url": "https://static.wixstatic.com/media/94cf5b_9b84554b545e4f11b0c00e3b4ba16211~mv2.png",
+          "board_category_slug": "step-up-gun",
+          "description": "The Hyperfroth gun features an even flowing rocker line with a large sweet spot, helping a very big board turn off the top even when you find yourself standing slightly off your mark. It's plan shape has lots of forward area and a lot of foam under the chest to help get in early. A thinned out tail, longer hard edges and forward set quad fins give these big boards tons of drive and hold off the bottom. It features a Vee bottom contour running right through the nose, this turns into a Vee Double contour through the back half. This gives you the benefit of a Vee bottom which will roll onto rail effortlessly but also provides speed from the concave within. Smaller versions can be setup as thrusters for a more traditional feel off the top. Glassing schedules go up to triple 6oz deck, double 6oz bottom."
+        }
+      ]
+    }
+  ]
+}
