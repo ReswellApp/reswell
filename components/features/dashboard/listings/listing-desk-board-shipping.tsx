@@ -13,6 +13,7 @@ import {
   listingOriginIsSet,
   sellDropoffSectionVisible,
   shouldClearDropoffOnNearbyError,
+  shouldClearDropoffWhenOriginGone,
 } from "@/lib/dropoff-location-nearby"
 import type { PublicDropoffLocation } from "@/lib/dropoff-location-types"
 import { normalizeTapeStyleInchesInput } from "@/lib/board-measurements"
@@ -55,7 +56,6 @@ export function ListingDeskBoardShipping({
     if (!originReady) {
       setLocations([])
       setStatus("ready")
-      setLoadedOriginKey("")
       return
     }
     let cancelled = false
@@ -90,10 +90,16 @@ export function ListingDeskBoardShipping({
 
   useEffect(() => {
     if (!spec.dropoffLocationId) return
-    if (!originReady) {
+    if (
+      shouldClearDropoffWhenOriginGone({
+        originReady,
+        loadedOriginKey,
+      })
+    ) {
       onChange({ dropoffLocationId: "" })
       return
     }
+    if (!originReady) return
     if (
       status === "error" &&
       shouldClearDropoffOnNearbyError({

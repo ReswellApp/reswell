@@ -170,6 +170,7 @@ import { sellFormFieldsFromDropoffLocation } from "@/lib/dropoff-location-box-ru
 import {
   sellDropoffSectionVisible,
   shouldClearDropoffOnNearbyError,
+  shouldClearDropoffWhenOriginGone,
 } from "@/lib/dropoff-location-nearby"
 import type { PublicDropoffLocation } from "@/lib/dropoff-location-types"
 import { normalizeSellShippingCostMode } from "@/lib/sell-shipping-cost-mode"
@@ -1026,7 +1027,6 @@ function SellPageContentInner({
     if (!listingOriginReady) {
       setDropoffLocations([])
       setDropoffLocationsStatus("ready")
-      setDropoffLoadedOriginKey("")
       return
     }
     const controller = new AbortController()
@@ -1066,10 +1066,16 @@ function SellPageContentInner({
 
   useEffect(() => {
     if (!formData.dropoffLocationId) return
-    if (!listingOriginReady) {
+    if (
+      shouldClearDropoffWhenOriginGone({
+        originReady: listingOriginReady,
+        loadedOriginKey: dropoffLoadedOriginKey,
+      })
+    ) {
       setFormData((fd) => (fd.dropoffLocationId ? { ...fd, dropoffLocationId: "" } : fd))
       return
     }
+    if (!listingOriginReady) return
     if (
       dropoffLocationsStatus === "error" &&
       shouldClearDropoffOnNearbyError({

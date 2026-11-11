@@ -106,3 +106,15 @@ export function shouldClearDropoffOnNearbyError(input: {
 }): boolean {
   return input.loadedOriginKey !== "" && input.loadedOriginKey !== input.currentOriginKey
 }
+
+/**
+ * Pins can be missing on first paint (draft restore, city without lat/lng).
+ * Clear pack-and-ship only after a nearby origin was already confirmed and
+ * the seller then removed it. Do not treat an empty loaded key as a clear.
+ */
+export function shouldClearDropoffWhenOriginGone(input: {
+  originReady: boolean
+  loadedOriginKey: string
+}): boolean {
+  return !input.originReady && input.loadedOriginKey !== ""
+}
