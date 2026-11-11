@@ -1063,6 +1063,14 @@ function SellPageContentInner({
 
   useEffect(() => {
     if (!formData.dropoffLocationId) return
+    if (!listingOriginReady) {
+      setFormData((fd) => (fd.dropoffLocationId ? { ...fd, dropoffLocationId: "" } : fd))
+      return
+    }
+    if (dropoffLocationsStatus === "error" && dropoffLoadedOriginKey !== dropoffOriginKey) {
+      setFormData((fd) => (fd.dropoffLocationId ? { ...fd, dropoffLocationId: "" } : fd))
+      return
+    }
     if (dropoffLocationsStatus !== "ready") return
     if (dropoffLoadedOriginKey !== dropoffOriginKey) return
     const location = dropoffLocations.find((row) => row.id === formData.dropoffLocationId)
@@ -1108,6 +1116,7 @@ function SellPageContentInner({
     dropoffLocationsStatus,
     dropoffLoadedOriginKey,
     dropoffOriginKey,
+    listingOriginReady,
     formData.boardLength,
     formData.boardWidthInches,
     formData.dropoffLocationId,

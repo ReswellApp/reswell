@@ -330,6 +330,7 @@ function DropoffChoices({
   const hasOrigin = sellListingOriginIsSet(listingLat, listingLng)
   const selectedIdRef = useRef(selectedId)
   const onClearRef = useRef(onClear)
+  const loadedOriginKeyRef = useRef("")
   selectedIdRef.current = selectedId
   onClearRef.current = onClear
 
@@ -337,15 +338,18 @@ function DropoffChoices({
     if (listingLat == null || listingLng == null || !hasOrigin) {
       setLocations([])
       setError(false)
+      loadedOriginKeyRef.current = ""
       if (selectedIdRef.current) onClearRef.current()
       return
     }
+    const originKey = `${listingLat.toFixed(5)},${listingLng.toFixed(5)}`
     let cancelled = false
     setLocations(null)
     setError(false)
     fetchSellDropoffLocations(boardLength, boardWidth, { lat: listingLat, lng: listingLng })
       .then((result) => {
         if (cancelled) return
+        loadedOriginKeyRef.current = originKey
         setLocations(result.locations)
         if (
           selectedIdRef.current &&
@@ -355,7 +359,11 @@ function DropoffChoices({
         }
       })
       .catch(() => {
-        if (!cancelled) setError(true)
+        if (cancelled) return
+        setError(true)
+        if (loadedOriginKeyRef.current !== originKey && selectedIdRef.current) {
+          onClearRef.current()
+        }
       })
     return () => {
       cancelled = true
