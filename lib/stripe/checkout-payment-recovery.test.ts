@@ -35,6 +35,27 @@ describe("checkout payment recovery", () => {
     )
   })
 
+  it("recovers a paid tip when Stripe.js reports a processing error", () => {
+    assert.equal(
+      paidPaymentIntentIdFromConfirmResult({
+        error: {
+          message: "A processing error occurred.",
+          payment_intent: { id: "pi_tip", status: "succeeded" },
+        },
+      }),
+      "pi_tip",
+    )
+    assert.equal(
+      paidPaymentIntentIdFromConfirmResult({
+        error: {
+          message: "A processing error occurred.",
+          payment_intent: { id: "pi_tip_processing", status: "processing" },
+        },
+      }),
+      "pi_tip_processing",
+    )
+  })
+
   it("recovers already-succeeded confirm errors via the client secret", () => {
     assert.equal(
       stripeConfirmErrorLooksAlreadySucceeded({

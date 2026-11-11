@@ -1,18 +1,24 @@
 import type { SoldOffPlatformChannel } from "@/lib/validations/mark-listing-sold"
 
+export type MarkListingSoldResult =
+  | { ok: true; priceUsd: number }
+  | { ok: false; error: string; status: number }
+
 export type MarkListingSoldInput = {
   channel?: SoldOffPlatformChannel
   detail?: string
   reswellHelpedFindBuyer?: boolean
 }
 
+/** Idempotent retry after a captured tip: the listing is already where we wanted it. */
+export function listingMarkSoldAlreadyComplete(result: MarkListingSoldResult): boolean {
+  return !result.ok && result.status === 400 && result.error === "Listing is already sold"
+}
+
 export async function postMarkListingSold(
   listingId: string,
   input: MarkListingSoldInput = {},
-): Promise<
-  | { ok: true; priceUsd: number }
-  | { ok: false; error: string; status: number }
-> {
+): Promise<MarkListingSoldResult> {
   const res = await fetch(`/api/listings/${listingId}/mark-sold`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
