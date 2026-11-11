@@ -5,7 +5,10 @@ import { mobileFailure } from "@/lib/utils/mobile-api-response"
 
 export const dynamic = "force-dynamic"
 
-/** GET `/api/mobile/v1/sell/dropoff-locations` — cities where Reswell packs and ships a board. */
+/**
+ * GET `/api/mobile/v1/sell/dropoff-locations`
+ * Same nearby-ZIP rule as website `/sell`: pass listing `lat`/`lng` or receive no cities.
+ */
 export async function GET(req: NextRequest) {
   try {
     const near = parseDropoffNearbyOrigin(

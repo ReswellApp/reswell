@@ -8,7 +8,8 @@ import { listPublicDropoffLocations } from "@/lib/services/listPublicDropoffLoca
  * never POSTs to `/sell` and aborts an in-flight listing save.
  *
  * Pass `lat` and `lng` from the listing origin (city/ZIP pin) to receive only
- * sites close enough to drop off. Without an origin the sell flow hides this list.
+ * sites close enough to drop off. Website `/sell` and the Expo app both send
+ * those params; without an origin this returns no cities.
  */
 export async function GET(request: NextRequest) {
   try {

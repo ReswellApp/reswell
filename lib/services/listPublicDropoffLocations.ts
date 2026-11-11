@@ -18,8 +18,8 @@ function toPublic(row: DropoffLocationRow): PublicDropoffLocation {
 export async function listPublicDropoffLocations(
   near?: { lat: number; lng: number } | null,
 ): Promise<PublicDropoffLocation[]> {
+  if (!near) return []
   const supabase = await createClient()
   const rows = await listActiveDropoffLocations(supabase)
-  const matched = near ? dropoffLocationsNearListing(rows, near.lat, near.lng) : rows
-  return matched.map(toPublic)
+  return dropoffLocationsNearListing(rows, near.lat, near.lng).map(toPublic)
 }

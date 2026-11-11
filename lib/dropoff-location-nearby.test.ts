@@ -35,7 +35,7 @@ describe("listingOriginIsSet", () => {
 })
 
 describe("parseDropoffNearbyOrigin", () => {
-  it("reads lat/lng query params from /sell dropoff fetches", () => {
+  it("reads lat/lng query params from website and mobile dropoff fetches", () => {
     assert.equal(parseDropoffNearbyOrigin(null, null), null)
     assert.equal(parseDropoffNearbyOrigin("", "-119.7"), null)
     assert.deepEqual(parseDropoffNearbyOrigin("34.4208", "-119.6982"), {

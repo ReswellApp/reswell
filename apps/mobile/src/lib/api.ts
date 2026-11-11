@@ -1452,21 +1452,19 @@ export function fetchSellPhotoGuide(): Promise<MobileSellPhotoGuide> {
   return sellPhotoGuidePromise
 }
 
-/** Surfboard drop-off cities. Same list as the website sell flow. Availability follows board length and width. */
+/** Surfboard drop-off cities. Same nearby-ZIP list as website `/sell`. Availability follows board length and width. */
 export function fetchSellDropoffLocations(
   boardLength: string,
   boardWidth: string,
-  origin?: { lat: number; lng: number } | null,
+  origin: { lat: number; lng: number },
 ): Promise<MobileSellDropoffLocations> {
-  const params = new URLSearchParams()
+  const params = new URLSearchParams({
+    lat: String(origin.lat),
+    lng: String(origin.lng),
+  })
   if (boardLength.trim()) params.set("board_length", boardLength.trim())
   if (boardWidth.trim()) params.set("board_width", boardWidth.trim())
-  if (origin) {
-    params.set("lat", String(origin.lat))
-    params.set("lng", String(origin.lng))
-  }
-  const query = params.toString()
-  return read(`/api/mobile/v1/sell/dropoff-locations${query ? `?${query}` : ""}`, (data) =>
+  return read(`/api/mobile/v1/sell/dropoff-locations?${params}`, (data) =>
     mobileSellDropoffLocationsSchema.parse(data),
   )
 }
