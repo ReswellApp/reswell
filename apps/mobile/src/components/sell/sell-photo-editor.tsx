@@ -364,20 +364,33 @@ export function SellPhotoEditor({
           <GestureDetector gesture={cropGesture}>
             <View style={styles.gestureFill}>
               {pixel && stage.width > 0 ? (
-                <Animated.View
+                <View
+                  collapsable={false}
                   style={[
+                    styles.cropClip,
                     {
-                      position: "absolute",
-                      left: (stage.width - displayW) / 2,
-                      top: (stage.height - displayH) / 2,
-                      width: displayW,
-                      height: displayH,
+                      left: frameLeft,
+                      top: frameTop,
+                      width: frameW,
+                      height: frameH,
                     },
-                    imageStyle,
                   ]}
                 >
-                  <Image source={{ uri: source }} style={{ width: displayW, height: displayH }} contentFit="fill" />
-                </Animated.View>
+                  <Animated.View
+                    style={[
+                      {
+                        position: "absolute",
+                        left: (frameW - displayW) / 2,
+                        top: (frameH - displayH) / 2,
+                        width: displayW,
+                        height: displayH,
+                      },
+                      imageStyle,
+                    ]}
+                  >
+                    <Image source={{ uri: source }} style={{ width: displayW, height: displayH }} contentFit="fill" />
+                  </Animated.View>
+                </View>
               ) : null}
             </View>
           </GestureDetector>
@@ -584,24 +597,33 @@ function clamp(value: number, min: number, max: number) {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#000000" },
+  screen: { flex: 1, backgroundColor: "#000000", overflow: "hidden" },
   topBar: {
+    zIndex: 2,
     minHeight: 48,
     paddingHorizontal: 16,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    backgroundColor: "#000000",
   },
   barLabel: { color: "#FFFFFF", fontSize: 17 },
   done: { color: "#FFD60A", fontSize: 17, fontWeight: "600" },
-  stage: { flex: 1 },
+  stage: { flex: 1, overflow: "hidden", zIndex: 0 },
   gestureFill: { flex: 1 },
+  cropClip: {
+    position: "absolute",
+    overflow: "hidden",
+    backgroundColor: "#000000",
+    // Tiny radius forces iOS to clip transformed children to this rectangle.
+    borderRadius: 0.1,
+  },
   mask: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0 },
-  dim: { position: "absolute", backgroundColor: "rgba(0,0,0,0.55)" },
+  dim: { position: "absolute", backgroundColor: "#000000" },
   frame: { position: "absolute", borderWidth: StyleSheet.hairlineWidth, borderColor: "#FFFFFF" },
   gridV: { position: "absolute", top: 0, bottom: 0, width: StyleSheet.hairlineWidth, backgroundColor: "rgba(255,255,255,0.55)" },
   gridH: { position: "absolute", left: 0, right: 0, height: StyleSheet.hairlineWidth, backgroundColor: "rgba(255,255,255,0.55)" },
-  controls: { paddingHorizontal: 16, paddingBottom: 8, gap: 16 },
+  controls: { zIndex: 2, paddingHorizontal: 16, paddingBottom: 8, gap: 16, backgroundColor: "#000000" },
   toolRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   iconButton: { width: 40, height: 44, alignItems: "center", justifyContent: "center" },
   dialWindow: { flex: 1, height: 44, overflow: "hidden", justifyContent: "center" },

@@ -13,7 +13,7 @@ import {
   View,
 } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
-import type { MobileCheckoutAddress, MobileCheckoutQuote } from "@reswell/api-contract"
+import type { MobileCheckoutAddress, MobileCheckoutQuote, MobileListingDetail } from "@reswell/api-contract"
 import { VerticalScroll } from "@/components/horizontal-rail"
 import { ScreenSearchHeader } from "@/components/screen-search-header"
 import { ScreenFooter, ScreenScroll, ScreenShell } from "@/components/screen-shell"
@@ -21,6 +21,7 @@ import {
   fetchCart,
   fetchCheckoutAddresses,
   fetchCheckoutConfig,
+  fetchListing,
   finalizeCheckout,
   quoteCheckout,
   saveCheckoutAddress,
@@ -92,6 +93,8 @@ function CheckoutForm() {
   const params = useLocalSearchParams<{ listing?: string | string[] }>()
   const listingParam = Array.isArray(params.listing) ? params.listing[0] : params.listing
   const cart = useAccountResource(fetchCart)
+  const [directListing, setDirectListing] = useState<MobileListingDetail | null>(null)
+  const [listingReady, setListingReady] = useState(!listingParam)
   const [addresses, setAddresses] = useState<MobileCheckoutAddress[]>([])
   const [addressId, setAddressId] = useState<string | null>(null)
   const [addressOpen, setAddressOpen] = useState(false)
@@ -103,8 +106,40 @@ function CheckoutForm() {
   const [quoting, setQuoting] = useState(false)
   const [paying, setPaying] = useState(false)
 
+  useEffect(() => {
+    if (!token || !listingParam) {
+      setDirectListing(null)
+      setListingReady(!listingParam)
+      return
+    }
+    let cancelled = false
+    setListingReady(false)
+    fetchListing(listingParam, token)
+      .then((listing) => {
+        if (!cancelled) setDirectListing(listing)
+      })
+      .catch(() => {
+        if (!cancelled) setDirectListing(null)
+      })
+      .finally(() => {
+        if (!cancelled) setListingReady(true)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [listingParam, token])
+
   const cartItems = cart.data?.items ?? []
-  const items = listingParam ? cartItems.filter((item) => item.listing.id === listingParam) : cartItems
+  const cartMatch = listingParam
+    ? cartItems.filter((item) => item.listing.id === listingParam || item.listing.slug === listingParam)
+    : []
+  const items = listingParam
+    ? cartMatch.length > 0
+      ? cartMatch
+      : directListing
+        ? [{ quantity: 1, listing: directListing }]
+        : []
+    : cartItems
   const listingIds = items.map((item) => item.listing.id)
   const itemUsd = items.reduce((sum, item) => sum + item.listing.price_usd * item.quantity, 0)
   const canShip = items.length > 0 && items.every((item) => item.listing.shipping_available)
@@ -214,11 +249,11 @@ function CheckoutForm() {
 
   return (
     <ScreenShell style={{ backgroundColor: colors.background }}>
-      {cart.loading && items.length === 0 ? (
+      {(listingParam ? !listingReady && items.length === 0 : cart.loading && items.length === 0) ? (
         <ActivityIndicator style={styles.centered} color={colors.foreground} />
       ) : items.length === 0 ? (
         <Text style={[styles.missing, { color: colors.muted, fontFamily: fontFamily.text }]}>
-          That item is no longer in your cart.
+          {listingParam ? "This listing is no longer available." : "That item is no longer in your cart."}
         </Text>
       ) : (
         <ScreenScroll reserveFooter contentInsetAdjustmentBehavior="never" contentContainerStyle={styles.list}>

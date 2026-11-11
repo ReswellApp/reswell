@@ -1,4 +1,6 @@
 import { googleForwardGeocode } from "@/lib/maps/google-geocoding-server"
+import { redisGetOrSet } from "@/lib/redis/cache"
+import { REDIS_TTL_SECONDS, redisForwardGeocodeKey } from "@/lib/redis/keys"
 import type { OrderTrackingDetail } from "@/lib/shipping/order-tracking-detail"
 
 export const TRACKING_ACTIVITY_PREVIEW_COUNT = 3
@@ -107,8 +109,10 @@ async function geocodePlace(query: string): Promise<{ lat: number; lng: number }
   const key = query.trim().toLowerCase()
   if (!key) return null
   if (geocodeCache.has(key)) return geocodeCache.get(key) ?? null
-  const result = await googleForwardGeocode(query)
-  const coords = result ? { lat: result.lat, lng: result.lng } : null
+  const coords = await redisGetOrSet(redisForwardGeocodeKey(key), REDIS_TTL_SECONDS.forwardGeocode, async () => {
+    const result = await googleForwardGeocode(query)
+    return result ? { lat: result.lat, lng: result.lng } : null
+  })
   geocodeCache.set(key, coords)
   return coords
 }

@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Access denied" }, { status: 403 })
     }
 
-    const limit = consumeLiveChatRateLimit(
+    const limit = await consumeLiveChatRateLimit(
       `session:${liveChatClientIp(req)}`,
       LIVE_CHAT_RATE_LIMITS.sessionCreate.limit,
       LIVE_CHAT_RATE_LIMITS.sessionCreate.windowMs,

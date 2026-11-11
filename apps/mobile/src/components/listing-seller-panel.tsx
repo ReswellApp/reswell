@@ -182,6 +182,13 @@ function MessageIconButton({ open, onToggle }: { open: boolean; onToggle: () => 
   )
 }
 
+const COMPOSER_MIN_HEIGHT = 36
+const COMPOSER_MAX_HEIGHT = 105
+
+function clampComposerHeight(height: number): number {
+  return Math.min(COMPOSER_MAX_HEIGHT, Math.max(COMPOSER_MIN_HEIGHT, Math.ceil(height)))
+}
+
 function MessageComposer({ listingId, onSent }: { listingId: string; onSent: () => void }) {
   const colors = useReswellColors()
   const router = useRouter()
@@ -189,35 +196,67 @@ function MessageComposer({ listingId, onSent }: { listingId: string; onSent: () 
   const [draft, setDraft] = useState("")
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [inputHeight, setInputHeight] = useState(COMPOSER_MIN_HEIGHT)
+  const canSend = draft.trim().length > 0 && !busy
+
+  function send() {
+    const body = draft.trim()
+    if (!body || busy) return
+    requestAuth((token) => {
+      setBusy(true)
+      setError(null)
+      void sendListingMessage(token, listingId, body)
+        .then((result) => {
+          setDraft("")
+          setInputHeight(COMPOSER_MIN_HEIGHT)
+          onSent()
+          router.push({ pathname: "/account/messages/[id]", params: { id: result.conversation_id } })
+        })
+        .catch((cause: unknown) => {
+          setError(cause instanceof Error ? cause.message : "Could not send that message")
+        })
+        .finally(() => setBusy(false))
+    })
+  }
 
   return (
-    <View style={[styles.messageComposer, { backgroundColor: colors.image, borderColor: colors.border }]}>
-      <TextInput
-        value={draft}
-        onChangeText={setDraft}
-        placeholder="Message the seller"
-        placeholderTextColor={colors.muted}
-        style={[styles.input, { color: colors.foreground, backgroundColor: colors.background, fontFamily: fontFamily.text }]}
-        onSubmitEditing={() => {
-          const body = draft.trim()
-          if (!body || busy) return
-          requestAuth((token) => {
-            setBusy(true)
-            setError(null)
-            void sendListingMessage(token, listingId, body)
-              .then((result) => {
-                setDraft("")
-                onSent()
-                router.push({ pathname: "/account/messages/[id]", params: { id: result.conversation_id } })
-              })
-              .catch((cause: unknown) => {
-                setError(cause instanceof Error ? cause.message : "Could not send that message")
-              })
-              .finally(() => setBusy(false))
-          })
-        }}
-      />
-      {busy ? <ActivityIndicator color={colors.foreground} /> : null}
+    <View style={styles.messageComposer}>
+      <View style={[styles.inputShell, { backgroundColor: colors.image, borderColor: colors.border }]}>
+        <TextInput
+          value={draft}
+          onChangeText={(value) => {
+            setDraft(value)
+            if (value.length === 0) setInputHeight(COMPOSER_MIN_HEIGHT)
+          }}
+          onContentSizeChange={(event) => {
+            setInputHeight(clampComposerHeight(event.nativeEvent.contentSize.height))
+          }}
+          placeholder="Message the seller"
+          placeholderTextColor={colors.muted}
+          multiline
+          scrollEnabled={inputHeight >= COMPOSER_MAX_HEIGHT}
+          textAlignVertical="top"
+          editable={!busy}
+          style={[styles.input, { height: inputHeight, color: colors.foreground, fontFamily: fontFamily.text }]}
+        />
+        <Pressable
+          disabled={!canSend}
+          accessibilityRole="button"
+          accessibilityLabel="Send"
+          onPress={send}
+          style={styles.send}
+        >
+          {busy ? (
+            <ActivityIndicator size="small" color={colors.foreground} />
+          ) : (
+            <SymbolView
+              name={{ ios: "paperplane.fill", android: "send", web: "send" }}
+              size={18}
+              tintColor={canSend ? colors.shipping : colors.muted}
+            />
+          )}
+        </Pressable>
+      </View>
       {error ? <Text style={[styles.error, { color: colors.destructive, fontFamily: fontFamily.text }]}>{error}</Text> : null}
     </View>
   )
@@ -281,8 +320,24 @@ const styles = StyleSheet.create({
   followLabel: { fontSize: 14, fontWeight: "700" },
   shopLink: { flexDirection: "row", alignItems: "center", gap: 2, alignSelf: "flex-start", paddingHorizontal: 2 },
   shopLinkLabel: { fontSize: 14, fontWeight: "600" },
-  messageComposer: { borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, padding: 10, gap: 8 },
-  input: { borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16 },
+  messageComposer: { gap: 8 },
+  inputShell: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingVertical: 10,
+    paddingLeft: 12,
+    paddingRight: 6,
+  },
+  input: {
+    flex: 1,
+    minWidth: 0,
+    fontSize: 16,
+    lineHeight: 21,
+    padding: 0,
+  },
+  send: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
   error: { fontSize: 14 },
   accordion: { minHeight: 52, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
   accordionLabel: { fontSize: 16, fontWeight: "700" },

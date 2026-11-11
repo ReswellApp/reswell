@@ -51,6 +51,7 @@ export type MobileSaleOrderItem = {
 
 export type MobileSaleDetailRow = MobileSaleListRow & {
   refunded_at: string | null
+  carrier_delivered_at: string | null
   tracking_carrier: string | null
   listing_id: string
   stripe_checkout_session_id: string | null
@@ -176,6 +177,7 @@ export async function getMobileSaleDetailRow(
       status,
       created_at,
       refunded_at,
+      carrier_delivered_at,
       fulfillment_method,
       delivery_status,
       tracking_number,
@@ -248,6 +250,7 @@ export async function getMobileSaleDetailRow(
         .filter((item): item is MobileSaleListing => item != null),
       buyer_name: (buyer.data as { display_name?: string | null } | null)?.display_name ?? null,
       refunded_at: typeof raw.refunded_at === "string" ? raw.refunded_at : null,
+      carrier_delivered_at: typeof raw.carrier_delivered_at === "string" ? raw.carrier_delivered_at : null,
       tracking_carrier: typeof raw.tracking_carrier === "string" ? raw.tracking_carrier : null,
       listing_id: String(raw.listing_id ?? ""),
       stripe_checkout_session_id:

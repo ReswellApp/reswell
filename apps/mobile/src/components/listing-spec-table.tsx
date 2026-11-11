@@ -8,6 +8,9 @@ function shapeLabel(boardType: string | null): string | null {
 }
 
 export function listingSpecRows(listing: MobileListingDetail): { label: string; value: string }[] {
+  if (listing.spec_rows) {
+    return listing.spec_rows.map((row) => ({ label: row.label, value: row.value }))
+  }
   const rows: { label: string; value: string }[] = []
   if (listing.condition_line) rows.push({ label: "Condition", value: listing.condition_line })
   const shape = shapeLabel(listing.board_type)
@@ -41,6 +44,6 @@ export function ListingSpecTable({ rows }: { rows: { label: string; value: strin
 const styles = StyleSheet.create({
   specs: { marginTop: 4, borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth },
   specRow: { flexDirection: "row", alignItems: "baseline", gap: 16, paddingVertical: 8 },
-  specLabel: { width: 116, fontSize: 13, fontWeight: "500" },
+  specLabel: { width: 128, fontSize: 13, fontWeight: "500" },
   specValue: { flex: 1, fontSize: 13, lineHeight: 18 },
 })

@@ -6,7 +6,9 @@ import {
   purchaseAccentTextClassName,
   purchaseTrackRowClassName,
 } from "@/components/features/purchases/purchase-brand-styles"
-import { LocalDateOnly } from "@/components/ui/local-datetime"
+import { FulfillmentTimeline } from "@/components/features/orders/fulfillment-timeline"
+import { LocalDateOnly, LocalDateTime } from "@/components/ui/local-datetime"
+import type { PurchaseTimelineEvent } from "@/lib/purchase-detail-timeline"
 import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import type { PurchaseStatusTone } from "@/lib/purchases-list-display"
 import { formatUsd } from "@/lib/utils/format-usd"
@@ -48,6 +50,9 @@ export interface SaleDetailSummaryProps {
   statusLabel: string
   statusTone: PurchaseStatusTone
   statusDateIso: string | null
+  statusDateIncludesTime?: boolean
+  timelineHeading?: string | null
+  timeline?: PurchaseTimelineEvent[]
   addressName: string | null
   addressLines: string[]
   trackUrl: string | null
@@ -164,10 +169,18 @@ export function SaleDetailSummary(props: SaleDetailSummaryProps) {
         <p className="text-lg font-bold leading-tight">{props.statusLabel}</p>
         {props.statusDateIso ? (
           <p className="text-sm">
-            <LocalDateOnly iso={props.statusDateIso} dateStyle="long" />
+            {props.statusDateIncludesTime ? (
+              <LocalDateTime iso={props.statusDateIso} dateStyle="long" timeStyle="short" />
+            ) : (
+              <LocalDateOnly iso={props.statusDateIso} dateStyle="long" />
+            )}
           </p>
         ) : null}
       </section>
+
+      {props.timelineHeading && props.timeline && props.timeline.length > 0 ? (
+        <FulfillmentTimeline heading={props.timelineHeading} timeline={props.timeline} />
+      ) : null}
 
       {props.addressLines.length > 0 ? (
         <section className="flex gap-3 rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-900/40">

@@ -36,6 +36,7 @@ const LIST_ROW: MobilePurchaseListRow = {
   },
   fulfillment_method: "shipping",
   seller_id: SELLER_ID,
+  pickup_code: null,
   listing: {
     id: LISTING_ID,
     title: "terramar surfco retro bmt twin surfboard fins",
@@ -58,6 +59,71 @@ describe("mobile purchases", () => {
     assert.equal(item.show_shipping, true)
     assert.equal(item.status_label, "Shipping Label Created")
     assert.equal(item.counterparty_name, "TERRAMAR SURF")
+    assert.equal(item.pickup_code, null)
+  })
+
+  it("surfaces a local pickup code on the list and details until handoff", () => {
+    const pickupRow: MobilePurchaseListRow = {
+      ...LIST_ROW,
+      shipping_amount: 0,
+      tracking_number: null,
+      tracking_detail: null,
+      shipping_address: null,
+      fulfillment_method: "pickup",
+      delivery_status: "pickup_ready",
+      pickup_code: "482910",
+    }
+    const item = toMobilePurchaseListItem(pickupRow, null)
+    if (!item) throw new Error("expected a pickup purchase")
+    assert.equal(item.pickup_code, "482910")
+    assert.equal(item.fulfillment_label, "Local pickup")
+
+    const detail = buildMobilePurchaseDetail(
+      {
+        ...pickupRow,
+        refunded_at: null,
+        carrier_delivered_at: null,
+        tracking_carrier: null,
+        listing_id: LISTING_ID,
+        order_items: [],
+        seller_slug: "terramar-surf",
+        seller_avatar_url: null,
+      },
+      null,
+      { conversationId: null, buyerReview: null, sellerReview: null, trackUrl: null },
+    )
+    if (!detail) throw new Error("expected pickup details")
+    assert.equal(detail.pickup_code, "482910")
+    assert.equal(detail.timeline_heading, "Pickup details")
+    assert.equal(detail.status_date_includes_time, false)
+
+    const pickedUp = buildMobilePurchaseDetail(
+      {
+        ...pickupRow,
+        delivery_status: "picked_up",
+        pickup_code: "482910",
+        refunded_at: null,
+        carrier_delivered_at: "2026-11-03T17:18:00.000Z",
+        tracking_carrier: null,
+        listing_id: LISTING_ID,
+        order_items: [],
+        seller_slug: "terramar-surf",
+        seller_avatar_url: null,
+      },
+      null,
+      { conversationId: null, buyerReview: null, sellerReview: null, trackUrl: null },
+    )
+    if (!pickedUp) throw new Error("expected picked up details")
+    assert.equal(pickedUp.pickup_code, null)
+    assert.equal(pickedUp.status_date, "2026-11-03T17:18:00.000Z")
+    assert.equal(pickedUp.status_date_includes_time, true)
+    assert.deepEqual(
+      pickedUp.timeline.map((step) => [step.title, step.occurred_at]),
+      [
+        ["Purchased", pickupRow.created_at],
+        ["Picked up", "2026-11-03T17:18:00.000Z"],
+      ],
+    )
   })
 
   it("builds purchase details with timeline, address, and line items", () => {
@@ -126,5 +192,6 @@ describe("mobile purchases", () => {
       detail.track_url,
       "https://www.reswell.app/track/44444444-4444-4444-8444-444444444444",
     )
+    assert.equal(detail.pickup_code, null)
   })
 })

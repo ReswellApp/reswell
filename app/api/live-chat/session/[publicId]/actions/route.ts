@@ -49,7 +49,7 @@ export async function GET(req: NextRequest, context: RouteContext) {
   try {
     const { publicId } = await context.params
     const visitorToken = req.nextUrl.searchParams.get("visitor_token")?.trim() || undefined
-    const limit = consumeLiveChatRateLimit(
+    const limit = await consumeLiveChatRateLimit(
       `actions-get:${liveChatClientIp(req)}:${publicId}`,
       LIVE_CHAT_RATE_LIMITS.actionsGet.limit,
       LIVE_CHAT_RATE_LIMITS.actionsGet.windowMs,
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: "Invalid action payload" }, { status: 400 })
     }
 
-    const limit = consumeLiveChatRateLimit(
+    const limit = await consumeLiveChatRateLimit(
       `actions-post:${liveChatClientIp(req)}:${publicId}`,
       LIVE_CHAT_RATE_LIMITS.actionsPost.limit,
       LIVE_CHAT_RATE_LIMITS.actionsPost.windowMs,

@@ -28,7 +28,7 @@ export default function PurchaseDetailScreen() {
     >
       {data ? (
         <ScrollView contentInsetAdjustmentBehavior="never" contentContainerStyle={styles.scroll}>
-          <PurchaseDetailView purchase={data} />
+          <PurchaseDetailView purchase={data} onReviewed={reload} />
         </ScrollView>
       ) : null}
     </AccountState>

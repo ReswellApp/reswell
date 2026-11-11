@@ -18,24 +18,11 @@ import {
   assertMobileSellVideos,
   replaceListingVideos,
 } from "@/lib/services/mobileSellVideos"
-import { verifyListingImageObjectsExist } from "@/lib/services/verifyListingImageStorage"
 import { verifyStorageObjectExists } from "@/lib/supabase/storage-object-exists"
 import { SERVER_IMAGE_CONVERT_MAX_BYTES } from "@/lib/utils/server-image-convert"
 
 /** Fallback path only — prefer device → Supabase storage (see apps/mobile sell-photo-upload). */
 const PHOTO_MAX_BYTES = SERVER_IMAGE_CONVERT_MAX_BYTES
-
-async function assertMobileSellImagesInStorage(
-  images: MobileSellPhoto[],
-): Promise<string | null> {
-  for (const image of images) {
-    const ok = await verifyListingImageObjectsExist(image.url, image.thumbnail_url)
-    if (!ok) {
-      return "Upload the listing photos again"
-    }
-  }
-  return null
-}
 
 /**
  * Fallback for clients that still POST bytes through Vercel.
@@ -122,12 +109,15 @@ export async function replaceListingImages(
   images: Array<MobileSellPhoto & { image_id?: string }>,
 ): Promise<string | null> {
   const previous = await supabase.from("listing_images").select("id").eq("listing_id", listingId)
-  const previousIds = (previous.data ?? []).map((row) => row.id as string)
+  const keptIds = new Set(images.flatMap((image) => (image.image_id ? [image.image_id] : [])))
+  const removedIds = (previous.data ?? [])
+    .map((row) => row.id as string)
+    .filter((id) => !keptIds.has(id))
   try {
     await syncListingImages(
       supabase,
       listingId,
-      previousIds,
+      removedIds,
       images.map((image, index) => ({
         id: image.image_id,
         url: image.url,
@@ -158,8 +148,6 @@ export async function saveMobileSellDraftService(
   ) {
     return { ok: false, status: 400, error: "Upload the listing photos again" }
   }
-  const storageError = await assertMobileSellImagesInStorage(input.images)
-  if (storageError) return { ok: false, status: 400, error: storageError }
   const videoError = await assertMobileSellVideos(input.videos, userId)
   if (videoError) return { ok: false, status: 400, error: videoError }
   const built = mobileSellDraftFields(input)
@@ -212,8 +200,6 @@ export async function publishMobileListingService(
   ) {
     return { ok: false, status: 400, error: "Upload the listing photos again" }
   }
-  const storageError = await assertMobileSellImagesInStorage(input.images)
-  if (storageError) return { ok: false, status: 400, error: storageError }
   const videoError = await assertMobileSellVideos(input.videos, userId)
   if (videoError) return { ok: false, status: 400, error: videoError }
   const built = mobileSellListingFields(input)

@@ -98,7 +98,9 @@ export const SUPPORT_JOURNEY_BY_TOPIC: Record<MessagesSupportTopic, SupportJourn
       title: "Delete my account or data",
       hint: "Privacy requests",
       resolution:
-        "We take account deletion and data requests seriously. Send a ticket with the email on your account and what you need—we’ll confirm identity before processing.",
+        "You can delete your account yourself from Profile → Sign-in → Delete account, or at reswell.com/account/delete while signed in. Finish open orders and cash out earnings first. If something blocks deletion, send a ticket with the email on your account.",
+      helpHref: "/account/delete",
+      helpLinkLabel: "Delete account",
     }),
     n({
       id: "acct-freeform",

@@ -59,6 +59,8 @@ describe("pushTopicForNotificationType", () => {
     assert.equal(pushTopicForNotificationType("price_drop_from_followed"), "follows")
     assert.equal(pushTopicForNotificationType("order_delivered"), "orders")
     assert.equal(pushTopicForNotificationType("payout_info_required"), "orders")
+    assert.equal(pushTopicForNotificationType("review_seller_requested"), "orders")
+    assert.equal(pushTopicForNotificationType("review_buyer_requested"), "orders")
   })
 })
 

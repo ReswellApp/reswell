@@ -14,6 +14,7 @@ function body(overrides: Partial<MobileSignUpBody> = {}): MobileSignUpBody {
     username: "",
     marketing_opt_in: true,
     accepted_terms: true,
+    date_of_birth: "1990-06-15",
     ...overrides,
   }
 }
@@ -26,6 +27,7 @@ describe("prepareMobileEmailSignUp", () => {
     assert.equal(result.value.metadata.display_name, "DJohn")
     assert.equal(result.value.metadata.username, undefined)
     assert.equal(result.value.metadata.marketing_opt_in, true)
+    assert.equal(result.value.metadata.date_of_birth, "1990-06-15")
   })
 
   it("keeps a chosen username as the public name", () => {
@@ -66,5 +68,10 @@ describe("prepareMobileEmailSignUp", () => {
       parsed.error.issues[0]?.message,
       "Please accept Reswell's Terms of Use and Privacy Policy to continue.",
     )
+  })
+
+  it("rejects sign-up without a date of birth", () => {
+    const parsed = mobileSignUpBodySchema.safeParse({ ...body(), date_of_birth: "" })
+    assert.equal(parsed.success, false)
   })
 })

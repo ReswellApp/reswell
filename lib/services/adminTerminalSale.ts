@@ -765,6 +765,7 @@ export async function completeAdminTerminalCashSale(
       stripe_checkout_session_id: cashReference,
       fulfillment_method: ADMIN_TERMINAL_FULFILLMENT,
       delivery_status: "picked_up",
+      carrier_delivered_at: new Date().toISOString(),
       pickup_code: null,
       sales_channel: ADMIN_TERMINAL_SALES_CHANNEL,
       ...(shippingAddressJson ? { shipping_address: shippingAddressJson } : {}),

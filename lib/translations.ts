@@ -145,6 +145,9 @@ type Translations = {
       changePasswordMismatch: string
       signOut: string
       signOutDescription: string
+      deleteAccount: string
+      deleteAccountDescription: string
+      deleteAccountButton: string
     }
     addresses: {
       tab: string
@@ -326,6 +329,10 @@ const en: Translations = {
       changePasswordMismatch: 'New passwords do not match.',
       signOut: 'Sign Out',
       signOutDescription: 'Sign out of your account on this device',
+      deleteAccount: 'Delete account',
+      deleteAccountDescription:
+        'Permanently delete your Reswell account and personal profile data. Finish open orders and cash out earnings first.',
+      deleteAccountButton: 'Delete account',
     },
     addresses: {
       tab: 'Addresses',
@@ -509,6 +516,10 @@ const es: Translations = {
       changePasswordMismatch: 'Las contraseñas nuevas no coinciden.',
       signOut: 'Cerrar sesión',
       signOutDescription: 'Cerrar sesión en este dispositivo',
+      deleteAccount: 'Eliminar cuenta',
+      deleteAccountDescription:
+        'Elimina de forma permanente tu cuenta de Reswell y los datos personales de tu perfil. Termina pedidos abiertos y retira tus ganancias primero.',
+      deleteAccountButton: 'Eliminar cuenta',
     },
     addresses: {
       tab: 'Direcciones',

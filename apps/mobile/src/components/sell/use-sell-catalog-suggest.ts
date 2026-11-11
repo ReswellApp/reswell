@@ -4,7 +4,7 @@ import type { MobileSellCatalogRow } from "@reswell/api-contract"
 
 const DEBOUNCE_MS = 180
 
-/** Catalog suggestions for a brand or model query. Empty until the query has two characters. */
+/** Brand directory suggestions. Empty until the query has two characters. Models stay on the model field. */
 export function useSellCatalogSuggest(query: string): {
   results: MobileSellCatalogRow[]
   searching: boolean
@@ -24,7 +24,9 @@ export function useSellCatalogSuggest(query: string): {
       setSearching(true)
       fetchSellCatalog(trimmed)
         .then((data) => {
-          if (!cancelled) setResults(data.results.slice(0, 6))
+          if (!cancelled) {
+            setResults(data.results.filter((row) => row.kind === "brand").slice(0, 6))
+          }
         })
         .catch(() => {
           if (!cancelled) setResults([])

@@ -2,6 +2,8 @@ import { unstable_cache } from "next/cache"
 import type { SearchSuggestResult } from "@/lib/types/marketplace-search-suggest"
 import type { NavSearchSuggestSectionKey } from "@/lib/header-nav-marketplace-search"
 import { navSearchSuggestSectionKey } from "@/lib/header-nav-marketplace-search"
+import { redisGetOrSet } from "@/lib/redis/cache"
+import { REDIS_TTL_SECONDS, redisSearchSuggestKey } from "@/lib/redis/keys"
 import {
   normalizeMarketplaceSearchSuggestQuery,
   runMarketplaceSearchSuggest,
@@ -17,8 +19,14 @@ async function loadNavSearchSuggest(
   qNormalized: string,
   sectionNormalized: NavSearchSuggestSectionKey,
 ): Promise<SearchSuggestResult> {
-  const supabase = getDb({ consistency: "eventual" })
-  return runMarketplaceSearchSuggest(supabase, qNormalized, sectionNormalized)
+  return redisGetOrSet(
+    redisSearchSuggestKey(sectionNormalized, qNormalized),
+    REDIS_TTL_SECONDS.searchSuggest,
+    async () => {
+      const supabase = getDb({ consistency: "eventual" })
+      return runMarketplaceSearchSuggest(supabase, qNormalized, sectionNormalized)
+    },
+  )
 }
 
 const getCachedNavSearchSuggest = unstable_cache(

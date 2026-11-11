@@ -2,6 +2,7 @@ import type { SupabaseClient, User } from "@supabase/supabase-js"
 
 import { trackKlaviyoNewAccountCreated } from "@/lib/klaviyo/track-new-account-created"
 import { applyMarketingEmailConsent } from "@/lib/services/marketingEmailConsent"
+import { saveSignupDateOfBirthFromUser } from "@/lib/services/saveSignupDateOfBirth"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 
 /**
@@ -12,6 +13,8 @@ export async function recordNewEmailAccountCreated(
   user: User,
   supabaseForProfile?: SupabaseClient,
 ): Promise<void> {
+  await saveSignupDateOfBirthFromUser(user)
+
   try {
     const serviceRole = createServiceRoleClient()
     const meta = user.user_metadata as Record<string, unknown> | undefined

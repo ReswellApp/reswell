@@ -25,6 +25,7 @@ import { bottomSheetListPaddingBottom } from "@/components/screen-shell"
 import { CategoryFilters } from "@/components/category-filters"
 import { CategoryToolbar } from "@/components/category-toolbar"
 import { type CategoryPlace, type CategoryRadius } from "@/components/category-location-filter"
+import { CategoryLocationButton } from "@/components/category-location-sheet"
 import { ListingCard } from "@/components/listing-card"
 import { SaveSearchCard } from "@/components/save-search-card"
 import { fetchCategory, fetchCategoryListings, fetchSavedSearch, fetchSearchResults } from "@/lib/api"
@@ -186,8 +187,9 @@ export default function SearchResultsScreen() {
     : filterSearchListings(searchListings, { sort, shipping, selected })
   const grid = listings.length % 2 === 1 ? [...listings, null] : listings
   const sorts = category?.sorts ?? SORTS
+  const showLocation = facetSlug === "surfboards"
   const filterCount =
-    Object.values(selected).reduce((sum, values) => sum + values.length, 0) + (shipping ? 1 : 0) + (place ? 1 : 0)
+    Object.values(selected).reduce((sum, values) => sum + values.length, 0) + (shipping ? 1 : 0)
   const tabBarInset = useFloatingTabBarContentInset()
 
   return (
@@ -213,6 +215,9 @@ export default function SearchResultsScreen() {
           numColumns={2}
           columnWrapperStyle={listings.length > 0 ? styles.columns : undefined}
           contentContainerStyle={[styles.list, tabBarInset]}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          automaticallyAdjustKeyboardInsets
           onEndReached={loadMore}
           onEndReachedThreshold={0.4}
           ListHeaderComponent={
@@ -221,6 +226,16 @@ export default function SearchResultsScreen() {
               filterCount={filterCount}
               onFilter={() => setFiltersOpen(true)}
               onSort={() => setSortOpen(true)}
+              location={
+                showLocation ? (
+                  <CategoryLocationButton
+                    place={place}
+                    radius={radius}
+                    onPlaceChange={setPlace}
+                    onRadiusChange={setRadius}
+                  />
+                ) : null
+              }
             />
           }
           ListEmptyComponent={
@@ -291,7 +306,7 @@ export default function SearchResultsScreen() {
         visible={filtersOpen}
         facets={category?.facets ?? []}
         ship={category?.ship ?? false}
-        showLocation={facetSlug === "surfboards"}
+        showLocation={showLocation}
         shipping={shipping}
         selected={selected}
         place={place}

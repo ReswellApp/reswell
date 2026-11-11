@@ -2,6 +2,7 @@ import type { MobileSignUpBody, MobileSignUpResult } from "@reswell/api-contract
 
 import { recordNewEmailAccountCreated } from "@/lib/services/recordNewEmailAccount"
 import { prepareMobileEmailSignUp } from "@/lib/services/prepareMobileEmailSignUp"
+import { saveSignupDateOfBirth } from "@/lib/services/saveSignupDateOfBirth"
 import type { MobileApiResult } from "@/lib/services/mobileApi"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
 import { createAnonSupabaseClient, createUserJwtSupabaseClient } from "@/lib/supabase/server"
@@ -24,6 +25,10 @@ export async function registerMobileEmailAccount(
   })
 
   if (error) return { ok: false, status: 400, error: error.message }
+
+  if (data.user) {
+    await saveSignupDateOfBirth(data.user.id, prepared.value.metadata.date_of_birth)
+  }
 
   const session = data.session
   if (session?.access_token && session.refresh_token && session.user) {

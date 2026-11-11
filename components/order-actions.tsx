@@ -9,6 +9,10 @@ import { Badge } from "@/components/ui/badge"
 import { Truck, CheckCircle2, Package, Loader2, AlertCircle, LifeBuoy, RotateCcw } from "lucide-react"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
+import {
+  pickupCodeBannerLabelClassName,
+  pickupCodeBannerSurfaceClassName,
+} from "@/components/features/purchases/purchase-brand-styles"
 import { helpHubHref } from "@/lib/help/help-hub-intents"
 import {
   AlertDialog,
@@ -26,6 +30,8 @@ import {
   payoutStatusLabel,
   payoutStatusBadgeVariant,
 } from "@/lib/order-status"
+
+export { pickupCodeBannerLabelClassName, pickupCodeBannerSurfaceClassName }
 
 type PayoutInfo = { status: string; hold_reason?: string | null }
 
@@ -274,12 +280,6 @@ export function PayoutStatusBadge({ payout }: { payout: PayoutInfo | null }) {
 }
 
 // ── Buyer: pickup code display ────────────────────────────────
-
-/** Footer blue (`listingHeart`) at low opacity — shared wherever the pickup code banner appears. */
-export const pickupCodeBannerSurfaceClassName =
-  "border-listingHeart/30 bg-listingHeart/[0.08] dark:bg-listingHeart/15"
-
-export const pickupCodeBannerLabelClassName = "text-listingHeart dark:text-listingHeart/90"
 
 export function BuyerPickupCode({
   pickupCode,

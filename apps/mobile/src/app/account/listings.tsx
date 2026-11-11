@@ -6,7 +6,7 @@ import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-na
 import type { MobileMyListings } from "@reswell/api-contract"
 import { DashboardPageGate } from "@/components/dashboard-page-gate"
 import { SCREEN_GUTTER } from "@/components/screen-shell"
-import { fetchMyListings, relistListing, setListingVacation } from "@/lib/api"
+import { fetchMyListings, prefetchSellListingEdit, relistListing, setListingVacation } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
 import { useAccountResource } from "@/lib/use-account-resource"
 import { fontFamily, useReswellColors } from "@/theme"
@@ -280,7 +280,11 @@ function ListingsDesk({
           onOpen={() => {
             if (item.slug) router.push({ pathname: "/listing/[id]", params: { id: item.slug } })
           }}
-          onEdit={() => router.push(`/sell/edit/${item.id}`)}
+          onEdit={() => {
+            const token = session?.access_token
+            if (token) prefetchSellListingEdit(token, item.id)
+            router.push(`/sell/edit/${item.id}`)
+          }}
           onVacation={() =>
             void run(item.id, (token) =>
               setListingVacation(token, { listing_id: item.id, enabled: !item.on_vacation }),

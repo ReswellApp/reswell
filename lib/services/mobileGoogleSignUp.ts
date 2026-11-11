@@ -6,6 +6,7 @@ import { ACCOUNT_BANNED_USER_MESSAGE } from "@/lib/messages/account-ban-errors"
 import { shouldRejectBannedAuthUser } from "@/lib/auth/reject-banned-auth-user"
 import { trackKlaviyoNewAccountCreated } from "@/lib/klaviyo/track-new-account-created"
 import { applyMarketingEmailConsent } from "@/lib/services/marketingEmailConsent"
+import { saveSignupDateOfBirth } from "@/lib/services/saveSignupDateOfBirth"
 import type { MobileApiResult } from "@/lib/services/mobileApi"
 import { createAnonSupabaseClient, createServiceRoleClient, createUserJwtSupabaseClient } from "@/lib/supabase/server"
 
@@ -68,6 +69,7 @@ export async function registerMobileGoogleAccount(
     return { ok: false, status: 403, error: ACCOUNT_BANNED_USER_MESSAGE }
   }
 
+  await saveSignupDateOfBirth(user.id, input.date_of_birth)
   await recordNewGoogleAccount(user, session.access_token, input.marketing_opt_in)
 
   return {

@@ -25,6 +25,11 @@ import { buildEmailSignUpSuccessPath } from "@/lib/google-ads/sign-up-success-pa
 import { resolveSignUpDisplayName } from "@/lib/auth/sign-up-display-name"
 import { LegalDocumentDialog, type LegalDocumentId } from "@/components/features/legal/legal-document-dialog"
 import { cn } from "@/lib/utils"
+import {
+  DATE_OF_BIRTH_REQUIRED_MESSAGE,
+  latestEligibleBirthDateIso,
+  signupDateOfBirthSchema,
+} from "@reswell/api-contract"
 
 function isCompleteEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())
@@ -54,6 +59,7 @@ export function SignUpFormPanel({
   onSignUpSuccess,
   googleAutoStart = false,
   initialMarketingOptIn,
+  initialDateOfBirth,
 }: {
   variant?: "page" | "modal" | "landing"
   redirectTo?: string
@@ -62,6 +68,8 @@ export function SignUpFormPanel({
   googleAutoStart?: boolean
   /** From OAuth handoff URL (`?marketing=1`) when auto-starting Google sign-up. */
   initialMarketingOptIn?: boolean
+  /** From OAuth handoff URL (`?dob=YYYY-MM-DD`) when auto-starting Google sign-up. */
+  initialDateOfBirth?: string
 }) {
   const [firstName, setFirstName] = useState("")
   const [lastName, setLastName] = useState("")
@@ -71,6 +79,7 @@ export function SignUpFormPanel({
   const [showPassword, setShowPassword] = useState(false)
   const [marketingOptIn, setMarketingOptIn] = useState(initialMarketingOptIn ?? true)
   const [acceptedTerms, setAcceptedTerms] = useState(true)
+  const [dateOfBirth, setDateOfBirth] = useState(initialDateOfBirth ?? "")
   const [legalDocument, setLegalDocument] = useState<LegalDocumentId | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -78,6 +87,7 @@ export function SignUpFormPanel({
 
   const firstNameComplete = firstName.trim().length > 0
   const lastNameComplete = lastName.trim().length > 0
+  const dateOfBirthComplete = signupDateOfBirthSchema.safeParse(dateOfBirth).success
   const emailComplete = isCompleteEmail(email)
   const passwordComplete = validateSignUpPassword(password).valid
 
@@ -100,6 +110,12 @@ export function SignUpFormPanel({
 
     if (!acceptedTerms) {
       setError("Please accept Reswell's Terms of Use and Privacy Policy to continue.")
+      return
+    }
+
+    const dateOfBirthCheck = signupDateOfBirthSchema.safeParse(dateOfBirth)
+    if (!dateOfBirthCheck.success) {
+      setError(dateOfBirthCheck.error.issues[0]?.message ?? DATE_OF_BIRTH_REQUIRED_MESSAGE)
       return
     }
 
@@ -155,6 +171,7 @@ export function SignUpFormPanel({
             first_name: trimmedFirst,
             last_name: trimmedLast,
             marketing_opt_in: marketingOptIn,
+            date_of_birth: dateOfBirthCheck.data,
             ...(username.trim() ? { username: username.trim() } : {}),
           },
         },
@@ -320,6 +337,8 @@ export function SignUpFormPanel({
       handoffMode="sign-up"
       layout="full"
       marketingOptIn={marketingOptIn}
+      dateOfBirth={dateOfBirth}
+      acceptedTerms={acceptedTerms}
       className={isLanding ? "sm:w-auto sm:shrink-0" : undefined}
       buttonClassName={isLanding ? "h-10 text-sm sm:w-auto sm:px-6" : undefined}
     />
@@ -381,6 +400,25 @@ export function SignUpFormPanel({
       <AuthFormOrDivider className={isLanding ? "py-0" : undefined} />
 
       <form onSubmit={handleSignUp} className={cn(isLanding ? "space-y-2" : compact ? "space-y-3" : "space-y-5")}>
+        <div className={cn("grid min-w-0", fieldGapClass)}>
+          <Label htmlFor="signup-date-of-birth" className={labelClass}>
+            Date of birth <RequiredMark complete={dateOfBirthComplete} />
+          </Label>
+          <Input
+            id="signup-date-of-birth"
+            type="date"
+            autoComplete="bday"
+            required
+            min="1900-01-01"
+            max={latestEligibleBirthDateIso()}
+            value={dateOfBirth}
+            onChange={(e) => setDateOfBirth(e.target.value)}
+          />
+          <p className={cn("text-muted-foreground", isLanding ? "text-[10px] leading-tight" : "text-xs leading-snug")}>
+            You must be 18 or older.
+          </p>
+        </div>
+
         <div
           className={cn(
             "grid grid-cols-2",

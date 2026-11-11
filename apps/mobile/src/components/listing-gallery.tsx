@@ -3,6 +3,7 @@ import { useState } from "react"
 import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native"
 import { ListingGalleryVideo } from "@/components/listing-gallery-video"
 import { ListingImageLightbox } from "@/components/listing-image-lightbox"
+import { ListingFavoriteButton } from "@/components/listing-tile-actions"
 import { fontFamily, useReswellColors } from "@/theme"
 
 /** Same default frame as the website listing hero: 3:4, whole photo visible. */
@@ -13,6 +14,7 @@ export function ListingGallery({
   video = null,
   sold = false,
   dimensionsLine = null,
+  favorite = null,
 }: {
   urls: string[]
   /** First playable clip, shown after the photos the way `/l` does. */
@@ -20,6 +22,12 @@ export function ListingGallery({
   sold?: boolean
   /** Same enlarge caption as the website, e.g. `5'11″ × 18 3/8″ × 2 1/4″ · 27 L`. */
   dimensionsLine?: string | null
+  /** Website PDP overlay: heart on the top-right of the photo. */
+  favorite?: {
+    listingId: string
+    favorited?: boolean
+    onFavoritedChange?: (favorited: boolean) => void
+  } | null
 }) {
   const colors = useReswellColors()
   const { width } = useWindowDimensions()
@@ -79,6 +87,14 @@ export function ListingGallery({
           <Text style={[styles.soldLabel, { color: colors.primaryForeground, fontFamily: fontFamily.text }]}>Sold</Text>
         </View>
       ) : null}
+      {favorite ? (
+        <ListingFavoriteButton
+          listingId={favorite.listingId}
+          initialFavorited={favorite.favorited}
+          onFavoritedChange={favorite.onFavoritedChange}
+          overlay="pdp"
+        />
+      ) : null}
       {frames > 1 ? (
         <View style={styles.dots} pointerEvents="none">
           <View style={styles.dotsPill}>
@@ -108,10 +124,11 @@ const styles = StyleSheet.create({
   sold: {
     position: "absolute",
     top: 16,
-    right: 16,
+    left: 16,
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 4,
+    zIndex: 8,
   },
   soldLabel: { fontSize: 11, fontWeight: "600", letterSpacing: 0.6, textTransform: "uppercase" },
   dots: {

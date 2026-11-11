@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams } from "expo-router"
-import { useCallback, useEffect, useState, type SetStateAction } from "react"
+import { useCallback, useEffect, useMemo, useState, type SetStateAction } from "react"
 import {
   ActivityIndicator,
   FlatList,
@@ -14,10 +14,14 @@ import type { MobileCategory, MobileCategorySortId, MobileListingCard, MobileLis
 import { CategoryFilters } from "@/components/category-filters"
 import { CategoryHero } from "@/components/category-hero"
 import { type CategoryPlace, type CategoryRadius } from "@/components/category-location-filter"
+import { CategoryLocationButton } from "@/components/category-location-sheet"
 import { CategoryToolbar } from "@/components/category-toolbar"
 import { useFloatingTabBarContentInset } from "@/components/floating-tab-bar"
 import { ScreenSearchHeader } from "@/components/screen-search-header"
-import { MarketplaceListingLayoutItem } from "@/components/marketplace-listing-layout-item"
+import {
+  MarketplaceListingLayoutItem,
+  marketplaceListingRows,
+} from "@/components/marketplace-listing-layout-item"
 import { type ListingLayout } from "@/components/listing-layout-switch"
 import { marketplaceListContentStyle } from "@/components/listing-list-layout"
 import { bottomSheetListPaddingBottom } from "@/components/screen-shell"
@@ -100,9 +104,10 @@ export default function CategoryScreen() {
 
   const { viewerId, followBusyId, openListing, openSeller, toggleFollow } = useListingSellerFollow(setListings)
   const tabBarInset = useFloatingTabBarContentInset()
-  const grid = layout === "grid" && listings.length % 2 === 1 ? [...listings, null] : listings
+  const rows = useMemo(() => marketplaceListingRows(listings, layout), [layout, listings])
+  const showLocation = slug === "surfboards"
   const filterCount =
-    Object.values(selected).reduce((sum, values) => sum + values.length, 0) + (shipping ? 1 : 0) + (place ? 1 : 0)
+    Object.values(selected).reduce((sum, values) => sum + values.length, 0) + (shipping ? 1 : 0)
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
@@ -119,15 +124,10 @@ export default function CategoryScreen() {
         </View>
       ) : category ? (
         <FlatList
-          key={layout}
-          data={grid}
-          keyExtractor={(item) => item?.id ?? "spacer"}
-          numColumns={layout === "grid" ? 2 : 1}
-          columnWrapperStyle={layout === "grid" ? styles.columns : undefined}
-          contentContainerStyle={[
-            layout === "list" ? marketplaceListContentStyle(styles.listBase, layout) : styles.list,
-            tabBarInset,
-          ]}
+          data={rows}
+          extraData={followBusyId}
+          keyExtractor={(item) => item.key}
+          contentContainerStyle={[marketplaceListContentStyle(styles.listBase), tabBarInset]}
           refreshing={loading}
           onRefresh={load}
           onEndReached={loadMore}
@@ -142,6 +142,16 @@ export default function CategoryScreen() {
                 onSort={() => setSortOpen(true)}
                 onFilter={() => setFiltersOpen(true)}
                 onLayout={setLayout}
+                location={
+                  showLocation ? (
+                    <CategoryLocationButton
+                      place={place}
+                      radius={radius}
+                      onPlaceChange={setPlace}
+                      onRadiusChange={setRadius}
+                    />
+                  ) : null
+                }
               />
             </View>
           }
@@ -155,21 +165,16 @@ export default function CategoryScreen() {
           ListFooterComponent={
             loadingMore ? <ActivityIndicator color={colors.foreground} style={styles.footer} /> : null
           }
-          renderItem={({ item }) =>
-            item ? (
-              <MarketplaceListingLayoutItem
-                layout={layout}
-                item={item}
-                viewerId={viewerId}
-                followBusy={followBusyId === item.seller?.id}
-                onPress={() => openListing(item)}
-                onPressSeller={openSeller}
-                onFollowSeller={toggleFollow}
-              />
-            ) : (
-              <View style={styles.spacer} />
-            )
-          }
+          renderItem={({ item }) => (
+            <MarketplaceListingLayoutItem
+              row={item}
+              viewerId={viewerId}
+              followBusyId={followBusyId}
+              onPress={openListing}
+              onPressSeller={openSeller}
+              onFollowSeller={toggleFollow}
+            />
+          )}
         />
       ) : null}
       <Modal visible={sortOpen} transparent animationType="fade" onRequestClose={() => setSortOpen(false)}>
@@ -208,7 +213,7 @@ export default function CategoryScreen() {
         visible={filtersOpen}
         facets={category?.facets ?? []}
         ship={category?.ship ?? false}
-        showLocation={slug === "surfboards"}
+        showLocation={showLocation}
         shipping={shipping}
         selected={selected}
         place={place}
@@ -233,12 +238,9 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   centered: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, padding: 24 },
   retry: { fontSize: 16, fontWeight: "600" },
-  list: { paddingTop: 4, paddingHorizontal: 12 },
   listBase: { paddingTop: 4 },
-  columns: { gap: 12 },
   empty: { textAlign: "center", marginTop: 32, fontSize: 16 },
   footer: { marginVertical: 16 },
-  spacer: { flex: 1 },
   scrim: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.28)" },
   sheet: { borderTopLeftRadius: 18, borderTopRightRadius: 18, paddingTop: 8 },
   sheetRow: { paddingHorizontal: 20, paddingVertical: 16 },

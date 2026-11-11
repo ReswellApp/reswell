@@ -24,7 +24,7 @@ export const accountsRetrievalDocs = [
       },
       {
         heading: "Password and sign in",
-        text: "On the Sign-in tab: Email reset link, or Change password (current + new, at least 6 characters). Sign Out ends the session. On the public sign-in page, use Forgot password?",
+        text: "On the Sign-in tab: Email reset link, or Change password (current + new, at least 6 characters). Sign Out ends the session. Delete account opens /account/delete. On the public sign-in page, use Forgot password?",
       },
       {
         heading: "Addresses and notifications",
@@ -74,7 +74,7 @@ export const accountsRetrievalDocs = [
     keywords: ["delete", "access", "login", "locked out", "close account"],
     relatedIds: ["accounts/update-profile-settings", "accounts/how-to-contact-support", "accounts/avoid-scams"],
     quickAnswer:
-      "Try Forgot password? and the same sign-in method you used originally (email or Google). To delete the account, contact support from the registered email. Open orders or pending payouts may need to finish first. Deleted accounts cannot be recovered.",
+      "Try Forgot password? and the same sign-in method you used originally (email or Google). To delete the account, open Profile → Sign-in → Delete account, or /account/delete while signed in. Open orders or pending payouts may need to finish first. Deleted accounts cannot be recovered.",
     sections: [
       {
         heading: "If you cannot sign in",
@@ -82,7 +82,7 @@ export const accountsRetrievalDocs = [
       },
       {
         heading: "Requesting deletion",
-        text: "Contact support from the registered email and say you want the account deleted. Mention active listings, open orders, and wallet balance.",
+        text: "On the website, open /dashboard/profile#sign-in and tap Delete account, or go to /account/delete while signed in. In the iOS app, Me → Profile → Sign-in → Delete account. Finish open orders and cash out earnings first. Deletion is permanent.",
       },
       {
         heading: "Before you delete",

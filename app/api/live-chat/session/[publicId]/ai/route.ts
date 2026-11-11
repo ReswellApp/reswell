@@ -19,13 +19,13 @@ export async function POST(req: NextRequest, context: RouteContext) {
 
     const { publicId } = await context.params
     const ip = liveChatClientIp(req)
-    const perToken = consumeLiveChatRateLimit(
+    const perToken = await consumeLiveChatRateLimit(
       `ai:${ip}:${publicId}`,
       LIVE_CHAT_RATE_LIMITS.ai.limit,
       LIVE_CHAT_RATE_LIMITS.ai.windowMs,
     )
     if (!perToken.ok) return liveChatRateLimitResponse(perToken.retryAfterSec)
-    const perIp = consumeLiveChatRateLimit(
+    const perIp = await consumeLiveChatRateLimit(
       `ai-ip:${ip}`,
       LIVE_CHAT_RATE_LIMITS.aiIp.limit,
       LIVE_CHAT_RATE_LIMITS.aiIp.windowMs,

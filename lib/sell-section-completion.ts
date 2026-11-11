@@ -48,20 +48,19 @@ function descriptionOnlyComplete(form: SellFormValidationInput): boolean {
 }
 
 function dimensionsSectionComplete(form: SellFormValidationInput): boolean {
-  const shippingRequiresLength = flagsFromBoardFulfillment(form.boardFulfillment).shipping_available
   const lenRaw = form.boardLength?.trim() ?? ""
 
-  // Pickup-only: dimensions stay optional. Shipping: length required; width/thickness optional.
-  if (!lenRaw) return !shippingRequiresLength
+  // Length, width, thickness, and volume are all optional. Filled values must still parse.
+  if (lenRaw) {
+    const { feetStr, inchesStr } = parseBoardLengthParts(lenRaw)
+    if (!feetStr) return false
+    const ft = parseLengthFeet(feetStr)
+    if (ft == null || ft < 1 || ft > 15) return false
 
-  const { feetStr, inchesStr } = parseBoardLengthParts(lenRaw)
-  if (!feetStr) return false
-  const ft = parseLengthFeet(feetStr)
-  if (ft == null || ft < 1 || ft > 15) return false
-
-  const inRaw = inchesStr.trim() === "" ? "0" : inchesStr
-  const inches = parseBoardMeasurement(inRaw) ?? Number.parseFloat(inRaw)
-  if (!Number.isFinite(inches) || inches < 0 || inches >= 12) return false
+    const inRaw = inchesStr.trim() === "" ? "0" : inchesStr
+    const inches = parseBoardMeasurement(inRaw) ?? Number.parseFloat(inRaw)
+    if (!Number.isFinite(inches) || inches < 0 || inches >= 12) return false
+  }
 
   if (form.boardWidthInches?.trim()) {
     const width =
@@ -217,7 +216,7 @@ export function computeSellStepChecklist(
     },
     {
       id: "dimensions",
-      label: shippingEnabled ? "Dimensions (required for shipping)" : "Dimensions",
+      label: "Dimensions",
       complete: dimensionsSectionComplete(form),
       sectionId: "sell-section-photos",
     },

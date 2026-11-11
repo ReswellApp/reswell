@@ -1,8 +1,11 @@
 import { Stack, useLocalSearchParams } from "expo-router"
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native"
 import type { MobileListingCard, MobileMarketplaceFeed, MobileMarketplaceFeedTab } from "@reswell/api-contract"
-import { MarketplaceListingLayoutItem } from "@/components/marketplace-listing-layout-item"
+import {
+  MarketplaceListingLayoutItem,
+  marketplaceListingRows,
+} from "@/components/marketplace-listing-layout-item"
 import { ListingLayoutSwitch, type ListingLayout } from "@/components/listing-layout-switch"
 import { useFloatingTabBarContentInset } from "@/components/floating-tab-bar"
 import { marketplaceListContentStyle } from "@/components/listing-list-layout"
@@ -169,7 +172,7 @@ export default function FeedScreen() {
       })
   }
 
-  const grid = layout === "grid" && listings.length % 2 === 1 ? [...listings, null] : listings
+  const rows = useMemo(() => marketplaceListingRows(listings, layout), [layout, listings])
   const empty = EMPTY_COPY[tab]
   const badge = badgeFor(tab)
 
@@ -205,12 +208,10 @@ export default function FeedScreen() {
         </View>
       ) : (
         <FlatList
-          key={layout}
-          data={grid}
-          keyExtractor={(item) => item?.id ?? "spacer"}
-          numColumns={layout === "grid" ? 2 : 1}
-          columnWrapperStyle={layout === "grid" ? styles.columns : undefined}
-          contentContainerStyle={[marketplaceListContentStyle(styles.list, layout), tabBarInset]}
+          data={rows}
+          extraData={followBusyId}
+          keyExtractor={(item) => item.key}
+          contentContainerStyle={[marketplaceListContentStyle(styles.list), tabBarInset]}
           refreshing={loading}
           onRefresh={() => load(tab)}
           onEndReached={loadMore}
@@ -228,22 +229,17 @@ export default function FeedScreen() {
           ListFooterComponent={
             loadingMore ? <ActivityIndicator color={colors.foreground} style={styles.footer} /> : null
           }
-          renderItem={({ item }) =>
-            item ? (
-              <MarketplaceListingLayoutItem
-                layout={layout}
-                item={item}
-                badge={badge}
-                viewerId={viewerId}
-                followBusy={followBusyId === item.seller?.id}
-                onPress={() => openListing(item)}
-                onPressSeller={openSeller}
-                onFollowSeller={toggleFollow}
-              />
-            ) : (
-              <View style={styles.spacer} />
-            )
-          }
+          renderItem={({ item }) => (
+            <MarketplaceListingLayoutItem
+              row={item}
+              badge={badge}
+              viewerId={viewerId}
+              followBusyId={followBusyId}
+              onPress={openListing}
+              onPressSeller={openSeller}
+              onFollowSeller={toggleFollow}
+            />
+          )}
         />
       )}
     </View>
@@ -312,10 +308,8 @@ const styles = StyleSheet.create({
   signIn: { minHeight: 44, borderRadius: 22, paddingHorizontal: 22, alignItems: "center", justifyContent: "center" },
   signInLabel: { fontSize: 16, fontWeight: "700" },
   list: { paddingTop: 8 },
-  columns: { gap: 12, paddingHorizontal: 12 },
   empty: { alignItems: "center", paddingHorizontal: 28, paddingTop: 48, gap: 8 },
   emptyTitle: { fontSize: 18, fontWeight: "700" },
   emptyBody: { textAlign: "center", fontSize: 15, lineHeight: 21 },
   footer: { marginVertical: 16 },
-  spacer: { flex: 1 },
 })

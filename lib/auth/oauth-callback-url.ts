@@ -2,6 +2,7 @@ import {
   MARKETING_OPT_IN_PARAM,
   marketingOptInParamValue,
 } from '@/lib/auth/marketing-email-consent'
+import { SIGNUP_DATE_OF_BIRTH_PARAM } from '@/lib/auth/signup-date-of-birth'
 import { safeRedirectPath } from '@/lib/auth/safe-redirect'
 
 /**
@@ -23,6 +24,7 @@ export function buildOAuthCallbackUrl(
   nextPath: string,
   windowOrigin: string,
   marketingOptIn?: boolean,
+  dateOfBirth?: string,
 ): string {
   const safeNext = safeRedirectPath(nextPath)
   const base = windowOrigin.replace(/\/$/, '')
@@ -31,11 +33,14 @@ export function buildOAuthCallbackUrl(
   if (marketingOptIn !== undefined) {
     redirectTo += `&${MARKETING_OPT_IN_PARAM}=${marketingOptInParamValue(marketingOptIn)}`
   }
+  if (dateOfBirth) {
+    redirectTo += `&${SIGNUP_DATE_OF_BIRTH_PARAM}=${encodeURIComponent(dateOfBirth)}`
+  }
 
   if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
     console.info(
       '[auth] OAuth redirectTo (must be in Supabase → Auth → URL Configuration → Redirect URLs):',
-      redirectTo
+      redirectTo.replace(/([?&]dob=)[^&]*/i, '$1***'),
     )
   }
 

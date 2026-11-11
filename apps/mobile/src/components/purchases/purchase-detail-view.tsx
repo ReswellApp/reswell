@@ -4,6 +4,7 @@ import { SymbolView } from "expo-symbols"
 import { useState, type ComponentProps } from "react"
 import { Pressable, Share, StyleSheet, Text, View } from "react-native"
 import type { MobilePurchaseDetail, MobilePurchaseStatusTone } from "@reswell/api-contract"
+import { OrderReviewSheet, ReviewPromptRow } from "@/components/order-review-sheet"
 import { PartyProfileStrip } from "@/components/party-profile-strip"
 import { openProfileConversation } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
@@ -39,7 +40,13 @@ function ActionRow({
   )
 }
 
-export function PurchaseDetailView({ purchase }: { purchase: MobilePurchaseDetail }) {
+export function PurchaseDetailView({
+  purchase,
+  onReviewed,
+}: {
+  purchase: MobilePurchaseDetail
+  onReviewed: () => void
+}) {
   const colors = useReswellColors()
   const router = useRouter()
   const { session } = useAuth()
@@ -49,6 +56,7 @@ export function PurchaseDetailView({ purchase }: { purchase: MobilePurchaseDetai
   const [copied, setCopied] = useState(false)
   const [messageError, setMessageError] = useState<string | null>(null)
   const [openingMessage, setOpeningMessage] = useState(false)
+  const [reviewOpen, setReviewOpen] = useState(false)
 
   const openListing = (listingId: string | null, listingSlug: string | null) => {
     const id = listingSlug || listingId
@@ -109,31 +117,15 @@ export function PurchaseDetailView({ purchase }: { purchase: MobilePurchaseDetai
         ))}
       </View>
 
-      {purchase.existing_review ? (
-        <View style={[styles.card, styles.reviewRow, card]}>
-          <Text style={[styles.reviewTitle, { color: colors.foreground, fontFamily: fontFamily.text }]}>Your review</Text>
-          <Text style={[styles.meta, { color: colors.muted, fontFamily: fontFamily.text }]}>
-            {purchase.existing_review.rating}/5
-            {purchase.existing_review.comment ? ` — ${purchase.existing_review.comment}` : ""}
-          </Text>
-        </View>
-      ) : purchase.hide_review_prompt ? null : (
-        <View style={[styles.card, styles.reviewRow, card]}>
-          <SymbolView name={{ ios: "star", android: "star", web: "star" }} size={16} tintColor={colors.muted} />
-          <Text style={[styles.reviewPrompt, { color: colors.muted, fontFamily: fontFamily.text }]}>Leave a review for the seller</Text>
-          <View
-            accessible
-            accessibilityRole="image"
-            accessibilityLabel="You can review the seller after this order is delivered or picked up."
-          >
-            <SymbolView
-              name={{ ios: "info.circle", android: "info", web: "info" }}
-              size={16}
-              tintColor={accent}
-            />
-          </View>
-        </View>
-      )}
+      <ReviewPromptRow
+        existing={purchase.existing_review}
+        canReview={purchase.can_review}
+        hidePrompt={purchase.hide_review_prompt}
+        actionLabel="Leave a review for the seller"
+        waitingLabel="You can review the seller after this order is delivered or picked up."
+        existingTitle="Your review"
+        onPress={() => setReviewOpen(true)}
+      />
 
       <View style={[styles.card, card]}>
         <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: fontFamily.headline }]}>Order Details</Text>
@@ -191,10 +183,24 @@ export function PurchaseDetailView({ purchase }: { purchase: MobilePurchaseDetai
         <Text style={[styles.statusLabel, { color: banner.color, fontFamily: fontFamily.headline }]}>{purchase.status_label}</Text>
         {purchase.status_date ? (
           <Text style={[styles.statusDate, { color: banner.color, fontFamily: fontFamily.text }]}>
-            {formatPurchaseDate(purchase.status_date, "long")}
+            {purchase.status_date_includes_time
+              ? formatPurchaseDateTime(purchase.status_date)
+              : formatPurchaseDate(purchase.status_date, "long")}
           </Text>
         ) : null}
       </View>
+
+      {purchase.pickup_code ? (
+        <View style={[styles.pickup, { backgroundColor: `${colors.listingHeart}14`, borderColor: `${colors.listingHeart}4D` }]}>
+          <Text style={[styles.pickupKicker, { color: colors.listingHeart, fontFamily: fontFamily.text }]}>YOUR PICKUP CODE</Text>
+          <Text selectable style={[styles.pickupCode, { color: colors.foreground, fontFamily: fontFamily.text }]}>
+            {purchase.pickup_code}
+          </Text>
+          <Text style={[styles.pickupHint, { color: colors.muted, fontFamily: fontFamily.text }]}>
+            Show this code to the seller when you pick up the item. It confirms the handoff and releases their payout.
+          </Text>
+        </View>
+      ) : null}
 
       {purchase.shipping_days_left != null && purchase.shipping_deadline ? (
         <Text style={[styles.deadline, { color: colors.muted, fontFamily: fontFamily.text }]}>
@@ -306,6 +312,18 @@ export function PurchaseDetailView({ purchase }: { purchase: MobilePurchaseDetai
         ) : null}
       </View>
 
+      {session?.access_token && purchase.can_review ? (
+        <OrderReviewSheet
+          presented={reviewOpen}
+          onDismiss={() => setReviewOpen(false)}
+          onSubmitted={onReviewed}
+          accessToken={session.access_token}
+          orderId={purchase.id}
+          subjectName={purchase.seller_name}
+          subject="seller"
+        />
+      ) : null}
+
       <View style={styles.block}>
         <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: fontFamily.headline }]}>Need help?</Text>
         <ActionRow
@@ -335,9 +353,6 @@ const styles = StyleSheet.create({
   itemTitle: { fontSize: 16, fontWeight: "700", lineHeight: 21 },
   itemPrice: { fontSize: 14, fontWeight: "700" },
   meta: { fontSize: 14, lineHeight: 20 },
-  reviewRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  reviewPrompt: { flex: 1, fontSize: 14 },
-  reviewTitle: { fontSize: 14, fontWeight: "600" },
   sectionTitle: { fontSize: 16, fontWeight: "700" },
   dlRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
   dlRowLast: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, paddingTop: 12 },
@@ -350,6 +365,10 @@ const styles = StyleSheet.create({
   statusKicker: { fontSize: 11, fontWeight: "700", letterSpacing: 0.6 },
   statusLabel: { fontSize: 18, fontWeight: "700", lineHeight: 22 },
   statusDate: { fontSize: 14 },
+  pickup: { borderRadius: 14, borderCurve: "continuous", borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: 16, paddingVertical: 16, alignItems: "center" },
+  pickupKicker: { fontSize: 11, fontWeight: "700", letterSpacing: 0.6 },
+  pickupCode: { marginTop: 6, fontSize: 32, fontWeight: "700", letterSpacing: 8, fontVariant: ["tabular-nums"] },
+  pickupHint: { marginTop: 8, fontSize: 14, lineHeight: 20, textAlign: "center" },
   deadline: { fontSize: 14, lineHeight: 20 },
   timelineBlock: { gap: 12 },
   timelineRow: { position: "relative", flexDirection: "row", gap: 12, paddingBottom: 16 },

@@ -1,4 +1,6 @@
 import { getGoogleGeocodingApiKey, googleForwardGeocode } from "@/lib/maps/google-geocoding-server"
+import { redisGetOrSet } from "@/lib/redis/cache"
+import { REDIS_TTL_SECONDS, redisForwardGeocodeKey } from "@/lib/redis/keys"
 
 const NOMINATIM_HEADERS = { Accept: "application/json", "User-Agent": "ReswellSurfMarketplace/1" }
 
@@ -30,11 +32,11 @@ export async function forwardGeocodePlaceForServer(
 ): Promise<{ lat: number; lng: number } | null> {
   const q = place.trim()
   if (q.length < 2) return null
-
-  if (getGoogleGeocodingApiKey()) {
-    const g = await googleForwardGeocode(q)
-    if (g) return { lat: g.lat, lng: g.lng }
-  }
-
-  return forwardGeocodeNominatim(q)
+  return redisGetOrSet(redisForwardGeocodeKey(q), REDIS_TTL_SECONDS.forwardGeocode, async () => {
+    if (getGoogleGeocodingApiKey()) {
+      const g = await googleForwardGeocode(q)
+      if (g) return { lat: g.lat, lng: g.lng }
+    }
+    return forwardGeocodeNominatim(q)
+  })
 }

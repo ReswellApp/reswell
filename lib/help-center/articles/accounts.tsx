@@ -60,6 +60,10 @@ export const accountsHelpArticles: HelpArticle[] = [
                   Passwords must be at least 6 characters.
                 </>,
                 <><strong>Sign Out</strong> to log out of your current session.</>,
+                <>
+                  <strong>Delete account</strong> opens {helpLink("/account/delete", "the deletion page")}{" "}
+                  to permanently close your Reswell account.
+                </>,
               ]}
             />
             <p>
@@ -142,13 +146,13 @@ export const accountsHelpArticles: HelpArticle[] = [
         body: (
           <>
             <p>
-              On the Reswell iOS app, go to Account → Profile → Sign-in → Delete account. Finish open
-              orders and cash out earnings first.
+              On the website, go to {helpLink("/dashboard/profile#sign-in", "Profile → Sign-in")} and
+              tap Delete account, or open {helpLink("/account/delete", "reswell.com/account/delete")}{" "}
+              while signed in. Finish open orders and cash out earnings first.
             </p>
             <p>
-              On the website, {helpLink("/contact", "contact support")} from the email address
-              registered on the account and ask for deletion. Open orders or pending payouts may need
-              to resolve first.
+              On the Reswell iOS app, go to Me → Profile → Sign-in → Delete account. The app uses
+              the same deletion process as the website.
             </p>
           </>
         ),

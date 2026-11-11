@@ -5,7 +5,9 @@ import { ScreenBackButton } from "@/components/screen-back-button"
 import { useEffect, useRef, useState } from "react"
 import {
   Animated,
+  Dimensions,
   Easing,
+  Keyboard,
   LayoutAnimation,
   Modal,
   Platform,
@@ -47,6 +49,49 @@ function runSearchBarLayoutAnimation() {
       property: LayoutAnimation.Properties.opacity,
     },
   })
+}
+
+/** Overlap from the bottom of the window so overlay results sit above the keyboard. */
+function useKeyboardBottomInset(enabled: boolean): number {
+  const [inset, setInset] = useState(0)
+
+  useEffect(() => {
+    if (!enabled) {
+      setInset(0)
+      return
+    }
+
+    function apply(next: number, duration?: number) {
+      if (Platform.OS === "ios" && duration && duration > 0) {
+        LayoutAnimation.configureNext({
+          duration,
+          update: { type: LayoutAnimation.Types.keyboard },
+        })
+      }
+      setInset((current) => (current === next ? current : next))
+    }
+
+    function insetFromEvent(event: { endCoordinates: { height: number; screenY: number } }) {
+      if (event.endCoordinates.height <= 0) return 0
+      return Math.max(0, Dimensions.get("window").height - event.endCoordinates.screenY)
+    }
+
+    if (Platform.OS === "ios") {
+      const frame = Keyboard.addListener("keyboardWillChangeFrame", (event) => {
+        apply(insetFromEvent(event), event.duration)
+      })
+      return () => frame.remove()
+    }
+
+    const show = Keyboard.addListener("keyboardDidShow", (event) => apply(insetFromEvent(event)))
+    const hide = Keyboard.addListener("keyboardDidHide", () => apply(0))
+    return () => {
+      show.remove()
+      hide.remove()
+    }
+  }, [enabled])
+
+  return enabled ? inset : 0
 }
 
 type SearchCartHeaderProps = {
@@ -276,6 +321,7 @@ export function SearchCartHeader(props: SearchCartHeaderProps) {
 
   const pageBarMode = props.mode === "input" ? "input" : "idle"
   const searchOverlayOpen = open && props.mode === "open"
+  const keyboardInset = useKeyboardBottomInset(searchOverlayOpen)
   const barStyle = [
     styles.bar,
     insetTop ? { paddingTop: insets.top } : null,
@@ -305,7 +351,7 @@ export function SearchCartHeader(props: SearchCartHeaderProps) {
               {renderBarChrome("active")}
             </Animated.View>
             <Pressable
-              style={[styles.modalDismiss, { top: overlayTop }]}
+              style={[styles.modalDismiss, { top: overlayTop, bottom: keyboardInset }]}
               onPress={() => closeSearch()}
             >
               <Animated.View

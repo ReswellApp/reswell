@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { RecentListing } from "@/components/recent-feed-client"
 import { listingBoardTypeDbValuesForFilter } from "@/lib/board-type-canonical"
+import { redisGetOrSet } from "@/lib/redis/cache"
+import { fingerprintCacheKey, REDIS_TTL_SECONDS, redisSearchResultsKey } from "@/lib/redis/keys"
 import { listActiveSurfboardIdsWithSearchTags } from "@/lib/db/listings"
 import {
   listActiveListingIdsByBrandModelIds,
@@ -40,7 +42,52 @@ type MarketplaceSearchResolutionMeta = {
   backend: "elasticsearch" | "supabase"
 }
 
+function searchResultsFingerprint(
+  rawQuery: string,
+  category: { id: string; name: string } | null,
+  brand: { id: string; name: string } | null,
+  parsed: MarketplaceParsedQuery | null,
+  brandFromUrl: boolean,
+): string {
+  return fingerprintCacheKey(
+    JSON.stringify({
+      q: rawQuery.trim().toLowerCase(),
+      categoryId: category?.id ?? "",
+      brandId: brand?.id ?? "",
+      brandFromUrl,
+      parsed: parsed
+        ? {
+            modelIds: parsed.modelIds,
+            lengthInches: parsed.lengthInches,
+            textQuery: parsed.textQuery,
+            isBrandOnly: parsed.isBrandOnly,
+            sectionIntent: parsed.sectionIntent,
+            styleIntent: parsed.styleIntent,
+          }
+        : null,
+    }),
+  )
+}
+
 export async function resolveSearchListings(
+  supabase: SupabaseClient,
+  rawQuery: string,
+  category: { id: string; name: string } | null,
+  brand: { id: string; name: string } | null,
+  parsed: MarketplaceParsedQuery | null,
+  brandFromUrl: boolean,
+): Promise<{
+  listings: RecentListing[]
+  searchMeta: MarketplaceSearchResolutionMeta | null
+}> {
+  return redisGetOrSet(
+    redisSearchResultsKey(searchResultsFingerprint(rawQuery, category, brand, parsed, brandFromUrl)),
+    REDIS_TTL_SECONDS.searchResults,
+    () => loadSearchListings(supabase, rawQuery, category, brand, parsed, brandFromUrl),
+  )
+}
+
+async function loadSearchListings(
   supabase: SupabaseClient,
   rawQuery: string,
   category: { id: string; name: string } | null,

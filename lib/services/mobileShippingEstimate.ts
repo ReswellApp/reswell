@@ -9,6 +9,8 @@ import {
 } from "@reswell/api-contract"
 import { lookupUsZipViaNominatim } from "@/lib/geocode/us-zip-lookup"
 import { getGoogleGeocodingApiKey, googleGeocodeUsZip } from "@/lib/maps/google-geocoding-server"
+import { redisGetOrSet } from "@/lib/redis/cache"
+import { REDIS_TTL_SECONDS, redisZipLookupKey } from "@/lib/redis/keys"
 import { EXAMPLE_SURFBOARD_MEASUREMENTS } from "@/lib/shipping/example-surfboard-measurements"
 import { getTopSurfboardShippingRates } from "@/lib/services/surfboardShippingEstimate"
 import type { MobileApiResult } from "@/lib/services/mobileApi"
@@ -40,6 +42,15 @@ export async function getMobileShippingZip(zip: string): Promise<MobileApiResult
   const five = zip.replace(/\D/g, "").slice(0, 5)
   if (five.length !== 5) return { ok: false, status: 400, error: "Enter a 5-digit US ZIP code" }
 
+  return redisGetOrSet(
+    redisZipLookupKey(five),
+    REDIS_TTL_SECONDS.geocodeSuggest,
+    () => loadMobileShippingZip(five),
+    { cacheIf: (result) => result.ok },
+  )
+}
+
+async function loadMobileShippingZip(five: string): Promise<MobileApiResult<MobileShippingZip>> {
   const nominatim = await lookupUsZipViaNominatim(five)
   if (nominatim) return { ok: true, data: mobileShippingZipSchema.parse(nominatim) }
 

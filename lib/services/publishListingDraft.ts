@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { after } from "next/server"
 import { revalidateNavSearchSuggest } from "@/lib/cache/revalidate-nav-search-suggest"
 import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
 import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
@@ -79,57 +80,36 @@ export function validateListingDraftPublishable(row: {
   return null
 }
 
+async function runPublishedListingSideEffect(work: () => Promise<unknown>): Promise<void> {
+  try {
+    await work()
+  } catch {
+    // best-effort
+  }
+}
+
 export async function applyPublishedListingSideEffects(
   supabase: SupabaseClient,
   listingId: string,
   sellerUserId: string,
 ): Promise<void> {
-  try {
-    await qualifyPublishedListingForGiveaways(supabase, listingId, sellerUserId)
-  } catch {
-    // Giveaway qualification is best-effort — never block publish.
-  }
+  syncListingToGoogleMerchantBestEffort(supabase, listingId)
+  void ingestSurfboardListingIntoDimensionPhotoRefsBestEffort(listingId)
 
-  try {
-    await syncListingToIndex(supabase, listingId)
-  } catch {
-    // ES optional
-  }
-
-  try {
-    await syncListingToGoogleMerchantBestEffort(supabase, listingId)
-  } catch {
-    // best-effort
-  }
-
-  try {
-    await notifyBoardSavedSearchMatchesForListing(listingId)
-  } catch {
-    // best-effort
-  }
-
-  try {
-    await notifyFollowersNewListingKlaviyo(listingId)
-  } catch {
-    // best-effort
-  }
-
-  try {
-    // Surfboard image+dims join the dimension-photo corpus for LLM matching.
-    // Service-role, idempotent, skips non-boards / incomplete dims; never blocks publish.
-    await ingestSurfboardListingIntoDimensionPhotoRefsBestEffort(listingId)
-  } catch {
-    // best-effort
-  }
-
-  try {
-    await revalidateAfterListingSiteModeration(supabase, [listingId])
-    revalidateBoardsBrowseCatalog()
-    revalidateNavSearchSuggest()
-    await revalidateSellersAfterListingChange(supabase, sellerUserId)
-  } catch {
-    // Cache revalidation is best-effort — listing is already live.
-  }
+  await Promise.all([
+    runPublishedListingSideEffect(() =>
+      qualifyPublishedListingForGiveaways(supabase, listingId, sellerUserId),
+    ),
+    runPublishedListingSideEffect(() => syncListingToIndex(supabase, listingId)),
+    runPublishedListingSideEffect(() => notifyBoardSavedSearchMatchesForListing(listingId)),
+    runPublishedListingSideEffect(() => notifyFollowersNewListingKlaviyo(listingId)),
+    runPublishedListingSideEffect(async () => {
+      await revalidateAfterListingSiteModeration(supabase, [listingId])
+      revalidateBoardsBrowseCatalog()
+      revalidateNavSearchSuggest()
+      await revalidateSellersAfterListingChange(supabase, sellerUserId)
+    }),
+  ])
 }
 
 async function fetchDraftListingForPublish(
@@ -245,7 +225,15 @@ export async function publishListingDraft(
     })
   }
 
-  await applyPublishedListingSideEffects(supabase, listingId, sellerUserId)
+  const runSideEffects = () =>
+    applyPublishedListingSideEffects(supabase, listingId, sellerUserId).catch(() => {
+      // Search / merchant / notify work is best-effort after the listing is live.
+    })
+  try {
+    after(runSideEffects)
+  } catch {
+    void runSideEffects()
+  }
 
   return { ok: true, listingId, slug: publishedSlug }
 }

@@ -9,7 +9,8 @@ import {
   type MobileProfileSettingsPatch,
 } from "@reswell/api-contract"
 import { fetchDashboardProfile } from "@/lib/db/dashboard-profile"
-import { fetchProfileAddresses, profileAddressOneLine } from "@/lib/db/profile-addresses"
+import { fetchProfileAddresses } from "@/lib/db/profile-addresses"
+import { toMobileProfileAddress } from "@/lib/services/mobileProfileAddresses"
 import {
   getPushTopicFlagsForUser,
   patchPushTopicForUser,
@@ -106,13 +107,10 @@ export async function getMobileProfileSettingsService(
     push_saves: pushTopics.saves,
     push_follows: pushTopics.follows,
     push_orders: pushTopics.orders,
-    addresses: addresses.addresses.map((address) => ({
-      id: address.id,
-      label: address.label,
-      full_name: address.full_name,
-      line: profileAddressOneLine(address),
-      is_default: address.is_default,
-    })),
+    addresses: addresses.addresses.flatMap((address) => {
+      const mapped = toMobileProfileAddress(address)
+      return mapped ? [mapped] : []
+    }),
   })
   if (!parsed.success) return { ok: false, status: 500, error: "Unable to load your profile right now" }
   return { ok: true, data: parsed.data }

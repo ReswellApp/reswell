@@ -8,6 +8,7 @@ import {
   mobileProfileParamSchema,
 } from "@reswell/api-contract"
 import {
+  applyMobileListingViewerOverlay,
   isMobileListingDetailVisible,
   toMobileListingCard,
   toMobileListingDetail,
@@ -122,6 +123,87 @@ describe("mobile listings contract", () => {
     assert.deepEqual(detail.image_urls, ["https://cdn.example.com/full.jpg"])
     assert.deepEqual(detail.videos, [])
     assert.equal(detail.description, "Light use.")
+    assert.equal(detail.buyer_offers_enabled, true)
+    assert.equal(detail.min_offer_pct, 70)
+    assert.equal(detail.min_offer_usd, 507.85)
+    assert.equal(detail.hide_min_offer_until_violated, false)
+    assert.equal(detail.shipping_cost_mode, "reswell")
+    assert.equal(detail.shipping_flat_rate, 0)
+    assert.deepEqual(
+      detail.spec_rows?.map((row) => [row.label, row.value]),
+      [
+        ["Condition", "Used – Good"],
+        ["Shape", "Shortboard"],
+        ["Dimensions", `6'6″ × 21" × 2 5/8″`],
+      ],
+    )
+  })
+
+  it("maps a seller minimum and open offer onto the detail", () => {
+    const detail = toMobileListingDetail(
+      {
+        ...ROW,
+        buyer_offers_enabled: false,
+        minimum_offer_pct: 80,
+        minimum_offer_amount: "500",
+        shipping_price: "45",
+        board_shipping_cost_mode: "flat",
+      },
+      { favorited: false, in_cart: false, open_offer_id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" },
+    )
+    if (!detail) throw new Error("expected a listing detail")
+    assert.equal(detail.buyer_offers_enabled, false)
+    assert.equal(detail.min_offer_pct, 80)
+    assert.equal(detail.min_offer_usd, 500)
+    assert.equal(detail.hide_min_offer_until_violated, true)
+    assert.equal(detail.shipping_cost_mode, "flat")
+    assert.equal(detail.shipping_flat_rate, 45)
+    assert.equal(detail.open_offer_id, "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa")
+  })
+
+  it("overlays signed-in flags onto a public listing shell without mutating it", () => {
+    const publicDetail = toMobileListingDetail(ROW)
+    if (!publicDetail) throw new Error("expected a listing detail")
+    assert.equal(publicDetail.favorited, undefined)
+    assert.equal(publicDetail.in_cart, undefined)
+    assert.equal(publicDetail.owner, undefined)
+
+    const overlaid = applyMobileListingViewerOverlay(publicDetail, {
+      favorited: true,
+      in_cart: true,
+      following: true,
+      open_offer_id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    })
+    assert.equal(publicDetail.favorited, undefined)
+    assert.equal(overlaid.favorited, true)
+    assert.equal(overlaid.in_cart, true)
+    assert.equal(overlaid.seller.following, true)
+    assert.equal(overlaid.open_offer_id, "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa")
+    assert.equal(overlaid.price_usd, publicDetail.price_usd)
+    assert.equal(overlaid.owner, undefined)
+  })
+
+  it("maps board fin facts onto the listing spec table", () => {
+    const detail = toMobileListingDetail({
+      ...ROW,
+      construction: "eps_epoxy",
+      fin_system: "futures",
+      fins_setup: "thruster",
+      fins_included: false,
+    })
+    if (!detail) throw new Error("expected a listing detail")
+    assert.deepEqual(
+      detail.spec_rows?.map((row) => [row.label, row.value]),
+      [
+        ["Condition", "Used – Good"],
+        ["Shape", "Shortboard"],
+        ["Dimensions", `6'6″ × 21" × 2 5/8″`],
+        ["Construction", "EPS/Epoxy"],
+        ["Fin system", "Futures"],
+        ["Fin setup", "Thruster"],
+        ["Fins included", "Not included"],
+      ],
+    )
   })
 
   it("returns the playable video stream in gallery order", () => {

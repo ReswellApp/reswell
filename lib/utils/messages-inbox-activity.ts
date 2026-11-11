@@ -31,6 +31,7 @@ export function activityKindLabel(type: string | undefined): string {
   if (t.includes("follow")) return "Follow"
   if (t.startsWith("offer_")) return "Offer"
   if (t === "order_delivered" || t === "order_delivered_payout") return "Order"
+  if (t === "review_seller_requested" || t === "review_buyer_requested") return "Review"
   if (t === "payout_info_required") return "Payout"
   if (t === "seller_message_waiting") return "Reply"
   if (t === "seller_listing_hide_warning" || t === "seller_listing_auto_hidden") return "Vacation"
@@ -73,8 +74,12 @@ export function inboxActivityNotificationHref(n: MessagesInboxNotification): str
   }
   const type = (n.type || "").toLowerCase()
   if (isOfferActivityType(type)) return dashboardOfferFocusPath(offerIdFromInboxNotification(n))
-  if (type === "order_delivered_payout") return orderDeliveredHref(n, "seller")
-  if (type === "order_delivered") return orderDeliveredHref(n, "buyer")
+  if (type === "order_delivered_payout" || type === "review_buyer_requested") {
+    return orderDeliveredHref(n, "seller")
+  }
+  if (type === "order_delivered" || type === "review_seller_requested") {
+    return orderDeliveredHref(n, "buyer")
+  }
   const href = n.href?.trim()
   if (href && href.startsWith("/") && !href.startsWith("//")) return href
   if (type === "payout_info_required") return "/dashboard/earnings"

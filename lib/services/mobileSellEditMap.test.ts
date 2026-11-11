@@ -107,3 +107,37 @@ describe("ownedListingRowToMobileSellEdit videos", () => {
     assert.deepEqual(mapped.draft.videos, [])
   })
 })
+
+describe("ownedListingRowToMobileSellEdit acquisition", () => {
+  it("maps website sell cost-basis fields onto the edit payload", () => {
+    const mapped = ownedListingRowToMobileSellEdit(
+      row({
+        section: "surfboards",
+        board_type: "shortboard",
+        seller_purchase_price_usd: 425.5,
+        seller_purchased_from: "Local surf shop",
+        seller_purchased_on: "2026-09-30T00:00:00.000Z",
+      }),
+    )
+    assert.equal(mapped.ok, true)
+    if (!mapped.ok) return
+    assert.equal(mapped.draft.seller_purchase_price, 425.5)
+    assert.equal(mapped.draft.seller_purchased_from, "Local surf shop")
+    assert.equal(mapped.draft.seller_purchased_on, "2026-09-30")
+  })
+
+  it("returns null cost-basis fields when the listing has none", () => {
+    const mapped = ownedListingRowToMobileSellEdit(
+      row({
+        seller_purchase_price_usd: null,
+        seller_purchased_from: null,
+        seller_purchased_on: null,
+      }),
+    )
+    assert.equal(mapped.ok, true)
+    if (!mapped.ok) return
+    assert.equal(mapped.draft.seller_purchase_price, null)
+    assert.equal(mapped.draft.seller_purchased_from, null)
+    assert.equal(mapped.draft.seller_purchased_on, null)
+  })
+})

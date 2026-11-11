@@ -2,6 +2,7 @@ import {
   mobileSaleDetailSchema,
   mobileSaleListItemSchema,
   type MobileOrderParty,
+  type MobilePurchaseReview,
   type MobileSaleDetail,
   type MobileSaleListItem,
 } from "@reswell/api-contract"
@@ -17,7 +18,12 @@ import {
   orderStatusLocksDuringRefund,
   payoutStatusLabel,
 } from "@/lib/order-status"
-import { purchaseDetailStatusDate } from "@/lib/purchase-detail-timeline"
+import {
+  buildPurchaseDetailTimeline,
+  purchaseDetailStatusDate,
+  purchaseDetailStatusShowsDateTime,
+  toMobilePurchaseTimeline,
+} from "@/lib/purchase-detail-timeline"
 import { purchaseStatusTone } from "@/lib/purchases-list-display"
 import { resolveSaleCardStatusDisplay, type OrderReturnSummaryForStatus } from "@/lib/sale-card-status"
 import {
@@ -28,6 +34,7 @@ import {
 } from "@/lib/sale-fulfillment-filters"
 import { saleDetailLine, saleRefundNote } from "@/lib/sales-list-display"
 import { resolveSellerOrderDisplayAmounts } from "@/lib/seller-order-display-amounts"
+import { canSubmitSellerReview } from "@/lib/services/orderSellerReview"
 import { parseOrderTrackingDetail } from "@/lib/shipping/order-tracking-detail"
 import { absolutePublicMediaUrl, absoluteUrl } from "@/lib/site-metadata"
 import { formatUsd } from "@/lib/utils/format-usd"
@@ -201,6 +208,8 @@ export function buildMobileSaleDetail(
     preparedLabel: boolean
     returnSummary: OrderReturnSummaryForStatus | null
     buyer: MobileOrderParty | null
+    sellerReview?: MobilePurchaseReview | null
+    buyerReview?: MobilePurchaseReview | null
   },
 ): MobileSaleDetail | null {
   const ship = asShippingAddress(order.shipping_address)
@@ -220,6 +229,7 @@ export function buildMobileSaleDetail(
   const isRefunding = order.status === "refunding"
   const fulfillmentLocked = orderStatusLocksDuringRefund(order.status)
   const trackingDetail = parseOrderTrackingDetail(order.tracking_detail)
+  const actualDeliveryAt = trackingDetail?.actual_delivery_date ?? order.carrier_delivered_at ?? null
   const statusDisplay = resolveSaleCardStatusDisplay({
     orderStatus: order.status,
     deliveryStatus: order.delivery_status ?? "pending",
@@ -340,9 +350,29 @@ export function buildMobileSaleDetail(
       deliveryStatus: order.delivery_status ?? "pending",
       orderStatus: order.status,
       createdAt: order.created_at,
-      actualDeliveryAt: trackingDetail?.actual_delivery_date ?? null,
+      actualDeliveryAt,
       refundedAt: order.refunded_at,
     }),
+    status_date_includes_time: purchaseDetailStatusShowsDateTime({
+      deliveryStatus: order.delivery_status ?? "pending",
+      orderStatus: order.status,
+    }),
+    timeline_heading: isPickup ? "Pickup details" : null,
+    timeline: isPickup
+      ? toMobilePurchaseTimeline(
+          buildPurchaseDetailTimeline({
+            createdAt: order.created_at,
+            fulfillmentMethod: "pickup",
+            deliveryStatus: order.delivery_status ?? "pending",
+            orderStatus: order.status,
+            hasTrackingNumber: Boolean(order.tracking_number?.trim()),
+            carrierStatusCode: trackingDetail?.status_code,
+            events: trackingDetail?.events ?? [],
+            actualDeliveryAt,
+            refundedAt: order.refunded_at,
+          }),
+        )
+      : [],
     address_name: text(ship?.name),
     address_lines: addrBlock ? addrBlock.split("\n").filter((line) => line.trim().length > 0) : [],
     track_url: extras.trackUrl,
@@ -357,6 +387,15 @@ export function buildMobileSaleDetail(
       : null,
     can_request_support: order.status === "confirmed",
     buyer: extras.buyer,
+    can_review:
+      !extras.sellerReview &&
+      canSubmitSellerReview(
+        { status: order.status, delivery_status: order.delivery_status ?? "pending" },
+        trackingDetail,
+      ),
+    hide_review_prompt: fulfillmentLocked,
+    existing_review: extras.sellerReview ?? null,
+    review_from_buyer: extras.buyerReview ?? null,
   }
   const parsed = mobileSaleDetailSchema.safeParse(payload)
   return parsed.success ? parsed.data : null

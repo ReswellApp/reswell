@@ -1,3 +1,6 @@
+import { redisGetOrSet } from "@/lib/redis/cache"
+import { REDIS_TTL_SECONDS, redisGeocodeSuggestKey } from "@/lib/redis/keys"
+
 const NOMINATIM_HEADERS = {
   Accept: "application/json",
   "Accept-Language": "en",
@@ -397,6 +400,14 @@ export type GeocodeSuggestion = {
 export async function suggestGeocodePlaces(query: string, detailFull = false): Promise<GeocodeSuggestion[]> {
   const q = query.trim()
   if (q.length < 2 || q.length > 200) return []
+  return redisGetOrSet(
+    redisGeocodeSuggestKey(q, detailFull),
+    REDIS_TTL_SECONDS.geocodeSuggest,
+    () => loadGeocodePlaces(q, detailFull),
+  )
+}
+
+async function loadGeocodePlaces(q: string, detailFull: boolean): Promise<GeocodeSuggestion[]> {
 
   const tokens = queryTokens(q)
   const phrase = q.toLowerCase()

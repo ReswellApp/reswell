@@ -1,4 +1,5 @@
 import { revalidatePath, revalidateTag } from "next/cache"
+import { expireMobileListingRedisCache } from "@/lib/cache/expire-mobile-listing-redis"
 import {
   LISTING_PUBLIC_DETAIL_CACHE_TAG,
   listingPublicDetailCacheTag,
@@ -55,4 +56,5 @@ export function revalidateListingDetailPage(listingId: string, slug?: string | n
   }
 
   expireListingPublicDetailParams([trimmedId, trimmedSlug])
+  expireMobileListingRedisCache(trimmedId, trimmedSlug || null)
 }

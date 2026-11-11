@@ -12,19 +12,19 @@ export async function verifyListingImageObjectsExist(
   const fullPath = listingStorageObjectPathFromUrl(url)
   if (!fullPath) return true
 
-  if (!(await verifyStorageObjectExists("listings", fullPath))) {
-    return false
-  }
-
   const thumbPath =
     typeof thumbnailUrl === "string" && thumbnailUrl.trim()
       ? listingStorageObjectPathFromUrl(thumbnailUrl)
       : null
   if (!thumbPath || thumbPath === fullPath) {
-    return true
+    return verifyStorageObjectExists("listings", fullPath)
   }
 
-  return verifyStorageObjectExists("listings", thumbPath)
+  const [fullOk, thumbOk] = await Promise.all([
+    verifyStorageObjectExists("listings", fullPath),
+    verifyStorageObjectExists("listings", thumbPath),
+  ])
+  return fullOk && thumbOk
 }
 
 export async function assertListingImageObjectsExist(
@@ -40,9 +40,11 @@ export async function assertListingImageObjectsExist(
 export async function assertAllListingImageObjectsExist(
   images: ReadonlyArray<{ url: string; thumbnailUrl?: string | null }>,
 ): Promise<void> {
-  for (const image of images) {
-    const url = image.url.trim()
-    if (!url) continue
-    await assertListingImageObjectsExist(url, image.thumbnailUrl)
-  }
+  await Promise.all(
+    images.map(async (image) => {
+      const url = image.url.trim()
+      if (!url) return
+      await assertListingImageObjectsExist(url, image.thumbnailUrl)
+    }),
+  )
 }

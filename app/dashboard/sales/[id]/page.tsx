@@ -72,7 +72,11 @@ import { CarrierAdjustmentNotice } from "@/components/features/shipping/carrier-
 import { SaleDetailSummary } from "@/components/features/sales/sale-detail-summary"
 import { SellerAdjustmentFeeCard } from "@/components/features/sales/seller-adjustment-fee-card"
 import { listSellerChargedAdjustmentFees } from "@/lib/services/shippingAdjustmentDispute"
-import { purchaseDetailStatusDate } from "@/lib/purchase-detail-timeline"
+import {
+  buildPurchaseDetailTimeline,
+  purchaseDetailStatusDate,
+  purchaseDetailStatusShowsDateTime,
+} from "@/lib/purchase-detail-timeline"
 import { purchaseStatusTone } from "@/lib/purchases-list-display"
 import { saleDetailLine, saleRefundNote } from "@/lib/sales-list-display"
 
@@ -132,6 +136,7 @@ type SaleDetail = {
   status: string
   created_at: string
   refunded_at: string | null
+  carrier_delivered_at?: string | null
   shipping_address: ShippingAddressJson
   fulfillment_method: string | null
   delivery_status: string
@@ -219,6 +224,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
       status,
       created_at,
       refunded_at,
+      carrier_delivered_at,
       shipping_address,
       fulfillment_method,
       delivery_status,
@@ -333,6 +339,8 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
     hadReswellPromo,
   } = amounts
   const carrierTracking = parseOrderTrackingDetail(trackingDetailRaw)
+  const actualDeliveryAt =
+    carrierTracking?.actual_delivery_date ?? sale.carrier_delivered_at ?? null
   const serviceSupabase = createServiceRoleClient()
   const chargedAdjustmentFees = await listSellerChargedAdjustmentFees({
     orderId: id,
@@ -514,9 +522,29 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
           deliveryStatus: sale.delivery_status,
           orderStatus: sale.status,
           createdAt: sale.created_at,
-          actualDeliveryAt: null,
+          actualDeliveryAt,
           refundedAt: sale.refunded_at,
         })}
+        statusDateIncludesTime={purchaseDetailStatusShowsDateTime({
+          deliveryStatus: sale.delivery_status,
+          orderStatus: sale.status,
+        })}
+        timelineHeading={isPickup ? "Pickup details" : null}
+        timeline={
+          isPickup
+            ? buildPurchaseDetailTimeline({
+                createdAt: sale.created_at,
+                fulfillmentMethod: "pickup",
+                deliveryStatus: sale.delivery_status,
+                orderStatus: sale.status,
+                hasTrackingNumber: Boolean(sale.tracking_number?.trim()),
+                carrierStatusCode: carrierTracking?.status_code,
+                events: carrierTracking?.events ?? [],
+                actualDeliveryAt,
+                refundedAt: sale.refunded_at,
+              })
+            : undefined
+        }
         addressName={ship?.name ?? null}
         addressLines={addressLines}
         trackUrl={null}

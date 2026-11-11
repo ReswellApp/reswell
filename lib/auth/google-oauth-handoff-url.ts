@@ -2,6 +2,7 @@ import {
   MARKETING_OPT_IN_PARAM,
   marketingOptInParamValue,
 } from '@/lib/auth/marketing-email-consent'
+import { SIGNUP_DATE_OF_BIRTH_PARAM } from '@/lib/auth/signup-date-of-birth'
 import { safeRedirectPath } from '@/lib/auth/safe-redirect'
 
 /** Query param: full-page auth auto-starts Google OAuth (after escaping an in-app browser). */
@@ -16,12 +17,16 @@ export function buildGoogleOAuthHandoffUrl(
   nextPath: string,
   mode: 'login' | 'sign-up' = 'login',
   marketingOptIn?: boolean,
+  dateOfBirth?: string,
 ): string {
   const base = origin.replace(/\/$/, '')
   const redirect = encodeURIComponent(safeRedirectPath(nextPath))
   let url = `${base}/auth/${mode}?redirect=${redirect}&${GOOGLE_OAUTH_AUTO_START_PARAM}=1`
   if (marketingOptIn !== undefined) {
     url += `&${MARKETING_OPT_IN_PARAM}=${marketingOptInParamValue(marketingOptIn)}`
+  }
+  if (dateOfBirth) {
+    url += `&${SIGNUP_DATE_OF_BIRTH_PARAM}=${encodeURIComponent(dateOfBirth)}`
   }
   return url
 }

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { mobileConversationParamSchema, mobileMessageMediaBodySchema } from "@reswell/api-contract"
 import { readMobileSession } from "@/lib/auth/mobile-session"
+import { consumeMobileMessageRateLimit } from "@/lib/redis/rate-limit"
 import { sendMobileConversationMediaMessage } from "@/lib/services/mobileMutations"
-import { mobileDataResponse, mobileFailure, readMobileJson } from "@/lib/utils/mobile-api-response"
+import { mobileDataResponse, mobileFailure, mobileTooManyRequests, readMobileJson } from "@/lib/utils/mobile-api-response"
 
 export const dynamic = "force-dynamic"
 
@@ -12,6 +13,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
   try {
     const session = await readMobileSession(request)
     if (!session.ok) return mobileDataResponse(session, "private, no-store")
+    const limited = await consumeMobileMessageRateLimit(session.user.id)
+    if (!limited.ok) {
+      return mobileTooManyRequests(limited.retryAfterSec, "Too many messages. Try again in a moment.")
+    }
     const { id } = await context.params
     const params = mobileConversationParamSchema.safeParse({ id })
     if (!params.success) return NextResponse.json({ error: "Invalid conversation" }, { status: 400 })

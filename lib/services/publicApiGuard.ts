@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { consumeRateLimit, rateLimitClientIp } from "@/lib/redis/rate-limit"
 import { createClient, createUserJwtSupabaseClient } from "@/lib/supabase/server"
 
 export const PUBLIC_API_FREE_LIMIT_PER_MINUTE = 10
@@ -34,10 +35,6 @@ export type PublicApiGuardLimited = {
 const WINDOW_MS = 60_000
 const DOCS_PATH = "/public-api"
 
-type RateBucket = { count: number; resetAt: number }
-
-const rateBuckets = new Map<string, RateBucket>()
-
 export function publicApiCorsHeaders(): Record<string, string> {
   return {
     "Access-Control-Allow-Origin": "*",
@@ -67,47 +64,6 @@ export function publicApiJson(
       ...extraHeaders,
     },
   })
-}
-
-function clientIpFromRequest(request: Request): string {
-  const forwarded = request.headers.get("x-forwarded-for")
-  if (forwarded) {
-    const first = forwarded.split(",")[0]?.trim()
-    if (first) return first
-  }
-  const realIp = request.headers.get("x-real-ip")?.trim()
-  if (realIp) return realIp
-  return "unknown"
-}
-
-function pruneBuckets(now: number): void {
-  if (rateBuckets.size < 400) return
-  for (const [key, bucket] of rateBuckets) {
-    if (bucket.resetAt <= now) rateBuckets.delete(key)
-  }
-}
-
-function consumeRateLimit(key: string, limit: number): { allowed: boolean; remaining: number; retryAfter: number } {
-  const now = Date.now()
-  pruneBuckets(now)
-  const existing = rateBuckets.get(key)
-  if (!existing || existing.resetAt <= now) {
-    rateBuckets.set(key, { count: 1, resetAt: now + WINDOW_MS })
-    return { allowed: true, remaining: Math.max(0, limit - 1), retryAfter: 60 }
-  }
-  if (existing.count >= limit) {
-    return {
-      allowed: false,
-      remaining: 0,
-      retryAfter: Math.max(1, Math.ceil((existing.resetAt - now) / 1000)),
-    }
-  }
-  existing.count += 1
-  return {
-    allowed: true,
-    remaining: Math.max(0, limit - existing.count),
-    retryAfter: Math.max(1, Math.ceil((existing.resetAt - now) / 1000)),
-  }
 }
 
 function docsUrlFromRequest(request: Request): string {
@@ -151,24 +107,28 @@ export async function enforcePublicApiGuard(request: Request): Promise<PublicApi
   const tier: PublicApiTier = userId ? "registered" : "free"
   const limitPerMinute =
     tier === "registered" ? PUBLIC_API_REGISTERED_LIMIT_PER_MINUTE : PUBLIC_API_FREE_LIMIT_PER_MINUTE
-  const bucketKey = userId ? `user:${userId}` : `ip:${clientIpFromRequest(request)}`
-  const consumed = consumeRateLimit(bucketKey, limitPerMinute)
+  const consumed = await consumeRateLimit({
+    scope: "public-api",
+    id: userId ? `user:${userId}` : `ip:${rateLimitClientIp(request)}`,
+    limit: limitPerMinute,
+    windowMs: WINDOW_MS,
+  })
 
-  if (!consumed.allowed) {
+  if (!consumed.ok) {
     const docs = docsUrlFromRequest(request)
     const limited: PublicApiGuardLimited = {
       ok: false,
       status: 429,
-      retryAfter: consumed.retryAfter,
+      retryAfter: consumed.retryAfterSec,
       body: {
         error: "Too many requests",
         message:
           tier === "free"
             ? `Free public API limit is ${PUBLIC_API_FREE_LIMIT_PER_MINUTE} requests per minute. Create a free Reswell account and send Authorization: Bearer <auth_token> for ${PUBLIC_API_REGISTERED_LIMIT_PER_MINUTE} requests per minute. Docs: ${docs}`
-            : `Registered public API limit is ${PUBLIC_API_REGISTERED_LIMIT_PER_MINUTE} requests per minute. Retry after ${consumed.retryAfter}s. Docs: ${docs}`,
+            : `Registered public API limit is ${PUBLIC_API_REGISTERED_LIMIT_PER_MINUTE} requests per minute. Retry after ${consumed.retryAfterSec}s. Docs: ${docs}`,
         tier,
         limit_per_minute: limitPerMinute,
-        retry_after: consumed.retryAfter,
+        retry_after: consumed.retryAfterSec,
         ...(tier === "free"
           ? {
               upgrade: {

@@ -16,3 +16,9 @@ export const purchaseSearchFieldClassName =
 
 /** Tracking row wash — light brand blue instead of generic indigo. */
 export const purchaseTrackRowClassName = "bg-[#7F9DD5]/15 dark:bg-[#5574AD]/20"
+
+/** Pickup-code banner. Footer blue (`listingHeart`) at low opacity. */
+export const pickupCodeBannerSurfaceClassName =
+  "border-listingHeart/30 bg-listingHeart/[0.08] dark:bg-listingHeart/15"
+
+export const pickupCodeBannerLabelClassName = "text-listingHeart dark:text-listingHeart/90"

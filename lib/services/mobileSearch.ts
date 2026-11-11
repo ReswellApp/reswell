@@ -8,12 +8,15 @@ import {
   type MobileSearch,
   type MobileSearchResults,
 } from "@reswell/api-contract"
+import { getNavSearchSuggestCached } from "@/lib/cache/nav-search-suggest"
 import { listMobileListingRowsByIds } from "@/lib/db/mobile-listings"
 import { isListingPubliclyVisible } from "@/lib/listing-public-visibility"
+import { redisGetOrSet } from "@/lib/redis/cache"
+import { REDIS_TTL_SECONDS, redisMobileResultsKey, redisMobileTypeaheadKey } from "@/lib/redis/keys"
 import { resolveDirectoryBrandRowFromLabel } from "@/lib/services/brandDirectorySearch"
 import { parseMarketplaceQuery } from "@/lib/services/marketplaceQueryParse"
 import { resolveSearchListings } from "@/lib/services/marketplaceSearchResults"
-import { runMarketplaceSearchSuggest } from "@/lib/services/marketplaceSearchSuggest"
+import { normalizeMarketplaceSearchSuggestQuery } from "@/lib/services/marketplaceSearchSuggest"
 import { toMobileListingCard, type MobileApiResult } from "@/lib/services/mobileApi"
 import { getDb } from "@/lib/supabase/db"
 import {
@@ -42,8 +45,20 @@ const SECTION_CATEGORY: Partial<Record<string, MobileListingCategory>> = {
 export async function searchMobileListingsService(
   query: string,
 ): Promise<MobileApiResult<MobileSearch>> {
-  const supabase = getDb({ consistency: "eventual", purpose: "catalog" })
-  const suggest = await runMarketplaceSearchSuggest(supabase, query, "marketplace")
+  const q = normalizeMarketplaceSearchSuggestQuery(query)
+  if (!q || q.length < 2) {
+    return { ok: true, data: { listings: [] } }
+  }
+  return redisGetOrSet(
+    redisMobileTypeaheadKey(q),
+    REDIS_TTL_SECONDS.mobileSearch,
+    () => loadMobileTypeahead(q),
+    { cacheIf: (result) => result.ok },
+  )
+}
+
+async function loadMobileTypeahead(query: string): Promise<MobileApiResult<MobileSearch>> {
+  const suggest = await getNavSearchSuggestCached(query, "marketplace")
   const ids = suggest.listings.map((listing) => listing.id)
   if (ids.length === 0) {
     return { ok: true, data: { listings: [] } }
@@ -86,6 +101,15 @@ export async function searchMobileResultsService(
     return { ok: true, data: parsed.data }
   }
 
+  return redisGetOrSet(
+    redisMobileResultsKey(trimmed),
+    REDIS_TTL_SECONDS.searchResults,
+    () => loadMobileSearchResults(trimmed),
+    { cacheIf: (result) => result.ok },
+  )
+}
+
+async function loadMobileSearchResults(trimmed: string): Promise<MobileApiResult<MobileSearchResults>> {
   const supabase = getDb({ consistency: "eventual", purpose: "catalog" })
   const parsedQuery = await parseMarketplaceQuery(supabase, trimmed)
   let brand: { id: string; name: string; slug: string } | null = parsedQuery.brand

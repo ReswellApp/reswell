@@ -12,11 +12,12 @@ import {
   View,
 } from "react-native"
 import type { MobilePurchaseStatusTone, MobileSaleDetail } from "@reswell/api-contract"
+import { OrderReviewSheet, ReviewPromptRow } from "@/components/order-review-sheet"
 import { PartyProfileStrip } from "@/components/party-profile-strip"
 import { verifySalePickup } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
-import { formatPurchaseDate } from "@/lib/purchase-display"
-import { saleLabelHref } from "@/lib/sale-label"
+import { formatPurchaseDate, formatPurchaseDateTime } from "@/lib/purchase-display"
+import { saleLabelHref } from "@/lib/sale-label-href"
 import { trackPackageHref } from "@/lib/track-package"
 import { fontFamily, useReswellColors } from "@/theme"
 
@@ -53,7 +54,13 @@ function ActionBlock({
   )
 }
 
-export function SaleDetailView({ sale, onVerified }: { sale: MobileSaleDetail; onVerified: () => void }) {
+export function SaleDetailView({
+  sale,
+  onVerified,
+}: {
+  sale: MobileSaleDetail
+  onVerified: () => void
+}) {
   const colors = useReswellColors()
   const router = useRouter()
   const { session } = useAuth()
@@ -64,6 +71,7 @@ export function SaleDetailView({ sale, onVerified }: { sale: MobileSaleDetail; o
   const [code, setCode] = useState("")
   const [verifying, setVerifying] = useState(false)
   const [verifyError, setVerifyError] = useState<string | null>(null)
+  const [reviewOpen, setReviewOpen] = useState(false)
   const openListing = (listingId: string | null, listingSlug: string | null) => {
     const id = listingSlug || listingId
     if (!id) return
@@ -129,6 +137,16 @@ export function SaleDetailView({ sale, onVerified }: { sale: MobileSaleDetail; o
           </Pressable>
         ))}
       </View>
+
+      <ReviewPromptRow
+        existing={sale.existing_review}
+        canReview={sale.can_review}
+        hidePrompt={sale.hide_review_prompt}
+        actionLabel="Leave a review for the buyer"
+        waitingLabel="You can review the buyer after this order is delivered or picked up."
+        existingTitle="Your buyer review"
+        onPress={() => setReviewOpen(true)}
+      />
 
       <View style={[styles.card, card]}>
         <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: fontFamily.headline }]}>Order Details</Text>
@@ -202,10 +220,59 @@ export function SaleDetailView({ sale, onVerified }: { sale: MobileSaleDetail; o
         <Text style={[styles.statusLabel, { color: banner.color, fontFamily: fontFamily.headline }]}>{sale.status_label}</Text>
         {sale.status_date ? (
           <Text style={[styles.statusDate, { color: banner.color, fontFamily: fontFamily.text }]}>
-            {formatPurchaseDate(sale.status_date, "long")}
+            {sale.status_date_includes_time
+              ? formatPurchaseDateTime(sale.status_date)
+              : formatPurchaseDate(sale.status_date, "long")}
           </Text>
         ) : null}
       </View>
+
+      {sale.timeline_heading && sale.timeline.length > 0 ? (
+        <View style={styles.timelineBlock}>
+          <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: fontFamily.headline }]}>
+            {sale.timeline_heading}
+          </Text>
+          {sale.timeline.map((step, index) => {
+            const last = index === sale.timeline.length - 1
+            const upcoming = step.state === "upcoming"
+            return (
+              <View key={step.id} style={styles.timelineRow}>
+                {!last ? (
+                  <View
+                    style={[
+                      styles.timelineLine,
+                      { backgroundColor: upcoming ? colors.border : "rgba(22, 163, 74, 0.5)" },
+                    ]}
+                  />
+                ) : null}
+                <View
+                  style={[
+                    styles.dot,
+                    upcoming
+                      ? { borderWidth: 1, borderColor: colors.muted, backgroundColor: colors.background }
+                      : { backgroundColor: "#16A34A" },
+                  ]}
+                />
+                <View style={styles.timelineCopy}>
+                  <Text
+                    style={[
+                      styles.timelineTitle,
+                      { color: upcoming ? colors.muted : accent, fontFamily: fontFamily.text },
+                    ]}
+                  >
+                    {step.title}
+                  </Text>
+                  {step.occurred_at ? (
+                    <Text style={[styles.timelineDate, { color: colors.muted, fontFamily: fontFamily.text }]}>
+                      {formatPurchaseDateTime(step.occurred_at)}
+                    </Text>
+                  ) : null}
+                </View>
+              </View>
+            )
+          })}
+        </View>
+      ) : null}
 
       {sale.delivery_badge_label || sale.payout_badge_label ? (
         <View style={styles.badges}>
@@ -352,7 +419,25 @@ export function SaleDetailView({ sale, onVerified }: { sale: MobileSaleDetail; o
             Local pickup. Coordinate a time and place with the buyer in messages.
           </Text>
         ) : null}
+        {sale.review_from_buyer ? (
+          <Text style={[styles.meta, { color: colors.muted, fontFamily: fontFamily.text }]}>
+            {sale.buyer_name} rated you {sale.review_from_buyer.rating}/5
+            {sale.review_from_buyer.comment ? ` — ${sale.review_from_buyer.comment}` : "."}
+          </Text>
+        ) : null}
       </View>
+
+      {session?.access_token && sale.can_review ? (
+        <OrderReviewSheet
+          presented={reviewOpen}
+          onDismiss={() => setReviewOpen(false)}
+          onSubmitted={onVerified}
+          accessToken={session.access_token}
+          orderId={sale.id}
+          subjectName={sale.buyer_name}
+          subject="buyer"
+        />
+      ) : null}
     </View>
   )
 }
@@ -388,6 +473,13 @@ const styles = StyleSheet.create({
   statusKicker: { fontSize: 11, fontWeight: "700", letterSpacing: 0.6 },
   statusLabel: { fontSize: 18, fontWeight: "700", lineHeight: 22 },
   statusDate: { fontSize: 14 },
+  timelineBlock: { gap: 12 },
+  timelineRow: { position: "relative", flexDirection: "row", gap: 12, paddingBottom: 16 },
+  timelineLine: { position: "absolute", left: 5, top: 12, width: StyleSheet.hairlineWidth + 1, bottom: 0 },
+  dot: { width: 10, height: 10, borderRadius: 5, marginTop: 4 },
+  timelineCopy: { flex: 1, minWidth: 0 },
+  timelineTitle: { fontSize: 14, fontWeight: "600" },
+  timelineDate: { fontSize: 12, marginTop: 2 },
   badges: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   badge: { borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
   badgeOutline: { borderWidth: StyleSheet.hairlineWidth + 1, backgroundColor: "transparent" },

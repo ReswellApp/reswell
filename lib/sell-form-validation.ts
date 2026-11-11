@@ -224,17 +224,6 @@ export function validateSellListingForm(
 
   const fulfillmentFlags = flagsFromBoardFulfillment(form.boardFulfillment)
   if (fulfillmentFlags.shipping_available && !relaxed) {
-    // Shipping needs board length for pack sizing; width/thickness stay optional.
-    if (!lenRaw) {
-      return "Enter board length when offering shipping."
-    }
-    {
-      const lenErr = validateFilledLength()
-      if (lenErr) {
-        return "Board length: enter feet and inches (e.g. 6'2)."
-      }
-    }
-
     const shippingMode = form.boardShippingCostMode ?? "reswell"
 
     // Free / flat are NOT Reswell UPS — no pack-band or DIM checks.

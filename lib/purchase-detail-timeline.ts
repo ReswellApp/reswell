@@ -109,7 +109,15 @@ export function buildPurchaseDetailTimeline(input: {
 
   if (input.fulfillmentMethod === "pickup") {
     if (input.deliveryStatus === "picked_up") {
-      return [purchased, { id: "picked-up", title: "Picked up", occurredAt: null, state: "done" }]
+      return [
+        purchased,
+        {
+          id: "picked-up",
+          title: "Picked up",
+          occurredAt: input.actualDeliveryAt,
+          state: "done",
+        },
+      ]
     }
     if (input.deliveryStatus === "pickup_ready") {
       return [
@@ -231,4 +239,29 @@ export function purchaseDetailStatusDate(input: {
     return input.actualDeliveryAt
   }
   return input.createdAt
+}
+
+/** Pickup (and delivered) status dates include the time of day. Purchase dates stay date-only. */
+export function purchaseDetailStatusShowsDateTime(input: {
+  deliveryStatus: string
+  orderStatus: string
+}): boolean {
+  if (input.orderStatus === "refunded" || input.orderStatus === "refunding") return false
+  return input.deliveryStatus === "picked_up"
+}
+
+export function toMobilePurchaseTimeline(
+  steps: PurchaseTimelineEvent[],
+): Array<{
+  id: string
+  title: string
+  occurred_at: string | null
+  state: PurchaseTimelineEvent["state"]
+}> {
+  return steps.map((step) => ({
+    id: step.id,
+    title: step.title,
+    occurred_at: step.occurredAt,
+    state: step.state,
+  }))
 }

@@ -1,9 +1,10 @@
 import { useRouter } from "expo-router"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native"
 import type { MobileListingDetail } from "@reswell/api-contract"
 import { EndListingSheet } from "@/components/end-listing-sheet"
-import { endListing, fetchListing, markListingSold, setListingVacation } from "@/lib/api"
+import { endListing, fetchListing, markListingSold, prefetchSellListingEdit, setListingVacation } from "@/lib/api"
+import { useAuth } from "@/lib/auth-context"
 import { useAuthGate } from "@/lib/auth-gate"
 import { fontFamily, useReswellColors } from "@/theme"
 
@@ -16,11 +17,18 @@ export function ListingOwnerActions({
 }) {
   const colors = useReswellColors()
   const router = useRouter()
+  const { session } = useAuth()
   const { requestAuth } = useAuthGate()
   const owner = listing.owner
+  const accessToken = session?.access_token
   const [endOpen, setEndOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!accessToken) return
+    prefetchSellListingEdit(accessToken, listing.id)
+  }, [accessToken, listing.id])
 
   if (!owner) return null
 
@@ -92,7 +100,10 @@ export function ListingOwnerActions({
             accessibilityRole="button"
             accessibilityLabel="Edit listing"
             disabled={busy}
-            onPress={() => router.push(`/sell/edit/${listing.id}`)}
+            onPress={() => {
+              if (accessToken) prefetchSellListingEdit(accessToken, listing.id)
+              router.push(`/sell/edit/${listing.id}`)
+            }}
             style={[styles.bubble, { backgroundColor: colors.primary }]}
           >
             <Text style={[styles.bubbleLabel, { color: colors.primaryForeground, fontFamily: fontFamily.text }]}>Edit</Text>

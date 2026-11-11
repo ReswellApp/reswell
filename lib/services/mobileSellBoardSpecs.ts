@@ -57,7 +57,7 @@ export function getMobileSellBoardSpecs(): MobileSellBoardSpecs {
             id: "length",
             label: "Length",
             hint: null,
-            required: true,
+            required: false,
             kind: "select",
             placeholder: "—",
             suffix: null,

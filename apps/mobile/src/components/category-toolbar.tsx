@@ -1,4 +1,5 @@
 import { SymbolView } from "expo-symbols"
+import type { ReactNode } from "react"
 import { Pressable, StyleSheet, Text, View } from "react-native"
 import { ListingLayoutSwitch, type ListingLayout } from "@/components/listing-layout-switch"
 import { ReswellFilterIcon } from "@/components/reswell-icons"
@@ -12,6 +13,7 @@ export function CategoryToolbar({
   onFilter,
   layout,
   onLayout,
+  location,
 }: {
   count: number
   filterCount: number
@@ -19,6 +21,7 @@ export function CategoryToolbar({
   onFilter: () => void
   layout?: ListingLayout
   onLayout?: (next: ListingLayout) => void
+  location?: ReactNode
 }) {
   const colors = useReswellColors()
   return (
@@ -56,6 +59,7 @@ export function CategoryToolbar({
           </View>
         ) : null}
       </View>
+      {location}
       <Text style={[styles.count, { color: colors.muted, fontFamily: fontFamily.text }]}>
         {count} {count === 1 ? "result" : "results"}
       </Text>

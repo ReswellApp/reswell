@@ -34,6 +34,22 @@ export type MobileListingRow = {
   model: string | null
   board_type: string | null
   dimensions: string | null
+  stock_quantity?: number | null
+  inventory_source?: string | null
+  construction?: string | null
+  fin_system?: string | null
+  fins_setup?: string | null
+  fins_included?: boolean | null
+  fin_size?: string | null
+  wetsuit_size?: string | null
+  boardbag_size?: string | null
+  surfpack_size?: string | null
+  leash_size?: string | null
+  apparel_kind?: string | null
+  apparel_size?: string | null
+  magazine_year?: number | string | null
+  traction_size?: string | null
+  accessory_size?: string | null
   city: string | null
   state: string | null
   shipping_available: boolean | null
@@ -42,6 +58,9 @@ export type MobileListingRow = {
   archived_at: string | null
   shipping_price: number | string | null
   board_shipping_cost_mode: string | null
+  buyer_offers_enabled?: boolean | null
+  minimum_offer_pct?: number | null
+  minimum_offer_amount?: number | string | null
   listing_images: ListingImageForCard[] | null
   listing_videos?: MobileListingVideoRow[] | null
   brand_id?: string | null
@@ -99,6 +118,25 @@ export const MOBILE_LISTING_SELECT = `
 export const MOBILE_LISTING_DETAIL_SELECT = `
   ${MOBILE_LISTING_SELECT},
   brand_id,
+  stock_quantity,
+  inventory_source,
+  construction,
+  fin_system,
+  fins_setup,
+  fins_included,
+  fin_size,
+  wetsuit_size,
+  boardbag_size,
+  surfpack_size,
+  leash_size,
+  apparel_kind,
+  apparel_size,
+  magazine_year,
+  traction_size,
+  accessory_size,
+  buyer_offers_enabled,
+  minimum_offer_pct,
+  minimum_offer_amount,
   listing_videos (id, url, thumbnail_url, content_type, duration_seconds, sort_order)
 `
 

@@ -1,9 +1,10 @@
 import { mobileAppleSignUpBodySchema } from "@reswell/api-contract"
 import { NextResponse, type NextRequest } from "next/server"
 import { ACCOUNT_BANNED_USER_MESSAGE } from "@/lib/messages/account-ban-errors"
+import { consumeMobileSignUpRateLimit } from "@/lib/redis/rate-limit"
 import { registerMobileAppleAccount } from "@/lib/services/mobileAppleSignUp"
 import { isNextRequestAccessBanned } from "@/lib/services/requestAccessBan"
-import { mobileDataResponse, mobileFailure, readMobileJson } from "@/lib/utils/mobile-api-response"
+import { mobileDataResponse, mobileFailure, mobileTooManyRequests, readMobileJson } from "@/lib/utils/mobile-api-response"
 
 export const dynamic = "force-dynamic"
 
@@ -12,6 +13,10 @@ export async function POST(request: NextRequest) {
   try {
     if (await isNextRequestAccessBanned(request)) {
       return NextResponse.json({ error: ACCOUNT_BANNED_USER_MESSAGE }, { status: 403 })
+    }
+    const limited = await consumeMobileSignUpRateLimit(request)
+    if (!limited.ok) {
+      return mobileTooManyRequests(limited.retryAfterSec, "Too many sign-up attempts. Try again in a moment.")
     }
 
     const parsed = mobileAppleSignUpBodySchema.safeParse(await readMobileJson(request))

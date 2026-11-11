@@ -78,6 +78,28 @@ export default function ListingScreen() {
               }
               sold={listing.status === "sold"}
               dimensionsLine={listingDimensionsLine(listing.dimensions, listing.volume_label)}
+              favorite={
+                listing.owner
+                  ? null
+                  : {
+                      listingId: listing.id,
+                      favorited: listing.favorited,
+                      onFavoritedChange: (favorited) =>
+                        setListing((current) =>
+                          current
+                            ? {
+                                ...current,
+                                favorited,
+                                watcher_count: Math.max(
+                                  0,
+                                  current.watcher_count +
+                                    (favorited === Boolean(current.favorited) ? 0 : favorited ? 1 : -1),
+                                ),
+                              }
+                            : current,
+                        ),
+                    }
+              }
             />
             {listing.status !== "sold" && listing.owner ? (
               <ListingOwnerActions listing={listing} onChange={setListing} />

@@ -26,8 +26,11 @@ import { absoluteProfileCircleUrl } from "@/lib/profile-circle"
 import {
   buildPurchaseDetailTimeline,
   purchaseDetailStatusDate,
+  purchaseDetailStatusShowsDateTime,
+  toMobilePurchaseTimeline,
 } from "@/lib/purchase-detail-timeline"
 import {
+  buyerVisiblePickupCode,
   purchaseDetailLine,
   purchaseRefundNote,
   purchaseShowsShipping,
@@ -119,7 +122,9 @@ function formatAddressLines(addr: NonNullable<ShippingAddressJson>["address"]): 
   )
 }
 
-function toReview(review: ExistingMarketplaceReview | null): MobilePurchaseReview | null {
+export function toMobileOrderReview(
+  review: ExistingMarketplaceReview | null,
+): MobilePurchaseReview | null {
   if (!review) return null
   const rating = Math.round(review.rating)
   if (rating < 1 || rating > 5) return null
@@ -182,6 +187,11 @@ export function toMobilePurchaseListItem(
     amount_struck: orderStatusIsRefunded(row.status),
     refund_note: purchaseRefundNote(row.status, usd(row.amount)),
     status_tone: purchaseStatusTone(statusDisplay),
+    pickup_code: buyerVisiblePickupCode({
+      pickupCode: row.pickup_code,
+      deliveryStatus: row.delivery_status ?? "pending",
+      orderStatus: row.status,
+    }),
   }
   const parsed = mobilePurchaseListItemSchema.safeParse(item)
   return parsed.success ? parsed.data : null
@@ -256,7 +266,7 @@ async function loadReview(
   reviewerId: string,
 ): Promise<MobilePurchaseReview | null> {
   const { data } = await getMarketplaceReviewByOrderAndReviewer(supabase, orderId, reviewerId)
-  return data ? toReview(existingMarketplaceReviewFromRow(data)) : null
+  return data ? toMobileOrderReview(existingMarketplaceReviewFromRow(data)) : null
 }
 
 export function buildMobilePurchaseDetail(
@@ -368,26 +378,27 @@ export function buildMobilePurchaseDetail(
       actualDeliveryAt,
       refundedAt: order.refunded_at,
     }),
+    status_date_includes_time: purchaseDetailStatusShowsDateTime({
+      deliveryStatus: order.delivery_status ?? "pending",
+      orderStatus: order.status,
+    }),
     shipping_deadline: showShippingDeadline ? getShippingDeadlineDate(order.created_at).toISOString() : null,
     shipping_days_left: showShippingDeadline ? daysUntilShippingDeadline(order.created_at) : null,
     shipping_window_days: SHIPPING_DEADLINE_DAYS,
     timeline_heading: isPickup ? "Pickup details" : "Shipping Details",
-    timeline: buildPurchaseDetailTimeline({
-      createdAt: order.created_at,
-      fulfillmentMethod: isPickup ? "pickup" : "shipping",
-      deliveryStatus: order.delivery_status ?? "pending",
-      orderStatus: order.status,
-      hasTrackingNumber: Boolean(order.tracking_number?.trim()),
-      carrierStatusCode: trackingDetail?.status_code,
-      events: trackingDetail?.events ?? [],
-      actualDeliveryAt,
-      refundedAt: order.refunded_at,
-    }).map((step) => ({
-      id: step.id,
-      title: step.title,
-      occurred_at: step.occurredAt,
-      state: step.state,
-    })),
+    timeline: toMobilePurchaseTimeline(
+      buildPurchaseDetailTimeline({
+        createdAt: order.created_at,
+        fulfillmentMethod: isPickup ? "pickup" : "shipping",
+        deliveryStatus: order.delivery_status ?? "pending",
+        orderStatus: order.status,
+        hasTrackingNumber: Boolean(order.tracking_number?.trim()),
+        carrierStatusCode: trackingDetail?.status_code,
+        events: trackingDetail?.events ?? [],
+        actualDeliveryAt,
+        refundedAt: order.refunded_at,
+      }),
+    ),
     address_name: text(ship?.name),
     address_lines: addressLines,
     track_url: extras.trackUrl,
@@ -418,6 +429,11 @@ export function buildMobilePurchaseDetail(
         },
         { userId: order.seller_id, fallbackName: sellerName },
       ),
+    pickup_code: buyerVisiblePickupCode({
+      pickupCode: order.pickup_code,
+      deliveryStatus: order.delivery_status ?? "pending",
+      orderStatus: order.status,
+    }),
   }
   const parsed = mobilePurchaseDetailSchema.safeParse(payload)
   return parsed.success ? parsed.data : null

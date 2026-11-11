@@ -1,3 +1,7 @@
+import {
+  DATE_OF_BIRTH_REQUIRED_MESSAGE,
+  signupDateOfBirthSchema,
+} from "@reswell/api-contract"
 import { SymbolView } from "expo-symbols"
 import { useEffect, useState, type ReactNode } from "react"
 import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, TextInput, View } from "react-native"
@@ -36,6 +40,7 @@ export function AuthSignUpForm({
   const [showPassword, setShowPassword] = useState(false)
   const [marketingOptIn, setMarketingOptIn] = useState(true)
   const [acceptedTerms, setAcceptedTerms] = useState(true)
+  const [dateOfBirth, setDateOfBirth] = useState("")
   const [localError, setLocalError] = useState<string | null>(null)
   const [googlePending, setGooglePending] = useState(false)
   const [applePending, setApplePending] = useState(false)
@@ -49,13 +54,30 @@ export function AuthSignUpForm({
   }, [busy])
 
   const emailReady = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+  const dateOfBirthReady = signupDateOfBirthSchema.safeParse(dateOfBirth).success
   const ready =
-    emailReady && firstName.trim().length > 0 && lastName.trim().length > 0 && password.length > 0 && !busy
+    emailReady &&
+    firstName.trim().length > 0 &&
+    lastName.trim().length > 0 &&
+    dateOfBirthReady &&
+    password.length > 0 &&
+    !busy
   const shownError = localError ?? error
+
+  function dateOfBirthError(): string | null {
+    const parsed = signupDateOfBirthSchema.safeParse(dateOfBirth)
+    if (parsed.success) return null
+    return parsed.error.issues[0]?.message ?? DATE_OF_BIRTH_REQUIRED_MESSAGE
+  }
 
   function submit() {
     if (!acceptedTerms) {
       setLocalError("Please accept Reswell's Terms of Use and Privacy Policy to continue.")
+      return
+    }
+    const birthdayProblem = dateOfBirthError()
+    if (birthdayProblem) {
+      setLocalError(birthdayProblem)
       return
     }
     const problem = passwordProblem(password)
@@ -74,6 +96,7 @@ export function AuthSignUpForm({
       username,
       marketingOptIn,
       acceptedTerms,
+      dateOfBirth,
     })
   }
 
@@ -86,6 +109,25 @@ export function AuthSignUpForm({
         </Text>
       </Text>
 
+      <Field label="Date of birth">
+        <TextInput
+          autoComplete="birthdate-full"
+          autoCorrect={false}
+          keyboardType="numbers-and-punctuation"
+          placeholder="YYYY-MM-DD"
+          placeholderTextColor="#A3A3A3"
+          value={dateOfBirth}
+          onChangeText={(value) => {
+            setLocalError(null)
+            setDateOfBirth(value.trim())
+          }}
+          style={[styles.input, { color: colors.foreground, borderColor: "#E6E6E6", fontFamily: fontFamily.text }]}
+        />
+        <Text style={[styles.hint, { color: colors.muted, fontFamily: fontFamily.text }]}>
+          You must be 18 or older.
+        </Text>
+      </Field>
+
       {onApple ? (
         <Pressable
           accessibilityRole="button"
@@ -96,10 +138,16 @@ export function AuthSignUpForm({
               setLocalError("Please accept Reswell's Terms of Use and Privacy Policy to continue.")
               return
             }
+            const birthdayProblem = dateOfBirthError()
+            if (birthdayProblem) {
+              setErrorAnchor("apple")
+              setLocalError(birthdayProblem)
+              return
+            }
             setLocalError(null)
             setErrorAnchor("apple")
             setApplePending(true)
-            onApple({ marketingOptIn, acceptedTerms })
+            onApple({ marketingOptIn, acceptedTerms, dateOfBirth })
           }}
           style={[styles.social, { borderColor: "#E4E4E7", backgroundColor: colors.background }]}
         >
@@ -131,10 +179,16 @@ export function AuthSignUpForm({
             setLocalError("Please accept Reswell's Terms of Use and Privacy Policy to continue.")
             return
           }
+          const birthdayProblem = dateOfBirthError()
+          if (birthdayProblem) {
+            setErrorAnchor("google")
+            setLocalError(birthdayProblem)
+            return
+          }
           setLocalError(null)
           setErrorAnchor("google")
           setGooglePending(true)
-          onGoogle({ marketingOptIn, acceptedTerms })
+          onGoogle({ marketingOptIn, acceptedTerms, dateOfBirth })
         }}
         style={[styles.social, { borderColor: "#E4E4E7", backgroundColor: colors.background }]}
       >

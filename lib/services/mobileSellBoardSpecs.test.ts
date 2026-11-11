@@ -19,7 +19,7 @@ describe("mobile sell board specs", () => {
     assert.equal(facets?.title, "Fins & construction")
 
     const length = dimensions?.fields.find((field) => field.id === "length")
-    assert.equal(length?.required, true)
+    assert.equal(length?.required, false)
     assert.equal(length?.kind, "select")
     assert.equal(length?.options.length, BOARD_LENGTH_OPTIONS.length)
     assert.equal(length?.options[0]?.value, BOARD_LENGTH_OPTIONS[0]?.value)

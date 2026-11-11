@@ -19,6 +19,19 @@ export async function readMobileJson(request: Request): Promise<unknown> {
   }
 }
 
+export function mobileTooManyRequests(retryAfterSec: number, error: string) {
+  return NextResponse.json(
+    { error },
+    {
+      status: 429,
+      headers: {
+        "Retry-After": String(retryAfterSec),
+        "Cache-Control": "no-store",
+      },
+    },
+  )
+}
+
 export function mobileFailure(route: string, error: unknown, fallback: string) {
   console.error("[mobile-api] failed", {
     route,

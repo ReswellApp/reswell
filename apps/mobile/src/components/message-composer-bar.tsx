@@ -39,6 +39,9 @@ export function MessageComposerBar({
             placeholder={placeholder}
             placeholderTextColor={colors.muted}
             editable={!sending}
+            multiline
+            scrollEnabled
+            textAlignVertical="center"
             style={[
               styles.input,
               leading ? null : styles.inputNoLeading,
@@ -75,14 +78,25 @@ const styles = StyleSheet.create({
   composer: { paddingHorizontal: 20, paddingTop: 4 },
   inputShell: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-end",
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 24,
     paddingLeft: 4,
     paddingRight: 6,
   },
   leading: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
-  input: { flex: 1, fontSize: 16, paddingVertical: 10, paddingRight: 4, paddingLeft: 6 },
+  input: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 36,
+    maxHeight: 132,
+    fontSize: 16,
+    lineHeight: 21,
+    paddingTop: 8,
+    paddingBottom: 8,
+    paddingRight: 4,
+    paddingLeft: 6,
+  },
   inputNoLeading: { paddingLeft: 14 },
   send: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
   sendError: { paddingHorizontal: 20, paddingBottom: 8, fontSize: 13 },

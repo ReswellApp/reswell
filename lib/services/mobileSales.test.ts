@@ -55,6 +55,7 @@ describe("mobile sales", () => {
     const detailRow: MobileSaleDetailRow = {
       ...LIST_ROW,
       refunded_at: null,
+      carrier_delivered_at: null,
       tracking_carrier: null,
       listing_id: LISTING_ID,
       stripe_checkout_session_id: "cs_test_123",
@@ -96,16 +97,57 @@ describe("mobile sales", () => {
     assert.equal(detail.status_label, "Awaiting pickup")
     assert.equal(detail.can_verify_pickup, true)
     assert.equal(detail.is_pickup, true)
+    assert.equal(detail.timeline_heading, "Pickup details")
+    assert.equal(detail.status_date_includes_time, false)
+    assert.deepEqual(
+      detail.timeline.map((step) => step.title),
+      ["Purchased", "Ready for pickup"],
+    )
     assert.equal(detail.delivery_badge_label, "Ready for pickup")
     assert.equal(detail.payout_badge_label, "Held — awaiting pickup")
     assert.equal(detail.can_request_support, true)
     assert.equal(detail.buyer, null)
+    assert.equal(detail.can_review, false)
+    assert.equal(detail.hide_review_prompt, false)
+    assert.equal(detail.existing_review, null)
+    assert.equal(detail.review_from_buyer, null)
+
+    const pickedUp = buildMobileSaleDetail(
+      {
+        ...detailRow,
+        delivery_status: "picked_up",
+        carrier_delivered_at: "2026-11-03T17:18:00.000Z",
+        payout_status: "pending",
+        payout_hold_reason: null,
+      },
+      {
+        conversationId: null,
+        labelAvailable: false,
+        trackUrl: null,
+        preparedLabel: false,
+        returnSummary: null,
+        buyer: null,
+      },
+    )
+    if (!pickedUp) throw new Error("expected picked up sale details")
+    assert.equal(pickedUp.can_verify_pickup, false)
+    assert.equal(pickedUp.can_review, true)
+    assert.equal(pickedUp.status_date, "2026-11-03T17:18:00.000Z")
+    assert.equal(pickedUp.status_date_includes_time, true)
+    assert.deepEqual(
+      pickedUp.timeline.map((step) => [step.title, step.occurred_at]),
+      [
+        ["Purchased", LIST_ROW.created_at],
+        ["Picked up", "2026-11-03T17:18:00.000Z"],
+      ],
+    )
   })
 
   it("includes the buyer profile on sale details", () => {
     const detailRow: MobileSaleDetailRow = {
       ...LIST_ROW,
       refunded_at: null,
+      carrier_delivered_at: null,
       tracking_carrier: null,
       listing_id: LISTING_ID,
       stripe_checkout_session_id: "cs_test_123",

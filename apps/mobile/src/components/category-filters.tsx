@@ -9,6 +9,7 @@ import {
   type CategoryPlace,
   type CategoryRadius,
 } from "@/components/category-location-filter"
+import { locationFilterDetail } from "@/lib/location-button-label"
 import { fontFamily, useReswellColors } from "@/theme"
 
 type FacetGroup = MobileCategory["facets"][number]
@@ -216,7 +217,7 @@ function FilterHome({
           <FilterLink
             key="location"
             title="Location"
-            detail={locationDetail(place, radius)}
+            detail={locationFilterDetail(place?.label, radius)}
             onPress={() => onOpen("location")}
           />
         ) : (
@@ -429,12 +430,6 @@ function facetDetail(group: FacetGroup, selected: string[]): string {
   return selected
     .map((value) => group.options.find((option) => option.value === value)?.label ?? value)
     .join(", ")
-}
-
-function locationDetail(place: CategoryPlace | null, radius: CategoryRadius): string {
-  if (!place?.label) return "None selected"
-  if (radius === "any") return place.label
-  return `${place.label} · ${radius} mi`
 }
 
 const shadow = {

@@ -1,13 +1,11 @@
 import * as ImagePicker from "expo-image-picker"
-import { Image } from "expo-image"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Pressable, StyleSheet, Text, View } from "react-native"
-import { SymbolView } from "expo-symbols"
 import { SellBoardSpecs } from "@/components/sell/sell-board-specs"
 import { SellPhotoEditor } from "@/components/sell/sell-photo-editor"
+import { SellPhotoRail } from "@/components/sell/sell-photo-rail"
 import { SellPhotoTips } from "@/components/sell/sell-photo-tips"
 import { SellUploadMenu } from "@/components/sell/sell-upload-menu"
-import { HorizontalRail } from "@/components/horizontal-rail"
 import { SellVideoAddTile, SellVideoFilledTile } from "@/components/sell/sell-video-tile"
 import { fetchSellPhotoGuide } from "@/lib/api"
 import { MAX_SELL_PHOTOS, type SellPhoto, type SellVideo } from "@/lib/sell-flow"
@@ -45,6 +43,7 @@ export function SellPhotosStep({
   const [editingId, setEditingId] = useState<string | null>(null)
   const room = MAX_SELL_PHOTOS - photos.length
   const editing = photos.find((photo) => photo.id === editingId) ?? null
+  const picking = useRef(false)
 
   useEffect(() => {
     void fetchSellPhotoGuide()
@@ -57,28 +56,38 @@ export function SellPhotosStep({
   }
 
   async function addFromLibrary() {
-    if (room <= 0) return
+    if (room <= 0 || picking.current) return
+    picking.current = true
     setMenuOpen(null)
     setError(null)
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync()
-    if (!permission.granted) {
-      setError("Photo access is off. Enable it in Settings to add listing photos.")
-      return
+    try {
+      await waitForUploadMenuClose()
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync()
+      if (!permission.granted) {
+        setError("Photo access is off. Enable it in Settings to add listing photos.")
+        return
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsMultipleSelection: true,
+        allowsEditing: false,
+        orderedSelection: true,
+        selectionLimit: room,
+        quality: 0.8,
+        preferredAssetRepresentationMode: ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Current,
+      })
+      if (result.canceled) return
+      onChange([...photos, ...toPhotos(result.assets)].slice(0, MAX_SELL_PHOTOS))
+    } finally {
+      picking.current = false
     }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      allowsMultipleSelection: true,
-      selectionLimit: room,
-      quality: 0.8,
-    })
-    if (result.canceled) return
-    onChange([...photos, ...toPhotos(result.assets)].slice(0, MAX_SELL_PHOTOS))
   }
 
   async function takePhoto() {
     if (room <= 0) return
     setMenuOpen(null)
     setError(null)
+    await waitForUploadMenuClose()
     const permission = await ImagePicker.requestCameraPermissionsAsync()
     if (!permission.granted) {
       setError("Camera access is off. Enable it in Settings to take a listing photo.")
@@ -92,6 +101,7 @@ export function SellPhotosStep({
   async function addVideoFromLibrary() {
     setMenuOpen(null)
     setError(null)
+    await waitForUploadMenuClose()
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync()
     if (!permission.granted) {
       setError("Photo access is off. Enable it in Settings to add a listing video.")
@@ -115,6 +125,7 @@ export function SellPhotosStep({
   async function recordVideo() {
     setMenuOpen(null)
     setError(null)
+    await waitForUploadMenuClose()
     const permission = await ImagePicker.requestCameraPermissionsAsync()
     if (!permission.granted) {
       setError("Camera access is off. Enable it in Settings to record a listing video.")
@@ -144,48 +155,21 @@ export function SellPhotosStep({
           <Text style={[styles.tipsLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}>View photo guide</Text>
         </Pressable>
       </View>
-      <HorizontalRail contentStyle={styles.rail}>
-        {photos.map((photo) => (
-          <View key={photo.id} style={styles.tile}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Edit photo"
-              onPress={() => setEditingId(photo.id)}
-              style={styles.editHit}
-            >
-              <Image source={{ uri: photo.uri }} style={[styles.image, { backgroundColor: colors.image }]} contentFit="cover" />
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Remove photo"
-              onPress={() => onChange(photos.filter((item) => item.id !== photo.id))}
-              style={styles.remove}
-            >
-              <SymbolView
-                name={{ ios: "xmark.circle.fill", android: "cancel", web: "cancel" }}
-                size={20}
-                tintColor="#FFFFFF"
-              />
-            </Pressable>
-          </View>
-        ))}
-        {Array.from({ length: room }, (_, index) => (
-          <Pressable
-            key={`empty-${index}`}
-            accessibilityRole="button"
-            accessibilityLabel="Add photo"
-            onPress={() => setMenuOpen("photo")}
-            style={[styles.tile, styles.empty, { borderColor: colors.foreground, backgroundColor: colors.image }]}
-          >
-            <Text style={[styles.plus, { color: colors.muted }]}>+</Text>
-          </Pressable>
-        ))}
-        {video ? (
-          <SellVideoFilledTile video={video} onRemove={() => onVideoChange(null)} onRetry={onVideoRetry} />
-        ) : (
-          <SellVideoAddTile onPress={() => setMenuOpen("video")} />
-        )}
-      </HorizontalRail>
+      <SellPhotoRail
+        photos={photos}
+        room={room}
+        onReorder={onChange}
+        onEdit={setEditingId}
+        onRemove={(id) => onChange(photos.filter((item) => item.id !== id))}
+        onAdd={() => setMenuOpen("photo")}
+        trailing={
+          video ? (
+            <SellVideoFilledTile video={video} onRemove={() => onVideoChange(null)} onRetry={onVideoRetry} />
+          ) : (
+            <SellVideoAddTile onPress={() => setMenuOpen("video")} />
+          )
+        }
+      />
       <Pressable
         accessibilityRole="button"
         onPress={() => {
@@ -236,6 +220,12 @@ function toPhotos(assets: ImagePicker.ImagePickerAsset[]): SellPhoto[] {
   }))
 }
 
+/** iOS will present a single-select picker if PHPicker opens while this sheet is still dismissing. */
+function waitForUploadMenuClose() {
+  if (process.env.EXPO_OS !== "ios") return Promise.resolve()
+  return new Promise<void>((resolve) => setTimeout(resolve, 400))
+}
+
 const styles = StyleSheet.create({
   stack: { gap: 12 },
   photosHeader: {
@@ -246,18 +236,6 @@ const styles = StyleSheet.create({
   },
   photosTitle: { flex: 1, fontSize: 16, fontWeight: "700" },
   tipsLabel: { fontSize: 13, fontWeight: "600", textDecorationLine: "underline" },
-  rail: { gap: 10, paddingRight: 4 },
-  tile: { width: 112, aspectRatio: 3 / 4, borderRadius: 10, overflow: "hidden" },
-  empty: {
-    borderWidth: 1,
-    borderStyle: "dashed",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  plus: { fontSize: 24, fontWeight: "500" },
-  image: { width: "100%", height: "100%" },
-  editHit: { width: "100%", height: "100%" },
-  remove: { position: "absolute", top: 6, right: 6 },
   editPhotos: { alignSelf: "flex-start", minHeight: 36, justifyContent: "center" },
   editPhotosLabel: { fontSize: 13, fontWeight: "600", textDecorationLine: "underline" },
   error: { fontSize: 15 },

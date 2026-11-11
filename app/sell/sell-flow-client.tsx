@@ -215,7 +215,6 @@ import {
 import {
   formatBoardLengthForTitle,
   isBoardLengthEntryComplete,
-  isTapeStyleInchesEntryComplete,
   normalizeTapeStyleInchesInput,
 } from "@/lib/board-measurements"
 import {
@@ -4875,12 +4874,6 @@ function SellPageContentInner({
                           mode={stockSizeMode}
                           onSelectSize={handleSelectStockSize}
                           onChooseCustom={handleChooseCustomStockSize}
-                          required={deliveryFlags.shipping_available}
-                          complete={
-                            isBoardLengthEntryComplete(formData.boardLength) &&
-                            isTapeStyleInchesEntryComplete(formData.boardWidthInches) &&
-                            isTapeStyleInchesEntryComplete(formData.boardThicknessInches)
-                          }
                           disabled={editLoading}
                         />
                       ) : null}
@@ -4895,7 +4888,6 @@ function SellPageContentInner({
                           onChange={(patch) =>
                             setFormData((fd) => ({ ...fd, ...patch }))
                           }
-                          dimensionsRequired={deliveryFlags.shipping_available}
                           disabled={editLoading}
                         />
                       ) : null}

@@ -12,6 +12,7 @@ import { parseOrderTrackingDetail } from "@/lib/shipping/order-tracking-detail"
 import { existingMarketplaceReviewFromRow, isReviewsMetadataColumnMissing } from "@/lib/marketplace-review-photos"
 import { PurchasesOrderList } from "@/components/features/purchases/purchases-order-list"
 import {
+  buyerVisiblePickupCode,
   purchaseDetailLine,
   purchaseRefundNote,
   purchaseShowsShipping,
@@ -59,6 +60,7 @@ type MarketplaceOrderRow = {
   created_at: string
   shipping_address: ShippingAddressJson
   fulfillment_method: string | null
+  pickup_code: string | null
   seller_id: string
   listings:
     | {
@@ -119,6 +121,7 @@ export default async function PurchasesPage() {
       created_at,
       shipping_address,
       fulfillment_method,
+      pickup_code,
       seller_id,
       listings (
         id,
@@ -219,6 +222,11 @@ export default async function PurchasesPage() {
           statusTone: purchaseStatusTone(statusDisplay),
           refundNote: purchaseRefundNote(row.status, Number(row.amount)),
           href: `/dashboard/purchases/${row.id}`,
+          pickupCode: buyerVisiblePickupCode({
+            pickupCode: row.pickup_code,
+            deliveryStatus: row.delivery_status ?? "pending",
+            orderStatus: row.status,
+          }),
           sellerReview:
             canReviewSeller || existingSellerReview
               ? { canReview: canReviewSeller, existing: existingSellerReview }

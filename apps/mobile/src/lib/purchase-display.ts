@@ -4,7 +4,7 @@ export function purchaseCountLabel(count: number): string {
 }
 
 export function purchaseMatchesQuery(
-  item: { listing_title: string; seller_name: string; order_number: string },
+  item: { listing_title: string; seller_name: string; order_number: string; pickup_code?: string | null },
   query: string,
 ): boolean {
   const q = query.trim().toLowerCase()
@@ -12,7 +12,14 @@ export function purchaseMatchesQuery(
   const title = item.listing_title.toLowerCase()
   const seller = item.seller_name.toLowerCase()
   const order = item.order_number.toLowerCase()
-  return title.includes(q) || seller.includes(q) || order.includes(q) || `#${order}`.includes(q)
+  const pickup = item.pickup_code?.trim().toLowerCase() ?? ""
+  return (
+    title.includes(q) ||
+    seller.includes(q) ||
+    order.includes(q) ||
+    `#${order}`.includes(q) ||
+    (pickup.length > 0 && pickup.includes(q))
+  )
 }
 
 export function formatPurchaseDate(iso: string | null | undefined, style: "medium" | "long" = "medium"): string {

@@ -54,6 +54,16 @@ export function PurchaseOrderRow({ item }: { item: MobilePurchaseListItem }) {
               {item.refund_note}
             </Text>
           ) : null}
+          {item.pickup_code ? (
+            <View style={[styles.pickup, { backgroundColor: `${colors.listingHeart}14`, borderColor: `${colors.listingHeart}4D` }]}>
+              <Text style={[styles.pickupKicker, { color: colors.listingHeart, fontFamily: fontFamily.text }]}>
+                PICKUP CODE
+              </Text>
+              <Text selectable style={[styles.pickupCode, { color: colors.foreground, fontFamily: fontFamily.text }]}>
+                {item.pickup_code}
+              </Text>
+            </View>
+          ) : null}
           <View style={[styles.pill, { backgroundColor: pill.backgroundColor }]}>
             <Text style={[styles.pillLabel, { color: pill.color, fontFamily: fontFamily.text }]}>{item.status_label}</Text>
           </View>
@@ -90,6 +100,9 @@ const styles = StyleSheet.create({
   priceLine: { marginTop: 4, fontSize: 15, lineHeight: 20 },
   price: { fontWeight: "700" },
   refund: { marginTop: 4, fontSize: 12, fontWeight: "600" },
+  pickup: { marginTop: 8, borderRadius: 10, borderCurve: "continuous", borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: 12, paddingVertical: 8 },
+  pickupKicker: { fontSize: 11, fontWeight: "700", letterSpacing: 0.6 },
+  pickupCode: { marginTop: 2, fontSize: 18, fontWeight: "700", letterSpacing: 4, fontVariant: ["tabular-nums"] },
   pill: {
     alignSelf: "flex-start",
     marginTop: 8,

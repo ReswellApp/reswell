@@ -32,7 +32,7 @@ export async function POST(req: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: "Invalid typing payload" }, { status: 400 })
     }
 
-    const limit = consumeLiveChatRateLimit(
+    const limit = await consumeLiveChatRateLimit(
       `typing:${liveChatClientIp(req)}:${parsed.data.visitor_token ?? "staff"}`,
       LIVE_CHAT_RATE_LIMITS.typing.limit,
       LIVE_CHAT_RATE_LIMITS.typing.windowMs,

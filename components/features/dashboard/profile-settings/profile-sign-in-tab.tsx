@@ -1,13 +1,15 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { CheckCircle2, KeyRound, LogOut, Shield } from "lucide-react"
+import Link from "next/link"
+import { CheckCircle2, KeyRound, LogOut, Shield, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { ProfileChangePasswordSection } from "@/components/features/dashboard/profile-change-password-section"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { ACCOUNT_DELETE_PATH } from "@/lib/account-deletion"
 import {
   profileCardClass,
   profileInputClass,
@@ -33,6 +35,9 @@ export type ProfileSignInTabCopy = ProfileChangePasswordCopy & {
   resetPasswordSending: string
   signOut: string
   signOutDescription: string
+  deleteAccount: string
+  deleteAccountDescription: string
+  deleteAccountButton: string
 }
 
 interface ProfileSignInTabProps {
@@ -136,6 +141,19 @@ export function ProfileSignInTab({
         <Button type="button" variant="outline" className="h-11 shrink-0 rounded-full px-6" onClick={onSignOut}>
           <LogOut className="mr-2 h-4 w-4" aria-hidden />
           {copy.signOut}
+        </Button>
+      </section>
+
+      <section className={`${profileCardClass} flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6`}>
+        <div>
+          <p className={profileSectionTitleClass}>{copy.deleteAccount}</p>
+          <p className={cn(profileSectionHintClass, "mt-1")}>{copy.deleteAccountDescription}</p>
+        </div>
+        <Button type="button" variant="outline" className="h-11 shrink-0 rounded-full px-6" asChild>
+          <Link href={ACCOUNT_DELETE_PATH}>
+            <Trash2 className="mr-2 h-4 w-4" aria-hidden />
+            {copy.deleteAccountButton}
+          </Link>
         </Button>
       </section>
     </div>

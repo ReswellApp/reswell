@@ -2,17 +2,17 @@ import { Image } from "expo-image"
 import * as ImagePicker from "expo-image-picker"
 import { useRouter } from "expo-router"
 import { useCallback, useEffect, useState } from "react"
-import { Alert, Pressable, StyleSheet, Switch, Text, TextInput, View } from "react-native"
+import { Pressable, StyleSheet, Switch, Text, TextInput, View } from "react-native"
 import { TextInput as GestureTextInput } from "react-native-gesture-handler"
 import { SymbolView } from "expo-symbols"
 import type { MobileProfileSettings } from "@reswell/api-contract"
 import { AccountState } from "@/components/account-state"
+import { ProfileAddresses } from "@/components/profile-addresses"
 import { ScreenScroll, ScreenShell } from "@/components/screen-shell"
 import { ProfileCircle } from "@/components/profile-circle"
 import {
   changeProfileEmail,
   changeProfilePassword,
-  deleteAccount,
   fetchMyListings,
   fetchProfileSettings,
   removeProfileAvatar,
@@ -59,7 +59,7 @@ export default function AccountProfileScreen() {
             <TabBar tab={tab} onChange={setTab} />
             {tab === "shop" ? <ShopTab settings={data} onSaved={reload} /> : null}
             {tab === "sign-in" ? <SignInTab settings={data} /> : null}
-            {tab === "addresses" ? <AddressesTab settings={data} /> : null}
+            {tab === "addresses" ? <ProfileAddresses settings={data} onSaved={reload} /> : null}
             {tab === "notifications" ? <NotificationsTab settings={data} onSaved={reload} /> : null}
           </ScreenScroll>
         </ScreenShell>
@@ -464,7 +464,7 @@ function SignInTab({ settings }: { settings: MobileProfileSettings }) {
   const [currentPassword, setCurrentPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
-  const [busy, setBusy] = useState<"email" | "password" | "reset" | "delete" | null>(null)
+  const [busy, setBusy] = useState<"email" | "password" | "reset" | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [messageTone, setMessageTone] = useState<"ok" | "error">("error")
 
@@ -679,62 +679,14 @@ function SignInTab({ settings }: { settings: MobileProfileSettings }) {
           Permanently delete your Reswell account and personal profile data. Finish open orders and cash out earnings first.
         </Text>
         <Pressable
-          disabled={busy !== null}
-          onPress={() => {
-            Alert.alert(
-              "Delete your account?",
-              "This can’t be undone. Your listings will be removed and you won’t be able to sign in again.",
-              [
-                { text: "Cancel", style: "cancel" },
-                {
-                  text: "Delete account",
-                  style: "destructive",
-                  onPress: () => {
-                    const token = session?.access_token
-                    if (!token) return
-                    setBusy("delete")
-                    setMessage(null)
-                    void deleteAccount(token)
-                      .then(async () => {
-                        await signOut()
-                        router.replace("/account")
-                      })
-                      .catch((cause: unknown) => {
-                        note("error", cause instanceof Error ? cause.message : "Couldn't delete your account.")
-                      })
-                      .finally(() => setBusy(null))
-                  },
-                },
-              ],
-            )
-          }}
-          style={[styles.outline, { borderColor: colors.border, opacity: busy !== null ? 0.35 : 1 }]}
+          onPress={() => router.push("/account/delete")}
+          style={[styles.outline, { borderColor: colors.border }]}
         >
           <Text style={[styles.saveLabel, { color: colors.destructive, fontFamily: fontFamily.text }]}>
-            {busy === "delete" ? "Deleting…" : "Delete account"}
+            Delete account
           </Text>
         </Pressable>
       </View>
-    </View>
-  )
-}
-
-function AddressesTab({ settings }: { settings: MobileProfileSettings }) {
-  const colors = useReswellColors()
-  if (settings.addresses.length === 0) {
-    return <Text style={[styles.empty, { color: colors.muted, fontFamily: fontFamily.text }]}>No saved addresses yet.</Text>
-  }
-  return (
-    <View style={styles.shop}>
-      {settings.addresses.map((address) => (
-        <View key={address.id} style={[styles.card, { borderColor: colors.border }]}>
-          <Text style={[styles.cardTitle, { color: colors.foreground, fontFamily: fontFamily.text }]}>
-            {address.label || address.full_name}
-            {address.is_default ? " · Default" : ""}
-          </Text>
-          <Text style={[styles.hint, { color: colors.muted, fontFamily: fontFamily.text }]}>{address.line}</Text>
-        </View>
-      ))}
     </View>
   )
 }

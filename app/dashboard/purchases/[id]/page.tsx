@@ -9,7 +9,7 @@ import { orderStatusIsRefunded, orderStatusLocksDuringRefund } from "@/lib/order
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
-import { BuyerConfirmDelivery, BuyerPickupCode } from "@/components/order-actions"
+import { BuyerConfirmDelivery } from "@/components/order-actions"
 import { ReswellTrackingSection } from "@/components/features/orders/reswell-tracking-section"
 import { OrderReturnsSection } from "@/components/features/orders/order-returns-section"
 import { PurchaseDetailView } from "@/components/features/purchases/purchase-detail-view"
@@ -24,6 +24,7 @@ import {
 } from "@/lib/shipping/order-tracking-detail"
 import { resolveSaleCardStatusDisplay } from "@/lib/sale-card-status"
 import {
+  buyerVisiblePickupCode,
   purchaseDetailLine,
   purchaseRefundNote,
   purchaseShowsShipping,
@@ -33,6 +34,7 @@ import {
 import {
   buildPurchaseDetailTimeline,
   purchaseDetailStatusDate,
+  purchaseDetailStatusShowsDateTime,
 } from "@/lib/purchase-detail-timeline"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
@@ -381,6 +383,10 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
           actualDeliveryAt,
           refundedAt: order.refunded_at,
         })}
+        statusDateIncludesTime={purchaseDetailStatusShowsDateTime({
+          deliveryStatus: order.delivery_status,
+          orderStatus: order.status,
+        })}
         shippingDeadlineIso={
           showShippingDeadline ? getShippingDeadlineDate(order.created_at).toISOString() : null
         }
@@ -418,17 +424,16 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
           role: "buyer",
           direct: true,
         })}
+        pickupCode={buyerVisiblePickupCode({
+          pickupCode: order.pickup_code,
+          deliveryStatus: order.delivery_status,
+          orderStatus: order.status,
+        })}
       />
 
       {!fulfillmentLocked && !order.tracking_number?.trim() ? (
         <div className="mx-auto w-full max-w-xl">
           <BuyerConfirmDelivery orderId={order.id} deliveryStatus={order.delivery_status} />
-        </div>
-      ) : null}
-
-      {!fulfillmentLocked && order.fulfillment_method === "pickup" && order.pickup_code ? (
-        <div className="mx-auto w-full max-w-xl">
-          <BuyerPickupCode pickupCode={order.pickup_code} deliveryStatus={order.delivery_status} />
         </div>
       ) : null}
 

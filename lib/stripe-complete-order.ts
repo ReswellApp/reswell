@@ -1184,6 +1184,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       delivery_status: deliveryStatus,
       pickup_code: pickupCode,
       sales_channel: isAdminTerminalSale ? "admin_terminal" : "online",
+      ...(isAdminTerminalSale ? { carrier_delivered_at: new Date().toISOString() } : {}),
       ...(packagingModeForOrder ? { shipping_packaging_mode: packagingModeForOrder } : {}),
       ...(shippingAddressJson ? { shipping_address: shippingAddressJson } : {}),
       ...(surfboardShippedMeta?.ok ? surfboardShippedMeta.write : {}),

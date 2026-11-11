@@ -41,6 +41,16 @@ export type SellPhoto = {
   serverImageId?: string
 }
 
+/** First photo is the listing cover. No-op when indices are out of range or equal. */
+export function moveSellPhoto(photos: SellPhoto[], from: number, to: number): SellPhoto[] {
+  if (from === to || from < 0 || to < 0 || from >= photos.length || to >= photos.length) return photos
+  const next = photos.slice()
+  const [photo] = next.splice(from, 1)
+  if (!photo) return photos
+  next.splice(to, 0, photo)
+  return next
+}
+
 export type SellVideoStatus = "idle" | "uploading" | "ready" | "error"
 
 /** Optional one-clip listing video. Same 6s–2min / 200MB rules as website sell. */
@@ -82,6 +92,13 @@ export type SellDraft = {
   condition: string
   description: string
   price: string
+  /**
+   * Private cost basis — same website sell fields (`seller_purchase_price_usd`,
+   * `seller_purchased_from`, `seller_purchased_on`). Shown for surfboards only.
+   */
+  sellerPurchasePrice: string
+  sellerPurchasedFrom: string
+  sellerPurchasedOn: string
   /** Display label from the place dropdown. */
   locationLabel: string
   city: string
@@ -129,6 +146,9 @@ export function emptySellDraft(): SellDraft {
     condition: "",
     description: "",
     price: "",
+    sellerPurchasePrice: "",
+    sellerPurchasedFrom: "",
+    sellerPurchasedOn: "",
     locationLabel: "",
     city: "",
     state: "",
@@ -185,6 +205,44 @@ export function formatSellPrice(raw: string): string {
   return priceUsd(raw).toLocaleString("en-US", { style: "currency", currency: "USD" })
 }
 
+const PURCHASE_DATE = /^\d{4}-\d{2}-\d{2}$/
+
+/** Same mapping as website `sellerPurchasePriceToDb` — empty/invalid becomes null. */
+export function sellerPurchasePriceAmount(raw: string): number | null {
+  const trimmed = raw.trim()
+  if (!trimmed) return null
+  const amount = Number.parseFloat(trimmed.replace(/[$,\s]/g, ""))
+  if (!Number.isFinite(amount) || amount < 0 || amount > PRICE_MAX) return null
+  return Math.round(amount * 100) / 100
+}
+
+/** Calendar day for the sell API, or null when blank/invalid. */
+export function sellerPurchasedOnValue(raw: string): string | null {
+  const day = raw.trim().slice(0, 10)
+  if (!PURCHASE_DATE.test(day)) return null
+  const year = Number(day.slice(0, 4))
+  const month = Number(day.slice(5, 7))
+  const date = Number(day.slice(8, 10))
+  const parsed = new Date(Date.UTC(year, month - 1, date))
+  if (
+    parsed.getUTCFullYear() !== year ||
+    parsed.getUTCMonth() !== month - 1 ||
+    parsed.getUTCDate() !== date
+  ) {
+    return null
+  }
+  return day
+}
+
+/** Optional private cost-basis fields. Blank is fine; a filled invalid value is not. */
+export function sellerPurchaseFieldsAreValid(draft: Pick<SellDraft, "sellerPurchasePrice" | "sellerPurchasedOn">): boolean {
+  const priceRaw = draft.sellerPurchasePrice.trim()
+  if (priceRaw && sellerPurchasePriceAmount(priceRaw) === null) return false
+  const dateRaw = draft.sellerPurchasedOn.trim()
+  if (dateRaw.length >= 10 && sellerPurchasedOnValue(dateRaw) === null) return false
+  return true
+}
+
 /** Every section of the one-screen listing form, except the unused review step. */
 export function sellDraftIsReady(
   draft: SellDraft,
@@ -208,7 +266,7 @@ export function stepIsReady(
   if (step === "details") return draft.condition.length > 0 && draft.description.trim().length > 0
   if (step === "price") {
     const price = priceUsd(draft.price)
-    return price >= PRICE_MIN && price <= PRICE_MAX
+    return price >= PRICE_MIN && price <= PRICE_MAX && sellerPurchaseFieldsAreValid(draft)
   }
   if (step === "place") {
     const category = categories.find((item) => item.slug === draft.category)

@@ -1,5 +1,7 @@
 import { parseGoogleAddressComponents } from "@/lib/maps/parse-google-address-components"
 import { getGoogleGeocodingApiKey } from "@/lib/maps/google-geocoding-server"
+import { redisGetOrSet } from "@/lib/redis/cache"
+import { REDIS_TTL_SECONDS, redisPlaceDetailsKey, redisPlacesSuggestKey } from "@/lib/redis/keys"
 import { normalizeUsStateProvinceForShipping } from "@/lib/us-state-name-to-code"
 
 /**
@@ -100,23 +102,35 @@ async function placesGet(url: URL): Promise<unknown | null> {
 export async function fetchGoogleRegionPredictions(input: string): Promise<GoogleRegionPrediction[]> {
   const query = input.trim()
   if (query.length < 2) return []
-  const url = new URL(AUTOCOMPLETE_URL)
-  url.searchParams.set("input", query)
-  url.searchParams.set("types", "(regions)")
-  url.searchParams.set("components", "country:us")
-  const body = await placesGet(url)
-  if (!body) return []
-  return parseGoogleRegionPredictions(body).slice(0, 8)
+  return redisGetOrSet(
+    redisPlacesSuggestKey(`google:${query}`),
+    REDIS_TTL_SECONDS.placesSuggest,
+    async () => {
+      const url = new URL(AUTOCOMPLETE_URL)
+      url.searchParams.set("input", query)
+      url.searchParams.set("types", "(regions)")
+      url.searchParams.set("components", "country:us")
+      const body = await placesGet(url)
+      if (!body) return []
+      return parseGoogleRegionPredictions(body).slice(0, 8)
+    },
+  )
 }
 
 /** Resolves a Places autocomplete row into city, state, and coordinates. */
 export async function fetchGooglePlaceLocation(placeId: string): Promise<GooglePlaceLocation | null> {
   const id = placeId.trim()
   if (!id || id.length > 300) return null
-  const url = new URL(DETAILS_URL)
-  url.searchParams.set("place_id", id)
-  url.searchParams.set("fields", "address_component,geometry,formatted_address")
-  const body = await placesGet(url)
-  if (!body) return null
-  return parseGooglePlaceLocation(body)
+  return redisGetOrSet(
+    redisPlaceDetailsKey(id),
+    REDIS_TTL_SECONDS.forwardGeocode,
+    async () => {
+      const url = new URL(DETAILS_URL)
+      url.searchParams.set("place_id", id)
+      url.searchParams.set("fields", "address_component,geometry,formatted_address")
+      const body = await placesGet(url)
+      if (!body) return null
+      return parseGooglePlaceLocation(body)
+    },
+  )
 }

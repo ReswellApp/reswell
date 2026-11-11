@@ -18,6 +18,12 @@ import {
   orderDeliveredSellerTitle,
   orderPickedUpBuyerBody,
   orderPickedUpSellerBody,
+  reviewBuyerRequestedBody,
+  reviewBuyerRequestedDedupeKey,
+  reviewBuyerRequestedTitle,
+  reviewSellerRequestedBody,
+  reviewSellerRequestedDedupeKey,
+  reviewSellerRequestedTitle,
   priceDropDedupeKey,
   priceDropMeetsThreshold,
 } from "@/lib/services/notifications/catalog"
@@ -374,5 +380,55 @@ describe("order delivered copy", () => {
     assert.equal(second[1]?.action, "skip")
     if (second[0]?.action === "skip") assert.equal(second[0].reason, "duplicate")
     if (second[1]?.action === "skip") assert.equal(second[1].reason, "duplicate")
+  })
+})
+
+describe("review requested copy", () => {
+  it("asks each side to rate the other after fulfillment", () => {
+    assert.equal(reviewSellerRequestedTitle(), "Leave a review for the seller")
+    assert.equal(
+      reviewSellerRequestedBody("1042", "Terramar Surf"),
+      "How was your order #1042? Rate Terramar Surf.",
+    )
+    assert.equal(reviewBuyerRequestedTitle(), "Leave a review for the buyer")
+    assert.equal(
+      reviewBuyerRequestedBody("1042", "Hayden"),
+      "How did the sale go for order #1042? Rate Hayden.",
+    )
+  })
+
+  it("sends review prompts once per order per side", () => {
+    const buyer: InAppNotificationInput = {
+      userId: BUYER,
+      type: "review_seller_requested",
+      listingId: "listing-1",
+      title: reviewSellerRequestedTitle(),
+      body: reviewSellerRequestedBody("1042", "Terramar Surf"),
+      href: "/dashboard/purchases/order-1",
+      dedupeKey: reviewSellerRequestedDedupeKey("order-1"),
+    }
+    const seller: InAppNotificationInput = {
+      userId: SELLER,
+      type: "review_buyer_requested",
+      listingId: "listing-1",
+      title: reviewBuyerRequestedTitle(),
+      body: reviewBuyerRequestedBody("1042", "Hayden"),
+      href: "/dashboard/sales/order-1",
+      dedupeKey: reviewBuyerRequestedDedupeKey("order-1"),
+    }
+    const first = planInAppNotifications([buyer, seller], snapshot())
+    const second = planInAppNotifications(
+      [buyer, seller],
+      snapshot({
+        seenLogKeys: new Set([
+          planPairKey(BUYER, buyer.dedupeKey),
+          planPairKey(SELLER, seller.dedupeKey),
+        ]),
+      }),
+    )
+    assert.equal(first[0]?.action, "deliver")
+    assert.equal(first[1]?.action, "deliver")
+    assert.equal(second[0]?.action, "skip")
+    assert.equal(second[1]?.action, "skip")
   })
 })

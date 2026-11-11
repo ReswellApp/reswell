@@ -1,19 +1,11 @@
-import type { SupabaseClient } from "@supabase/supabase-js"
-import { revalidateListYourSurfboardShowcase } from "@/lib/cache/revalidate-list-your-surfboard-showcase"
-import { revalidateSellerProfileAndDirectoryCatalog } from "@/lib/cache/revalidate-sellers-directory-catalog"
-import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
+import { createClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
-import {
-  insertMarketplaceReviewForOrder,
-  getMarketplaceReviewByOrderAndReviewer,
-} from "@/lib/db/order-reviews"
-import { trackKlaviyoSellerReviewedBuyer } from "@/lib/klaviyo/track-seller-reviewed-buyer"
-import { resolveMarketplaceReviewAttachmentMetadata } from "@/lib/services/marketplaceReviewAttachments"
-import { evaluateUserReview } from "@/lib/services/accountRestrictions"
-import { validateSellerReviewForOrder } from "@/lib/services/orderSellerReview"
-import { parseOrderTrackingDetail } from "@/lib/shipping/order-tracking-detail"
-import { orderSellerReviewBodySchema } from "@/lib/validations/order-seller-review"
 import { loadMarketplaceOrderAccess } from "@/lib/account-access/order-operator-session"
+import {
+  loadOrderForMarketplaceReview,
+  submitMarketplaceOrderReview,
+} from "@/lib/services/submitMarketplaceOrderReview"
+import { orderSellerReviewBodySchema } from "@/lib/validations/order-seller-review"
 
 export const dynamic = "force-dynamic"
 
@@ -29,18 +21,6 @@ export async function POST(
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
-
-  const reviewGuard = await evaluateUserReview(supabase, user.id)
-  if (!reviewGuard.ok) {
-    return NextResponse.json(
-      {
-        error: reviewGuard.userMessage,
-        code: reviewGuard.error,
-        restrictedUntil: reviewGuard.restrictedUntil,
-      },
-      { status: 403 },
-    )
   }
 
   let json: unknown
@@ -60,95 +40,28 @@ export async function POST(
     return NextResponse.json({ error: access.error }, { status: access.status })
   }
 
-  const { data: order, error: orderErr } = await supabase
-    .from("orders")
-    .select("id, buyer_id, seller_id, listing_id, status, delivery_status, tracking_detail")
-    .eq("id", orderId)
-    .maybeSingle()
-
-  if (orderErr || !order) {
+  const order = await loadOrderForMarketplaceReview(supabase, orderId)
+  if (!order) {
     return NextResponse.json({ error: "Order not found" }, { status: 404 })
   }
 
-  const isBuyer = access.role === "buyer"
-  const isSeller = access.role === "seller"
-
-  const trackingDetail = parseOrderTrackingDetail(order.tracking_detail)
-  const gate = validateSellerReviewForOrder(order, trackingDetail)
-  if (!gate.ok) {
-    return NextResponse.json({ error: gate.error }, { status: 400 })
-  }
-
-  const reviewerId = isSeller ? String(order.seller_id ?? "") : user.id
-  if (!reviewerId) {
-    return NextResponse.json({ error: "Order not found" }, { status: 404 })
-  }
-
-  const { data: existing } = await getMarketplaceReviewByOrderAndReviewer(supabase, orderId, reviewerId)
-  if (existing) {
-    return NextResponse.json({ error: "You already submitted a review for this order." }, { status: 409 })
-  }
-
-  if (!order.listing_id) {
-    return NextResponse.json({ error: "This order has no listing to attach a review to." }, { status: 400 })
-  }
-
-  const reviewedId = isBuyer ? order.seller_id : order.buyer_id
-
-  const attachmentMeta = await resolveMarketplaceReviewAttachmentMetadata(
-    user.id,
-    parsed.data.attachments,
-  )
-  if (!attachmentMeta.ok) {
-    return NextResponse.json({ error: attachmentMeta.error }, { status: 400 })
-  }
-
-  let reviewClient: SupabaseClient = supabase
-  if (reviewerId !== user.id) {
-    try {
-      reviewClient = createServiceRoleClient()
-    } catch {
-      return NextResponse.json({ error: "Could not save your review" }, { status: 503 })
-    }
-  }
-
-  const { data, error } = await insertMarketplaceReviewForOrder(reviewClient, {
-    order_id: orderId,
-    reviewer_id: reviewerId,
-    reviewed_id: reviewedId,
-    listing_id: order.listing_id,
-    rating: parsed.data.rating,
-    comment: parsed.data.comment ?? null,
-    metadata: attachmentMeta.metadata,
+  const result = await submitMarketplaceOrderReview(supabase, {
+    actorUserId: user.id,
+    role: access.role,
+    order,
+    body: parsed.data,
   })
 
-  if (error || !data) {
-    console.error("[order review] insert:", error)
-    if (
-      error?.message.includes("reviews_order_id_reviewer_uidx") ||
-      error?.message.includes("reviews_order_id_uidx") ||
-      error?.message.includes("duplicate key")
-    ) {
-      return NextResponse.json({ error: "You already submitted a review for this order." }, { status: 409 })
-    }
-    return NextResponse.json({ error: "Could not save your review" }, { status: 500 })
+  if (!result.ok) {
+    return NextResponse.json(
+      {
+        error: result.error,
+        ...(result.code ? { code: result.code } : {}),
+        ...(result.restrictedUntil ? { restrictedUntil: result.restrictedUntil } : {}),
+      },
+      { status: result.status },
+    )
   }
 
-  if (isSeller && order.buyer_id) {
-    void trackKlaviyoSellerReviewedBuyer({
-      orderId,
-      buyerUserId: order.buyer_id,
-      sellerUserId: order.seller_id,
-      listingId: order.listing_id,
-      rating: parsed.data.rating,
-      comment: parsed.data.comment ?? null,
-    })
-  }
-
-  if (isBuyer && order.seller_id) {
-    await revalidateSellerProfileAndDirectoryCatalog(supabase, order.seller_id)
-  }
-  revalidateListYourSurfboardShowcase()
-
-  return NextResponse.json({ success: true, id: data.id, created_at: data.created_at })
+  return NextResponse.json({ success: true, id: result.id, created_at: result.created_at })
 }

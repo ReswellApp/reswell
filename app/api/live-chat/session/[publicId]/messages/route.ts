@@ -56,7 +56,7 @@ export async function POST(req: NextRequest, context: RouteContext) {
     }
 
     const { publicId } = await context.params
-    const limit = consumeLiveChatRateLimit(
+    const limit = await consumeLiveChatRateLimit(
       `msg:${liveChatClientIp(req)}:${publicId}`,
       LIVE_CHAT_RATE_LIMITS.message.limit,
       LIVE_CHAT_RATE_LIMITS.message.windowMs,

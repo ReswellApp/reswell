@@ -24,6 +24,13 @@ function numberOrNull(value: unknown): number | null {
   return null
 }
 
+/** Website `<input type="date">` value from a date column or ISO timestamp. */
+function purchaseDate(value: unknown): string | null {
+  if (typeof value !== "string") return null
+  const day = value.trim().slice(0, 10)
+  return /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : null
+}
+
 function sellCondition(value: unknown): MobileSellDraft["condition"] {
   const normalized = text(value)
   if (
@@ -170,6 +177,7 @@ export function ownedListingRowToMobileSellEdit(row: OwnedListingForEditRow):
   const locationLabel = [city, state].filter(Boolean).join(", ")
 
   const price = numberOrNull(row.price)
+  const purchasePrice = numberOrNull(row.seller_purchase_price_usd)
 
   const draft: MobileSellDraft = {
     id: row.id,
@@ -181,6 +189,9 @@ export function ownedListingRowToMobileSellEdit(row: OwnedListingForEditRow):
     subcategory,
     condition: sellCondition(row.condition),
     price: price != null && price > 0 ? price : null,
+    seller_purchase_price: purchasePrice != null && purchasePrice >= 0 ? purchasePrice : null,
+    seller_purchased_from: text(row.seller_purchased_from) || null,
+    seller_purchased_on: purchaseDate(row.seller_purchased_on),
     city,
     state,
     location_lat: numberOrNull(row.latitude),

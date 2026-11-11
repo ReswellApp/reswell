@@ -57,6 +57,7 @@ import { getSellerReviewSummary } from "@/lib/db/seller-reviews"
 import { getPublicSellerDisplayName } from "@/lib/listing-labels"
 import { absolutePublicMediaUrl } from "@/lib/site-metadata"
 import { parseOrderPlacedMessageMetadata } from "@/lib/validations/order-placed-message-metadata"
+import { parseReviewRequestMessageMetadata } from "@/lib/validations/review-request-message-metadata"
 import { isListingPubliclyVisible, isListingVisibleInSavedList } from "@/lib/listing-public-visibility"
 import { redactShippingLabelArtifactsFromMessage } from "@/lib/messages/redact-seller-shipping-label"
 import { absoluteProfileCircleUrl } from "@/lib/profile-circle"
@@ -589,11 +590,12 @@ function toMobileMessages(
   return rows.map((row) => {
     const redacted = redactShippingLabelArtifactsFromMessage(row)
     const order = orderCard(row.metadata, viewerIsSeller)
+    const review = order ? null : reviewCard(row.metadata)
     const imageAtt = parseMarketplaceMessageImageAttachment(row.metadata)
     const videoAtt = parseMarketplaceMessageVideoAttachment(row.metadata)
     const attachment = imageAtt ? ({ kind: "image" as const }) : videoAtt ? ({ kind: "video" as const }) : null
-    const offer = order ? null : offerForMobileMessage(row, offersById, conversationOffers, listingId)
-    const rawBody = order ? "" : text(typeof redacted.content === "string" ? redacted.content : row.content) ?? ""
+    const offer = order || review ? null : offerForMobileMessage(row, offersById, conversationOffers, listingId)
+    const rawBody = order || review ? "" : text(typeof redacted.content === "string" ? redacted.content : row.content) ?? ""
     const placeholder =
       attachment?.kind === "image"
         ? composeMediaAttachmentMessageBody("image")
@@ -609,6 +611,7 @@ function toMobileMessages(
       order,
       attachment,
       offer,
+      review,
     }
   })
 }
@@ -630,6 +633,16 @@ function joinedLabel(value: string | null | undefined): string | null {
   const date = new Date(raw)
   if (Number.isNaN(date.getTime())) return null
   return `Joined ${date.toLocaleDateString("en-US", { month: "short", year: "numeric" })}`
+}
+
+function reviewCard(metadata: unknown) {
+  const review = parseReviewRequestMessageMetadata(metadata)
+  if (!review) return null
+  return {
+    order_id: review.orderId,
+    order_num: review.orderNum,
+    listing_title: review.listingTitle,
+  }
 }
 
 function orderCard(metadata: unknown, viewerIsSeller: boolean) {

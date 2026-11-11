@@ -39,6 +39,12 @@ export function sellDraftFromMobileEdit(payload: MobileSellEditLoad): SellDraft 
     condition: payload.condition,
     description: payload.description,
     price: payload.price != null && payload.price > 0 ? String(payload.price) : "",
+    sellerPurchasePrice:
+      payload.seller_purchase_price != null && payload.seller_purchase_price >= 0
+        ? String(payload.seller_purchase_price)
+        : "",
+    sellerPurchasedFrom: payload.seller_purchased_from ?? "",
+    sellerPurchasedOn: payload.seller_purchased_on ?? "",
     locationLabel: payload.location_label ?? "",
     city: payload.city,
     state: payload.state,

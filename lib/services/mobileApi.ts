@@ -35,6 +35,7 @@ import { getListingCartHolderCount } from "@/lib/db/listing-cart-holders"
 import { getListingFavoriteCount } from "@/lib/db/listing-favorite-count"
 import { getSellerReviewSummary } from "@/lib/db/seller-reviews"
 import { listingPickupCaption } from "@/lib/listing-fulfillment"
+import { listingPublicSpecRows } from "@/lib/utils/listing-board-spec-rows"
 import {
   listingCardImageSrc,
   orderedListingGalleryImages,
@@ -58,7 +59,13 @@ import { absoluteProxiedProfileMediaUrl } from "@/lib/public-media-display-src"
 import { configuredReswellShopOwnerUserId } from "@/lib/services/resolveReswellShopOwnerUser"
 import { listingPdpVideoPlaybackSrc } from "@/lib/listing-media-proxy-url"
 import { absolutePublicMediaUrl, absoluteUrl } from "@/lib/site-metadata"
+import { redisGetOrSet, redisSetJson } from "@/lib/redis/cache"
+import { REDIS_TTL_SECONDS, redisMobileListingKey } from "@/lib/redis/keys"
 import { resolveListingCatalogSlugs } from "@/lib/services/mobileListingCatalog"
+import { findOpenBuyerOfferOnListing } from "@/lib/db/offers"
+import { effectiveBoardShippingMode } from "@/lib/services/peerListingShippingQuote"
+import { effectiveMinimumOfferAmount } from "@/lib/utils/offers-minimum-amount"
+import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
 import { getDb } from "@/lib/supabase/db"
 import type { SupabaseClient, User } from "@supabase/supabase-js"
 
@@ -293,9 +300,15 @@ function locationLine(city: string | null | undefined, state: string | null | un
   return line ? line.toUpperCase() : null
 }
 
+function hasFixedMinimumOffer(raw: unknown): boolean {
+  if (raw == null || raw === "") return false
+  const amount = typeof raw === "number" ? raw : Number.parseFloat(String(raw))
+  return Number.isFinite(amount) && amount > 0
+}
+
 export function toMobileListingDetail(
   row: MobileListingRow,
-  viewer?: { favorited: boolean; in_cart: boolean; following?: boolean },
+  viewer?: { favorited: boolean; in_cart: boolean; following?: boolean; open_offer_id?: string | null },
   stats?: MobileListingDetailStats,
   catalog?: { brandSlug: string | null; modelSlug: string | null },
   owner?: { can_delete: boolean; on_vacation: boolean; can_vacation: boolean },
@@ -305,6 +318,14 @@ export function toMobileListingDetail(
   const seller = pickSeller(row.profiles)
   const sellerId = nullableText(row.user_id)
   if (!sellerId) return null
+  const minOfferPct = effectiveMinimumOfferPct({ minimum_offer_pct: row.minimum_offer_pct ?? null })
+  const minOfferUsd = effectiveMinimumOfferAmount(
+    {
+      minimum_offer_amount: row.minimum_offer_amount ?? null,
+      minimum_offer_pct: row.minimum_offer_pct ?? null,
+    },
+    card.price_usd,
+  )
   const imageUrls: string[] = []
   const seen = new Set<string>()
   for (const image of orderedListingGalleryImages(row.listing_images)) {
@@ -344,6 +365,20 @@ export function toMobileListingDetail(
     ...(owner ? { owner } : {}),
     brand_slug: catalog?.brandSlug ?? null,
     model_slug: catalog?.modelSlug ?? null,
+    spec_rows: listingPublicSpecRows(row).map((spec) => ({ label: spec.label, value: spec.value })),
+    buyer_offers_enabled: row.buyer_offers_enabled !== false,
+    min_offer_usd: minOfferUsd,
+    min_offer_pct: minOfferPct,
+    hide_min_offer_until_violated: hasFixedMinimumOffer(row.minimum_offer_amount),
+    shipping_cost_mode: row.shipping_available
+      ? effectiveBoardShippingMode({
+          section: row.section,
+          board_shipping_cost_mode: row.board_shipping_cost_mode,
+          shipping_price: row.shipping_price,
+        })
+      : shippingCostMode(row.board_shipping_cost_mode),
+    shipping_flat_rate: moneyUsd(row.shipping_price),
+    ...(viewer && viewer.open_offer_id !== undefined ? { open_offer_id: viewer.open_offer_id } : {}),
   }
   const parsed = mobileListingDetailSchema.safeParse(detail)
   if (!parsed.success) return null
@@ -596,7 +631,120 @@ export function isMobileListingDetailVisible(listing: ListingPublicVisibilityFie
   return isListingPubliclyVisible(listing) || isListingVisibleInPublicSoldFeed(listing)
 }
 
+export type MobileListingViewerOverlay = {
+  favorited: boolean
+  in_cart: boolean
+  following?: boolean
+  open_offer_id?: string | null
+  owner?: MobileListingDetail["owner"]
+}
+
+/** Buyer/session flags on top of a public PDP shell. Does not mutate `publicDetail`. */
+export function applyMobileListingViewerOverlay(
+  publicDetail: MobileListingDetail,
+  overlay: MobileListingViewerOverlay,
+): MobileListingDetail {
+  return {
+    ...publicDetail,
+    favorited: overlay.favorited,
+    in_cart: overlay.in_cart,
+    seller:
+      overlay.following === undefined
+        ? publicDetail.seller
+        : { ...publicDetail.seller, following: overlay.following },
+    ...(overlay.open_offer_id !== undefined ? { open_offer_id: overlay.open_offer_id } : {}),
+    ...(overlay.owner ? { owner: overlay.owner } : {}),
+  }
+}
+
+async function loadMobileListingBuyerOverlay(
+  viewer: { supabase: SupabaseClient; userId: string },
+  listingId: string,
+  sellerId: string,
+): Promise<MobileListingViewerOverlay> {
+  const [favorite, cart, follow, openOffer] = await Promise.all([
+    viewer.supabase
+      .from("favorites")
+      .select("id")
+      .eq("user_id", viewer.userId)
+      .eq("listing_id", listingId)
+      .maybeSingle(),
+    viewer.supabase
+      .from("cart_items")
+      .select("id")
+      .eq("profile_id", viewer.userId)
+      .eq("listing_id", listingId)
+      .maybeSingle(),
+    viewer.supabase
+      .from("seller_follows")
+      .select("id")
+      .eq("follower_id", viewer.userId)
+      .eq("seller_id", sellerId)
+      .maybeSingle(),
+    findOpenBuyerOfferOnListing(viewer.supabase, listingId, viewer.userId),
+  ])
+  return {
+    favorited: Boolean(favorite.data),
+    in_cart: Boolean(cart.data),
+    following: Boolean(follow.data),
+    open_offer_id: openOffer?.id ?? null,
+  }
+}
+
+async function loadPublicMobileListingDetail(
+  listingParam: string,
+): Promise<MobileApiResult<MobileListingDetail>> {
+  const result = await loadMobileListingDetailFromDb(listingParam)
+  if (result.ok) {
+    const alias =
+      result.data.slug && redisMobileListingKey(result.data.slug) !== redisMobileListingKey(listingParam)
+        ? result.data.slug
+        : result.data.id
+    if (redisMobileListingKey(alias) !== redisMobileListingKey(listingParam)) {
+      await redisSetJson(redisMobileListingKey(alias), result, REDIS_TTL_SECONDS.mobileListing)
+    }
+  }
+  return result
+}
+
+async function getCachedPublicMobileListingDetail(
+  listingParam: string,
+): Promise<MobileApiResult<MobileListingDetail>> {
+  const param = listingParam.trim()
+  return redisGetOrSet(
+    redisMobileListingKey(param),
+    REDIS_TTL_SECONDS.mobileListing,
+    () => loadPublicMobileListingDetail(param),
+    { cacheIf: (value) => value.ok },
+  )
+}
+
+/**
+ * Public photos/price/specs/seller from Redis (45s). Signed-in hearts, cart,
+ * follow, and offers are overlaid after. Owners skip the cache so dashboard
+ * actions see the row they just saved.
+ */
 export async function getMobileListingService(
+  listingParam: string,
+  viewer?: { supabase: SupabaseClient; userId: string },
+): Promise<MobileApiResult<MobileListingDetail>> {
+  if (viewer) {
+    const publicResult = await getCachedPublicMobileListingDetail(listingParam)
+    if (!publicResult.ok) return publicResult
+    if (viewer.userId === publicResult.data.seller.id) {
+      return loadMobileListingDetailFromDb(listingParam, viewer)
+    }
+    const overlay = await loadMobileListingBuyerOverlay(
+      viewer,
+      publicResult.data.id,
+      publicResult.data.seller.id,
+    )
+    return { ok: true, data: applyMobileListingViewerOverlay(publicResult.data, overlay) }
+  }
+  return getCachedPublicMobileListingDetail(listingParam)
+}
+
+async function loadMobileListingDetailFromDb(
   listingParam: string,
   viewer?: { supabase: SupabaseClient; userId: string },
 ): Promise<MobileApiResult<MobileListingDetail>> {
@@ -639,10 +787,14 @@ export async function getMobileListingService(
                 .eq("seller_id", sellerId)
                 .maybeSingle()
             : Promise.resolve({ data: null }),
-        ]).then(([favorite, cart, follow]) => ({
+          isOwner
+            ? Promise.resolve(null)
+            : findOpenBuyerOfferOnListing(viewer.supabase, row.id, viewer.userId),
+        ]).then(([favorite, cart, follow, openOffer]) => ({
           favorited: Boolean(favorite.data),
           in_cart: Boolean(cart.data),
           following: sellerId ? Boolean(follow.data) : undefined,
+          open_offer_id: openOffer?.id ?? null,
         }))
       : Promise.resolve(undefined),
     sold ? Promise.resolve(0) : getListingFavoriteCount(supabase, row.id),

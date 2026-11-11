@@ -4,6 +4,7 @@ import { SymbolView } from "expo-symbols"
 import { useEffect, useState } from "react"
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -109,7 +110,14 @@ export function SearchOverlayBody({ query, onChangeQuery, onClose }: SearchOverl
   }
 
   return (
-    <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.body}>
+    <ScrollView
+      style={styles.scroll}
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
+      automaticallyAdjustKeyboardInsets
+      contentInsetAdjustmentBehavior="never"
+      contentContainerStyle={styles.body}
+    >
       {searching ? (
         <Results hits={hits} loading={loading} onOpen={openListing} onSeeAll={openResults} />
       ) : (
@@ -226,7 +234,8 @@ function Results({
 }
 
 const styles = StyleSheet.create({
-  body: { paddingBottom: 40 },
+  scroll: { flex: 1 },
+  body: { flexGrow: 1, paddingBottom: 48 },
   idle: { gap: 28 },
   block: { gap: 4, paddingTop: 12 },
   heading: { fontSize: 18, fontWeight: "700", paddingHorizontal: 20, marginBottom: 8 },

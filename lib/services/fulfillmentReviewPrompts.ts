@@ -1,4 +1,5 @@
 import { sendFulfillmentReviewReminder } from "@/lib/services/orderReviewInvite"
+import { publishReviewRequestedNotifications } from "@/lib/services/notifications/publishReviewRequested"
 import { autoSendReviewBuyerRequestedForOrder } from "@/lib/services/sellerReviewBuyerPrompt"
 import { autoSendSellerReviewRequestForOrder } from "@/lib/services/sellerReviewRequest"
 
@@ -7,6 +8,7 @@ import { autoSendSellerReviewRequestForOrder } from "@/lib/services/sellerReview
  * 1. Klaviyo `Review Invite Sent` (fulfillment phase) — live flow "Post-purchase review"
  * 2. In-thread review card + Klaviyo `Review Requested` — live flow "Request review from buyer"
  * 3. Klaviyo `Review Buyer Requested` — seller email to review the buyer
+ * 4. In-app + push: buyer rates the seller, seller rates the buyer
  */
 export async function sendFulfillmentReviewPrompts(orderId: string): Promise<void> {
   await sendFulfillmentReviewReminder(orderId)
@@ -27,5 +29,11 @@ export async function sendFulfillmentReviewPrompts(orderId: string): Promise<voi
     }
   } catch (e) {
     console.error("[fulfillmentReviewPrompts] review buyer requested:", e)
+  }
+
+  try {
+    await publishReviewRequestedNotifications(orderId)
+  } catch (e) {
+    console.error("[fulfillmentReviewPrompts] review notifications:", e)
   }
 }

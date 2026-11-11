@@ -27,7 +27,8 @@ export function PrivacyPolicyContent({ compact = false }: { compact?: boolean })
         <ul className="list-disc space-y-1 pl-6">
           <li>
             <strong className="text-foreground">Account information.</strong> Your name, email
-            address, password (stored hashed by our auth provider), display name, seller slug, profile
+            address, password (stored hashed by our auth provider), date of birth (to confirm you are
+            18 or older; not shown on your public profile), display name, seller slug, profile
             photo, bio, and the city or general location you choose to show on your profile.
           </li>
           <li>
@@ -243,7 +244,17 @@ export function PrivacyPolicyContent({ compact = false }: { compact?: boolean })
             .
           </li>
           <li>
-            Request access to, correction of, or deletion of your personal information by{" "}
+            Delete your account yourself from{" "}
+            <Link href="/dashboard/profile#sign-in" className={linkClass}>
+              Profile → Sign-in
+            </Link>{" "}
+            or{" "}
+            <Link href="/account/delete" className={linkClass}>
+              reswell.com/account/delete
+            </Link>
+            . In the iOS app, go to Me → Profile → Sign-in → Delete account. Finish open orders and cash out
+            earnings first. You can also request access to, correction of, or deletion of your
+            personal information by{" "}
             <Link href="/contact" className={linkClass}>
               contacting us
             </Link>
@@ -263,7 +274,8 @@ export function PrivacyPolicyContent({ compact = false }: { compact?: boolean })
         <h2 className={h2}>10. Children</h2>
         <p className="leading-relaxed">
           Reswell is not directed to children under 18, and you must be at least 18 to use the
-          platform. We do not knowingly collect personal information from children under 18. If you
+          platform. New accounts must provide a date of birth at sign-up so we can confirm that
+          eligibility. We do not knowingly collect personal information from children under 18. If you
           believe a child has provided us with personal information, please{" "}
           <Link href="/contact" className={linkClass}>
             contact us

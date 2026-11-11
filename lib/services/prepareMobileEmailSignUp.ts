@@ -11,6 +11,7 @@ export type PreparedEmailSignUp = {
     first_name: string
     last_name: string
     marketing_opt_in: boolean
+    date_of_birth: string
     username?: string
   }
 }
@@ -41,6 +42,7 @@ export function prepareMobileEmailSignUp(
         first_name: input.first_name.trim(),
         last_name: input.last_name.trim(),
         marketing_opt_in: input.marketing_opt_in,
+        date_of_birth: input.date_of_birth,
         ...(username ? { username } : {}),
       },
     },

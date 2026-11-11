@@ -31,13 +31,7 @@ import {
   withInchesDecimalLabels,
   type BoardDimensionOption,
 } from "@/lib/board-dimension-options"
-import {
-  isBoardLengthEntryComplete,
-  isTapeStyleInchesEntryComplete,
-  normalizeVolumeLitersInput,
-  parseBoardMeasurement,
-} from "@/lib/board-measurements"
-import { SellRequiredMark } from "@/components/features/sell/sell-required-mark"
+import { normalizeVolumeLitersInput, parseBoardMeasurement } from "@/lib/board-measurements"
 import { cn } from "@/lib/utils"
 
 export type SellBoardDimensionsPickerValues = {
@@ -51,8 +45,6 @@ type SellBoardDimensionsPickerProps = {
   values: SellBoardDimensionsPickerValues
   onChange: (patch: Partial<SellBoardDimensionsPickerValues>) => void
   className?: string
-  /** When shipping is on, board length is required (width/thickness stay optional). */
-  dimensionsRequired?: boolean
   disabled?: boolean
   volumeInputRef?: Ref<HTMLInputElement>
 }
@@ -135,7 +127,6 @@ function DimSelect({
   placeholder,
   ariaLabel,
   disabled,
-  required,
 }: {
   value: string
   onValueChange: (next: string) => void
@@ -145,7 +136,6 @@ function DimSelect({
   placeholder: string
   ariaLabel: string
   disabled?: boolean
-  required?: boolean
 }) {
   const listId = useId()
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -289,7 +279,6 @@ function DimSelect({
         type="button"
         disabled={disabled}
         aria-label={ariaLabel}
-        aria-required={required || undefined}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={open ? listId : undefined}
@@ -380,7 +369,6 @@ export function SellBoardDimensionsPicker({
   values,
   onChange,
   className,
-  dimensionsRequired = false,
   disabled = false,
   volumeInputRef,
 }: SellBoardDimensionsPickerProps) {
@@ -425,20 +413,8 @@ export function SellBoardDimensionsPicker({
     ? displayInchesOrRaw(thicknessValue, inchesNotation)
     : ""
 
-  const lengthComplete = isBoardLengthEntryComplete(values.boardLength)
-  const widthComplete = isTapeStyleInchesEntryComplete(values.boardWidthInches)
-  const thicknessComplete = isTapeStyleInchesEntryComplete(values.boardThicknessInches)
-
-  const fieldLabel = (text: string, required: boolean, complete: boolean) => (
-    <Label className="text-xs font-medium text-muted-foreground">
-      {text}
-      {required ? (
-        <>
-          {" "}
-          <SellRequiredMark complete={complete} />
-        </>
-      ) : null}
-    </Label>
+  const fieldLabel = (text: string) => (
+    <Label className="text-xs font-medium text-muted-foreground">{text}</Label>
   )
 
   const segmentedBoxClassName = cn(
@@ -455,7 +431,6 @@ export function SellBoardDimensionsPicker({
       placeholder="—"
       ariaLabel="Board length"
       disabled={disabled}
-      required={dimensionsRequired}
     />
   )
   const widthSelect = (
@@ -468,7 +443,6 @@ export function SellBoardDimensionsPicker({
       placeholder="—"
       ariaLabel="Board width in inches"
       disabled={disabled}
-      required={false}
     />
   )
   const thicknessSelect = (
@@ -481,7 +455,6 @@ export function SellBoardDimensionsPicker({
       placeholder="—"
       ariaLabel="Board thickness in inches"
       disabled={disabled}
-      required={false}
     />
   )
   /** Rendered once per breakpoint layout; `volumeInputRef` ends up on the sm+ instance. */
@@ -529,8 +502,8 @@ export function SellBoardDimensionsPicker({
       <div className="space-y-3 sm:hidden">
         <div className="space-y-2">
           <div className="grid grid-cols-2 gap-x-2 text-xs text-muted-foreground">
-            {fieldLabel("Length", dimensionsRequired, lengthComplete)}
-            {fieldLabel("Width", false, widthComplete)}
+            {fieldLabel("Length")}
+            {fieldLabel("Width")}
           </div>
           <div className={segmentedBoxClassName}>
             {lengthSelect}
@@ -539,8 +512,8 @@ export function SellBoardDimensionsPicker({
         </div>
         <div className="space-y-2">
           <div className="grid grid-cols-2 gap-x-2 text-xs text-muted-foreground">
-            {fieldLabel("Thickness", false, thicknessComplete)}
-            {fieldLabel("Volume", false, false)}
+            {fieldLabel("Thickness")}
+            {fieldLabel("Volume")}
           </div>
           <div className={segmentedBoxClassName}>
             {thicknessSelect}
@@ -552,10 +525,10 @@ export function SellBoardDimensionsPicker({
       {/* sm+: original single-row segmented control. */}
       <div className="hidden space-y-2 sm:block">
         <div className="grid grid-cols-4 gap-x-2 text-xs text-muted-foreground">
-          {fieldLabel("Length", dimensionsRequired, lengthComplete)}
-          {fieldLabel("Width", false, widthComplete)}
-          {fieldLabel("Thickness", false, thicknessComplete)}
-          {fieldLabel("Volume", false, false)}
+          {fieldLabel("Length")}
+          {fieldLabel("Width")}
+          {fieldLabel("Thickness")}
+          {fieldLabel("Volume")}
         </div>
 
         <div

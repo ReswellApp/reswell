@@ -1,5 +1,4 @@
 import { StyleSheet, type StyleProp, type ViewStyle } from "react-native"
-import type { ListingLayout } from "@/components/listing-layout-switch"
 
 /** Matches list `FlatList` horizontal padding (12 + 12). */
 export const LISTING_LIST_HORIZONTAL_INSET = 24
@@ -17,19 +16,27 @@ export const listingListColumnStyle: ViewStyle = {
   gap: 8,
 }
 
+/** Two marketplace tiles in one FlatList row — avoids changing `numColumns`. */
+export const listingGridRowStyle: ViewStyle = {
+  flexDirection: "row",
+  gap: 12,
+}
+
+/** Odd-count grid placeholder so the last tile keeps half width. */
+export const listingGridRowSpacerStyle: ViewStyle = {
+  flex: 1,
+}
+
 /** @deprecated Use {@link listingListColumnStyle}. */
 export const listingListMediaFrameStyle = listingListColumnStyle
 
-/** FlatList content padding when `ListingLayout` is `list` (matches feed single column). */
+/** FlatList content padding shared by grid and list marketplace rows. */
 export const listingListFlatListPadding: ViewStyle = {
   paddingHorizontal: 12,
 }
 
-export function marketplaceListContentStyle(
-  base: StyleProp<ViewStyle>,
-  layout: ListingLayout,
-): StyleProp<ViewStyle> {
-  return layout === "list" ? [base, listingListFlatListPadding] : base
+export function marketplaceListContentStyle(base: StyleProp<ViewStyle>): StyleProp<ViewStyle> {
+  return [base, listingListFlatListPadding]
 }
 
 /** @deprecated List tiles are full width; kept so stale Metro bundles do not crash on `.shell`. */

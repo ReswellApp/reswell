@@ -9,7 +9,10 @@ import {
   ensureConversationForBuyerSellerListing,
   getConversationForBuyerSellerListing,
 } from "@/lib/db/conversations"
+import { getMarketplaceReviewByOrderAndReviewer } from "@/lib/db/order-reviews"
 import { getMobileSaleDetailRow, listMobileSaleRows } from "@/lib/db/mobile-sales"
+import { existingMarketplaceReviewFromRow } from "@/lib/marketplace-review-photos"
+import { toMobileOrderReview } from "@/lib/services/mobilePurchases"
 import { getOrderReturnSummariesByOrderIds } from "@/lib/db/orderReturnStatusSummary"
 import { fetchOrderIdsWithPreparedShippingLabels } from "@/lib/db/orderShippingLabels"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
@@ -30,6 +33,15 @@ import type { OrderCompletedMessagePayload } from "@/lib/validations/order-compl
 import type { SupabaseClient } from "@supabase/supabase-js"
 
 export { buildMobileSaleDetail, toMobileSaleListItem } from "@/lib/services/mobileSalesMap"
+
+async function loadReview(
+  supabase: SupabaseClient,
+  orderId: string,
+  reviewerId: string,
+) {
+  const { data } = await getMarketplaceReviewByOrderAndReviewer(supabase, orderId, reviewerId)
+  return data ? toMobileOrderReview(existingMarketplaceReviewFromRow(data)) : null
+}
 
 export async function listMobileSalesService(
   supabase: SupabaseClient,
@@ -90,18 +102,21 @@ export async function getMobileSaleDetailService(
 
   const order = loaded.rows
   const listingId = order.listing_id.trim() || order.listing?.id || null
-  const [conversation, preparedIds, returnSummaries, hasLabel, buyer] = await Promise.all([
-    order.buyer_id
-      ? getConversationForBuyerSellerListing(supabase, order.buyer_id, userId, listingId)
-      : Promise.resolve(null),
-    fetchOrderIdsWithPreparedShippingLabels(supabase, [orderId]),
-    getOrderReturnSummariesByOrderIds(supabase, [orderId]),
-    mobileSaleHasLabel(supabase, userId, orderId, order.tracking_number),
-    loadMobileOrderParty(supabase, order.buyer_id, {
-      viewerId: userId,
-      fallbackName: order.buyer_name,
-    }),
-  ])
+  const [conversation, preparedIds, returnSummaries, hasLabel, buyer, sellerReview, buyerReview] =
+    await Promise.all([
+      order.buyer_id
+        ? getConversationForBuyerSellerListing(supabase, order.buyer_id, userId, listingId)
+        : Promise.resolve(null),
+      fetchOrderIdsWithPreparedShippingLabels(supabase, [orderId]),
+      getOrderReturnSummariesByOrderIds(supabase, [orderId]),
+      mobileSaleHasLabel(supabase, userId, orderId, order.tracking_number),
+      loadMobileOrderParty(supabase, order.buyer_id, {
+        viewerId: userId,
+        fallbackName: order.buyer_name,
+      }),
+      loadReview(supabase, orderId, userId),
+      order.buyer_id ? loadReview(supabase, orderId, order.buyer_id) : Promise.resolve(null),
+    ])
   const labelAvailable = hasLabel
 
   const detail = buildMobileSaleDetail(order, {
@@ -119,6 +134,8 @@ export async function getMobileSaleDetailService(
         )
       : null,
     buyer,
+    sellerReview,
+    buyerReview,
   })
   if (!detail) return { ok: false, status: 500, error: "Unable to load this sale right now" }
   return { ok: true, data: detail }

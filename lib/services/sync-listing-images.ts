@@ -6,19 +6,24 @@ import {
 } from "@/lib/listing-image-identity"
 import { persistableListingThumbnailUrl } from "@/lib/listing-media-proxy-url"
 import {
+  listingImageRowNeedsUpdate,
+  listingImageRowsMatchPayload,
+  listingImagesNeedingStorageVerify,
+  type ListingImageSyncRow,
+  type ListingImageUpdateOp,
+} from "@/lib/services/listing-image-sync-diff"
+import {
   orderListingImageWritesForPrimaryTrigger,
   type ListingImageWriteOrder,
 } from "@/lib/services/listing-image-write-order"
 import { deleteListingMediaRowsThenStorage } from "@/lib/services/listingStorageCleanup"
 import { assertAllListingImageObjectsExist } from "@/lib/services/verifyListingImageStorage"
 
-export type ListingImageUpdateOp = {
-  id?: string
-  url: string
-  thumbnailUrl?: string | null
-  isPrimary: boolean
-  sortOrder: number
-}
+export type { ListingImageSyncRow, ListingImageUpdateOp } from "@/lib/services/listing-image-sync-diff"
+export {
+  listingImageRowsMatchPayload,
+  listingImagesNeedingStorageVerify,
+} from "@/lib/services/listing-image-sync-diff"
 
 /** Row the reconcile persisted. Callers stamp `id` back onto the photo slot. */
 export type SyncedListingImage = {
@@ -29,14 +34,6 @@ export type SyncedListingImage = {
   sortOrder: number
 }
 
-type ExistingListingImageRow = {
-  id: string
-  sort_order: number
-  is_primary: boolean
-  url: string
-  thumbnail_url: string | null
-}
-
 function normalizedThumbnailUrl(
   thumbnailUrl: string | null | undefined,
   fullUrl?: string | null,
@@ -44,37 +41,24 @@ function normalizedThumbnailUrl(
   return persistableListingThumbnailUrl(thumbnailUrl, fullUrl)
 }
 
-function listingImageThumbnailsEquivalent(
-  existing: ExistingListingImageRow,
-  img: ListingImageUpdateOp,
-): boolean {
-  const existingThumb = typeof existing.thumbnail_url === "string" && existing.thumbnail_url.trim()
-    ? existing.thumbnail_url.trim()
-    : null
-  const nextThumb = normalizedThumbnailUrl(img.thumbnailUrl, img.url)
-  if (existingThumb === nextThumb) return true
-  if (existingThumb == null && nextThumb && listingImageUrlsEquivalent(existing.url, nextThumb)) {
-    return true
-  }
-  if (nextThumb == null && existingThumb && listingImageUrlsEquivalent(existing.url, existingThumb)) {
-    return true
-  }
-  if (existingThumb && nextThumb) {
-    return listingImageUrlsEquivalent(existingThumb, nextThumb)
-  }
-  return false
-}
-
-function listingImageRowNeedsUpdate(
-  existing: ExistingListingImageRow,
-  img: ListingImageUpdateOp,
-): boolean {
-  if (existing.sort_order !== img.sortOrder) return true
-  if (existing.is_primary !== img.isPrimary) return true
-
-  const url = img.url.trim()
-  if (url && !listingImageUrlsEquivalent(existing.url, url)) return true
-  return !listingImageThumbnailsEquivalent(existing, img)
+function syncedFromExistingRows(
+  existingById: ReadonlyMap<string, ListingImageSyncRow>,
+  images: ListingImageUpdateOp[],
+): SyncedListingImage[] {
+  return images.flatMap((img) => {
+    if (!img.id) return []
+    const existing = existingById.get(img.id)
+    if (!existing) return []
+    return [
+      {
+        id: existing.id,
+        url: existing.url,
+        thumbnailUrl: existing.thumbnail_url,
+        isPrimary: existing.is_primary === true,
+        sortOrder: existing.sort_order,
+      },
+    ]
+  })
 }
 
 /** True when removed ids are empty and every existing image row already matches the payload. */
@@ -93,23 +77,12 @@ export async function listingImagesAlreadySynced(
     .eq("listing_id", listingId)
     .order("sort_order", { ascending: true })
 
-  if (error || !existingRows || existingRows.length !== images.length) {
-    return false
-  }
-
-  const existingById = new Map(
-    existingRows.map((row) => [row.id as string, row as ExistingListingImageRow]),
+  if (error || !existingRows) return false
+  return listingImageRowsMatchPayload(
+    existingRows as ListingImageSyncRow[],
+    images,
+    removedImageIds,
   )
-
-  for (const img of images) {
-    if (!img.id) return false
-    const existing = existingById.get(img.id)
-    if (!existing || listingImageRowNeedsUpdate(existing, img)) {
-      return false
-    }
-  }
-
-  return true
 }
 
 async function adoptExistingListingImage(
@@ -169,9 +142,10 @@ async function readSyncedListingImages(
  *
  * The file is uploaded before a row exists, so the storage object is the
  * identity. A photo with no id claims the row that already points at that
- * file. Writes run one at a time, new primary last, so the cover trigger
- * stamps photo 1. A unique violation means a concurrent reconcile won the
- * insert; this one adopts that row instead of adding a second.
+ * file. Unchanged existing photos skip storage HEAD checks. Writes run one
+ * at a time, new primary last, so the cover trigger stamps photo 1. A unique
+ * violation means a concurrent reconcile won the insert; this one adopts that
+ * row instead of adding a second.
  */
 export async function syncListingImages(
   supabase: SupabaseClient,
@@ -179,78 +153,59 @@ export async function syncListingImages(
   removedImageIds: string[],
   images: ListingImageUpdateOp[],
 ): Promise<SyncedListingImage[]> {
+  const { data: existingLoad, error: existingLoadError } = await supabase
+    .from("listing_images")
+    .select("id, sort_order, is_primary, url, thumbnail_url")
+    .eq("listing_id", listingId)
+    .order("sort_order", { ascending: true })
+  if (existingLoadError) throw new Error(existingLoadError.message)
+
+  const existingRows = (existingLoad ?? []) as ListingImageSyncRow[]
+  const reconciled = assignListingImageIdsFromExistingUrls(
+    existingRows.map((row) => ({ id: row.id, url: row.url })),
+    images,
+  )
+  const imagesToWrite = reconciled.images
+  const existingById = new Map(existingRows.map((row) => [row.id, row]))
+  const keptImageIds = new Set(imagesToWrite.flatMap((img) => (img.id ? [img.id] : [])))
+  const idsToDelete = [
+    ...removedImageIds.filter((id) => !keptImageIds.has(id)),
+    ...reconciled.duplicateRowIds,
+  ]
+
+  if (
+    idsToDelete.length === 0 &&
+    listingImageRowsMatchPayload(existingRows, imagesToWrite, [])
+  ) {
+    return syncedFromExistingRows(existingById, imagesToWrite)
+  }
+
+  const imagesToVerify = listingImagesNeedingStorageVerify(existingById, imagesToWrite)
   await assertAllListingImageObjectsExist(
-    images.map((img) => ({ url: img.url, thumbnailUrl: img.thumbnailUrl })),
+    imagesToVerify.map((img) => ({ url: img.url, thumbnailUrl: img.thumbnailUrl })),
   )
 
-  const keptImageIds = new Set(images.flatMap((img) => (img.id ? [img.id] : [])))
   await deleteListingMediaRowsThenStorage(
     supabase,
     "listing_images",
     listingId,
-    removedImageIds.filter((id) => !keptImageIds.has(id)),
-    images.flatMap((img) => [img.url, img.thumbnailUrl]),
+    idsToDelete,
+    imagesToWrite.flatMap((img) => [img.url, img.thumbnailUrl]),
   )
 
-  const { data: existingRows, error: existingLoadError } = await supabase
-    .from("listing_images")
-    .select("id, url")
-    .eq("listing_id", listingId)
-  if (existingLoadError) throw new Error(existingLoadError.message)
-
-  const reconciled = assignListingImageIdsFromExistingUrls(
-    (existingRows ?? []).map((row) => ({
-      id: String(row.id),
-      url: typeof row.url === "string" ? row.url : "",
-    })),
-    images,
-  )
-  const imagesToWrite = reconciled.images
-
-  if (reconciled.duplicateRowIds.length > 0) {
-    await deleteListingMediaRowsThenStorage(
-      supabase,
-      "listing_images",
-      listingId,
-      reconciled.duplicateRowIds,
-      imagesToWrite.flatMap((img) => [img.url, img.thumbnailUrl]),
+  const inserts = imagesToWrite.filter((img) => !img.id && img.url.trim())
+  if (idsToDelete.length > 0 && inserts.length > 0) {
+    // Re-check inserts after deletes. A concurrent reconcile can remove storage
+    // between the opening assert and these writes; never insert rows that 404
+    // on the PDP.
+    await assertAllListingImageObjectsExist(
+      inserts.map((img) => ({ url: img.url, thumbnailUrl: img.thumbnailUrl })),
     )
   }
 
-  // Re-check after deletes. A concurrent reconcile can remove storage between
-  // the opening assert and these writes; never insert rows that 404 on the PDP.
-  await assertAllListingImageObjectsExist(
-    imagesToWrite.map((img) => ({ url: img.url, thumbnailUrl: img.thumbnailUrl })),
-  )
-
-  if (await listingImagesAlreadySynced(supabase, listingId, [], imagesToWrite)) {
-    return readSyncedListingImages(supabase, listingId)
-  }
-
-  const inserts = imagesToWrite.filter((img) => !img.id && img.url.trim())
   const updates = imagesToWrite.filter((img): img is ListingImageUpdateOp & { id: string } =>
     Boolean(img.id),
   )
-
-  let existingById = new Map<string, ExistingListingImageRow>()
-  if (updates.length > 0) {
-    const { data: existingRows, error: existingErr } = await supabase
-      .from("listing_images")
-      .select("id, sort_order, is_primary, url, thumbnail_url")
-      .eq("listing_id", listingId)
-      .in(
-        "id",
-        updates.map((img) => img.id),
-      )
-
-    if (existingErr) {
-      throw new Error(existingErr.message)
-    }
-
-    existingById = new Map(
-      (existingRows ?? []).map((row) => [row.id as string, row as ExistingListingImageRow]),
-    )
-  }
 
   type PendingImageWrite = ListingImageWriteOrder &
     (

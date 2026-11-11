@@ -1,7 +1,10 @@
 import { after, NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { getSafeRouteUser, resolveServerAuth } from "@/lib/auth/get-safe-server-user"
-import { expirePublicListingSurfacesAfterEdit } from "@/lib/cache/revalidate-listing-after-edit"
+import {
+  expireListingDetailAfterEdit,
+  expireListingDiscoverySurfacesAfterEdit,
+} from "@/lib/cache/revalidate-listing-after-edit"
 import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { fetchListingForEditById, fetchOwnedListingForEdit } from "@/lib/db/listingEdit"
 import {
@@ -337,12 +340,17 @@ export async function PUT(
   try {
     // Before the JSON returns. The sell form navigates to `/l` as soon as this
     // response arrives; `after()` runs too late and the hourly shell is already served.
-    expirePublicListingSurfacesAfterEdit(listingId, result.slug)
+    expireListingDetailAfterEdit(listingId, result.slug)
   } catch (error) {
     console.error("[owned-edit] listing revalidate:", error)
   }
 
   after(() => {
+    try {
+      expireListingDiscoverySurfacesAfterEdit()
+    } catch (error) {
+      console.error("[owned-edit] catalog revalidate:", error)
+    }
     void revalidateSellersAfterListingChange(writeDb, ownerUserId).catch((error) => {
       console.error("[owned-edit] seller revalidate:", error)
     })

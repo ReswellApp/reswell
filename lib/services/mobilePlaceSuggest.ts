@@ -5,6 +5,8 @@ import {
   type MobilePlaceSuggestions,
 } from "@reswell/api-contract"
 import { fetchGooglePlaceLocation, fetchGoogleRegionPredictions } from "@/lib/maps/google-places-region"
+import { redisGetOrSet } from "@/lib/redis/cache"
+import { REDIS_TTL_SECONDS, redisPlacesSuggestKey } from "@/lib/redis/keys"
 import { suggestGeocodePlaces } from "@/lib/services/geocodeSuggestions"
 import { normalizeUsStateProvinceForShipping } from "@/lib/us-state-name-to-code"
 
@@ -13,6 +15,14 @@ import { normalizeUsStateProvinceForShipping } from "@/lib/us-state-name-to-code
  * then the Photon/Nominatim suggestions when Places returns nothing.
  */
 export async function suggestMobilePlaces(query: string): Promise<MobilePlaceSuggestions> {
+  return redisGetOrSet(
+    redisPlacesSuggestKey(query),
+    REDIS_TTL_SECONDS.placesSuggest,
+    () => loadMobilePlaces(query),
+  )
+}
+
+async function loadMobilePlaces(query: string): Promise<MobilePlaceSuggestions> {
   const google = await fetchGoogleRegionPredictions(query)
   if (google.length > 0) {
     return mobilePlaceSuggestionsSchema.parse({

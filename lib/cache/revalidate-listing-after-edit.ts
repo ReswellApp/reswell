@@ -10,6 +10,28 @@ import { revalidateListingDetailPage } from "@/lib/cache/revalidate-listing-publ
 
 const EXPIRE_NOW = { expire: 0 } as const
 
+/** Expire the concrete `/l/...` shell so the seller lands on the new photos. */
+export function expireListingDetailAfterEdit(
+  listingId: string,
+  slug?: string | null,
+): void {
+  revalidateListingDetailPage(listingId, slug)
+}
+
+/**
+ * Drop browse/home tile caches. Safe to run after the save response — the
+ * seller navigates to the listing, not `/boards`.
+ */
+export function expireListingDiscoverySurfacesAfterEdit(): void {
+  revalidateTag(BOARDS_BROWSE_CACHE_TAG, EXPIRE_NOW)
+  revalidateTag(HOME_RECENTLY_ADDED_SURFBOARDS_CACHE_TAG, EXPIRE_NOW)
+  revalidateTag(HOME_RECENTLY_LISTED_GRID_CACHE_TAG, EXPIRE_NOW)
+  revalidateTag(HOME_MOST_VIEWED_CACHE_TAG, EXPIRE_NOW)
+  revalidateTag(NAV_SUGGESTED_SURFBOARDS_CACHE_TAG, EXPIRE_NOW)
+  revalidatePath("/boards", "page")
+  revalidatePath("/", "page")
+}
+
 /**
  * Drop cached listing pages and tile grids immediately after a seller save.
  * `'max'` only marks those entries stale-while-revalidate, so `/boards` and
@@ -19,12 +41,6 @@ export function expirePublicListingSurfacesAfterEdit(
   listingId: string,
   slug?: string | null,
 ): void {
-  revalidateListingDetailPage(listingId, slug)
-  revalidateTag(BOARDS_BROWSE_CACHE_TAG, EXPIRE_NOW)
-  revalidateTag(HOME_RECENTLY_ADDED_SURFBOARDS_CACHE_TAG, EXPIRE_NOW)
-  revalidateTag(HOME_RECENTLY_LISTED_GRID_CACHE_TAG, EXPIRE_NOW)
-  revalidateTag(HOME_MOST_VIEWED_CACHE_TAG, EXPIRE_NOW)
-  revalidateTag(NAV_SUGGESTED_SURFBOARDS_CACHE_TAG, EXPIRE_NOW)
-  revalidatePath("/boards", "page")
-  revalidatePath("/", "page")
+  expireListingDetailAfterEdit(listingId, slug)
+  expireListingDiscoverySurfacesAfterEdit()
 }

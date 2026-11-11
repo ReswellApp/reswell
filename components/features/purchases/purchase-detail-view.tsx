@@ -19,8 +19,10 @@ import {
   purchaseTrackRowClassName,
 } from "@/components/features/purchases/purchase-brand-styles"
 import { CopyOrderNumber } from "@/components/features/purchases/copy-order-number"
+import { PurchasePickupCode } from "@/components/features/purchases/purchase-pickup-code"
 import { ReviewSellerControls } from "@/components/review-seller-controls"
 import { SellerRatingStarRow } from "@/components/seller-rating-stars"
+import { FulfillmentTimeline } from "@/components/features/orders/fulfillment-timeline"
 import { LocalDateOnly, LocalDateTime } from "@/components/ui/local-datetime"
 import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
 import type { PurchaseTimelineEvent } from "@/lib/purchase-detail-timeline"
@@ -61,6 +63,7 @@ export interface PurchaseDetailViewProps {
   statusLabel: string
   statusTone: PurchaseStatusTone
   statusDateIso: string | null
+  statusDateIncludesTime?: boolean
   shippingDeadlineIso: string | null
   shippingDaysLeft: number | null
   timeline: PurchaseTimelineEvent[]
@@ -82,6 +85,7 @@ export interface PurchaseDetailViewProps {
   reviewFromSeller: ExistingMarketplaceReview | null
   helpCenterHref: string
   messageReswellHref: string
+  pickupCode: string | null
 }
 
 function ActionLink({
@@ -245,10 +249,16 @@ export function PurchaseDetailView(props: PurchaseDetailViewProps) {
         <p className="text-lg font-bold leading-tight">{props.statusLabel}</p>
         {props.statusDateIso ? (
           <p className="text-sm">
-            <LocalDateOnly iso={props.statusDateIso} dateStyle="long" />
+            {props.statusDateIncludesTime ? (
+              <LocalDateTime iso={props.statusDateIso} dateStyle="long" timeStyle="short" />
+            ) : (
+              <LocalDateOnly iso={props.statusDateIso} dateStyle="long" />
+            )}
           </p>
         ) : null}
       </section>
+
+      {props.pickupCode ? <PurchasePickupCode pickupCode={props.pickupCode} /> : null}
 
       {props.shippingDaysLeft != null && props.shippingDeadlineIso ? (
         <p className="text-sm leading-relaxed text-muted-foreground">
@@ -267,49 +277,7 @@ export function PurchaseDetailView(props: PurchaseDetailViewProps) {
         </p>
       ) : null}
 
-      <section className="space-y-3">
-        <h2 className="text-base font-bold text-foreground">{props.timelineHeading}</h2>
-        <ol>
-          {props.timeline.map((step, index) => {
-            const last = index === props.timeline.length - 1
-            return (
-              <li key={step.id} className="relative flex gap-3 pb-4 last:pb-0">
-                {!last ? (
-                  <span
-                    className={cn(
-                      "absolute left-[5px] top-3 h-[calc(100%-4px)] w-px",
-                      step.state === "upcoming" ? "bg-border" : "bg-green-600/50",
-                    )}
-                    aria-hidden
-                  />
-                ) : null}
-                <span
-                  className={cn(
-                    "relative z-[1] mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full",
-                    step.state === "upcoming" ? "border border-muted-foreground/40 bg-background" : "bg-green-600",
-                  )}
-                  aria-hidden
-                />
-                <div className="min-w-0">
-                  <p
-                    className={cn(
-                      "text-sm font-semibold",
-                      step.state === "upcoming" ? "text-muted-foreground" : purchaseAccentTextClassName,
-                    )}
-                  >
-                    {step.title}
-                  </p>
-                  {step.occurredAt ? (
-                    <p className="text-xs text-muted-foreground">
-                      <LocalDateTime iso={step.occurredAt} dateStyle="medium" timeStyle="short" />
-                    </p>
-                  ) : null}
-                </div>
-              </li>
-            )
-          })}
-        </ol>
-      </section>
+      <FulfillmentTimeline heading={props.timelineHeading} timeline={props.timeline} />
 
       {props.addressLines.length > 0 ? (
         <section className="flex gap-3 rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-900/40">

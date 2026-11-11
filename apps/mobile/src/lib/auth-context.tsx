@@ -15,16 +15,19 @@ export type SignUpInput = {
   username: string
   marketingOptIn: boolean
   acceptedTerms: boolean
+  dateOfBirth: string
 }
 
 export type GoogleSignUpInput = {
   marketingOptIn: boolean
   acceptedTerms: boolean
+  dateOfBirth: string
 }
 
 export type AppleSignUpInput = {
   marketingOptIn: boolean
   acceptedTerms: boolean
+  dateOfBirth: string
 }
 
 export type SignUpResult =
@@ -94,6 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             username: input.username.trim(),
             marketing_opt_in: input.marketingOptIn,
             accepted_terms: input.acceptedTerms,
+            date_of_birth: input.dateOfBirth,
           })
           if (result.status === "confirm_email") return { status: "confirm_email" }
           if (!result.access_token || !result.refresh_token) {
@@ -131,6 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             ...(credential.credential.nonce ? { nonce: credential.credential.nonce } : {}),
             marketing_opt_in: input.marketingOptIn,
             accepted_terms: input.acceptedTerms,
+            date_of_birth: input.dateOfBirth,
           })
           if (!result.access_token || !result.refresh_token) {
             return { status: "error", message: "Couldn't create your account." }
@@ -160,6 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             nonce: credential.credential.nonce,
             marketing_opt_in: input.marketingOptIn,
             accepted_terms: input.acceptedTerms,
+            date_of_birth: input.dateOfBirth,
           })
           if (!result.access_token || !result.refresh_token) {
             return { status: "error", message: "Couldn't create your account." }

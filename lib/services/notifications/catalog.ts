@@ -31,6 +31,8 @@ export const NOTIFICATION_TYPES = [
   "seller_message_waiting",
   "seller_listing_hide_warning",
   "seller_listing_auto_hidden",
+  "review_seller_requested",
+  "review_buyer_requested",
 ] as const
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number]
@@ -147,6 +149,16 @@ export const NOTIFICATION_POLICIES: Record<NotificationType, NotificationPolicy>
     mode: "once",
     windowHours: NOTIFICATION_WINDOW_HOURS,
   },
+  review_seller_requested: {
+    type: "review_seller_requested",
+    mode: "once",
+    windowHours: NOTIFICATION_WINDOW_HOURS,
+  },
+  review_buyer_requested: {
+    type: "review_buyer_requested",
+    mode: "once",
+    windowHours: NOTIFICATION_WINDOW_HOURS,
+  },
 }
 
 export function isNotificationType(value: string): value is NotificationType {
@@ -218,6 +230,14 @@ export function sellerListingHideWarningDedupeKey(listingId: string, messageKey:
 
 export function sellerListingAutoHiddenDedupeKey(listingId: string, messageKey: string): string {
   return `seller_listing_auto_hidden:${listingId}:${messageKey}`
+}
+
+export function reviewSellerRequestedDedupeKey(orderId: string): string {
+  return `review_seller_requested:${orderId}`
+}
+
+export function reviewBuyerRequestedDedupeKey(orderId: string): string {
+  return `review_buyer_requested:${orderId}`
 }
 
 export function priceDropMeetsThreshold(oldPrice: number, newPrice: number): boolean {
@@ -339,6 +359,24 @@ export function sellerListingAutoHiddenBody(title: string): string {
 
 export function sellerListingAutoHiddenEmailBody(): string {
   return "Your listing is in vacation mode (hidden). You can turn it back on whenever you like."
+}
+
+export function reviewSellerRequestedTitle(): string {
+  return "Leave a review for the seller"
+}
+
+export function reviewSellerRequestedBody(orderNum: string, sellerName: string): string {
+  const name = sellerName.trim() || "the seller"
+  return `How was your order #${orderNum}? Rate ${name}.`
+}
+
+export function reviewBuyerRequestedTitle(): string {
+  return "Leave a review for the buyer"
+}
+
+export function reviewBuyerRequestedBody(orderNum: string, buyerName: string): string {
+  const name = buyerName.trim() || "the buyer"
+  return `How did the sale go for order #${orderNum}? Rate ${name}.`
 }
 
 export const LISTING_SAVED_DIGEST_HREF = "/dashboard/listings"

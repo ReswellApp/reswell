@@ -13,15 +13,18 @@ describe("listing detail revalidation", () => {
     const src = readRepo("lib/cache/revalidate-listing-public-detail.ts")
     assert.match(src, /revalidatePath\(trimmed\)/)
     assert.match(src, /expire:\s*0/)
+    assert.match(src, /expireMobileListingRedisCache\(/)
     assert.doesNotMatch(src, /revalidatePath\([^)]*,\s*["']page["']\)/)
   })
 
   it("drops the listing shell before the save response, not in after()", () => {
     const ownedEdit = readRepo("app/api/listings/[id]/owned-edit/route.ts")
-    const expireAt = ownedEdit.indexOf("expirePublicListingSurfacesAfterEdit(")
+    const expireAt = ownedEdit.indexOf("expireListingDetailAfterEdit(")
     const afterAt = ownedEdit.indexOf("after(() => {")
+    const catalogAt = ownedEdit.indexOf("expireListingDiscoverySurfacesAfterEdit(")
     assert.ok(expireAt > -1)
     assert.ok(afterAt > expireAt)
+    assert.ok(catalogAt > afterAt)
 
     const revalidateRoute = readRepo("app/api/listings/revalidate-mutation/route.ts")
     const routeExpireAt = revalidateRoute.indexOf("expirePublicListingSurfacesAfterEdit(")

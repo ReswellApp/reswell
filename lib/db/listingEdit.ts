@@ -103,6 +103,20 @@ const LISTING_FOR_EDIT_SELECT = `
   brand_models ( id, name, brands ( slug ) )
 `
 
+/** Columns the mobile sell-edit mapper reads. Skips catalog joins the website hydrator needs. */
+const LISTING_FOR_MOBILE_EDIT_SELECT = `
+  id, user_id, section, status, slug, title, description, price, condition,
+  city, state, latitude, longitude, shipping_available, local_pickup, shipping_price,
+  board_shipping_cost_mode, shipping_packed_length_in, shipping_packed_width_in,
+  shipping_packed_height_in, shipping_packed_weight_oz, shipping_package_tier,
+  shipping_package_band, dropoff_location_id, brand, model, category_id, board_type,
+  fin_setup, fin_system, construction, fins_setup, fins_included,
+  seller_purchase_price_usd, seller_purchased_from, seller_purchased_on,
+  dimensions, length_total_inches, volume_liters,
+  listing_images (id, url, thumbnail_url, is_primary, sort_order),
+  listing_videos (id, url, thumbnail_url, content_type, duration_seconds, byte_size, sort_order)
+`
+
 /** Listing row + images for the sell-flow edit hydrator (owner-scoped). */
 export async function fetchOwnedListingForEdit(
   supabase: SupabaseClient,
@@ -115,6 +129,26 @@ export async function fetchOwnedListingForEdit(
   const { data, error } = await supabase
     .from("listings")
     .select(LISTING_FOR_EDIT_SELECT)
+    .eq("id", trimmed)
+    .eq("user_id", userId)
+    .maybeSingle()
+
+  if (error || !data?.id) return null
+  return data as OwnedListingForEditRow
+}
+
+/** Owner listing row for the mobile sell-edit screen. */
+export async function fetchOwnedListingForMobileEdit(
+  supabase: SupabaseClient,
+  listingId: string,
+  userId: string,
+): Promise<OwnedListingForEditRow | null> {
+  const trimmed = listingId.trim()
+  if (!trimmed) return null
+
+  const { data, error } = await supabase
+    .from("listings")
+    .select(LISTING_FOR_MOBILE_EDIT_SELECT)
     .eq("id", trimmed)
     .eq("user_id", userId)
     .maybeSingle()

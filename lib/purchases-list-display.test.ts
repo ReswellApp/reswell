@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 
 import {
+  buyerVisiblePickupCode,
   purchaseCountLabel,
   purchaseDetailLine,
   purchaseMatchesQuery,
@@ -31,6 +32,27 @@ describe("purchase list display", () => {
     assert.equal(purchaseMatchesQuery(row, "89w-frv"), true)
     assert.equal(purchaseMatchesQuery(row, "#89W"), true)
     assert.equal(purchaseMatchesQuery(row, "missing"), false)
+    assert.equal(purchaseMatchesQuery({ ...row, pickupCode: "482910" }, "482910"), true)
+    assert.equal(purchaseMatchesQuery(row, "482910"), false)
+  })
+
+  it("shows the buyer pickup code until handoff or refund", () => {
+    assert.equal(
+      buyerVisiblePickupCode({ pickupCode: " 482910 ", deliveryStatus: "pickup_ready", orderStatus: "confirmed" }),
+      "482910",
+    )
+    assert.equal(
+      buyerVisiblePickupCode({ pickupCode: "482910", deliveryStatus: "picked_up", orderStatus: "confirmed" }),
+      null,
+    )
+    assert.equal(
+      buyerVisiblePickupCode({ pickupCode: "482910", deliveryStatus: "pickup_ready", orderStatus: "refunded" }),
+      null,
+    )
+    assert.equal(
+      buyerVisiblePickupCode({ pickupCode: "   ", deliveryStatus: "pickup_ready", orderStatus: "confirmed" }),
+      null,
+    )
   })
 
   it("splits the buyer total into item price and shipping", () => {

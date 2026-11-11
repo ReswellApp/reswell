@@ -3,6 +3,11 @@ import {
   parseMarketingOptInParam,
   userMarketingOptInFromMetadata,
 } from "@/lib/auth/marketing-email-consent";
+import {
+  SIGNUP_DATE_OF_BIRTH_COOKIE,
+  parseSignupDateOfBirthParam,
+  signupDateOfBirthCookieClearOptions,
+} from "@/lib/auth/signup-date-of-birth";
 import { passwordResetLandingPath } from "@/lib/auth/password-reset-landing-flag";
 import { exchangeAuthCodeWithRetry } from "@/lib/auth/exchange-auth-code-with-retry";
 import { isGoogleAuthUser } from "@/lib/auth/profile-completion";
@@ -22,6 +27,11 @@ import {
 } from "@/lib/google-ads/sign-up-success-path";
 import { trackKlaviyoNewAccountCreated } from "@/lib/klaviyo/track-new-account-created";
 import { applyMarketingEmailConsent } from "@/lib/services/marketingEmailConsent";
+import {
+  dateOfBirthFromUserMetadata,
+  saveSignupDateOfBirth,
+  saveSignupDateOfBirthFromUser,
+} from "@/lib/services/saveSignupDateOfBirth";
 import { captureServerEvent } from "@/lib/posthog-server";
 import {
   bannedAuthRedirect,
@@ -71,6 +81,7 @@ function buildOAuthSuccessRedirect(
   redirectResponse: NextResponse,
   user: User,
   marketingFromCallback: boolean | null,
+  dateOfBirthFromCallback: string | null,
 ): NextResponse {
   let redirectPath = next;
   if (isGoogleAuthUser(user)) {
@@ -93,6 +104,13 @@ function buildOAuthSuccessRedirect(
       console.error("[auth/callback] PostHog OAuth capture failed:", e)
     }
   })
+
+  const dateOfBirth = dateOfBirthFromCallback ?? dateOfBirthFromUserMetadata(user)
+  if (dateOfBirth) {
+    after(async () => {
+      await saveSignupDateOfBirth(user.id, dateOfBirth)
+    })
+  }
 
   if (isNewOAuthAccount(user)) {
     after(async () => {
@@ -130,6 +148,11 @@ function buildOAuthSuccessRedirect(
     });
   }
   copyAuthCookies(redirectResponse, finalResponse);
+  finalResponse.cookies.set(
+    SIGNUP_DATE_OF_BIRTH_COOKIE,
+    "",
+    signupDateOfBirthCookieClearOptions(),
+  );
   finalResponse.headers.set("Cache-Control", "private, no-store");
   return finalResponse;
 }
@@ -143,6 +166,9 @@ export async function GET(request: NextRequest) {
   const marketingFromCallback = parseMarketingOptInParam(
     searchParams.get("marketing"),
   );
+  const dateOfBirthFromCallback =
+    parseSignupDateOfBirthParam(searchParams.get("dob")) ??
+    parseSignupDateOfBirthParam(request.cookies.get(SIGNUP_DATE_OF_BIRTH_COOKIE)?.value);
 
   // Handle PKCE flow (OAuth, etc.): session cookies must be set on this response.
   if (code) {
@@ -168,6 +194,7 @@ export async function GET(request: NextRequest) {
         redirectResponse,
         sessionUser,
         marketingFromCallback,
+        dateOfBirthFromCallback,
       );
     }
 
@@ -197,6 +224,7 @@ export async function GET(request: NextRequest) {
         redirectResponse,
         existingUser,
         marketingFromCallback,
+        dateOfBirthFromCallback,
       );
     }
 
@@ -226,6 +254,7 @@ export async function GET(request: NextRequest) {
         redirectResponse.headers.set("Location", `${origin}${redirectPath}`);
         after(async () => {
           try {
+            await saveSignupDateOfBirthFromUser(u)
             const hasServiceRole = Boolean(
               process.env.SUPABASE_SERVICE_ROLE_KEY?.trim(),
             );

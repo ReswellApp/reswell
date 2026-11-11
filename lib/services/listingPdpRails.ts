@@ -21,6 +21,8 @@ import {
 } from "@/lib/listing-public-visibility"
 import type { MobileListingRow } from "@/lib/db/mobile-listings"
 import { fetchSignedInPdpRecentlyViewedSurfboards } from "@/lib/services/pdp-recent-strip-listings"
+import { redisGetOrSet, redisSetJson } from "@/lib/redis/cache"
+import { REDIS_TTL_SECONDS, redisMobileListingRailsKey } from "@/lib/redis/keys"
 import { toMobileListingCard, type MobileApiResult } from "@/lib/services/mobileApi"
 import { getDb } from "@/lib/supabase/db"
 import type { PeerSimilarFacetColumn } from "@/lib/utils/listing-detail-similar-peer"
@@ -28,6 +30,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 
 const RAIL_LISTING_SELECT = `
   id,
+  slug,
   user_id,
   title,
   status,
@@ -59,6 +62,7 @@ const PEER_FACET: Record<string, { column: PeerSimilarFacetColumn; field: string
 
 type RailListingRow = {
   id: string
+  slug: string | null
   user_id: string
   title: string | null
   status: string
@@ -118,15 +122,83 @@ function section(id: string, title: string, listings: MobileListingCard[]) {
   return { id, title, listings }
 }
 
+type PublicListingRailsCache = {
+  listingId: string
+  slug: string | null
+  section: string
+  sections: MobileListingRails["sections"]
+}
+
+async function rememberPublicListingRailsAlias(
+  listingParam: string,
+  cached: PublicListingRailsCache,
+): Promise<void> {
+  const alias =
+    cached.slug && redisMobileListingRailsKey(cached.slug) !== redisMobileListingRailsKey(listingParam)
+      ? cached.slug
+      : cached.listingId
+  if (redisMobileListingRailsKey(alias) === redisMobileListingRailsKey(listingParam)) return
+  await redisSetJson(redisMobileListingRailsKey(alias), cached, REDIS_TTL_SECONDS.mobileListingRails)
+}
+
+async function parseRails(
+  sections: MobileListingRails["sections"],
+): Promise<MobileApiResult<MobileListingRails>> {
+  const parsed = mobileListingRailsSchema.safeParse({ sections })
+  if (!parsed.success) {
+    console.error("[mobile-api] listing rails shape failed", {
+      timestamp: new Date().toISOString(),
+      issues: parsed.error.issues.map((issue) => issue.path.join(".")),
+    })
+    return { ok: false, status: 500, error: "Unable to load listing recommendations right now" }
+  }
+  return { ok: true, data: parsed.data }
+}
+
 /**
  * The scrollable blocks under a public `/l` page: similar listings, more from
  * the seller, recently viewed surfboards, and shop “You may also like”.
  * Blog posts are not rendered under `/l` today, so they are not a rail.
+ *
+ * Similar/seller/shop rails are public and Redis-cached. Recently viewed is
+ * per-user and always loaded live.
  */
 export async function getListingPdpRailsService(
   listingParam: string,
   viewer?: { supabase: SupabaseClient; userId: string },
 ): Promise<MobileApiResult<MobileListingRails>> {
+  const param = listingParam.trim()
+  const cached = await redisGetOrSet(
+    redisMobileListingRailsKey(param),
+    REDIS_TTL_SECONDS.mobileListingRails,
+    () => loadPublicListingRails(param),
+    { cacheIf: (value) => value.ok },
+  )
+  if (!cached.ok) {
+    return { ok: false, status: cached.status, error: cached.error }
+  }
+
+  const sections = [...cached.data.sections]
+  if (viewer && cached.data.section === "surfboards") {
+    const recent = await fetchSignedInPdpRecentlyViewedSurfboards(
+      viewer.supabase,
+      viewer.userId,
+      cached.data.listingId,
+    )
+    const recentSection = section(
+      "recently_viewed",
+      RECENTLY_VIEWED_RAIL_TITLE,
+      cardsFromPeerRows(recent as unknown as Record<string, unknown>[]),
+    )
+    if (recentSection) sections.push(recentSection)
+  }
+
+  return parseRails(sections)
+}
+
+async function loadPublicListingRails(
+  listingParam: string,
+): Promise<MobileApiResult<PublicListingRailsCache>> {
   const catalog = getDb({ consistency: "eventual", purpose: "catalog" })
   const found = await findListingByParam(catalog, listingParam, { select: RAIL_LISTING_SELECT })
   if (found.queryFailed) {
@@ -143,18 +215,17 @@ export async function getListingPdpRailsService(
   const sections = (
     listing.section === "new"
       ? await shopSections(listing.id)
-      : await peerSections(catalog, listing, viewer)
+      : await peerSections(catalog, listing)
   ).filter((item) => item != null)
 
-  const parsed = mobileListingRailsSchema.safeParse({ sections })
-  if (!parsed.success) {
-    console.error("[mobile-api] listing rails shape failed", {
-      timestamp: new Date().toISOString(),
-      issues: parsed.error.issues.map((issue) => issue.path.join(".")),
-    })
-    return { ok: false, status: 500, error: "Unable to load listing recommendations right now" }
+  const data: PublicListingRailsCache = {
+    listingId: listing.id,
+    slug: typeof listing.slug === "string" && listing.slug.trim() ? listing.slug.trim() : null,
+    section: listing.section,
+    sections,
   }
-  return { ok: true, data: parsed.data }
+  await rememberPublicListingRailsAlias(listingParam, data)
+  return { ok: true, data }
 }
 
 async function shopSections(listingId: string) {
@@ -169,11 +240,10 @@ async function shopSections(listingId: string) {
 async function peerSections(
   catalog: SupabaseClient,
   listing: RailListingRow,
-  viewer?: { supabase: SupabaseClient; userId: string },
 ) {
   const facet = PEER_FACET[listing.section]
   const facetValue = facet ? listing[facet.field] : null
-  const [similarRaw, sellerRaw, recent] = await Promise.all([
+  const [similarRaw, sellerRaw] = await Promise.all([
     listing.section === "surfboards"
       ? fetchSimilarSurfboardsForListingPdp(catalog, {
           excludeListingId: listing.id,
@@ -197,18 +267,10 @@ async function peerSections(
       excludeListingId: listing.id,
       limit: PDP_SELLER_LISTING_LIMIT,
     }).then((rows) => rows as unknown as Record<string, unknown>[]),
-    listing.section === "surfboards" && viewer
-      ? fetchSignedInPdpRecentlyViewedSurfboards(viewer.supabase, viewer.userId, listing.id)
-      : Promise.resolve([]),
   ])
 
   return [
     section("similar", similarListingRailTitle(listing.section), cardsFromPeerRows(similarRaw)),
     section("seller", sellerListingRailTitle(listing.section), cardsFromPeerRows(sellerRaw)),
-    section(
-      "recently_viewed",
-      RECENTLY_VIEWED_RAIL_TITLE,
-      cardsFromPeerRows(recent as unknown as Record<string, unknown>[]),
-    ),
   ]
 }

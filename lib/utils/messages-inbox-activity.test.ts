@@ -2,7 +2,7 @@ import assert from "node:assert/strict"
 import { describe, it } from "node:test"
 
 import type { MessagesInboxNotification } from "../db/messagesInbox.ts"
-import { inboxActivityNotificationHref } from "./messages-inbox-activity.ts"
+import { activityKindLabel, inboxActivityNotificationHref } from "./messages-inbox-activity.ts"
 
 const ORDER_ID = "11111111-1111-4111-8111-111111111111"
 
@@ -24,6 +24,13 @@ function note(overrides: Partial<MessagesInboxNotification> = {}): MessagesInbox
     ...overrides,
   }
 }
+
+describe("activityKindLabel", () => {
+  it("labels review prompts as Review", () => {
+    assert.equal(activityKindLabel("review_seller_requested"), "Review")
+    assert.equal(activityKindLabel("review_buyer_requested"), "Review")
+  })
+})
 
 describe("inboxActivityNotificationHref", () => {
   it("opens the seller sale for an order delivered payout, not the listing", () => {
@@ -60,6 +67,32 @@ describe("inboxActivityNotificationHref", () => {
         }),
       ),
       `/dashboard/purchases/${ORDER_ID}`,
+    )
+  })
+
+  it("opens the buyer purchase for a leave-seller-review notice", () => {
+    assert.equal(
+      inboxActivityNotificationHref(
+        note({
+          type: "review_seller_requested",
+          href: `/dashboard/purchases/${ORDER_ID}`,
+          metadata: { orderId: ORDER_ID },
+        }),
+      ),
+      `/dashboard/purchases/${ORDER_ID}`,
+    )
+  })
+
+  it("opens the seller sale for a leave-buyer-review notice", () => {
+    assert.equal(
+      inboxActivityNotificationHref(
+        note({
+          type: "review_buyer_requested",
+          href: "/l/patagonia-surfboard",
+          metadata: { orderId: ORDER_ID },
+        }),
+      ),
+      `/dashboard/sales/${ORDER_ID}`,
     )
   })
 

@@ -142,6 +142,8 @@ export function ScreenScroll({
       refreshControl={refreshControl}
       nestedScrollEnabled
       keyboardShouldPersistTaps="handled"
+      keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
+      automaticallyAdjustKeyboardInsets
       showsVerticalScrollIndicator={showsVerticalScrollIndicator}
       alwaysBounceVertical={Platform.OS === "ios"}
       overScrollMode="always"

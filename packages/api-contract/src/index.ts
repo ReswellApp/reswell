@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { signupDateOfBirthSchema } from "./date-of-birth"
 
 /** Stable `/api/mobile/v1` shapes. Add fields freely. Renames and removals wait for v2. */
 
@@ -8,7 +9,42 @@ export const mobileProfileAddressSchema = z.object({
   full_name: z.string(),
   line: z.string(),
   is_default: z.boolean(),
+  line1: z.string(),
+  line2: z.string().nullable(),
+  city: z.string(),
+  state: z.string().nullable(),
+  postal_code: z.string(),
+  country: z.string(),
 })
+
+export const mobileProfileAddressesSchema = z.object({
+  addresses: z.array(mobileProfileAddressSchema),
+})
+
+/** Same shipping fields the website profile Addresses tab saves. */
+export const mobileProfileAddressBodySchema = z.object({
+  line1: z.string().trim().min(1).max(200),
+  line2: z.string().trim().max(200).optional().nullable(),
+  city: z.string().trim().min(1).max(120),
+  state: z.string().trim().max(120).optional().nullable(),
+  postal_code: z.string().trim().min(1).max(32),
+  country: z.string().trim().min(2).max(64).default("US"),
+  label: z.string().trim().max(80).optional().nullable(),
+  is_default: z.boolean().optional(),
+})
+
+export const mobileProfileAddressPatchSchema = z
+  .object({
+    line1: z.string().trim().min(1).max(200).optional(),
+    line2: z.string().trim().max(200).optional().nullable(),
+    city: z.string().trim().min(1).max(120).optional(),
+    state: z.string().trim().max(120).optional().nullable(),
+    postal_code: z.string().trim().min(1).max(32).optional(),
+    country: z.string().trim().min(2).max(64).optional(),
+    label: z.string().trim().max(80).optional().nullable(),
+    is_default: z.boolean().optional(),
+  })
+  .refine((data) => Object.keys(data).length > 0, { message: "At least one field is required" })
 
 /** Same profile settings the website dashboard edits. */
 export const mobileProfileSettingsSchema = z.object({
@@ -101,6 +137,7 @@ export const mobileSignUpBodySchema = z.object({
   accepted_terms: z.boolean().refine((value) => value, {
     message: "Please accept Reswell's Terms of Use and Privacy Policy to continue.",
   }),
+  date_of_birth: signupDateOfBirthSchema,
 })
 
 export const mobileSignUpResultSchema = z.object({
@@ -118,6 +155,7 @@ export const mobileGoogleSignUpBodySchema = z.object({
   accepted_terms: z.boolean().refine((value) => value, {
     message: "Please accept Reswell's Terms of Use and Privacy Policy to continue.",
   }),
+  date_of_birth: signupDateOfBirthSchema,
 })
 
 /** Native Sign in with Apple identity token plus the sign-up checkboxes. */
@@ -128,6 +166,7 @@ export const mobileAppleSignUpBodySchema = z.object({
   accepted_terms: z.boolean().refine((value) => value, {
     message: "Please accept Reswell's Terms of Use and Privacy Policy to continue.",
   }),
+  date_of_birth: signupDateOfBirthSchema,
 })
 
 export const mobileListingReportBodySchema = z.object({
@@ -260,6 +299,27 @@ export const mobileListingDetailSchema = mobileListingCardSchema.extend({
   brand_slug: z.string().nullable(),
   /** Catalog model page under that brand. Null when the model is not in the catalog. */
   model_slug: z.string().nullable(),
+  /** Same spec table rows the website listing page prints. */
+  spec_rows: z
+    .array(
+      z.object({
+        label: z.string(),
+        value: z.string(),
+      }),
+    )
+    .optional(),
+  /** Seller allows buyer offers. Default true when the listing has not turned them off. */
+  buyer_offers_enabled: z.boolean(),
+  /** Lowest amount the seller will accept, in USD. */
+  min_offer_usd: z.number(),
+  /** Platform or seller minimum as a percent of list price. */
+  min_offer_pct: z.number().int().min(50).max(90),
+  /** Hide the minimum until the buyer types below it (fixed dollar minimum). */
+  hide_min_offer_until_violated: z.boolean(),
+  shipping_cost_mode: z.enum(["reswell", "flat", "free"]).nullable(),
+  shipping_flat_rate: z.number().nonnegative(),
+  /** Signed-in buyer’s open PENDING/COUNTERED offer on this listing. */
+  open_offer_id: z.string().uuid().nullable().optional(),
 })
 
 export const mobileListingsPageSchema = z.object({
@@ -987,6 +1047,29 @@ export const mobileSellVideoSchema = z.object({
   video_id: z.string().uuid().optional(),
 })
 
+const emptyAcquisitionToNull = (value: unknown): unknown =>
+  typeof value === "string" && value.trim() === "" ? null : value
+
+/**
+ * Private cost basis — same listing columns as website sell
+ * (`seller_purchase_price_usd`, `seller_purchased_from`, `seller_purchased_on`).
+ * Omitted by older app builds so existing values are left alone.
+ */
+const mobileSellAcquisitionFieldShape = {
+  seller_purchase_price: z.preprocess(
+    emptyAcquisitionToNull,
+    z.number().nonnegative().max(999_999.99).nullable().optional(),
+  ),
+  seller_purchased_from: z.preprocess(
+    emptyAcquisitionToNull,
+    z.string().trim().max(200).nullable().optional(),
+  ),
+  seller_purchased_on: z.preprocess(
+    emptyAcquisitionToNull,
+    z.string().date().nullable().optional(),
+  ),
+}
+
 const mobileSellPublishRefinements = <T extends z.ZodTypeAny>(schema: T) =>
   schema
     .refine((value: z.infer<typeof mobileSellPublishBodySchema>) => value.shipping || value.local_pickup, {
@@ -1039,6 +1122,7 @@ export const mobileSellPublishBodySchema = z.object({
   /** Omitted by older app builds — leave existing videos alone. `[]` removes the clip. */
   videos: z.array(mobileSellVideoSchema).max(1, "You can add up to 1 video").optional(),
   draft_id: z.string().uuid().nullable(),
+  ...mobileSellAcquisitionFieldShape,
 })
 
 export const mobileSellPublishSchema = mobileSellPublishRefinements(mobileSellPublishBodySchema)
@@ -1080,6 +1164,7 @@ export const mobileSellDraftSchema = z.object({
   }),
   images: z.array(mobileSellPhotoSchema).max(MOBILE_SELL_MAX_PHOTOS),
   videos: z.array(mobileSellVideoSchema).max(1, "You can add up to 1 video").optional(),
+  ...mobileSellAcquisitionFieldShape,
 })
 
 export const mobileSellPublishResultSchema = z.object({
@@ -1353,6 +1438,10 @@ export const mobileApiErrorSchema = z.object({
   error: z.string(),
 })
 
+export type MobileProfileAddress = z.infer<typeof mobileProfileAddressSchema>
+export type MobileProfileAddresses = z.infer<typeof mobileProfileAddressesSchema>
+export type MobileProfileAddressBody = z.infer<typeof mobileProfileAddressBodySchema>
+export type MobileProfileAddressPatch = z.infer<typeof mobileProfileAddressPatchSchema>
 export type MobileProfileSettings = z.infer<typeof mobileProfileSettingsSchema>
 export type MobileProfileSettingsPatch = z.infer<typeof mobileProfileSettingsPatchSchema>
 export type MobilePushTokenBody = z.infer<typeof mobilePushTokenBodySchema>
@@ -2022,6 +2111,8 @@ export const mobilePurchaseListItemSchema = mobileOrderSchema.extend({
   amount_struck: z.boolean(),
   refund_note: z.string().nullable(),
   status_tone: mobilePurchaseStatusToneSchema,
+  /** 6-digit local pickup code. Null when the order is not an open pickup. */
+  pickup_code: z.string().nullable(),
 })
 
 export const mobilePurchasesSchema = z.object({
@@ -2070,6 +2161,7 @@ export const mobilePurchaseDetailSchema = z.object({
   status_label: z.string(),
   status_tone: mobilePurchaseStatusToneSchema,
   status_date: z.string().nullable(),
+  status_date_includes_time: z.boolean(),
   shipping_deadline: z.string().nullable(),
   shipping_days_left: z.number().int().nullable(),
   shipping_window_days: z.number().int().positive(),
@@ -2090,6 +2182,8 @@ export const mobilePurchaseDetailSchema = z.object({
   existing_review: mobilePurchaseReviewSchema.nullable(),
   review_from_seller: mobilePurchaseReviewSchema.nullable(),
   seller: mobileOrderPartySchema,
+  /** 6-digit local pickup code. Null when the order is not an open pickup. */
+  pickup_code: z.string().nullable(),
 })
 
 export const mobileSaleSchema = mobileOrderSchema.extend({
@@ -2160,6 +2254,9 @@ export const mobileSaleDetailSchema = mobileSaleSchema.extend({
   shipping_note: z.string().nullable(),
   status_tone: mobilePurchaseStatusToneSchema,
   status_date: z.string().nullable(),
+  status_date_includes_time: z.boolean(),
+  timeline_heading: z.string().nullable(),
+  timeline: z.array(mobilePurchaseTimelineEventSchema),
   address_name: z.string().nullable(),
   address_lines: z.array(z.string()),
   track_url: z.string().nullable(),
@@ -2172,10 +2269,32 @@ export const mobileSaleDetailSchema = mobileSaleSchema.extend({
   payout_badge_label: z.string().nullable(),
   can_request_support: z.boolean(),
   buyer: mobileOrderPartySchema.nullable(),
+  can_review: z.boolean(),
+  hide_review_prompt: z.boolean(),
+  existing_review: mobilePurchaseReviewSchema.nullable(),
+  review_from_buyer: mobilePurchaseReviewSchema.nullable(),
 })
 
 export const mobileSaleVerifyPickupBodySchema = z.object({
   code: z.string().trim().min(1).max(12),
+})
+
+/** Same body as website `POST /api/orders/[id]/review` (photos optional later). */
+export const mobileOrderReviewBodySchema = z.object({
+  rating: z.number().int().min(1).max(5),
+  comment: z
+    .union([z.string().max(2000), z.null()])
+    .optional()
+    .transform((value) => {
+      if (value == null || value === "") return undefined
+      const trimmed = value.trim()
+      return trimmed.length > 0 ? trimmed : undefined
+    }),
+})
+
+export const mobileOrderReviewResultSchema = z.object({
+  id: z.string().uuid(),
+  created_at: z.string(),
 })
 
 export const mobileSaleVerifyPickupSchema = z.object({
@@ -2226,6 +2345,8 @@ export type MobileSaleDetailItem = z.infer<typeof mobileSaleDetailItemSchema>
 export type MobileSaleListItem = z.infer<typeof mobileSaleListItemSchema>
 export type MobileSales = z.infer<typeof mobileSalesSchema>
 export type MobileSaleVerifyPickup = z.infer<typeof mobileSaleVerifyPickupSchema>
+export type MobileOrderReviewBody = z.infer<typeof mobileOrderReviewBodySchema>
+export type MobileOrderReviewResult = z.infer<typeof mobileOrderReviewResultSchema>
 export type MobileTrackEvent = z.infer<typeof mobileTrackEventSchema>
 export type MobileTrackMap = z.infer<typeof mobileTrackMapSchema>
 export type MobileTrackPackage = z.infer<typeof mobileTrackPackageSchema>
@@ -2465,6 +2586,12 @@ export const mobileMessageAttachmentSchema = z.object({
   kind: z.enum(["image", "video"]),
 })
 
+export const mobileMessageReviewSchema = z.object({
+  order_id: z.string().uuid(),
+  order_num: z.string(),
+  listing_title: z.string(),
+})
+
 export const mobileMessageSchema = z.object({
   id: z.string().uuid(),
   body: z.string(),
@@ -2474,6 +2601,8 @@ export const mobileMessageSchema = z.object({
   attachment: mobileMessageAttachmentSchema.nullable().optional(),
   /** Structured offer for thread cards. Omit on ordinary chat lines. */
   offer: mobileOfferSchema.nullable().optional(),
+  /** Buyer↔seller review request card. Omit on ordinary chat lines. */
+  review: mobileMessageReviewSchema.nullable().optional(),
 })
 
 /** Messages inserted after `after`, for a thread the viewer already has open. */
@@ -2582,6 +2711,37 @@ export const mobileOfferActionResultSchema = z.object({
   removed: z.boolean(),
 })
 
+export const mobileCreateOfferBodySchema = z.object({
+  amount: z.coerce.number().finite().positive(),
+  fulfillment: z.enum(["pickup", "shipping"]),
+  message: z.string().trim().max(200).optional(),
+  payment_intent_id: z.string().trim().min(1),
+  address_id: z.string().uuid().optional(),
+  quote_token: z.string().trim().min(1).optional(),
+})
+
+export const mobileCreateOfferPaymentBodySchema = z.object({
+  amount: z.coerce.number().finite().positive(),
+  fulfillment: z.enum(["pickup", "shipping"]),
+  address_id: z.string().uuid().optional(),
+  quote_token: z.string().trim().min(1).optional(),
+})
+
+export const mobileCreateOfferPaymentSchema = z.object({
+  client_secret: z.string().min(1),
+  payment_intent_id: z.string().min(1),
+  item_usd: z.number(),
+  shipping_usd: z.number(),
+  total_usd: z.number(),
+  total_label: z.string(),
+})
+
+export const mobileCreateOfferResultSchema = z.object({
+  offer_id: z.string().uuid(),
+  conversation_id: z.string().uuid().nullable(),
+  already_open: z.boolean(),
+})
+
 export type MobileFavoriteBody = z.infer<typeof mobileFavoriteBodySchema>
 export type MobileFollowBody = z.infer<typeof mobileFollowBodySchema>
 export type MobileCartBody = z.infer<typeof mobileCartBodySchema>
@@ -2591,6 +2751,10 @@ export type MobileMessageResult = z.infer<typeof mobileMessageResultSchema>
 export type MobileConversationOpenResult = z.infer<typeof mobileConversationOpenResultSchema>
 export type MobileOfferActionBody = z.infer<typeof mobileOfferActionBodySchema>
 export type MobileOfferActionResult = z.infer<typeof mobileOfferActionResultSchema>
+export type MobileCreateOfferBody = z.infer<typeof mobileCreateOfferBodySchema>
+export type MobileCreateOfferPaymentBody = z.infer<typeof mobileCreateOfferPaymentBodySchema>
+export type MobileCreateOfferPayment = z.infer<typeof mobileCreateOfferPaymentSchema>
+export type MobileCreateOfferResult = z.infer<typeof mobileCreateOfferResultSchema>
 export type MobileFavoriteResult = z.infer<typeof mobileFavoriteResultSchema>
 export type MobileFollowResult = z.infer<typeof mobileFollowResultSchema>
 export type MobileCartResult = z.infer<typeof mobileCartResultSchema>
@@ -2639,6 +2803,17 @@ export type MobileConversationPreview = z.infer<typeof mobileConversationPreview
 export type MobileMessage = z.infer<typeof mobileMessageSchema>
 export type MobileMessagesDelta = z.infer<typeof mobileMessagesDeltaSchema>
 export type MobileConversationDetail = z.infer<typeof mobileConversationDetailSchema>
+
+export {
+  MINIMUM_ACCOUNT_AGE,
+  DATE_OF_BIRTH_REQUIRED_MESSAGE,
+  DATE_OF_BIRTH_UNDERAGE_MESSAGE,
+  formatIsoDateOnly,
+  latestEligibleBirthDateIso,
+  parseIsoDateOnly,
+  dateOfBirthMeetsMinimumAge,
+  signupDateOfBirthSchema,
+} from "./date-of-birth"
 
 export {
   listingFulfillmentPdpCopy,

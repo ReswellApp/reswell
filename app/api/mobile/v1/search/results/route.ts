@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from "next/server"
 import { mobileSearchQuerySchema } from "@reswell/api-contract"
+import { consumeMobileSearchRateLimit } from "@/lib/redis/rate-limit"
 import { searchMobileResultsService } from "@/lib/services/mobileSearch"
+import { mobileTooManyRequests } from "@/lib/utils/mobile-api-response"
 
 export const dynamic = "force-dynamic"
 
 /** Full marketplace results. Same ranking as the website `/search` page. */
 export async function GET(request: NextRequest) {
   try {
+    const limited = await consumeMobileSearchRateLimit(request)
+    if (!limited.ok) {
+      return mobileTooManyRequests(limited.retryAfterSec, "Too many searches. Try again in a moment.")
+    }
+
     const parsed = mobileSearchQuerySchema.safeParse({
       q: request.nextUrl.searchParams.get("q") ?? "",
     })

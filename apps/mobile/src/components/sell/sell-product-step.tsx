@@ -1,5 +1,6 @@
-import { useState } from "react"
+import { useCallback, useRef, useState } from "react"
 import { Pressable, StyleSheet, Text, View } from "react-native"
+import { SellCatalogSuggestField } from "@/components/sell/sell-catalog-suggest-field"
 import { SellField, SellSelectField } from "@/components/sell/sell-field"
 import { SellOptionSheet } from "@/components/sell/sell-option-sheet"
 import { useSellBrandModels } from "@/components/sell/use-sell-brand-models"
@@ -7,6 +8,8 @@ import { useSellCatalogSuggest } from "@/components/sell/use-sell-catalog-sugges
 import type { SellDraft } from "@/lib/sell-flow"
 import type { MobileSellCatalogRow, MobileSellTaxonomy } from "@reswell/api-contract"
 import { fontFamily, useReswellColors } from "@/theme"
+
+type SuggestField = "brand" | "model"
 
 export function SellProductStep({
   draft,
@@ -30,43 +33,46 @@ export function SellProductStep({
 }) {
   const colors = useReswellColors()
   const [sheet, setSheet] = useState<"category" | "subcategory" | null>(null)
-  const [suggestingBrand, setSuggestingBrand] = useState(false)
-  const [suggestingModel, setSuggestingModel] = useState(false)
-  const brandSuggestions = useSellCatalogSuggest(suggestingBrand ? draft.brand : "")
+  const [suggest, setSuggest] = useState<SuggestField | null>(null)
+  const locked = useRef({ brand: false, model: false })
+  const brandSuggestions = useSellCatalogSuggest(draft.brand)
   const modelSuggestions = useSellBrandModels(draft.brandId, draft.model)
   const category = taxonomy?.categories.find((item) => item.slug === draft.category) ?? null
   const subcategory = category?.subcategories.find((item) => item.slug === draft.subcategory) ?? null
+  const catalogBrand = draft.brandId.trim().length > 0
+
+  const openSuggest = useCallback((field: SuggestField) => {
+    locked.current[field] = false
+    setSuggest(field)
+  }, [])
+
+  const closeSuggest = useCallback((field: SuggestField) => {
+    setSuggest((current) => (current === field ? null : current))
+  }, [])
+
+  const keepTyped = useCallback((field: SuggestField) => {
+    locked.current[field] = true
+    setSuggest((current) => (current === field ? null : current))
+  }, [])
 
   function applyCatalogSuggestion(row: MobileSellCatalogRow) {
-    if (row.kind === "brand") {
-      onChange({
-        brand: row.brand_name,
-        brandId: row.brand_id,
-        brandModelId: "",
-        linkedBrandName: row.brand_name,
-        model: "",
-        category: row.category,
-        subcategory: row.category === draft.category ? draft.subcategory : "",
-      })
-      setSuggestingBrand(false)
-      setSuggestingModel(true)
-      return
-    }
-
+    if (row.kind !== "brand") return
     onChange({
       brand: row.brand_name,
       brandId: row.brand_id,
-      brandModelId: row.kind === "model" ? row.id : "",
+      brandModelId: "",
       linkedBrandName: row.brand_name,
-      model: row.model_name ?? "",
+      model: "",
       category: row.category,
-      subcategory: row.board_type ?? (row.category === draft.category ? draft.subcategory : ""),
+      subcategory: row.category === draft.category ? draft.subcategory : "",
     })
-    setSuggestingBrand(false)
-    setSuggestingModel(false)
+    locked.current.brand = false
+    locked.current.model = false
+    setSuggest(null)
   }
 
   function applyBrandModel(row: MobileSellCatalogRow) {
+    if (row.kind !== "model") return
     onChange({
       brand: row.brand_name,
       brandId: row.brand_id,
@@ -76,18 +82,19 @@ export function SellProductStep({
       category: row.category,
       subcategory: row.board_type ?? (row.category === draft.category ? draft.subcategory : ""),
     })
-    setSuggestingModel(false)
+    locked.current.model = false
+    setSuggest(null)
   }
 
   function onBrandChange(brand: string) {
-    setSuggestingBrand(true)
-    setSuggestingModel(false)
+    if (!locked.current.brand) setSuggest("brand")
     const linked = draft.linkedBrandName.trim()
     const clearLink = Boolean(draft.brandId && linked && brand.trim() !== linked)
     if (!clearLink) {
       onChange({ brand })
       return
     }
+    locked.current.model = false
     onChange({
       brand,
       brandId: "",
@@ -98,8 +105,7 @@ export function SellProductStep({
   }
 
   function onModelChange(model: string) {
-    setSuggestingModel(true)
-    setSuggestingBrand(false)
+    if (catalogBrand && !locked.current.model) setSuggest("model")
     const clearCatalogModel = Boolean(draft.brandModelId) && model.trim() !== draft.model.trim()
     onChange({
       model,
@@ -120,9 +126,6 @@ export function SellProductStep({
 
   const showIdentity = variant === "all" || variant === "identity"
   const showClassification = variant === "all" || variant === "classification"
-  const showBrandSuggestions = suggestingBrand && brandSuggestions.results.length > 0
-  const showModelSuggestions =
-    suggestingModel && draft.brandId.trim().length > 0 && modelSuggestions.results.length > 0
 
   if (showClassification && error) {
     return (
@@ -143,40 +146,49 @@ export function SellProductStep({
     <View style={styles.stack}>
       {showIdentity ? (
         <>
-          <SellField
+          <SellCatalogSuggestField
             label="Brand"
             required
             value={draft.brand}
             onChangeText={onBrandChange}
-            onFocus={() => {
-              setSuggestingBrand(true)
-              setSuggestingModel(false)
-            }}
             placeholder="Album"
-            autoCapitalize="words"
+            open={suggest === "brand"}
+            onOpen={() => openSuggest("brand")}
+            onClose={() => closeSuggest("brand")}
+            onKeepTyped={() => keepTyped("brand")}
+            rows={brandSuggestions.results}
+            loading={brandSuggestions.searching}
+            onPick={applyCatalogSuggestion}
+            listLabel="Brand matches"
           />
-          {showBrandSuggestions ? (
-            <SuggestionList
-              rows={brandSuggestions.results}
-              onPick={applyCatalogSuggestion}
-              colors={colors}
+          {catalogBrand ? (
+            <SellCatalogSuggestField
+              label="Model"
+              required
+              value={draft.model}
+              onChangeText={onModelChange}
+              placeholder="Ghost"
+              open={suggest === "model"}
+              onOpen={() => openSuggest("model")}
+              onClose={() => closeSuggest("model")}
+              onKeepTyped={() => keepTyped("model")}
+              rows={modelSuggestions.results}
+              loading={modelSuggestions.loading}
+              onPick={applyBrandModel}
+              listLabel="Model matches"
+              allowEmptyQuery
             />
-          ) : null}
-          <SellField
-            label="Model"
-            required
-            value={draft.model}
-            onChangeText={onModelChange}
-            onFocus={() => {
-              setSuggestingModel(true)
-              setSuggestingBrand(false)
-            }}
-            placeholder="Ghost"
-            autoCapitalize="words"
-          />
-          {showModelSuggestions ? (
-            <SuggestionList rows={modelSuggestions.results} onPick={applyBrandModel} colors={colors} />
-          ) : null}
+          ) : (
+            <SellField
+              label="Model"
+              required
+              value={draft.model}
+              onChangeText={onModelChange}
+              placeholder="Ghost"
+              autoCapitalize="words"
+              autoCorrect={false}
+            />
+          )}
           <SellField
             label="Listing title"
             required
@@ -241,47 +253,8 @@ export function SellProductStep({
   )
 }
 
-function SuggestionList({
-  rows,
-  onPick,
-  colors,
-}: {
-  rows: MobileSellCatalogRow[]
-  onPick: (row: MobileSellCatalogRow) => void
-  colors: ReturnType<typeof useReswellColors>
-}) {
-  return (
-    <View style={[styles.suggestions, { borderColor: colors.foreground }]}>
-      {rows.map((row) => (
-        <Pressable
-          key={`${row.kind}-${row.id}`}
-          accessibilityRole="button"
-          onPress={() => onPick(row)}
-          style={[styles.suggestion, { borderBottomColor: colors.border }]}
-        >
-          <Text style={[styles.suggestionTitle, { color: colors.foreground, fontFamily: fontFamily.text }]}>
-            {row.kind === "model" && row.model_name ? row.model_name : row.title}
-          </Text>
-          <Text style={[styles.suggestionMeta, { color: colors.muted, fontFamily: fontFamily.text }]}>
-            {row.kind === "model" ? row.brand_name : row.category_label}
-          </Text>
-        </Pressable>
-      ))}
-    </View>
-  )
-}
-
 const styles = StyleSheet.create({
   stack: { gap: 12 },
   copy: { fontSize: 16 },
   retry: { fontSize: 16, fontWeight: "600" },
-  suggestions: { borderWidth: 1, borderRadius: 8, overflow: "hidden", marginTop: -8 },
-  suggestion: {
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    gap: 2,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  suggestionTitle: { fontSize: 16, fontWeight: "600" },
-  suggestionMeta: { fontSize: 13 },
 })

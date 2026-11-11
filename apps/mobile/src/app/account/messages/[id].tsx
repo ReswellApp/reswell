@@ -35,6 +35,11 @@ import {
   unblockUser,
 } from "@/lib/api"
 import { uploadConversationImageAttachment } from "@/lib/message-media-upload"
+import {
+  dismissMessagesSafetyNote,
+  isMessagesSafetyNoteDismissed,
+  readMessagesSafetyNoteDismissed,
+} from "@/lib/messages-safety-note"
 import { useAuth } from "@/lib/auth-context"
 import { setActiveMarketplaceConversation, subscribeMarketplaceThread } from "@/lib/marketplace-live"
 import { useInboxUnreadReload } from "@/lib/inbox-unread-count"
@@ -64,7 +69,7 @@ export default function ConversationScreen() {
   const [sending, setSending] = useState(false)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [photoMenuOpen, setPhotoMenuOpen] = useState(false)
-  const [safetyOpen, setSafetyOpen] = useState(true)
+  const [safetyOpen, setSafetyOpen] = useState(() => isMessagesSafetyNoteDismissed() !== true)
   const [reportOpen, setReportOpen] = useState(false)
   const [blockBusy, setBlockBusy] = useState(false)
   const accessToken = session?.access_token ?? null
@@ -110,6 +115,21 @@ export default function ConversationScreen() {
     stickToBottomRef.current = true
     setPendingMessages([])
   }, [id])
+
+  useEffect(() => {
+    let cancelled = false
+    void readMessagesSafetyNoteDismissed().then((dismissed) => {
+      if (!cancelled) setSafetyOpen(!dismissed)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const onDismissSafetyNote = useCallback(() => {
+    setSafetyOpen(false)
+    void dismissMessagesSafetyNote()
+  }, [])
 
   useLayoutEffect(() => {
     if (!data) return
@@ -284,7 +304,7 @@ export default function ConversationScreen() {
                       router.push({ pathname: "/account/sales/[id]", params: { id: orderId } })
                       return
                     }
-                    router.push("/account/purchases")
+                    router.push({ pathname: "/account/purchases/[id]", params: { id: orderId } })
                   }}
                 />
               )
@@ -300,7 +320,7 @@ export default function ConversationScreen() {
                     Get safety tips
                   </Text>
                 </Text>
-                <Pressable onPress={() => setSafetyOpen(false)} accessibilityLabel="Dismiss safety note">
+                <Pressable onPress={onDismissSafetyNote} accessibilityLabel="Dismiss safety note">
                   <SymbolView name={{ ios: "xmark", android: "close", web: "close" }} size={14} tintColor={colors.muted} />
                 </Pressable>
               </View>
@@ -593,6 +613,44 @@ function MessageRow({
       </View>
     )
   }
+  if (message.review) {
+    const review = message.review
+    return (
+      <View style={[styles.orderWrap, message.mine ? styles.mine : styles.theirs]}>
+        <View style={[styles.orderCard, { borderColor: colors.foreground, backgroundColor: colors.background }]}>
+          <View style={styles.orderHeader}>
+            <View style={styles.orderHeaderText}>
+              <Text style={[styles.orderKicker, { color: colors.foreground, fontFamily: fontFamily.text }]}>
+                Review requested
+              </Text>
+              <Text style={[styles.orderNum, { color: colors.muted, fontFamily: fontFamily.text }]}>#{review.order_num}</Text>
+            </View>
+            <SymbolView
+              name={{ ios: "star.fill", android: "star", web: "star" }}
+              size={18}
+              tintColor={colors.reviewStar}
+            />
+          </View>
+          {review.listing_title ? (
+            <Text style={[styles.orderItem, { color: colors.foreground, fontFamily: fontFamily.text }]}>
+              {review.listing_title}
+            </Text>
+          ) : null}
+          <Text style={[styles.orderMeta, { color: colors.muted, fontFamily: fontFamily.text }]}>
+            {viewerIsSeller
+              ? "A review request was sent to the buyer for this sale."
+              : "How did this purchase go? Your review helps other buyers."}
+          </Text>
+          <Pressable onPress={() => onOpenOrder(review.order_id)} style={[styles.orderButton, { backgroundColor: colors.foreground }]}>
+            <Text style={[styles.orderButtonLabel, { color: colors.primaryForeground, fontFamily: fontFamily.text }]}>
+              {viewerIsSeller ? "View sale" : "Write review"}
+            </Text>
+          </Pressable>
+        </View>
+        <Text style={[styles.time, message.mine ? styles.timeMine : null, { color: colors.muted, fontFamily: fontFamily.text }]}>{time}</Text>
+      </View>
+    )
+  }
   if (message.order) {
     const order = message.order
     return (
@@ -628,24 +686,26 @@ function MessageRow({
   const authHeaders = accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined
 
   return (
-    <View style={[styles.messageRow, message.mine ? styles.mine : styles.theirs]}>
-      {message.mine ? null : <ProfileCircle url={avatarUrl} size={28} />}
-      <View style={styles.bubbleWrap}>
-        <View style={[styles.bubble, imageAttachment ? styles.mediaBubble : null, { borderColor: colors.border, backgroundColor: message.mine ? colors.image : colors.background }]}>
-          {imageAttachment ? (
-            <Image
-              source={{ uri: messageAttachmentUrl(message.id), headers: authHeaders }}
-              style={[styles.messageImage, { backgroundColor: colors.image }]}
-              contentFit="cover"
-            />
-          ) : null}
-          {message.body ? (
-            <Text style={[styles.body, imageAttachment ? styles.mediaCaption : null, { color: colors.foreground, fontFamily: fontFamily.text }]}>
-              {message.body}
-            </Text>
-          ) : null}
+    <View style={styles.messageSlot}>
+      <View style={[styles.messageRow, message.mine ? styles.mine : styles.theirs]}>
+        {message.mine ? null : <ProfileCircle url={avatarUrl} size={28} />}
+        <View style={[styles.bubbleWrap, message.mine ? styles.bubbleWrapMine : null]}>
+          <View style={[styles.bubble, imageAttachment ? styles.mediaBubble : null, { borderColor: colors.border, backgroundColor: message.mine ? colors.image : colors.background }]}>
+            {imageAttachment ? (
+              <Image
+                source={{ uri: messageAttachmentUrl(message.id), headers: authHeaders }}
+                style={[styles.messageImage, { backgroundColor: colors.image }]}
+                contentFit="cover"
+              />
+            ) : null}
+            {message.body ? (
+              <Text style={[styles.body, imageAttachment ? styles.mediaCaption : null, { color: colors.foreground, fontFamily: fontFamily.text }]}>
+                {message.body}
+              </Text>
+            ) : null}
+          </View>
+          <Text style={[styles.time, message.mine ? styles.timeMine : null, { color: colors.muted, fontFamily: fontFamily.text }]}>{time}</Text>
         </View>
-        <Text style={[styles.time, message.mine ? styles.timeMine : null, { color: colors.muted, fontFamily: fontFamily.text }]}>{time}</Text>
       </View>
     </View>
   )
@@ -711,10 +771,24 @@ const styles = StyleSheet.create({
   personMeta: { fontSize: 14 },
   reviewLine: { flexDirection: "row", alignItems: "center", gap: 4 },
   day: { alignSelf: "center", marginTop: 8, fontSize: 13 },
-  messageRow: { flexDirection: "row", alignItems: "flex-end", gap: 8, maxWidth: "86%" },
-  bubbleWrap: { flexShrink: 1, gap: 4 },
-  bubble: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 18, paddingHorizontal: 14, paddingVertical: 10 },
-  body: { fontSize: 16, lineHeight: 21 },
+  messageSlot: { alignSelf: "stretch", width: "100%" },
+  messageRow: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 8,
+    width: "86%",
+    maxWidth: "86%",
+  },
+  bubbleWrap: { flex: 1, minWidth: 0, alignItems: "flex-start", gap: 4 },
+  bubbleWrapMine: { alignItems: "flex-end" },
+  bubble: {
+    maxWidth: "100%",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  body: { maxWidth: "100%", flexShrink: 1, fontSize: 16, lineHeight: 21 },
   time: { fontSize: 12 },
   timeMine: { textAlign: "right" },
   mine: { alignSelf: "flex-end" },

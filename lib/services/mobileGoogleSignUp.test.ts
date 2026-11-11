@@ -10,10 +10,12 @@ describe("mobileGoogleSignUpBodySchema", () => {
       id_token: TOKEN,
       marketing_opt_in: true,
       accepted_terms: true,
+      date_of_birth: "1990-06-15",
     })
     assert.equal(parsed.success, true)
     if (!parsed.success) return
     assert.equal(parsed.data.marketing_opt_in, true)
+    assert.equal(parsed.data.date_of_birth, "1990-06-15")
     assert.equal(parsed.data.nonce, undefined)
   })
 
@@ -24,6 +26,7 @@ describe("mobileGoogleSignUpBodySchema", () => {
       access_token: "google-access",
       marketing_opt_in: false,
       accepted_terms: true,
+      date_of_birth: "1990-06-15",
     })
     assert.equal(parsed.success, true)
     if (!parsed.success) return
@@ -36,6 +39,7 @@ describe("mobileGoogleSignUpBodySchema", () => {
       id_token: TOKEN,
       marketing_opt_in: true,
       accepted_terms: false,
+      date_of_birth: "1990-06-15",
     })
     assert.equal(parsed.success, false)
     if (parsed.success) return
@@ -43,5 +47,14 @@ describe("mobileGoogleSignUpBodySchema", () => {
       parsed.error.issues[0]?.message,
       "Please accept Reswell's Terms of Use and Privacy Policy to continue.",
     )
+  })
+
+  it("rejects sign-up without a date of birth", () => {
+    const parsed = mobileGoogleSignUpBodySchema.safeParse({
+      id_token: TOKEN,
+      marketing_opt_in: true,
+      accepted_terms: true,
+    })
+    assert.equal(parsed.success, false)
   })
 })

@@ -7,8 +7,9 @@ import {
   type MobileSellUpdate,
 } from "@reswell/api-contract"
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { after } from "next/server"
 import { expirePublicListingSurfacesAfterEdit } from "@/lib/cache/revalidate-listing-after-edit"
-import { fetchOwnedListingForEdit } from "@/lib/db/listingEdit"
+import { fetchOwnedListingForMobileEdit } from "@/lib/db/listingEdit"
 import type { MobileApiResult } from "@/lib/services/mobileApi"
 import { ownedListingRowToMobileSellEdit } from "@/lib/services/mobileSellEditMap"
 import { mobileSellListingFields } from "@/lib/services/mobileSellListingFields"
@@ -18,7 +19,6 @@ import {
   replaceListingVideos,
 } from "@/lib/services/mobileSellVideos"
 import { isOwnedListingStorageUrl } from "@/lib/services/ownedListingStorageUrl"
-import { verifyListingImageObjectsExist } from "@/lib/services/verifyListingImageStorage"
 
 const EDITABLE_STATUSES = new Set(["active", "pending_sale", "draft", "delinquent"])
 
@@ -38,7 +38,7 @@ export async function getMobileListingEditService(
   userId: string,
   listingId: string,
 ): Promise<MobileApiResult<MobileSellEditLoad>> {
-  const row = await fetchOwnedListingForEdit(supabase, listingId, userId)
+  const row = await fetchOwnedListingForMobileEdit(supabase, listingId, userId)
   if (!row) return { ok: false, status: 404, error: "Listing not found" }
   const status = typeof row.status === "string" ? row.status : ""
   if (status === "sold") return { ok: false, status: 400, error: "Sold listings cannot be edited here" }
@@ -134,10 +134,6 @@ export async function updateMobileListingEditService(
   ) {
     return { ok: false, status: 400, error: "Upload the listing photos again" }
   }
-  for (const image of parsed.data.images) {
-    const ok = await verifyListingImageObjectsExist(image.url, image.thumbnail_url)
-    if (!ok) return { ok: false, status: 400, error: "Upload the listing photos again" }
-  }
   const videoError = await assertMobileSellVideos(parsed.data.videos, userId)
   if (videoError) return { ok: false, status: 400, error: videoError }
 
@@ -158,13 +154,20 @@ export async function updateMobileListingEditService(
   }
 
   const slug = (existing.data.slug as string | null) || listingId
+  const expireCaches = () => {
+    try {
+      expirePublicListingSurfacesAfterEdit(listingId, slug)
+    } catch (error) {
+      console.error("[mobile-api] listing edit revalidate failed", {
+        listingId,
+        message: error instanceof Error ? error.message : String(error),
+      })
+    }
+  }
   try {
-    expirePublicListingSurfacesAfterEdit(listingId, slug)
-  } catch (error) {
-    console.error("[mobile-api] listing edit revalidate failed", {
-      listingId,
-      message: error instanceof Error ? error.message : String(error),
-    })
+    after(expireCaches)
+  } catch {
+    expireCaches()
   }
 
   return { ok: true, data: { id: listingId, slug } }

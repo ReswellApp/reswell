@@ -1,8 +1,17 @@
 import * as Location from "expo-location"
 import { SymbolView } from "expo-symbols"
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react"
-import { ActivityIndicator, Pressable, StyleSheet, Switch, Text, TextInput, View } from "react-native"
-import { fetchPlaceSuggestions, reverseGeocodeLabel, type PlaceSuggestion } from "@/lib/api"
+import {
+  ActivityIndicator,
+  Keyboard,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native"
+import type { MobilePlaceSuggestion } from "@reswell/api-contract"
+import { fetchPlaceSuggestions, fetchSellPlaceDetails, fetchStructuredPlace, reverseGeocodeLabel } from "@/lib/api"
 import { fontFamily, useReswellColors } from "@/theme"
 
 export type CategoryPlace = {
@@ -14,13 +23,16 @@ export type CategoryPlace = {
 export const CATEGORY_RADIUS = ["any", "25", "50", "100", "200"] as const
 export type CategoryRadius = (typeof CATEGORY_RADIUS)[number]
 
-const RADIUS_LABELS: Record<CategoryRadius, string> = {
-  any: "Any distance",
-  "25": "25 Miles",
-  "50": "50 Miles",
-  "100": "100 Miles",
-  "200": "200 Miles",
-}
+const RADIUS_CHIPS: { value: CategoryRadius; label: string }[] = [
+  { value: "any", label: "Any" },
+  { value: "25", label: "25" },
+  { value: "50", label: "50" },
+  { value: "100", label: "100" },
+  { value: "200", label: "200" },
+]
+
+/** Same pin/chip blue as the website boards location filter. */
+export const LOCATION_PIN = "#1877F2"
 
 export type CategoryLocationHandle = {
   commit: () => void
@@ -31,16 +43,19 @@ type CategoryLocationFilterProps = {
   onPlaceChange: (place: CategoryPlace | null) => void
   radius: CategoryRadius
   onRadiusChange: (radius: CategoryRadius) => void
+  autoFocus?: boolean
 }
 
 export const CategoryLocationFilter = forwardRef<CategoryLocationHandle, CategoryLocationFilterProps>(
-  function CategoryLocationFilter({ place, onPlaceChange, radius, onRadiusChange }, ref) {
+  function CategoryLocationFilter({ place, onPlaceChange, radius, onRadiusChange, autoFocus = false }, ref) {
     const colors = useReswellColors()
-    const [enabled, setEnabled] = useState(Boolean(place))
     const [draft, setDraft] = useState(place?.label ?? "")
-    const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([])
+    const [suggestions, setSuggestions] = useState<MobilePlaceSuggestion[]>([])
+    const [searching, setSearching] = useState(false)
     const [locating, setLocating] = useState(false)
+    const [resolvingId, setResolvingId] = useState<string | null>(null)
     const [note, setNote] = useState<string | null>(null)
+    const [focused, setFocused] = useState(false)
 
     useEffect(() => {
       setDraft(place?.label ?? "")
@@ -48,11 +63,13 @@ export const CategoryLocationFilter = forwardRef<CategoryLocationHandle, Categor
 
     useEffect(() => {
       const query = draft.trim()
-      if (!enabled || query.length < 2 || query === place?.label) {
+      if (query.length < 2 || query === place?.label) {
         setSuggestions([])
+        setSearching(false)
         return
       }
       let cancelled = false
+      setSearching(true)
       const timer = setTimeout(() => {
         fetchPlaceSuggestions(query)
           .then((rows) => {
@@ -61,21 +78,36 @@ export const CategoryLocationFilter = forwardRef<CategoryLocationHandle, Categor
           .catch(() => {
             if (!cancelled) setSuggestions([])
           })
+          .finally(() => {
+            if (!cancelled) setSearching(false)
+          })
       }, 250)
       return () => {
         cancelled = true
         clearTimeout(timer)
       }
-    }, [draft, enabled, place?.label])
+    }, [draft, place?.label])
+
+    function applyPlace(next: CategoryPlace) {
+      Keyboard.dismiss()
+      setDraft(next.label)
+      setSuggestions([])
+      setNote(null)
+      onPlaceChange(next)
+    }
+
+    function clearPlace() {
+      setDraft("")
+      setSuggestions([])
+      setNote(null)
+      onPlaceChange(null)
+      onRadiusChange("any")
+    }
 
     function commitDraft() {
-      if (!enabled) {
-        onPlaceChange(null)
-        return
-      }
       const label = draft.trim()
       if (!label) {
-        onPlaceChange(null)
+        if (place) clearPlace()
         return
       }
       if (place?.label === label) return
@@ -84,22 +116,35 @@ export const CategoryLocationFilter = forwardRef<CategoryLocationHandle, Categor
 
     useImperativeHandle(ref, () => ({ commit: commitDraft }))
 
-    function setNearMe(next: boolean) {
-      setEnabled(next)
-      setNote(null)
-      setSuggestions([])
-      if (!next) {
-        setDraft("")
-        onPlaceChange(null)
-        onRadiusChange("any")
+    async function pick(suggestion: MobilePlaceSuggestion) {
+      if (suggestion.place_id) {
+        setResolvingId(suggestion.place_id)
+        setNote(null)
+        try {
+          const details = await fetchSellPlaceDetails(suggestion.place_id)
+          applyPlace({
+            label: `${details.city}, ${details.state}`,
+            lat: details.lat,
+            lng: details.lng,
+          })
+        } catch {
+          setNote("Couldn't use that place. Try another.")
+        } finally {
+          setResolvingId(null)
+        }
+        return
       }
-    }
-
-    function pick(suggestion: PlaceSuggestion) {
-      setDraft(suggestion.label)
-      setSuggestions([])
-      setNote(null)
-      onPlaceChange({ label: suggestion.label, lat: suggestion.lat, lng: suggestion.lng })
+      if (suggestion.lat == null || suggestion.lng == null) {
+        setNote("Choose a city from the list.")
+        return
+      }
+      const city = suggestion.city.trim()
+      const state = suggestion.state.trim()
+      applyPlace({
+        label: city && state ? `${city}, ${state}` : suggestion.label,
+        lat: suggestion.lat,
+        lng: suggestion.lng,
+      })
     }
 
     async function useMyLocation() {
@@ -114,10 +159,9 @@ export const CategoryLocationFilter = forwardRef<CategoryLocationHandle, Categor
         const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
         const lat = position.coords.latitude
         const lng = position.coords.longitude
-        const label = (await reverseGeocodeLabel(lat, lng)) ?? "Current location"
-        setDraft(label)
-        setSuggestions([])
-        onPlaceChange({ label, lat, lng })
+        const structured = await fetchStructuredPlace(lat, lng)
+        const label = structured?.label ?? (await reverseGeocodeLabel(lat, lng)) ?? "Current location"
+        applyPlace({ label, lat, lng })
       } catch {
         setNote("Location unavailable. Enter a city or ZIP.")
       } finally {
@@ -126,151 +170,202 @@ export const CategoryLocationFilter = forwardRef<CategoryLocationHandle, Categor
     }
 
     return (
-      <View>
-        <View style={styles.toggleRow}>
-          <Text style={[styles.toggleLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}>
-            Only show items near me
-          </Text>
-          <Switch
-            accessibilityLabel="Only show items near me"
-            value={enabled}
-            onValueChange={setNearMe}
-            trackColor={{ false: colors.border, true: "#34C759" }}
-            thumbColor="#FFFFFF"
-            ios_backgroundColor={colors.border}
-          />
-        </View>
-        {enabled ? (
-          <View style={styles.near}>
-            <View style={[styles.field, { borderColor: colors.foreground }]}>
-              <Text style={[styles.fieldLabel, { color: colors.muted, fontFamily: fontFamily.text }]}>City or ZIP</Text>
-              <TextInput
-                value={draft}
-                onChangeText={(value) => {
-                  setDraft(value)
-                  setNote(null)
-                  if (!value.trim() && place) onPlaceChange(null)
-                }}
-                onSubmitEditing={commitDraft}
-                placeholder="City or ZIP"
-                placeholderTextColor={colors.muted}
-                autoCapitalize="words"
-                autoCorrect={false}
-                returnKeyType="search"
-                style={[styles.input, { color: colors.foreground, fontFamily: fontFamily.text }]}
-              />
-            </View>
-            {suggestions.length > 0 ? (
-              <View style={[styles.suggestions, { borderColor: colors.border }]}>
-                {suggestions.map((suggestion) => (
-                  <Pressable
-                    key={`${suggestion.label}-${suggestion.lat}`}
-                    onPress={() => pick(suggestion)}
-                    style={[styles.suggestion, { borderBottomColor: colors.border }]}
-                  >
-                    <Text style={{ color: colors.foreground, fontFamily: fontFamily.text, fontSize: 16 }}>
-                      {suggestion.label}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-            ) : null}
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Use my current location"
-              disabled={locating}
-              onPress={() => void useMyLocation()}
-              style={styles.locate}
-            >
-              {locating ? (
-                <ActivityIndicator color={colors.foreground} />
-              ) : (
+      <View style={styles.wrap}>
+        <Text style={[styles.section, { color: colors.foreground, fontFamily: fontFamily.text }]}>Where</Text>
+        <View style={styles.search}>
+          <View
+            style={[
+              styles.pill,
+              { backgroundColor: colors.secondary, borderColor: focused ? LOCATION_PIN : colors.border },
+            ]}
+          >
+            <SymbolView
+              name={{ ios: "mappin.and.ellipse", android: "place", web: "place" }}
+              size={18}
+              tintColor={LOCATION_PIN}
+            />
+            <TextInput
+              value={draft}
+              onChangeText={(value) => {
+                setDraft(value)
+                setNote(null)
+                if (!value.trim() && place) {
+                  onPlaceChange(null)
+                  onRadiusChange("any")
+                }
+              }}
+              onSubmitEditing={commitDraft}
+              placeholder="City or ZIP"
+              placeholderTextColor={colors.muted}
+              autoCapitalize="words"
+              autoCorrect={false}
+              autoFocus={autoFocus}
+              returnKeyType="search"
+              accessibilityLabel="City or ZIP"
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
+              style={[styles.input, { color: colors.foreground, fontFamily: fontFamily.text }]}
+            />
+            {searching || resolvingId ? <ActivityIndicator color={LOCATION_PIN} /> : null}
+            {draft.trim() && !searching && !resolvingId ? (
+              <Pressable accessibilityRole="button" accessibilityLabel="Clear location" onPress={clearPlace} hitSlop={8}>
                 <SymbolView
-                  name={{ ios: "location.fill", android: "my_location", web: "my_location" }}
-                  size={16}
-                  tintColor={colors.foreground}
+                  name={{ ios: "xmark.circle.fill", android: "cancel", web: "cancel" }}
+                  size={18}
+                  tintColor={colors.muted}
                 />
-              )}
-              <Text style={[styles.locateLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}>
-                Use my current location
-              </Text>
-            </Pressable>
-            {note ? <Text style={[styles.note, { color: colors.muted, fontFamily: fontFamily.text }]}>{note}</Text> : null}
-            <View>
-              {CATEGORY_RADIUS.map((value) => {
-                const active = value === radius
+              </Pressable>
+            ) : null}
+          </View>
+          {suggestions.length > 0 ? (
+            <View style={[styles.suggestions, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              {suggestions.slice(0, 4).map((suggestion, index, rows) => {
+                const key = suggestion.place_id ?? `${suggestion.label}-${suggestion.lat}`
+                const busy = resolvingId === suggestion.place_id
                 return (
                   <Pressable
-                    key={value}
-                    accessibilityRole="radio"
-                    accessibilityState={{ selected: active }}
-                    onPress={() => onRadiusChange(value)}
-                    style={[styles.radiusRow, { borderBottomColor: colors.border }]}
+                    key={key}
+                    accessibilityRole="button"
+                    onPress={() => void pick(suggestion)}
+                    style={[
+                      styles.suggestion,
+                      index < rows.length - 1
+                        ? { borderBottomColor: colors.border, borderBottomWidth: StyleSheet.hairlineWidth }
+                        : null,
+                    ]}
                   >
-                    <Text style={[styles.radiusLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}>
-                      {RADIUS_LABELS[value]}
+                    <SymbolView
+                      name={{ ios: "mappin", android: "place", web: "place" }}
+                      size={16}
+                      tintColor={LOCATION_PIN}
+                    />
+                    <Text
+                      style={[styles.suggestionLabel, { color: colors.foreground, fontFamily: fontFamily.text }]}
+                      numberOfLines={1}
+                    >
+                      {suggestion.label}
                     </Text>
-                    {active ? (
-                      <SymbolView
-                        name={{ ios: "checkmark", android: "check", web: "check" }}
-                        size={18}
-                        tintColor={colors.foreground}
-                        weight="semibold"
-                      />
-                    ) : (
-                      <View style={[styles.radio, { borderColor: colors.muted }]} />
-                    )}
+                    {busy ? <ActivityIndicator color={LOCATION_PIN} /> : null}
                   </Pressable>
                 )
               })}
             </View>
+          ) : null}
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Use my current location"
+          disabled={locating}
+          onPress={() => void useMyLocation()}
+          style={[styles.locate, { backgroundColor: colors.secondary }]}
+        >
+          {locating ? (
+            <ActivityIndicator color={LOCATION_PIN} />
+          ) : (
+            <SymbolView
+              name={{ ios: "location.fill", android: "my_location", web: "my_location" }}
+              size={18}
+              tintColor={LOCATION_PIN}
+            />
+          )}
+          <Text style={[styles.locateLabel, { color: LOCATION_PIN, fontFamily: fontFamily.text }]}>
+            {locating ? "Finding you…" : "Use my current location"}
+          </Text>
+        </Pressable>
+        {note ? <Text style={[styles.note, { color: colors.muted, fontFamily: fontFamily.text }]}>{note}</Text> : null}
+        <View style={styles.distance}>
+          <Text style={[styles.section, { color: colors.foreground, fontFamily: fontFamily.text }]}>
+            Distance in miles
+          </Text>
+          <View style={styles.chips} accessibilityLabel="Search radius">
+            {RADIUS_CHIPS.map((chip) => {
+              const selected = chip.value === radius
+              return (
+                <Pressable
+                  key={chip.value}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                  onPress={() => onRadiusChange(chip.value)}
+                  style={[
+                    styles.chip,
+                    selected ? { backgroundColor: LOCATION_PIN } : { backgroundColor: colors.secondary },
+                  ]}
+                >
+                  <Text
+                    style={{
+                      color: selected ? "#FFFFFF" : colors.foreground,
+                      fontFamily: fontFamily.text,
+                      fontSize: 15,
+                      fontWeight: "600",
+                    }}
+                  >
+                    {chip.label}
+                  </Text>
+                </Pressable>
+              )
+            })}
           </View>
-        ) : null}
+        </View>
       </View>
     )
   },
 )
 
 const styles = StyleSheet.create({
-  toggleRow: {
+  wrap: { paddingHorizontal: 20, gap: 12, overflow: "visible" },
+  section: { fontSize: 15, fontWeight: "700" },
+  search: { zIndex: 2 },
+  pill: {
     minHeight: 52,
-    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 14,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
+    gap: 10,
   },
-  toggleLabel: { flex: 1, fontSize: 16 },
-  near: { paddingTop: 8, gap: 4 },
-  field: {
-    marginHorizontal: 16,
-    borderWidth: 1.5,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingTop: 8,
-    paddingBottom: 6,
-  },
-  fieldLabel: { fontSize: 12 },
-  input: { fontSize: 17, paddingVertical: 2 },
-  suggestions: { marginHorizontal: 16, borderTopWidth: StyleSheet.hairlineWidth },
-  suggestion: { paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
+  input: { flex: 1, fontSize: 17, paddingVertical: 14 },
   locate: {
-    minHeight: 48,
-    paddingHorizontal: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  locateLabel: { fontSize: 16 },
-  note: { paddingHorizontal: 16, fontSize: 13 },
-  radiusRow: {
     minHeight: 52,
-    paddingHorizontal: 16,
+    borderRadius: 16,
+    paddingHorizontal: 14,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    gap: 10,
   },
-  radiusLabel: { fontSize: 16 },
-  radio: { width: 22, height: 22, borderRadius: 11, borderWidth: 1.5 },
+  locateLabel: { fontSize: 16, fontWeight: "600" },
+  suggestions: {
+    position: "absolute",
+    top: "100%",
+    left: 0,
+    right: 0,
+    marginTop: 6,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 16,
+    overflow: "hidden",
+    zIndex: 3,
+    elevation: 8,
+    shadowColor: "#000000",
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+  },
+  suggestion: {
+    minHeight: 52,
+    paddingHorizontal: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  suggestionLabel: { flex: 1, fontSize: 16 },
+  note: { fontSize: 14, lineHeight: 20 },
+  distance: { gap: 12, paddingTop: 8 },
+  chips: { flexDirection: "row", gap: 8 },
+  chip: {
+    flex: 1,
+    minHeight: 44,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 })

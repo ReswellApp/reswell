@@ -4,7 +4,13 @@ import { Platform } from "react-native"
 import { notifyCartChanged } from "@/lib/cart-count-events"
 import { publicApiUrl } from "@/lib/public-env"
 import { getSupabase } from "@/lib/supabase"
-import type { SellDraft, SellPhoto, SellVideo } from "@/lib/sell-flow"
+import {
+  sellerPurchasePriceAmount,
+  sellerPurchasedOnValue,
+  type SellDraft,
+  type SellPhoto,
+  type SellVideo,
+} from "@/lib/sell-flow"
 import {
   mobileCartResultSchema,
   mobileCashOutResultSchema,
@@ -52,6 +58,8 @@ import {
   mobileMessageMediaBodySchema,
   mobileConversationOpenResultSchema,
   mobileMessageResultSchema,
+  mobileCreateOfferPaymentSchema,
+  mobileCreateOfferResultSchema,
   mobileOfferActionResultSchema,
   mobileOfferDetailSchema,
   mobileOffersSchema,
@@ -63,6 +71,7 @@ import {
   mobileProfileShopFiltersSchema,
   mobileProfileSignInActionSchema,
   mobileSignUpResultSchema,
+  mobileProfileAddressesSchema,
   mobileProfileSettingsSchema,
   mobilePushTestResultSchema,
   mobilePushTokenResultSchema,
@@ -77,6 +86,7 @@ import {
   mobileSaleDetailSchema,
   mobileSaleLabelSchema,
   mobileSaleVerifyPickupSchema,
+  mobileOrderReviewResultSchema,
   mobileSalesSchema,
   mobileTrackPackageSchema,
   mobileShipperActionResultSchema,
@@ -150,6 +160,10 @@ import {
   type MobileMe,
   type MobileModelPage,
   type MobileConversationOpenResult,
+  type MobileCreateOfferBody,
+  type MobileCreateOfferPayment,
+  type MobileCreateOfferPaymentBody,
+  type MobileCreateOfferResult,
   type MobileMessageMediaBody,
   type MobileMessageResult,
   type MobileOffer,
@@ -164,6 +178,9 @@ import {
   type MobileProfileBannerResult,
   type MobileProfileEmail,
   type MobileProfilePassword,
+  type MobileProfileAddressBody,
+  type MobileProfileAddressPatch,
+  type MobileProfileAddresses,
   type MobileProfileSettings,
   type MobileProfileSignInAction,
   type MobileGoogleSignUpBody,
@@ -185,6 +202,8 @@ import {
   type MobileSaleDetail,
   type MobileSales,
   type MobileSaleVerifyPickup,
+  type MobileOrderReviewBody,
+  type MobileOrderReviewResult,
   type MobileTrackPackage,
   type MobileShipper,
   type MobileShipperActionBody,
@@ -202,9 +221,11 @@ import {
   type MobileSellDropoffLocations,
   type MobileSellPhoto,
   type MobileSellVideo,
+  type MobileSellEditLoad,
   type MobileSellPublishResult,
   type MobileSellTaxonomy,
   type MobilePlaceDetails,
+  type MobilePlaceSuggestion,
   type MobilePlaceSuggestions,
 } from "@reswell/api-contract"
 
@@ -579,32 +600,6 @@ export function fetchCategoryListings(
   )
 }
 
-export type PlaceSuggestion = {
-  label: string
-  lat: number
-  lng: number
-}
-
-/** Website city/ZIP suggestions (`/api/geocode/suggest`). */
-export async function fetchPlaceSuggestions(query: string): Promise<PlaceSuggestion[]> {
-  const q = query.trim()
-  if (q.length < 2) return []
-  const response = await fetch(`${apiOrigin()}/api/geocode/suggest?q=${encodeURIComponent(q)}`, {
-    headers: { Accept: "application/json" },
-  })
-  if (!response.ok) return []
-  const body: unknown = await response.json()
-  if (!body || typeof body !== "object" || !("suggestions" in body) || !Array.isArray(body.suggestions)) return []
-  return body.suggestions.flatMap((row) => {
-    if (!row || typeof row !== "object") return []
-    const suggestion = row as Record<string, unknown>
-    if (typeof suggestion.label !== "string" || typeof suggestion.lat !== "number" || typeof suggestion.lng !== "number") {
-      return []
-    }
-    return [{ label: suggestion.label, lat: suggestion.lat, lng: suggestion.lng }]
-  })
-}
-
 /** Website reverse geocode (`/api/geocode?lat=&lng=`). */
 export async function reverseGeocodeLabel(lat: number, lng: number): Promise<string | null> {
   const response = await fetch(`${apiOrigin()}/api/geocode?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`, {
@@ -848,12 +843,83 @@ export function actOnOffer(
   )
 }
 
+export function startListingOfferPayment(
+  accessToken: string,
+  listingId: string,
+  body: MobileCreateOfferPaymentBody,
+): Promise<MobileCreateOfferPayment> {
+  return read(
+    `/api/mobile/v1/listings/${encodeURIComponent(listingId)}/offers/payment`,
+    (data) => mobileCreateOfferPaymentSchema.parse(data),
+    accessToken,
+    body,
+  )
+}
+
+export function createListingOffer(
+  accessToken: string,
+  listingId: string,
+  body: MobileCreateOfferBody,
+): Promise<MobileCreateOfferResult> {
+  return read(
+    `/api/mobile/v1/listings/${encodeURIComponent(listingId)}/offers`,
+    (data) => mobileCreateOfferResultSchema.parse(data),
+    accessToken,
+    body,
+  )
+}
+
 export function fetchProfileSettings(accessToken: string): Promise<MobileProfileSettings> {
   return read("/api/mobile/v1/me/profile", (data) => mobileProfileSettingsSchema.parse(data), accessToken)
 }
 
 export function saveProfileSettings(accessToken: string, body: MobileProfileSettingsPatch): Promise<MobileProfileSettings> {
   return read("/api/mobile/v1/me/profile", (data) => mobileProfileSettingsSchema.parse(data), accessToken, body)
+}
+
+export function createProfileAddress(
+  accessToken: string,
+  body: MobileProfileAddressBody,
+): Promise<MobileProfileAddresses> {
+  return read(
+    "/api/mobile/v1/me/addresses",
+    (data) => mobileProfileAddressesSchema.parse(data),
+    accessToken,
+    body,
+  )
+}
+
+export function updateProfileAddress(
+  accessToken: string,
+  addressId: string,
+  body: MobileProfileAddressPatch,
+): Promise<MobileProfileAddresses> {
+  return putJson(
+    `/api/mobile/v1/me/addresses/${encodeURIComponent(addressId)}`,
+    accessToken,
+    body,
+  ).then((data) => mobileProfileAddressesSchema.parse(data))
+}
+
+export async function deleteProfileAddress(
+  accessToken: string,
+  addressId: string,
+): Promise<MobileProfileAddresses> {
+  const response = await fetch(`${apiOrigin()}/api/mobile/v1/me/addresses/${encodeURIComponent(addressId)}`, {
+    method: "DELETE",
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+  })
+  const parsed = await readResponseJson(response)
+  if (!response.ok) {
+    throw new Error(responseErrorMessage(parsed, "Unable to delete that address"))
+  }
+  if (!parsed || typeof parsed !== "object" || !("data" in parsed)) {
+    throw new Error("Unexpected response")
+  }
+  return mobileProfileAddressesSchema.parse(parsed.data)
 }
 
 /** Website email sign-up. Returns a session, or asks the person to confirm their email. */
@@ -1238,6 +1304,20 @@ export function verifySalePickup(
   )
 }
 
+/** Same write as website `POST /api/orders/[id]/review`. */
+export function submitOrderReview(
+  accessToken: string,
+  orderId: string,
+  body: MobileOrderReviewBody,
+): Promise<MobileOrderReviewResult> {
+  return read(
+    `/api/mobile/v1/me/orders/${encodeURIComponent(orderId)}/review`,
+    (data) => mobileOrderReviewResultSchema.parse(data),
+    accessToken,
+    body,
+  )
+}
+
 export function fetchSupportCases(accessToken: string): Promise<MobileSupportCases> {
   return read("/api/mobile/v1/me/support", (data) => mobileSupportCasesSchema.parse(data), accessToken)
 }
@@ -1331,13 +1411,18 @@ export function fetchSellTaxonomy(): Promise<MobileSellTaxonomy> {
   return read("/api/mobile/v1/sell/taxonomy", (data) => mobileSellTaxonomySchema.parse(data))
 }
 
-/** Google place dropdown for the sell location field. Falls back to city/ZIP search on the server. */
+/** Google place dropdown for sell and browse location. Falls back to city/ZIP search on the server. */
 export function fetchSellPlaceSuggestions(query: string): Promise<MobilePlaceSuggestions> {
   const q = query.trim()
   if (q.length < 2) return Promise.resolve({ suggestions: [] })
   return read(`/api/mobile/v1/places/suggest?q=${encodeURIComponent(q)}`, (data) =>
     mobilePlaceSuggestionsSchema.parse(data),
   )
+}
+
+/** Same Google Places rows as website location filters (`LocationInputSuggest`). */
+export async function fetchPlaceSuggestions(query: string): Promise<MobilePlaceSuggestion[]> {
+  return (await fetchSellPlaceSuggestions(query)).suggestions
 }
 
 /** City, state, and coordinates for a Google suggestion. */
@@ -1400,7 +1485,7 @@ export async function fetchStructuredPlace(lat: number, lng: number): Promise<St
   return { label: `${city}, ${state}`, city, state }
 }
 
-/** Brand and model catalog search. Same index as the website sell flow. */
+/** Brand directory typeahead. Same pipeline as the website sell brand field. */
 export function fetchSellCatalog(query: string): Promise<MobileSellCatalogSearch> {
   const params = new URLSearchParams({ q: query.trim() })
   return read(`/api/mobile/v1/sell/catalog-search?${params.toString()}`, (data) =>
@@ -1430,6 +1515,9 @@ function sellListingBody(draft: SellDraft, images: MobileSellPhoto[], includeDra
     subcategory: draft.subcategory.trim(),
     condition: draft.condition,
     price: Number.isFinite(price) ? price : null,
+    seller_purchase_price: sellerPurchasePriceAmount(draft.sellerPurchasePrice),
+    seller_purchased_from: draft.sellerPurchasedFrom.trim().slice(0, 200) || null,
+    seller_purchased_on: sellerPurchasedOnValue(draft.sellerPurchasedOn),
     city: draft.city.trim(),
     state: draft.state.trim(),
     location_lat: draft.locationLat,
@@ -1532,22 +1620,32 @@ export async function uploadSellVideoIfNeeded(
 
 /** Uploads photos that are still only on the phone. Photos already stored are reused. */
 export async function uploadSellPhotos(accessToken: string, photos: SellPhoto[]): Promise<SellPhoto[]> {
+  const reused = await Promise.all(
+    photos.map(async (photo) => {
+      // Existing listing rows keep their storage URLs — don't re-upload when HEAD probes fail.
+      if (photo.serverImageId && photo.url && photo.thumbnailUrl) {
+        return photo
+      }
+      if (photo.url && photo.thumbnailUrl) {
+        const [fullOk, thumbOk] = await Promise.all([
+          sellPhotoStorageUrlReachable(photo.url),
+          sellPhotoStorageUrlReachable(photo.thumbnailUrl),
+        ])
+        if (fullOk && thumbOk) return photo
+      }
+      return null
+    }),
+  )
+
   const uploaded: SellPhoto[] = []
-  for (const photo of photos) {
-    // Existing listing rows keep their storage URLs — don't re-upload when HEAD probes fail.
-    if (photo.serverImageId && photo.url && photo.thumbnailUrl) {
-      uploaded.push(photo)
+  for (let i = 0; i < photos.length; i++) {
+    const kept = reused[i]
+    if (kept) {
+      uploaded.push(kept)
       continue
     }
-    if (photo.url && photo.thumbnailUrl) {
-      const stored =
-        (await sellPhotoStorageUrlReachable(photo.url)) &&
-        (await sellPhotoStorageUrlReachable(photo.thumbnailUrl))
-      if (stored) {
-        uploaded.push(photo)
-        continue
-      }
-    }
+    const photo = photos[i]
+    if (!photo) continue
     const stored = await uploadSellPhoto(accessToken, photo.uri)
     uploaded.push({ ...photo, url: stored.url, thumbnailUrl: stored.thumbnail_url })
   }
@@ -1566,10 +1664,38 @@ export function saveSellListingDraft(accessToken: string, draft: SellDraft): Pro
   )
 }
 
-export function fetchSellListingEdit(accessToken: string, listingId: string) {
-  return getJson(`/api/mobile/v1/me/listings/${encodeURIComponent(listingId)}/edit`, accessToken).then((data) =>
-    mobileSellEditLoadSchema.parse(data),
-  )
+const SELL_EDIT_CACHE_MS = 45_000
+const sellEditLoads = new Map<string, Promise<MobileSellEditLoad>>()
+
+function sellEditCacheKey(accessToken: string, listingId: string): string {
+  return `${listingId}:${accessToken.slice(-12)}`
+}
+
+export function fetchSellListingEdit(accessToken: string, listingId: string): Promise<MobileSellEditLoad> {
+  const key = sellEditCacheKey(accessToken, listingId)
+  const pending = sellEditLoads.get(key)
+  if (pending) return pending
+
+  const load = getJson(`/api/mobile/v1/me/listings/${encodeURIComponent(listingId)}/edit`, accessToken)
+    .then((data) => mobileSellEditLoadSchema.parse(data))
+    .catch((error: unknown) => {
+      sellEditLoads.delete(key)
+      throw error
+    })
+  sellEditLoads.set(key, load)
+  setTimeout(() => {
+    if (sellEditLoads.get(key) === load) sellEditLoads.delete(key)
+  }, SELL_EDIT_CACHE_MS)
+  return load
+}
+
+/** Start the edit payload fetch before the seller taps Edit. */
+export function prefetchSellListingEdit(accessToken: string, listingId: string): void {
+  void fetchSellListingEdit(accessToken, listingId).catch(() => undefined)
+}
+
+function forgetSellListingEdit(accessToken: string, listingId: string): void {
+  sellEditLoads.delete(sellEditCacheKey(accessToken, listingId))
 }
 
 function editSellListingBody(
@@ -1603,7 +1729,10 @@ export function updateSellListing(
     `/api/mobile/v1/me/listings/${encodeURIComponent(listingId)}/edit`,
     accessToken,
     editSellListingBody(draft, images, listingId),
-  ).then((data) => mobileSellPublishResultSchema.parse(data))
+  ).then((data) => {
+    forgetSellListingEdit(accessToken, listingId)
+    return mobileSellPublishResultSchema.parse(data)
+  })
 }
 
 export function publishSellListing(accessToken: string, draft: SellDraft): Promise<MobileSellPublishResult> {

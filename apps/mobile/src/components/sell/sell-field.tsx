@@ -1,6 +1,6 @@
 import { SymbolView } from "expo-symbols"
-import type { ReactNode } from "react"
-import { Pressable, StyleSheet, Switch, Text, TextInput, View } from "react-native"
+import type { ReactNode, Ref } from "react"
+import { Pressable, StyleSheet, Switch, Text, TextInput, View, type TextInput as RNTextInput } from "react-native"
 import { fontFamily, useReswellColors } from "@/theme"
 
 function FieldLabel({ label, required }: { label: string; required?: boolean }) {
@@ -21,27 +21,45 @@ export function SellField({
   multiline = false,
   keyboardType,
   autoCapitalize = "sentences",
+  autoCorrect,
+  autoComplete,
   required = false,
   onFocus,
+  onBlur,
+  onSubmitEditing,
+  returnKeyType,
+  blurOnSubmit,
   accessibilityLabel,
   suffix,
+  trailing,
+  inputRef,
 }: {
   label: string
   value: string
   onChangeText: (value: string) => void
   placeholder?: string
   multiline?: boolean
-  keyboardType?: "default" | "decimal-pad"
+  keyboardType?: "default" | "decimal-pad" | "numbers-and-punctuation"
   autoCapitalize?: "none" | "sentences" | "words" | "characters"
+  autoCorrect?: boolean
+  autoComplete?: "off" | "name"
   required?: boolean
   onFocus?: () => void
+  onBlur?: () => void
+  onSubmitEditing?: () => void
+  returnKeyType?: "done" | "next" | "default"
+  blurOnSubmit?: boolean
   accessibilityLabel?: string
   suffix?: string
+  trailing?: ReactNode
+  inputRef?: Ref<RNTextInput>
 }) {
   const colors = useReswellColors()
+  const adorned = Boolean(suffix || trailing)
 
   const input = (
     <TextInput
+      ref={inputRef}
       value={value}
       onChangeText={onChangeText}
       placeholder={placeholder}
@@ -49,13 +67,18 @@ export function SellField({
       multiline={multiline}
       keyboardType={keyboardType}
       autoCapitalize={autoCapitalize}
-      autoCorrect={autoCapitalize !== "characters"}
+      autoCorrect={autoCorrect ?? autoCapitalize !== "characters"}
+      autoComplete={autoComplete}
       onFocus={onFocus}
+      onBlur={onBlur}
+      onSubmitEditing={onSubmitEditing}
+      returnKeyType={returnKeyType}
+      blurOnSubmit={blurOnSubmit}
       accessibilityLabel={accessibilityLabel || label || placeholder || "Text field"}
       style={[
         styles.input,
         multiline ? styles.multiline : null,
-        suffix ? styles.inputWithSuffix : null,
+        adorned ? styles.inputWithSuffix : null,
         {
           color: colors.foreground,
           borderColor: colors.foreground,
@@ -69,10 +92,11 @@ export function SellField({
   return (
     <View style={styles.wrap}>
       {label ? <FieldLabel label={label} required={required} /> : null}
-      {suffix ? (
+      {adorned ? (
         <View style={[styles.input, styles.suffixRow, { borderColor: colors.foreground, backgroundColor: colors.background }]}>
           {input}
-          <Text style={[styles.suffix, { color: colors.muted, fontFamily: fontFamily.text }]}>{suffix}</Text>
+          {suffix ? <Text style={[styles.suffix, { color: colors.muted, fontFamily: fontFamily.text }]}>{suffix}</Text> : null}
+          {trailing}
         </View>
       ) : (
         input

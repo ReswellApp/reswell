@@ -1,3 +1,5 @@
+import { redisGetOrSet } from "@/lib/redis/cache"
+import { fingerprintCacheKey, REDIS_CARRIER_IDS_KEY, REDIS_TTL_SECONDS, redisShippingRatesKey } from "@/lib/redis/keys"
 import { shipEngineRequest } from "@/lib/shipengine/client"
 import { isShipEngineConfigured } from "@/lib/shipengine/config"
 import { formatShipEngineApiError } from "@/lib/shipengine/errors"
@@ -31,17 +33,53 @@ async function parseJsonSafe(res: Response): Promise<unknown> {
   }
 }
 
+function shippingRateCacheHash(
+  input: SurfboardShippingEstimateInput,
+  topN: number,
+): string {
+  return fingerprintCacheKey(
+    JSON.stringify({
+      from: {
+        line1: input.shipFrom.address_line1.trim().toLowerCase(),
+        city: input.shipFrom.city_locality.trim().toLowerCase(),
+        state: input.shipFrom.state_province.trim().toUpperCase(),
+        postal: input.shipFrom.postal_code.trim(),
+        residential: input.shipFrom.residential,
+      },
+      to: {
+        line1: input.shipTo.address_line1.trim().toLowerCase(),
+        city: input.shipTo.city_locality.trim().toLowerCase(),
+        state: input.shipTo.state_province.trim().toUpperCase(),
+        postal: input.shipTo.postal_code.trim(),
+        residential: input.shipTo.residential,
+      },
+      weightOz: input.weightOz,
+      lengthIn: input.lengthIn,
+      widthIn: input.widthIn,
+      heightIn: input.heightIn,
+      topN,
+    }),
+  )
+}
+
 async function fetchCarrierIds(): Promise<string[]> {
-  const res = await shipEngineRequest("/carriers")
-  const data = await parseJsonSafe(res)
-  if (!res.ok) {
-    const hint = formatShipEngineApiError(data)
-    throw new Error(
-      hint ||
-        (typeof data === "string" ? data : "Could not load shipping carriers"),
-    )
-  }
-  return extractCarrierIdsFromCarriersResponse(data)
+  return redisGetOrSet(
+    REDIS_CARRIER_IDS_KEY,
+    REDIS_TTL_SECONDS.carrierIds,
+    async () => {
+      const res = await shipEngineRequest("/carriers")
+      const data = await parseJsonSafe(res)
+      if (!res.ok) {
+        const hint = formatShipEngineApiError(data)
+        throw new Error(
+          hint ||
+            (typeof data === "string" ? data : "Could not load shipping carriers"),
+        )
+      }
+      return extractCarrierIdsFromCarriersResponse(data)
+    },
+    { cacheIf: (ids) => ids.length > 0 },
+  )
 }
 
 /**
@@ -56,6 +94,18 @@ export async function getTopSurfboardShippingRates(
   }
 
   const topN = Math.min(500, Math.max(1, opts?.topN ?? 20))
+  return redisGetOrSet(
+    redisShippingRatesKey(shippingRateCacheHash(input, topN)),
+    REDIS_TTL_SECONDS.shippingRates,
+    () => loadTopSurfboardShippingRates(input, topN),
+    { cacheIf: (result) => result.ok },
+  )
+}
+
+async function loadTopSurfboardShippingRates(
+  input: SurfboardShippingEstimateInput,
+  topN: number,
+): Promise<{ ok: true; rates: PublicShippingRateRow[] } | { ok: false; error: string }> {
 
   let carrierIds: string[]
   try {

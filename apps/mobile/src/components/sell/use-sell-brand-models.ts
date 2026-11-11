@@ -7,7 +7,7 @@ const MODEL_SUBSTRING_MATCH_MIN_CHARS = 4
 /** Same token/prefix filter as website `SurfboardModelCatalogInput`. */
 function filterBrandModels(rows: MobileSellCatalogRow[], query: string): MobileSellCatalogRow[] {
   const q = query.trim().toLowerCase()
-  if (!q) return rows.slice(0, 40)
+  if (!q) return rows.slice(0, 16)
 
   return rows
     .filter((row) => {

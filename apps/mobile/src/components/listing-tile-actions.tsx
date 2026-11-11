@@ -9,15 +9,21 @@ import { useReswellColors } from "@/theme"
 /** Website listing-tile heart. Stays ink-colored on the white photo pill. */
 const HEART = "#04070E"
 
+/** Website listing PDP overlay. White heart on the photo, drop-shadowed. */
+const PDP_HEART = "#FFFFFF"
+
 /** Heart over the photo. Signed-out taps open the sign-in sheet. */
 export function ListingFavoriteButton({
   listingId,
   initialFavorited,
   onFavoritedChange,
+  overlay = "tile",
 }: {
   listingId: string
   initialFavorited?: boolean
   onFavoritedChange?: (favorited: boolean) => void
+  /** `pdp` matches the website listing-image overlay: white heart, no pill. */
+  overlay?: "tile" | "pdp"
 }) {
   const { requestAuth } = useAuthGate()
   const marks = useListingMarks()
@@ -48,15 +54,18 @@ export function ListingFavoriteButton({
     })
   }
 
+  const pdp = overlay === "pdp"
+  const tint = pdp ? PDP_HEART : HEART
+
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={favorited ? "Remove from favorites" : "Save to favorites"}
       onPress={() => void toggle()}
-      style={styles.heart}
+      style={pdp ? styles.pdpHeart : styles.heart}
     >
       {busy ? (
-        <ActivityIndicator size="small" color={HEART} />
+        <ActivityIndicator size="small" color={tint} />
       ) : (
         <SymbolView
           name={{
@@ -64,8 +73,8 @@ export function ListingFavoriteButton({
             android: favorited ? "favorite" : "favorite_border",
             web: favorited ? "favorite" : "favorite_border",
           }}
-          size={16}
-          tintColor={HEART}
+          size={pdp ? 22 : 16}
+          tintColor={tint}
         />
       )}
     </Pressable>
@@ -138,6 +147,23 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.9)",
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: "rgba(229,229,229,0.9)",
+  },
+  pdpHeart: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 15,
+    backgroundColor: "transparent",
+    shadowColor: "#000000",
+    shadowOpacity: 0.55,
+    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 3,
   },
   cart: {
     width: 36,

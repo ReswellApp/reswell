@@ -1,5 +1,9 @@
 import { formatCondition } from "@/lib/listing-labels"
-import { orderStatusIsRefunded, orderStatusIsRefundInProgress } from "@/lib/order-status"
+import {
+  orderStatusIsRefunded,
+  orderStatusIsRefundInProgress,
+  orderStatusLocksDuringRefund,
+} from "@/lib/order-status"
 import type { ExistingMarketplaceReview } from "@/lib/types/marketplace-review"
 import { formatUsd } from "@/lib/utils/format-usd"
 
@@ -23,6 +27,8 @@ export interface PurchaseListItem {
   statusTone: PurchaseStatusTone
   refundNote: string | null
   href: string
+  /** 6-digit local pickup code. Null when the order is not an open pickup. */
+  pickupCode: string | null
   sellerReview: {
     canReview: boolean
     existing: ExistingMarketplaceReview | null
@@ -35,7 +41,7 @@ export function purchaseCountLabel(count: number): string {
 }
 
 export function purchaseMatchesQuery(
-  item: { title: string; sellerName: string; orderNumber: string },
+  item: { title: string; sellerName: string; orderNumber: string; pickupCode?: string | null },
   query: string,
 ): boolean {
   const q = query.trim().toLowerCase()
@@ -43,7 +49,28 @@ export function purchaseMatchesQuery(
   const title = item.title.toLowerCase()
   const seller = item.sellerName.toLowerCase()
   const order = item.orderNumber.toLowerCase()
-  return title.includes(q) || seller.includes(q) || order.includes(q) || `#${order}`.includes(q)
+  const pickup = item.pickupCode?.trim().toLowerCase() ?? ""
+  return (
+    title.includes(q) ||
+    seller.includes(q) ||
+    order.includes(q) ||
+    `#${order}`.includes(q) ||
+    (pickup.length > 0 && pickup.includes(q))
+  )
+}
+
+/**
+ * Buyer-facing pickup code. Hidden after the seller verifies handoff, and during refunds.
+ */
+export function buyerVisiblePickupCode(input: {
+  pickupCode: string | null | undefined
+  deliveryStatus: string
+  orderStatus: string
+}): string | null {
+  if (orderStatusLocksDuringRefund(input.orderStatus)) return null
+  if (input.deliveryStatus === "picked_up") return null
+  const code = input.pickupCode?.trim() ?? ""
+  return code.length > 0 ? code : null
 }
 
 /** Buyer total is item price plus shipping. Clamp so a bad shipping figure cannot go negative. */

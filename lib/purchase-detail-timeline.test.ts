@@ -4,6 +4,7 @@ import { describe, it } from "node:test"
 import {
   buildPurchaseDetailTimeline,
   purchaseDetailStatusDate,
+  purchaseDetailStatusShowsDateTime,
 } from "./purchase-detail-timeline.ts"
 
 const createdAt = "2026-08-13T15:16:00.000Z"
@@ -186,6 +187,7 @@ describe("purchase detail timeline", () => {
   })
 
   it("uses pickup and refund milestones", () => {
+    const pickedUpAt = "2026-11-03T17:18:00.000Z"
     const pickup = buildPurchaseDetailTimeline({
       createdAt,
       fulfillmentMethod: "pickup",
@@ -193,12 +195,20 @@ describe("purchase detail timeline", () => {
       orderStatus: "confirmed",
       hasTrackingNumber: false,
       events: [],
-      actualDeliveryAt: null,
+      actualDeliveryAt: pickedUpAt,
       refundedAt: null,
     })
     assert.deepEqual(
       pickup.map((step) => step.title),
       ["Purchased", "Picked up"],
+    )
+    assert.equal(pickup[1]?.occurredAt, pickedUpAt)
+    assert.equal(
+      purchaseDetailStatusShowsDateTime({
+        deliveryStatus: "picked_up",
+        orderStatus: "confirmed",
+      }),
+      true,
     )
 
     const refunded = buildPurchaseDetailTimeline({
@@ -245,6 +255,23 @@ describe("purchase detail timeline", () => {
         refundedAt: null,
       }),
       createdAt,
+    )
+    assert.equal(
+      purchaseDetailStatusDate({
+        deliveryStatus: "picked_up",
+        orderStatus: "confirmed",
+        createdAt,
+        actualDeliveryAt: "2026-11-03T17:18:00.000Z",
+        refundedAt: null,
+      }),
+      "2026-11-03T17:18:00.000Z",
+    )
+    assert.equal(
+      purchaseDetailStatusShowsDateTime({
+        deliveryStatus: "pending",
+        orderStatus: "confirmed",
+      }),
+      false,
     )
   })
 })

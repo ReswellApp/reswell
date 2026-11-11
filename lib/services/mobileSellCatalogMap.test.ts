@@ -4,7 +4,9 @@ import { MOBILE_SELL_CATALOG_CATEGORIES } from "@reswell/api-contract"
 import {
   boardTypeFromCatalogSlug,
   mapMobileSellBrandModels,
+  mapMobileSellBrandSuggest,
   mapMobileSellCatalog,
+  mobileCategoryForBrand,
 } from "@/lib/services/mobileSellCatalogMap"
 import { SELL_CATALOG_SEARCH_CATEGORIES, type SellCatalogSearchResult } from "@/lib/types/sell-catalog-search"
 
@@ -80,6 +82,41 @@ describe("mobile sell catalog map", () => {
     assert.equal(mapped.results[0]?.model_name, null)
   })
 
+  it("maps directory brand suggest rows as brands only", () => {
+    const mapped = mapMobileSellBrandSuggest(
+      [
+        {
+          id: "brand-1",
+          name: "Channel Islands",
+          slug: "channel-islands",
+          short_description: "Al Merrick",
+          logo_url: "https://cdn.example/ci.png",
+          location_label: "Carpinteria, CA",
+          lead_shaper_name: "Al Merrick",
+        },
+      ],
+      new Map([["brand-1", ["surfboards"]]]),
+    )
+    assert.equal(mapped.results.length, 1)
+    assert.deepEqual(mapped.results[0], {
+      kind: "brand",
+      id: "brand-1",
+      brand_id: "brand-1",
+      brand_name: "Channel Islands",
+      model_name: null,
+      category: "surfboards",
+      category_label: "Surfboards",
+      board_type: null,
+      image_url: "https://cdn.example/ci.png",
+      title: "Channel Islands",
+    })
+  })
+
+  it("defaults untagged directory brands to surfboards", () => {
+    assert.equal(mobileCategoryForBrand([]), "surfboards")
+    assert.equal(mobileCategoryForBrand(["boardbags", "fins"]), "fins")
+  })
+
   it("maps brand-models drill-in rows the same way as search hits", () => {
     const mapped = mapMobileSellBrandModels([
       {
@@ -101,5 +138,20 @@ describe("mobile sell catalog map", () => {
     assert.equal(mapped.results[0]?.brand_name, "Pyzel")
     assert.equal(mapped.results[0]?.model_name, "Sweet Spot")
     assert.equal(mapped.results[0]?.board_type, "shortboard")
+  })
+
+  it("drops non-model rows from brand-models drill-in", () => {
+    const mapped = mapMobileSellBrandModels([
+      {
+        kind: "brand",
+        id: "brand-2",
+        name: "Pyzel",
+        slug: "pyzel",
+        logoUrl: null,
+        shortDescription: null,
+        category: "surfboards",
+      },
+    ])
+    assert.equal(mapped.results.length, 0)
   })
 })

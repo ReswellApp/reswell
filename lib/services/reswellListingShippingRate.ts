@@ -42,6 +42,8 @@ import { buyerResidentialIndicator } from "@/lib/shipping/buyer-address-validati
 import { normalizeUsStateProvinceForShipping } from "@/lib/us-state-name-to-code"
 import { logPackBandQuoteTelemetry } from "@/lib/shipping/pack-band-telemetry"
 import { resolveSurfboardShippingPackBandId } from "@/lib/surfboard-shipping-pack-bands"
+import { redisGetOrSet } from "@/lib/redis/cache"
+import { REDIS_CARRIER_IDS_KEY, REDIS_TTL_SECONDS } from "@/lib/redis/keys"
 import { shipEngineRequest } from "@/lib/shipengine/client"
 import { isShipEngineConfigured } from "@/lib/shipengine/config"
 import { formatShipEngineApiError } from "@/lib/shipengine/errors"
@@ -141,23 +143,33 @@ async function fetchAllConnectedCarrierIds(): Promise<{ ok: true; ids: string[] 
     return { ok: true, ids: cached }
   }
 
-  let res: Response
-  try {
-    res = await shipEngineRequest("/carriers")
-  } catch (e) {
-    console.error("[reswellListingShippingRate] /carriers fetch failed:", e)
+  const fromRedis = await redisGetOrSet(
+    REDIS_CARRIER_IDS_KEY,
+    REDIS_TTL_SECONDS.carrierIds,
+    async (): Promise<string[] | null> => {
+      let res: Response
+      try {
+        res = await shipEngineRequest("/carriers")
+      } catch (e) {
+        console.error("[reswellListingShippingRate] /carriers fetch failed:", e)
+        return null
+      }
+      if (!res.ok) {
+        const data = await parseJsonSafe(res)
+        const hint = formatShipEngineApiError(data)
+        console.error("[reswellListingShippingRate] /carriers HTTP:", res.status, data)
+        return null
+      }
+      const data = await parseJsonSafe(res)
+      return extractCarrierIdsFromCarriersResponse(data)
+    },
+    { cacheIf: (ids) => Array.isArray(ids) && ids.length > 0 },
+  )
+  if (!fromRedis) {
     return { ok: false, error: "Could not load carrier accounts. Try again later." }
   }
-  if (!res.ok) {
-    const data = await parseJsonSafe(res)
-    const hint = formatShipEngineApiError(data)
-    console.error("[reswellListingShippingRate] /carriers HTTP:", res.status, data)
-    return { ok: false, error: hint || "Could not load carrier accounts." }
-  }
-  const data = await parseJsonSafe(res)
-  const ids = extractCarrierIdsFromCarriersResponse(data)
-  writeCachedCarrierIds(ids)
-  return { ok: true, ids }
+  writeCachedCarrierIds(fromRedis)
+  return { ok: true, ids: fromRedis }
 }
 
 /** Saved seller street address → ShipEngine ship-from (label purchase and label-time re-quotes). */

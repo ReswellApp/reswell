@@ -29,6 +29,7 @@ export type MobilePurchaseListRow = {
   created_at: string
   shipping_address: unknown
   fulfillment_method: string | null
+  pickup_code: string | null
   seller_id: string
   listing: MobilePurchaseListing | null
   seller_name: string | null
@@ -85,6 +86,7 @@ export async function listMobilePurchaseRows(
       created_at,
       shipping_address,
       fulfillment_method,
+      pickup_code,
       seller_id,
       listings ( ${LISTING_SELECT} )
     `,
@@ -126,6 +128,7 @@ export async function listMobilePurchaseRows(
       created_at: String(row.created_at ?? ""),
       shipping_address: row.shipping_address,
       fulfillment_method: typeof row.fulfillment_method === "string" ? row.fulfillment_method : null,
+      pickup_code: typeof row.pickup_code === "string" ? row.pickup_code : null,
       seller_id: sellerId,
       listing: asListing(row.listings),
       seller_name: names.get(sellerId) ?? null,
@@ -155,6 +158,7 @@ export async function getMobilePurchaseDetailRow(
       delivery_status,
       tracking_number,
       tracking_carrier,
+      pickup_code,
       shipping_address,
       seller_id,
       listing_id,
@@ -215,6 +219,7 @@ export async function getMobilePurchaseDetailRow(
       created_at: String(raw.created_at ?? ""),
       shipping_address: raw.shipping_address,
       fulfillment_method: typeof raw.fulfillment_method === "string" ? raw.fulfillment_method : null,
+      pickup_code: typeof raw.pickup_code === "string" ? raw.pickup_code : null,
       seller_id: sellerId,
       listing: asListing(raw.listings),
       seller_name: sellerProfile?.display_name ?? null,

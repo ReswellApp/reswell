@@ -37,7 +37,7 @@ export async function GET(req: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: "Invalid request" }, { status: 400 })
     }
 
-    const limit = consumeLiveChatRateLimit(
+    const limit = await consumeLiveChatRateLimit(
       `orders-get:${liveChatClientIp(req)}:${publicId}`,
       LIVE_CHAT_RATE_LIMITS.actionsGet.limit,
       LIVE_CHAT_RATE_LIMITS.actionsGet.windowMs,

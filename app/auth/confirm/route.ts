@@ -8,6 +8,7 @@ import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 import { buildEmailSignUpSuccessPath } from "@/lib/google-ads/sign-up-success-path"
 import { trackKlaviyoNewAccountCreated } from "@/lib/klaviyo/track-new-account-created"
 import { applyMarketingEmailConsent } from "@/lib/services/marketingEmailConsent"
+import { saveSignupDateOfBirthFromUser } from "@/lib/services/saveSignupDateOfBirth"
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler-client"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { type NextRequest, NextResponse, after } from "next/server"
@@ -51,6 +52,7 @@ export async function GET(request: NextRequest) {
             )
             if (hasServiceRole) {
               const serviceRole = createServiceRoleClient()
+              await saveSignupDateOfBirthFromUser(u)
               const meta = u.user_metadata as Record<string, unknown> | undefined
               if (typeof meta?.marketing_opt_in === "boolean") {
                 await applyMarketingEmailConsent({

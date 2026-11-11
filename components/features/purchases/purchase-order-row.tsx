@@ -5,6 +5,7 @@ import {
   purchaseAccentLinkClassName,
   purchaseAccentTextClassName,
 } from "@/components/features/purchases/purchase-brand-styles"
+import { PurchasePickupCode } from "@/components/features/purchases/purchase-pickup-code"
 import { ReviewSellerControls } from "@/components/review-seller-controls"
 import { LocalDateOnly } from "@/components/ui/local-datetime"
 import { listingPhotoFillClassName } from "@/lib/listing-photo-fill"
@@ -91,6 +92,7 @@ export function PurchaseOrderRow({
                   {item.refundNote}
                 </p>
               ) : null}
+              {item.pickupCode ? <PurchasePickupCode pickupCode={item.pickupCode} compact /> : null}
             </div>
             {item.sellerReview ? (
               <div className="order-last sm:order-none sm:mt-2.5">

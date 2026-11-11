@@ -140,8 +140,26 @@ export function mobileSellListingFields(
       brand: input.brand,
       model: input.model,
       buyer_offers_enabled: true,
+      ...sellerAcquisitionFields(input),
     },
   }
+}
+
+/** Same private cost-basis columns as website sell. Omitted keys leave existing DB values. */
+function sellerAcquisitionFields(
+  input: Pick<MobileSellPublish, "seller_purchase_price" | "seller_purchased_from" | "seller_purchased_on">,
+): Record<string, unknown> {
+  const fields: Record<string, unknown> = {}
+  if (input.seller_purchase_price !== undefined) {
+    fields.seller_purchase_price_usd = input.seller_purchase_price
+  }
+  if (input.seller_purchased_from !== undefined) {
+    fields.seller_purchased_from = input.seller_purchased_from?.trim() || null
+  }
+  if (input.seller_purchased_on !== undefined) {
+    fields.seller_purchased_on = input.seller_purchased_on || null
+  }
+  return fields
 }
 
 /** Same columns as a published listing, hidden until Post listing. */

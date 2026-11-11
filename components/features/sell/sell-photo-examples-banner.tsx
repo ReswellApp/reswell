@@ -18,8 +18,8 @@ function initiallyHidden(): boolean {
 }
 
 /**
- * Shot checklist under the uploader. Each tile is a square so the row
- * stays short on the wide sell form. Hideable; stays hidden per device.
+ * Shot checklist under the uploader. Tiles use the same 3:4 frame as
+ * marketplace listing cards. Hideable; stays hidden per device.
  * Photos are from Hayden's Quadratic Formula listing.
  */
 export function SellPhotoExamplesBanner({ className }: { className?: string }) {
@@ -56,7 +56,7 @@ export function SellPhotoExamplesBanner({ className }: { className?: string }) {
           {SELL_PHOTO_GUIDE_EXAMPLES.map((example) => (
             <li
               key={example.id}
-              className="relative aspect-square min-w-0 overflow-hidden rounded-lg border border-border bg-white"
+              className="relative aspect-[3/4] min-w-0 overflow-hidden rounded-lg border border-border bg-white"
             >
               <ListingMediaFillImage src={example.path} alt={example.label} />
               <span className="absolute inset-x-0 bottom-0 z-[1] bg-gradient-to-t from-black/75 to-transparent px-0.5 pb-1 pt-3 text-center text-[9px] font-medium leading-tight text-white sm:text-[11px]">

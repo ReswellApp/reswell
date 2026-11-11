@@ -3,8 +3,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
+import {
+  DATE_OF_BIRTH_REQUIRED_MESSAGE,
+  signupDateOfBirthSchema,
+} from '@reswell/api-contract'
 import { buildOAuthCallbackUrl } from '@/lib/auth/oauth-callback-url'
 import { buildGoogleOAuthHandoffUrl } from '@/lib/auth/google-oauth-handoff-url'
+import { persistSignupDateOfBirthCookie } from '@/lib/auth/signup-date-of-birth'
 import { isInAppBrowserClient } from '@/lib/utils/is-in-app-browser'
 import { openInSystemBrowser } from '@/lib/utils/escape-in-app-browser'
 import { isAccountBannedError } from '@/lib/auth/is-account-banned-error'
@@ -53,6 +58,10 @@ type GoogleOAuthButtonProps = {
   layout?: 'full' | 'compact'
   /** Sign-up marketing checkbox — forwarded through OAuth callback when set. */
   marketingOptIn?: boolean
+  /** Sign-up birthday — required when `handoffMode` is sign-up. */
+  dateOfBirth?: string
+  /** Sign-up terms checkbox — required when `handoffMode` is sign-up. */
+  acceptedTerms?: boolean
 }
 
 function stripGoogleAutoStartParam(): void {
@@ -72,12 +81,41 @@ export function GoogleOAuthButton({
   handoffMode = 'login',
   layout = 'full',
   marketingOptIn,
+  dateOfBirth,
+  acceptedTerms,
 }: GoogleOAuthButtonProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const autoStartedRef = useRef(false)
 
+  const signUpDateOfBirth = useCallback((): string | undefined => {
+    if (handoffMode !== 'sign-up') return undefined
+    const parsed = signupDateOfBirthSchema.safeParse(dateOfBirth)
+    return parsed.success ? parsed.data : undefined
+  }, [dateOfBirth, handoffMode])
+
+  const signUpGateError = useCallback((): string | null => {
+    if (handoffMode !== 'sign-up') return null
+    if (acceptedTerms === false) {
+      return "Please accept Reswell's Terms of Use and Privacy Policy to continue."
+    }
+    if (!signUpDateOfBirth()) {
+      const parsed = signupDateOfBirthSchema.safeParse(dateOfBirth)
+      return parsed.success
+        ? DATE_OF_BIRTH_REQUIRED_MESSAGE
+        : (parsed.error.issues[0]?.message ?? DATE_OF_BIRTH_REQUIRED_MESSAGE)
+    }
+    return null
+  }, [acceptedTerms, dateOfBirth, handoffMode, signUpDateOfBirth])
+
   const startGoogleOAuth = useCallback(async () => {
+    const blocked = signUpGateError()
+    if (blocked) {
+      setError(blocked)
+      return
+    }
+    const eligibleDob = signUpDateOfBirth()
+    if (eligibleDob) persistSignupDateOfBirthCookie(eligibleDob)
     const supabase = createClient()
     setIsLoading(true)
     setError(null)
@@ -86,6 +124,7 @@ export function GoogleOAuthButton({
         nextPath,
         window.location.origin,
         marketingOptIn,
+        eligibleDob,
       )
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -105,7 +144,7 @@ export function GoogleOAuthButton({
       )
       setIsLoading(false)
     }
-  }, [marketingOptIn, nextPath])
+  }, [marketingOptIn, nextPath, signUpDateOfBirth, signUpGateError])
 
   useEffect(() => {
     if (!autoStart || autoStartedRef.current || isInAppBrowserClient()) return
@@ -115,12 +154,19 @@ export function GoogleOAuthButton({
   }, [autoStart, startGoogleOAuth])
 
   const handleClick = () => {
+    const blocked = signUpGateError()
+    if (blocked) {
+      setError(blocked)
+      return
+    }
+    const eligibleDob = signUpDateOfBirth()
     if (isInAppBrowserClient()) {
       const handoffUrl = buildGoogleOAuthHandoffUrl(
         window.location.origin,
         nextPath,
         handoffMode,
         marketingOptIn,
+        eligibleDob,
       )
       openInSystemBrowser(handoffUrl)
       return
