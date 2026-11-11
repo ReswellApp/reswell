@@ -85,8 +85,16 @@ export function ListingDeskBoardShipping({
   }, [reload, originReady, spec.latitude, spec.longitude])
 
   useEffect(() => {
-    if (!originReady) return
-    if (status !== "ready" || loadedOriginKey !== originKey || !spec.dropoffLocationId) return
+    if (!spec.dropoffLocationId) return
+    if (!originReady) {
+      onChange({ dropoffLocationId: "" })
+      return
+    }
+    if (status === "error" && loadedOriginKey !== originKey) {
+      onChange({ dropoffLocationId: "" })
+      return
+    }
+    if (status !== "ready" || loadedOriginKey !== originKey) return
     if (locations.some((row) => row.id === spec.dropoffLocationId)) return
     onChange({ dropoffLocationId: "" })
   }, [originReady, status, loadedOriginKey, originKey, locations, spec.dropoffLocationId, onChange])
