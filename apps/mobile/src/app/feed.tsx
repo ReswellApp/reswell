@@ -14,6 +14,7 @@ import { fetchMarketplaceFeed } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
 import { useAuthGate } from "@/lib/auth-gate"
 import { useListingSellerFollow } from "@/lib/listing-seller-follow"
+import { peekFeed } from "@/lib/marketplace-screen-cache"
 import { fontFamily, useReswellColors } from "@/theme"
 
 const FEED_SCREEN_TITLE = "New Listings Feed"
@@ -69,13 +70,16 @@ export default function FeedScreen() {
   const { requestAuth } = useAuthGate()
   const token = session?.access_token
   const params = useLocalSearchParams<{ tab?: string }>()
-  const [tab, setTab] = useState<MobileMarketplaceFeedTab>(requestedFeedTab(params.tab) ?? "new")
-  const [feed, setFeed] = useState<MobileMarketplaceFeed | null>(null)
-  const [listings, setListings] = useState<MobileListingCard[]>([])
+  const initialTab = requestedFeedTab(params.tab) ?? "new"
+  const cachedFeed = peekFeed(initialTab, token)
+  const [tab, setTab] = useState<MobileMarketplaceFeedTab>(initialTab)
+  const [feed, setFeed] = useState<MobileMarketplaceFeed | null>(cachedFeed)
+  const [listings, setListings] = useState<MobileListingCard[]>(cachedFeed?.listings ?? [])
   const [error, setError] = useState<string | null>(null)
   const [needsSignIn, setNeedsSignIn] = useState(false)
   const [promptSignIn, setPromptSignIn] = useState(false)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(!cachedFeed)
+  const [refreshing, setRefreshing] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
   const [layout, setLayout] = useState<ListingLayout>("grid")
   const { viewerId, followBusyId, openListing, openSeller, toggleFollow } = useListingSellerFollow(setListings)
@@ -86,36 +90,46 @@ export default function FeedScreen() {
   tabRef.current = tab
 
   const load = useCallback(
-    (nextTab: MobileMarketplaceFeedTab) => {
-    const id = ++requestId.current
-    setLoading(true)
-    fetchMarketplaceFeed({ tab: nextTab }, token)
-      .then((next) => {
-        if (requestId.current !== id) return
-        setFeed(next)
-        setListings(next.listings)
-        setError(null)
-        setNeedsSignIn(false)
-      })
-      .catch((cause: unknown) => {
-        if (requestId.current !== id) return
-        const message = cause instanceof Error ? cause.message : "Unable to load the feed"
-        if (message === "Sign in required") {
+    (nextTab: MobileMarketplaceFeedTab, mode: "silent" | "pull" = "silent") => {
+      const id = ++requestId.current
+      const cached = peekFeed(nextTab, token)
+      if (cached) {
+        setFeed(cached)
+        setListings(cached.listings)
+      }
+      if (mode === "pull") setRefreshing(true)
+      else if (!cached) setLoading(true)
+      fetchMarketplaceFeed({ tab: nextTab }, token, { force: mode === "pull" })
+        .then((next) => {
+          if (requestId.current !== id) return
+          setFeed(next)
+          setListings(next.listings)
           setError(null)
-          setNeedsSignIn(true)
-          setPromptSignIn(true)
-          if (token) void signOut()
-          return
-        }
-        setNeedsSignIn(false)
-        setFeed(null)
-        setListings([])
-        setError(message)
-      })
-      .finally(() => {
-        if (requestId.current === id) setLoading(false)
-      })
-  },
+          setNeedsSignIn(false)
+        })
+        .catch((cause: unknown) => {
+          if (requestId.current !== id) return
+          const message = cause instanceof Error ? cause.message : "Unable to load the feed"
+          if (message === "Sign in required") {
+            setError(null)
+            setNeedsSignIn(true)
+            setPromptSignIn(true)
+            if (token) void signOut()
+            return
+          }
+          setNeedsSignIn(false)
+          if (peekFeed(nextTab, token)) return
+          setFeed(null)
+          setListings([])
+          setError(message)
+        })
+        .finally(() => {
+          if (requestId.current === id) {
+            setLoading(false)
+            setRefreshing(false)
+          }
+        })
+    },
     [signOut, token],
   )
 
@@ -136,8 +150,10 @@ export default function FeedScreen() {
 
   function chooseFeed(next: MobileMarketplaceFeedTab) {
     if (next === tab) return
-    setFeed(null)
-    setListings([])
+    const cached = peekFeed(next, token)
+    setFeed(cached)
+    setListings(cached?.listings ?? [])
+    setError(null)
     setTab(next)
   }
 
@@ -212,8 +228,8 @@ export default function FeedScreen() {
           extraData={followBusyId}
           keyExtractor={(item) => item.key}
           contentContainerStyle={[marketplaceListContentStyle(styles.list), tabBarInset]}
-          refreshing={loading}
-          onRefresh={() => load(tab)}
+          refreshing={refreshing}
+          onRefresh={() => load(tab, "pull")}
           onEndReached={loadMore}
           onEndReachedThreshold={0.4}
           ListEmptyComponent={

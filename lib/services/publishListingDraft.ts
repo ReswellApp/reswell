@@ -112,6 +112,27 @@ export async function applyPublishedListingSideEffects(
   ])
 }
 
+/**
+ * Search, merchant, and notify work after the listing is already live.
+ * Next.js holds the HTTP response for un-awaited promises; `after()` sends
+ * first so Publish is not stuck on Elasticsearch / Klaviyo / revalidate.
+ */
+export function deferPublishedListingSideEffects(
+  supabase: SupabaseClient,
+  listingId: string,
+  sellerUserId: string,
+): void {
+  const runSideEffects = () =>
+    applyPublishedListingSideEffects(supabase, listingId, sellerUserId).catch(() => {
+      // Search / merchant / notify work is best-effort after the listing is live.
+    })
+  try {
+    after(runSideEffects)
+  } catch {
+    void runSideEffects()
+  }
+}
+
 async function fetchDraftListingForPublish(
   supabase: SupabaseClient,
   listingId: string,
@@ -225,15 +246,7 @@ export async function publishListingDraft(
     })
   }
 
-  const runSideEffects = () =>
-    applyPublishedListingSideEffects(supabase, listingId, sellerUserId).catch(() => {
-      // Search / merchant / notify work is best-effort after the listing is live.
-    })
-  try {
-    after(runSideEffects)
-  } catch {
-    void runSideEffects()
-  }
+  deferPublishedListingSideEffects(supabase, listingId, sellerUserId)
 
   return { ok: true, listingId, slug: publishedSlug }
 }

@@ -1,9 +1,10 @@
-import { Image } from "expo-image"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native"
 import { ListingGalleryVideo } from "@/components/listing-gallery-video"
+import { ListingImage, prefetchListingImage } from "@/components/listing-image"
 import { ListingImageLightbox } from "@/components/listing-image-lightbox"
 import { ListingFavoriteButton } from "@/components/listing-tile-actions"
+import { listingGalleryPhotoIsNear } from "@/lib/listing-image"
 import { fontFamily, useReswellColors } from "@/theme"
 
 /** Same default frame as the website listing hero: 3:4, whole photo visible. */
@@ -32,9 +33,21 @@ export function ListingGallery({
   const colors = useReswellColors()
   const { width } = useWindowDimensions()
   const [index, setIndex] = useState(0)
+  const [loadIndex, setLoadIndex] = useState(0)
   const [enlarged, setEnlarged] = useState(false)
   const photos = urls.filter((url) => url.length > 0)
   const frames = photos.length > 0 || video ? photos.length + (video ? 1 : 0) : 1
+  const nextPhoto = photos[loadIndex + 1]
+
+  useEffect(() => {
+    if (nextPhoto) prefetchListingImage(nextPhoto)
+  }, [nextPhoto])
+
+  function settlePage(offsetX: number) {
+    const next = pageIndex(offsetX, width)
+    setIndex(next)
+    setLoadIndex(next)
+  }
 
   return (
     <View>
@@ -42,14 +55,17 @@ export function ListingGallery({
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
-        onMomentumScrollEnd={(event) => {
-          const next = Math.round(event.nativeEvent.contentOffset.x / width)
-          setIndex(next)
+        scrollEventThrottle={16}
+        onScroll={(event) => {
+          const next = pageIndex(event.nativeEvent.contentOffset.x, width)
+          setLoadIndex((current) => (current === next ? current : next))
         }}
+        onMomentumScrollEnd={(event) => settlePage(event.nativeEvent.contentOffset.x)}
       >
         {Array.from({ length: frames }, (_, frame) => {
           const uri = photos[frame]
           if (uri) {
+            const near = listingGalleryPhotoIsNear(frame, loadIndex)
             return (
               <Pressable
                 key={uri}
@@ -57,14 +73,20 @@ export function ListingGallery({
                 accessibilityLabel="View enlarged photo"
                 onPress={() => {
                   setIndex(frame)
+                  setLoadIndex(frame)
                   setEnlarged(true)
                 }}
               >
-                <Image
-                  source={{ uri }}
-                  style={[styles.frame, { width, backgroundColor: colors.background }]}
-                  contentFit="contain"
-                />
+                {near ? (
+                  <ListingImage
+                    uri={uri}
+                    style={[styles.frame, { width, backgroundColor: colors.background }]}
+                    contentFit="contain"
+                    priority={frame === 0 || frame === index ? "high" : "normal"}
+                  />
+                ) : (
+                  <View style={[styles.frame, { width, backgroundColor: colors.image }]} />
+                )}
               </Pressable>
             )
           }
@@ -112,11 +134,19 @@ export function ListingGallery({
         urls={photos}
         index={Math.min(index, Math.max(photos.length - 1, 0))}
         dimensionsLine={dimensionsLine ?? null}
-        onIndexChange={setIndex}
+        onIndexChange={(next) => {
+          setIndex(next)
+          setLoadIndex(next)
+        }}
         onClose={() => setEnlarged(false)}
       />
     </View>
   )
+}
+
+function pageIndex(offsetX: number, pageWidth: number): number {
+  if (pageWidth <= 0) return 0
+  return Math.round(offsetX / pageWidth)
 }
 
 const styles = StyleSheet.create({

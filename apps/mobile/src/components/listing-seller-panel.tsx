@@ -1,8 +1,9 @@
 import { Link, useRouter } from "expo-router"
 import { SymbolView } from "expo-symbols"
 import { useEffect, useState } from "react"
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native"
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native"
 import type { MobileListingDetail } from "@reswell/api-contract"
+import { GrowingComposerInput } from "@/components/growing-composer-input"
 import { ListingSpecTable, listingSpecRows } from "@/components/listing-spec-table"
 import { ProfileCircle } from "@/components/profile-circle"
 import { ReportListingButton } from "@/components/report-listing-button"
@@ -182,13 +183,6 @@ function MessageIconButton({ open, onToggle }: { open: boolean; onToggle: () => 
   )
 }
 
-const COMPOSER_MIN_HEIGHT = 36
-const COMPOSER_MAX_HEIGHT = 105
-
-function clampComposerHeight(height: number): number {
-  return Math.min(COMPOSER_MAX_HEIGHT, Math.max(COMPOSER_MIN_HEIGHT, Math.ceil(height)))
-}
-
 function MessageComposer({ listingId, onSent }: { listingId: string; onSent: () => void }) {
   const colors = useReswellColors()
   const router = useRouter()
@@ -196,7 +190,6 @@ function MessageComposer({ listingId, onSent }: { listingId: string; onSent: () 
   const [draft, setDraft] = useState("")
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [inputHeight, setInputHeight] = useState(COMPOSER_MIN_HEIGHT)
   const canSend = draft.trim().length > 0 && !busy
 
   function send() {
@@ -208,7 +201,6 @@ function MessageComposer({ listingId, onSent }: { listingId: string; onSent: () 
       void sendListingMessage(token, listingId, body)
         .then((result) => {
           setDraft("")
-          setInputHeight(COMPOSER_MIN_HEIGHT)
           onSent()
           router.push({ pathname: "/account/messages/[id]", params: { id: result.conversation_id } })
         })
@@ -222,22 +214,15 @@ function MessageComposer({ listingId, onSent }: { listingId: string; onSent: () 
   return (
     <View style={styles.messageComposer}>
       <View style={[styles.inputShell, { backgroundColor: colors.image, borderColor: colors.border }]}>
-        <TextInput
+        <GrowingComposerInput
           value={draft}
-          onChangeText={(value) => {
-            setDraft(value)
-            if (value.length === 0) setInputHeight(COMPOSER_MIN_HEIGHT)
-          }}
-          onContentSizeChange={(event) => {
-            setInputHeight(clampComposerHeight(event.nativeEvent.contentSize.height))
-          }}
+          onChangeText={setDraft}
           placeholder="Message the seller"
           placeholderTextColor={colors.muted}
-          multiline
-          scrollEnabled={inputHeight >= COMPOSER_MAX_HEIGHT}
-          textAlignVertical="top"
           editable={!busy}
-          style={[styles.input, { height: inputHeight, color: colors.foreground, fontFamily: fontFamily.text }]}
+          autoComplete="off"
+          accessibilityLabel="Message the seller"
+          style={{ color: colors.foreground, fontFamily: fontFamily.text }}
         />
         <Pressable
           disabled={!canSend}
@@ -324,18 +309,12 @@ const styles = StyleSheet.create({
   inputShell: {
     flexDirection: "row",
     alignItems: "flex-end",
+    overflow: "hidden",
     borderRadius: 14,
     borderWidth: StyleSheet.hairlineWidth,
     paddingVertical: 10,
     paddingLeft: 12,
     paddingRight: 6,
-  },
-  input: {
-    flex: 1,
-    minWidth: 0,
-    fontSize: 16,
-    lineHeight: 21,
-    padding: 0,
   },
   send: { width: 36, height: 36, alignItems: "center", justifyContent: "center" },
   error: { fontSize: 14 },

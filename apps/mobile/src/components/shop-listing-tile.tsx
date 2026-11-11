@@ -1,6 +1,7 @@
-import { Image } from "expo-image"
 import { Pressable, StyleSheet, Text, View } from "react-native"
 import type { MobileListingCard } from "@reswell/api-contract"
+import { ListingImage } from "@/components/listing-image"
+import { useListingPrefetchPress } from "@/lib/use-listing-prefetch-press"
 import { fontFamily, useReswellColors } from "@/theme"
 
 /** Your own inventory. Status and price, without the buyer heart, cart, or shipping marks. */
@@ -14,10 +15,16 @@ export function ShopListingTile({
   onPress: () => void
 }) {
   const colors = useReswellColors()
+  const press = useListingPrefetchPress(item, onPress)
   return (
-    <Pressable onPress={onPress} style={styles.card} accessibilityRole="button">
+    <Pressable {...press} style={styles.card} accessibilityRole="button">
       {item.image_url ? (
-        <Image source={{ uri: item.image_url }} style={[styles.image, { backgroundColor: colors.image }]} contentFit="cover" />
+        <ListingImage
+          uri={item.image_url}
+          listingId={item.id}
+          style={[styles.image, { backgroundColor: colors.image }]}
+          contentFit="cover"
+        />
       ) : (
         <View style={[styles.image, { backgroundColor: colors.image }]} />
       )}

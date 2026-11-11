@@ -11,6 +11,7 @@ import { SellPhotosStep } from "@/components/sell/sell-photos-step"
 import { SellPlaceStep } from "@/components/sell/sell-place-step"
 import { SellPriceStep } from "@/components/sell/sell-price-step"
 import { SellProductStep } from "@/components/sell/sell-product-step"
+import { useSellMediaUpload } from "@/components/sell/use-sell-media-upload"
 import {
   fetchSellBoardSpecs,
   fetchSellListingEdit,
@@ -63,6 +64,14 @@ export function SellListingFlow({
   const [busy, setBusy] = useState<"draft" | "post" | null>(null)
   const [editLoading, setEditLoading] = useState(isEdit)
   const [editError, setEditError] = useState<string | null>(null)
+  const draftRef = useRef(draft)
+  draftRef.current = draft
+  const { flushPendingUploads, mergeUploadedMedia } = useSellMediaUpload(
+    session?.access_token,
+    draft.photos,
+    draft.video,
+    setDraft,
+  )
   const category = taxonomy?.categories.find((item) => item.slug === draft.category) ?? null
   const fulfillment = category?.fulfillment ?? null
   const needsBoardSpecs = category?.board_specs === true
@@ -253,7 +262,8 @@ export function SellListingFlow({
     setBusy("draft")
     setNotice(null)
     try {
-      const nextDraft = await uploadSellMedia(token, draft)
+      await flushPendingUploads(token)
+      const nextDraft = await uploadSellMedia(token, mergeUploadedMedia(draftRef.current))
       const saved = await saveSellListingDraft(token, nextDraft)
       const next = { ...nextDraft, serverDraftId: saved.id }
       setDraft(next)
@@ -280,7 +290,8 @@ export function SellListingFlow({
     setBusy("post")
     setNotice(null)
     try {
-      const nextDraft = await uploadSellMedia(token, draft)
+      await flushPendingUploads(token)
+      const nextDraft = await uploadSellMedia(token, mergeUploadedMedia(draftRef.current))
       setDraft(nextDraft)
       if (isEdit && editListingId) {
         const saved = await updateSellListing(token, editListingId, nextDraft)

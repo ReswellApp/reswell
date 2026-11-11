@@ -4,6 +4,8 @@ import { Platform } from "react-native"
 import { registerAppleAccount, registerEmailAccount, registerGoogleAccount } from "@/lib/api"
 import { obtainAppleIdCredential, signInWithAppleNative } from "@/lib/apple-sign-in"
 import { obtainGoogleIdCredential, signInWithGoogleNative, signOutGoogleNative } from "@/lib/google-sign-in"
+import { clearListingPdpCache } from "@/lib/listing-pdp-cache"
+import { clearMarketplaceScreenCache } from "@/lib/marketplace-screen-cache"
 import { unregisterPushToken } from "@/lib/push-token"
 import { getSupabase } from "@/lib/supabase"
 
@@ -192,6 +194,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return message || null
       },
       async signOut() {
+        clearListingPdpCache()
+        clearMarketplaceScreenCache()
         await unregisterPushToken(session?.access_token)
         await signOutGoogleNative()
         if (!supabase) return

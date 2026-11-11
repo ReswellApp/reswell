@@ -1,7 +1,7 @@
-import { Image } from "expo-image"
 import { useVideoPlayer, VideoView } from "expo-video"
 import { useEffect } from "react"
 import { StyleSheet, View } from "react-native"
+import { ListingImage } from "@/components/listing-image"
 
 const HERO_ASPECT = 3 / 4
 
@@ -27,7 +27,7 @@ export function ListingGalleryVideo({
 
   return (
     <View style={[styles.frame, { width }]}>
-      {posterUrl ? <Image source={{ uri: posterUrl }} style={styles.poster} contentFit="contain" /> : null}
+      {posterUrl ? <ListingImage uri={posterUrl} style={styles.poster} contentFit="contain" priority="low" /> : null}
       <VideoView
         player={player}
         nativeControls

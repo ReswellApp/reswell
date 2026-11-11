@@ -18,6 +18,7 @@ import {
 import type { SupabaseClient } from "@supabase/supabase-js"
 
 export function toMobileProfileAddress(address: ProfileAddressRow): MobileProfileAddress | null {
+  if (!address.line1?.trim() || !address.city?.trim() || !address.postal_code?.trim()) return null
   const parsed = mobileProfileAddressSchema.safeParse({
     id: address.id,
     label: address.label,

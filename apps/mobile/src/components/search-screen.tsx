@@ -1,10 +1,8 @@
-import { Image } from "expo-image"
 import { useRouter } from "expo-router"
 import { SymbolView } from "expo-symbols"
 import { useEffect, useState } from "react"
 import {
   ActivityIndicator,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -12,7 +10,8 @@ import {
   View,
 } from "react-native"
 import type { MobileListingCard } from "@reswell/api-contract"
-import { fetchSearchSuggest } from "@/lib/api"
+import { ListingImage, prefetchListingImage } from "@/components/listing-image"
+import { fetchSearchSuggest, prefetchListing } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
 import {
   getRecentlyViewedCached,
@@ -66,7 +65,7 @@ export function SearchOverlayBody({ query, onChangeQuery, onClose }: SearchOverl
 
   useEffect(() => {
     for (const listing of viewed) {
-      if (listing.image_url) Image.prefetch(listing.image_url).catch(() => undefined)
+      if (listing.image_url) prefetchListingImage(listing.image_url)
     }
   }, [viewed])
 
@@ -97,6 +96,7 @@ export function SearchOverlayBody({ query, onChangeQuery, onClose }: SearchOverl
   }, [searching, trimmed])
 
   function openListing(id: string) {
+    prefetchListing(id, session?.access_token)
     if (trimmed.length >= 2) {
       rememberSearch(trimmed).then(setRecent).catch(() => undefined)
     }
@@ -112,18 +112,25 @@ export function SearchOverlayBody({ query, onChangeQuery, onClose }: SearchOverl
   return (
     <ScrollView
       style={styles.scroll}
-      keyboardShouldPersistTaps="handled"
-      keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
+      keyboardShouldPersistTaps="always"
+      keyboardDismissMode="none"
       automaticallyAdjustKeyboardInsets
       contentInsetAdjustmentBehavior="never"
       contentContainerStyle={styles.body}
     >
       {searching ? (
-        <Results hits={hits} loading={loading} onOpen={openListing} onSeeAll={openResults} />
+        <Results
+          hits={hits}
+          loading={loading}
+          accessToken={session?.access_token}
+          onOpen={openListing}
+          onSeeAll={openResults}
+        />
       ) : (
         <Idle
           recent={recent}
           viewed={viewed}
+          accessToken={session?.access_token}
           onRecent={onChangeQuery}
           onOpen={(listing) => openListing(listing.slug || listing.id)}
         />
@@ -135,11 +142,13 @@ export function SearchOverlayBody({ query, onChangeQuery, onClose }: SearchOverl
 function Idle({
   recent,
   viewed,
+  accessToken,
   onRecent,
   onOpen,
 }: {
   recent: string[]
   viewed: MobileListingCard[]
+  accessToken?: string | null
   onRecent: (query: string) => void
   onOpen: (listing: MobileListingCard) => void
 }) {
@@ -162,11 +171,30 @@ function Idle({
           <Text style={[styles.heading, { color: colors.foreground, fontFamily: fontFamily.headline }]}>
             Recently Viewed Listings
           </Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.viewedRow}>
+          <ScrollView
+            horizontal
+            nestedScrollEnabled
+            directionalLockEnabled
+            keyboardShouldPersistTaps="always"
+            keyboardDismissMode="none"
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.viewedRow}
+          >
             {viewed.map((listing) => (
-              <Pressable key={listing.id} accessibilityRole="button" onPress={() => onOpen(listing)}>
+              <Pressable
+                key={listing.id}
+                accessibilityRole="button"
+                onPress={() => onOpen(listing)}
+                onPressIn={() => prefetchListing(listing.slug || listing.id, accessToken)}
+              >
                 {listing.image_url ? (
-                  <Image source={{ uri: listing.image_url }} style={[styles.viewedImage, { backgroundColor: colors.image }]} contentFit="cover" />
+                  <ListingImage
+                    uri={listing.image_url}
+                    listingId={listing.id}
+                    style={[styles.viewedImage, { backgroundColor: colors.image }]}
+                    contentFit="cover"
+                    priority="low"
+                  />
                 ) : (
                   <View style={[styles.viewedImage, { backgroundColor: colors.image }]} />
                 )}
@@ -182,11 +210,13 @@ function Idle({
 function Results({
   hits,
   loading,
+  accessToken,
   onOpen,
   onSeeAll,
 }: {
   hits: MobileListingCard[]
   loading: boolean
+  accessToken?: string | null
   onOpen: (id: string) => void
   onSeeAll: () => void
 }) {
@@ -202,9 +232,21 @@ function Results({
         const place = [hit.city, hit.state].filter(Boolean).join(", ")
         const meta = [hit.brand, place].filter(Boolean).join(" · ")
         return (
-          <Pressable key={hit.id} accessibilityRole="button" onPress={() => onOpen(hit.slug || hit.id)} style={styles.hit}>
+          <Pressable
+            key={hit.id}
+            accessibilityRole="button"
+            onPress={() => onOpen(hit.slug || hit.id)}
+            onPressIn={() => prefetchListing(hit.slug || hit.id, accessToken)}
+            style={styles.hit}
+          >
             {hit.image_url ? (
-              <Image source={{ uri: hit.image_url }} style={[styles.thumb, { backgroundColor: colors.image }]} contentFit="cover" />
+              <ListingImage
+                uri={hit.image_url}
+                listingId={hit.id}
+                style={[styles.thumb, { backgroundColor: colors.image }]}
+                contentFit="cover"
+                priority="low"
+              />
             ) : (
               <View style={[styles.thumb, { backgroundColor: colors.image }]} />
             )}

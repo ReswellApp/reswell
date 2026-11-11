@@ -2,7 +2,7 @@ import { useRouter } from "expo-router"
 import { useAuthGate } from "@/lib/auth-gate"
 import { useCallback, useState, type Dispatch, type SetStateAction } from "react"
 import type { MobileListingCard, MobileListingCardSeller } from "@reswell/api-contract"
-import { setFollow } from "@/lib/api"
+import { prefetchListing, setFollow } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
 
 export function patchListingSeller(
@@ -25,9 +25,11 @@ export function useListingSellerFollow(setListings: Dispatch<SetStateAction<Mobi
 
   const openListing = useCallback(
     (listing: MobileListingCard) => {
-      router.push({ pathname: "/listing/[id]", params: { id: listing.slug || listing.id } })
+      const id = listing.slug || listing.id
+      prefetchListing(id, session?.access_token)
+      router.push({ pathname: "/listing/[id]", params: { id } })
     },
-    [router],
+    [router, session?.access_token],
   )
 
   const openSeller = useCallback(

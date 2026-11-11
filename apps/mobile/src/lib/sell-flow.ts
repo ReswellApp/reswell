@@ -41,6 +41,11 @@ export type SellPhoto = {
   serverImageId?: string
 }
 
+/** True when the photo already lives in the listings bucket — skip re-upload. */
+export function sellPhotoHasStorageUrls(photo: SellPhoto): boolean {
+  return Boolean(photo.url && photo.thumbnailUrl)
+}
+
 /** First photo is the listing cover. No-op when indices are out of range or equal. */
 export function moveSellPhoto(photos: SellPhoto[], from: number, to: number): SellPhoto[] {
   if (from === to || from < 0 || to < 0 || from >= photos.length || to >= photos.length) return photos

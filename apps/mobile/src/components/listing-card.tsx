@@ -1,10 +1,11 @@
-import { Image } from "expo-image"
 import { SymbolView } from "expo-symbols"
 import { Pressable, StyleSheet, Text, View } from "react-native"
 import type { MobileListingCard } from "@reswell/api-contract"
+import { ListingImage } from "@/components/listing-image"
 import { LISTING_TILE_ASPECT } from "@/components/listing-list-layout"
 import { ListingCartButton, ListingFavoriteButton } from "@/components/listing-tile-actions"
 import { canShowListingCartButton } from "@/lib/listing-cart-tile"
+import { useListingPrefetchPress } from "@/lib/use-listing-prefetch-press"
 import { fontFamily, useReswellColors } from "@/theme"
 
 /** Two-column marketplace tile: photo, heart, title, condition, price, ship mark, and cart. */
@@ -26,14 +27,16 @@ export function ListingCard({
 }) {
   const colors = useReswellColors()
   const showCart = canShowListingCartButton(item, { badge, viewerId })
+  const press = useListingPrefetchPress(item, onPress)
 
   return (
     <View style={styles.card}>
       <View>
-        <Pressable onPress={onPress} accessibilityRole="button">
+        <Pressable {...press} accessibilityRole="button">
           {item.image_url ? (
-            <Image
-              source={{ uri: item.image_url }}
+            <ListingImage
+              uri={item.image_url}
+              listingId={item.id}
               style={[styles.image, { backgroundColor: colors.image }]}
               contentFit="cover"
             />
@@ -54,7 +57,7 @@ export function ListingCard({
           onFavoritedChange={onFavoritedChange}
         />
       </View>
-      <Pressable onPress={onPress} style={styles.copy}>
+      <Pressable {...press} style={styles.copy}>
         <Text numberOfLines={3} style={[styles.title, { color: colors.foreground, fontFamily: fontFamily.headline }]}>
           {item.title}
         </Text>
@@ -65,7 +68,7 @@ export function ListingCard({
         ) : null}
       </Pressable>
       <View style={styles.priceRow}>
-        <Pressable onPress={onPress} style={styles.pricePress}>
+        <Pressable {...press} style={styles.pricePress}>
           <Text style={[styles.price, { color: colors.foreground, fontFamily: fontFamily.text }]}>{item.price_label}</Text>
         </Pressable>
         <View style={styles.actions}>

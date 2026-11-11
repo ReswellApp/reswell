@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from "expo-router"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native"
 import type { MobileListingDetail, MobileListingRailSection } from "@reswell/api-contract"
 import { ScreenSearchHeader } from "@/components/screen-search-header"
@@ -11,6 +11,12 @@ import { ScreenFooter, ScreenScroll, ScreenShell } from "@/components/screen-she
 import { ListingRails } from "@/components/listing-rails"
 import { fetchListing, fetchListingRails } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
+import {
+  listingMatchesParam,
+  peekCachedListing,
+  peekCachedRails,
+  rememberCachedListing,
+} from "@/lib/listing-pdp-cache"
 import { fontFamily, useReswellColors } from "@/theme"
 
 export default function ListingScreen() {
@@ -19,34 +25,55 @@ export default function ListingScreen() {
   const router = useRouter()
   const { session } = useAuth()
   const token = session?.access_token
-  const [listing, setListing] = useState<MobileListingDetail | null>(null)
-  const [rails, setRails] = useState<MobileListingRailSection[]>([])
+  const [listing, setListing] = useState<MobileListingDetail | null>(() =>
+    id ? peekCachedListing(id, token) : null,
+  )
+  const [rails, setRails] = useState<MobileListingRailSection[]>(
+    () => (id ? peekCachedRails(id, token)?.sections ?? [] : []),
+  )
   const [error, setError] = useState<string | null>(null)
   const [attempt, setAttempt] = useState(0)
+
+  const applyListing = useCallback(
+    (next: MobileListingDetail) => {
+      rememberCachedListing(next, token)
+      setListing(next)
+    },
+    [token],
+  )
 
   useEffect(() => {
     if (!id) return
     let cancelled = false
+    const cachedListing = peekCachedListing(id, token)
+    const cachedRails = peekCachedRails(id, token)
     setError(null)
-    setRails([])
-    fetchListing(id, token)
+    setListing((current) => cachedListing ?? (current && listingMatchesParam(current, id) ? current : null))
+    setRails(cachedRails?.sections ?? [])
+    fetchListing(id, token, { force: attempt > 0 })
       .then((next) => {
-        if (!cancelled) setListing(next)
+        if (!cancelled) applyListing(next)
       })
       .catch((cause: unknown) => {
-        if (!cancelled) setError(cause instanceof Error ? cause.message : "Unable to load listing")
+        if (cancelled) return
+        const cached = peekCachedListing(id, token)
+        if (cached) {
+          applyListing(cached)
+          return
+        }
+        setError(cause instanceof Error ? cause.message : "Unable to load listing")
       })
-    fetchListingRails(id, token)
+    fetchListingRails(id, token, { force: attempt > 0 })
       .then((next) => {
         if (!cancelled) setRails(next.sections)
       })
       .catch(() => {
-        if (!cancelled) setRails([])
+        if (!cancelled && !peekCachedRails(id, token)) setRails([])
       })
     return () => {
       cancelled = true
     }
-  }, [id, token, attempt])
+  }, [applyListing, id, token, attempt])
 
   return (
     <ScreenShell style={{ backgroundColor: colors.background }}>
@@ -85,24 +112,25 @@ export default function ListingScreen() {
                       listingId: listing.id,
                       favorited: listing.favorited,
                       onFavoritedChange: (favorited) =>
-                        setListing((current) =>
-                          current
-                            ? {
-                                ...current,
-                                favorited,
-                                watcher_count: Math.max(
-                                  0,
-                                  current.watcher_count +
-                                    (favorited === Boolean(current.favorited) ? 0 : favorited ? 1 : -1),
-                                ),
-                              }
-                            : current,
-                        ),
+                        setListing((current) => {
+                          if (!current) return current
+                          const next = {
+                            ...current,
+                            favorited,
+                            watcher_count: Math.max(
+                              0,
+                              current.watcher_count +
+                                (favorited === Boolean(current.favorited) ? 0 : favorited ? 1 : -1),
+                            ),
+                          }
+                          rememberCachedListing(next, token)
+                          return next
+                        }),
                     }
               }
             />
             {listing.status !== "sold" && listing.owner ? (
-              <ListingOwnerActions listing={listing} onChange={setListing} />
+              <ListingOwnerActions listing={listing} onChange={applyListing} />
             ) : null}
             <ListingDetail listing={listing} />
             <ListingRails
@@ -114,7 +142,7 @@ export default function ListingScreen() {
           </ScreenScroll>
           {listing.status === "sold" || listing.owner ? null : (
             <ScreenFooter bordered={false}>
-              <ListingActions listing={listing} onChange={setListing} />
+              <ListingActions listing={listing} onChange={applyListing} />
             </ScreenFooter>
           )}
         </>

@@ -1,4 +1,5 @@
 import assert from "node:assert/strict"
+import { readFileSync } from "node:fs"
 import { describe, it } from "node:test"
 import {
   mobileSellDraftSchema,
@@ -216,5 +217,31 @@ describe("mobile sell acquisition schema", () => {
     assert.equal(parsed.data.seller_purchase_price, null)
     assert.equal(parsed.data.seller_purchased_from, null)
     assert.equal(parsed.data.seller_purchased_on, null)
+  })
+})
+
+describe("mobile sell publish response", () => {
+  it("returns after the listing row is live, without waiting on search/notify work", () => {
+    const src = readFileSync(new URL("./mobileSellPublish.ts", import.meta.url), "utf8")
+    assert.match(src, /deferPublishedListingSideEffects\(/)
+    assert.doesNotMatch(src, /await applyPublishedListingSideEffects/)
+    assert.doesNotMatch(src, /void applyPublishedListingSideEffects/)
+  })
+
+  it("defers website publish side effects the same way", () => {
+    const src = readFileSync(new URL("./publishListingDraft.ts", import.meta.url), "utf8")
+    assert.match(src, /after\(runSideEffects\)/)
+    assert.match(src, /deferPublishedListingSideEffects\(/)
+  })
+
+  it("reuses stored photo URLs instead of HEAD-probing them on publish", () => {
+    const src = readFileSync(new URL("../../apps/mobile/src/lib/api.ts", import.meta.url), "utf8")
+    const start = src.indexOf("export async function uploadSellPhotos")
+    const end = src.indexOf("export function saveSellListingDraft")
+    assert.ok(start >= 0 && end > start)
+    const fn = src.slice(start, end)
+    assert.match(fn, /sellPhotoHasStorageUrls/)
+    assert.doesNotMatch(fn, /HEAD/)
+    assert.doesNotMatch(fn, /sellPhotoStorageUrlReachable/)
   })
 })

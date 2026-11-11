@@ -27,6 +27,7 @@ import { marketplaceListContentStyle } from "@/components/listing-list-layout"
 import { bottomSheetListPaddingBottom } from "@/components/screen-shell"
 import { fetchCategory, fetchCategoryListings } from "@/lib/api"
 import { useListingSellerFollow } from "@/lib/listing-seller-follow"
+import { peekCategory, peekCategoryListings } from "@/lib/marketplace-screen-cache"
 import { categoryListingQuery, type SelectedFacets } from "@/lib/category-listing-query"
 import { fontFamily, useReswellColors } from "@/theme"
 
@@ -36,10 +37,14 @@ export default function CategoryScreen() {
   const params = useLocalSearchParams<{ slug: string; type?: string }>()
   const slug = params.slug
   const boardType = params.type
-  const [category, setCategory] = useState<MobileCategory | null>(null)
-  const [page, setPage] = useState<MobileListingsPage | null>(null)
+  const initialListingsQuery = categoryListingQuery(0, "relevant", false, {}, boardType, null, "any")
+  const cachedCategory = slug ? peekCategory(slug) : null
+  const cachedPage = slug ? peekCategoryListings(slug, initialListingsQuery) : null
+  const [category, setCategory] = useState<MobileCategory | null>(cachedCategory)
+  const [page, setPage] = useState<MobileListingsPage | null>(cachedPage)
   const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(!cachedCategory)
+  const [refreshing, setRefreshing] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
   const [sort, setSort] = useState<MobileCategorySortId>("relevant")
   const [shipping, setShipping] = useState(false)
@@ -49,13 +54,20 @@ export default function CategoryScreen() {
   const [layout, setLayout] = useState<ListingLayout>("grid")
   const [sortOpen, setSortOpen] = useState(false)
   const [filtersOpen, setFiltersOpen] = useState(false)
-  const load = useCallback(() => {
+  const load = useCallback((mode: "silent" | "pull" = "silent") => {
     if (!slug) return
     let cancelled = false
-    setLoading(true)
+    const query = categoryListingQuery(0, sort, shipping, selected, boardType, place, radius)
+    const cachedNextCategory = peekCategory(slug)
+    const cachedNextPage = peekCategoryListings(slug, query)
+    if (cachedNextCategory) setCategory(cachedNextCategory)
+    if (cachedNextPage) setPage(cachedNextPage)
+    if (mode === "pull") setRefreshing(true)
+    else if (!cachedNextCategory) setLoading(true)
+    else if (!cachedNextPage) setRefreshing(true)
     Promise.all([
-      fetchCategory(slug),
-      fetchCategoryListings(slug, categoryListingQuery(0, sort, shipping, selected, boardType, place, radius)),
+      fetchCategory(slug, { force: mode === "pull" }),
+      fetchCategoryListings(slug, query, { force: mode === "pull" }),
     ])
       .then(([nextCategory, nextPage]) => {
         if (!cancelled) {
@@ -65,10 +77,14 @@ export default function CategoryScreen() {
         }
       })
       .catch((cause: unknown) => {
-        if (!cancelled) setError(cause instanceof Error ? cause.message : "Unable to load this category")
+        if (cancelled || peekCategory(slug)) return
+        setError(cause instanceof Error ? cause.message : "Unable to load this category")
       })
       .finally(() => {
-        if (!cancelled) setLoading(false)
+        if (!cancelled) {
+          setLoading(false)
+          setRefreshing(false)
+        }
       })
     return () => {
       cancelled = true
@@ -118,7 +134,7 @@ export default function CategoryScreen() {
       ) : error && !category ? (
         <View style={styles.centered}>
           <Text style={{ color: colors.foreground, fontFamily: fontFamily.text }}>{error}</Text>
-          <Pressable onPress={load}>
+          <Pressable onPress={() => load()}>
             <Text style={[styles.retry, { color: colors.foreground, fontFamily: fontFamily.text }]}>Try again</Text>
           </Pressable>
         </View>
@@ -128,8 +144,8 @@ export default function CategoryScreen() {
           extraData={followBusyId}
           keyExtractor={(item) => item.key}
           contentContainerStyle={[marketplaceListContentStyle(styles.listBase), tabBarInset]}
-          refreshing={loading}
-          onRefresh={load}
+          refreshing={refreshing}
+          onRefresh={() => load("pull")}
           onEndReached={loadMore}
           onEndReachedThreshold={0.4}
           ListHeaderComponent={

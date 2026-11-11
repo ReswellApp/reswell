@@ -1,6 +1,7 @@
 import type { MobileListingCard, MobileProfileShopSection } from "@reswell/api-contract"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { fetchProfileListings, fetchProfileShopFilters } from "@/lib/api"
+import { peekProfileListings, peekProfileShopFilters } from "@/lib/marketplace-screen-cache"
 
 type InventoryPage = {
   listings: MobileListingCard[]
@@ -15,6 +16,15 @@ function emptyPage(): InventoryPage {
   return { listings: [], offset: 0, limit: 20, has_more: false }
 }
 
+function fromListingsPage(page: { listings: MobileListingCard[]; offset: number; limit: number; has_more: boolean }): InventoryPage {
+  return {
+    listings: page.listings,
+    offset: page.offset,
+    limit: page.limit,
+    has_more: page.has_more,
+  }
+}
+
 function mergePage(previous: InventoryPage, next: InventoryPage): InventoryPage {
   const seen = new Set(previous.listings.map((listing) => listing.id))
   return {
@@ -25,13 +35,19 @@ function mergePage(previous: InventoryPage, next: InventoryPage): InventoryPage 
 
 export function useProfileShopListings(slug: string | undefined, shopTab: "listings" | "sold") {
   const activeStatus: ShopTab = shopTab === "sold" ? "sold" : "current"
-  const [current, setCurrent] = useState<InventoryPage>(emptyPage)
-  const [sold, setSold] = useState<InventoryPage>(emptyPage)
-  const [soldRequested, setSoldRequested] = useState(false)
-  const [currentSections, setCurrentSections] = useState<MobileProfileShopSection[]>([])
-  const [soldSections, setSoldSections] = useState<MobileProfileShopSection[]>([])
+  const cachedCurrent = slug ? peekProfileListings(slug, "current") : null
+  const cachedSold = slug ? peekProfileListings(slug, "sold") : null
+  const cachedCurrentFilters = slug ? peekProfileShopFilters(slug, "current") : null
+  const cachedSoldFilters = slug ? peekProfileShopFilters(slug, "sold") : null
+  const [current, setCurrent] = useState<InventoryPage>(cachedCurrent ? fromListingsPage(cachedCurrent) : emptyPage)
+  const [sold, setSold] = useState<InventoryPage>(cachedSold ? fromListingsPage(cachedSold) : emptyPage)
+  const [soldRequested, setSoldRequested] = useState(Boolean(cachedSold))
+  const [currentSections, setCurrentSections] = useState<MobileProfileShopSection[]>(
+    cachedCurrentFilters?.sections ?? [],
+  )
+  const [soldSections, setSoldSections] = useState<MobileProfileShopSection[]>(cachedSoldFilters?.sections ?? [])
   const [sectionId, setSectionId] = useState<string | null>(null)
-  const [loadingCurrent, setLoadingCurrent] = useState(true)
+  const [loadingCurrent, setLoadingCurrent] = useState(!cachedCurrent)
   const [loadingSold, setLoadingSold] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -51,11 +67,15 @@ export function useProfileShopListings(slug: string | undefined, shopTab: "listi
     loadingMoreRef.current = false
     setLoadingMore(false)
     setSectionId(null)
-    setCurrent(emptyPage())
-    setSold(emptyPage())
-    setSoldRequested(false)
-    setCurrentSections([])
-    setSoldSections([])
+    const nextCurrent = peekProfileListings(slug, "current")
+    const nextSold = peekProfileListings(slug, "sold")
+    const nextCurrentFilters = peekProfileShopFilters(slug, "current")
+    const nextSoldFilters = peekProfileShopFilters(slug, "sold")
+    setCurrent(nextCurrent ? fromListingsPage(nextCurrent) : emptyPage())
+    setSold(nextSold ? fromListingsPage(nextSold) : emptyPage())
+    setSoldRequested(Boolean(nextSold))
+    setCurrentSections(nextCurrentFilters?.sections ?? [])
+    setSoldSections(nextSoldFilters?.sections ?? [])
     setError(null)
 
     Promise.all([fetchProfileShopFilters(slug, "current"), fetchProfileShopFilters(slug, "sold")])
@@ -65,7 +85,7 @@ export function useProfileShopListings(slug: string | undefined, shopTab: "listi
         setSoldSections(soldFilters.sections)
       })
       .catch(() => {
-        if (!cancelled) {
+        if (!cancelled && !peekProfileShopFilters(slug, "current")) {
           setCurrentSections([])
           setSoldSections([])
         }
@@ -83,8 +103,14 @@ export function useProfileShopListings(slug: string | undefined, shopTab: "listi
     loadingMoreRef.current = false
     setLoadingMore(false)
     setError(null)
-    setLoadingCurrent(true)
-    setCurrent(emptyPage())
+    const cached = peekProfileListings(slug, "current", sectionId)
+    if (cached) {
+      setCurrent(fromListingsPage(cached))
+      setLoadingCurrent(false)
+    } else {
+      setLoadingCurrent(true)
+      if (sectionId) setCurrent(emptyPage())
+    }
     fetchProfileListings(slug, { status: "current", section: sectionId ?? undefined })
       .then((page) => {
         if (cancelled || currentGeneration.current !== generation) return
@@ -96,7 +122,7 @@ export function useProfileShopListings(slug: string | undefined, shopTab: "listi
         })
       })
       .catch((cause: unknown) => {
-        if (!cancelled && currentGeneration.current === generation) {
+        if (!cancelled && currentGeneration.current === generation && !peekProfileListings(slug, "current", sectionId)) {
           setError(cause instanceof Error ? cause.message : "Unable to load listings")
         }
       })
@@ -115,8 +141,14 @@ export function useProfileShopListings(slug: string | undefined, shopTab: "listi
     loadingMoreRef.current = false
     setLoadingMore(false)
     setError(null)
-    setLoadingSold(true)
-    setSold(emptyPage())
+    const cached = peekProfileListings(slug, "sold", sectionId)
+    if (cached) {
+      setSold(fromListingsPage(cached))
+      setLoadingSold(false)
+    } else {
+      setLoadingSold(true)
+      if (sectionId) setSold(emptyPage())
+    }
     fetchProfileListings(slug, { status: "sold", section: sectionId ?? undefined })
       .then((page) => {
         if (cancelled || soldGeneration.current !== generation) return
@@ -128,7 +160,7 @@ export function useProfileShopListings(slug: string | undefined, shopTab: "listi
         })
       })
       .catch((cause: unknown) => {
-        if (!cancelled && soldGeneration.current === generation) {
+        if (!cancelled && soldGeneration.current === generation && !peekProfileListings(slug, "sold", sectionId)) {
           setSold(emptyPage())
           setError(cause instanceof Error ? cause.message : "Unable to load listings")
         }

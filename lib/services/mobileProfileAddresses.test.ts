@@ -35,6 +35,12 @@ describe("mobile profile addresses", () => {
     assert.equal(mapped.line, "915 DE LA VINA ST · SANTA BARBARA, CA, 93101-3220")
   })
 
+  it("drops incomplete saved addresses instead of sending empty streets", () => {
+    assert.equal(toMobileProfileAddress(row({ line1: "" })), null)
+    assert.equal(toMobileProfileAddress(row({ city: "  " })), null)
+    assert.equal(toMobileProfileAddress(row({ postal_code: "" })), null)
+  })
+
   it("defaults country to US when creating", () => {
     const parsed = mobileProfileAddressBodySchema.parse({
       line1: "816 Alberta Avenue",

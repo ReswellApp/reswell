@@ -10,7 +10,7 @@ import { listingObjectPublicUrl } from "@/lib/supabase/storage-upload-xhr"
 import { decodeImageBufferForSharp } from "@/lib/services/decodeImageForSharp"
 import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import { mobileSellDraftFields, mobileSellListingFields } from "@/lib/services/mobileSellListingFields"
-import { applyPublishedListingSideEffects } from "@/lib/services/publishListingDraft"
+import { deferPublishedListingSideEffects } from "@/lib/services/publishListingDraft"
 import type { MobileApiResult } from "@/lib/services/mobileApi"
 import { isOwnedListingStorageUrl } from "@/lib/services/ownedListingStorageUrl"
 import { syncListingImages } from "@/lib/services/sync-listing-images"
@@ -263,6 +263,6 @@ export async function publishMobileListingService(
     }
   }
 
-  void applyPublishedListingSideEffects(supabase, listingId, userId)
+  deferPublishedListingSideEffects(supabase, listingId, userId)
   return { ok: true, data: { id: listingId, slug: publishedSlug } }
 }

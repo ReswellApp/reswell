@@ -9,12 +9,13 @@ export const mobileProfileAddressSchema = z.object({
   full_name: z.string(),
   line: z.string(),
   is_default: z.boolean(),
-  line1: z.string(),
-  line2: z.string().nullable(),
-  city: z.string(),
-  state: z.string().nullable(),
-  postal_code: z.string(),
-  country: z.string(),
+  /** Present once the API includes street fields. Older `/me/profile` payloads omit them. */
+  line1: z.string().optional().default(""),
+  line2: z.string().nullable().optional().default(null),
+  city: z.string().optional().default(""),
+  state: z.string().nullable().optional().default(null),
+  postal_code: z.string().optional().default(""),
+  country: z.string().optional().default("US"),
 })
 
 export const mobileProfileAddressesSchema = z.object({

@@ -8,6 +8,7 @@ import { ProfileHeader, type SellerTab } from "@/components/profile-header"
 import { ProfileReviewsSheet } from "@/components/profile-reviews-sheet"
 import { ScreenSearchHeader } from "@/components/screen-search-header"
 import { fetchProfile, fetchProfileReviews, openProfileConversation, setFollow } from "@/lib/api"
+import { peekProfile, peekProfileReviews } from "@/lib/marketplace-screen-cache"
 import { useProfileShopListings } from "@/lib/use-profile-shop-listings"
 import { useAuth } from "@/lib/auth-context"
 import { useAuthGate } from "@/lib/auth-gate"
@@ -25,8 +26,8 @@ export default function SellerScreen() {
   const [followBusy, setFollowBusy] = useState(false)
   const [followError, setFollowError] = useState<string | null>(null)
   const [messageError, setMessageError] = useState<string | null>(null)
-  const [profile, setProfile] = useState<MobileProfile | null>(null)
-  const [reviews, setReviews] = useState<MobileReview[]>([])
+  const [profile, setProfile] = useState<MobileProfile | null>(() => (slug ? peekProfile(slug, token) : null))
+  const [reviews, setReviews] = useState<MobileReview[]>(() => (slug ? peekProfileReviews(slug)?.reviews ?? [] : []))
   const [error, setError] = useState<string | null>(null)
   const [shopQuery, setShopQuery] = useState("")
   const [shopSort, setShopSort] = useState<ProfileShopSort>("newest")
@@ -37,20 +38,25 @@ export default function SellerScreen() {
   useEffect(() => {
     if (!slug) return
     let cancelled = false
+    const cachedProfile = peekProfile(slug, token)
+    const cachedReviews = peekProfileReviews(slug)
     setError(null)
+    if (cachedProfile) setProfile(cachedProfile)
+    if (cachedReviews) setReviews(cachedReviews.reviews)
     fetchProfile(slug, token)
       .then((next) => {
         if (!cancelled) setProfile(next)
       })
       .catch((cause: unknown) => {
-        if (!cancelled) setError(cause instanceof Error ? cause.message : "Unable to load this seller")
+        if (cancelled || peekProfile(slug, token)) return
+        setError(cause instanceof Error ? cause.message : "Unable to load this seller")
       })
     fetchProfileReviews(slug)
       .then((page) => {
         if (!cancelled) setReviews(page.reviews)
       })
       .catch(() => {
-        if (!cancelled) setReviews([])
+        if (!cancelled && !peekProfileReviews(slug)) setReviews([])
       })
     return () => {
       cancelled = true

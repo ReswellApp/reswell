@@ -1,10 +1,10 @@
-import { Image } from "expo-image"
 import { SymbolView } from "expo-symbols"
 import { useEffect, useRef, useState } from "react"
 import { FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native"
 import { Gesture, GestureDetector } from "react-native-gesture-handler"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated"
+import { ListingImage } from "@/components/listing-image"
 import { fontFamily, useReswellColors } from "@/theme"
 
 const MIN_SCALE = 1
@@ -68,7 +68,8 @@ export function ListingImageLightbox({
 
   return (
     <Modal visible={visible} animationType="fade" transparent={false} onRequestClose={onClose}>
-      <View style={[styles.screen, { backgroundColor: colors.image }]}>
+      {visible ? (
+        <View style={[styles.screen, { backgroundColor: colors.image }]}>
         <View style={[styles.toolbar, { paddingTop: insets.top + 8 }]}>
           <Pressable
             accessibilityRole="button"
@@ -152,10 +153,11 @@ export function ListingImageLightbox({
                         onPress={() => goTo(thumb)}
                         style={[styles.thumbHit, selected ? { backgroundColor: colors.foreground } : null]}
                       >
-                        <Image
-                          source={{ uri: url }}
+                        <ListingImage
+                          uri={url}
                           style={[styles.thumb, { backgroundColor: colors.background }]}
                           contentFit="cover"
+                          priority="low"
                         />
                       </Pressable>
                     )
@@ -166,7 +168,8 @@ export function ListingImageLightbox({
             ) : null}
           </View>
         ) : null}
-      </View>
+        </View>
+      ) : null}
     </Modal>
   )
 }
@@ -279,7 +282,7 @@ function ZoomablePhoto({
   return (
     <GestureDetector gesture={gesture}>
       <Animated.View style={[styles.page, { width, height }, animated]}>
-        <Image source={{ uri }} style={styles.photo} contentFit="contain" />
+        <ListingImage uri={uri} style={styles.photo} contentFit="contain" priority={active ? "high" : "low"} />
       </Animated.View>
     </GestureDetector>
   )

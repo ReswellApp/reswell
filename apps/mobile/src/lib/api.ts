@@ -2,11 +2,26 @@ import Constants from "expo-constants"
 import { isDevice } from "expo-device"
 import { Platform } from "react-native"
 import { notifyCartChanged } from "@/lib/cart-count-events"
+import { forgetCachedListing, loadCachedListing, loadCachedRails } from "@/lib/listing-pdp-cache"
+import {
+  loadBrowseRail,
+  loadCategory,
+  loadCategoryListingsPage,
+  loadFeed,
+  loadHome,
+  loadProfile,
+  loadProfileListingsPage,
+  loadProfileReviewsPage,
+  loadProfileShopFiltersPage,
+  loadSearchResults,
+  loadSearchSuggest,
+} from "@/lib/marketplace-screen-cache"
 import { publicApiUrl } from "@/lib/public-env"
 import { getSupabase } from "@/lib/supabase"
 import {
   sellerPurchasePriceAmount,
   sellerPurchasedOnValue,
+  sellPhotoHasStorageUrls,
   type SellDraft,
   type SellPhoto,
   type SellVideo,
@@ -436,17 +451,40 @@ async function getJson(
   return body.data
 }
 
+function isSchemaMismatch(cause: unknown): boolean {
+  return Boolean(
+    cause &&
+      typeof cause === "object" &&
+      "issues" in cause &&
+      Array.isArray((cause as { issues: unknown }).issues),
+  )
+}
+
+function parseResponse<T>(parse: (data: unknown) => T, data: unknown): T {
+  try {
+    return parse(data)
+  } catch (cause) {
+    if (isSchemaMismatch(cause)) {
+      throw new Error("Couldn't load this screen. Try again.")
+    }
+    throw cause
+  }
+}
+
 function read<T>(path: string, parse: (data: unknown) => T, accessToken?: string | null, body?: unknown): Promise<T> {
-  return getJson(path, accessToken, body).then(parse)
+  return getJson(path, accessToken, body).then((data) => parseResponse(parse, data))
 }
 
-export function fetchHome(): Promise<MobileHome> {
-  return read("/api/mobile/v1/home", (data) => mobileHomeSchema.parse(data))
+export function fetchHome(options?: { force?: boolean }): Promise<MobileHome> {
+  return loadHome(() => read("/api/mobile/v1/home", (data) => mobileHomeSchema.parse(data)), options)
 }
 
-/** Website category rail and Seller Resources dropdown. Refetched on each home visit. */
-export function fetchBrowseRail(): Promise<MobileBrowseRail> {
-  return read("/api/mobile/v1/browse-rail", (data) => mobileBrowseRailSchema.parse(data))
+/** Website category rail and Seller Resources dropdown. */
+export function fetchBrowseRail(options?: { force?: boolean }): Promise<MobileBrowseRail> {
+  return loadBrowseRail(
+    () => read("/api/mobile/v1/browse-rail", (data) => mobileBrowseRailSchema.parse(data)),
+    options,
+  )
 }
 
 /** `/sellers`. Copy, order, mosaic, banners, and ratings follow the website directory. */
@@ -548,6 +586,7 @@ export function fetchMarketplaceFeed(
     listing_id?: string
   },
   accessToken?: string | null,
+  options?: { force?: boolean },
 ): Promise<MobileMarketplaceFeed> {
   const params = new URLSearchParams()
   if (query?.tab) params.set("tab", query.tab)
@@ -557,11 +596,15 @@ export function fetchMarketplaceFeed(
     params.set("listing_id", query.listing_id)
   }
   const search = params.toString()
-  return read(
-    `/api/mobile/v1/feed${search ? `?${search}` : ""}`,
-    (data) => mobileMarketplaceFeedSchema.parse(data),
-    accessToken,
-  )
+  const loader = () =>
+    read(
+      `/api/mobile/v1/feed${search ? `?${search}` : ""}`,
+      (data) => mobileMarketplaceFeedSchema.parse(data),
+      accessToken,
+    )
+  const firstPage = (!query?.page || query.page <= 1) && !query?.sold_at
+  if (!firstPage) return loader()
+  return loadFeed(query?.tab ?? "new", accessToken, loader, options)
 }
 
 export function fetchRecentlyViewed(accessToken: string): Promise<MobileRecentlyViewed> {
@@ -572,13 +615,18 @@ export function fetchRecentlyViewed(accessToken: string): Promise<MobileRecently
   )
 }
 
-export function fetchCategory(slug: string): Promise<MobileCategory> {
-  return read(`/api/mobile/v1/categories/${encodeURIComponent(slug)}`, (data) => mobileCategorySchema.parse(data))
+export function fetchCategory(slug: string, options?: { force?: boolean }): Promise<MobileCategory> {
+  return loadCategory(
+    slug,
+    () => read(`/api/mobile/v1/categories/${encodeURIComponent(slug)}`, (data) => mobileCategorySchema.parse(data)),
+    options,
+  )
 }
 
 export function fetchCategoryListings(
   slug: string,
   query: Partial<MobileCategoryListingsQuery> & { offset?: number },
+  options?: { force?: boolean },
 ): Promise<MobileListingsPage> {
   const params = new URLSearchParams()
   if (query.offset) params.set("offset", String(query.offset))
@@ -594,10 +642,13 @@ export function fetchCategoryListings(
     params.set("lng", String(query.lng))
   }
   const search = params.toString()
-  return read(
-    `/api/mobile/v1/categories/${encodeURIComponent(slug)}/listings${search ? `?${search}` : ""}`,
-    (data) => mobileListingsPageSchema.parse(data),
-  )
+  const loader = () =>
+    read(
+      `/api/mobile/v1/categories/${encodeURIComponent(slug)}/listings${search ? `?${search}` : ""}`,
+      (data) => mobileListingsPageSchema.parse(data),
+    )
+  if (query.offset) return loader()
+  return loadCategoryListingsPage(slug, query, loader, options)
 }
 
 /** Website reverse geocode (`/api/geocode?lat=&lng=`). */
@@ -613,16 +664,25 @@ export async function reverseGeocodeLabel(lat: number, lng: number): Promise<str
 }
 
 /** Same ranking as the website header. Cards use absolute image URLs. */
-export function fetchSearchSuggest(query: string): Promise<MobileSearch["listings"]> {
+export function fetchSearchSuggest(query: string, options?: { force?: boolean }): Promise<MobileSearch["listings"]> {
   const q = query.trim()
   if (q.length < 2) return Promise.resolve([])
-  return read(`/api/mobile/v1/search?q=${encodeURIComponent(q)}`, (data) => mobileSearchSchema.parse(data).listings)
+  return loadSearchSuggest(
+    q,
+    () => read(`/api/mobile/v1/search?q=${encodeURIComponent(q)}`, (data) => mobileSearchSchema.parse(data).listings),
+    options,
+  )
 }
 
 /** Same result set as the website `/search` page. */
-export function fetchSearchResults(query: string): Promise<MobileSearchResults> {
-  return read(`/api/mobile/v1/search/results?q=${encodeURIComponent(query.trim())}`, (data) =>
-    mobileSearchResultsSchema.parse(data),
+export function fetchSearchResults(query: string, options?: { force?: boolean }): Promise<MobileSearchResults> {
+  return loadSearchResults(
+    query,
+    () =>
+      read(`/api/mobile/v1/search/results?q=${encodeURIComponent(query.trim())}`, (data) =>
+        mobileSearchResultsSchema.parse(data),
+      ),
+    options,
   )
 }
 
@@ -666,7 +726,10 @@ export function setListingVacation(
     (data) => mobileListingActionResultSchema.parse(data),
     accessToken,
     body,
-  )
+  ).then((result) => {
+    if (body.listing_id) forgetCachedListing(body.listing_id)
+    return result
+  })
 }
 
 export function relistListing(accessToken: string, listingId: string): Promise<{ message: string }> {
@@ -675,7 +738,10 @@ export function relistListing(accessToken: string, listingId: string): Promise<{
     (data) => mobileListingActionResultSchema.parse(data),
     accessToken,
     { listing_id: listingId },
-  )
+  ).then((result) => {
+    forgetCachedListing(listingId)
+    return result
+  })
 }
 
 export function endListing(accessToken: string, listingId: string): Promise<{ message: string }> {
@@ -684,7 +750,10 @@ export function endListing(accessToken: string, listingId: string): Promise<{ me
     (data) => mobileListingActionResultSchema.parse(data),
     accessToken,
     {},
-  )
+  ).then((result) => {
+    forgetCachedListing(listingId)
+    return result
+  })
 }
 
 export function markListingSold(accessToken: string, listingId: string): Promise<{ message: string }> {
@@ -693,58 +762,117 @@ export function markListingSold(accessToken: string, listingId: string): Promise
     (data) => mobileListingActionResultSchema.parse(data),
     accessToken,
     {},
-  )
+  ).then((result) => {
+    forgetCachedListing(listingId)
+    return result
+  })
 }
 
 export function fetchProfileListings(
   slug: string,
   query?: { offset?: number; status?: "current" | "sold"; section?: string },
+  options?: { force?: boolean },
 ): Promise<MobileListingsPage> {
+  const status = query?.status ?? "current"
   const params = new URLSearchParams({
     limit: "20",
     offset: String(query?.offset ?? 0),
-    status: query?.status ?? "current",
+    status,
   })
   if (query?.section) params.set("section", query.section)
-  return read(`/api/mobile/v1/profiles/${encodeURIComponent(slug)}/listings?${params.toString()}`, (data) =>
-    mobileListingsPageSchema.parse(data),
-  )
+  const loader = () =>
+    read(`/api/mobile/v1/profiles/${encodeURIComponent(slug)}/listings?${params.toString()}`, (data) =>
+      mobileListingsPageSchema.parse(data),
+    )
+  if (query?.offset) return loader()
+  return loadProfileListingsPage(slug, status, query?.section, loader, options)
 }
 
 export function fetchProfileShopFilters(
   slug: string,
   status: "current" | "sold" = "current",
+  options?: { force?: boolean },
 ): Promise<MobileProfileShopFilters> {
   const params = new URLSearchParams({ status })
-  return read(
-    `/api/mobile/v1/profiles/${encodeURIComponent(slug)}/shop-filters?${params.toString()}`,
-    (data) => mobileProfileShopFiltersSchema.parse(data),
+  return loadProfileShopFiltersPage(
+    slug,
+    status,
+    () =>
+      read(
+        `/api/mobile/v1/profiles/${encodeURIComponent(slug)}/shop-filters?${params.toString()}`,
+        (data) => mobileProfileShopFiltersSchema.parse(data),
+      ),
+    options,
   )
 }
 
-export function fetchProfileReviews(slug: string, offset = 0): Promise<MobileReviewsPage> {
-  return read(
-    `/api/mobile/v1/profiles/${encodeURIComponent(slug)}/reviews?limit=20&offset=${offset}`,
-    (data) => mobileReviewsPageSchema.parse(data),
-  )
+export function fetchProfileReviews(
+  slug: string,
+  offset = 0,
+  options?: { force?: boolean },
+): Promise<MobileReviewsPage> {
+  const loader = () =>
+    read(
+      `/api/mobile/v1/profiles/${encodeURIComponent(slug)}/reviews?limit=20&offset=${offset}`,
+      (data) => mobileReviewsPageSchema.parse(data),
+    )
+  if (offset) return loader()
+  return loadProfileReviewsPage(slug, loader, options)
 }
 
-export function fetchListing(id: string, accessToken?: string | null): Promise<MobileListingDetail> {
-  return getJson(`/api/mobile/v1/listings/${encodeURIComponent(id)}`, accessToken).then((data) =>
-    mobileListingDetailSchema.parse(data),
+export function fetchListing(
+  id: string,
+  accessToken?: string | null,
+  options?: { force?: boolean },
+): Promise<MobileListingDetail> {
+  return loadCachedListing(
+    id,
+    accessToken,
+    () =>
+      getJson(`/api/mobile/v1/listings/${encodeURIComponent(id)}`, accessToken).then((data) =>
+        mobileListingDetailSchema.parse(data),
+      ),
+    options,
   )
 }
 
 /** Same horizontal sections the website renders under `/l`. */
-export function fetchListingRails(id: string, accessToken?: string | null): Promise<MobileListingRails> {
-  return getJson(`/api/mobile/v1/listings/${encodeURIComponent(id)}/rails`, accessToken).then((data) =>
-    mobileListingRailsSchema.parse(data),
+export function fetchListingRails(
+  id: string,
+  accessToken?: string | null,
+  options?: { force?: boolean },
+): Promise<MobileListingRails> {
+  return loadCachedRails(
+    id,
+    accessToken,
+    () =>
+      getJson(`/api/mobile/v1/listings/${encodeURIComponent(id)}/rails`, accessToken).then((data) =>
+        mobileListingRailsSchema.parse(data),
+      ),
+    options,
   )
 }
 
-export function fetchProfile(slug: string, accessToken?: string | null): Promise<MobileProfile> {
-  return getJson(`/api/mobile/v1/profiles/${encodeURIComponent(slug)}`, accessToken).then((data) =>
-    mobileProfileSchema.parse(data),
+/** Kick off PDP + rails before the listing screen mounts. */
+export function prefetchListing(id: string, accessToken?: string | null): void {
+  if (!id.trim()) return
+  void fetchListing(id, accessToken).catch(() => undefined)
+  void fetchListingRails(id, accessToken).catch(() => undefined)
+}
+
+export function fetchProfile(
+  slug: string,
+  accessToken?: string | null,
+  options?: { force?: boolean },
+): Promise<MobileProfile> {
+  return loadProfile(
+    slug,
+    accessToken,
+    () =>
+      getJson(`/api/mobile/v1/profiles/${encodeURIComponent(slug)}`, accessToken).then((data) =>
+        mobileProfileSchema.parse(data),
+      ),
+    options,
   )
 }
 
@@ -1573,15 +1701,6 @@ export async function uploadSellPhoto(_accessToken: string, uri: string): Promis
   return mobileSellPhotoSchema.parse(await uploadSellPhotoToListingsStorage(uri))
 }
 
-async function sellPhotoStorageUrlReachable(url: string): Promise<boolean> {
-  try {
-    const res = await fetch(url, { method: "HEAD", signal: AbortSignal.timeout(12_000) })
-    return res.ok
-  } catch {
-    return false
-  }
-}
-
 export async function uploadSellVideo(
   _accessToken: string,
   video: SellVideo,
@@ -1591,7 +1710,7 @@ export async function uploadSellVideo(
   return mobileSellVideoSchema.parse(await uploadSellVideoToListingsStorage(video, onProgress))
 }
 
-/** Uploads a local clip. Reuses the stored object when the public URL still resolves. */
+/** Uploads a local clip. Reuses the stored object when this session already uploaded it. */
 export async function uploadSellVideoIfNeeded(
   accessToken: string,
   video: SellVideo | null,
@@ -1599,10 +1718,7 @@ export async function uploadSellVideoIfNeeded(
 ): Promise<SellVideo | null> {
   if (!video) return null
   if (video.url) {
-    const stored = await sellPhotoStorageUrlReachable(video.url)
-    const thumbOk =
-      !video.thumbnailUrl || (await sellPhotoStorageUrlReachable(video.thumbnailUrl))
-    if (stored && thumbOk) return { ...video, status: "ready", errorMessage: null }
+    return { ...video, status: "ready", errorMessage: null }
   }
   const stored = await uploadSellVideo(accessToken, video, onProgress)
   return {
@@ -1620,32 +1736,12 @@ export async function uploadSellVideoIfNeeded(
 
 /** Uploads photos that are still only on the phone. Photos already stored are reused. */
 export async function uploadSellPhotos(accessToken: string, photos: SellPhoto[]): Promise<SellPhoto[]> {
-  const reused = await Promise.all(
-    photos.map(async (photo) => {
-      // Existing listing rows keep their storage URLs — don't re-upload when HEAD probes fail.
-      if (photo.serverImageId && photo.url && photo.thumbnailUrl) {
-        return photo
-      }
-      if (photo.url && photo.thumbnailUrl) {
-        const [fullOk, thumbOk] = await Promise.all([
-          sellPhotoStorageUrlReachable(photo.url),
-          sellPhotoStorageUrlReachable(photo.thumbnailUrl),
-        ])
-        if (fullOk && thumbOk) return photo
-      }
-      return null
-    }),
-  )
-
   const uploaded: SellPhoto[] = []
-  for (let i = 0; i < photos.length; i++) {
-    const kept = reused[i]
-    if (kept) {
-      uploaded.push(kept)
+  for (const photo of photos) {
+    if (sellPhotoHasStorageUrls(photo)) {
+      uploaded.push(photo)
       continue
     }
-    const photo = photos[i]
-    if (!photo) continue
     const stored = await uploadSellPhoto(accessToken, photo.uri)
     uploaded.push({ ...photo, url: stored.url, thumbnailUrl: stored.thumbnail_url })
   }
@@ -1731,6 +1827,7 @@ export function updateSellListing(
     editSellListingBody(draft, images, listingId),
   ).then((data) => {
     forgetSellListingEdit(accessToken, listingId)
+    forgetCachedListing(listingId)
     return mobileSellPublishResultSchema.parse(data)
   })
 }

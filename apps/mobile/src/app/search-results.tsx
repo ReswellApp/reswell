@@ -31,6 +31,7 @@ import { SaveSearchCard } from "@/components/save-search-card"
 import { fetchCategory, fetchCategoryListings, fetchSavedSearch, fetchSearchResults } from "@/lib/api"
 import { useAuth } from "@/lib/auth-context"
 import { categoryListingQuery, type SelectedFacets } from "@/lib/category-listing-query"
+import { peekCategory, peekCategoryListings, peekSearchResults } from "@/lib/marketplace-screen-cache"
 import { fontFamily, useReswellColors } from "@/theme"
 
 const SORTS: { id: MobileCategorySortId; label: string }[] = [
@@ -47,14 +48,26 @@ export default function SearchResultsScreen() {
   const { session } = useAuth()
   const params = useLocalSearchParams<{ q?: string }>()
   const query = typeof params.q === "string" ? params.q.trim() : ""
+  const cachedSearch = peekSearchResults(query)
   const [draft, setDraft] = useState(query)
-  const [browse, setBrowse] = useState<MobileSearchResults["browse"]>(null)
-  const [searchListings, setSearchListings] = useState<MobileListingCard[]>([])
-  const [facetSlug, setFacetSlug] = useState<MobileListingCategory>("surfboards")
-  const [category, setCategory] = useState<MobileCategory | null>(null)
-  const [page, setPage] = useState<MobileListingsPage | null>(null)
+  const [browse, setBrowse] = useState<MobileSearchResults["browse"]>(cachedSearch?.browse ?? null)
+  const [searchListings, setSearchListings] = useState<MobileListingCard[]>(cachedSearch?.listings ?? [])
+  const [facetSlug, setFacetSlug] = useState<MobileListingCategory>(
+    cachedSearch?.browse?.category ?? inferCategory(cachedSearch?.listings ?? []),
+  )
+  const [category, setCategory] = useState<MobileCategory | null>(() =>
+    peekCategory(cachedSearch?.browse?.category ?? "surfboards"),
+  )
+  const [page, setPage] = useState<MobileListingsPage | null>(() =>
+    cachedSearch?.browse
+      ? peekCategoryListings(
+          cachedSearch.browse.category,
+          categoryListingQuery(0, "relevant", false, {}, cachedSearch.browse.board_type ?? undefined, null, "any"),
+        )
+      : null,
+  )
   const [savedSearchId, setSavedSearchId] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(!cachedSearch)
   const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [sort, setSort] = useState<MobileCategorySortId>("relevant")
@@ -79,14 +92,23 @@ export default function SearchResultsScreen() {
       return
     }
     let cancelled = false
-    setLoading(true)
-    setBrowse(null)
-    setPage(null)
+    const cached = peekSearchResults(query)
     setSort("relevant")
     setShipping(false)
     setSelected({})
     setPlace(null)
     setRadius("any")
+    if (cached) {
+      setBrowse(cached.browse)
+      setSearchListings(cached.listings)
+      setFacetSlug(cached.browse?.category ?? inferCategory(cached.listings))
+      setLoading(false)
+    } else {
+      setLoading(true)
+      setBrowse(null)
+      setPage(null)
+      setSearchListings([])
+    }
     fetchSearchResults(query)
       .then((result) => {
         if (cancelled) return
@@ -114,7 +136,7 @@ export default function SearchResultsScreen() {
         if (!cancelled) setCategory(next)
       })
       .catch(() => {
-        if (!cancelled) setCategory(null)
+        if (!cancelled && !peekCategory(facetSlug)) setCategory(null)
       })
     return () => {
       cancelled = true
@@ -124,11 +146,23 @@ export default function SearchResultsScreen() {
   useEffect(() => {
     if (!browse || query.length < 2) return
     let cancelled = false
-    setLoading(true)
-    fetchCategoryListings(
-      browse.category,
-      categoryListingQuery(0, sort, shipping, selected, browse.board_type ?? undefined, place, radius),
+    const listingsQuery = categoryListingQuery(
+      0,
+      sort,
+      shipping,
+      selected,
+      browse.board_type ?? undefined,
+      place,
+      radius,
     )
+    const cachedPage = peekCategoryListings(browse.category, listingsQuery)
+    if (cachedPage) {
+      setPage(cachedPage)
+      setLoading(false)
+    } else {
+      setLoading(true)
+    }
+    fetchCategoryListings(browse.category, listingsQuery)
       .then((next) => {
         if (!cancelled) setPage(next)
       })
@@ -182,9 +216,10 @@ export default function SearchResultsScreen() {
       .finally(() => setLoadingMore(false))
   }
 
-  const listings = browse
-    ? (page?.listings ?? [])
-    : filterSearchListings(searchListings, { sort, shipping, selected })
+  const listings =
+    browse && page
+      ? page.listings
+      : filterSearchListings(searchListings, { sort, shipping, selected })
   const grid = listings.length % 2 === 1 ? [...listings, null] : listings
   const sorts = category?.sorts ?? SORTS
   const showLocation = facetSlug === "surfboards"
