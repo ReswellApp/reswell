@@ -9,7 +9,6 @@ import {
   FOR_SURFBOARD_FLIPPERS_FAQS,
   FOR_SURFBOARD_FLIPPERS_HERO_DESCRIPTION,
   FOR_SURFBOARD_FLIPPERS_STEPS,
-  FOR_SURFBOARD_FLIPPERS_USES,
   FOR_SURFBOARD_FLIPPERS_VALUES,
   forSurfboardFlippersOfferHref,
   forSurfboardFlippersOfferLabel,
@@ -126,17 +125,12 @@ function forSurfboardFlippers(
         },
         {
           kind: "steps",
-          title: "How a flipper gets started",
+          title: "How it works",
           steps: [...FOR_SURFBOARD_FLIPPERS_STEPS],
         },
         {
-          kind: "cards",
-          title: "What flippers list",
-          cards: FOR_SURFBOARD_FLIPPERS_USES.map((item) => card(item.title, item.body)),
-        },
-        {
           kind: "faqs",
-          title: signedIn ? "Selling as a flipper" : "Before you apply",
+          title: signedIn ? "Selling as a flipper" : "Questions",
           items: FOR_SURFBOARD_FLIPPERS_FAQS.map((item) => ({
             question: item.question,
             answer: item.answer,

@@ -19,7 +19,7 @@ export const FOR_SURFBOARD_FLIPPERS_TITLE =
 export const FOR_SURFBOARD_FLIPPERS_DESCRIPTION = `Surfers who buy and sell boards: flip on Reswell with ${FOR_SURFBOARD_FLIPPERS_OFFER_MONTHS} months of zero marketplace fees. Apply once — we set up the offer.`
 
 export const FOR_SURFBOARD_FLIPPERS_HERO_DESCRIPTION =
-  "Reswell is the marketplace for buying and selling surfboards. Built for surfers who rotate quivers, hunt deals, and move boards often — try it with six months of no selling fees."
+  "For surfers who buy and sell boards. List on Reswell with six months of no selling fees."
 
 export function forSurfboardFlippersOfferHref(): string {
   return `${FOR_SURFBOARD_FLIPPERS_PATH}#${FOR_SURFBOARD_FLIPPERS_OFFER_ANCHOR}`
@@ -42,43 +42,41 @@ export function forSurfboardFlippersSignInHref(): string {
   return authLandingHref("/auth/login", SURFBOARD_SELL_BOARDS_CREATE_HREF)
 }
 
+/** Kept for mobile seller-resource cards. */
 export const FOR_SURFBOARD_FLIPPERS_VALUES = [
   {
     key: "fee",
     title: "Six months at 0%",
-    body: `Apply once. We waive the usual ${MARKETPLACE_FEE_PERCENT}% marketplace fee for ${FOR_SURFBOARD_FLIPPERS_OFFER_MONTHS} months so you can flip boards on Reswell risk-free.`,
+    body: `We waive the usual ${MARKETPLACE_FEE_PERCENT}% marketplace fee for ${FOR_SURFBOARD_FLIPPERS_OFFER_MONTHS} months.`,
   },
   {
     key: "reach",
-    title: "Buyers beyond your zip",
-    body: "Local apps keep deals local. Reswell reaches surfers already hunting used boards — pickup or shipped nationwide.",
+    title: "Buyers nationwide",
+    body: "Pickup or ship. Reach surfers already hunting used boards.",
   },
   {
     key: "flow",
-    title: "Buy and sell in one place",
-    body: "Source a board, list the next one, get paid in your wallet. Same marketplace for both sides of the flip.",
+    title: "Buy and sell here",
+    body: "Source a board, list the next one, get paid in your wallet.",
   },
 ] as const
 
 export const FOR_SURFBOARD_FLIPPERS_STEPS = [
   {
-    title: "Tell us you’re flipping",
-    body: "Name and email — that’s it. No public promo code; we confirm you’re actively buying and selling, then turn the offer on.",
+    title: "Apply",
+    body: "Name and email. We confirm you’re flipping, then unlock the offer.",
   },
   {
-    title: "We unlock zero selling fees",
-    body: `Reswell sets ${FOR_SURFBOARD_FLIPPERS_OFFER_MONTHS} months of no marketplace fee on your seller account. You keep 100% of the item price while the offer runs.`,
+    title: "List",
+    body: "Post boards free. Photograph deck, bottom, rails, and any dings.",
   },
   {
-    title: "List the boards you move",
-    body: "Quiver rotates, project boards, deals you picked up. Free to post. Photograph deck, bottom, rails, and any dings.",
-  },
-  {
-    title: "Sell, then get paid in your wallet",
-    body: "When a board sells, earnings go to your Reswell wallet. Connect a bank account and cash out when the sale is ready.",
+    title: "Get paid",
+    body: "Sales land in your Reswell wallet. Cash out when ready.",
   },
 ] as const
 
+/** Kept for mobile seller-resource cards. */
 export const FOR_SURFBOARD_FLIPPERS_USES = [
   {
     title: "Quiver rotates",
@@ -86,49 +84,23 @@ export const FOR_SURFBOARD_FLIPPERS_USES = [
   },
   {
     title: "Deals you picked up",
-    body: "Boards you bought to ride or flip — listed where buyers are already searching.",
+    body: "Boards you bought to ride or flip.",
   },
   {
     title: "Volume sellers",
-    body: "If you buy and sell often, Reswell is built to keep that loop moving.",
+    body: "If you buy and sell often, keep the loop moving here.",
   },
 ] as const
 
 export const FOR_SURFBOARD_FLIPPERS_WHY = {
-  eyebrow: "Why Reswell",
-  title: "One place to buy and sell surfboards",
-  body: [
-    "Some boards move fine on Facebook Marketplace or Craigslist. Others sit for months — while someone a few towns over is hunting that exact shape.",
-    "Reswell was built so buying and selling surfboards does not stop at local pickup. One dedicated marketplace for boards and gear, with shipping when meetup is not the right fit.",
-    "Surfboard flippers are part of that. You already hunt deals and rotate boards. Reswell gives those boards a wider audience — and gives you a place to source the next one.",
-  ],
-} as const
-
-export const FOR_SURFBOARD_FLIPPERS_FIT = {
-  eyebrow: "Flippers on Reswell",
-  title: "How flippers fit the marketplace",
-  lead: "Reswell connects surfers who want a specific board with people who have one. Flippers keep inventory moving — the marketplace brings demand both ways.",
-  points: [
-    {
-      title: "Buy, then sell again",
-      body: "Find a board, ride it or flip it, list the next one. One account for both sides of the deal.",
-    },
-    {
-      title: "Pickup or ship",
-      body: "Offer local pickup, shipping, or both. You choose per listing — buyers pay shipping at checkout.",
-    },
-    {
-      title: "Same Sell flow",
-      body: "No special account type. Sign up, list from Sell, and apply for the six-month fee offer if you move boards often.",
-    },
-  ],
+  title: "One marketplace for surfboards",
+  body: "Reswell is built so buying and selling boards doesn’t stop at local pickup. Flippers keep inventory moving — we bring the buyers.",
 } as const
 
 export const FOR_SURFBOARD_FLIPPERS_OFFER = {
-  eyebrow: "Flipper offer",
   title: "Six months. No selling fees.",
-  lead: `Normally Reswell takes ${MARKETPLACE_FEE_PERCENT}% of the item price when a board sells (you keep ${SELLER_SHARE_PERCENT}%). For surfers who buy and sell on this offer, we waive that fee for ${FOR_SURFBOARD_FLIPPERS_OFFER_MONTHS} months so you can demo the marketplace with real flips.`,
-  after: `After the ${FOR_SURFBOARD_FLIPPERS_OFFER_MONTHS} months, the standard ${MARKETPLACE_FEE_PERCENT}% marketplace fee applies. Listing stays free either way. Shipping is buyer-paid and never part of the fee.`,
+  lead: `Usually ${MARKETPLACE_FEE_PERCENT}% when a board sells. For this offer: 0% for ${FOR_SURFBOARD_FLIPPERS_OFFER_MONTHS} months.`,
+  after: `Afterward, the standard ${MARKETPLACE_FEE_PERCENT}% fee applies (you keep ${SELLER_SHARE_PERCENT}%). Listing stays free.`,
 } as const
 
 export type ForSurfboardFlippersFaq = {
@@ -139,37 +111,25 @@ export type ForSurfboardFlippersFaq = {
 
 export const FOR_SURFBOARD_FLIPPERS_FAQS: readonly ForSurfboardFlippersFaq[] = [
   {
-    question: "How do I get the 6 months with no selling fees?",
-    answer: `Apply on this page with your name and email. There is no public promo code. A Reswell teammate confirms you’re a surfer who buys and sells boards, then turns on ${FOR_SURFBOARD_FLIPPERS_OFFER_MONTHS} months of zero marketplace fees on your seller account.`,
+    question: "How do I get 6 months free?",
+    answer: `Apply with your name and email. We confirm you’re buying and selling boards, then turn on ${FOR_SURFBOARD_FLIPPERS_OFFER_MONTHS} months of zero marketplace fees.`,
     href: forSurfboardFlippersOfferHref(),
   },
   {
-    question: "Why not just publish a promo code?",
+    question: "Why no promo code?",
     answer:
-      "Seller fee waivers are set on your account by Reswell. A public code would be easy to abuse. Applying first keeps the offer for flippers who are ready to list.",
+      "Fee waivers are set on your account by Reswell. Applying keeps the offer for real flippers.",
     href: forSurfboardFlippersOfferHref(),
   },
   {
-    question: "Do I need a special account?",
-    answer:
-      "No. Flippers use the same free Reswell account as any seller. Sign up, list boards from Sell, and apply for the offer so we can attach the fee waiver.",
-    href: helpArticlePath("selling", "how-to-list-a-board"),
-  },
-  {
-    question: "What does it cost after the offer?",
-    answer: `It is always free to list. When a board sells after the offer ends, Reswell takes a ${MARKETPLACE_FEE_PERCENT}% marketplace fee on the item price. You keep ${SELLER_SHARE_PERCENT}%. Buyer-paid shipping is not included in that fee, and card processing is not deducted from your payout.`,
+    question: "What does it cost after?",
+    answer: `Free to list. After the offer, Reswell takes ${MARKETPLACE_FEE_PERCENT}% of the item price when a board sells. You keep ${SELLER_SHARE_PERCENT}%.`,
     href: helpArticlePath("selling", "marketplace-fees"),
-  },
-  {
-    question: "Can someone pick the board up locally?",
-    answer:
-      "Yes. Each listing can offer local pickup, shipping, or both. Pickup-only is fine if you do not want to ship.",
-    href: helpArticlePath("selling", "how-to-list-a-board"),
   },
   {
     question: "How do I get paid?",
     answer:
-      "Earnings go to your Reswell wallet after the sale reaches the payout state. Connect a payout account, then cash out to your bank.",
+      "Earnings go to your Reswell wallet. Connect a payout account, then cash out to your bank.",
     href: helpArticlePath("selling", "how-long-to-get-paid"),
   },
 ]
