@@ -1,6 +1,7 @@
 /**
  * Sends one minimal Events API event so **Listing Auto Vacation** appears under
- * Flows → Your metrics → API before any real seller listing is auto-hidden.
+ * Flows → Your metrics → API. Auto vacation is off; this seed is only for the
+ * existing metric / flow, not a live hide.
  */
 
 import "@/lib/klaviyo/bootstrap-env"

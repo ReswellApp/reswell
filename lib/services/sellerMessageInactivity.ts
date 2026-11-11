@@ -1,26 +1,15 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import {
   fetchListingsEligibleForSellerMessageInactivity,
-  recordSellerMessageInactivityAction,
   recordSellerMessageReminder,
   SELLER_MESSAGE_REMINDER_DAYS,
   type SellerMessageInactivityEligibleRow,
   type SellerMessageReminderStage,
 } from "@/lib/db/sellerMessageInactivity"
 import type { KlaviyoListingImage } from "@/lib/klaviyo/catalog-product"
-import {
-  trackKlaviyoInactiveSeller,
-  type KlaviyoInactiveSellerMissedMessage,
-} from "@/lib/klaviyo/track-inactive-seller"
 import { trackKlaviyoSellerMessageReminder } from "@/lib/klaviyo/track-seller-message-reminder"
 import { publicSiteOriginForEmail } from "@/lib/public-site-origin"
 import {
-  sellerListingAutoHiddenBody,
-  sellerListingAutoHiddenDedupeKey,
-  sellerListingAutoHiddenTitle,
-  sellerListingHideWarningBody,
-  sellerListingHideWarningDedupeKey,
-  sellerListingHideWarningTitle,
   sellerMessageWaitingBody,
   sellerMessageWaitingDedupeKey,
   sellerMessageWaitingTitle,
@@ -32,7 +21,7 @@ import {
   sellerMessageReminderCutoff,
   sellerMessageReminderMessageKey,
 } from "@/lib/services/sellerMessageInactivityStage"
-import { setListingVacationModeForSeller } from "@/lib/services/listingVacationMode"
+import type { KlaviyoInactiveSellerMissedMessage } from "@/lib/klaviyo/track-inactive-seller"
 
 export type ProcessSellerMessageInactivitySummary = {
   eligible: number
@@ -58,12 +47,6 @@ type ListingInactivityGroup = {
   rows: DueRow[]
 }
 
-const STAGE_ORDER: Record<SellerMessageReminderStage, number> = {
-  day7: 0,
-  day6: 1,
-  day3: 2,
-}
-
 function groupDueRows(rows: DueRow[]): ListingInactivityGroup[] {
   const byListing = new Map<string, ListingInactivityGroup>()
 
@@ -85,7 +68,7 @@ function groupDueRows(rows: DueRow[]): ListingInactivityGroup[] {
     })
   }
 
-  return [...byListing.values()].sort((a, b) => STAGE_ORDER[a.stage] - STAGE_ORDER[b.stage])
+  return [...byListing.values()]
 }
 
 function buildMissedMessages(
@@ -112,48 +95,20 @@ function inAppNotice(group: ListingInactivityGroup): InAppNotificationInput | nu
   const conversationId = oldestConversationId(group.rows)
   if (!messageKey || !conversationId) return null
 
-  const threadHref = `/messages/${conversationId}`
-  const title = group.listingTitle
-  const metadata = {
-    listingId: group.listingId,
-    conversationId,
-    stage: group.stage,
-    messageIds: group.rows.map((row) => row.buyer_message_id),
-  }
-
-  if (group.stage === "day3") {
-    return {
-      userId: group.sellerId,
-      type: "seller_message_waiting",
-      listingId: group.listingId,
-      title: sellerMessageWaitingTitle(),
-      body: sellerMessageWaitingBody(title),
-      href: threadHref,
-      dedupeKey: sellerMessageWaitingDedupeKey(group.listingId, messageKey),
-      metadata,
-    }
-  }
-  if (group.stage === "day6") {
-    return {
-      userId: group.sellerId,
-      type: "seller_listing_hide_warning",
-      listingId: group.listingId,
-      title: sellerListingHideWarningTitle(),
-      body: sellerListingHideWarningBody(title),
-      href: threadHref,
-      dedupeKey: sellerListingHideWarningDedupeKey(group.listingId, messageKey),
-      metadata,
-    }
-  }
   return {
     userId: group.sellerId,
-    type: "seller_listing_auto_hidden",
+    type: "seller_message_waiting",
     listingId: group.listingId,
-    title: sellerListingAutoHiddenTitle(),
-    body: sellerListingAutoHiddenBody(title),
-    href: "/dashboard/listings",
-    dedupeKey: sellerListingAutoHiddenDedupeKey(group.listingId, messageKey),
-    metadata,
+    title: sellerMessageWaitingTitle(),
+    body: sellerMessageWaitingBody(group.listingTitle),
+    href: `/messages/${conversationId}`,
+    dedupeKey: sellerMessageWaitingDedupeKey(group.listingId, messageKey),
+    metadata: {
+      listingId: group.listingId,
+      conversationId,
+      stage: group.stage,
+      messageIds: group.rows.map((row) => row.buyer_message_id),
+    },
   }
 }
 
@@ -206,9 +161,9 @@ async function publishNotice(
 /**
  * Unanswered buyer messages on a live listing:
  * day 3 — in-app "are you still here?" and Klaviyo **Seller Still Here**
- * day 6 — in-app hide warning and Klaviyo **Seller Listing Hide Warning**
- * day 7 — vacation mode, in-app notice, and Klaviyo **Inactive Seller**
- *          (vacation mode also emits **Listing Auto Vacation**)
+ *
+ * Auto vacation is off. Day 6 hide warnings and day 7 vacation mode are not applied.
+ * Sellers hide listings with vacation mode themselves.
  */
 export async function processSellerMessageInactivity(
   supabase: SupabaseClient,
@@ -247,35 +202,14 @@ export async function processSellerMessageInactivity(
 
   const groups = groupDueRows(dueRows)
   const errors: string[] = []
-  const hiddenListingIds = new Set<string>()
   let remindersSent = 0
-  let warningsSent = 0
-  let vacationApplied = 0
   let inAppNotified = 0
   let klaviyoEmitted = 0
   let failed = 0
 
   for (const group of groups) {
-    if (group.stage !== "day7" && hiddenListingIds.has(group.listingId)) {
-      continue
-    }
-
-    if (group.stage === "day7") {
-      const outcome = await processDay7(supabase, group)
-      if (outcome.vacationApplied) {
-        vacationApplied += 1
-        hiddenListingIds.add(group.listingId)
-      }
-      if (outcome.inApp) inAppNotified += 1
-      if (outcome.klaviyo) klaviyoEmitted += 1
-      failed += outcome.failed
-      errors.push(...outcome.errors)
-      continue
-    }
-
     const outcome = await processReminder(supabase, group)
-    if (outcome.sent && group.stage === "day3") remindersSent += 1
-    if (outcome.sent && group.stage === "day6") warningsSent += 1
+    if (outcome.sent) remindersSent += 1
     if (outcome.inApp) inAppNotified += 1
     if (outcome.klaviyo) klaviyoEmitted += 1
     failed += outcome.failed
@@ -286,8 +220,8 @@ export async function processSellerMessageInactivity(
     eligible: dueRows.length,
     listingsProcessed: groups.length,
     remindersSent,
-    warningsSent,
-    vacationApplied,
+    warningsSent: 0,
+    vacationApplied: 0,
     inAppNotified,
     klaviyoEmitted,
     failed,
@@ -317,7 +251,7 @@ async function processReminder(
   ])
 
   const klaviyoResult = await trackKlaviyoSellerMessageReminder({
-    stage: group.stage === "day6" ? "day6" : "day3",
+    stage: "day3",
     sellerUserId: group.sellerId,
     sellerDisplayName,
     listingId: group.listingId,
@@ -350,7 +284,7 @@ async function processReminder(
         sellerId: row.seller_id,
         buyerMessageId: row.buyer_message_id,
         buyerMessageAt: row.buyer_message_at,
-        stage: group.stage === "day6" ? "day6" : "day3",
+        stage: "day3",
         notifiedAt,
       }),
     ),
@@ -365,101 +299,4 @@ async function processReminder(
   }
 
   return { sent: failed === 0, inApp: true, klaviyo: klaviyoResult.ok, failed, errors }
-}
-
-async function processDay7(
-  supabase: SupabaseClient,
-  group: ListingInactivityGroup,
-): Promise<{
-  vacationApplied: boolean
-  inApp: boolean
-  klaviyo: boolean
-  failed: number
-  errors: string[]
-}> {
-  const errors: string[] = []
-  const vacationResult = await setListingVacationModeForSeller({
-    supabase,
-    userId: group.sellerId,
-    listingId: group.listingId,
-    vacationMode: true,
-    source: "seller_inactivity",
-  })
-
-  if (!vacationResult.ok) {
-    return {
-      vacationApplied: false,
-      inApp: false,
-      klaviyo: false,
-      failed: 1,
-      errors: [`${group.listingId}: vacation mode failed — ${vacationResult.error}`],
-    }
-  }
-
-  const notice = await publishNotice(supabase, group)
-  let inApp = false
-  let hiddenNotifiedAt: string | null = null
-  if (notice.ok) {
-    inApp = true
-    hiddenNotifiedAt = new Date().toISOString()
-  } else {
-    errors.push(`${group.listingId}: in-app day7 failed — ${notice.error}`)
-  }
-
-  const [listingImages, sellerDisplayName] = await Promise.all([
-    fetchListingImagesForKlaviyo(supabase, group.listingId),
-    fetchSellerDisplayName(supabase, group.sellerId),
-  ])
-
-  const klaviyoResult = await trackKlaviyoInactiveSeller({
-    sellerUserId: group.sellerId,
-    sellerDisplayName,
-    listingId: group.listingId,
-    listingTitle: group.listingTitle,
-    listingSlug: group.listingSlug,
-    listingSection: group.listingSection,
-    listingImages,
-    vacationModeApplied: true,
-    missedMessages: buildMissedMessages(group.rows),
-  })
-
-  const klaviyoOk = klaviyoResult.ok || klaviyoResult.skipped
-  let failed = notice.ok ? 0 : 1
-  if (!klaviyoOk) {
-    failed += 1
-    errors.push(
-      `${group.listingId}: Klaviyo ${klaviyoResult.status} — ${klaviyoResult.detail.slice(0, 200)}`,
-    )
-  }
-
-  const vacationAppliedAt = new Date().toISOString()
-  const recordOutcomes = await Promise.all(
-    group.rows.map((row) =>
-      recordSellerMessageInactivityAction(supabase, {
-        listingId: row.listing_id,
-        conversationId: row.conversation_id,
-        sellerId: row.seller_id,
-        buyerMessageId: row.buyer_message_id,
-        buyerMessageAt: row.buyer_message_at,
-        vacationAppliedAt,
-        klaviyoSentAt: klaviyoResult.ok ? vacationAppliedAt : null,
-        hiddenNotifiedAt,
-      }),
-    ),
-  )
-
-  for (const [i, rec] of recordOutcomes.entries()) {
-    if (rec.error) {
-      failed += 1
-      errors.push(`${group.rows[i]?.conversation_id}: record action failed — ${rec.error}`)
-    }
-  }
-
-  return {
-    vacationApplied: true,
-    inApp,
-    klaviyo: klaviyoResult.ok,
-    failed,
-    errors,
-  }
 }

@@ -3,28 +3,13 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { deleteAllCartRowsForListing } from "@/lib/db/cart-items-server"
 import { updateListingHiddenFromSite } from "@/lib/db/listings"
-import type { KlaviyoListingImage } from "@/lib/klaviyo/catalog-product"
-import { trackKlaviyoListingAutoVacation } from "@/lib/klaviyo/track-listing-auto-vacation"
 import { syncListingToIndex } from "@/lib/elasticsearch/listings-index"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { revalidateAfterListingSiteModeration } from "@/lib/services/listingSiteModerationRevalidation"
-import type { ListingVisibilitySource } from "@/lib/listing-visibility-sources"
 import { recordListingVisibilityEvent } from "@/lib/services/listingVisibilityAudit"
 import { evaluateSellerCanSell } from "@/lib/services/sellerBan"
 
 const VACATION_ALLOWED_STATUSES = new Set(["active", "pending_sale"])
-
-type VacationModeListingRow = {
-  id: string
-  user_id: string
-  status: string | null
-  hidden_from_site: boolean | null
-  title: string | null
-  slug: string | null
-  section: string | null
-  price: string | number | null
-  tile_gallery_images: KlaviyoListingImage[] | null
-}
 
 function runAfterResponse(work: () => Promise<void>): void {
   const run = () => {
@@ -47,8 +32,6 @@ export async function setListingVacationModeForSeller(params: {
   userId: string
   listingId: string
   vacationMode: boolean
-  /** Defaults to seller_vacation; inactivity job passes seller_inactivity. */
-  source?: Extract<ListingVisibilitySource, "seller_vacation" | "seller_inactivity">
 }): Promise<{ ok: true; changed: boolean } | { ok: false; error: string; status: number }> {
   const listingId = params.listingId.trim()
   if (!listingId) {
@@ -57,7 +40,7 @@ export async function setListingVacationModeForSeller(params: {
 
   const { data: listing, error: listingErr } = await params.supabase
     .from("listings")
-    .select("id, user_id, status, hidden_from_site, title, slug, section, price, tile_gallery_images")
+    .select("id, user_id, status, hidden_from_site")
     .eq("id", listingId)
     .maybeSingle()
 
@@ -101,9 +84,8 @@ export async function setListingVacationModeForSeller(params: {
     return { ok: false, error: "Server configuration error", status: 503 }
   }
 
-  const source = params.source ?? "seller_vacation"
   const updated = await updateListingHiddenFromSite(service, listingId, hiddenFromSite, {
-    source,
+    source: "seller_vacation",
   })
   if (!updated.ok) {
     return { ok: false, error: updated.message, status: 500 }
@@ -112,7 +94,7 @@ export async function setListingVacationModeForSeller(params: {
   await recordListingVisibilityEvent(service, {
     listingId,
     hiddenFromSite,
-    source,
+    source: "seller_vacation",
     actorUserId: params.userId,
     metadata: { vacationMode: params.vacationMode },
   })
@@ -136,7 +118,6 @@ export async function setListingVacationModeForSeller(params: {
 
   syncListingToGoogleMerchantBestEffort(service, listingId)
 
-  const row = listing as VacationModeListingRow
   runAfterResponse(async () => {
     try {
       await syncListingToIndex(service, listingId)
@@ -145,34 +126,6 @@ export async function setListingVacationModeForSeller(params: {
         "[listingVacationMode] elasticsearch sync:",
         error instanceof Error ? error.message : error,
       )
-    }
-
-    if (hiddenFromSite && source === "seller_inactivity") {
-      const images = Array.isArray(row.tile_gallery_images) ? row.tile_gallery_images : null
-      try {
-        const klaviyoResult = await trackKlaviyoListingAutoVacation({
-          sellerUserId: params.userId,
-          listingId,
-          listingTitle: typeof row.title === "string" ? row.title : "",
-          listingSlug: row.slug,
-          listingSection:
-            typeof row.section === "string" && row.section.trim() ? row.section : "surfboards",
-          price: row.price,
-          listingImages: images,
-        })
-        if (!klaviyoResult.ok && !klaviyoResult.skipped) {
-          console.error(
-            "[listingVacationMode] klaviyo Listing Auto Vacation:",
-            klaviyoResult.status,
-            klaviyoResult.detail.slice(0, 200),
-          )
-        }
-      } catch (e) {
-        console.error(
-          "[listingVacationMode] klaviyo Listing Auto Vacation:",
-          e instanceof Error ? e.message : e,
-        )
-      }
     }
   })
 

@@ -1,14 +1,11 @@
 /**
- * Klaviyo Events API — **Inactive Seller** when a seller has not replied to buyer
- * listing messages for 7+ days. Cron applies vacation mode before emitting this event.
- * Day 3 and day 6 use **Seller Still Here** and **Seller Listing Hide Warning**.
+ * Klaviyo Events API — **Inactive Seller** used to fire after 7+ days of unanswered
+ * buyer messages, when cron auto-hid the listing. Auto vacation is off, so this
+ * metric is no longer emitted. Day 3 still uses **Seller Still Here**.
  *
  * **Metric (Flows → Metric → …):** **Inactive Seller**
  *
- * **Profile = seller** so flows email the listing owner about missed messages.
- *
  * Bootstrap: `POST /api/integrations/klaviyo/bootstrap-inactive-seller-metric`
- * Cron: `GET /api/cron/seller-message-inactivity`
  */
 
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"

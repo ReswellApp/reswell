@@ -15,11 +15,10 @@
  *    Also available: `Title`, `Price`, `price_display`, `photo_url`, `listing_url`,
  *    `vacation_label`, `days_unanswered`.
  *
- * Fires from `setListingVacationModeForSeller` only on a hide transition with
- * source `seller_inactivity` (the seller-message inactivity cron).
+ * No longer emitted. Auto vacation is off; sellers turn vacation mode on themselves.
+ * Kept so existing Klaviyo flows and the bootstrap endpoint still resolve.
  *
  * Bootstrap: `POST /api/integrations/klaviyo/bootstrap-listing-auto-vacation-metric`
- * Cron: `GET /api/cron/seller-message-inactivity`
  */
 
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"

@@ -10,10 +10,19 @@ export type ShopVacationListing = {
 
 export type ShopVacationMode = "on" | "off"
 
+function isSellerVacationHide(listing: ShopVacationListing): boolean {
+  if (listing.hidden_from_site !== true) return false
+  return (
+    listing.site_visibility_reason === "seller_vacation" ||
+    listing.site_visibility_reason === "seller_inactivity"
+  )
+}
+
 /**
  * Live listings a shop-wide vacation action should change.
  * Turning vacation on hides listings that are still public.
- * Turning it off only restores listings the seller put on vacation.
+ * Turning it off restores listings the seller put on vacation, plus listings
+ * the old auto-vacation job hid.
  */
 export function shopVacationTargetIds(
   listings: ShopVacationListing[],
@@ -28,12 +37,7 @@ export function shopVacationTargetIds(
       ids.push(listing.id)
       continue
     }
-    if (
-      listing.hidden_from_site === true &&
-      listing.site_visibility_reason === "seller_vacation"
-    ) {
-      ids.push(listing.id)
-    }
+    if (isSellerVacationHide(listing)) ids.push(listing.id)
   }
   return ids
 }
@@ -45,9 +49,7 @@ export function shopVacationButtonMode(listings: ShopVacationListing[]): ShopVac
   if (live.length === 0) return "unavailable"
   const visible = live.filter((listing) => listing.hidden_from_site !== true)
   if (visible.length > 0) return "on"
-  const sellerVacation = live.filter(
-    (listing) => listing.site_visibility_reason === "seller_vacation",
-  )
+  const sellerVacation = live.filter(isSellerVacationHide)
   if (sellerVacation.length > 0) return "off"
   return "unavailable"
 }

@@ -5,8 +5,8 @@ import { NextResponse } from "next/server"
 /**
  * Daily job for unanswered buyer listing messages:
  * day 3 — in-app notice + Klaviyo **Seller Still Here**
- * day 6 — in-app hide warning + Klaviyo **Seller Listing Hide Warning**
- * day 7 — vacation mode, in-app notice, Klaviyo **Listing Auto Vacation** and **Inactive Seller**
+ *
+ * Auto vacation is off. Listings stay live until the seller turns on vacation mode.
  *
  * Protected with CRON_SECRET (same pattern as other cron routes).
  */
