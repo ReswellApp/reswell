@@ -8,6 +8,7 @@ import {
   milesBetweenDropoffOrigin,
   parseDropoffNearbyOrigin,
   sellDropoffSectionVisible,
+  shouldClearDropoffOnNearbyError,
 } from "./dropoff-location-nearby.ts"
 
 /** Seeded Santa Barbara drop-off (93101). */
@@ -163,6 +164,38 @@ describe("sellDropoffSectionVisible", () => {
         loadError: true,
       }),
       true,
+    )
+  })
+})
+
+describe("shouldClearDropoffOnNearbyError", () => {
+  it("keeps a restored pack-and-ship choice when the first nearby fetch fails", () => {
+    assert.equal(
+      shouldClearDropoffOnNearbyError({
+        loadedOriginKey: "",
+        currentOriginKey: "34.42080,-119.69820",
+      }),
+      false,
+    )
+  })
+
+  it("clears drop-off after a confirmed origin moves and the new fetch fails", () => {
+    assert.equal(
+      shouldClearDropoffOnNearbyError({
+        loadedOriginKey: "34.42080,-119.69820",
+        currentOriginKey: "34.05220,-118.24370",
+      }),
+      true,
+    )
+  })
+
+  it("keeps drop-off when retrying the same confirmed origin fails", () => {
+    assert.equal(
+      shouldClearDropoffOnNearbyError({
+        loadedOriginKey: "34.42080,-119.69820",
+        currentOriginKey: "34.42080,-119.69820",
+      }),
+      false,
     )
   })
 })

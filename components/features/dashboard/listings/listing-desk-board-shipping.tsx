@@ -9,7 +9,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { SmoothCollapse } from "@/components/ui/smooth-collapse"
 import { sellFormFieldsFromDropoffLocation } from "@/lib/dropoff-location-box-rules"
-import { listingOriginIsSet, sellDropoffSectionVisible } from "@/lib/dropoff-location-nearby"
+import {
+  listingOriginIsSet,
+  sellDropoffSectionVisible,
+  shouldClearDropoffOnNearbyError,
+} from "@/lib/dropoff-location-nearby"
 import type { PublicDropoffLocation } from "@/lib/dropoff-location-types"
 import { normalizeTapeStyleInchesInput } from "@/lib/board-measurements"
 import type { ListingDeskSpec } from "@/lib/listings-desk-fields"
@@ -90,7 +94,13 @@ export function ListingDeskBoardShipping({
       onChange({ dropoffLocationId: "" })
       return
     }
-    if (status === "error" && loadedOriginKey !== originKey) {
+    if (
+      status === "error" &&
+      shouldClearDropoffOnNearbyError({
+        loadedOriginKey,
+        currentOriginKey: originKey,
+      })
+    ) {
       onChange({ dropoffLocationId: "" })
       return
     }

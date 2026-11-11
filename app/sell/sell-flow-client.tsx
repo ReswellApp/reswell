@@ -167,7 +167,10 @@ import {
   type SurfboardShippedSellDraft,
 } from "@/components/features/sell/surfboard-shipped-choice"
 import { sellFormFieldsFromDropoffLocation } from "@/lib/dropoff-location-box-rules"
-import { sellDropoffSectionVisible } from "@/lib/dropoff-location-nearby"
+import {
+  sellDropoffSectionVisible,
+  shouldClearDropoffOnNearbyError,
+} from "@/lib/dropoff-location-nearby"
 import type { PublicDropoffLocation } from "@/lib/dropoff-location-types"
 import { normalizeSellShippingCostMode } from "@/lib/sell-shipping-cost-mode"
 import { saveListingSurfboardShippedAction } from "@/lib/actions/surfboardShippedActions"
@@ -1067,7 +1070,13 @@ function SellPageContentInner({
       setFormData((fd) => (fd.dropoffLocationId ? { ...fd, dropoffLocationId: "" } : fd))
       return
     }
-    if (dropoffLocationsStatus === "error" && dropoffLoadedOriginKey !== dropoffOriginKey) {
+    if (
+      dropoffLocationsStatus === "error" &&
+      shouldClearDropoffOnNearbyError({
+        loadedOriginKey: dropoffLoadedOriginKey,
+        currentOriginKey: dropoffOriginKey,
+      })
+    ) {
       setFormData((fd) => (fd.dropoffLocationId ? { ...fd, dropoffLocationId: "" } : fd))
       return
     }

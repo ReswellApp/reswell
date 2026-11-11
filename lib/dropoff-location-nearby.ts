@@ -94,3 +94,15 @@ export function sellDropoffSectionVisible(input: {
   if (input.loadError) return true
   return input.nearbyCount > 0
 }
+
+/**
+ * After a nearby fetch fails, drop a saved pack-and-ship choice only when a
+ * different origin was already confirmed. An empty loaded key is the first
+ * fetch (edit/desk restore) — keep the saved city and let the seller retry.
+ */
+export function shouldClearDropoffOnNearbyError(input: {
+  loadedOriginKey: string
+  currentOriginKey: string
+}): boolean {
+  return input.loadedOriginKey !== "" && input.loadedOriginKey !== input.currentOriginKey
+}

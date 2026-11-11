@@ -361,7 +361,11 @@ function DropoffChoices({
       .catch(() => {
         if (cancelled) return
         setError(true)
-        if (loadedOriginKeyRef.current !== originKey && selectedIdRef.current) {
+        if (
+          loadedOriginKeyRef.current !== "" &&
+          loadedOriginKeyRef.current !== originKey &&
+          selectedIdRef.current
+        ) {
           onClearRef.current()
         }
       })
