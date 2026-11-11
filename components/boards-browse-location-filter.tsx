@@ -23,6 +23,13 @@ type Props = {
   listboxId: string
   /** Toolbar popover on `/boards`; sidebar keeps the stacked form fields. */
   layout?: "sidebar" | "toolbar"
+  /**
+   * Suggestion list placement. Toolbar defaults to a portaled panel; pass `inline`
+   * for the mobile drawer so results stay in-flow (no keyboard flip jank).
+   */
+  panelPlacement?: "portal" | "inline"
+  /** Focus the city field when the surface opens (mobile drawer). */
+  autoFocus?: boolean
 }
 
 /** City/ZIP + radius controls for browse filters. */
@@ -30,6 +37,8 @@ export function BoardsBrowseLocationFilter({
   state,
   listboxId,
   layout = "sidebar",
+  panelPlacement,
+  autoFocus = false,
 }: Props) {
   const { toast } = useToast()
   const { goToCityLanding, resolveCityLanding } = useBoardsLocationCityRedirect(state.searchParams)
@@ -159,6 +168,9 @@ export function BoardsBrowseLocationFilter({
     )
   }
 
+  const suggestPlacement =
+    panelPlacement ?? (isToolbar ? "portal" : "inline")
+
   const suggest = (
     <LocationInputSuggest
       name="boards-location-q"
@@ -180,8 +192,9 @@ export function BoardsBrowseLocationFilter({
       onEnterWhenPanelClosed={() => {
         void commitTypedLocation()
       }}
-      panelPlacement={isToolbar ? "portal" : "inline"}
+      panelPlacement={suggestPlacement}
       hidePanelFocusRing={isToolbar}
+      autoFocus={autoFocus}
       listboxId={listboxId}
       className="min-w-0 flex-1"
       inputClassName={
