@@ -5,7 +5,7 @@ import {
   parseOrderTrackingDetail,
   type OrderTrackingDetail,
 } from "@/lib/shipping/order-tracking-detail"
-import { withTrackingEventCoordinates } from "@/lib/shipping/tracking-map-points"
+import { withTrackingEventCoordinates } from "@/lib/shipping/tracking-map-geocode"
 
 export type PublicOrderTrackingPage = {
   orderId: string
