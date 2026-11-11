@@ -141,6 +141,8 @@ export function SellCatalogSuggestField({
     pickingRef.current = true
     animateSuggestLayout()
     onPick(row)
+    inputRef.current?.blur()
+    Keyboard.dismiss()
     setTimeout(() => {
       pickingRef.current = false
     }, 250)

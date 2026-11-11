@@ -13,6 +13,7 @@ import {
   StyleSheet,
   View,
   type RefreshControlProps,
+  type ScrollViewProps,
   type StyleProp,
   type ViewStyle,
 } from "react-native"
@@ -116,6 +117,12 @@ export type ScreenScrollProps = {
   /** Trailing padding when there is no tab bar inset and no footer (default `SCROLL_END_PADDING`). */
   endPadding?: number
   showsVerticalScrollIndicator?: boolean
+  /**
+   * Override the default dismiss mode (`interactive` on iOS, `on-drag` elsewhere).
+   * Use `on-drag` on long forms so scrolling away from a field closes the keyboard.
+   */
+  keyboardDismissMode?: "none" | "on-drag" | "interactive"
+  onScrollBeginDrag?: ScrollViewProps["onScrollBeginDrag"]
 }
 
 /**
@@ -131,6 +138,8 @@ export function ScreenScroll({
   reserveFooter = false,
   endPadding = SCROLL_END_PADDING,
   showsVerticalScrollIndicator = false,
+  keyboardDismissMode,
+  onScrollBeginDrag,
 }: ScreenScrollProps) {
   const scrollInsets = useScreenScrollInsets({ reserveFooter, endPadding })
   return (
@@ -142,7 +151,8 @@ export function ScreenScroll({
       refreshControl={refreshControl}
       nestedScrollEnabled
       keyboardShouldPersistTaps="handled"
-      keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
+      keyboardDismissMode={keyboardDismissMode ?? (Platform.OS === "ios" ? "interactive" : "on-drag")}
+      onScrollBeginDrag={onScrollBeginDrag}
       automaticallyAdjustKeyboardInsets
       showsVerticalScrollIndicator={showsVerticalScrollIndicator}
       alwaysBounceVertical={Platform.OS === "ios"}
