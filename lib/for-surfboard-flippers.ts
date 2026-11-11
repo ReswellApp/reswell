@@ -63,7 +63,7 @@ export const FOR_SURFBOARD_FLIPPERS_VALUES = [
 export const FOR_SURFBOARD_FLIPPERS_STEPS = [
   {
     title: "Tell us you’re flipping",
-    body: "Name, email, city — that’s it. No public promo code; we confirm you’re actively buying and selling, then turn the offer on.",
+    body: "Name and email — that’s it. No public promo code; we confirm you’re actively buying and selling, then turn the offer on.",
   },
   {
     title: "We unlock zero selling fees",
@@ -140,7 +140,7 @@ export type ForSurfboardFlippersFaq = {
 export const FOR_SURFBOARD_FLIPPERS_FAQS: readonly ForSurfboardFlippersFaq[] = [
   {
     question: "How do I get the 6 months with no selling fees?",
-    answer: `Apply on this page with your name, email, and city. There is no public promo code. A Reswell teammate confirms you’re a surfer who buys and sells boards, then turns on ${FOR_SURFBOARD_FLIPPERS_OFFER_MONTHS} months of zero marketplace fees on your seller account.`,
+    answer: `Apply on this page with your name and email. There is no public promo code. A Reswell teammate confirms you’re a surfer who buys and sells boards, then turns on ${FOR_SURFBOARD_FLIPPERS_OFFER_MONTHS} months of zero marketplace fees on your seller account.`,
     href: forSurfboardFlippersOfferHref(),
   },
   {

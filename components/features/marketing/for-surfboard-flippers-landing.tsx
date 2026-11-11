@@ -203,16 +203,11 @@ export function ForSurfboardFlippersLanding({ signedIn }: { signedIn: boolean })
             </p>
           </div>
 
-          <div className="mx-auto mt-12 max-w-md">
-            <div className="mb-5 text-center">
-              <h3 className="font-headline text-2xl font-bold tracking-tight text-white">
-                Claim the offer
-              </h3>
-              <p className="mt-2 text-sm text-white/70">
-                Three fields. We confirm and turn on zero fees.
-              </p>
-            </div>
+          <div className="mx-auto mt-10 max-w-sm">
             <ForSurfboardFlippersPartnerForm />
+            <p className="mt-3 text-center text-xs text-white/55">
+              Name + email. We confirm and unlock zero fees.
+            </p>
           </div>
         </section>
       </FadeInSection>

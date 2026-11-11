@@ -14,13 +14,12 @@ export function ForSurfboardFlippersPartnerForm() {
   const [loading, setLoading] = useState(false)
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
-  const [city, setCity] = useState("")
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     try {
-      const data = await submitSurfboardFlipperOffer({ name, email, city })
+      const data = await submitSurfboardFlipperOffer({ name, email })
       if ("error" in data) {
         toast.error(data.error ?? "Failed to send")
         return
@@ -35,14 +34,13 @@ export function ForSurfboardFlippersPartnerForm() {
 
   if (submitted) {
     return (
-      <div className="rounded-[1.75rem] bg-white px-6 py-8 text-center sm:px-8 sm:py-10">
-        <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-[#E8EEF8] text-[#001A4A]">
-          <CheckCircle2 className="h-6 w-6" aria-hidden />
+      <div className="rounded-[1.75rem] bg-white px-6 py-8 text-center sm:px-8">
+        <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-[#E8EEF8] text-[#001A4A]">
+          <CheckCircle2 className="h-5 w-5" aria-hidden />
         </div>
-        <p className="mt-4 text-lg font-semibold tracking-tight text-[#001A4A]">You&apos;re in</p>
-        <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-[#5c6b89]">
-          We&apos;ll confirm and turn on {FOR_SURFBOARD_FLIPPERS_OFFER_MONTHS} months of no selling
-          fees. Watch your inbox.
+        <p className="mt-3 text-lg font-semibold tracking-tight text-[#001A4A]">You&apos;re in</p>
+        <p className="mt-1.5 text-sm text-[#5c6b89]">
+          We&apos;ll turn on {FOR_SURFBOARD_FLIPPERS_OFFER_MONTHS} months free — watch your inbox.
         </p>
       </div>
     )
@@ -51,10 +49,10 @@ export function ForSurfboardFlippersPartnerForm() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-[1.75rem] bg-white px-6 py-7 sm:px-8 sm:py-8"
+      className="rounded-[1.75rem] bg-white px-6 py-6 sm:px-7 sm:py-7"
       noValidate
     >
-      <div className="space-y-4">
+      <div className="space-y-3.5">
         <div className="space-y-1.5">
           <Label htmlFor="flipper-offer-name" className="text-[#001A4A]">
             Name
@@ -85,27 +83,13 @@ export function ForSurfboardFlippersPartnerForm() {
             autoComplete="email"
           />
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="flipper-offer-city" className="text-[#001A4A]">
-            City
-          </Label>
-          <Input
-            id="flipper-offer-city"
-            value={city}
-            onChange={(e) => setCity(e.target.value)}
-            placeholder="Santa Barbara, CA"
-            className="h-11 rounded-xl border-border/80"
-            required
-            autoComplete="address-level2"
-          />
-        </div>
       </div>
 
       <Button
         type="submit"
         size="lg"
         disabled={loading}
-        className="mt-5 h-12 w-full rounded-full bg-[#001A4A] text-base font-semibold text-white hover:bg-[#001A4A]/90"
+        className="mt-4 h-12 w-full rounded-full bg-[#001A4A] text-base font-semibold text-white hover:bg-[#001A4A]/90"
       >
         {loading ? "Sending…" : "Get 6 months free"}
       </Button>

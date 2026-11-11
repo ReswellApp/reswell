@@ -14,7 +14,6 @@ function buildFlipperMessage(input: SurfboardFlipperOfferInput): string {
     "",
     `Name: ${input.name}`,
     `Email: ${input.email}`,
-    `City: ${input.city}`,
     "",
     "Ops: confirm this person buys/sells boards, then grant marketplace fee waiver (is_reswell_seller) for the offer window.",
   ].join("\n")
@@ -67,7 +66,7 @@ export async function submitSurfboardFlipperOfferService(
   const opened = await createSupportCaseWithOpeningMessage(supabase, {
     kind: "general",
     subject: SURFBOARD_FLIPPER_OFFER_SUBJECT,
-    preview: `${input.name} — ${input.city}`,
+    preview: input.name,
     requester_user_id: linkedUserId,
     requester_email: email,
     requester_role: linkedUserId ? "member" : "guest",

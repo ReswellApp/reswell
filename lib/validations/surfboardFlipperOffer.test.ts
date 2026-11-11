@@ -3,22 +3,20 @@ import { describe, it } from "node:test"
 import { surfboardFlipperOfferSchema } from "./surfboardFlipperOffer.ts"
 
 describe("surfboardFlipperOfferSchema", () => {
-  it("accepts name, email, and city", () => {
+  it("accepts name and email", () => {
     const parsed = surfboardFlipperOfferSchema.safeParse({
       name: "Alex",
       email: "alex@example.com",
-      city: "Santa Barbara, CA",
     })
     assert.equal(parsed.success, true)
     if (!parsed.success) return
     assert.equal(parsed.data.name, "Alex")
   })
 
-  it("requires name, email, and city", () => {
+  it("requires name and email", () => {
     const parsed = surfboardFlipperOfferSchema.safeParse({
       name: "",
       email: "alex@example.com",
-      city: "",
     })
     assert.equal(parsed.success, false)
   })
@@ -27,7 +25,6 @@ describe("surfboardFlipperOfferSchema", () => {
     const parsed = surfboardFlipperOfferSchema.safeParse({
       name: "Alex",
       email: "not-an-email",
-      city: "Ventura",
     })
     assert.equal(parsed.success, false)
   })
