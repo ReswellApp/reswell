@@ -25,6 +25,10 @@ describe("mobile seller resources", () => {
     assert.equal(faqs?.kind, "faqs")
     if (faqs?.kind !== "faqs") return
     assert.equal(faqs.title, "Selling as a flipper")
+    const steps = page.sections.find((section) => section.kind === "steps")
+    assert.equal(steps?.kind, "steps")
+    if (steps?.kind !== "steps") return
+    assert.equal(steps.steps[0]?.title, "Apply")
   })
 
   it("aliases legacy for-surf-shops to flipper copy", () => {
