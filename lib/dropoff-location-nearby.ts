@@ -96,9 +96,9 @@ export function sellDropoffSectionVisible(input: {
 }
 
 /**
- * After a nearby fetch fails, drop a saved pack-and-ship choice only when a
- * different origin was already confirmed. An empty loaded key is the first
- * fetch (edit/desk restore) — keep the saved city and let the seller retry.
+ * Drop a saved pack-and-ship choice only when a different origin was already
+ * confirmed. An empty loaded key is first load / edit restore — origin pins
+ * may still be applying, or the first nearby fetch failed — keep the city.
  */
 export function shouldClearDropoffOnNearbyError(input: {
   loadedOriginKey: string

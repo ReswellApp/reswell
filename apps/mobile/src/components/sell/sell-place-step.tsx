@@ -338,8 +338,10 @@ function DropoffChoices({
     if (listingLat == null || listingLng == null || !hasOrigin) {
       setLocations([])
       setError(false)
+      if (selectedIdRef.current && loadedOriginKeyRef.current !== "") {
+        onClearRef.current()
+      }
       loadedOriginKeyRef.current = ""
-      if (selectedIdRef.current) onClearRef.current()
       return
     }
     const originKey = `${listingLat.toFixed(5)},${listingLng.toFixed(5)}`

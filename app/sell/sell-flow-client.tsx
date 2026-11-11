@@ -1067,7 +1067,14 @@ function SellPageContentInner({
   useEffect(() => {
     if (!formData.dropoffLocationId) return
     if (!listingOriginReady) {
-      setFormData((fd) => (fd.dropoffLocationId ? { ...fd, dropoffLocationId: "" } : fd))
+      if (
+        shouldClearDropoffOnNearbyError({
+          loadedOriginKey: dropoffLoadedOriginKey,
+          currentOriginKey: dropoffOriginKey,
+        })
+      ) {
+        setFormData((fd) => (fd.dropoffLocationId ? { ...fd, dropoffLocationId: "" } : fd))
+      }
       return
     }
     if (

@@ -91,7 +91,14 @@ export function ListingDeskBoardShipping({
   useEffect(() => {
     if (!spec.dropoffLocationId) return
     if (!originReady) {
-      onChange({ dropoffLocationId: "" })
+      if (
+        shouldClearDropoffOnNearbyError({
+          loadedOriginKey,
+          currentOriginKey: originKey,
+        })
+      ) {
+        onChange({ dropoffLocationId: "" })
+      }
       return
     }
     if (

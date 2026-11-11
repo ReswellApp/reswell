@@ -179,6 +179,26 @@ describe("shouldClearDropoffOnNearbyError", () => {
     )
   })
 
+  it("keeps a restored pack-and-ship choice before a listing origin is confirmed", () => {
+    assert.equal(
+      shouldClearDropoffOnNearbyError({
+        loadedOriginKey: "",
+        currentOriginKey: "",
+      }),
+      false,
+    )
+  })
+
+  it("clears drop-off after a confirmed origin is removed", () => {
+    assert.equal(
+      shouldClearDropoffOnNearbyError({
+        loadedOriginKey: "34.42080,-119.69820",
+        currentOriginKey: "",
+      }),
+      true,
+    )
+  })
+
   it("clears drop-off after a confirmed origin moves and the new fetch fails", () => {
     assert.equal(
       shouldClearDropoffOnNearbyError({
