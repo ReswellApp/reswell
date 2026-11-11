@@ -16,6 +16,9 @@ export async function listMobileSellDropoffLocations(
   dims: BoardDimsForDropoff = {},
   near?: { lat: number; lng: number } | null,
 ): Promise<MobileSellDropoffLocations> {
+  if (!near) {
+    return mobileSellDropoffLocationsSchema.parse({ locations: [] })
+  }
   const locations = await listPublicDropoffLocations(near)
   const boardLength = dims.boardLength?.trim() ?? ""
   return mobileSellDropoffLocationsSchema.parse({
