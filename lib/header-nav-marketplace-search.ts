@@ -70,6 +70,9 @@ export function navSearchSuggestSectionKey(section: string): NavSearchSuggestSec
  * that section’s browse hub, and bare board styles (`fish`, `shortboard`) open
  * `/boards?type=&q=`. Unique catalog-model lookups stay on `/search` until
  * `MARKETPLACE_SEARCH_OPENS_MODEL_PAGES` is flipped on.
+ *
+ * Keep this function synchronous. Header Enter navigates with this href
+ * before any suggest/personalization network work.
  */
 export function headerNavSearchSubmitHref(
   rawQuery: string,

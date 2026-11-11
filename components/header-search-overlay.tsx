@@ -40,17 +40,18 @@ export function HeaderSearchOverlay({
   const pathname = usePathname()
   const headerSearchParams = useClientSearchParams()
   const handleSubmit = useCallback(
-    async (e: React.FormEvent) => {
+    (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault()
-      const q = searchQuery.trim()
+      const fromInput = new FormData(e.currentTarget).get("q")
+      const q = (typeof fromInput === "string" ? fromInput : searchQuery).trim()
       if (!q) {
         clearNavSearchQuery()
         onQueryChange("")
         onClose()
-        await goToCuratedSearchPage(router, pathname, headerSearchParams.toString())
+        void goToCuratedSearchPage(router, pathname, headerSearchParams.toString())
         return
       }
-      const href = await hrefForNavMarketplaceSearch(q, pathname, headerSearchParams)
+      const href = hrefForNavMarketplaceSearch(q, pathname, headerSearchParams)
       onQueryChange(q)
       writeNavSearchQuery(q)
       if (href) router.push(href)
@@ -64,6 +65,7 @@ export function HeaderSearchOverlay({
       <SearchInputWithSuggest
         value={searchQuery}
         onChange={onQueryChange}
+        name="q"
         onBrandStripPick={(brandName, resolved) => {
           if (resolved?.catalogSlug) {
             router.push(`${BRANDS_BASE}/${encodeURIComponent(resolved.catalogSlug)}`)
@@ -82,11 +84,10 @@ export function HeaderSearchOverlay({
         onSelect={(text) => {
           const term = text.trim()
           if (!term) return
+          const href = hrefForNavMarketplaceSearch(term, pathname, headerSearchParams)
           onQueryChange(term)
           writeNavSearchQuery(term)
-          void hrefForNavMarketplaceSearch(term, pathname, headerSearchParams).then((href) => {
-            if (href) router.push(href)
-          })
+          if (href) router.push(href)
           onClose()
         }}
         onNavigate={() => {
