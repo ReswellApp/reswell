@@ -13,12 +13,17 @@ import {
   publicMarketplaceCdnCacheControl,
   shouldAttachDeviceCookieOnDocument,
 } from '@/lib/crawler/public-marketplace-paths'
+import {
+  listingIsAnonymousPublicHtml,
+  listingParamFromPublicPath,
+} from '@/lib/crawler/listing-html-cdn'
+import { hasSupabaseAuthCookies } from '@/lib/auth/has-supabase-auth-cookies'
 import { isServerActionRequest } from '@/lib/utils/is-server-action-request'
 
-function applyPublicMarketplaceCacheHints(
+async function applyPublicMarketplaceCacheHints(
   request: NextRequest,
   response: NextResponse,
-): NextResponse {
+): Promise<NextResponse> {
   if (response.status >= 300 && response.status < 400) return response
   if (
     !isCacheablePublicMarketplaceRequest(
@@ -28,10 +33,22 @@ function applyPublicMarketplaceCacheHints(
   ) {
     return response
   }
-  const cacheControl = publicMarketplaceCdnCacheControl(
-    request.nextUrl.pathname,
-    response.headers.has('set-cookie'),
-  )
+  const pathname = request.nextUrl.pathname
+  const hasSetCookie = response.headers.has('set-cookie')
+  const hasRequestSession = hasSupabaseAuthCookies(request.cookies.getAll())
+  let isAnonymousPublicListingHtml = false
+  // Session requests render DynamicGate personalization on a cache miss even
+  // when the live row is public, and they usually do not Set-Cookie.
+  if (!hasSetCookie && !hasRequestSession) {
+    const listingParam = listingParamFromPublicPath(pathname)
+    if (listingParam) {
+      isAnonymousPublicListingHtml = await listingIsAnonymousPublicHtml(listingParam)
+    }
+  }
+  const cacheControl = publicMarketplaceCdnCacheControl(pathname, hasSetCookie, {
+    isAnonymousPublicListingHtml,
+    hasRequestSession,
+  })
   if (!cacheControl) return response
   response.headers.set('CDN-Cache-Control', cacheControl)
   // CDN-Cache-Control wins at the edge. Cache-Control is what the browser keeps,
@@ -79,7 +96,7 @@ export async function proxy(request: NextRequest) {
       ? attachDeviceCookie(request, response)
       : response
 
-    return applyPublicMarketplaceCacheHints(request, withDevice)
+    return await applyPublicMarketplaceCacheHints(request, withDevice)
   } catch (error) {
     console.error('[middleware] proxy failed; passing through', {
       pathname,
