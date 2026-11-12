@@ -2,7 +2,10 @@ import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
 import { describe, it } from "node:test"
 import { publicMarketplaceCdnCacheControl } from "../crawler/public-marketplace-paths.ts"
-import { PUBLIC_MARKETPLACE_EDGE_CACHE_CONTROL } from "../crawler/public-marketplace-cache-policy.ts"
+import {
+  LISTING_HTML_CDN_CACHE_CONTROL,
+  PUBLIC_MARKETPLACE_EDGE_CACHE_CONTROL,
+} from "../crawler/public-marketplace-cache-policy.ts"
 
 function readRepo(relativePath: string): string {
   return readFileSync(new URL(`../../${relativePath}`, import.meta.url), "utf8")
@@ -34,12 +37,25 @@ describe("listing detail revalidation", () => {
   })
 
   it("does not keep /l on the 24h edge stale-while-revalidate window", () => {
-    assert.equal(publicMarketplaceCdnCacheControl("/l/lost-pisces", false), null)
+    assert.equal(
+      publicMarketplaceCdnCacheControl("/l/lost-pisces", false),
+      LISTING_HTML_CDN_CACHE_CONTROL,
+    )
+    assert.doesNotMatch(LISTING_HTML_CDN_CACHE_CONTROL, /stale-while-revalidate/)
+    assert.equal(publicMarketplaceCdnCacheControl("/l/lost-pisces", true), null)
     assert.equal(publicMarketplaceCdnCacheControl("/sold", false), null)
     assert.equal(
       publicMarketplaceCdnCacheControl("/boards", false),
       PUBLIC_MARKETPLACE_EDGE_CACHE_CONTROL,
     )
+  })
+
+  it("does not call cookies() from listing generateMetadata", () => {
+    const page = readRepo("app/l/[listing]/page.tsx")
+    assert.doesNotMatch(page, /getCachedRequestSession/)
+    assert.doesNotMatch(page, /from ["']next\/headers["']/)
+    assert.doesNotMatch(page, /findListingByParam/)
+    assert.match(page, /getCachedPublicListingForMetadata/)
   })
 
   it("forwards anonymousPublicView into every section PDP so cookies() cannot dynamize /l", () => {

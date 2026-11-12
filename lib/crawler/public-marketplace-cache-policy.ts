@@ -4,6 +4,15 @@ export const PUBLIC_MARKETPLACE_EDGE_CACHE_CONTROL =
   "public, s-maxage=3600, stale-while-revalidate=86400"
 
 /**
+ * Anonymous `/l/{slug}` HTML. No `stale-while-revalidate` — that window kept
+ * sold PDPs live after `revalidatePath`. Next still emits `private, no-store`
+ * (cookies in `generateMetadata`, `Date.now` in SSR), so the CDN only stores
+ * this document when middleware sets this header. Five minutes is the
+ * spend/sale tradeoff: ~545 KB listing HTML was MISS on every request.
+ */
+export const LISTING_HTML_CDN_CACHE_CONTROL = "public, s-maxage=300"
+
+/**
  * Browser lifetime for those same documents. The edge may keep HTML (`s-maxage`),
  * but the browser must revalidate so a refresh after a deploy gets new chunk hashes
  * instead of a cached document pointing at deleted `/_next/static` files.
