@@ -62,12 +62,15 @@ export function shouldAttachDeviceCookieOnDocument(pathname: string): boolean {
 export function publicMarketplaceCdnCacheControl(
   pathname: string,
   hasSetCookie: boolean,
+  options?: { isAnonymousPublicListingHtml?: boolean },
 ): string | null {
-  // `/sold` stays uncached (`force-dynamic`). `/l/` gets a short s-maxage with
-  // no stale-while-revalidate so sold PDPs cannot linger for a day.
+  // `/sold` stays uncached (`force-dynamic`). `/l/` is only cached when the
+  // anonymous public shell will render — never hidden owner/staff PDPs or
+  // the unavailable page. No stale-while-revalidate so sold PDPs cannot
+  // linger for a day.
   if (pathname === "/sold") return null
   if (pathname.startsWith("/l/")) {
-    if (hasSetCookie) return null
+    if (hasSetCookie || !options?.isAnonymousPublicListingHtml) return null
     return LISTING_HTML_CDN_CACHE_CONTROL
   }
   return cdnCacheControlForPublicHtml(isPublicMarketplaceHtmlPath(pathname), hasSetCookie)

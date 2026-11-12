@@ -4,11 +4,11 @@ export const PUBLIC_MARKETPLACE_EDGE_CACHE_CONTROL =
   "public, s-maxage=3600, stale-while-revalidate=86400"
 
 /**
- * Anonymous `/l/{slug}` HTML. No `stale-while-revalidate` — that window kept
- * sold PDPs live after `revalidatePath`. Next still emits `private, no-store`
- * (cookies in `generateMetadata`, `Date.now` in SSR), so the CDN only stores
- * this document when middleware sets this header. Five minutes is the
- * spend/sale tradeoff: ~545 KB listing HTML was MISS on every request.
+ * Anonymous public `/l/{slug}` HTML only. No `stale-while-revalidate` — that
+ * window kept sold PDPs live after `revalidatePath`. Next still emits
+ * `private, no-store` on listing documents, so the CDN only stores this when
+ * middleware sets the header after an anonymous public-row lookup. Hidden
+ * owner/staff PDPs and the unavailable page must not get this header.
  */
 export const LISTING_HTML_CDN_CACHE_CONTROL = "public, s-maxage=300"
 

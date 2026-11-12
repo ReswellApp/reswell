@@ -37,12 +37,26 @@ describe("listing detail revalidation", () => {
   })
 
   it("does not keep /l on the 24h edge stale-while-revalidate window", () => {
+    assert.equal(publicMarketplaceCdnCacheControl("/l/lost-pisces", false), null)
     assert.equal(
-      publicMarketplaceCdnCacheControl("/l/lost-pisces", false),
+      publicMarketplaceCdnCacheControl("/l/lost-pisces", false, {
+        isAnonymousPublicListingHtml: true,
+      }),
       LISTING_HTML_CDN_CACHE_CONTROL,
     )
     assert.doesNotMatch(LISTING_HTML_CDN_CACHE_CONTROL, /stale-while-revalidate/)
-    assert.equal(publicMarketplaceCdnCacheControl("/l/lost-pisces", true), null)
+    assert.equal(
+      publicMarketplaceCdnCacheControl("/l/lost-pisces", true, {
+        isAnonymousPublicListingHtml: true,
+      }),
+      null,
+    )
+    assert.equal(
+      publicMarketplaceCdnCacheControl("/l/lost-pisces", false, {
+        isAnonymousPublicListingHtml: false,
+      }),
+      null,
+    )
     assert.equal(publicMarketplaceCdnCacheControl("/sold", false), null)
     assert.equal(
       publicMarketplaceCdnCacheControl("/boards", false),
