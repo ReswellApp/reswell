@@ -55,15 +55,25 @@ describe("anonymous public listing CDN header", () => {
 
   it("looks up listings with the anon client and never caches DynamicGate HTML as public", () => {
     const lookup = readRepo("lib/crawler/listing-html-cdn.ts")
-    assert.match(lookup, /createAnonSupabaseClient/)
-    assert.match(lookup, /includeHiddenListings:\s*false/)
+    const page = readRepo("app/l/[listing]/page.tsx")
+    const cache = readRepo("lib/cache/listing-public-detail.ts")
+    assert.match(lookup, /getCachedPublicListingDetailRow/)
+    assert.match(lookup, /shouldCdnCacheListingHtml/)
+    assert.doesNotMatch(lookup, /findListingByParam/)
+    assert.doesNotMatch(lookup, /createAnonSupabaseClient/)
     assert.doesNotMatch(lookup, /getCachedRequestSession/)
+    assert.match(cache, /includeHiddenListings:\s*false/)
+    assert.match(cache, /getDb\(\{\s*consistency:\s*"strong"\s*\}\)/)
+    assert.match(cache, /export function getCachedPublicListingDetailRow/)
+    assert.match(cache, /getCachedPublicListingForRoute = cache\(async \(param: string\) => \{/)
+    assert.match(cache, /return getCachedPublicListingDetailRow\(param\)/)
 
     const proxy = readRepo("proxy.ts")
     assert.match(proxy, /listingIsAnonymousPublicHtml/)
     assert.match(proxy, /isAnonymousPublicListingHtml/)
 
-    const page = readRepo("app/l/[listing]/page.tsx")
+    assert.match(page, /getCachedPublicListingForRoute/)
+    assert.match(page, /shouldCdnCacheListingHtml/)
     assert.match(page, /ListingDetailDynamicGate/)
     assert.match(page, /ListingDetailPublicOrAuthenticated/)
     assert.doesNotMatch(page, /LISTING_HTML_CDN_CACHE_CONTROL/)

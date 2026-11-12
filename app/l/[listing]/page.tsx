@@ -6,6 +6,7 @@ import {
   getCachedPublicListingForMetadata,
   getCachedPublicListingForRoute,
 } from "@/lib/listing-detail-cache"
+import { shouldCdnCacheListingHtml } from "@/lib/crawler/listing-html-cdn-policy"
 import { resolveListingDetailMetadata } from "@/lib/seo/resolve-listing-metadata"
 import { ListingDetailDynamicGate } from "@/components/features/listings/listing-detail-dynamic-gate"
 import { ListingDetailPublicOrAuthenticated } from "@/components/features/listings/listing-detail-public-or-authenticated"
@@ -48,9 +49,12 @@ export default async function ListingDetailPage(props: {
   params: Promise<{ listing: string }>
 }) {
   const { listing: listingParam } = await props.params
-  const { listing, redirectSlug } = await getCachedPublicListingForRoute(listingParam)
+  const cached = await getCachedPublicListingForRoute(listingParam)
+  const { listing, redirectSlug } = cached
 
-  if (listing && !listing.hidden_from_site) {
+  // Same predicate as `listingIsAnonymousPublicHtml` so CDN-Cache-Control from
+  // proxy cannot land on ListingDetailDynamicGate HTML.
+  if (shouldCdnCacheListingHtml(cached)) {
     if (redirectSlug) {
       redirect(`/l/${redirectSlug}`)
     }
