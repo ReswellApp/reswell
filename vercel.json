@@ -149,6 +149,10 @@
     {
       "path": "/api/cron/surfboard-dimension-photo-queue",
       "schedule": "42 */4 * * *"
+    },
+    {
+      "path": "/api/cron/workforce-agents",
+      "schedule": "20 15 * * *"
     }
   ]
 }

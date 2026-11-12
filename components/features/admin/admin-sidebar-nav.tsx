@@ -40,6 +40,7 @@ import {
   Handshake,
   Zap,
   Mail,
+  Bot,
 } from 'lucide-react'
 import {
   Collapsible,
@@ -133,6 +134,8 @@ function AdminNavItemIcon({ icon }: { icon: AdminNavIconKey }) {
       return <Zap className={NAV_ICON_CLASS} aria-hidden />
     case 'mail':
       return <Mail className={NAV_ICON_CLASS} aria-hidden />
+    case 'bot':
+      return <Bot className={NAV_ICON_CLASS} aria-hidden />
     default:
       return <LayoutDashboard className={NAV_ICON_CLASS} aria-hidden />
   }
