@@ -17,6 +17,7 @@ import {
   listingIsAnonymousPublicHtml,
   listingParamFromPublicPath,
 } from '@/lib/crawler/listing-html-cdn'
+import { hasSupabaseAuthCookies } from '@/lib/auth/has-supabase-auth-cookies'
 import { isServerActionRequest } from '@/lib/utils/is-server-action-request'
 
 async function applyPublicMarketplaceCacheHints(
@@ -34,8 +35,11 @@ async function applyPublicMarketplaceCacheHints(
   }
   const pathname = request.nextUrl.pathname
   const hasSetCookie = response.headers.has('set-cookie')
+  const hasRequestSession = hasSupabaseAuthCookies(request.cookies.getAll())
   let isAnonymousPublicListingHtml = false
-  if (!hasSetCookie) {
+  // Session requests render DynamicGate personalization on a cache miss even
+  // when the live row is public, and they usually do not Set-Cookie.
+  if (!hasSetCookie && !hasRequestSession) {
     const listingParam = listingParamFromPublicPath(pathname)
     if (listingParam) {
       isAnonymousPublicListingHtml = await listingIsAnonymousPublicHtml(listingParam)
@@ -43,6 +47,7 @@ async function applyPublicMarketplaceCacheHints(
   }
   const cacheControl = publicMarketplaceCdnCacheControl(pathname, hasSetCookie, {
     isAnonymousPublicListingHtml,
+    hasRequestSession,
   })
   if (!cacheControl) return response
   response.headers.set('CDN-Cache-Control', cacheControl)

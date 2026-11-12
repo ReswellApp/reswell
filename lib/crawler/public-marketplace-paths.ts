@@ -62,15 +62,21 @@ export function shouldAttachDeviceCookieOnDocument(pathname: string): boolean {
 export function publicMarketplaceCdnCacheControl(
   pathname: string,
   hasSetCookie: boolean,
-  options?: { isAnonymousPublicListingHtml?: boolean },
+  options?: { isAnonymousPublicListingHtml?: boolean; hasRequestSession?: boolean },
 ): string | null {
-  // `/sold` stays uncached (`force-dynamic`). `/l/` is only cached when the
-  // anonymous public shell will render — never hidden owner/staff PDPs or
-  // the unavailable page. No stale-while-revalidate so sold PDPs cannot
-  // linger for a day.
+  // `/sold` stays uncached (`force-dynamic`). `/l/` is only cached when this
+  // response is the anonymous public shell — never DynamicGate (owner/staff
+  // or unavailable) and never a request that already has a session cookie.
+  // No stale-while-revalidate so sold PDPs cannot linger for a day.
   if (pathname === "/sold") return null
   if (pathname.startsWith("/l/")) {
-    if (hasSetCookie || !options?.isAnonymousPublicListingHtml) return null
+    if (
+      hasSetCookie ||
+      options?.hasRequestSession ||
+      !options?.isAnonymousPublicListingHtml
+    ) {
+      return null
+    }
     return LISTING_HTML_CDN_CACHE_CONTROL
   }
   return cdnCacheControlForPublicHtml(isPublicMarketplaceHtmlPath(pathname), hasSetCookie)

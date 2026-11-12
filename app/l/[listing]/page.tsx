@@ -12,6 +12,7 @@ import { ListingDetailPublicOrAuthenticated } from "@/components/features/listin
 import type { PublicListingRow } from "@/components/features/listings/listing-detail-public-body"
 import { ListingDetailRoutePending } from "@/components/listing-detail-page-loading"
 import { ListingPublishedCelebration } from "@/components/features/listings/listing-published-celebration"
+import { listingRendersAnonymousPublicShell } from "@/lib/crawler/listing-html-cdn-policy"
 
 /** ISR shell — keep in sync with `LISTING_PUBLIC_DETAIL_REVALIDATE_SECONDS`. */
 export const revalidate = 3600
@@ -50,7 +51,7 @@ export default async function ListingDetailPage(props: {
   const { listing: listingParam } = await props.params
   const { listing, redirectSlug } = await getCachedPublicListingForRoute(listingParam)
 
-  if (listing && !listing.hidden_from_site) {
+  if (listingRendersAnonymousPublicShell(listing)) {
     if (redirectSlug) {
       redirect(`/l/${redirectSlug}`)
     }

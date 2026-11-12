@@ -57,6 +57,13 @@ describe("listing detail revalidation", () => {
       }),
       null,
     )
+    assert.equal(
+      publicMarketplaceCdnCacheControl("/l/lost-pisces", false, {
+        isAnonymousPublicListingHtml: true,
+        hasRequestSession: true,
+      }),
+      null,
+    )
     assert.equal(publicMarketplaceCdnCacheControl("/sold", false), null)
     assert.equal(
       publicMarketplaceCdnCacheControl("/boards", false),
