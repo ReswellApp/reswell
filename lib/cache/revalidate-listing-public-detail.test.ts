@@ -4,6 +4,7 @@ import { describe, it } from "node:test"
 import { publicMarketplaceCdnCacheControl } from "../crawler/public-marketplace-paths.ts"
 import {
   LISTING_HTML_CDN_CACHE_CONTROL,
+  LISTING_HTML_PRIVATE_CACHE_CONTROL,
   PUBLIC_MARKETPLACE_EDGE_CACHE_CONTROL,
 } from "../crawler/public-marketplace-cache-policy.ts"
 
@@ -43,11 +44,18 @@ describe("listing detail revalidation", () => {
     )
     assert.doesNotMatch(LISTING_HTML_CDN_CACHE_CONTROL, /stale-while-revalidate/)
     assert.equal(publicMarketplaceCdnCacheControl("/l/lost-pisces", true), null)
+    assert.equal(
+      publicMarketplaceCdnCacheControl("/l/lost-pisces", false, true),
+      LISTING_HTML_PRIVATE_CACHE_CONTROL,
+    )
     assert.equal(publicMarketplaceCdnCacheControl("/sold", false), null)
     assert.equal(
       publicMarketplaceCdnCacheControl("/boards", false),
       PUBLIC_MARKETPLACE_EDGE_CACHE_CONTROL,
     )
+    const proxy = readRepo("proxy.ts")
+    assert.match(proxy, /hasSupabaseAuthCookies/)
+    assert.match(proxy, /LISTING_HTML_PRIVATE_CACHE_CONTROL/)
   })
 
   it("does not call cookies() from listing generateMetadata", () => {

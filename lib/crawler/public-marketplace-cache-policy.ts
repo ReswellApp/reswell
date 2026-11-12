@@ -13,6 +13,15 @@ export const PUBLIC_MARKETPLACE_EDGE_CACHE_CONTROL =
 export const LISTING_HTML_CDN_CACHE_CONTROL = "public, s-maxage=300"
 
 /**
+ * Signed-in `/l/{slug}` HTML. Owners and staff can see hidden listings via
+ * `ListingDetailDynamicGate`; guests get the unavailable page. Middleware must
+ * set this so the edge bypasses (and does not store) that session-specific
+ * document. Skipping the header is not enough — a prior anonymous HIT would
+ * still replay.
+ */
+export const LISTING_HTML_PRIVATE_CACHE_CONTROL = "private, no-store"
+
+/**
  * Browser lifetime for those same documents. The edge may keep HTML (`s-maxage`),
  * but the browser must revalidate so a refresh after a deploy gets new chunk hashes
  * instead of a cached document pointing at deleted `/_next/static` files.

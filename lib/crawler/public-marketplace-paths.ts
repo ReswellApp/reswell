@@ -2,6 +2,7 @@ import { isModelPagePathname } from "@/lib/models/routes"
 import {
   BROWSER_HTML_CACHE_CONTROL,
   LISTING_HTML_CDN_CACHE_CONTROL,
+  LISTING_HTML_PRIVATE_CACHE_CONTROL,
   PUBLIC_MARKETPLACE_EDGE_CACHE_CONTROL,
   isCacheablePublicMarketplaceRequest,
   publicMarketplaceCdnCacheControl as cdnCacheControlForPublicHtml,
@@ -11,6 +12,7 @@ import {
 export {
   BROWSER_HTML_CACHE_CONTROL,
   LISTING_HTML_CDN_CACHE_CONTROL,
+  LISTING_HTML_PRIVATE_CACHE_CONTROL,
   PUBLIC_MARKETPLACE_EDGE_CACHE_CONTROL,
   isCacheablePublicMarketplaceRequest,
 }
@@ -62,12 +64,15 @@ export function shouldAttachDeviceCookieOnDocument(pathname: string): boolean {
 export function publicMarketplaceCdnCacheControl(
   pathname: string,
   hasSetCookie: boolean,
+  hasRequestAuthCookies = false,
 ): string | null {
-  // `/sold` stays uncached (`force-dynamic`). `/l/` gets a short s-maxage with
-  // no stale-while-revalidate so sold PDPs cannot linger for a day.
+  // `/sold` stays uncached (`force-dynamic`). Anonymous `/l/` gets a short
+  // s-maxage with no stale-while-revalidate so sold PDPs cannot linger for a
+  // day. Signed-in `/l/` is the hidden-listing gate — never store it.
   if (pathname === "/sold") return null
   if (pathname.startsWith("/l/")) {
     if (hasSetCookie) return null
+    if (hasRequestAuthCookies) return LISTING_HTML_PRIVATE_CACHE_CONTROL
     return LISTING_HTML_CDN_CACHE_CONTROL
   }
   return cdnCacheControlForPublicHtml(isPublicMarketplaceHtmlPath(pathname), hasSetCookie)

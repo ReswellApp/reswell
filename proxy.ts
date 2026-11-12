@@ -7,8 +7,10 @@ import { resolveSeoRedirect } from '@/lib/seo/edge-redirects'
 import {
   evaluateAdCatalogCrawlerAccess,
 } from '@/lib/crawler/ad-catalog-crawler'
+import { hasSupabaseAuthCookies } from '@/lib/auth/has-supabase-auth-cookies'
 import {
   BROWSER_HTML_CACHE_CONTROL,
+  LISTING_HTML_PRIVATE_CACHE_CONTROL,
   isCacheablePublicMarketplaceRequest,
   publicMarketplaceCdnCacheControl,
   shouldAttachDeviceCookieOnDocument,
@@ -31,12 +33,19 @@ function applyPublicMarketplaceCacheHints(
   const cacheControl = publicMarketplaceCdnCacheControl(
     request.nextUrl.pathname,
     response.headers.has('set-cookie'),
+    hasSupabaseAuthCookies(request.cookies.getAll()),
   )
   if (!cacheControl) return response
   response.headers.set('CDN-Cache-Control', cacheControl)
   // CDN-Cache-Control wins at the edge. Cache-Control is what the browser keeps,
   // and it must not hold HTML across deploys (stale HTML → ChunkLoadError).
-  response.headers.set('Cache-Control', BROWSER_HTML_CACHE_CONTROL)
+  // Signed-in `/l/` is session-specific — do not mark that document public.
+  response.headers.set(
+    'Cache-Control',
+    cacheControl === LISTING_HTML_PRIVATE_CACHE_CONTROL
+      ? LISTING_HTML_PRIVATE_CACHE_CONTROL
+      : BROWSER_HTML_CACHE_CONTROL,
+  )
   return response
 }
 
