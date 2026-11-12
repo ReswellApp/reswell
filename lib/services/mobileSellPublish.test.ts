@@ -95,6 +95,30 @@ describe("mobile sell publish fields", () => {
     assert.equal(built.fields.dimensions, null)
   })
 
+  it("stores a fin box without a shortboard carton", () => {
+    const built = mobileSellListingFields(
+      publishInput({
+        category: "fins",
+        subcategory: "",
+        specs: {},
+        package_length: "10",
+        package_width: "7",
+        package_height: "4",
+        package_weight_lb: "3",
+        package_weight_oz: "0",
+      }),
+    )
+    assert.equal(built.ok, true)
+    if (!built.ok) return
+    assert.equal(built.fields.section, "fins")
+    assert.equal(built.fields.shipping_package_tier, null)
+    assert.equal(built.fields.shipping_package_band, null)
+    assert.equal(built.fields.shipping_packed_length_in, 10)
+    assert.equal(built.fields.shipping_packed_width_in, 7)
+    assert.equal(built.fields.shipping_packed_height_in, 4)
+    assert.equal(built.fields.shipping_packed_weight_oz, 48)
+  })
+
   it("rejects a surfboard with no board style", () => {
     const built = mobileSellListingFields(publishInput({ subcategory: "" }))
     assert.equal(built.ok, false)

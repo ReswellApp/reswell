@@ -40,6 +40,7 @@ export function buildTractionListingPersistFields(
   )
   const packedRow = reswellPackageFieldsToDb({
     boardShippingCostMode: shippingMode,
+    listingSection: TRACTION_SECTION,
     reswellPackageLengthIn: input.reswellPackageLengthIn,
     reswellPackageWidthIn: input.reswellPackageWidthIn,
     reswellPackageHeightIn: input.reswellPackageHeightIn,

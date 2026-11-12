@@ -3,10 +3,6 @@ import { MOBILE_LISTING_CATEGORIES, MOBILE_SELL_MAX_PHOTOS } from "@reswell/api-
 import type { OwnedListingForEditRow } from "@/lib/db/listingEdit"
 import { surfboardSellFormDimensionsFromListingRow } from "@/lib/listing-dimensions-storage"
 import { reswellPackageFormFromDbRow } from "@/lib/sell-listing-fulfillment-flags"
-import {
-  parseSurfboardShippingPackBandId,
-  surfboardShippingPackBandFixedParcel,
-} from "@/lib/surfboard-shipping-pack-bands"
 import { boardTypeFromCategoryId } from "@/lib/utils/board-type-from-category-id"
 
 const CATEGORY_SET = new Set<string>(MOBILE_LISTING_CATEGORIES)
@@ -139,21 +135,7 @@ export function ownedListingRowToMobileSellEdit(row: OwnedListingForEditRow):
       })
     : null
 
-  const packedFromRow = reswellPackageFormFromDbRow(row)
-  const packBand =
-    surfboard && !packedFromRow.reswellPackageLengthIn
-      ? parseSurfboardShippingPackBandId(row.shipping_package_band)
-      : null
-  const packBandParcel = packBand ? surfboardShippingPackBandFixedParcel(packBand) : null
-  const packed = packBandParcel
-    ? {
-        reswellPackageLengthIn: String(packBandParcel.lengthIn),
-        reswellPackageWidthIn: String(packBandParcel.widthIn),
-        reswellPackageHeightIn: String(packBandParcel.heightIn),
-        reswellPackageWeightLb: String(packBandParcel.weightLb),
-        reswellPackageWeightOz: "",
-      }
-    : packedFromRow
+  const packed = reswellPackageFormFromDbRow(row)
   const shipping = shippingState(row)
 
   const specs: MobileSellDraft["specs"] = {}

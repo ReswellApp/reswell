@@ -24,6 +24,7 @@ export function buildMagazineListingPersistFields(
   const shipping = magazineListingShippingFieldsFor(input)
   const packedRow = reswellPackageFieldsToDb({
     boardShippingCostMode: "reswell",
+    listingSection: MAGAZINES_SECTION,
     reswellPackageLengthIn: input.reswellPackageLengthIn,
     reswellPackageWidthIn: input.reswellPackageWidthIn,
     reswellPackageHeightIn: input.reswellPackageHeightIn,

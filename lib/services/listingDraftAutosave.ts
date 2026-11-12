@@ -64,6 +64,7 @@ export function buildSurfboardDraftListingRow(
   const boardLengthCombined = resolveDraftBoardLength(fd)
   const packed = reswellPackageFieldsToDb({
     ...fd,
+    listingSection: "surfboards",
     boardLength: boardLengthCombined,
   })
   const price = parseSellListingPrice(fd.price) ?? 0

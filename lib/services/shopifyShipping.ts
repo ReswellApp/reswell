@@ -14,12 +14,12 @@ import {
   type ListingPackageColumns,
   type ShopCategoryPackageSizeMap,
 } from "@/lib/shop-category-package-sizes"
+import { defaultListingSectionCartonColumns } from "@/lib/listing-section-cartons"
 import {
   SHOP_STORE_DEFAULT_ID,
   formatShopPackedSizeSummary,
   packageFitsSurfboardListing,
   shopShippingColumnsForRef,
-  shopShippingColumnsForSoftSection,
   type ShopShippingDefaults,
 } from "@/lib/shop-shipping-defaults"
 import type { ShopifyShippingReadiness } from "@/lib/shopify/types"
@@ -73,14 +73,16 @@ function shopDefaultColumnsForImport(
   packageSizes: ShopCategoryPackageSizeMap,
   shippingDefaults: ShopShippingDefaults | undefined,
 ): ListingPackageColumns | null {
-  if (!shippingDefaults?.physicalProduct) return null
+  if (shippingDefaults && !shippingDefaults.physicalProduct) return null
   if (section === "surfboards") {
+    if (!shippingDefaults) return null
     const ref = shippingDefaults.boardSizes.shortboard_medium ?? SHOP_STORE_DEFAULT_ID
     const columns = shopShippingColumnsForRef(shippingDefaults, ref, "shortboard_medium")
     return columns && packageFitsSurfboardListing(columns) ? columns : null
   }
-  if (packageSizes[section]) return null
-  return shopShippingColumnsForSoftSection(shippingDefaults, section)
+  const packageSizeId = packageSizes[section]
+  if (packageSizeId) return listingPackageColumnsForShopSize(section, packageSizeId)
+  return defaultListingSectionCartonColumns(section)
 }
 
 export function shopifyImportFulfillmentDefaults(input: {
@@ -89,10 +91,11 @@ export function shopifyImportFulfillmentDefaults(input: {
   packageSizes: ShopCategoryPackageSizeMap
   shippingDefaults?: ShopShippingDefaults
 }): ShopifyImportFulfillmentDefaults {
-  const packageSizeId = input.packageSizes[input.section]
-  const packageColumns =
-    shopDefaultColumnsForImport(input.section, input.packageSizes, input.shippingDefaults) ??
-    (packageSizeId ? listingPackageColumnsForShopSize(input.section, packageSizeId) : null)
+  const packageColumns = shopDefaultColumnsForImport(
+    input.section,
+    input.packageSizes,
+    input.shippingDefaults,
+  )
   const shippingAvailable =
     input.hasShipFromAddress && packageColumns !== null
 

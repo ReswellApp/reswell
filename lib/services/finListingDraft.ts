@@ -66,6 +66,7 @@ export function buildFinListingDraftRow(
   }
   const packedRow = reswellPackageFieldsToDb({
     boardShippingCostMode: shippingMode,
+    listingSection: FINS_SECTION,
     reswellPackageLengthIn: input.reswellPackageLengthIn ?? "",
     reswellPackageWidthIn: input.reswellPackageWidthIn ?? "",
     reswellPackageHeightIn: input.reswellPackageHeightIn ?? "",

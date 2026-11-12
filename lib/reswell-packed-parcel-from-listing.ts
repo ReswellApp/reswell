@@ -1,4 +1,5 @@
 import { FINS_SECTION } from "@/lib/fin-listing-config"
+import { defaultListingSectionCarton } from "@/lib/listing-section-cartons"
 import {
   applyFinReswellPackageDefaultsPerField,
   finReswellPackageFormFieldsFromListingRow,
@@ -9,17 +10,12 @@ import {
 } from "@/lib/fin-reswell-shipping-defaults"
 import { parseListingDimensionsColumn } from "@/lib/listing-dimensions-storage"
 import {
-  getSurfboardShippingTier,
   parseSurfboardShippingTierId,
-  surfboardShippingTierFixedParcel,
+  resolveSurfboardShippingTierFromBoardLengthIn,
   surfboardShippingTierUsesUpsParcelLimits,
   validateSurfboardShippingTierParcelLimits,
   type SurfboardShippingTierId,
 } from "@/lib/surfboard-shipping-tiers"
-import {
-  parseSurfboardShippingPackBandId,
-  surfboardShippingPackBandFixedParcel,
-} from "@/lib/surfboard-shipping-pack-bands"
 import {
   applyReswellShippingAxisBuffer,
   reswellSuggestedPackageInchesFromBoard,
@@ -108,6 +104,38 @@ function finListingUsesDefaultPackedParcel(row: ListingPackedParcelSource): bool
   return row.section?.trim() === FINS_SECTION
 }
 
+/**
+ * Surfboard carton / board-length heuristics are only for surfboard rows.
+ * Fins and other gear that inherited `shipping_package_tier`, leftover
+ * `dimensions`, or a 78″ packed box were rated as boards — USPS refused the
+ * parcel (“can't deliver”) and UPS Ground came back around $300.
+ */
+function shouldUseSurfboardPackedParcelPath(row: ListingPackedParcelSource): boolean {
+  const section = row.section?.trim()
+  if (!section) return true
+  return isSurfboardListingSection(section)
+}
+
+function sectionDefaultPackedParcelResult(section: string | null | undefined): {
+  ok: true
+  source: ResolvedPackedParcelSource
+  weightOz: number
+  lengthIn: number
+  widthIn: number
+  heightIn: number
+} | null {
+  const carton = defaultListingSectionCarton(section)
+  if (!carton) return null
+  return {
+    ok: true,
+    source: "heuristic",
+    weightOz: carton.weightOz,
+    lengthIn: carton.lengthIn,
+    widthIn: carton.widthIn,
+    heightIn: carton.heightIn,
+  }
+}
+
 function finDefaultPackedParcelResult(): {
   ok: true
   source: ResolvedPackedParcelSource
@@ -116,14 +144,16 @@ function finDefaultPackedParcelResult(): {
   widthIn: number
   heightIn: number
 } {
-  return {
-    ok: true,
-    source: "heuristic",
-    weightOz: FIN_RESWELL_DEFAULT_PACKAGE_WEIGHT_OZ_NUM,
-    lengthIn: FIN_RESWELL_DEFAULT_PACKAGE_LENGTH_IN_NUM,
-    widthIn: FIN_RESWELL_DEFAULT_PACKAGE_WIDTH_IN_NUM,
-    heightIn: FIN_RESWELL_DEFAULT_PACKAGE_HEIGHT_IN_NUM,
-  }
+  return (
+    sectionDefaultPackedParcelResult(FINS_SECTION) ?? {
+      ok: true,
+      source: "heuristic",
+      weightOz: FIN_RESWELL_DEFAULT_PACKAGE_WEIGHT_OZ_NUM,
+      lengthIn: FIN_RESWELL_DEFAULT_PACKAGE_LENGTH_IN_NUM,
+      widthIn: FIN_RESWELL_DEFAULT_PACKAGE_WIDTH_IN_NUM,
+      heightIn: FIN_RESWELL_DEFAULT_PACKAGE_HEIGHT_IN_NUM,
+    }
+  )
 }
 
 function finPackedParcelResultFromStoredRow(
@@ -188,19 +218,20 @@ type PackedParcelDims = { lengthIn: number; widthIn: number; heightIn: number }
 export function resolveSurfboardShippingTierIdFromListing(
   row: ListingPackedParcelSource,
 ): SurfboardShippingTierId | null {
-  return parseSurfboardShippingTierId(row.shipping_package_tier)
+  const stored = parseSurfboardShippingTierId(row.shipping_package_tier)
+  if (stored) return stored
+  const lengthIn = boardLengthInchesFromListing(row)
+  if (lengthIn == null || lengthIn <= 0) return null
+  return resolveSurfboardShippingTierFromBoardLengthIn(lengthIn)
 }
 
 /**
- * True when the listing uses an admin-entered custom carton (no pack band + stored L×W×H).
- * Those parcels are gated by UPS DIM/weight, not the shortboard 78″ box-length ceiling.
+ * True when the listing has a seller/shop packed box. Those parcels are gated by
+ * carrier DIM/weight, not a stock shortboard / midlength / longboard carton.
  */
 export function listingUsesAdminCustomSurfboardCarton(
   row: ListingPackedParcelSource,
 ): boolean {
-  const tierId = parseSurfboardShippingTierId(row.shipping_package_tier)
-  if (!tierId) return false
-  if (parseSurfboardShippingPackBandId(row.shipping_package_band)) return false
   const Ls = num(row.shipping_packed_length_in)
   const Ws = num(row.shipping_packed_width_in)
   const Hs = num(row.shipping_packed_height_in)
@@ -208,73 +239,43 @@ export function listingUsesAdminCustomSurfboardCarton(
 }
 
 /**
- * Resolves outer-carton L×W×H for surfboard listings from the stored tier or saved packed dims.
- *
- * Explicit pack band → fixed band carton.
- * Null band + usable stored dims → admin custom (or legacy persisted) carton.
- * Null shortboard band + no stored dims → Medium (legacy).
+ * Resolves outer-carton L×W×H from the stored packed box, or board-size heuristics.
+ * Stock compact / medium / midlength / longboard cartons are not used.
  */
 function resolveSurfboardPackedParcelDims(
   row: ListingPackedParcelSource,
 ): PackedParcelDims | null {
-  const tierId = parseSurfboardShippingTierId(row.shipping_package_tier)
   const Ls = num(row.shipping_packed_length_in)
   const Ws = num(row.shipping_packed_width_in)
   const Hs = num(row.shipping_packed_height_in)
-  const stored =
-    Ls && Ws && Hs && storedPackedSurfboardDimsInRange(Ls, Ws, Hs)
-      ? { lengthIn: Ls, widthIn: Ws, heightIn: Hs }
-      : null
-
-  if (tierId) {
-    const explicitBandId = parseSurfboardShippingPackBandId(row.shipping_package_band)
-    if (explicitBandId) {
-      const band = surfboardShippingPackBandFixedParcel(explicitBandId)
-      return {
-        lengthIn: band.lengthIn,
-        widthIn: band.widthIn,
-        heightIn: band.heightIn,
-      }
-    }
-
-    // Admin custom carton (or legacy row that persisted packed dims without a band).
-    if (stored) return stored
-
-    if (tierId === "shortboard") {
-      const medium = surfboardShippingPackBandFixedParcel("shortboard_medium")
-      return {
-        lengthIn: medium.lengthIn,
-        widthIn: medium.widthIn,
-        heightIn: medium.heightIn,
-      }
-    }
-
-    const fixed = surfboardShippingTierFixedParcel(tierId)
-    return {
-      lengthIn: fixed.lengthIn,
-      widthIn: fixed.widthIn,
-      heightIn: fixed.heightIn,
-    }
+  if (Ls && Ws && Hs && storedPackedSurfboardDimsInRange(Ls, Ws, Hs)) {
+    return { lengthIn: Ls, widthIn: Ws, heightIn: Hs }
   }
-
-  return stored
+  return suggestPackedBoxInchesFromListing(row)
 }
 
-function surfboardTierWeightOzFromListing(row: ListingPackedParcelSource): number | null {
-  const tierId = parseSurfboardShippingTierId(row.shipping_package_tier)
-  if (tierId) {
-    const explicitBandId = parseSurfboardShippingPackBandId(row.shipping_package_band)
-    if (explicitBandId) {
-      return surfboardShippingPackBandFixedParcel(explicitBandId).weightLb * 16
-    }
-    // Custom carton weight comes from shipping_packed_weight_oz (caller prefers saved).
-    // Fall back to Medium / tier defaults only when weight wasn't persisted.
-    if (tierId === "shortboard") {
-      return surfboardShippingPackBandFixedParcel("shortboard_medium").weightLb * 16
-    }
-    return getSurfboardShippingTier(tierId).weightLb * 16
+function surfboardWeightOzFromListing(row: ListingPackedParcelSource): number | null {
+  const stored = num(row.shipping_packed_weight_oz)
+  if (
+    stored != null &&
+    stored >= RESWELL_MIN_REASONABLE_STORED_PARCEL_WEIGHT_OZ &&
+    stored <= RESWELL_MAX_REASONABLE_STORED_PARCEL_WEIGHT_OZ
+  ) {
+    return stored
   }
-  return null
+  const boardLength = boardLengthFormFromListing(row)
+  if (!boardLength) return null
+  const parsedDims = row.dimensions?.trim() ? parseListingDimensionsColumn(row.dimensions) : null
+  const wt = reswellSuggestedShipWeightLbOzFromBoard({
+    boardLength,
+    boardVolumeL: parsedDims?.boardVolumeL?.trim() ?? "",
+  })
+  if (!wt) return null
+  const lb = wt.lb.trim() === "" ? 0 : parseFloat(wt.lb.replace(/,/g, ""))
+  const oz = wt.oz.trim() === "" ? 0 : parseFloat(wt.oz.replace(/,/g, ""))
+  if (!Number.isFinite(lb) || lb < 0 || !Number.isFinite(oz) || oz < 0 || oz >= 16) return null
+  const total = lb * 16 + oz
+  return Number.isFinite(total) && total > 0 ? total : null
 }
 
 function validateResolvedParcelForCarrier(
@@ -350,7 +351,9 @@ export type ResolvedPackedParcelSource =
  * otherwise from the standard shortboard / midlength / longboard tier derived from board length
  * in `listings.dimensions`. Weight prefers saved `shipping_packed_weight_oz`, then the tier default.
  *
- * **Fins and other small parcels:** seller-entered or default packed dims apply.
+ * **Fins and other small parcels:** seller-entered or default packed dims apply. A leaked
+ * surfboard tier, leftover board `dimensions`, or 78″ carton on these rows is ignored so
+ * checkout does not quote board-sized UPS Ground (hundreds of dollars) for a fin set.
  */
 export type ResolvedPackedParcel = {
   source: ResolvedPackedParcelSource
@@ -594,7 +597,7 @@ export function suggestPackedBoxInchesFromListing(
   }
 }
 
-export function resolvePackedParcelFromListing(row: ListingPackedParcelSource):
+function resolveSmallPackedParcelFromListing(row: ListingPackedParcelSource):
   | {
       ok: true
       source: ResolvedPackedParcelSource
@@ -604,118 +607,18 @@ export function resolvePackedParcelFromListing(row: ListingPackedParcelSource):
       heightIn: number
     }
   | { ok: false; error: string } {
-  const boardLength = boardLengthFormFromListing(row)
-  const parsedDims = row.dimensions?.trim() ? parseListingDimensionsColumn(row.dimensions) : null
-  const widthStr = parsedDims?.boardWidthInches?.trim() ?? ""
-  const thickStr = parsedDims?.boardThicknessInches?.trim() ?? ""
-  const volStr = parsedDims?.boardVolumeL?.trim() ?? ""
-
   const Woz = num(row.shipping_packed_weight_oz)
-  const surfboardTierId = resolveSurfboardShippingTierIdFromListing(row)
-  const adminCustomCarton = listingUsesAdminCustomSurfboardCarton(row)
-  const cartonOpts = { adminCustomCarton }
-
-  if (surfboardTierId) {
-    const parcelDims = resolveSurfboardPackedParcelDims(row)
-    if (!parcelDims) {
-      return {
-        ok: false,
-        error: "This listing is missing a Reswell shipping size. Ask the seller to choose shortboard, midlength, or longboard.",
-      }
-    }
-    const tierWeightOz = surfboardTierWeightOzFromListing(row)
-    if (tierWeightOz == null) {
-      return { ok: false, error: "Could not resolve shipping weight for this listing." }
-    }
-    const weightOz =
-      Woz != null &&
-      Woz >= RESWELL_MIN_REASONABLE_STORED_PARCEL_WEIGHT_OZ &&
-      Woz <= RESWELL_MAX_REASONABLE_STORED_PARCEL_WEIGHT_OZ
-        ? Woz
-        : tierWeightOz
-    return finishResolvedParcel(
-      Woz != null ? "board+saved-weight" : "board+heuristic-weight",
-      parcelDims,
-      weightOz,
-      surfboardTierId,
-      cartonOpts,
-    )
-  }
-
-  if (boardLength) {
-    const parcelDims = resolveSurfboardPackedParcelDims(row)
-    if (!parcelDims) {
-      return {
-        ok: false,
-        error:
-          "This listing is missing a Reswell shipping size. Ask the seller to choose shortboard, midlength, or longboard.",
-      }
-    }
-
-    if (Woz != null && Woz >= RESWELL_MIN_REASONABLE_STORED_PARCEL_WEIGHT_OZ && Woz <= RESWELL_MAX_REASONABLE_STORED_PARCEL_WEIGHT_OZ) {
-      return finishResolvedParcel("board+saved-weight", parcelDims, Woz, surfboardTierId, cartonOpts)
-    }
-
-    const tierWeightOz = surfboardTierWeightOzFromListing(row)
-    if (tierWeightOz != null) {
-      return finishResolvedParcel(
-        "board+heuristic-weight",
-        parcelDims,
-        tierWeightOz,
-        surfboardTierId,
-        cartonOpts,
-      )
-    }
-
-    const wt = reswellSuggestedShipWeightLbOzFromBoard({ boardLength, boardVolumeL: volStr })
-    if (!wt) {
-      return {
-        ok: false,
-        error:
-          "This listing is missing a shipping weight. Ask the seller to update Reswell shipping (lb + oz).",
-      }
-    }
-    const lb = wt.lb.trim() === "" ? 0 : parseFloat(wt.lb.replace(/,/g, ""))
-    const oz = wt.oz.trim() === "" ? 0 : parseFloat(wt.oz.replace(/,/g, ""))
-    if (!Number.isFinite(lb) || lb < 0 || !Number.isFinite(oz) || oz < 0 || oz >= 16) {
-      return { ok: false, error: "Could not estimate package weight for shipping." }
-    }
-    const heuristicWeight = lb * 16 + oz
-    if (!Number.isFinite(heuristicWeight) || heuristicWeight <= 0) {
-      return { ok: false, error: "Could not estimate package weight for shipping." }
-    }
-    return finishResolvedParcel(
-      "board+heuristic-weight",
-      parcelDims,
-      heuristicWeight,
-      surfboardTierId,
-      cartonOpts,
-    )
-  }
-
-  /** No board dims — seller-entered packed box (fins, legacy surfboard rows). */
   const Ls = num(row.shipping_packed_length_in)
   const Ws = num(row.shipping_packed_width_in)
   const Hs = num(row.shipping_packed_height_in)
-  if (Ls && Ws && Hs && Woz && storedPackedSurfboardDimsLookUsable(Ls, Ws, Hs, Woz)) {
-    return finishResolvedParcel(
-      "heuristic",
-      { lengthIn: Ls, widthIn: Ws, heightIn: Hs },
-      Woz,
-      surfboardTierId,
-      cartonOpts,
-    )
-  }
   if (Ls && Ws && Hs && storedPackedSmallParcelDimsLookUsable(Ls, Ws, Hs)) {
     const weightOz = finFallbackSmallParcelWeightOz(row, Woz)
-    const finished = finishResolvedParcel(
+    return finishResolvedParcel(
       "heuristic",
       { lengthIn: Ls, widthIn: Ws, heightIn: Hs },
       weightOz,
       null,
     )
-    if (!finished.ok) return finished
-    return finished
   }
   if (finListingUsesDefaultPackedParcel(row)) {
     const finParcel = finPackedParcelResultFromStoredRow(row) ?? finDefaultPackedParcelResult()
@@ -731,9 +634,64 @@ export function resolvePackedParcelFromListing(row: ListingPackedParcelSource):
     if (!limitCheck.ok) return limitCheck
     return finParcel
   }
+  const sectionParcel = sectionDefaultPackedParcelResult(row.section)
+  if (sectionParcel) {
+    const limitCheck = validateResolvedParcelForCarrier(
+      {
+        lengthIn: sectionParcel.lengthIn,
+        widthIn: sectionParcel.widthIn,
+        heightIn: sectionParcel.heightIn,
+        weightOz: sectionParcel.weightOz,
+      },
+      null,
+    )
+    if (!limitCheck.ok) return limitCheck
+    return sectionParcel
+  }
   return {
     ok: false,
     error:
       "This listing is missing packed shipping dimensions. Ask the seller to update Reswell shipping.",
   }
+}
+
+export function resolvePackedParcelFromListing(row: ListingPackedParcelSource):
+  | {
+      ok: true
+      source: ResolvedPackedParcelSource
+      weightOz: number
+      lengthIn: number
+      widthIn: number
+      heightIn: number
+    }
+  | { ok: false; error: string } {
+  if (!shouldUseSurfboardPackedParcelPath(row)) {
+    return resolveSmallPackedParcelFromListing(row)
+  }
+
+  const Woz = num(row.shipping_packed_weight_oz)
+  const surfboardTierId = resolveSurfboardShippingTierIdFromListing(row)
+  const parcelDims = resolveSurfboardPackedParcelDims(row)
+  if (!parcelDims) {
+    return {
+      ok: false,
+      error:
+        "This listing is missing packed shipping dimensions. Ask the seller to update Reswell shipping.",
+    }
+  }
+  const weightOz = surfboardWeightOzFromListing(row)
+  if (weightOz == null) {
+    return {
+      ok: false,
+      error:
+        "This listing is missing a shipping weight. Ask the seller to update Reswell shipping (lb + oz).",
+    }
+  }
+  const source =
+    listingUsesAdminCustomSurfboardCarton(row) && Woz != null
+      ? "board+saved-weight"
+      : "board+heuristic-weight"
+  return finishResolvedParcel(source, parcelDims, weightOz, surfboardTierId, {
+    adminCustomCarton: true,
+  })
 }

@@ -75,7 +75,8 @@ export function mobileSellListingFields(
     shippingOn && mode === "reswell" && input.package_length.trim()
       ? reswellPackageFieldsToDb({
           boardShippingCostMode: "reswell",
-          adminCustomShippingCarton: true,
+          listingSection: input.category,
+          adminCustomShippingCarton: surfboard,
           reswellPackageLengthIn: input.package_length,
           reswellPackageWidthIn: input.package_width,
           reswellPackageHeightIn: input.package_height,
