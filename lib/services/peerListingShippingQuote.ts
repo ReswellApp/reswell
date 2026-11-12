@@ -1,3 +1,4 @@
+import { effectiveBoardShippingMode } from "@/lib/board-shipping-cost-mode"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import { resolvePackedParcelFromListing } from "@/lib/reswell-packed-parcel-from-listing"
 import type { ListingPackedParcelSource } from "@/lib/reswell-packed-parcel-from-listing"
@@ -85,7 +86,8 @@ export type PeerSurfboardCheckoutListingRow = PeerListingForShippingQuote & {
   shipping_available: boolean | null
 }
 
-export { effectiveBoardShippingMode } from "@/lib/board-shipping-cost-mode"
+/** Imported above — `export { NAME } from` does not bind NAME locally. */
+export { effectiveBoardShippingMode }
 
 /**
  * Live ShipEngine quote (USD) for peer surfboard checkout when the listing uses Reswell-calculated shipping.
