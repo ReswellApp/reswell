@@ -47,7 +47,13 @@ export function isPublicMarketplaceHtmlPath(pathname: string): boolean {
   return false
 }
 
+/** Public media is cacheable at the edge. A Set-Cookie here forces a CDN BYPASS. */
+export function isPublicMediaPath(pathname: string): boolean {
+  return pathname === "/media" || pathname.startsWith("/media/")
+}
+
 export function shouldAttachDeviceCookieOnDocument(pathname: string): boolean {
+  if (isPublicMediaPath(pathname)) return false
   return shouldAttachDeviceCookie(isPublicMarketplaceHtmlPath(pathname))
 }
 

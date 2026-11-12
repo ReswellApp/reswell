@@ -104,11 +104,13 @@ async function renderAccessoriesListingDetailPage({
   listingParam,
   prefetchedListing,
   viewerUser,
+  anonymousPublicView,
 }: ListingDetailPageSharedProps) {
   const { supabase, user, listing: accessoryRaw } = await loadListingDetailPageContext({
     listingParam,
     prefetchedListing,
     viewerUser,
+    anonymousPublicView,
     section: ACCESSORIES_SECTION,
   })
   const accessory = accessoryRaw as Record<string, any> | null

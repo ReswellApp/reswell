@@ -108,11 +108,13 @@ async function renderLeashesListingDetailPage({
   listingParam,
   prefetchedListing,
   viewerUser,
+  anonymousPublicView,
 }: ListingDetailPageSharedProps) {
   const { supabase, user, listing: leashRaw } = await loadListingDetailPageContext({
     listingParam,
     prefetchedListing,
     viewerUser,
+    anonymousPublicView,
     section: LEASHES_SECTION,
   })
   const leash = leashRaw as Record<string, any> | null

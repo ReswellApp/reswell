@@ -102,11 +102,13 @@ async function renderMagazinesListingDetailPage({
   listingParam,
   prefetchedListing,
   viewerUser,
+  anonymousPublicView,
 }: ListingDetailPageSharedProps) {
   const { supabase, user, listing: magazineRaw } = await loadListingDetailPageContext({
     listingParam,
     prefetchedListing,
     viewerUser,
+    anonymousPublicView,
     section: MAGAZINES_SECTION,
   })
   const magazine = magazineRaw as Record<string, any> | null
