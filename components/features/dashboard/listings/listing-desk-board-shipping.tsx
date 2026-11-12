@@ -9,6 +9,12 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { SmoothCollapse } from "@/components/ui/smooth-collapse"
 import { sellFormFieldsFromDropoffLocation } from "@/lib/dropoff-location-box-rules"
+import {
+  listingOriginIsSet,
+  sellDropoffSectionVisible,
+  shouldClearDropoffOnNearbyError,
+  shouldClearDropoffWhenOriginGone,
+} from "@/lib/dropoff-location-nearby"
 import type { PublicDropoffLocation } from "@/lib/dropoff-location-types"
 import { normalizeTapeStyleInchesInput } from "@/lib/board-measurements"
 import type { ListingDeskSpec } from "@/lib/listings-desk-fields"
@@ -29,16 +35,38 @@ export function ListingDeskBoardShipping({
   onChange,
 }: ListingDeskBoardShippingProps) {
   const [locations, setLocations] = useState<PublicDropoffLocation[]>([])
-  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading")
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("ready")
   const [reload, setReload] = useState(0)
+  const [loadedOriginKey, setLoadedOriginKey] = useState("")
   const reswell = spec.shippingAvailable && spec.shippingCostMode === "reswell"
   const free = spec.shippingAvailable && spec.shippingCostMode === "free"
   const flat = spec.shippingAvailable && spec.shippingCostMode === "flat"
+  const originReady = listingOriginIsSet(spec.latitude, spec.longitude)
+  const originKey = originReady
+    ? `${Number(spec.latitude).toFixed(5)},${Number(spec.longitude).toFixed(5)}`
+    : ""
+  const showDropoffCard = sellDropoffSectionVisible({
+    listingLat: spec.latitude,
+    listingLng: spec.longitude,
+    nearbyCount: locations.length,
+    loadError: status === "error",
+  })
 
   useEffect(() => {
+    if (!originReady) {
+      setLocations([])
+      setStatus("ready")
+      return
+    }
     let cancelled = false
+    setLocations([])
     setStatus("loading")
-    void fetch("/api/sell/dropoff-locations", { credentials: "include" })
+    const params = new URLSearchParams({
+      lat: String(spec.latitude),
+      lng: String(spec.longitude),
+    })
+    const nextOriginKey = `${Number(spec.latitude).toFixed(5)},${Number(spec.longitude).toFixed(5)}`
+    void fetch(`/api/sell/dropoff-locations?${params}`, { credentials: "include" })
       .then(async (response) => {
         if (!response.ok) throw new Error("dropoff")
         const json: unknown = await response.json()
@@ -49,6 +77,7 @@ export function ListingDeskBoardShipping({
         if (!cancelled) {
           setLocations(Array.isArray(rows) ? (rows as PublicDropoffLocation[]) : [])
           setStatus("ready")
+          setLoadedOriginKey(nextOriginKey)
         }
       })
       .catch(() => {
@@ -57,7 +86,34 @@ export function ListingDeskBoardShipping({
     return () => {
       cancelled = true
     }
-  }, [reload])
+  }, [reload, originReady, spec.latitude, spec.longitude])
+
+  useEffect(() => {
+    if (!spec.dropoffLocationId) return
+    if (
+      shouldClearDropoffWhenOriginGone({
+        originReady,
+        loadedOriginKey,
+      })
+    ) {
+      onChange({ dropoffLocationId: "" })
+      return
+    }
+    if (!originReady) return
+    if (
+      status === "error" &&
+      shouldClearDropoffOnNearbyError({
+        loadedOriginKey,
+        currentOriginKey: originKey,
+      })
+    ) {
+      onChange({ dropoffLocationId: "" })
+      return
+    }
+    if (status !== "ready" || loadedOriginKey !== originKey) return
+    if (locations.some((row) => row.id === spec.dropoffLocationId)) return
+    onChange({ dropoffLocationId: "" })
+  }, [originReady, status, loadedOriginKey, originKey, locations, spec.dropoffLocationId, onChange])
 
   function applyOffer(enable: boolean, mode: SellShippingCostMode) {
     let shipping = enable
@@ -100,6 +156,7 @@ export function ListingDeskBoardShipping({
         </SmoothCollapse>
         <SmoothCollapse open={reswell}>
           <div className="space-y-3 pt-2 sm:pt-3">
+            {showDropoffCard ? (
             <SellDropoffLocationCard
               locations={locations}
               selectedLocationId={spec.dropoffLocationId}
@@ -127,6 +184,7 @@ export function ListingDeskBoardShipping({
               }}
               onClear={() => onChange({ dropoffLocationId: "" })}
             />
+            ) : null}
             {spec.dropoffLocationId && !spec.packageLengthIn ? null : (
               <PackageCard
                 spec={spec}

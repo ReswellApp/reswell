@@ -167,6 +167,11 @@ import {
   type SurfboardShippedSellDraft,
 } from "@/components/features/sell/surfboard-shipped-choice"
 import { sellFormFieldsFromDropoffLocation } from "@/lib/dropoff-location-box-rules"
+import {
+  sellDropoffSectionVisible,
+  shouldClearDropoffOnNearbyError,
+  shouldClearDropoffWhenOriginGone,
+} from "@/lib/dropoff-location-nearby"
 import type { PublicDropoffLocation } from "@/lib/dropoff-location-types"
 import { normalizeSellShippingCostMode } from "@/lib/sell-shipping-cost-mode"
 import { saveListingSurfboardShippedAction } from "@/lib/actions/surfboardShippedActions"
@@ -999,19 +1004,42 @@ function SellPageContentInner({
   const [dropoffLocations, setDropoffLocations] = useState<PublicDropoffLocation[]>([])
   const [dropoffLocationsStatus, setDropoffLocationsStatus] = useState<
     "loading" | "ready" | "error"
-  >("loading")
+  >("ready")
   const [dropoffLocationsReload, setDropoffLocationsReload] = useState(0)
+  const [dropoffLoadedOriginKey, setDropoffLoadedOriginKey] = useState("")
   const formDataRef = useRef(formData)
   useEffect(() => {
     formDataRef.current = formData
   }, [formData])
 
+  const listingOriginReady = sellFormHasCommittedMapPins(formData)
+  const dropoffOriginKey = listingOriginReady
+    ? `${formData.locationLat.toFixed(5)},${formData.locationLng.toFixed(5)}`
+    : ""
+  const showSellDropoffCard = sellDropoffSectionVisible({
+    listingLat: formData.locationLat,
+    listingLng: formData.locationLng,
+    nearbyCount: dropoffLocations.length,
+    loadError: dropoffLocationsStatus === "error",
+  })
+
   useEffect(() => {
+    if (!listingOriginReady) {
+      setDropoffLocations([])
+      setDropoffLocationsStatus("ready")
+      return
+    }
     const controller = new AbortController()
+    setDropoffLocations([])
     setDropoffLocationsStatus("loading")
+    const params = new URLSearchParams({
+      lat: String(formData.locationLat),
+      lng: String(formData.locationLng),
+    })
+    const originKey = `${formData.locationLat.toFixed(5)},${formData.locationLng.toFixed(5)}`
     void (async () => {
       try {
-        const res = await fetch("/api/sell/dropoff-locations", {
+        const res = await fetch(`/api/sell/dropoff-locations?${params}`, {
           signal: controller.signal,
           credentials: "include",
         })
@@ -1022,6 +1050,7 @@ function SellPageContentInner({
         if (controller.signal.aborted) return
         setDropoffLocations(json?.data?.locations ?? [])
         setDropoffLocationsStatus("ready")
+        setDropoffLoadedOriginKey(originKey)
       } catch (error) {
         if (controller.signal.aborted) return
         setDropoffLocationsStatus("error")
@@ -1033,11 +1062,32 @@ function SellPageContentInner({
     return () => {
       controller.abort()
     }
-  }, [dropoffLocationsReload])
+  }, [dropoffLocationsReload, listingOriginReady, formData.locationLat, formData.locationLng])
 
   useEffect(() => {
     if (!formData.dropoffLocationId) return
+    if (
+      shouldClearDropoffWhenOriginGone({
+        originReady: listingOriginReady,
+        loadedOriginKey: dropoffLoadedOriginKey,
+      })
+    ) {
+      setFormData((fd) => (fd.dropoffLocationId ? { ...fd, dropoffLocationId: "" } : fd))
+      return
+    }
+    if (!listingOriginReady) return
+    if (
+      dropoffLocationsStatus === "error" &&
+      shouldClearDropoffOnNearbyError({
+        loadedOriginKey: dropoffLoadedOriginKey,
+        currentOriginKey: dropoffOriginKey,
+      })
+    ) {
+      setFormData((fd) => (fd.dropoffLocationId ? { ...fd, dropoffLocationId: "" } : fd))
+      return
+    }
     if (dropoffLocationsStatus !== "ready") return
+    if (dropoffLoadedOriginKey !== dropoffOriginKey) return
     const location = dropoffLocations.find((row) => row.id === formData.dropoffLocationId)
     if (!location) {
       setFormData((fd) => (fd.dropoffLocationId ? { ...fd, dropoffLocationId: "" } : fd))
@@ -1079,6 +1129,9 @@ function SellPageContentInner({
   }, [
     dropoffLocations,
     dropoffLocationsStatus,
+    dropoffLoadedOriginKey,
+    dropoffOriginKey,
+    listingOriginReady,
     formData.boardLength,
     formData.boardWidthInches,
     formData.dropoffLocationId,
@@ -5069,7 +5122,11 @@ function SellPageContentInner({
                 <SellFormSection
                   sectionId="sell-section-shipping"
                   title="Shipping"
-                  description="Buyers see your city for pickup. Pack and ship it yourself, or drop it off in a city we serve and we pack and ship it for you."
+                  description={
+                    showSellDropoffCard
+                      ? "Buyers see your city for pickup. Pack and ship it yourself, or drop it off in a city we serve and we pack and ship it for you."
+                      : "Buyers see your city for pickup. Pack and ship it yourself, or offer local pickup."
+                  }
                   complete={sellSectionCompletion["sell-section-shipping"] === true}
                 >
                   <div className="space-y-10">
@@ -5193,6 +5250,7 @@ function SellPageContentInner({
                                 </SmoothCollapse>
                                 <SmoothCollapse open={reswellShippingSelected}>
                                   <div className="space-y-3 pt-2 sm:pt-3">
+                                    {showSellDropoffCard ? (
                                     <SellDropoffLocationCard
                                       locations={dropoffLocations}
                                       selectedLocationId={formData.dropoffLocationId}
@@ -5228,6 +5286,7 @@ function SellPageContentInner({
                                         })
                                       }
                                     />
+                                    ) : null}
                                     {formData.dropoffLocationId &&
                                     !formData.reswellPackageLengthIn ? null : (
                                     <ReswellPackageDimensionsCard

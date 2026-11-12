@@ -1,11 +1,10 @@
-import { listActiveDropoffLocations } from "@/lib/db/dropoff-locations"
+import { listActiveDropoffLocations, type DropoffLocationRow } from "@/lib/db/dropoff-locations"
+import { dropoffLocationsNearListing } from "@/lib/dropoff-location-nearby"
 import type { PublicDropoffLocation } from "@/lib/dropoff-location-types"
 import { createClient } from "@/lib/supabase/server"
 
-export async function listPublicDropoffLocations(): Promise<PublicDropoffLocation[]> {
-  const supabase = await createClient()
-  const rows = await listActiveDropoffLocations(supabase)
-  return rows.map((row) => ({
+function toPublic(row: DropoffLocationRow): PublicDropoffLocation {
+  return {
     id: row.id,
     slug: row.slug,
     name: row.name,
@@ -13,5 +12,14 @@ export async function listPublicDropoffLocations(): Promise<PublicDropoffLocatio
     state: row.state,
     hoursNote: row.hours_note,
     boxRules: row.box_rules,
-  }))
+  }
+}
+
+export async function listPublicDropoffLocations(
+  near?: { lat: number; lng: number } | null,
+): Promise<PublicDropoffLocation[]> {
+  if (!near) return []
+  const supabase = await createClient()
+  const rows = await listActiveDropoffLocations(supabase)
+  return dropoffLocationsNearListing(rows, near.lat, near.lng).map(toPublic)
 }

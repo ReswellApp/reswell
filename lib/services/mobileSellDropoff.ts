@@ -14,8 +14,12 @@ const NEEDS_LENGTH = "Add board length (and width if it is 6'0 or under) in Info
 /** Drop-off cities from the same list `/sell` uses for surfboards. */
 export async function listMobileSellDropoffLocations(
   dims: BoardDimsForDropoff = {},
+  near?: { lat: number; lng: number } | null,
 ): Promise<MobileSellDropoffLocations> {
-  const locations = await listPublicDropoffLocations()
+  if (!near) {
+    return mobileSellDropoffLocationsSchema.parse({ locations: [] })
+  }
+  const locations = await listPublicDropoffLocations(near)
   const boardLength = dims.boardLength?.trim() ?? ""
   return mobileSellDropoffLocationsSchema.parse({
     locations: locations.flatMap((location) => {
