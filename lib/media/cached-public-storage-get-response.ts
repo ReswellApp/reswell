@@ -4,7 +4,7 @@ import {
   getCachedPublicStorageObject,
   type PublicStorageBucket,
 } from "@/lib/cache/public-storage-object"
-import { PUBLIC_MEDIA_CACHE_CONTROL } from "@/lib/listing-media-cache-control"
+import { publicMediaCacheHeaders } from "@/lib/listing-media-cache-control"
 
 export async function cachedPublicStorageGetResponse(opts: {
   bucket: PublicStorageBucket
@@ -39,7 +39,7 @@ export async function cachedPublicStorageGetResponse(opts: {
     status: 200,
     headers: {
       "Content-Type": ct,
-      "Cache-Control": PUBLIC_MEDIA_CACHE_CONTROL,
+      ...publicMediaCacheHeaders(),
     },
   })
 }

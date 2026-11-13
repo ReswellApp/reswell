@@ -3,7 +3,8 @@ export const PUBLIC_STORAGE_OBJECT_REVALIDATE_SECONDS = 60 * 60 * 24 * 365
 
 /**
  * Next.js Data Cache rejects entries over 2MB; cached values are base64 (~4/3 size).
- * Larger objects skip `unstable_cache` and rely on route `Cache-Control` + the edge CDN.
+ * Listing/blog photo bodies no longer use Data Cache (CDN only). This cap still
+ * documents the platform limit if a small brand asset is wrapped in `unstable_cache`.
  */
 export const PUBLIC_STORAGE_DATA_CACHE_MAX_RAW_BYTES = Math.floor((2 * 1024 * 1024 * 3) / 4) - 8192
 
