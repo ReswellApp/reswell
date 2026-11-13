@@ -31,7 +31,8 @@ import {
 import { StripeConnectSetupDialog } from "@/components/features/earnings/stripe-connect-setup-dialog"
 import { PayoutRequirementsChecklist } from "@/components/features/earnings/payout-requirements-checklist"
 import type { StripeConnectStatusPayload, PayoutSetupStatus } from "@/lib/utils/stripe-connect-status"
-import { AlertCircle, Building2, CheckCircle2, ChevronDown, Loader2, Shield, Trash2, Zap } from "lucide-react"
+import { EARNINGS_TRANSFER_PAUSE } from "@/lib/earnings-transfer-pause"
+import { AlertCircle, Building2, CheckCircle2, ChevronDown, Info, Loader2, Shield, Trash2, Zap } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { bankTransferBadge } from "@/lib/utils/stripe-connect-transfer-status"
@@ -505,18 +506,25 @@ export function StripeBankPayoutSection({
           })
         }
 
-        toast.error(err, {
-          description,
-          duration: 20_000,
-          ...(nextAction
-            ? {
-                action: {
-                  label: cashOutNextActionLabel(nextAction),
-                  onClick: () => runCashOutNextAction(nextAction),
-                },
-              }
-            : {}),
-        })
+        if (data.errorCode === EARNINGS_TRANSFER_PAUSE.errorCode) {
+          toast.message(err, {
+            description: detail || EARNINGS_TRANSFER_PAUSE.toastDetail,
+            duration: 12_000,
+          })
+        } else {
+          toast.error(err, {
+            description,
+            duration: 20_000,
+            ...(nextAction
+              ? {
+                  action: {
+                    label: cashOutNextActionLabel(nextAction),
+                    onClick: () => runCashOutNextAction(nextAction),
+                  },
+                }
+              : {}),
+          })
+        }
         await onRefresh()
         return
       }
@@ -991,9 +999,7 @@ export function StripeBankPayoutSection({
                     Available: ${availableBalance.toFixed(2)} · Minimum $10.00
                   </p>
                   <p className="text-xs text-muted-foreground leading-snug">
-                    Bank transfers use buyer payments that have fully finished processing. Your balance can update
-                    before every dollar is ready to send—if a transfer is declined, try again after recent sales have
-                    settled (often a few business days).
+                    {EARNINGS_TRANSFER_PAUSE.bannerBody}
                   </p>
                 </div>
 
@@ -1091,10 +1097,17 @@ export function StripeBankPayoutSection({
               >
                 <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain">
                   <div className="flex gap-3">
-                    <AlertCircle
-                      className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-500"
-                      aria-hidden
-                    />
+                    {cashOutError.errorCode === EARNINGS_TRANSFER_PAUSE.errorCode ? (
+                      <Info
+                        className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-500"
+                        aria-hidden
+                      />
+                    ) : (
+                      <AlertCircle
+                        className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-500"
+                        aria-hidden
+                      />
+                    )}
                     <div className="min-w-0 flex-1 space-y-3">
                       <h2
                         id="stripe-cashout-error-title"
@@ -1172,13 +1185,16 @@ export function StripeBankPayoutSection({
                       }
                       onClick={() => setCashOutError(null)}
                     >
-                      {cashOutError.errorCode === "instant_payouts_limit_exceeded"
-                        ? "Stay on instant — try again later"
-                        : cashOutError.nextAction === "wait_review"
-                          ? "Got it — I’ll try again later"
-                          : "Back to cash out"}
+                      {cashOutError.errorCode === EARNINGS_TRANSFER_PAUSE.errorCode
+                        ? "Got it"
+                        : cashOutError.errorCode === "instant_payouts_limit_exceeded"
+                          ? "Stay on instant — try again later"
+                          : cashOutError.nextAction === "wait_review"
+                            ? "Got it — I’ll try again later"
+                            : "Back to cash out"}
                     </Button>
-                    {cashOutError.nextAction !== "contact_support" ? (
+                    {cashOutError.nextAction !== "contact_support" &&
+                    cashOutError.errorCode !== EARNINGS_TRANSFER_PAUSE.errorCode ? (
                       <Button
                         type="button"
                         variant="outline"
