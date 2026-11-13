@@ -165,6 +165,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
       { href: '/admin/listings/bulk', label: 'Bulk list', icon: 'layers' },
       { href: '/admin/seo', label: 'SEO', icon: 'search' },
       { href: '/admin/wallets', label: 'Wallet balances', icon: 'wallet' },
+      { href: '/admin/stripe-books', label: 'Stripe books', icon: 'dollarSign' },
       { href: '/admin/sale-tips', label: 'Seller tips', icon: 'dollarSign' },
       { href: '/admin/fraud-messages', label: 'Fraud messages', icon: 'shield' },
       { href: '/admin/partner-embeds', label: 'Partner embeds', icon: 'code' },

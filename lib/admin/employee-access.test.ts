@@ -49,7 +49,7 @@ describe("employeeAdminPathDecision", () => {
   })
 
   it("sends every other admin path to employee home", () => {
-    for (const pathname of ["/admin", "/admin/orders", "/admin/users", "/admin/listings"]) {
+    for (const pathname of ["/admin", "/admin/orders", "/admin/users", "/admin/listings", "/admin/stripe-books"]) {
       const decision = employeeAdminPathDecision(pathname, new URLSearchParams())
       assert.equal(decision.allow, false)
       if (!decision.allow) {

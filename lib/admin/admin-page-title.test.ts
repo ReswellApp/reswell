@@ -10,6 +10,7 @@ describe('getAdminPageTitle', () => {
     assert.equal(getAdminPageTitle('/admin/home', ADMIN_NAV_GROUPS), 'Home')
     assert.equal(getAdminPageTitle('/admin/contact-messages', ADMIN_NAV_GROUPS), 'Support tickets')
     assert.equal(getAdminPageTitle('/admin/volume-calculator', ADMIN_NAV_GROUPS), 'Volume calculator')
+    assert.equal(getAdminPageTitle('/admin/stripe-books', ADMIN_NAV_GROUPS), 'Stripe books')
   })
 
   it('returns nested support-ticket tool labels', () => {
