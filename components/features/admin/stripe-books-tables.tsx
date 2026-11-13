@@ -54,8 +54,8 @@ export function StripeBooksTables({ report }: { report: StripeBooksReport }) {
                   <td className={cn("px-4 py-2 text-right tabular-nums", signedClass(row.amountCents))}>
                     {money(row.amountCents)}
                   </td>
-                  <td className="px-4 py-2 text-right tabular-nums text-rose-700 dark:text-rose-400">
-                    {row.feeCents ? money(-Math.abs(row.feeCents)) : "—"}
+                  <td className={cn("px-4 py-2 text-right tabular-nums", signedClass(-row.feeCents))}>
+                    {row.feeCents ? money(-row.feeCents) : "—"}
                   </td>
                   <td className={cn("px-4 py-2 text-right tabular-nums font-medium", signedClass(row.netCents))}>
                     {money(row.netCents)}
@@ -147,8 +147,8 @@ export function StripeBooksTables({ report }: { report: StripeBooksReport }) {
                   <td className={cn("px-4 py-2 text-right tabular-nums", signedClass(row.amountCents))}>
                     {money(row.amountCents)}
                   </td>
-                  <td className="px-4 py-2 text-right tabular-nums">
-                    {row.feeCents ? money(-Math.abs(row.feeCents)) : "—"}
+                  <td className={cn("px-4 py-2 text-right tabular-nums", signedClass(-row.feeCents))}>
+                    {row.feeCents ? money(-row.feeCents) : "—"}
                   </td>
                   <td className={cn("px-4 py-2 text-right tabular-nums font-medium", signedClass(row.netCents))}>
                     {money(row.netCents)}

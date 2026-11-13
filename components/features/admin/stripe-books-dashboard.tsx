@@ -170,14 +170,26 @@ export function StripeBooksDashboard({ report }: { report: StripeBooksReport }) 
             </div>
             <div>
               <dt className="text-xs text-muted-foreground">Stripe processing (embedded + fees)</dt>
-              <dd className="font-medium tabular-nums text-rose-700 dark:text-rose-400">
-                {money(-Math.abs(processingCents))}
+              <dd
+                className={cn(
+                  "font-medium tabular-nums",
+                  processingCents > 0 && "text-rose-700 dark:text-rose-400",
+                  processingCents < 0 && "text-emerald-700 dark:text-emerald-400",
+                )}
+              >
+                {money(-processingCents)}
               </dd>
             </div>
             <div>
               <dt className="text-xs text-muted-foreground">Stripe Connect fees</dt>
-              <dd className="font-medium tabular-nums text-rose-700 dark:text-rose-400">
-                {money(-Math.abs(connectCents))}
+              <dd
+                className={cn(
+                  "font-medium tabular-nums",
+                  connectCents > 0 && "text-rose-700 dark:text-rose-400",
+                  connectCents < 0 && "text-emerald-700 dark:text-emerald-400",
+                )}
+              >
+                {money(-connectCents)}
               </dd>
             </div>
             <div>

@@ -211,7 +211,7 @@ export async function loadStripeBooksReport(
       generatedAtIso: new Date().toISOString(),
       timezone: BUSINESS_TIMEZONE,
       period,
-      livemode: process.env.STRIPE_SECRET_KEY?.startsWith("sk_live_") ?? null,
+      livemode: balance.livemode,
       stripeAccountId: platformAccountId(),
       truncated: btPage.truncated,
       transactionCount: categorized.length,

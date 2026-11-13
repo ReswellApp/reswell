@@ -11,6 +11,7 @@ import type { StripeBooksLedgerSnapshot, StripeBooksPeriod } from "@/lib/types/s
 const PAGE_SIZE = 1000
 
 type OrderRow = {
+  id: string
   amount: number | string | null
   shipping_amount: number | string | null
   platform_fee: number | string | null
@@ -22,6 +23,7 @@ type OrderRow = {
 }
 
 type TransferRow = {
+  id: string
   amount: number | string | null
   fee_amount: number | string | null
   payout_speed: string | null
@@ -74,11 +76,12 @@ export async function loadStripeBooksLedgerSnapshot(
         let query = supabase
           .from("orders")
           .select(
-            "amount, shipping_amount, platform_fee, seller_earnings, promo_discount_usd, payment_method, refunded_at, created_at",
+            "id, amount, shipping_amount, platform_fee, seller_earnings, promo_discount_usd, payment_method, refunded_at, created_at",
           )
-          .eq("status", "confirmed")
+          .in("status", ["confirmed", "refunding", "refunded"])
           .eq("is_admin_test", false)
           .order("created_at", { ascending: true })
+          .order("id", { ascending: true })
           .range(from, to)
         if (period.startIso) query = query.gte("created_at", period.startIso)
         if (period.endIsoExclusive) query = query.lt("created_at", period.endIsoExclusive)
@@ -90,9 +93,10 @@ export async function loadStripeBooksLedgerSnapshot(
       (from, to) => {
         let query = supabase
           .from("stripe_connect_transfers")
-          .select("amount, fee_amount, payout_speed, status, created_at")
-          .eq("status", "SUCCEEDED")
+          .select("id, amount, fee_amount, payout_speed, status, created_at")
+          .in("status", ["SUCCEEDED", "REVERSED"])
           .order("created_at", { ascending: true })
+          .order("id", { ascending: true })
           .range(from, to)
         if (period.startIso) query = query.gte("created_at", period.startIso)
         if (period.endIsoExclusive) query = query.lt("created_at", period.endIsoExclusive)
