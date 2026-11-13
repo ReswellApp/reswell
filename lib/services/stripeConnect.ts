@@ -133,9 +133,6 @@ function userFacingMessageForStripeInstantPayoutError(e: unknown): {
   errorCode?: string
   nextAction?: ConnectCashOutNextAction
 } {
-  if (isPlatformTransferFundsShortfall(e)) {
-    return platformTransferPauseFailure()
-  }
   if (e instanceof Stripe.errors.StripeError) {
     if (e.code === "instant_payouts_limit_exceeded") {
       const limitMsg = instantPayoutDailyLimitUserMessage()
