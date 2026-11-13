@@ -1,4 +1,4 @@
-import { revalidateTag, unstable_cache } from "next/cache"
+import { revalidateTag } from "next/cache"
 import sharp from "sharp"
 import {
   LISTING_CARD_MAX_LONG_EDGE,
@@ -142,12 +142,21 @@ function variantCacheTag(
   return `${prefix}:${bucket}:${objectPath}`
 }
 
-async function loadListingVariantBody(
+/**
+ * On-demand resized variant for listing objects.
+ * `tile`: ≤1280px long edge WebP for marketplace cards (not the stored 640px thumb).
+ * `pdp`: ≤1024px long edge WebP for the listing detail hero.
+ * `merchant`: ≤1600px long edge WebP for Google Merchant / catalog feeds.
+ *
+ * The HTTP response is cached on the CDN. Do not wrap the WebP body in
+ * `unstable_cache` — ISR write units are billed per 8 KB.
+ */
+export async function getCachedListingVariantBody(
   bucket: PublicStorageBucket,
   objectPath: string,
   upstreamUrl: string,
   variant: ListingMediaResizeVariant,
-): Promise<{ bodyBase64: string; contentType: string } | null> {
+): Promise<{ body: Buffer; contentType: string } | null> {
   const cached = await getCachedPublicStorageObject(bucket, objectPath, upstreamUrl)
   if (!cached) return null
 
@@ -155,49 +164,10 @@ async function loadListingVariantBody(
     cachedPublicStorageObjectBody(cached),
     variant,
   )
-
   return {
-    bodyBase64: resized.toString("base64"),
+    body: resized,
     contentType: "image/webp",
   }
-}
-
-/**
- * On-demand resized variant for listing objects.
- * `tile`: ≤1280px long edge WebP for marketplace cards (not the stored 640px thumb).
- * `pdp`: ≤1024px long edge WebP for the listing detail hero.
- * `merchant`: ≤1600px long edge WebP for Google Merchant / catalog feeds.
- */
-export function getCachedListingVariantBody(
-  bucket: PublicStorageBucket,
-  objectPath: string,
-  upstreamUrl: string,
-  variant: ListingMediaResizeVariant,
-): Promise<{ body: Buffer; contentType: string } | null> {
-  const keyPrefix =
-    variant === LISTING_MEDIA_TILE_VARIANT
-      ? TILE_VARIANT_CACHE_TAG_PREFIX
-      : variant === LISTING_MEDIA_CARD_VARIANT
-        ? CARD_VARIANT_CACHE_TAG_PREFIX
-        : variant === LISTING_MEDIA_FILM_VARIANT
-          ? FILM_VARIANT_CACHE_TAG_PREFIX
-          : `listing-${variant}-variant`
-  const loader = unstable_cache(
-    () => loadListingVariantBody(bucket, objectPath, upstreamUrl, variant),
-    [keyPrefix, bucket, objectPath],
-    {
-      revalidate: 60 * 60 * 24 * 365,
-      tags: [variantCacheTag(bucket, objectPath, variant)],
-    },
-  )
-
-  return loader().then((cached) => {
-    if (!cached) return null
-    return {
-      body: Buffer.from(cached.bodyBase64, "base64"),
-      contentType: cached.contentType,
-    }
-  })
 }
 
 export function getCachedListingTileVariantBody(

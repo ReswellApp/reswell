@@ -1,10 +1,15 @@
 {
   "installCommand": "npm install",
-  "regions": ["iad1", "sfo1"],
+  "ignoreCommand": "bash scripts/vercel-ignore-build.sh",
+  "regions": ["sfo1"],
   "headers": [
     {
       "source": "/media/(.*)",
       "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "1"
+        },
         {
           "key": "CDN-Cache-Control",
           "value": "public, s-maxage=31536000, stale-while-revalidate=86400"
