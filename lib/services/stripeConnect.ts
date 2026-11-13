@@ -133,9 +133,8 @@ function userFacingMessageForStripeInstantPayoutError(e: unknown): {
   errorCode?: string
   nextAction?: ConnectCashOutNextAction
 } {
-  if (isPlatformTransferFundsShortfall(e)) {
-    return platformTransferPauseFailure()
-  }
+  // Instant payouts run after the platform transfer succeeds. A balance shortfall
+  // here is on the connected account, so standard delivery stays available.
   if (e instanceof Stripe.errors.StripeError) {
     if (e.code === "instant_payouts_limit_exceeded") {
       const limitMsg = instantPayoutDailyLimitUserMessage()
