@@ -37,6 +37,7 @@ import {
   addressRowLooksLikeUsPoBox,
   isStripePrefillAddressRejection,
 } from "@/lib/utils/stripe-connect-prefill-address"
+import { EARNINGS_TRANSFER_PAUSE } from "@/lib/earnings-transfer-pause"
 
 /**
  * Wallet debits must bypass RLS: seller session clients often cannot UPDATE `wallets` / INSERT
@@ -73,20 +74,41 @@ async function getPlatformAvailableUsdCents(stripe: Stripe): Promise<number> {
   return usd?.amount ?? 0
 }
 
-function userFacingMessageForStripeTransferError(e: unknown): string {
-  if (e instanceof Stripe.errors.StripeError) {
-    const code = e.code
-    if (code === "balance_insufficient") {
-      return (
-        "This amount can’t leave for your bank yet—buyers’ card payments are still finishing processing. " +
-        "Try again in a few business days, or contact support if you think your sales have already settled."
-      )
-    }
-    if (code === "amount_too_small") {
-      return "The amount is too small for Stripe to transfer. Try a slightly higher amount or contact support."
+function isPlatformTransferFundsShortfall(e: unknown): boolean {
+  if (!(e instanceof Stripe.errors.StripeError)) return false
+  if (e.code === "balance_insufficient") return true
+  const message = (e.message ?? "").toLowerCase()
+  return /insufficient (available )?funds|not enough funds|insufficient balance/.test(message)
+}
+
+function platformTransferPauseFailure(): {
+  error: string
+  errorDetail: string
+  errorCode: typeof EARNINGS_TRANSFER_PAUSE.errorCode
+} {
+  return {
+    error: EARNINGS_TRANSFER_PAUSE.toastTitle,
+    errorDetail: EARNINGS_TRANSFER_PAUSE.toastDetail,
+    errorCode: EARNINGS_TRANSFER_PAUSE.errorCode,
+  }
+}
+
+function userFacingMessageForStripeTransferError(e: unknown): {
+  error: string
+  errorDetail?: string
+  errorCode?: string
+} {
+  if (isPlatformTransferFundsShortfall(e)) {
+    return platformTransferPauseFailure()
+  }
+  if (e instanceof Stripe.errors.StripeError && e.code === "amount_too_small") {
+    return {
+      error: "The amount is too small for Stripe to transfer. Try a slightly higher amount or contact support.",
     }
   }
-  return "Stripe could not send funds to your connected account. Check your payout setup or try again."
+  return {
+    error: "Stripe could not send funds to your connected account. Check your payout setup or try again.",
+  }
 }
 
 function isInstantPayoutDailyLimitExceededError(e: unknown): boolean {
@@ -111,6 +133,8 @@ function userFacingMessageForStripeInstantPayoutError(e: unknown): {
   errorCode?: string
   nextAction?: ConnectCashOutNextAction
 } {
+  // Instant payouts run after the platform transfer succeeds. A balance shortfall
+  // here is on the connected account, so standard delivery stays available.
   if (e instanceof Stripe.errors.StripeError) {
     if (e.code === "instant_payouts_limit_exceeded") {
       const limitMsg = instantPayoutDailyLimitUserMessage()
@@ -959,12 +983,7 @@ export async function cashOutToStripeConnectedAccount(
     })
     return {
       ok: false,
-      error: "Hang tight — we’re almost ready to send this",
-      errorDetail:
-        "Your money is still yours. Sometimes your Reswell balance updates before every buyer payment has finished " +
-        "the usual card-network clearing step, and we can only transfer funds once that process is complete " +
-        "(often within a few business days of a sale). Try this cash-out again soon — in most cases it goes through " +
-        "after a short wait. If this keeps happening or you’d like us to double-check anything, we’re happy to help.",
+      ...platformTransferPauseFailure(),
       status: 400,
     }
   }
@@ -1036,9 +1055,12 @@ export async function cashOutToStripeConnectedAccount(
         amountUsd,
       })
     }
+    const transferError = userFacingMessageForStripeTransferError(e)
     return {
       ok: false,
-      error: userFacingMessageForStripeTransferError(e),
+      error: transferError.error,
+      ...(transferError.errorDetail ? { errorDetail: transferError.errorDetail } : {}),
+      ...(transferError.errorCode ? { errorCode: transferError.errorCode } : {}),
       status: 502,
     }
   }

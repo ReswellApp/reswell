@@ -12,6 +12,7 @@ import {
 } from "@/components/features/earnings/earnings-panes"
 import { EarningsHub, EarningsHubSkeleton } from "@/components/features/earnings/earnings-hub"
 import { EarningsStripePayoutCard } from "@/components/features/earnings/earnings-stripe-payout-card"
+import { EarningsTransferPauseBanner } from "@/components/features/earnings/earnings-transfer-pause-banner"
 import type {
   EarningsHubInitialData,
   EarningsTransaction,
@@ -367,31 +368,34 @@ export function EarningsPageClient({
 
   if (view === "available") {
     return (
-      <EarningsAvailablePane
-        amountLabel={formatUsd(displayAvailable)}
-        rows={readyBalanceListings}
-        isLoading={!listingsReady}
-        showTransfer={stripePayoutsEnabled}
-        payout={
-          stripePayoutsEnabled ? (
-            <section id="earnings-bank-payout" className="scroll-mt-28 space-y-3">
-              <h2 className="text-base font-semibold text-foreground">Bank transfers</h2>
-              <EarningsStripePayoutCard
-                enabled={stripePayoutsEnabled}
-                isLoading={stripeBlockLoading}
-                statusFetchFailed={stripeStatusFailed}
-                historyFetchFailed={stripeHistoryFailed}
-                onRetry={() => void fetchData()}
-                availableBalance={displayAvailable}
-                connectStatus={stripeConnectStatus}
-                transferHistory={stripeTransferHistory}
-                onRefresh={fetchData}
-                onCashOutSettled={handleStripeBankCashOutSettled}
-              />
-            </section>
-          ) : null
-        }
-      />
+      <div className="space-y-4">
+        {stripePayoutsEnabled ? <EarningsTransferPauseBanner /> : null}
+        <EarningsAvailablePane
+          amountLabel={formatUsd(displayAvailable)}
+          rows={readyBalanceListings}
+          isLoading={!listingsReady}
+          showTransfer={stripePayoutsEnabled}
+          payout={
+            stripePayoutsEnabled ? (
+              <section id="earnings-bank-payout" className="scroll-mt-28 space-y-3">
+                <h2 className="text-base font-semibold text-foreground">Bank transfers</h2>
+                <EarningsStripePayoutCard
+                  enabled={stripePayoutsEnabled}
+                  isLoading={stripeBlockLoading}
+                  statusFetchFailed={stripeStatusFailed}
+                  historyFetchFailed={stripeHistoryFailed}
+                  onRetry={() => void fetchData()}
+                  availableBalance={displayAvailable}
+                  connectStatus={stripeConnectStatus}
+                  transferHistory={stripeTransferHistory}
+                  onRefresh={fetchData}
+                  onCashOutSettled={handleStripeBankCashOutSettled}
+                />
+              </section>
+            ) : null
+          }
+        />
+      </div>
     )
   }
 
@@ -416,15 +420,18 @@ export function EarningsPageClient({
   }
 
   return (
-    <EarningsHub
-      lifetimeLabel={formatUsd(lifetimeEarned)}
-      last30Label={formatUsd(last30)}
-      availableLabel={formatUsd(displayAvailable)}
-      pendingLabel={formatUsd(displayPending)}
-      readyLabel={formatUsd(displayAvailable)}
-      creditLabel={formatUsd(creditBalanceUsd)}
-      showCredit={creditVisible}
-      showTransfer={stripePayoutsEnabled}
-    />
+    <div className="space-y-4">
+      {stripePayoutsEnabled ? <EarningsTransferPauseBanner /> : null}
+      <EarningsHub
+        lifetimeLabel={formatUsd(lifetimeEarned)}
+        last30Label={formatUsd(last30)}
+        availableLabel={formatUsd(displayAvailable)}
+        pendingLabel={formatUsd(displayPending)}
+        readyLabel={formatUsd(displayAvailable)}
+        creditLabel={formatUsd(creditBalanceUsd)}
+        showCredit={creditVisible}
+        showTransfer={stripePayoutsEnabled}
+      />
+    </div>
   )
 }
