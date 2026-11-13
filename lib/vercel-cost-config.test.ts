@@ -15,6 +15,10 @@ describe("Vercel cost configuration", () => {
     }
     assert.deepEqual(config.regions, ["sfo1"])
     assert.equal(config.ignoreCommand, "bash scripts/vercel-ignore-build.sh")
+    const ignore = readRepo("scripts/vercel-ignore-build.sh")
+    assert.match(ignore, /VERCEL_GIT_PREVIOUS_SHA/)
+    assert.match(ignore, /git diff --quiet "\$PREV" HEAD/)
+    assert.doesNotMatch(ignore, /git diff --quiet HEAD/)
 
     const media = config.headers?.find((entry) => entry.source === "/media/(.*)")
     assert.ok(media)

@@ -7,13 +7,20 @@ if [ "${VERCEL_ENV:-}" = "production" ]; then
   exit 1
 fi
 
-# First commit on a shallow clone has no parent — build.
-if ! git rev-parse --verify HEAD^ >/dev/null 2>&1; then
+# Diff against the last successful deployment of this branch.
+# Comparing only the tip commit would skip a preview that still has
+# undeployed app code (first push, or a push after a failed/cancelled build).
+# VERCEL_GIT_PREVIOUS_SHA is empty on a branch's first deployment.
+PREV="${VERCEL_GIT_PREVIOUS_SHA:-}"
+if [ -z "$PREV" ]; then
+  exit 1
+fi
+if ! git cat-file -e "${PREV}^{commit}" 2>/dev/null; then
   exit 1
 fi
 
-# Skip preview deploys that only touch docs / agent files.
-git diff --quiet HEAD^ HEAD -- . \
+# Skip preview deploys whose changes since last success are only docs / agent files.
+git diff --quiet "$PREV" HEAD -- . \
   ':!*.md' \
   ':!.cursor' \
   ':!.agents' \
