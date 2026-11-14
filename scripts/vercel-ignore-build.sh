@@ -19,6 +19,12 @@ if ! git cat-file -e "${PREV}^{commit}" 2>/dev/null; then
   exit 1
 fi
 
+# Redeploy of the last successful commit has PREV == HEAD (env-var
+# refresh, retry, or force). An empty self-diff must not skip the build.
+if [ "$(git rev-parse "$PREV")" = "$(git rev-parse HEAD)" ]; then
+  exit 1
+fi
+
 # Skip preview deploys whose changes since last success are only docs / agent files.
 git diff --quiet "$PREV" HEAD -- . \
   ':!*.md' \
