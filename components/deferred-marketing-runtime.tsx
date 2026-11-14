@@ -5,7 +5,7 @@ import { useEffect, useState, type ComponentType, type ReactNode } from 'react'
 import { deferUntilIdleOrInteraction } from '@/lib/analytics/defer-until-idle'
 
 /**
- * Keeps Klaviyo, PostHog identify, page-view beacons, and Vercel Analytics out of the
+ * Keeps Klaviyo, PostHog identify, and page-view beacons out of the
  * initial document. The inner chunk downloads only after idle or first interaction.
  */
 export function DeferredMarketingRuntime(): ReactNode {

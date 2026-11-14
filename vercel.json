@@ -1,10 +1,15 @@
 {
   "installCommand": "npm install",
-  "regions": ["iad1", "sfo1"],
+  "ignoreCommand": "bash scripts/vercel-ignore-build.sh",
+  "regions": ["sfo1"],
   "headers": [
     {
       "source": "/media/(.*)",
       "headers": [
+        {
+          "key": "x-vercel-enable-rewrite-caching",
+          "value": "1"
+        },
         {
           "key": "CDN-Cache-Control",
           "value": "public, s-maxage=31536000, stale-while-revalidate=86400"
@@ -32,7 +37,7 @@
     },
     {
       "path": "/api/cron/klaviyo-catalog-sync",
-      "schedule": "6-56/10 * * * *"
+      "schedule": "6,36 * * * *"
     },
     {
       "path": "/api/cron/seller-message-inactivity",
@@ -68,7 +73,7 @@
     },
     {
       "path": "/api/cron/shopify-sync",
-      "schedule": "2-57/5 * * * *"
+      "schedule": "2,17,32,47 * * * *"
     },
     {
       "path": "/api/cron/google-merchant-refresh",
@@ -128,7 +133,7 @@
     },
     {
       "path": "/api/cron/support-case-backfill",
-      "schedule": "14-59/15 * * * *"
+      "schedule": "14 * * * *"
     },
     {
       "path": "/api/cron/auto-price-drop",

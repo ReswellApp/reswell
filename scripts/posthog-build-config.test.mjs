@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import test from 'node:test'
 
 test('PostHog source maps stay outside the Next production build', async () => {
@@ -22,8 +23,12 @@ test('PostHog source maps stay outside the Next production build', async () => {
     const rewrites = await resolved.rewrites()
     assert.ok(
       rewrites.afterFiles.some(({ source }) => source === '/ingest/:path*'),
-      'PostHog runtime ingestion rewrite must remain enabled',
+      'PostHog runtime ingestion rewrite must remain enabled for cached clients',
     )
+
+    const client = readFileSync(new URL('../lib/client/init-posthog-client.ts', import.meta.url), 'utf8')
+    assert.match(client, /api_host: posthogHost/)
+    assert.doesNotMatch(client, /api_host:\s*["']\/ingest["']/)
   } finally {
     restoreEnv('POSTHOG_API_KEY', originalApiKey)
     restoreEnv('POSTHOG_PROJECT_ID', originalProjectId)
