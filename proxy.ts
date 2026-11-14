@@ -101,8 +101,9 @@ export const config = {
      * - favicon.ico (favicon file)
      * - images - .svg, .png, .jpg, .jpeg, .gif, .webp, video
      * - media/* — public listing/blog bytes; skip session + device cookie so the CDN can store them
+     * - ingest/* — PostHog proxy rewrite; must not boot a function on every event
      * - api/webhooks/* — Stripe/ShipEngine need the raw body; skip Supabase session work here
      */
-    '/((?!_next/static|_next/image|favicon.ico|images/|media/|api/webhooks/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp4|mov|webm|m4v)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|images/|media/|ingest/|api/webhooks/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp4|mov|webm|m4v)$).*)',
   ],
 }

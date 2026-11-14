@@ -25,7 +25,7 @@ import {
   listingMediaStoredDerivativeKind,
   type ListingMediaResizeVariant,
 } from "@/lib/media/listing-tile-variant-resize"
-import { PUBLIC_MEDIA_CACHE_CONTROL } from "@/lib/listing-media-cache-control"
+import { publicMediaCacheHeaders } from "@/lib/listing-media-cache-control"
 import { listingImageStandInObjectPaths } from "@/lib/listing-image-storage-siblings"
 
 const PUBLIC_LISTINGS_MARKER = "/storage/v1/object/public/listings/"
@@ -52,7 +52,7 @@ function storedObjectResponse(
     status: 200,
     headers: {
       "Content-Type": type,
-      "Cache-Control": PUBLIC_MEDIA_CACHE_CONTROL,
+      ...publicMediaCacheHeaders(),
     },
   })
 }

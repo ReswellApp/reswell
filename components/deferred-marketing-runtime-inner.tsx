@@ -1,7 +1,5 @@
 'use client'
 
-import { Analytics } from '@vercel/analytics/next'
-
 import { hasMarketingConsent } from '@/lib/analytics/marketing-consent'
 import { KlaviyoOnsite } from '@/components/klaviyo-onsite'
 import { MarketingPageViewTracker } from '@/components/marketing-page-view-tracker'
@@ -19,7 +17,6 @@ export function DeferredMarketingRuntimeInner() {
       {allowMarketing ? <KlaviyoOnsite /> : null}
       <MarketingPageViewTracker />
       <PostHogIdentify />
-      <Analytics />
     </>
   )
 }
