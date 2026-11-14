@@ -28,6 +28,10 @@ describe("Vercel cost configuration", () => {
         (header) => header.key === "x-vercel-enable-rewrite-caching" && header.value === "1",
       ),
     )
+    assert.equal(
+      media.headers.some((header) => header.key === "CDN-Cache-Control"),
+      false,
+    )
 
     const cron = (path: string) => config.crons?.find((entry) => entry.path === path)?.schedule
     assert.equal(cron("/api/cron/shopify-sync"), "2,17,32,47 * * * *")
