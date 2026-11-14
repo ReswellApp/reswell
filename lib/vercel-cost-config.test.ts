@@ -28,6 +28,11 @@ describe("Vercel cost configuration", () => {
         (header) => header.key === "x-vercel-enable-rewrite-caching" && header.value === "1",
       ),
     )
+    // Origin Cache-Control decides rewrite TTL. A year-long CDN-Cache-Control here
+    // would pin Storage 404s (posters, races) at the edge with no purge path.
+    assert.ok(
+      !media.headers.some((header) => header.key.toLowerCase() === "cdn-cache-control"),
+    )
 
     const cron = (path: string) => config.crons?.find((entry) => entry.path === path)?.schedule
     assert.equal(cron("/api/cron/shopify-sync"), "2,17,32,47 * * * *")
