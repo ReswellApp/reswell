@@ -15,7 +15,14 @@ PREV="${VERCEL_GIT_PREVIOUS_SHA:-}"
 if [ -z "$PREV" ]; then
   exit 1
 fi
-if ! git cat-file -e "${PREV}^{commit}" 2>/dev/null; then
+PREV_SHA="$(git rev-parse --verify "${PREV}^{commit}" 2>/dev/null || true)"
+if [ -z "$PREV_SHA" ]; then
+  exit 1
+fi
+# Redeploy, env-var rebuild, and retry set previous SHA to this commit.
+# An empty diff would skip the build. Always rebuild the same commit.
+HEAD_SHA="$(git rev-parse HEAD)"
+if [ "$PREV_SHA" = "$HEAD_SHA" ]; then
   exit 1
 fi
 
