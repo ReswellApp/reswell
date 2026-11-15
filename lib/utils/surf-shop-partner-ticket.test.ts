@@ -5,6 +5,7 @@ import {
   SURF_SHOP_PARTNER_OPS_NOTE,
   buildSurfShopPartnerCustomerMessage,
   buildSurfShopPartnerOpsNotes,
+  surfShopPartnerKlaviyoIdentity,
   surfShopPartnerLinkedUserId,
 } from "./surf-shop-partner-ticket.ts"
 
@@ -63,6 +64,41 @@ describe("surfShopPartnerLinkedUserId", () => {
   })
 })
 
+describe("surfShopPartnerKlaviyoIdentity", () => {
+  it("uses the signed-in member when the case is attached to them", () => {
+    assert.deepEqual(
+      surfShopPartnerKlaviyoIdentity({
+        linkedUserId: "user-1",
+        sessionEmail: "alex@gmail.com",
+        workEmail: "shop@tideshop.com",
+      }),
+      { email: "alex@gmail.com", externalId: "user-1" },
+    )
+  })
+
+  it("uses shop email only for guests, with no member external id", () => {
+    assert.deepEqual(
+      surfShopPartnerKlaviyoIdentity({
+        linkedUserId: null,
+        sessionEmail: null,
+        workEmail: "shop@tideshop.com",
+      }),
+      { email: "shop@tideshop.com", externalId: null },
+    )
+  })
+
+  it("does not pair a member id with a different work email", () => {
+    assert.deepEqual(
+      surfShopPartnerKlaviyoIdentity({
+        linkedUserId: "user-1",
+        sessionEmail: "",
+        workEmail: "shop@tideshop.com",
+      }),
+      { email: "shop@tideshop.com", externalId: null },
+    )
+  })
+})
+
 describe("submitSurfShopPartnerApplicationService wiring", () => {
   it("keeps ops notes off the customer opening message, member thread, and Klaviyo message", () => {
     assert.match(serviceSource, /message: customerMessage/)
@@ -79,6 +115,16 @@ describe("submitSurfShopPartnerApplicationService wiring", () => {
     assert.doesNotMatch(
       serviceSource,
       /user\.email[\s\S]{0,80}=== email/,
+    )
+  })
+
+  it("sends Klaviyo the attached member identity, not a mixed shop-email profile", () => {
+    assert.match(serviceSource, /surfShopPartnerKlaviyoIdentity\(/)
+    assert.match(serviceSource, /email: klaviyoIdentity\.email/)
+    assert.match(serviceSource, /externalId: klaviyoIdentity\.externalId/)
+    assert.doesNotMatch(
+      serviceSource,
+      /trackKlaviyoSupportTicketCreated\([\s\S]*email,\s*externalId: linkedUserId/,
     )
   })
 })

@@ -59,3 +59,22 @@ export function surfShopPartnerLinkedUserId(
   const id = sessionUser?.id?.trim()
   return id || null
 }
+
+/**
+ * Klaviyo profile for the Support Tickets confirmation.
+ * Same identity as case attachment: signed-in member when present, otherwise
+ * shop email with no external id. Never pair a member id with a different work email.
+ */
+export function surfShopPartnerKlaviyoIdentity(args: {
+  linkedUserId: string | null
+  sessionEmail?: string | null
+  workEmail: string
+}): { email: string; externalId: string | null } {
+  const linkedUserId = args.linkedUserId?.trim() || null
+  const sessionEmail = (args.sessionEmail ?? "").trim()
+  const workEmail = args.workEmail.trim()
+  if (linkedUserId && sessionEmail) {
+    return { email: sessionEmail, externalId: linkedUserId }
+  }
+  return { email: workEmail, externalId: null }
+}

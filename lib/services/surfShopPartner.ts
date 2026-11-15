@@ -7,6 +7,7 @@ import {
   SURF_SHOP_PARTNER_SUBJECT,
   buildSurfShopPartnerCustomerMessage,
   buildSurfShopPartnerOpsNotes,
+  surfShopPartnerKlaviyoIdentity,
   surfShopPartnerLinkedUserId,
 } from "@/lib/utils/surf-shop-partner-ticket"
 import type { SurfShopPartnerApplicationInput } from "@/lib/validations/surfShopPartner"
@@ -78,10 +79,15 @@ export async function submitSurfShopPartnerApplicationService(
   })
 
   const caseId = opened?.id ?? inserted.id
+  const klaviyoIdentity = surfShopPartnerKlaviyoIdentity({
+    linkedUserId,
+    sessionEmail,
+    workEmail: email,
+  })
   await trackKlaviyoSupportTicketCreated({
     supportTicketId: caseId,
-    email,
-    externalId: linkedUserId,
+    email: klaviyoIdentity.email,
+    externalId: klaviyoIdentity.externalId,
     source: "contact_form",
     subject: SURF_SHOP_PARTNER_SUBJECT,
     message: customerMessage,
