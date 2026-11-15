@@ -18,9 +18,13 @@ const purchaseCountClass = "text-[22px] font-medium leading-none text-slate-400 
 
 interface PurchasesOrderListProps {
   items: PurchaseListItem[]
+  emptyState?: {
+    body: string
+    action?: { href: string; label: string }
+  }
 }
 
-export function PurchasesOrderList({ items }: PurchasesOrderListProps) {
+export function PurchasesOrderList({ items, emptyState }: PurchasesOrderListProps) {
   const [query, setQuery] = useState("")
   const visible = useMemo(
     () => items.filter((item) => purchaseMatchesQuery(item, query)),
@@ -55,11 +59,15 @@ export function PurchasesOrderList({ items }: PurchasesOrderListProps) {
         <div className="flex flex-col items-center px-6 py-16 text-center">
           <Receipt className="mb-4 h-12 w-12 text-muted-foreground" aria-hidden />
           <p className="mb-4 max-w-sm text-muted-foreground">
-            When you buy from other members, your orders show up here.
+            {emptyState?.body ?? "When you buy from other members, your orders show up here."}
           </p>
-          <Button asChild>
-            <Link href="/gear">Browse gear</Link>
-          </Button>
+          {emptyState && !emptyState.action ? null : (
+            <Button asChild>
+              <Link href={emptyState?.action?.href ?? "/gear"}>
+                {emptyState?.action?.label ?? "Browse gear"}
+              </Link>
+            </Button>
+          )}
         </div>
       ) : visible.length === 0 ? (
         <p className="py-12 text-center text-sm text-muted-foreground">

@@ -37,9 +37,11 @@ import { useMobileLg } from "@/hooks/use-mobile-lg"
 import { cn } from "@/lib/utils"
 import { isThreadsRoute } from "@/lib/utils/threads-routes"
 import { isShopifyClaimPath } from "@/lib/shopify/claim-path"
+import { isSiteClosureAccountPath, SITE_CLOSED } from "@/lib/site-closure"
 
 function hideSiteChrome(pathname: string | null): boolean {
   if (!pathname) return false
+  if (SITE_CLOSED && !isSiteClosureAccountPath(pathname)) return true
   if (pathname.startsWith("/auth") || pathname === "/help" || pathname.startsWith("/help/")) {
     return true
   }
@@ -67,6 +69,7 @@ function isPartnerEmbedRoute(pathname: string | null): boolean {
 
 /** Full-height flows without the marketing footer (messages, sell listing). */
 function hideFooter(pathname: string | null): boolean {
+  if (SITE_CLOSED) return true
   if (!pathname) return false
   return (
     pathname === "/messages" ||
@@ -143,7 +146,7 @@ export function SiteChromeClient({
     return <>{children}</>
   }
 
-  const showTopCategoryBar = shouldShowSiteTopCategoryBar(pathname)
+  const showTopCategoryBar = !SITE_CLOSED && shouldShowSiteTopCategoryBar(pathname)
   const showGiveawayMarquee =
     showTopCategoryBar &&
     !pathname?.startsWith("/giveaways") &&
@@ -155,10 +158,14 @@ export function SiteChromeClient({
       <AuthModalProvider>
         <AddedToCartProvider>
           <div className="flex min-h-dvh flex-col">
-            <GiveawayEntryBootstrap isLoggedIn={hasUser} />
-            <GiveawaySignupPopup serverUser={headerAuth.user} />
-            <NewsletterPromoPopup serverUser={headerAuth.user} />
-            <SignInShipFromPrompt />
+            {SITE_CLOSED ? null : (
+              <>
+                <GiveawayEntryBootstrap isLoggedIn={hasUser} />
+                <GiveawaySignupPopup serverUser={headerAuth.user} />
+                <NewsletterPromoPopup serverUser={headerAuth.user} />
+                <SignInShipFromPrompt />
+              </>
+            )}
             <RouteProgressBar />
             <NavigationPageGate>{children}</NavigationPageGate>
           </div>
@@ -169,10 +176,14 @@ export function SiteChromeClient({
   return (
     <AuthModalProvider>
       <AddedToCartProvider>
-        <GiveawayEntryBootstrap isLoggedIn={hasUser} />
-        <GiveawaySignupPopup serverUser={headerAuth.user} />
-        <NewsletterPromoPopup serverUser={headerAuth.user} />
-        <SignInShipFromPrompt />
+        {SITE_CLOSED ? null : (
+          <>
+            <GiveawayEntryBootstrap isLoggedIn={hasUser} />
+            <GiveawaySignupPopup serverUser={headerAuth.user} />
+            <NewsletterPromoPopup serverUser={headerAuth.user} />
+            <SignInShipFromPrompt />
+          </>
+        )}
         <div
           className={cn(
             "flex flex-col",

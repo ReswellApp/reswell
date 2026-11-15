@@ -14,6 +14,7 @@ import { validateSellerReviewForOrder } from "@/lib/services/orderSellerReview"
 import { parseOrderTrackingDetail } from "@/lib/shipping/order-tracking-detail"
 import { orderSellerReviewBodySchema } from "@/lib/validations/order-seller-review"
 import { loadMarketplaceOrderAccess } from "@/lib/account-access/order-operator-session"
+import { SITE_CLOSED } from "@/lib/site-closure"
 
 export const dynamic = "force-dynamic"
 
@@ -72,6 +73,13 @@ export async function POST(
 
   const isBuyer = access.role === "buyer"
   const isSeller = access.role === "seller"
+
+  if (SITE_CLOSED && isSeller) {
+    return NextResponse.json(
+      { error: "Reswell has closed. New buyer reviews are no longer accepted." },
+      { status: 403 },
+    )
+  }
 
   const trackingDetail = parseOrderTrackingDetail(order.tracking_detail)
   const gate = validateSellerReviewForOrder(order, trackingDetail)

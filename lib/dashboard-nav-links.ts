@@ -83,7 +83,16 @@ export interface DashboardNavLinksInput {
   isDropoffLocation?: boolean
   hasShopifyAccess?: boolean
   showEarnings?: boolean
+  /** Wind-down: earnings, sales, purchases, and profile only. */
+  siteClosed?: boolean
 }
+
+const CLOSURE_NAV_PATHS = new Set([
+  "/dashboard/sales",
+  "/dashboard/earnings",
+  "/dashboard/purchases",
+  "/dashboard/profile",
+])
 
 function buildSellingLinks(input: DashboardNavLinksInput): DashboardNavLink[] {
   const links: DashboardNavLink[] = [
@@ -133,13 +142,25 @@ const ACCOUNT_LINKS: DashboardNavLink[] = [
   { name: "Reswell help", href: "/dashboard/support", icon: LifeBuoy },
 ]
 
+function linkKeptDuringClosure(link: DashboardNavLink): boolean {
+  const path = link.href.split("?")[0] ?? link.href
+  return CLOSURE_NAV_PATHS.has(path)
+}
+
 /** Grouped nav for sidebar / mobile / account menu (Pango-style Selling / Buying / Account). */
 export function dashboardNavSections(input: DashboardNavLinksInput): DashboardNavSection[] {
-  return [
+  const sections: DashboardNavSection[] = [
     { id: "selling", label: "Selling", links: buildSellingLinks(input) },
     { id: "buying", label: "Buying", links: BUYING_LINKS },
     { id: "account", label: "Account", links: ACCOUNT_LINKS },
   ]
+  if (!input.siteClosed) return sections
+  return sections
+    .map((section) => ({
+      ...section,
+      links: section.links.filter(linkKeptDuringClosure),
+    }))
+    .filter((section) => section.links.length > 0)
 }
 
 /** Flat list for callers that do not need section headers. */

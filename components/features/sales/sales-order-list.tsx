@@ -22,6 +22,11 @@ interface SalesOrderListProps {
   pendingShipmentCount: number
   pendingPickupCount: number
   showFulfillmentGroups: boolean
+  earlierGroupLabel?: string
+  emptyState?: {
+    body: string
+    action?: { href: string; label: string }
+  }
 }
 
 export function SalesOrderList({
@@ -32,6 +37,8 @@ export function SalesOrderList({
   pendingShipmentCount,
   pendingPickupCount,
   showFulfillmentGroups,
+  earlierGroupLabel = "Earlier sales",
+  emptyState,
 }: SalesOrderListProps) {
   const [query, setQuery] = useState("")
   const visible = useMemo(
@@ -75,11 +82,16 @@ export function SalesOrderList({
         <div className="flex flex-col items-center px-6 py-16 text-center">
           <PackageCheck className="mb-4 h-12 w-12 text-muted-foreground" aria-hidden />
           <p className="mb-4 max-w-sm text-muted-foreground">
-            When someone buys your gear, the sale shows up here with fulfillment details.
+            {emptyState?.body ??
+              "When someone buys your gear, the sale shows up here with fulfillment details."}
           </p>
-          <Button asChild>
-            <Link href="/sell?new=1">Create a listing</Link>
-          </Button>
+          {emptyState && !emptyState.action ? null : (
+            <Button asChild>
+              <Link href={emptyState?.action?.href ?? "/sell?new=1"}>
+                {emptyState?.action?.label ?? "Create a listing"}
+              </Link>
+            </Button>
+          )}
         </div>
       ) : items.length === 0 ? (
         <p className="py-12 text-center text-sm text-muted-foreground">
@@ -103,7 +115,7 @@ export function SalesOrderList({
                 ) : null}
                 {showEarlierHeading ? (
                   <li className="list-none pb-1 pt-2 text-sm font-semibold text-muted-foreground">
-                    Earlier sales
+                    {earlierGroupLabel}
                   </li>
                 ) : null}
                 <SaleOrderRow item={item} imagePriority={index === 0} />

@@ -31,6 +31,7 @@ import {
 import { ProfileCircleSlotFallback } from "@/components/profile-circle"
 import { Avatar, AvatarImage } from "@/components/ui/avatar"
 import { dashboardNavSections } from "@/lib/dashboard-nav-links"
+import { SITE_CLOSED } from "@/lib/site-closure"
 import { forceReleaseBodyScrollLock } from "@/hooks/use-body-scroll-lock"
 import { NavUnreadCountBadge } from "@/components/nav-unread-count-badge"
 
@@ -220,6 +221,7 @@ function HeaderAccountMenuInner({
           isDropoffLocation,
           hasShopifyAccess: shopAccess?.hasShopifyAccess === true,
           showEarnings: shopAccess ? shopAccess.showEarnings : true,
+          siteClosed: SITE_CLOSED,
         }).map((section) => (
           <div key={section.id}>
             <DropdownMenuSeparator />

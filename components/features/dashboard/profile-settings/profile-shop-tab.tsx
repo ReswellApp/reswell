@@ -28,7 +28,6 @@ import {
   profileSectionTitleClass,
   profileTextareaClass,
 } from "@/components/features/dashboard/profile-settings/profile-settings-styles"
-import { ShopVacationButton } from "@/components/features/dashboard/listings/shop-vacation-button"
 
 export type ProfileShopTabCopy = {
   displayName: string
@@ -106,6 +105,8 @@ interface ProfileShopTabProps {
   onRemoveBanner: () => void
   onTileBannerUpload: (e: React.ChangeEvent<HTMLInputElement>) => void
   onRemoveTileBanner: () => void
+  /** Public shop fields. Hidden while the marketplace is closed. */
+  showPublicFields?: boolean
 }
 
 export function ProfileShopTab({
@@ -138,6 +139,7 @@ export function ProfileShopTab({
   onRemoveBanner,
   onTileBannerUpload,
   onRemoveTileBanner,
+  showPublicFields = true,
 }: ProfileShopTabProps) {
   const username = profile.seller_slug?.trim() || "—"
   const profilePhotoUrl = profile.shop_logo_url || profile.avatar_url
@@ -189,19 +191,6 @@ export function ProfileShopTab({
 
   return (
     <div className="mx-auto max-w-xl space-y-8 pt-2">
-      <section className="rounded-xl border border-border bg-muted/40 px-4 py-4 sm:px-5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0 space-y-1">
-            <h3 className={profileSectionTitleClass}>Shop vacation</h3>
-            <p className={profileSectionHintClass}>
-              Temporarily hide all live listings from browse, search, and checkout. Drafts and sold
-              listings stay as they are.
-            </p>
-          </div>
-          <ShopVacationButton className="shrink-0 self-start sm:self-center" />
-        </div>
-      </section>
-
       <div className="flex flex-col items-center gap-3">
         <div className="relative">
           <Avatar className="h-24 w-24 border-2 border-neutral-200 bg-neutral-100">
@@ -284,7 +273,7 @@ export function ProfileShopTab({
             <Label htmlFor="shop-display-name" className={profileLabelClass}>
               {copy.displayName}
             </Label>
-            {sellerStoreHref ? (
+            {showPublicFields && sellerStoreHref ? (
               <Link
                 href={sellerStoreHref}
                 target="_blank"
@@ -312,6 +301,7 @@ export function ProfileShopTab({
           <Input id="shop-username" className={cn(profileInputClass, "bg-neutral-50")} value={username} readOnly disabled />
         </div>
 
+        {showPublicFields ? (
         <div className="space-y-2">
           <Label htmlFor="shop-bio" className={profileLabelClass}>
             {copy.bio}
@@ -325,7 +315,9 @@ export function ProfileShopTab({
             rows={4}
           />
         </div>
+        ) : null}
 
+        {showPublicFields ? (
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="shop-location" className={profileLabelClass}>
@@ -351,11 +343,15 @@ export function ProfileShopTab({
               placeholder={copy.cityPlaceholder}
             />
           </div>
-          </div>
         </div>
+        ) : null}
+      </div>
 
-        <ProfileBrowseHomeSection initialHome={initialBrowseHome} copy={browseHomeCopy} />
+        {showPublicFields ? (
+          <ProfileBrowseHomeSection initialHome={initialBrowseHome} copy={browseHomeCopy} />
+        ) : null}
 
+        {showPublicFields ? (
         <div className="space-y-3 border-t border-neutral-200/80 pt-6">
           <div>
             <p className={profileSectionTitleClass}>{copy.sellerBannerTitle}</p>
@@ -442,7 +438,9 @@ export function ProfileShopTab({
           />
         ) : null}
       </div>
+        ) : null}
 
+      {showPublicFields ? (
       <div className="space-y-3 border-t border-neutral-200/80 pt-6">
         <div>
           <p className={profileSectionTitleClass}>{copy.tileBannerTitle}</p>
@@ -526,6 +524,7 @@ export function ProfileShopTab({
           />
         ) : null}
       </div>
+      ) : null}
 
       <Button
         className={profilePillButtonClass(saving || savedFlash)}

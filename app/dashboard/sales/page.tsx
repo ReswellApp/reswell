@@ -42,6 +42,14 @@ import { resolveMarketplaceOrderBuyerLabel } from "@/lib/order-buyer-display"
 import { resolveSellerOrderDisplayAmounts } from "@/lib/seller-order-display-amounts"
 import { listingsUseSantaBarbaraDropoff } from "@/lib/dropoff-santa-barbara"
 import { canSubmitSellerReview } from "@/lib/services/orderSellerReview"
+import { SITE_CLOSED } from "@/lib/site-closure"
+import {
+  deliveryStillNeedsAttention,
+  payoutFundsAreReleased,
+  returnStillOpen,
+  saleNeedsClosureAttention,
+} from "@/lib/closure-account-orders"
+import { getPayoutReleaseByOrderIds } from "@/lib/db/orderPayoutRelease"
 import {
   existingMarketplaceReviewFromRow,
   isReviewsMetadataColumnMissing,
@@ -241,7 +249,31 @@ export default async function SalesPage({
     })
   }
 
-  const list = (sales ?? []) as unknown as SaleRow[]
+  const fetchedSales = (sales ?? []) as unknown as SaleRow[]
+  const [returnSummaries, payoutReleaseByOrderId] = await Promise.all([
+    getOrderReturnSummariesByOrderIds(
+      supabase,
+      fetchedSales.map((sale) => sale.id),
+    ),
+    SITE_CLOSED
+      ? getPayoutReleaseByOrderIds(
+          supabase,
+          fetchedSales
+            .filter((sale) => !deliveryStillNeedsAttention(sale.delivery_status ?? "pending"))
+            .map((sale) => sale.id),
+        )
+      : Promise.resolve(new Map()),
+  ])
+  const list = SITE_CLOSED
+    ? fetchedSales.filter((sale) =>
+        saleNeedsClosureAttention({
+          orderStatus: sale.status,
+          deliveryStatus: sale.delivery_status ?? "pending",
+          payoutReleased: payoutFundsAreReleased(payoutReleaseByOrderId.get(sale.id)),
+          returnInProgress: returnStillOpen(returnSummaries.get(sale.id)),
+        }),
+      )
+    : fetchedSales
   const santaBarbaraDropoffOrderIds = new Set(
     list.filter(saleUsesSantaBarbaraDropoff).map((sale) => sale.id),
   )
@@ -252,10 +284,6 @@ export default async function SalesPage({
     fetchOrderIdsWithPrintableShippingLabelPdfs(supabase, orderIds),
     fetchPaperlessQrByOrderId(supabase, orderIds),
   ])
-  const returnSummaries = await getOrderReturnSummariesByOrderIds(
-    supabase,
-    list.map((s) => s.id),
-  )
 
   const trackingOrderIds = list.filter((s) => s.tracking_number?.trim()).map((s) => s.id)
   const trackingDetailByOrderId = new Map<string, ReturnType<typeof parseOrderTrackingDetail>>()
@@ -417,6 +445,7 @@ export default async function SalesPage({
         const review = reviewsByOrderId.get(sale.id)
         const existingBuyerReview = review ? existingMarketplaceReviewFromRow(review) : null
         const canReviewBuyer =
+          !SITE_CLOSED &&
           !existingBuyerReview &&
           canSubmitSellerReview(
             { status: sale.status, delivery_status: sale.delivery_status ?? "pending" },
@@ -467,7 +496,9 @@ export default async function SalesPage({
           Your Sales
         </h1>
         <p className="mt-1 text-[15px] leading-snug text-muted-foreground">
-          Track and fulfill your orders.
+          {SITE_CLOSED
+            ? "Open sales that still need shipping, pickup, or an earnings release."
+            : "Track and fulfill your orders."}
         </p>
       </header>
 
@@ -498,6 +529,14 @@ export default async function SalesPage({
             pendingShipmentCount={pendingShipmentCount}
             pendingPickupCount={pendingPickupCount}
             showFulfillmentGroups={activeFilter === "all"}
+            earlierGroupLabel={SITE_CLOSED ? "Still open" : undefined}
+            emptyState={
+              SITE_CLOSED
+                ? {
+                    body: "Nothing here needs shipping, pickup, or an earnings release. Completed sales with released earnings stay hidden.",
+                  }
+                : undefined
+            }
           />
         </div>
       )}

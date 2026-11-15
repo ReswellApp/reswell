@@ -15,6 +15,7 @@ import {
   dashboardSidebarWidthClass,
 } from "@/lib/utils/dashboard-display-styles"
 import { isDashboardSupportDeskPath } from "@/lib/utils/dashboard-support-path"
+import { SITE_CLOSED } from "@/lib/site-closure"
 import { cn } from "@/lib/utils"
 
 interface DashboardAppFrameProps {
@@ -147,12 +148,14 @@ export function DashboardAppFrame({
                 showShopAdminWarning={showShopAdminWarning}
               />
             ) : null}
-            <Button asChild className={dashboardSidebarCreateButtonClass}>
-              <Link href="/sell?new=1">
-                <Plus className="mr-2 h-5 w-5" />
-                Create Listing
-              </Link>
-            </Button>
+            {SITE_CLOSED ? null : (
+              <Button asChild className={dashboardSidebarCreateButtonClass}>
+                <Link href="/sell?new=1">
+                  <Plus className="mr-2 h-5 w-5" />
+                  Create Listing
+                </Link>
+              </Button>
+            )}
 
             <Suspense fallback={null}>
               <DashboardSidebarNav

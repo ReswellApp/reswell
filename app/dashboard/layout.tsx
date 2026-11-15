@@ -6,6 +6,7 @@ import { coastalShipperMembership } from "@/lib/services/coastalShipperAccess"
 import { dropoffLocationMembership } from "@/lib/services/dropoffLocationAccess"
 import { getShopAccountContext } from "@/lib/services/accountAccess"
 import { accountHasShopifyNavLink } from "@/lib/services/shopifyNavAccess"
+import { SITE_CLOSED, SITE_CLOSURE_ACCOUNT_HOME } from "@/lib/site-closure"
 
 export default async function DashboardLayout({
   children,
@@ -14,13 +15,17 @@ export default async function DashboardLayout({
 }) {
   const { supabase, user } = await getCachedDashboardSession()
 
+  const signedOutLogin = SITE_CLOSED
+    ? `/auth/login?redirect=${encodeURIComponent(SITE_CLOSURE_ACCOUNT_HOME)}`
+    : "/auth/login?redirect=/dashboard/listings"
+
   if (!user) {
-    redirect("/auth/login?redirect=/dashboard/listings")
+    redirect(signedOutLogin)
   }
 
   const shop = await getShopAccountContext()
   if (!shop) {
-    redirect("/auth/login?redirect=/dashboard/listings")
+    redirect(signedOutLogin)
   }
 
   const [{ data: shipperRow, error: shipperError }, { data: dropoffRow, error: dropoffError }] =

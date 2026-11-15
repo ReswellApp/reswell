@@ -20,6 +20,7 @@ import { ACCOUNT_BANNED_USER_MESSAGE } from "@/lib/messages/account-ban-errors"
 import { navigateAfterClientAuth } from "@/lib/auth/navigate-after-client-auth"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 import { authLandingHref } from "@/lib/auth/auth-landing-href"
+import { SITE_CLOSED } from "@/lib/site-closure"
 import { hasSupabaseAuthCookiesClient } from "@/lib/auth/has-supabase-auth-cookies"
 import { waitForClientSession } from "@/lib/auth/wait-for-client-session"
 import { cn } from "@/lib/utils"
@@ -285,7 +286,7 @@ export function LoginFormPanel({
           >
             Welcome back
           </h1>
-          {showPageHeader ? (
+          {showPageHeader && !SITE_CLOSED ? (
             <p className="text-sm text-muted-foreground">
               Don&apos;t have an account yet? {signUpLink}
             </p>
@@ -395,7 +396,7 @@ export function LoginFormPanel({
           Forgot your password? {forgotPasswordLink}
         </p>
 
-        {!showPageHeader ? (
+        {!showPageHeader && !SITE_CLOSED ? (
           <p className="text-center text-sm text-muted-foreground">
             Don&apos;t have an account yet? {signUpLink}
           </p>

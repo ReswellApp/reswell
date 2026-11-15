@@ -1,4 +1,5 @@
 import type { ReactNode } from "react"
+import { EarningsServiceNotice } from "@/components/features/earnings/earnings-service-notice"
 import { getShopAccountContext } from "@/lib/services/accountAccess"
 
 export default async function EarningsLayout({ children }: { children: ReactNode }) {
@@ -13,5 +14,10 @@ export default async function EarningsLayout({ children }: { children: ReactNode
       </div>
     )
   }
-  return children
+  return (
+    <div className="space-y-4">
+      <EarningsServiceNotice />
+      {children}
+    </div>
+  )
 }

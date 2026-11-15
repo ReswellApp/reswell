@@ -6,10 +6,13 @@ import { getShopAccountContext, loadAccountTeamPanelData } from "@/lib/services/
 import { loadMessageSmsNotificationsStateForUser } from "@/lib/services/messageSmsNotifications"
 import { loadProfileBrowseHomeForUser } from "@/lib/services/profileBrowseHome"
 import { privatePageMetadata } from "@/lib/site-metadata"
+import { SITE_CLOSED } from "@/lib/site-closure"
 
 export const metadata = privatePageMetadata({
   title: "Profile — Reswell",
-  description: "Update your display name, bio, location, and shipping addresses for your Reswell account.",
+  description: SITE_CLOSED
+    ? "Your name, sign-in, and shipping details."
+    : "Update your display name, bio, location, and shipping addresses for your Reswell account.",
   path: "/dashboard/profile",
 })
 

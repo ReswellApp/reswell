@@ -12,6 +12,7 @@ import { LocalDateOnly, LocalDateTime } from "@/components/ui/local-datetime"
 import { SellerReviewDialog } from "@/components/features/messages/seller-review-dialog"
 import { MarketplaceReviewPhotos } from "@/components/features/reviews/marketplace-review-photos"
 import type { ExistingSellerReview } from "@/components/review-seller-controls"
+import { SITE_CLOSED } from "@/lib/site-closure"
 
 const STAR_FILLED = ratingStarFilledClassName
 const STAR_EMPTY = ratingStarEmptyClassName
@@ -118,7 +119,7 @@ export function ReviewBuyerControls({
     )
   }
 
-  if (!canReview) {
+  if (!canReview || SITE_CLOSED) {
     return null
   }
 
