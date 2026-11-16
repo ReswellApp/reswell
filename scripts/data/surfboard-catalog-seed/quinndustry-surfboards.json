@@ -1,0 +1,49 @@
+{
+  "generated_for": "QUINNdustry Surfboards official named standup catalog",
+  "source": "https://qscboards.com/models and https://qscboards.com/products (official Space Coast named models — excludes merch, custom-any-shape deposits, and gallery mixed racks)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "quinndustry-surfboards",
+      "name": "QUINNdustry Surfboards",
+      "website_url": "https://qscboards.com",
+      "location_label": "Palm Bay / Melbourne, Florida",
+      "founder_name": "Andre Q. Wilson",
+      "lead_shaper_name": "Andre Q. Wilson",
+      "short_description": "Small-batch Space Coast surfboards by Andre Q. Wilson in Palm Bay / Melbourne, Florida — performance thrusters, twin fishes, and versatile 5-fins built for Florida waves.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/quinndustry-surfboards.png",
+      "models": [
+        {
+          "name": "Wave Wizard",
+          "image_url": "https://qscboards.com/surfboards/wave_wizard_product1.png",
+          "description": "The Wave Wizard is a straight performance thruster. It has a medium rocker and a single concave starting midpoint that deepens into the tail. This thing is a knife and will shred!",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "NEMOsis",
+          "image_url": "https://qscboards.com/surfboards/nemosis_product1.png",
+          "description": "The NEMOsis is comparable to the RNF with a slightly more performance outline. It has medium rocker with a heavier vee throughout the tail allowing for insane rail to rail transitions. With boxes set for upright twins+trailer (MRs, MFs, etc.) this thing is fun fast and just the right amount of loose.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Codfather",
+          "image_url": "https://qscboards.com/surfboards/codfather_product.png",
+          "description": "The Codfather is your typical retro twin. It has a soft rocker with a wide nose and a slightly tapered tail allowing it to get you into pretty much anything. This is my go to on the knee high summer days here in central FL.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "EGGsclusive",
+          "image_url": "https://qscboards.com/surfboards/eggsclusive_product1.png",
+          "description": "The EGGsclusive is a rounded pin performance board with a medium rocker. It has a double concave starting in the second third of the board and deepens throughout into the tail. It has a domed deck and tuned rails to allow for some extra volume packed in without sacrificing the maneuverability.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "EGGspresso",
+          "image_url": "https://qscboards.com/surfboards/eggspresso_product1.png",
+          "description": "The EGGspresso is super fun and the perfect board for these softer FL waves! We started with the same template as the EGGsclusive then softened the rocker and widened it throughout. It maintains the same double concave as the EGGsclusive. Set up with five box configuration so you can throw in your go to thruster for those head high days or a quad for the waist high days when it’s feeling a bit more playful.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
