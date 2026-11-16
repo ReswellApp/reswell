@@ -2,10 +2,10 @@ import assert from "node:assert/strict"
 import { register } from "node:module"
 import { after, describe, it } from "node:test"
 /**
- * `export { NAME } from` does not create a local binding. The media routes
+ * `export { NAME } from` does not create a local binding. Brand-asset loaders
  * use this prefix inside `unstable_cache`'s key, so it has to be imported
  * in `public-storage-object.ts` — a re-export alone throws
- * `PUBLIC_STORAGE_OBJECT_CACHE_TAG_PREFIX is not defined` on every image.
+ * `PUBLIC_STORAGE_OBJECT_CACHE_TAG_PREFIX is not defined`.
  */
 const CACHE_KEY = Symbol.for("reswell.publicStorageObjectCacheKey")
 
@@ -35,14 +35,13 @@ export async function resolve(specifier, context, nextResolve) {
 )
 
 const originalFetch = globalThis.fetch
+const fetchCalls: Array<{ url: string; cache?: RequestCache }> = []
 
-globalThis.fetch = (async (_url: string | URL | Request, init?: RequestInit) => {
-  if (init?.method === "HEAD") {
-    return new Response(null, {
-      status: 200,
-      headers: { "content-length": "100", "content-type": "image/webp" },
-    })
-  }
+globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
+  fetchCalls.push({
+    url: String(url),
+    cache: init?.cache,
+  })
   return new Response(Buffer.from("webp"), {
     status: 200,
     headers: { "content-type": "image/webp" },
@@ -56,19 +55,20 @@ after(() => {
 const storageModule = await import("./public-storage-object.ts")
 
 describe("getCachedPublicStorageObject", () => {
-  it("uses the imported cache-tag prefix for listing photos", async () => {
+  it("does not put listing photos in the Next.js Data Cache", async () => {
+    fetchCalls.length = 0
+    globalThis[CACHE_KEY] = undefined
+
     const result = await storageModule.getCachedPublicStorageObject(
       "listings",
       "user/1-full.webp",
       "https://example.test/listings/user/1-full.webp",
     )
 
-    assert.deepEqual(globalThis[CACHE_KEY], [
-      "public-storage-object",
-      "listings",
-      "user/1-full.webp",
-    ])
+    assert.equal(globalThis[CACHE_KEY], undefined)
     assert.equal(result?.contentType, "image/webp")
+    assert.equal(fetchCalls.length, 1)
+    assert.equal(fetchCalls[0]?.cache, "no-store")
   })
 
   it("uses the imported cache-tag prefix for brand logos", async () => {

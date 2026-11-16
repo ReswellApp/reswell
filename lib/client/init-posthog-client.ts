@@ -31,7 +31,12 @@ export function ensurePostHogClient(): Promise<PostHogClient | null> {
     if (!posthogInitialized) {
       posthogInitialized = true
       posthog.init(token, {
-        api_host: "/ingest",
+        // Direct to PostHog. Proxying through /ingest billed every event as a
+        // Vercel request plus Fast Origin Transfer. The /ingest rewrite stays
+        // for clients that still have the old bundle cached.
+        api_host: posthogHost && posthogHost.startsWith("http")
+          ? posthogHost
+          : "https://us.i.posthog.com",
         ui_host: uiHost,
         defaults: "2026-01-30",
         capture_exceptions: true,
