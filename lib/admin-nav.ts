@@ -41,6 +41,7 @@ export type AdminNavIconKey =
   | 'handshake'
   | 'zap'
   | 'mail'
+  | 'bot'
 
 export interface AdminNavItemConfig {
   href: string
@@ -91,6 +92,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
     id: 'tools',
     label: 'Tools',
     items: [
+      { href: '/admin/agents', label: 'Workforce agents', icon: 'bot' },
       { href: '/admin/email-studio', label: 'Email studio', icon: 'mail' },
       { href: '/admin/llm-usage', label: 'LLM Usage', icon: 'sparkles' },
       { href: '/admin/search-quality', label: 'Search Quality', icon: 'sparkles' },
