@@ -13,11 +13,6 @@ import { ProfileCircle } from "@/components/profile-circle"
 import {
   changeProfileEmail,
   changeProfilePassword,
-<<<<<<< HEAD
-  fetchMyListings,
-=======
-  deleteAccount,
->>>>>>> closing-down-
   fetchProfileSettings,
   removeProfileAvatar,
   removeProfileBanner,

@@ -10,6 +10,7 @@ import { evaluateUserReview } from "@/lib/services/accountRestrictions"
 import { resolveMarketplaceReviewAttachmentMetadata } from "@/lib/services/marketplaceReviewAttachments"
 import { validateSellerReviewForOrder } from "@/lib/services/orderSellerReview"
 import { parseOrderTrackingDetail } from "@/lib/shipping/order-tracking-detail"
+import { SITE_CLOSED } from "@/lib/site-closure"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import type { OrderSellerReviewBody } from "@/lib/validations/order-seller-review"
 
@@ -46,6 +47,14 @@ export async function submitMarketplaceOrderReview(
     body: OrderSellerReviewBody
   },
 ): Promise<SubmitMarketplaceOrderReviewResult> {
+  if (SITE_CLOSED && input.role === "seller") {
+    return {
+      ok: false,
+      status: 403,
+      error: "Reswell has closed. New buyer reviews are no longer accepted.",
+    }
+  }
+
   const reviewGuard = await evaluateUserReview(supabase, input.actorUserId)
   if (!reviewGuard.ok) {
     return {
