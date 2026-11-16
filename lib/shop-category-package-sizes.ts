@@ -4,16 +4,9 @@ import {
   isPeerListingSection,
   type PeerListingSection,
 } from "@/lib/peer-listing-sections"
-import { reswellPackageFieldsToDb } from "@/lib/sell-listing-fulfillment-flags"
-import { SURFBOARD_SHIPPING_PACK_BANDS } from "@/lib/surfboard-shipping-pack-bands"
-import { SURFBOARD_SHIPPING_TIERS } from "@/lib/surfboard-shipping-tiers"
 
-/** Shop-level packed-box choice. Surfboard ids match existing shipping tiers and pack bands. */
+/** Shop-level packed-box choice for non-surfboard categories. Surfboards use the shop's own saved box, not stock compact/medium/mid/long cartons. */
 export const SHOP_PACKAGE_SIZE_IDS = [
-  "shortboard_compact",
-  "shortboard_medium",
-  "midlength",
-  "longboard",
   "small",
   "medium",
   "large",
@@ -72,12 +65,6 @@ const SOFT_PACKAGE_PRESETS: Record<SoftPackagePreset["id"], SoftPackagePreset> =
   },
 }
 
-const SURFBOARD_SIZE_IDS: ShopPackageSizeId[] = [
-  "shortboard_compact",
-  "shortboard_medium",
-  "midlength",
-  "longboard",
-]
 const SOFT_SIZE_IDS: ShopPackageSizeId[] = ["small", "medium", "large"]
 
 const SOFT_SIZE_SET = new Set<string>(SOFT_SIZE_IDS)
@@ -87,7 +74,7 @@ export function isShopPackageSizeId(value: string): value is ShopPackageSizeId {
 }
 
 export function shopPackageSizesForSection(section: PeerListingSection): ShopPackageSizeId[] {
-  return section === "surfboards" ? SURFBOARD_SIZE_IDS : SOFT_SIZE_IDS
+  return section === "surfboards" ? [] : SOFT_SIZE_IDS
 }
 
 export function isShopPackageSizeAllowed(
@@ -108,25 +95,15 @@ export function shopPackageCategoryOrder(): PeerListingSection[] {
 }
 
 export function shopPackageSizeLabel(sizeId: ShopPackageSizeId): string {
-  if (sizeId === "shortboard_compact") return "Shortboard · Compact"
-  if (sizeId === "shortboard_medium") return "Shortboard · Medium"
-  if (sizeId === "midlength") return SURFBOARD_SHIPPING_TIERS.midlength.label
-  if (sizeId === "longboard") return SURFBOARD_SHIPPING_TIERS.longboard.label
   return SOFT_PACKAGE_PRESETS[sizeId].label
 }
 
 /** Short name for a size chip. The category already supplies the context. */
 export function shopPackageChipLabel(sizeId: ShopPackageSizeId): string {
-  if (sizeId === "shortboard_compact") return "Compact"
-  if (sizeId === "shortboard_medium") return "Medium"
   return shopPackageSizeLabel(sizeId)
 }
 
 export function shopPackageSizeSummary(sizeId: ShopPackageSizeId): string {
-  if (sizeId === "shortboard_compact") return SURFBOARD_SHIPPING_PACK_BANDS.shortboard_compact.summary
-  if (sizeId === "shortboard_medium") return SURFBOARD_SHIPPING_PACK_BANDS.shortboard_medium.summary
-  if (sizeId === "midlength") return SURFBOARD_SHIPPING_TIERS.midlength.summary
-  if (sizeId === "longboard") return SURFBOARD_SHIPPING_TIERS.longboard.summary
   return SOFT_PACKAGE_PRESETS[sizeId].summary
 }
 
@@ -135,25 +112,6 @@ export function listingPackageColumnsForShopSize(
   sizeId: ShopPackageSizeId,
 ): ListingPackageColumns | null {
   if (!isShopPackageSizeAllowed(section, sizeId)) return null
-
-  if (section === "surfboards") {
-    if (sizeId === "shortboard_compact" || sizeId === "shortboard_medium") {
-      return reswellPackageFieldsToDb({
-        boardShippingCostMode: "reswell",
-        surfboardShippingTier: "shortboard",
-        surfboardShippingPackBand: sizeId,
-        category: "surfboards",
-      })
-    }
-    if (sizeId === "midlength" || sizeId === "longboard") {
-      return reswellPackageFieldsToDb({
-        boardShippingCostMode: "reswell",
-        surfboardShippingTier: sizeId,
-        category: "surfboards",
-      })
-    }
-    return null
-  }
 
   if (!SOFT_SIZE_SET.has(sizeId)) return null
   const preset = SOFT_PACKAGE_PRESETS[sizeId as SoftPackagePreset["id"]]
@@ -214,19 +172,6 @@ export function inferShopPackageSizeId(
   }
 
   if (row.section === "surfboards") {
-    const band = row.shipping_package_band
-    if (band === "shortboard_compact" || band === "shortboard_medium") {
-      const columns = listingPackageColumnsForShopSize("surfboards", band)
-      if (columns && (snapshotMatchesColumns(row, columns) || row.shipping_packed_length_in == null)) {
-        return band
-      }
-      return band
-    }
-    const tier = row.shipping_package_tier
-    if (tier === "midlength" || tier === "longboard") {
-      return tier
-    }
-    if (tier === "shortboard") return "custom"
     return hasAnyPackageData(row) ? "custom" : null
   }
 

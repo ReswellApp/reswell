@@ -34,6 +34,7 @@ export function buildApparelListingPersistFields(
   const shipping = apparelListingShippingFieldsFor(input, options)
   const packedRow = reswellPackageFieldsToDb({
     boardShippingCostMode: "reswell",
+    listingSection: APPAREL_SECTION,
     reswellPackageLengthIn: input.reswellPackageLengthIn,
     reswellPackageWidthIn: input.reswellPackageWidthIn,
     reswellPackageHeightIn: input.reswellPackageHeightIn,

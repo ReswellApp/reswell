@@ -61,6 +61,7 @@ export function buildFinListingPersistFields(
         }
   const packedRow = reswellPackageFieldsToDb({
     boardShippingCostMode: shippingMode,
+    listingSection: FINS_SECTION,
     ...reswellPackage,
   })
 

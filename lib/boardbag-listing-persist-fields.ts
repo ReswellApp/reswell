@@ -40,6 +40,7 @@ export function buildBoardbagListingPersistFields(
   )
   const packedRow = reswellPackageFieldsToDb({
     boardShippingCostMode: shippingMode,
+    listingSection: BOARDBAGS_SECTION,
     reswellPackageLengthIn: input.reswellPackageLengthIn,
     reswellPackageWidthIn: input.reswellPackageWidthIn,
     reswellPackageHeightIn: input.reswellPackageHeightIn,
