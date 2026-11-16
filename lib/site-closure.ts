@@ -6,7 +6,9 @@ import { supabaseAuthForwardPathname } from "@/lib/auth/supabase-auth-forward-pa
  */
 export const SITE_CLOSED = true
 
-export const SITE_CLOSURE_DATE_LABEL = "November 15, 2026"
+export const SITE_CLOSURE_DATE_LABEL = "November 26, 2026"
+
+export const SITE_CLOSURE_DATE_SHORT = "11/26/2026"
 
 export const SITE_CLOSURE_PATH = "/closed"
 

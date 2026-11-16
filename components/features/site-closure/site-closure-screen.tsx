@@ -3,7 +3,7 @@ import Link from "next/link"
 import { SiteClosureAccountLink } from "@/components/features/site-closure/site-closure-account-link"
 import { SiteWordmarkLink } from "@/components/site-wordmark-link"
 import { RESWELL_CONTACT_EMAIL, RESWELL_CONTACT_MAILTO } from "@/lib/constants/contact"
-import { SITE_CLOSURE_ACCOUNT_HOME } from "@/lib/site-closure"
+import { SITE_CLOSURE_ACCOUNT_HOME, SITE_CLOSURE_DATE_SHORT } from "@/lib/site-closure"
 
 export type SiteClosureAccount = {
   name: string
@@ -58,7 +58,7 @@ export function SiteClosureScreen({ account }: { account: SiteClosureAccount | n
           </h1>
           <div className="mx-auto mt-8 max-w-xl rounded-2xl border border-border bg-muted/40 px-6 py-7 sm:mt-10 sm:px-8 sm:py-8">
             <p className="text-center text-lg font-semibold leading-snug text-foreground sm:text-xl">
-              We have closed down the site and platform on 11/15/26.
+              We have closed down the site and platform on {SITE_CLOSURE_DATE_SHORT}.
             </p>
             <div className="mt-6 space-y-4 text-[15px] font-light leading-relaxed text-foreground sm:text-base">
               <p>
