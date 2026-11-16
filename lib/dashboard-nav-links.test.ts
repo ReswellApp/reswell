@@ -76,4 +76,23 @@ describe("dashboardNavSections", () => {
 
     assert.equal(favorites?.href, "/favorites")
   })
+
+  it("keeps sales, earnings, purchases, and profile while the site is closed", () => {
+    const sections = dashboardNavSections({
+      isAdmin: true,
+      isShipper: true,
+      isDropoffLocation: true,
+      hasShopifyAccess: true,
+      showEarnings: true,
+      siteClosed: true,
+    })
+    assert.deepEqual(
+      sections.map((section) => [section.label, section.links.map((link) => link.name)]),
+      [
+        ["Selling", ["Sales", "Earnings"]],
+        ["Buying", ["Purchases"]],
+        ["Account", ["Profile"]],
+      ],
+    )
+  })
 })

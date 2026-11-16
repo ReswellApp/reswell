@@ -13,6 +13,7 @@ import {
   dashboardNavSections,
   type DashboardNavLink,
 } from "@/lib/dashboard-nav-links"
+import { SITE_CLOSED } from "@/lib/site-closure"
 import { isMostSpecificDashboardNavMatch } from "@/lib/dashboard-nav-match"
 import { SupportUnreadTicker } from "@/components/features/support/support-unread-ticker"
 import { cn } from "@/lib/utils"
@@ -81,6 +82,7 @@ export function DashboardMobileNav({
         isDropoffLocation,
         hasShopifyAccess,
         showEarnings,
+        siteClosed: SITE_CLOSED,
       }),
     [hasShopifyAccess, isAdmin, isDropoffLocation, isShipper, showEarnings],
   )
@@ -93,7 +95,7 @@ export function DashboardMobileNav({
       })),
     )
 
-    if (!sellerProfileHref) return flat
+    if (!sellerProfileHref || SITE_CLOSED) return flat
 
     const sellerLink: DashboardNavLink & { key: string } = {
       key: "seller-profile",

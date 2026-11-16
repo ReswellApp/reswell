@@ -40,6 +40,13 @@ import { sellerProfileHref } from "@/lib/seller-slug"
 import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
 import { packageTrackHref } from "@/lib/utils/carrier-tracking-url"
 import { helpHubHref } from "@/lib/help/help-hub-intents"
+import { SITE_CLOSED } from "@/lib/site-closure"
+import {
+  purchaseNeedsClosureAttention,
+  returnStillOpen,
+} from "@/lib/closure-account-orders"
+import { ClosureSettledOrderNotice } from "@/components/features/orders/closure-settled-order-notice"
+import { getOrderReturnSummariesByOrderIds } from "@/lib/db/orderReturnStatusSummary"
 import {
   daysUntilShippingDeadline,
   getShippingDeadlineDate,
@@ -210,6 +217,16 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
   }
 
   const order = row as unknown as OrderDetail
+  if (SITE_CLOSED) {
+    const closureReturns = await getOrderReturnSummariesByOrderIds(supabase, [id])
+    const stillNeeded = purchaseNeedsClosureAttention({
+      orderStatus: order.status,
+      deliveryStatus: order.delivery_status ?? "pending",
+      payoutReleased: false,
+      returnInProgress: returnStillOpen(closureReturns.get(id)),
+    })
+    if (!stillNeeded) return <ClosureSettledOrderNotice kind="purchase" />
+  }
   const trackingDetailRaw = await fetchOptionalOrderTrackingDetailJson(supabase, {
     orderId: id,
     role: "buyer",

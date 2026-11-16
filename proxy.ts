@@ -14,6 +14,7 @@ import {
   shouldAttachDeviceCookieOnDocument,
 } from '@/lib/crawler/public-marketplace-paths'
 import { isServerActionRequest } from '@/lib/utils/is-server-action-request'
+import { shouldServeSiteClosurePage, SITE_CLOSURE_PATH } from '@/lib/site-closure'
 
 function applyPublicMarketplaceCacheHints(
   request: NextRequest,
@@ -44,6 +45,24 @@ export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
   const isServerAction = isServerActionRequest(request)
+
+  if (
+    shouldServeSiteClosurePage({
+      method: request.method,
+      pathname,
+      searchParams: request.nextUrl.searchParams,
+      isServerAction,
+    })
+  ) {
+    const url = request.nextUrl.clone()
+    url.pathname = SITE_CLOSURE_PATH
+    url.search = ''
+    const closed = NextResponse.rewrite(url)
+    closed.headers.set('Cache-Control', 'private, no-store')
+    closed.headers.set('CDN-Cache-Control', 'no-store')
+    closed.headers.set('X-Robots-Tag', 'noindex, nofollow')
+    return closed
+  }
 
   const catalogAccess = evaluateAdCatalogCrawlerAccess(request)
   if (!catalogAccess.allowed && !isServerAction) {

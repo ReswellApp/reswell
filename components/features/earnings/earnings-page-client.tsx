@@ -8,6 +8,7 @@ import {
   EarningsActivityPane,
   EarningsAvailablePane,
   EarningsCreditPane,
+  EarningsDetailShell,
   EarningsPendingPane,
 } from "@/components/features/earnings/earnings-panes"
 import { EarningsHub, EarningsHubSkeleton } from "@/components/features/earnings/earnings-hub"
@@ -29,6 +30,7 @@ import { dispatchHeaderWalletSync } from "@/lib/auth/header-wallet-sync"
 import type { SellerEarningsDashboardTotals } from "@/lib/db/sellerEarningsTotals"
 import { useClientSearchParams } from "@/hooks/use-client-search-params"
 import { formatUsd } from "@/lib/utils/format-usd"
+import { SITE_CLOSED } from "@/lib/site-closure"
 import type { StripeConnectStatusPayload } from "@/lib/utils/stripe-connect-status"
 
 interface StripeTransferHistoryItem {
@@ -396,6 +398,16 @@ export function EarningsPageClient({
   }
 
   if (view === "activity") {
+    if (SITE_CLOSED) {
+      return (
+        <EarningsDetailShell title="Activity">
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            Completed activity is hidden. Pending earnings and money you can still transfer stay on
+            Earnings.
+          </p>
+        </EarningsDetailShell>
+      )
+    }
     return (
       <EarningsActivityPane
         transactions={transactions}
@@ -425,6 +437,7 @@ export function EarningsPageClient({
       creditLabel={formatUsd(creditBalanceUsd)}
       showCredit={creditVisible}
       showTransfer={stripePayoutsEnabled}
+      openOrdersOnly={SITE_CLOSED}
     />
   )
 }

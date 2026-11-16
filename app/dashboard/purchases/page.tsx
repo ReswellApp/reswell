@@ -21,6 +21,11 @@ import {
   type PurchaseListItem,
 } from "@/lib/purchases-list-display"
 import { REAL_MARKETPLACE_PURCHASES_FILTER } from "@/lib/order-admin-test"
+import { SITE_CLOSED } from "@/lib/site-closure"
+import {
+  purchaseNeedsClosureAttention,
+  returnStillOpen,
+} from "@/lib/closure-account-orders"
 
 export const metadata = privatePageMetadata({
   title: "Purchases — Reswell",
@@ -136,7 +141,21 @@ export default async function PurchasesPage() {
     .in("status", [...ORDER_STATUS_LIST])
     .order("created_at", { ascending: false })
 
-  const list = (orders ?? []) as unknown as MarketplaceOrderRow[]
+  const fetchedOrders = (orders ?? []) as unknown as MarketplaceOrderRow[]
+  const returnSummaries = await getOrderReturnSummariesByOrderIds(
+    supabase,
+    fetchedOrders.map((order) => order.id),
+  )
+  const list = SITE_CLOSED
+    ? fetchedOrders.filter((row) =>
+        purchaseNeedsClosureAttention({
+          orderStatus: row.status,
+          deliveryStatus: row.delivery_status ?? "pending",
+          payoutReleased: false,
+          returnInProgress: returnStillOpen(returnSummaries.get(row.id)),
+        }),
+      )
+    : fetchedOrders
 
   const sellerIds = [...new Set(list.map((p) => p.seller_id).filter(Boolean))]
   const { data: sellerProfiles } =
@@ -149,7 +168,6 @@ export default async function PurchasesPage() {
   )
 
   const orderIds = list.map((o) => o.id)
-  const returnSummaries = await getOrderReturnSummariesByOrderIds(supabase, orderIds)
   type OwnReviewRow = {
     order_id: string
     id: string
@@ -241,7 +259,9 @@ export default async function PurchasesPage() {
           Your Purchases
         </h1>
         <p className="mt-1 text-[15px] leading-snug text-muted-foreground">
-          Track and manage your orders.
+          {SITE_CLOSED
+            ? "Purchases that are still on the way, or still have an open return or refund."
+            : "Track and manage your orders."}
         </p>
       </header>
 
@@ -253,7 +273,16 @@ export default async function PurchasesPage() {
             Supabase.
           </p>
         ) : (
-          <PurchasesOrderList items={items} />
+          <PurchasesOrderList
+            items={items}
+            emptyState={
+              SITE_CLOSED
+                ? {
+                    body: "Nothing here is still on the way. Delivered purchases stay hidden unless a return or refund is open.",
+                  }
+                : undefined
+            }
+          />
         )}
       </div>
     </div>

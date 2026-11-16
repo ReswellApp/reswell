@@ -121,27 +121,27 @@ export function AboutPageContent({ stats, heroListingImages }: AboutPageContentP
             </h2>
             <div className="mt-6 space-y-5 text-base leading-relaxed text-muted-foreground sm:text-lg">
               <p>
-                Some boards move fine on Facebook Marketplace or Craigslist. Others sit for months.
-                Someone out there might be looking for that same board, and they just aren&apos;t in your
-                town. Reswell came from a simple idea: buying and selling surfboards doesn&apos;t have to
-                stop at local pickup.
+                Welcome to Reswell! As lifelong surfers, we know the troubles that come with buying and
+                selling surfboards. We&apos;ve all been there: scrolling Facebook Marketplace, refreshing
+                Craigslist, messaging strangers who never reply, and meeting up in parking lots hoping
+                the ding they mentioned really is &ldquo;minor.&rdquo; Surfboards are sacred to us, and
+                these sites just don&apos;t do justice to them.
               </p>
               <p>
-                We wanted one dedicated place for surfboards and surf gear. Finding the board you want
-                should be straightforward, and sellers should be able to reach buyers who are looking for
-                what they have. Trust and connection are the point.
+                To do right by our passion for surfing, we created a peer-to-peer marketplace dedicated
+                to surfboards and surf gear. Everything we&apos;ve built comes back to trust and
+                community. Every transaction comes with purchase protection, so you&apos;re covered if a
+                board doesn&apos;t show up as promised. Detailed listings give you the dimensions and
+                condition up front, so you know exactly what you&apos;re getting. Profiles backed with
+                strong reviews mean you&apos;re never buying from a stranger. Our simple, easy-to-use
+                interface ties it all together so you can spend less time searching for surfboards and
+                more time riding them.
               </p>
               <p>
-                We&apos;re based in Santa Barbara. Even here, it can be hard to find the board you want if
-                you don&apos;t have Southern California&apos;s inventory around the corner. Reswell is for
-                surfers who know what they want, and for people who buy and sell boards often, whether
-                they&apos;re trying new setups or selling as a side hustle.
-              </p>
-              <p>
-                We&apos;re not another Facebook Marketplace, Boardal, or Craigslist. Those places are
-                useful for plenty of things, and they&apos;ll keep existing. For serious buyers and
-                sellers, we want something more focused: ship the board, skip the meetup logistics,
-                and build a marketplace around trust.
+                We&apos;re based in Santa Barbara, CA and feel lucky to be surrounded by a strong surf
+                culture with a lot of quality surfboards. We simply want to share this feeling with
+                others. Whether you&apos;re filling a gap in your quiver or buying and selling as a side
+                hustle, you&apos;ve found your spot.
               </p>
             </div>
           </div>

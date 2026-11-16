@@ -13,6 +13,7 @@ import {
   dashboardNavSections,
   type DashboardNavLink,
 } from "@/lib/dashboard-nav-links"
+import { SITE_CLOSED } from "@/lib/site-closure"
 import { isMostSpecificDashboardNavMatch } from "@/lib/dashboard-nav-match"
 import {
   dashboardSidebarNavIconClass,
@@ -158,6 +159,7 @@ export function DashboardSidebarNav({
     isDropoffLocation,
     hasShopifyAccess,
     showEarnings,
+    siteClosed: SITE_CLOSED,
   })
   const navHrefs = sections.flatMap((section) =>
     section.links.flatMap((item) => [

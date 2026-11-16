@@ -32,6 +32,7 @@ import { ProfileNotificationsTab } from "@/components/features/dashboard/profile
 import { AccountTeamPanel } from "@/components/features/dashboard/account-team-panel"
 import type { AccountTeamPanelData } from "@/lib/services/accountAccess"
 import { sellerProfileHref } from "@/lib/seller-slug"
+import { SITE_CLOSED } from "@/lib/site-closure"
 import type { DashboardProfileRow } from "@/lib/db/dashboard-profile"
 import type { ProfileBrowseHome } from "@/lib/db/profileBrowseHome"
 import type { ProfileAddressRow } from "@/lib/profile-address"
@@ -72,6 +73,7 @@ export function DashboardProfileSettings({
   signInEmail,
 }: DashboardProfileSettingsProps) {
   const isThreads = variant === "threads"
+  const hidePublicProfile = SITE_CLOSED && !isThreads
   const { t } = useLocale()
   const [activeTab, setActiveTab] = useState<ProfileSettingsTabId>("shop")
   const [profile, setProfile] = useState<DashboardProfileRow | null>(initialProfile)
@@ -125,12 +127,19 @@ export function DashboardProfileSettings({
 
   useEffect(() => {
     const applyHash = () => {
-      setActiveTab(profileSettingsTabFromHash(window.location.hash))
+      const tab = profileSettingsTabFromHash(window.location.hash)
+      if (hidePublicProfile && tab === "notifications") {
+        setActiveTab("shop")
+        const base = window.location.pathname + window.location.search
+        window.history.replaceState(null, "", base)
+        return
+      }
+      setActiveTab(tab)
     }
     applyHash()
     window.addEventListener("hashchange", applyHash)
     return () => window.removeEventListener("hashchange", applyHash)
-  }, [])
+  }, [hidePublicProfile])
 
   function handleTabChange(tab: ProfileSettingsTabId) {
     setActiveTab(tab)
@@ -561,12 +570,18 @@ export function DashboardProfileSettings({
 
   return (
     <div className="space-y-6">
-      {!isThreads ? <DashboardPageHeader title={s.title} description={s.subtitle} /> : null}
+      {!isThreads ? (
+        <DashboardPageHeader
+          title={s.title}
+          description={hidePublicProfile ? "Your name, sign-in, and shipping details." : s.subtitle}
+        />
+      ) : null}
 
       <ProfileSettingsTabNav
         activeTab={activeTab}
         onTabChange={handleTabChange}
         variant={variant}
+        hiddenTabs={hidePublicProfile ? ["notifications"] : undefined}
         labels={{
           shop: isThreads ? "Profile" : s.shopTab,
           signIn: s.signInTab,
@@ -650,6 +665,7 @@ export function DashboardProfileSettings({
           onRemoveBanner={() => void handleRemoveBanner()}
           onTileBannerUpload={(e) => void handleTileBannerUpload(e)}
           onRemoveTileBanner={() => void handleRemoveTileBanner()}
+          showPublicFields={!hidePublicProfile}
         />
       ) : null}
 
@@ -701,7 +717,7 @@ export function DashboardProfileSettings({
         </div>
       ) : null}
 
-      {activeTab === "notifications" ? (
+      {activeTab === "notifications" && !hidePublicProfile ? (
         <ProfileNotificationsTab
           copy={s.notifications}
           initialMessageSmsOptIn={initialMessageSmsOptIn}

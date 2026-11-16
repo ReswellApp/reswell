@@ -48,6 +48,13 @@ import {
 import { getMarketplaceReviewByOrderAndReviewer } from "@/lib/db/order-reviews"
 import { existingMarketplaceReviewFromRow } from "@/lib/marketplace-review-photos"
 import { validateSellerReviewForOrder } from "@/lib/services/orderSellerReview"
+import { SITE_CLOSED } from "@/lib/site-closure"
+import {
+  payoutFundsAreReleased,
+  returnStillOpen,
+  saleNeedsClosureAttention,
+} from "@/lib/closure-account-orders"
+import { ClosureSettledOrderNotice } from "@/components/features/orders/closure-settled-order-notice"
 import {
   autoSendSellerReviewRequestForOrder,
   sellerReviewRequestAlreadySentForOrder,
@@ -106,7 +113,7 @@ type ShippingAddressJson = {
   } | null
 } | null
 
-type PayoutRow = { status: string; hold_reason?: string | null }
+type PayoutRow = { status: string; hold_reason?: string | null; released_at?: string | null }
 
 type OrderListingRow = {
   id: string
@@ -285,11 +292,21 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
 
   const { data: payoutFromDb } = await supabase
     .from("payouts")
-    .select("status, hold_reason")
+    .select("status, hold_reason, released_at")
     .eq("order_id", id)
     .maybeSingle()
 
   const payoutRow: PayoutRow | null = payoutFromDb ?? null
+  if (SITE_CLOSED) {
+    const closureReturns = await getOrderReturnSummariesByOrderIds(supabase, [id])
+    const stillNeeded = saleNeedsClosureAttention({
+      orderStatus: sale.status,
+      deliveryStatus: sale.delivery_status ?? "pending",
+      payoutReleased: payoutFundsAreReleased(payoutRow),
+      returnInProgress: returnStillOpen(closureReturns.get(id)),
+    })
+    if (!stillNeeded) return <ClosureSettledOrderNotice kind="sale" />
+  }
   const sortedPack = [...(sale.order_items ?? [])].sort(
     (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
   )
@@ -421,7 +438,10 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
     ? existingMarketplaceReviewFromRow(sellerReviewOfBuyer)
     : null
   const canSubmitBuyerReview =
-    buyerReviewGate.ok && !existingSellerReviewOfBuyer && Boolean(sale.buyer_id)
+    !SITE_CLOSED &&
+    buyerReviewGate.ok &&
+    !existingSellerReviewOfBuyer &&
+    Boolean(sale.buyer_id)
   const showSellerOwnBuyerReviewUi = !!(existingSellerReviewOfBuyer || canSubmitBuyerReview)
 
   let reviewRequestAlreadySent =

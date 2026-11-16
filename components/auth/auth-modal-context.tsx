@@ -11,6 +11,7 @@ import {
 import { AuthModal } from "@/components/auth/auth-modal"
 import { sellPostAuthReturnPath } from "@/lib/sell-flow/post-auth-return-path"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
+import { closurePostAuthPath, SITE_CLOSED } from "@/lib/site-closure"
 
 type Mode = "login" | "sign-up" | "forgot-password"
 
@@ -28,23 +29,28 @@ export function AuthModalProvider({ children }: { children: ReactNode }) {
   const [mode, setMode] = useState<Mode>("login")
   const [redirectTo, setRedirectTo] = useState("/")
 
+  const resolveRedirect = useCallback((redirect?: string | null) => {
+    const next = sellPostAuthReturnPath(safeRedirectPath(redirect ?? null))
+    return SITE_CLOSED ? closurePostAuthPath(next) : next
+  }, [])
+
   const openLogin = useCallback((redirect?: string | null) => {
     setMode("login")
-    setRedirectTo(sellPostAuthReturnPath(safeRedirectPath(redirect ?? null)))
+    setRedirectTo(resolveRedirect(redirect))
     setOpen(true)
-  }, [])
+  }, [resolveRedirect])
 
   const openSignUp = useCallback((redirect?: string | null) => {
     setMode("sign-up")
-    setRedirectTo(sellPostAuthReturnPath(safeRedirectPath(redirect ?? null)))
+    setRedirectTo(resolveRedirect(redirect))
     setOpen(true)
-  }, [])
+  }, [resolveRedirect])
 
   const openForgotPassword = useCallback((redirect?: string | null) => {
     setMode("forgot-password")
-    setRedirectTo(sellPostAuthReturnPath(safeRedirectPath(redirect ?? null)))
+    setRedirectTo(resolveRedirect(redirect))
     setOpen(true)
-  }, [])
+  }, [resolveRedirect])
 
   const close = useCallback(() => setOpen(false), [])
 

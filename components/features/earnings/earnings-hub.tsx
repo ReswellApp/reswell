@@ -60,6 +60,7 @@ export function EarningsHub({
   creditLabel,
   showCredit,
   showTransfer = false,
+  openOrdersOnly = false,
 }: {
   lifetimeLabel: string
   last30Label: string
@@ -70,15 +71,31 @@ export function EarningsHub({
   /** Admin-only Reswell Credit pilot. */
   showCredit: boolean
   showTransfer?: boolean
+  /** Hide lifetime history. Pending release and cash-out balance stay. */
+  openOrdersOnly?: boolean
 }) {
   return (
     <div className={hubCardClass}>
       <h1 className="hidden text-2xl font-bold tracking-tight text-foreground lg:block">Earnings</h1>
+      {openOrdersOnly ? (
+        <p className="mt-1 text-[15px] leading-snug text-muted-foreground lg:mt-2">
+          Pending earnings on orders that have not released funds, and money you can still transfer.
+        </p>
+      ) : null}
 
       <div className="rounded-xl bg-muted/50 lg:mt-5">
-        <div className="grid grid-cols-3 divide-x divide-border/60 px-1 py-4 sm:px-2 sm:py-5">
-          <EarningsStat value={lifetimeLabel} label="Lifetime Earnings" />
-          <EarningsStat value={last30Label} label="Last 30 Days" />
+        <div
+          className={cn(
+            "grid divide-x divide-border/60 px-1 py-4 sm:px-2 sm:py-5",
+            openOrdersOnly ? "grid-cols-2" : "grid-cols-3",
+          )}
+        >
+          {openOrdersOnly ? (
+            <EarningsStat value={pendingLabel} label="Pending Release" />
+          ) : (
+            <EarningsStat value={lifetimeLabel} label="Lifetime Earnings" />
+          )}
+          {openOrdersOnly ? null : <EarningsStat value={last30Label} label="Last 30 Days" />}
           <EarningsStat value={availableLabel} label="Available Earnings" />
         </div>
         {showTransfer ? (
@@ -106,8 +123,12 @@ export function EarningsHub({
           title="Available"
           amount={readyLabel}
         />
-        <EarningsMenuLink href={earningsHref("activity")} icon={List} title="Activity" />
-        <EarningsMenuLink href={helpTopicPath("selling")} icon={DollarSign} title="Earnings FAQ" />
+        {openOrdersOnly ? null : (
+          <EarningsMenuLink href={earningsHref("activity")} icon={List} title="Activity" />
+        )}
+        {openOrdersOnly ? null : (
+          <EarningsMenuLink href={helpTopicPath("selling")} icon={DollarSign} title="Earnings FAQ" />
+        )}
       </div>
 
       {showCredit ? (

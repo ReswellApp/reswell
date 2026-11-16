@@ -105,6 +105,7 @@ import { WorkingOnAccountBanner } from "@/components/working-on-account-banner"
 import { coastalShipperMembership } from "@/lib/services/coastalShipperAccess"
 import { dropoffLocationMembership } from "@/lib/services/dropoffLocationAccess"
 import { SiteWordmarkLink } from "@/components/site-wordmark-link"
+import { SITE_CLOSED } from "@/lib/site-closure"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
 
@@ -1363,7 +1364,9 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
   /** Sell flow and checkout: logo + account only (no main nav / search / cart). */
   const isSellFlowPath =
     pathname !== null && (pathname === "/sell" || pathname.startsWith("/sell/"))
+  const isClosureChrome = SITE_CLOSED
   const isMinimalNavChrome =
+    isClosureChrome ||
     isSellFlowPath ||
     (pathname !== null && (pathname === "/checkout" || pathname.startsWith("/checkout/")))
 
@@ -1432,13 +1435,15 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
               <Skeleton className="h-9 w-9 shrink-0 rounded-full" aria-hidden />
             ) : user && accountMenu ? (
               <>
-                <NavMessagesDropdown
-                  userId={user.id}
-                  unreadMessages={unreadMessages}
-                  unreadSupport={unreadSupport}
-                  triggerClassName="h-10 w-10 shrink-0"
-                  iconClassName="h-[22px] w-[22px]"
-                />
+                {isClosureChrome ? null : (
+                  <NavMessagesDropdown
+                    userId={user.id}
+                    unreadMessages={unreadMessages}
+                    unreadSupport={unreadSupport}
+                    triggerClassName="h-10 w-10 shrink-0"
+                    iconClassName="h-[22px] w-[22px]"
+                  />
+                )}
                 {accountMenu}
               </>
             ) : authLoaded ? (

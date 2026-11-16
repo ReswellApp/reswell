@@ -9,6 +9,7 @@ interface ProfileSettingsTabNavProps {
   activeTab: ProfileSettingsTabId
   onTabChange: (tab: ProfileSettingsTabId) => void
   variant?: ProfileSettingsVariant
+  hiddenTabs?: readonly ProfileSettingsTabId[]
   labels: {
     shop: string
     signIn: string
@@ -23,6 +24,7 @@ export function ProfileSettingsTabNav({
   activeTab,
   onTabChange,
   variant = "dashboard",
+  hiddenTabs = [],
   labels,
 }: ProfileSettingsTabNavProps) {
   const isThreads = variant === "threads"
@@ -41,7 +43,7 @@ export function ProfileSettingsTabNav({
       )}
       aria-label="Profile settings"
     >
-      {TAB_ORDER.map((tab) => {
+      {TAB_ORDER.filter((tab) => !hiddenTabs.includes(tab)).map((tab) => {
         const active = activeTab === tab
         return (
           <button

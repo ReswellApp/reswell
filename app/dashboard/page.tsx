@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation"
 import { privatePageMetadata } from "@/lib/site-metadata"
+import { SITE_CLOSED, SITE_CLOSURE_ACCOUNT_HOME } from "@/lib/site-closure"
 
 export const metadata = privatePageMetadata({
   title: "Dashboard — Reswell",
@@ -7,7 +8,7 @@ export const metadata = privatePageMetadata({
   path: "/dashboard",
 })
 
-/** The overview home is retired. Bookmarks and old links land on listings. */
+/** The overview home is retired. While the marketplace is closed, land on sales. */
 export default function DashboardPage() {
-  redirect("/dashboard/listings")
+  redirect(SITE_CLOSED ? SITE_CLOSURE_ACCOUNT_HOME : "/dashboard/listings")
 }
