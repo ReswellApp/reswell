@@ -2,6 +2,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { SiteClosureAccountLink } from "@/components/features/site-closure/site-closure-account-link"
 import { SiteWordmarkLink } from "@/components/site-wordmark-link"
+import { RESWELL_CONTACT_EMAIL, RESWELL_CONTACT_MAILTO } from "@/lib/constants/contact"
 import { SITE_CLOSURE_ACCOUNT_HOME } from "@/lib/site-closure"
 
 export type SiteClosureAccount = {
@@ -55,9 +56,43 @@ export function SiteClosureScreen({ account }: { account: SiteClosureAccount | n
           <h1 className="text-center font-headline text-3xl font-light leading-tight tracking-tight text-foreground sm:text-4xl md:text-5xl">
             Thank you from the Reswell team
           </h1>
-          <p className="mx-auto mt-8 max-w-xl text-center text-base font-medium leading-relaxed text-foreground sm:mt-10 sm:text-lg">
-            We have closed down the site and platform on 11/15/26.
-          </p>
+          <div className="mx-auto mt-8 max-w-xl rounded-2xl border border-border bg-muted/40 px-6 py-7 sm:mt-10 sm:px-8 sm:py-8">
+            <p className="text-center text-lg font-semibold leading-snug text-foreground sm:text-xl">
+              We have closed down the site and platform on 11/15/26.
+            </p>
+            <div className="mt-6 space-y-4 text-[15px] font-light leading-relaxed text-foreground sm:text-base">
+              <p>
+                If you have existing payouts or earnings still in your account, you can still{" "}
+                {account ? (
+                  <Link
+                    href="/dashboard/earnings"
+                    className="underline underline-offset-4 transition-colors hover:text-foreground/70"
+                  >
+                    view your earnings
+                  </Link>
+                ) : (
+                  <Link
+                    href={loginHref}
+                    className="underline underline-offset-4 transition-colors hover:text-foreground/70"
+                  >
+                    sign in
+                  </Link>
+                )}{" "}
+                to transfer remaining funds. We&apos;ll continue processing payouts for completed
+                sales.
+              </p>
+              <p>
+                If you have any questions, email us at{" "}
+                <a
+                  href={RESWELL_CONTACT_MAILTO}
+                  className="underline underline-offset-4 transition-colors hover:text-foreground/70"
+                >
+                  {RESWELL_CONTACT_EMAIL}
+                </a>
+                .
+              </p>
+            </div>
+          </div>
           <div className="mx-auto mt-10 max-w-xl space-y-6 text-[15px] font-light leading-relaxed text-foreground sm:text-base">
             <p>
               We started Reswell to make buying and selling surf gear easier and more
