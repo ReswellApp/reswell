@@ -1,0 +1,61 @@
+{
+  "generated_for": "Portrait official named standup catalog",
+  "source": "https://portraitltd.com/collections/surfboards-1 (Shopify product_type=surfboard only — collapsed color/size/tint variants; excludes tees, hats, hoodies, skate decks, custom order form, and the Pegasus Step Up 1-of-1 Christenson special project)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "portrait-surfboards",
+      "name": "Portrait",
+      "website_url": "https://portraitltd.com",
+      "location_label": "Cardiff, California",
+      "founder_name": "Zach Miller",
+      "lead_shaper_name": "Zach Miller",
+      "short_description": "Performance surfboards shaped by Zach Miller in Cardiff, California — named standup models from the official Portrait shop.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/portrait-surfboards.png",
+      "models": [
+        {
+          "name": "The Mongrel",
+          "image_url": "https://cdn.shopify.com/s/files/1/0902/8029/6813/files/Mongrel-Stock-White-Front-1600x2000.jpg",
+          "description": "By far one of the most lively and versatile boards in all conditions. A true mash-up born from blending our performance shortboards with modern twin fin templates. Featuring a medium entry rocker with a late flick in the exit, single to double concave, a slightly forward wide point, and a set-back twin fin setup. The result is strong paddle ability, instant acceleration, and responsive control under your feet. The pulled-in outline, pintail, and modern rails allow for hold in pumping surf and high-performance turns. This thing is a little monster. Ride equal to or up to 2” longer than your standard shortboard. Available as a pure twin or tri-fin setup.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Slide Machine",
+          "image_url": "https://cdn.shopify.com/s/files/1/0902/8029/6813/files/Slide-Machine-Clear-Stock-Front-1600x2000.jpg",
+          "description": "The Slide Machine is built for effortless speed in everyday surf. Short, wide, and full of volume, it planes early and carries momentum through weak sections with almost no effort. Rooted in classic Mini Simmons concepts, this version adds a subtle modern edge. A very slight flip in the nose keeps it forgiving in steeper pockets without sacrificing the traditional flat rocker glide. The modified rail foil adds drive and control, giving the board a more responsive, performance-oriented feel while maintaining that loose, skate-inspired flow. Ride approximately 8–12” shorter than your standard shortboard. Designed for knee-high to head-high surf, especially crumbly, soft, or everyday conditions where speed and glide matter most.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "The Quadcore5000",
+          "image_url": "https://cdn.shopify.com/s/files/1/0902/8029/6813/files/Quadcore-Yellow-Rails-Top-1600x2000.jpg",
+          "description": "Go fast. The concept was simple — hide a long rail line inside a shortboard package. This high-performance blunt nose quad extends the rail line through the outline, then snubs the nose to keep overall dimensions compact for tighter pockets. The straighter rail line, combined with a medium entry rocker and pulled-in swallow tail, generates serious speed and responsiveness. The quad setup adds control at pace, letting you push through sections with confidence. Ride approximately equal to or 1–2” longer than your standard shortboard. Or experiment with a slightly shorter, mini variation for a more skate-inspired feel.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Tanto",
+          "image_url": "https://cdn.shopify.com/s/files/1/0902/8029/6813/files/Tanto-White-Twin-Top-1600x2000.jpg",
+          "description": "Named after the versatile Japanese short sword. The Tanto is your high-performance shortboard for medium to solid waves. A slightly forward wide point adds paddle power and drive through flat sections, while a mild late flick in the tail rocker allows for higher performance in critical sections and turns. Available as a thruster or customized as a high-performance twin fin for maximum speed (our blade of choice). Ride equivalent dims to your standard shortboard.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Pegasus",
+          "image_url": "https://cdn.shopify.com/s/files/1/0902/8029/6813/files/Pegasus-Tiger-Front-1600x2000.jpg",
+          "description": "The Pegasus is your go-to blade for when the surf is serious. High-performance curve throughout, with more nose and tail rocker that lets you lay into turns. Built for pumping surf and surfers who demand performance rail and tube surfing. Available as a thruster or 5-fin setup. Ride equivalent dims to your standard shortboard, or size up for a step-up.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Arrow",
+          "image_url": "https://cdn.shopify.com/s/files/1/0902/8029/6813/files/Arrow-Yellow-Green-Front-1600x2000.jpg",
+          "description": "I wanted something that could chip in easy and fly down the line without sacrificing maneuverability. This Twin Pin was made with a slightly longer rail line, pulled-in tail, and gradual rockers that allow you to use it in anything. It excels in point breaks as an everyday go-to, or even as a step-up twin. The step deck and beak nose aid paddle power, while the pinched and stretched rail line carries speed and holds through a carve or tube. Chip in, go fast. Available from 6’2”–7’0”.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "MACH5",
+          "image_url": "https://cdn.shopify.com/s/files/1/0902/8029/6813/files/Mach-5-Cobalt-Top-1600x2000.jpg",
+          "description": "Inspired by the high performance and aesthetics of classic race cars. The MACH 5 is the ultimate high-performance fish — a classic concept modified for modern performance. Designed to be the fastest and most fun board in the line-up, it features modern contours, deep double concave, and a pulled-in tail. A flat entry rocker with slight flick under the back foot delivers incredible drive without sacrificing performance on rail. Built to fly in all conditions. It might not be possible to find anything faster. Ride 2–4” shorter than your standard shortboards and approximately 1L thicker.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
