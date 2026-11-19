@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react"
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition } from "react"
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { Inbox, PanelRight, RefreshCw } from "lucide-react"
@@ -24,7 +24,8 @@ import {
   findInboxItemBySelection,
   inboxLoadQueryKey,
   inboxViewFromSearchParams,
-  mergeInboxPageItems,
+  applyInboxLoadItems,
+  inboxRefreshPagination,
   nextInboxSelectedKey,
   pinSelectedInboxItem,
   shouldApplyInboxLoad,
@@ -39,6 +40,7 @@ import {
   type InboxViewCounts,
   EMPTY_INBOX_VIEW_COUNTS,
 } from "@/lib/admin/case-inbox"
+import { inboxQueryUsesHistory } from "@/lib/admin/case-inbox-query"
 import { staffSentToast } from "@/lib/admin/case-inbox-counterpart"
 import type { SupportCaseThreadMessage } from "@/lib/services/supportCaseThread"
 import type { StaffAssigneeRow } from "@/lib/db/searchInsightActions"
@@ -136,8 +138,9 @@ export function CaseInboxAdminClient({
   const [staff, setStaff] = useState<StaffAssigneeRow[]>([])
   const [currentStaffId, setCurrentStaffId] = useState<string | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
-  // Desktop defaults to Intercom-style three panes; mobile stays conversation-first.
-  const [detailsOpen, setDetailsOpen] = useState(true)
+  // Conversation-first on hydrate so a phone ?case= deep link does not paint the
+  // customer pane. Desktop opens the third pane in useLayoutEffect before paint.
+  const [detailsOpen, setDetailsOpen] = useState(false)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const desktopDetailsPref = useRef(true)
 
@@ -161,6 +164,12 @@ export function CaseInboxAdminClient({
   selectedKeyRef.current = selectedKey
   const skipNoteBlur = useRef(false)
   const loadGenerationRef = useRef(0)
+  const itemsLengthRef = useRef(0)
+  const hasMoreRef = useRef(hasMore)
+  const nextOffsetRef = useRef(nextOffset)
+  itemsLengthRef.current = items.length
+  hasMoreRef.current = hasMore
+  nextOffsetRef.current = nextOffset
   const loadQueryRef = useRef(
     inboxLoadQueryKey({
       view: parsed.view,
@@ -213,8 +222,10 @@ export function CaseInboxAdminClient({
         sort: args.sort,
         search: args.search ?? "",
       })
-      if (mode !== "page") {
+      if (mode === "initial") {
         loadGenerationRef.current += 1
+        loadQueryRef.current = queryKey
+      } else if (mode === "refresh") {
         loadQueryRef.current = queryKey
       }
       const requestGeneration = loadGenerationRef.current
@@ -244,20 +255,39 @@ export function CaseInboxAdminClient({
         }
         if ("error" in res) {
           toast.error(res.error)
-          if (mode !== "page") {
+          if (mode === "initial") {
             setItems([])
             setHasMore(false)
           }
         } else {
+          const paged = inboxQueryUsesHistory(args.search ?? "", args.view)
+          const pagination = inboxRefreshPagination({
+            paged: mode === "refresh" && paged,
+            loadedCount: itemsLengthRef.current,
+            incomingCount: res.items.length,
+            currentHasMore: hasMoreRef.current,
+            incomingHasMore: res.hasMore,
+            currentNextOffset: nextOffsetRef.current,
+            incomingNextOffset: res.nextOffset,
+          })
           setItems((prev) =>
-            mode === "page" ? mergeInboxPageItems(prev, res.items) : res.items,
+            applyInboxLoadItems({
+              mode,
+              paged,
+              prev,
+              next: res.items,
+            }),
           )
           setCounts(res.counts)
-          setHasMore(res.hasMore)
-          setNextOffset(res.nextOffset)
+          setHasMore(pagination.hasMore)
+          setNextOffset(pagination.nextOffset)
         }
       } finally {
-        if (requestGeneration === loadGenerationRef.current) {
+        if (mode === "page") {
+          if (loadQueryRef.current === queryKey) setLoadingMore(false)
+        } else if (mode === "refresh") {
+          if (requestGeneration === loadGenerationRef.current) setRefreshing(false)
+        } else if (requestGeneration === loadGenerationRef.current) {
           setLoading(false)
           setRefreshing(false)
           setLoadingMore(false)
@@ -302,7 +332,7 @@ export function CaseInboxAdminClient({
     })
   }, [])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const media = window.matchMedia("(min-width: 768px)")
     const syncDetailsForViewport = () => {
       if (media.matches) {

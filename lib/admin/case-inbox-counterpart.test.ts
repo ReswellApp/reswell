@@ -3,11 +3,22 @@ import { describe, it } from "node:test"
 import {
   caseHasMemberReply,
   inboxCounterpartLabel,
+  INBOX_WORKFLOW_STATUS_VALUES,
   staffReplyPlaceholder,
   staffSentToast,
   staffWaitingStatusLabel,
   staffWorkflowStatusLabel,
+  workflowSelectValue,
 } from "./case-inbox-counterpart.ts"
+
+describe("workflowSelectValue", () => {
+  it("keeps submitted distinct from in_review so choosing In review persists", () => {
+    assert.equal(workflowSelectValue("submitted"), "submitted")
+    assert.equal(workflowSelectValue("in_review"), "in_review")
+    assert.ok(INBOX_WORKFLOW_STATUS_VALUES.includes("submitted"))
+    assert.ok(INBOX_WORKFLOW_STATUS_VALUES.includes("in_review"))
+  })
+})
 
 describe("inbox counterpart copy", () => {
   it("names sellers and buyers instead of customer", () => {

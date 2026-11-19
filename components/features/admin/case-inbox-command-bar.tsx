@@ -4,7 +4,11 @@ import { UserCheck } from "lucide-react"
 import type { CaseInboxItem, CaseInboxPriority } from "@/lib/admin/case-inbox"
 import type { SupportCaseStatus } from "@/lib/types/supportCase"
 import type { StaffAssigneeRow } from "@/lib/db/searchInsightActions"
-import { staffWorkflowStatusLabel } from "@/lib/admin/case-inbox-counterpart"
+import {
+  INBOX_WORKFLOW_STATUS_VALUES,
+  staffWorkflowStatusLabel,
+  workflowSelectValue,
+} from "@/lib/admin/case-inbox-counterpart"
 import { CaseAssigneeSelect } from "@/components/features/admin/case-assignee-select"
 import { Button } from "@/components/ui/button"
 import {
@@ -24,20 +28,6 @@ interface CaseInboxCommandBarProps {
   onAssigned: (id: string | null) => void
   onStatus: (status: SupportCaseStatus) => void
   onPriority: (priority: CaseInboxPriority) => void
-}
-
-const WORKFLOW_STATUS_VALUES: SupportCaseStatus[] = [
-  "in_progress",
-  "in_review",
-  "waiting_on_you",
-  "resolved",
-]
-
-function workflowSelectValue(status: SupportCaseStatus): SupportCaseStatus {
-  if (status === "resolved") return "resolved"
-  if (status === "waiting_on_you") return "waiting_on_you"
-  if (status === "in_review" || status === "submitted") return "in_review"
-  return "in_progress"
 }
 
 export function CaseInboxCommandBar({
@@ -69,7 +59,7 @@ export function CaseInboxCommandBar({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {WORKFLOW_STATUS_VALUES.map((status) => (
+            {INBOX_WORKFLOW_STATUS_VALUES.map((status) => (
               <SelectItem key={status} value={status}>
                 {staffWorkflowStatusLabel(status, item)}
               </SelectItem>
