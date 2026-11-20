@@ -1,0 +1,205 @@
+{
+  "generated_for": "Kinetic Surf Designs official named standup catalog",
+  "source": "https://kineticsurfdesigns.com/ official model pages via /wp-json/oembed (product-front thumbnails) and first-party descriptions. SiteGround blocks datacenter fetches of /wp-content/uploads, so seed image_url values use WordPress.com Photon (i0.wp.com) for the same official files. Skip standup paddleboards (Convoy 2, The Ted, Super Sport, Little Ted), Flat Bush Fish (no unique product-front), and Flying Eyeball (description under 40 characters).",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "kinetic-surf-designs",
+      "name": "Kinetic Surf Designs",
+      "website_url": "https://kineticsurfdesigns.com",
+      "location_label": "Myrtle Beach, South Carolina",
+      "founder_name": "Gary Wilson",
+      "lead_shaper_name": "Gary Wilson",
+      "short_description": "Custom surfboards from Myrtle Beach shaper Gary Wilson — named shortboards, fish, mid-lengths, and logs built since 1995 for East Coast beachbreak.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/kinetic-surf-designs.png",
+      "models": [
+        {
+          "name": "Banana Hammock",
+          "image_url": "https://i0.wp.com/kineticsurfdesigns.com/wp-content/uploads/2021/05/banana-hammock.jpg",
+          "description": "Call this a fish without corners. Stable width and higher volume for the respective lengths it has a wider tail than nose to handle performance turns in critical sections and of course it goes great in small and marginal conditions. Shorter lengths are perfect for both beginner shortboarders and experienced shredders too while mid lengths are great for bigger folks to catch a lot of waves easily and gracefully.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Battle Barge Round Tail",
+          "image_url": "https://i0.wp.com/kineticsurfdesigns.com/wp-content/uploads/2021/05/battle-barge-round-tail-edit.png",
+          "description": "The Battle Barge is a utility ride it all shortboard that will excell in overhead surf and grovel gracefully. Enough meat and width as to not be lacking in float and glide in any condition. Ride it within an inch or so longer or shorter than your height.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Boiled Peanut",
+          "image_url": "https://i0.wp.com/kineticsurfdesigns.com/wp-content/uploads/2021/05/boiled-peanut-edit.png",
+          "description": "Starting out as a more modern version of the winger pintails from the early/mid 80s these shapes evolved into a great midsize shortboard for bigger guys. The winger outline allows a smaller tail tip on a wider tail for big feet. Many have found success as a funshape size stick for a smaller folks along with being a great good wave tool for larger people.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Butternut",
+          "image_url": "https://i0.wp.com/kineticsurfdesigns.com/wp-content/uploads/2021/05/butternut.jpg",
+          "description": "Single fin tanker without a hard edge anywhere on the hull. Soft like the waves it likes it is inspired by our collection of old school logs that were built in mid sixties. A displacement hull that doesn't need hard parts to plane it off, only a nose concave to extend time on the nose. Barn door style pivot fin comes standard to complete the endless summer vibe.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Confederate Dollar",
+          "image_url": "https://i0.wp.com/kineticsurfdesigns.com/wp-content/uploads/2021/05/confederate-dollar-edit.png",
+          "description": "Little shape geared toward small to medium surf. Very fishy proportions that make a speedy board in all conditions. We call it the Confederate Dollar because it works well in the south and is a fun novelty anywhere else. Comes with a single 8\" center fin box and keel side bites along with small standard 3\" sidebite fins.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Copacetic",
+          "image_url": "https://i0.wp.com/kineticsurfdesigns.com/wp-content/uploads/2021/05/copacetic.jpg",
+          "description": "Do it all single fin diamond tail retro/ fun shape for all conditions and riders. Geared for lateral speed runs down the beach and position style trim lines on a wave it will go fast without pumping. Comes with a pair of single foil long based keel side bite skegs along with the single center fin to match the track it likes most on the wave.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Deodorizer",
+          "image_url": "https://i0.wp.com/kineticsurfdesigns.com/wp-content/uploads/2021/05/deodorizer.jpg",
+          "description": "This is one of our planning hull/mini simmons shapes. They really shine in soft parts of the wave and will catch swells outside with the loggers. Do not be afraid to get one very little, they work best 5ft. to 5ft.10\" or 6\" to 12\" shorter than your height.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Dos Equis Pescado",
+          "image_url": "https://i0.wp.com/kineticsurfdesigns.com/wp-content/uploads/2023/04/Dos-Equis-2-768x768.jpg",
+          "description": "DX (Dos Equis Pescado): Twin fin fish. Loose & slidey when upright yet will hold hard on fast direction changes because the tail corner you lean on is another fin- the secret sauce that makes a fish so much fun on a small/medium day. Straight rocker and rails from the front foot to the tail tip. Shallow fin box toe-in to aim down & through fast sections. Get one short as you and your back can handle for the full effect. Fast and loose is a 3 word description that is all you will need.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Egg Over Easy",
+          "image_url": "https://i0.wp.com/kineticsurfdesigns.com/wp-content/uploads/2021/05/egg-over-easy.jpg",
+          "description": "Single fin Egg for when the time is right. High, fast trim to top carve, cheater 5 in the bowl, drawn out cutbacks, deep fade takeoffs, this one is for the stylist.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Eggman",
+          "image_url": "https://i0.wp.com/kineticsurfdesigns.com/wp-content/uploads/2021/05/eggman.jpg",
+          "description": "A sweet funshape meant to cover a lot of bases at the beach. Great first surfboard but also a great only surfboard. A very forgiving shape with no techie stuff going on.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Happy Ending",
+          "image_url": "https://i0.wp.com/kineticsurfdesigns.com/wp-content/uploads/2021/05/Happy_ending.jpeg",
+          "description": "Wide nose fun board. Lots of float combined with a flat, even rocker. Easy to catch waves and very stable. Family friendly. Perfect first surfboard. Anyone can have a ball on this one. Very low ego emissions. Dogs fit well on the nose. Kids get stoked on surfing quickly with them. Will catch waves way off the peak and cruise along on a wave barely breaking. We have fine tuned these shapes over time to maximize the good time factor for anyone. When on one every session has a happy ending because your head is in the right place. A fun log/baby log shape that does not ride like a wet noodle.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Hot Rod Log",
+          "image_url": "https://i0.wp.com/kineticsurfdesigns.com/wp-content/uploads/2021/05/hot-rod-log.jpg",
+          "description": "A narrow tailed 3 finned log featuring multiple concaves and degrees of finely tuned rails pulled from shortboards. Good amount of rocker in the tail to aid in turning from the middle of the board as well as riding very short when riding from the tail. Not extremely wide or thick they are much like a mini van with a turbo that will do a crazy burnout. Crazy guys will use them to ride the big days. But make no mistake it will ride some very tiny days well also- after all it is a log.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Hydrofeather",
+          "image_url": "https://i0.wp.com/kineticsurfdesigns.com/wp-content/uploads/2021/05/hydrofeather.jpg",
+          "description": "A speed egg or a fun gun might be another name for these shapes. Deep tail rocker with a triple concave under the rear third and a softish bottom under the nose for drive off the bottom and loose and forgiving on the top turn. Low nose rocker gets the board in position and down the face while paddling and catching waves. This one will ride short from the tail while being easy to turn from the middle. Will handle knee knockers to well overhead surf with ease.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Jake",
+          "image_url": "https://i0.wp.com/kineticsurfdesigns.com/wp-content/uploads/2021/05/jake.jpg",
+          "description": "A shortboard-fish hybrid designed to build lots of speed in walled up beachbreak surf. Straight rail outline through the hips with a break behind the rail fins combined with low overall rocker curve and fairly wide tail get it skimming quickly in sections you thought were unmakable. Great performance shorty for onshore, sloppy beachies with lots of ramps and hits. Many dozens of these have been completely worn out since the mid 90's as a testament to the all terrain characteristics of this shape.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Jama Lama",
+          "image_url": "https://i0.wp.com/kineticsurfdesigns.com/wp-content/uploads/2021/05/jama-lama-edit.png",
+          "description": "A small to medium size wave performance diamond tailed shortboard. Features a step rail design to keep a little volume in the board but still have a low drivey rail for pumping through really fast walled up sections.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Jet Pack Fish",
+          "image_url": "https://i0.wp.com/kineticsurfdesigns.com/wp-content/uploads/2021/05/jet-pack-fish.jpg",
+          "description": "Barely a fish is the best way to describe this shape. Primarily a small to medium wave weapon meant for speed it shares much with retro fish shapes but with a slightly pulled nose and a condensed tail block. Retaining tail corners like a fish but only having a .75\" deep swallow allows it to possess more planing surface than a true fish so more of the most crucial skimming area is accessible. Fin box positions are similar to high performance thrusters for stick, drive and squirt with less slip and slide like twin fin fish but with 5 boxes it can be tuned as desired.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Kingfish",
+          "image_url": "https://i0.wp.com/kineticsurfdesigns.com/wp-content/uploads/2021/05/kingfish-edit.png",
+          "description": "Not really a fish as much as a swallow tail mid size shortboard. This shape was designed with good waves and bigger dudes in mind. Not too much but just enough rocker for steeper waves. It likes to cover ground in long sweeping turns with just enough looseness and pivot to fit in hard top turns. Proponents like this one because of the way it paddles and catches waves but holds a rail in tight on fun bowling sections. We have been fitting them with 5 fin boxes lately for max versatility and adaptability. We do this one from 6ft.8\" or so to 9ft. plus if you like.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "L7",
+          "image_url": "https://i0.wp.com/kineticsurfdesigns.com/wp-content/uploads/2021/05/L7.jpg",
+          "description": "A contemporary high performance planing hull meant to be ridden very short. This shape is similar in scope to the mini-simmons in terms of a straight rail curve and a very wide tail block so it must be ridden at the riders height at most to a few inches shorter ensuring that initial foot placement be close to the tail. The fin cluster is positioned close to the tail to eliminate slip and provide grip and drive. The square(ish) nose block starts off a linear rail outline with only a very slight curve because straight is fast and fast is fun. Geared more for small surf but will handle overhead surf easily when sized appropriately to the rider.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Nuedal Destroyer",
+          "image_url": "https://i0.wp.com/kineticsurfdesigns.com/wp-content/uploads/2021/05/nuedal-destroyer.jpg",
+          "description": "Nose rider log with a retro vibe meant for riding the entire wave start to finish. The outline is inspired by mid sixties logs with a slightly pulled nose, wide point back a little and a little hip. Nose riding capabilities are enhanced not with concaves but with a wide tail and strategically placed nose and tail flip combined with a very low and smooth rocker. Made to excel in conditions for when you would ride a log: small, soft, clean and long waves.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Photon Torpedo",
+          "image_url": "https://i0.wp.com/kineticsurfdesigns.com/wp-content/uploads/2023/06/Untitled-2-04-768x1441.jpg",
+          "description": "PT (Photon Torpedo): A modern specialty nose riding log featuring a nearly straight rocker profile from center to the nose tip. Thinner 50/50 rails, wide flipped up tail and long nose concave are there to help with riding this board from the first 1/3 of the deck. It is meant to meet & match the swell early and stay with it as long as possible when the rider is up on the front.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Pork Chop",
+          "image_url": "https://i0.wp.com/kineticsurfdesigns.com/wp-content/uploads/2021/05/pork-chop-edit.png",
+          "description": "A shorter, wider performance shape with a low even rocker and a modified square tail. Full rails, considerable single concave under your feet and no hips in the outline leading to a fairly wide tailblock.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Retro Single",
+          "image_url": "https://i0.wp.com/kineticsurfdesigns.com/wp-content/uploads/2021/05/retro-single.jpg",
+          "description": "A single fin shape true to the mid 1970s with more of a stylist in mind than a ripper. These boards catch waves amazingly well because frankly average guys were not as good as they are now. They do not respond to pumping, really like a more lateral line and require good positioning on the wave face more than the building of speed through climb and drop. Narrowish tails and classic down rails like bowling steep sections really well. The feeling of not having multiple fins all pointing different directions on the bottom of a surfboard is one every surfer should experience.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Sea Groove",
+          "image_url": "https://i0.wp.com/kineticsurfdesigns.com/wp-content/uploads/2023/06/Untitled-2-07-768x1441.jpg",
+          "description": "SG1 (Sea Groove): Retro styled 1+2 (as stock) mid length shape with a balanced foil to handle a wide variety of conditions from teeny tiny to way out there grinders. Great one board quiver for anyone looking at the long fast lines this shape was designed to go in. Designed as a single fin newer versions include side boxes positioned farther back for twin fins for an extra dimension in fun on a mid length.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Sea Sniper",
+          "image_url": "https://i0.wp.com/kineticsurfdesigns.com/wp-content/uploads/2021/05/sea-sniper.jpg",
+          "description": "Big boy performance thruster. Proportioned just like a high performance three fin shred sled but larger for larger folks. Shines in good surf w/ a rider that knows what to do and when to do it.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Skwert Job",
+          "image_url": "https://i0.wp.com/kineticsurfdesigns.com/wp-content/uploads/2021/05/skwert-job-edit.png",
+          "description": "Another mini simmons type hull that is slimmed and slightly more stretched than our Deodorizer. It features a slight double concave under the back foot to calm it at speed and aid in that heelside/backside bottom turn. Moved the fins up a little and toed them in a hair more than the DEO for a more pivoty top turn feel and drive up the face.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Smells Like Fish",
+          "image_url": "https://i0.wp.com/kineticsurfdesigns.com/wp-content/uploads/2021/05/smells-like-fish-edit.png",
+          "description": "This is a fish. Not a swallow tail tacked on the end of something else. Flat rocker and a little width. Ride it as short as you can to get the real deal feel.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Squid Tickler",
+          "image_url": "https://i0.wp.com/kineticsurfdesigns.com/wp-content/uploads/2023/06/Untitled-2-05-768x1441.jpg",
+          "description": "ST (Squid Tickler): Born as a plus 9' golden era ('64-'67) and a homage to the Phil Edwards style of log that this shaper had the privilege of riding some. The foil is slightly thicker front than back with an on center rocker that does not rely on flips on either end to save beginner surfers that choose bad lines but demands the surfer catch waves somewhat out the back & knows how to take off in trim if they are late. Rocker is hidden throughout the middle which results in a very fast but predictable trim & turn that begs for that sweet & fast high line. That does not mean it will not climb over foam balls after nicely placed bottom turns and respond to more modern techniques, it just wants to do them more laterally and down the wave closer to the fast trim line. It has evolved over several generations of refinement to mid lengths that include a nose concave underneath for early entry and linking of sections that flatten out then leading to a double concave (spiral) vee under the back foot to soften high speed runs like a 1967 Cadillac does.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Step This Way",
+          "image_url": "https://i0.wp.com/kineticsurfdesigns.com/wp-content/uploads/2023/06/Untitled-2-03-768x1441.jpg",
+          "description": "STW (Step This Way): A nose rider log comprising of a stepped deck/scooped nose to facilitate a downward bend when weight is up on the nose tip. This flattens entry rocker and extend tip rides. An old concept that is fun, interesting & works if the rider is quick on their feet. These are most often equipped with a thinnish wood stringer to allow for the bending of the nose where the step is located. Has a wide tail with a flip behind the fin box to provide ballast when the tail is buried in the wave. This is a focused nose riding log for soft & small surf, it is not wise to force them to endure medium-large & bigger surf especially while using a leg rope as there is a chance they will not survive.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Tricuspid",
+          "image_url": "https://i0.wp.com/kineticsurfdesigns.com/wp-content/uploads/2021/05/tricuspid.jpg",
+          "description": "Versatile shortboard shape meant for a variety of conditions and surfers. Flatish rocker and a semi-aggressive triple concave under the riders feet it will go fast in small stuff and go great in overhead surf too. Nose and tail are of similar widths resulting in a shape that will shred a wide variety of conditions.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Twin Bear",
+          "image_url": "https://i0.wp.com/kineticsurfdesigns.com/wp-content/uploads/2023/06/Untitled-2-01-768x1441.jpg",
+          "description": "TB (Twin Bear): Round pin mid length with only 2 boxes positioned for 2 fins only. If a loose middy is your desire look no further. No corners on a hull outline means slip when upright. Two fin minimalist cluster (one for your toe and one for your heel) straight across the bottom means loose. Tune it with big ole keels to slide less and shorter upright twins for more slip. Where do we need more slip? On small/tight wave faces to fit smaller turns. Bigger & faster sections maybe less slide/longer turns? The choice is yours, amigo.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Wooly Mammoth, Jr.",
+          "image_url": "https://i0.wp.com/kineticsurfdesigns.com/wp-content/uploads/2021/05/wooly-mammoth-jr-edit.png",
+          "description": "A short, flat and plump little cue for small to medium size surf. It really excels in knee to waist and will coast soft waves without having to resort to the dreaded chicken hop. Bigger dudes that are in denial of their need for a bigger board will enjoy this one. Ride it right around your height to a few inches shorter than your height.",
+          "board_category_slug": "groveler"
+        }
+      ]
+    }
+  ]
+}
