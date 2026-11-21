@@ -1,0 +1,97 @@
+{
+  "generated_for": "Schaper Hawaii official named standup catalog",
+  "source": "https://www.schaperhawaii.com/surfboards plus first-party model pages (Squarespace). Named standup models only — excludes Fish Stick and Tip Time (no official copy), Groveler (dimension screenshot only), NSP, Lost retail boards, used inventory, merch, SUPs, and custom-order deposits.",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "schaper-hawaii",
+      "name": "Schaper Hawaii",
+      "website_url": "https://www.schaperhawaii.com",
+      "location_label": "Waialua, Hawaii",
+      "founder_name": "Carl Schaper",
+      "lead_shaper_name": "Carl Schaper",
+      "short_description": "North Shore of Oahu custom surfboards by Carl Schaper, shaped at the Waialua Sugar Mill — precision shortboards, twins, fun shapes, longboards, and guns.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/schaper-hawaii.png",
+      "models": [
+        {
+          "name": "Sugar Rush",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/552b03c3e4b05e8743417e54/b9423ce4-2c14-4b83-9483-437b75635b35/22513+front+%28web%29.jpg?format=1500w",
+          "description": "A Step Up without the length is a good start at describing the Sugar Rush. A close friend Shuichi Tokunaga from Okinawa was a driving force behind this board's design. The reefs there are very shallow, and the waves just come in, stand straight up, and dump. He was in need of something shorter that would fit the curve on the smaller days, but would still catch the wave and hold in the barrel. The Sugar Rush was born in response to people like Shuichi asking themselves again and again: “How do I get more paddle power in a shorter board without losing performance?” Ridden and tested in a wide variety of waves from Off The Wall all the way to Chuns, this model does a great job of getting you into the wave early without having a lot of length out in front of you. Mid-point forward it feels almost like a little fun board, but from Mid-point back it's all high speed performance. By end-stage development, this model turned out to be an extremely versatile board, performing well in barrels as well as everyday surf. We can do this board from as small as possible right up to the 9 foot range. Carl is currently riding a new 7'4 that's proved to be even super fun in smaller summer surf. If you’re looking for a single choice that can hold its own in serious surf, but still perform well in regular conditions, the Sugar Rush could be the model for you.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Pro Short",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/552b03c3e4b05e8743417e54/5172d5dc-ddb6-41bb-bf16-91a1f41deb35/23109+Pro+Short+web.jpg?format=1500w",
+          "description": "In the Pro Short model, all the elements come together to create a board with perfect balance. Using a rocker template that has stood the test of time and bridged the gap between generations of the world’s best surfers. The Pro Short has been a staple in the Schaper line up. Developed and tested right here on the North Shore. Originally designed in the early 90’s, this is the same board Carl has shaped for countless pros to be used every winter in the Triple Crown. Going back to Richie Lovett, Danny Wills and Mick Campbell in its earlier days and bookending in 2014 with Ricardo Christy. Supplementing Ricardo’s quiver and ultimately qualifying him for the WSL. This model allows you to push yourself into the most critical surf in the world. The goal of this board is perfect control at very high speed. At the end of the day, as describe by many surfers, ” it’s the board that just stays under your feet”. Recommended for experienced surfers as your performance short board and the next 1 or 2 sizes up. While it’s usually ridden as a squash on your smallest board. Some guys prefer thumb or round pin. You can get it either way and are welcome to custom your fin set up to your preference.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Short Fuse",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/552b03c3e4b05e8743417e54/aa868c31-f181-4a52-bac1-e226b945c603/23088+front+%28web%29.jpg?format=1500w",
+          "description": "Described as “Everybody’s Board” this small wave high performance board is ideal for all skill levels. Featuring a slightly flatter rocker than the Pro Short for increased speed. This bottom curve has proved itself again and again for well over 30 years. The combination of this rocker with a single to double concave and just a slightly fuller outline creates an extremely solid all around board that has been very popular among every day and pro surfers alike. The board that Carl is currently riding is a 6’8 x 20 ½ x 2 ¾ set up as a quad with a bat tail. Available in a wide variety of tails and fin set ups. Get ready to blow up because this bomb’s fuse is short!",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Deuce",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/552b03c3e4b05e8743417e54/ab389b39-168c-45fa-9927-87822e8ac350/22134+front+%28web%29.jpg?format=1500w",
+          "description": "The Deuce is a retro Twin fin that we have updated by adding a little more curve to the overall outline, and some small bottom curve improvements. A throwback to the early 70's, Carl's very first custom board was a 5'2 twin fin by America surfboards in Virginia Beach! In 1981, Carl's go-to small wave board was still a twin fin, when a friend of his brought back a tri-fin from Hawaii. Although not immediately convinced on the tri fin, Carl wasted no time putting 2 little trailers on his twin, which was likely going on simultaneously everywhere. The Deuce is a board that can be enjoyed by all skill levels in small to moderate surf. Very fast and skatey due to full, wide, outlines and extremely low rockers. This is a timeless surfboard and has been used by generation after generation! Available in twin or quad set ups.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Funshape",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/552b03c3e4b05e8743417e54/e6c47952-7c5f-4dd6-bdd6-820b39caf825/22439+%28web%29.jpg?format=1500w",
+          "description": "It’s rumored that the 7’6″ Fun Shape is globally the highest selling board of all time. This would not be surprising as it’s extremely versatile design is suitable for almost any size wave and condition. When you shrink this model down to a 6’0 this will be most brands’ hybrid model. On the other end, when you scale it up to an 11’0 it’s very similar to the guns we make for big wave hell man Garrett McNamara. If you are looking for a one board quiver for all around surf, then look no further. Available in squash, round pins, 3, 4 and 5 fin set ups.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Mini Lunch Break",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/552b03c3e4b05e8743417e54/4764a603-3e14-4364-9bd0-1a709c44004c/25141+MLB.jpg?format=1500w",
+          "description": "The Mini Lunch Break is ideal for those looking for a big experience in a small package! This is a go-to if you love the ease of catching waves and the glide you get from your 9’0, but you just want performance. We cannot say enough how fun these boards are. You can push them into the “mellower” bigger stuff, but it’s great for the small surf as well. Very quick and easy to catch waves with tons of performance. Get your foot back on that tail and you can wrap it around like a shortboard! The bottom is designed similarly to our Step Ups, but with the longboard rocker. Subtle roll through the center to V in the tail allows for solid control at higher speeds. The wider outline and lower entry rocker is bound to produce great results for every surfer. Available in a squash, Round Pin, 2+1, thruster or 5 fin.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Hi Pro",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/552b03c3e4b05e8743417e54/1763077814917-PPXYQYWD2V1DMNS72UYD/25170+Hi+Pro.jpg?format=1500w",
+          "description": "The Hi-Pro is Bonga Perkins', former 2 time world champion, favorite all around board. Bonga has been riding slight variations of this board for over 20 years. It originally had a 15 ½ nose on it and was being used more in pretty solid surf here in Hawaii. When BP came we modified it to its current look to give it more nose riding capability. His long time dims of 17 ¾ x 22 x 13 ¾ and 2 ¾ have stood the test of time. This is a long board with about as much short board as you can get into it. Carl often tells people to notice the back third of the board, as it fits almost perfectly on your 6'2 step up, with the same thickness, tail measure, and rails. The bottom is fairly flat through the middle, running into a slight V into a double concave, similar to our step-ups. In short, a low volume, the Hi-Pro is an extremely high performance longboard designed to do it all, turn on a dime, and park it on the nose!",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Lunch Break",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/552b03c3e4b05e8743417e54/017a54c4-2595-475c-813c-d3e63814a6d3/25042+web.jpg?format=1500w",
+          "description": "The Lunchbreak is aimed at performance in the smallest of conditions, and rivals the Hi-Pro in popularity! It doesn’t matter if you’re a world champion or someone new to surfing, this model has your back. Our widest nose and widest tail in our performance line. Only the Tip Time has a lower nose rocker. Featuring a low smooth entry rocker with a spoon concave, we have still kept our performance tail rocker in this model to maintain solid turning capability. This is the one to keep in your van all summer for the chance to slip in a quick one at your local break on a small summer bump! Excellent choice for all skill levels.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Gun",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/552b03c3e4b05e8743417e54/1467759186038-4MQ34N586ATSR6ACH4X1/SCHAPER_0016+Garrets+Gun.jpg?format=1500w",
+          "description": "Guns start at 8’6 and go up from there. Carl really loves shaping and designing these boards for waves of consequence. From his early days of shaping he always did the longboards just to be comfortable shaping bigger boards. Although there wasn’t a high demand for longboards during the seventies and eighties, Carl never shied away from them, and that paid off in the long run. Our big guns have always received great feedback. We are proud to announce the arrival of one of the most renowned big wave riders in the world, Garrett McNamara, to the Schaper family. Garrett has been extremely stoked on the big guns we have made him this year. Solid performance through and through, proven designs, and boards you can trust! If you are riding these boards you should have your own custom dimensions, but if not, come talk to us.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Mutt",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/552b03c3e4b05e8743417e54/1467481263759-MTJRE7OLJ2FHX97V3MBO/SCHAPER_0028+Mutt.jpg?format=1500w",
+          "description": "With surface area in mind for speed and paddling, merging a longboard look with a “Skatey” rail and bottom, this ain’t no pure bred animal. It was created for those smaller summer days where you want to keep your wave count high and your worries small. The tail is pulled in substantially so you can still turn this dog, but has a nice wide nose you can get up front on and cruise into the sunset. Perfect for the dog days of summer!",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Detention",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/552b03c3e4b05e8743417e54/1467481263814-SZKKYBJ7017RGDF811TN/SCHAPER_0031+Detention-1.jpg?format=1500w",
+          "description": "A wider, fuller shape that distributes volumes forward under your chest, this board allows you to catch more waves than you ever thought possible! It is a great transitional board from your longboard down to something a little shorter. Designed to ensure fun in even the poorest of conditions, you’ll be frothing while everyone else in the lineup is over it. Featuring a moderate entry rocker and an outline that is almost a double ender, this model still has a solid performance tail rocker with a deep single concave for exceptional speed in marginal conditions. As with many of our models we can make this board with a variety of tails, the most common of which are squash and swallow tails. We do all the stocks in 5 fin set ups, but you can save a few bucks at quad or tri sets if you order a custom board. Largely the culprit of skipping class, you may just end up in detention!",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Stealth Bomber",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/552b03c3e4b05e8743417e54/1467481264125-V2E8GRJHJXLHXR32JRI7/SCHAPER_0037+stealth+bomber.jpg?format=1500w",
+          "description": "Looking for the model for having a whole lot of fun in marginal conditions? We invite you to seriously consider the Stealth Bomber. This board is going to keep your wave count high, allow you to beat those mushy sections, but still smack the lip when you get a shot. The Stealth Bomber features the widest tail of our line of boards- think 1972 diamond tail twin fins, Carl's first brand new board. This, combined with a hybrid nose outline and a low entry rocker but a good performance rocker out the tail creates a perfect little gutless wave board. The bottom is a subtle roll to V with double concave and V out the tail. All of this combined with the overall wide outline and fuller rails makes for a board that will glide into some waves and drop some bombs. The diamond tail provides that little bit of extra length for developing speed, but once you get it going and put it on the rail (and yes you can put this board on the rail), the shorter rail line enables a tighter turn. Timeless diamond tail and 5 fin set up is the way to go!",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Diamond Head Special",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/552b03c3e4b05e8743417e54/1467481264403-020Q5CRRL9IX14CF6XXM/SCHAPER_0039+short+fuse.jpg?format=1500w",
+          "description": "Don't let the name fool you. This board was designed for smaller conditions and goes insane in smaller surf, but also really handles in better surf. Meant for more advanced surfers in sloppier conditions, this board is a slimmed down, souped up version of the Stealth Bomber, with the same flatter entry rocker and wide tail. Single to double concaves, which compliments the narrower outlines, allows this model to achieve a really fast and loose design for sloppy and softer waves. Remember to ride this board shorter than you are tall. We have mainly been doing this in the diamond tail, but you can get this in squash and round pin.",
+          "board_category_slug": "groveler"
+        }
+      ]
+    }
+  ]
+}
