@@ -1,0 +1,55 @@
+{
+  "generated_for": "DDay Boards official named standup catalog",
+  "source": "https://ddayboards.com.au/ (official Avada portfolio lineup — six named production models with unique product-fronts and first-party shaper notes; excludes gallery Instagram, contact forms, and custom deposits)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "dday-boards",
+      "name": "DDay Boards",
+      "website_url": "https://ddayboards.com.au/",
+      "location_label": "Victoria, Australia",
+      "founder_name": "Darcy",
+      "lead_shaper_name": "Darcy",
+      "short_description": "Custom surfboards hand-shaped in Victoria for down-the-line drive and controlled handling, from fish and eggs to twins and step-ups.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/dday-boards.png",
+      "models": [
+        {
+          "name": "Fish-Twin Keel",
+          "image_url": "https://ddayboards.com.au/wp-content/uploads/2024/11/Fish-Twin-Keel-Feature-960x960-1.jpg",
+          "description": "Traditional fish-esque boards shaped for speed and performance, especially in smaller surf, and some of the most versatile boards in the DDay quiver. Smaller sizes are tuned with more performance-oriented rocker and bottom contours for beach break and mid-sized point surf. Longer variations are slightly detuned in contour and rocker for longer, more powerful down-the-line point breaks. A side-cut variation is also offered for a snappier feel and easier rail-to-rail transitions.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Mid Length Egg",
+          "image_url": "https://ddayboards.com.au/wp-content/uploads/2024/11/21-Egg-Style-960x960-Feature.jpg",
+          "description": "Shaped as the answer to perfect but smaller days at Bells and Winkipop, with subtle spiral vee throughout and softer forgiving rails. Two versions: a speedier tracker outline with less tail curve and a more rounded-point nose, and an EVO-inspired outline with rounded nose and tail plus increased tail area and curve. A good bridge for advanced and beginner surfers moving down from a longboard or moving up in length.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Round Tail Twin",
+          "image_url": "https://ddayboards.com.au/wp-content/uploads/2024/11/Round-Tail-Twin-960x960-Feature.jpg",
+          "description": "Built to make a longer board looser and more maneuverable. Occupies a similar niche to the speed-shape eggs but is more capable in better waves. Compared with the 2+1 eggs, these deliver instant acceleration and reduced resistance with no center fin, enabling a tighter turning arc for boards of equivalent length. A one-board-quiver solution for surfers happy to ride a longer board as their daily rider.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Gun Twin Swallow Tail",
+          "image_url": "https://ddayboards.com.au/wp-content/uploads/2024/11/Gun-Twin-Swallow-Tail-Feature-960x960-1.jpg",
+          "description": "Designed to complement the round-tail twin with more rocker, a slimmer outline, a more pointed nose, a gun-like tail curve, a full foil, and boxier rails. A step-up equivalent for round-tail twin riders, or a higher-performance mid-length for surfers coming from a shortboard or smaller hybrid. Versatile in high-quality or hollow surf, and a strong travel or everyday option for riders who need extra help catching waves.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Single with Side Bites",
+          "image_url": "https://ddayboards.com.au/wp-content/uploads/2024/11/Single-Sidebites-top-2-960x960-1.jpg",
+          "description": "Not strictly a 1970s single fin, but that description captures the design: extra volume, a strong central drive from the middle fin, and a lot of control. Best in good, long, down-the-line waves like Winkipop and Bells. A shortboard replacement in 3–6 ft surf when you want exceptional paddle power, sheer speed, and long arcing lines rather than top-to-bottom surfing. Niche, demanding, and built for surfers willing to invest the time to ride them well.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Step Ups",
+          "image_url": "https://ddayboards.com.au/wp-content/uploads/2024/11/Step-Ups-960x960-Feature.jpg",
+          "description": "The most consistent boards in the DDay quiver over the last ten years, stripped back for function when the waves are exceptional. Two foils share almost identical design features: a traditional shortboard foil for surfers who want a board slightly longer than their shortboard while keeping a performance approach, and a fuller foil with a small beak for extra paddling assistance, more pushback, and drive on the open face in more challenging surf.",
+          "board_category_slug": "step-up-gun"
+        }
+      ]
+    }
+  ]
+}
