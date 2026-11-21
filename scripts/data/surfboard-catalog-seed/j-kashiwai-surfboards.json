@@ -1,0 +1,73 @@
+{
+  "generated_for": "j.kashiwai Surfboards official named standup catalog",
+  "source": "https://www.jkashiwaisurfboards.com/boards (Squarespace first-party model packshots and captions — excludes Top G/Double Down shared photo, Wing Swallow Twin copy under 40 chars, Gun with no official copy, custom-order page, team pages, and merch)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "j-kashiwai-surfboards",
+      "name": "j.kashiwai Surfboards",
+      "website_url": "https://www.jkashiwaisurfboards.com",
+      "location_label": "Oahu, Hawaii",
+      "founder_name": "Jason Kashiwai",
+      "lead_shaper_name": "Jason Kashiwai",
+      "short_description": "Hawaii shaper Jason Kashiwai develops high quality boards with the best craftsmanship. High-performance shapes tested all over the world by his team riders.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/j-kashiwai-surfboards.png",
+      "models": [
+        {
+          "name": "Coffee Break",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fe3d9478bbaf62d2e70f351/1608775669570-A5O9TS5QWNDL6F1UOO0A/JK_COFFEE_BREAK_TOP_200px_lyn70i.jpg?format=2500w",
+          "description": "A fish-style board great for small groveler days. Not a bulky old-school fish, but a more modern performer. Comes with a stealth swallow tail with a single to double concave vee out the tail. Fin Setup: Tri-Quad, 5-FIN. Tail Style: Swallow. Sizes: 5'4 - 6'2.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Buck Short",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fe3d9478bbaf62d2e70f351/1608775814519-VM9OQWGZFJ0OVTPF0VTL/JK_BUCKSHORT_TOP_200px_yxjed3.jpg?format=2500w",
+          "description": "This is a step down meant to be ridden 2-4 inches shorter than your everyday board. Great for small days, but also a good everyday performer. Features fuller rails and a little fuller foil to keep the volume up. Comes with a single concave and squash tail. Fin Setup: Thruster. Tail Style: Squash. Sizes: 5'6 - 6'0.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Buzz Saw",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fe3d9478bbaf62d2e70f351/1608775964155-QNKT2UI28UQ5BY3T8CF3/JK_BUZZSAW_TOP_200px_d7op4j.jpg?format=2500w",
+          "description": "Your everyday shortboard! Features a lower rocker, and single to double concave with vee off the tail. Fin Setup: Thruster. Tail Style: Squash or RP. Sizes: 5'9 - 6'1.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Krank",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fe3d9478bbaf62d2e70f351/1608776155950-XBRENA9LFIH9M94J5ALI/JK_Krank_Top_200px_shadow_xp09gg.jpg?format=2500w",
+          "description": "A high performance team favorite! Features a high rocker for in-the-pocket surfing and a single concave. Fin Setup: Thruster. Tail Style: Squash. Sizes: 5'9 - 6'2.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Evil Twin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fe3d9478bbaf62d2e70f351/c896e8d3-e2e5-4453-8ec2-713feb28f163/IMG_2464.jpg?format=2500w",
+          "description": "Old school twin keel featuring a flat deck wing swallow or straight swallow.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Mid Length",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fe3d9478bbaf62d2e70f351/1761326888319-MK2HWOREG9RYIVN0DDGJ/IMG_9014.jpeg?format=2500w",
+          "description": "Twin or 2+1 fin set up when wave count or fun factor is important.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "DEVO twin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fe3d9478bbaf62d2e70f351/b7662a6b-368e-4bdd-a0a9-51e55c800086/IMG_2392.jpeg?format=2500w",
+          "description": "Performance twin keel more of a thruster feel very positive good for aggressive performance surfing.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Phoenix Quad",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fe3d9478bbaf62d2e70f351/883eb9d6-bdaa-4b54-ac4a-2c159e9dccd8/IMG_8995.jpg?format=2500w",
+          "description": "Performance 4-fin or 5-fin swallow tail with single concave, featuring a medium-high rocker and a lower apex rail. This design creates a very fast, fluid, and highly sensitive board that responds effortlessly. It can easily become your reliable everyday driver in a variety of conditions.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Da Kine",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fe3d9478bbaf62d2e70f351/aa014299-b4b1-4882-971c-48116bf18c04/IMG_5761.jpeg?format=2500w",
+          "description": "Da Kine your Uncle rides at Waikiki with that classic 50/50 style rail, a pronounced nose concave, and a wide tail block for stability. Just cruising through life, taking it easy and enjoying the ride.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
