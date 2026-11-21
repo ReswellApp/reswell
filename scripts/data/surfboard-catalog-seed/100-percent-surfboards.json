@@ -1,0 +1,48 @@
+{
+  "generated_for": "100 Percent Surfboards official named standup catalog gap-fill",
+  "source": "https://www.100percentsurf.com (Squarespace model pages — excludes already-live models, repairs, merch, and custom-order category pages without a unique named shape)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "100-percent-surfboards",
+      "name": "100 Percent Surfboards",
+      "website_url": "https://www.100percentsurf.com",
+      "location_label": "Moana, South Australia",
+      "founder_name": "Rodney Bedford",
+      "lead_shaper_name": "Tom Bedford",
+      "short_description": "Third-generation custom surfboards shaped in-house by Rodney and Tom Bedford in Moana, South Australia.",
+      "models": [
+        {
+          "name": "Hang 'Em High",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/60a766715b5c3643c454812f/a9ccbd9a-4acf-4325-83a9-703e7db0c0b1/HANG_EM_HIGH_CLEAR_1_SURFBOARDS_SOUTH_AUSTRALIA.jpg?format=1500w",
+          "description": "All round high performance, designed for radical, in-the-pocket surfing and aerial ability. The outline and tail lift allow for drive and control, with a slight hip in the tail. Great for airs and adding flair to aggressive turns.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "JayBee Transition Single",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/60a766715b5c3643c454812f/1627032761317-R7XG0XQG7C9525KKFFJZ/Jaybee+Transition+Single+Fin+Adelaide+Retro+Custom+Surfboard?format=1500w",
+          "description": "Harking back to a traditional styled outline from a time when boards evolved from the 8 foot toward the 7 foot range. This is suitable for a cruisy type of surfing that produces long flowing turns and a relaxing ride all the way to the beach.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Jaybee Longboard",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/60a766715b5c3643c454812f/1627032069944-0UAZI5TL1W7HJJABD5GR/Jaybee+Longboard+Hand+Shaped+Surfboard+Adelaide+South+Australia?format=1500w",
+          "description": "A more traditional style of longboard for smooth flowing turns and easy gliding. A variable flatter rocker will be tweaked to suit the surfer with a focus on cruising or turning. Perfect for small clean days and a lot of fun.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Pintail Twin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/60a766715b5c3643c454812f/3ad08dd5-78bf-4b6c-92f5-6c91744c6f78/6_4_Pierre_Lipstix_Twin_Green_FEB_2025_v01.jpg?format=1500w",
+          "description": "Modern-retro design with optional channels and optional glassed-in, hand-made retro fins. Your choice of FCS or Future Fin plugs installed.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Step Up",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/60a766715b5c3643c454812f/1626989858582-9XS3566KU760MHRAH2OG/Step+Up+Model+Local+Adelaide+Surfboards?format=1500w",
+          "description": "Designed for bigger, more powerful waves. Ideal step-up board. More length and thickness allows for catching fast-moving heavy waves, with slightly more flowing rocker and an outline for surfers who want to take an advanced approach to bigger waves.",
+          "board_category_slug": "step-up-gun"
+        }
+      ]
+    }
+  ]
+}
