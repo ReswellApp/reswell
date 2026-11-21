@@ -1,0 +1,67 @@
+{
+  "generated_for": "Quiver Concepts official named standup catalog",
+  "source": "https://quiverconcepts.com/boards/ plus first-party model pages /yw /dad-bod /sous-shi /la-dolce /bird-dog /cosmic /plank-ton /pb (WordPress — excludes Waked Potato wake-surf option, custom New Design, shop merch)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "quiver-concepts",
+      "name": "Quiver Concepts",
+      "website_url": "https://quiverconcepts.com",
+      "location_label": "Wilmington, North Carolina",
+      "founder_name": "Jason Meyer",
+      "lead_shaper_name": "Jason Meyer",
+      "short_description": "Hand-shaped custom surfboards from Jason Meyer in Wilmington, North Carolina — named models built one-on-one for East Coast conditions.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/quiver-concepts.png",
+      "models": [
+        {
+          "name": "YW",
+          "image_url": "https://quiverconcepts.com/wp-content/uploads/2021/04/YW-Blue-1.jpg",
+          "description": "The YW is a performance-inspired fish hybrid, blending a fish rail line with a diamond tail into an ultra fun playful board. Keeping the width through the rounder nose, the YW has the extra paddle power needed for mushier conditions and helps get into bigger waves earlier. The YW uses a quad or twin fin with an optional knubster center keel setup for those days that need a little extra control. This board was developed with the guidance of Dave Yearwood (hence the name \"YW\"), drawing on his knowledge of fish design.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Dad Bod",
+          "image_url": "https://quiverconcepts.com/wp-content/uploads/2021/04/Dad-Bod-MintyFreshness-5.jpg",
+          "description": "Everyone loves a Dad Bod! This fun board was designed to live up to its shape and maximize wave count without surrendering to a longboard just yet. Whether you want to cruise through summer surf, you can't ride your performance shortboard any more, or you're pushing the kids into their first waves, the Dad Bod won't let you down.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Sous-Shi",
+          "image_url": "https://quiverconcepts.com/wp-content/uploads/2021/04/Sous-Shi-White-8.jpg",
+          "description": "Fresh, never frozen Sous-Shi. Fresh catch of the day. The Sous-Shi is a retro twin fin fish designed with fun in mind. This board is perfect for waves from knee to head with its fast and loose design. Riding a Sous-Shi is sure to put the biggest grin on your face, so go ahead and take a bite.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "La Dolce",
+          "image_url": "https://quiverconcepts.com/wp-content/uploads/2021/04/La-Dolce-White-8.jpg",
+          "description": "La Dolce is Italian for \"the sweetness\", so sit back, kick your feet up, and just enjoy the ride. The phrase \"la dolce far niente\" means \"the sweetness of doing nothing\" and that's just what this board is made for — catching waves and cruising with no effort.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Bird Dog",
+          "image_url": "https://quiverconcepts.com/wp-content/uploads/2021/04/Bird-Dog-White-7.jpg",
+          "description": "Fast, fun, and free. The Bird Dog is a wave hunter through and through. This board was designed with a little more volume than your standard shortboard to help you catch anything. Perfect for sniffing out barrels or taking flight.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Cosmic",
+          "image_url": "https://quiverconcepts.com/wp-content/uploads/2021/04/Cosmic-Rose-5.jpg",
+          "description": "This Cosmic is an asymmetrical experiment aiming to break conceptions and traditional thought on board design. With a twin fin on the rider's toe-side and a quad on the heel, the goal of the Cosmic is to even out a rider's surfing style front-side and back-side by combining two different boards into one. Board design varies on rider's stance. The Cosmic is ready for you when the stars align and great surf is on tap.",
+          "board_category_slug": "asym"
+        },
+        {
+          "name": "Plank-Ton",
+          "image_url": "https://quiverconcepts.com/wp-content/uploads/2021/06/DSC_1120.jpg",
+          "description": "Small waves don't stand a chance against this log. The Plank-ton is a nice summer cruiser for those that just want to sit back or walk the plank. Work on your cross step, put some toes on the nose, and see how it goes.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "PB",
+          "image_url": "https://quiverconcepts.com/wp-content/uploads/2021/06/DSC_2159.jpg",
+          "description": "The Pelican Bomber (aka \"PB\") was designed and named after the waves I enjoyed where I grew up surfing on my home break near Pelican Watch. There are a few sandbars that, when the waves are good, you need a fast, fun board capable of handling anything you throw at it. Rides as a thruster or a twin fin. Channels are a fun option and add an extra gear when the waves are good.",
+          "board_category_slug": "shortboard"
+        }
+      ]
+    }
+  ]
+}
