@@ -1,0 +1,85 @@
+{
+  "generated_for": "EP Surfboards official named standup catalog",
+  "source": "https://epsurfboards.com.au/products.json plus /collections/frontpage (official named models — excludes Mid length / Performance / Hybrid custom-order SKUs, merch, and deposits)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "ep-surfboards",
+      "name": "EP Surfboards",
+      "website_url": "https://epsurfboards.com.au",
+      "location_label": "Tweed Heads South, New South Wales, Australia",
+      "founder_name": "Jett Jorgensen",
+      "lead_shaper_name": "Jett Jorgensen",
+      "short_description": "EVADE PROFILES custom surfboards from Jett Jorgensen in Tweed Heads South — performance shortboards, hybrids, midlengths, and step-ups shaped for how you surf.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/ep-surfboards.png",
+      "models": [
+        {
+          "name": "Donny",
+          "image_url": "https://cdn.shopify.com/s/files/1/0696/4481/2453/files/EP_Studio_Shoot-6_5c000fb5-15a7-4f05-bb05-602eccbd95f7.jpg?v=1756879029&format=jpg&width=1600",
+          "description": "THE DONNY IS THE OG AND STILL THE GO-TO. ONE OF THE FIRST MODELS IN THE EP LINEUP, IT’S BEEN FINE-TUNED OVER THE YEARS TO KEEP IT DIALLED IN. WITH A SLIGHTLY LOWER ROCKER AND FULLER RAILS THAN YOUR GOOD WAVE BOARD (LADY EVIL/HIGH OCTANE), THE DONNY STRIKES THAT SWEET SPOT. FAST, FORGIVING, AND READY TO HANDLE WHATEVER THE LINEUP THROWS AT IT. RIDE AT YOUR HEIGHT, THE DONNY IS YOUR EVERYDAY PERFORMANCE BOARD AND IS USED AS A REFERENCE FOR ALL OTHER MODELS IN THE RANGE",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Lady Evil",
+          "image_url": "https://cdn.shopify.com/s/files/1/0696/4481/2453/files/EP_Studio_Shoot-28_2804ddf1-1a5f-455c-8faa-2c1f2e67ba32.jpg?v=1756879031&format=jpg&width=1600",
+          "description": "I DESIGNED THE LADY EVIL FOR WHEN THE WAVES ARE PUMPING, THIS IS THE BOARD YOU PULL OUT WHEN THERES THE NEED FOR CRITICAL, TOP-TO-BOTTOM SURFING. BUILT OFF THE DONNY’S DNA, I DIALLED IN THE LOWER RAILS, ADDED MORE ROCKER, AND DEEPENED THE CONCAVE TO CREATE A BOARD THAT GRIPS, DRIVES, AND HANDLES SERIOUS POWER. RIDE IT 1-2” LONGER THAN YOUR HEIGHT OR YOUR DONNY MODEL(PERFORMANCE ALL-ROUNDER), AND AROUND THE SAME VOLUME.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "High Octane",
+          "image_url": "https://cdn.shopify.com/s/files/1/0696/4481/2453/files/EP_Studio_Shoot-12_0796044f-2ffc-4c77-b21b-10ad8421b510.jpg?v=1756879028&format=jpg&width=1600",
+          "description": "I DESIGNED THE HIGH OCTANE FOR POWERFUL, SUCKY WAVES. THE TAPERED LOWER RAIL THAT PINCHES AT THE TAIL HOLDS STEADY IN CRITICAL SECTIONS, WHILE THE WIDE OUTLINE WITH FORWARD FOAM AND A PULLED-IN ROUND TAIL MAKES IT EASY TO NAVIGATE BARRELS. THE ROLLED DECK ADDS A SHARPER FEEL AND KEEPS MORE RAIL IN THE WATER FOR BIG, DRAWN-OUT TURNS. RIDE IT AT YOUR HEIGHT OR THE SAME LENGTH AS YOUR DONNY MODEL (PERFORMANCE ALL-ROUNDER), ADD AROUND 0.5-1L MORE VOLUME.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Agent Orange",
+          "image_url": "https://cdn.shopify.com/s/files/1/0696/4481/2453/files/EP_Studio_Shoot-10_da60e193-808c-40af-9cc8-f9fafdfd80be.jpg?v=1756879026&format=jpg&width=1600",
+          "description": "THE AGENT ORANGE IS THE LATEST ADDITION TO THE EVADE PERFORMANCE RANGE. IT STARTED AS A CUT-DOWN DONNY AND WAS BUILT INTO A SMALL WAVE GROVELLER, BUT AFTER SOME TRIAL RUNS IT PROVED ITSELF IN BIGGER CONDITIONS TOO. THE FLATTER DECK AND BOXIER RAILS CARRY SPEED THROUGH FLAT SECTIONS AND OFFER SOLID PADDLE POWER. ITS WIDER OUTLINE TOWARDS THE TAIL COMBINED WITH A BIG HIP, GIVES IT PLENTY OF PIVOT IN THE POCKET. I’VE KEPT THE ROCKER AND CONCAVES SIMILAR TO THE DONNY FOR THAT FAMILIAR PERFORMANCE FEEL. THIS BOARD REALLY STANDS OUT ON BEACH BREAKS, ESPECIALLY WHERE OTHER PERFORMANCE BOARDS STRUGGLE. RIDE IT 1-2” SHORTER THAN YOUR HEIGHT OR YOUR DONNY MODEL (PERFORMANCE ALL-ROUNDER), ADDING AROUND 0.5-1L MORE VOLUME.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Lady Evil - Step Up",
+          "image_url": "https://cdn.shopify.com/s/files/1/0696/4481/2453/files/EP_Studio_Shoot-25_af0ddd96-57ed-4ca0-bc22-7a39edaf36c6.jpg?v=1756879024&format=jpg&width=1600",
+          "description": "THE LADY EVIL STEP-UP WAS BORN OUT OF NECESSITY ON A TRIP TO PUERTO ESCONDIDO. I WANTED A BOARD THAT FELT FAMILIAR BUT COULD HANDLE BIGGER, HEAVIER WAVES, SO I TOOK THE LADY EVIL MODEL AND LEVELED IT UP. KEEPING THE SAME ROCKERS, RAILS, AND CONCAVES BUT SIZING IT UP ALL AROUND. A SLIGHT DECK THICKNESS EXTENSION WAS ADDED FOR EASIER PADDLE-INS, AND WAS COMPLIMENTED WITH A PULLED-IN ROUNDED PIN TAIL FOR SMOOTH BARREL NAVIGATION. THIS IS THE BOARD FOR ANY SESSION WHERE YOU NEED THAT EXTRA HELP GETTING INTO WAVES. AS A STEP-UP, IT CAN BE RIDDEN AT WHATEVER LENGTH AND VOLUME, SUIT THE CONDITIONS, MORE VOLUME MEANS MORE PADDLE POWER.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "HPT",
+          "image_url": "https://cdn.shopify.com/s/files/1/0696/4481/2453/files/EP_Studio_Shoot-17_47166a48-25ed-42bd-9175-810ce7fe58e5.jpg?v=1756879023&format=jpg&width=1600",
+          "description": "THE HPT IS ONE OF THE ORIGINAL MODELS IN THE RANGE, A BLEND OF PERFORMANCE AND TWIN FIN, RIDDEN WITH A 2+1 FIN SETUP. IT SHARES PERFORMANCE RAILS AND CONCAVES SIMILAR TO THE AGENT ORANGE MODEL BUT FEATURES A LOWER ROCKER FOR MAX SPEED. THE OUTLINE IS FAIRLY STRAIGHT WITH PLENTY OF FOAM ON THE DECK, HELPING IT CARRY THROUGH FLATTER SECTIONS. THE FLYER-TO-SWALLOW TAIL SETUP GIVES THE BOARD A GREAT RELEASE POINT IN THE POCKET. IT’S MY GO-TO WHEN THE WAVES ARE FLATTER, AND I’M CHASING AN EASY SURF WITH LOADS OF FOAM UNDER THE CHEST. RIDE IT 2-3” SHORTER THAN YOUR HEIGHT OR YOUR DONNY MODEL (PERFORMANCE ALL-ROUNDER), ADDING AROUND 0.5-1L MORE VOLUME.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "HPT-Pin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0696/4481/2453/files/EP_Studio_Shoot-15_861d7808-af1c-4dd5-98ff-cf7d1e34e711.jpg?v=1756879021&format=jpg&width=1600",
+          "description": "The HPT-Pin is the sister model of the HPT and was made quite a while later. This model stemmed from a team rider’s love of the HPT and the need to ride it in larger, more critical waves. The HPT-Pin shares all features identical to the HPT apart from its outline, where the flyers to swallow tail setup is replaced with a pulled in pin tail. This offers the rider faster sharper turns in the pocket, more release off the top as well as the best barrel navigation a board can have. This board should be ridden 2-3” under your height or shorter than your Donny model (Performance all-rounder). Add 0.5-1L more than your Donny.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Vol-2",
+          "image_url": "https://cdn.shopify.com/s/files/1/0696/4481/2453/files/EP_Studio_Shoot-34_994ecd42-29cf-4dd2-b73d-f35aaeff0fc0.jpg?v=1756879019&format=jpg&width=1600",
+          "description": "The vol-2 is one of the most sought after as well as most experimental boards in the range. When this model was in its first designing stage I honestly thought what I was going after was a bit far fetched. It's basically a messy mix between old school and new school that somehow comes together to become something magic. The Vol-2’s flat deck and full outline give the board a ton of speed down the line, whilst its v-concave nose, chimed rails and pinched tail provide all of its maneuverability. This board is versatile in many conditions although works best any longer running waves. This board should be ridden 3-4” under your height or shorter than your Donny model (Performance all-rounder). Add 1-2L more than your Donny.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "White Rabbit",
+          "image_url": "https://cdn.shopify.com/s/files/1/0696/4481/2453/files/EP_Studio_Shoot-32_076fa627-3d40-4f25-beb2-a340ce4f3781.jpg?v=1756879018&format=jpg&width=1600",
+          "description": "The White Rabbit was thought up after a session surfing on the Vol-2. I had already fallen in love with the Vol-2 but I wanted something different although just as fun. I implemented all of the Vol-2’s features into the White Rabbit model, only putting a few new tweaks in the nose and tail ends of the board. These are its shovel nose, diamond tail and most important the change from twin to thruster. The changes made give the white rabbit a dramatically different feel to its sister model, making turns sharper with better release off the top. all while keeping its speed and flow. This board works best in smaller bowlier waves due to its length, although I have ridden it in bigger swells and it does hold up. This board should be ridden 4-5” under your height or shorter than your Donny model (Performance all-rounder). Add 1-2L more than your Donny.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Mistress Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0696/4481/2453/files/EP_Studio_Shoot-19_7681edb9-8090-43e5-8e3e-6e3e1923c7cb.jpg?v=1756879015&format=jpg&width=1600",
+          "description": "The Mistress Twin has quickly become one of the most sought-after boards in the EVADE range. Originally shaped for a team rider with a deep love for all things twin fin, the concept was simple: blend old-school twin vibes with a new-school edge. With a traditional outline and forward centre of mass, combined with modern rockers and refined rails, the Mistress Twin generates plenty of speed and draws smooth, stylish lines. But don’t let the flow fool you—it gets super critical in the pocket and off the lip. To top it off, a deep 4-channel bottom was added for extra hold and drive, giving it that bite when you really need it. This board shines in clean, powerful waves where you can push your turns, but it’s still one of my go-to all-rounders. Mine lives in the car, always ready. As a mid length this board can be ridden at any length or volume that best suits the waves you are surfing, although I ride mine 3-4” over my height or longer then my Donny model (Performance all-rounder). Adding 4-5L more than my Donny.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Midstrength",
+          "image_url": "https://cdn.shopify.com/s/files/1/0696/4481/2453/files/EP_Studio_Shoot-23_5ecf6faa-ec23-4ad1-afb9-75218dd8bc7b.jpg?v=1756879016&format=jpg&width=1600",
+          "description": "There have been many days I've been in the water and wished I had something with a little more meat to get into waves quicker, whilst being close to something that I already know. The Midstrength fits this to a tee, Its blend of a performance-like outline with forgiving rails and lowered rockers make those smaller fatter days worth getting in the water. This model carries speed well and is smooth and flowy through turns. The fin set-up of the Midstrength is a single box + thruster side’s, but can be ridden just as a single depending on the rider's preference. As a mid length this board can be ridden at any length or volume that best suits the waves you are surfing, although I ride mine 3-4” over my height or longer then my Donny model (Performance all-rounder), Adding 4-5L more then my Donny.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
