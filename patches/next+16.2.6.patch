@@ -1,0 +1,194 @@
+diff --git a/node_modules/next/dist/client/components/app-router.js b/node_modules/next/dist/client/components/app-router.js
+index 560525f..77f3b64 100644
+--- a/node_modules/next/dist/client/components/app-router.js
++++ b/node_modules/next/dist/client/components/app-router.js
+@@ -111,6 +111,18 @@ function Head({ headCacheNode }) {
+  * The global router that wraps the application components.
+  */ function Router({ actionQueue, globalError, webSocket, staticIndicatorState }) {
+     const state = (0, _useactionqueue.useActionQueue)(actionQueue);
++    // Isolate useActionQueue from the rest of the router hooks. A suspend can
++    // commit a shorter hook list on this fiber, and the following render then
++    // throws React error #310 above the app error boundary, replacing the whole
++    // document. The remaining hooks live in a child so they mount on a fresh fiber.
++    return /*#__PURE__*/ (0, _jsxruntime.jsx)(RouterContent, {
++        state: state,
++        globalError: globalError,
++        webSocket: webSocket,
++        staticIndicatorState: staticIndicatorState
++    });
++}
++function RouterContent({ state, globalError, webSocket, staticIndicatorState }) {
+     const { canonicalUrl } = state;
+     // Add memoized pathname/query for useSearchParams and usePathname.
+     const { searchParams, pathname } = (0, _react.useMemo)(()=>{
+@@ -200,36 +212,6 @@ function Head({ headCacheNode }) {
+             window.removeEventListener('unhandledrejection', handleUnhandledRedirect);
+         };
+     }, []);
+-    // When mpaNavigation flag is set do a hard navigation to the new url.
+-    // Infinitely suspend because we don't actually want to rerender any child
+-    // components with the new URL and any entangled state updates shouldn't
+-    // commit either (eg: useTransition isPending should stay true until the page
+-    // unloads).
+-    //
+-    // This is a side effect in render. Don't try this at home, kids. It's
+-    // probably safe because we know this is a singleton component and it's never
+-    // in <Offscreen>. At least I hope so. (It will run twice in dev strict mode,
+-    // but that's... fine?)
+-    const { pushRef } = state;
+-    if (pushRef.mpaNavigation) {
+-        // if there's a re-render, we don't want to trigger another redirect if one is already in flight to the same URL
+-        if (globalMutable.pendingMpaPath !== canonicalUrl) {
+-            const location = window.location;
+-            if (pushRef.pendingPush) {
+-                location.assign(canonicalUrl);
+-            } else {
+-                location.replace(canonicalUrl);
+-            }
+-            globalMutable.pendingMpaPath = canonicalUrl;
+-        }
+-        // TODO-APP: Should we listen to navigateerror here to catch failed
+-        // navigations somehow? And should we call window.stop() if a SPA navigation
+-        // should interrupt an MPA one?
+-        // NOTE: This is intentionally using `throw` instead of `use` because we're
+-        // inside an externally mutable condition (pushRef.mpaNavigation), which
+-        // violates the rules of hooks.
+-        throw _unresolvedthenable.unresolvedThenable;
+-    }
+     (0, _react.useEffect)(()=>{
+         const originalPushState = window.history.pushState.bind(window.history);
+         const originalReplaceState = window.history.replaceState.bind(window.history);
+@@ -360,6 +342,36 @@ function Head({ headCacheNode }) {
+         nextUrl,
+         previousNextUrl
+     ]);
++    // When mpaNavigation flag is set do a hard navigation to the new url.
++    // Infinitely suspend because we don't actually want to rerender any child
++    // components with the new URL and any entangled state updates shouldn't
++    // commit either (eg: useTransition isPending should stay true until the page
++    // unloads).
++    //
++    // This is a side effect in render. Don't try this at home, kids. It's
++    // probably safe because we know this is a singleton component and it's never
++    // in <Offscreen>. At least I hope so. (It will run twice in dev strict mode,
++    // but that's... fine?)
++    const { pushRef } = state;
++    if (pushRef.mpaNavigation) {
++        // if there's a re-render, we don't want to trigger another redirect if one is already in flight to the same URL
++        if (globalMutable.pendingMpaPath !== canonicalUrl) {
++            const location = window.location;
++            if (pushRef.pendingPush) {
++                location.assign(canonicalUrl);
++            } else {
++                location.replace(canonicalUrl);
++            }
++            globalMutable.pendingMpaPath = canonicalUrl;
++        }
++        // TODO-APP: Should we listen to navigateerror here to catch failed
++        // navigations somehow? And should we call window.stop() if a SPA navigation
++        // should interrupt an MPA one?
++        // NOTE: This throw stays below every hook in RouterContent. The condition is
++        // externally mutable (pushRef.mpaNavigation); throwing above a later hook
++        // changes the hook count and trips React error #310.
++        throw _unresolvedthenable.unresolvedThenable;
++    }
+     let head;
+     if (matchingHead !== null) {
+         // The head is wrapped in an extra component so we can use
+diff --git a/node_modules/next/dist/esm/client/components/app-router.js b/node_modules/next/dist/esm/client/components/app-router.js
+index 38c0e17..ded2625 100644
+--- a/node_modules/next/dist/esm/client/components/app-router.js
++++ b/node_modules/next/dist/esm/client/components/app-router.js
+@@ -99,6 +99,18 @@ function Head({ headCacheNode }) {
+  * The global router that wraps the application components.
+  */ function Router({ actionQueue, globalError, webSocket, staticIndicatorState }) {
+     const state = useActionQueue(actionQueue);
++    // Isolate useActionQueue from the rest of the router hooks. A suspend can
++    // commit a shorter hook list on this fiber, and the following render then
++    // throws React error #310 above the app error boundary, replacing the whole
++    // document. The remaining hooks live in a child so they mount on a fresh fiber.
++    return /*#__PURE__*/ _jsx(RouterContent, {
++        state: state,
++        globalError: globalError,
++        webSocket: webSocket,
++        staticIndicatorState: staticIndicatorState
++    });
++}
++function RouterContent({ state, globalError, webSocket, staticIndicatorState }) {
+     const { canonicalUrl } = state;
+     // Add memoized pathname/query for useSearchParams and usePathname.
+     const { searchParams, pathname } = useMemo(()=>{
+@@ -188,36 +200,6 @@ function Head({ headCacheNode }) {
+             window.removeEventListener('unhandledrejection', handleUnhandledRedirect);
+         };
+     }, []);
+-    // When mpaNavigation flag is set do a hard navigation to the new url.
+-    // Infinitely suspend because we don't actually want to rerender any child
+-    // components with the new URL and any entangled state updates shouldn't
+-    // commit either (eg: useTransition isPending should stay true until the page
+-    // unloads).
+-    //
+-    // This is a side effect in render. Don't try this at home, kids. It's
+-    // probably safe because we know this is a singleton component and it's never
+-    // in <Offscreen>. At least I hope so. (It will run twice in dev strict mode,
+-    // but that's... fine?)
+-    const { pushRef } = state;
+-    if (pushRef.mpaNavigation) {
+-        // if there's a re-render, we don't want to trigger another redirect if one is already in flight to the same URL
+-        if (globalMutable.pendingMpaPath !== canonicalUrl) {
+-            const location = window.location;
+-            if (pushRef.pendingPush) {
+-                location.assign(canonicalUrl);
+-            } else {
+-                location.replace(canonicalUrl);
+-            }
+-            globalMutable.pendingMpaPath = canonicalUrl;
+-        }
+-        // TODO-APP: Should we listen to navigateerror here to catch failed
+-        // navigations somehow? And should we call window.stop() if a SPA navigation
+-        // should interrupt an MPA one?
+-        // NOTE: This is intentionally using `throw` instead of `use` because we're
+-        // inside an externally mutable condition (pushRef.mpaNavigation), which
+-        // violates the rules of hooks.
+-        throw unresolvedThenable;
+-    }
+     useEffect(()=>{
+         const originalPushState = window.history.pushState.bind(window.history);
+         const originalReplaceState = window.history.replaceState.bind(window.history);
+@@ -348,6 +330,36 @@ function Head({ headCacheNode }) {
+         nextUrl,
+         previousNextUrl
+     ]);
++    // When mpaNavigation flag is set do a hard navigation to the new url.
++    // Infinitely suspend because we don't actually want to rerender any child
++    // components with the new URL and any entangled state updates shouldn't
++    // commit either (eg: useTransition isPending should stay true until the page
++    // unloads).
++    //
++    // This is a side effect in render. Don't try this at home, kids. It's
++    // probably safe because we know this is a singleton component and it's never
++    // in <Offscreen>. At least I hope so. (It will run twice in dev strict mode,
++    // but that's... fine?)
++    const { pushRef } = state;
++    if (pushRef.mpaNavigation) {
++        // if there's a re-render, we don't want to trigger another redirect if one is already in flight to the same URL
++        if (globalMutable.pendingMpaPath !== canonicalUrl) {
++            const location = window.location;
++            if (pushRef.pendingPush) {
++                location.assign(canonicalUrl);
++            } else {
++                location.replace(canonicalUrl);
++            }
++            globalMutable.pendingMpaPath = canonicalUrl;
++        }
++        // TODO-APP: Should we listen to navigateerror here to catch failed
++        // navigations somehow? And should we call window.stop() if a SPA navigation
++        // should interrupt an MPA one?
++        // NOTE: This throw stays below every hook in RouterContent. The condition is
++        // externally mutable (pushRef.mpaNavigation); throwing above a later hook
++        // changes the hook count and trips React error #310.
++        throw unresolvedThenable;
++    }
+     let head;
+     if (matchingHead !== null) {
+         // The head is wrapped in an extra component so we can use
