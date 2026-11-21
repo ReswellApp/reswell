@@ -1,6 +1,7 @@
 import { isModelPagePathname } from "@/lib/models/routes"
 import {
   BROWSER_HTML_CACHE_CONTROL,
+  LISTING_HTML_CDN_CACHE_CONTROL,
   PUBLIC_MARKETPLACE_EDGE_CACHE_CONTROL,
   isCacheablePublicMarketplaceRequest,
   publicMarketplaceCdnCacheControl as cdnCacheControlForPublicHtml,
@@ -9,6 +10,7 @@ import {
 
 export {
   BROWSER_HTML_CACHE_CONTROL,
+  LISTING_HTML_CDN_CACHE_CONTROL,
   PUBLIC_MARKETPLACE_EDGE_CACHE_CONTROL,
   isCacheablePublicMarketplaceRequest,
 }
@@ -60,10 +62,22 @@ export function shouldAttachDeviceCookieOnDocument(pathname: string): boolean {
 export function publicMarketplaceCdnCacheControl(
   pathname: string,
   hasSetCookie: boolean,
+  options?: { isAnonymousPublicListingHtml?: boolean; hasRequestSession?: boolean },
 ): string | null {
-  // Cookie-free document. Next.js revalidatePath owns freshness for these
-  // routes. The shared `s-maxage` + 24h stale-while-revalidate window kept
-  // serving the previous document after a save or a sale.
-  if (pathname === "/sold" || pathname.startsWith("/l/")) return null
+  // `/sold` stays uncached (`force-dynamic`). `/l/` is only cached when this
+  // response is the anonymous public shell — never DynamicGate (owner/staff
+  // or unavailable) and never a request that already has a session cookie.
+  // No stale-while-revalidate so sold PDPs cannot linger for a day.
+  if (pathname === "/sold") return null
+  if (pathname.startsWith("/l/")) {
+    if (
+      hasSetCookie ||
+      options?.hasRequestSession ||
+      !options?.isAnonymousPublicListingHtml
+    ) {
+      return null
+    }
+    return LISTING_HTML_CDN_CACHE_CONTROL
+  }
   return cdnCacheControlForPublicHtml(isPublicMarketplaceHtmlPath(pathname), hasSetCookie)
 }

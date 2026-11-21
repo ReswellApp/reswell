@@ -2,20 +2,17 @@ import type { Metadata } from "next"
 import { Suspense } from "react"
 import { redirect } from "next/navigation"
 import { pageSeoMetadata } from "@/lib/site-metadata"
-import { findListingByParam } from "@/lib/listing-query"
 import {
   getCachedPublicListingForMetadata,
   getCachedPublicListingForRoute,
-  SURFBOARD_LISTING_SELECT,
 } from "@/lib/listing-detail-cache"
 import { resolveListingDetailMetadata } from "@/lib/seo/resolve-listing-metadata"
-import { canViewHiddenListing } from "@/lib/listing-site-access"
-import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
 import { ListingDetailDynamicGate } from "@/components/features/listings/listing-detail-dynamic-gate"
 import { ListingDetailPublicOrAuthenticated } from "@/components/features/listings/listing-detail-public-or-authenticated"
 import type { PublicListingRow } from "@/components/features/listings/listing-detail-public-body"
 import { ListingDetailRoutePending } from "@/components/listing-detail-page-loading"
 import { ListingPublishedCelebration } from "@/components/features/listings/listing-published-celebration"
+import { listingRendersAnonymousPublicShell } from "@/lib/crawler/listing-html-cdn-policy"
 
 /** ISR shell — keep in sync with `LISTING_PUBLIC_DETAIL_REVALIDATE_SECONDS`. */
 export const revalidate = 3600
@@ -33,24 +30,12 @@ export async function generateMetadata(props: {
   params: Promise<{ listing: string }>
 }): Promise<Metadata> {
   const { listing: listingParam } = await props.params
-  let { listing } = await getCachedPublicListingForMetadata(listingParam)
-  if (!listing) {
-    const { supabase } = await getCachedRequestSession()
-    const live = await findListingByParam(supabase, listingParam, {
-      select: SURFBOARD_LISTING_SELECT,
-      section: undefined,
-      includeHiddenListings: true,
-    })
-    listing = live.listing
-  }
-  if (!listing) {
+  const { listing } = await getCachedPublicListingForMetadata(listingParam)
+  // Public cache only. cookies() here dynamizes the whole /l route even when
+  // the miss/hidden branch is not taken. Hidden listings still render for
+  // owners via ListingDetailDynamicGate; their share tags stay unavailable.
+  if (!listing || listing.hidden_from_site) {
     return unavailableListingMetadata(listingParam)
-  }
-  if (listing.hidden_from_site) {
-    const { supabase, user } = await getCachedRequestSession()
-    if (!(await canViewHiddenListing(supabase, listing, user))) {
-      return unavailableListingMetadata(listingParam)
-    }
   }
   if (listing.section === "new") {
     const price = Number(listing.price)
@@ -66,7 +51,7 @@ export default async function ListingDetailPage(props: {
   const { listing: listingParam } = await props.params
   const { listing, redirectSlug } = await getCachedPublicListingForRoute(listingParam)
 
-  if (listing && !listing.hidden_from_site) {
+  if (listingRendersAnonymousPublicShell(listing)) {
     if (redirectSlug) {
       redirect(`/l/${redirectSlug}`)
     }

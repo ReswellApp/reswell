@@ -36,8 +36,8 @@ function listingPublicDetailCacheTags(param: string): string[] {
   return [LISTING_PUBLIC_DETAIL_CACHE_TAG, listingPublicDetailCacheTag(param)]
 }
 
-/** One hourly row per param — metadata, route shell, and peer PDP detail share this entry. */
-function getCachedPublicListingDetailRow(param: string): Promise<PublicListingLookupResult> {
+/** One hourly row per param — metadata, route shell, peer PDP, and listing CDN gate. */
+export function getCachedPublicListingDetailRow(param: string): Promise<PublicListingLookupResult> {
   return unstable_cache(
     () => loadPublicListingByParam(param, SURFBOARD_LISTING_SELECT),
     ["listing-public-detail-v2", param],
