@@ -1,0 +1,125 @@
+{
+  "generated_for": "VESSO official named standup catalog",
+  "source": "https://vessosurf.com/products.json plus /collections/all-boards (Shopify Surfboard / named model products only — excludes merch)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "vesso-surfboards",
+      "name": "VESSO",
+      "website_url": "https://vessosurf.com/",
+      "location_label": "Oahu, Hawaii",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/vesso-surfboards.png",
+      "short_description": "Masterfully handshaped, locally in Hawaii. Official VESSO named standup catalog — shortboards, fishes, mid-lengths, and longboards.",
+      "models": [
+        {
+          "name": "Manini",
+          "image_url": "https://cdn.shopify.com/s/files/1/0798/3844/5850/files/manini_54443301-c2f8-4bb3-bfb4-04e4da208b3e.jpg?v=1773794865&format=jpg&width=1600",
+          "description": "Manini is definitely something to have in your quiver! It is set up as a twin + trailer. It has a little bit more rocker than the love seat, so it can go a tighter in the pocket. The outline is also a tad bit pulled in and the tail is a wing swallow to reduce surface area in the tail and for easier maneuverability. This board is recommended to ride a couple inches shorter than your regular shortboard or whatever you feel comfortable with! This board has been one of our popular models for those fun 1-3 foot days!",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Shrimp tempura",
+          "image_url": "https://cdn.shopify.com/s/files/1/0798/3844/5850/files/B87E3974-7FA9-498C-9029-695C38F4F4A0.jpg?v=1763598059&format=jpg&width=1600",
+          "description": "Shrimp Tempura has quickly become one of the standout performance shortboards in our 2025 lineup. After getting the nod from the Yamakawa brothers, we knew we had to release this model. Designed to excel in everything from mushy to punchy waves, it features a bit more nose rocker paired with a slightly flatter tail rocker for added drive and responsiveness. It has a slight single concave throughout the board, letting you throw even more spray than usual! A lively, reliable shortboard built for surfers who want performance in a wide range of everyday conditions.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Mini Me",
+          "image_url": "https://cdn.shopify.com/s/files/1/0798/3844/5850/files/5C6B696D-8567-4947-8A94-CA44FB9A6654_ee0a0538-f9da-4575-b424-e801c094c501.jpg?v=1763597800&format=jpg&width=1600",
+          "description": "Surfing just got even more fun. This board is a shrunken-down version of our MIDori mid-length model, originally created while we were just messing around, and it turned out to be so fun. Designed for both small waves and slightly bigger days, it shares a similar overall curve to the MIDori. It features a subtle single-to-double concave and can be ridden as either a thruster or a quad. We recommend the quad setup for added speed and a more responsive feel. With a slightly wider outline in the nose and a pulled-in tail, it offers an excellent hold through your turns. You can size it like your regular shortboard or go a bit shorter or longer depending on how much volume you prefer. This board is pure fun, fast, lively, and versatile.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Wings",
+          "image_url": "https://cdn.shopify.com/s/files/1/0798/3844/5850/files/WINGSPNG.png?v=1709454256&format=png&width=1600",
+          "description": "Our latest performance shortboard, 'The Wings,' features a design optimized for agility and stability. It comes equipped with an enhanced nose rocker for better maneuverability and a reduced tail rocker, ensuring stability and consistent drive. Versatile in nature, this board excels in various conditions, tested firsthand from the mellow waves of the South Shore to the notorious swells of the North Shore. 'The Wings' is an ideal choice for any surfer passionate about shortboarding. The board's design incorporates a single to double concave bottom with a subtle Vee at the tip of the tail, aiding in smoother rail-to-rail transitions. Expect a board that is not only swift but also remarkably responsive. Rail: Medium Rocker Nose/ Tail: A little more than medium nose rocker / flatter tail rocker Concave: Single concave to a Double concave into a super slight Vee in the Tip of the tail Outline: Medium nose / medium tail Foil: Medium Wave Type/ Conditions: Any Condition",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "MIDori",
+          "image_url": "https://cdn.shopify.com/s/files/1/0798/3844/5850/files/MIDORIPNG.png?v=1709250320&format=png&width=1600",
+          "description": "MIDori, our latest mid-length surfboard, features a design with a single concave at the center transitioning to a double concave at the tail. With exceptional stability and ease of control due to the board's optimal rocker. Its increased volume around the chest area aids in easier paddling. A versatile board that thrives in various wave conditions, small to large, mushy to clean, gentle to powerful surf. Suitable for surfers of all skill levels, and it's an ideal choice for those moving to a shorter board and want the paddle power of a longboard with the agility of a shortboard. The MIDori can be configured as either a thruster or a quad setup. Rail: Medium Full Rocker Nose/Tail: Medium/Medium Concave: Light single to double with slight vee Outline: Medium full nose/ Medium tail Foil: Medium Wave Type/Conditions: Any conditions",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Hi-Volt",
+          "image_url": "https://cdn.shopify.com/s/files/1/0798/3844/5850/files/HI-VOLTPNG.png?v=1697237503&format=png&width=1600",
+          "description": "Endorsed by our team riders, the Hi-Volt embodies innovation and intrigue in surfboard design. Initially conceived as a mere test cut and not intended for finishing or glassing, we opted to bring the board to completion on a whim. From the moment we rode the first wave, it was enchanting, offering impressive drive, speed, and responsiveness, all while ensuring a smooth release. Mirroring the Mamba's rocker with a straighter exit for amplified drive, the Hi-Volt features a subtly pulled-in tail, ensuring steadfast hold during bottom turns. A distinguishing characteristic of this board is its gentle single concave, extending across its entirety, providing that extra burst of speed. If you’re in pursuit of a board that offers quick pocket transitions coupled with robust drive, the Hi-Volt stands out as an exemplary choice, performing its best in waves 2-6 feet Hawaiian (4-12 feet face) Rail: medium Rocker: more nose rocker and more tail rocker Concave : slight single concave through out the board Foil: medium throughout the board Wave type: punchy hollow waves",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Hot Pocket",
+          "image_url": "https://cdn.shopify.com/s/files/1/0798/3844/5850/files/HOTPOCKETPNG.png?v=1697237451&format=png&width=1600",
+          "description": "Introducing the Hot Pocket, our latest innovation in small wave surfing. With slightly increased width at both the nose and tail, paired with a sleek, relaxed rocker at the entry and tail, this board is meticulously designed for superior paddling and effortless speed generation. It promises quick, loose and agile performance, catering to surfers of all skill levels. The Hot Pocket thrives in modest, soft waves, excelling in conditions up to 1-3 feet Hawaiian (2-6 ft face). For optimal performance, consider ordering the Hot Pocket 1-2 inches shorter than your typical shortboard, adjusted according to your skill level. Rail: medium Rocker: flatter nose rocker and flatter tail rocker Concave: single to double concave Foil: medium throughout the board Wave type: soft mushy waves",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Octane",
+          "image_url": "https://cdn.shopify.com/s/files/1/0798/3844/5850/files/OCTANEPNG.png?v=1695870003&format=png&width=1600",
+          "description": "The Octane is the most seasoned high performance shortboard in our line. Tried and true, constantly evolving and enhancing with each passing year. The Octane has been a staple in the quiver of many world tour vets and has been tested around the world. The Octane is geared towards competent surfers for better/punchier waves and features a generous amount of rocker through the nose and tail in a single continuous curve. This aggressive rocker profile has been offset by adding a little more volume through the nose and tail to help maintain speed and momentum while still allowing for ultra tight radius turns and maintenance of speed. Rail: Medium Full Rocker Nose/ Tail: Heavy/ Medium Concave: Medium Single concave to a deep Double throughout the rail. Outline: Medium full nose / Fuller Tail. Foil: Medium Wave Type/ Conditions: Beach breaks or waves with more curve in the face.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Sonic",
+          "image_url": "https://cdn.shopify.com/s/files/1/0798/3844/5850/files/SONICPNG.png?v=1693013892&format=png&width=1600",
+          "description": "The Sonic is our most versatile and reliable shortboard. It features an exceptionally drivey, flatter tail curve, it effortlessly generates abundant down-the-line speed, making it perfect for executing long, powerful turns with precision.. This relaxed, fast tail rocker is offset by additional rocker in the nose, which helps the Sonic fit in tight pockets and hollow waves. If you had to pack a single shortboard that would work in anything from Huntington Beach slop, to pumping Jbay, this would be the one. Rail: Medium Rocker Nose/Tail: Heavy Nose Rocker /Flat tail Rocker Concave: Slight single to double Outline: Pulled in nose to pulled tail Foil: Medium Wave Type: Any Condition",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Gypsy",
+          "image_url": "https://cdn.shopify.com/s/files/1/0798/3844/5850/files/GYPSYPNG.png?v=1693006438&format=png&width=1600",
+          "description": "The Gypsy is a classic single-fin log, designed to cater to surfers who want an easy-to-ride, glidey board that will also maximize their time on the nose. Like most nose-riders, the Gypsy features a traditional low entry/nose rocker for extra lift in the tip and a very accelerated tail curve. This rocker profile, harmonized with an exceptionally forgiving 50/50 rail shape allows the Gypsy to glide effortlessly through flat spots, while creating a stable platform for easy nose riding. If you’re just looking for a smooth summer time glider, or for a great classic nose-rider, the Gypsy is it. Size range: 9’0-10’0 Rail: tapered 50/50 Rocker nose/tail: Flat/Aggressive tail exit Concave: Deep concave in the nose and rolled vee from middle to tail. Outline: Wide tail with a little pulled in nose. Foil: Thin throughout the board Wave Type/ Condition: Slower fat waves",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Nifty 9",
+          "image_url": "https://cdn.shopify.com/s/files/1/0798/3844/5850/files/NIFTYNINEPNG.png?v=1693006338&format=png&width=1600",
+          "description": "The Nifty 9 effortlessly bridges the transition from shortboard riding to longboarding, ensuring a smooth and responsive ride. Its bottom curve and sleek lines gives you good control with lots of quick turns. Not only is it nimble and easy to maneuver, but it also excels in nose riding. The Nifty 9 can even gain a lot of speed through the flat section of the wave. Serving as a versatile, high-performance Longboard, the Nifty 9 accommodates riders of all levels, from beginners to competitive longboarders. If you want to do large turns and nose rides, then this is the board! Size Range: 8'0 to 10'0 Rail: Medium Rocker Nose/Tail: moderate nose with high tail Concave: Concave in nose going to a slight vee off the tail Outline: Medium nose and tail Foil: Thin nose and tail Wave Type/Conditions: All around",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Fusion",
+          "image_url": "https://cdn.shopify.com/s/files/1/0798/3844/5850/files/FUSIONPNG_8c51d95e-ed57-424e-9da3-89e8730f203b.png?v=1693015199&format=png&width=1600",
+          "description": "The Fusion has long stood as a trusted 'step-up' among the quiver selections of both local surfers and touring professionals. It has been constantly refined and tuned season after season and put through the paces to suit our heavy waves along the 7 Mile Miracle here on the North Shore of Oahu. The Fusion features light concaves with a slight vee in the tail that has been combined with a time-tested advanced rocker profile that yields a fast, maneuverable board without losing control. The Fusion will hold its line, but will also allow the rider to have maximum control at high speeds and through big maneuvers. Size Range: 6'6 to 8'0 Rail: Medium Rocker Nose/Tail: Heavy/Lower Concave: Light single to Light double with slight vee Outline: Stream line narrower nose and tail Foil: Medium nose and tail Wave Type/Conditions: Soild reef break",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Forever Single",
+          "image_url": "https://cdn.shopify.com/s/files/1/0798/3844/5850/files/FOREVERSINGLEPNG_f3a526b9-2d49-456a-b57c-0fc0b512bd42.png?v=1693015177&format=png&width=1600",
+          "description": "Forever Single represents a continuously evolving embodiment of the timeless single fin design, meticulously modified and refined over years to emerge as a favored choice. It boasts a flattened nose and tail rocker, generating remarkable down-the-line speed and drive. While single fins are renowned for their tracky nature and swift straight-line motion, we've cultivated a fusion of a single concave transitioning into a robust double vee off the tail. This adaptation not only enhances the looseness of this single fin but also facilitates a smooth transition from rail to rail, instilling a truly playful sensation underfoot. This single fin is adorned with a slim beak nose, not only paying homage to the 'old school' vibe but also infusing additional volume to aid in paddling and wave catching. Typically, we suggest riding them an inch or two longer than your conventional shortboard to bolster drive and stability. Rail: Taper Rocker Nose/Tail: Low/Low Concave: Light single to heavy double with slight vee Outline: wider nose and pulled in tail Foil: fuller nose and medium tail Wave Type/Conditions: Any condition",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Double Deuce",
+          "image_url": "https://cdn.shopify.com/s/files/1/0798/3844/5850/files/DOUBLEDEUCEPNG.png?v=1693006217&format=png&width=1600",
+          "description": "The Double Deuce, initially conceived as a playful single fin, was transformed into a spirited quad fin following modifications requested by a team member. It swiftly ascended to one of our collection's most sought-after designs. The Double Deuce is complemented with a gentle rocker profile, offering effortless paddling and generating remarkable speed and drive, ensuring it glides through flatter sections with ease. It has established itself as a staple in the quiver for not only small but also medium surfing days. The Double Deuce is characterized by a distinctive bottom contour that begins with a subtle single concave, which ﬂows into a deep double and concludes with a slight vee at the tail. These bottom contours guide water flow throughout the board, producing lift under the front foot for speed, and splitting the water flow between the feet and through the quad fins. This not only aids in projecting the board effectively but also ensures seamless transitions from rail to rail. Rail: medium Rocker: low nose rocker and low tail rocker Concave: slight single to deep double to a vee off the tail Foil: fuller throughout the board Wave type: any wave condition, typically smaller mushy waves",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Black Jack",
+          "image_url": "https://cdn.shopify.com/s/files/1/0798/3844/5850/files/BLACKJACKPNG_4d5cdfff-0afd-450b-8288-518300b88d0f.png?v=1693015158&format=png&width=1600",
+          "description": "The Blackjack has rapidly ascended as a stellar addition to our High-Performance shortboard collection. In a remarkably brief timeframe, it has garnered favoritism among our team riders and surfing enthusiasts. Optimal for those in pursuit of a singularly performance-centric shortboard, the Blackjack thrives across a wide spectrum of waves and conditions. From the rigorous demands of QS grinders to the pursuits of local luminaries, the Blackjack... Rail: Medium Rocker Nose/Tail: High/Medium Concave: Deep single to Double Outline: pulled in nose and Tail Foil: Medium Wave Type/ Conditions: Beach Breaks/Hollow Waves",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Loop",
+          "image_url": "https://cdn.shopify.com/s/files/1/0798/3844/5850/files/THELOOPPNG_d2cb97e2-c192-44bb-8084-5e6eb596787b.png?v=1692942297&format=png&width=1600",
+          "description": "The Loop is a great alternative for anyone wanting the easy feel of riding a longboard, without all the extra “bulk” that can often limit the maneuverability of longer boards. It is designed to be ridden about a foot shorter than the Nifty 9, and has been scaled and refined to create a more compact sub-longboard that is easy to turn and that can handle big and small waves. A versatile all-around performer, The Loop promises to go on rail, while also providing the stability needed for nose riding. Size Range: 8'0 Rail: Medium Rocker Nose/Tail: moderate nose with high tail Concave: Concave in nose going to a slight vee off the tail Outline: Medium nose and tail Foil: Thin nose and tail Wave Type/Conditions: All around",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Loveseat",
+          "image_url": "https://cdn.shopify.com/s/files/1/0798/3844/5850/files/LoveseatPNG.png?v=1692742142&format=png&width=1600",
+          "description": "The Love Seat embodies a contemporary take on the retro Twin fish, ensuring your rides are exhilarating even on small mushy days. It has a flatter rocker throughout the whole board, and a slight single to deep double concave with a healthy amount of vee off the tail, the Love Seat can carry a lot of speed and drive while maintaining that “loose” maneuverability we all love out a twin fin. We recommend to order/ride the Love Seat a few inches shorter, with some extra width and little more thickness than your regular shortboard. Rail: Flat deck with taper rail Rocker Nose/Tail: Low/Low Concave: Light single to deep double with slight vee Outline: wide point more near the nose with a wide swallow tail Foil: fuller throughout the board Wave Type/Conditions: small mushy conditions",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Fugu",
+          "image_url": "https://cdn.shopify.com/s/files/1/0798/3844/5850/files/7C2F2C52-5569-4864-ACFD-5B7A08C85778.jpg?v=1764626329&format=jpg&width=1600",
+          "description": "The Fugu is designed to help keep you in the water even on the smallest, most dismal of days. The magic that makes The Fugu such an ideal board for small wave fun, is the combination of an ultra relaxed rocker with a full, curvy outline that results in a small wave board that generates maximum speed with minimal effort. The bottom contours feature a slight single concave that transitions into a deep double, allowing an already “skatey” board to roll rail to rail effortlessly. The Fugu excels in waves 0.5 feet to 2 feet Hawaiian (1-4 ft face). The Fugu offers effortless paddling and wave-catching capabilities. The Fugu is a must-have and an excellent board to have in the quiver and turns even the worst conditions into a small wave playground. Rail: Full Rocker nose/tail: Flat in both ends Concave: Slight single concave in the front with extreme double running off the tail. Outline: Full Foil: fuller in tail and nose Wave Type/ Conditions: small waves",
+          "board_category_slug": "groveler"
+        }
+      ]
+    }
+  ]
+}
