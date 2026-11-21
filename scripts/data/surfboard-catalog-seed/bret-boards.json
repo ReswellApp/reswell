@@ -1,0 +1,91 @@
+{
+  "generated_for": "Bret Boards official named standup catalog",
+  "source": "https://www.bretboards.com (official Wix: Performance Models, Shortboards, Hybrids/Midlengths, Step Downs, Step Ups, Longboards — named surfboard models only; skipped SK8, merch, logos-as-photos, action shots, Freedom Hawk/Orca/All Arounder/Mind Expander/Trident/Gen-X/Bucknife XL/Long Fish/Sea foam/Acid Wash/Big Blue)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "bret-boards",
+      "name": "Bret Boards",
+      "website_url": "https://www.bretboards.com",
+      "location_label": "Haleiwa, North Shore, Oahu, Hawaii",
+      "founder_name": "Bret Marumoto",
+      "lead_shaper_name": "Bret Marumoto",
+      "short_description": "North Shore of Oahu custom surfboards from Bret Marumoto — Hawaiian Performer Series shortboards, hybrids, and step-ups shaped in Haleiwa.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/bret-boards.png",
+      "models": [
+        {
+          "name": "Lone Wolf",
+          "image_url": "https://static.wixstatic.com/media/2490c9_d9692b99e7824484b0de54bee86ce4b1~mv2.png",
+          "description": "Don't want to follow the sheep herd like everyone else? Separate yourself and jump on the Lone Wolf. Part of our Hawaiian Performer Series, this model consists of all the feed back from our stable of riders. Having lowered the front entry rocker to give the surfer more drive helps the mild single to double concave work efficiently for speed & flow in your turns. The rail is shaped into a flatter deck and rolled into a tucked under edge leading into the tail area the most important part of your surfboard (engine) - so you can lay into turns with speed, power and flow. Attack the line up on the Lone Wolf!",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Regulator",
+          "image_url": "https://static.wixstatic.com/media/2490c9_075cd96488644e6a8c16f885bd24f226~mv2.png",
+          "description": "The Regulator model is the most versatile model we have to offer by far. The fuller softer rails and single concave to vee off the tail make this board “fast” & “forgiving” and should be ridden two (2) to three (3) inches shorter and slightly wider than your standard shortboard.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Savage",
+          "image_url": "https://static.wixstatic.com/media/2490c9_e195f59a5763424c8f7befda167ab338~mv2.png",
+          "description": "If your looking for untamed absolute high performance design jump on the Savage. With it's roots designed from Bret’s Hawaiian Performer Series models like the Regulator, Lone Wolf and Kraken .. single to double concave performance rocker, subtle entry nose rocker, a more parallel outline with a hip placed in front of the fins giving the rider ability to turn hard in the pocket with fast & responsive acceleration. Surf this board in 2-3 foot beach break to 6 foot grinding reef breaks.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Sumo",
+          "image_url": "https://static.wixstatic.com/media/2490c9_1ffb44b817e64422b1de58eafa78a4e9~mv2.png",
+          "description": "The Sumo is shaped for surfer who needs more volume and paddling power but still want’s performance of a modern shortboard shape. Fuller outline and flatter deck to accommodate a well balanced rocker that works well any in kind of conditions.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Free Thinker",
+          "image_url": "https://static.wixstatic.com/media/2490c9_a035ec7940b04883b7fdde849216c882~mv2.png",
+          "description": "The go to shape trans median performance model (air or water) multi design .. The moderate nose rocker entry leading into the deepest single concave we build blends thru the bottom with a slight kick in tail rocker near the fin area giving the rider precision on point turning and drive. Outline features a elliptical hip in the back half of the board for a fore giving transition in your turns. Free Thinker is high performance model designed around our stable of surfers at Bretboards.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Mamba",
+          "image_url": "https://static.wixstatic.com/media/2490c9_9bf4d77e4b0243d59ccb7a589eeba49a~mv2.png",
+          "description": "The tackle box series consists of modern shorter profile surfboard designs ..the Mamba is a 2020 release derived from designs of the 80’s via Newport Beach, Ca echo beach era and the modern rockers and channels of the last few decades of shortboard performance. A fuller outline wider point forward with a fuller tail hip leading into a single wing that curves into multi point tail tip for effortless maneuvers...Super drivey through the flat dead sections and extra hold in turns due to the channel system leading out the tail. Ride as quad or thruster & order 4”-6” shorter than your average shortboard.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Aku Bird",
+          "image_url": "https://static.wixstatic.com/media/2490c9_de2202a9300e4730ab9acad5c7958dc4~mv2.png",
+          "description": "When surf’s small, gutless & hard to motivate you out in the water paddle out the Aku Bird. Fuller outline, wide point forward bringing the thickness flow under your chest for optimum paddling power. What’s makes the Aku Bird fly? Start with a deep single concave hull within a moderate bottom rocker curve which equates to instant drive & rail to rail speed in your turns. The 2021 release is updated with slight improvements in performance design.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Uncle",
+          "image_url": "https://static.wixstatic.com/media/2490c9_b902bbb5e9004b4eaf1ba00fc618cd48~mv2.png",
+          "description": "This hybrid shape is an all around utility design that provides superior paddling power with easy turning & glide on any given day of surf. Various tail shapes give this design versatility - rounded pin downline drive & hold on reef break type conditions - swallow tail loose rail to rail speed and carving power - squash tail glide right the flat spots on guiltless waves ..ideal for your everyday beach break conditions. Meet the Uncle - a mid-length that blends classic style with modern performance. It’s a got a full-isa nose, a round tail, and just the right width to keep things easy and fun. The low rocker up front helps you catch waves early and glide fast with plenty of hidden foam to work with.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Malolo",
+          "image_url": "https://static.wixstatic.com/media/2490c9_3d8d2020a41448b2a447f1175f8f60c0~mv2.png",
+          "description": "aka \"the flying fish\" designed with a wider nose outline plus lower rocker in nose entry, making it a performance shortboard with drive to fly right through the flat sections of slow mushy waves. The bottom rocker runs a single concave to double concave between the back fins.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Misfit",
+          "image_url": "https://static.wixstatic.com/media/2490c9_19731c2bbd4d4ca886d093fc0d1dc760~mv2.png",
+          "description": "The shortboard designed to surf large hollow waves or your local spot when its firing. Wide point shifted forward brings up the foam under your chest for added paddling ability - bottom rocker uses a drawn out curve from nose to back half leading into slight tail kick for that smooth hold and quick response. Rides best with a rounded pin or moon tail.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Bucknife",
+          "image_url": "https://static.wixstatic.com/media/2490c9_ed63177fd1c94ec3b1bd9a5e6ae38791~mv2.png",
+          "description": "Developed on the shores of the North Shore this step up design has gone through vast input from some of my most promient pro riders in heavy water situations. Drawn out sleek outlines with moderate entry rocker (12cm center concave to 22cm double concave spiral vee) to knife into critical positioning with that confidence in your equipment. Field tested by some of Hawaii's best surfers Micheal & Derek Ho, Kalani Chapman, Flynn Novak & Dustin Barca.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "The Cat",
+          "image_url": "https://static.wixstatic.com/media/2490c9_43d8d03a55054cbbab1660021a5e069f~mv2.png",
+          "description": "Designed for waist-to-shoulder-waves, the Cat thrives in the pocket. It’s a true daily rider - reliable and responsive no matter what the surf is doing under head high. Whether you’re gliding down at your favorite point break or trimming in paradise in Waikiki, this board is made to be surfed from tail to nose. A versatile shape for maximizing fun in everyday conditions.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
