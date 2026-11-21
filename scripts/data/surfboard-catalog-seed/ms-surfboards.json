@@ -1,0 +1,85 @@
+{
+  "generated_for": "MS Surfboards official named standup catalog",
+  "source": "https://mssurfboards.co/collections/our-surfboards (Shopify named model products — excludes stock size SKUs, Channel Islands retail boards, gift vouchers, and custom-order deposits)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "ms-surfboards",
+      "name": "MS Surfboards",
+      "website_url": "https://mssurfboards.co/",
+      "location_label": "Kunda Park / Maroochydore, Sunshine Coast, Queensland, Australia",
+      "founder_name": "Mitchell Surman",
+      "lead_shaper_name": "Mitchell Surman",
+      "short_description": "Handmade custom surfboards by Mitchell Surman in Kunda Park on Queensland's Sunshine Coast — longboards, mid-lengths, twins, and fish shaped in-house.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/ms-surfboards.png",
+      "models": [
+        {
+          "name": "Electric Lady",
+          "image_url": "https://cdn.shopify.com/s/files/1/0445/2771/4460/files/9_4ElectricLady.png?v=1742362921&width=1800",
+          "description": "The Electric Lady has a defined concave in the nose merging into foiled roll through the tail. It is designed to be ridden in the pocket and once there provides terrific lift and hold to extend noserides for as long as possible. While it thrives on the regularity of point break waves it is equally at home on shifting beach breaks. The rolled bottom allows deft manoeuvrability and the ability to react to and reach the elusive pocket of beach breaks. It is a noserider that provides a stable platform in the energy of the pocket but also fizzles with energy on the open face.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Cinnamon Girl",
+          "image_url": "https://cdn.shopify.com/s/files/1/0445/2771/4460/files/9_0CinnamonGirl.png?v=1742362851&width=1800",
+          "description": "Our longboards are designed to feel alive, whether you want to noseride, flow through turns and dropknees or simply trim. The Cinnamon Girl is our prized possession undergoing the most development and experimentation of any of our boards. With subtle concave throughout the board paired with a nice roll off the rails the board is designed for trim and turns. There's no sacrifice in nose riding ability with the concave allowing for unprecedented nose lift and control.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "HP Log",
+          "image_url": "https://cdn.shopify.com/s/files/1/0445/2771/4460/products/731E30FB-6C28-4CE2-9140-1FD1C28EA663.jpg?v=1624595166",
+          "description": "The HP Log is what Mitch was riding when he was traveling competing. With a much narrower tail, more rocker, a hard rail edge in the back end and the single fin with side bites setup this board is a great all round board for every type of condition. If you want to surf a longboard more aggressive or just a more forgiving style of longboard this is the model for you.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Peace Frog",
+          "image_url": "https://cdn.shopify.com/s/files/1/0445/2771/4460/files/8_6PeaceFrogTwin.png?v=1742362974&width=1800",
+          "description": "A classic double ender single fin. The Peace Frog is Mitch's personal favourite board for surfing around home when we have waves. The classic single fin feel with a few modern features. A must have board in the quiver if you're a single fin lover.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Moonlight Drive",
+          "image_url": "https://cdn.shopify.com/s/files/1/0445/2771/4460/products/1.png?v=1602726794",
+          "description": "The Moonlight Drive has quickly become our best selling Mid-Length and must have for Mitch and our team. The key to this board is the blend of speed, carry and flow you get from a mid-length mixed with the ultimate manoeuvrability of the twin fin set up. We designed this board with quite a pulled in speed controlling tail to give you confidence under your rear foot and control over the twin fin set up. The top two thirds of the board are where the mid-length benefits come in. Having the long parallel template with a semi refined rail this board generates speed effortlessly while giving you complete confidence in a steep high speed situation. The nose template is a little more pulled in than traditional mid-lengths, which allows you to cut a tighter arc without having to add too much rocker.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Void Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0445/2771/4460/products/ED28BE30-FB1D-4256-A3EF-417694B0C8DE.jpg?v=1624593604",
+          "description": "The Void Twin pays homage to a very classic design. The wide point is right up, the deck is flat to carry the maximum amount of foam with the edged rail running to a beak. The rocker is very gentle to carry speed and momentum with a narrow pin tail and channels to control speed. That mixed with the twin fin setup is a marriage made in heaven.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Dark Void Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0445/2771/4460/files/6_4_Dark_Void.png?v=1742355934&width=1800",
+          "description": "The Dark Void Twin pays homage to a very classic design. With the wide point pushed forward and a flat deck to maximize foam distribution, the beaked nose complements the edgy rails for a timeless yet functional aesthetic. Its gentle rocker is designed to carry speed and momentum effortlessly, while the narrow pin tail and subtle channels provide control and precision. Paired with the twin fin setup, this board creates a perfect blend of speed, maneuverability, and flow.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Big Tony",
+          "image_url": "https://cdn.shopify.com/s/files/1/0445/2771/4460/products/05356AB9-21F7-4301-9862-4ACFC3E04B7F.jpg?v=1624592880",
+          "description": "The Big Tony is a mid fish with a touch more performance than most. Designed to be the board you can surf in pretty much anything from knee high beach breaks to 6ft point breaks. With loads of foam under your chest this board is a breeze to paddle. We keep the rails quite forgiving in the Big Tony so it caters to a huge range of surfers from beginners to pros.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "HP Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0445/2771/4460/products/FF0A1352-4A47-428C-850B-674B685B4911.jpg?v=1624596742",
+          "description": "The HP fish is by far the most aggressive and performance orientated boards we make. This is a performance twin fin designed to be surfed with high energy. Suited to the surfer that wants to surf at a high level on something different to a thruster.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "War Pig",
+          "image_url": "https://cdn.shopify.com/s/files/1/0445/2771/4460/files/NEW.png?v=1742366707&width=1800",
+          "description": "The classic design that keeps on giving. This timeless shape has probably made more surfers happy than any other, our War Pig pays homage to that perfectly. With the length short, broad nose and wide swallow tail this board looks like the classic fish, but there's a twist. We have pulled the bulk of the foam up under your chest and refined out the tail. The result is an absolute paddle machine. Having this foam forward also gives you more carry in small dead sections allowing you to keep speed and momentum. We have a beaked nose that runs a dropped rail through the top third of the board and a more modern edged rail throughout the tail.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Sweet Leaf",
+          "image_url": "https://cdn.shopify.com/s/files/1/0445/2771/4460/products/AC5DF08B-1FA7-454B-B6DB-96B0D44930FF.jpg?v=1624590744",
+          "description": "The new Sweet Leaf has a classic template with curve the whole way up. This updated model is one of our most playful boards to date. With the foam this little board carries you have no problems paddling and the buoyancy carries you over dead sections with ease. The biggest change is the dedicated twin fin setup. The addition of the round tail and pulling the fins back is the key to this little boards heart. The drive and control you would expect from a thruster mixed with the easy speed of a twinny.",
+          "board_category_slug": "shortboard"
+        }
+      ]
+    }
+  ]
+}
