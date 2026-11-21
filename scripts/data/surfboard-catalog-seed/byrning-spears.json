@@ -1,0 +1,49 @@
+{
+  "generated_for": "Byrning Spears official named standup catalog",
+  "source": "https://byrningspears.com.au/about/pelagics-series/ (official Pelagics Series — excludes used boards, merch, fins, and gallery one-offs without unique production copy)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "byrning-spears",
+      "name": "Byrning Spears",
+      "website_url": "https://byrningspears.com.au",
+      "location_label": "Currumbin, Queensland, Australia",
+      "founder_name": "Allan Byrne",
+      "lead_shaper_name": "Allan Byrne",
+      "short_description": "Independent Currumbin shaper Allan Byrne's channel-bottom high-performance boards and Pelagics gun quiver, hand-shaped on the Gold Coast since 1982.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/byrning-spears.png",
+      "models": [
+        {
+          "name": "GT",
+          "image_url": "https://byrningspears.com.au/wp-content/uploads/2020/11/byrning-spears-pelagics-gt.jpg",
+          "description": "Your small wave, up to 6'0\" board. High-performance short-arc turns, great hold in the barrel and projection out of turns.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Yellow Fin Tuna",
+          "image_url": "https://byrningspears.com.au/wp-content/uploads/2020/11/byrning-spears-pelagics-yellow-fin.jpg",
+          "description": "If it's 4' to 6' with bigger sets, grab this one. It has a wider range of usage and can double as a small-wave performer.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Spanish Mackeral",
+          "image_url": "https://byrningspears.com.au/wp-content/uploads/2020/11/byrning-spears-pelagics-spanish-mackeral.jpg",
+          "description": "Much like the 6'5\" but capable of dealing with more size and power. If I could only take one board, this would be the one. Using the FCS 1's to surf the larger waves and FCS 2's to make the board feel smaller and surfing tighter arcs, it becomes an extremely useful piece of equipment.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Wahoo",
+          "image_url": "https://byrningspears.com.au/wp-content/uploads/2020/11/byrning-spears-pelagics-wahoo.jpg",
+          "description": "Starting to reach into full gun range. Drag this out at 6'-10', fast, grip on the face and speed to burn. Now we are talking. It's 10' already and we need paddle and penetration. Still highly manoeuvrable but secure in the power. A full-blown Indo gun but still feels like you are driving a sports car.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Blue Marlin",
+          "image_url": "https://byrningspears.com.au/wp-content/uploads/2020/11/byrning-spears-pelagics-blue-marlin.jpg",
+          "description": "Bloody serious, take it to Outside Corner, Lighthouse, Nusa Dua, as well as Sunset Beach and Pipeline. You are ready.",
+          "board_category_slug": "step-up-gun"
+        }
+      ]
+    }
+  ]
+}
