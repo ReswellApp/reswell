@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { PUBLIC_MEDIA_CACHE_CONTROL } from "@/lib/listing-media-cache-control"
+import { publicMediaCacheHeaders } from "@/lib/listing-media-cache-control"
 
 const PUBLIC_LISTINGS_MARKER = "/storage/v1/object/public/listings/"
 
@@ -61,7 +61,9 @@ export async function listingVideoStreamResponse(opts: {
   if (contentLength) out.set("Content-Length", contentLength)
   const contentRange = upstream.headers.get("content-range")
   if (contentRange) out.set("Content-Range", contentRange)
-  out.set("Cache-Control", PUBLIC_MEDIA_CACHE_CONTROL)
+  for (const [key, value] of Object.entries(publicMediaCacheHeaders())) {
+    out.set(key, value)
+  }
 
   return new Response(upstream.body, {
     status: upstream.status,
