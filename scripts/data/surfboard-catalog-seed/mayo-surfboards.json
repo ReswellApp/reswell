@@ -1,0 +1,79 @@
+{
+  "generated_for": "Mayo Surfboards official named standup catalog",
+  "source": "https://www.mayosurfboards.com (official Wix model pages — excludes Bonzers fin close-ups, shop/merch, and celebrity quotes)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "mayo-surfboards",
+      "name": "Mayo Surfboards",
+      "website_url": "https://www.mayosurfboards.com",
+      "location_label": "Cocoa Beach, Florida",
+      "founder_name": "Larry Mayo",
+      "lead_shaper_name": "Larry Mayo",
+      "short_description": "Handcrafted East Coast boards from Larry Mayo in Cocoa Beach — hulls, fishes, eggs, logs, gliders, and guns.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/mayo-surfboards.png",
+      "models": [
+        {
+          "name": "Tug",
+          "image_url": "https://static.wixstatic.com/media/4b8397_74bedc4b31b34ba7a017574fef748b83~mv2.png",
+          "description": "A surfboard version of the early-70s George Greenough Spoon. The Original Tug is very hull-like, with belly in the nose, an S-deck, and mostly 2+1 or twin-keel setups. Remix and Stretch versions keep what works on the original and add modern spins on length, bottom contours, and fin configurations.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Twin Keel Fish",
+          "image_url": "https://static.wixstatic.com/media/4b8397_187e6f39ab004265be90b5fa38696bc8~mv2.png",
+          "description": "Lis-style fishes that have come a long way since Thomas Campbell opened everyone's eyes to the versatility and pure fun of these little guys. Go full traditional with a straighter, more down-the-line outline, volan, full-color, gloss, and polish, or add some curve to the outline and keep it light with a sanded gloss or EPS — built around glass-on keels.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Farrah",
+          "image_url": "https://static.wixstatic.com/media/4b8397_f97c146a54c94f889cb89d796b06ba7c~mv2.png",
+          "description": "Quad fishes that have proven a staple for East Coasters. An adaptation of the famous San Diego quad fishes, they look as good on rail as they do on the wall. A strong travel-quiver option that still handles surprisingly well in solid surf. Available with FCS, Futures, or glass-ons, in volan tint and polish or a lean EPS sanded finish.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Round Tail Quad",
+          "image_url": "https://static.wixstatic.com/media/4b8397_6a6656f6f16745adbd1dca66a0352244~mv2.png",
+          "description": "The next step after the Farrah quads — a virtual one-board travel quiver for trips to Central America, Bali, Europe, and Australia. Designed to work in anything from slop to pumping points and pounding beachbreak so you are not carting around a full board bag.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Mid-Length Egg",
+          "image_url": "https://static.wixstatic.com/media/4b8397_da2ef5d582754a3ca0ca204618f7f375~mv2.png/v1/fill/w_1400,h_1866,al_c,q_85,enc_jpg/egg.jpg",
+          "description": "Egg designs that have evolved over the last decade as people discovered how much fun they are to ride. Drawn-out S-turns on open-face waves, sweeping bottom turns, and the hold to run a straight line in hollow waves just as well as they trim in small, sloppy stuff. Great for beginners, and not a funshape to be outgrown — an intelligent addition to any quiver.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Nu Noserider",
+          "image_url": "https://static.wixstatic.com/media/4b8397_ef965efbe8ee4a84a84592865ca2ad89~mv2.jpeg",
+          "description": "Larry Mayo's take on the late-60s Bing/Takayama collaboration for David Nuuhiwa — the combination of rails, rocker, fin placement, and teardrop concave still being imitated today. His best noserider to date, built as a transition-era log.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Pork Slider",
+          "image_url": "https://static.wixstatic.com/media/4b8397_c92ff5a3183c4f5f8404ad10bb658e30~mv2.png",
+          "description": "The pig occupies a quiver position somewhere between an egg and a log. Built for full-styling, these boards handle most surf under 8 feet and are meant to be ridden with flair to spare — think Dora slide-slipping through the Malibu crowd.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Softail",
+          "image_url": "https://static.wixstatic.com/media/4b8397_a21c58aac7a44f0a9c2469f9eb66b5c6~mv2.png",
+          "description": "Full outline with a little more curve than most point-break noseriders, concave pulled back a full four feet, and a tail flipped up and scooped out. Loose off the tail with tons of pivot, a sweet spot just behind the concave for beating summer sections, and a nose you get comfortable standing on. Designed for sliding slop just as well as Scorpion Bay — a log for all seasons.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Osprey Glider",
+          "image_url": "https://static.wixstatic.com/media/4b8397_b6d44606d2804e288fe3ad4dfc150d47~mv2.png",
+          "description": "Inspired by the boards Skip Frye was shaping in the early 90s simply called Big Boards, the Glider has become more popular since Frye's feature in Thomas Campbell's film The Seedling. Lengths usually range from 10' to 11' with a soft rail in the nose, neutral in the middle, and down in the tail. Built to maximize speed and trim and glide through sections — the Osprey and Osprey Pintail are about having fun and making the most of all conditions.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Guns",
+          "image_url": "https://static.wixstatic.com/media/4b8397_e42bd4624bf94c86ad458a1674a81b29~mv2.png",
+          "description": "Not for the faint of heart. Mayo guns come from the Lopez tradition — single-fin sizzlers, best for hollow surf, great for hurricane groundswell, and available from sub-7' up into the 8' range.",
+          "board_category_slug": "step-up-gun"
+        }
+      ]
+    }
+  ]
+}
