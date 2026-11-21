@@ -1,0 +1,43 @@
+{
+  "generated_for": "Di Surfboards Hawaii official named standup catalog",
+  "source": "https://www.disurfboards808.com/surfboards-models.html (official Weebly model page — excludes stock Coming Soon, shaping-room photos, and merch)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "di-surfboards",
+      "name": "Di Surfboards Hawaii",
+      "website_url": "https://www.disurfboards808.com",
+      "location_label": "Lahaina, Maui, Hawaii",
+      "founder_name": "Duane Ignacio",
+      "lead_shaper_name": "Duane Ignacio",
+      "short_description": "Lahaina shaper Duane Ignacio — hand-shaped and CAD-refined surfboards under Di Surfboards Hawaii since 2005, after starting In Deep Surfboards in 1993.",
+      "logo_url": "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/brand-assets/logos/di-surfboards.jpg",
+      "models": [
+        {
+          "name": "Maui Flyer",
+          "image_url": "https://www.disurfboards808.com/uploads/3/8/4/7/38475331/5-8-eps-fish_orig.jpg",
+          "description": "MF (Maui Flyer). 5'8\" x 20.5\" x 2.47\", 29.6 L. EPS core, epoxy glassed, 5 FCS 2. Low rocker throughout the board. Single to a double concave through the tail. Carbon stripes top and bottom with carbon heel and toe stripes. Custom dimensions available from 5'6\" to 6'0\".",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Alpha Fish",
+          "image_url": "https://www.disurfboards808.com/uploads/3/8/4/7/38475331/5-11-fish_orig.jpg",
+          "description": "AF (Alpha Fish). 5'11\" x 20.25\" x 2.47\", 31.12 L. PU core, polyurethane resin glassed, Futures thruster. Medium rocker throughout the board. Single to double concave through the tail. Custom dimensions available from 5'6\" to 6'0\".",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Mini Longboard",
+          "image_url": "https://www.disurfboards808.com/uploads/3/8/4/7/38475331/8-6_orig.jpg",
+          "description": "8'6\" x 23.25\" x 3.25\", 73.2 L. PU core, polyester resin, sanded finish, five-fin Futures setup. Bottom contour: V bottom to double concave. Custom dimensions available from 8'0\" to 8'5\".",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Progressive Longboard",
+          "image_url": "https://www.disurfboards808.com/uploads/3/8/4/7/38475331/9-2_orig.jpg",
+          "description": "9'2\" x 23\" x 3.12\", 78.9 L. PU core, polyester resin, sanded finish, 2+1 Futures setup. Bottom contour: nose concave, V bottom to double concave. Custom dimensions available from 9'0\" to 9'5\".",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
