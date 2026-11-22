@@ -1,0 +1,67 @@
+{
+  "generated_for": "Flux Surfboards official named standup catalog",
+  "source": "https://www.fluxsurf.co (official Squarespace model pages — standup surfboards only)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "flux-surfboards",
+      "name": "Flux Surfboards",
+      "website_url": "https://www.fluxsurf.co",
+      "location_label": "Chicago, Illinois",
+      "founder_name": "Scott Turner",
+      "lead_shaper_name": "Scott Turner",
+      "short_description": "Handmade custom surfboards by Scott Turner in Chicago, shaped and glassed start to finish for the Great Lakes and beyond.",
+      "logo_url": "https://images.squarespace-cdn.com/content/v1/68c1b8147afcd844021bf097/3caa0e55-f86a-44c1-9336-0ca45683edcb/board.png",
+      "models": [
+        {
+          "name": "Muse",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/68c1b8147afcd844021bf097/948915d7-0441-421a-b0e7-fdda67783e96/IMG_0577.JPG?format=2500w",
+          "description": "Scott Turner's take on a classic swallow-tail fish. Moderate retro rocker, foam-forward foil, rolled entry into a double concave and spiral vee, and knifey tail rails. It sits down in the water and draws smooth lines, with the option for more aggressive turns by shifting the back foot over the fins. Tried frontside and backside from beach-break mush to Indo barrels — a power surfer's fish for open faces, ridden twin or quad.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Tobiko",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/68c1b8147afcd844021bf097/5a308845-822e-4740-95df-e27558fdaf07/IMG_1640.JPG?format=2500w",
+          "description": "A stretched, slimmed-down round-tail fish with extra flip in the tips, tuned for more power and curve than the Muse. More foiled and meant to be ridden longer and thicker, it still works on everyday chest-high days and scales up to 7'1\". Pack it with a Ceylon Single and it covers most waves through 8–10 ft. Twin or quad; designed around keels and also excellent as a quad.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Trash Panda",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/68c1b8147afcd844021bf097/8a84ed82-9a65-44ef-9255-7da870f13bfc/IMG_0487.png?format=1500w",
+          "description": "A high-volume, high-performance shortboard for the Great Lakes. Thick and flat along the stringer for paddle power, with a refined HPSB rail and spiral vee through the back half — no single concave. The deck has a subtle dome that drops into a true performance rail so it drives through softer lake surf without giving up maneuverability. Ride it around your height as a lake good-wave board or an ocean groveler. Thruster or quad.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Barracuda",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/68c1b8147afcd844021bf097/7fa551a4-964e-48b0-9e4d-be0b2b9b3284/22BC9098-7B5F-4C90-8DE0-F5E55783C85E.JPG?format=2500w",
+          "description": "A modern shortboard with extra flow. Balanced foil, rolled deck, flat entry, single concave under the front foot, double concave between the feet, and vee in the tail. It fits the pocket but still carries speed like a fish. Developed for San Diego beach break and equally at home at a typical mid-tide beachie. All-purpose platform for thruster, twin, twin-plus-trailer, or quad.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Ceylon Single",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/68c1b8147afcd844021bf097/854d0cea-be58-4025-a801-537c6fb05010/IMG_0597.JPG?format=2500w",
+          "description": "Not your dad's single fin — part step-up, part mid-length. Enough curve to stay playful when the waves are legit, flat enough to cruise across mellower sections. Rides the line between a step-up and a mid-length on lined-up open-faced reefs and points. Single fin only; no sidebites needed. Ride it about the same length and thickness as your step-up and a half-inch to an inch wider.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Egg",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/68c1b8147afcd844021bf097/1c750364-5660-4b25-b93b-c988b23eb0c7/IMG_8233.png?format=1500w",
+          "description": "The one-board quiver for the lake. It paddles bigger than it is and surfs smaller than it is, with smooth flowing curve and an enormous sweet spot you can turn from anywhere. Made from 6'4\" through 9'0\" — spicy hot rods in the smaller sizes and cruise/carve/nose-ride one-board quivers from 7'6\" up. Quad under 7 ft; quad or single in the 7–8 ft range; single above 8 ft.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Cali Plank",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/68c1b8147afcd844021bf097/85055d80-b869-4f74-8667-0fc6ca70dfae/3EE376E4-4740-40AA-B3AB-504D4DA177B6.JPG?format=2500w",
+          "description": "A fairly traditional California log with the nose concave extended a little further into the middle of the board. Riders on the lake call them incredibly smooth. Tuned for trim and glide or nose riding depending on skill and style. Recommended between 9'0\" and 10'0\", with customs from 8'8\" to 10'6\". Best in 1–3 ft mellow ocean or any lake day.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Thor's Hammer",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/68c1b8147afcd844021bf097/7e6ac58a-4b70-422f-93f3-e284ba0e73b8/IMG_6871.JPG?format=2500w",
+          "description": "Part glider and part egg — the any-day, any-wave board for the Great Lakes. It cruises into the most discouraging dribble and still picks off soft rollers that are too weak for a mid-length. Depending on length you can catch waves that have not broken yet and ride them to the beach. Sweet spot 9'0\"–9'7\", special order to 10'7\". Single fin; packs a ton of volume so you do not need to ride them huge.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
