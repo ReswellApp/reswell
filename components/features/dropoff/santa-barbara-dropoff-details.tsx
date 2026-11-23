@@ -1,10 +1,6 @@
-import Link from "next/link"
 import { HowToSellSection } from "@/components/features/seller-resources/how-to-sell-section"
-import {
-  SANTA_BARBARA_DROPOFF_MAX_LENGTH,
-  SANTA_BARBARA_DROPOFF_SHORTBOARD_MAX_WIDTH,
-} from "@/lib/dropoff-santa-barbara"
-import { HOW_TO_SHIP_HREF } from "@/lib/seller-resources"
+import { formatDropoffBoxSize } from "@/lib/dropoff-location-box-rules"
+import { SANTA_BARBARA_DROPOFF_BOX_RULES } from "@/lib/dropoff-santa-barbara"
 
 export function SantaBarbaraDropoffWhy() {
   return (
@@ -34,10 +30,7 @@ export function SantaBarbaraDropoffWhy() {
           <ul className="mt-3 space-y-3 text-sm leading-relaxed text-[#5c6b89] sm:text-base">
             <li>Sellers in and around Santa Barbara who do not want to pack a board.</li>
             <li>Boards that had interest locally but never closed.</li>
-            <li>
-              Anyone listing a board up to {SANTA_BARBARA_DROPOFF_MAX_LENGTH} who wants nationwide
-              reach.
-            </li>
+            <li>Anyone listing a board who wants nationwide reach.</li>
           </ul>
         </div>
       </div>
@@ -50,33 +43,19 @@ export function SantaBarbaraDropoffSizes() {
     <HowToSellSection
       eyebrow="What we pack"
       title="Sizes we can ship from here"
-      lead="These limits match the cartons we keep in Santa Barbara. Longer or wider boards can still sell — pack those yourself."
+      lead="We pack every Santa Barbara drop-off. The carton depends on board length, and width does not change the box."
     >
       <div className="grid gap-5 md:grid-cols-2">
-        <div className="rounded-[1.75rem] bg-[#F4F7FB] px-6 py-8 sm:px-8">
-          <p className="text-xl font-bold tracking-tight text-[#001A4A]">Boards we drop off</p>
-          <ul className="mt-4 space-y-2 text-sm leading-relaxed text-[#5c6b89] sm:text-base">
-            <li>Up to {SANTA_BARBARA_DROPOFF_MAX_LENGTH} overall.</li>
-            <li>
-              6&apos;0 and under need to be {SANTA_BARBARA_DROPOFF_SHORTBOARD_MAX_WIDTH} wide or
-              less.
-            </li>
-            <li>You will see this option in the sell flow when the board fits.</li>
-          </ul>
-        </div>
-        <div className="rounded-[1.75rem] bg-[#F4F7FB] px-6 py-8 sm:px-8">
-          <p className="text-xl font-bold tracking-tight text-[#001A4A]">Outside those sizes</p>
-          <p className="mt-4 text-sm leading-relaxed text-[#5c6b89] sm:text-base">
-            Pack and ship it yourself, or keep the listing pickup-only. The{" "}
-            <Link
-              href={HOW_TO_SHIP_HREF}
-              className="font-medium text-[#001A4A] underline underline-offset-2"
-            >
-              how to ship guide
-            </Link>{" "}
-            covers boxes, labels, and local meetups.
-          </p>
-        </div>
+        {SANTA_BARBARA_DROPOFF_BOX_RULES.map((rule) => (
+          <div key={rule.id} className="rounded-[1.75rem] bg-[#F4F7FB] px-6 py-8 sm:px-8">
+            <p className="text-xl font-bold tracking-tight text-[#001A4A]">{rule.label}</p>
+            <ul className="mt-4 space-y-2 text-sm leading-relaxed text-[#5c6b89] sm:text-base">
+              <li>{formatDropoffBoxSize(rule)} in</li>
+              <li>{rule.weightLb} lb</li>
+              <li>Any board width.</li>
+            </ul>
+          </div>
+        ))}
       </div>
     </HowToSellSection>
   )
