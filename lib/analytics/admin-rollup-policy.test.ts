@@ -123,10 +123,12 @@ describe("admin analytics retention policy", () => {
     const vercelConfig = JSON.parse(
       await readFile(new URL("../../vercel.json", import.meta.url), "utf8"),
     ) as { crons?: Array<{ path?: string }> }
-    assert.ok(
+    assert.equal(
       vercelConfig.crons?.some(
         (cron) => cron.path === "/api/cron/admin-analytics-rollups",
       ),
+      false,
+      "analytics rollups stay unscheduled while the marketplace is closed",
     )
     assert.ok(
       vercelConfig.crons?.some(

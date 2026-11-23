@@ -2,9 +2,30 @@ import assert from "node:assert/strict"
 import { readFile } from "node:fs/promises"
 import { describe, it } from "node:test"
 
-import { BOARD_BUY_SLA_MINUTES } from "../board-buy/constants.ts"
-
 type VercelCron = { path: string; schedule: string }
+
+/** Marketplace growth jobs. Unscheduled while the public site is closed. */
+const PAUSED_WHILE_CLOSED = [
+  "/api/cron/klaviyo-inactivity-milestones",
+  "/api/cron/klaviyo-unfinished-listings",
+  "/api/cron/klaviyo-catalog-sync",
+  "/api/cron/seller-message-inactivity",
+  "/api/cron/newsletter-promo-expiration-nudge",
+  "/api/cron/klaviyo-favorites-digest",
+  "/api/cron/klaviyo-flow-stats",
+  "/api/cron/admin-analytics-rollups",
+  "/api/cron/board-buy-sla",
+  "/api/cron/google-merchant-refresh",
+  "/api/cron/elasticsearch-reindex",
+  "/api/cron/search-insights-digest",
+  "/api/cron/search-daily-report",
+  "/api/cron/search-period-report",
+  "/api/cron/backfill-listing-brand-model",
+  "/api/cron/auto-price-drop",
+  "/api/cron/notification-fanout",
+  "/api/cron/listing-image-storage-drift",
+  "/api/cron/surfboard-dimension-photo-queue",
+] as const
 
 const FIELD_BOUNDS = [
   [0, 59],
@@ -98,7 +119,11 @@ describe("vercel cron stagger", () => {
       return parsed.hourWild && isEveryNMinutes(sorted(parsed.minutes), 15)
     })
 
-    assert.ok(fiveMinute.length >= 2, "expected recurring 5-minute jobs")
+    assert.equal(
+      fiveMinute.length,
+      1,
+      "shopify sync is the only 5-minute job left while the marketplace is closed",
+    )
     assert.ok(fifteenMinute.length >= 3, "expected recurring 15-minute jobs")
 
     for (const five of fiveMinute) {
@@ -164,29 +189,17 @@ describe("vercel cron stagger", () => {
     }
   })
 
-  it("keeps board-buy SLA polling inside the 30-minute quoting window", async () => {
-    const crons = await loadCrons()
-    const boardBuy = crons.find((cron) => cron.path === "/api/cron/board-buy-sla")
-    assert.ok(boardBuy, "board-buy-sla cron must remain scheduled")
-
-    const minutes = sorted(parseCronSchedule(boardBuy.schedule).minutes)
-    assert.ok(minutes.length >= 3, "board-buy-sla must poll several times per hour")
-
-    const gaps = minutes.map((minute, index) => {
-      const next = minutes[(index + 1) % minutes.length]!
-      return (next - minute + 60) % 60 || 60
-    })
-    const maxGap = Math.max(...gaps)
-    assert.ok(
-      maxGap <= BOARD_BUY_SLA_MINUTES / 3,
-      `board-buy-sla gap of ${maxGap}m is too wide for a ${BOARD_BUY_SLA_MINUTES}m quoting SLA`,
-    )
-  })
-
-  it("keeps admin analytics rollups and recently-viewed trim scheduled", async () => {
+  it("leaves marketplace growth jobs unscheduled while the site is closed", async () => {
     const crons = await loadCrons()
     const paths = new Set(crons.map((cron) => cron.path))
-    assert.ok(paths.has("/api/cron/admin-analytics-rollups"))
+    for (const path of PAUSED_WHILE_CLOSED) {
+      assert.equal(paths.has(path), false, `${path} should stay unscheduled`)
+    }
+    assert.ok(paths.has("/api/cron/shopify-sync"))
+    assert.ok(paths.has("/api/cron/release-carrier-delivered-payouts"))
+    assert.ok(paths.has("/api/cron/sync-open-carrier-tracking"))
+    assert.ok(paths.has("/api/cron/refund-after-return-delivered"))
+    assert.ok(paths.has("/api/cron/support-case-backfill"))
     assert.ok(paths.has("/api/cron/trim-recent-listing-views"))
   })
 })

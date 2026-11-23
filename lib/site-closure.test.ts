@@ -1,4 +1,5 @@
 import assert from "node:assert/strict"
+import { readFile } from "node:fs/promises"
 import { describe, it } from "node:test"
 import {
   closurePostAuthPath,
@@ -58,6 +59,15 @@ describe("site closure wall", () => {
     assert.equal(wall("/", { search: "token_hash=abc&type=recovery" }), false)
     assert.equal(wall("/sell", { method: "POST" }), false)
     assert.equal(wall("/sell", { isServerAction: true }), false)
+  })
+
+  it("keeps the shutdown page static and cacheable", async () => {
+    const page = await readFile(new URL("../app/closed/page.tsx", import.meta.url), "utf8")
+    const proxy = await readFile(new URL("../proxy.ts", import.meta.url), "utf8")
+    assert.match(page, /export const dynamic = "force-static"/)
+    assert.doesNotMatch(page, /getCachedRequestSession/)
+    assert.match(proxy, /PUBLIC_MARKETPLACE_EDGE_CACHE_CONTROL/)
+    assert.doesNotMatch(proxy, /CDN-Cache-Control', 'no-store'/)
   })
 
   it("sends sign-in back to sales when the requested page is closed", () => {

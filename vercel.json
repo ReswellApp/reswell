@@ -23,60 +23,16 @@
   ],
   "crons": [
     {
-      "path": "/api/cron/klaviyo-inactivity-milestones",
-      "schedule": "0 8 * * *"
-    },
-    {
-      "path": "/api/cron/klaviyo-unfinished-listings",
-      "schedule": "40 * * * *"
-    },
-    {
-      "path": "/api/cron/klaviyo-catalog-sync",
-      "schedule": "6-56/10 * * * *"
-    },
-    {
-      "path": "/api/cron/seller-message-inactivity",
-      "schedule": "0 7 * * *"
-    },
-    {
-      "path": "/api/cron/newsletter-promo-expiration-nudge",
-      "schedule": "0 6 * * *"
-    },
-    {
-      "path": "/api/cron/klaviyo-favorites-digest",
-      "schedule": "0 10 * * 1"
-    },
-    {
-      "path": "/api/cron/klaviyo-flow-stats",
-      "schedule": "15 9 * * *"
-    },
-    {
       "path": "/api/cron/trim-recent-listing-views",
       "schedule": "30 9 * * *"
-    },
-    {
-      "path": "/api/cron/admin-analytics-rollups",
-      "schedule": "15 */2 * * *"
     },
     {
       "path": "/api/cron/purge-stale-offers",
       "schedule": "5 * * * *"
     },
     {
-      "path": "/api/cron/board-buy-sla",
-      "schedule": "1-56/5 * * * *"
-    },
-    {
       "path": "/api/cron/shopify-sync",
       "schedule": "2-57/5 * * * *"
-    },
-    {
-      "path": "/api/cron/google-merchant-refresh",
-      "schedule": "20 * * * *"
-    },
-    {
-      "path": "/api/cron/elasticsearch-reindex",
-      "schedule": "48 4,16 * * *"
     },
     {
       "path": "/api/cron/sync-open-carrier-tracking",
@@ -93,22 +49,6 @@
     {
       "path": "/api/cron/refund-after-return-delivered",
       "schedule": "10,25,40,55 * * * *"
-    },
-    {
-      "path": "/api/cron/search-insights-digest",
-      "schedule": "0 15 * * 1"
-    },
-    {
-      "path": "/api/cron/search-daily-report",
-      "schedule": "30 14 * * *"
-    },
-    {
-      "path": "/api/cron/search-period-report",
-      "schedule": "0 15 1 * *"
-    },
-    {
-      "path": "/api/cron/backfill-listing-brand-model",
-      "schedule": "0 5,17 * * *"
     },
     {
       "path": "/api/cron/vercel-error-digest",
@@ -131,24 +71,8 @@
       "schedule": "14-59/15 * * * *"
     },
     {
-      "path": "/api/cron/auto-price-drop",
-      "schedule": "35 * * * *"
-    },
-    {
       "path": "/api/cron/live-chat-escalate-unanswered",
       "schedule": "45 * * * *"
-    },
-    {
-      "path": "/api/cron/notification-fanout",
-      "schedule": "3-58/5 * * * *"
-    },
-    {
-      "path": "/api/cron/listing-image-storage-drift",
-      "schedule": "47 14 * * *"
-    },
-    {
-      "path": "/api/cron/surfboard-dimension-photo-queue",
-      "schedule": "42 */4 * * *"
     }
   ]
 }
