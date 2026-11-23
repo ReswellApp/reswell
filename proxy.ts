@@ -9,6 +9,7 @@ import {
 } from '@/lib/crawler/ad-catalog-crawler'
 import {
   BROWSER_HTML_CACHE_CONTROL,
+  PUBLIC_MARKETPLACE_EDGE_CACHE_CONTROL,
   isCacheablePublicMarketplaceRequest,
   publicMarketplaceCdnCacheControl,
   shouldAttachDeviceCookieOnDocument,
@@ -58,8 +59,12 @@ export async function proxy(request: NextRequest) {
     url.pathname = SITE_CLOSURE_PATH
     url.search = ''
     const closed = NextResponse.rewrite(url)
-    closed.headers.set('Cache-Control', 'private, no-store')
-    closed.headers.set('CDN-Cache-Control', 'no-store')
+    // Same anonymous document for every public URL. Cache it at the edge so
+    // repeat crawls do not invoke the proxy and the shutdown page again.
+    // Browsers still revalidate, so a deploy does not leave stale HTML behind.
+    closed.headers.set('Cache-Control', BROWSER_HTML_CACHE_CONTROL)
+    closed.headers.set('CDN-Cache-Control', PUBLIC_MARKETPLACE_EDGE_CACHE_CONTROL)
+    closed.headers.set('Vercel-CDN-Cache-Control', PUBLIC_MARKETPLACE_EDGE_CACHE_CONTROL)
     closed.headers.set('X-Robots-Tag', 'noindex, nofollow')
     return closed
   }
