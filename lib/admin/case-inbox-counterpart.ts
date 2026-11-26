@@ -27,6 +27,19 @@ export function staffWaitingStatusLabel(item: Pick<CaseInboxItem, "requesterRole
   return "Waiting on reply"
 }
 
+export const INBOX_WORKFLOW_STATUS_VALUES: SupportCaseStatus[] = [
+  "submitted",
+  "in_review",
+  "in_progress",
+  "waiting_on_you",
+  "resolved",
+]
+
+/** Keep Submitted as its own value so choosing In review actually persists. */
+export function workflowSelectValue(status: SupportCaseStatus): SupportCaseStatus {
+  return INBOX_WORKFLOW_STATUS_VALUES.includes(status) ? status : "in_progress"
+}
+
 export function staffWorkflowStatusLabel(
   status: SupportCaseStatus,
   item: Pick<CaseInboxItem, "requesterRole" | "openedBy">,

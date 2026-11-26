@@ -35,23 +35,13 @@ import {
 } from "@/components/ui/select"
 import { formatSupportCaseReference } from "@/lib/utils/support-case-display"
 import { adminLiveChatHrefForCase } from "@/lib/utils/support-case-paths"
-import { staffWorkflowStatusLabel } from "@/lib/admin/case-inbox-counterpart"
+import {
+  INBOX_WORKFLOW_STATUS_VALUES,
+  staffWorkflowStatusLabel,
+  workflowSelectValue,
+} from "@/lib/admin/case-inbox-counterpart"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
-
-const WORKFLOW_STATUS_VALUES: SupportCaseStatus[] = [
-  "in_progress",
-  "in_review",
-  "waiting_on_you",
-  "resolved",
-]
-
-function workflowSelectValue(status: SupportCaseStatus): SupportCaseStatus {
-  if (status === "resolved") return "resolved"
-  if (status === "waiting_on_you") return "waiting_on_you"
-  if (status === "in_review" || status === "submitted") return "in_review"
-  return "in_progress"
-}
 
 const OUTCOME_OPTIONS: { value: OrderSupportOutcome; label: string }[] = [
   { value: "approved", label: "Approved" },
@@ -184,7 +174,7 @@ export function CaseInboxDetails({
                 >
                   <SelectTrigger className="h-9 bg-background"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {WORKFLOW_STATUS_VALUES.map((status) => (
+                    {INBOX_WORKFLOW_STATUS_VALUES.map((status) => (
                       <SelectItem key={status} value={status}>
                         {staffWorkflowStatusLabel(status, item)}
                       </SelectItem>

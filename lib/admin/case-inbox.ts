@@ -452,11 +452,14 @@ export function filterInboxItems(
 }
 
 export {
+  applyInboxLoadItems,
   findInboxItemBySelection,
   firstNonEmptyText,
   inboxItemPassesMineFilter,
   inboxLoadQueryKey,
+  inboxRefreshPagination,
   mergeInboxPageItems,
+  mergeInboxRefreshItems,
   nextInboxSelectedKey,
   pinSelectedInboxItem,
   shouldApplyInboxLoad,

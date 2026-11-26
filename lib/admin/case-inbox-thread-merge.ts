@@ -20,6 +20,11 @@ export function mergeThreadMessagesWithPendingLocal(
       .filter((message) => message.author_role === "agent" && !message.is_internal)
       .map((message) => normalizedBody(message.body)),
   )
+  const serverCustomerBodies = new Set(
+    serverMessages
+      .filter((message) => message.author_role === "customer" && !message.is_internal)
+      .map((message) => normalizedBody(message.body)),
+  )
   const serverNoteBodies = new Set(
     serverMessages
       .filter((message) => message.is_internal)
@@ -29,7 +34,9 @@ export function mergeThreadMessagesWithPendingLocal(
     if (!message.id.startsWith("local-")) return false
     const body = normalizedBody(message.body)
     if (message.is_internal) return !serverNoteBodies.has(body)
-    return message.author_role === "agent" && !serverAgentBodies.has(body)
+    if (message.author_role === "agent") return !serverAgentBodies.has(body)
+    if (message.author_role === "customer") return !serverCustomerBodies.has(body)
+    return false
   })
   if (pendingLocal.length === 0) return serverMessages
   return [...serverMessages, ...pendingLocal].sort(
